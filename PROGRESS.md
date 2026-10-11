@@ -40,10 +40,14 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Nothing is being built.** On 2026-10-10 no pull request and no issue is open, and v0.44.0 holds
-everything on `main`. The owner asked for the framework to be left stable so the client sites
-can take one release and be worked on without it; this section says where each unfinished spec
-stops, so work resumes from here and not from a transcript.
+**Spec 107 is being finished** (2026-10-11). The first client site on shared hosting went
+public that day, updated by extracting a zip over the release before it, and files the new
+release no longer shipped broke its Site Editor. The owner asked for Releases to be what that
+site uses. The spec was amended first with five answers a client on such a host needs
+(DECISIONS #304: the configuration line where `DISALLOW_FILE_MODS` is set, one builder and
+`--with-plugin`, a folder replaced whole, the database step beside the automatic check, the
+first installation as a runbook); then slice 4 from T042b, slice 5 and slice 6, one pull request
+each. For the other specs this section still says where each stops.
 
 **Nothing half-built can be reached.** The classes of spec 107's fourth slice are bound to no
 route and no screen, and the Releases screen says it installs nothing yet.
@@ -54,7 +58,7 @@ route and no screen, and the Releases screen says it installs nothing yet.
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | not planned | `/speckit-plan` |
-| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | T048 to T056, then slices 5 and 6 | T048, `ReleaseTableCopies` |
+| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | T042b to T056, then slices 5 and 6 | T042b, T047b, T047c, then T048, `ReleaseTableCopies` |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 
 What to know before resuming each:

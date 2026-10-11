@@ -39,6 +39,12 @@
   its first draft were wrong and were corrected against the source before this was committed:
   CoreX does apply a release's schema changes without a command line (`SchemaSelfHeal`, on the
   first admin page or cron run), and a release holds thirteen add-ons.
+- A clarification session on 2026-10-11 answered five questions the owner put after the first
+  client site went public. He asked for answers, so none was put back to him; each is recorded
+  with its reason under "Clarifications" and is his to overrule. FR-018, FR-027, FR-028, FR-035
+  and FR-045 came from it, each with an edge case or an acceptance it can be tested by. One
+  fact in "The host this is written for" was wrong and is corrected there: the site does set
+  `DISALLOW_FILE_MODS`.
 - The outline arrived in full from the hosting session after the first draft and the spec was
   rewritten to it: what the owner said, what was recommended and accepted, and the one
   recommendation (no general backup) that he was not asked to agree to in those words, now the
