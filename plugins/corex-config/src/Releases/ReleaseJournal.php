@@ -45,11 +45,13 @@ final class ReleaseJournal
      * Write down a swap before any of it is made.
      *
      * @param list<array{from:string,to:string}> $moves Each rename, in the order it is made.
+     * @param array<string,mixed>                $about What the swap is of: which installation, what it replaces, who asked. Kept with the folders it moved out, for going back.
      */
-    public function begin(array $moves): void
+    public function begin(array $moves, array $about = []): void
     {
         $this->write([
             'status' => self::OPEN,
+            'about'  => $about,
             'moves'  => array_map(static fn (array $move): array => [...$move, 'state' => self::PENDING], $moves),
         ]);
     }
@@ -60,6 +62,16 @@ final class ReleaseJournal
         $status = $this->read()['status'] ?? null;
 
         return is_string($status) ? $status : null;
+    }
+
+    /**
+     * What the last swap was of, as whoever began it said.
+     *
+     * @return array<string,mixed>
+     */
+    public function about(): array
+    {
+        return (array) ($this->read()['about'] ?? []);
     }
 
     /**

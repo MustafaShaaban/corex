@@ -18,6 +18,9 @@ import { createSha256 } from './sha256.js';
 /** The key every answer of the Releases routes carries (`ReleaseRestGateway::MARK`). */
 const MARK = 'corex_release';
 
+/** The header an installation's key is carried in (`ReleaseMaintenance::HEADER`). */
+const KEY_HEADER = 'X-Corex-Release-Key';
+
 /** How long to wait before the second try; doubled before each one after. */
 const FIRST_WAIT_MS = 1000;
 
@@ -115,7 +118,7 @@ async function sha256Of( file ) {
  * @param {typeof window.fetch}           [options.fetch] `fetch`, or what stands in for it.
  * @param {(ms: number) => Promise<void>} [options.wait]  Waits a number of milliseconds.
  * @param {number}                        [options.tries] How many times a request is made before giving up.
- * @return {Object} `{ overview, inspect, upload }`.
+ * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, cancel }`.
  */
 export function createReleaseClient( {
 	restUrl,
@@ -124,6 +127,12 @@ export function createReleaseClient( {
 	wait = sleep,
 	tries = DEFAULT_TRIES,
 } ) {
+	// The key of the installation in hand. The site makes it when an installation is prepared
+	// and keeps only its hash; it is held here for as long as the page is open, and goes with
+	// every request from then on. While a release is being put in place WordPress turns away
+	// every request but the one that carries it.
+	let installationKey = null;
+
 	/**
 	 * One try: the marked answer, or null when what came back was not one.
 	 *
@@ -137,7 +146,13 @@ export function createReleaseClient( {
 			response = await fetch( url, {
 				credentials: 'same-origin',
 				...init,
-				headers: { 'X-WP-Nonce': nonce, ...init.headers },
+				headers: {
+					'X-WP-Nonce': nonce,
+					...( installationKey && {
+						[ KEY_HEADER ]: installationKey,
+					} ),
+					...init.headers,
+				},
 			} );
 		} catch {
 			return null;
@@ -259,9 +274,37 @@ export function createReleaseClient( {
 		).package;
 	}
 
+	/**
+	 * What installing a package would do, and the way back. The key in the answer is kept for
+	 * the requests that follow.
+	 *
+	 * @param {string} name The package's name on the site.
+	 * @return {Promise<Object>} The statement, `drops`, `key`, `recovery_link`, `copies_days`.
+	 */
+	async function prepare( name ) {
+		const prepared = await data(
+			'/install/prepare',
+			json( { package: name } )
+		);
+		installationKey = prepared.key;
+
+		return prepared;
+	}
+
+	async function cancel() {
+		await data( '/install/cancel', json( {} ) );
+		installationKey = null;
+	}
+
 	return {
 		overview: () => data( '' ),
 		inspect: ( name ) => data( '/inspect', json( { package: name } ) ),
 		upload,
+		prepare,
+		confirm: ( phrase, more = {} ) =>
+			data( '/install/confirm', json( { phrase, ...more } ) ),
+		step: () => data( '/install/step', json( {} ) ),
+		finish: () => data( '/install/finish', json( {} ) ),
+		cancel,
 	};
 }

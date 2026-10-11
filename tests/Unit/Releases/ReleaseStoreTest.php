@@ -134,3 +134,42 @@ it('keeps what happened, newest last, and only the last fifty', function () {
         ->and($log[0]['number'])->toBe(4)
         ->and($log[49]['number'])->toBe(53);
 });
+
+it('makes nothing in order to say what is in progress', function () {
+    expect($this->store->state())->toBe([])
+        ->and($this->store->log())->toBe([])
+        ->and(is_dir($this->content . '/corex-releases'))->toBeFalse();
+});
+
+it('does a piece of an installation while no other request does one, and answers what it did', function () {
+    expect($this->store->exclusively(static fn (): string => 'unpacked'))->toBe('unpacked');
+});
+
+it('tells a second request that the first is still at work, and does not run it', function () {
+    $ran = false;
+
+    $refused = $this->store->exclusively(function () use (&$ran): ?ReleaseRefused {
+        try {
+            $this->store->exclusively(static function () use (&$ran): void {
+                $ran = true;
+            });
+        } catch (ReleaseRefused $refused) {
+            return $refused;
+        }
+
+        return null;
+    });
+
+    expect($refused?->reason)->toBe(ReleaseStore::BUSY)
+        ->and($ran)->toBeFalse();
+});
+
+it('lets the next request in once the first is over, however it ended', function () {
+    try {
+        $this->store->exclusively(static fn () => throw new RuntimeException('the step failed'));
+    } catch (RuntimeException) {
+        // The step's own failure is its caller's to deal with.
+    }
+
+    expect($this->store->exclusively(static fn (): string => 'the next one'))->toBe('the next one');
+});

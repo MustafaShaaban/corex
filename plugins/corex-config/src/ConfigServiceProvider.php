@@ -51,13 +51,29 @@ use Corex\Config\Branding\BrandingService;
 use Corex\Config\Data\DataAdminScreen;
 use Corex\Config\Data\DataManagementController;
 use Corex\Config\Releases\InstalledRelease;
+use Corex\Config\Releases\ReleaseCompletion;
+use Corex\Config\Releases\ReleaseContentHash;
 use Corex\Config\Releases\ReleaseDesk;
+use Corex\Config\Releases\ReleaseFinisher;
+use Corex\Config\Releases\ReleaseHostFacts;
+use Corex\Config\Releases\ReleaseInstallation;
+use Corex\Config\Releases\ReleaseJournal;
+use Corex\Config\Releases\ReleaseMaintenance;
 use Corex\Config\Releases\ReleasePackageInspector;
+use Corex\Config\Releases\ReleaseRecord;
+use Corex\Config\Releases\ReleaseRecoveryPlugin;
 use Corex\Config\Releases\ReleaseRestGateway;
+use Corex\Config\Releases\ReleaseSafeguards;
 use Corex\Config\Releases\ReleasesController;
 use Corex\Config\Releases\ReleasesScreen;
+use Corex\Config\Releases\ReleaseStaging;
+use Corex\Config\Releases\ReleaseSteps;
 use Corex\Config\Releases\ReleaseStore;
+use Corex\Config\Releases\ReleaseSwap;
+use Corex\Config\Releases\ReleaseTableCopier;
+use Corex\Config\Releases\ReleaseTableCopies;
 use Corex\Config\Releases\ReleaseUpload;
+use Corex\Config\Releases\WpReleaseTableCopier;
 use Corex\Config\Data\DataManagementServices;
 use Corex\Config\Data\DataRestGateway;
 use Corex\Config\Data\DataAccessPolicy;
@@ -130,6 +146,7 @@ use Corex\Config\Retention\SubmissionRetentionStore;
 use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\Migrator;
 use Corex\Database\Schema\SchemaComponent;
+use Corex\Database\Schema\SchemaMigrator;
 use Corex\Database\Schema\SchemaRegistry;
 use Corex\Config\Insights\InsightRegistry;
 use Corex\Config\Insights\InsightStore;
@@ -553,8 +570,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(DataManagementController::class);
         $this->container->singleton(DataAdminScreen::class);
 
-        // Releases (spec 107): reading a package where it lands, and receiving one. What the
-        // installer keeps is in wp-content/corex-releases/, beside the folders a release
+        // Releases (spec 107): receiving a package, reading it, and putting it in place. What
+        // the installer keeps is in wp-content/corex-releases/, beside the folders a release
         // replaces and none of them.
         $this->container->singleton(ReleaseStore::class, static fn (): ReleaseStore => new ReleaseStore(WP_CONTENT_DIR));
         $this->container->singleton(InstalledRelease::class, static fn (): InstalledRelease => new InstalledRelease(ABSPATH));
@@ -576,10 +593,88 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(ReleaseStore::class),
                 $c->make(ReleasePackageInspector::class),
                 $c->make(InstalledRelease::class),
-                // Every folder an installation writes in. The first is where releases are kept.
-                [WP_CONTENT_DIR, WP_PLUGIN_DIR, get_theme_root(), WPMU_PLUGIN_DIR, untrailingslashit(ABSPATH)],
+                // Read here, where the site is put together: constants are the site's
+                // configuration, and the class that judges them is told what they say.
+                static fn (): ReleaseHostFacts => ReleaseHostFacts::ofThisHost(
+                    // Every folder an installation writes in. The first is where releases are kept.
+                    [WP_CONTENT_DIR, WP_PLUGIN_DIR, get_theme_root(), WPMU_PLUGIN_DIR, untrailingslashit(ABSPATH)],
+                    defined(ReleaseHostFacts::ALLOWED_BY) && constant(ReleaseHostFacts::ALLOWED_BY) === true,
+                    // A package holds `wp-content/plugins/<name>` and `wp-content/themes/<name>`,
+                    // and a release's folders are moved to those paths beside wp-content's parent.
+                    basename(WP_CONTENT_DIR) === 'wp-content'
+                        && wp_normalize_path(WP_PLUGIN_DIR) === wp_normalize_path(WP_CONTENT_DIR . '/plugins')
+                        && wp_normalize_path(get_theme_root()) === wp_normalize_path(WP_CONTENT_DIR . '/themes'),
+                ),
             ),
         );
+        $this->container->singleton(ReleaseJournal::class, static fn (ContainerInterface $c): ReleaseJournal => new ReleaseJournal($c->make(ReleaseStore::class)));
+        $this->container->singleton(ReleaseMaintenance::class, static fn (): ReleaseMaintenance => new ReleaseMaintenance(untrailingslashit(ABSPATH)));
+        $this->container->singleton(
+            ReleaseRecoveryPlugin::class,
+            static fn (ContainerInterface $c): ReleaseRecoveryPlugin => new ReleaseRecoveryPlugin(
+                WPMU_PLUGIN_DIR,
+                $c->make(ReleaseJournal::class),
+                $c->make(ReleaseMaintenance::class),
+            ),
+        );
+        $this->container->singleton(
+            ReleaseSafeguards::class,
+            static fn (ContainerInterface $c): ReleaseSafeguards => new ReleaseSafeguards(
+                $c->make(ReleaseMaintenance::class),
+                $c->make(ReleaseRecoveryPlugin::class),
+                home_url('/'),
+            ),
+        );
+        $this->container->singleton(ReleaseStaging::class, static fn (ContainerInterface $c): ReleaseStaging => new ReleaseStaging(
+            $c->make(ReleaseStore::class),
+            $c->make(ReleaseContentHash::class),
+        ));
+        $this->container->singleton(
+            ReleaseTableCopier::class,
+            static fn (ContainerInterface $c): ReleaseTableCopier => $c->make(WpReleaseTableCopier::class),
+        );
+        $this->container->singleton(ReleaseTableCopies::class, static fn (ContainerInterface $c): ReleaseTableCopies => new ReleaseTableCopies(
+            $c->make(ReleaseTableCopier::class),
+            $c->make(SchemaRegistry::class),
+            $c->make(SchemaMigrator::class),
+        ));
+        // The folder a release's paths are relative to: the one wp-content is in.
+        $this->container->singleton(ReleaseSwap::class, static fn (ContainerInterface $c): ReleaseSwap => new ReleaseSwap(
+            $c->make(ReleaseStore::class),
+            $c->make(ReleaseStaging::class),
+            $c->make(ReleaseJournal::class),
+            dirname(WP_CONTENT_DIR),
+        ));
+        $this->container->singleton(ReleaseSteps::class, static fn (ContainerInterface $c): ReleaseSteps => new ReleaseSteps(
+            $c->make(ReleaseStore::class),
+            $c->make(ReleaseStaging::class),
+            $c->make(ReleaseTableCopies::class),
+            $c->make(ReleaseSwap::class),
+            $c->make(ReleaseJournal::class),
+            $c->make(ReleaseSafeguards::class),
+            $c->make(InstalledRelease::class),
+        ));
+        $this->container->singleton(ReleaseRecord::class, static fn (ContainerInterface $c): ReleaseRecord => new ReleaseRecord(
+            $c->make(ReleaseStore::class),
+            $c->make(ActivityService::class),
+            // An activity entry refuses an empty name, and an account can have been removed.
+            static function (int $userId): string {
+                $user = get_userdata($userId);
+
+                return $user instanceof \WP_User && $user->display_name !== '' ? $user->display_name : '#' . $userId;
+            },
+        ));
+        $this->container->singleton(ReleaseFinisher::class);
+        $this->container->singleton(ReleaseInstallation::class, static fn (ContainerInterface $c): ReleaseInstallation => new ReleaseInstallation(
+            $c->make(ReleaseStore::class),
+            $c->make(ReleaseDesk::class),
+            $c->make(InstalledRelease::class),
+            $c->make(ReleaseSteps::class),
+            $c->make(ReleaseSafeguards::class),
+            $c->make(ReleaseRecord::class),
+            dirname(WP_CONTENT_DIR),
+        ));
+        $this->container->singleton(ReleaseCompletion::class);
         $this->container->singleton(ReleaseRestGateway::class);
         $this->container->singleton(ReleasesController::class);
         $this->container->singleton(ReleasesScreen::class);

@@ -63,14 +63,15 @@ final class ReleaseSwap
      *
      * What the last installation replaced is discarded first: one previous release is kept.
      *
-     * @param list<string> $ownedBefore The folders the running release recorded as its own.
+     * @param list<string>        $ownedBefore The folders the running release recorded as its own.
+     * @param array<string,mixed> $about       What the journal keeps of this swap beside its renames.
      *
      * @throws ReleaseRefused When a folder would not move. Every folder that had moved is back where it was.
      */
-    public function swap(ReleaseManifest $manifest, array $ownedBefore): void
+    public function swap(ReleaseManifest $manifest, array $ownedBefore, array $about = []): void
     {
         $this->store->empty('previous');
-        $this->journal->begin($this->movesFor($manifest, $ownedBefore));
+        $this->journal->begin($this->movesFor($manifest, $ownedBefore), $about);
 
         $outcome = $this->run();
 

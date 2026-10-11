@@ -37,6 +37,7 @@ final readonly class ReleaseManifest
      * @param list<string>                                             $releasePaths     Folders the release owns, relative to the site.
      * @param array<string,array{files:int,bytes:int,hash:string}>     $contents         What each holds, by path.
      * @param list<string>                                             $namespaceFolders Folders the autoloader maps a namespace to.
+     * @param string                                                   $json             The description as it was read, for an installation to keep between its requests.
      */
     private function __construct(
         public string $version,
@@ -49,7 +50,18 @@ final readonly class ReleaseManifest
         private array $contents,
         public string $autoloadFile,
         public array $namespaceFolders,
+        public string $json,
     ) {
+    }
+
+    /**
+     * The description as a site records it once the release is installed.
+     *
+     * @return array<string,mixed>
+     */
+    public function described(): array
+    {
+        return (array) json_decode($this->json, true);
     }
 
     /**
@@ -81,6 +93,7 @@ final readonly class ReleaseManifest
             self::contents($described, $paths),
             (string) ($described['autoload']['file'] ?? ''),
             array_values(array_map('strval', (array) ($described['autoload']['psr4'] ?? []))),
+            $json,
         );
     }
 

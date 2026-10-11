@@ -1,7 +1,8 @@
 /**
  * What a package is, stated before anything on the site changes (spec 107, FR-010, FR-015,
- * FR-017): its release, when it was built and for whom, what it would replace, and whatever on
- * this host or about this package a person has to know before installing it.
+ * FR-017, FR-026): its release, when it was built and for whom, what it would replace, and
+ * whatever on this host or about this package a person has to know before installing it. Where
+ * nothing stands in the way, the way on to installing it is here.
  *
  * The heading takes the focus when the statement arrives. It is the answer to a button that
  * was pressed somewhere above it, and a screen reader is otherwise told nothing.
@@ -9,6 +10,7 @@
 import { useEffect, useRef } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexTime from '../admin/components/CorexTime.js';
+import { workingProps } from '../admin/components/working.js';
 import { sizeOf } from '../Submissions/export/exportState.js';
 
 /**
@@ -69,6 +71,20 @@ function cautionsOf( statement ) {
 			)
 		);
 	}
+	const { package: builtWith, site: runs } = statement.wordpress ?? {};
+	if ( builtWith && runs && builtWith !== runs ) {
+		cautions.push(
+			sprintf(
+				/* translators: 1: the WordPress version a package was built with. 2: the WordPress version the site runs. */
+				__(
+					'This package was built with WordPress %1$s and this site runs %2$s. Installing a release does not replace WordPress.',
+					'corex'
+				),
+				builtWith,
+				runs
+			)
+		);
+	}
 
 	return [
 		...cautions,
@@ -77,11 +93,13 @@ function cautionsOf( statement ) {
 }
 
 /**
- * @param {Object} props           Component props.
- * @param {Object} props.statement The site's answer for the package.
+ * @param {Object}     props           Component props.
+ * @param {Object}     props.statement The site's answer for the package.
+ * @param {string}     props.pending   The action under way on the screen, if any.
+ * @param {() => void} props.onInstall Called when the administrator asks to install it.
  * @return {Element} The statement.
  */
-export default function ReleaseStatement( { statement } ) {
+export default function ReleaseStatement( { statement, pending, onInstall } ) {
 	const heading = useRef( null );
 	const cautions = cautionsOf( statement );
 
@@ -118,12 +136,34 @@ export default function ReleaseStatement( { statement } ) {
 					) ) }
 				</ul>
 			) }
-			<p className="corex-releases__line">
-				{ __(
-					'Reading a package changes nothing on the site. Installing one from this screen is not part of this release of CoreX yet.',
-					'corex'
-				) }
-			</p>
+			{ statement.blockers.length > 0 ? (
+				<p className="corex-releases__line">
+					{ __(
+						'This package cannot be installed on this host until what is listed above is dealt with. Reading it changed nothing on the site.',
+						'corex'
+					) }
+				</p>
+			) : (
+				<>
+					<p className="corex-releases__line">
+						{ __(
+							'Reading a package changes nothing on the site. Neither does the next step: it says what installing does and gives you the way back, and asks you to confirm.',
+							'corex'
+						) }
+					</p>
+					<div className="corex-releases__actions">
+						<button
+							type="button"
+							className="button button-primary"
+							disabled={ pending !== '' }
+							onClick={ onInstall }
+							{ ...workingProps( pending === 'prepare' ) }
+						>
+							{ __( 'Install this release…', 'corex' ) }
+						</button>
+					</div>
+				</>
+			) }
 		</section>
 	);
 }
