@@ -18,6 +18,10 @@ use Corex\Blocks\BlockRenderer;
  * its heading, with a close button. Token-only (radius/shadow/z-index/focus), escaped, i18n,
  * RTL. Without JS the dialog markup is still present and the close/trigger are inert anchors —
  * the content is never lost. Empty title + empty content render nothing.
+ *
+ * The close button comes before the body, in a header with the title. The order is not for looks:
+ * a browser opening a dialog puts focus on the first thing in it that takes focus, and scrolls to
+ * it. With the button last that was the first link of the content, wherever in the content it was.
  */
 final class ModalRenderer implements BlockRenderer
 {
@@ -50,9 +54,10 @@ final class ModalRenderer implements BlockRenderer
             '<div class="corex-modal-wrap">'
             . '<button type="button" class="corex-modal__trigger" aria-haspopup="dialog" aria-controls="%1$s">%2$s</button>'
             . '<dialog id="%1$s" class="corex-modal"%3$s>'
-            . '%4$s'
-            . '<div class="corex-modal__body">%5$s</div>'
+            . '<div class="corex-modal__header">%4$s'
             . '<button type="button" class="corex-modal__close" data-corex-modal-close aria-label="%6$s">&times;</button>'
+            . '</div>'
+            . '<div class="corex-modal__body">%5$s</div>'
             . '</dialog></div>',
             esc_attr($id),
             esc_html($triggerLabel),

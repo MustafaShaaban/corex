@@ -38,6 +38,25 @@ it('renders a trigger button and a dialog labelled by the title', function () {
         ->and($html)->toContain('corex-modal__close');
 });
 
+it('puts the close button in the header and before the body, with a title and without one', function (string $title, string $heading) {
+    $html = $this->renderer->render(
+        ['title' => $title, 'content' => '<a href="#terms">The terms</a>'],
+        '',
+        (object) [],
+    );
+
+    // The first thing in the dialog to take focus is where a browser opens it: the close button,
+    // not the link in what it holds.
+    expect($html)->toMatch(
+        '~<dialog [^>]*><div class="corex-modal__header">' . $heading
+        . '<button type="button" class="corex-modal__close"[^>]*>&times;</button></div>'
+        . '<div class="corex-modal__body"><a href="#terms">The terms</a></div></dialog>~',
+    );
+})->with([
+    'a title'  => ['Terms', '<h2 id="[^"]+" class="corex-modal__title">Terms</h2>'],
+    'no title' => ['', ''],
+]);
+
 it('escapes the title and trigger label', function () {
     $html = $this->renderer->render(
         ['title' => '<script>x</script>', 'triggerLabel' => '<b>y</b>', 'content' => 'ok'],

@@ -155,6 +155,17 @@ All notable changes to Corex are documented here. The format follows
   way: it kept inside the window by 2px, and on a phone a modal holding a paragraph was as
   wide as the window, with nothing beside it to tap. It is now at most 512px wide where it was
   546px, 92% of a narrow window, and 19px clear of the window's top and bottom.
+- **A modal or drawer block opens at its first line, and its title and close button stay in
+  view.** A `corex/modal` or `corex/drawer` whose content held a link opened with focus on that
+  link and scrolled to it: with the link at the end of a long text, a visitor was shown the last
+  lines and never the title or the first ones. Scrolled by hand, the title and the close button
+  went up with the text, and on a phone a visitor at the last line had the strip of dimmed page
+  beside the dialog to close it with and nothing else. The title and the close button are now
+  in a header that does not scroll, and the content scrolls under it. A dialog opens at its
+  first line with focus on the close button. The close button is 30px square where it was 21px
+  by 18px, and a long title wraps beside it where it ran under it.
+- **A drawer block comes in from its own edge on a site read right to left.** There the drawer
+  at the end, which is on the left, began 16px inside the window and moved out to its edge.
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.
@@ -170,6 +181,25 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Clear the page cache after taking this release, on a site that uses a `corex/modal` or a
+  `corex/drawer`.** Their markup changed and their stylesheet with it. A cached page holds the
+  markup from before, and with the new stylesheet its title sits against the panel's edge and
+  its close button under the content.
+- **A site that styles these two blocks should look at them once.** What changed:
+  - The title and the close button are in a new `<div class="corex-modal__header">` (or
+    `corex-drawer__header`), and the close button comes before `.corex-modal__body`, not after
+    it. A selector that reaches them as children of the `<dialog>` no longer matches.
+  - The `<dialog>` has no padding and does not scroll. The padding is the header's and the
+    body's, and the body scrolls. Padding a site put on `.corex-modal` or `.corex-drawer` is now
+    added round both, outside the scrollbar: put it on the header and the body.
+  - The close button is laid out in the header and is not positioned. `inset`, `top` or `right`
+    set on `.corex-modal__close` or `.corex-drawer__close` do nothing now.
+  - The title has no margin under it, and there is a line under the header. The text starts 8px
+    lower than it did.
+- **By the keyboard, a long dialog is scrolled after one press of Tab.** Focus opens on the
+  close button, which is outside what scrolls, so the arrow keys and Page Down do nothing from
+  there. Tab goes to the content, which takes focus while it holds more than fits, and the keys
+  scroll it. Until now they scrolled at once, and took the title and the close button away.
 - **A `corex/drawer` and a `corex/modal` are narrower by their own padding**: the text column
   of each is 32px narrower on a desktop (34px in a modal, with its border), and a modal that
   fills its height is 34px shorter. A site that set a width or a height on `.corex-drawer` or
