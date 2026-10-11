@@ -103,10 +103,12 @@ final class ExportReadyNotificationProducer implements NotificationProducer
      */
     private function downloadAction(string $kind): ?NotificationAction
     {
-        [$page, $ability] = match ($kind) {
-            SubmissionExportJobHandler::KIND => ['corex-submissions', CorexAbility::MANAGE_SUBMISSIONS],
-            DataExportJobHandler::KIND => ['corex-data-models', CorexAbility::MANAGE_DATA],
-            default => [null, null],
+        // The Data screen has five tabs and opens on the first. Its exports are on one of them,
+        // so the link names it: it opened the Models tab, with nothing to download in sight.
+        [$page, $ability, $tab] = match ($kind) {
+            SubmissionExportJobHandler::KIND => ['corex-submissions', CorexAbility::MANAGE_SUBMISSIONS, null],
+            DataExportJobHandler::KIND => ['corex-data-models', CorexAbility::MANAGE_DATA, 'export'],
+            default => [null, null, null],
         };
 
         if ($page === null || $ability === null) {
@@ -115,7 +117,7 @@ final class ExportReadyNotificationProducer implements NotificationProducer
 
         return NotificationAction::to(
             'notifications.export.ready.action',
-            add_query_arg(['page' => $page], admin_url('admin.php')),
+            add_query_arg(array_filter(['page' => $page, 'tab' => $tab]), admin_url('admin.php')),
             $ability,
             __('Download the export', 'corex'),
         );

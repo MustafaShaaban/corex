@@ -41,6 +41,7 @@ use Corex\Config\Export\ExportWriters;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use Corex\Jobs\BoundedJob;
+use Corex\Tests\Support\InMemoryDataExportStore;
 use Corex\Tests\Support\InMemorySubmissionsReader;
 
 beforeEach(function () {
@@ -137,23 +138,7 @@ function exportService(bool $xlsx = true, ?DataSource $source = null, ?DataAcces
     };
     $sources = new DataSourceService($registry, $policy);
     $queries = new DataQueryService($registry, $sources);
-    $store = new class implements DataExportStore {
-        /** @var array<int,DataExportRun> */ public array $runs = [];
-        /** @var array<int,array{path:string,extension:string,content_type:string}> */ public array $files = [];
-        /** @var array<int,string> */ public array $artifacts = [];
-        public function create(DataExportRun $run): DataExportRun { $run = $run->withId(count($this->runs) + 1); return $this->runs[$run->id] = $run; }
-        public function attachJob(int $id, int $jobId): DataExportRun { return $this->runs[$id] = $this->runs[$id]->withJob($jobId); }
-        public function find(int $id): ?DataExportRun { return $this->runs[$id] ?? null; }
-        public function findByHash(string $hash): ?DataExportRun { foreach ($this->runs as $run) if ($run->inputHash === $hash) return $run; return null; }
-        public function history(int $actorId, bool $manageAll, int $limit): array { return array_slice(array_values(array_filter($this->runs, static fn (DataExportRun $run): bool => $manageAll || $run->actorId === $actorId)), 0, $limit); }
-        public function saveFile(int $id, array $file): void { $this->files[$id] = $file; }
-        public function leaveOut(int $id, string $sourceKey): DataExportRun { return $this->runs[$id] = $this->runs[$id]->leavingOut($sourceKey); }
-        public function removeFile(int $id, string $reason, int $actorId): DataExportRun { unset($this->files[$id]); return $this->runs[$id] = $this->runs[$id]->withoutFile($reason, $actorId, new DateTimeImmutable('now')); }
-        public function holdingFilesBefore(DateTimeImmutable $cutoff, int $limit): array { return array_values(array_filter($this->runs, fn (DataExportRun $run): bool => isset($this->files[$run->id]) && $run->createdAt < $cutoff)); }
-        public function file(int $id): ?array { return $this->files[$id] ?? null; }
-        public function artifact(int $id): ?string { return $this->artifacts[$id] ?? null; }
-        public function finish(int $id, int $rows): void { $this->runs[$id] = $this->runs[$id]->completed($rows); }
-    };
+    $store = new InMemoryDataExportStore();
     $queue = new class implements DataExportJobQueue {
         /** @var list<DataExportRun> */ public array $runs = [];
         /** @var list<int> */ public array $advanced = [];
