@@ -31,6 +31,11 @@ final class UnavailableSubmissionEmailGateway implements SubmissionEmailGateway
         throw new DomainException(__('Email Studio is required for submission replies.', 'corex'));
     }
 
+    public function preview(string $recipient, string $subject, string $htmlBody): array
+    {
+        throw new DomainException(__('Email Studio is required for submission replies.', 'corex'));
+    }
+
     public function resend(string $attemptId, string $recipient, array $context): MailResult
     {
         throw new DomainException(__('Email Studio is required to resend submission email.', 'corex'));

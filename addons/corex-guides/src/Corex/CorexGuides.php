@@ -86,15 +86,23 @@ final class CorexGuides
             ->withTopic(GuideTopic::for(
                 'reply',
                 __('Reply to somebody', 'corex'),
-                __('Replies are sent from your site and are styled like the rest of its email.', 'corex'),
+                __('A reply is sent from your site as a designed email, and is kept with the message it answers.', 'corex'),
                 [
                     new GuideStep(
-                        __('Open the message, then choose Reply.', 'corex'),
-                        __('A box appears for your answer.', 'corex'),
+                        __('Open the message and find Reply.', 'corex'),
+                        __('When a reply would not be delivered from this site, a line above the box says so and what has to change.', 'corex'),
                     ),
                     new GuideStep(
-                        __('Write your reply and choose Send.', 'corex'),
-                        __('The reply is sent and recorded against the message, so anybody else looking at it can see it was answered.', 'corex'),
+                        __('Write the subject and the message.', 'corex'),
+                        __('The buttons above the message make text bold or italic, start a bulleted or a numbered list, and add a link. Each has a keyboard shortcut, shown when you point at it. Colours, fonts and pictures come from the email design of the site, so they are not offered here.', 'corex'),
+                    ),
+                    new GuideStep(
+                        __('Choose Preview.', 'corex'),
+                        __('You see the email as it will be sent, at the width of a wide screen or of a phone, with its plain-text version below.', 'corex'),
+                    ),
+                    new GuideStep(
+                        __('Choose Send reply.', 'corex'),
+                        __('The panel says what happened to the reply. It is then listed on the message with who sent it and when, so anybody else looking at it can see it was answered.', 'corex'),
                     ),
                 ],
             ))
