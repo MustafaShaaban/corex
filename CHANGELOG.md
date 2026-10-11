@@ -8,6 +8,36 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A release is installed from the admin** (spec 107, slice 4). On CoreX → Releases a package
+  that was read and not refused can be installed. The screen states what installing does and
+  gives the recovery link, to copy or save as a file, before it asks for the version to be
+  typed. Then the site unpacks the package beside itself, checks each folder against the
+  package's own measure, copies CoreX's tables as they are, and puts the release in place by
+  renames written down first. The request after that is answered by the release just installed:
+  it brings the database to the release and lists what moved, and only then is the release
+  recorded as the site's. Each step is its own request, the screen says which one the site is
+  at, and an installation whose browser went away is gone on with by whoever next opens the
+  screen and may install releases (DECISIONS #307).
+- **A folder a release owns is replaced whole.** A file the release before shipped and this one
+  does not is not left on the site: it is in the kept previous release. A test is named for the
+  day this was missing (2026-10-11, pattern files of an earlier theme left by extracting a zip
+  over it). A folder the running release owned and the package does not hold leaves the site
+  with the previous release, and the screen names each before the administrator confirms.
+- **`COREX_ALLOW_RELEASE_INSTALL`.** A site that sets `DISALLOW_FILE_MODS` could not install a
+  release, and the screen told it to lift the setting. One line in `wp-config.php`,
+  `define( 'COREX_ALLOW_RELEASE_INSTALL', true );`, now allows a release to be installed from
+  the Releases screen and nothing else: WordPress's own installers, updaters and editors stay
+  off. The screen gives the line where it is needed.
+- **`--with-plugin=<folder>` on the package builder.** A plugin that is neither CoreX's nor the
+  site's own (a mail plugin, say) is named to `npm run build:dist`, any number of times, and is
+  then a folder of the release like the others: listed, measured, checked on the site and
+  replaced whole. `corex-release.json` lists such plugins under `third_party_plugins`.
+- **A visitor is held off while a release's files are in place and its database is not.**
+  WordPress's own maintenance answer, for those seconds, from the swap until the finishing
+  request; it lets through the one request carrying the installation's key.
+- **A copy of CoreX's tables before a release changes them**, one for each table in the schema
+  registry, named `<table>_cxrel_<yyyymmddhhmm>`. Kept for a person to read from; nothing puts
+  one back. One set is kept: an installation removes the copies of the one before it.
 - **The reply box says, before anything is typed, when a reply will not be delivered, and where
   that is changed** (spec 106, slice 1). On a production site a reply is delivered only when
   CoreX → Settings → Mail has a delivery provider chosen and live delivery on. Nothing beside
@@ -58,6 +88,46 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site on a host with no command line can take its next release from the admin**, once it
+  runs this one. This release itself still has to reach the site the old way. After that:
+  build with `npm run build:dist -- --client=<slug> --zip`, open CoreX → Releases, send the
+  zip, read the statement, save the recovery link, type the version.
+- **A site that sets `DISALLOW_FILE_MODS` adds one line to `wp-config.php`** to use it:
+  `define( 'COREX_ALLOW_RELEASE_INSTALL', true );`. Without it the screen reads and receives
+  packages and refuses to install, as before, and says which line is missing. A package is not
+  signed: with the line in place, whoever holds `corex_manage_releases` can replace the site's
+  code. The ability can be denied to a role on Access & Abilities.
+- **A client that adds a third-party plugin to its package after the build names it to the
+  builder instead**: `--with-plugin=<folder>`. A plugin copied into `dist/` afterwards is in no
+  release path, so an installation from the admin neither unpacks nor replaces it.
+- **A package has to be named `corex-release-….zip`**, as `--zip` names it, to be kept by the
+  screen. A zip a client names itself is refused for its name.
+- **Installing replaces each folder of the release whole.** A file somebody changed or added on
+  the host inside a CoreX plugin, an add-on, the site's own plugin or theme, `wp-content/vendor`
+  or `wp-content/packages` is replaced. Uploads, `wp-config.php`, `.htaccess`, WordPress itself
+  and any plugin or theme the package does not name are left as they are.
+- **A plugin the running release carried and the next package does not is removed from the
+  site** with the previous release, and WordPress switches it off. The screen names it first.
+  The first installation from the admin on a site that was only ever unpacked by hand reads
+  what the running release owned from `corex-release.json` in the site's root.
+- **A site whose plugins or themes are not in `wp-content/plugins` and `wp-content/themes`**
+  (a moved or renamed content folder) cannot install from the admin: the screen says so.
+- **The site is in WordPress's maintenance mode for the seconds between the swap and the end of
+  the database step.** If the finishing request never comes, WordPress stops holding visitors
+  off by itself after ten minutes, the schema is brought up to date by the first admin page or
+  cron run as before, and the Releases screen finishes the installation when it is next opened.
+- **New in `wp-content/`:** `mu-plugins/corex-release-recovery.php`, written just before a
+  release's folders are moved and kept while there is a release to go back to; `corex-releases/`
+  holds the previous release's folders, which count against a host's file allowance until the
+  next installation replaces them. Tables named `…_cxrel_<minute>` appear in the database.
+  Going back from the screen, and the removal of old copies, come with the next slice; until
+  then the recovery link is the way back.
+- **On a network the table copies are of the main site's tables only.** Every site's database
+  is still brought to the release.
+- **Code of your own that built `ReleaseDesk` or called `ReleaseHostFacts::ofThisHost()`**:
+  `ReleaseDesk` takes a function that answers the host's facts in place of the list of
+  folders; `ofThisHost()` takes two more arguments, both optional. `ReleasesController` takes
+  two more collaborators. Nothing outside CoreX is known to build either.
 - **On a production site with no delivery provider or with live delivery off, Send reply is
   now switched off**, with the reason beside it. Before, the reply was accepted and refused
   without a word. To deliver replies: CoreX → Settings → Mail, **Delivery provider**: WordPress

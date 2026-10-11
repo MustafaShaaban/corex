@@ -74,6 +74,33 @@ final class InstalledRelease
     }
 
     /**
+     * The description itself, as the package that was installed or unpacked gave it.
+     *
+     * @return array<string,mixed>|null Null when the site has none it can rely on.
+     */
+    public function description(): ?array
+    {
+        return $this->described();
+    }
+
+    /**
+     * Record the release an installation from the admin has just put in place.
+     *
+     * @param array<string,mixed> $description The package's own description.
+     */
+    public function record(array $description): void
+    {
+        // Read when the Releases screen opens and by nothing else: not loaded with every request.
+        update_option(self::OPTION, $description, false);
+    }
+
+    /** Forget what an installation recorded: the site is again what the description in its root says. */
+    public function forget(): void
+    {
+        delete_option(self::OPTION);
+    }
+
+    /**
      * @return array<string,mixed>|null The description, or null when the site has none it can rely on.
      */
     private function described(): ?array

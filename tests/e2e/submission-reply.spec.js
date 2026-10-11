@@ -18,7 +18,10 @@ const {
 	seedSubmission,
 } = require( './helpers' );
 
-const FLOW_SLUG = 'corex-inbox-e2e';
+// A flow of this spec's own. Another spec's slug is another spec's to create: two files run at
+// once, each found the inbox spec's flow missing on a fresh site, and the second to create it
+// was refused.
+const FLOW_SLUG = 'corex-reply-e2e';
 // Unique per test, so the seeded submission is one row on a site where earlier runs, and the
 // test before this one, left theirs.
 let EMAIL = '';

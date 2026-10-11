@@ -14,13 +14,10 @@ declare(strict_types=1);
 
 use Corex\Boot;
 use Corex\Config\Releases\InstalledRelease;
-use Corex\Config\Releases\ReleaseDesk;
 use Corex\Config\Releases\ReleaseHostFacts;
-use Corex\Config\Releases\ReleasePackageInspector;
 use Corex\Config\Releases\ReleaseRestGateway;
 use Corex\Config\Releases\ReleasesController;
-use Corex\Config\Releases\ReleaseStore;
-use Corex\Config\Releases\ReleaseUpload;
+use Corex\Tests\Support\ReleaseInstaller;
 use Corex\Tests\Support\ReleasePackages;
 
 /**
@@ -47,26 +44,14 @@ beforeEach(function () {
     $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($admins[0] ?? 0));
 
-    $this->content = sys_get_temp_dir() . '/corex-content-' . bin2hex(random_bytes(4));
-    mkdir($this->content);
-    $this->site = sys_get_temp_dir() . '/corex-site-' . bin2hex(random_bytes(4));
-    mkdir($this->site);
-    file_put_contents($this->site . '/corex-release.json', '{"corex_version":"0.43.5","client":"acme"}');
-
     // The controller the site would build, over a store and a site of the test's own.
-    $store     = new ReleaseStore($this->content);
-    $installed = new InstalledRelease($this->site);
-    $inspector = new ReleasePackageInspector($installed, PHP_VERSION, '7.1.3');
+    $this->site    = new ReleaseInstaller(['corex-release.json' => '{"corex_version":"0.43.5","client":"acme"}']);
+    $this->content = $this->site->root . '/wp-content';
+    $this->store   = $this->site->store;
 
-    $this->store = $store;
     // Given to the container in place of the site's own, so the provider registers these
     // routes exactly as it does for a site, on the server's own hook, with this controller.
-    $container = Boot::app()->container();
-    $container->instance(ReleasesController::class, new ReleasesController(
-        $container->make(ReleaseRestGateway::class),
-        new ReleaseDesk($store, $inspector, $installed, [$this->content]),
-        new ReleaseUpload($store),
-    ));
+    Boot::app()->container()->instance(ReleasesController::class, $this->site->controller);
     // A server built before this test has the site's own controller on these routes.
     $GLOBALS['wp_rest_server'] = null;
     delete_option(InstalledRelease::OPTION);
@@ -75,16 +60,7 @@ beforeEach(function () {
 afterEach(function () {
     Boot::app()->container()->singleton(ReleasesController::class);
     $GLOBALS['wp_rest_server'] = null;
-    ReleasePackages::clean();
-
-    $remove = static function (string $path) use (&$remove): void {
-        foreach (array_diff(scandir($path) ?: [], ['.', '..']) as $entry) {
-            is_dir("$path/$entry") ? $remove("$path/$entry") : unlink("$path/$entry");
-        }
-        rmdir($path);
-    };
-    $remove($this->content);
-    $remove($this->site);
+    $this->site->remove();
 });
 
 it('is closed to somebody who may not install releases', function () {

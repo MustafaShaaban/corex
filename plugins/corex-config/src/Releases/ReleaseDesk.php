@@ -10,6 +10,8 @@ namespace Corex\Config\Releases;
 
 defined('ABSPATH') || exit;
 
+use Closure;
+
 /**
  * What the Releases screen asks before anything is installed: what is on this site, what this
  * host can do, and what a given package is (spec 107, US1 and US2; FR-010, FR-017).
@@ -28,30 +30,34 @@ final class ReleaseDesk
     private const LARGEST_PART = 4 * 1024 * 1024;
 
     /**
-     * @param list<string> $folders The folders an installation writes in; the first is where releases are kept.
+     * @param Closure():ReleaseHostFacts $host What this host can and cannot do, read each time it is asked.
      */
     public function __construct(
         private readonly ReleaseStore $store,
         private readonly ReleasePackageInspector $inspector,
         private readonly InstalledRelease $installed,
-        private readonly array $folders,
+        private readonly Closure $host,
     ) {
     }
 
     /**
      * What the screen shows when it is opened.
      *
-     * @return array{installed:array{known:bool,version:?string,client:?string},blockers:list<array{reason:string,message:string}>,packages:list<array{name:string,bytes:int}>,part_bytes:int}
+     * @return array{installed:array{known:bool,version:?string,client:?string},installation:?array<string,mixed>,blockers:list<array{reason:string,message:string}>,packages:list<array{name:string,bytes:int}>,part_bytes:int}
+     *
+     * @throws ReleaseRefused When an installation is in progress that this release cannot read.
      */
     public function overview(): array
     {
         return [
+            // An installation somebody's browser went away from is found here, and gone on with.
+            'installation' => ReleaseProgress::standing($this->store)?->forTheScreen(),
             'installed'  => [
                 'known'   => $this->installed->isKnown(),
                 'version' => $this->installed->version(),
                 'client'  => $this->installed->client(),
             ],
-            'blockers'   => ReleaseHostFacts::ofThisHost($this->folders)->blockers(0),
+            'blockers'   => $this->blockers(0),
             'packages'   => $this->store->packages(),
             'part_bytes' => $this->partBytes(),
         ];
@@ -69,6 +75,19 @@ final class ReleaseDesk
      */
     public function inspect(string $name, int $actorId): array
     {
+        return $this->statementOf($name, $this->examine($name, $actorId));
+    }
+
+    /**
+     * Inspect a package on the site.
+     *
+     * @param string $name    The package's name in `incoming/`.
+     * @param int    $actorId Who asked: recorded with a refusal.
+     *
+     * @throws ReleaseRefused When the package is not one this site should install. It is gone from the site by then.
+     */
+    public function examine(string $name, int $actorId): ReleaseInspection
+    {
         $file = $this->store->fileIn('incoming', $name);
 
         if (! is_file($file)) {
@@ -79,7 +98,7 @@ final class ReleaseDesk
         }
 
         try {
-            $inspection = $this->inspector->inspect($file);
+            return $this->inspector->inspect($file);
         } catch (ReleaseRefused $refused) {
             $this->store->record([
                 'event'   => 'refused',
@@ -96,7 +115,15 @@ final class ReleaseDesk
                 $refused->getMessage(),
             ));
         }
+    }
 
+    /**
+     * What the screen states of a package that was not refused.
+     *
+     * @return array<string,mixed> The statement of FR-010, and what on this host stands in the way of installing it.
+     */
+    public function statementOf(string $name, ReleaseInspection $inspection): array
+    {
         return [
             'package'            => $name,
             'version'            => $inspection->manifest->version,
@@ -107,9 +134,21 @@ final class ReleaseDesk
             'client_unconfirmed' => $inspection->clientUnconfirmed,
             'files'              => $inspection->files,
             'bytes'              => $inspection->bytes,
+            // WordPress is not replaced by a release (FR-026): the two are said where they differ.
+            'wordpress'          => ['package' => $inspection->manifest->wordPressVersion, 'site' => $inspection->siteWordPress],
             // A release is unpacked beside the one it replaces before either is moved.
-            'blockers'           => ReleaseHostFacts::ofThisHost($this->folders)->blockers($inspection->bytes),
+            'blockers'           => $this->blockers($inspection->bytes),
         ];
+    }
+
+    /**
+     * What on this host stands in the way of an installation that takes the given room.
+     *
+     * @return list<array{reason:string,message:string}>
+     */
+    private function blockers(int $neededBytes): array
+    {
+        return ($this->host)()->blockers($neededBytes);
     }
 
     /**

@@ -25,31 +25,47 @@ final readonly class ReleaseHostFacts
     public const NO_ZIP           = 'no_zip';
     public const NOT_WRITABLE     = 'not_writable';
     public const NO_SPACE         = 'no_space';
+    public const LAYOUT_DIFFERS   = 'layout_differs';
+
+    /**
+     * The constant a site's configuration file defines as true to say releases may be
+     * installed from the admin although the site is set not to change its own files (plan D16).
+     */
+    public const ALLOWED_BY = 'COREX_ALLOW_RELEASE_INSTALL';
 
     /**
      * @param bool         $fileChangesAllowed Whether the site is set to let its own files be changed.
      * @param bool         $canOpenZips        Whether PHP has what opens a zip.
      * @param list<string> $unwritable         The folders an installation writes in that cannot be written.
      * @param int|null     $freeBytes          The room where releases are kept; null on a host that will not say.
+     * @param bool         $laidOutAsAPackage  Whether the site's plugins and themes are where a package holds them:
+     *                                         `wp-content/plugins` and `wp-content/themes`. A release's folders are
+     *                                         moved to those paths and no others.
      */
     public function __construct(
         public bool $fileChangesAllowed,
         public bool $canOpenZips,
         public array $unwritable,
         public ?int $freeBytes,
+        public bool $laidOutAsAPackage = true,
     ) {
     }
 
     /**
-     * @param list<string> $folders The folders an installation writes in; the first is where releases are kept.
+     * @param list<string> $folders                The folders an installation writes in; the first is where releases are kept.
+     * @param bool         $allowedByConfiguration Whether the site's configuration file says releases may be installed
+     *                                             (`ALLOWED_BY`). It allows a release and nothing else: WordPress is
+     *                                             not asked to let anything through on the strength of it.
+     * @param bool         $laidOutAsAPackage      Whether the site's plugins and themes are where a package holds them.
      */
-    public static function ofThisHost(array $folders): self
+    public static function ofThisHost(array $folders, bool $allowedByConfiguration = false, bool $laidOutAsAPackage = true): self
     {
         return new self(
-            wp_is_file_mod_allowed('corex_release_install'),
+            wp_is_file_mod_allowed('corex_release_install') || $allowedByConfiguration,
             class_exists(ZipArchive::class),
             array_values(array_filter($folders, static fn (string $folder): bool => ! self::canWriteIn($folder))),
             self::roomIn($folders[0] ?? ''),
+            $laidOutAsAPackage,
         );
     }
 
@@ -77,7 +93,18 @@ final readonly class ReleaseHostFacts
         if (! $this->fileChangesAllowed) {
             $blockers[] = [
                 'reason'  => self::FILE_CHANGES_OFF,
-                'message' => __('This site is set not to change its own files (DISALLOW_FILE_MODS, or a host that has turned updates off). A release cannot be installed from here until that is lifted.', 'corex'),
+                'message' => sprintf(
+                    /* translators: %s: a line of PHP to add to wp-config.php. */
+                    __('This site is set not to change its own files (DISALLOW_FILE_MODS, or a host that has turned updates off). To install releases from this screen and keep that setting, add this line to wp-config.php: %s It allows a release to be installed here and nothing else: WordPress\'s own installers, updaters and editors stay off.', 'corex'),
+                    "define( '" . self::ALLOWED_BY . "', true );",
+                ),
+            ];
+        }
+
+        if (! $this->laidOutAsAPackage) {
+            $blockers[] = [
+                'reason'  => self::LAYOUT_DIFFERS,
+                'message' => __('This site keeps its plugins or its themes somewhere other than a release package holds them (wp-content/plugins and wp-content/themes, in a folder named wp-content). A release cannot be installed from here: its folders would be put where WordPress does not look.', 'corex'),
             ];
         }
 
