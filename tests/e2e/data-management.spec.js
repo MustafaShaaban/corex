@@ -345,21 +345,22 @@ test( 'exports several ticked models into one file, lists the export once, and d
 					box( row ).left >= box( body ).left - 0.5 &&
 					box( row ).right <= box( body ).right + 0.5
 			),
-			gaps: new Set(
-				parts
-					.slice( 1 )
-					.map( ( part, index ) =>
-						Math.round(
-							box( part ).top - box( parts[ index ] ).bottom
+			// As a list: a Set does not come back from the page.
+			gaps: Array.from(
+				new Set(
+					parts
+						.slice( 1 )
+						.map( ( part, index ) =>
+							Math.round(
+								box( part ).top - box( parts[ index ] ).bottom
+							)
 						)
-					)
+				)
 			),
 		};
 	} );
 	expect( inside.models ).toBe( true );
-	expect( inside.gaps, 'one distance between parts' ).toEqual(
-		new Set( [ 24 ] )
-	);
+	expect( inside.gaps, 'one distance between parts' ).toEqual( [ 24 ] );
 
 	const notice = dialog.locator( '.corex-export__notice' );
 	await expect( notice ).toContainText( 'contains personal data (' );
