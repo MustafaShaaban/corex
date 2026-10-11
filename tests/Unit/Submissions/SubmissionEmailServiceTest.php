@@ -34,12 +34,16 @@ function emailWorkflowRecord(): array
     ];
 }
 
-function emailWorkflowStore(): SubmissionWorkflowStore
+function emailWorkflowStore(string $submitterEmail = 'sam@example.com'): SubmissionWorkflowStore
 {
-    return new class() implements SubmissionWorkflowStore {
+    return new class($submitterEmail) implements SubmissionWorkflowStore {
+        public function __construct(private string $submitterEmail)
+        {
+        }
+
         public function findWorkflow(int $id): ?array
         {
-            return $id === 31 ? emailWorkflowRecord() : null;
+            return $id === 31 ? ['submitter_email' => $this->submitterEmail] + emailWorkflowRecord() : null;
         }
 
         public function updateWorkflow(int $id, array $changes, string $expectedUpdatedAt): array
@@ -75,6 +79,13 @@ function submissionEmailGateway(string $mode = ReplyReadiness::CAPTURE, string $
             $this->calls[] = ['reply', $recipient, $subject, $htmlBody];
 
             return submissionMailResult('22222222-2222-4222-8222-222222222222', $this->state);
+        }
+
+        public function preview(string $recipient, string $subject, string $htmlBody): array
+        {
+            $this->calls[] = ['preview', $recipient, $subject, $htmlBody];
+
+            return ['html' => '<html><body>' . $htmlBody . '</body></html>', 'text' => 'Thanks, Sam.'];
         }
 
         public function resend(string $attemptId, string $recipient, array $context): MailResult
@@ -253,4 +264,37 @@ it('keeps no reply for a submission the person cannot reach', function () {
         ->toThrow(DomainException::class)
         ->and($gateway->calls)->toBe([])
         ->and($replies->kept)->toBe([]);
+});
+
+// Spec 106, FR-005: read before it is sent. Nothing leaves, and nothing is written down.
+it('previews the email for the address a reply would go to, sending and keeping nothing', function () {
+    $gateway = submissionEmailGateway();
+    $replies = submissionReplyStore();
+    $timeline = submissionEmailTimeline();
+    $service = new SubmissionEmailService(emailWorkflowStore(), $gateway, $timeline, $replies);
+
+    $preview = $service->preview(new SubmissionAccessScope(7, false, ['sales']), 31, new SubmissionReply('Re: Contact', '<p>Thanks, Sam.</p>'));
+
+    expect($preview)->toBe(['html' => '<html><body><p>Thanks, Sam.</p></body></html>', 'text' => 'Thanks, Sam.'])
+        ->and($gateway->calls)->toBe([['preview', 'sam@example.com', 'Re: Contact', '<p>Thanks, Sam.</p>']])
+        ->and($replies->kept)->toBe([])
+        ->and($timeline->events)->toBe([]);
+});
+
+it('previews nothing of a submission the person cannot reach', function () {
+    $gateway = submissionEmailGateway();
+    $service = new SubmissionEmailService(emailWorkflowStore(), $gateway, submissionEmailTimeline(), submissionReplyStore());
+
+    expect(fn () => $service->preview(new SubmissionAccessScope(9, false, ['support']), 31, new SubmissionReply('Re: Contact', '<p>Thanks, Sam.</p>')))
+        ->toThrow(DomainException::class)
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('previews nothing where there is no address a reply could go to', function () {
+    $gateway = submissionEmailGateway();
+    $service = new SubmissionEmailService(emailWorkflowStore('not an address'), $gateway, submissionEmailTimeline(), submissionReplyStore());
+
+    expect(fn () => $service->preview(new SubmissionAccessScope(7, false, ['sales']), 31, new SubmissionReply('Re: Contact', '<p>Thanks, Sam.</p>')))
+        ->toThrow(DomainException::class, 'replyable email address')
+        ->and($gateway->calls)->toBe([]);
 });

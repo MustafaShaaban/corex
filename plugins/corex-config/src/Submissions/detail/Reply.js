@@ -5,15 +5,17 @@
  * reach anybody, the answer, and what happened to it. The middle two were unsaid: on a site with
  * live delivery off a reply was refused and the pane said it had been processed.
  */
-import { useId, useRef, useState } from '@wordpress/element';
+import { useEffect, useId, useRef, useState } from '@wordpress/element';
 import { Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import CorexErrorState from '../../admin/components/CorexErrorState.js';
+import CorexRichText from '../../admin/components/CorexRichText.js';
 import CorexTime from '../../admin/components/CorexTime.js';
 import { workingProps } from '../../admin/components/working.js';
+import ReplyPreview from './ReplyPreview.js';
 import Section from './Section.js';
 import { contactOf } from './detailState.js';
-import { cleanReplyHtml } from './replyHtml.js';
+import { cleanReplyHtml, hasWords } from '../../admin/components/replyHtml.js';
 import { canSendReply, readinessNotice, replyStateOf } from './replyState.js';
 
 const NOTHING_WRITTEN = { subject: '', body: '' };
@@ -30,11 +32,36 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 	const fieldId = useId();
 	const [ reply, setReply ] = useState( NOTHING_WRITTEN );
 	const [ outcome, setOutcome ] = useState( null );
+	const [ preview, setPreview ] = useState( null );
 	const contact = contactOf( record );
 	const delivery = record.reply_delivery;
 	const notice = readinessNotice( delivery, mailSettingsUrl );
 	const noticeId = `${ fieldId }-delivery`;
 	const subject = useRef( null );
+	const previewButton = useRef( null );
+	const previewing = useRef( false );
+
+	// Leaving the preview puts the keyboard back on the button that opened it. The browser
+	// cannot: the button was switched off while its request was out, so nothing had focus
+	// when the dialog opened, and it would be left on the page itself.
+	useEffect( () => {
+		if ( previewing.current && ! preview ) {
+			previewButton.current?.focus();
+		}
+		previewing.current = Boolean( preview );
+	}, [ preview ] );
+
+	// A reply is a subject and a message that says something.
+	const written = reply.subject.trim() !== '' && hasWords( reply.body );
+
+	// The email as the server would build it now, from what is written now.
+	const look = () =>
+		work.during( 'preview', async () => {
+			const email = await inbox.previewReply( record.id, reply );
+			if ( email ) {
+				setPreview( email );
+			}
+		} );
 
 	const send = () =>
 		work.during( 'reply', async () => {
@@ -87,28 +114,39 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 						/>
 					</div>
 					<div className="corex-field">
-						<label htmlFor={ `${ fieldId }-body` }>
+						<span id={ `${ fieldId }-body-label` }>
 							{ __( 'Message', 'corex' ) }
-						</label>
-						<textarea
-							id={ `${ fieldId }-body` }
-							aria-describedby={ notice ? noticeId : undefined }
+						</span>
+						<CorexRichText
 							value={ reply.body }
-							onChange={ ( event ) =>
-								setReply( {
-									...reply,
-									body: event.target.value,
-								} )
+							onChange={ ( body ) =>
+								setReply( ( before ) => ( {
+									...before,
+									body,
+								} ) )
 							}
+							labelledBy={ `${ fieldId }-body-label` }
+							describedBy={ notice ? noticeId : undefined }
+							// What is typed while a reply is on its way would be emptied
+							// with it when it has gone.
+							disabled={ work.pending === 'reply' }
 						/>
 					</div>
 					<div className="corex-pane__actions">
 						<Button
+							ref={ previewButton }
 							variant="secondary"
+							disabled={ ! written || work.pending !== '' }
+							onClick={ look }
+							{ ...workingProps( work.pending === 'preview' ) }
+						>
+							{ __( 'Preview', 'corex' ) }
+						</Button>
+						<Button
+							variant="primary"
 							disabled={
 								! canSendReply( delivery ) ||
-								! reply.subject.trim() ||
-								! reply.body.trim() ||
+								! written ||
 								work.pending !== ''
 							}
 							onClick={ send }
@@ -117,6 +155,14 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 							{ __( 'Send reply', 'corex' ) }
 						</Button>
 					</div>
+					{ preview && (
+						<ReplyPreview
+							email={ preview }
+							subject={ preview.subject ?? reply.subject }
+							note={ notice ? notice.text : '' }
+							onClose={ () => setPreview( null ) }
+						/>
+					) }
 					{ /* Always there, so that what it comes to hold is announced: a region
 					     that arrives already holding its words is often not read out. */ }
 					<p className="screen-reader-text" role="status">

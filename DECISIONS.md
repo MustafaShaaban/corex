@@ -10235,3 +10235,94 @@ registers a design through the filter from outside the framework's classes, and 
 generator's test. Only replies are drawn through the design; the other emails are slice 7.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
+
+## #313 — A reply is written in CoreX's own small editor, and its preview is the email
+
+**Date:** 2026-10-11. **Branch:** `feat/106-reply-editor`. **Spec:** 106, slice 3.
+
+"The reply emails from corex it should be a rich text, should have the same experience of the
+emails." The box was a `<textarea>`, and nothing showed the email before it left.
+
+**CoreX's own editor, over `contenteditable`.** A reply has paragraphs, bold, italic, two
+kinds of list and links. The block editor's rich text edits one block and a list is a block of
+its own, so the two together need the block editor's store; the classic editor draws in a
+frame with its own skin, which the admin's tokens, its dark and light and its direction do
+not reach; Tiptap, Lexical or Quill is a dependency with advisories to follow, for five
+buttons. `CorexRichText` is a text box and a toolbar of the admin's own buttons. Its commands
+go through `document.execCommand`, deprecated and with no replacement in any browser; they are
+in one module, `richTextCommands.js`, so the day there is one, one file changes.
+
+**The editor is how somebody writes, not the guard.** What it gives back is reduced by
+`cleanReplyHtml`, what is pasted is reduced before it is inserted, and the server reduces again
+whatever is posted (#305). A link is asked for in a form in the page and refused there when
+it goes anywhere but the web, a mailbox or a telephone; the server would remove it anyway.
+
+**What a browser writes is not what an email has, so both ends turn it into paragraphs.** A
+browser writes a line as a `<div>` and leaves the first line typed as bare text. The first
+was reduced to its words run together; the second was drawn at another size from the lines
+after it, which a screenshot showed and no test had. The editor asks the browser for
+paragraphs, makes the line being written one, and gives back paragraphs. `ReplyBody` ends a
+paragraph wherever a block a reply does not have begins or ends, for whatever posts without
+the editor; the two ends hold one list of those blocks.
+
+**A line end means two things, and the server is told which.** In lines somebody typed into
+a plain box it is a line, and stays one (slice 0). In markup it is how the markup was laid
+out: Word and Outlook wrap what they put on the clipboard, and a pasted paragraph reached
+the customer broken in the middle of its sentences. So a reply that is markup has its line
+ends read as the space a browser draws, in the browser's reduction and in `ReplyBody`, and
+a reply with no block of its own keeps them.
+
+**Emphasis or a link around blocks is moved inside each of them.** A page writes a card as
+a link around two blocks, and a word processor a whole document as one "bold" around its
+paragraphs. A paragraph cannot stand inside either; read again the markup came apart and the
+link had lost its address. Google Docs says that wrapper is not bold, and says real bold
+and italic with a style on a span: the wrapper is dropped and the style is read.
+
+**The box shows what will be sent.** Underline is Ctrl+U in every browser, and something
+dragged in arrives with its colours and pictures. Either would be drawn in the box and
+missing from the email, so the browser's own formatting other than bold and italic is
+refused, and what is dropped is reduced as a paste is. The value the editor is given is
+reduced before it is put on the page as well as on the way out: the next caller hands it a
+stored draft.
+
+**Each paragraph reads in the direction of what is written in it.** `dir="auto"` is on each
+block and not on the text box: on the box, the whole message would take the direction of its
+first line. It is the editor's own marking and is not in what is given back; the email gives
+each paragraph its direction itself (#308).
+
+**The preview is the email.** `POST …/reply/preview` answers the document and the plain text
+from the composer that `reply()` sends with, so the two cannot differ: a test sends what was
+previewed and compares the bytes, in an integration test and in the browser. A drawing of the
+email made in the admin would have been a second template to keep true. It is shown in an
+`<iframe sandbox="">` from `srcdoc`: nothing in it runs or reaches the admin. The seam
+`SubmissionEmailGateway` gained `preview()` for it, which a site that implements the seam
+itself has to add.
+
+**Escape in a dialog opened from another closed both.** The preview is a dialog opened from
+the pane, which is one. React hands a nested dialog's `cancel` to its ancestors' handlers,
+though the browser's own event does not bubble; the pane closed with the preview.
+`CorexDialog` now answers only its own. Every confirmation opened from a dialog had this.
+
+**A review that ran the editor in a browser found what reading had not.** A formatting
+button said "off" after it was turned on, until the next letter: a command moves no caret,
+so the browser announced nothing, and the browser test passed only because its keys came
+faster than a person's. Leaving the preview left the keyboard on the page itself, the button
+that opened it having been switched off while its request was out. A paragraph written
+after a list took no direction of its own, because a browser leaves it inside the paragraph
+the list was started in. The Link button made a link of whatever was selected anywhere on
+the page. A shortcut was matched by the character its key writes, which on an Arabic or a
+Russian keyboard is not a Latin letter; it is now matched by the key's place where the
+character is not one. Each has a test that fails without its fix, four of them checked by
+breaking the fix. A design that fails while a reply is only being previewed is reported as
+it is when one is sent, so the notification says CoreX used its standard design and no
+longer that an email was sent.
+
+**Not done here.** The draft kept between visits (FR-006, T044 and T045) is the next pull
+request: it is a store and three routes of its own, and the editor and the preview do not
+need it. The preview's width switch is two widths, 640 and 360, where the plan said 600 and
+360: the standard design is 600 wide with a margin each side, and a frame of 600 would draw
+it narrower than a wide screen does. Three things the review named are left: a space that
+does not break, which a browser puts beside an inserted link, is posted as it is; typing
+with an input method (Android, Chinese, Japanese, Korean) has not been tried on the first
+line; and the toolbar reads the page's direction from the `dir` attribute, which is how the
+admin states it, and not from the computed style.

@@ -64,6 +64,16 @@ All notable changes to Corex are documented here. The format follows
   throws, answers nothing or leaves the message out does not stop a reply: the email goes in
   the standard design, and the people who manage email are told which design failed and how
   (DECISIONS #311). The guide is "A site's own email design".
+- **A reply is written in an editor, and previewed as the email it will be** (spec 106,
+  slice 3). The message box has bold, italic, bulleted and numbered lists and links, from a
+  toolbar or from the keyboard (Ctrl or Cmd with B, I and K; with Shift and 8 or 7 for the
+  lists). A link is asked for in the page, and one that goes anywhere but the web, a mailbox
+  or a telephone is refused there. What is pasted keeps that formatting and loses the rest.
+  Each paragraph reads in the direction of what is written in it. **Preview** shows the email
+  the server will send, in the site's design, at the width of a wide screen or of a phone,
+  with its plain-text version; the email that is then sent is that one, to the byte. The box
+  was a plain text area and there was no preview (DECISIONS #313). A draft kept between
+  visits is not built yet.
 - **The colours and type of a CoreX email are defined once**, in the email add-on
   (`Corex\Email\Design\EmailPalette`, `EmailBrand`), for every email drawn from them. They
   were inside the Guides add-on's support message.
@@ -86,6 +96,14 @@ All notable changes to Corex are documented here. The format follows
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.
+- **Escape in a dialog opened from another closes that one only.** It closed both: leaving
+  a confirmation or a preview opened from the submission's pane took the pane with it.
+- **Lines posted as blocks a reply does not have stay apart.** `<div>One</div><div>Two</div>`,
+  which is what a browser's editor and many pasted pages write, was reduced to "OneTwo" in one
+  paragraph; each is now a paragraph, and so is each cell of a pasted table.
+- **A paragraph pasted from a word processor is not broken in the middle of its sentences.**
+  A line end inside markup is how the markup was laid out, and is read as a space. Lines
+  typed with no markup of their own stay lines, as before.
 - **What somebody types between angle brackets in a reply is kept.** "Contact Sam
   <sam@example.com>" reached the customer as "Contact Sam", and "<500 EGP and >300 EGP" as
   "300 EGP": the text was read as markup and deleted.
@@ -144,6 +162,16 @@ All notable changes to Corex are documented here. The format follows
 - **`Corex\Mail\SubmissionEmailGateway` has a new method, `readiness(): ReplyReadiness`.** A site
   that implements this seam itself has to add it. A site that uses CoreX's email add-on, or
   none, has nothing to do.
+- **`Corex\Mail\SubmissionEmailGateway` has a second new method,
+  `preview(string $recipient, string $subject, string $htmlBody): array`**, answering
+  `['html' => …, 'text' => …]`. A site that implements this seam itself has to add it, as it
+  does `readiness()`.
+- **New route: `POST corex/v1/submissions/{id}/reply/preview`**, taking `subject` and `body`
+  as the reply route does, guarded as it is, and answering `{ preview: { subject, html, text } }`.
+  It sends nothing and keeps nothing of the reply.
+- **The notification about a site's email design that failed now reads "CoreX used its
+  standard design for the email instead"**, where it said the email was sent: a design can
+  fail while a reply is only being previewed.
 - **`POST corex/v1/submissions/{id}/reply` answers 422 where a reply would be refused**, with
   the reason, and sends nothing. It answered 200 with a result whose state was `rejected`. Its
   answer gains `recorded`, false when the email went and the reply could not be kept.

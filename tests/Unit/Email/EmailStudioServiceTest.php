@@ -500,6 +500,9 @@ it('sends a reply in the site design with the same words as plain text beside it
 
 it('says replies need the email add-on where it is absent', function () {
     $readiness = (new UnavailableSubmissionEmailGateway())->readiness();
+    // And there is no email to show before sending where nothing would send one.
+    expect(fn () => (new UnavailableSubmissionEmailGateway())->preview('sam@example.com', 'Re: Contact', '<p>Hello</p>'))
+        ->toThrow(DomainException::class, 'Email Studio is required');
 
     expect($readiness->mode)->toBe('unavailable')
         ->and($readiness->sendable())->toBeFalse()
