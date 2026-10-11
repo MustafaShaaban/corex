@@ -34,7 +34,13 @@ Delivery is **best-effort and never throws** — failures are logged, not fatal.
   brand-aware layout (pulled from `theme.json` / `brand.json`).
 - **Security** — `HeaderGuard` rejects CR/LF/control characters in headers; recipients are
   resolved + validated.
-- **Driver** — `WpMailDriver` sends via `wp_mail` with the configured from-identity.
+- **Driver** — `WpMailDriver` sends via `wp_mail` with the configured from-identity. A message
+  that carries a `plainText` is sent with it as the plain-text alternative of the HTML.
+- **Design** — `Corex\Email\Design` holds what a designed email is drawn from: `EmailPalette`
+  (the colours, light and dark, the one place an email's colours are written), `EmailBrand`
+  (the site's name, address, logo, direction and language), and `StandardEmailDesign`, which
+  draws a message as a whole document. A reply from the Submissions inbox is the first email
+  drawn this way; the others still go through the layout above.
 - **Log** — each send is recorded to the `corex_email_log` CPT.
 
 ## Inspect email state in wp-admin

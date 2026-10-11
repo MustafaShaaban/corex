@@ -199,10 +199,12 @@ or discarded. Not `localStorage`: the same person on another machine has their d
 
 In the email add-on, `Corex\Email\Design`:
 
-- `EmailBrand`: the values a design is drawn from: site name, logo address, direction, accent,
-  text, muted text, canvas, surface, border, font, footer text. `EmailBrand::standard()` holds
-  CoreX's light palette, the one `SupportEmailPalette` holds today; the Guides add-on's support
-  email reads them from here, and `SupportEmailPalette` goes (FR-012).
+- `EmailPalette`: the colours, for one scheme. `light()` and `dark()` are the admin's two
+  palettes, the one `SupportEmailPalette` held; the Guides add-on's support email reads them
+  from here, and `SupportEmailPalette` is gone (FR-012).
+- `EmailBrand`: whose the email is (the site's name, address, logo, direction, language and
+  footer line) with its two palettes, and the type and shape constants. `EmailBrandSource`
+  says which brand an email is drawn with; `SiteEmailBrand` reads it from WordPress.
 - `EmailDesign` (interface): `render(EmailContent $content, EmailBrand $brand): string`.
   `EmailContent` holds the subject, the reduced message, and who is answered.
 - `StandardEmailDesign`: tables and inline styles, a header with the logo (its `alt` is the

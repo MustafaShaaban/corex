@@ -61,6 +61,14 @@ final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
         update_post_meta($id, self::META_SLUG, $slug);
         update_post_meta($id, self::META_PAYLOAD, $payload);
 
+        // A payload the database would not take whole comes back as something else. A record
+        // like that is not left behind: it could not be read, and nothing would ever remove it.
+        if (! is_array(get_post_meta($id, self::META_PAYLOAD, true))) {
+            wp_delete_post($id, true);
+
+            throw new \DomainException(__('The email record could not be stored.', 'corex'));
+        }
+
         return $id;
     }
 

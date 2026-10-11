@@ -27,7 +27,8 @@ function wordPressSendsItsOwnMail(): bool
 {
     $defined = str_replace('\\', '/', (string) (new ReflectionFunction('wp_mail'))->getFileName());
 
-    return str_ends_with($defined, '/wp-includes/pluggable.php');
+    // Its own function, and nothing that answers for it before the mailer is reached.
+    return str_ends_with($defined, '/wp-includes/pluggable.php') && has_filter('pre_wp_mail') === false;
 }
 
 /**
@@ -84,6 +85,19 @@ it('sends a message with no plain-text version as it always was, and leaves none
         ->and($built)->not->toContain('text/plain')
         ->and($built)->not->toContain('in plain text');
 })->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// The database does not take a payload that is not text whole, and what it kept could not be
+// read: such a record took Email Studio's list down, and nothing would ever have removed it.
+it('refuses to keep a record it could not read back, and leaves none behind', function () {
+    $store = Boot::app()->container()->make(WpEmailStudioStore::class);
+    $before = count($store->all('captured_email'));
+
+    expect(fn () => $store->create('captured_email', '0f8fad5b-d9cb-469f-a165-70867728950e', 'Not text', 0, [
+        'capture_id' => '0f8fad5b-d9cb-469f-a165-70867728950e',
+        'plain_text' => "Caf\xE9",
+    ]))->toThrow(DomainException::class, 'could not be stored')
+        ->and(count($store->all('captured_email')))->toBe($before);
+});
 
 it('keeps the plain-text version a message was sent with in its capture', function () {
     $captures = new CapturedEmailRepository(Boot::app()->container()->make(WpEmailStudioStore::class));

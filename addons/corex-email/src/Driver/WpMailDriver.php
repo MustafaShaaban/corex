@@ -54,14 +54,15 @@ final class WpMailDriver implements MailDriver
             $headers[] = 'Bcc: ' . $bcc;
         }
 
-        // The fifth argument. `wp_mail()` has always taken `$attachments` and this driver has
-        // always passed four, so the mail stack could not send a file at all (spec 081, FR-010).
         $alternative = $this->alternative($message->plainText);
         if ($alternative !== null) {
             add_action('phpmailer_init', $alternative);
         }
 
         try {
+            // The fifth argument. `wp_mail()` has always taken `$attachments` and this driver
+            // has always passed four, so the mail stack could not send a file at all (spec 081,
+            // FR-010).
             return wp_mail(
                 $message->to,
                 $message->subject,
@@ -70,7 +71,8 @@ final class WpMailDriver implements MailDriver
                 $this->attachments->resolve($message->attachments),
             );
         } finally {
-            // For this message only: the next one may have no plain text to send.
+            // For this message only. The hook takes itself off when it runs; this is for a
+            // send that never reached it.
             if ($alternative !== null) {
                 remove_action('phpmailer_init', $alternative);
             }
@@ -89,9 +91,15 @@ final class WpMailDriver implements MailDriver
             return null;
         }
 
-        return static function (object $mailer) use ($plainText): void {
+        // It takes itself off as it runs: `wp_mail()` fires other hooks before it returns, and
+        // an email one of their listeners sends must not leave with this one's words.
+        $once = null;
+        $once = static function (object $mailer) use ($plainText, &$once): void {
+            remove_action('phpmailer_init', $once);
             $mailer->AltBody = $plainText;
         };
+
+        return $once;
     }
 
     /**

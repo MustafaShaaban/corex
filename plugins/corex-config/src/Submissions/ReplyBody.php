@@ -54,7 +54,8 @@ final class ReplyBody
         if (! is_string($posted) || strlen($posted) > self::MOST_BYTES) {
             return '';
         }
-        $markup = (string) preg_replace('#<!--.*?(?:-->|$)#s', '', $posted);
+        // Bytes that are not text are replaced first: every reader after this one expects text.
+        $markup = (string) preg_replace('#<!--.*?(?:-->|$)#s', '', mb_scrub($posted, 'UTF-8'));
         $markup = (string) preg_replace('#<(script|style)\b[^>]*>.*?(?:</\1\s*>|$)#is', '', $markup);
         $markup = (string) preg_replace('#<(?!/?[a-z][a-z0-9]*(?:\s[^<>]*)?/?>)#i', '&lt;', $markup);
         $markup = wp_kses($markup, self::ALLOWED, ['http', 'https', 'mailto', 'tel']);

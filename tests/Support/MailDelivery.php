@@ -8,6 +8,10 @@ declare(strict_types=1);
 
 namespace Corex\Tests\Support;
 
+use Corex\Boot;
+use Corex\Mail\SubmissionEmailGateway;
+use RuntimeException;
+
 /**
  * Decides, for a test's own process, what the install does with an email.
  *
@@ -48,6 +52,20 @@ final class MailDelivery
             $filter = static fn (): string => $value;
             add_filter('pre_option_' . $option, $filter);
             $filters[] = ['pre_option_' . $option, $filter];
+        }
+
+        // An install can fix these settings where an option does not reach: an `.env` file is
+        // read before the options are. The answer is checked against the decision a send takes,
+        // before any test has sent anything.
+        $decided = Boot::app()->container()->make(SubmissionEmailGateway::class)->readiness()->mode;
+        if ($decided !== $mode) {
+            self::stop($filters);
+
+            throw new RuntimeException(sprintf(
+                'This install decides "%s" for an email whatever a test answers (asked for "%s"). No test may send on it.',
+                $decided,
+                $mode,
+            ));
         }
 
         return $filters;

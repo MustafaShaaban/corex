@@ -68,17 +68,54 @@ it('keeps a contrast of 4.5 to 1 for every text on every ground', function (Emai
     'dark' => [fn () => EmailPalette::dark()],
 ]);
 
-it('holds the CoreX admin colours, light and dark', function () {
-    expect(EmailPalette::light()->accent)->toBe('#ad8643')
-        ->and(EmailPalette::light()->text)->toBe('#14151a')
-        ->and(EmailPalette::light()->canvas)->toBe('#f6f7f9')
-        ->and(EmailPalette::dark()->accent)->toBe('#c9a25e')
-        ->and(EmailPalette::dark()->text)->toBe('#f4f5f7');
+// An email cannot read the admin's custom properties, so their values are written again in
+// EmailPalette. This is what notices when the two stop agreeing.
+it('holds the colours the CoreX admin is drawn in, light and dark', function (EmailPalette $palette) {
+    $tokens = strtolower((string) file_get_contents(dirname(__DIR__, 3) . '/plugins/corex-core/assets/css/corex-admin-tokens.css'));
+    $short = static fn (string $colour): string => preg_match('/^#(.)\1(.)\2(.)\3$/', $colour, $pair) === 1
+        ? '#' . $pair[1] . $pair[2] . $pair[3]
+        : $colour;
+    $token = [
+        'canvas' => 'canvas', 'surface' => 'surface-raised', 'border' => 'border', 'text' => 'text',
+        'muted' => 'text-muted', 'accent' => 'action', 'link' => 'link',
+    ];
+
+    foreach ($token as $colour => $name) {
+        $written = preg_quote($palette->{$colour}, '/') . '|' . preg_quote($short($palette->{$colour}), '/');
+        expect($tokens)->toMatch(sprintf('/--corex-admin-%s:\s*(%s);/', $name, $written));
+    }
+})->with([
+    'light' => [fn () => EmailPalette::light()],
+    'dark' => [fn () => EmailPalette::dark()],
+]);
+
+it('refuses a colour an email client could not read', function (mixed $colour) {
+    expect(fn () => EmailPalette::light()->with(['accent' => $colour]))->toThrow(InvalidArgumentException::class);
+})->with([
+    'a name' => ['red'],
+    'three digits' => ['#abc'],
+    'a function' => ['rgb(1,2,3)'],
+    'a letter that is not hex' => ['#12345g'],
+    'a custom property' => ['var(--corex-admin-action)'],
+    'a second declaration' => ['#ad8643;background:url(x)'],
+    'a line ending after it' => ["#ad8643\n#000000"],
+    'not text at all' => [['#ad8643']],
+]);
+
+it('reads ltr or rtl and nothing else, because the direction is written into the document', function () {
+    expect(fn () => new EmailBrand('Acme', 'https://acme.test/', '', 'ltr" onload="steal()', 'en', '', EmailPalette::light(), EmailPalette::dark()))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(EmailBrand::standard('Acme', 'https://acme.test/', '', 'sideways')->direction)->toBe('ltr');
 });
 
-it('refuses a colour an email client could not read', function (string $colour) {
-    expect(fn () => EmailPalette::light()->with(['accent' => $colour]))->toThrow(InvalidArgumentException::class);
-})->with(['red', '#abc', 'rgb(1,2,3)', '#12345g', 'var(--corex-admin-action)', '#ad8643;background:url(x)']);
+it('links and loads the web only, whatever it is handed', function () {
+    $html = acmeEmail(brand: EmailBrand::standard('Acme', 'javascript:steal()', 'data:image/svg+xml,<svg onload=steal()>'));
+
+    expect($html)->not->toContain('javascript:')
+        ->and($html)->not->toContain('data:')
+        ->and($html)->not->toContain('<img')
+        ->and($html)->toContain('This message was sent by Acme.');
+});
 
 it('takes a site its own colours and keeps the rest', function () {
     $own = EmailPalette::light()->with(['accent' => '#0B1F3B']);
@@ -185,6 +222,36 @@ it('writes a message out as plain text: paragraphs, lists and links', function (
         . "1. First\n2. Second\n\n"
         . 'See the offer (https://example.com/offer) or us@example.com.',
     );
+});
+
+// As WordPress lays a reply out before it gets here: a line ending between every two tags.
+// The first version turned each into a space, and every list item after the first was set in.
+it('writes a list out the same however its markup was laid out', function () {
+    $text = PlainText::of("<p>Intro</p>\n<ul>\n<li>One</li>\n<li>Two</li>\n</ul>\n<ol>\n<li>First</li>\n<li>Second</li>\n</ol>\n<p>After<br />\nthe lists</p>\n");
+
+    expect($text)->toBe("Intro\n\n- One\n- Two\n\n1. First\n2. Second\n\nAfter\nthe lists");
+});
+
+it('sets a list inside a list in under its item', function () {
+    $text = PlainText::of('<ul><li>One<ul><li>Inner A</li><li>Inner B</li></ul></li><li>Two<ol><li>Step</li></ol></li></ul><p>End</p>');
+
+    expect($text)->toBe("- One\n  - Inner A\n  - Inner B\n- Two\n  1. Step\n\nEnd");
+});
+
+it('does not write a link out twice where its text is its address', function () {
+    $text = PlainText::of('<p><a href="https://example.com/a?b=1&#038;c=2">https://example.com/a?b=1&amp;c=2</a> and <a href="https://example.com/x">example.com/x</a></p>');
+
+    expect($text)->toBe('https://example.com/a?b=1&c=2 and example.com/x');
+});
+
+// A pattern that reads UTF-8 answers nothing for bytes that are not: the plain-text part of the
+// email would have left empty while the HTML held the message.
+it('keeps the words of a message that holds a byte that is not text', function () {
+    $text = PlainText::of("<p>Caf\xE9 au lait</p><p>Second line</p>");
+
+    expect(mb_check_encoding($text, 'UTF-8'))->toBeTrue()
+        ->and($text)->toContain('au lait')
+        ->and($text)->toContain('Second line');
 });
 
 it('leaves no markup and no entity in the plain text', function () {

@@ -41,6 +41,12 @@ it('names the site as it is written, not as WordPress stores it', function () {
         ->and($brand->dark)->toEqual(EmailPalette::dark());
 });
 
+it('names a site that has no title by where it is', function () {
+    ($this->answer)('pre_option_blogname', static fn (): string => '');
+
+    expect((new SiteEmailBrand())->brand()->name)->toBe((string) wp_parse_url(home_url('/'), PHP_URL_HOST));
+});
+
 it('takes the site icon for its mark where the theme has no logo', function () {
     ($this->answer)('theme_mod_custom_logo', static fn (): int => 0);
     ($this->answer)('get_site_icon_url', static fn (): string => 'https://acme.test/icon.png');

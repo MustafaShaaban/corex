@@ -10,6 +10,8 @@ namespace Corex\Email\Design;
 
 defined('ABSPATH') || exit;
 
+use InvalidArgumentException;
+
 /**
  * What an email is drawn from: whose it is, and in which colours and type (spec 106).
  *
@@ -51,6 +53,10 @@ final readonly class EmailBrand
         public EmailPalette $light,
         public EmailPalette $dark,
     ) {
+        // Written into the document as it is, so it is one of the two or it is refused.
+        if (! in_array($this->direction, ['ltr', 'rtl'], true)) {
+            throw new InvalidArgumentException('An email reads ltr or rtl.');
+        }
     }
 
     /** A site's emails in CoreX's own colours. */

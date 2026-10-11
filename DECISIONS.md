@@ -10013,3 +10013,63 @@ the slice that replaces personal data exists; they are refused until it does.
 slice 5 measures them, on a development machine held to a shared host's limits and not on the
 host. How a flow is recognised on another install was not read (research.md).
 
+## #308 — A reply leaves as a designed email with its words as plain text, and an email's colours are written once
+
+**Date:** 2026-10-11. **Branch:** `feat/106-standard-template`. **Spec:** 106, slice 2.
+
+A reply was wrapped in the one shell CoreX had: the site's name or logo, a line in the theme's
+`primary`, the text. It set no type, no colour, no background and no footer, and it was sent as
+HTML alone. The owner asked for "a standard styled email template" in "the corex theme and
+colors".
+
+**The design is a document, drawn from values.** `StandardEmailDesign` draws a whole email from
+an `EmailContent` (the subject, the reduced message, who it is for) and an `EmailBrand` (whose
+it is, and in which colours). Tables and inline styles, fluid up to 600 pixels. Light colours
+are written inline, for the client that honours nothing else; a client that asks for a dark
+scheme gets the dark palette by class from one style block. Physical `left` and `right`,
+chosen from the site's direction, because Outlook's engine does not read `start`; each
+paragraph carries `dir="auto"` and `text-align: start`, which every client that is a browser
+reads, so an Arabic line in an English reply starts from the right.
+
+**The header is the site's, the colours are CoreX's.** The email is from the site to its
+customer, so the header shows the site's logo or name, never CoreX's mark. This is the spec's
+reading of "the corex theme and colors" and the owner's to overrule. The accent is the admin's
+brass, not the theme's `primary` that the old shell used: a site's own colours, logo and footer
+are slice 4, and until that is released every site's replies wear CoreX's. That is said under
+Client impact.
+
+**An email's colours are literals in one class.** An email cannot read a custom property, so a
+token has to arrive as a value somewhere. `EmailPalette` is where, for every email drawn from
+it; spec 093 had the same values inside the Guides add-on, and `SupportEmailPalette` is removed.
+A colour is `#rrggbb` or it is refused, because it is written into a `style` attribute. The
+link colour is the admin's link token, not its action colour: brass on white is 3.35 to 1 and
+is used only for the card's edge. A unit test holds every text on every ground to 4.5 to 1 in
+both palettes.
+
+**The plain-text version is sent as the alternative of one message.** `EmailMessage` gains
+`plainText`. `wp_mail()` takes one body; its mailer sends two when it is handed the second, so
+`WpMailDriver` hands it over on `phpmailer_init` for that one send and takes the hook off
+again in a `finally`. `MailService` rebuilds every message to drop bad recipients and had
+dropped two fields that way before (#150); its own test failed on the new one until it was
+carried, which is what that test is for.
+
+**Found in the browser, and nowhere else.** The first `PlainText` read its input as bytes.
+Read that way `\R` matches the second byte of the Arabic letter meem as a line ending, so the
+plain text of an Arabic reply was not valid text, the database would not take the capture's
+payload, and the development site failed to keep the email: "captured" came back "failed".
+Every pattern now reads UTF-8, and a unit test holds an Arabic reply. The two unreadable capture
+records that the failure left on corex.local then made Email Studio's list throw; I found them
+by reading every capture's payload and removed those two. `CapturedEmailRepository::latest()`
+now passes over a record it cannot read.
+
+**A test that could have sent mail is written so that it cannot.** The plain-text test has to
+run WordPress's own mailer to see the two parts. It reads the message at the last hook before
+sending and throws there, and it is skipped on an install whose `wp_mail()` is not WordPress's
+own: corex.local's is an SMTP plugin's, with a mailbox behind it. So those two tests were not
+run on the development site at all; CI is where they run.
+
+**Not in this slice.** Only a reply is drawn this way. Form notifications, routed emails and
+Email Studio's templates still go through `Layout` (slice 7). A site's own values and a site's
+own design are slice 4.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.

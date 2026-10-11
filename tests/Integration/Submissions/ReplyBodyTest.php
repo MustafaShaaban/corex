@@ -96,6 +96,14 @@ it('keeps an Arabic reply as it was written', function () {
         ->and($reduced)->toContain("<p>سنتصل بك <strong>غدا</strong>.<br />\nمع التحية</p>");
 });
 
+it('keeps the words of a reply that holds a byte that is not text', function () {
+    $reduced = ReplyBody::reduce("Caf\xE9 au lait\n\nSecond line");
+
+    expect(mb_check_encoding($reduced, 'UTF-8'))->toBeTrue()
+        ->and($reduced)->toContain('au lait')
+        ->and($reduced)->toContain('<p>Second line</p>');
+});
+
 it('answers nothing for a reply with no words in it', function (mixed $posted) {
     expect(ReplyBody::reduce($posted))->toBe('');
 })->with([

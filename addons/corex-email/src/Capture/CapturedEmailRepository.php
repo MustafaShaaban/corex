@@ -15,7 +15,7 @@ use Corex\Email\Studio\EmailStudioStore;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
 use DomainException;
-use InvalidArgumentException;
+use Exception;
 
 /**
  * Append-only repository for Development message capture.
@@ -62,16 +62,17 @@ final class CapturedEmailRepository
     public function latest(int $limit = 50): array
     {
         $limit    = max(1, min(100, $limit));
-        $records  = array_reverse($this->store->all(self::TYPE));
-        $records  = array_slice($records, 0, $limit);
         $captures = [];
-        foreach ($records as $record) {
-            // A record whose payload did not survive being stored is not an email, and one of
-            // them must not take the list of the others away: it did, on a development site,
-            // until the record was found and removed by hand.
+        foreach (array_reverse($this->store->all(self::TYPE)) as $record) {
+            if (count($captures) === $limit) {
+                break;
+            }
+            // A record that cannot be read as an email, whatever is wrong with it, must not
+            // take the list of the others away: one did, on a development site, until it was
+            // found and removed by hand. The store no longer leaves such a record behind.
             try {
                 $captures[] = $this->capturedEmail($record);
-            } catch (InvalidArgumentException) {
+            } catch (Exception) {
                 continue;
             }
         }

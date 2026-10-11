@@ -46,7 +46,7 @@ final readonly class EmailPalette
         public string $link,
     ) {
         foreach (get_object_vars($this) as $name => $colour) {
-            if (preg_match('/^#[0-9a-f]{6}$/', $colour) !== 1) {
+            if (preg_match('/^#[0-9a-f]{6}\z/i', $colour) !== 1) {
                 throw new InvalidArgumentException(sprintf('The email colour "%s" must be written as #rrggbb.', $name));
             }
         }
@@ -88,7 +88,7 @@ final readonly class EmailPalette
     {
         $own = get_object_vars($this);
         foreach (array_intersect_key($colours, $own) as $name => $colour) {
-            $own[$name] = strtolower(trim((string) $colour));
+            $own[$name] = is_string($colour) ? strtolower(trim($colour)) : '';
         }
 
         return new self(...$own);

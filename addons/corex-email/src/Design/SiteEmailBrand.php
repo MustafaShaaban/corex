@@ -18,10 +18,14 @@ final class SiteEmailBrand implements EmailBrandSource
 {
     public function brand(): EmailBrand
     {
+        $home = (string) home_url('/');
+        // WordPress stores the name with its entities encoded; a design escapes it itself.
+        $name = trim(wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES));
+
         return EmailBrand::standard(
-            // WordPress stores the name with its entities encoded; a design escapes it itself.
-            wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES),
-            (string) home_url('/'),
+            // A site with no title is still named in its emails, by where it is.
+            $name !== '' ? $name : (string) wp_parse_url($home, PHP_URL_HOST),
+            $home,
             $this->logo(),
             is_rtl() ? 'rtl' : 'ltr',
             (string) get_bloginfo('language'),

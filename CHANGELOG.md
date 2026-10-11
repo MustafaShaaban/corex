@@ -17,6 +17,17 @@ All notable changes to Corex are documented here. The format follows
   development site, and a staging site with live delivery off, it says a reply is kept in Email
   Studio and delivered to nobody. The statement comes from the decision the sending itself
   takes, so the two cannot disagree (DECISIONS #305).
+- **A reply arrives as a designed email, with a plain-text version beside it** (spec 106,
+  slice 2). The site's logo, or its name, above the message on a card with CoreX's brass edge,
+  and a footer naming the site and linking to it. It holds at phone width, has a dark palette
+  for a mail client that asks for one, reads right to left on a right-to-left site, and lets
+  each paragraph take its own direction, so an Arabic line in an English reply starts from the
+  right. The same words go with it as plain text, with links written out and list items
+  marked, as the alternative part of one message. The reply used to be wrapped in a bare shell
+  that set no type, no colour and no footer, and was sent as HTML alone (DECISIONS #308).
+- **The colours and type of a CoreX email are defined once**, in the email add-on
+  (`Corex\Email\Design\EmailPalette`, `EmailBrand`), for every email drawn from them. They
+  were inside the Guides add-on's support message.
 - **A reply is kept on its submission and listed there**: its subject, its text, who sent it,
   when, and what happened to it. The history held an action and a state and nothing of what was
   said. A reply that was not sent is listed as not sent, with the reason.
@@ -33,6 +44,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Email Studio lists its captured emails when one of them cannot be read.** One record
+  whose contents had not survived being stored took the whole list with it, and the screen
+  answered an error.
 - **What somebody types between angle brackets in a reply is kept.** "Contact Sam
   <sam@example.com>" reached the customer as "Contact Sam", and "<500 EGP and >300 EGP" as
   "300 EGP": the text was read as markup and deleted.
@@ -57,6 +71,17 @@ All notable changes to Corex are documented here. The format follows
 - **A submission's detail (`GET corex/v1/submissions/{id}`) gains `replies` and
   `reply_delivery`.** Replies are stored as post meta `corex_submission_replies`, one row to a
   reply. Code of your own that copies or removes a submission's personal data has to include it.
+- **A reply's email looks different.** It was the site's name or logo over a line in the
+  theme's `primary` colour; it is now the standard design in CoreX's colours. A site's own
+  colours, logo and footer line, and a site's own template, are the next slices of spec 106:
+  until they are released, replies from every site wear CoreX's brass.
+- **`Corex\Email\Message\EmailMessage` has a new last argument, `plainText`**, and a message
+  that carries one is sent as `multipart/alternative`. Code that builds a message is unaffected.
+  A mail driver of your own receives the field and may ignore it.
+- **`Corex\Guides\Support\SupportEmailPalette` is removed.** Its values are
+  `Corex\Email\Design\EmailPalette::light()` and the constants of `EmailBrand`.
+- **`EmailStudioSubmissionGateway` takes a `ReplyComposer` where it took a `Layout`.** Code
+  that takes the gateway from the container is unaffected.
 - **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
 
 ## [0.44.0] — 2026-10-10

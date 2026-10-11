@@ -83,13 +83,14 @@ final class StandardEmailDesign implements EmailDesign
     private function header(EmailBrand $brand): string
     {
         $name = $this->escaped($brand->name);
-        if ($brand->logo === '') {
+        $logo = $this->address($brand->logo);
+        if ($logo === '') {
             return $name;
         }
 
         return sprintf(
             '<img src="%s" alt="%s" style="display:block;max-width:180px;height:auto;border:0" />',
-            $this->escaped($brand->logo),
+            $logo,
             $name,
         );
     }
@@ -119,12 +120,15 @@ final class StandardEmailDesign implements EmailDesign
         if ($brand->footer !== '') {
             return $this->escaped($brand->footer);
         }
-        $site = sprintf(
-            '<a class="cx-muted" style="color:%s;text-decoration:underline" href="%s">%s</a>',
-            $light->muted,
-            $this->escaped($brand->homeUrl),
-            $this->escaped($brand->name),
-        );
+        $home = $this->address($brand->homeUrl);
+        $site = $home === ''
+            ? $this->escaped($brand->name)
+            : sprintf(
+                '<a class="cx-muted" style="color:%s;text-decoration:underline" href="%s">%s</a>',
+                $light->muted,
+                $home,
+                $this->escaped($brand->name),
+            );
 
         /* translators: %s: the name of the site an email was sent from, as a link to it. */
         return sprintf($this->escaped(__('This message was sent by %s.', 'corex')), $site);
@@ -150,6 +154,15 @@ final class StandardEmailDesign implements EmailDesign
             $dark->muted,
             $dark->link,
         );
+    }
+
+    /**
+     * A web address, escaped for an attribute, or '' for anything that is not one: what a
+     * design links to and loads is the web, whatever it was handed.
+     */
+    private function address(string $value): string
+    {
+        return preg_match('#^https?://#i', $value) === 1 ? $this->escaped($value) : '';
     }
 
     /** For text and for an attribute's value alike: both quotes are escaped. */

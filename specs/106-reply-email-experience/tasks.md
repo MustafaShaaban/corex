@@ -51,23 +51,27 @@ Tests are written first and seen to fail. One slice per pull request. Decisions 
 
 ## Slice 2: the standard template, with a plain-text version (US2; FR-008 to FR-013)
 
-- [ ] T020 Pest unit: `EmailBrand::standard()` holds the palette the support email uses;
+- [x] T020 Pest unit: `EmailBrand::standard()` holds the palette the support email uses;
       every text and background pair it offers has a contrast of 4.5 to 1, light and dark
-- [ ] T021 `Corex\Email\Design\EmailBrand`; the support email reads it; `SupportEmailPalette` removed
-- [ ] T022 Pest unit: `StandardEmailDesign` draws the logo with the site's name as its `alt`,
+- [x] T021 `Corex\Email\Design\EmailBrand`; the support email reads it; `SupportEmailPalette` removed
+- [x] T022 Pest unit: `StandardEmailDesign` draws the logo with the site's name as its `alt`,
       or the name; a footer naming the site; `dir`; the message once; no width over 600; no
       style outside the brand's values; escapes the subject and the site's name
-- [ ] T023 `EmailDesign`, `EmailContent`, `StandardEmailDesign`
-- [ ] T024 Pest unit: `PlainText::of()` writes paragraphs, list items and links out
-- [ ] T025 `PlainText`
-- [ ] T026 Pest unit: `ReplyComposer` answers the HTML and the text; the gateway sends both
-- [ ] T027 `ReplyComposer`; `EmailMessage::$plainText`; the gateway composes through it
-- [ ] T028 Pest integration: a reply sent through `wp_mail` is `multipart/alternative` with
+- [x] T023 `EmailDesign`, `EmailContent`, `StandardEmailDesign`
+- [x] T024 Pest unit: `PlainText::of()` writes paragraphs, list items and links out
+- [x] T025 `PlainText`
+- [x] T026 Pest unit: `ReplyComposer` answers the HTML and the text, in Arabic as in English;
+      the gateway sends both
+- [x] T027 `ReplyComposer` over an `EmailBrandSource`; `EmailMessage::$plainText`, carried by
+      `MailService`; the gateway composes through it
+- [x] T028 Pest integration: a reply sent through `wp_mail` is `multipart/alternative` with
       both parts; a message with no plain text is sent as before; the capture holds both
-- [ ] T029 `WpMailDriver` and the capture carry the plain text
-- [ ] T030 Playwright: the captured reply drawn at 600 and 320 pixels, light and dark, left to
-      right and right to left: no sideways scroll, measured contrast, the header and footer
-- [ ] T031 Guards; the email guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
+- [x] T029 `WpMailDriver` and the capture carry the plain text
+- [x] T030 Playwright: the captured reply drawn at 320, 375 and 800 pixels, light and dark: no
+      sideways scroll, measured contrast, the header and footer, and an Arabic line starting
+      from the right beside an English one. A right-to-left site is the unit test's and was
+      looked at as a screenshot
+- [x] T031 Guards; the email guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
 
 ## Slice 3: the editor and the true preview (US1; FR-001 to FR-007)
 
