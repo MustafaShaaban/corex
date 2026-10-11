@@ -114,7 +114,8 @@ Studio." is removed.
 ### D4. A reply is kept with the submission
 
 `SubmissionReplyStore` (interface) and `WpSubmissionReplyStore`, post meta
-`corex_submission_replies`: a list of
+`corex_submission_replies`, one row to a reply so that two people answering at once cannot
+write over each other. Each holds
 
 ```text
 id            uuid
@@ -127,7 +128,8 @@ attempts      [ { attempt_id, state, message, occurred_at } ]   newest last
 
 `SubmissionEmailService::reply()` reduces, sends, stores, then writes the history entry, which
 now carries `reply_id`. The detail record gets `replies`, each with `actor_name` and `state`
-(its last attempt's). The route answers `{ result, reply }`.
+(its last attempt's). The route still answers `{ result }`: the pane reads the submission again
+after a reply, and the reply comes with it.
 
 A reply is stored whatever happened to it. One that was refused is on record as not sent: that
 is what the second person on the team needs to know.
@@ -147,7 +149,7 @@ in it is not asked for and not decided.
 
 ### D5. What is posted is reduced on the server, to the formatting a reply has
 
-`ReplyBody::reduce()` (config plugin, pure): `wp_kses()` with `p`, `br`, `strong`, `b`, `em`,
+`ReplyBody::reduce()` (config plugin, declared as the reply route's sanitizer): `wp_kses()` with `p`, `br`, `strong`, `b`, `em`,
 `i`, `ul`, `ol`, `li`, `a[href]`, and the protocols `http`, `https`, `mailto`, `tel`; then
 `wpautop()` so text typed in a plain box keeps its paragraphs (slice 0). A link with no scheme
 becomes `https://`. Nothing left after reduction is refused: "Write a message before sending."
@@ -254,7 +256,8 @@ replies         [ { id, subject, body_html, actor_id, actor_name, created_at, st
 ```
 
 **`POST corex/v1/submissions/{id}/reply`**, body `{ subject, body }` as now; answers
-`{ result: MailResult, reply: <one of replies> }`. A message that reduces to nothing is 422.
+`{ result: MailResult }`. A message that reduces to nothing is 422, and so is a reply on a site
+that would refuse it, with the reason.
 
 **`corexSubmissions`** (the screen's configuration) gains `mailSettingsUrl`, present only for
 a person who may change settings.
@@ -271,9 +274,10 @@ Later slices add: `POST …/reply/preview` and `GET|PUT|DELETE …/reply/draft` 
 **Server**
 
 - `DeliveryDecision::$code`; `ReplyReadiness`; `readiness()` on the seam and both gateways.
-- `ReplyBody::reduce()`; `SubmissionReply` uses it.
-- `SubmissionReplyStore`, `WpSubmissionReplyStore`; `SubmissionEmailService::reply()` stores and
-  answers the reply; the detail record carries `replies` and `reply_delivery`.
+- `ReplyBody::reduce()` as the route's sanitizer for `body`.
+- `SubmissionReplyStore`, `WpSubmissionReplyStore` (one meta row to a reply);
+  `SubmissionEmailService::reply()` refuses where a reply would be refused, and otherwise sends
+  and stores; `SubmissionReplyView` gives the detail record `replies` and `reply_delivery`.
 - Anonymizing removes `corex_submission_replies`.
 
 **Interface**

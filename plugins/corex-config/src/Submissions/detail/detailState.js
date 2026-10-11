@@ -7,6 +7,7 @@
  */
 import { __, sprintf } from '@wordpress/i18n';
 import { DELIVERY_META, STATUS_LABELS } from '../badges.js';
+import { emailHistoryLine } from './replyState.js';
 
 /** Question types whose answer is a way to reach the sender. */
 const EMAIL_TYPES = [ 'email' ];
@@ -273,9 +274,7 @@ export function historyLine( event, record ) {
 		return DELIVERY_META[ summary.delivery_status ].label;
 	}
 	if ( stage === 'email' ) {
-		return event.outcome === 'success'
-			? __( 'Reply sent', 'corex' )
-			: __( 'Reply could not be sent', 'corex' );
+		return emailHistoryLine( event );
 	}
 
 	return (

@@ -11,42 +11,43 @@ Tests are written first and seen to fail. One slice per pull request. Decisions 
 
 **Server**
 
-- [ ] T001 Pest unit: `DeliveryPolicy` names each of its seven outcomes with a code
-- [ ] T002 `DeliveryDecision::$code`
-- [ ] T003 Pest unit: `EmailStudioSubmissionGateway::readiness()` answers `refuse` with no
+- [x] T001 Pest unit: `DeliveryPolicy` names each of its seven outcomes with a code
+- [x] T002 `DeliveryDecision::$code`
+- [x] T003 Pest unit: `EmailStudioSubmissionGateway::readiness()` answers `refuse` with no
       provider and with live delivery off in production, `capture` in development and staging,
       `deliver` when both are set; the reason names the Mail settings; the answer and what
       `reply()` then does agree in each case
-- [ ] T004 `Corex\Mail\ReplyReadiness`; `readiness()` on the seam, on the Email Studio gateway
+- [x] T004 `Corex\Mail\ReplyReadiness`; `readiness()` on the seam, on the Email Studio gateway
       and on the unavailable one
-- [ ] T005 Pest unit: `ReplyBody::reduce()` keeps paragraphs, emphasis, lists and web, mail
+- [x] T005 Pest integration (the reduction is WordPress's own): `ReplyBody::reduce()` keeps paragraphs, emphasis, lists and web, mail
       and telephone links; removes scripts, styles, images, attributes and other schemes;
       turns typed lines into paragraphs; gives a schemeless link `https://`
-- [ ] T006 `ReplyBody`; `SubmissionReply` reduces through it and refuses an empty result
-- [ ] T007 Pest unit: `SubmissionEmailService::reply()` stores the reply with its subject, its
+- [x] T006 `ReplyBody`, declared as the reply route's sanitizer; `SubmissionReply` refuses an
+      empty result
+- [x] T007 Pest unit: `SubmissionEmailService::reply()` stores the reply with its subject, its
       reduced text, who sent it and its attempt, whatever the state; the history entry carries
       the reply's id and no text; nothing is stored when the submission is out of scope
-- [ ] T008 `SubmissionReplyStore`, `WpSubmissionReplyStore`, the service, container bindings
-- [ ] T009 Pest integration: the route answers `result` and `reply`; the detail record carries
+- [x] T008 `SubmissionReplyStore`, `WpSubmissionReplyStore`, the service, container bindings
+- [x] T009 Pest integration: the route answers `result`; the detail record carries
       `replies` with the sender's name and `reply_delivery`; anonymizing removes the replies;
       deleting for good leaves nothing
-- [ ] T010 The reader's `replies` and `reply_delivery`; the anonymize list; `mailSettingsUrl`
+- [x] T010 The reader's `replies` and `reply_delivery`; the anonymize list; `mailSettingsUrl`
 
 **Interface**
 
-- [ ] T011 Jest: `replyHtml.js` reduces markup to the allowlist; `replyOutcome()` words each
+- [x] T011 Jest: `replyHtml.js` reduces markup to the allowlist; `replyOutcome()` words each
       state; `readinessNotice()` words each mode with and without a settings link; the history
       line names the reply's state
-- [ ] T012 `replyHtml.js`, the state helpers in `detailState.js`
-- [ ] T013 Jest (rendered): with `refuse` the notice is shown and Send is off and described by
+- [x] T012 `replyHtml.js`, the state helpers in `detailState.js`
+- [x] T013 Jest (rendered): with `refuse` the notice is shown and Send is off and described by
       it; with `capture` the notice is shown and Send works; a reply that was not sent leaves
       the box as it was; a sent one empties it and is listed
-- [ ] T014 The Reply section: notice, outcome, the list of replies; `useInbox.reply()` answers
+- [x] T014 The Reply section: notice, outcome, the list of replies; `useInbox.reply()` answers
       the result; styles from tokens
-- [ ] T015 Playwright: on the development site the section says a reply is kept and not
+- [x] T015 Playwright: on the development site the section says a reply is kept and not
       delivered; a reply is sent, the pane says kept, and it is listed with its text; measured
       spacing of the notice and the list, both directions, light and dark
-- [ ] T016 Guards; the inbox guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
+- [x] T016 Guards; the inbox guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
 
 ## Slice 2: the standard template, with a plain-text version (US2; FR-008 to FR-013)
 

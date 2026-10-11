@@ -15,6 +15,14 @@ defined('ABSPATH') || exit;
  */
 interface SubmissionEmailGateway
 {
+    /**
+     * What sending a reply from this site would do now: deliver it, keep it, or refuse it.
+     *
+     * Asked before a reply is written, so the reply box can say so (spec 106, FR-028). It must
+     * be the decision {@see reply()} acts on, not a second reading of the same settings.
+     */
+    public function readiness(): ReplyReadiness;
+
     public function reply(string $recipient, string $subject, string $htmlBody): MailResult;
 
     /** @param array<string,mixed> $context */
