@@ -1,7 +1,7 @@
 /**
  * The admin controls a CSS read cannot settle (spec 087, US4 / SC-005).
  *
- * Three defects live here, and all three are contests between CoreX's stylesheet and two
+ * Four defects live here, and all four are contests between CoreX's stylesheet and two
  * third-party ones that ship inside WordPress. Reading the source proves what CoreX *declares*;
  * only a browser resolves what actually wins.
  *
@@ -11,6 +11,9 @@
  *   so every mouse click left a blue halo.
  * - The same rule is what makes a keyboard focus ring visible, so removing it naively would trade
  *   one defect for a worse one. Both directions are asserted.
+ * - A `<Button variant="secondary">` has a real border that WordPress colours with the admin
+ *   accent. CoreX drew its own border as an inset shadow and left that one alone, so every
+ *   secondary button had two: a blue line at its edge and the CoreX line inside it.
  *
  * Measured, not photographed: a contrast ratio and a computed `box-shadow` are facts a screenshot
  * review does not catch, which is the failure mode this repository keeps meeting.
@@ -71,6 +74,60 @@ function outerShadowLayers( shadow ) {
 		.split( /,(?![^(]*\))/ )
 		.map( ( layer ) => layer.trim() )
 		.filter( ( layer ) => layer !== '' && ! layer.includes( 'inset' ) );
+}
+
+/**
+ * A token's colour, as the browser resolves it where an element stands.
+ *
+ * Asked of the browser and not copied from the token file: the two themes give the same token two
+ * values, and which one applies is decided by where the element is.
+ *
+ * @param {import('@playwright/test').Locator} locator An element inside the shell.
+ * @param {string}                             token   A custom property, `--corex-admin-border`.
+ * @return {Promise<string>} A computed colour.
+ */
+function tokenColour( locator, token ) {
+	return locator.evaluate( ( element, name ) => {
+		const probe = element.ownerDocument.createElement( 'span' );
+		probe.style.color = `var(${ name })`;
+		element.after( probe );
+		const colour =
+			element.ownerDocument.defaultView.getComputedStyle( probe ).color;
+		probe.remove();
+
+		return colour;
+	}, token );
+}
+
+/**
+ * What draws an element's edge: its border, side by side, and its `box-shadow`.
+ *
+ * Read once the border has stopped changing. Gutenberg gives a secondary button's border colour a
+ * transition, and a style read while one runs is the colour the button is leaving.
+ *
+ * @param {import('@playwright/test').Locator} locator The element.
+ * @return {Promise<{border: Array<string>, shadow: string}>} Each distinct side, and the shadow.
+ */
+function edgeOf( locator ) {
+	return locator.evaluate( async ( element ) => {
+		const view = element.ownerDocument.defaultView;
+		await Promise.all(
+			element
+				.getAnimations()
+				.filter(
+					( animation ) => animation instanceof view.CSSTransition
+				)
+				.map( ( animation ) => animation.finished.catch( () => {} ) )
+		);
+		const style = view.getComputedStyle( element );
+		const sides = [ 'Top', 'Right', 'Bottom', 'Left' ].map( ( side ) =>
+			[ 'Width', 'Style', 'Color' ]
+				.map( ( part ) => style[ `border${ side }${ part }` ] )
+				.join( ' ' )
+		);
+
+		return { border: [ ...new Set( sides ) ], shadow: style.boxShadow };
+	} );
 }
 
 /**
@@ -360,6 +417,112 @@ test.describe( 'Admin controls are visible and behave when clicked', () => {
 
 			expect( outline.style ).not.toBe( 'none' );
 			expect( parseFloat( outline.width ) ).toBeGreaterThan( 0 );
+		} );
+	}
+
+	/**
+	 * A secondary `<Button>` has one border, and it is CoreX's.
+	 *
+	 * WordPress gives every Gutenberg button a real border, transparent until a variant colours it,
+	 * and colours this variant's with the admin accent: at rest, and again in a rule of its own
+	 * when the button is hovered, focused, held down or disabled. Each of those is measured,
+	 * because answering the resting rule alone leaves the blue to come back under the pointer.
+	 *
+	 * The last two states are put on the button by hand. No CoreX screen has a secondary button
+	 * that is disabled and still focusable, or one that is pressed; `aria-disabled` and
+	 * `is-pressed` are what `<Button>` writes when a screen does.
+	 */
+	for ( const theme of THEMES ) {
+		test( `a secondary button has one border, the CoreX one, in every state in ${ theme }`, async ( {
+			page,
+		} ) => {
+			await openPinned( page, INBOX, theme );
+			await page.locator( '.corex-inbox__row-button' ).first().click();
+
+			const pane = page.locator( '.corex-inbox__drawer' );
+			const button = pane.getByRole( 'button', {
+				name: 'Move to trash',
+			} );
+			// Disabled until something is written in the note.
+			const disabled = pane.getByRole( 'button', { name: 'Add note' } );
+			await expect( button ).toBeEnabled();
+			await expect( disabled ).toBeDisabled();
+
+			const line = await tokenColour( button, '--corex-admin-border' );
+			const strong = await tokenColour(
+				button,
+				'--corex-admin-border-strong'
+			);
+			const drawnIn = ( colour ) => ( {
+				border: [ `1px solid ${ colour }` ],
+				shadow: 'none',
+			} );
+			const pointerAway = () => page.mouse.move( 0, 0 );
+
+			await pointerAway();
+			expect( await edgeOf( button ), 'at rest' ).toEqual(
+				drawnIn( line )
+			);
+			expect( await edgeOf( disabled ), 'disabled' ).toEqual(
+				drawnIn( line )
+			);
+
+			await button.hover();
+			expect( await edgeOf( button ), 'under the pointer' ).toEqual(
+				drawnIn( strong )
+			);
+			await disabled.hover();
+			expect(
+				await edgeOf( disabled ),
+				'disabled, under the pointer'
+			).toEqual( drawnIn( line ) );
+
+			// From the keyboard, so that no pointer over the button answers for either state.
+			await pointerAway();
+			await button.focus();
+			expect( await edgeOf( button ), 'focused' ).toEqual(
+				drawnIn( line )
+			);
+			await page.keyboard.down( 'Space' );
+			expect( await edgeOf( button ), 'held down' ).toEqual(
+				drawnIn( strong )
+			);
+			// Let go with the button no longer focused: let go on it, and the submission is moved to
+			// the trash.
+			await button.blur();
+			await page.keyboard.up( 'Space' );
+
+			await button.evaluate( ( element ) =>
+				element.setAttribute( 'aria-disabled', 'true' )
+			);
+			expect(
+				await edgeOf( button ),
+				'disabled and still focusable'
+			).toEqual( drawnIn( line ) );
+			await button.hover();
+			expect(
+				await edgeOf( button ),
+				'disabled and still focusable, under the pointer'
+			).toEqual( drawnIn( line ) );
+			await page.mouse.down();
+			expect(
+				await edgeOf( button ),
+				'disabled and still focusable, held down'
+			).toEqual( drawnIn( line ) );
+			// Let go somewhere else in the pane: the attribute alone does not stop the button's own
+			// click, and let go outside the pane the press closes it.
+			await pane.getByRole( 'heading' ).first().hover();
+			await page.mouse.up();
+
+			await button.evaluate( ( element ) => {
+				element.blur();
+				element.removeAttribute( 'aria-disabled' );
+				element.setAttribute( 'aria-pressed', 'true' );
+				element.classList.add( 'is-pressed' );
+			} );
+			expect( await edgeOf( button ), 'pressed' ).toEqual(
+				drawnIn( line )
+			);
 		} );
 	}
 
