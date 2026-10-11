@@ -23,6 +23,9 @@ The single justified custom block: reusable accessible-dialog behavior core has 
 
 - trigger click → `dialog.showModal()`; close button / ESC / backdrop click → `dialog.close()`; focus returns to
   the trigger. Native `<dialog>` provides the focus trap + `::backdrop` + ESC.
+- A backdrop click is a press of the mouse that starts and ends outside the dialog's box. The `<dialog>` element
+  is the padded panel, so a click whose target is the dialog is not enough to know one by (amended 2026-10-11;
+  `corex/drawer` follows the same rule, `src/Blocks/shared/backdrop-press.js`).
 - **No-JS degradation:** the trigger is also an in-page anchor to the content; the content renders visibly (the
   dialog is `open`-fallback or revealed via `:target`) so it is never lost without JS.
 

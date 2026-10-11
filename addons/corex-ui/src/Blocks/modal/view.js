@@ -1,9 +1,11 @@
 /**
  * corex/modal front-end behavior. The native <dialog> gives the focus trap, ::backdrop, and
- * ESC-to-close for free; this only opens it, closes on the close button + a backdrop click,
- * and returns focus to the trigger. Loaded only where the block renders (viewScript). Without
- * JS the trigger/close are inert and the dialog content stays in the DOM — nothing is lost.
+ * ESC-to-close for free; this only opens it, closes on the close button + a press on the
+ * backdrop, and returns focus to the trigger. Loaded only where the block renders (viewScript).
+ * Without JS the trigger/close are inert and the dialog content stays in the DOM — nothing is lost.
  */
+import { onBackdropPress } from '../shared/backdrop-press';
+
 ( function () {
 	function wire( wrap ) {
 		const trigger = wrap.querySelector( '.corex-modal__trigger' );
@@ -20,11 +22,8 @@
 			}
 		} );
 
-		// Backdrop click (the click lands on the <dialog> element itself).
-		dialog.addEventListener( 'click', function ( event ) {
-			if ( event.target === dialog ) {
-				close( dialog );
-			}
+		onBackdropPress( dialog, function () {
+			close( dialog );
 		} );
 
 		const closeBtn = dialog.querySelector( '[data-corex-modal-close]' );

@@ -138,6 +138,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A modal or drawer block is not closed by a press that began inside it, or by a click on
+  its own panel.** On a page, pressing the mouse on a button inside a `corex/modal` or
+  `corex/drawer`, sliding off it and letting go over the dimmed page closed the dialog, and so
+  did a press begun on the dimmed page and let go inside. A click on the panel's own padding
+  closed it as well, which in a drawer is all the height its content does not fill. Both blocks
+  are now left by a press that starts and ends outside the panel. A click or a tap on the
+  dimmed page, Escape and the close button close them as before, and focus goes back to the
+  button that opened them.
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.
