@@ -146,6 +146,15 @@ All notable changes to Corex are documented here. The format follows
   are now left by a press that starts and ends outside the panel. A click or a tap on the
   dimmed page, Escape and the close button close them as before, and focus goes back to the
   button that opened them.
+- **A drawer block fits the window, and the end of what it holds can be read.** A
+  `corex/drawer` was taller than the window by twice its padding (752px in a 720px window), so
+  a drawer holding more than fits stopped scrolling with its last 16px below the window's
+  edge: most of the last line of text, or of a link reached with Tab. Its sizes now count its
+  padding. On a desktop it is 384px wide where it was 416px, and on a phone it leaves 38px of
+  the dimmed page beside it where it left 6px. A `corex/modal` counts its padding and border the same
+  way: it kept inside the window by 2px, and on a phone a modal holding a paragraph was as
+  wide as the window, with nothing beside it to tap. It is now at most 512px wide where it was
+  546px, 92% of a narrow window, and 19px clear of the window's top and bottom.
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.
@@ -161,6 +170,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A `corex/drawer` and a `corex/modal` are narrower by their own padding**: the text column
+  of each is 32px narrower on a desktop (34px in a modal, with its border), and a modal that
+  fills its height is 34px shorter. A site that set a width or a height on `.corex-drawer` or
+  `.corex-modal` in its own stylesheet now sets the panel's, padding included, and should look
+  at the result once.
 - **A site on a host with no command line can take its next release from the admin**, once it
   runs this one. This release itself still has to reach the site the old way. After that:
   build with `npm run build:dist -- --client=<slug> --zip`, open CoreX → Releases, send the

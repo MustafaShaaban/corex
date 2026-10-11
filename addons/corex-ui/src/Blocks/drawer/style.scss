@@ -5,9 +5,15 @@
  * native <dialog>. Consumes the 054 foundation tokens: z-index, radius, shadow, focus ring, motion.
  * The panel is pinned to a block edge and spans the full block size; start/end are logical so it is
  * correct in RTL. No hardcoded values.
+ *
+ * The sizes below are the panel's, its padding included (`border-box`), and so is the width the
+ * browser allows a modal dialog (the window less `6px + 2em`), which on a phone is the narrower.
+ * Counted on top of them, the padding made the panel taller than the window by twice itself, so the
+ * end of what it held could not be scrolled to, and left a phone 6px of backdrop beside it.
  */
 /* stylelint-enable @stylistic/max-line-length */
 .corex-drawer {
+	box-sizing: border-box;
 	margin: 0;
 	block-size: 100%;
 	max-block-size: 100%;

@@ -10,7 +10,11 @@
  * on the box. The specs below place the mouse in all three: on the content, on the box's own
  * padding, and on the backdrop outside the box.
  *
- * The page is provisioned through the REST API (admin session) and read as a visitor.
+ * It also holds where an open dialog is: inside the window, with backdrop left beside it, and
+ * scrolled by the visitor as far as its last line. Those are read off a second page whose dialogs
+ * hold more than any window here fits, at a desktop's size and a phone's, in both directions.
+ *
+ * The pages are provisioned through the REST API (admin session) and read as a visitor.
  *
  * ENVIRONMENT-GATED: needs the site at COREX_BASE_URL + `npx playwright install`.
  */
@@ -20,6 +24,32 @@ const { STORAGE_STATE } = require( './global-setup' );
 
 const BODY =
 	'<p>Read this before you agree.</p><p><button type="button">Agree</button></p>';
+
+/** The words a long dialog ends on, as a link: what a visitor scrolls to, or reaches with Tab. */
+const LAST_LINE = 'The last line';
+
+/**
+ * More than a window fits, as the block's Content box takes it: text with no element around it,
+ * so nothing but the dialog's own padding comes after the last line.
+ */
+const LONG_BODY =
+	Array.from(
+		{ length: 80 },
+		( _, index ) => `Sentence ${ index + 1 } of what a visitor reads.`
+	).join( ' ' ) + ` <a href="#last-line">${ LAST_LINE }</a>`;
+
+/** The share of the window's width a dialog may take: `92vw` in both stylesheets. */
+const WIDEST = 0.92;
+
+const WINDOWS = [
+	{ width: 1280, height: 720 },
+	{ width: 375, height: 812 },
+];
+
+const DIRECTIONS = [ 'ltr', 'rtl' ];
+
+/** A turn of the wheel longer than any dialog here: it ends where the dialog stops scrolling. */
+const FAR = 100000;
 
 const BLOCKS = [
 	{
@@ -105,12 +135,23 @@ async function adminSession( browser ) {
 /**
  * Open one block's dialog and wait until it has stopped moving, so its box can be measured.
  *
- * @param {import('@playwright/test').Page} page  The page.
- * @param {Object}                          block One of BLOCKS.
+ * @param {import('@playwright/test').Page} page              The page.
+ * @param {Object}                          block             One of BLOCKS.
+ * @param {Object}                          [where]           Where to open it.
+ * @param {string}                          [where.path]      The page's path. The short page's when left out.
+ * @param {string}                          [where.direction] `rtl` to read the page right to left.
  * @return {Promise<{dialog: import('@playwright/test').Locator, trigger: import('@playwright/test').Locator}>} The dialog and the button that opened it.
  */
-async function open( page, block ) {
-	await page.goto( pagePath );
+async function open( page, block, { path = pagePath, direction } = {} ) {
+	await page.goto( path );
+	if ( direction ) {
+		await page
+			.locator( 'html' )
+			.evaluate(
+				( root, dir ) => root.setAttribute( 'dir', dir ),
+				direction
+			);
+	}
 	const trigger = page.getByRole( 'button', {
 		name: block.attributes.triggerLabel,
 	} );
@@ -172,43 +213,64 @@ async function press( page, from, to ) {
 	await page.mouse.up();
 }
 
+/**
+ * Publish a page holding every block of BLOCKS, each with the same content.
+ *
+ * @param {import('@playwright/test').Page} page  A page on the admin's session.
+ * @param {string}                          nonce Its REST nonce.
+ * @param {string}                          title The page's title.
+ * @param {string}                          body  What each dialog holds.
+ * @return {Promise<number>} The page's id.
+ */
+async function publish( page, nonce, title, body ) {
+	const response = await page.request.post( '/wp-json/wp/v2/pages', {
+		headers: { 'X-WP-Nonce': nonce },
+		data: {
+			title,
+			status: 'publish',
+			content: BLOCKS.map( ( block ) =>
+				blockComment( block.name, {
+					...block.attributes,
+					content: body,
+				} )
+			).join( '\n\n' ),
+		},
+	} );
+	expect( response.ok() ).toBe( true );
+
+	return ( await response.json() ).id;
+}
+
 let pagePath = '';
-let pageId = 0;
+let longPagePath = '';
+const pageIds = [];
 
 // The visitor's view. The config's admin session is inherited unless it is emptied here.
 test.use( { storageState: { cookies: [], origins: [] } } );
 
 test.beforeAll( async ( { browser } ) => {
 	const { context, page, nonce } = await adminSession( browser );
-	const response = await page.request.post( '/wp-json/wp/v2/pages', {
-		headers: { 'X-WP-Nonce': nonce },
-		data: {
-			title: 'Dialog blocks E2E',
-			status: 'publish',
-			content: BLOCKS.map( ( block ) =>
-				blockComment( block.name, {
-					...block.attributes,
-					content: BODY,
-				} )
-			).join( '\n\n' ),
-		},
-	} );
-	expect( response.ok() ).toBe( true );
-	pageId = ( await response.json() ).id;
-	pagePath = `/?page_id=${ pageId }`;
+	pageIds.push( await publish( page, nonce, 'Dialog blocks E2E', BODY ) );
+	pagePath = `/?page_id=${ pageIds[ 0 ] }`;
+	pageIds.push(
+		await publish( page, nonce, 'Dialog blocks E2E, long', LONG_BODY )
+	);
+	longPagePath = `/?page_id=${ pageIds[ 1 ] }`;
 	await context.close();
 } );
 
 test.afterAll( async ( { browser } ) => {
-	if ( ! pageId ) {
+	if ( ! pageIds.length ) {
 		return;
 	}
 	const { context, page, nonce } = await adminSession( browser );
-	await page.request
-		.delete( `/wp-json/wp/v2/pages/${ pageId }?force=true`, {
-			headers: { 'X-WP-Nonce': nonce },
-		} )
-		.catch( () => {} );
+	for ( const id of pageIds ) {
+		await page.request
+			.delete( `/wp-json/wp/v2/pages/${ id }?force=true`, {
+				headers: { 'X-WP-Nonce': nonce },
+			} )
+			.catch( () => {} );
+	}
 	await context.close();
 } );
 
@@ -275,5 +337,56 @@ for ( const block of BLOCKS ) {
 				await expect( dialog ).toHaveJSProperty( 'open', false );
 			} );
 		} );
+
+		for ( const size of WINDOWS ) {
+			for ( const direction of DIRECTIONS ) {
+				test.describe( `holding more than fits a ${ size.width }x${ size.height } window, ${ direction }`, () => {
+					test.use( { viewport: size } );
+
+					test( 'is inside the window and leaves backdrop beside it', async ( {
+						page,
+					} ) => {
+						const { dialog } = await open( page, block, {
+							path: longPagePath,
+							direction,
+						} );
+
+						const box = await dialog.boundingBox();
+
+						expect( box.x ).toBeGreaterThanOrEqual( 0 );
+						expect( box.y ).toBeGreaterThanOrEqual( 0 );
+						expect( box.x + box.width ).toBeLessThanOrEqual(
+							size.width
+						);
+						expect( box.y + box.height ).toBeLessThanOrEqual(
+							size.height
+						);
+						expect( box.width ).toBeLessThanOrEqual(
+							Math.ceil( WIDEST * size.width )
+						);
+					} );
+
+					test( 'is scrolled as far as its last line', async ( {
+						page,
+					} ) => {
+						const { dialog } = await open( page, block, {
+							path: longPagePath,
+							direction,
+						} );
+						const box = await dialog.boundingBox();
+
+						await page.mouse.move(
+							box.x + box.width / 2,
+							size.height / 2
+						);
+						await page.mouse.wheel( 0, FAR );
+
+						await expect(
+							dialog.getByRole( 'link', { name: LAST_LINE } )
+						).toBeInViewport( { ratio: 1 } );
+					} );
+				} );
+			}
+		}
 	} );
 }
