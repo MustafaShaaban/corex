@@ -91,20 +91,23 @@ Tests are written first and seen to fail. One slice per pull request. Decisions 
       captured email is the preview; right to left; measured spacing of the toolbar
 - [ ] T049 Guards; guide; CHANGELOG; PROGRESS; DECISIONS
 
-## Slice 4: a client's own template (US3; FR-014 to FR-020)
+## Slice 4: a client's own template (US3; FR-014 to FR-020) — built before slice 3
 
-- [ ] T060 Pest unit: `corex_email_brand` and the Mail settings change the standard design's
+- [x] T060 Pest unit: `corex_email_brand` and the Mail settings change the standard design's
       accent, logo and footer; an invalid colour is refused when saved
-- [ ] T061 The settings fields; the filter
-- [ ] T062 Pest unit: `corex_email_design` replaces the design for the reply and the preview;
+- [x] T061 The settings fields; the filter
+- [x] T062 Pest unit: `corex_email_design` replaces the design for the reply and the preview;
       a design that throws, answers nothing or leaves the message out falls back to the
       standard one and is recorded
-- [ ] T063 `EmailDesigns` (the resolver and its guard); the activity entry and notification
-- [ ] T064 Pest unit: `make:email-design` writes a design that renders, in the site's plugin
-- [ ] T065 The generator and its stub
+- [x] T063 `EmailDesigns` (the resolver and its guard); the activity entry and notification
+- [x] T064 Pest unit: `make:email-design` writes a design that renders, in the site's plugin
+- [x] T065 The generator and its stub
 - [ ] T066 Client-layout check: a generated site with its own design sends in it and no
-      framework file is changed
-- [ ] T067 The developer guide, with the example that runs; CHANGELOG with Client impact;
+      framework file is changed. **Not added to the `client-site-layout` job.** The behaviour is
+      held by `ReplyEmailDesignTest` (a design registered through the filter from outside the
+      framework's classes) and by the generator's test, which loads what it wrote and draws
+      with it (DECISIONS #311)
+- [x] T067 The developer guide, with the example that runs; CHANGELOG with Client impact;
       guards; PROGRESS; DECISIONS
 
 ## Slice 5: "Send again", and the reply sender (US4.2, US5; FR-022, FR-024)

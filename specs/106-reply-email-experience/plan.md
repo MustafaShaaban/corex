@@ -229,10 +229,10 @@ The header carries the site's mark, not CoreX's (spec, Assumptions): the owner c
 - **Its own template** (FR-014): a filter `corex_email_design` receives the standard design and
   returns an `EmailDesign`. A filter and not a container binding, because it is asked at
   sending time and so does not depend on which provider booted first.
-- **A guard around it** (FR-017): the client's design is called inside a `try`; if it throws,
-  returns nothing, or returns a document without the message, the reply goes in the standard
-  design and an activity entry and a notification say which. The message is looked for as text,
-  so a design is free to restyle it.
+- **A guard around it** (FR-017): `SiteEmailDesign` calls the client's design inside a `try`;
+  if it throws, returns nothing, or returns a document without the message, the reply goes in
+  the standard design and a notification to the people who manage email says which design and
+  how. The message is looked for as its words, so a design is free to restyle it.
 - **A start** (FR-019): `wp corex make:email-design` writes a working copy of the standard
   design into the site's own plugin. **A guide** with it, and Client impact (FR-020).
 

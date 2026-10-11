@@ -228,6 +228,10 @@ export default defineConfig( {
 							slug: 'guides/mail',
 						},
 						{ label: 'Email Studio', slug: 'guides/email-studio' },
+						{
+							label: "A site's own email design",
+							slug: 'guides/email-design',
+						},
 						{ label: 'Blog Pro', slug: 'guides/blog-pro' },
 						{
 							label: 'Model · Controller · Service',
