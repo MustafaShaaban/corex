@@ -10,6 +10,7 @@ namespace Corex\Config\Blog;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
 
@@ -46,6 +47,14 @@ final class ReadingEventTable
             ['id' => 'reading_seconds', 'label' => 'Reading seconds'],
             ['id' => 'share_target', 'label' => 'Share target'],
             ['id' => 'retention_until', 'label' => 'Retention until'],
-        ], 'corex');
+        ], 'corex', personalData: [
+            'occurred_at'     => DataField::PERSONAL_NONE,
+            'post_id'         => DataField::PERSONAL_NONE,
+            'event_type'      => DataField::PERSONAL_NONE,
+            'reading_seconds' => DataField::PERSONAL_NONE,
+            'share_target'    => DataField::PERSONAL_NONE,
+            'retention_until' => DataField::PERSONAL_NONE,
+        ],
+        );
     }
 }

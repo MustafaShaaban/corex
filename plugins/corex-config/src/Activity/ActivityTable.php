@@ -10,6 +10,7 @@ namespace Corex\Config\Activity;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
 
@@ -57,6 +58,15 @@ final class ActivityTable
             ['id' => 'actor_label', 'label' => 'Actor'],
             ['id' => 'target_label', 'label' => 'Target'],
             ['id' => 'outcome', 'label' => 'Outcome'],
-        ], 'corex');
+        ], 'corex', personalData: [
+            'occurred_at'  => DataField::PERSONAL_NONE,
+            'area'         => DataField::PERSONAL_NONE,
+            'kind'         => DataField::PERSONAL_NONE,
+            'actor_label'  => DataField::PERSONAL_IDENTITY,
+            // What was acted on, by its name: often a person (an account, somebody's request).
+            'target_label' => DataField::PERSONAL_IDENTITY,
+            'outcome'      => DataField::PERSONAL_NONE,
+        ],
+        );
     }
 }

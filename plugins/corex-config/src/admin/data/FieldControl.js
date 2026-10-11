@@ -5,20 +5,20 @@ import {
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../components/CorexSelect.js';
+import { holdsPersonalData, personalDataLabel } from '../personalData.js';
 
 export function writableFields( source ) {
 	return ( source?.fields || [] ).filter( ( field ) => ! field.read_only );
 }
 
 export default function FieldControl( { field, value, onChange } ) {
-	const help =
-		field.personal_data_class !== 'none'
-			? sprintf(
-					/* translators: %s: personal-data classification. */
-					__( 'Personal data: %s', 'corex' ),
-					field.personal_data_class
-				)
-			: undefined;
+	const help = holdsPersonalData( field )
+		? sprintf(
+				/* translators: %s: a kind of personal data, e.g. "contact details". */
+				__( 'Personal data: %s', 'corex' ),
+				personalDataLabel( field.personal_data_class )
+			)
+		: undefined;
 	const props = {
 		label: field.label,
 		value: value ?? '',

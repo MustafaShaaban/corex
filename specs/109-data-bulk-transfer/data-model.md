@@ -27,11 +27,11 @@ What CoreX's own tables declare, to be confirmed column by column in slice 1:
 
 | Model | Personal data | Identity | Transfer |
 |---|---|---|---|
-| Form submissions | each answer by its form field's class, else `content`; submitter name `identity`, email `contact` | none | born in production; files |
+| Form submissions | every answer: `contact` when it reads as an email address or a phone number, else `content`; the summary `content` | none | born in production; files |
 | Newsletter subscribers | `email` contact, `topics` behavioral | `email` | born in production |
 | Job applications | `name` identity, `email` contact, `cv_attachment` sensitive | none | born in production; files: `cv_attachment` |
 | Access requests | `requester_id` identity | none | no |
-| Activity events | `actor_label` identity, `target_label` content | none | no |
+| Activity events | `actor_label` identity, `target_label` identity | none | no |
 | Login attempts | `user_id` security | none | no |
 | Notification user state | `user_id` identity | none | no |
 | Role ability grants, bounded jobs, notifications, reading events | every column `none` | none | no |

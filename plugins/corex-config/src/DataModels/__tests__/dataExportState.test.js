@@ -15,6 +15,8 @@ import {
 	dataScopes,
 	defaultDataScope,
 	describeDataQuery,
+	personalKinds,
+	withheldColumns,
 } from '../dataExportState.js';
 
 const FIELDS = [
@@ -158,6 +160,62 @@ describe( 'the columns', () => {
 			{ id: 'name', label: 'Name', personal: true, hint: '' },
 			{ id: 'status', label: 'Status', personal: false, hint: '' },
 			{ id: 'city', label: 'City', personal: false, hint: '' },
+		] );
+	} );
+} );
+
+// Spec 109, slice 1. Ticking a box was the only question asked, of anybody who could export
+// the model. A column that holds personal data is now offered only to a person allowed to take
+// personal data out, and the confirmation names what it is confirming.
+describe( 'the columns of a person not allowed to export personal data', () => {
+	it( 'leave out the ones that hold personal data', () => {
+		expect( dataColumnChoices( FIELDS, false ) ).toEqual( [
+			{ id: 'status', label: 'Status', personal: false, hint: '' },
+			{ id: 'city', label: 'City', personal: false, hint: '' },
+		] );
+	} );
+
+	it( 'are counted, so the dialog can say how many it is withholding', () => {
+		expect( withheldColumns( FIELDS, false ) ).toBe( 1 );
+		expect( withheldColumns( FIELDS, true ) ).toBe( 0 );
+	} );
+
+	it( 'leave out a column nobody classed, which is treated as personal', () => {
+		const fields = [
+			...FIELDS,
+			{ key: 'notes', label: 'Notes', personal_data_class: 'undeclared' },
+		];
+
+		expect(
+			dataColumnChoices( fields, false ).map( ( choice ) => choice.id )
+		).toEqual( [ 'status', 'city' ] );
+		expect( withheldColumns( fields, false ) ).toBe( 2 );
+	} );
+} );
+
+describe( 'the kinds of personal data in an export', () => {
+	const fields = [
+		{ key: 'email', label: 'Email', personal_data_class: 'contact' },
+		{ key: 'phone', label: 'Phone', personal_data_class: 'contact' },
+		{ key: 'name', label: 'Name', personal_data_class: 'identity' },
+		{ key: 'cv', label: 'CV', personal_data_class: 'sensitive' },
+		{ key: 'status', label: 'Status', personal_data_class: 'none' },
+	];
+
+	it( 'are named in words, once each, for the columns that are chosen', () => {
+		expect( personalKinds( fields, [ 'email', 'phone', 'name' ] ) ).toEqual(
+			[ 'contact details', 'names and identities' ]
+		);
+	} );
+
+	it( 'are none when no chosen column holds any', () => {
+		expect( personalKinds( fields, [ 'status' ] ) ).toEqual( [] );
+	} );
+
+	it( 'follow the order of the source’s fields, whatever order they were ticked in', () => {
+		expect( personalKinds( fields, [ 'cv', 'email' ] ) ).toEqual( [
+			'contact details',
+			'sensitive details',
 		] );
 	} );
 } );

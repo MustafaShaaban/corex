@@ -10,6 +10,7 @@ namespace Corex\Newsletter\Subscriber;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
 
@@ -95,6 +96,15 @@ final class SubscriberTable
             // at all — a state neither the confirm flow nor the publish notifier recognises, so
             // the address could never be confirmed and would never receive anything.
             ['status' => 'pending'],
+            // What leaves the site with a subscriber: an address, and what they asked to hear
+            // about. An export asks for a confirmation and for the right to take them out.
+            personalData: [
+                'email'      => DataField::PERSONAL_CONTACT,
+                'status'     => DataField::PERSONAL_NONE,
+                'topics'     => DataField::PERSONAL_BEHAVIORAL,
+                'consent'    => DataField::PERSONAL_NONE,
+                'created_at' => DataField::PERSONAL_NONE,
+            ],
         );
     }
 }

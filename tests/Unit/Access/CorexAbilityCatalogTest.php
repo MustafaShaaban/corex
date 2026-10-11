@@ -60,6 +60,23 @@ it('makes installing a release a critical ability of its own, held by whoever ma
         ->and($catalog->expanded([CorexAbility::RUN_DANGEROUS_ACTIONS]))->not->toContain(CorexAbility::MANAGE_RELEASES);
 });
 
+it('makes taking personal data out in a file a right of its own', function () {
+    // Spec 109, D3. Managing a model is browsing and changing its records on the site. A file
+    // of people's addresses leaves the site, and the Submissions inbox already kept that for
+    // administrators while the Data screen gave it to anybody who managed the same records.
+    $catalog  = CorexAbilityCatalog::defaults();
+    $personal = $catalog->find(CorexAbility::EXPORT_PERSONAL_DATA);
+
+    expect($personal)->not->toBeNull()
+        ->and($personal->group)->toBe(CorexAbility::GROUP_DATA)
+        ->and($personal->risk)->toBe(CorexAbility::RISK_SENSITIVE)
+        ->and($personal->locked)->toBeFalse()
+        ->and($catalog->expanded([CorexAbility::MANAGE_ADMIN]))->toContain(CorexAbility::EXPORT_PERSONAL_DATA)
+        ->and($catalog->expanded([CorexAbility::MANAGE_DATA]))->not->toContain(CorexAbility::EXPORT_PERSONAL_DATA)
+        ->and($catalog->expanded([CorexAbility::MANAGE_DATA_MODELS]))->not->toContain(CorexAbility::EXPORT_PERSONAL_DATA)
+        ->and($catalog->expanded([CorexAbility::MANAGE_SUBMISSIONS]))->not->toContain(CorexAbility::EXPORT_PERSONAL_DATA);
+});
+
 it('rejects duplicate and malformed ability definitions', function () {
     $catalog = new CorexAbilityCatalog();
     $ability = new CorexAbility(

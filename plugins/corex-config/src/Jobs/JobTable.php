@@ -10,6 +10,7 @@ namespace Corex\Config\Jobs;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
 
@@ -53,6 +54,14 @@ final class JobTable
             ['id' => 'total', 'label' => 'Total'],
             ['id' => 'attempts', 'label' => 'Attempts'],
             ['id' => 'updated_at', 'label' => 'Updated'],
-        ], 'corex');
+        ], 'corex', personalData: [
+            'kind'       => DataField::PERSONAL_NONE,
+            'state'      => DataField::PERSONAL_NONE,
+            'processed'  => DataField::PERSONAL_NONE,
+            'total'      => DataField::PERSONAL_NONE,
+            'attempts'   => DataField::PERSONAL_NONE,
+            'updated_at' => DataField::PERSONAL_NONE,
+        ],
+        );
     }
 }

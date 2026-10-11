@@ -403,8 +403,10 @@ action, then give the same two again: the second trial run reports every row as 
   kind. The models CoreX and its add-ons ship MUST state it truthfully.
 - **FR-017**: A model that states nothing MUST be treated as holding personal data in every
   column.
-- **FR-018**: Every answer of a form submission MUST be treated as personal data unless the
-  form states that the field holds none.
+- **FR-018**: Every answer of a form submission MUST be treated as personal data, as the
+  Submissions inbox treats it. (Until 2026-10-11 this read "unless the form states that the
+  field holds none". The flow builder stores "none" for every field nobody set, so a stored
+  "none" is not a statement; and the inbox already withholds every answer.)
 - **FR-019**: Every export and every package that includes personal data MUST require a
   confirmation that names the kinds included.
 - **FR-020**: Columns holding personal data MUST be offered only to a person allowed to export

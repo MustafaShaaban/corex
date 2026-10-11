@@ -101,6 +101,7 @@ final class CorexAbilityCatalog
             CorexAbility::MANAGE_SUBMISSIONS,
             CorexAbility::MANAGE_DATA,
             CorexAbility::MANAGE_DATA_MODELS,
+            CorexAbility::EXPORT_PERSONAL_DATA,
             CorexAbility::MANAGE_EMAIL,
             CorexAbility::MANAGE_BLOG,
             CorexAbility::MANAGE_OPERATIONS,
@@ -177,6 +178,21 @@ final class CorexAbilityCatalog
                 [],
                 ['corex-data-models'],
                 ['models.import', 'models.migrate'],
+            ),
+            // Not implied by managing data, data models or submissions: those are about records
+            // on the site, and this is about a file of people's details leaving it. The
+            // Submissions inbox kept it for administrators while the Data screen gave it to
+            // anybody who managed the same records (spec 109, D3).
+            self::ability(
+                CorexAbility::EXPORT_PERSONAL_DATA,
+                'Export personal data',
+                'Take personal data out of the site in an exported file.',
+                CorexAbility::GROUP_DATA,
+                CorexAbility::RISK_SENSITIVE,
+                false,
+                [],
+                ['corex-data-models', 'corex-submissions'],
+                ['data.export_personal'],
             ),
             self::ability(
                 CorexAbility::MANAGE_EMAIL,

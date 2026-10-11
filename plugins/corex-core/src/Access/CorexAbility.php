@@ -23,6 +23,7 @@ final class CorexAbility
     public const MANAGE_SUBMISSIONS    = 'corex_manage_submissions';
     public const MANAGE_DATA           = 'corex_manage_data';
     public const MANAGE_DATA_MODELS    = 'corex_manage_data_models';
+    public const EXPORT_PERSONAL_DATA  = 'corex_export_personal_data';
     public const MANAGE_EMAIL          = 'corex_manage_email';
     public const MANAGE_BLOG           = 'corex_manage_blog';
     public const MANAGE_OPERATIONS     = 'corex_manage_operations';

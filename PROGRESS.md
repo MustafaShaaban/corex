@@ -69,7 +69,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | slices 1, 2 and 4 of seven are built and unreleased. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites wait for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Planned on 2026-10-11, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards | slice 3, T040: the editor and the true preview; then slice 5, "Send again" and the reply sender |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | all six slices are built (DECISIONS #307, #310 for the last three) | a first installation on a shared host, watched |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
-| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | specified and planned on 2026-10-11 in six slices, the owner's five answers written in; no tasks and no code | `/speckit-tasks`, then slice 1: personal data marked on every model and asked about by one rule |
+| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | slice 1 of six is built (personal data marked on every model and asked about by one rule); slices 2 to 6 have tasks and no code | T030, slice 2: several models in one export |
 
 What to know before resuming each:
 
@@ -91,11 +91,16 @@ What to know before resuming each:
   and Migrations on CoreX → Data each take one model at a time. He answered its five questions
   "as recommended" (DECISIONS #306): "migrate" meant moving records between installs, so
   several table changes together are not built; pages, templates and settings get a spec of
-  their own. The spec carries parts B and C of the 2026-10-08 outline for the Data screen's
-  models. Its plan puts personal data first: slice 1 changes who is offered personal columns
-  on the Data screen, which is a client impact to say to both client sites' sessions before
-  the release that carries it. Slice 5 splits `Releases/ReleaseUpload.php`, a file of spec 107:
-  tell that session before touching it.
+  their own. Slice 1 (DECISIONS #309) changes who is offered personal columns on the Data
+  screen: a client impact, in the changelog. **Neither client site's session has been told**:
+  none was running on 2026-10-11. Say it to both before the release that carries this is
+  tagged. Slice 2 is the
+  owner's report itself, several models in one export. Slice 5 splits
+  `Releases/ReleaseUpload.php`, a file of spec 107, which is finished; what the Releases side
+  relies on is written into task T080.
+  Slice 1's integration and browser tests ran in CI; its screens were looked at on the
+  development install. The line a person without the right is shown was drawn in Jest and not
+  walked in a browser, because no fixture account manages data without being an administrator.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -153,12 +158,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can
   find them afterwards. It is spec 105's fifth slice, not started; deleting a submission for good
   from the trash does remove its files.
-- **No column of a table model is marked as personal data.** `TableDataSource::fields()` declares
-  every column of every managed table as holding none, so newsletter subscribers, job
-  applications and login attempts are exported from CoreX → Data with no confirmation. And the
-  Data screen exports a submission's personal columns to anybody who manages submissions, where
-  the Submissions inbox offers them to an administrator. Read from the code on 2026-10-11, not
-  exercised; spec 109's second user story, not started.
 - **A release cannot be installed from the admin yet.** CoreX → Releases receives a package and
   says what it is. A site on a host with no command line is still updated by hand, by unpacking
   the shared-host package over the old one (spec 107, from its fourth slice).
