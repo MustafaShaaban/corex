@@ -10024,7 +10024,7 @@ an existing test of exactly that host caught.
   allowance shared by two sites that may want a time limit.
 - A package is not signed.
 
-## #309 — Going back is the journal read backwards, by the screen or by the link, and ends the same either way
+## #310 — Going back is the journal read backwards, by the screen or by the link, and ends the same either way
 
 **Date:** 2026-10-11. **Spec:** 107, slice 5 (T060 to T065). **Branch:** `feat/107-going-back`.
 
