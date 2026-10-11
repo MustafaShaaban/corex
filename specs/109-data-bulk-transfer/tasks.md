@@ -97,7 +97,7 @@ export personal data is not offered that column, and the route refuses it.
       this file is touched
 - [x] T017 [US2] Pest integration, `tests/Integration/Data/DataManagementControllerTest.php`:
       as a person who manages data and submissions and is not an administrator,
-      `POST /data/newsletter-subscribers/exports` with `email` answers a refusal and makes no
+      `POST /data/{source}/exports` with a personal column answers a refusal and makes no
       run; without `email` it makes one; after the role is given the ability, with `email`
       and the acknowledgement it makes one; `GET /data/sources` carries `permissions` and the
       declared classes; an administrator is unchanged

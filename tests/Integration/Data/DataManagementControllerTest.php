@@ -441,9 +441,9 @@ it('marks what CoreX ships: an activity event names a person, a job does not, an
         return array_column($described['fields'], 'personal_data_class', 'key');
     };
 
-    expect($fields('activity-events')['actor_label'])->toBe('identity')
-        ->and($fields('activity-events')['outcome'])->toBe('none')
-        ->and(array_unique(array_values($fields('bounded-jobs'))))->toBe(['none'])
+    expect($fields('table-activity-events')['actor_label'])->toBe('identity')
+        ->and($fields('table-activity-events')['outcome'])->toBe('none')
+        ->and(array_unique(array_values($fields('table-bounded-jobs'))))->toBe(['none'])
         ->and($fields('submissions')['summary'])->toBe('content')
         ->and($fields('submissions'))->not->toContain('undeclared');
 });
