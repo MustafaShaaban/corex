@@ -46,7 +46,8 @@ final class CapturedEmailRepository
             'subject'     => $message->subject,
             'body'        => $message->body,
             'html_body'   => $message->body,
-            'plain_text'  => $this->plainText($message->body),
+            // What the message was sent with, where it brought its own.
+            'plain_text'  => $message->plainText ?? $this->plainText($message->body),
             'headers'     => $message->headers,
             'captured_at' => $capturedAt->format(DATE_ATOM),
             'retention_until' => $capturedAt->modify('+30 days')->format(DATE_ATOM),

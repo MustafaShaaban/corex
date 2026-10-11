@@ -62,6 +62,7 @@ final class MailService
             $message->headers,
             from: $message->from,
             attachments: $message->attachments,
+            plainText: $message->plainText,
         );
 
         if ($clean->to === []) {

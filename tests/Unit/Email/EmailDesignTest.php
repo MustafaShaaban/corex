@@ -1,0 +1,218 @@
+<?php
+
+/**
+ * The standard email design, the values it is drawn from, and the plain-text version beside it
+ * (spec 106, slice 2: FR-008 to FR-013).
+ *
+ * @package Corex\Tests\Unit\Email
+ */
+
+declare(strict_types=1);
+
+use Brain\Monkey\Functions;
+use Corex\Email\Design\EmailBrand;
+use Corex\Email\Design\EmailContent;
+use Corex\Email\Design\EmailPalette;
+use Corex\Email\Design\PlainText;
+use Corex\Email\Design\EmailBrandSource;
+use Corex\Email\Design\ReplyComposer;
+use Corex\Email\Design\StandardEmailDesign;
+
+beforeEach(function () {
+    Functions\when('__')->returnArg();
+});
+
+/** The contrast of two `#rrggbb` colours, as WCAG measures it. */
+function emailContrast(string $first, string $second): float
+{
+    $luminance = static function (string $colour): float {
+        $channels = array_map(
+            static function (string $pair): float {
+                $value = hexdec($pair) / 255;
+
+                return $value <= 0.03928 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+            },
+            str_split(ltrim($colour, '#'), 2),
+        );
+
+        return 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2];
+    };
+    $lighter = max($luminance($first), $luminance($second));
+    $darker = min($luminance($first), $luminance($second));
+
+    return ($lighter + 0.05) / ($darker + 0.05);
+}
+
+function acmeBrand(string $logo = '', string $direction = 'ltr', string $footer = ''): EmailBrand
+{
+    return EmailBrand::standard('Acme & Sons', 'https://acme.test/', $logo, $direction, 'en-GB', $footer);
+}
+
+function acmeEmail(string $message = '<p>Thanks, Sam.</p>', ?EmailBrand $brand = null): string
+{
+    return (new StandardEmailDesign())->render(
+        new EmailContent('Re: your <message>', $message, 'sam@example.com'),
+        $brand ?? acmeBrand(),
+    );
+}
+
+// SC-005: every text an email shows, on every ground it is shown on, in both palettes.
+it('keeps a contrast of 4.5 to 1 for every text on every ground', function (EmailPalette $palette) {
+    foreach ([$palette->text, $palette->muted, $palette->link] as $ink) {
+        foreach ([$palette->surface, $palette->canvas] as $ground) {
+            expect(emailContrast($ink, $ground))->toBeGreaterThanOrEqual(4.5, "$ink on $ground");
+        }
+    }
+})->with([
+    'light' => [fn () => EmailPalette::light()],
+    'dark' => [fn () => EmailPalette::dark()],
+]);
+
+it('holds the CoreX admin colours, light and dark', function () {
+    expect(EmailPalette::light()->accent)->toBe('#ad8643')
+        ->and(EmailPalette::light()->text)->toBe('#14151a')
+        ->and(EmailPalette::light()->canvas)->toBe('#f6f7f9')
+        ->and(EmailPalette::dark()->accent)->toBe('#c9a25e')
+        ->and(EmailPalette::dark()->text)->toBe('#f4f5f7');
+});
+
+it('refuses a colour an email client could not read', function (string $colour) {
+    expect(fn () => EmailPalette::light()->with(['accent' => $colour]))->toThrow(InvalidArgumentException::class);
+})->with(['red', '#abc', 'rgb(1,2,3)', '#12345g', 'var(--corex-admin-action)', '#ad8643;background:url(x)']);
+
+it('takes a site its own colours and keeps the rest', function () {
+    $own = EmailPalette::light()->with(['accent' => '#0B1F3B']);
+
+    expect($own->accent)->toBe('#0b1f3b')
+        ->and($own->text)->toBe(EmailPalette::light()->text);
+});
+
+it('shows the site name where there is no logo', function () {
+    $html = acmeEmail();
+
+    expect($html)->not->toContain('<img')
+        ->and($html)->toContain('Acme &amp; Sons');
+});
+
+it('shows the logo with the site name standing in for it when images are off', function () {
+    $html = acmeEmail(brand: acmeBrand('https://acme.test/logo.png'));
+
+    expect($html)->toContain('<img src="https://acme.test/logo.png"')
+        ->and($html)->toContain('alt="Acme &amp; Sons"');
+});
+
+it('does not trust a logo address into an attribute', function () {
+    $html = acmeEmail(brand: acmeBrand('https://acme.test/a.png" onerror="steal()'));
+
+    expect($html)->not->toContain('onerror="steal()"');
+});
+
+it('carries the message once, and a footer that names the site', function () {
+    $html = acmeEmail('<p>Thanks, Sam.</p><ul><li>One</li></ul>');
+
+    expect(substr_count($html, 'Thanks, Sam.'))->toBe(1)
+        ->and($html)->toContain('<li')->toContain('One')
+        ->and($html)->toMatch('#This message was sent by <a [^>]*href="https://acme.test/">Acme &amp; Sons</a>\.#');
+});
+
+it('says a site its own footer line', function () {
+    $html = acmeEmail(brand: acmeBrand(footer: 'Acme & Sons · 12 High Street <b>'));
+
+    expect($html)->toContain('Acme &amp; Sons · 12 High Street &lt;b&gt;')
+        ->and($html)->not->toContain('This message was sent by');
+});
+
+it('escapes the subject into the document title', function () {
+    expect(acmeEmail())->toContain('<title>Re: your &lt;message&gt;</title>');
+});
+
+it('reads right to left on a right-to-left site, and lets each paragraph take its own direction', function () {
+    $rtl = acmeEmail(brand: acmeBrand(direction: 'rtl'));
+
+    expect($rtl)->toContain('<html lang="en-GB" dir="rtl"')
+        ->and($rtl)->toContain('text-align:right')
+        ->and($rtl)->not->toContain('text-align:left')
+        ->and($rtl)->toContain('<p dir="auto"')
+        ->and(acmeEmail())->toContain('<html lang="en-GB" dir="ltr"')->toContain('text-align:left');
+});
+
+it('holds a phone and a wide screen: fluid, and never wider than 600', function () {
+    $html = acmeEmail();
+
+    expect($html)->toContain('name="viewport"')
+        ->and($html)->toContain('width="100%"')
+        ->and($html)->toContain('max-width:600px')
+        // No width in pixels but the one measure: a fixed width is what scrolls sideways on a phone.
+        ->and(preg_match_all('/width[:=]"?\s*\d+(px|")/', $html, $fixed))->toBe(1)
+        ->and($fixed[0])->toBe(['width:600px']);
+});
+
+it('declares both colour schemes, and draws the light one for a client that honours neither', function () {
+    $html = acmeEmail();
+    $light = EmailPalette::light();
+    $dark = EmailPalette::dark();
+
+    expect($html)->toContain('<meta name="color-scheme" content="light dark"')
+        ->and($html)->toContain('@media (prefers-color-scheme: dark)')
+        ->and($html)->toContain('background:' . $light->surface)
+        ->and($html)->toContain('color:' . $light->text)
+        ->and($html)->toContain($dark->surface)
+        ->and($html)->toContain($dark->text);
+});
+
+it('styles what a message holds, because a mail client reads no style sheet for it', function () {
+    $html = acmeEmail('<p>Hello</p><ol><li>First</li></ol><p><a href="https://example.com/offer">The offer</a></p>');
+
+    expect($html)->toMatch('/<p dir="auto" class="cx-text" style="[^"]*margin:0 0 16px/')
+        ->and($html)->toMatch('/<ol style="[^"]+"/')
+        ->and($html)->toMatch('/<li dir="auto" class="cx-text" style="[^"]+"/')
+        ->and($html)->toMatch('/<a class="cx-link" style="[^"]*color:' . EmailPalette::light()->link . '[^"]*" href="https:\/\/example.com\/offer">The offer<\/a>/');
+});
+
+it('writes a message out as plain text: paragraphs, lists and links', function () {
+    $text = PlainText::of(
+        '<p>Hello <strong>Salma</strong>,</p>' . "\n"
+        . '<p>We offer:<br />' . "\n" . 'two things.</p>'
+        . '<ul><li>One</li><li>Two &amp; a half</li></ul>'
+        . '<ol><li>First</li><li>Second</li></ol>'
+        . '<p>See <a href="https://example.com/offer">the offer</a> or <a href="mailto:us@example.com">us@example.com</a>.</p>',
+    );
+
+    expect($text)->toBe(
+        "Hello Salma,\n\n"
+        . "We offer:\ntwo things.\n\n"
+        . "- One\n- Two & a half\n\n"
+        . "1. First\n2. Second\n\n"
+        . 'See the offer (https://example.com/offer) or us@example.com.',
+    );
+});
+
+it('leaves no markup and no entity in the plain text', function () {
+    $text = PlainText::of('<p>5 &lt; 6 &nbsp;and&nbsp; <em>so</em> on</p><p></p><p>&copy; Acme</p>');
+
+    expect($text)->toBe("5 < 6  and  so on\n\n© Acme");
+});
+
+it('composes a reply as the designed document and the same words in plain text', function () {
+    // The site's own values are read from WordPress in SiteEmailBrandTest, against WordPress.
+    $site = new class() implements EmailBrandSource {
+        public function brand(): EmailBrand
+        {
+            return EmailBrand::standard('Acme & Sons', 'https://acme.test/', 'https://acme.test/icon.png', 'rtl', 'ar');
+        }
+    };
+
+    $email = (new ReplyComposer(new StandardEmailDesign(), $site))->compose(
+        'sam@example.com',
+        'Re: your message',
+        '<p>Thanks, Sam.</p><p>See <a href="https://example.com/offer">the offer</a>.</p>',
+    );
+
+    expect($email->html)->toContain('<html lang="ar" dir="rtl"')
+        ->and($email->html)->toContain('<img src="https://acme.test/icon.png" alt="Acme &amp; Sons"')
+        ->and($email->html)->toContain('Thanks, Sam.')
+        ->and($email->text)->toBe(
+            "Thanks, Sam.\n\nSee the offer (https://example.com/offer).\n\n-- \n"
+            . 'This message was sent by Acme & Sons (https://acme.test/).',
+        );
+});
