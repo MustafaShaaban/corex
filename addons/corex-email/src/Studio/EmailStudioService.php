@@ -17,6 +17,7 @@ use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Delivery\EmailAttemptRepository;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Message\EmailMessage;
+use Corex\Mail\MessageId;
 use Corex\Events\EventDispatcher;
 use Corex\Mail\MailResult;
 use Corex\Support\Uuid;
@@ -38,6 +39,11 @@ final class EmailStudioService
         private readonly EmailTemplateService $templates,
         private readonly string $providerName,
         private readonly ?EventDispatcher $events = null,
+        /**
+         * The host an email's id is made of: the site's own. '' sends as before, under whatever
+         * id WordPress's mailer makes, which nothing can read back.
+         */
+        private readonly string $messageHost = '',
     ) {
     }
 
@@ -152,6 +158,12 @@ final class EmailStudioService
 
         $decision = $this->decide($delivery);
         $attemptIds = array_map(static fn (): string => Uuid::v4(), $recipients);
+        // Sent under an id CoreX chose, so that a later email can say it answers this one
+        // (spec 106, FR-037). One email, whoever it goes to: the id is the first attempt's.
+        $messageId = MessageId::of($attemptIds[0], $this->messageHost);
+        if ($messageId !== '') {
+            $message = $message->withHeaders(['Message-ID' => $messageId]);
+        }
         $outcome    = $this->execute($decision, $message, $attemptIds[0]);
         $attempt    = $this->recordAttempts(
             $recipients,
@@ -250,6 +262,11 @@ final class EmailStudioService
             templateId: $metadata->template?->templateId,
             templateVersion: $metadata->template?->templateVersion,
             routeId: $metadata->template?->routeId,
+            // The id it was sent under. A provider that answers one of its own would be
+            // recorded here in its place; none of CoreX's drivers is told one.
+            providerMessageId: MessageId::isOne($context->message->headers['Message-ID'] ?? null)
+                ? $context->message->headers['Message-ID']
+                : null,
             errorCode: $this->errorCode($outcome),
         ));
     }

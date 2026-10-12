@@ -31,6 +31,8 @@ use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailBrandSource;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\StandardEmailDesign;
+use Corex\Mail\MessageId;
+use Corex\Mail\ReplyConversation;
 use Corex\Mail\UnavailableSubmissionEmailGateway;
 use Corex\Email\Studio\EmailDeliveryContext;
 use Corex\Email\Studio\EmailHealthContext;
@@ -110,9 +112,13 @@ function studioMailDriver(bool $accepted = true): MailDriver
         {
         }
 
+        /** @var list<EmailMessage> */
+        public array $sent = [];
+
         public function send(EmailMessage $message): bool
         {
             ++$this->calls;
+            $this->sent[] = $message;
 
             return $this->accepted;
         }
@@ -120,7 +126,7 @@ function studioMailDriver(bool $accepted = true): MailDriver
 }
 
 /** @return array{0:EmailStudioService,1:CapturedEmailRepository,2:EmailAttemptRepository,3:MailDriver} */
-function emailStudioService(bool $providerAccepts = true): array
+function emailStudioService(bool $providerAccepts = true, string $messageHost = ''): array
 {
     $store    = emailStudioServiceStore();
     $captures = new CapturedEmailRepository($store);
@@ -131,7 +137,7 @@ function emailStudioService(bool $providerAccepts = true): array
     ]);
 
     return [
-        new EmailStudioService(new DeliveryPolicy(), $captures, $attempts, $driver, $editor, 'postmark'),
+        new EmailStudioService(new DeliveryPolicy(), $captures, $attempts, $driver, $editor, 'postmark', null, $messageHost),
         $captures,
         $attempts,
         $driver,
@@ -389,7 +395,7 @@ it('reports actionable template provider reply-to and subscription health failur
  */
 function replyGateway(array $settings, ?array $studio = null): EmailStudioSubmissionGateway
 {
-    [$service] = $studio ?? emailStudioService();
+    [$service, $captures, $attempts] = $studio ?? emailStudioService();
     $store = emailStudioServiceStore();
     $config = new class($settings) implements ConfigInterface {
         /** @param array<string,mixed> $settings */
@@ -414,8 +420,8 @@ function replyGateway(array $settings, ?array $studio = null): EmailStudioSubmis
             new EmailLayoutRepository($store),
             new EmailPartialRepository($store),
             new EmailRouteRepository($store),
-            new CapturedEmailRepository($store),
-            new EmailAttemptRepository($store),
+            $captures,
+            $attempts,
         ),
         $service,
         new EmailTemplateService([]),
@@ -508,3 +514,174 @@ it('says replies need the email add-on where it is absent', function () {
         ->and($readiness->sendable())->toBeFalse()
         ->and($readiness->reason)->toContain('Email add-on');
 });
+
+// Spec 106, FR-037: an email is sent under an id CoreX chose, so that a later one can name it.
+it('sends each email under an id of its own, made of the site\'s host, and keeps it with the attempt', function () {
+    [$studio, , $attempts, $driver] = emailStudioService(messageHost: 'mu-va.com');
+    $live = new EmailDeliveryContext('production', true, true, '44444444-4444-4444-8444-444444444444');
+
+    $first = $studio->send(studioMessage(), $live);
+    $second = $studio->send(studioMessage(), $live);
+    $kept = $attempts->findByAttemptId($first->attemptId);
+
+    expect($driver->sent[0]->headers['Message-ID'])->toBe(MessageId::of($first->attemptId, 'mu-va.com'))
+        ->and($kept->providerMessageId)->toBe(MessageId::of($first->attemptId, 'mu-va.com'))
+        ->and($driver->sent[1]->headers['Message-ID'])->toBe(MessageId::of($second->attemptId, 'mu-va.com'))
+        // The rest of the message is as it was given.
+        ->and($driver->sent[0]->subject)->toBe('Welcome')
+        ->and($driver->sent[0]->replyTo)->toBe('reply@example.com');
+});
+
+it('keeps the id with an email that was kept on the site and not delivered', function () {
+    [$studio, $captures, $attempts] = emailStudioService(messageHost: 'acme.test');
+
+    $kept = $studio->send(studioMessage(), new EmailDeliveryContext('development', true, true, '44444444-4444-4444-8444-444444444444'));
+
+    expect($attempts->findByAttemptId($kept->attemptId)->providerMessageId)->toBe(MessageId::of($kept->attemptId, 'acme.test'))
+        ->and($captures->latest(1)[0]->headers['Message-ID'])->toBe(MessageId::of($kept->attemptId, 'acme.test'));
+});
+
+it('sends as before where it was told no host to make an id of', function () {
+    [$studio, , $attempts, $driver] = emailStudioService();
+
+    $sent = $studio->send(studioMessage(), new EmailDeliveryContext('production', true, true, '44444444-4444-4444-8444-444444444444'));
+
+    expect($driver->sent[0]->headers)->toBe([])
+        ->and($attempts->findByAttemptId($sent->attemptId)->providerMessageId)->toBeNull();
+});
+
+it('makes an id only of a host a mail server would take for a name', function (string $address, string $host) {
+    expect(MessageId::hostOf($address))->toBe($host)
+        // Twenty characters of the attempt's id, where the host leaves room for them.
+        ->and(MessageId::of('11111111-2222-4333-8444-555555555555', $host))
+        ->toBe($host === '' ? '' : '<11111111222243338444@' . $host . '>');
+})->with([
+    'a site' => ['https://Mu-Va.com/shop/', 'mu-va.com'],
+    'a site on a port' => ['http://127.0.0.1:8906/', '127.0.0.1'],
+    'no address' => ['', ''],
+    'a path' => ['/wp-admin/', ''],
+]);
+
+// WordPress's mailer rewrites a header's value past 47 characters when it sends through PHP's
+// `mail()`, and no mail program reads what it writes as an id. So an id is shorter on a longer
+// host, down to ten characters of the attempt's.
+it('makes an id that fits in a header as it is written, on a host of up to 34 characters', function (string $host, string $id) {
+    $made = MessageId::of('11111111-2222-4333-8444-555555555555', $host);
+
+    expect($made)->toBe($id)
+        ->and(strlen($made) <= MessageId::FITS)->toBe(strlen($host) <= 34);
+})->with([
+    'a short host' => ['mu-va.com', '<11111111222243338444@mu-va.com>'],
+    'the longest that leaves room for twenty' => ['a-site-of-twenty.example', '<11111111222243338444@a-site-of-twenty.example>'],
+    'one longer' => ['a-site-of-twenty4.example', '<1111111122224333844@a-site-of-twenty4.example>'],
+    'the longest an id fits on' => ['staging.a-client-of-us.example.com', '<1111111122@staging.a-client-of-us.example.com>'],
+    'one longer, where it does not' => ['staging.a-client-of-us1.example.com', '<1111111122@staging.a-client-of-us1.example.com>'],
+]);
+
+it('knows an id from what is not one', function (mixed $value, bool $isOne) {
+    expect(MessageId::isOne($value))->toBe($isOne);
+})->with([
+    'an id' => ['<11111111-1111-4111-8111-111111111111@mu-va.com>', true],
+    'without its brackets' => ['11111111-1111-4111-8111-111111111111@mu-va.com', false],
+    'with a header after it' => ["<a@b.com>\r\nBcc: x@example.com", false],
+    'two of them' => ['<a@b.com> <c@d.com>', false],
+    'with a space' => ['<a b@c.com>', false],
+    // WordPress's mailer takes none of these for an id, and sends under one of its own.
+    'two dots together' => ['<a..b@c.com>', false],
+    'a dot first' => ['<.a@c.com>', false],
+    'a dot before the host' => ['<a.@c.com>', false],
+    'a host that ends in a dot' => ['<a@c.com.>', false],
+    'longer than an id is taken to be' => ['<' . str_repeat('a', 250) . '@c.com>', false],
+    'nothing' => ['', false],
+    'not text' => [['<a@b.com>'], false],
+]);
+
+// FR-038 and FR-040: the emails this person was sent, in order, are what a reply continues.
+it('answers a reply\'s conversation from the emails this person was sent, oldest first', function () {
+    Functions\when('sanitize_key')->returnArg();
+    Functions\when('is_email')->justReturn(false);
+    $studio = emailStudioService(messageHost: 'acme.test');
+    $gateway = replyGateway(['app.env' => 'development', 'mail.provider' => 'postmark', 'mail.live_delivery' => true], $studio);
+    $development = new EmailDeliveryContext('development', true, true, '44444444-4444-4444-8444-444444444444');
+    $confirmation = $studio[0]->send(new EmailMessage(['sam@example.com'], [], [], null, 'We received your enquiry', '<p>Thanks</p>'), $development);
+    $toTheTeam = $studio[0]->send(new EmailMessage(['sales@acme.test'], [], [], null, 'New enquiry', '<p>Sam wrote</p>'), $development);
+    $first = $gateway->reply('sam@example.com', 'Re: We received your enquiry', '<p>Hello Sam</p>');
+
+    $conversation = $gateway->conversation('Sam@Example.com ', [$first->attemptId, $toTheTeam->attemptId, 'not-an-id', $confirmation->attemptId]);
+
+    expect($conversation->messageIds)->toBe([
+        MessageId::of($confirmation->attemptId, 'acme.test'),
+        MessageId::of($first->attemptId, 'acme.test'),
+    ])
+        ->and($conversation->subject)->toBe('Re: We received your enquiry')
+        ->and($conversation->latest())->toBe(MessageId::of($first->attemptId, 'acme.test'));
+});
+
+it('has no conversation where nothing this person was sent has an id', function () {
+    Functions\when('sanitize_key')->returnArg();
+    Functions\when('is_email')->justReturn(false);
+    // Sent before CoreX chose ids: the email is on record, and nothing can name it.
+    $studio = emailStudioService();
+    $gateway = replyGateway(['app.env' => 'development', 'mail.provider' => 'postmark', 'mail.live_delivery' => true], $studio);
+    $old = $studio[0]->send(studioMessage(), new EmailDeliveryContext('development', true, true, '44444444-4444-4444-8444-444444444444'));
+
+    expect($gateway->conversation('sam@example.com', [$old->attemptId])->isEmpty())->toBeTrue()
+        ->and($gateway->conversation('sam@example.com', [])->isEmpty())->toBeTrue();
+});
+
+it('sends a reply under the email it answers, naming the ones before it; or as a new email, naming none', function () {
+    Functions\when('sanitize_key')->returnArg();
+    Functions\when('is_email')->justReturn(false);
+    $studio = emailStudioService(messageHost: 'acme.test');
+    $gateway = replyGateway(['app.env' => 'production', 'mail.provider' => 'postmark', 'mail.live_delivery' => true], $studio);
+    $within = new ReplyConversation(['<one@acme.test>', '<two@acme.test>'], 'We received your enquiry');
+
+    $gateway->reply('sam@example.com', 'Re: We received your enquiry', '<p>Hello</p>', $within);
+    $gateway->reply('sam@example.com', 'A new subject', '<p>Hello</p>');
+    $gateway->reply('sam@example.com', 'A new subject', '<p>Hello</p>', new ReplyConversation());
+    [$continued, $alone, $withNothing] = $studio[3]->sent;
+
+    expect($continued->headers['In-Reply-To'])->toBe('<two@acme.test>')
+        ->and($continued->headers['References'])->toBe('<one@acme.test> <two@acme.test>')
+        ->and($alone->headers)->not->toHaveKey('In-Reply-To')->not->toHaveKey('References')
+        ->and($withNothing->headers)->not->toHaveKey('In-Reply-To')
+        // Each is still sent under an id of its own, for the next reply to name.
+        ->and(MessageId::isOne($alone->headers['Message-ID']))->toBeTrue();
+});
+
+// Every email Email Studio sends on a site with a host goes through this. A field left behind
+// here is a field that email lost: its sender, its attachments, its plain-text version.
+it('carries every field of a message when headers are added to it', function () {
+    $message = new EmailMessage(
+        ['sam@example.com'],
+        ['cc@example.com'],
+        ['bcc@example.com'],
+        'reply@example.com',
+        'Welcome',
+        '<p>Hello</p>',
+        ['X-Kept' => 'yes', 'Message-ID' => '<old@acme.test>'],
+        'from@example.com',
+        [12, 13],
+        'Hello',
+    );
+    $given = (new ReflectionClass(EmailMessage::class))->getConstructor()->getNumberOfParameters();
+
+    $with = $message->withHeaders(['Message-ID' => '<new@acme.test>']);
+
+    // Every field was given a value of its own above: one added to the class and not here
+    // fails the first line, and one not carried fails the second.
+    expect(count(get_object_vars($message)))->toBe($given)->toBe(10)
+        ->and(array_replace(get_object_vars($with), ['headers' => $message->headers]))->toBe(get_object_vars($message))
+        ->and($with->headers)->toBe(['Message-ID' => '<new@acme.test>', 'X-Kept' => 'yes']);
+});
+
+it('lets nothing but an id into a conversation', function () {
+    // The fourth is what a looser rule of its own once let through, and the driver would not
+    // have written: a reply counted as joining an email it never named.
+    $conversation = new ReplyConversation(['<one@acme.test>', "<two@acme.test>\r\nBcc: x@example.com", 'plain', '<a..b@acme.test>', ['x'], '<three@acme.test>'], "Subject\r\nBcc: x");
+
+    expect($conversation->messageIds)->toBe(['<one@acme.test>', '<three@acme.test>'])
+        ->and($conversation->subject)->toBe('Subject Bcc: x')
+        ->and((new ReplyConversation([], 'A subject'))->subject)->toBe('');
+});
+

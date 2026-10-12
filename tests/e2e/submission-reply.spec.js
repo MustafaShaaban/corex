@@ -313,9 +313,15 @@ test( 'sends a reply on a site that keeps its email, says what happened, and lis
 	);
 	await expect( pane.getByLabel( 'Subject' ) ).toBeFocused();
 	await expect( pane ).not.toContainText( 'Reply processed by Email Studio' );
+	// The reply that went is now the email the next one answers: the box starts from it.
 	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue(
-		STARTING_SUBJECT
+		'Re: your message'
 	);
+	await expect(
+		pane.getByRole( 'radio', {
+			name: 'In the conversation they already have',
+		} )
+	).toBeChecked();
 	await expect( pane.getByRole( 'textbox', { name: 'Message' } ) ).toHaveText(
 		''
 	);
@@ -1161,3 +1167,177 @@ for ( const [ logo, what ] of [
 		}
 	} );
 }
+
+// Spec 106, story 10: a reply joins the emails the person already has, or stands alone, and
+// whoever writes it chooses. The first reply here is the only email this person has been
+// sent, so it is a new email; the second is offered its conversation.
+test( 'sends a second reply in the conversation the first began, or as a new email, as chosen', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	const pane = await openPaneOn( page, 'capture' );
+	const subject = pane.getByLabel( 'Subject' );
+	const message = pane.getByRole( 'textbox', { name: 'Message' } );
+	const choice = pane.getByRole( 'group', { name: 'How it is sent' } );
+	const stamp = Date.now();
+	const write = async ( words ) => {
+		await message.click();
+		await page.keyboard.type( words );
+		await pane.getByRole( 'button', { name: 'Send reply' } ).click();
+		await expect( message ).toHaveText( '' );
+	};
+	const headersOf = ( title ) =>
+		page.evaluate( async ( wanted ) => {
+			const config = window.corexSubmissions;
+			const studio = await window.Corex.api.get(
+				config.restUrl.replace( /\/submissions$/, '/email-studio' ),
+				{ nonce: config.nonce }
+			);
+
+			return studio.envelope.data.captures.find(
+				( capture ) => capture.subject === wanted
+			)?.headers;
+		}, title );
+
+	// Nothing was sent to this person before: no choice, and the reason.
+	await expect( choice ).toHaveCount( 0 );
+	await expect( pane.locator( '.corex-pane__reply-way' ) ).toContainText(
+		'This will be a new email'
+	);
+	const first = `About your enquiry ${ stamp }`;
+	await subject.fill( first );
+	await write( 'Hello Salma.' );
+
+	// Now there is an email to answer: the choice is offered, the conversation chosen, and
+	// the subject is the one that answers it.
+	await expect( choice ).toBeVisible();
+	await expect(
+		choice.getByRole( 'radio', {
+			name: 'In the conversation they already have',
+		} )
+	).toBeChecked();
+	await expect( subject ).toHaveValue( `Re: ${ first }` );
+
+	for ( const [ theme, direction ] of APPEARANCES ) {
+		await pinAppearance( page, theme, direction );
+		await choice.scrollIntoViewIfNeeded();
+		const measured = await choice.evaluate( ( group ) => {
+			const box = ( node ) => node.getBoundingClientRect();
+			const rows = Array.from( group.querySelectorAll( 'label' ) );
+			const field = group.previousElementSibling.querySelector( 'input' );
+			const rtl = window.getComputedStyle( group ).direction === 'rtl';
+			const start = ( node ) =>
+				rtl ? box( node ).right : box( node ).left;
+
+			return {
+				heights: rows.map( ( row ) => Math.round( box( row ).height ) ),
+				// Each choice starts where the subject field does.
+				starts: rows.map( ( row ) =>
+					Math.round( Math.abs( start( row ) - start( field ) ) )
+				),
+				between: Math.round(
+					box( rows[ 1 ] ).top - box( rows[ 0 ] ).bottom
+				),
+				radioToWords: rows.map( ( row ) => {
+					const radio = row.querySelector( 'input' );
+					const words = row.querySelector( 'span' );
+					return Math.round(
+						rtl
+							? box( radio ).left - box( words ).right
+							: box( words ).left - box( radio ).right
+					);
+				} ),
+				level: rows.map( ( row ) => {
+					const radio = row.querySelector( 'input' );
+					const words = row.querySelector( 'span' );
+					return Math.round(
+						Math.abs(
+							( box( radio ).top + box( radio ).bottom ) / 2 -
+								( box( words ).top + box( words ).bottom ) / 2
+						)
+					);
+				} ),
+				border: window.getComputedStyle( group ).borderTopWidth,
+				overflows:
+					document.documentElement.scrollWidth >
+					document.documentElement.clientWidth,
+			};
+		} );
+		const where = `${ theme } ${ direction }`;
+
+		for ( const height of measured.heights ) {
+			// WCAG 2.2, 2.5.8: a target of at least 24 pixels.
+			expect(
+				height,
+				`${ where }: a choice's height`
+			).toBeGreaterThanOrEqual( 24 );
+		}
+		expect( measured.starts, `${ where }: in line with the field` ).toEqual(
+			[ 0, 0 ]
+		);
+		expect(
+			measured.between,
+			`${ where }: the same distance between the choices as in each`
+		).toBe( measured.radioToWords[ 0 ] );
+		expect(
+			new Set( measured.radioToWords ).size,
+			`${ where }: one distance from a radio to its words`
+		).toBe( 1 );
+		for ( const offset of measured.level ) {
+			expect(
+				offset,
+				`${ where }: a radio level with its words`
+			).toBeLessThanOrEqual( 2 );
+		}
+		expect( measured.border, `${ where }: no box of the browser's` ).toBe(
+			'0px'
+		);
+		expect( measured.overflows, `${ where }: no sideways scroll` ).toBe(
+			false
+		);
+	}
+	await pinAppearance( page, 'dark', 'ltr' );
+
+	await write( 'And one more thing.' );
+	// A new email, chosen though there is a conversation: the subject follows the choice.
+	await choice.getByRole( 'radio', { name: 'As a new email' } ).check();
+	await expect( subject ).toHaveValue( STARTING_SUBJECT );
+	const third = `Something else ${ stamp }`;
+	await subject.fill( third );
+	await write( 'A separate matter.' );
+
+	const [ began, joined, alone ] = [
+		await headersOf( first ),
+		await headersOf( `Re: ${ first }` ),
+		await headersOf( third ),
+	];
+	// Each left under an id of its own.
+	expect( began[ 'Message-ID' ] ).toMatch( /^<[0-9a-f]{20}@[^>\s]+>$/ );
+	expect(
+		new Set(
+			[ began, joined, alone ].map( ( kept ) => kept[ 'Message-ID' ] )
+		).size
+	).toBe( 3 );
+	expect( began[ 'In-Reply-To' ] ).toBeUndefined();
+	// The second answers the first.
+	expect( joined[ 'In-Reply-To' ] ).toBe( began[ 'Message-ID' ] );
+	expect( joined.References ).toBe( began[ 'Message-ID' ] );
+	// The third stands alone.
+	expect( alone[ 'In-Reply-To' ] ).toBeUndefined();
+	expect( alone.References ).toBeUndefined();
+
+	// And each is listed with the way it went.
+	await expect( pane.locator( '.corex-pane__reply' ) ).toHaveCount( 3 );
+	const listed = await pane
+		.locator( '.corex-pane__reply' )
+		.evaluateAll( ( replies ) =>
+			replies.map( ( reply ) =>
+				reply.textContent.includes( 'In the conversation' )
+					? 'conversation'
+					: 'new'
+			)
+		);
+	expect( listed ).toEqual( [ 'new', 'conversation', 'new' ] );
+
+	expect( errors ).toEqual( [] );
+} );

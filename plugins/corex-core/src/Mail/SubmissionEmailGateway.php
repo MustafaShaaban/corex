@@ -23,7 +23,21 @@ interface SubmissionEmailGateway
      */
     public function readiness(): ReplyReadiness;
 
-    public function reply(string $recipient, string $subject, string $htmlBody): MailResult;
+    /**
+     * @param ReplyConversation|null $within The emails this one is sent under, as
+     *                                       {@see conversation()} answered them; null, or an
+     *                                       empty one, for an email that stands alone.
+     */
+    public function reply(string $recipient, string $subject, string $htmlBody, ?ReplyConversation $within = null): MailResult;
+
+    /**
+     * The emails this site sent one person that a reply can be sent under, among the attempts
+     * named (spec 106, FR-038). Empty where none of them can be: a reply is then a new email.
+     *
+     * @param list<string> $attemptIds The attempts a submission knows of: its confirmation, and
+     *                                 each reply since.
+     */
+    public function conversation(string $recipient, array $attemptIds): ReplyConversation;
 
     /**
      * The email {@see reply()} would send for the same three values, and sends nothing.

@@ -857,6 +857,49 @@
 	font-weight: 400;
 }
 
+/* A sentence under a field says something about it, and is not a label: a
+   field's own weight is its label's. */
+.corex-admin .corex-pane .corex-field p {
+	font-weight: 400;
+}
+
+/* How a reply is sent: two choices on a line each, or one sentence. The
+   fieldset is drawn as a group of the pane's own, not as a browser draws
+   one. */
+.corex-admin .corex-pane fieldset.corex-pane__reply-way {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-pane__reply-way legend {
+	margin-block-end: var(--corex-admin-space-xs);
+	padding: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-pane__reply-way label {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	min-block-size: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	font-weight: 400;
+}
+
+.corex-admin .corex-pane__reply-way input[type="radio"] {
+	flex: none;
+	margin: 0;
+}
+
+.corex-admin .corex-pane p.corex-pane__reply-way {
+	margin: 0;
+}
+
 /* The draft of a reply: what became of it, and the way to be rid of it, on
    one line. */
 .corex-admin .corex-pane__reply-draft {
