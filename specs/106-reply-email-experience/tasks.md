@@ -136,3 +136,54 @@ Tasks are written when the slice is reached.
 
 Tasks are written when the slice is reached. It changes how every existing email looks, and is
 announced under Client impact before it is merged.
+
+## Slice 8: a header that holds a logo of any shape (US8; FR-032 to FR-034) — built before slice 5
+
+- [ ] T100 Pest unit: the header is a band of the card; a square, a wide and a tall logo are
+      each given a width and a height inside 180 by 48 with their proportions kept; a logo of
+      unknown size is limited by height; no logo, the site's name in the band
+- [ ] T101 `EmailBrand::$logoWidth`, `$logoHeight`; `SiteEmailBrand` reads the logo's size;
+      `StandardEmailDesign`'s header
+- [ ] T102 Pest integration: a site whose Mail setting or custom logo is a 600 by 600 image
+      sends a reply whose logo is 48 by 48
+- [ ] T103 The generator's stub from the same header; its test draws an email with it
+- [ ] T104 Playwright: the captured reply at 320, 375 and 800 pixels, light and dark, both
+      directions, with a square and a wide logo: the band's height, the logo's box, no
+      sideways scroll, contrast of the name
+- [ ] T105 Guards; the email-design guide; CHANGELOG with Client impact (the email looks
+      different; a site's own design is untouched); PROGRESS; DECISIONS
+
+## Slice 9: a subject to start from (US9; FR-035, FR-036)
+
+- [ ] T110 Pest unit and integration: `reply_subject` from the form's name; one "Re: "
+- [ ] T111 `reply_subject` in the submission's detail
+- [ ] T112 Jest: the box starts with it; a default alone is not a draft; a draft's subject
+      wins; after sending the box goes back to it
+- [ ] T113 The Reply section and `useReplyDraft` on it
+- [ ] T114 Playwright: open, see it, change it, send; the email's subject is what was typed
+- [ ] T115 Guards; guide; CHANGELOG; PROGRESS; DECISIONS
+
+## Slice 10: a reply in the conversation the person already has (US10; FR-037 to FR-043)
+
+- [ ] T120 Pest unit: a message is given a Message-ID of the site's host; `inReplyTo` and
+      `references` are ids or are refused; the driver writes the three headers
+- [ ] T121 `MailRequest`, `EmailMessage`, `MailService`, `WpMailDriver`; the id on the attempt
+- [ ] T122 Pest integration: a real send carries the Message-ID CoreX chose (`pre_wp_mail`
+      and PHPMailer's own record of the message)
+- [ ] T123 Pest unit and integration: `SubmissionConversation::of()` answers the confirmation,
+      then each delivered reply, in order; `began()` records a site's own confirmation
+- [ ] T124 `SubmissionConversation`; `MailResult::$messageId`
+- [ ] T125 Pest unit and integration: a reply sent in the conversation names the latest email
+      and the ones before it; as a new email, none; the record keeps which
+- [ ] T126 `SubmissionEmailGateway::reply()` takes the conversation; the route's `thread`
+- [ ] T127 Jest: the two choices where there is a conversation, the sentence where there is
+      none, the subject that follows the choice, the warning when it was rewritten
+- [ ] T128 The Reply section; the list of replies says which way each went
+- [ ] T129 Playwright: reply both ways; the captured emails' headers; measured spacing of
+      the choice, light and dark, both directions
+- [ ] T130 Guards; the mail guide (a site's own confirmation; what threading cannot promise);
+      CHANGELOG with Client impact (the seam's signature); PROGRESS; DECISIONS
+
+## Slice 11: the email says what it is (US11; FR-044)
+
+Tasks are written when the owner has answered story 11's question.

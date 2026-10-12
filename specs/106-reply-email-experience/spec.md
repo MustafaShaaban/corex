@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-08
 
-**Status**: Planned 2026-10-11 ([plan.md](plan.md), [tasks.md](tasks.md)); slice 0 is in v0.44.0
+**Status**: Planned 2026-10-11 ([plan.md](plan.md), [tasks.md](tasks.md)); slice 0 is in v0.44.0, slices 1 to 4 in v0.45.0 but for the reply draft; stories 8 to 11 added 2026-10-12
 
 **Input**: Owner requirement, 2026-10-08 — "the reply emails from corex it should be a rich text,
 should have the same experience of the emails. also should create a standard sytled email template
@@ -14,6 +14,11 @@ to developer to replace it with his custom template as we need this for muva and
 **Added 2026-10-11**: the owner used Reply on a live client site (Muva, CoreX v0.44.0) and
 reported what is under "Reported from a live site" below. It adds user story 0 and FR-028 to
 FR-031, and changes the order of the slices.
+
+**Added 2026-10-12**: the owner read replies sent from the live site on v0.45.2 and asked for
+what is under "Reported from the live site again" below. It adds user stories 8 to 11 and
+FR-032 to FR-044. His words reached this spec through the Muva client session, quoted as it
+relayed them; story 11 waits on one answer from him.
 
 ## What is there today *(read from the code on 2026-10-08)*
 
@@ -45,6 +50,34 @@ FR-031, and changes the order of the slices.
   delivered, captured or refused. He could not tell whether his first reply had gone.
 - The reply's text is not kept or shown: the history holds an action, an attempt and a state.
 - The box is a plain text box; the email is CoreX's bare shell (stories 1 to 3 below).
+
+## Reported from the live site again *(owner, 2026-10-12; each read in the code)*
+
+"the reply email that sent from corex admin is now better than before but it needs to be
+styled better than that, add background, add propper header since the logo now is on the air
+and if i puted large logo it is bad, also we need to sign it as it a private reply or internal
+operation something like that, i feel that if we can make it to reply to the user at the same
+email that sent to him after the submission will be beter, if it could be an option to be
+choosen that if the admin wants to reply to the same email or same thrid replies or sepirate
+email ? and add a default title based on that form submited could be edited if wants to
+change it".
+
+- **The logo is "on the air".** `StandardEmailDesign` draws the header as a row above the
+  card, on the canvas, and the logo as an image limited to 180 pixels of width and nothing of
+  height. A square logo is drawn 180 by 180 above the message. (Story 8.)
+- **"Add background."** The standard design has a canvas colour and a card on it; what he saw
+  as missing is a header that reads as part of the email. A site's own background is its own
+  design's, which Muva has since registered. (Story 8.)
+- **No subject to start from.** The subject starts empty and is required. (Story 9.)
+- **A reply cannot join the email the person already has.** Nothing CoreX sends carries a
+  Message-ID of its own choosing, an In-Reply-To or a References header; `MailRequest` has no
+  headers; `EmailMessage::$headers` exists and `WpMailDriver` never reads it; the id of the
+  confirmation a person was sent is not kept. (Story 10.)
+- **The email does not say what it is.** It carries the site's mark, the message and a footer
+  naming the site. Nothing says a person wrote it to this person. (Story 11.)
+
+Asked for the same day and not part of this spec: a copy button on the Coming soon preview
+link, which is the Operations screen's and has its own task.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -262,7 +295,110 @@ and answer it; both emails are in that template.
 
 ---
 
+### User Story 8 - A header that holds a logo of any shape (Priority: P1)
+
+The email opens with a header that is part of it: the site's logo, or its name, on the card
+and not floating above it, at a size that a square, a tall or a very wide logo cannot break.
+
+**Why this priority**: it is what every customer who is answered sees first, and on the first
+live site it was a 180 pixel square above a narrow message.
+
+**Independent Test**: send a reply from a site whose logo is square, one whose logo is five
+times wider than it is tall, and one with no logo; in each the header is one band of the card,
+no taller than a line of heading, and the message starts where it did.
+
+**Acceptance Scenarios**:
+
+1. **Given** a site with a square logo of 600 by 600 pixels, **When** a reply is sent, **Then**
+   the logo is drawn no taller than 48 pixels and no wider than 180, inside the card.
+2. **Given** a site with no logo, **When** a reply is sent, **Then** the header holds the
+   site's name, in the same band.
+3. **Given** a mail client that reads no style sheet and ignores `max-height` (Outlook on
+   Windows), **When** it draws the email, **Then** the logo is the same bounded size, from
+   the image's own width and height.
+4. **Given** a developer who runs `wp corex make:email-design`, **When** they read the file it
+   writes, **Then** it starts from the same header.
+
+---
+
+### User Story 9 - A subject to start from (Priority: P2)
+
+The subject is already written when the reply box opens, from what the person sent, and can be
+changed.
+
+**Independent Test**: open a submission of the form "Contact"; the subject reads
+"Re: Contact"; change it; send; the email carries what was typed.
+
+**Acceptance Scenarios**:
+
+1. **Given** a submission with no reply begun, **When** its pane opens, **Then** the subject
+   holds "Re: " and the name of the form it came from.
+2. **Given** that subject untouched and no message written, **When** the pane is left,
+   **Then** no draft is kept: a subject nobody wrote is not something somebody began.
+3. **Given** a draft of the person's own, **When** the pane opens, **Then** the subject is the
+   draft's, not the default.
+4. **Given** a reply that continues the conversation (story 10), **When** the box opens,
+   **Then** the subject is "Re: " and the subject of the email being answered.
+
+---
+
+### User Story 10 - A reply in the conversation the person already has (Priority: P1)
+
+The person who wrote in was sent a confirmation. The reply can arrive under that email, in
+the same conversation in their mail program, or as an email of its own: whoever answers
+chooses, each time.
+
+**Why this priority**: it is the owner's ask in his own words, and to a customer it is the
+difference between an answer to what they sent and one more email from a company.
+
+**Independent Test**: submit a form that sends a confirmation; reply with "Continue the
+conversation" chosen; in a mail program that threads, the reply is under the confirmation.
+Reply to another with "Send as a new email"; it stands alone.
+
+**Acceptance Scenarios**:
+
+1. **Given** a submission whose confirmation CoreX sent, **When** the reply box opens,
+   **Then** it offers two ways to send, and "in the conversation they already have" is chosen.
+2. **Given** that choice, **When** the reply is sent, **Then** it names the confirmation as
+   the email it answers, and its subject is "Re: " and the confirmation's subject unless the
+   person changed it.
+3. **Given** a first reply already sent, **When** a second is sent the same way, **Then** it
+   continues from the first reply, and names the confirmation before it.
+4. **Given** "Send as a new email", **When** the reply is sent, **Then** it names no earlier
+   email.
+5. **Given** a submission for which no email of CoreX's is known (the form sends none, or the
+   submission is older than this feature), **When** the box opens, **Then** only "a new email"
+   is offered, and the box says why.
+6. **Given** a site that sends its own confirmation through CoreX's mailer, **When** it tells
+   CoreX which submission that email was for, **Then** replies can continue from it as from
+   one CoreX sent.
+
+---
+
+### User Story 11 - The email says what it is (Priority: P2) [NEEDS CLARIFICATION]
+
+"we need to sign it as it a private reply or internal operation something like that."
+
+Read two ways, both plausible: the email should say it is a personal reply from the site's
+team to this person, not an automatic message; or it should end with who wrote it. One
+question to the owner settles it: a line above the message ("A reply from the {site} team"),
+a signature below it (the name of whoever replied, or a line the site sets), or both. Nothing
+of this story is built before he answers.
+
+---
+
 ### Edge Cases
+
+- A logo address that is not an image of the site's library (set by a filter): its size is
+  not known, and it is limited by height alone.
+- A confirmation whose mail provider replaced its Message-ID: the reply names the id the
+  provider answered where it answered one; where it did not, the conversation may not join, and
+  the guide says so.
+- A mail program that groups by subject as well as by reference (Gmail): a reply whose subject
+  the person rewrote may stand alone though it names the email it answers. The box says so
+  beside the subject when the conversation is chosen and the subject no longer begins as the
+  confirmation's does.
+- A reply sent again (story 4): it keeps the place in the conversation it was first given.
 
 - A reply that is only spaces, or only an empty list: it cannot be sent, and the reason is said.
 - Formatting the editor does not offer, typed or pasted as markup: it is removed before the
@@ -357,6 +493,32 @@ and answer it; both emails are in that template.
   not delivered, or not sent, with the reason. It MUST NOT say a reply was sent when it was not.
 - **FR-031**: A reply that was not sent MUST leave what was written in the box.
 
+**After the second live review (2026-10-12)**
+
+- **FR-032**: The standard template's header MUST be part of the card that holds the message,
+  not a row above it.
+- **FR-033**: The logo MUST be limited in height as well as in width, in a mail client that
+  reads its styles and in one that reads only the image's own width and height.
+- **FR-034**: The design a developer is given to start from MUST have the same header.
+- **FR-035**: The subject of a reply MUST start as "Re: " and the name of the form the
+  submission came from, or the subject of the email being continued, and MUST be editable.
+- **FR-036**: A default subject alone MUST NOT be kept as a draft.
+- **FR-037**: Every email CoreX sends through its mailer MUST carry a Message-ID CoreX chose,
+  and the id MUST be kept with the record of that sending.
+- **FR-038**: For a submission, CoreX MUST know the emails it sent the submitter, in order: the
+  confirmation, then each reply.
+- **FR-039**: The reply box MUST offer to send in the conversation the person already has, or
+  as a new email, and MUST offer only the second where no earlier email is known, saying why.
+- **FR-040**: A reply sent in the conversation MUST name the latest email of that conversation
+  as the one it answers and the ones before it as its references.
+- **FR-041**: The choice MUST be recorded with the reply and shown where the reply is listed.
+- **FR-042**: A site that sends its own confirmation through CoreX's mailer MUST have a
+  documented way to have that email recorded for a submission, so that replies continue from it.
+- **FR-043**: The preview MUST say which of the two ways the reply will be sent. The two are
+  one document: only headers differ.
+- **FR-044**: [NEEDS CLARIFICATION: story 11] The email MUST say that a person of the site's
+  team wrote it to this person, in the way the owner chooses.
+
 **Later stories**
 
 - **FR-026**: A person MUST be able to save a reply for reuse and start a reply from a saved one,
@@ -374,6 +536,8 @@ and answer it; both emails are in that template.
   by default; a site may set its own.
 - **Reply sender**: the name and address a site's replies come from, and where answers go.
 - **Saved reply**: a subject and message kept for reuse.
+- **Conversation**: for one submission, the emails CoreX sent its submitter, in order, each
+  with the Message-ID it was sent under.
 
 ## Success Criteria *(mandatory)*
 

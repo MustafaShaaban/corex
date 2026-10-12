@@ -11041,3 +11041,44 @@ sent with "<500" in its subject arrives with "&lt;500": older than this slice, a
 fix, since every place a subject is printed has to be read first. A save that failed is not
 tried again until something more is written. Closing the browser's tab inside the pause
 loses what was written in it.
+
+## #321 — Four asks from the owner's second reading of live replies, and the order they are built in
+
+**Date:** 2026-10-12. **Branch:** `spec/106-live-review-asks`. **Spec:** 106, stories 8 to 11.
+
+The owner read replies sent from Muva on v0.45.2 and asked for a proper header ("the logo now
+is on the air and if i puted large logo it is bad"), a default subject from the form, a reply
+"to the same email that sent to him after the submission" as a choice, and for the email to
+be signed "as it a private reply". His words came through the Muva session, which also read
+the code; each reading was checked here before it was written into the spec.
+
+**Into spec 106, not a new spec.** All four are about the reply and its email, and three of
+them change what slices 1 to 4 built. A new number would have split one feature's record.
+
+**Before slices 5, 6 and 7.** "Send again", saved replies and every email in the template
+were this spec's own guesses at what comes next; these are what the owner met.
+
+**The logo has a box, drawn two ways.** A width limit alone is what let a square logo be
+180 pixels tall. A height limit in CSS alone would still be ignored by Outlook on Windows,
+which reads an image's attributes and not `max-height`. So the size that fits is worked out
+from the image's real size where it is known, and written as attributes.
+
+**No general headers on the mail seam.** Threading needs two headers. `MailRequest` gets two
+fields that take message ids and nothing else, not a map: a caller that can set any header
+can add a recipient nobody sees.
+
+**CoreX chooses the Message-ID.** WordPress lets PHPMailer make one at the moment of sending
+and there is no reading it back, which is why nothing could thread. An id made when the
+message is built can be kept with its attempt, and named by the reply.
+
+**The conversation is read from what is already kept.** A submission's confirmation is bound
+to it by attempt, and each reply keeps its attempts (#305). The conversation is those, in
+order, with their ids: nothing new is stored on the submission.
+
+**One story is not designed.** "Sign it as a private reply" reads as a line saying a person
+of the team wrote this, or as a signature with a name, or both. The owner is asked; nothing
+of it is built first.
+
+**Not here.** The copy button on the Coming soon preview link, asked for the same day, is the
+Operations screen's: its own task. Whether a form's file is attached to its email again is
+the owner's to say (spec 081, #319).

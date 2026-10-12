@@ -21,6 +21,14 @@ untrustworthy whatever the email looks like.
 | 5 | "Send again"; the name and address replies come from | US4.2, US5 |
 | 6 | Saved replies | US6 |
 | 7 | Every email in the template; Email Studio's preview drawn by the sending code | US7 |
+| 8 | The header is part of the card, and a logo of any shape fits it | US8 |
+| 9 | A subject to start from | US9 |
+| 10 | A reply in the conversation the person already has, or as a new email | US10 |
+| 11 | The email says what it is (waits on the owner's answer) | US11 |
+
+Slices 8 to 11 come from the owner's second reading of live replies (2026-10-12) and are
+built before 5, 6 and 7, in that order: 8 is what every customer sees, 9 is small and is what
+10 builds its subject on, 10 is the largest.
 
 ## Technical context
 
@@ -249,6 +257,70 @@ The header carries the site's mark, not CoreX's (spec, Assumptions): the owner c
   how. The message is looked for as its words, so a design is free to restyle it.
 - **A start** (FR-019): `wp corex make:email-design` writes a working copy of the standard
   design into the site's own plugin. **A guide** with it, and Client impact (FR-020).
+
+### D11. The header is a band of the card, and the logo has a box (slice 8)
+
+The card becomes two rows of one bordered table: a header band, then the message. The band
+holds the logo, or the site's name where there is none; never both, since a logo is the name.
+
+The logo's box is 180 by 48 pixels. Two things draw it, because two kinds of mail client read
+two things. `max-width` and `max-height` with `width:auto;height:auto` for clients that read
+styles. The image's own `width` and `height` attributes for those that do not, Outlook on
+Windows first: `SiteEmailBrand` reads the logo's real size where the logo is in the site's
+library (the Mail setting, or the theme's custom logo) and writes the size that fits the box
+with its proportions kept. A logo given as a bare address by `corex_email_brand` has no known
+size: it gets `height="48"` and no width, which every client scales from.
+
+`EmailBrand` gains `logoWidth` and `logoHeight` (0 where unknown). The generator's stub is
+written from the same header, and its test still draws an email with it.
+
+### D12. A subject to start from (slice 9)
+
+The submission's detail gains `reply_subject`: "Re: " and the form's name; with a conversation
+(D13), "Re: " and the subject of its latest email, with one "Re: " and not two. Made on the
+server, where the form's name and the conversation are, and translated there.
+
+The box starts with it when the person has no draft. The draft's hook is given it as what
+"nothing written" looks like, so an untouched default is not kept and the line "Draft saved."
+does not appear for words nobody wrote. After a reply is sent the box goes back to it.
+
+### D13. A conversation is the emails a submission's sender was sent (slice 10)
+
+**A Message-ID of CoreX's own.** `<{uuid}@{site host}>`, made when a message is built, set on
+PHPMailer through `phpmailer_init` as the plain-text part is (slice 2), and kept on the
+attempt (`corex_email_log`). WordPress otherwise lets PHPMailer make one at the moment of
+sending, which nothing can read back. Where a provider answers an id of its own it is kept
+beside CoreX's (`EmailAttempt::$providerMessageId`, declared and never set), and
+is the one named in a reply.
+
+**Headers travel.** `MailRequest` gains `inReplyTo` and `references` (ids, validated as ids:
+no free header text crosses the seam), carried to `EmailMessage` and written by the driver.
+Not a general headers map: a caller that can set any header can set `Bcc`.
+
+**The conversation is read, not stored twice.** For a submission: the attempt bound as its
+submitter's confirmation (`corex_email_json`), then each stored reply's last delivered attempt.
+`SubmissionConversation::of(int $submissionId)` answers the ids in order, from the attempts.
+A reply's attempt already keeps its attempt id (D4); the Message-ID is looked up from it.
+
+**A site's own confirmation.** `MailResult` gains `messageId`. A site that sends its own
+confirmation calls `SubmissionConversation::began(int $submissionId, MailResult $sent)`,
+which binds that attempt to the submission as CoreX's own flow does. Documented in the mail
+guide with the listener it goes in.
+
+**The choice.** `reply_delivery` gains `conversation`: whether there is one, and the subject
+of its latest email. The box shows two radio buttons under the subject when there is one:
+"In the conversation they already have" (chosen) and "As a new email". Where there is none it
+shows a sentence: "This will be a new email: CoreX has no record of an email sent to this
+person for this submission." The reply route takes `thread: continue|new`; the record keeps
+it; the list of replies says "in the conversation" or "a new email".
+
+**What it cannot promise.** Gmail groups by reference and by subject; some providers replace
+the Message-ID. The guide says both, and the box warns beside the subject when the
+conversation is chosen and the subject was rewritten.
+
+### D14. What the email says it is (slice 11)
+
+Not designed: it waits on the owner's answer to story 11.
 
 ### D10. Send again, and the sender (slice 5)
 
