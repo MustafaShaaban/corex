@@ -114,13 +114,66 @@ it('shows a new link once, whole, with what to do with it', function () {
 
     $page = corexPreviewLinkController()->linkPage($result);
 
+    $link   = add_query_arg([PreviewAccess::PARAMETER => $result->token], home_url('/'));
+
     expect($page)->toStartWith('<!DOCTYPE html>')
-        ->and($page)->toContain(esc_html(add_query_arg([PreviewAccess::PARAMETER => $result->token], home_url('/'))))
+        ->and($page)->toContain('value="' . esc_attr($link) . '"')
         ->and($page)->toContain('Preview link created')
         ->and($page)->toContain('cannot be shown again')
         ->and($page)->toContain('page=corex-operations-security')
         // An admin interstitial, not a public page.
         ->and($page)->toContain('noindex');
+});
+
+it('shows the link in a labelled field with a button that copies it (FR-011a)', function () {
+    $result = corexPreviewLinkService()->perform(PreviewLinkService::CREATE, $this->adminId, $this->now);
+
+    $page = corexPreviewLinkController()->linkPage($result);
+
+    expect($page)->toContain('for="corex-preview-link">Preview link</label>')
+        ->and($page)->toMatch('/<input[^>]* id="corex-preview-link"[^>]* readonly/')
+        // Written hidden: the script shows it, so with scripts off there is no button that does nothing.
+        ->and($page)->toMatch('/<button type="button"[^>]* data-corex-copy-button[^>]* hidden>/')
+        ->and($page)->toContain('<span>Copy link</span>')
+        ->and($page)->toContain('role="status" aria-live="polite"')
+        // The script that shows the button and copies is in the page, which asks for no file.
+        ->and($page)->toContain("querySelectorAll( '[data-corex-copy]' )")
+        ->and($page)->not->toMatch('/<script[^>]* src=/')
+        // Still once, and in one place: the field. Not in the script, not in an attribute beside it.
+        ->and(substr_count($page, (string) $result->token))->toBe(1);
+});
+
+it('lets a site that sends a Content-Security-Policy put its nonce on the script', function () {
+    $nonce = static fn (array $attributes): array => $attributes + ['nonce' => 'site-nonce-1'];
+    add_filter('wp_inline_script_attributes', $nonce);
+
+    try {
+        $result = corexPreviewLinkService()->perform(PreviewLinkService::CREATE, $this->adminId, $this->now);
+        $page   = corexPreviewLinkController()->linkPage($result);
+    } finally {
+        remove_filter('wp_inline_script_attributes', $nonce);
+    }
+
+    expect($page)->toMatch('/<script[^>]* nonce="site-nonce-1"/');
+});
+
+it('writes the link into the field escaped as an attribute', function () {
+    // A home address that already has a query: the link then has an ampersand in it, which is the
+    // one character of a link WordPress builds that an attribute has to have escaped. What a
+    // quote or a bracket becomes is the unit test's, on the field itself.
+    $withQuery = static fn (): string => 'http://example.test/?campaign=a&lang=ar';
+    add_filter('home_url', $withQuery);
+
+    try {
+        $result = corexPreviewLinkService()->perform(PreviewLinkService::CREATE, $this->adminId, $this->now);
+        $page   = corexPreviewLinkController()->linkPage($result);
+    } finally {
+        remove_filter('home_url', $withQuery);
+    }
+
+    expect($page)->toContain(
+        'value="http://example.test/?campaign=a&amp;lang=ar&amp;' . PreviewAccess::PARAMETER . '=' . $result->token . '"'
+    );
 });
 
 it('says the previous link has stopped working when it shows a regenerated one', function () {

@@ -115,6 +115,77 @@
 	margin-block-start: var(--corex-admin-space-xs);
 }
 
+/*
+ * A value somebody has to copy, with a button that copies it (spec 101,
+ * FR-011a; markup from StandalonePage::copyField).
+ *
+ * Start-aligned in the centred card, like the quoted detail above: the
+ * label, the field and what the button answered read as one form row.
+ * The field shrinks before the button does, so the button's words are
+ * never cut; on a narrow screen the button goes under the field at the
+ * field's width.
+ */
+.corex-standalone__copy {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	inline-size: 100%;
+	text-align: start;
+}
+
+.corex-standalone__copy-label {
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+.corex-standalone__copy-row {
+	display: flex;
+	align-items: stretch;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-standalone__copy-value {
+	flex-grow: 1;
+	min-inline-size: 0;
+	min-block-size: var(--corex-admin-control-height);
+	margin: 0;
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-standalone .corex-standalone__copy-button {
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+.corex-standalone__copy-icon {
+	flex-shrink: 0;
+	inline-size: 1rem;
+	block-size: 1rem;
+}
+
+.corex-standalone__copy-icon--done,
+.corex-standalone__copy.is-copied .corex-standalone__copy-icon--copy {
+	display: none;
+}
+
+.corex-standalone__copy.is-copied .corex-standalone__copy-icon--done {
+	display: block;
+}
+
+/* One line is kept for the answer, so the card does not move when it comes. */
+.corex-standalone__copy-status {
+	min-block-size: calc(var(--corex-admin-font-sm) * var(--corex-admin-line-normal));
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-standalone__status {
 	display: inline-flex;
 	align-items: center;
@@ -172,6 +243,11 @@
 .corex-standalone .button:hover,
 .corex-standalone__btn:hover {
 	border-color: var(--corex-admin-action);
+}
+
+/* The attribute loses to any rule that sets display, and the rule above does. */
+.corex-standalone .button[hidden] {
+	display: none;
 }
 
 .corex-standalone .button-primary {
@@ -356,6 +432,10 @@
 
 	.corex-standalone__card {
 		padding: var(--corex-admin-space-xl) var(--corex-admin-space-md);
+	}
+
+	.corex-standalone__copy-row {
+		flex-direction: column;
 	}
 }
 

@@ -115,3 +115,61 @@ it('exposes the shared brand mark as an inline currentColor SVG', function () {
     expect(StandalonePage::brandMark())->toContain('<svg')
         ->and(StandalonePage::brandMark())->toContain('fill="currentColor"');
 });
+
+/**
+ * The copy field (spec 101, FR-011a). The escaping helpers escape here as WordPress's do, because
+ * what is under test is which of them each value goes through.
+ */
+function standaloneCopyField(string $value = 'http://example.test/?corex_preview=abc'): string
+{
+    Functions\when('esc_attr')->alias(static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES));
+    Functions\when('esc_html')->alias(static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES));
+    Functions\when('esc_attr__')->alias(static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES));
+    Functions\when('wp_get_inline_script_tag')
+        ->alias(static fn (string $script): string => '<script data-through-wordpress>' . $script . '</script>');
+
+    return standalonePage()->copyField('corex-preview-link', 'Preview link', $value, 'Copy link');
+}
+
+it('holds a value to be copied in a labelled read-only field', function () {
+    $field = standaloneCopyField();
+
+    expect($field)->toContain('<label class="corex-standalone__copy-label" for="corex-preview-link">Preview link</label>')
+        ->and($field)->toMatch('/<input[^>]* id="corex-preview-link"[^>]* readonly[^>]* value="http:\/\/example\.test\/\?corex_preview=abc"/')
+        // An address reads left to right on a page written right to left.
+        ->and($field)->toMatch('/<input[^>]* dir="ltr"/');
+});
+
+it('escapes the value as an attribute, since that is where it is written', function () {
+    $field = standaloneCopyField('http://example.test/?a=1&b="><script>x</script>');
+
+    expect($field)->toContain('value="http://example.test/?a=1&amp;b=&quot;&gt;&lt;script&gt;x&lt;/script&gt;"')
+        ->and($field)->not->toContain('<script>x</script>');
+});
+
+it('writes the copy button hidden, for the script to show where it runs', function () {
+    $field = standaloneCopyField();
+
+    expect($field)->toMatch('/<button type="button"[^>]* data-corex-copy-button[^>]* hidden>/')
+        ->and($field)->toContain('<span>Copy link</span>')
+        // The icon says nothing a second time: the button's name is its words.
+        ->and($field)->toMatch('/<svg[^>]* aria-hidden="true"[^>]* focusable="false"/');
+});
+
+it('has an empty polite status for what the button did, and the words for it', function () {
+    $field = standaloneCopyField();
+
+    expect($field)->toContain('role="status" aria-live="polite" data-corex-copy-status></p>')
+        ->and($field)->toMatch('/data-copied="[^"]+"/')
+        ->and($field)->toMatch('/data-manual="[^"]+"/');
+});
+
+it('carries its script inline, through the WordPress function a site adds a nonce to', function () {
+    $field  = standaloneCopyField();
+    $script = (string) file_get_contents(dirname(__DIR__, 3) . '/plugins/corex-core/assets/js/corex-copy-field.js');
+
+    expect($script)->not->toBe('')
+        ->and($field)->toContain('<script data-through-wordpress>' . $script . '</script>')
+        // The value is in the field and nowhere else: not in the script, not in a data attribute.
+        ->and(substr_count($field, 'corex_preview=abc'))->toBe(1);
+});
