@@ -11352,7 +11352,7 @@ which is how CoreX's mark reaches the listener there. Whether Gmail keeps a `Mes
 writes its own, a reply names an id the person's mail program never saw, and stands alone.
 One real reply on MUVA after the release, and its raw headers, will say.
 
-## #326 — The page that shows a preview link has a button that copies it
+## #327 — The page that shows a preview link has a button that copies it
 
 **Date:** 2026-10-13. **Branch:** `feat/101-preview-link-copy`. **Spec:** 101, FR-011a (added by this change).
 

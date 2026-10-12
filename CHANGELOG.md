@@ -14,7 +14,7 @@ All notable changes to Corex are documented here. The format follows
   screen reader as well. With scripts off there is no button and the link is copied from the
   field by hand. On a site not served over HTTPS, where a browser gives a page no clipboard,
   the button copies by selecting the field. The link is still shown once and kept nowhere
-  (DECISIONS #326).
+  (DECISIONS #327).
 
 - **A reply that was begun and not sent is kept as a draft** (spec 106, slice 3). It is
   written down when writing pauses, and is in the box again the next time that person opens

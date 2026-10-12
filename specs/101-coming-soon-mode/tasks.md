@@ -574,7 +574,7 @@ written before the code they test.
       not move. Measured, that left 56 pixels under the field against 16 above its label. It is
       on the label's line now.
 - [x] **T075** `docs/en/03-operations/coming-soon.md` and its Arabic mirror, the docs site's
-      `guides/coming-soon.md`, `CHANGELOG.md` with its Client impact, `DECISIONS.md` #326,
+      `guides/coming-soon.md`, `CHANGELOG.md` with its Client impact, `DECISIONS.md` #327,
       `PROGRESS.md`. Guard Gate: `clean-code-guard` (two guards for parts the page always
       writes were taken out of the script, and a timer renamed), `wp-guard` (nothing found),
       `test-guard` (assertions the unit test already makes were taken out of the integration
