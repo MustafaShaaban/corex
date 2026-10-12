@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Email\Security\HeaderGuard;
 use Corex\Email\Studio\EmailTemplateService;
 use Corex\Email\Studio\EmailTemplateVersion;
 use Corex\Email\Studio\EmailPartialRepository;
@@ -16,6 +17,7 @@ use Corex\Email\Studio\EmailPartial;
 use Corex\Email\Studio\EmailLayout;
 use Corex\Email\Studio\EmailStudioStore;
 use Corex\Email\Template\Layout;
+use Corex\Mail\SubjectLine;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -126,7 +128,7 @@ it('rejects scripts event handlers javascript urls PHP and header injection', fu
     'header'     => ["Hello\r\nBcc: victim@example.com", '<p>Hello</p>'],
 ]);
 
-it('renders context with HTML escaping and keeps subject and plain text free of markup', function () {
+it('renders context with HTML escaping, plain text free of markup, and the subject as it is', function () {
     $rendered = emailTemplateService()->render(editableVersion(), [
         'user' => ['name' => '<b>Sam</b>'],
         'site' => ['name' => 'CoreX'],
@@ -134,8 +136,87 @@ it('renders context with HTML escaping and keeps subject and plain text free of 
 
     expect($rendered['html'])->toContain('&lt;b&gt;Sam&lt;/b&gt;')
         ->and($rendered['html'])->not->toContain('<b>Sam</b>')
-        ->and($rendered['subject'])->toBe('Welcome Sam')
+        ->and($rendered['subject'])->toBe('Welcome <b>Sam</b>')
         ->and($rendered['plain'])->toBe('Hello Sam at CoreX');
+});
+
+// A subject is a header, plain text and not markup (DECISIONS #329).
+it('renders a template\'s subject as it was written', function (string $written) {
+    $rendered = emailTemplateService()->render(editableVersion(subject: $written), []);
+
+    expect($rendered['subject'])->toBe($written);
+})->with([
+    'a less-than sign' => ['Price <500 EGP'],
+    'an address in angle brackets' => ['Sam <sam@example.com> asked'],
+    'an ampersand and both quotes' => ['Tom & Jerry\'s "offer"'],
+    'an entity somebody meant to write' => ['Use &amp; not &'],
+    'Arabic' => ['السعر أقل من <500> جنيه & "خصم"'],
+]);
+
+it('gives up one byte of a subject that is not UTF-8, and not the subject', function () {
+    $rendered = emailTemplateService()->render(editableVersion(subject: "Price \xE9 {{ user.name }}"), [
+        'user' => ['name' => 'سام'],
+    ]);
+
+    expect($rendered['subject'])->toBe('Price ? سام');
+});
+
+it('merges a value into the subject as it is', function (string $name, string $subject) {
+    $rendered = emailTemplateService()->render(editableVersion(subject: 'Hello {{ user.name }}'), [
+        'user' => ['name' => $name],
+    ]);
+
+    expect($rendered['subject'])->toBe($subject);
+})->with([
+    'markup and an ampersand' => ['Sam <b>x</b> & co', 'Hello Sam <b>x</b> & co'],
+    'an address in angle brackets' => ['Sam <sam@example.com>', 'Hello Sam <sam@example.com>'],
+    'Arabic' => ['سام <500> & "شركاه"', 'Hello سام <500> & "شركاه"'],
+    'a placeholder, which is not read again' => ['{{ site.name }}', 'Hello {{ site.name }}'],
+    // One byte that is not UTF-8 costs that byte, and not the whole subject.
+    'a byte that is not UTF-8' => ["Sam\xE9", 'Hello Sam?'],
+]);
+
+it('makes one line of a subject whose merged value holds a break', function (string $name, string $subject) {
+    $rendered = emailTemplateService()->render(editableVersion(subject: 'Hello {{ user.name }}'), [
+        'user' => ['name' => $name],
+    ]);
+
+    expect($rendered['subject'])->toBe($subject)
+        ->and((new HeaderGuard())->inspect(['subject' => $rendered['subject']]))->toBeNull();
+})->with([
+    'markup, then a header of its own' => ["Sam <b>x</b>\r\nBcc: victim@example.com", 'Hello Sam <b>x</b> Bcc: victim@example.com'],
+    'a line feed alone' => ["Sam\nBcc: victim@example.com", 'Hello Sam Bcc: victim@example.com'],
+    'a tab and a null byte' => ["Sam\tthe\0first", 'Hello Sam the first'],
+    'the line separator of Unicode' => ["Sam\u{2028}Bcc: victim@example.com", 'Hello Sam Bcc: victim@example.com'],
+]);
+
+it('cuts a merged subject at the length a subject may have', function () {
+    $rendered = emailTemplateService()->render(editableVersion(subject: 'Hello {{ user.name }}'), [
+        'user' => ['name' => str_repeat('م', 400)],
+    ]);
+
+    expect(mb_strlen($rendered['subject']))->toBe(SubjectLine::LONGEST)
+        ->and($rendered['subject'])->toStartWith('Hello مم');
+});
+
+it('escapes the subject where the brand layout prints it, as the page\'s title', function () {
+    $service = new EmailTemplateService([
+        'user.name' => ['type' => 'text', 'label' => 'User name'],
+        'site.name' => ['type' => 'text', 'label' => 'Site name'],
+    ], null, new Layout(['name' => 'CoreX']));
+    $layout = new EmailLayout(4, 'plain', 'Plain', 1, ['body' => '{{ content }}'], null, 7, new DateTimeImmutable());
+
+    $rendered = $service->render(
+        editableVersion(subject: 'Price <500 EGP for {{ user.name }}', html: '<p>Hello</p>', plain: 'Hello'),
+        ['user' => ['name' => '</title><script>alert(1)</script> & "co"']],
+        $layout,
+    );
+
+    expect($rendered['subject'])->toBe('Price <500 EGP for </title><script>alert(1)</script> & "co"')
+        ->and($rendered['html'])->toContain(
+            '<title>Price &lt;500 EGP for &lt;/title&gt;&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;co&quot;</title>',
+        )
+        ->and($rendered['html'])->not->toContain('<script>');
 });
 
 it('generates plain text from safe HTML when auto mode is selected', function () {

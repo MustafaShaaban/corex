@@ -10,8 +10,10 @@ namespace Corex\Email\Studio;
 
 defined('ABSPATH') || exit;
 
+use Closure;
 use DomainException;
 use Corex\Email\Template\Layout;
+use Corex\Mail\SubjectLine;
 
 /**
  * Validates editable content and renders only schema-declared scalar context.
@@ -121,11 +123,11 @@ final class EmailTemplateService
             throw new DomainException(__('Unsafe or invalid email template content cannot be rendered.', 'corex'));
         }
 
-        $subject = trim(strip_tags($this->merge($version->subject, $context, html: false)));
-        $html    = $this->merge($this->expandPartials($version->htmlBody, true), $context, html: true);
+        $subject = $this->subjectLine($version->subject, $context);
+        $html    = $this->merge($this->expandPartials($version->htmlBody, true), $context, self::escaped(...));
         $plain   = $version->plainTextMode === EmailTemplateVersion::PLAIN_AUTO
             ? $this->toPlainText($html)
-            : $this->merge($this->expandPartials($version->plainText, false), $context, html: false);
+            : $this->merge($this->expandPartials($version->plainText, false), $context, self::withoutMarkup(...));
 
         if ($emailLayout !== null) {
             $html = $this->applyLayout($emailLayout, $subject, $html, $context);
@@ -163,21 +165,47 @@ final class EmailTemplateService
         return array_values(array_unique($matches[1] ?? []));
     }
 
-    /** @param array<string,mixed> $context */
-    private function merge(string $content, array $context, bool $html): string
+    /**
+     * @param array<string,mixed>    $context
+     * @param Closure(string):string $written How a value is written where it lands.
+     */
+    private function merge(string $content, array $context, Closure $written): string
     {
         return preg_replace_callback(
             self::PLACEHOLDER,
-            function (array $matches) use ($context, $html): string {
-                $value = $this->contextValue($context, $matches[1]);
-                if ($html) {
-                    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                }
-
-                return trim(strip_tags($value));
-            },
+            fn (array $matches): string => $written($this->contextValue($context, $matches[1])),
             $content,
         ) ?? $content;
+    }
+
+    /** Into markup: a value is text there, whatever it holds. */
+    private static function escaped(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /** Into the plain-text version: a value written as markup is read as its words. */
+    private static function withoutMarkup(string $value): string
+    {
+        return trim(strip_tags($value));
+    }
+
+    /**
+     * The subject as the email carries it: what was written, with each value as it is.
+     *
+     * A subject is a header and not markup, so nothing is stripped from it, and whatever prints
+     * it escapes it there. What a header cannot hold is a line break, and a value handed in (a
+     * name somebody typed into a form) can bring one: the merged subject is made one line.
+     *
+     * @param array<string,mixed> $context
+     */
+    private function subjectLine(string $written, array $context): string
+    {
+        $merged = $this->merge($written, $context, static fn (string $value): string => $value);
+
+        // A byte that is not UTF-8 costs that byte. Left in, the subject could not be read as
+        // text, and the email would leave with none.
+        return SubjectLine::of(mb_scrub($merged, 'UTF-8'));
     }
 
     /** @param array<string,mixed> $context */
@@ -270,7 +298,7 @@ final class EmailTemplateService
             $regions[$name] = str_replace(
                 '__COREX_EMAIL_CONTENT__',
                 '{{ content }}',
-                $this->merge($expanded, $context, html: true),
+                $this->merge($expanded, $context, self::escaped(...)),
             );
         }
 

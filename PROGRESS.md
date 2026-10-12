@@ -87,7 +87,9 @@ What to know before resuming each:
   and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
   (DECISIONS #326; on `main` after v0.45.2, not released). A subject can now hold `<`, `>`
   and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
-  is printed before adding a place that prints one.
+  is printed before adding a place that prints one. An Email Studio template's subject, and a
+  value merged into it, are read by the same rule (DECISIONS #329; on `main` after v0.45.2,
+  not released): nothing is stripped, and a line break in a merged value is a space.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -154,12 +156,15 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **CoreX → Data → Form submissions prints that number too**, in its record view and in its
   own export. The Submissions inbox and its export name the file. Read from
   `SubmissionsSource`, not looked at in a browser.
-- **An Email Studio template's subject loses what follows a `<`.** A template's subject is run
-  through `strip_tags()` when it is merged (`EmailTemplateService::render()`): measured on
-  2026-10-13, a template whose subject is "Price <500 EGP" is sent as "Price", and
-  "Sam <sam@example.com> asked" as "Sam  asked". A reply's subject and Email Studio's own
-  **Test send** and **Resend** are kept as typed (DECISIONS #326); a template's is not, and
-  a value merged into it is stripped the same way. Not changed.
+- **An email made from an Email Studio template leaves without a plain-text version.** A
+  template has a Plain Text tab, written by hand or made from the HTML, and the health check
+  refuses one written by hand and left empty. Nothing that sends reads it: the route and the
+  email sent again from a submission build their message from the subject and the HTML
+  (`EmailRouteMessageFactory::prepare()`, `EmailStudioSubmissionGateway::resend()`). Measured
+  on 2026-10-13 through a route on a site that delivers: the mail driver was handed no
+  plain-text version, with a manual one saved on the template. A reply has one. The version
+  nobody sends also loses what follows a `<` in a merged value ("under <500 EGP" is "under"
+  there). Found while reading for DECISIONS #329, not changed.
 - **Email Studio's store drops a backslash from everything it keeps.** Its records go to
   `update_post_meta()` without `wp_slash()` (`WpEmailStudioStore::create()` and `update()`).
   Measured on 2026-10-13: an email with the subject "C:\offers\new" is listed, in Email
