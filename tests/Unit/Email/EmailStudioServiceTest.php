@@ -591,7 +591,7 @@ it('knows an id from what is not one', function (mixed $value, bool $isOne) {
     'a dot first' => ['<.a@c.com>', false],
     'a dot before the host' => ['<a.@c.com>', false],
     'a host that ends in a dot' => ['<a@c.com.>', false],
-    'longer than a header\'s line' => ['<' . str_repeat('a', 250) . '@c.com>', false],
+    'longer than an id is taken to be' => ['<' . str_repeat('a', 250) . '@c.com>', false],
     'nothing' => ['', false],
     'not text' => [['<a@b.com>'], false],
 ]);
@@ -649,8 +649,36 @@ it('sends a reply under the email it answers, naming the ones before it; or as a
         ->and(MessageId::isOne($alone->headers['Message-ID']))->toBeTrue();
 });
 
+// Every email Email Studio sends on a site with a host goes through this. A field left behind
+// here is a field that email lost: its sender, its attachments, its plain-text version.
+it('carries every field of a message when headers are added to it', function () {
+    $message = new EmailMessage(
+        ['sam@example.com'],
+        ['cc@example.com'],
+        ['bcc@example.com'],
+        'reply@example.com',
+        'Welcome',
+        '<p>Hello</p>',
+        ['X-Kept' => 'yes', 'Message-ID' => '<old@acme.test>'],
+        'from@example.com',
+        [12, 13],
+        'Hello',
+    );
+    $given = (new ReflectionClass(EmailMessage::class))->getConstructor()->getNumberOfParameters();
+
+    $with = $message->withHeaders(['Message-ID' => '<new@acme.test>']);
+
+    // Every field was given a value of its own above: one added to the class and not here
+    // fails the first line, and one not carried fails the second.
+    expect(count(get_object_vars($message)))->toBe($given)->toBe(10)
+        ->and(array_replace(get_object_vars($with), ['headers' => $message->headers]))->toBe(get_object_vars($message))
+        ->and($with->headers)->toBe(['Message-ID' => '<new@acme.test>', 'X-Kept' => 'yes']);
+});
+
 it('lets nothing but an id into a conversation', function () {
-    $conversation = new ReplyConversation(['<one@acme.test>', "<two@acme.test>\r\nBcc: x@example.com", 'plain', ['x'], '<three@acme.test>'], "Subject\r\nBcc: x");
+    // The fourth is what a looser rule of its own once let through, and the driver would not
+    // have written: a reply counted as joining an email it never named.
+    $conversation = new ReplyConversation(['<one@acme.test>', "<two@acme.test>\r\nBcc: x@example.com", 'plain', '<a..b@acme.test>', ['x'], '<three@acme.test>'], "Subject\r\nBcc: x");
 
     expect($conversation->messageIds)->toBe(['<one@acme.test>', '<three@acme.test>'])
         ->and($conversation->subject)->toBe('Subject Bcc: x')

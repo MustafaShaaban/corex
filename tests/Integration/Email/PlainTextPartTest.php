@@ -225,48 +225,172 @@ it('goes without naming an email whose id the way it is sent has no room for', f
         ->and($built)->toContain('<p>Hello Salma</p>');
 })->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
 
+/**
+ * Every message WordPress's mailer built while one email was sent through the driver, in the
+ * order it built them, and what the driver answered. None of them is delivered: each is read
+ * and then left with nobody to go to, which the mailer refuses.
+ *
+ * @param array<string,array{0:callable,1:int}> $listening Hook name to its listener and priority,
+ *                                                         on for the length of the send.
+ *
+ * @return array{built:list<string>,went:bool}
+ */
+function builtWhileSending(EmailMessage $message, array $listening): array
+{
+    $built = [];
+    $read = static function (object $mailer) use (&$built): void {
+        $mailer->preSend();
+        $built[] = $mailer->getSentMIMEMessage();
+        $mailer->clearAllRecipients();
+    };
+    add_action('phpmailer_init', $read, PHP_INT_MAX);
+    foreach ($listening as $hook => [$listener, $priority]) {
+        add_filter($hook, $listener, $priority);
+    }
+
+    try {
+        $went = Boot::app()->container()->make(WpMailDriver::class)->send($message);
+    } finally {
+        remove_action('phpmailer_init', $read, PHP_INT_MAX);
+        foreach ($listening as $hook => [$listener, $priority]) {
+            remove_filter($hook, $listener, $priority);
+        }
+    }
+
+    return ['built' => $built, 'went' => $went];
+}
+
+/** A sender WordPress's mailer takes, for an install whose own would be `wordpress@localhost`. */
+function aSenderTheMailerTakes(): array
+{
+    return [static fn (): string => 'site@example.com', PHP_INT_MAX];
+}
+
 // WordPress says how an email went before `wp_mail()` returns, and something may send an email
 // of its own on hearing it: a notice to the team that a reply failed. WordPress has not
 // emptied its mailer of the reply's id by then.
-it('leaves its id on no email that something sends on hearing how it went', function () {
-    $emails = 0;
-    $second = '';
-    $read = static function (object $mailer) use (&$emails, &$second): void {
-        $emails++;
-        if ($emails === 2) {
-            $mailer->preSend();
-            $second = $mailer->getSentMIMEMessage();
-        }
-        // With nobody to go to, the mailer refuses it, and WordPress says it failed.
-        $mailer->clearAllRecipients();
-    };
-    $tellTheTeam = static function () use (&$emails): void {
-        if ($emails === 1) {
-            wp_mail('team@example.com', 'A reply was not sent', 'The mail server refused it.');
-        }
-    };
-    $from = static fn (): string => 'site@example.com';
-    add_action('phpmailer_init', $read, PHP_INT_MAX);
-    add_action('wp_mail_failed', $tellTheTeam);
-    add_filter('wp_mail_from', $from, PHP_INT_MAX);
+it('leaves its id on no email that something sends on hearing how it went', function (Closure $notice, string $itsId) {
+    $told = false;
+    $sent = builtWhileSending(replyToTheSecondOfTwo(), [
+        'wp_mail_from' => aSenderTheMailerTakes(),
+        'wp_mail_failed' => [static function () use (&$told, $notice): void {
+            if (! $told) {
+                $told = true;
+                $notice();
+            }
+        }, 10],
+    ]);
+    $second = $sent['built'][1] ?? '';
 
-    try {
-        $went = Boot::app()->container()->make(WpMailDriver::class)->send(replyToTheSecondOfTwo());
-    } finally {
-        remove_action('phpmailer_init', $read, PHP_INT_MAX);
-        remove_action('wp_mail_failed', $tellTheTeam);
-        remove_filter('wp_mail_from', $from, PHP_INT_MAX);
-    }
-
-    expect($went)->toBeFalse()
-        ->and($emails)->toBe(2)
+    expect($sent['went'])->toBeFalse()
+        ->and($sent['built'])->toHaveCount(2)
         ->and($second)->toContain('A reply was not sent')
         ->and($second)->not->toContain('33333333333343338333')
         ->and($second)->not->toContain('In-Reply-To')->not->toContain('References')
-        // Nor the reply's plain-text version: CoreX's listener is still on the hook, and
-        // does its work for one email.
+        // Nor the reply's plain-text version: it is handed to the reply and to nothing else.
         ->and($second)->not->toContain('multipart/alternative')->not->toContain('Hello Salma')
-        ->and(preg_match_all('/^Message-ID: <[^>\s]+>/mi', $second))->toBe(1);
+        ->and(preg_match_all('/^Message-ID: <[^>\s]+>/mi', $second))->toBe(1)
+        ->and($itsId === '' || str_contains($second, 'Message-ID: ' . $itsId))->toBeTrue();
+})->with([
+    'by wp_mail()' => [static fn () => wp_mail('team@example.com', 'A reply was not sent', 'The mail server refused it.'), ''],
+    // An email of CoreX's own, sent the same way from inside the first: it leaves under its own id.
+    'through this driver, under an id of its own' => [
+        static fn () => Boot::app()->container()->make(WpMailDriver::class)->send(new EmailMessage(
+            ['team@example.com'],
+            [],
+            [],
+            null,
+            'A reply was not sent',
+            '<p>The mail server refused it.</p>',
+            ['Message-ID' => '<44444444444444448444@acme.test>'],
+        )),
+        '<44444444444444448444@acme.test>',
+    ],
+])->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// An id something else gave that second email is not CoreX's to take off.
+it('leaves an email sent meanwhile the id something else gave it', function () {
+    $told = false;
+    $sent = builtWhileSending(replyToTheSecondOfTwo(), [
+        'wp_mail_from' => aSenderTheMailerTakes(),
+        'wp_mail_failed' => [static function () use (&$told): void {
+            if (! $told) {
+                $told = true;
+                wp_mail('team@example.com', 'A reply was not sent', 'The mail server refused it.');
+            }
+        }, 10],
+        // A helpdesk plugin, giving its notices ids of its own.
+        'phpmailer_init' => [static function (object $mailer): void {
+            if ($mailer->Subject === 'A reply was not sent') {
+                $mailer->MessageID = '<ticket-81@helpdesk.example>';
+            }
+        }, 10],
+    ]);
+
+    expect($sent['built'][1] ?? '')->toContain('Message-ID: <ticket-81@helpdesk.example>');
+})->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// The first email to reach the mailer after the driver sent one is not always the driver's.
+// WordPress refuses a sender before it reaches the mailer's hook, and says so at once: an
+// email sent on hearing that reaches the hook first, and the reply never does.
+it('hands nothing of a reply that never reached the mailer to the email that did', function () {
+    $asked = 0;
+    $told = false;
+    $sent = builtWhileSending(replyToTheSecondOfTwo(), [
+        // The reply's sender is one the mailer refuses, as `wordpress@localhost` is; the notice's is not.
+        'wp_mail_from' => [static function () use (&$asked): string {
+            return ++$asked === 1 ? 'not an address' : 'site@example.com';
+        }, PHP_INT_MAX],
+        'wp_mail_failed' => [static function () use (&$told): void {
+            if (! $told) {
+                $told = true;
+                wp_mail('team@example.com', 'A reply was not sent', 'Its sender was refused.');
+            }
+        }, 10],
+    ]);
+    $notice = $sent['built'][0] ?? '';
+
+    expect($sent['went'])->toBeFalse()
+        ->and($sent['built'])->toHaveCount(1)
+        ->and($notice)->toContain('A reply was not sent')
+        ->and($notice)->not->toContain('33333333333343338333')
+        ->and($notice)->not->toContain('In-Reply-To')->not->toContain('References')
+        ->and($notice)->not->toContain('multipart/alternative')->not->toContain('Hello Salma');
+})->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// A plugin that copies every email to somebody sends its copy from the `wp_mail` filter, which
+// is before the email it copies has reached the mailer.
+it('hands a reply what is the reply\'s when another email is sent from inside its sending first', function () {
+    $copied = false;
+    $sent = builtWhileSending(replyToTheSecondOfTwo(), [
+        'wp_mail_from' => aSenderTheMailerTakes(),
+        'wp_mail' => [static function (array $email) use (&$copied): array {
+            if (! $copied) {
+                $copied = true;
+                wp_mail('archive@example.com', 'Copy: ' . $email['subject'], 'A copy for the archive.');
+            }
+
+            return $email;
+        }, 10],
+    ]);
+    [$copy, $reply] = $sent['built'] + ['', ''];
+
+    expect($sent['built'])->toHaveCount(2)
+        ->and($copy)->toContain('A copy for the archive.')
+        ->and($copy)->not->toContain('33333333333343338333')->not->toContain('In-Reply-To')
+        ->and($copy)->not->toContain('multipart/alternative')
+        // And the reply is still the reply.
+        ->and($reply)->toContain('Message-ID: <33333333333343338333@acme.test>')
+        ->and($reply)->toContain('In-Reply-To: <22222222222242228222@acme.test>')
+        ->and($reply)->toContain('multipart/alternative')->toContain('Hello Salma');
+})->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// What the driver knows its own email by at the mailer is taken off there.
+it('sends nothing of its own making with an email but what it was asked to', function () {
+    $built = builtAndNotSent(Boot::app()->container()->make(WpMailDriver::class), replyToTheSecondOfTwo());
+
+    expect($built)->not->toContain('X-Corex')
+        ->and(preg_match_all('/^X-[A-Za-z-]+:/m', $built))->toBe(preg_match_all('/^X-(Mailer|Priority):/m', $built));
 })->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
 
 // WordPress empties its mailer's body and headers before each email, and not its id. Left

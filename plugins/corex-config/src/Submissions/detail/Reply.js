@@ -57,8 +57,14 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 	const starts = [ 'conversation', 'new' ].map(
 		( way ) => untouchedReply( record, way ).subject
 	);
-	// One object while neither changes: the draft is written down when this does.
-	const begun = useMemo( () => ( { ...reply, thread } ), [ reply, thread ] );
+	// One object while neither changes: the draft is written down when this does. It keeps
+	// the way somebody chose, and nothing where nobody did: a draft begun before there was
+	// an email to continue from was not chosen to be a new email, and joins the conversation
+	// like any other once there is one.
+	const begun = useMemo(
+		() => ( { ...reply, thread: chosen ?? '' } ),
+		[ reply, chosen ]
+	);
 	const draft = useReplyDraft( {
 		id: record.id,
 		stored: record.reply_draft,

@@ -975,7 +975,7 @@ describe( 'the subject a reply starts with', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: Request a quote',
 			body: '<p>Hello</p>',
-			thread: 'new',
+			thread: '',
 		} );
 	} );
 
@@ -1166,7 +1166,7 @@ describe( 'the draft', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: your message',
 			body: '<p>Hello</p>',
-			thread: 'new',
+			thread: '',
 		} );
 		expect( line().textContent ).toContain( 'Draft saved.' );
 		// Said in the page, not announced each time writing pauses.
@@ -1285,7 +1285,7 @@ describe( 'the draft', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: your message',
 			body: '<p>Hello</p>',
-			thread: 'new',
+			thread: '',
 		} );
 	} );
 
@@ -1337,7 +1337,7 @@ describe( 'the draft', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: your message',
 			body: '<p>Hello</p>',
-			thread: 'new',
+			thread: '',
 		} );
 		expect( message().textContent ).toBe( 'Hello' );
 	} );
@@ -1416,6 +1416,29 @@ describe( 'the draft', () => {
 			expect(
 				container.querySelector( '.corex-pane__reply-way' ).textContent
 			).toContain( 'This will be a new email' );
+		} );
+
+		// Begun before there was an email to continue from: nobody chose a new email, and
+		// the draft must not come back as if somebody had.
+		it( 'keeps no way where nobody chose one, and joins the conversation once there is one', async () => {
+			show( submission() );
+			type( field( 'Subject' ), 'Your kitchen' );
+			typeMessage( '<p>Hello</p>' );
+			await pause();
+			const kept = inbox.keepReplyDraft.mock.calls.at( -1 )[ 1 ];
+			leave();
+
+			show(
+				submission( {
+					...IN_A_CONVERSATION,
+					reply_draft: { ...kept, saved_at: STORED.saved_at },
+				} )
+			);
+
+			expect( kept.thread ).toBe( '' );
+			expect(
+				way( 'In the conversation they already have' ).checked
+			).toBe( true );
 		} );
 
 		// Kept before the way was kept with it.

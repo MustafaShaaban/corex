@@ -93,6 +93,10 @@ All notable changes to Corex are documented here. The format follows
 - **CoreX's own listener on `phpmailer_init` now runs at priority 9999**, after the listeners
   that set a mail server up, where it ran at 10. A listener of your own at a later priority
   that changes how an email is sent is not seen by it.
+- **An email CoreX sends with a plain-text version or an id carries a header `X-Corex-Send`
+  as far as WordPress's mailer**, where CoreX takes it off. A mail plugin that sends without
+  firing `phpmailer_init` sends that header with the email; it holds a value made for that
+  one email and nothing else.
 - **A submission's detail gains `reply_subject`**, and `SubmissionReplyView::of()` takes
   the submission's record where it took its id.
 - **New routes: `POST` and `DELETE corex/v1/submissions/{id}/reply/draft`**, and a

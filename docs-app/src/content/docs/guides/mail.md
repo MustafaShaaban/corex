@@ -100,8 +100,13 @@ What this cannot promise:
 - Through PHP's own `mail()`, WordPress's mailer rewrites a header longer than 47 characters,
   so a reply names the one email it answers and not the ones before it; and on a site whose
   host name is longer than 34 characters it names none, and arrives as an email of its own
-  though the inbox lists it as sent in the conversation. Through a mail server it names up to
-  the whole conversation, on any host.
+  though the inbox lists it as sent in the conversation. Where a plugin chooses a mail server
+  on the `phpmailer_init` hook, a reply names up to the whole conversation, on any host.
+  FluentSMTP chooses after that hook, for its SMTP and its Gmail connections alike, so on it
+  a reply is written as it is for `mail()`.
+- The id is made of the host of the address the request is handled on. A site with one
+  domain per language, sending its confirmation later from the mail queue, may record one
+  host and send under another: the reply then names an id that was never sent.
 - Which emails a person was sent is recognised with the site's own secret keys. After a move
   to a host with new keys, earlier emails are not recognised and the next reply is a new
   email.

@@ -26,11 +26,27 @@ final class WpMailDriver implements MailDriver
 {
     /**
      * When this driver's own listener runs on `phpmailer_init`: after the listeners that set
-     * the mail server up, which are at the usual priority or a little after it. How an email
-     * is sent decides how long a header may be, and at the usual priority this read "by
-     * `mail()`" on a site about to send through a mail server.
+     * the mail server up on that hook, which are at the usual priority or a little after it.
+     * How an email is sent decides how long a header may be, and at the usual priority this
+     * read "by `mail()`" on a site whose listener was about to choose a mail server.
+     *
+     * Not every plugin chooses there. FluentSMTP sets the mailer to `mail()`, fires the hook,
+     * and chooses its mail server afterwards: on it this reads `mail()` whatever comes next,
+     * which is the careful answer.
      */
     public const AFTER_THE_MAIL_SERVER_IS_SET_UP = 9999;
+
+    /**
+     * The header this driver's own email is known by when WordPress's mailer is handed it.
+     *
+     * `wp_mail()` fires its hooks for every email, and more than one can be on its way at
+     * once: a copy sent from the `wp_mail` filter, a notice sent on hearing that an email
+     * failed. The first email to reach the hook is not always the one this driver sent, and
+     * what it hands the mailer (a plain-text version, an id, the email being answered) must
+     * go to that one only. So the email carries a mark of its own as far as the mailer, where
+     * it is taken off again: it does not leave the site where the hook is fired.
+     */
+    private const MARK = 'X-Corex-Send';
 
     public function __construct(
         private readonly ConfigInterface $config,
@@ -65,9 +81,11 @@ final class WpMailDriver implements MailDriver
 
         // What `wp_mail()` has no argument for: the plain-text version, the id the email is
         // sent under, and which email it answers.
+        $mark = bin2hex(random_bytes(8));
         $mailer = null;
-        $prepared = $this->beforeSending($message, $mailer);
+        $prepared = $this->beforeSending($message, $mark, $mailer);
         if ($prepared !== null) {
+            $headers[] = self::MARK . ': ' . $mark;
             add_action('phpmailer_init', $prepared, self::AFTER_THE_MAIL_SERVER_IS_SET_UP);
         }
 
@@ -91,7 +109,7 @@ final class WpMailDriver implements MailDriver
             // not the id: left there, it would be the id of the next email anything on the
             // site sent, and two emails under one id are one email to a mail program.
             if (is_object($mailer)) {
-                $mailer->MessageID = '';
+                self::takeIdOff($mailer, $message->headers['Message-ID'] ?? null);
             }
         }
     }
@@ -109,10 +127,11 @@ final class WpMailDriver implements MailDriver
      * The three headers are taken from the message by name and written only as ids: a header
      * taken as it was given could carry a second header behind it, and a recipient nobody sees.
      *
-     * @param object|null $mailer Set to the mailer once the hook has run, for the caller to
-     *                            take the id back off it.
+     * @param string      $mark   What this email is known by at the mailer: {@see MARK}.
+     * @param object|null $mailer Set to the mailer once it has been handed this email, for the
+     *                            caller to take the id back off it.
      */
-    private function beforeSending(EmailMessage $message, ?object &$mailer): ?Closure
+    private function beforeSending(EmailMessage $message, string $mark, ?object &$mailer): ?Closure
     {
         $plainText = $message->plainText !== null && trim($message->plainText) !== '' ? $message->plainText : null;
         $messageId = MessageId::isOne($message->headers['Message-ID'] ?? null) ? $message->headers['Message-ID'] : null;
@@ -122,25 +141,20 @@ final class WpMailDriver implements MailDriver
             return null;
         }
 
-        // It does its work once: `wp_mail()` fires other hooks before it returns, and an email
-        // one of their listeners sends must not leave with this one's words or id.
-        //
         // It does not take itself off the hook as it runs, which is how it was first written.
         // WordPress then skips whatever listens at the next priority, where something
         // listens at an earlier one: on a site whose mail server is set up by a listener at
         // priority 20, behind another plugin's at 5, a reply left without the mail server's
         // settings. The caller takes it off, when `wp_mail()` has returned.
-        $done = false;
-        $once = static function (object $phpmailer) use ($plainText, $messageId, $answers, $before, &$done, &$mailer): void {
-            if ($done) {
-                // A second email, sent by something listening to how the first one went.
-                // WordPress has emptied its mailer for it of everything but the first one's
-                // id, which is taken off here: two emails under one id are one email.
-                $phpmailer->MessageID = '';
+        return static function (object $phpmailer) use ($plainText, $messageId, $answers, $before, $mark, &$mailer): void {
+            if (! self::isThisDriversEmail($phpmailer, $mark)) {
+                // Another email, sent while this one was on its way. If it comes after this
+                // one, WordPress has emptied its mailer for it of everything but this one's
+                // id, which is taken off here. An id something else gave it is left alone.
+                self::takeIdOff($phpmailer, $messageId);
 
                 return;
             }
-            $done = true;
             $mailer = $phpmailer;
             if ($plainText !== null) {
                 $phpmailer->AltBody = $plainText;
@@ -157,8 +171,45 @@ final class WpMailDriver implements MailDriver
                 $phpmailer->addCustomHeader('References', $named);
             }
         };
+    }
 
-        return $once;
+    /**
+     * Whether the mailer holds the email this driver marked, taking the mark off it if so.
+     *
+     * WordPress empties its mailer's headers before each email and writes the email's own, so
+     * the mark is there for that email and no other.
+     */
+    private static function isThisDriversEmail(object $phpmailer, string $mark): bool
+    {
+        if (! method_exists($phpmailer, 'getCustomHeaders')) {
+            return false;
+        }
+        $headers = (array) $phpmailer->getCustomHeaders();
+        $others = array_values(array_filter($headers, static fn (mixed $header): bool => ! (
+            is_array($header)
+            && strcasecmp(trim((string) ($header[0] ?? '')), self::MARK) === 0
+            && trim((string) ($header[1] ?? '')) === $mark
+        )));
+        if (count($others) === count($headers)) {
+            return false;
+        }
+        $phpmailer->clearCustomHeaders();
+        foreach ($others as $header) {
+            $phpmailer->addCustomHeader((string) $header[0], (string) ($header[1] ?? ''));
+        }
+
+        return true;
+    }
+
+    /**
+     * Takes an id this driver gave the mailer back off it. Only that one: an id something else
+     * gave an email of its own is not this driver's to remove.
+     */
+    private static function takeIdOff(object $phpmailer, mixed $messageId): void
+    {
+        if (is_string($messageId) && $messageId !== '' && ($phpmailer->MessageID ?? '') === $messageId) {
+            $phpmailer->MessageID = '';
+        }
     }
 
     /**
@@ -166,8 +217,8 @@ final class WpMailDriver implements MailDriver
      * word, which no mail program reads as an id: the email would arrive, and stand alone.
      *
      * Through PHP's own `mail()` that is 63 characters less the 16 the encoding itself takes.
-     * Through anything else it is a line of 998. Asked when the mail server has been set up
-     * by whoever sets it up, which is why this listens late.
+     * Through anything else it is a line of 998. Asked late, after the listeners that choose
+     * a mail server on this hook: {@see AFTER_THE_MAIL_SERVER_IS_SET_UP}.
      */
     private static function roomFor(object $phpmailer): int
     {

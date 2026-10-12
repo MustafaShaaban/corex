@@ -11265,9 +11265,9 @@ whatever listened next (#324).
 **How long an id is follows the host.** Twenty characters of the attempt's id where the host
 leaves room for them in 47, which is a host of up to 24; fewer on a longer one, down to ten,
 which fits a host of up to 34. Twenty characters of a random id are 74 random bits and ten are
-40. On a host longer than 34 characters an id is over the line: through a mail server nothing
-changes, and through `mail()` the reply goes as an email of its own, under its own id, without
-naming the one it answers. The pane cannot say so beforehand, since how an email is sent is
+40. On a host longer than 34 characters an id is over the line: where a mail server was
+chosen by the time CoreX asks nothing changes, and through `mail()` the reply goes as an
+email of its own, under its own id, without naming the one it answers. The pane cannot say so beforehand, since how an email is sent is
 decided by whatever listens when it is sent; the reply is then listed as sent in the
 conversation and was not. Known, said in the guide, and left: a host that long, sending
 through `mail()`.
@@ -11277,10 +11277,15 @@ committed. Each of these has a test that fails without its fix.
 
 - *The way an email is sent was asked too early.* CoreX's listener ran at the usual priority
   and read "by `mail()`" on a site whose mail server is set up by a listener after it, so it
-  named one earlier email where it had room for all. It now listens at 9999.
+  named one earlier email where it had room for all. It now listens at 9999. This helps where
+  a plugin chooses its mail server on that hook. FluentSMTP does not: it sets the mailer to
+  `mail()`, fires the hook, and chooses afterwards (2.4.1, `helpers.php:671` and `:793`,
+  `Providers/Smtp/Handler.php:45`), and its Gmail connection builds the message while the
+  mailer still says `mail()`. On it CoreX reads `mail()` and writes for `mail()`, which is the
+  careful answer and, for Gmail, the true one.
 - *An email sent on hearing how a reply went left under the reply's id.* WordPress says how an
-  email went before `wp_mail()` returns, and the mailer still holds the id then. The listener,
-  asked a second time, takes it off.
+  email went before `wp_mail()` returns, and the mailer still holds the id then. The listener
+  takes it off an email that is not its own, where it is still the one it set.
 - *`began()` recorded any email*, whoever it went to. Above.
 - *A draft did not keep the way it was to be sent.* Somebody who chose a new email, wrote
   their own subject and came back found the draft set to join the conversation. The draft now
@@ -11295,6 +11300,27 @@ committed. Each of these has a test that fails without its fix.
   next one answers, so the box starts in the conversation again. And where an email to
   continue from appears under an open box (a colleague replied), a subject nobody wrote
   follows it.
+
+**What a second review found, the same day**, reading those fixes.
+
+- *The first email to reach the mailer's hook is not always CoreX's.* The listener took it to
+  be. WordPress refuses a sender before it fires that hook and says so at once, so a notice
+  sent on hearing it reached the hook first and left with the reply's id, its plain-text
+  version and the email it answered. A copy sent from the `wp_mail` filter did the same, and
+  the reply then left with none of them. The email now carries a mark as far as the mailer
+  (`X-Corex-Send`, a header with a value made for that email), which is what the listener
+  knows it by and takes off there. Where a mail plugin never fires the hook the mark leaves
+  with the email: a header that says nothing of anybody.
+- *The id was taken off any email*, also one a helpdesk plugin had given its own notice. Only
+  the id CoreX set is taken off.
+- *A draft kept the way in effect, not the way chosen.* Begun before there was an email to
+  continue from, it was kept as "new" and came back as a new email nobody chose. It keeps
+  what was chosen, and nothing where nobody chose.
+- *`began()` matched an address the mail engine would not send to* (a space beside it). It
+  reads them as the engine does.
+- *`EmailMessage::withHeaders()` named each field*, and a field added later would have been
+  dropped from every Email Studio email. It carries whatever the class has; a test gives
+  every field a value and compares.
 
 **The choice is the person's, each time.** Two radio buttons where there is a conversation,
 the conversation chosen: joining what the person already has is what was asked for. Where
@@ -11321,6 +11347,7 @@ Mail is the check still owed, on a site that delivers.
 **And not yet through a sending service.** MUVA sends through FluentSMTP's Gmail connection.
 Its session read the plugin: it fires `phpmailer_init`, so CoreX's listener runs, and it
 hands Gmail the whole message WordPress's mailer built, so CoreX's three headers leave the
-site. Whether Gmail keeps a `Message-ID` it is handed or writes its own is not known. If it
+site. It puts a header it does not know on the mailer before that hook (`helpers.php:712`),
+which is how CoreX's mark reaches the listener there. Whether Gmail keeps a `Message-ID` it is handed or writes its own is not known. If it
 writes its own, a reply names an id the person's mail program never saw, and stands alone.
 One real reply on MUVA after the release, and its raw headers, will say.

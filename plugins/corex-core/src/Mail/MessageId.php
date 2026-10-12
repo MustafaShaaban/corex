@@ -41,8 +41,8 @@ final class MessageId
 
     /**
      * `<something@host>`: no space, no bracket inside, one `@`, no dot at an end or beside
-     * another. What a header may carry, and what WordPress's mailer takes for an id: given
-     * anything else it sends under one of its own and says nothing.
+     * another. What a header may carry, and no wider than what WordPress's mailer takes for an
+     * id: given what it does not take, it sends under one of its own and says nothing.
      */
     private const SHAPE = '/^<[A-Za-z0-9_+-]+(?:\.[A-Za-z0-9_+-]+)*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*>\z/';
 

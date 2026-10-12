@@ -202,6 +202,10 @@ announced under Client impact before it is merged.
       keeps the way it was to be sent; anonymizing removes what the site said it sent; one
       rule for what an id is, and an id as long as its host leaves room for. Each with a test
       that fails without it
+- [x] T132 Second review, 2026-10-13: the driver knows its own email at the mailer by a mark
+      and not by being first; only an id it set is taken off; a draft keeps the way chosen and
+      not the way in effect; `began()` reads addresses as the mail engine does;
+      `withHeaders()` carries every field
 
 ## Slice 11: the email says what it is (US11; FR-044)
 

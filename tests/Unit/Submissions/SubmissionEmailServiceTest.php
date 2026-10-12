@@ -422,14 +422,28 @@ it('records only an email that goes to the person who sent the submission', func
     'a submission there is none of' => [['sam@example.com'], 404],
 ]);
 
-it('records an email to the person however their address was typed, among others it went to', function () {
+it('records an email to the person in whichever case their address was typed, among others it went to', function () {
     $own = ownConversationStore();
 
     conversationOn(submissionReplyStore(), $own, new UnavailableSubmissionEmailGateway())
-        ->began(31, new MailRequest(to: ['sales@acme.test', ' Sam@Example.com '], subject: 'We have your request', body: '<p>Thank you</p>'));
+        ->began(31, new MailRequest(to: ['sales@acme.test', 'Sam@Example.com'], subject: 'We have your request', body: '<p>Thank you</p>'));
 
     expect($own->emailsOf(31))->toHaveCount(1);
 });
+
+// The mail engine sends to an address only as it is written: one with a space beside it, or a
+// name in front of it, is dropped there, so the person was not sent that email.
+it('records nothing for an address the mail engine would not send to', function (string $written) {
+    $own = ownConversationStore();
+
+    conversationOn(submissionReplyStore(), $own, new UnavailableSubmissionEmailGateway())
+        ->began(31, new MailRequest(to: ['sales@acme.test', $written], subject: 'We have your request', body: '<p>Thank you</p>'));
+
+    expect($own->kept)->toBe([]);
+})->with([
+    'a space beside it' => [' sam@example.com '],
+    'a name in front of it' => ['Sam <sam@example.com>'],
+]);
 
 it('records nothing for a site with no host to make an id of', function () {
     $own = ownConversationStore();

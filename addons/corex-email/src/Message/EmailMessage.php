@@ -67,19 +67,8 @@ final class EmailMessage
      */
     public function withHeaders(array $headers): self
     {
-        // By name: a field added to this class and not carried here fails `MailServiceTest`,
-        // and one out of order fails at once.
-        return new self(
-            to: $this->to,
-            cc: $this->cc,
-            bcc: $this->bcc,
-            replyTo: $this->replyTo,
-            subject: $this->subject,
-            body: $this->body,
-            headers: $headers + $this->headers,
-            from: $this->from,
-            attachments: $this->attachments,
-            plainText: $this->plainText,
-        );
+        // Every field this class has, by its name, and the headers over them: a field added
+        // later is carried without being named here.
+        return new self(...[...get_object_vars($this), 'headers' => $headers + $this->headers]);
     }
 }

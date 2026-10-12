@@ -81,8 +81,12 @@ final readonly class SubmissionConversation
     public function began(int $submissionId, MailRequest $request): void
     {
         $sender = strtolower(trim((string) ($this->submissions->findWorkflow($submissionId)['submitter_email'] ?? '')));
+        // As the mail engine reads them: an address it would not send to is not one the
+        // email went to, however close it is to the person's.
         $goesToThem = $sender !== '' && in_array($sender, array_map(
-            static fn (mixed $address): string => is_string($address) ? strtolower(trim($address)) : '',
+            static fn (mixed $address): string => is_string($address) && filter_var($address, FILTER_VALIDATE_EMAIL) !== false
+                ? strtolower($address)
+                : '',
             $request->to,
         ), true);
         $messageId = MessageId::of($request->requestId, $this->host);
