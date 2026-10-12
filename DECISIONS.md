@@ -11433,7 +11433,7 @@ three; what is not text is refused and nothing is kept.
 `tests/Unit/Mail/SubjectLineTest.php` for the rule alone. Thirteen of the first file's
 tests and five of the second's failed before the change.
 
-## #329 — A template's subject is a header too: sent as written, with what is merged into it, on one line
+## #330 — A template's subject is a header too: sent as written, with what is merged into it, on one line
 
 **Date:** 2026-10-13. **Branch:** `fix/template-subject-kept-as-written`. **Found by:** the
 reading for #326, which measured it and left it for a change of its own.

@@ -174,7 +174,7 @@ it('persists creates drafts and activation through the REST boundary', function 
         ->and($overviewResponse->get_data()['data']['variables'])->toHaveKeys(['Recipient']);
 });
 
-// A subject is a header, plain text and not markup (DECISIONS #329).
+// A subject is a header, plain text and not markup (DECISIONS #330).
 it('keeps a template\'s subject as written, from the draft route to the email it renders', function (string $written) {
     $this->layouts->installDefaults(false, get_current_user_id(), new DateTimeImmutable());
     $layout = $this->layouts->find('transactional');

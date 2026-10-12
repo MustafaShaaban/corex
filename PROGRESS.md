@@ -88,7 +88,7 @@ What to know before resuming each:
   (DECISIONS #326; on `main` after v0.45.2, not released). A subject can now hold `<`, `>`
   and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
   is printed before adding a place that prints one. An Email Studio template's subject, and a
-  value merged into it, are read by the same rule (DECISIONS #329; on `main` after v0.45.2,
+  value merged into it, are read by the same rule (DECISIONS #330; on `main` after v0.45.2,
   not released): nothing is stripped, and a line break in a merged value is a space.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
@@ -164,7 +164,7 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   on 2026-10-13 through a route on a site that delivers: the mail driver was handed no
   plain-text version, with a manual one saved on the template. A reply has one. The version
   nobody sends also loses what follows a `<` in a merged value ("under <500 EGP" is "under"
-  there). Found while reading for DECISIONS #329, not changed.
+  there). Found while reading for DECISIONS #330, not changed.
 - **Email Studio's store drops a backslash from everything it keeps.** Its records go to
   `update_post_meta()` without `wp_slash()` (`WpEmailStudioStore::create()` and `update()`).
   Measured on 2026-10-13: an email with the subject "C:\offers\new" is listed, in Email

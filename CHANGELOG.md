@@ -84,7 +84,7 @@ All notable changes to Corex are documented here. The format follows
   it writes it; what another mailer does with one was not measured. The merged subject is
   now one line, with a space where the break was. This is every email sent from a template
   through its route (a form's notification, an access request's emails) and one sent again
-  from a submission (DECISIONS #329).
+  from a submission (DECISIONS #330).
 
 ### Client impact
 

@@ -66,7 +66,7 @@ it('escapes a merge value containing markup so it is not live HTML', function ()
         ->and($rendered->body)->not->toContain('<script>alert(1)</script>');
 });
 
-// A subject is a header, plain text and not markup (DECISIONS #329).
+// A subject is a header, plain text and not markup (DECISIONS #330).
 it('merges a value into the subject as it is, and escapes it in the page\'s title', function () {
     $rendered = mailRenderer()->render(new GreetingTemplate(), new MailContext([
         'user' => ['name' => 'سام <b>x</b> & "co"'],

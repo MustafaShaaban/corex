@@ -140,7 +140,7 @@ it('renders context with HTML escaping, plain text free of markup, and the subje
         ->and($rendered['plain'])->toBe('Hello Sam at CoreX');
 });
 
-// A subject is a header, plain text and not markup (DECISIONS #329).
+// A subject is a header, plain text and not markup (DECISIONS #330).
 it('renders a template\'s subject as it was written', function (string $written) {
     $rendered = emailTemplateService()->render(editableVersion(subject: $written), []);
 

@@ -243,7 +243,7 @@ it('blocks unconfigured Production and delivers after both provider gates pass',
         ]);
 });
 
-// A subject is a header, plain text and not markup (DECISIONS #329). Read from where a
+// A subject is a header, plain text and not markup (DECISIONS #330). Read from where a
 // development site keeps an email: nothing is sent.
 it('keeps a routed email under its template\'s subject as written, with a value merged as it is', function (
     string $written,
