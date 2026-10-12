@@ -113,6 +113,45 @@ function type( control, text ) {
 	} );
 }
 
+// A submission whose sender already has an email from the site about it.
+const IN_A_CONVERSATION = {
+	reply_subject: 'Re: Request a quote',
+	reply_conversation: {
+		available: true,
+		subject: 'Re: We received your request',
+	},
+};
+const way = ( label ) =>
+	[ ...container.querySelectorAll( 'input[type="radio"]' ) ].find(
+		( radio ) => radio.closest( 'label' ).textContent === label
+	);
+
+// A request whose answer the test gives when it chooses to.
+const held = () => {
+	let answer;
+	const promise = new Promise( ( resolve ) => {
+		answer = resolve;
+	} );
+
+	return {
+		promise,
+		answer: ( value ) => act( async () => answer( value ) ),
+	};
+};
+
+// The pane's own "one request at a time", which names the control whose request is out.
+function Pane( { record } ) {
+	const [ pending, during ] = usePending();
+
+	return (
+		<Reply record={ record } inbox={ inbox } work={ { pending, during } } />
+	);
+}
+const showInPane = ( record ) =>
+	act( () => {
+		root.render( <Pane record={ record } /> );
+	} );
+
 async function write( subject, said ) {
 	type( field( 'Subject' ), subject );
 	typeMessage( said );
@@ -228,7 +267,12 @@ describe( 'before anything is typed', () => {
 
 		expect( inbox.reply ).toHaveBeenCalledWith(
 			41,
-			{ subject: 'Re: your message', body: '<p>Hello Salma</p>' },
+			{
+				subject: 'Re: your message',
+				body: '<p>Hello Salma</p>',
+				// No earlier email to this person is on record: a new one.
+				thread: 'new',
+			},
 			'salma@example.com'
 		);
 	} );
@@ -566,6 +610,319 @@ describe( 'the preview', () => {
 	} );
 } );
 
+// Spec 106, FR-039 to FR-041 and FR-043: a reply joins the emails the person already has,
+// or stands alone, and whoever writes it chooses.
+describe( 'how a reply is sent', () => {
+	const sentAs = () => inbox.reply.mock.calls.at( -1 )[ 1 ];
+	const send = () =>
+		act( async () => {
+			button( 'Send reply' ).click();
+		} );
+
+	beforeEach( () => {
+		inbox.reply.mockResolvedValue( {
+			tone: 'success',
+			text: 'Reply sent to salma@example.com.',
+			detail: '',
+			keep: false,
+		} );
+	} );
+
+	it( 'is a new email, and says why, where no earlier email to this person is on record', async () => {
+		show( submission( { reply_subject: 'Re: Request a quote' } ) );
+
+		expect( container.querySelector( 'input[type="radio"]' ) ).toBeNull();
+		expect(
+			container.querySelector( '.corex-pane__reply-way' ).textContent
+		).toContain( 'This will be a new email' );
+
+		typeMessage( '<p>Hello</p>' );
+		await send();
+
+		expect( sentAs() ).toEqual( {
+			subject: 'Re: Request a quote',
+			body: '<p>Hello</p>',
+			thread: 'new',
+		} );
+	} );
+
+	it( 'offers the conversation they already have, chosen, with the subject that answers it', async () => {
+		show( submission( IN_A_CONVERSATION ) );
+		const group = container.querySelector( 'fieldset' );
+
+		expect( group.querySelector( 'legend' ).textContent ).toBe(
+			'How it is sent'
+		);
+		expect( way( 'In the conversation they already have' ).checked ).toBe(
+			true
+		);
+		expect( way( 'As a new email' ).checked ).toBe( false );
+		expect( field( 'Subject' ).value ).toBe(
+			'Re: We received your request'
+		);
+
+		typeMessage( '<p>Hello</p>' );
+		await send();
+
+		expect( sentAs().thread ).toBe( 'conversation' );
+		expect( sentAs().subject ).toBe( 'Re: We received your request' );
+	} );
+
+	it( 'takes the subject of the form when a new email is chosen, and the other back again', async () => {
+		show( submission( IN_A_CONVERSATION ) );
+
+		act( () => way( 'As a new email' ).click() );
+		expect( field( 'Subject' ).value ).toBe( 'Re: Request a quote' );
+
+		act( () => way( 'In the conversation they already have' ).click() );
+		expect( field( 'Subject' ).value ).toBe(
+			'Re: We received your request'
+		);
+
+		act( () => way( 'As a new email' ).click() );
+		typeMessage( '<p>Hello</p>' );
+		await send();
+
+		expect( sentAs() ).toEqual( {
+			subject: 'Re: Request a quote',
+			body: '<p>Hello</p>',
+			thread: 'new',
+		} );
+	} );
+
+	it( 'leaves a subject somebody wrote as they wrote it, whichever way is chosen', () => {
+		show( submission( IN_A_CONVERSATION ) );
+		type( field( 'Subject' ), 'Your kitchen, next week' );
+
+		act( () => way( 'As a new email' ).click() );
+
+		expect( field( 'Subject' ).value ).toBe( 'Your kitchen, next week' );
+	} );
+
+	// Gmail keeps emails together by their subject as well as by what they answer.
+	it( 'says a rewritten subject may part the reply from the conversation, and only then', () => {
+		show( submission( IN_A_CONVERSATION ) );
+		const hint = () =>
+			[ ...container.querySelectorAll( '.corex-pane__muted' ) ].find(
+				( line ) => line.textContent.includes( 'Gmail' )
+			);
+		expect( hint() ).toBeUndefined();
+
+		type( field( 'Subject' ), 'Your kitchen, next week' );
+		expect( hint() ).toBeDefined();
+		expect(
+			field( 'Subject' ).getAttribute( 'aria-describedby' )
+		).toContain( hint().id );
+
+		act( () => way( 'As a new email' ).click() );
+		expect( hint() ).toBeUndefined();
+	} );
+
+	it( 'says in the preview which way the reply will be sent', async () => {
+		inbox.previewReply = jest.fn().mockResolvedValue( {
+			html: '<p>Hello</p>',
+			text: 'Hello',
+		} );
+		show( submission( IN_A_CONVERSATION ) );
+		typeMessage( '<p>Hello</p>' );
+
+		await act( async () => {
+			button( 'Preview' ).click();
+		} );
+
+		expect(
+			document.body.querySelector( '.corex-reply-preview' ).textContent
+		).toContain( 'It will be sent in the conversation they already have.' );
+	} );
+
+	it( 'says of each reply already sent which way it went', () => {
+		const sent = ( id, thread ) => ( {
+			id,
+			subject: 'Re: Request a quote',
+			body_html: '<p>Hello</p>',
+			actor_name: 'Mustafa',
+			created_at: '2026-10-12T10:00:00+00:00',
+			state: 'sent',
+			message: '',
+			thread,
+		} );
+		show(
+			submission( {
+				replies: [
+					sent( 'a', 'conversation' ),
+					sent( 'b', 'new' ),
+					// Kept before there was a choice.
+					sent( 'c', undefined ),
+				],
+			} )
+		);
+
+		expect(
+			[ ...container.querySelectorAll( '.corex-pane__reply' ) ].map(
+				( listed ) =>
+					[ 'In the conversation', 'A new email' ].find( ( said ) =>
+						listed.textContent.includes( said )
+					)
+			)
+		).toEqual( [ 'In the conversation', 'A new email', 'A new email' ] );
+	} );
+
+	it( 'keeps the way that was chosen when the reply was not sent', async () => {
+		inbox.reply.mockResolvedValue( {
+			tone: 'failure',
+			text: 'Reply not sent.',
+			detail: 'The mail server refused it.',
+			keep: true,
+		} );
+		show( submission( IN_A_CONVERSATION ) );
+		act( () => way( 'As a new email' ).click() );
+		typeMessage( '<p>Hello</p>' );
+
+		await send();
+
+		expect( way( 'As a new email' ).checked ).toBe( true );
+		expect( field( 'Subject' ).value ).toBe( 'Re: Request a quote' );
+	} );
+
+	// What is chosen while a reply is on its way would be about a reply that has gone.
+	it( 'cannot be changed while the reply is on its way', async () => {
+		const sending = held();
+		inbox.reply.mockReturnValue( sending.promise );
+		showInPane( submission( IN_A_CONVERSATION ) );
+		typeMessage( '<p>Hello</p>' );
+		const ways = () => [
+			...container.querySelectorAll( 'input[type="radio"]' ),
+		];
+		expect( ways().map( ( radio ) => radio.disabled ) ).toEqual( [
+			false,
+			false,
+		] );
+
+		await send();
+		expect( ways().map( ( radio ) => radio.disabled ) ).toEqual( [
+			true,
+			true,
+		] );
+
+		await sending.answer( {
+			tone: 'failure',
+			text: 'Reply not sent.',
+			detail: '',
+			keep: true,
+		} );
+		expect( ways().map( ( radio ) => radio.disabled ) ).toEqual( [
+			false,
+			false,
+		] );
+	} );
+
+	// A reply sent as a new email is itself the email the next one answers.
+	it( 'is the conversation again for the next reply, after one sent as a new email', async () => {
+		const record = submission( IN_A_CONVERSATION );
+		show( record );
+		act( () => way( 'As a new email' ).click() );
+		typeMessage( '<p>Hello</p>' );
+		inbox.reply.mockImplementation( async () => {
+			show( {
+				...record,
+				reply_conversation: {
+					available: true,
+					subject: 'Re: Request a quote',
+				},
+			} );
+
+			return {
+				tone: 'success',
+				text: 'Reply sent.',
+				detail: '',
+				keep: false,
+			};
+		} );
+
+		await send();
+
+		expect( sentAs().thread ).toBe( 'new' );
+		expect( way( 'In the conversation they already have' ).checked ).toBe(
+			true
+		);
+		expect( field( 'Subject' ).value ).toBe( 'Re: Request a quote' );
+	} );
+
+	// The pane reads the submission again after every change to it. An email to continue
+	// from can be there on the second reading and not on the first: a colleague replied.
+	describe( 'when an email to continue from appears under an open box', () => {
+		const appears = ( record ) =>
+			show( { ...record, ...IN_A_CONVERSATION } );
+
+		it( 'takes the subject that answers it, where nobody had written one', () => {
+			const record = submission( {
+				reply_subject: 'Re: Request a quote',
+			} );
+			show( record );
+			typeMessage( '<p>Hello</p>' );
+
+			appears( record );
+
+			expect(
+				way( 'In the conversation they already have' ).checked
+			).toBe( true );
+			expect( field( 'Subject' ).value ).toBe(
+				'Re: We received your request'
+			);
+			// What was being written is not started over.
+			expect( message().textContent ).toBe( 'Hello' );
+		} );
+
+		it( 'leaves a subject somebody wrote', () => {
+			const record = submission( {
+				reply_subject: 'Re: Request a quote',
+			} );
+			show( record );
+			type( field( 'Subject' ), 'Your kitchen, next week' );
+
+			appears( record );
+
+			expect( field( 'Subject' ).value ).toBe(
+				'Your kitchen, next week'
+			);
+		} );
+	} );
+
+	// The reply that went is now the email the next one answers: the pane reads the
+	// submission again, and the box starts from that.
+	it( 'starts the next reply from the one that has just gone', async () => {
+		const first = submission( { reply_subject: 'Re: Request a quote' } );
+		show( first );
+		type( field( 'Subject' ), 'About your kitchen' );
+		typeMessage( '<p>Hello</p>' );
+		inbox.reply.mockImplementation( async () => {
+			// As the inbox does before it answers: the submission is read again.
+			show( {
+				...first,
+				reply_conversation: {
+					available: true,
+					subject: 'Re: About your kitchen',
+				},
+			} );
+
+			return {
+				tone: 'success',
+				text: 'Reply sent.',
+				detail: '',
+				keep: false,
+			};
+		} );
+
+		await send();
+
+		expect( field( 'Subject' ).value ).toBe( 'Re: About your kitchen' );
+		expect( way( 'In the conversation they already have' ).checked ).toBe(
+			true
+		);
+		expect( message().textContent ).toBe( '' );
+	} );
+} );
+
 // Spec 106, FR-035 and FR-036: the box opens with a subject from the form the person filled
 // in, to keep or to change; and a subject nobody wrote is not something somebody began.
 describe( 'the subject a reply starts with', () => {
@@ -578,17 +935,6 @@ describe( 'the subject a reply starts with', () => {
 		act( () => root.unmount() );
 		root = createRoot( container );
 	};
-	function Pane( { record } ) {
-		const [ pending, during ] = usePending();
-
-		return (
-			<Reply
-				record={ record }
-				inbox={ inbox }
-				work={ { pending, during } }
-			/>
-		);
-	}
 
 	beforeEach( () => jest.useFakeTimers() );
 	afterEach( () => jest.useRealTimers() );
@@ -629,6 +975,7 @@ describe( 'the subject a reply starts with', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: Request a quote',
 			body: '<p>Hello</p>',
+			thread: '',
 		} );
 	} );
 
@@ -763,34 +1110,6 @@ describe( 'the draft', () => {
 		act( () => root.unmount() );
 		root = createRoot( container );
 	};
-	// A request whose answer the test gives when it chooses to.
-	const held = () => {
-		let answer;
-		const promise = new Promise( ( resolve ) => {
-			answer = resolve;
-		} );
-
-		return {
-			promise,
-			answer: ( value ) => act( async () => answer( value ) ),
-		};
-	};
-	// The pane's own "one request at a time", which names the control whose request is out.
-	function Pane( { record } ) {
-		const [ pending, during ] = usePending();
-
-		return (
-			<Reply
-				record={ record }
-				inbox={ inbox }
-				work={ { pending, during } }
-			/>
-		);
-	}
-	const showInPane = ( record ) =>
-		act( () => {
-			root.render( <Pane record={ record } /> );
-		} );
 
 	beforeEach( () => jest.useFakeTimers() );
 	afterEach( () => jest.useRealTimers() );
@@ -847,6 +1166,7 @@ describe( 'the draft', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: your message',
 			body: '<p>Hello</p>',
+			thread: '',
 		} );
 		expect( line().textContent ).toContain( 'Draft saved.' );
 		// Said in the page, not announced each time writing pauses.
@@ -965,6 +1285,7 @@ describe( 'the draft', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: your message',
 			body: '<p>Hello</p>',
+			thread: '',
 		} );
 	} );
 
@@ -1016,6 +1337,7 @@ describe( 'the draft', () => {
 		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
 			subject: 'Re: your message',
 			body: '<p>Hello</p>',
+			thread: '',
 		} );
 		expect( message().textContent ).toBe( 'Hello' );
 	} );
@@ -1023,6 +1345,112 @@ describe( 'the draft', () => {
 	// Each of these made a draft of a reply that had gone, or of one that was discarded: the
 	// next visit showed it as "the reply you began earlier and did not send", ready to be
 	// sent a second time.
+	// Spec 106, FR-039: how it was to be sent is part of what was begun. Somebody who chose a
+	// new email must not come back to a draft set to join the conversation.
+	describe( 'and the way it is to be sent', () => {
+		const AS_A_NEW_EMAIL = {
+			...STORED,
+			subject: 'Your kitchen, next week',
+			thread: 'new',
+		};
+
+		it( 'comes back set to be sent the way it was', () => {
+			show(
+				submission( {
+					...IN_A_CONVERSATION,
+					reply_draft: AS_A_NEW_EMAIL,
+				} )
+			);
+
+			expect( way( 'As a new email' ).checked ).toBe( true );
+			expect( field( 'Subject' ).value ).toBe(
+				'Your kitchen, next week'
+			);
+			// Nothing is said about parting from a conversation it is not to join.
+			expect( container.textContent ).not.toContain( 'Gmail' );
+		} );
+
+		it( 'is not written down again for coming back that way', async () => {
+			show(
+				submission( {
+					...IN_A_CONVERSATION,
+					reply_draft: AS_A_NEW_EMAIL,
+				} )
+			);
+
+			await pause( 10000 );
+			leave();
+
+			expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+		} );
+
+		it( 'is written down again when only the way changes', async () => {
+			show(
+				submission( {
+					...IN_A_CONVERSATION,
+					reply_draft: AS_A_NEW_EMAIL,
+				} )
+			);
+
+			act( () => way( 'In the conversation they already have' ).click() );
+			await pause();
+
+			expect( inbox.keepReplyDraft ).toHaveBeenCalledTimes( 1 );
+			expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
+				subject: 'Your kitchen, next week',
+				body: STORED.body,
+				thread: 'conversation',
+			} );
+		} );
+
+		it( 'is a new email where there is no longer an email to continue from', () => {
+			show(
+				submission( {
+					reply_draft: { ...STORED, thread: 'conversation' },
+				} )
+			);
+
+			expect(
+				container.querySelector( 'input[type="radio"]' )
+			).toBeNull();
+			expect(
+				container.querySelector( '.corex-pane__reply-way' ).textContent
+			).toContain( 'This will be a new email' );
+		} );
+
+		// Begun before there was an email to continue from: nobody chose a new email, and
+		// the draft must not come back as if somebody had.
+		it( 'keeps no way where nobody chose one, and joins the conversation once there is one', async () => {
+			show( submission() );
+			type( field( 'Subject' ), 'Your kitchen' );
+			typeMessage( '<p>Hello</p>' );
+			await pause();
+			const kept = inbox.keepReplyDraft.mock.calls.at( -1 )[ 1 ];
+			leave();
+
+			show(
+				submission( {
+					...IN_A_CONVERSATION,
+					reply_draft: { ...kept, saved_at: STORED.saved_at },
+				} )
+			);
+
+			expect( kept.thread ).toBe( '' );
+			expect(
+				way( 'In the conversation they already have' ).checked
+			).toBe( true );
+		} );
+
+		// Kept before the way was kept with it.
+		it( 'is in the conversation where the draft does not say', () => {
+			show( submission( { ...IN_A_CONVERSATION, reply_draft: STORED } ) );
+
+			expect(
+				way( 'In the conversation they already have' ).checked
+			).toBe( true );
+		} );
+	} );
+
 	describe( 'does not come back', () => {
 		it( 'when the pane is left while the reply is on its way', async () => {
 			const sending = held();

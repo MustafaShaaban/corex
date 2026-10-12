@@ -324,6 +324,35 @@ it; the list of replies says "in the conversation" or "a new email".
 the Message-ID. The guide says both, and the box warns beside the subject when the
 conversation is chosen and the subject was rewritten.
 
+As built, these differ, each for a reason met while building or found in review.
+
+- **No new fields on `MailRequest`.** `EmailMessage` already carried a `headers` map that no
+  driver read, and the capture already kept it. The reply's headers ride on that, and the
+  driver writes three of them by name, each only as an id. A general headers map on the
+  public seam is still not offered.
+- **The id is part of the attempt's, not all of it.** WordPress's mailer rewrites a header
+  value it finds too long as an encoded word, which no mail program reads as an id. Through
+  PHP's `mail()` that is past 47 characters, and a whole id with a nine-letter host is 48: a
+  test against the real mailer read `=?us-ascii?Q?<2222...` where the id should be. So an id
+  is twenty characters of the attempt's on a host of up to 24, and fewer on a longer one, down
+  to ten on a host of 34. For the same reason the driver names as many earlier emails as fit,
+  the latest first, and asks how the email is sent only after whoever sets the mail server up
+  has done so (its listener is at priority 9999).
+- **The pane is told in `reply_conversation`, beside `reply_delivery`:** `{ available,
+  subject }`. Whether a reply can be delivered and whether there is an email to continue from
+  are two questions. The route takes `thread: conversation|new`, the words the pane shows, and
+  a draft keeps the same field.
+- **`SubmissionConversation::of()` takes the submission's record**, which the view already
+  holds, and reads the emails bound to it whichever binding they are under: the email add-on
+  keeps the ones that went to the person.
+- **`began()` records only an email to the submission's sender.** A site's listener sends the
+  team's notice from the same place.
+- **`MailResult` is not given the id, and `began()` takes the request.** A site's own email
+  goes through the older mail path, which records no attempt: its `MailResult` names an
+  attempt nothing kept, and `Mailer::send()` answers nothing at all. But a request has an id
+  of its own that it keeps through the mail queue, so the email leaves under an id made of
+  that, whenever it leaves, and the site records the request.
+
 ### D14. What the email says it is (slice 11)
 
 Not designed: it waits on the owner's answer to story 11.

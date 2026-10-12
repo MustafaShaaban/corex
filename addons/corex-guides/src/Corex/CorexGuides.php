@@ -101,6 +101,10 @@ final class CorexGuides
                         __('What you have written is kept as your draft for that message, and is there when you open it again, on any computer. Nobody else sees it. Discard draft empties the box and removes it.', 'corex'),
                     ),
                     new GuideStep(
+                        __('Choose how it is sent, where you are asked.', 'corex'),
+                        __('When the person was already sent an email about this message, such as a confirmation or an earlier reply, your reply can arrive under it in their mail program, or as a new email. Where there is no earlier email on record, it is a new email.', 'corex'),
+                    ),
+                    new GuideStep(
                         __('Choose Preview.', 'corex'),
                         __('You see the email as it will be sent, at the width of a wide screen or of a phone, with its plain-text version below.', 'corex'),
                     ),

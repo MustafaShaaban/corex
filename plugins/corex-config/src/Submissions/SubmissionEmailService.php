@@ -25,6 +25,7 @@ final readonly class SubmissionEmailService
         private SubmissionTimelineStore $timeline,
         private SubmissionReplyStore $replies,
         private ?SubmissionReplyDraftStore $drafts = null,
+        private ?SubmissionConversation $conversation = null,
     ) {
     }
 
@@ -35,7 +36,7 @@ final readonly class SubmissionEmailService
      * Where a reply is certain to be refused none is sent and none is kept: the reply box said
      * so before anything was written (spec 106, FR-028), and this is the same answer.
      */
-    public function reply(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply): SentReply
+    public function reply(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply, bool $inConversation = false): SentReply
     {
         $record = $this->accessible($scope, $submissionId);
         $recipient = $this->recipient($record);
@@ -43,8 +44,13 @@ final readonly class SubmissionEmailService
         if (! $readiness->sendable()) {
             throw new DomainException($readiness->reason);
         }
-        $result = $this->email->reply($recipient, $reply->subject, $reply->htmlBody);
-        $sent = new SentReply($result, $this->kept($scope, $submissionId, $reply, $result));
+        // Under the emails the person already has, where that was asked for and there are
+        // any (spec 106, FR-039). Asked for where there are none, it goes as a new email, and
+        // is recorded as one.
+        $within = $inConversation ? $this->conversation?->of($record) : null;
+        $result = $this->email->reply($recipient, $reply->subject, $reply->htmlBody, $within);
+        $continued = $within !== null && ! $within->isEmpty();
+        $sent = new SentReply($result, $this->kept($scope, $submissionId, $reply, $result, $continued));
         $this->forgetDraft($scope, $submissionId, $result);
 
         return $sent;
@@ -88,10 +94,10 @@ final readonly class SubmissionEmailService
      * or a row the database will not take, must not become an error: the person would send
      * again, and the customer would be answered twice.
      */
-    private function kept(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply, MailResult $result): bool
+    private function kept(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply, MailResult $result, bool $inConversation): bool
     {
         try {
-            $kept = SubmissionReplyRecord::sent($reply, $scope->actorId, $result);
+            $kept = SubmissionReplyRecord::sent($reply, $scope->actorId, $result, $inConversation);
             $this->replies->add($submissionId, $kept);
             $this->recordOutcome($scope, $submissionId, 'reply', $result, $kept->id);
 

@@ -5,7 +5,13 @@
  * reach anybody, the answer, and what happened to it. The middle two were unsaid: on a site with
  * live delivery off a reply was refused and the pane said it had been processed.
  */
-import { useEffect, useId, useRef, useState } from '@wordpress/element';
+import {
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+} from '@wordpress/element';
 import { Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import CorexErrorState from '../../admin/components/CorexErrorState.js';
@@ -29,22 +35,97 @@ import { draftOf, untouchedReply, useReplyDraft } from './useReplyDraft.js';
  */
 export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 	const fieldId = useId();
-	// The box before anybody writes in it: a subject from the form the person filled in,
-	// to keep or to change (FR-035). Read once: the pane reads the submission again after
-	// every change to it, and what somebody is writing does not start over for that.
-	const [ untouched ] = useState( () => untouchedReply( record ) );
+	// Under the emails the person already has, or as a new one (FR-039). Where there are
+	// none there is no choice; where there are, the conversation is the one chosen until
+	// somebody chooses.
+	const inConversation = Boolean( record.reply_conversation?.available );
+	// A draft was begun one way or the other, and is still that way.
+	const [ chosen, setChosen ] = useState( () =>
+		WAYS[ record.reply_draft?.thread ] ? record.reply_draft.thread : null
+	);
+	const thread = inConversation ? ( chosen ?? 'conversation' ) : 'new';
+	// The box before anybody writes in it: a subject to keep or to change (FR-035). Kept
+	// from when the box was opened or last emptied: the pane reads the submission again
+	// after every change to it, and what somebody is writing does not start over for that.
+	const [ untouched, setUntouched ] = useState( () =>
+		untouchedReply( record, thread )
+	);
 	// What they began on another visit and did not send is where they left it (FR-006).
 	const [ reply, setReply ] = useState( () =>
 		draftOf( record.reply_draft, untouched )
 	);
+	const starts = [ 'conversation', 'new' ].map(
+		( way ) => untouchedReply( record, way ).subject
+	);
+	// One object while neither changes: the draft is written down when this does. It keeps
+	// the way somebody chose, and nothing where nobody did: a draft begun before there was
+	// an email to continue from was not chosen to be a new email, and joins the conversation
+	// like any other once there is one.
+	const begun = useMemo(
+		() => ( { ...reply, thread: chosen ?? '' } ),
+		[ reply, chosen ]
+	);
 	const draft = useReplyDraft( {
 		id: record.id,
 		stored: record.reply_draft,
-		reply,
+		reply: begun,
 		inbox,
 		held: work.pending === 'reply',
 		untouched,
+		startingSubjects: starts,
 	} );
+	// The box is to go back to how it starts: asked for when a reply has gone or a draft
+	// was discarded, and done once the pane has read the submission again, since a reply
+	// that went is now the email the next one answers.
+	const [ emptyOwed, setEmptyOwed ] = useState( false );
+	useEffect( () => {
+		if ( emptyOwed ) {
+			const fresh = untouchedReply( record, thread );
+			setUntouched( fresh );
+			setReply( fresh );
+			setEmptyOwed( false );
+		}
+	}, [ emptyOwed, record, thread ] );
+	// The box as it starts is in the conversation where there is one: a reply sent as a new
+	// email is itself the email the next one answers.
+	const startOver = () => {
+		setChosen( null );
+		setEmptyOwed( true );
+	};
+
+	// The way changed and nobody chose: the pane read the submission again, and there is
+	// now an email to continue from, or there no longer is. A subject nobody wrote follows.
+	const starting = untouchedReply( record, thread ).subject;
+	useEffect( () => {
+		if ( untouched.subject === starting ) {
+			return;
+		}
+		setReply( ( before ) =>
+			before.subject.trim() === untouched.subject.trim()
+				? { ...before, subject: starting }
+				: before
+		);
+		setUntouched( { subject: starting, body: '' } );
+		// What the box started with is read, not followed: this is about the way changing.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ starting ] );
+
+	// A subject nobody wrote follows the way the reply is sent. One somebody wrote is theirs.
+	const choose = ( way ) => {
+		setChosen( way );
+		if ( [ '', ...starts ].includes( reply.subject.trim() ) ) {
+			const fresh = untouchedReply( record, way );
+			setUntouched( fresh );
+			setReply( ( before ) => ( { ...before, subject: fresh.subject } ) );
+		}
+	};
+	// Some mail programs keep emails together by their subject as well as by what they
+	// answer: said when the reply is to join a conversation and its subject no longer does.
+	const subjectParts =
+		thread === 'conversation' &&
+		reply.subject.trim() !== '' &&
+		reply.subject.trim() !==
+			untouchedReply( record, 'conversation' ).subject.trim();
 	const [ outcome, setOutcome ] = useState( null );
 	const [ preview, setPreview ] = useState( null );
 	const contact = contactOf( record );
@@ -87,7 +168,11 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 
 		return work.during( 'reply', async () => {
 			setOutcome( null );
-			const said = await inbox.reply( record.id, reply, contact.email );
+			const said = await inbox.reply(
+				record.id,
+				{ ...reply, thread },
+				contact.email
+			);
 			// Refused before it was tried: the pane's own failure line says why.
 			if ( ! said ) {
 				return;
@@ -95,7 +180,7 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 			setOutcome( said );
 			if ( ! said.keep ) {
 				draft.forget();
-				setReply( untouched );
+				startOver();
 				// The button that was pressed is off again; focus must not be left on it.
 				subject.current?.focus();
 			}
@@ -106,7 +191,7 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 		const discarded = await work.during( 'draft', async () => {
 			const done = await draft.discard();
 			if ( done ) {
-				setReply( untouched );
+				startOver();
 				setOutcome( null );
 				setDraftSaid( __( 'Draft discarded.', 'corex' ) );
 			}
@@ -142,6 +227,7 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 		[ notice ? noticeId : '', draft.state === 'restored' ? draftId : '' ]
 			.filter( Boolean )
 			.join( ' ' ) || undefined;
+	const subjectHintId = `${ fieldId }-subject-hint`;
 
 	return (
 		<Section title={ __( 'Reply', 'corex' ) }>
@@ -167,7 +253,11 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 							id={ `${ fieldId }-subject` }
 							ref={ subject }
 							type="text"
-							aria-describedby={ described }
+							aria-describedby={
+								[ described, subjectParts ? subjectHintId : '' ]
+									.filter( Boolean )
+									.join( ' ' ) || undefined
+							}
 							value={ reply.subject }
 							onChange={ ( event ) =>
 								setReply( {
@@ -176,7 +266,25 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 								} )
 							}
 						/>
+						{ subjectParts && (
+							<p
+								id={ subjectHintId }
+								className="corex-pane__muted"
+							>
+								{ __(
+									'Some mail programs, Gmail among them, keep emails together only while the subject stays the same.',
+									'corex'
+								) }
+							</p>
+						) }
 					</div>
+					<HowItIsSent
+						name={ `${ fieldId }-thread` }
+						offered={ inConversation }
+						thread={ thread }
+						onChoose={ choose }
+						disabled={ work.pending === 'reply' }
+					/>
 					<div className="corex-field">
 						<span id={ `${ fieldId }-body-label` }>
 							{ __( 'Message', 'corex' ) }
@@ -232,7 +340,12 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 						<ReplyPreview
 							email={ preview }
 							subject={ preview.subject ?? reply.subject }
-							note={ notice ? notice.text : '' }
+							note={ [
+								notice ? notice.text : '',
+								WAYS[ thread ].said,
+							]
+								.filter( Boolean )
+								.join( ' ' ) }
 							onClose={ () => setPreview( null ) }
 						/>
 					) }
@@ -254,6 +367,70 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 			) }
 			<RelatedEmails record={ record } inbox={ inbox } work={ work } />
 		</Section>
+	);
+}
+
+/** The two ways a reply is sent, as they are offered, said in a preview, and listed. */
+const WAYS = {
+	conversation: {
+		offered: __( 'In the conversation they already have', 'corex' ),
+		said: __(
+			'It will be sent in the conversation they already have.',
+			'corex'
+		),
+		listed: __( 'In the conversation', 'corex' ),
+	},
+	new: {
+		offered: __( 'As a new email', 'corex' ),
+		said: __( 'It will be sent as a new email.', 'corex' ),
+		listed: __( 'A new email', 'corex' ),
+	},
+};
+
+/**
+ * Whether the reply joins the emails the person already has, or stands alone (FR-039).
+ *
+ * A choice where there is one to make. Where CoreX knows of no earlier email to this person
+ * for this submission, one sentence says the reply is a new email and why.
+ *
+ * @param {Object}   props
+ * @param {string}   props.name     The name the two radio buttons share.
+ * @param {boolean}  props.offered  Whether there is a conversation to join.
+ * @param {string}   props.thread   `conversation` or `new`.
+ * @param {Function} props.onChoose Called with the way chosen.
+ * @param {boolean}  props.disabled True while the reply is being sent.
+ * @return {import('react').ReactElement} The choice, or the sentence.
+ */
+function HowItIsSent( { name, offered, thread, onChoose, disabled } ) {
+	if ( ! offered ) {
+		return (
+			<p className="corex-pane__muted corex-pane__reply-way">
+				{ __(
+					'This will be a new email: there is no earlier email to this person on record for this submission.',
+					'corex'
+				) }
+			</p>
+		);
+	}
+
+	return (
+		<fieldset className="corex-pane__reply-way">
+			<legend>{ __( 'How it is sent', 'corex' ) }</legend>
+			{ Object.keys( WAYS ).map( ( way ) => (
+				<label key={ way } htmlFor={ `${ name }-${ way }` }>
+					<input
+						id={ `${ name }-${ way }` }
+						type="radio"
+						name={ name }
+						value={ way }
+						checked={ thread === way }
+						disabled={ disabled }
+						onChange={ () => onChoose( way ) }
+					/>
+					<span>{ WAYS[ way ].offered }</span>
+				</label>
+			) ) }
+		</fieldset>
 	);
 }
 
@@ -401,6 +578,9 @@ function Replies( { replies } ) {
 								<span>{ state.label }</span>
 							</span>
 						</div>
+						<p className="corex-pane__reply-meta">
+							{ WAYS[ reply.thread ]?.listed || WAYS.new.listed }
+						</p>
 						<p className="corex-pane__reply-meta">
 							<span>
 								{ reply.actor_name ||

@@ -21,17 +21,26 @@ final readonly class SubmissionReplyDraft
     /** A subject is a line. Beyond this it is something pasted by mistake, and is cut. */
     private const LONGEST_SUBJECT = 300;
 
+    /** The two ways a reply is sent (FR-039): under the emails the person has, or alone. */
+    private const WAYS = ['conversation', 'new'];
+
     public string $subject;
     public string $htmlBody;
 
     public string $savedAt;
 
+    /** How it was to be sent, or '' where that was not said. */
+    public string $thread;
+
     /**
      * @param string $savedAt When it was last written down, as an ISO 8601 date; '' where
      *                        what was given is not a date.
+     * @param string $thread  `conversation` or `new`: somebody who chose a new email and came
+     *                        back to their draft must not find it set to join a conversation.
      */
-    public function __construct(string $subject, string $htmlBody, string $savedAt)
+    public function __construct(string $subject, string $htmlBody, string $savedAt, string $thread = '')
     {
+        $this->thread = in_array($thread, self::WAYS, true) ? $thread : '';
         $this->savedAt = strtotime($savedAt) === false ? '' : $savedAt;
         $line = trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $subject));
         $this->subject = mb_substr($line, 0, self::LONGEST_SUBJECT);
@@ -44,10 +53,10 @@ final readonly class SubmissionReplyDraft
         return $this->subject === '' && $this->htmlBody === '';
     }
 
-    /** @return array{subject:string,body:string,saved_at:string} */
+    /** @return array{subject:string,body:string,saved_at:string,thread:string} */
     public function toArray(): array
     {
-        return ['subject' => $this->subject, 'body' => $this->htmlBody, 'saved_at' => $this->savedAt];
+        return ['subject' => $this->subject, 'body' => $this->htmlBody, 'saved_at' => $this->savedAt, 'thread' => $this->thread];
     }
 
     /**
@@ -66,6 +75,7 @@ final readonly class SubmissionReplyDraft
             // is put on a page all the same.
             ReplyBody::reduce($stored['body'] ?? ''),
             is_string($stored['saved_at'] ?? null) ? $stored['saved_at'] : '',
+            is_string($stored['thread'] ?? null) ? $stored['thread'] : '',
         );
 
         return $draft->isEmpty() ? null : $draft;

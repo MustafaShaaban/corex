@@ -31,7 +31,7 @@ final readonly class SubmissionReplyDrafts
     /**
      * The draft of the person asking, for a submission they have already been shown.
      *
-     * @return array{subject:string,body:string,saved_at:string}|null
+     * @return array{subject:string,body:string,saved_at:string,thread:string}|null
      */
     public function of(int $actorId, int $submissionId): ?array
     {
@@ -42,16 +42,18 @@ final readonly class SubmissionReplyDrafts
      * Writes down what is written so far. A draft of nothing is discarded.
      *
      * @param string $htmlBody The message as {@see ReplyBody::reduce()} leaves it.
+     * @param string $thread   How the reply is to be sent: `conversation`, `new`, or '' where
+     *                         that was not said.
      *
-     * @return array{subject:string,body:string,saved_at:string}|null What is now kept, as it
-     *                                                                will be given back.
+     * @return array{subject:string,body:string,saved_at:string,thread:string}|null What is
+     *                                                 now kept, as it will be given back.
      *
      * @throws DomainException When the submission is not the person's to answer.
      */
-    public function keep(SubmissionAccessScope $scope, int $submissionId, string $subject, string $htmlBody): ?array
+    public function keep(SubmissionAccessScope $scope, int $submissionId, string $subject, string $htmlBody, string $thread = ''): ?array
     {
         $this->assertReachable($scope, $submissionId);
-        $draft = new SubmissionReplyDraft($subject, $htmlBody, (new DateTimeImmutable('now'))->format(DATE_ATOM));
+        $draft = new SubmissionReplyDraft($subject, $htmlBody, (new DateTimeImmutable('now'))->format(DATE_ATOM), $thread);
         if ($draft->isEmpty()) {
             $this->drafts->discard($submissionId, $scope->actorId);
 
