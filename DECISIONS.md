@@ -11432,3 +11432,78 @@ three; what is not text is refused and nothing is kept.
 `tests/Integration/Email/EmailStudioControllerTest.php` for the two sends.
 `tests/Unit/Mail/SubjectLineTest.php` for the rule alone. Thirteen of the first file's
 tests and five of the second's failed before the change.
+
+## #329 — Email Studio's store slashes what it hands to WordPress, and repairs nothing it already holds
+
+**Date:** 2026-10-13. **Branch:** `fix/email-studio-store-keeps-backslashes`. **Found by:**
+reading for #326, where it was measured and left as its own change.
+
+`WpEmailStudioStore` keeps every Email Studio record as a private post: the record's name is
+the post's title, and its content is one meta value. `wp_insert_post()`, `wp_update_post()`
+and `update_post_meta()` each take one level of slashes off what they are handed, because
+they were written for the text of a request. The store handed its records over as they
+were, so one level came off text that had none to spare.
+
+**Measured on real WordPress, before the change**, through the store and through each
+repository that uses it:
+
+- A captured email with the subject `C:\offers\new and a "quote"` and the body
+  `<p>C:\offers\one</p>` was read back with `C:offersnew and a "quote"` and
+  `<p>C:offersone</p>`. Its plain-text version and a header's value lost them the same way.
+  An attempt's subject did too.
+- A template draft whose HTML holds `<style>q::before{content:"\201C"}</style>` was read
+  back with `content:"201C"`. Its subject, its sender's name and its plain text lost theirs.
+  A layout's regions and a partial's HTML and plain text did the same. An email sent by a
+  route is built from the stored version and the stored layout
+  (`EmailRouteMessageFactory`): read, not measured through a send.
+- `\"` was read back as `"`, `\'` as `'`, and a backslash at the end of a text was gone.
+- A name lost a level each time its record was written again, and a template's record is
+  written again when a draft is saved and when a version is made active: `\\server\share`
+  was `\servershare` after the first write and `servershare` after the next.
+- A template version's checksum is taken from the content before it is stored
+  (`EmailTemplateRepository::saveDraft()`). For a draft with a backslash in it, the
+  checksum computed again from what was read back was a different one. Nothing compares the
+  two today: the checksum is stored, shown by the REST answer, and checked only for its
+  shape.
+- Quotes alone, an ampersand, Arabic and accented text were not changed, and what is not
+  text (a number, a boolean, null) kept its kind. They are in the tests so that they stay
+  so.
+
+**The change.** `create()` and `update()` hand over `wp_slash($name)` as the title and
+`wp_slash($payload)` as the meta value. `wp_slash()` goes through a list of any depth and
+adds slashes to text only, and what WordPress takes off is what it put on. The two other
+meta values of a record, its type and its slug, are each held to a pattern with no
+backslash in it and are left as they were. This is what
+`WpSubmissionReplyStore` and `WpSubmissionConversationStore` already do.
+
+**Nothing relied on the stripping.** Read before the change: the store is used only inside
+the email add-on, by six repositories, and none of them, nor the controller, hands it text
+from `$_POST` or slashes anything itself; a REST request's values arrive without slashes.
+The one search inside a stored content is `forgetAttempt()`, which looks for an attempt's
+id, and an id has no backslash in it. No code compares a stored text with the text it was
+made from. `EmailTemplateCatalog` only reads.
+
+**Records already stored are not repaired.** What was dropped is not in the database: a
+stored `C:offersnew` cannot be told from one that was typed so. A template, a layout or a
+partial saved before this change with a backslash in it has to be opened and saved again.
+A template version kept before the change, with a backslash in what was written, still
+carries the checksum of what was written and not of what is stored. Captured emails and
+attempts already listed keep what they were stored with.
+
+**Found on the way, measured, and left** (PROGRESS.md, "Open, and not hidden"): a record's
+name is a post's title, and WordPress cleans a title as markup for whoever lacks
+`unfiltered_html`. In a request nobody is signed in for, `Tom & Jerry` is kept as
+`Tom &amp; Jerry` and `Price <500 EGP` as `Price &lt;500 EGP`, with and without this
+change. An administrator of a single site holds that right. A captured email's and an
+attempt's title is read by nothing: the subject they show is in the content. A template's,
+a layout's and a partial's name is read. Keeping a name out of the title is a change to
+what a record is, with its own tests.
+
+**Tests.** `tests/Integration/Email/EmailStudioStoreKeepsTextTest.php`, on real WordPress:
+the store alone, for seven texts, when a record is made and when it is written twice more;
+what is not text; a record made with nobody signed in; then a captured email, an attempt,
+a template with a draft made active, two drafts that differ by a backslash, a layout and a
+partial, each through its repository. Seventeen of its 22 tests failed before the change.
+`tests/Integration/Submissions/ReplySubjectAsTypedTest.php`: the test of a path in a
+subject now sends a path in the body too and reads Email Studio's copy, the captured email
+and the attempt, which it could not before; it failed before the change.
