@@ -54,6 +54,14 @@ let container;
 let root;
 let inbox;
 
+// Whether a draft holds a word: its message is read as a page reads it, not taken apart.
+function saysSomething( written ) {
+	const message = document.createElement( 'div' );
+	message.innerHTML = written.body;
+
+	return ( written.subject + message.textContent ).trim() !== '';
+}
+
 // The pane's own "one request at a time": here every request is let through at once.
 const work = { pending: '', during: ( name, task ) => task() };
 
@@ -128,9 +136,7 @@ beforeEach( () => {
 		// As the route answers: what it kept, or nothing where what was written says nothing.
 		keepReplyDraft: jest.fn( async ( id, written ) => ( {
 			ok: true,
-			draft: /[^\s<>]/.test(
-				written.subject + written.body.replace( /<[^>]*>/g, '' )
-			)
+			draft: saysSomething( written )
 				? { ...written, saved_at: '2026-10-11T10:00:00+00:00' }
 				: null,
 		} ) ),
