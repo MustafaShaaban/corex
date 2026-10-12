@@ -45,6 +45,68 @@ Delivery is **best-effort and never throws** — failures are logged, not fatal.
   the code that builds the sent one. It sends nothing and keeps nothing of the reply; a site's
   email design that fails there is reported as it is when a reply is sent.
 - **Log** — each send is recorded to the `corex_email_log` CPT.
+- **Conversation** — an email sent by Email Studio, or through `Corex\Mail\Mailer`, leaves
+  under a `Message-ID` CoreX chose (`Corex\Mail\MessageId`), on a site whose address has a
+  host name to make one of. A reply from the Submissions inbox can name the email it answers
+  (`In-Reply-To`, `References`), which is what a mail program reads to show it under that one.
+
+## Replies that continue your own confirmation
+
+The Submissions inbox offers to send a reply "in the conversation they already have" when
+CoreX has a record of an email it sent that person for that submission. A flow's own
+confirmation is recorded by the flow. A site that sends its confirmation itself tells CoreX
+so, where it sends it:
+
+```php
+use Corex\Config\Submissions\SubmissionConversation;
+use Corex\Mail\Mailer;
+use Corex\Mail\MailRequest;
+
+final class SendLeadConfirmation
+{
+    public function __construct(
+        private readonly Mailer $mailer,
+        private readonly SubmissionConversation $conversation,
+    ) {
+    }
+
+    public function handle(int $submissionId, string $email): void
+    {
+        $request = new MailRequest(
+            to: [$email],
+            subject: 'We received your enquiry',
+            body: '<p>Thank you. We will be in touch.</p>',
+        );
+        $this->mailer->send($request);
+
+        // Replies to this submission can now be sent under this email.
+        $this->conversation->began($submissionId, $request);
+    }
+}
+```
+
+The email leaves under an id made of the request's own, whenever it leaves: at once, or later
+from the mail queue. `began()` records that id, and not what became of the email, which
+`send()` does not say. It records an email only where the submission's sender is one of the
+request's recipients: called for the notice you send your own team, it records nothing.
+
+What this cannot promise:
+
+- Gmail keeps emails together by their subject as well as by what they answer. A reply whose
+  subject was rewritten may stand alone there; the reply box says so when that is the case.
+- A sending service that replaces an email's `Message-ID` with its own breaks the link: the
+  reply arrives, and stands alone. This is not yet checked for an SMTP plugin's Gmail
+  connection.
+- Through PHP's own `mail()`, WordPress's mailer rewrites a header longer than 47 characters,
+  so a reply names the one email it answers and not the ones before it; and on a site whose
+  host name is longer than 34 characters it names none, and arrives as an email of its own
+  though the inbox lists it as sent in the conversation. Through a mail server it names up to
+  the whole conversation, on any host.
+- Which emails a person was sent is recognised with the site's own secret keys. After a move
+  to a host with new keys, earlier emails are not recognised and the next reply is a new
+  email.
+- An email sent before CoreX chose ids (before the release that carries this) cannot be
+  continued.
 
 ## Inspect email state in wp-admin
 

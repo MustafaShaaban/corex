@@ -23,18 +23,29 @@ export const PAUSE_BEFORE_SAVING = 1500;
 
 const NOTHING_WRITTEN = { subject: '', body: '' };
 
+// How it is to be sent is part of what was begun (FR-039): somebody who chose a new email and
+// comes back to their draft must not find it set to join the conversation.
 const same = ( one, other ) =>
-	one.subject === other.subject && one.body === other.body;
+	one.subject === other.subject &&
+	one.body === other.body &&
+	( one.thread ?? '' ) === ( other.thread ?? '' );
 
 /**
  * What the reply box holds before anybody has written in it: the subject it starts with
  * (spec 106, FR-035), and no message.
  *
+ * Sent in the conversation the person already has, a reply answers the latest email of it;
+ * sent as a new email, it is about the form they filled in.
+ *
  * @param {Object} record The open submission.
+ * @param {string} thread `conversation` or `new`.
  * @return {{subject:string,body:string}} The untouched box.
  */
-export function untouchedReply( record ) {
-	return { subject: record.reply_subject || '', body: '' };
+export function untouchedReply( record, thread = 'new' ) {
+	const answering =
+		thread === 'conversation' ? record.reply_conversation?.subject : '';
+
+	return { subject: answering || record.reply_subject || '', body: '' };
 }
 
 /**
@@ -49,13 +60,14 @@ export function draftOf( stored, untouched ) {
 }
 
 /**
- * @param {Object}  options
- * @param {number}  options.id          The submission.
- * @param {?Object} options.stored      Its `reply_draft` as it was when the pane opened, or null.
- * @param {Object}  options.reply       What is in the box now: `{ subject, body }`.
- * @param {Object}  options.inbox       The inbox's requests.
- * @param {boolean} options.held        True while the reply is being sent.
- * @param {Object}  [options.untouched] What the box holds before anybody writes in it. A subject nobody wrote is not something somebody began (FR-036): the box holding only that is kept as no draft.
+ * @param {Object}   options
+ * @param {number}   options.id                 The submission.
+ * @param {?Object}  options.stored             Its `reply_draft` as it was when the pane opened, or null.
+ * @param {Object}   options.reply              What is in the box now, and how it is to be sent: `{ subject, body, thread }`.
+ * @param {Object}   options.inbox              The inbox's requests.
+ * @param {boolean}  options.held               True while the reply is being sent.
+ * @param {string[]} [options.startingSubjects] Every subject the box may start with now, whichever way the reply is sent: none of them is something somebody wrote.
+ * @param {Object}   [options.untouched]        What the box holds before anybody writes in it. A subject nobody wrote is not something somebody began (FR-036): the box holding only that is kept as no draft.
  * @return {{state:string,hold:Function,forget:Function,discard:Function}} `state` is `none`, `restored`, `saved`, `unsaved` (it could not be written down) or `undiscarded` (it could not be removed).
  */
 export function useReplyDraft( {
@@ -65,15 +77,16 @@ export function useReplyDraft( {
 	inbox,
 	held,
 	untouched = NOTHING_WRITTEN,
+	startingSubjects = [],
 } ) {
 	const [ state, setState ] = useState( stored ? 'restored' : 'none' );
-	// What the box says when it says nothing of somebody's own: empty, or the subject it
-	// started with and no message.
-	const saysNothing = ( written ) =>
-		! hasWords( written.body ) &&
-		[ '', untouched.subject.trim() ].includes( written.subject.trim() );
-	// What the server holds, as far as is known; and what is on its way to it.
-	const kept = useRef( draftOf( stored, untouched ) );
+	// What the server holds, as far as is known; and what is on its way to it. The way the
+	// box opens set to is the way the draft was kept, or the only way there is: neither is a
+	// change somebody made.
+	const kept = useRef( {
+		...draftOf( stored, untouched ),
+		thread: reply.thread,
+	} );
 	const asked = useRef( null );
 	// Goes up each time the draft ends: an answer from before that is not about this one.
 	const turn = useRef( 0 );
@@ -82,8 +95,21 @@ export function useReplyDraft( {
 	// A save was still out when the reply was sent, and may reach the server after it.
 	const crossed = useRef( false );
 	// Read when a timer fires or the pane is left, which is later than the render that set them.
-	const latest = useRef( { reply, inbox, held } );
-	latest.current = { reply, inbox, held };
+	const latest = useRef( { reply, inbox, held, starts: [] } );
+	latest.current = {
+		reply,
+		inbox,
+		held,
+		starts: [ untouched.subject, ...startingSubjects ].map( ( subject ) =>
+			subject.trim()
+		),
+	};
+
+	// Read at the moment it is asked: the subject the box starts with changes with how the
+	// reply is to be sent, and with the conversation growing by a reply.
+	const saysNothing = ( written ) =>
+		! hasWords( written.body ) &&
+		[ '', ...latest.current.starts ].includes( written.subject.trim() );
 
 	// Nothing of somebody's own in the box, and nothing kept: there is nothing to write
 	// down, whichever nothing it is. Clearing the subject it started with to write another
@@ -175,7 +201,7 @@ export function useReplyDraft( {
 		// The reply has gone, and the server discarded its draft as it went.
 		forget: () => {
 			ended();
-			kept.current = untouched;
+			kept.current = NOTHING_WRITTEN;
 			setState( 'none' );
 			if ( crossed.current ) {
 				crossed.current = false;
@@ -196,7 +222,7 @@ export function useReplyDraft( {
 			} );
 			await requests.current;
 			if ( done ) {
-				kept.current = untouched;
+				kept.current = NOTHING_WRITTEN;
 			}
 			setState( done ? 'none' : 'undiscarded' );
 

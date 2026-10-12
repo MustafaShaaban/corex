@@ -792,6 +792,23 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Submissions\WpSubmissionReplyDraftStore::class),
         );
         $this->container->singleton(\Corex\Config\Submissions\SubmissionReplyDrafts::class);
+        $this->container->singleton(\Corex\Config\Submissions\WpSubmissionConversationStore::class);
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionConversationStore::class,
+            static fn (ContainerInterface $c): \Corex\Config\Submissions\WpSubmissionConversationStore =>
+                $c->make(\Corex\Config\Submissions\WpSubmissionConversationStore::class),
+        );
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionConversation::class,
+            static fn (ContainerInterface $c): \Corex\Config\Submissions\SubmissionConversation =>
+                new \Corex\Config\Submissions\SubmissionConversation(
+                    $c->make(\Corex\Config\Submissions\SubmissionReplyStore::class),
+                    $c->make(\Corex\Config\Submissions\SubmissionConversationStore::class),
+                    $c->make(SubmissionEmailGateway::class),
+                    $c->make(SubmissionWorkflowStore::class),
+                    \Corex\Mail\MessageId::hostOf((string) home_url('/')),
+                ),
+        );
         $this->container->singleton(\Corex\Config\Submissions\SubmissionReplyView::class);
         $this->container->singleton(SubmissionWorkflowService::class);
         $this->container->singleton(

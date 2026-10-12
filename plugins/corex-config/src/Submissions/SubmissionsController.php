@@ -159,8 +159,15 @@ final readonly class SubmissionsController
 
     public function reply(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->mutate($request, $this->replyShape(), function (Request $safe) use ($request): Response {
-            $sent = $this->services->email->reply($this->scope(), $this->changeable($request), $this->written($safe));
+        return $this->gateway->mutate($request, $this->replyShape() + ['thread' => 'sanitize_key'], function (Request $safe) use ($request): Response {
+            $sent = $this->services->email->reply(
+                $this->scope(),
+                $this->changeable($request),
+                $this->written($safe),
+                // Under the emails the person already has, or as a new one. A request that
+                // does not say is one from before there was a choice: a new email.
+                ($safe->input['thread'] ?? '') === 'conversation',
+            );
 
             return Response::ok(['result' => $sent->result->toArray(), 'recorded' => $sent->recorded]);
         });
@@ -198,6 +205,7 @@ final readonly class SubmissionsController
                 $this->changeable($request),
                 (string) ($safe->input['subject'] ?? ''),
                 (string) ($safe->input['body'] ?? ''),
+                (string) ($safe->input['thread'] ?? ''),
             )]);
         });
     }
@@ -401,6 +409,7 @@ final readonly class SubmissionsController
         return [
             'subject' => static fn (mixed $typed): string => is_string($typed) ? wp_check_invalid_utf8($typed) : '',
             'body' => [ReplyBody::class, 'reduce'],
+            'thread' => 'sanitize_key',
         ];
     }
 

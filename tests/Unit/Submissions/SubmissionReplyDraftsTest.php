@@ -88,7 +88,7 @@ function draftedReplyGateway(string $state): SubmissionEmailGateway
             return new ReplyReadiness(ReplyReadiness::DELIVER, 'live', '');
         }
 
-        public function reply(string $recipient, string $subject, string $htmlBody): MailResult
+        public function reply(string $recipient, string $subject, string $htmlBody, ?\Corex\Mail\ReplyConversation $within = null): MailResult
         {
             return new MailResult(
                 attemptId: '22222222-2222-4222-8222-222222222222',
@@ -99,6 +99,11 @@ function draftedReplyGateway(string $state): SubmissionEmailGateway
                 occurredAt: new DateTimeImmutable('2026-10-11T12:00:00+00:00'),
                 retryable: false,
             );
+        }
+
+        public function conversation(string $recipient, array $attemptIds): \Corex\Mail\ReplyConversation
+        {
+            throw new BadMethodCallException();
         }
 
         public function preview(string $recipient, string $subject, string $htmlBody): array
@@ -158,6 +163,21 @@ it('keeps what one person has written to one submission, and gives it back to th
         ->and(strtotime($kept['saved_at']))->toBeGreaterThan(0)
         ->and($drafts->of(7, 31))->toBe($kept);
 });
+
+// Spec 106, FR-039: somebody who chose a new email and comes back to their draft must not find
+// it set to join the conversation.
+it('keeps how the reply was to be sent with what was written', function (string $given, string $kept) {
+    $drafts = new SubmissionReplyDrafts(draftedSubmissions(), draftStore());
+
+    $drafts->keep(new SubmissionAccessScope(7, false, SALES), 31, 'Your kitchen', '<p>Hello Sam,</p>', $given);
+
+    expect($drafts->of(7, 31)['thread'])->toBe($kept);
+})->with([
+    'in the conversation' => ['conversation', 'conversation'],
+    'as a new email' => ['new', 'new'],
+    'not said' => ['', ''],
+    'something that is neither' => ['bcc', ''],
+]);
 
 it('keeps half a reply: a subject with no message yet, or a message with no subject', function () {
     $drafts = new SubmissionReplyDrafts(draftedSubmissions(), draftStore());

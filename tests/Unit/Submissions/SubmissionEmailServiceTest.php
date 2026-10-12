@@ -17,8 +17,14 @@ use Corex\Config\Submissions\SubmissionWorkflowStore;
 use Corex\Config\Submissions\SubmissionReplyRecord;
 use Corex\Config\Submissions\SubmissionReplyStore;
 use Corex\Mail\MailResult;
+use Corex\Mail\UnavailableSubmissionEmailGateway;
+use Corex\Mail\MailRequest;
 use Corex\Mail\ReplyReadiness;
 use Corex\Mail\SubmissionEmailGateway;
+use Corex\Config\Submissions\ReplySubject;
+use Corex\Config\Submissions\SubmissionConversation;
+use Corex\Config\Submissions\SubmissionConversationStore;
+use Corex\Mail\ReplyConversation;
 
 function emailWorkflowRecord(): array
 {
@@ -63,6 +69,23 @@ function submissionEmailGateway(string $mode = ReplyReadiness::CAPTURE, string $
     return new class($mode, $state) implements SubmissionEmailGateway {
         public array $calls = [];
 
+        /** @var list<\Corex\Mail\ReplyConversation|null> What each reply was sent under. */
+        public array $within = [];
+
+        /** @var list<array{0:string,1:list<string>}> What a conversation was asked for. */
+        public array $asked = [];
+
+        public function conversation(string $recipient, array $attemptIds): \Corex\Mail\ReplyConversation
+        {
+            $this->asked[] = [$recipient, $attemptIds];
+
+            // Every attempt named is taken to be an email this person has.
+            return new \Corex\Mail\ReplyConversation(
+                array_map(static fn (string $id): string => '<' . $id . '@acme.test>', $attemptIds),
+                'We received your enquiry',
+            );
+        }
+
         public function __construct(private readonly string $mode, private readonly string $state)
         {
         }
@@ -74,9 +97,10 @@ function submissionEmailGateway(string $mode = ReplyReadiness::CAPTURE, string $
             return new ReplyReadiness($this->mode, 'a_code', $sendable ? '' : 'Replies are not being delivered: ' . $this->mode);
         }
 
-        public function reply(string $recipient, string $subject, string $htmlBody): MailResult
+        public function reply(string $recipient, string $subject, string $htmlBody, ?\Corex\Mail\ReplyConversation $within = null): MailResult
         {
             $this->calls[] = ['reply', $recipient, $subject, $htmlBody];
+            $this->within[] = $within;
 
             return submissionMailResult('22222222-2222-4222-8222-222222222222', $this->state);
         }
@@ -297,4 +321,180 @@ it('previews nothing where there is no address a reply could go to', function ()
     expect(fn () => $service->preview(new SubmissionAccessScope(7, false, ['sales']), 31, new SubmissionReply('Re: Contact', '<p>Thanks, Sam.</p>')))
         ->toThrow(DomainException::class, 'replyable email address')
         ->and($gateway->calls)->toBe([]);
+});
+
+// Spec 106, FR-038 to FR-042: a reply is sent in the conversation the person already has, or
+// as a new email. The email add-on is the fake above: what is held here is which emails a
+// submission says it knows of, and what a reply is then sent under and recorded as.
+/** The email a flow sent for submission 31 and bound to it. Whom it went to is the gateway's to say. */
+const A_FLOW_EMAIL = '11111111-1111-4111-8111-111111111111';
+const EARLIER_REPLY = '66666666-6666-4666-8666-666666666666';
+
+function ownConversationStore(): SubmissionConversationStore
+{
+    return new class() implements SubmissionConversationStore {
+        /** @var array<int,list<array{message_id:string,subject:string}>> */
+        public array $kept = [];
+
+        public function emailsOf(int $submissionId): array
+        {
+            return $this->kept[$submissionId] ?? [];
+        }
+
+        public function add(int $submissionId, string $messageId, string $subject): void
+        {
+            $this->kept[$submissionId][] = ['message_id' => $messageId, 'subject' => $subject];
+        }
+    };
+}
+
+/** The conversation of the fakes above, on a site at acme.test, where submission 31 is Sam's. */
+function conversationOn(SubmissionReplyStore $replies, SubmissionConversationStore $own, SubmissionEmailGateway $gateway, string $host = 'acme.test'): SubmissionConversation
+{
+    return new SubmissionConversation($replies, $own, $gateway, emailWorkflowStore(), $host);
+}
+
+it('reads a submission\'s conversation from what the site said it sent, the emails a flow sent, and each reply', function () {
+    $gateway = submissionEmailGateway();
+    $replies = submissionReplyStore();
+    $replies->add(31, new SubmissionReplyRecord('reply-1', 'Re: Contact', '<p>Hello</p>', 7, '2026-10-12T12:00:00+00:00', [
+        ['attempt_id' => EARLIER_REPLY, 'state' => 'sent', 'message' => '', 'occurred_at' => '2026-10-12T12:00:00+00:00'],
+    ]));
+    $own = ownConversationStore();
+    $own->add(31, '<ownconfirmation@acme.test>', 'We have your request');
+
+    $conversation = conversationOn($replies, $own, $gateway)->of(emailWorkflowRecord());
+
+    // The email add-on is asked about the flow's emails and the replies, for the person who
+    // wrote in. What the site sent itself is the site's word, and came first.
+    expect($gateway->asked)->toBe([['sam@example.com', [A_FLOW_EMAIL, EARLIER_REPLY]]])
+        ->and($conversation->messageIds)->toBe([
+            '<ownconfirmation@acme.test>',
+            '<' . A_FLOW_EMAIL . '@acme.test>',
+            '<' . EARLIER_REPLY . '@acme.test>',
+        ])
+        ->and($conversation->latest())->toBe('<' . EARLIER_REPLY . '@acme.test>')
+        ->and($conversation->subject)->toBe('We received your enquiry');
+});
+
+it('has no conversation for a submission with nobody to write to', function (array $record) {
+    $gateway = submissionEmailGateway();
+
+    $conversation = conversationOn(submissionReplyStore(), ownConversationStore(), $gateway)->of($record);
+
+    expect($conversation->isEmpty())->toBeTrue()
+        ->and($gateway->asked)->toBe([]);
+})->with([
+    'no address' => [['id' => 31, 'submitter_email' => '']],
+    'something that is not one' => [['id' => 31, 'submitter_email' => 'not an address']],
+    'no submission' => [['submitter_email' => 'sam@example.com']],
+]);
+
+// FR-042: a site that sends its own confirmation says so, where it sends it, with the request
+// it sends. The email leaves under an id made of the request's own, whenever it leaves.
+it('records the email a site sends itself by the id it will leave under, once', function () {
+    $own = ownConversationStore();
+    $conversation = conversationOn(submissionReplyStore(), $own, new UnavailableSubmissionEmailGateway());
+    $request = new MailRequest(to: ['sam@example.com'], subject: 'We have your request', body: '<p>Thank you</p>', requestId: '55555555-6666-4777-8888-999999999999');
+
+    $conversation->began(31, $request);
+    $continued = $conversation->of(emailWorkflowRecord());
+
+    expect($own->emailsOf(31))->toBe([['message_id' => '<55555555666647778888@acme.test>', 'subject' => 'We have your request']])
+        // With nothing else sent, it is the conversation, and its subject is what a reply answers.
+        ->and($continued->messageIds)->toBe(['<55555555666647778888@acme.test>'])
+        ->and($continued->subject)->toBe('We have your request');
+});
+
+// A site's listener sends the team's notice from the same place as the person's confirmation.
+// A reply to the person must not answer an email they were never sent, or start from its subject.
+it('records only an email that goes to the person who sent the submission', function (array $to, int $submissionId) {
+    $own = ownConversationStore();
+    $conversation = conversationOn(submissionReplyStore(), $own, new UnavailableSubmissionEmailGateway());
+
+    $conversation->began($submissionId, new MailRequest(to: $to, subject: 'New enquiry from Sam', body: '<p>Sam wrote in</p>'));
+
+    expect($own->kept)->toBe([])
+        ->and($conversation->of(emailWorkflowRecord())->isEmpty())->toBeTrue();
+})->with([
+    'the team\'s notice' => [['sales@acme.test'], 31],
+    'nobody' => [[], 31],
+    'a submission there is none of' => [['sam@example.com'], 404],
+]);
+
+it('records an email to the person however their address was typed, among others it went to', function () {
+    $own = ownConversationStore();
+
+    conversationOn(submissionReplyStore(), $own, new UnavailableSubmissionEmailGateway())
+        ->began(31, new MailRequest(to: ['sales@acme.test', ' Sam@Example.com '], subject: 'We have your request', body: '<p>Thank you</p>'));
+
+    expect($own->emailsOf(31))->toHaveCount(1);
+});
+
+it('records nothing for a site with no host to make an id of', function () {
+    $own = ownConversationStore();
+
+    conversationOn(submissionReplyStore(), $own, submissionEmailGateway(), '')->began(31, new MailRequest(to: ['sam@example.com'], subject: 'Hello', body: '<p>Hi</p>'));
+
+    expect($own->emailsOf(31))->toBe([]);
+});
+
+it('sends a reply under the emails the person has when that is asked for, and records it so', function () {
+    $gateway = submissionEmailGateway(ReplyReadiness::DELIVER, MailResult::STATE_SENT);
+    $replies = submissionReplyStore();
+    $service = new SubmissionEmailService(
+        emailWorkflowStore(),
+        $gateway,
+        submissionEmailTimeline(),
+        $replies,
+        null,
+        conversationOn($replies, ownConversationStore(), $gateway),
+    );
+    $scope = new SubmissionAccessScope(7, false, ['sales']);
+    $reply = new SubmissionReply('Re: We received your enquiry', '<p>Hello Sam</p>');
+
+    $service->reply($scope, 31, $reply, inConversation: true);
+    $service->reply($scope, 31, $reply);
+
+    expect($gateway->within[0]->latest())->toBe('<' . A_FLOW_EMAIL . '@acme.test>')
+        // The second was asked for as a new email, and names nothing.
+        ->and($gateway->within[1])->toBeNull()
+        ->and(array_map(static fn (SubmissionReplyRecord $kept): string => $kept->toArray()['thread'], $replies->forSubmission(31)))
+        ->toBe(['conversation', 'new']);
+});
+
+it('sends a new email, and records a new email, where there is nothing to continue', function () {
+    $gateway = submissionEmailGateway(ReplyReadiness::DELIVER, MailResult::STATE_SENT);
+    $replies = submissionReplyStore();
+    // A submission that names no email of its own, with nobody to say which there were.
+    $service = new SubmissionEmailService(emailWorkflowStore(), $gateway, submissionEmailTimeline(), $replies);
+
+    $service->reply(new SubmissionAccessScope(7, false, ['sales']), 31, new SubmissionReply('Re: Contact', '<p>Hello</p>'), inConversation: true);
+
+    expect($gateway->within[0])->toBeNull()
+        ->and($replies->forSubmission(31)[0]->toArray()['thread'])->toBe('new');
+});
+
+it('reads a reply kept before there was a choice as a new email', function () {
+    $kept = SubmissionReplyRecord::fromArray(['id' => 'reply-1', 'subject' => 'Re: Contact', 'body_html' => '<p>Hello</p>', 'attempts' => []]);
+
+    expect($kept->inConversation)->toBeFalse()
+        ->and($kept->toArray()['thread'])->toBe('new');
+});
+
+it('answers an email\'s subject once', function (string $subject, string $answer) {
+    Functions\when('__')->returnArg();
+
+    expect(ReplySubject::answering($subject))->toBe($answer);
+})->with([
+    'a subject' => ['We received your enquiry', 'Re: We received your enquiry'],
+    'one that answers already' => ['Re: We received your enquiry', 'Re: We received your enquiry'],
+    'in capitals' => ['RE: Offer', 'RE: Offer'],
+    'none' => ['', ''],
+    'with a line break in it' => ["Offer\r\nBcc: x@example.com", 'Re: Offer Bcc: x@example.com'],
+]);
+
+it('keeps what an empty conversation would have been out of a header', function () {
+    expect((new ReplyConversation())->latest())->toBe('')
+        ->and((new ReplyConversation(['not an id']))->isEmpty())->toBeTrue();
 });

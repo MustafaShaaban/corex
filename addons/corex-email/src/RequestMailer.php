@@ -17,6 +17,7 @@ use Corex\Email\Template\TemplateRenderer;
 use Corex\Mail\MailRequest;
 use Corex\Mail\AttemptingMailer;
 use Corex\Mail\MailResult;
+use Corex\Mail\MessageId;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
 
@@ -33,6 +34,8 @@ final class RequestMailer implements AttemptingMailer
         private readonly TemplateRenderer $renderer,
         private readonly RecipientResolver $resolver,
         private readonly MailService $service,
+        /** The host an email's id is made of: the site's own. '' sends as before. */
+        private readonly string $messageHost = '',
     ) {
     }
 
@@ -54,6 +57,11 @@ final class RequestMailer implements AttemptingMailer
         if ($request->from !== null && $request->from !== '') {
             $builder->from($request->from);
         }
+
+        // Sent under an id made of the request's own, which the request keeps through the
+        // queue: whoever made the request can say which email a reply answers (spec 106,
+        // FR-042), whenever it is sent.
+        $builder->sentUnder(MessageId::of($request->requestId, $this->messageHost));
 
         foreach ($request->attachments as $attachmentId) {
             $builder->attachMedia($attachmentId);

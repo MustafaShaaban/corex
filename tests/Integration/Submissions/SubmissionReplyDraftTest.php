@@ -92,6 +92,22 @@ it('gives a person back the reply they began, on another visit', function () {
         ->and(strtotime($shown['saved_at']))->toBeGreaterThan(time() - 60);
 });
 
+// Spec 106, FR-039: how the reply was to be sent is part of what was begun.
+it('gives the draft back set to be sent the way it was', function (mixed $asked, string $kept) {
+    $this->draftController->keepReplyDraft(draftRequest('POST', $this->draftSubmission, '/reply/draft', [
+        'subject' => 'Your kitchen',
+        'body' => '<p>Hello Salma</p>',
+        'thread' => $asked,
+    ]));
+
+    expect(draftShownOn($this)['thread'])->toBe($kept);
+})->with([
+    'as a new email' => ['new', 'new'],
+    'in the conversation' => ['conversation', 'conversation'],
+    'something that is neither' => ["new\r\nBcc: x@example.com", ''],
+    'not text' => [['new'], ''],
+]);
+
 // A subject goes back into the field it was typed in. What `sanitize_text_field` does to a
 // line (it wrote "Price &lt;500 EGP", and took the address out of "Sam <sam@example.com>")
 // would have come back as something the person never wrote.

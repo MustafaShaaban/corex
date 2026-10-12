@@ -12,9 +12,12 @@ defined('ABSPATH') || exit;
 
 use Corex\Email\Delivery\DeliveryDecision;
 use Corex\Email\Delivery\DeliveryPolicy;
+use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Message\EmailMessage;
+use Corex\Mail\MessageId;
 use Corex\Mail\MailResult;
+use Corex\Mail\ReplyConversation;
 use Corex\Mail\ReplyReadiness;
 use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\Config\ConfigInterface;
@@ -26,6 +29,8 @@ use DomainException;
  */
 final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGateway
 {
+    private const AN_ATTEMPT_ID = '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i';
+
     public function __construct(
         private EmailStudioRepositories $repositories,
         private EmailStudioService $studio,
@@ -87,7 +92,7 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
      * "whatever the operator typed", and one would put a placeholder between the operator and
      * their own words.
      */
-    public function reply(string $recipient, string $subject, string $htmlBody): MailResult
+    public function reply(string $recipient, string $subject, string $htmlBody, ?ReplyConversation $within = null): MailResult
     {
         $email = $this->composer->compose($recipient, $subject, $htmlBody);
 
@@ -99,9 +104,49 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
                 $this->replyToAddress(),
                 $subject,
                 $email->html,
+                // An email says which one it answers, and names the ones before it: that is
+                // what a mail program reads to put it under them (spec 106, FR-040).
+                $within === null || $within->isEmpty() ? [] : [
+                    'In-Reply-To' => $within->latest(),
+                    'References' => implode(' ', $within->messageIds),
+                ],
                 plainText: $email->text,
             ),
             $this->deliveryContext(),
+        );
+    }
+
+    /**
+     * Among the attempts named, the emails this person was sent and has: each went to them,
+     * left or was kept, and was sent under an id that can be named. Oldest first.
+     *
+     * An email sent before CoreX chose ids is on record and cannot be continued: it left
+     * under an id nothing kept.
+     */
+    public function conversation(string $recipient, array $attemptIds): ReplyConversation
+    {
+        $sent = [];
+        foreach (array_unique(array_filter($attemptIds, 'is_string')) as $attemptId) {
+            // An id is asked for only if it is one: the list comes from what a submission
+            // has stored, and the repository refuses anything else by throwing.
+            $attempt = preg_match(self::AN_ATTEMPT_ID, $attemptId) === 1
+                ? $this->repositories->attempts->findByAttemptId($attemptId)
+                : null;
+            if (
+                $attempt !== null
+                && $this->repositories->attempts->wasSentTo($attempt, $recipient)
+                && in_array($attempt->state, [EmailAttempt::STATE_SENT, EmailAttempt::STATE_CAPTURED, EmailAttempt::STATE_OPENED], true)
+                && MessageId::isOne($attempt->providerMessageId)
+            ) {
+                $sent[] = $attempt;
+            }
+        }
+        // By when each left, and for two in the same second by the order they were recorded in.
+        usort($sent, static fn (EmailAttempt $a, EmailAttempt $b): int => [$a->occurredAt, $a->id] <=> [$b->occurredAt, $b->id]);
+
+        return new ReplyConversation(
+            array_map(static fn (EmailAttempt $attempt): string => (string) $attempt->providerMessageId, $sent),
+            $sent === [] ? '' : $sent[count($sent) - 1]->subject,
         );
     }
 

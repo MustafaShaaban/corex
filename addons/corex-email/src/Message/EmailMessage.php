@@ -56,4 +56,30 @@ final class EmailMessage
         public readonly ?string $plainText = null,
     ) {
     }
+
+    /**
+     * This message with headers added to its own, the added ones winning.
+     *
+     * Headers are not written as they are given. A driver writes the ones it knows by name,
+     * each checked for what it has to be: see {@see \Corex\Email\Driver\WpMailDriver}.
+     *
+     * @param array<string,string> $headers
+     */
+    public function withHeaders(array $headers): self
+    {
+        // By name: a field added to this class and not carried here fails `MailServiceTest`,
+        // and one out of order fails at once.
+        return new self(
+            to: $this->to,
+            cc: $this->cc,
+            bcc: $this->bcc,
+            replyTo: $this->replyTo,
+            subject: $this->subject,
+            body: $this->body,
+            headers: $headers + $this->headers,
+            from: $this->from,
+            attachments: $this->attachments,
+            plainText: $this->plainText,
+        );
+    }
 }

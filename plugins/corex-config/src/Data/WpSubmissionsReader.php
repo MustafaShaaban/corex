@@ -112,6 +112,8 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
                 'corex_submission_notes',
                 // What the team wrote back quotes the person it answers (spec 106, FR-023).
                 'corex_submission_replies',
+                // The subject of a confirmation the site sent them may name them.
+                'corex_submission_conversation',
             ], true)) {
                 delete_post_meta($id, (string) $key);
             }
