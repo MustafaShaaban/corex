@@ -11511,3 +11511,13 @@ went. Each has a test that fails without its fix.
 **Found on the way, not this slice's:** Email Studio's store writes a record without
 `wp_slash()`, so an email kept on a development site loses its backslashes ("C:\offers" is
 kept as "C:offers"). The delivered email is not affected. Filed as a task of its own.
+
+**The inbox's list, fixed in the same pull request.** This slice's browser run failed on a
+test it had not touched: the inbox answered with an error while another test, in another
+worker, was deleting submissions for good. WordPress reads a page of posts in two steps, ids
+and then each post, and hands back nothing for one that went in between; the reader's list
+was typed to take posts and nothing else. A team with two people in the inbox, or a
+retention run, meets the same thing. The reader now passes over what is no longer there. It
+is here and not in a pull request of its own because it stood in this one's way; it is
+released code's defect, in the changelog under Fixed.
+

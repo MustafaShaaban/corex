@@ -57,6 +57,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The inbox no longer fails to load when a submission is deleted at that moment.**
+  WordPress finds the ids of a page of submissions and then reads each one; a submission
+  deleted between the two, by a colleague or by retention, came back as nothing, and the list
+  answered "The submissions could not be loaded" for whoever was opening it. It is now a
+  page with one row fewer. The same in the Data screen's list of submissions.
+
 - **A reply no longer keeps another plugin's mail settings from being applied.** CoreX gives
   WordPress's mailer a reply's plain-text version through the `phpmailer_init` hook, and took
   itself off that hook as it ran. WordPress then skips whatever listens at the next priority,
