@@ -11351,3 +11351,82 @@ site. It puts a header it does not know on the mailer before that hook (`helpers
 which is how CoreX's mark reaches the listener there. Whether Gmail keeps a `Message-ID` it is handed or writes its own is not known. If it
 writes its own, a reply names an id the person's mail program never saw, and stands alone.
 One real reply on MUVA after the release, and its raw headers, will say.
+
+## #328 — A reply that did not go is sent again as it was written, and stays one reply
+
+**Date:** 2026-10-13. **Branch:** `feat/106-reply-send-again`. **Spec:** 106, slice 5, its first half (story 4, FR-022).
+
+(#326 and #327 are held by two pull requests open the same day: the reply's subject kept as
+typed, and the copy button on the preview link.)
+
+Slice 1 lists a reply that was not sent, with the reason, "so the next person to open the
+submission knows the lead has not been answered". There was nothing they could do about it
+but write the reply again.
+
+**What is sent is what is kept.** The route names the reply and carries nothing else:
+`POST corex/v1/submissions/{id}/replies/{reply}/send`. The reply is the one the address
+names, read from the path, which a body or a query string cannot answer for. The subject and
+the message are the stored ones, reduced when they were first sent. Somebody who wants to say
+something else writes a reply.
+
+**One reply, tried twice.** The new sending is added to the reply's own list of attempts,
+which has been a list since slice 1 and never held more than one. The reply keeps who wrote
+it and when; the history says who sent it again. The list of replies says "Tried 2 times":
+"sent" would be untrue of a reply that failed both times.
+
+**By anybody who may answer the submission.** Not only whoever wrote it: it is the second
+person who finds it.
+
+**Which replies: the ones known not to have gone.** A reply whose last sending failed, was
+rejected or was returned. Not one that went or is waiting; not one kept on a site that keeps
+its email, which was not meant to arrive; and not one in a state this code does not know. The
+first version went by exclusion ("anything that is not sent or on its way"), which a state
+added to the mail seam later would have fallen into: the customer answered twice because of a
+word nobody listed. The server decides, and tells the pane with each reply
+(`can_send_again`), so there is one rule and not two that have to agree.
+
+**Claimed before it is sent.** The first version checked the reply, sent the email, and then
+wrote the reply over itself only if it was still as read. That protected the record and not
+the customer: two people pressing in the seconds a mail server takes both passed the check,
+and both emails went. Now the reply is written over itself as being sent (a last attempt in
+state `sending`, with no id) before the email is handed over, by matching the row as the
+database holds it, which the database does in one step. The second request finds the row
+changed and is refused with "Somebody else is sending this reply again", having sent
+nothing. When the email system has answered, what happened takes the place of the sending
+begun. The row is matched as stored and not as read, since a reply kept by an earlier
+release has fewer fields than the same reply read back.
+
+**A sending that was begun and never ended** (the request died between the two writes) would
+leave the reply waiting for ever. After ten minutes it can be sent again, and what happens
+then takes the abandoned sending's place. Ten minutes is far longer than a mail server is
+waited for and short enough that the lead is answered the same morning.
+
+**Which way it goes is decided when it goes.** A reply that was to join the conversation
+joins it where there still is one, answering the latest email the person has, and is sent as
+a new email otherwise and listed as one from then on. The spec's line "it keeps the place in
+the conversation it was first given" is read as that: the choice is kept, not the email it
+would have answered on the day it failed.
+
+**The writer's own draft.** A reply that fails stays in its writer's box and as their draft,
+for them to try again (FR-031). Sent again from the list by that same person, it has gone,
+and the box would still hold it with Send reply ready: the customer answered twice, the
+second time as a new reply. So where the draft of the person sending again is that same
+reply, subject and message, it is discarded with the sending, the route says so
+(`draft_ended`), and the pane empties the box. A draft that says anything else is theirs
+and is left.
+
+**What is said when it could not be written down.** A first sending that went and could not
+be kept says the reply "is not listed here". Of a reply sent again that is untrue, beside
+the reply it is about: it says the sending could not be written down, that the submission
+may go on listing the reply as it was, and not to send it again.
+
+**Not built here:** the reply's own sender (story 5), which is the other half of slice 5.
+
+**Reviewed** by an independent reading before the pull request. It found the two ways the
+customer could still be answered twice (the claim, the draft), the exclusion list, the
+reply read from where a body could answer for it, and "Sent 2 times" on a reply that never
+went. Each has a test that fails without its fix.
+
+**Found on the way, not this slice's:** Email Studio's store writes a record without
+`wp_slash()`, so an email kept on a development site loses its backslashes ("C:\offers" is
+kept as "C:offers"). The delivered email is not affected. Filed as a task of its own.

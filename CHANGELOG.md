@@ -15,6 +15,12 @@ All notable changes to Corex are documented here. The format follows
   with the submission, so it goes to the trash with it and is removed when the submission is
   deleted or anonymized (DECISIONS #320).
 
+- **A reply that did not go can be sent again** (spec 106, slice 5). A reply listed as "Not
+  sent" has a **Send again** button, for anybody who may answer the submission. It sends the
+  reply as it was written and adds what happened to that reply, which then says how many
+  times sending it was tried. Two people pressing at once send it once: the reply is written
+  down as being sent before the email is handed over (DECISIONS #328).
+
 - **A reply starts with a subject** (spec 106, slice 9): "Re: " and the name of the form the
   person filled in, to keep or to change. A form defined in code is named as the inbox's own
   filter names it. The subject started empty and had to be written
@@ -71,6 +77,12 @@ All notable changes to Corex are documented here. The format follows
   `logoBox()` and `logoIsItsName()`**, and two optional last constructor arguments. A brand
   built in a `corex_email_brand` filter says its logo's size with `withLogoSize()`. A design of your own may draw
   its logo from `logoBox()`; one that does not is unaffected.
+- **New route: `POST corex/v1/submissions/{id}/replies/{reply}/send`**, with no body. It
+  answers as the reply route does, with `draft_ended` beside `recorded`. Each of a
+  submission's `replies` gains `can_send_again`. **`SubmissionReplyStore` gains
+  `replace(int $submissionId, SubmissionReplyRecord $was, SubmissionReplyRecord $now): void`**:
+  a site that implements that store itself has to add it. A reply being sent again has, for
+  as long as that takes, a last attempt in state `sending` with an empty `attempt_id`.
 - **`Corex\Mail\SubmissionEmailGateway::reply()` takes a fourth, optional argument**, a
   `Corex\Mail\ReplyConversation`, **and the interface gains
   `conversation(string $recipient, array $attemptIds): ReplyConversation`.** A site that

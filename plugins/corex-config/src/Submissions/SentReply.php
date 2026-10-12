@@ -21,9 +21,14 @@ use Corex\Mail\MailResult;
  */
 final readonly class SentReply
 {
+    /**
+     * @param bool $draftEnded True when the person's own draft held this same reply and was
+     *                         discarded with it: left there, it would be sent a second time.
+     */
     public function __construct(
         public MailResult $result,
         public bool $recorded,
+        public bool $draftEnded = false,
     ) {
     }
 }

@@ -119,14 +119,21 @@ Built in two pull requests: the editor and the preview first, the draft after it
 
 ## Slice 5: "Send again", and the reply sender (US4.2, US5; FR-022, FR-024)
 
-- [ ] T080 Pest unit: sending a stored reply again adds an attempt to it and a history entry;
+- [x] T080 Pest unit: sending a stored reply again adds an attempt to it and a history entry;
       refused on a reply already delivered and outside the scope
-- [ ] T081 `SubmissionEmailService::sendAgain()`; `POST …/replies/{reply}/send`
+- [x] T081 `SubmissionEmailService::sendAgain()`; `POST …/replies/{reply}/send`;
+      `SubmissionReplyStore::replace()`, and an integration test of the row written over in
+      place, also one an earlier release kept
 - [ ] T082 Pest unit and integration: with a reply sender set, From, its name and Reply-To are
       those; without, as today; an invalid address is refused when saved
 - [ ] T083 The three settings; `EmailMessage::$fromName`; the driver
-- [ ] T084 Jest and Playwright: "Send again" on a reply that was not delivered
-- [ ] T085 The control; guards; guide; CHANGELOG; PROGRESS; DECISIONS
+- [x] T084 Jest and Playwright: "Send again" on a reply that was not delivered. The browser
+      meets a reply that did not go through a third mode of the mail fixture, `fail`, which
+      answers for WordPress before it reaches its mailer
+- [x] T085 The control; guards; guide; CHANGELOG; PROGRESS; DECISIONS (#328), for "Send
+      again". T082 and T083, the reply's sender, are the slice's second pull request. The
+      review found two ways the customer could still be answered twice: the reply is now
+      claimed before it is sent, and the sender's own draft of it goes with it
 
 ## Slice 6: saved replies (US6; FR-026)
 

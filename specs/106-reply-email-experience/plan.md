@@ -363,6 +363,13 @@ Not designed: it waits on the owner's answer to story 11.
 on a reply whose last attempt was not delivered. A reply's attempts are its own list (D4), not
 the form's notification bindings that `resend()` works from.
 
+As built: the route is `POST corex/v1/submissions/{id}/replies/{reply}/send`, with no body.
+It is offered on a reply whose last sending failed, was rejected or was returned, and not on
+one kept on a site that keeps its email; the server says which (`can_send_again`). The store
+gains `replace()`, which writes the reply over itself only where it is still as it was read.
+The reply is written down as being sent before the email is handed over, so two people
+pressing at once send it once (DECISIONS #328).
+
 The sender: `mail.reply.from_name`, `mail.reply.from_address`, `mail.reply.reply_to` in the
 Mail settings, validated when saved. `EmailMessage::$from` is an address only, on purpose (a
 name that varies per message is how a spoof reads); a site-wide reply name set by an

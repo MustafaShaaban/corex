@@ -35,6 +35,26 @@ final class WpSubmissionReplyStore implements SubmissionReplyStore
         }
     }
 
+    public function replace(int $submissionId, SubmissionReplyRecord $was, SubmissionReplyRecord $now): void
+    {
+        // The row as the database holds it is what WordPress matches the old value by. A reply
+        // kept by an earlier release has fewer fields than one read back, so it is not `$was`.
+        foreach ((array) get_post_meta($submissionId, self::META_KEY, false) as $stored) {
+            $kept = is_array($stored) ? SubmissionReplyRecord::fromArray($stored) : null;
+            if ($kept === null || $kept->id !== $was->id) {
+                continue;
+            }
+            if ($kept->toArray() === $was->toArray()
+                && update_post_meta($submissionId, self::META_KEY, wp_slash($now->toArray()), $stored) !== false) {
+                return;
+            }
+
+            break;
+        }
+
+        throw new DomainException(__('The reply could not be kept with its submission.', 'corex'));
+    }
+
     public function forSubmission(int $submissionId): array
     {
         $replies = [];
