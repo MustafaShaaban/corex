@@ -566,6 +566,178 @@ describe( 'the preview', () => {
 	} );
 } );
 
+// Spec 106, FR-035 and FR-036: the box opens with a subject from the form the person filled
+// in, to keep or to change; and a subject nobody wrote is not something somebody began.
+describe( 'the subject a reply starts with', () => {
+	const WITH_A_SUBJECT = { reply_subject: 'Re: Request a quote' };
+	const pause = () =>
+		act( async () => {
+			jest.advanceTimersByTime( PAUSE_BEFORE_SAVING * 4 );
+		} );
+	const leave = () => {
+		act( () => root.unmount() );
+		root = createRoot( container );
+	};
+	function Pane( { record } ) {
+		const [ pending, during ] = usePending();
+
+		return (
+			<Reply
+				record={ record }
+				inbox={ inbox }
+				work={ { pending, during } }
+			/>
+		);
+	}
+
+	beforeEach( () => jest.useFakeTimers() );
+	afterEach( () => jest.useRealTimers() );
+
+	it( 'is there when the box opens, and can be changed', () => {
+		show( submission( WITH_A_SUBJECT ) );
+
+		expect( field( 'Subject' ).value ).toBe( 'Re: Request a quote' );
+		// A subject alone is not a reply: there is nothing to send yet.
+		expect( button( 'Send reply' ).disabled ).toBe( true );
+
+		type( field( 'Subject' ), 'Your quote' );
+		typeMessage( '<p>Hello</p>' );
+
+		expect( field( 'Subject' ).value ).toBe( 'Your quote' );
+		expect( button( 'Send reply' ).disabled ).toBe( false );
+	} );
+
+	it( 'is not kept as a draft while it is all the box holds', async () => {
+		show( submission( WITH_A_SUBJECT ) );
+
+		await pause();
+		leave();
+		await pause();
+
+		expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+		expect(
+			container.querySelector( '.corex-pane__reply-draft' )
+		).toBeNull();
+	} );
+
+	it( 'is kept with the message once there is one', async () => {
+		show( submission( WITH_A_SUBJECT ) );
+
+		typeMessage( '<p>Hello</p>' );
+		await pause();
+
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
+			subject: 'Re: Request a quote',
+			body: '<p>Hello</p>',
+		} );
+	} );
+
+	// Back to how the box opened: what was kept is discarded, and not kept as a draft of a
+	// subject nobody wrote.
+	it( 'leaves no draft when the message is taken out again', async () => {
+		show( submission( WITH_A_SUBJECT ) );
+		typeMessage( '<p>Hello</p>' );
+		await pause();
+
+		typeMessage( '' );
+		await pause();
+
+		expect( inbox.keepReplyDraft ).toHaveBeenLastCalledWith( 41, {
+			subject: '',
+			body: '',
+		} );
+		expect(
+			container.querySelector( '.corex-pane__reply-draft' )
+		).toBeNull();
+	} );
+
+	// Clearing it to write another is the first thing most people do. Nothing of theirs
+	// is in the box yet, and nothing is kept: there is nothing to ask the server for.
+	it.each( [
+		[ 'cleared', '' ],
+		[ 'followed by a space', 'Re: Request a quote ' ],
+	] )(
+		'asks the server for nothing while it is only %s',
+		async ( _, typed ) => {
+			inbox.keepReplyDraft.mockResolvedValue( {
+				ok: false,
+				draft: null,
+			} );
+			show( submission( WITH_A_SUBJECT ) );
+
+			type( field( 'Subject' ), typed );
+			await pause();
+			type( field( 'Subject' ), 'Re: Request a quote' );
+			await pause();
+
+			expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+			expect(
+				container.querySelector( '.corex-pane__reply-draft' )
+			).toBeNull();
+		}
+	);
+
+	it( 'gives way to the subject of a draft the person had begun', () => {
+		show(
+			submission( {
+				...WITH_A_SUBJECT,
+				reply_draft: {
+					subject: 'About your kitchen',
+					body: '<p>Hello</p>',
+					saved_at: '2026-10-11T10:00:00+00:00',
+				},
+			} )
+		);
+
+		expect( field( 'Subject' ).value ).toBe( 'About your kitchen' );
+	} );
+
+	it( 'is what the box goes back to when the reply has gone, or its draft was discarded', async () => {
+		inbox.reply.mockResolvedValue( {
+			tone: 'success',
+			text: 'Reply sent to salma@example.com.',
+			detail: '',
+			keep: false,
+		} );
+		act( () => {
+			root.render( <Pane record={ submission( WITH_A_SUBJECT ) } /> );
+		} );
+		type( field( 'Subject' ), 'Your quote' );
+		typeMessage( '<p>Hello</p>' );
+
+		await act( async () => {
+			button( 'Send reply' ).click();
+		} );
+
+		expect( field( 'Subject' ).value ).toBe( 'Re: Request a quote' );
+		expect( message().textContent ).toBe( '' );
+
+		type( field( 'Subject' ), 'Another' );
+		typeMessage( '<p>Again</p>' );
+		await pause();
+		await act( async () => {
+			button( 'Discard draft' ).click();
+		} );
+
+		expect( field( 'Subject' ).value ).toBe( 'Re: Request a quote' );
+		await pause();
+		leave();
+		await pause();
+		// The reply that went, one save of what was written after it, and nothing since.
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'does not start over when the pane reads the submission again', () => {
+		show( submission( WITH_A_SUBJECT ) );
+		type( field( 'Subject' ), 'Your quote' );
+
+		// As after a note is added: the same submission, read again.
+		show( submission( { reply_subject: 'Re: Renamed form' } ) );
+
+		expect( field( 'Subject' ).value ).toBe( 'Your quote' );
+	} );
+} );
+
 // Spec 106, FR-006: an unsent reply is the person's draft until it is sent or discarded.
 describe( 'the draft', () => {
 	const STORED = {

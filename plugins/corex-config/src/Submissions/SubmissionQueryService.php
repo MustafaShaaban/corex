@@ -101,7 +101,7 @@ final readonly class SubmissionQueryService
             'owners' => $this->owners?->people() ?? [],
             // What was answered, what would happen to an answer sent now, and the answer
             // this person began and did not send (spec 106).
-        ] + ($this->replies?->of((int) ($record['id'] ?? 0), $actorId) ?? []);
+        ] + ($this->replies?->of($record, $actorId) ?? []);
     }
 
     /**

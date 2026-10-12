@@ -94,7 +94,7 @@ final class CorexGuides
                     ),
                     new GuideStep(
                         __('Write the subject and the message.', 'corex'),
-                        __('The buttons above the message make text bold or italic, start a bulleted or a numbered list, and add a link. Each has a keyboard shortcut, shown when you point at it. Colours, fonts and pictures come from the email design of the site, so they are not offered here.', 'corex'),
+                        __('The subject starts as "Re:" and the name of the form the person filled in; keep it or write your own. The buttons above the message make text bold or italic, start a bulleted or a numbered list, and add a link. Each has a keyboard shortcut, shown when you point at it. Colours, fonts and pictures come from the email design of the site, so they are not offered here.', 'corex'),
                     ),
                     new GuideStep(
                         __('Leave it and come back, if you need to.', 'corex'),

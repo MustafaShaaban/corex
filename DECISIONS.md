@@ -11138,3 +11138,42 @@ is the check that is still owed.
 
 **Not here.** The layout the other emails are drawn in (`Template\Layout`) still limits a
 logo by width alone; they come to this design in slice 7.
+
+## #323 — A reply starts with a subject, and a subject nobody wrote is not a draft
+
+**Date:** 2026-10-12. **Branch:** `feat/106-default-subject`. **Spec:** 106, slice 9 (FR-035, FR-036).
+
+"Add a default title based on that form submited could be edited if wants to change it."
+
+**"Re: " and the form's name.** The form is what the person who wrote in knows they filled
+in. Its name is, in this order: what a form built in the admin was called when the submission
+was sent; what the site's forms call it now, which is the name the inbox's own filter lists it
+under and where a form defined in code says what it is called; its slug as a person would
+read it. Written as plain text: WordPress keeps a title with its `&` as an entity, and a
+subject is not markup. One line, and cut at a subject's length. Sent with the submission as
+`reply_subject`.
+
+**"Re:" is not translated.** It is what mail programs keep a conversation together by, in
+every language; translated, it would be put in front of itself the next time, and slice 10
+needs one "Re:" and not two. Only the words that stand in where a submission names no form
+("your message") are translated, in the language of whoever is replying, who can change them.
+
+**Not the site's name, and not the first line of what they wrote.** "Re: your message to
+Muva" says nothing a customer who wrote to two shops can tell apart by the second half of;
+their own words as a subject would quote them back before the email is opened.
+
+**A place to start is not something begun.** The draft's hook is told what the untouched box
+holds, and treats a box that holds only that, or nothing, as saying nothing: opening a
+submission keeps no draft, clearing the subject to write another asks the server for
+nothing, "Draft saved." does not appear for words nobody wrote, and a message written and
+taken out again discards what was kept. The box goes back to the subject it started with when
+a reply has gone or its draft is discarded. This is the pane's rule: the draft route keeps
+whatever subject it is given, as it keeps any half of a reply.
+
+**Read once.** The pane reads the submission again after every change to it. What somebody
+is writing does not start over for that, even if the form was renamed in the meantime.
+
+**Left.** Where the reply continues a conversation, the subject is "Re: " and the subject of
+the email being answered: slice 10. And the reply route still passes a subject through
+`sanitize_text_field` (#320), which a form called "Budget <5000" now reaches without anybody
+typing it: the subject is sent as "Re: Budget &lt;5000". That fix has its own task.

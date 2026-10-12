@@ -29,6 +29,14 @@ test.beforeEach( () => {
 	EMAIL = `corex-reply-e2e-${ Date.now() }@example.com`;
 } );
 
+/**
+ * The subject the reply box opens with: "Re: " and the name of the form the person filled in
+ * (spec 106, FR-035), which `seedSubmission()` calls "Inbox E2E flow". It is also what the
+ * box goes back to when a reply has gone. Whole, and not a pattern: every subject these
+ * tests type begins "Re: " too, and a box that kept one would have matched.
+ */
+const STARTING_SUBJECT = 'Re: Inbox E2E flow';
+
 /** Long enough for a browser to have said everything about the last key. */
 const SETTLED = 400;
 
@@ -268,6 +276,11 @@ test( 'sends a reply on a site that keeps its email, says what happened, and lis
 	await expect( notice ).toContainText( 'This is a development site.' );
 	await expect( notice ).toContainText( 'is not delivered' );
 	await expect( pane.locator( '.corex-pane__reply' ) ).toHaveCount( 0 );
+	// A subject to start from is there, and is a place to start: nothing is kept of it.
+	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue(
+		STARTING_SUBJECT
+	);
+	await expect( pane.locator( '.corex-pane__reply-draft' ) ).toHaveCount( 0 );
 
 	await pane.getByLabel( 'Subject' ).fill( 'Re: your message' );
 	await pane.getByRole( 'textbox', { name: 'Message' } ).click();
@@ -300,7 +313,9 @@ test( 'sends a reply on a site that keeps its email, says what happened, and lis
 	);
 	await expect( pane.getByLabel( 'Subject' ) ).toBeFocused();
 	await expect( pane ).not.toContainText( 'Reply processed by Email Studio' );
-	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue( '' );
+	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue(
+		STARTING_SUBJECT
+	);
 	await expect( pane.getByRole( 'textbox', { name: 'Message' } ) ).toHaveText(
 		''
 	);
@@ -972,14 +987,18 @@ test( 'keeps a reply that was begun as a draft, gives it back on another visit, 
 	await pinAppearance( page, 'dark', 'ltr' );
 
 	await pane.getByRole( 'button', { name: 'Discard draft' } ).click();
-	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue( '' );
+	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue(
+		STARTING_SUBJECT
+	);
 	await expect( message ).toHaveText( '' );
 	await expect( draftLine() ).toHaveCount( 0 );
 	await expect( pane.getByLabel( 'Subject' ) ).toBeFocused();
 
 	// And it is gone for good, not only from this visit.
 	await reopen();
-	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue( '' );
+	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue(
+		STARTING_SUBJECT
+	);
 	await expect( draftLine() ).toHaveCount( 0 );
 
 	expect( errors ).toEqual( [] );

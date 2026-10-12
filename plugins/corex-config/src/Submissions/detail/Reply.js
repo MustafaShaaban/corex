@@ -17,7 +17,7 @@ import Section from './Section.js';
 import { contactOf } from './detailState.js';
 import { cleanReplyHtml, hasWords } from '../../admin/components/replyHtml.js';
 import { canSendReply, readinessNotice, replyStateOf } from './replyState.js';
-import { NOTHING_WRITTEN, draftOf, useReplyDraft } from './useReplyDraft.js';
+import { draftOf, untouchedReply, useReplyDraft } from './useReplyDraft.js';
 
 /**
  * @param {Object} props
@@ -29,14 +29,21 @@ import { NOTHING_WRITTEN, draftOf, useReplyDraft } from './useReplyDraft.js';
  */
 export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 	const fieldId = useId();
+	// The box before anybody writes in it: a subject from the form the person filled in,
+	// to keep or to change (FR-035). Read once: the pane reads the submission again after
+	// every change to it, and what somebody is writing does not start over for that.
+	const [ untouched ] = useState( () => untouchedReply( record ) );
 	// What they began on another visit and did not send is where they left it (FR-006).
-	const [ reply, setReply ] = useState( () => draftOf( record.reply_draft ) );
+	const [ reply, setReply ] = useState( () =>
+		draftOf( record.reply_draft, untouched )
+	);
 	const draft = useReplyDraft( {
 		id: record.id,
 		stored: record.reply_draft,
 		reply,
 		inbox,
 		held: work.pending === 'reply',
+		untouched,
 	} );
 	const [ outcome, setOutcome ] = useState( null );
 	const [ preview, setPreview ] = useState( null );
@@ -88,7 +95,7 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 			setOutcome( said );
 			if ( ! said.keep ) {
 				draft.forget();
-				setReply( NOTHING_WRITTEN );
+				setReply( untouched );
 				// The button that was pressed is off again; focus must not be left on it.
 				subject.current?.focus();
 			}
@@ -99,7 +106,7 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 		const discarded = await work.during( 'draft', async () => {
 			const done = await draft.discard();
 			if ( done ) {
-				setReply( NOTHING_WRITTEN );
+				setReply( untouched );
 				setOutcome( null );
 				setDraftSaid( __( 'Draft discarded.', 'corex' ) );
 			}

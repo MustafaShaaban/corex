@@ -355,3 +355,25 @@ it('gives back what is stored reduced, and its date only where it is one', funct
         ->and($shown['body'])->not->toContain('script')->not->toContain('onclick')->not->toContain('href')->not->toContain('steal')
         ->and($shown['saved_at'])->toBe('');
 });
+
+// Spec 106, FR-035: the box opens with a subject, from the form the person filled in.
+it('sends the pane a subject to start a reply from, with the submission', function () {
+    // As WordPress stores a title: its `&` and `<` as entities.
+    update_post_meta($this->draftSubmission, 'corex_flow_label_snapshot', 'Sales &amp; quotes');
+
+    $shown = $this->draftController->show(draftRequest('GET', $this->draftSubmission, ''))->get_data()['data']['submission'];
+
+    expect($shown['reply_subject'])->toBe('Re: Sales & quotes');
+});
+
+// A form defined in code says its own name, and the inbox's filter lists it under that.
+it('names a form defined in code as the inbox\'s own filter names it', function () {
+    update_post_meta($this->draftSubmission, 'corex_form_slug', 'quote_v2');
+    $named = static fn (array $forms): array => [...$forms, ['id' => 0, 'name' => 'Request a quote', 'slug' => 'quote_v2']];
+    add_filter('corex_submission_filter_options', $named);
+
+    $shown = $this->draftController->show(draftRequest('GET', $this->draftSubmission, ''))->get_data()['data']['submission'];
+    remove_filter('corex_submission_filter_options', $named);
+
+    expect($shown['reply_subject'])->toBe('Re: Request a quote');
+});

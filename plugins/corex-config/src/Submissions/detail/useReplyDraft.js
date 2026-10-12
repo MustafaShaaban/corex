@@ -21,37 +21,59 @@ import { hasWords } from '../../admin/components/replyHtml.js';
 /** How long writing has to stop before what is written is written down, in milliseconds. */
 export const PAUSE_BEFORE_SAVING = 1500;
 
-export const NOTHING_WRITTEN = { subject: '', body: '' };
+const NOTHING_WRITTEN = { subject: '', body: '' };
 
 const same = ( one, other ) =>
 	one.subject === other.subject && one.body === other.body;
 
-const saysNothing = ( reply ) =>
-	reply.subject.trim() === '' && ! hasWords( reply.body );
+/**
+ * What the reply box holds before anybody has written in it: the subject it starts with
+ * (spec 106, FR-035), and no message.
+ *
+ * @param {Object} record The open submission.
+ * @return {{subject:string,body:string}} The untouched box.
+ */
+export function untouchedReply( record ) {
+	return { subject: record.reply_subject || '', body: '' };
+}
 
 /**
- * @param {?Object} stored The submission's `reply_draft`, or null.
+ * @param {?Object}                      stored      The submission's `reply_draft`, or null.
+ * @param {{subject:string,body:string}} [untouched] What the box holds where there is no draft.
  * @return {{subject:string,body:string}} What the box starts with.
  */
-export function draftOf( stored ) {
+export function draftOf( stored, untouched ) {
 	return stored
 		? { subject: stored.subject || '', body: stored.body || '' }
-		: NOTHING_WRITTEN;
+		: untouched;
 }
 
 /**
  * @param {Object}  options
- * @param {number}  options.id     The submission.
- * @param {?Object} options.stored Its `reply_draft` as it was when the pane opened, or null.
- * @param {Object}  options.reply  What is in the box now: `{ subject, body }`.
- * @param {Object}  options.inbox  The inbox's requests.
- * @param {boolean} options.held   True while the reply is being sent.
+ * @param {number}  options.id          The submission.
+ * @param {?Object} options.stored      Its `reply_draft` as it was when the pane opened, or null.
+ * @param {Object}  options.reply       What is in the box now: `{ subject, body }`.
+ * @param {Object}  options.inbox       The inbox's requests.
+ * @param {boolean} options.held        True while the reply is being sent.
+ * @param {Object}  [options.untouched] What the box holds before anybody writes in it. A subject nobody wrote is not something somebody began (FR-036): the box holding only that is kept as no draft.
  * @return {{state:string,hold:Function,forget:Function,discard:Function}} `state` is `none`, `restored`, `saved`, `unsaved` (it could not be written down) or `undiscarded` (it could not be removed).
  */
-export function useReplyDraft( { id, stored, reply, inbox, held } ) {
+export function useReplyDraft( {
+	id,
+	stored,
+	reply,
+	inbox,
+	held,
+	untouched = NOTHING_WRITTEN,
+} ) {
 	const [ state, setState ] = useState( stored ? 'restored' : 'none' );
+	// What the box says when it says nothing of somebody's own: empty, or the subject it
+	// started with and no message.
+	const saysNothing = ( written ) =>
+		! hasWords( written.body ) &&
+		[ '', untouched.subject.trim() ].includes( written.subject.trim() );
 	// What the server holds, as far as is known; and what is on its way to it.
-	const kept = useRef( draftOf( stored ) );
+	const kept = useRef( draftOf( stored, untouched ) );
 	const asked = useRef( null );
 	// Goes up each time the draft ends: an answer from before that is not about this one.
 	const turn = useRef( 0 );
@@ -63,8 +85,13 @@ export function useReplyDraft( { id, stored, reply, inbox, held } ) {
 	const latest = useRef( { reply, inbox, held } );
 	latest.current = { reply, inbox, held };
 
+	// Nothing of somebody's own in the box, and nothing kept: there is nothing to write
+	// down, whichever nothing it is. Clearing the subject it started with to write another
+	// is the first thing most people do, and asked the server to discard a draft there was
+	// not; when that request failed the pane said a draft could not be saved.
 	const writtenDown = ( written ) =>
 		same( written, kept.current ) ||
+		( saysNothing( written ) && saysNothing( kept.current ) ) ||
 		( asked.current !== null && same( written, asked.current ) );
 
 	const write = ( written ) => {
@@ -76,9 +103,13 @@ export function useReplyDraft( { id, stored, reply, inbox, held } ) {
 				asked.current = null;
 				return;
 			}
-			// A request that could not be made at all is one that was not kept.
+			// A request that could not be made at all is one that was not kept. A box that
+			// says nothing of somebody's own is posted as nothing, which discards.
 			const answer = await latest.current.inbox
-				.keepReplyDraft( id, written )
+				.keepReplyDraft(
+					id,
+					saysNothing( written ) ? NOTHING_WRITTEN : written
+				)
 				.catch( () => ( { ok: false, draft: null } ) );
 			if ( asked.current === written ) {
 				asked.current = null;
@@ -144,7 +175,7 @@ export function useReplyDraft( { id, stored, reply, inbox, held } ) {
 		// The reply has gone, and the server discarded its draft as it went.
 		forget: () => {
 			ended();
-			kept.current = NOTHING_WRITTEN;
+			kept.current = untouched;
 			setState( 'none' );
 			if ( crossed.current ) {
 				crossed.current = false;
@@ -165,7 +196,7 @@ export function useReplyDraft( { id, stored, reply, inbox, held } ) {
 			} );
 			await requests.current;
 			if ( done ) {
-				kept.current = NOTHING_WRITTEN;
+				kept.current = untouched;
 			}
 			setState( done ? 'none' : 'undiscarded' );
 
