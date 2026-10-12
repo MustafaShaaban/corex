@@ -139,19 +139,25 @@ announced under Client impact before it is merged.
 
 ## Slice 8: a header that holds a logo of any shape (US8; FR-032 to FR-034) — built before slice 5
 
-- [ ] T100 Pest unit: the header is a band of the card; a square, a wide and a tall logo are
+- [x] T100 Pest unit: the header is a band of the card; a square, a wide and a tall logo are
       each given a width and a height inside 180 by 48 with their proportions kept; a logo of
       unknown size is limited by height; no logo, the site's name in the band
-- [ ] T101 `EmailBrand::$logoWidth`, `$logoHeight`; `SiteEmailBrand` reads the logo's size;
-      `StandardEmailDesign`'s header
-- [ ] T102 Pest integration: a site whose Mail setting or custom logo is a 600 by 600 image
-      sends a reply whose logo is 48 by 48
-- [ ] T103 The generator's stub from the same header; its test draws an email with it
-- [ ] T104 Playwright: the captured reply at 320, 375 and 800 pixels, light and dark, both
-      directions, with a square and a wide logo: the band's height, the logo's box, no
-      sideways scroll, contrast of the name
-- [ ] T105 Guards; the email-design guide; CHANGELOG with Client impact (the email looks
-      different; a site's own design is untouched); PROGRESS; DECISIONS
+- [x] T101 `EmailBrand::$logoWidth`, `$logoHeight`, `logoBox()`; `SiteEmailBrand` reads the
+      logo's size; `StandardEmailDesign`'s header
+- [x] T102 Pest integration: the size of the theme's logo, of the logo the Mail settings
+      name, of a cut that says its size in its name, and none for an address nothing is
+      known about
+- [x] T103 The generator's stub from the same header; its test draws an email with it
+- [x] T104 Playwright: the captured reply at three widths, light and dark: the header stands
+      on the card's ground under the brand's edge. And a reply sent as a site with a square
+      mark and as one with a wordmark (the mail fixture answers `X-Corex-E2E-Mail-Logo`): the
+      logo inside its box, its attributes the size it was drawn at, the name beside a mark and
+      level with it. A right-to-left header is the unit test's; the header with images not
+      shown was drawn by a one-off script and looked at, and is not in the suite
+- [x] T105 Guards; the email-design guide; CHANGELOG with Client impact (the email looks
+      different; a site's own design is untouched); PROGRESS; DECISIONS. The review drew the
+      header with its image missing and found the site's name cut off inside the logo's box:
+      the name is now text beside a mark, and no logo has a height in its style
 
 ## Slice 9: a subject to start from (US9; FR-035, FR-036)
 

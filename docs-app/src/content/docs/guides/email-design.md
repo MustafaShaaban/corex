@@ -18,7 +18,7 @@ No code. In **CoreX → Settings → Mail**:
 | Setting | What it changes | Left blank |
 |---|---|---|
 | **Email accent colour** | The edge along the top of the email's card, in light and dark mail clients alike: choose one that shows on both white and near-black. Six-digit hex, such as `#0B1F3B`. | CoreX's brass |
-| **Email logo** | The mark at the top of the email. A whole web address (`https://…`) of an image at least 360 pixels wide; it is shown at up to 180. Anything else is passed over. | The site's logo, then its icon, then its name |
+| **Email logo** | The mark at the top of the email. A whole web address (`https://…`) of a PNG or JPEG image; anything else, a vector image included, is passed over. It is drawn inside a box of 180 by 48 pixels with its proportions kept, so a square, a wide or a tall logo all fit; an image about twice that size stays sharp on a dense screen. A square logo has the site's name beside it; one at least twice as wide as it is tall is read as the name and stands alone. Choose an image from this site's media library: CoreX reads its size and writes the fitted one into the email, which is what Outlook on Windows goes by. For an image at an address elsewhere CoreX knows no size, and Outlook on Windows draws it as large as it is. | The site's logo, then its icon, then its name |
 | **Email footer line** | The line under the card. | "This message was sent by" and the site's name, linked to the site |
 
 A colour that is not six-digit hex is not saved: the field keeps the value it had.
@@ -72,6 +72,9 @@ and `canvas`: the standard palettes do, and nothing checks yours.
 | `$content->bodyHtml` | The message, already cleaned: only `<p>`, `<br>`, `<strong>`, `<b>`, `<em>`, `<i>`, `<ul>`, `<ol>`, `<li>` and `<a href>`. Print it as it is. |
 | `$content->recipient` | The address the email is for. |
 | `$brand->name`, `->homeUrl`, `->logo` | The site's name, its address, and an absolute address of its mark, or `''`. |
+| `$brand->logoBox()` | The width and height to draw the logo at, inside 180 by 48 with its proportions kept, or `null` where the logo's own size is not known (an address outside this site's uploads). Write them as the image's `width` and `height`: Outlook on Windows reads those and not `max-height`. |
+| `$brand->logoIsItsName()` | Whether the logo is at least twice as wide as it is tall, and so read as the name written out. The standard design writes the site's name as text beside a logo that is not, so that the name is there when a mail client shows no images. |
+| `$brand->withLogoSize($width, $height)` | The brand with its logo's own size said, in pixels. Call it when a `corex_email_brand` filter of yours names a logo CoreX cannot measure. |
 | `$brand->direction`, `->language` | `ltr` or `rtl`, and a language tag for the document. |
 | `$brand->footer` | The footer line the site set, or `''`. |
 | `$brand->light`, `->dark` | The colours: `canvas`, `surface`, `border`, `text`, `muted`, `accent`, `link`. |

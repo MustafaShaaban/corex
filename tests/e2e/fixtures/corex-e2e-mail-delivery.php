@@ -25,6 +25,10 @@ defined('ABSPATH') || exit;
  *   - `capture`: a development site. An email is kept in Email Studio and reaches nobody.
  *   - `refuse`: a production site with a provider chosen and live delivery off.
  *
+ * A request that also carries `X-Corex-E2E-Mail-Logo` is answered as a site with a logo, which
+ * the suite's own site has not: `mark` for a square one and `name` for one that is the name
+ * written out. Both are images WordPress itself ships, at the size they really are.
+ *
  * Nothing is stored: each setting is answered through its `pre_option_` filter and the database
  * row is neither read nor written. Without the header this file does nothing, and it does
  * nothing for a request that is not signed in as somebody who manages the site.
@@ -48,3 +52,28 @@ add_action('plugins_loaded', static function (): void {
         );
     }
 }, 1);
+
+add_filter('corex_email_brand', static function (mixed $brand): mixed {
+    $asked = isset($_SERVER['HTTP_X_COREX_E2E_MAIL_LOGO'])
+        ? sanitize_key(wp_unslash((string) $_SERVER['HTTP_X_COREX_E2E_MAIL_LOGO']))
+        : '';
+    $image = ['mark' => 'w-logo-blue.png', 'name' => 'wordpress-logo.png'][$asked] ?? '';
+    if ($image === '' || ! $brand instanceof \Corex\Email\Design\EmailBrand || ! current_user_can('manage_options')) {
+        return $brand;
+    }
+    $size = getimagesize(ABSPATH . 'wp-admin/images/' . $image);
+
+    return new \Corex\Email\Design\EmailBrand(
+        $brand->name,
+        $brand->homeUrl,
+        admin_url('images/' . $image),
+        $brand->direction,
+        $brand->language,
+        $brand->footer,
+        $brand->light,
+        $brand->dark,
+        is_array($size) ? (int) $size[0] : 0,
+        is_array($size) ? (int) $size[1] : 0,
+    );
+});
+
