@@ -15,6 +15,12 @@ All notable changes to Corex are documented here. The format follows
   with the submission, so it goes to the trash with it and is removed when the submission is
   deleted or anonymized (DECISIONS #320).
 
+- **A reply starts with a subject** (spec 106, slice 9): "Re: " and the name of the form the
+  person filled in, to keep or to change. A form defined in code is named as the inbox's own
+  filter names it. The subject started empty and had to be written
+  each time. A subject nobody wrote is not kept as a draft, and the box goes back to it when
+  a reply has gone (DECISIONS #323).
+
 ### Changed
 
 - **The standard email's header is part of the card, and a logo of any shape fits it**
@@ -40,6 +46,8 @@ All notable changes to Corex are documented here. The format follows
   `logoBox()` and `logoIsItsName()`**, and two optional last constructor arguments. A brand
   built in a `corex_email_brand` filter says its logo's size with `withLogoSize()`. A design of your own may draw
   its logo from `logoBox()`; one that does not is unaffected.
+- **A submission's detail gains `reply_subject`**, and `SubmissionReplyView::of()` takes
+  the submission's record where it took its id.
 - **New routes: `POST` and `DELETE corex/v1/submissions/{id}/reply/draft`**, and a
   submission's detail gains `reply_draft` (`{ subject, body, saved_at }` or null) for the
   person asking. A draft is post meta on the submission, `corex_reply_draft_{user id}`. Code
@@ -47,8 +55,8 @@ All notable changes to Corex are documented here. The format follows
   does `corex_submission_replies`.
 - **`SubmissionControllerServices` takes a `SubmissionReplyDrafts`**, and
   `SubmissionEmailService` an optional `SubmissionReplyDraftStore`;
-  `SubmissionReplyView::of()` takes the id of the person asking. Code that takes them from
-  the container is unaffected.
+  `SubmissionReplyView::of()` also takes the id of the person asking. Code that takes them
+  from the container is unaffected.
 - **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
 
 ## [0.45.2] — 2026-10-11

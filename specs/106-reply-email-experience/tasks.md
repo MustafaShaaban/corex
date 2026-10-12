@@ -161,13 +161,15 @@ announced under Client impact before it is merged.
 
 ## Slice 9: a subject to start from (US9; FR-035, FR-036)
 
-- [ ] T110 Pest unit and integration: `reply_subject` from the form's name; one "Re: "
-- [ ] T111 `reply_subject` in the submission's detail
-- [ ] T112 Jest: the box starts with it; a default alone is not a draft; a draft's subject
-      wins; after sending the box goes back to it
-- [ ] T113 The Reply section and `useReplyDraft` on it
-- [ ] T114 Playwright: open, see it, change it, send; the email's subject is what was typed
-- [ ] T115 Guards; guide; CHANGELOG; PROGRESS; DECISIONS
+- [x] T110 Pest unit and integration: `reply_subject` from the form's name; one "Re: "
+- [x] T111 `ReplySubject`; `reply_subject` in the submission's detail
+- [x] T112 Jest: the box starts with it; a default alone is not a draft; a draft's subject
+      wins; after sending or discarding the box goes back to it
+- [x] T113 The Reply section and `useReplyDraft` on it
+- [x] T114 Playwright: the box opens with it and no draft is kept of it; changed, the reply
+      is sent with what was typed; the box goes back to it afterwards
+- [x] T115 Guide; CHANGELOG; PROGRESS; DECISIONS. The subject from a conversation's latest
+      email (story 9, scenario 4) comes with slice 10
 
 ## Slice 10: a reply in the conversation the person already has (US10; FR-037 to FR-043)
 
