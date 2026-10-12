@@ -26,9 +26,14 @@ final class UnavailableSubmissionEmailGateway implements SubmissionEmailGateway
         );
     }
 
-    public function reply(string $recipient, string $subject, string $htmlBody): MailResult
+    public function reply(string $recipient, string $subject, string $htmlBody, ?ReplyConversation $within = null): MailResult
     {
         throw new DomainException(__('Email Studio is required for submission replies.', 'corex'));
+    }
+
+    public function conversation(string $recipient, array $attemptIds): ReplyConversation
+    {
+        return new ReplyConversation();
     }
 
     public function preview(string $recipient, string $subject, string $htmlBody): array

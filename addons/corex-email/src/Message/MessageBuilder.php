@@ -10,6 +10,7 @@ namespace Corex\Email\Message;
 
 defined('ABSPATH') || exit;
 
+use Corex\Mail\MessageId;
 use Corex\Email\EmailResult;
 use Corex\Email\MailService;
 use Corex\Email\Recipients\RecipientResolver;
@@ -35,6 +36,8 @@ final class MessageBuilder
     private ?string $replyTo = null;
 
     private ?string $from = null;
+
+    private string $messageId = '';
 
     /** @var list<int> */
     private array $attachments = [];
@@ -161,6 +164,17 @@ final class MessageBuilder
         return $this;
     }
 
+    /**
+     * The id this email is sent under, so that a later one can say it answers it (spec 106,
+     * FR-042). Anything that is not an id is passed over.
+     */
+    public function sentUnder(string $messageId): self
+    {
+        $this->messageId = MessageId::isOne($messageId) ? $messageId : '';
+
+        return $this;
+    }
+
     public function build(): EmailMessage
     {
         if ($this->templateName !== null) {
@@ -195,7 +209,7 @@ final class MessageBuilder
             $this->replyTo,
             $subject,
             $body,
-            [],
+            $this->messageId === '' ? [] : ['Message-ID' => $this->messageId],
             $this->from,
             $this->attachments,
         );

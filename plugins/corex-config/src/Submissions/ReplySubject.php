@@ -55,6 +55,19 @@ final class ReplySubject
     }
 
     /**
+     * The subject of a reply to an email: its own, answered once. '' where it had none.
+     */
+    public static function answering(string $subject): string
+    {
+        $subject = self::line($subject);
+        if ($subject === '' || preg_match('/^re\s*:/i', $subject) === 1) {
+            return $subject;
+        }
+
+        return 'Re: ' . $subject;
+    }
+
+    /**
      * A name as one line of plain text. WordPress keeps a title with its `&` and `<` written
      * as entities, and a subject is not markup: it would reach a customer as "&amp;". A
      * subject is a header, and holds no line break.

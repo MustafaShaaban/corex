@@ -169,6 +169,7 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(TemplateRenderer::class),
                 $c->make(RecipientResolver::class),
                 $c->make(MailService::class),
+                \Corex\Mail\MessageId::hostOf((string) home_url('/')),
             ),
         );
 
@@ -206,6 +207,7 @@ final class MailServiceProvider extends ServiceProvider
                     $c->make(EmailTemplateService::class),
                     'wp-mail',
                     $c->make(\Corex\Events\EventDispatcher::class),
+                    \Corex\Mail\MessageId::hostOf((string) home_url('/')),
                 );
             },
         );

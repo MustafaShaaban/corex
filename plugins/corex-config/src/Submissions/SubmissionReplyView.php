@@ -25,6 +25,7 @@ final readonly class SubmissionReplyView
         private SubmissionOwnerNames $people,
         private ?SubmissionReplyDrafts $drafts = null,
         private ?FlowFilterOptions $forms = null,
+        private ?SubmissionConversation $conversation = null,
     ) {
     }
 
@@ -32,16 +33,23 @@ final readonly class SubmissionReplyView
      * @param array<string,mixed> $record  The submission, as the inbox reads it.
      * @param int                 $actorId The person looking: the reply they began is theirs alone to see.
      *
-     * @return array{replies:list<array<string,mixed>>,reply_delivery:array{mode:string,code:string,reason:string},reply_draft:array{subject:string,body:string,saved_at:string}|null,reply_subject:string}
+     * @return array<string,mixed> `replies`, `reply_delivery`, `reply_draft`, `reply_conversation` and `reply_subject`.
      */
     public function of(array $record, int $actorId): array
     {
         $submissionId = (int) ($record['id'] ?? 0);
+        $conversation = $this->conversation?->of($record);
 
         return [
             'replies' => array_map($this->described(...), $this->replies->forSubmission($submissionId)),
             'reply_delivery' => $this->email->readiness()->toArray(),
             'reply_draft' => $this->drafts?->of($actorId, $submissionId),
+            // Whether a reply can be sent under the emails the person already has, and the
+            // subject it then starts as: the one that answers the latest of them (FR-039).
+            'reply_conversation' => [
+                'available' => $conversation !== null && ! $conversation->isEmpty(),
+                'subject' => $conversation === null ? '' : ReplySubject::answering($conversation->subject),
+            ],
             // What a reply's subject starts as, for whoever writes it to change (FR-035).
             'reply_subject' => ReplySubject::startingFor($record, $this->knownAs((string) ($record['form'] ?? ''))),
         ];

@@ -108,6 +108,19 @@ final class EmailAttemptRepository
         );
     }
 
+    /**
+     * Whether an attempt went to this address.
+     *
+     * Asked of the repository because an attempt does not keep who it went to: it keeps the
+     * address with its middle taken out, for a person to read, and a keyed digest of it, which
+     * is what is compared here.
+     */
+    public function wasSentTo(EmailAttempt $attempt, string $recipient): bool
+    {
+        return $attempt->recipientHash !== null
+            && hash_equals($attempt->recipientHash, $this->recipientHash($recipient));
+    }
+
     private function redact(string $recipient): string
     {
         [$local, $domain] = explode('@', $recipient, 2);

@@ -11194,8 +11194,13 @@ behind it.
 
 **What that did on a site.** Where another plugin listens at an earlier priority and the
 mail server is set up by a listener at a later one, a CoreX reply left without the mail
-server's settings: by PHP's own `mail()`, or not at all. A site whose mail plugin replaces
-`wp_mail()` whole, as FluentSMTP does, never runs this code. No report of it; found by a test.
+server's settings: by PHP's own `mail()`, or not at all. No report of it; found by a test.
+
+**Corrected 2026-10-13.** This entry first said that a site whose mail plugin replaces
+`wp_mail()` whole, as FluentSMTP does, never runs this code. That was written without
+reading the plugin, and is wrong: FluentSMTP's `wp_mail()` fires `phpmailer_init` itself
+(`app/Functions/helpers.php`, read in version 2.4.1 on the MUVA site by its own session), so
+CoreX's listener runs there, and so did the defect.
 
 **Once, by a flag.** The listener does its work the first time it runs and nothing after, and
 the driver takes it off when `wp_mail()` has returned, which it already did for a send that
@@ -11205,6 +11210,147 @@ sends an email from inside the first one's sending and reads that it left withou
 **For the rest of the code.** `remove_action()` or `remove_filter()` on the hook being run, by
 the callback being run, is the pattern. Every `remove_action()` and `remove_filter()` in
 `plugins/`, `addons/`, `packages/` and `theme/` was read: this was the only one.
+
+## #325 — A reply joins the emails the person already has, by an id CoreX chose for each
+
+**Date:** 2026-10-12, reviewed 2026-10-13. **Branch:** `feat/106-reply-in-conversation`. **Spec:** 106, slice 10 (FR-037 to FR-043).
+
+"If we can make it to reply to the user at the same email that sent to him after the
+submission will be beter, if it could be an option to be choosen."
+
+**An email says which one it answers by that one's id, so CoreX chooses the ids.** WordPress
+lets its mailer make one at the moment of sending and there is no reading it back. Each email
+Email Studio sends, and each a site sends through `Corex\Mail\Mailer`, is now sent under
+`<part of its attempt's or its request's id@the site's host>`, and an attempt keeps its id,
+in the field that was declared for a provider's id and never set. Not every email on a site:
+the two places that call `wp_mail()` themselves where the mail engine is absent
+(`NotificationDispatcher`, `SupportMailer`) send as before, and so does a site whose address
+has no host a mail server would take for a name (an internationalised name as it is written,
+an underscore, an address in brackets).
+
+**The conversation is read, not stored.** For a submission: the emails a flow sent and bound
+to it, what the site said it sent itself, and each reply's sendings. The email add-on keeps of
+those the ones that went to this person, left or were kept, and have an id. Whether an attempt
+went to somebody is asked of the attempts' repository, which keeps a keyed digest of the
+address and not the address. Nothing new is stored but a site's own confirmation, which
+nothing else records.
+
+**A site's own confirmation is recorded by its request.** The first design recorded the
+`MailResult` a site was answered. Reading the path a site's email takes showed that could
+not work: it goes through the older mail engine, which records no attempt, so the result
+names one nothing kept; and `Mailer::send()`, which is what a site calls, answers nothing. A
+request has an id of its own and keeps it through the mail queue. So that path sends an
+email under an id made of the request's, whenever it leaves, and the site calls
+`SubmissionConversation::began($submissionId, $request)`. The id says nothing of whom the
+email went to, so `began()` reads the request: it records an email only where one of its
+recipients is the submission's sender. A site's listener sends the team's notice from the
+same place, and a reply to a customer must not answer, or start from the subject of, an
+email they were never sent. For this the id's class is the seam's, `Corex\Mail\MessageId`,
+since the inbox makes one without the email add-on's help.
+
+**No general headers on the seam.** `EmailMessage` already had a `headers` map no driver
+read. The reply's ride on it, and the driver writes three by name, each only as an id: a
+header taken as it was given could carry a second one behind it, and a recipient nobody sees.
+
+**What the real mailer did with it, which no fake would have.** Three things, each caught by
+a test that builds the message with WordPress's own mailer and stops before sending.
+A header value past 47 characters, through PHP's `mail()`, is rewritten as an encoded word:
+the first id was 48. So the id is shorter, and the driver names as many earlier emails as fit
+the way the email is sent. The mailer keeps its `MessageID` from one email to the next:
+WordPress empties its body and headers and not that, so the id of a reply would have been
+the id of the next email anything on the site sent. The driver takes it back off. And the
+listener that hands the mailer all this, removing itself as it ran, made WordPress skip
+whatever listened next (#324).
+
+**How long an id is follows the host.** Twenty characters of the attempt's id where the host
+leaves room for them in 47, which is a host of up to 24; fewer on a longer one, down to ten,
+which fits a host of up to 34. Twenty characters of a random id are 74 random bits and ten are
+40. On a host longer than 34 characters an id is over the line: where a mail server was
+chosen by the time CoreX asks nothing changes, and through `mail()` the reply goes as an
+email of its own, under its own id, without naming the one it answers. The pane cannot say so beforehand, since how an email is sent is
+decided by whatever listens when it is sent; the reply is then listed as sent in the
+conversation and was not. Known, said in the guide, and left: a host that long, sending
+through `mail()`.
+
+**What the review found, 2026-10-13.** An independent reading of the diff, before it was
+committed. Each of these has a test that fails without its fix.
+
+- *The way an email is sent was asked too early.* CoreX's listener ran at the usual priority
+  and read "by `mail()`" on a site whose mail server is set up by a listener after it, so it
+  named one earlier email where it had room for all. It now listens at 9999. This helps where
+  a plugin chooses its mail server on that hook. FluentSMTP does not: it sets the mailer to
+  `mail()`, fires the hook, and chooses afterwards (2.4.1, `helpers.php:671` and `:793`,
+  `Providers/Smtp/Handler.php:45`), and its Gmail connection builds the message while the
+  mailer still says `mail()`. On it CoreX reads `mail()` and writes for `mail()`, which is the
+  careful answer and, for Gmail, the true one.
+- *An email sent on hearing how a reply went left under the reply's id.* WordPress says how an
+  email went before `wp_mail()` returns, and the mailer still holds the id then. The listener
+  takes it off an email that is not its own, where it is still the one it set.
+- *`began()` recorded any email*, whoever it went to. Above.
+- *A draft did not keep the way it was to be sent.* Somebody who chose a new email, wrote
+  their own subject and came back found the draft set to join the conversation. The draft now
+  keeps `thread`, and changing only that is a change worth writing down.
+- *Anonymizing left what the site said it sent*, whose subject may name the person. Removed
+  with the replies.
+- *Two rules for what an id is.* The conversation took a looser one than the driver writes,
+  so an id could be counted and not named. One rule now, `MessageId::isOne()`, which is also
+  no wider than what WordPress's mailer accepts: given `<a..b@host>` it sends under an id of
+  its own and says nothing.
+- *The box after a reply sent as a new email stayed on "new".* That reply is the email the
+  next one answers, so the box starts in the conversation again. And where an email to
+  continue from appears under an open box (a colleague replied), a subject nobody wrote
+  follows it.
+
+**What a second review found, the same day**, reading those fixes.
+
+- *The first email to reach the mailer's hook is not always CoreX's.* The listener took it to
+  be. WordPress refuses a sender before it fires that hook and says so at once, so a notice
+  sent on hearing it reached the hook first and left with the reply's id, its plain-text
+  version and the email it answered. A copy sent from the `wp_mail` filter did the same, and
+  the reply then left with none of them. The email now carries a mark as far as the mailer
+  (`X-Corex-Send`, a header with a value made for that email), which is what the listener
+  knows it by and takes off there. Where a mail plugin never fires the hook the mark leaves
+  with the email: a header that says nothing of anybody.
+- *The id was taken off any email*, also one a helpdesk plugin had given its own notice. Only
+  the id CoreX set is taken off.
+- *A draft kept the way in effect, not the way chosen.* Begun before there was an email to
+  continue from, it was kept as "new" and came back as a new email nobody chose. It keeps
+  what was chosen, and nothing where nobody chose.
+- *`began()` matched an address the mail engine would not send to* (a space beside it). It
+  reads them as the engine does.
+- *`EmailMessage::withHeaders()` named each field*, and a field added later would have been
+  dropped from every Email Studio email. It carries whatever the class has; a test gives
+  every field a value and compares.
+
+**The choice is the person's, each time.** Two radio buttons where there is a conversation,
+the conversation chosen: joining what the person already has is what was asked for. Where
+there is none, a sentence saying the reply is a new email and why. A subject nobody wrote
+follows the choice; one somebody wrote is left. Rewritten while the conversation is chosen,
+the box says some mail programs keep emails together by subject too.
+
+**The next reply starts from the one that went.** The pane reads the submission again after
+a reply, and the box is emptied from that reading, so the subject is the one that answers the
+reply just sent.
+
+**What it cannot promise**, said in the guide and not hidden: Gmail and subjects; a sending
+service that replaces the id; `mail()` and long headers; and every email sent before this,
+which left under an id nothing kept. Which emails a person was sent is asked by a digest of
+their address keyed with the site's own secret (`wp_salt('auth')`), as the attempts were
+already kept: a site moved to a host with new secrets no longer recognises its earlier
+emails as theirs, and its replies start as new emails until the next one. On a site that sends its own confirmation and does not
+call `began()`, the first reply is a new email and the second continues it.
+
+**Not run in a mail program.** The headers are read off what the mailer built and off what
+the site kept. That two real emails are shown as one conversation in Gmail, Outlook and Apple
+Mail is the check still owed, on a site that delivers.
+
+**And not yet through a sending service.** MUVA sends through FluentSMTP's Gmail connection.
+Its session read the plugin: it fires `phpmailer_init`, so CoreX's listener runs, and it
+hands Gmail the whole message WordPress's mailer built, so CoreX's three headers leave the
+site. It puts a header it does not know on the mailer before that hook (`helpers.php:712`),
+which is how CoreX's mark reaches the listener there. Whether Gmail keeps a `Message-ID` it is handed or writes its own is not known. If it
+writes its own, a reply names an id the person's mail program never saw, and stands alone.
+One real reply on MUVA after the release, and its raw headers, will say.
 
 ## #326 — A subject is a header: it is kept as typed, on one line, and escaped where it is printed
 
@@ -11230,7 +11376,8 @@ character becomes one space, with the spaces round it, so a second line pasted w
 indent is one space from the first. The class is in `corex-core` because both the inbox
 (`corex-config`) and Email Studio (`corex-email`) read a subject, and neither depends on the
 other. The reply route, its preview, the draft route, the draft as it is read back from the
-store, the subject a reply starts with (`ReplySubject`), and Email Studio's two sends all go
+store, the subject a reply starts with (`ReplySubject`), the subject of the conversation a
+reply joins (`ReplyConversation`, #325), and Email Studio's two sends all go
 through it. The draft's own rule and `draftShape()` are gone: a draft is posted as a reply
 is, so it gives back what would be sent.
 

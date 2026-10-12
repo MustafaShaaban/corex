@@ -173,24 +173,39 @@ announced under Client impact before it is merged.
 
 ## Slice 10: a reply in the conversation the person already has (US10; FR-037 to FR-043)
 
-- [ ] T120 Pest unit: a message is given a Message-ID of the site's host; `inReplyTo` and
-      `references` are ids or are refused; the driver writes the three headers
-- [ ] T121 `MailRequest`, `EmailMessage`, `MailService`, `WpMailDriver`; the id on the attempt
-- [ ] T122 Pest integration: a real send carries the Message-ID CoreX chose (`pre_wp_mail`
-      and PHPMailer's own record of the message)
-- [ ] T123 Pest unit and integration: `SubmissionConversation::of()` answers the confirmation,
-      then each delivered reply, in order; `began()` records a site's own confirmation
-- [ ] T124 `SubmissionConversation`; `MailResult::$messageId`
-- [ ] T125 Pest unit and integration: a reply sent in the conversation names the latest email
+- [x] T120 Pest unit: a message is given a Message-ID of the site's host; only an id is an
+      id; the gateway sets what a reply answers
+- [x] T121 `Corex\Mail\MessageId`, `EmailMessage::withHeaders()`, `EmailStudioService`,
+      `RequestMailer`, `WpMailDriver`; the id on the attempt. Not new fields on `MailRequest`:
+      the message already carried headers, and the driver now writes three of them by name,
+      each only as an id
+- [x] T122 Pest integration: what WordPress's own mailer built carries the id CoreX chose,
+      once, and the email it answers; nothing of one email is left on the next
+- [x] T123 Pest unit and integration: `SubmissionConversation::of()` answers the confirmation,
+      then each reply, in order; `began()` records a site's own confirmation
+- [x] T124 `SubmissionConversation`, its store. Not `MailResult::$messageId`: a site's own
+      email is sent under an id made of its request's, which the request keeps through the
+      mail queue, so `began()` takes the request
+- [x] T125 Pest unit and integration: a reply sent in the conversation names the latest email
       and the ones before it; as a new email, none; the record keeps which
-- [ ] T126 `SubmissionEmailGateway::reply()` takes the conversation; the route's `thread`
-- [ ] T127 Jest: the two choices where there is a conversation, the sentence where there is
+- [x] T126 `SubmissionEmailGateway::reply()` takes the conversation; the route's `thread`
+- [x] T127 Jest: the two choices where there is a conversation, the sentence where there is
       none, the subject that follows the choice, the warning when it was rewritten
-- [ ] T128 The Reply section; the list of replies says which way each went
-- [ ] T129 Playwright: reply both ways; the captured emails' headers; measured spacing of
-      the choice, light and dark, both directions
-- [ ] T130 Guards; the mail guide (a site's own confirmation; what threading cannot promise);
+- [x] T128 The Reply section; the list of replies says which way each went
+- [x] T129 Playwright: reply both ways; the kept emails' headers; measured spacing of the
+      choice, light and dark, both directions
+- [x] T130 The mail guide (a site's own confirmation; what threading cannot promise);
       CHANGELOG with Client impact (the seam's signature); PROGRESS; DECISIONS
+- [x] T131 Review, 2026-10-13 (DECISIONS #325): the way an email is sent is asked after the
+      mail server is set up; an email sent on hearing how a reply went does not leave under
+      the reply's id; `began()` records only an email to the submission's sender; a draft
+      keeps the way it was to be sent; anonymizing removes what the site said it sent; one
+      rule for what an id is, and an id as long as its host leaves room for. Each with a test
+      that fails without it
+- [x] T132 Second review, 2026-10-13: the driver knows its own email at the mailer by a mark
+      and not by being first; only an id it set is taken off; a draft keeps the way chosen and
+      not the way in effect; `began()` reads addresses as the mail engine does;
+      `withHeaders()` carries every field
 
 ## Slice 11: the email says what it is (US11; FR-044)
 

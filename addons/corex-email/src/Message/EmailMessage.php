@@ -56,4 +56,19 @@ final class EmailMessage
         public readonly ?string $plainText = null,
     ) {
     }
+
+    /**
+     * This message with headers added to its own, the added ones winning.
+     *
+     * Headers are not written as they are given. A driver writes the ones it knows by name,
+     * each checked for what it has to be: see {@see \Corex\Email\Driver\WpMailDriver}.
+     *
+     * @param array<string,string> $headers
+     */
+    public function withHeaders(array $headers): self
+    {
+        // Every field this class has, by its name, and the headers over them: a field added
+        // later is carried without being named here.
+        return new self(...[...get_object_vars($this), 'headers' => $headers + $this->headers]);
+    }
 }

@@ -21,6 +21,21 @@ All notable changes to Corex are documented here. The format follows
   each time. A subject nobody wrote is not kept as a draft, and the box goes back to it when
   a reply has gone (DECISIONS #323).
 
+- **A reply is sent in the conversation the person already has, or as a new email** (spec
+  106, slice 10). Where CoreX has a record of an email it sent the person for that
+  submission (the confirmation, or an earlier reply), the reply box offers both, with the
+  conversation chosen and the subject that answers it. The reply then names the email it
+  answers, which is what a mail program reads to put it under that one. Each reply is listed
+  with the way it went, and the preview says which it will be. Where there is no earlier email
+  on record the reply is a new email, and the box says so. A draft keeps the way it was to
+  be sent. Emails sent before this release cannot be continued: they left under an id nothing
+  kept (DECISIONS #325).
+- **An email CoreX's mail engine sends is sent under an id CoreX chose**, made of the site's
+  host, so that a later email can say it answers it: an email Email Studio sends, and one a
+  site sends through `Corex\Mail\Mailer`. Not yet checked through a sending service that
+  may write its own id, such as the Gmail connection of an SMTP plugin: there a reply would
+  arrive and stand alone.
+
 ### Changed
 
 - **The standard email's header is part of the card, and a logo of any shape fits it**
@@ -79,11 +94,37 @@ All notable changes to Corex are documented here. The format follows
   `logoBox()` and `logoIsItsName()`**, and two optional last constructor arguments. A brand
   built in a `corex_email_brand` filter says its logo's size with `withLogoSize()`. A design of your own may draw
   its logo from `logoBox()`; one that does not is unaffected.
+- **`Corex\Mail\SubmissionEmailGateway::reply()` takes a fourth, optional argument**, a
+  `Corex\Mail\ReplyConversation`, **and the interface gains
+  `conversation(string $recipient, array $attemptIds): ReplyConversation`.** A site that
+  implements this seam itself has to add both. A site that uses CoreX's email add-on, or
+  none, has nothing to do.
+- **A site that sends its own confirmation email** through `Corex\Mail\Mailer` can have
+  replies continue from it: where it sends it, call
+  `SubmissionConversation::began($submissionId, $request)` with the `MailRequest` it sent.
+  It records an email only where the submission's sender is one of the request's recipients.
+  The guide "Mail" shows the listener. Without it, replies to that site's submissions are new
+  emails until the first reply, which the next one then continues. What it records is post
+  meta on the submission, `corex_submission_conversation`: code of your own that copies or
+  removes a submission's personal data has to include it.
+- **`POST corex/v1/submissions/{id}/reply` takes `thread`**, `conversation` or `new`; left
+  out, the reply is a new email, as before. A submission's detail gains
+  `reply_conversation` (`{ available, subject }`), and each of its `replies` a `thread`.
+- **An email's `Message-ID` is now CoreX's**, `<10 to 20 characters@your site's host>`. A
+  mail provider that replaces it with its own (some sending services do) sends the email as
+  before, and replies to it cannot join it.
+- **CoreX's own listener on `phpmailer_init` now runs at priority 9999**, after the listeners
+  that set a mail server up, where it ran at 10. A listener of your own at a later priority
+  that changes how an email is sent is not seen by it.
+- **An email CoreX sends with a plain-text version or an id carries a header `X-Corex-Send`
+  as far as WordPress's mailer**, where CoreX takes it off. A mail plugin that sends without
+  firing `phpmailer_init` sends that header with the email; it holds a value made for that
+  one email and nothing else.
 - **A submission's detail gains `reply_subject`**, and `SubmissionReplyView::of()` takes
   the submission's record where it took its id.
 - **New routes: `POST` and `DELETE corex/v1/submissions/{id}/reply/draft`**, and a
-  submission's detail gains `reply_draft` (`{ subject, body, saved_at }` or null) for the
-  person asking. A draft is post meta on the submission, `corex_reply_draft_{user id}`. Code
+  submission's detail gains `reply_draft` (`{ subject, body, saved_at, thread }` or null)
+  for the person asking; the route takes `thread` too. A draft is post meta on the submission, `corex_reply_draft_{user id}`. Code
   of your own that copies or removes a submission's personal data has to include it, as it
   does `corex_submission_replies`.
 - **`SubmissionControllerServices` takes a `SubmissionReplyDrafts`**, and

@@ -33,10 +33,12 @@ final readonly class SubmissionReplyRecord
         public int $actorId,
         public string $createdAt,
         public array $attempts,
+        /** Whether it was sent under the emails the person already had, or as a new one. */
+        public bool $inConversation = false,
     ) {
     }
 
-    public static function sent(SubmissionReply $reply, int $actorId, MailResult $result): self
+    public static function sent(SubmissionReply $reply, int $actorId, MailResult $result, bool $inConversation = false): self
     {
         return new self(
             Uuid::v4(),
@@ -45,6 +47,7 @@ final readonly class SubmissionReplyRecord
             $actorId,
             (new DateTimeImmutable('now'))->format(DATE_ATOM),
             [self::attempt($result)],
+            $inConversation,
         );
     }
 
@@ -71,6 +74,8 @@ final readonly class SubmissionReplyRecord
                 'message' => (string) ($attempt['message'] ?? ''),
                 'occurred_at' => (string) ($attempt['occurred_at'] ?? ''),
             ], $attempts),
+            // A reply kept before there was a choice went as a new email.
+            ($stored['thread'] ?? '') === 'conversation',
         );
     }
 
@@ -96,6 +101,7 @@ final readonly class SubmissionReplyRecord
             'actor_id' => $this->actorId,
             'created_at' => $this->createdAt,
             'attempts' => $this->attempts,
+            'thread' => $this->inConversation ? 'conversation' : 'new',
         ];
     }
 
