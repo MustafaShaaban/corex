@@ -138,3 +138,68 @@ it('keeps the plain-text version a message was sent with in its capture', functi
     expect($captured->plainText)->toBe("Hello\n\nSalma")
         ->and($derived->plainText)->toContain('Salma')->not->toContain('<p>');
 });
+
+// WordPress skips the listeners at the next priority when one before them takes itself off
+// the hook as it runs, and something listens earlier still. CoreX's own did: where another
+// plugin set up the mail server at a later priority, a reply left without its settings.
+it('keeps nothing that listens to the mailer after it from running', function (array $others) {
+    $ran = [];
+    $listeners = [];
+    foreach ($others as $priority) {
+        $listeners[$priority] = static function () use (&$ran, $priority): void {
+            $ran[] = $priority;
+        };
+        add_action('phpmailer_init', $listeners[$priority], $priority);
+    }
+
+    try {
+        builtAndNotSent(Boot::app()->container()->make(WpMailDriver::class), new EmailMessage(
+            ['salma@example.com'],
+            [],
+            [],
+            null,
+            'Re: your message',
+            '<p>Hello Salma</p>',
+            plainText: 'Hello Salma',
+        ));
+    } finally {
+        foreach ($listeners as $priority => $listener) {
+            remove_action('phpmailer_init', $listener, $priority);
+        }
+    }
+
+    expect($ran)->toBe($others);
+})->with([
+    'one before it and one after' => [[5, 20]],
+    'one before it and two after' => [[1, 11, 99]],
+    'only after it' => [[20, 99]],
+])->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// And the words of one email are still not the next one's, sent while this one is on its way:
+// `wp_mail()` fires this hook again for an email sent from inside the first one's sending.
+it('gives its plain-text version to one email only, though it stays on the hook until that one has gone', function () {
+    $second = 'not asked';
+    // What listens at CoreX's own priority is asked again, as a second email would ask it.
+    $again = static function (object $mailer) use (&$second): void {
+        global $wp_filter;
+        $other = clone $mailer;
+        $other->AltBody = '';
+        foreach ($wp_filter['phpmailer_init']->callbacks[10] ?? [] as $listener) {
+            $listener['function']($other);
+        }
+        $second = (string) $other->AltBody;
+    };
+    add_action('phpmailer_init', $again, 11);
+
+    try {
+        $built = builtAndNotSent(
+            Boot::app()->container()->make(WpMailDriver::class),
+            new EmailMessage(['a@example.com'], [], [], null, 'First', '<p>One</p>', plainText: 'One, in plain text'),
+        );
+    } finally {
+        remove_action('phpmailer_init', $again, 11);
+    }
+
+    expect($built)->toContain('One, in plain text')
+        ->and($second)->toBe('');
+})->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');

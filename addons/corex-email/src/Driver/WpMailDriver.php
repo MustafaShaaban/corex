@@ -71,8 +71,7 @@ final class WpMailDriver implements MailDriver
                 $this->attachments->resolve($message->attachments),
             );
         } finally {
-            // For this message only. The hook takes itself off when it runs; this is for a
-            // send that never reached it.
+            // For this message only.
             if ($alternative !== null) {
                 remove_action('phpmailer_init', $alternative);
             }
@@ -91,15 +90,23 @@ final class WpMailDriver implements MailDriver
             return null;
         }
 
-        // It takes itself off as it runs: `wp_mail()` fires other hooks before it returns, and
-        // an email one of their listeners sends must not leave with this one's words.
-        $once = null;
-        $once = static function (object $mailer) use ($plainText, &$once): void {
-            remove_action('phpmailer_init', $once);
+        // It does its work once: `wp_mail()` fires other hooks before it returns, and an email
+        // one of their listeners sends must not leave with this one's words.
+        //
+        // It does not take itself off the hook as it runs, which is how it was first written.
+        // WordPress then skips whatever listens at the next priority, where something
+        // listens at an earlier one: on a site whose mail server is set up by a listener at
+        // priority 20, behind another plugin's at 5, a reply left without the mail server's
+        // settings. The caller takes it off, when `wp_mail()` has returned.
+        $done = false;
+
+        return static function (object $mailer) use ($plainText, &$done): void {
+            if ($done) {
+                return;
+            }
+            $done = true;
             $mailer->AltBody = $plainText;
         };
-
-        return $once;
     }
 
     /**
