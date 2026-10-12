@@ -83,15 +83,17 @@ Built in two pull requests: the editor and the preview first, the draft after it
 - [x] T042 Pest unit and integration: the preview route answers what `reply()` then captures,
       byte for byte; it is guarded as the reply route is
 - [x] T043 `POST …/reply/preview`
-- [ ] T044 Pest unit and integration: a draft is one person's, for one submission; saved,
-      read, discarded; removed when the reply is sent; gone with the submission
-- [ ] T045 `SubmissionReplyDrafts`, its routes
+- [x] T044 Pest unit and integration: a draft is one person's, for one submission; saved,
+      read, discarded; removed when the reply is sent; gone with the submission, with an
+      anonymization and with the person
+- [x] T045 `SubmissionReplyDrafts`, its store, its routes
 - [x] T046 Jest (rendered): the Reply section with the editor, the preview dialog at two
-      widths. Not yet: the draft restored on reopening (with T044)
-- [x] T047 The Reply section on the editor; the preview. Not yet: the draft (with T045)
+      widths, the draft restored on reopening
+- [x] T047 The Reply section on the editor; the preview; the draft
 - [x] T048 Playwright: write a formatted reply with the keyboard only, preview, send; the
       captured email is the preview; an Arabic paragraph reads from the right; measured
-      spacing of the toolbar, light and dark, both directions
+      spacing of the toolbar, light and dark, both directions; a draft written, left,
+      come back to and discarded
 - [x] T049 Guards; guide; CHANGELOG; PROGRESS; DECISIONS, for the editor and the preview.
       The independent review ran the editor in a browser and named four defects and a dozen
       lesser ones; each is fixed with a test, and what is left is in DECISIONS #313

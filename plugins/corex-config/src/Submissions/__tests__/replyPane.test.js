@@ -9,6 +9,8 @@ import { createRoot } from '@wordpress/element';
 import { act } from 'react';
 
 import Reply from '../detail/Reply.js';
+import { PAUSE_BEFORE_SAVING } from '../detail/useReplyDraft.js';
+import { usePending } from '../../admin/components/working.js';
 import {
 	installDateTimeConfig,
 	removeDateTimeConfig,
@@ -51,6 +53,14 @@ const REFUSED = {
 let container;
 let root;
 let inbox;
+
+// Whether a draft holds a word: its message is read as a page reads it, not taken apart.
+function saysSomething( written ) {
+	const message = document.createElement( 'div' );
+	message.innerHTML = written.body;
+
+	return ( written.subject + message.textContent ).trim() !== '';
+}
 
 // The pane's own "one request at a time": here every request is let through at once.
 const work = { pending: '', during: ( name, task ) => task() };
@@ -119,7 +129,19 @@ beforeAll( () => {
 afterAll( removeDateTimeConfig );
 
 beforeEach( () => {
-	inbox = { reply: jest.fn(), resend: jest.fn(), log: jest.fn() };
+	inbox = {
+		reply: jest.fn(),
+		resend: jest.fn(),
+		log: jest.fn(),
+		// As the route answers: what it kept, or nothing where what was written says nothing.
+		keepReplyDraft: jest.fn( async ( id, written ) => ( {
+			ok: true,
+			draft: saysSomething( written )
+				? { ...written, saved_at: '2026-10-11T10:00:00+00:00' }
+				: null,
+		} ) ),
+		discardReplyDraft: jest.fn().mockResolvedValue( true ),
+	};
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 	root = createRoot( container );
@@ -541,5 +563,424 @@ describe( 'the preview', () => {
 		await preview();
 
 		expect( frame() ).toBeNull();
+	} );
+} );
+
+// Spec 106, FR-006: an unsent reply is the person's draft until it is sent or discarded.
+describe( 'the draft', () => {
+	const STORED = {
+		subject: 'Re: your message',
+		body: '<p>Hello <strong>Salma</strong>,</p>',
+		saved_at: '2026-10-11T10:00:00+00:00',
+	};
+	const SENT = {
+		tone: 'success',
+		text: 'Reply sent to salma@example.com.',
+		detail: '',
+		keep: false,
+	};
+	const line = () => container.querySelector( '.corex-pane__reply-draft' );
+	const announced = () =>
+		container.querySelector( '[role="status"]' ).textContent;
+	// Writing stops for as long as it takes for what is written to be written down.
+	const pause = ( milliseconds = PAUSE_BEFORE_SAVING ) =>
+		act( async () => {
+			jest.advanceTimersByTime( milliseconds );
+		} );
+	const leave = () => {
+		act( () => root.unmount() );
+		root = createRoot( container );
+	};
+	// A request whose answer the test gives when it chooses to.
+	const held = () => {
+		let answer;
+		const promise = new Promise( ( resolve ) => {
+			answer = resolve;
+		} );
+
+		return {
+			promise,
+			answer: ( value ) => act( async () => answer( value ) ),
+		};
+	};
+	// The pane's own "one request at a time", which names the control whose request is out.
+	function Pane( { record } ) {
+		const [ pending, during ] = usePending();
+
+		return (
+			<Reply
+				record={ record }
+				inbox={ inbox }
+				work={ { pending, during } }
+			/>
+		);
+	}
+	const showInPane = ( record ) =>
+		act( () => {
+			root.render( <Pane record={ record } /> );
+		} );
+
+	beforeEach( () => jest.useFakeTimers() );
+	afterEach( () => jest.useRealTimers() );
+
+	it( 'is where the person left it when they come back, and can be sent', () => {
+		show( submission( { reply_draft: STORED } ) );
+
+		expect( field( 'Subject' ).value ).toBe( 'Re: your message' );
+		expect( message().querySelector( 'strong' ).textContent ).toBe(
+			'Salma'
+		);
+		expect( line().textContent ).toContain(
+			'the reply you began earlier and did not send'
+		);
+		expect( button( 'Send reply' ).disabled ).toBe( false );
+	} );
+
+	// The sentence stands after the buttons. Somebody who reads the page in order meets two
+	// filled fields first, so the fields say why they are filled.
+	it( 'says on the fields themselves that what is in them was written earlier', () => {
+		show( submission( { reply_draft: STORED } ) );
+		const said = line().querySelector( 'span' );
+
+		expect( field( 'Subject' ).getAttribute( 'aria-describedby' ) ).toBe(
+			said.id
+		);
+		expect( message().getAttribute( 'aria-describedby' ) ).toBe( said.id );
+	} );
+
+	it( 'is not written down again while nothing in it has changed', async () => {
+		show( submission( { reply_draft: STORED } ) );
+
+		await pause( 10000 );
+		leave();
+
+		expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+	} );
+
+	it( 'is written down once writing has paused, and not while it goes on', async () => {
+		show( submission() );
+		expect( line() ).toBeNull();
+
+		type( field( 'Subject' ), 'Re: your' );
+		await pause( PAUSE_BEFORE_SAVING - 500 );
+		type( field( 'Subject' ), 'Re: your message' );
+		await pause( PAUSE_BEFORE_SAVING - 500 );
+		typeMessage( '<p>Hello</p>' );
+		await pause( PAUSE_BEFORE_SAVING - 1 );
+		expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+
+		await pause( 1 );
+
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledTimes( 1 );
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
+			subject: 'Re: your message',
+			body: '<p>Hello</p>',
+		} );
+		expect( line().textContent ).toContain( 'Draft saved.' );
+		// Said in the page, not announced each time writing pauses.
+		expect( announced() ).toBe( '' );
+
+		await pause( 10000 );
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it.each( [
+		[ 'the server refused it', async () => ( { ok: false, draft: null } ) ],
+		[
+			'the request could not be made',
+			async () => {
+				throw new Error( 'offline' );
+			},
+		],
+		// Answered, and nothing kept, for a message that did say something.
+		[
+			'the server kept nothing',
+			async () => ( { ok: true, draft: null } ),
+		],
+	] )( 'says so, and announces it, when %s', async ( _, answer ) => {
+		inbox.keepReplyDraft.mockImplementation( answer );
+		show( submission() );
+
+		typeMessage( '<p>Hello</p>' );
+		await pause();
+
+		const sentence =
+			'The draft could not be saved. What you have written is still here.';
+		expect( line().textContent ).toContain( sentence );
+		expect( announced() ).toBe( sentence );
+		expect( message().textContent ).toBe( 'Hello' );
+	} );
+
+	it( 'is discarded when asked: the server is told, the box is emptied, and it is said', async () => {
+		showInPane( submission( { reply_draft: STORED } ) );
+		act( () => button( 'Discard draft' ).focus() );
+
+		await act( async () => {
+			button( 'Discard draft' ).click();
+		} );
+
+		expect( inbox.discardReplyDraft ).toHaveBeenCalledWith( 41 );
+		expect( field( 'Subject' ).value ).toBe( '' );
+		expect( message().textContent ).toBe( '' );
+		expect( line() ).toBeNull();
+		expect( announced() ).toBe( 'Draft discarded.' );
+		// The button that was pressed went with the draft.
+		expect( document.activeElement ).toBe( field( 'Subject' ) );
+		await pause( 10000 );
+		expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+	} );
+
+	it( 'says it is working while the draft is being discarded, and holds the other buttons', async () => {
+		const discarding = held();
+		inbox.discardReplyDraft.mockReturnValue( discarding.promise );
+		showInPane( submission( { reply_draft: STORED } ) );
+
+		await act( async () => {
+			button( 'Discard draft' ).click();
+		} );
+
+		expect( button( 'Discard draft' ).getAttribute( 'aria-busy' ) ).toBe(
+			'true'
+		);
+		expect( button( 'Discard draft' ).disabled ).toBe( true );
+		expect( button( 'Send reply' ).disabled ).toBe( true );
+
+		await discarding.answer( true );
+		expect( line() ).toBeNull();
+	} );
+
+	it( 'stays in the box when it could not be discarded, says that, and gives the button back', async () => {
+		inbox.discardReplyDraft.mockResolvedValue( false );
+		showInPane( submission( { reply_draft: STORED } ) );
+
+		await act( async () => {
+			button( 'Discard draft' ).click();
+		} );
+
+		expect( field( 'Subject' ).value ).toBe( 'Re: your message' );
+		expect( line().textContent ).toContain(
+			'The draft could not be discarded.'
+		);
+		expect( announced() ).toBe( 'The draft could not be discarded.' );
+		expect( document.activeElement ).toBe( button( 'Discard draft' ) );
+	} );
+
+	it( 'is discarded by emptying what was written', async () => {
+		show( submission( { reply_draft: STORED } ) );
+
+		type( field( 'Subject' ), '' );
+		typeMessage( '<p><br></p>' );
+		await pause();
+
+		// An empty paragraph is what an emptied box holds, and is given back as nothing.
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
+			subject: '',
+			body: '',
+		} );
+		expect( line() ).toBeNull();
+	} );
+
+	it( 'is written down at once when the pane is left before the pause is over', async () => {
+		show( submission() );
+		type( field( 'Subject' ), 'Re: your message' );
+		typeMessage( '<p>Hello</p>' );
+		await pause( 200 );
+
+		leave();
+		await pause( 0 );
+
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledTimes( 1 );
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
+			subject: 'Re: your message',
+			body: '<p>Hello</p>',
+		} );
+	} );
+
+	it( 'is not written down a second time when the pane is left while it is being written down', async () => {
+		const saving = held();
+		inbox.keepReplyDraft.mockReturnValue( saving.promise );
+		show( submission() );
+		typeMessage( '<p>Hello</p>' );
+		await pause();
+
+		leave();
+		await saving.answer( { ok: true, draft: STORED } );
+
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'is no longer a draft once the reply has gone: nothing is written down after it', async () => {
+		inbox.reply.mockResolvedValue( SENT );
+		show( submission( { reply_draft: STORED } ) );
+
+		await act( async () => {
+			button( 'Send reply' ).click();
+		} );
+		await pause( 10000 );
+		leave();
+		await pause( 0 );
+
+		expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+	} );
+
+	it( 'is still a draft when the reply was not sent, with what was written', async () => {
+		inbox.reply.mockResolvedValue( {
+			tone: 'failure',
+			text: 'The reply was not sent.',
+			detail: 'The mail server refused it.',
+			keep: true,
+		} );
+		// In the pane, whose sending and having sent are what the draft waits on.
+		showInPane( submission() );
+		type( field( 'Subject' ), 'Re: your message' );
+		typeMessage( '<p>Hello</p>' );
+
+		await act( async () => {
+			button( 'Send reply' ).click();
+		} );
+		expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+		await pause();
+
+		expect( inbox.keepReplyDraft ).toHaveBeenCalledWith( 41, {
+			subject: 'Re: your message',
+			body: '<p>Hello</p>',
+		} );
+		expect( message().textContent ).toBe( 'Hello' );
+	} );
+
+	// Each of these made a draft of a reply that had gone, or of one that was discarded: the
+	// next visit showed it as "the reply you began earlier and did not send", ready to be
+	// sent a second time.
+	describe( 'does not come back', () => {
+		it( 'when the pane is left while the reply is on its way', async () => {
+			const sending = held();
+			inbox.reply.mockReturnValue( sending.promise );
+			showInPane( submission() );
+			type( field( 'Subject' ), 'Re: your message' );
+			typeMessage( '<p>Hello</p>' );
+			await act( async () => {
+				button( 'Send reply' ).click();
+			} );
+
+			leave();
+			await pause( 10000 );
+			await sending.answer( SENT );
+
+			expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+		} );
+
+		it( 'when it is discarded before the pause in writing is over', async () => {
+			const discarding = held();
+			inbox.discardReplyDraft.mockReturnValue( discarding.promise );
+			showInPane( submission( { reply_draft: STORED } ) );
+			type( field( 'Subject' ), 'Re: your message, changed' );
+			await pause( PAUSE_BEFORE_SAVING - 500 );
+
+			await act( async () => {
+				button( 'Discard draft' ).click();
+			} );
+			// The pause would have ended here, with the discard still out.
+			await pause( 10000 );
+			await discarding.answer( true );
+			await pause( 10000 );
+			leave();
+			await pause( 0 );
+
+			expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
+		} );
+
+		it( 'when it is discarded while it is being written down: the discard goes after', async () => {
+			const saving = held();
+			const order = [];
+			inbox.keepReplyDraft.mockImplementation( () => {
+				order.push( 'keep' );
+				return saving.promise;
+			} );
+			inbox.discardReplyDraft.mockImplementation( async () => {
+				order.push( 'discard' );
+				return true;
+			} );
+			showInPane( submission( { reply_draft: STORED } ) );
+			type( field( 'Subject' ), 'Re: your message, changed' );
+			await pause();
+
+			await act( async () => {
+				button( 'Discard draft' ).click();
+			} );
+			// The save is still out: a discard sent now could reach the server first.
+			expect( order ).toEqual( [ 'keep' ] );
+
+			await saving.answer( { ok: true, draft: STORED } );
+
+			expect( order ).toEqual( [ 'keep', 'discard' ] );
+			// And the late answer is about a draft that is over: it is not read.
+			expect( line() ).toBeNull();
+			expect( field( 'Subject' ).value ).toBe( '' );
+			await pause( 10000 );
+			leave();
+			await pause( 0 );
+			expect( order ).toEqual( [ 'keep', 'discard' ] );
+		} );
+
+		it( 'when the reply is sent while it is being written down: what the save left is removed', async () => {
+			const saving = held();
+			const order = [];
+			inbox.keepReplyDraft.mockImplementation( () => {
+				order.push( 'keep' );
+				return saving.promise;
+			} );
+			inbox.discardReplyDraft.mockImplementation( async () => {
+				order.push( 'discard' );
+				return true;
+			} );
+			inbox.reply.mockResolvedValue( SENT );
+			showInPane( submission() );
+			type( field( 'Subject' ), 'Re: your message' );
+			typeMessage( '<p>Hello</p>' );
+			await pause();
+
+			await act( async () => {
+				button( 'Send reply' ).click();
+			} );
+			await saving.answer( { ok: true, draft: STORED } );
+
+			// The save may have reached the server after the reply did, so it is undone.
+			expect( order ).toEqual( [ 'keep', 'discard' ] );
+			expect( line() ).toBeNull();
+			expect( field( 'Subject' ).value ).toBe( '' );
+		} );
+
+		it( 'and no draft is removed after a reply when none was being written down', async () => {
+			inbox.reply.mockResolvedValue( SENT );
+			showInPane( submission( { reply_draft: STORED } ) );
+
+			await act( async () => {
+				button( 'Send reply' ).click();
+			} );
+			await pause( 10000 );
+
+			expect( inbox.discardReplyDraft ).not.toHaveBeenCalled();
+		} );
+	} );
+
+	it( 'is not written down while the reply is on its way', async () => {
+		const sending = ( pending ) =>
+			act( () => {
+				root.render(
+					<Reply
+						record={ submission() }
+						inbox={ inbox }
+						work={ { ...work, pending } }
+					/>
+				);
+			} );
+		sending( '' );
+		type( field( 'Subject' ), 'Re: your message' );
+		await pause( PAUSE_BEFORE_SAVING - 500 );
+
+		sending( 'reply' );
+		await pause( 10000 );
+
+		expect( inbox.keepReplyDraft ).not.toHaveBeenCalled();
 	} );
 } );

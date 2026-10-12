@@ -823,3 +823,131 @@ test( 'writes a formatted reply with the keyboard alone, previews the email, and
 
 	expect( errors ).toEqual( [] );
 } );
+
+// Spec 106, FR-006: what somebody began and did not send is theirs to come back to.
+test( 'keeps a reply that was begun as a draft, gives it back on another visit, and discards it when asked', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	let pane = await openPaneOn( page, 'capture' );
+	const row = page
+		.locator( '.corex-inbox__table tbody tr' )
+		.filter( { hasText: EMAIL } )
+		.first();
+	const reopen = async () => {
+		await page.keyboard.press( 'Escape' );
+		await expect( page.getByRole( 'dialog' ) ).toHaveCount( 0 );
+		await row.getByRole( 'button' ).click();
+		pane = page.getByRole( 'dialog' );
+		await expect(
+			pane.getByRole( 'heading', { name: 'Reply' } )
+		).toBeVisible();
+	};
+	const draftLine = () => pane.locator( '.corex-pane__reply-draft' );
+
+	await expect( draftLine() ).toHaveCount( 0 );
+	// A subject is kept as it was typed, angle bracket and all.
+	await pane.getByLabel( 'Subject' ).fill( 'Re: the offer <500 EGP' );
+	await pane.getByRole( 'textbox', { name: 'Message' } ).click();
+	await page.keyboard.type( 'Hello Salma,' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.press( 'Control+b' );
+	await page.keyboard.type( 'tomorrow' );
+	// Written down once writing pauses, and said in the page.
+	await expect( draftLine() ).toContainText( 'Draft saved.' );
+
+	// Left and come back to: where it was, formatting and all.
+	await reopen();
+	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue(
+		'Re: the offer <500 EGP'
+	);
+	const message = pane.getByRole( 'textbox', { name: 'Message' } );
+	await expect( message.locator( 'p' ).first() ).toHaveText( 'Hello Salma,' );
+	await expect( message.locator( 'b, strong' ) ).toHaveText( 'tomorrow' );
+	await expect( draftLine() ).toContainText(
+		'the reply you began earlier and did not send'
+	);
+	await expect(
+		pane.getByRole( 'button', { name: 'Send reply' } )
+	).toBeEnabled();
+
+	for ( const [ theme, direction ] of APPEARANCES ) {
+		await pinAppearance( page, theme, direction );
+		await draftLine().scrollIntoViewIfNeeded();
+		const measured = await draftLine().evaluate( ( line ) => {
+			const box = ( element ) => element.getBoundingClientRect();
+			const actions = line.previousElementSibling;
+			const said = line.querySelector( 'span' );
+			const button = line.querySelector( 'button' );
+			const colour = ( element ) =>
+				window.getComputedStyle( element ).color;
+			const ground = ( element ) => {
+				let at = element;
+				while ( at ) {
+					const fill = window.getComputedStyle( at ).backgroundColor;
+					if (
+						fill &&
+						! /rgba\(0, 0, 0, 0\)|transparent/.test( fill )
+					) {
+						return fill;
+					}
+					at = at.parentElement;
+				}
+				return 'rgb(255, 255, 255)';
+			};
+
+			return {
+				within:
+					box( line ).left >= box( actions ).left - 1 &&
+					box( line ).right <= box( actions ).right + 1,
+				below: box( line ).top - box( actions ).bottom,
+				oneLine:
+					Math.abs( box( said ).bottom - box( button ).bottom ) < 6,
+				buttonHeight: box( button ).height,
+				text: [ colour( said ), ground( said ) ],
+				overflows:
+					document.documentElement.scrollWidth >
+					document.documentElement.clientWidth,
+			};
+		} );
+		const where = `${ theme } ${ direction }`;
+
+		expect( measured.within, `${ where }: inside the section` ).toBe(
+			true
+		);
+		expect(
+			measured.below,
+			`${ where }: clear of the buttons above it`
+		).toBeGreaterThanOrEqual( 8 );
+		expect(
+			measured.oneLine,
+			`${ where }: its two parts on one line`
+		).toBe( true );
+		// WCAG 2.2, 2.5.8: a target of at least 24 pixels.
+		expect(
+			measured.buttonHeight,
+			`${ where }: the discard button's height`
+		).toBeGreaterThanOrEqual( 24 );
+		expect(
+			contrast( ...measured.text ),
+			`${ where }: what the line says`
+		).toBeGreaterThanOrEqual( 4.5 );
+		expect( measured.overflows, `${ where }: no sideways scroll` ).toBe(
+			false
+		);
+	}
+	await pinAppearance( page, 'dark', 'ltr' );
+
+	await pane.getByRole( 'button', { name: 'Discard draft' } ).click();
+	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue( '' );
+	await expect( message ).toHaveText( '' );
+	await expect( draftLine() ).toHaveCount( 0 );
+	await expect( pane.getByLabel( 'Subject' ) ).toBeFocused();
+
+	// And it is gone for good, not only from this visit.
+	await reopen();
+	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue( '' );
+	await expect( draftLine() ).toHaveCount( 0 );
+
+	expect( errors ).toEqual( [] );
+} );

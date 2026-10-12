@@ -24,6 +24,7 @@ final readonly class SubmissionEmailService
         private SubmissionEmailGateway $email,
         private SubmissionTimelineStore $timeline,
         private SubmissionReplyStore $replies,
+        private ?SubmissionReplyDraftStore $drafts = null,
     ) {
     }
 
@@ -43,8 +44,28 @@ final readonly class SubmissionEmailService
             throw new DomainException($readiness->reason);
         }
         $result = $this->email->reply($recipient, $reply->subject, $reply->htmlBody);
+        $sent = new SentReply($result, $this->kept($scope, $submissionId, $reply, $result));
+        $this->forgetDraft($scope, $submissionId, $result);
 
-        return new SentReply($result, $this->kept($scope, $submissionId, $reply, $result));
+        return $sent;
+    }
+
+    /**
+     * What was being written has gone, or is kept as sent: it is no longer a draft. A reply
+     * that was not sent stays one, for the person to try again.
+     *
+     * The states are the ones the pane empties its box for (`replyState.js`): where the box
+     * keeps its words (FR-031), the draft keeps them too.
+     */
+    private function forgetDraft(SubmissionAccessScope $scope, int $submissionId, MailResult $result): void
+    {
+        $gone = [
+            MailResult::STATE_QUEUED, MailResult::STATE_SENT, MailResult::STATE_ACCEPTED,
+            MailResult::STATE_OPENED, MailResult::STATE_CAPTURED,
+        ];
+        if (in_array($result->state, $gone, true)) {
+            $this->drafts?->discard($submissionId, $scope->actorId);
+        }
     }
 
     /**

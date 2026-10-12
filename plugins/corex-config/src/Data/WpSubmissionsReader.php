@@ -14,6 +14,7 @@ use Corex\Config\Submissions\SubmissionAccessScope;
 use Corex\Config\Submissions\SubmissionExportSource;
 use Corex\Config\Submissions\SubmissionInboxQuery;
 use Corex\Config\Submissions\SubmissionWorkflowStore;
+use Corex\Config\Submissions\WpSubmissionReplyDraftStore;
 use Corex\Config\Retention\SubmissionRetentionStore;
 use DomainException;
 use WP_Query;
@@ -102,7 +103,10 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             return false;
         }
         foreach (array_keys(get_post_meta($id)) as $key) {
-            if (str_starts_with((string) $key, 'corex_field_') || in_array($key, [
+            // A reply somebody began and did not send quotes the person as a sent one does.
+            $personal = str_starts_with((string) $key, 'corex_field_')
+                || str_starts_with((string) $key, WpSubmissionReplyDraftStore::META_PREFIX);
+            if ($personal || in_array($key, [
                 'corex_values_json', 'corex_submitter_name', 'corex_submitter_email',
                 'corex_hidden_metadata_json', 'corex_utm_json', 'corex_consent_snapshot_json',
                 'corex_submission_notes',

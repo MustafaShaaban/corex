@@ -37,6 +37,8 @@ final readonly class SubmissionsController
         $this->route('/submissions/(?P<id>\d+)/notes', 'POST', 'addNote');
         $this->route('/submissions/(?P<id>\d+)/reply', 'POST', 'reply');
         $this->route('/submissions/(?P<id>\d+)/reply/preview', 'POST', 'previewReply');
+        $this->route('/submissions/(?P<id>\d+)/reply/draft', 'POST', 'keepReplyDraft');
+        $this->route('/submissions/(?P<id>\d+)/reply/draft', 'DELETE', 'discardReplyDraft');
         $this->route('/submissions/(?P<id>\d+)/resend', 'POST', 'resend');
         $this->route('/submissions/(?P<id>\d+)/email-log', 'GET', 'emailLog');
         $this->route('/submissions/(?P<id>\d+)', 'DELETE', 'destroy');
@@ -175,6 +177,37 @@ final readonly class SubmissionsController
             $email = $this->services->email->preview($this->scope(), $this->changeable($request), $reply);
 
             return Response::ok(['preview' => ['subject' => $reply->subject] + $email]);
+        });
+    }
+
+    /**
+     * Writes down the reply somebody has begun, for them alone (spec 106, FR-006). Either
+     * half may be missing: it is not a reply yet. With neither, there is nothing to keep.
+     */
+    public function keepReplyDraft(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, $this->draftShape(), function (Request $safe) use ($request): Response {
+            // Reduced, it would be nothing, and nothing is what discards a draft: the one
+            // already kept would be removed for a message that was only too long.
+            if (ReplyBody::isTooLong($request->get_param('body'))) {
+                throw new DomainException(__('This message is too long to keep as a draft.', 'corex'));
+            }
+
+            return Response::ok(['draft' => $this->services->drafts->keep(
+                $this->scope(),
+                $this->changeable($request),
+                (string) ($safe->input['subject'] ?? ''),
+                (string) ($safe->input['body'] ?? ''),
+            )]);
+        });
+    }
+
+    public function discardReplyDraft(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, [], function () use ($request): Response {
+            $this->services->drafts->discard($this->scope(), $this->changeable($request));
+
+            return Response::ok(['draft' => null]);
         });
     }
 
@@ -352,6 +385,21 @@ final readonly class SubmissionsController
         return [
             'subject' => 'sanitize_text_field',
             // To a reply's own formatting, which is narrower than a post's (spec 106, FR-004).
+            'body' => [ReplyBody::class, 'reduce'],
+        ];
+    }
+
+    /**
+     * What a draft is posted as. Its subject is kept as it was typed: it goes back into the
+     * field it came from, and "Price <500" has to come back as that. The draft itself makes
+     * it one line of a subject's length.
+     *
+     * @return array<string,callable|string>
+     */
+    private function draftShape(): array
+    {
+        return [
+            'subject' => static fn (mixed $typed): string => is_string($typed) ? wp_check_invalid_utf8($typed) : '',
             'body' => [ReplyBody::class, 'reduce'],
         ];
     }

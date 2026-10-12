@@ -57,7 +57,7 @@ final readonly class SubmissionQueryService
         $scope = $this->scope($actorId);
         $record = $this->reader->findInbox($submissionId, $scope);
 
-        return $record !== null && $scope->allows($record) ? $this->described($record) : null;
+        return $record !== null && $scope->allows($record) ? $this->described($record, $actorId) : null;
     }
 
     /**
@@ -88,7 +88,7 @@ final readonly class SubmissionQueryService
      *
      * @return array<string,mixed>
      */
-    private function described(array $record): array
+    private function described(array $record, int $actorId): array
     {
         $questions = $this->questionsOf($record);
 
@@ -99,8 +99,9 @@ final readonly class SubmissionQueryService
                 (string) ($record['owner_key'] ?? ''),
             ) ?? '',
             'owners' => $this->owners?->people() ?? [],
-            // What was answered, and what would happen to an answer sent now (spec 106).
-        ] + ($this->replies?->of((int) ($record['id'] ?? 0)) ?? []);
+            // What was answered, what would happen to an answer sent now, and the answer
+            // this person began and did not send (spec 106).
+        ] + ($this->replies?->of((int) ($record['id'] ?? 0), $actorId) ?? []);
     }
 
     /**

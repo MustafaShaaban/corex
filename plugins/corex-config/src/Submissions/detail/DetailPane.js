@@ -159,6 +159,8 @@ export default function DetailPane( {
 			<Answers record={ record } />
 			{ ! record.trashed && (
 				<Reply
+					// A reply being written is to one submission: another starts its own.
+					key={ record.id }
 					record={ record }
 					inbox={ inbox }
 					work={ work }

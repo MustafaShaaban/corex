@@ -857,6 +857,24 @@
 	font-weight: 400;
 }
 
+/* The draft of a reply: what became of it, and the way to be rid of it, on
+   one line. */
+.corex-admin .corex-pane__reply-draft {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	margin: 0;
+}
+
+/* A button drawn as a link is as tall as its text. This one stands alone at
+   the end of a line, so it is given the height a pointer needs (WCAG 2.2,
+   2.5.8). */
+.corex-admin .corex-pane__reply-draft .components-button.is-link {
+	min-block-size: var(--corex-admin-space-lg);
+}
+
 /*
  * The preview of a reply (spec 106): the email itself in a frame, at the width
  * of a wide screen or of a phone, and its plain-text version.

@@ -6,6 +6,28 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A reply that was begun and not sent is kept as a draft** (spec 106, slice 3). It is
+  written down when writing pauses, and is in the box again the next time that person opens
+  that submission, on any machine; nobody else is shown it. Sending the reply ends it;
+  **Discard draft** removes it; a reply that could not be sent stays a draft. It is kept
+  with the submission, so it goes to the trash with it and is removed when the submission is
+  deleted or anonymized (DECISIONS #320).
+
+### Client impact
+
+- **New routes: `POST` and `DELETE corex/v1/submissions/{id}/reply/draft`**, and a
+  submission's detail gains `reply_draft` (`{ subject, body, saved_at }` or null) for the
+  person asking. A draft is post meta on the submission, `corex_reply_draft_{user id}`. Code
+  of your own that copies or removes a submission's personal data has to include it, as it
+  does `corex_submission_replies`.
+- **`SubmissionControllerServices` takes a `SubmissionReplyDrafts`**, and
+  `SubmissionEmailService` an optional `SubmissionReplyDraftStore`;
+  `SubmissionReplyView::of()` takes the id of the person asking. Code that takes them from
+  the container is unaffected.
+- **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
+
 ## [0.45.2] — 2026-10-11
 
 Two changes on top of v0.45.1, both for a form defined in code.

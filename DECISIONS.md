@@ -10971,3 +10971,73 @@ to the event) and `tests/Integration/Forms/NotificationFileLinkTest.php`, where 
 the email points at is the one WordPress stored and the name is the file's on disk.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
+
+## #320 — A reply that was begun is kept with its submission, under the name of who began it
+
+**Date:** 2026-10-12. **Branch:** `feat/106-reply-draft-kept`. **Spec:** 106, slice 3 (FR-006).
+
+"An unsent reply MUST be kept as that person's draft for that submission until it is sent or
+discarded." The box forgot what was in it when the pane closed.
+
+**With the submission, not with the person.** The plan had user meta,
+`corex_reply_draft_{submission}`. A draft quotes and names the customer it answers, as a
+sent reply does (#305), so it has to go where the submission goes: to the trash and back, away
+with a permanent delete, away with an anonymization. As user meta it would have outlived all
+three, and each of those paths would have had to learn to look for it. As post meta on the
+submission, `corex_reply_draft_{user}`, WordPress removes it with the post, the anonymization
+removes it by its prefix, and the one thing left to do by hand is the other direction: when
+a person is removed from the site, their drafts go with them (`deleted_user`). That hook is
+the site's own: on a network, a person removed from one site, or deleted from the network,
+leaves drafts on the other sites until their submissions go.
+
+**A key to a person.** Two people writing to the same customer at once each have their own
+draft and neither writes over the other's. Nobody is shown a draft that is not theirs: it is
+read with the submission's detail, for whoever is asking.
+
+**On the server, not in the browser.** `localStorage` would be there only on the machine it
+was written on, and would hold a customer's name on a shared computer after the person had
+signed out.
+
+**Written down when writing pauses, and at once when the pane is left.** A second and a
+half after the last change, and when the pane closes with something not yet written down.
+Nothing is asked while nothing has changed, so opening a submission and reading it writes
+nothing, and the submission's own date of change is left alone, so a status change made
+against the date the pane last read is not a conflict. A save is quiet: it reads the inbox
+again for nothing and holds no other control of the pane. "Draft saved." is said in the page
+and not announced, since a screen reader told so at every pause would talk over the
+writing. What went wrong is announced, from the section's status region; so is "Draft
+discarded.", which nothing on the page then shows.
+
+**When it stops being a draft.** When the reply is sent, queued or kept on the site: the
+service that sends it discards it, for the states the pane empties its box for. A reply that
+failed, was refused or came back stays one, as the box keeps its words for another try
+(FR-031). Emptying the box discards it: there is no draft of nothing. **Discard draft**
+removes it and empties the box.
+
+**A draft that is over must not come back.** The first version let it, three ways, and a
+review that ran the hook with held answers found them: the pane left while a reply was on
+its way wrote the reply down as a draft; a discard pressed inside the pause in writing was
+followed by the save the pause had been waiting for; and an answer that came back after a
+discard or a send was read as if the draft were still there. Each showed the person, on
+their next visit, "the reply you began earlier and did not send" over a reply that had gone:
+the second answer to a customer that #305 goes out of its way to prevent. So the draft's
+requests go one at a time in the order they were made, nothing is written down while a reply
+is being sent, an answer from before the draft ended is not read, and a save that was still
+out when the reply went is followed by a discard. Each has a test that fails without it.
+
+**Half a reply is a draft.** A subject with no message yet, or the other way round, which
+`SubmissionReply` refuses; so a draft is its own small value, with its message reduced by
+`ReplyBody` on the way in and again on the way out. Its subject is kept as it was typed:
+`sanitize_text_field` wrote "Price &lt;500 EGP" and took the address out of
+"Sam <sam@example.com>", and a draft goes back into the field it came from. A message too
+long to be read as a reply is refused, where reduced to nothing it would have discarded the
+draft already kept.
+
+**Not as the plan said.** `POST`, not `PUT`: the admin's request client has no `PUT`. No
+`GET` of its own: the draft comes with the submission.
+
+**Left.** The reply route still passes a subject through `sanitize_text_field`, so a reply
+sent with "<500" in its subject arrives with "&lt;500": older than this slice, and its own
+fix, since every place a subject is printed has to be read first. A save that failed is not
+tried again until something more is written. Closing the browser's tab inside the pause
+loses what was written in it.
