@@ -19,6 +19,7 @@ use Corex\Email\Routing\EmailRoute;
 use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Http\ResponseEnvelope;
 use Corex\Http\RouteParam;
+use Corex\Mail\SubjectLine;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
@@ -404,7 +405,8 @@ final class EmailStudioController
             [],
             [],
             $this->nullableEmail($request->get_param('reply_to')),
-            sanitize_text_field((string) $request->get_param('subject')),
+            // As typed, on one line: a subject is a header and not a form's text.
+            SubjectLine::of($request->get_param('subject')),
             wp_kses_post((string) $request->get_param('body')),
             ['Content-Type' => 'text/html; charset=UTF-8'],
         );

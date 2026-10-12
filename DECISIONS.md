@@ -11352,6 +11352,87 @@ which is how CoreX's mark reaches the listener there. Whether Gmail keeps a `Mes
 writes its own, a reply names an id the person's mail program never saw, and stands alone.
 One real reply on MUVA after the release, and its raw headers, will say.
 
+## #326 — A subject is a header: it is kept as typed, on one line, and escaped where it is printed
+
+**Date:** 2026-10-13. **Branch:** `fix/reply-subject-kept-as-typed`. **Found by:** a review of
+spec 106's reply draft on 2026-10-12, run through the route on real WordPress.
+
+The reply route and its preview read a subject with `sanitize_text_field()`. That function is
+for the text of an HTML form. An email's subject is a header, and a header is plain text: a
+mail program shows what it is handed, entities and all.
+
+**Measured through the routes, before the change.** "Price <500 EGP" left as
+"Price &lt;500 EGP". "Sam <sam@example.com> asked" left as "Sam asked". "Save 50%de today"
+left as "Save 50 today". An Arabic subject with a price between angle brackets lost the
+price. "Tom & Jerry's "offer"" was not changed, and is in the tests so that it stays so. The
+draft route had kept a subject as typed since #320, so a draft gave back the right subject
+and sending it changed it. Email Studio's **Test send** and **Resend** went through the same
+function and did the same; a reply that failed and was sent again from Email Studio's log
+would have been changed there, after this fix, by the screen that shows it as typed.
+
+**One rule, in the core.** `Corex\Mail\SubjectLine::of()` answers the text as typed: UTF-8
+or nothing, one line, trimmed, at most 300 characters. A line break or any other control
+character becomes one space, with the spaces round it, so a second line pasted with its
+indent is one space from the first. The class is in `corex-core` because both the inbox
+(`corex-config`) and Email Studio (`corex-email`) read a subject, and neither depends on the
+other. The reply route, its preview, the draft route, the draft as it is read back from the
+store, the subject a reply starts with (`ReplySubject`), the subject of the conversation a
+reply joins (`ReplyConversation`, #325), and Email Studio's two sends all go
+through it. The draft's own rule and `draftShape()` are gone: a draft is posted as a reply
+is, so it gives back what would be sent.
+
+**A header that cannot be split.** `SubmissionReply` still refuses a subject with a control
+character in it, and `HeaderGuard` still refuses one on the older mail path. Neither is
+reached by a subject from a route now: "Hello", a line break, "Bcc: someone@example.com" is
+sent as the one line "Hello Bcc: someone@example.com", with no copy to anybody. The rule
+reads `\p{Cc}` and the two Unicode separators, U+2028 and U+2029: the byte range the older
+checks use (`\x00-\x1F\x7F`) does not reach the control characters above the delete
+character. Those cannot split a header sent through WordPress's mailer: measured, PHPMailer
+writes a subject holding U+0085 or U+2028 as an encoded word. They are taken out so that one
+line is one line.
+
+**What is not done to it.** Nothing is decoded and nothing is stripped. "&amp;" typed is
+"&amp;" sent. Two spaces stay two. The marks that order right-to-left text (U+200E, U+200F)
+are not control characters and stay. A subject over 300 characters is cut, as a draft's
+already was, and the preview shows it cut; the box has no limit of its own.
+
+**Every place a subject is printed was read before the route was changed**, since it can now
+hold `<`, `>`, `&` and both quotes at once. None printed it raw:
+
+- `StandardEmailDesign` and the file `wp corex make:email-design` writes put it in `<title>`
+  through `htmlspecialchars()`; both already had a test with a `<` in the subject. The older
+  `Template\Layout` does the same.
+- A site's own design is handed it as plain text and told to escape it (`EmailContent`, the
+  generated file's comment, the email-design guide). The preview of such a design is drawn in
+  a frame with every permission taken away (`sandbox=""`), so one that does not escape it
+  draws a broken title and runs nothing.
+- Email Studio's lists (attempts, captured emails, the overview), the resend form, the
+  inbox's list of replies and its preview's title are React text or an input's value. The
+  REST answers are JSON.
+- The history of a submission says that a reply was sent and which one, and holds no subject.
+  No export includes replies. No notice or notification is written with a subject in it.
+- An attempt and a captured email are kept as one serialized value of post meta, and their
+  post's title, which nothing reads back, is the subject. The older log (`corex_email_log`)
+  is not written by a reply and is shown nowhere.
+
+**Two things found by reading, measured, and left** (PROGRESS.md, "Open, and not hidden"):
+an Email Studio template's subject is run through `strip_tags()` when it is merged, so a
+template whose subject is "Price <500 EGP" is sent as "Price"; and Email Studio's store
+hands its records to `update_post_meta()` without `wp_slash()`, so a backslash is dropped
+from everything it keeps: "C:\offers\new" is listed as "C:offersnew", in a subject and in a
+body, in a template too. The email itself leaves with its backslashes; the copy does not
+have them. Each is its own change with its own tests.
+
+**Tests.** `tests/Integration/Submissions/ReplySubjectAsTypedTest.php`, through the three
+routes on real WordPress with delivery answered as a development site's: the email kept, the
+reply kept with the submission, the attempt and the preview each hold the subject as typed,
+for six subjects; a draft is sent under the subject it gave back; a subject with a line
+break, a tab, a null byte, an indent, or 400 characters is one line of at most 300 in all
+three; what is not text is refused and nothing is kept.
+`tests/Integration/Email/EmailStudioControllerTest.php` for the two sends.
+`tests/Unit/Mail/SubjectLineTest.php` for the rule alone. Thirteen of the first file's
+tests and five of the second's failed before the change.
+
 ## #328 — A reply that did not go is sent again as it was written, and stays one reply
 
 **Date:** 2026-10-13. **Branch:** `feat/106-reply-send-again`. **Spec:** 106, slice 5, its first half (story 4, FR-022).

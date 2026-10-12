@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
 use Corex\Http\RouteParam;
+use Corex\Mail\SubjectLine;
 use DomainException;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -160,7 +161,7 @@ final readonly class SubmissionsController
 
     public function reply(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->mutate($request, $this->replyShape() + ['thread' => 'sanitize_key'], function (Request $safe) use ($request): Response {
+        return $this->gateway->mutate($request, $this->replyShape(), function (Request $safe) use ($request): Response {
             $sent = $this->services->email->reply(
                 $this->scope(),
                 $this->changeable($request),
@@ -198,7 +199,8 @@ final readonly class SubmissionsController
 
     /**
      * The email a reply would be sent as (spec 106, FR-005). It sends nothing and keeps nothing
-     * of the reply. The subject is answered as it would be sent, which is not always as typed.
+     * of the reply. The subject is answered as it would be sent: as typed, but for a line break
+     * or a length no subject has ({@see SubjectLine}).
      */
     public function previewReply(WP_REST_Request $request): WP_REST_Response
     {
@@ -216,7 +218,7 @@ final readonly class SubmissionsController
      */
     public function keepReplyDraft(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->mutate($request, $this->draftShape(), function (Request $safe) use ($request): Response {
+        return $this->gateway->mutate($request, $this->replyShape(), function (Request $safe) use ($request): Response {
             // Reduced, it would be nothing, and nothing is what discards a draft: the one
             // already kept would be removed for a message that was only too long.
             if (ReplyBody::isTooLong($request->get_param('body'))) {
@@ -407,31 +409,20 @@ final readonly class SubmissionsController
     }
 
     /**
-     * What a reply is posted as, for sending and for previewing alike.
+     * What a reply is posted as: for sending, for previewing and for keeping as a draft alike,
+     * so that a draft gives back what would be sent. Its subject is kept as it was typed, on
+     * one line: it is an email's header and not markup, and cleaned as a form's text
+     * "Price <500 EGP" reached the customer as "Price &lt;500 EGP".
      *
      * @return array<string,callable|string>
      */
     private function replyShape(): array
     {
         return [
-            'subject' => 'sanitize_text_field',
+            'subject' => [SubjectLine::class, 'of'],
             // To a reply's own formatting, which is narrower than a post's (spec 106, FR-004).
             'body' => [ReplyBody::class, 'reduce'],
-        ];
-    }
-
-    /**
-     * What a draft is posted as. Its subject is kept as it was typed: it goes back into the
-     * field it came from, and "Price <500" has to come back as that. The draft itself makes
-     * it one line of a subject's length.
-     *
-     * @return array<string,callable|string>
-     */
-    private function draftShape(): array
-    {
-        return [
-            'subject' => static fn (mixed $typed): string => is_string($typed) ? wp_check_invalid_utf8($typed) : '',
-            'body' => [ReplyBody::class, 'reduce'],
+            // `conversation` or `new` (FR-039). A preview is the same email either way.
             'thread' => 'sanitize_key',
         ];
     }
