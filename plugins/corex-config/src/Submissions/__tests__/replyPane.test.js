@@ -442,6 +442,218 @@ describe( 'what was already answered', () => {
 } );
 
 // What is typed while a reply is on its way would be emptied with it when it has gone.
+// Spec 106, FR-022: a reply that did not go can be sent again, as it was written, by whoever
+// picks the lead up.
+describe( 'a reply that did not go', () => {
+	const kept = ( id, state, more = {} ) => ( {
+		id,
+		subject: 'Re: your message',
+		body_html: '<p>Hello Salma</p>',
+		actor_name: 'Mustafa',
+		created_at: '2026-10-11T10:00:00+00:00',
+		state,
+		message: state === 'failed' ? 'The mail server refused it.' : '',
+		attempts: [ { state } ],
+		// The server says which replies did not go: one rule, and it is not the pane's.
+		can_send_again: state === 'failed',
+		...more,
+	} );
+	const listed = ( id ) =>
+		[ ...container.querySelectorAll( '.corex-pane__reply' ) ].find(
+			( reply ) => reply.dataset.reply === id
+		);
+	const again = ( id ) =>
+		[ ...listed( id ).querySelectorAll( 'button' ) ].find(
+			( candidate ) => candidate.textContent.trim() === 'Send again'
+		);
+	const announced = () =>
+		container.querySelector( '[role="status"]' ).textContent;
+
+	it( 'can be sent again where the server says so, whatever its state looks like', () => {
+		show(
+			submission( {
+				replies: [
+					kept( 'a', 'failed' ),
+					// Being sent by a colleague at this moment.
+					kept( 'b', 'failed', { can_send_again: false } ),
+					kept( 'c', 'sent' ),
+					// A sending that was begun and abandoned.
+					kept( 'd', 'sending', { can_send_again: true } ),
+					// A reply as an earlier release answered it: nothing said.
+					kept( 'e', 'failed', { can_send_again: undefined } ),
+				],
+			} )
+		);
+
+		expect(
+			[ 'a', 'b', 'c', 'd', 'e' ]
+				.filter( ( id ) => again( id ) )
+				.join( ' ' )
+		).toBe( 'a d' );
+	} );
+
+	it( 'cannot where a reply from this site would be refused, or there is nobody to send it to', () => {
+		show(
+			submission( {
+				replies: [ kept( 'a', 'failed' ) ],
+				reply_delivery: REFUSED,
+			} )
+		);
+		expect( again( 'a' ) ).toBeUndefined();
+
+		show(
+			submission( {
+				replies: [ kept( 'a', 'failed' ) ],
+				questions: [],
+				values: {},
+			} )
+		);
+		expect( again( 'a' ) ).toBeUndefined();
+	} );
+
+	it( 'is sent again when asked: that reply, to the person who wrote in, and what happened is said', async () => {
+		inbox.sendReplyAgain = jest.fn().mockResolvedValue( {
+			tone: 'success',
+			text: 'Reply sent to salma@example.com.',
+			detail: '',
+			keep: false,
+		} );
+		showInPane(
+			submission( {
+				replies: [ kept( 'a', 'sent' ), kept( 'b', 'failed' ) ],
+			} )
+		);
+
+		await act( async () => {
+			again( 'b' ).click();
+		} );
+
+		expect( inbox.sendReplyAgain ).toHaveBeenCalledTimes( 1 );
+		expect( inbox.sendReplyAgain ).toHaveBeenCalledWith(
+			41,
+			'b',
+			'salma@example.com'
+		);
+		expect( announced() ).toBe( 'Reply sent to salma@example.com.' );
+		// What is in the box is somebody's own, and is not sent or emptied by this.
+		expect( inbox.reply ).not.toHaveBeenCalled();
+	} );
+
+	it( 'says it is working while it is sent again, holds every other button, and gives the keyboard back', async () => {
+		const sending = held();
+		inbox.sendReplyAgain = jest.fn().mockReturnValue( sending.promise );
+		showInPane(
+			submission( {
+				replies: [ kept( 'a', 'failed' ), kept( 'b', 'failed' ) ],
+			} )
+		);
+		typeMessage( '<p>Hello</p>' );
+		act( () => again( 'a' ).focus() );
+
+		await act( async () => {
+			again( 'a' ).click();
+		} );
+		expect( again( 'a' ).getAttribute( 'aria-busy' ) ).toBe( 'true' );
+		expect( again( 'b' ).disabled ).toBe( true );
+		expect( again( 'b' ).getAttribute( 'aria-busy' ) ).toBeNull();
+		expect( button( 'Send reply' ).disabled ).toBe( true );
+
+		// It did not go this time either: the button is there to be pressed again.
+		await sending.answer( {
+			tone: 'failure',
+			text: 'The reply was not sent.',
+			detail: 'The mail server refused it.',
+			keep: true,
+		} );
+
+		expect( again( 'a' ).disabled ).toBe( false );
+		expect( document.activeElement ).toBe( again( 'a' ) );
+		expect( container.textContent ).toContain( 'The reply was not sent.' );
+		expect( message().textContent ).toBe( 'Hello' );
+	} );
+
+	it( 'puts the keyboard on the subject when it has gone, since its button went with it', async () => {
+		const record = submission( { replies: [ kept( 'a', 'failed' ) ] } );
+		inbox.sendReplyAgain = jest.fn( async () => {
+			// As the inbox does before it answers: the submission is read again.
+			showInPane( {
+				...record,
+				replies: [
+					kept( 'a', 'sent', {
+						attempts: [ { state: 'failed' }, { state: 'sent' } ],
+						can_send_again: false,
+					} ),
+				],
+			} );
+
+			return {
+				tone: 'success',
+				text: 'Reply sent to salma@example.com.',
+				detail: '',
+				keep: false,
+			};
+		} );
+		showInPane( record );
+
+		await act( async () => {
+			again( 'a' ).click();
+		} );
+
+		expect( again( 'a' ) ).toBeUndefined();
+		expect( document.activeElement ).toBe( field( 'Subject' ) );
+	} );
+
+	// A reply sent again by its own writer, with the same words still in their box: the
+	// reply has gone, and the box must not hold it to be sent a second time.
+	it( 'empties the box of the same reply when the server says its draft went with it, and of nothing else', async () => {
+		const record = submission( {
+			reply_subject: 'Re: Request a quote',
+			replies: [ kept( 'a', 'failed' ) ],
+		} );
+		const answer = ( draftEnded ) => ( {
+			tone: 'success',
+			text: 'Reply sent to salma@example.com.',
+			detail: '',
+			keep: false,
+			draftEnded,
+		} );
+		inbox.sendReplyAgain = jest.fn().mockResolvedValue( answer( false ) );
+		showInPane( record );
+		type( field( 'Subject' ), 'Re: your message' );
+		typeMessage( '<p>Hello Salma</p>' );
+
+		await act( async () => {
+			again( 'a' ).click();
+		} );
+		expect( message().textContent ).toBe( 'Hello Salma' );
+
+		inbox.sendReplyAgain.mockResolvedValue( answer( true ) );
+		await act( async () => {
+			again( 'a' ).click();
+		} );
+
+		expect( message().textContent ).toBe( '' );
+		expect( field( 'Subject' ).value ).toBe( 'Re: Request a quote' );
+		expect( button( 'Send reply' ).disabled ).toBe( true );
+	} );
+
+	it( 'says how many times sending a reply was tried, once that is more than one', () => {
+		show(
+			submission( {
+				replies: [
+					kept( 'a', 'sent' ),
+					kept( 'b', 'sent', {
+						attempts: [ { state: 'failed' }, { state: 'sent' } ],
+					} ),
+				],
+			} )
+		);
+
+		expect( listed( 'a' ).textContent ).not.toContain( 'Tried' );
+		expect( listed( 'b' ).textContent ).toContain( 'Tried 2 times' );
+	} );
+} );
+
 it( 'cannot be written in while a reply is being sent, and can while anything else is', () => {
 	const during = ( pending ) => {
 		act( () => {

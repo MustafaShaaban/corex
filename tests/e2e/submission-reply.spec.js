@@ -1341,3 +1341,130 @@ test( 'sends a second reply in the conversation the first began, or as a new ema
 
 	expect( errors ).toEqual( [] );
 } );
+
+// Spec 106, FR-022. A reply that did not go is on the submission as one that did not go, and
+// whoever opens it next can send it again as it was written.
+test( 'sends a reply that did not go again, from where it is listed, and adds the sending to it', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	// A site that delivers, whose mail server takes nothing: nothing reaches a mailer.
+	const pane = await openPaneOn( page, 'fail' );
+	await pane.getByLabel( 'Subject' ).fill( 'Re: your kitchen' );
+	await pane.getByRole( 'textbox', { name: 'Message' } ).click();
+	await page.keyboard.type( 'We can come on Tuesday.' );
+	await pane.getByRole( 'button', { name: 'Send reply' } ).click();
+
+	await expect( pane ).toContainText( 'The reply was not sent.' );
+	const reply = pane.locator( '.corex-pane__reply' );
+	await expect( reply ).toHaveCount( 1 );
+	await expect( reply ).toContainText( 'Not sent' );
+	const again = reply.getByRole( 'button', { name: 'Send again' } );
+	await expect( again ).toBeVisible();
+
+	// Somebody else, later, on a site that now keeps its email. What was left in the box
+	// is their colleague's draft, not theirs; they open the submission and find the reply.
+	await page.setExtraHTTPHeaders( { 'X-Corex-E2E-Mail': 'capture' } );
+	await page.reload();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	await page
+		.locator( '.corex-inbox__table tbody tr' )
+		.filter( { hasText: EMAIL } )
+		.first()
+		.getByRole( 'button' )
+		.click();
+	const later = page.getByRole( 'dialog' );
+	const listed = later.locator( '.corex-pane__reply' );
+	const button = listed.getByRole( 'button', { name: 'Send again' } );
+	await expect( listed ).toContainText( 'Not sent' );
+	await expect( listed ).not.toContainText( 'Tried 2 times' );
+
+	// Where it stands, before it is pressed: in the reply's own card, apart from its words,
+	// at the end of its row, tall enough to press.
+	for ( const [ theme, direction ] of APPEARANCES ) {
+		await pinAppearance( page, theme, direction );
+		await button.scrollIntoViewIfNeeded();
+		const measured = await listed.evaluate( ( card ) => {
+			const box = ( node ) => node.getBoundingClientRect();
+			const pressed = card.querySelector( '.corex-pane__actions button' );
+			const row = pressed.parentElement;
+			const before = row.previousElementSibling;
+			const inside = window.getComputedStyle( card );
+			const rtl = window.getComputedStyle( card ).direction === 'rtl';
+			const edge = rtl
+				? box( pressed ).left -
+					box( card ).left -
+					parseFloat( inside.paddingLeft ) -
+					parseFloat( inside.borderLeftWidth )
+				: box( card ).right -
+					parseFloat( inside.paddingRight ) -
+					parseFloat( inside.borderRightWidth ) -
+					box( pressed ).right;
+
+			return {
+				above: Math.round( box( pressed ).top - box( before ).bottom ),
+				fromTheEnd: Math.round( edge ),
+				height: Math.round( box( pressed ).height ),
+				below: Math.round(
+					box( card ).bottom -
+						parseFloat( inside.paddingBottom ) -
+						parseFloat( inside.borderBottomWidth ) -
+						box( pressed ).bottom
+				),
+				pastTheCard:
+					box( pressed ).left < box( card ).left ||
+					box( pressed ).right > box( card ).right,
+			};
+		} );
+		const where = `${ theme } ${ direction }`;
+
+		expect(
+			measured.above,
+			`${ where }: apart from the reply's words`
+		).toBeGreaterThanOrEqual( 8 );
+		expect( measured.fromTheEnd, `${ where }: at the end of its row` ).toBe(
+			0
+		);
+		expect( measured.below, `${ where }: on the card's own padding` ).toBe(
+			0
+		);
+		expect(
+			measured.height,
+			`${ where }: tall enough to press`
+		).toBeGreaterThanOrEqual( 30 );
+		expect( measured.pastTheCard, `${ where }: inside the card` ).toBe(
+			false
+		);
+	}
+	await pinAppearance( page, 'dark', 'ltr' );
+
+	// By the keyboard: it is a button like any other.
+	await button.focus();
+	await page.keyboard.press( 'Enter' );
+
+	await expect( later.getByRole( 'status' ) ).toContainText(
+		`Reply kept on this site, not delivered to ${ EMAIL }.`
+	);
+	// One reply still, tried twice, and nothing left to send again.
+	await expect( listed ).toHaveCount( 1 );
+	await expect( listed ).toContainText( 'Kept, not delivered' );
+	await expect( listed ).toContainText( 'Tried 2 times' );
+	await expect( listed ).toContainText( 'We can come on Tuesday.' );
+	await expect( button ).toHaveCount( 0 );
+	// Its button went with it: the keyboard is on the subject, not on the page.
+	await expect( later.getByLabel( 'Subject' ) ).toBeFocused();
+
+	// What went is what was kept the first time.
+	const kept = await keptEmailFor( page, EMAIL );
+	expect( kept.subject ).toBe( 'Re: your kitchen' );
+	expect( kept.html_body ).toContain( 'We can come on Tuesday.' );
+
+	await later.locator( 'summary', { hasText: 'History' } ).click();
+	await expect( later ).toContainText( 'Reply could not be sent' );
+
+	expect( errors ).toEqual( [] );
+} );

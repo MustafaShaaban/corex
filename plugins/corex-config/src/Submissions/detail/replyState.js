@@ -62,18 +62,28 @@ export function readinessNotice( delivery, settingsUrl ) {
  * @param {Object}  [result]   The route's `result`: `{ state, message }`.
  * @param {string}  address    Who the reply was for.
  * @param {boolean} [recorded] False when the reply went and could not then be kept on the submission.
+ * @param {boolean} [again]    True for a reply that was listed and sent again (FR-022): it is on the submission already, and what could not be kept is this sending of it.
  * @return {{tone:string,text:string,detail:string,keep:boolean}} `keep` is whether what was written stays in the box (FR-031).
  */
-export function replyOutcome( result, address, recorded = true ) {
+export function replyOutcome(
+	result,
+	address,
+	recorded = true,
+	again = false
+) {
 	const state = result?.state || '';
 	const detail = result?.message || '';
 	// Said with what happened, never in its place: the reply has gone and is not to be sent again.
-	const unrecorded = recorded
-		? ''
+	const unsaid = again
+		? __(
+				'That could not be written down on this submission, which may go on listing the reply as it was. Do not send it again.',
+				'corex'
+			)
 		: __(
 				'It could not be kept on this submission, so it is not listed here. Do not send it again.',
 				'corex'
 			);
+	const unrecorded = recorded ? '' : unsaid;
 
 	if ( state === 'queued' ) {
 		return {
@@ -178,6 +188,11 @@ export function emailHistoryLine( event ) {
 		return succeeded
 			? __( 'Email sent again', 'corex' )
 			: __( 'Email could not be sent again', 'corex' );
+	}
+	if ( summary.action === 'reply_again' && summary.state !== 'captured' ) {
+		return succeeded
+			? __( 'Reply sent again', 'corex' )
+			: __( 'Reply could not be sent again', 'corex' );
 	}
 	if ( summary.state === 'captured' ) {
 		return __( 'Reply kept on this site, not delivered', 'corex' );

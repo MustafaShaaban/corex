@@ -349,3 +349,200 @@ it('continues from the confirmation a flow sent the person, and not from what it
         ->and($headers['References'] ?? '')->toBe($itsId);
 });
 
+// Spec 106, FR-022: a reply that did not go is sent again as it was written, through the
+// route, and what happened is added to it. On real WordPress, since what is under test is the
+// row being written over in place: also a row an earlier release kept, which has fewer fields.
+/**
+ * Keeps a reply on the test's submission with one sending, as a release before this one would
+ * have unless `$more` says otherwise.
+ *
+ * @param array<string,mixed> $more Fields over the reply's own.
+ */
+function aReplyKeptBefore(int $submission, string $state, array $more = []): string
+{
+    $id = wp_generate_uuid4();
+    add_post_meta($submission, WpSubmissionReplyStore::META_KEY, wp_slash($more + [
+        'id' => $id,
+        'subject' => 'Re: your message',
+        'body_html' => '<p>Dear Salma, the file is at C:\offers\one.</p>',
+        'actor_id' => 1,
+        'created_at' => '2026-10-11T10:00:00+00:00',
+        'attempts' => [['attempt_id' => wp_generate_uuid4(), 'state' => $state, 'message' => 'The mail server refused it.', 'occurred_at' => '2026-10-11T10:00:00+00:00']],
+    ]));
+
+    return $id;
+}
+
+/**
+ * Asks the route itself, as a browser does: its pattern, its permission check and its
+ * handler are all WordPress's to find.
+ *
+ * @param array<string,mixed> $body What the request carries besides its address.
+ */
+function sendAgainThroughTheRoute(int $submission, string $reply, bool $proven = true, array $body = []): WP_REST_Response
+{
+    $request = new WP_REST_Request('POST', '/corex/v1/submissions/' . $submission . '/replies/' . $reply . '/send');
+    if ($proven) {
+        $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    }
+    $request->set_body_params($body);
+
+    return rest_ensure_response(rest_do_request($request));
+}
+
+/** The submission as the pane is sent it. */
+function shownWithItsReplies(object $test): array
+{
+    $get = new WP_REST_Request('GET', '/corex/v1/submissions/' . $test->replySubmission);
+    $get->set_url_params(['id' => (string) $test->replySubmission]);
+
+    return $test->replyController->show($get)->get_data()['data']['submission'];
+}
+
+/** The email Email Studio kept for one sending, or null. */
+function keptEmailOf(string $attemptId): ?\Corex\Email\Capture\CapturedEmail
+{
+    foreach (Boot::app()->container()->make(\Corex\Email\Capture\CapturedEmailRepository::class)->latest(30) as $capture) {
+        if ($capture->attemptId === $attemptId) {
+            return $capture;
+        }
+    }
+
+    return null;
+}
+
+it('sends a reply that did not go again through its route, and adds the sending to the reply', function () {
+    $replyId = aReplyKeptBefore($this->replySubmission, 'failed');
+    $before = shownWithItsReplies($this)['replies'][0];
+
+    $again = sendAgainThroughTheRoute($this->replySubmission, $replyId)->get_data();
+    $submission = shownWithItsReplies($this);
+    $reply = $submission['replies'][0];
+    $sent = keptEmailOf($again['data']['result']['attempt_id']);
+
+    expect($before['can_send_again'])->toBeTrue()
+        ->and($again['ok'])->toBeTrue()
+        ->and($again['data']['recorded'])->toBeTrue()
+        ->and($again['data']['draft_ended'])->toBeFalse()
+        ->and($again['data']['result']['state'])->toBe('captured')
+        // One reply, sent twice, as it was written.
+        ->and($submission['replies'])->toHaveCount(1)
+        ->and($reply['id'])->toBe($replyId)
+        ->and($reply['body_html'])->toContain('C:\offers\one.')
+        ->and(array_column($reply['attempts'], 'state'))->toBe(['failed', 'captured'])
+        ->and($reply['state'])->toBe('captured')
+        ->and($reply['can_send_again'])->toBeFalse()
+        ->and($reply['created_at'])->toBe('2026-10-11T10:00:00+00:00')
+        // What went is what was kept, to the person who wrote in.
+        ->and($sent?->subject)->toBe('Re: your message')
+        ->and($sent?->to)->toBe([(string) get_post_meta($this->replySubmission, 'corex_submitter_email', true)])
+        // (Email Studio's own record of it loses its backslashes, which is not this code's: a task of its own.)
+        ->and($sent?->body)->toContain('Dear Salma, the file is at C:')
+        ->and(array_column(array_column($submission['timeline'], 'summary'), 'action'))->toContain('reply_again');
+});
+
+it('refuses to send again a reply that went, or one that is not on the submission', function (?string $state, string $reason) {
+    $replyId = $state === null ? wp_generate_uuid4() : aReplyKeptBefore($this->replySubmission, $state);
+    $kept = get_post_meta($this->replySubmission, WpSubmissionReplyStore::META_KEY);
+
+    $refused = sendAgainThroughTheRoute($this->replySubmission, $replyId);
+
+    expect($refused->get_status())->toBe(422)
+        ->and($refused->get_data()['message'])->toBe($reason)
+        ->and(get_post_meta($this->replySubmission, WpSubmissionReplyStore::META_KEY))->toBe($kept);
+})->with([
+    'one that was sent' => ['sent', 'This reply does not need sending again.'],
+    'one kept on a site that keeps its email' => ['captured', 'This reply does not need sending again.'],
+    'one there is none of' => [null, 'That reply is not on this submission.'],
+]);
+
+// The reply is the one the address names. A request that names another in its body, where
+// WordPress looks first, is still about the one it was sent to.
+it('sends again the reply its address names, whatever the request carries', function () {
+    $named = aReplyKeptBefore($this->replySubmission, 'failed');
+    $other = aReplyKeptBefore($this->replySubmission, 'failed', ['created_at' => '2026-10-11T11:00:00+00:00']);
+
+    sendAgainThroughTheRoute($this->replySubmission, $named, true, ['reply' => $other]);
+    $states = array_column(shownWithItsReplies($this)['replies'], 'state', 'id');
+
+    expect($states[$named])->toBe('captured')
+        ->and($states[$other])->toBe('failed');
+});
+
+it('sends nothing again for a request that does not prove where it came from, or on a submission in the trash', function (string $how, int $status, string $said) {
+    $replyId = aReplyKeptBefore($this->replySubmission, 'failed');
+    if ($how === 'in the trash') {
+        Boot::app()->container()->make(\Corex\Config\Submissions\SubmissionTrashStore::class)
+            ->trash($this->replySubmission, $this->administrator, \Corex\Config\Submissions\SubmissionTrashStore::VIA_INBOX);
+    }
+    $kept = get_post_meta($this->replySubmission, WpSubmissionReplyStore::META_KEY);
+
+    $refused = sendAgainThroughTheRoute($this->replySubmission, $replyId, $how !== 'unproven');
+
+    // Each refused by what refuses it on every other route that changes a submission, and
+    // said as it is there.
+    expect($refused->get_status())->toBe($status)
+        ->and($refused->get_data()['message'])->toBe($said)
+        ->and(get_post_meta($this->replySubmission, WpSubmissionReplyStore::META_KEY))->toBe($kept);
+})->with([
+    ['unproven', 403, 'Invalid or missing security token.'],
+    ['in the trash', 409, 'This submission is in the trash. Restore it to change it.'],
+]);
+
+// A reply that was to join the conversation answers the email the person has when it is sent
+// again: the confirmation, and not its own sending that failed.
+it('sends a reply again in the conversation it was to join, answering the email the person has', function () {
+    $studio = Boot::app()->container()->make(\Corex\Email\Studio\EmailStudioService::class);
+    $person = (string) get_post_meta($this->replySubmission, 'corex_submitter_email', true);
+    $confirmation = $studio->send(
+        new \Corex\Email\Message\EmailMessage([$person], [], [], null, 'We received your enquiry', '<p>Hello</p>'),
+        new \Corex\Email\Studio\EmailDeliveryContext('development', true, true, wp_generate_uuid4()),
+    );
+    update_post_meta($this->replySubmission, 'corex_email_json', ['bindings' => [
+        'submitter_confirmation' => ['attempt_id' => $confirmation->attemptId, 'state' => $confirmation->state],
+    ]]);
+    $replyId = aReplyKeptBefore($this->replySubmission, 'failed', ['thread' => 'conversation']);
+
+    $again = sendAgainThroughTheRoute($this->replySubmission, $replyId)->get_data();
+    $headers = keptEmailOf($again['data']['result']['attempt_id'])?->headers ?? [];
+    $itsId = \Corex\Mail\MessageId::of($confirmation->attemptId, (string) wp_parse_url(home_url('/'), PHP_URL_HOST));
+
+    expect($itsId)->not->toBe('')
+        ->and($headers['In-Reply-To'] ?? '')->toBe($itsId)
+        ->and($headers['References'] ?? '')->toBe($itsId)
+        ->and(shownWithItsReplies($this)['replies'][0]['thread'])->toBe('conversation');
+});
+
+// Sent from where it is listed, the reply has gone. Left as its writer's draft it would be
+// sent a second time, as a new reply.
+it('ends the draft of whoever sends it again when the draft is that reply', function () {
+    $replyId = aReplyKeptBefore($this->replySubmission, 'failed', ['body_html' => '<p>Dear Salma</p>']);
+    $this->replyController->keepReplyDraft(replyRecordRequest('POST', '/corex/v1/submissions/' . $this->replySubmission . '/reply/draft', [
+        'id' => $this->replySubmission,
+        'subject' => 'Re: your message',
+        'body' => '<p>Dear Salma</p>',
+    ]));
+    $begun = shownWithItsReplies($this)['reply_draft'];
+
+    $again = sendAgainThroughTheRoute($this->replySubmission, $replyId)->get_data();
+
+    expect($begun['body'] ?? '')->toBe('<p>Dear Salma</p>')
+        ->and($again['data']['draft_ended'])->toBeTrue()
+        ->and(shownWithItsReplies($this)['reply_draft'])->toBeNull();
+});
+
+// Two people find the same reply that did not go, and both press Send again.
+it('does not write one person\'s sending over another\'s', function () {
+    aReplyKeptBefore($this->replySubmission, 'failed');
+    $store = Boot::app()->container()->make(SubmissionReplyStore::class);
+    $asBothRead = $store->forSubmission($this->replySubmission)[0];
+    $begun = $asBothRead->beingSentAgain(new DateTimeImmutable('now'));
+
+    $store->replace($this->replySubmission, $asBothRead, $begun);
+
+    expect(fn () => $store->replace($this->replySubmission, $asBothRead, $begun))
+        ->toThrow(DomainException::class)
+        ->and(array_column($store->forSubmission($this->replySubmission)[0]->attempts, 'state'))->toBe(['failed', 'sending'])
+        // And while that sending is out, the pane is told the reply is nobody's to send again.
+        ->and(shownWithItsReplies($this)['replies'][0]['can_send_again'])->toBeFalse();
+});
