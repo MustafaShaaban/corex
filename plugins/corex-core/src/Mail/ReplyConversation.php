@@ -35,7 +35,7 @@ final readonly class ReplyConversation
         // One rule for what an id is, which is also the driver's: an id this let through and
         // the driver did not write would be a reply recorded as joining what it never named.
         $this->messageIds = array_values(array_filter($messageIds, [MessageId::class, 'isOne']));
-        $this->subject = $this->messageIds === [] ? '' : trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $subject));
+        $this->subject = $this->messageIds === [] ? '' : SubjectLine::of($subject);
     }
 
     /** No email to continue from: a reply can only be a new one. */

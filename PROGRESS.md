@@ -83,6 +83,11 @@ What to know before resuming each:
   what the Releases side relies on is written into task T080. The line a person without the
   right is shown was drawn in Jest and not walked in a browser, because no fixture account
   manages data without being an administrator.
+- **Spec 106, a reply's subject.** It is kept as typed on the reply, preview and draft routes
+  and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
+  (DECISIONS #326; on `main` after v0.45.2, not released). A subject can now hold `<`, `>`
+  and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
+  is printed before adding a place that prints one.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -156,6 +161,18 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **CoreX → Data → Form submissions prints that number too**, in its record view and in its
   own export. The Submissions inbox and its export name the file. Read from
   `SubmissionsSource`, not looked at in a browser.
+- **An Email Studio template's subject loses what follows a `<`.** A template's subject is run
+  through `strip_tags()` when it is merged (`EmailTemplateService::render()`): measured on
+  2026-10-13, a template whose subject is "Price <500 EGP" is sent as "Price", and
+  "Sam <sam@example.com> asked" as "Sam  asked". A reply's subject and Email Studio's own
+  **Test send** and **Resend** are kept as typed (DECISIONS #326); a template's is not, and
+  a value merged into it is stripped the same way. Not changed.
+- **Email Studio's store drops a backslash from everything it keeps.** Its records go to
+  `update_post_meta()` without `wp_slash()` (`WpEmailStudioStore::create()` and `update()`).
+  Measured on 2026-10-13: an email with the subject "C:\offers\new" is listed, in Email
+  Studio's captured emails and attempts, as "C:offersnew", and its body loses them too. A
+  template, a layout and a partial are kept by the same store. The email itself leaves with
+  its backslashes, and a reply kept with its submission has them. Not changed.
 - **The inbox's list is slow on a site with many thousands of submissions.** Measured on
   2026-10-11 with 10,000 of them: the statement that lists the inbox with no search took
   0.6 s, and 1.2 s on a second seeding; without the clause that leaves out submissions marked

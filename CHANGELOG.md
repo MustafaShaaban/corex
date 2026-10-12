@@ -67,8 +67,31 @@ All notable changes to Corex are documented here. The format follows
   earlier one, a reply sent since v0.45.0 could leave without those settings. It now does its
   work once and is taken off when the email has gone (DECISIONS #324).
 
+- **A reply's subject reaches the customer as it was typed.** The reply and its preview
+  cleaned the subject as the text of an HTML form, and a subject is an email's header, which
+  is plain text. "Price <500 EGP" was sent as "Price &lt;500 EGP", and a mail program shows
+  that as written; "Sam <sam@example.com> asked" as "Sam asked"; "Save 50%de today" as
+  "Save 50 today". A draft had kept the subject as typed since it was built, so a draft gave
+  back the right subject and sending it changed it. A reply, its preview and its draft now
+  read a subject by one rule, `Corex\Mail\SubjectLine`: the text as typed, on one line of at
+  most 300 characters, with a space where a line break or another control character was, so
+  that nothing typed after a break becomes a header of its own. Email Studio's **Test send**
+  and **Resend** changed a subject the same way and read it by the same rule now. Every place
+  a subject is printed was read first: each escapes it where it is printed
+  (DECISIONS #326).
+
 ### Client impact
 
+- **A subject can hold `<`, `>` and `&` together now**, in a reply and in an email sent from
+  Email Studio's **Test send** and **Resend**. A design of your own registered on
+  `corex_email_design` is handed the subject as plain text, as it always was told
+  (`$content->subject`: "Escape it before you print it"), and a design made by
+  `wp corex make:email-design` escapes it. One that prints the subject without escaping it
+  has to escape it: until now a subject with a `<` in it arrived written as entities, or
+  without what stood between the angle brackets, and no longer does. Code of your own that reads a reply's `subject`, an attempt's
+  or a captured email's, and prints it into a page escapes it there too.
+- **New class `Corex\Mail\SubjectLine`** (`SubjectLine::of($typed)`), for code of your own
+  that takes a subject somebody typed. Nothing to rebuild: no screen changed.
 - **A reply's email looks different at the top**: the header is inside the card, the logo is
   at most 48 pixels tall, and a square logo has the site's name beside it. A site whose logo
   is an SVG now shows its site icon or its name there: set a PNG under CoreX → Settings →
