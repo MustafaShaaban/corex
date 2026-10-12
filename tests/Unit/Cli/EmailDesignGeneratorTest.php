@@ -103,3 +103,27 @@ it('starts with what the standard design gives a reader: a dark scheme, a footer
         ->and($own)->not->toContain('<img')
         ->and($own)->not->toContain('/wp-content/uploads/logo.png');
 });
+
+// Spec 106, FR-034: the header a developer starts from is the standard one. Compared whole and
+// not by its parts: a copy that drifts from what it copies is the thing to catch.
+it('starts as the standard design does, for every kind of header', function (EmailBrand $brand) {
+    // The standard design's footer sentence is translated; a generated one writes its own.
+    Brain\Monkey\Functions\when('__')->returnArg();
+    $class = 'GeneratedDesignHeader\\Mail\\HeaderEmailDesign';
+    // Written once: each case draws with the same generated class.
+    if (! class_exists($class, false)) {
+        require_once generatedEmailDesign('Header', 'GeneratedDesignHeader')['path'];
+    }
+    $content = new EmailContent('Re: your message', '<p>Thanks, <a href="https://acme.test/x">Sam</a>.</p><ul><li>One</li></ul>', 'sam@example.com');
+
+    $own = (new $class())->render($content, $brand);
+    $standard = (new Corex\Email\Design\StandardEmailDesign())->render($content, $brand);
+
+    expect(str_replace('own-', 'cx-', $own))->toBe($standard);
+})->with([
+    'the name' => [fn () => EmailBrand::standard('Acme & Sons', 'https://acme.test/')],
+    'a mark, with the name beside it' => [fn () => EmailBrand::standard('Acme', 'https://acme.test/', 'https://acme.test/logo.png')->withLogoSize(600, 600)],
+    'a logo that is the name' => [fn () => EmailBrand::standard('Acme', 'https://acme.test/', 'https://acme.test/logo.png')->withLogoSize(1000, 200)],
+    'a logo of no known size, right to left' => [fn () => EmailBrand::standard('Acme', 'https://acme.test/', 'https://acme.test/logo.png', 'rtl', 'ar')],
+    'a footer of the site\'s own' => [fn () => EmailBrand::standard('Acme', 'https://acme.test/', '', 'ltr', 'en', 'Acme Ltd, Cairo')],
+]);

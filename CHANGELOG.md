@@ -15,8 +15,31 @@ All notable changes to Corex are documented here. The format follows
   with the submission, so it goes to the trash with it and is removed when the submission is
   deleted or anonymized (DECISIONS #320).
 
+### Changed
+
+- **The standard email's header is part of the card, and a logo of any shape fits it**
+  (spec 106, slice 8). The site's logo, or its name, is now the first band of the card that
+  holds the message, under the brand's edge. It stood above the card, on the canvas, limited
+  to 180 pixels of width and nothing of height: a square logo was drawn 180 by 180 over a
+  narrow message. A logo from the site's library is now written at the size that fits inside
+  180 by 48 pixels, as the image's own width and height, which is what Outlook on Windows
+  reads. A square mark has the site's name beside it as text, so the email still says who it
+  is from where images are not shown; a logo that is the name written out stands alone. A
+  vector logo is passed over, since Gmail and Outlook draw nothing for one.
+  `wp corex make:email-design` writes the same header (DECISIONS #322).
+
 ### Client impact
 
+- **A reply's email looks different at the top**: the header is inside the card, the logo is
+  at most 48 pixels tall, and a square logo has the site's name beside it. A site whose logo
+  is an SVG now shows its site icon or its name there: set a PNG under CoreX → Settings →
+  Mail → **Email logo** to show a logo. A site that registered its own design on
+  `corex_email_design` is untouched. A design generated before this release keeps the header it was written with;
+  to take the new one, copy the header from a newly generated file.
+- **`Corex\Email\Design\EmailBrand` gains `logoWidth`, `logoHeight`, `withLogoSize()`,
+  `logoBox()` and `logoIsItsName()`**, and two optional last constructor arguments. A brand
+  built in a `corex_email_brand` filter says its logo's size with `withLogoSize()`. A design of your own may draw
+  its logo from `logoBox()`; one that does not is unaffected.
 - **New routes: `POST` and `DELETE corex/v1/submissions/{id}/reply/draft`**, and a
   submission's detail gains `reply_draft` (`{ subject, body, saved_at }` or null) for the
   person asking. A draft is post meta on the submission, `corex_reply_draft_{user id}`. Code

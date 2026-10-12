@@ -73,15 +73,75 @@ final readonly class SiteEmailBrand implements EmailBrandSource
      */
     public function logo(): string
     {
+        return $this->ownMark()[0];
+    }
+
+    /**
+     * The site's own mark, with its size where WordPress recorded one.
+     *
+     * @return array{string,int,int} Its address, width and height; 0 and 0 for a size not known.
+     */
+    private function ownMark(): array
+    {
         $customLogoId = (int) get_theme_mod('custom_logo');
-        if ($customLogoId > 0) {
-            $logo = wp_get_attachment_image_url($customLogoId, 'medium');
-            if (is_string($logo) && $logo !== '') {
-                return $logo;
-            }
+        $logo = $customLogoId > 0 ? wp_get_attachment_image_url($customLogoId, 'medium') : false;
+        if (is_string($logo) && self::drawable($logo)) {
+            return [$logo, ...self::recordedSize($customLogoId)];
+        }
+        $icon = (string) get_site_icon_url(180);
+
+        return self::drawable($icon) ? [$icon, ...self::recordedSize((int) get_option('site_icon'))] : ['', 0, 0];
+    }
+
+    /**
+     * A logo a mail client draws. A vector image is not one: Gmail and Outlook on Windows show
+     * nothing for it, and the site's name is a better header than a gap.
+     */
+    private static function drawable(string $address): bool
+    {
+        return $address !== '' && preg_match('/\.svgz?(?:[?#].*)?$/i', $address) !== 1;
+    }
+
+    /**
+     * The size WordPress recorded for an image of the site's library, whose proportions every
+     * cut of it keeps. Asked of the record and not of `wp_get_attachment_image_src()`, which
+     * answers 1 by 1 for an image it holds no size for.
+     *
+     * @return array{int,int} Width and height, or 0 and 0.
+     */
+    private static function recordedSize(int $attachmentId): array
+    {
+        $recorded = $attachmentId > 0 ? wp_get_attachment_metadata($attachmentId) : false;
+        $width = is_array($recorded) ? (int) ($recorded['width'] ?? 0) : 0;
+        $height = is_array($recorded) ? (int) ($recorded['height'] ?? 0) : 0;
+
+        return $width > 0 && $height > 0 ? [$width, $height] : [0, 0];
+    }
+
+    /**
+     * The size of a logo the Mail settings name by its address.
+     *
+     * Known only for an image under this site's own uploads: what the library recorded, or,
+     * for a cut WordPress made, the size it wrote into the cut's name (`-300x150.png`). A name
+     * elsewhere that happens to end so says nothing about the image (`logo-16x9.png`).
+     *
+     * @return array{int,int} Width and height, or 0 and 0.
+     */
+    private function sizeOfNamed(string $address): array
+    {
+        $path = (string) strtok($address, '?#');
+        $uploads = (string) (wp_get_upload_dir()['baseurl'] ?? '');
+        if ($uploads === '' || stripos((string) set_url_scheme($path, 'https'), (string) set_url_scheme($uploads, 'https') . '/') !== 0) {
+            return [0, 0];
+        }
+        $size = self::recordedSize((int) attachment_url_to_postid($path));
+        if ($size !== [0, 0]) {
+            return $size;
         }
 
-        return (string) get_site_icon_url(180);
+        return preg_match('/-(\d{1,5})x(\d{1,5})\.[a-z0-9]+$/i', $path, $said) === 1
+            ? [(int) $said[1], (int) $said[2]]
+            : [0, 0];
     }
 
     /** The site as WordPress knows it, with what its Mail settings say about its emails. */
@@ -93,15 +153,18 @@ final readonly class SiteEmailBrand implements EmailBrandSource
         // A mail client has no page to resolve a path from: only a whole web address is a logo.
         $ownLogo = trim((string) $this->config->get('mail.brand.logo', ''));
         $ownLogo = preg_match('#^https?://#i', $ownLogo) === 1 ? $ownLogo : '';
+        [$logo, $logoWidth, $logoHeight] = self::drawable($ownLogo)
+            ? [$ownLogo, ...$this->sizeOfNamed($ownLogo)]
+            : $this->ownMark();
         $brand = EmailBrand::standard(
             // A site with no title is still named in its emails, by where it is.
             $name !== '' ? $name : (string) wp_parse_url($home, PHP_URL_HOST),
             $home,
-            $ownLogo !== '' ? $ownLogo : $this->logo(),
+            $logo,
             is_rtl() ? 'rtl' : 'ltr',
             (string) get_bloginfo('language'),
             trim((string) $this->config->get('mail.brand.footer', '')),
-        );
+        )->withLogoSize($logoWidth, $logoHeight);
 
         // The edge of the card, in both schemes: it is never text, so it has no contrast to keep.
         // The setting is not saved unless it is #rrggbb; a value that reached the store some

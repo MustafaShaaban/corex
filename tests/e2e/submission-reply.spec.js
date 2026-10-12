@@ -417,8 +417,8 @@ function measuredEmail( letter ) {
 		};
 		const box = ( node ) => node.getBoundingClientRect();
 		const paragraphs = Array.from( document.querySelectorAll( 'p' ) );
-		const card = document.querySelector( '.cx-surface' );
-		const header = document.querySelector( 'td.cx-text' );
+		// The card is two bands of one box: the header, then the message.
+		const [ header, card ] = document.querySelectorAll( 'td.cx-surface' );
 		const footer = document.querySelector( 'td.cx-muted' );
 		const edgeOf = ( paragraph ) => {
 			const range = document.createRange();
@@ -443,6 +443,19 @@ function measuredEmail( letter ) {
 			footer: footer.textContent.trim(),
 			order: [ header, card, footer ].map( ( part ) =>
 				Math.round( box( part ).top )
+			),
+			// What makes the header a band of the card and not a row above it: the card's
+			// own ground, which is not the canvas's, under the brand's edge.
+			grounds: [ header, card, document.body ].map(
+				( part ) => window.getComputedStyle( part ).backgroundColor
+			),
+			edge: [
+				window.getComputedStyle( header ).borderTopWidth,
+				window.getComputedStyle( header ).borderTopColor,
+				window.getComputedStyle( card ).borderTopWidth,
+			],
+			sides: [ header, card ].map(
+				( part ) => window.getComputedStyle( part ).borderLeftColor
 			),
 			message: colours( paragraphs[ 0 ] ),
 			link: colours( card.querySelector( 'a' ) ),
@@ -521,6 +534,26 @@ test( 'sends the reply as a designed email that holds on a phone, in a dark mail
 				measured.order,
 				`${ where }: header, message, footer, in that order`
 			).toEqual( [ ...measured.order ].sort( ( a, b ) => a - b ) );
+			expect(
+				measured.grounds[ 0 ],
+				`${ where }: the header stands on the card's ground`
+			).toBe( measured.grounds[ 1 ] );
+			expect(
+				measured.grounds[ 0 ],
+				`${ where }: which is not the canvas`
+			).not.toBe( measured.grounds[ 2 ] );
+			expect(
+				measured.edge[ 0 ],
+				`${ where }: the brand's edge is the header's`
+			).toBe( '4px' );
+			expect(
+				measured.edge[ 2 ],
+				`${ where }: and nothing is drawn between the two bands but the header's own rule`
+			).toBe( '0px' );
+			expect(
+				measured.sides[ 0 ],
+				`${ where }: one border down both bands`
+			).toBe( measured.sides[ 1 ] );
 			for ( const part of [ 'message', 'link', 'foot', 'head' ] ) {
 				expect(
 					contrast( ...measured[ part ] ),
@@ -951,3 +984,161 @@ test( 'keeps a reply that was begun as a draft, gives it back on another visit, 
 
 	expect( errors ).toEqual( [] );
 } );
+
+// Spec 106, FR-032 and FR-033: on the first live site a square logo was drawn 180 by 180 on
+// the canvas above the message. The suite's own site has no logo, so these two are asked for.
+for ( const [ logo, what ] of [
+	[ 'mark', 'a square mark with the site named beside it' ],
+	[ 'name', 'a logo that is the name, alone' ],
+] ) {
+	test( `opens the email with ${ what }, held to its box at every width`, async ( {
+		page,
+		context,
+	} ) => {
+		await openPaneOn( page, 'capture' );
+		await page.setExtraHTTPHeaders( {
+			'X-Corex-E2E-Mail': 'capture',
+			'X-Corex-E2E-Mail-Logo': logo,
+		} );
+		const subject = `Re: the header with ${ logo } ${ Date.now() }`;
+		const html = await page.evaluate(
+			async ( [ recipient, title ] ) => {
+				const config = window.corexSubmissions;
+				const list = await window.Corex.api.get(
+					`${ config.restUrl }?search=${ encodeURIComponent( recipient ) }`,
+					{ nonce: config.nonce }
+				);
+				await window.Corex.api.post(
+					`${ config.restUrl }/${ list.envelope.data.items[ 0 ].id }/reply`,
+					{ subject: title, body: '<p>Hello Salma.</p>' },
+					{ nonce: config.nonce }
+				);
+				const studio = await window.Corex.api.get(
+					config.restUrl.replace( /\/submissions$/, '/email-studio' ),
+					{ nonce: config.nonce }
+				);
+
+				return studio.envelope.data.captures.find(
+					( capture ) => capture.subject === title
+				)?.html_body;
+			},
+			[ EMAIL, subject ]
+		);
+		expect( html, 'the reply was kept' ).toBeTruthy();
+
+		const letter = await context.newPage();
+		await letter.setContent( html, { waitUntil: 'load' } );
+		// A right-to-left site writes its header from the other side: that is the markup's,
+		// and is held where the markup is written, in the unit test.
+		for ( const width of [ 320, 375, 800 ] ) {
+			await letter.setViewportSize( { width, height: 600 } );
+			const measured = await letter.evaluate( () => {
+				const band = document.querySelector( 'td.cx-band' );
+				const image = band.querySelector( 'img' );
+				const box = ( node ) => node.getBoundingClientRect();
+				const named = band.querySelector( 'td.cx-text' );
+
+				return {
+					loaded: image.naturalWidth > 0,
+					logo: [ box( image ).width, box( image ).height ].map(
+						Math.round
+					),
+					said: [
+						image.getAttribute( 'width' ),
+						image.getAttribute( 'height' ),
+					].map( Number ),
+					alt: image.alt,
+					words: band.textContent.trim(),
+					band: Math.round( box( band ).height ),
+					// The name beside a mark: on its line, and clear of it.
+					beside: named
+						? [
+								Math.round(
+									Math.abs(
+										( box( named ).top +
+											box( named ).bottom ) /
+											2 -
+											( box( image ).top +
+												box( image ).bottom ) /
+												2
+									)
+								),
+								Math.round(
+									Math.min(
+										Math.abs(
+											box( named ).left -
+												box( image ).right
+										),
+										Math.abs(
+											box( image ).left -
+												box( named ).right
+										)
+									)
+								),
+							]
+						: null,
+					inside:
+						box( image ).left >= box( band ).left &&
+						box( image ).right <= box( band ).right,
+					sideways:
+						document.documentElement.scrollWidth -
+						document.documentElement.clientWidth,
+				};
+			} );
+			const where = `${ logo } at ${ width }px`;
+
+			expect( measured.loaded, `${ where }: the logo is drawn` ).toBe(
+				true
+			);
+			expect(
+				measured.logo[ 0 ],
+				`${ where }: no wider than its box`
+			).toBeLessThanOrEqual( 180 );
+			expect(
+				measured.logo[ 1 ],
+				`${ where }: no taller than its box`
+			).toBeLessThanOrEqual( 48 );
+			// What a client that reads no style is given is what this one drew.
+			expect(
+				measured.said,
+				`${ where }: its own size says the same`
+			).toEqual( measured.logo );
+			expect( measured.inside, `${ where }: inside the header` ).toBe(
+				true
+			);
+			// The edge, the padding above and below, the box, the rule under it.
+			expect(
+				measured.band,
+				`${ where }: the header is no taller than the box allows`
+			).toBeLessThanOrEqual( 4 + 16 + 48 + 16 + 1 );
+			expect( measured.sideways, `${ where }: no sideways scroll` ).toBe(
+				0
+			);
+			if ( logo === 'mark' ) {
+				// The name is text: there when images are not shown, and said once.
+				expect(
+					measured.words,
+					`${ where }: the site is named`
+				).not.toBe( '' );
+				expect( measured.alt, `${ where }: and named once` ).toBe( '' );
+				expect(
+					measured.beside[ 0 ],
+					`${ where }: the name is level with the mark`
+				).toBeLessThanOrEqual( 2 );
+				expect(
+					measured.beside[ 1 ],
+					`${ where }: and clear of it`
+				).toBe( 12 );
+			} else {
+				expect(
+					measured.words,
+					`${ where }: the logo is the name`
+				).toBe( '' );
+				expect(
+					measured.alt,
+					`${ where }: which stands in for it`
+				).not.toBe( '' );
+			}
+		}
+	} );
+}

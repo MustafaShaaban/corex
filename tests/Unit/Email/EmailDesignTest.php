@@ -138,6 +138,128 @@ it('shows the logo with the site name standing in for it when images are off', f
         ->and($html)->toContain('alt="Acme &amp; Sons"');
 });
 
+/**
+ * The email's header as a reader of markup sees it: its logo's attributes, and its words.
+ *
+ * @return array{logo:?array<string,string>,words:string,cells:list<string>}
+ */
+function emailHeader(string $html): array
+{
+    $document = new DOMDocument();
+    @$document->loadHTML('<?xml encoding="utf-8"?>' . $html);
+    $find = new DOMXPath($document);
+    $band = $find->query('//td[contains(concat(" ", @class, " "), " cx-band ") or contains(concat(" ", @class, " "), " own-band ")]')->item(0);
+    $image = $find->query('.//img', $band)->item(0);
+    $logo = null;
+    if ($image instanceof DOMElement) {
+        foreach ($image->attributes as $attribute) {
+            $logo[$attribute->name] = $attribute->value;
+        }
+    }
+    $cells = [];
+    foreach ($find->query('//td[contains(concat(" ", @class, " "), " cx-surface ") or contains(concat(" ", @class, " "), " own-surface ")]') as $cell) {
+        $cells[] = $cell->getAttribute('style');
+    }
+
+    return ['logo' => $logo, 'words' => trim($band->textContent), 'cells' => $cells];
+}
+
+// Spec 106, FR-032: on the first live site the logo stood above the card, on the canvas, and
+// read as something that had come loose from the email.
+it('draws the header as a band of the card that holds the message', function () {
+    $html = acmeEmail();
+    $accent = EmailPalette::light()->accent;
+    $header = emailHeader($html);
+
+    expect($header['cells'])->toHaveCount(2)
+        // The band carries the card's edge and its top corners; the message its bottom ones.
+        ->and($header['cells'][0])->toContain('border-top:4px solid ' . $accent)->toContain('border-radius:10px 10px 0 0')
+        ->and($header['cells'][1])->toContain('border-radius:0 0 10px 10px')
+        ->and($header['cells'][1])->not->toContain('border-top')->not->toContain($accent)
+        // One ground for both, which is what makes them one card.
+        ->and($header['cells'][0])->toContain('background:' . EmailPalette::light()->surface)
+        ->and($header['cells'][1])->toContain('background:' . EmailPalette::light()->surface)
+        ->and($header['words'])->toBe('Acme & Sons')
+        ->and(strpos($html, 'Thanks, Sam.'))->toBeGreaterThan(strpos($html, 'Acme &amp; Sons'));
+});
+
+// FR-033: a width limit alone let a square logo be drawn 180 pixels tall. The fitted size is
+// written as the image's own attributes, which is all Outlook on Windows reads, and as a
+// width in its style with the height left to follow.
+it('writes a logo of any shape at a size inside 180 by 48, with its proportions kept', function (int $width, int $height, string $drawnWidth, string $drawnHeight) {
+    $logo = emailHeader(acmeEmail(brand: acmeBrand('https://acme.test/logo.png')->withLogoSize($width, $height)))['logo'];
+
+    expect($logo['src'])->toBe('https://acme.test/logo.png')
+        ->and([$logo['width'], $logo['height']])->toBe([$drawnWidth, $drawnHeight])
+        ->and($logo['style'])->toContain('width:' . $drawnWidth . 'px')->toContain('height:auto')
+        // No height in the style: with images not shown it would cut the name off.
+        ->and($logo['style'])->not->toContain('max-height');
+})->with([
+    'square' => [600, 600, '48', '48'],
+    'wide' => [1000, 200, '180', '36'],
+    'very wide' => [1800, 100, '180', '10'],
+    'tall' => [100, 400, '12', '48'],
+    'already small: never enlarged' => [120, 40, '120', '40'],
+    'one pixel wide' => [1, 5000, '1', '48'],
+    'one pixel tall' => [5000, 1, '180', '1'],
+]);
+
+// FR-009: the header carries the site's name where images are not shown. A mark's box is 48
+// pixels wide and holds no name, and Outlook shows no image from a sender it does not know.
+it('writes the name beside a mark as text, so that it is there when images are not shown', function () {
+    $header = emailHeader(acmeEmail(brand: acmeBrand('https://acme.test/mark.png')->withLogoSize(600, 600)));
+
+    expect($header['words'])->toBe('Acme & Sons')
+        // Said once: the image beside the name is not read out as the name again.
+        ->and($header['logo']['alt'])->toBe('');
+});
+
+it('lets a logo that is the name written out stand alone, with the name standing in for it', function () {
+    $header = emailHeader(acmeEmail(brand: acmeBrand('https://acme.test/wordmark.png')->withLogoSize(1000, 200)));
+
+    expect($header['words'])->toBe('')
+        ->and($header['logo']['alt'])->toBe('Acme & Sons');
+});
+
+it('reads a logo at least twice as wide as it is tall as the name, and a squarer one as a mark', function (int $width, int $height, bool $isItsName) {
+    expect(acmeBrand('https://acme.test/logo.png')->withLogoSize($width, $height)->logoIsItsName())->toBe($isItsName);
+})->with([
+    'square' => [600, 600, false],
+    'tall' => [100, 400, false],
+    'a little wider than tall' => [199, 100, false],
+    'twice as wide' => [200, 100, true],
+    'a line of lettering' => [1000, 120, true],
+    'of no known size' => [0, 0, false],
+]);
+
+it('places the mark and the name from the side a right-to-left site reads from', function () {
+    $html = acmeEmail(brand: acmeBrand('https://acme.test/mark.png', 'rtl')->withLogoSize(600, 600));
+
+    expect($html)->toContain('<table role="presentation" dir="rtl" align="right"')
+        // The space between them is on the side the name is on.
+        ->and($html)->toContain('padding-left:12px');
+});
+
+// A size nothing is known about: no attributes, since a height given to an image smaller
+// than it would enlarge it where attributes are read.
+it('limits a logo whose size is not known by its style alone, and gives it no size of its own', function () {
+    $logo = emailHeader(acmeEmail(brand: acmeBrand('https://acme.test/logo.png')))['logo'];
+
+    expect($logo)->not->toHaveKey('width')->not->toHaveKey('height')
+        ->and($logo['style'])->toContain('max-width:180px')->toContain('max-height:48px')
+        ->and($logo['alt'])->toBe('Acme & Sons');
+});
+
+it('takes a size as a width and a height or as none, however the brand was made', function () {
+    $brand = acmeBrand('https://acme.test/logo.png')->withLogoSize(600, 300);
+    $half = new EmailBrand('Acme', 'https://acme.test/', '', 'ltr', 'en', '', EmailPalette::light(), EmailPalette::dark(), 600, 0);
+
+    expect([$brand->withFooter('Acme')->logoWidth, $brand->withFooter('Acme')->logoHeight])->toBe([600, 300])
+        ->and($brand->withPalettes(EmailPalette::light(), EmailPalette::dark())->logoBox())->toBe([96, 48])
+        ->and([$half->logoWidth, $half->logoHeight])->toBe([0, 0])
+        ->and(acmeBrand()->withLogoSize(-5, 40)->logoBox())->toBeNull();
+});
+
 it('does not trust a logo address into an attribute', function () {
     $html = acmeEmail(brand: acmeBrand('https://acme.test/a.png" onerror="steal()'));
 

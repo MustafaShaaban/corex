@@ -313,6 +313,8 @@ no taller than a line of heading, and the message starts where it did.
    the logo is drawn no taller than 48 pixels and no wider than 180, inside the card.
 2. **Given** a site with no logo, **When** a reply is sent, **Then** the header holds the
    site's name, in the same band.
+2a. **Given** a square logo and a mail client that shows no images, **When** it draws the
+   email, **Then** the site's name is still read in the header, whole.
 3. **Given** a mail client that reads no style sheet and ignores `max-height` (Outlook on
    Windows), **When** it draws the email, **Then** the logo is the same bounded size, from
    the image's own width and height.

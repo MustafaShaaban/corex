@@ -11082,3 +11082,59 @@ of it is built first.
 **Not here.** The copy button on the Coming soon preview link, asked for the same day, is the
 Operations screen's: its own task. Whether a form's file is attached to its email again is
 the owner's to say (spec 081, #319).
+
+## #322 — The email's header is a band of its card; a logo is fitted to a box, and a mark has the name beside it
+
+**Date:** 2026-10-12. **Branch:** `feat/106-email-header`. **Spec:** 106, slice 8 (FR-032 to FR-034).
+
+"Add propper header since the logo now is on the air and if i puted large logo it is bad."
+The standard design drew the logo in a row above the card, on the canvas, limited to 180
+pixels of width. Muva's logo is square, and was 180 by 180 over the message.
+
+**One box, two bands.** The header is the card's first row and carries its edge and its top
+corners; the message is the second and carries the bottom ones. On the card's own surface, not
+on the accent: a logo is drawn for a light ground far more often than for a brand colour, and
+the accent is already the edge above it. Each side of each band is written singly, because
+Outlook's engine reads a border taken back less surely than one never given.
+
+**A box of 180 by 48, from the logo's real size.** Where the size is known the logo is written
+at the width that fits, as the image's own `width` and `height` (Outlook on Windows reads
+those and no `max-height`) and as a width in its style, with the height left to follow. The
+size is read where WordPress recorded it: the theme's logo, the site icon, an image of this
+site's library named in the Mail settings, or a cut WordPress made, which says its size in its
+name. `EmailBrand::logoBox()` answers the fitted size, never larger than the image.
+
+**No height in the style, because of what is drawn when images are not.** The first version
+held the logo by `max-height` and by both attributes, and a review that drew it with the
+image missing found the site's name, standing in for the logo, cut off inside a box 48 pixels
+square. Outlook shows no image from a sender it does not know, which is what a first reply
+to a customer is. With a width and no height, the name is drawn across that width in as many
+lines as it needs.
+
+**A mark has the name beside it.** That is still no use at 48 pixels of width. So a logo is
+read by its shape, which is all that is known of it: at least twice as wide as tall is the
+name written out, and stands alone with the name as its `alt`; a squarer one is a mark, and
+the name is written beside it as text, with an empty `alt` so that it is said once. This
+replaces "logo or name, never both", which is what made a blocked image an email from nobody.
+
+**What is not known is not guessed.** A logo at an address outside the site's uploads has no
+known size, whatever its name says (`logo-16x9.png` is a name), and is limited by its style
+alone with no attributes: a height given to an image smaller than it would enlarge it. In
+Outlook on Windows such a logo is drawn at its own size, and the setting's help and the guide
+say to choose one from the library. WordPress answers "1 by 1" for an image it holds no size
+for; that is read as no size. A vector logo is passed over for the next mark or the name:
+Gmail and Outlook on Windows draw nothing for one.
+
+**The generator's stub is the same header**, and a test draws the two and compares the
+documents whole, so the copy cannot drift from what it copies. A design generated earlier
+keeps what it was written with: it is the site's file.
+
+**Checked by drawing it, and where that stops.** A mark, a logo that is a name, an unknown
+one, no logo, a right-to-left site and the same with images missing were drawn in Chromium
+and measured; the suite now sends a reply as a site with a mark and as one with a wordmark
+and measures both at three widths. Nothing here was run in Outlook, Gmail or Apple Mail: what
+is said of them is what is known of how they read markup, and a first reply seen in Outlook
+is the check that is still owed.
+
+**Not here.** The layout the other emails are drawn in (`Template\Layout`) still limits a
+logo by width alone; they come to this design in slice 7.

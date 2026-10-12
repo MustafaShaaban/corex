@@ -115,7 +115,7 @@ final class SettingsRegistry implements FieldSections
                     'mail.brand.logo' => [
                         'label' => __('Email logo', 'corex'),
                         'type'  => 'media',
-                        'help'  => __('Shown at the top of an email, up to 180 pixels wide. Leave blank for the site\'s logo.', 'corex'),
+                        'help'  => __('Shown at the top of an email, fitted inside 180 by 48 pixels. Choose a PNG or JPEG: a mail client does not draw an SVG. Leave blank for the site\'s logo.', 'corex'),
                     ],
                     'mail.brand.footer' => [
                         'label' => __('Email footer line', 'corex'),

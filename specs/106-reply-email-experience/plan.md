@@ -261,7 +261,13 @@ The header carries the site's mark, not CoreX's (spec, Assumptions): the owner c
 ### D11. The header is a band of the card, and the logo has a box (slice 8)
 
 The card becomes two rows of one bordered table: a header band, then the message. The band
-holds the logo, or the site's name where there is none; never both, since a logo is the name.
+holds the site's name, its logo, or its mark with the name beside it.
+
+As built, "never both" did not survive a review that drew the header with its image missing:
+a mark's box is 48 pixels wide and holds no name, and Outlook shows no image from a sender it
+does not know. A logo at least twice as wide as tall is read as the name and stands alone; a
+squarer one is a mark and has the name beside it as text. And a logo of known size has a width
+and no height in its style, so that the name standing in for it is not cut off.
 
 The logo's box is 180 by 48 pixels. Two things draw it, because two kinds of mail client read
 two things. `max-width` and `max-height` with `width:auto;height:auto` for clients that read
