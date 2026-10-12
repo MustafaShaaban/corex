@@ -580,6 +580,9 @@ function measureCopyField( page ) {
 		const cardBox = box( card );
 
 		return {
+			card: cardBox,
+			words: box( button.querySelector( 'span' ) ),
+			iconGap: parseFloat( window.getComputedStyle( button ).columnGap ),
 			// The card's content box: what is inside its border and its padding.
 			inside: {
 				left:
@@ -646,6 +649,9 @@ test( 'the page that shows a new link copies it at a press, and holds in both di
 		await page.emulateMedia( { colorScheme: cell.scheme } );
 		await pinAppearance( page, cell.scheme, cell.direction );
 		await page.evaluate( () => window.navigator.clipboard.writeText( '' ) );
+		// The answer of the cell before has been taken back.
+		await expect( status, where ).toHaveText( '', { timeout: 10_000 } );
+		const before = await measureCopyField( page );
 
 		await button.click();
 		await expect( status, where ).toHaveText( 'Copied.' );
@@ -670,6 +676,14 @@ test( 'the page that shows a new link copies it at a press, and holds in both di
 		const insideStart = rtl ? drawn.inside.right : drawn.inside.left;
 		const insideEnd = rtl ? drawn.inside.left : drawn.inside.right;
 
+		// The answer takes no room of its own: nothing moved when it came.
+		expect( drawn.card, `the card stays where it was: ${ where }` ).toEqual(
+			before.card
+		);
+		expect(
+			drawn.input,
+			`the field stays where it was: ${ where }`
+		).toEqual( before.input );
 		expect( drawn.pageFits, `no sideways scroll: ${ where }` ).toBe( true );
 		expect( drawn.buttonWordsCut, `the button is whole: ${ where }` ).toBe(
 			false
@@ -683,7 +697,8 @@ test( 'the page that shows a new link copies it at a press, and holds in both di
 			drawn.button.width,
 			`target width: ${ where }`
 		).toBeGreaterThanOrEqual( 24 );
-		// The label and the field begin on the card's start edge, and the answer under them.
+		// The label and the field begin on the card's start edge. The answer is on the label's
+		// line and ends on the card's end edge, which is over the button.
 		expect( start( drawn.label ), `label start: ${ where }` ).toBeCloseTo(
 			insideStart,
 			0
@@ -692,9 +707,27 @@ test( 'the page that shows a new link copies it at a press, and holds in both di
 			insideStart,
 			0
 		);
-		expect( start( drawn.status ), `answer start: ${ where }` ).toBeCloseTo(
-			insideStart,
+		expect( end( drawn.status ), `answer end: ${ where }` ).toBeCloseTo(
+			insideEnd,
 			0
+		);
+		expect( drawn.status.bottom, `answer line: ${ where }` ).toBeCloseTo(
+			drawn.label.bottom,
+			0
+		);
+		// The icon comes before the words, with the button's gap between.
+		const icon = await page
+			.locator( '.corex-standalone__copy-icon--done' )
+			.boundingBox();
+		expect(
+			rtl
+				? icon.x - ( drawn.words.left + drawn.words.width )
+				: drawn.words.left - ( icon.x + icon.width ),
+			`icon gap: ${ where }`
+		).toBeCloseTo( drawn.iconGap, 0 );
+		expect( icon.width, `icon size: ${ where }` ).toBeCloseTo( 16, 0 );
+		expect( drawn.iconGap, `icon gap: ${ where }` ).toBeGreaterThanOrEqual(
+			8
 		);
 		expect( end( drawn.button ), `button end: ${ where }` ).toBeCloseTo(
 			insideEnd,
@@ -725,10 +758,14 @@ test( 'the page that shows a new link copies it at a press, and holds in both di
 				drawn.button.top - drawn.input.bottom,
 				`gap under the field: ${ where }`
 			).toBeCloseTo( drawn.rowGap, 0 );
-			expect( drawn.button.width, `button width: ${ where }` ).toBeCloseTo(
-				drawn.input.width,
-				0
-			);
+			expect(
+				drawn.button.width,
+				`button width: ${ where }`
+			).toBeCloseTo( drawn.input.width, 0 );
+			expect(
+				drawn.button.height,
+				`button height: ${ where }`
+			).toBeCloseTo( drawn.input.height, 0 );
 			expect(
 				start( drawn.button ),
 				`button start: ${ where }`

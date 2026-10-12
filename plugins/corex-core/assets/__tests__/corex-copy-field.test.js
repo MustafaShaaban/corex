@@ -9,10 +9,10 @@ const LINK = 'http://example.test/?corex_preview=abc';
 const FIELD =
 	'<div class="corex-standalone__copy" data-corex-copy' +
 	' data-copied="Copied." data-manual="Select and copy by hand.">' +
-	'<label for="link">Preview link</label>' +
+	'<div><label for="link">Preview link</label>' +
+	'<p role="status" aria-live="polite" data-corex-copy-status></p></div>' +
 	`<input id="link" type="text" readonly value="${ LINK }" data-corex-copy-value />` +
 	'<button type="button" data-corex-copy-button hidden><span>Copy link</span></button>' +
-	'<p role="status" aria-live="polite" data-corex-copy-status></p>' +
 	'</div>';
 
 const run = () =>

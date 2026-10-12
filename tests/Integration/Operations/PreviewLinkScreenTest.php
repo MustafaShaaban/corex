@@ -132,11 +132,8 @@ it('shows the link in a labelled field with a button that copies it (FR-011a)', 
 
     expect($page)->toContain('for="corex-preview-link">Preview link</label>')
         ->and($page)->toMatch('/<input[^>]* id="corex-preview-link"[^>]* readonly/')
-        // Written hidden: the script shows it, so with scripts off there is no button that does nothing.
-        ->and($page)->toMatch('/<button type="button"[^>]* data-corex-copy-button[^>]* hidden>/')
         ->and($page)->toContain('<span>Copy link</span>')
-        ->and($page)->toContain('role="status" aria-live="polite"')
-        // The script that shows the button and copies is in the page, which asks for no file.
+        // What the field is made of is the unit test's (StandalonePageTest). The script that shows the button and copies is in the page, which asks for no file.
         ->and($page)->toContain("querySelectorAll( '[data-corex-copy]' )")
         ->and($page)->not->toMatch('/<script[^>]* src=/')
         // Still once, and in one place: the field. Not in the script, not in an attribute beside it.

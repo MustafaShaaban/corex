@@ -121,6 +121,8 @@
  *
  * Start-aligned in the centred card, like the quoted detail above: the
  * label, the field and what the button answered read as one form row.
+ * The answer is on the label's line, at its other end, over the button:
+ * it takes no room of its own, so the card does not move when it comes.
  * The field shrinks before the button does, so the button's words are
  * never cut; on a narrow screen the button goes under the field at the
  * field's width.
@@ -132,10 +134,25 @@
 	text-align: start;
 }
 
+/* A long answer, which only a refusal to copy gives, goes under the label. */
+.corex-standalone__copy-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	column-gap: var(--corex-admin-space-sm);
+}
+
 .corex-standalone__copy-label {
 	color: var(--corex-admin-text);
 	font-size: var(--corex-admin-font-sm);
 	font-weight: 600;
+}
+
+.corex-standalone__copy-status {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
 }
 
 .corex-standalone__copy-row {
@@ -156,10 +173,15 @@
 	border-radius: var(--corex-admin-radius-sm);
 	font-family: var(--corex-admin-font-mono);
 	font-size: var(--corex-admin-font-sm);
+
+	/* The button's line: one height stacked, as the two are in a row. */
+	line-height: calc(var(--corex-admin-font-md) * var(--corex-admin-line-normal));
 }
 
-.corex-standalone .corex-standalone__copy-button {
+/* Named as a button too: the button rule below sets a gap, and comes later. */
+.corex-standalone .button.corex-standalone__copy-button {
 	flex-shrink: 0;
+	gap: var(--corex-admin-space-xs);
 	white-space: nowrap;
 }
 
@@ -176,14 +198,6 @@
 
 .corex-standalone__copy.is-copied .corex-standalone__copy-icon--done {
 	display: block;
-}
-
-/* One line is kept for the answer, so the card does not move when it comes. */
-.corex-standalone__copy-status {
-	min-block-size: calc(var(--corex-admin-font-sm) * var(--corex-admin-line-normal));
-	margin: 0;
-	color: var(--corex-admin-text-muted);
-	font-size: var(--corex-admin-font-sm);
 }
 
 .corex-standalone__status {
@@ -245,7 +259,7 @@
 	border-color: var(--corex-admin-action);
 }
 
-/* The attribute loses to any rule that sets display, and the rule above does. */
+/* The attribute loses to any rule that sets display: the one above does. */
 .corex-standalone .button[hidden] {
 	display: none;
 }

@@ -23,9 +23,11 @@
 		input.focus();
 		input.select();
 
+		// Where copying is not allowed, one browser answers false and another throws. Either
+		// way nothing was copied, and the caller says so with the field still selected.
 		try {
 			return document.execCommand( 'copy' );
-		} catch ( error ) {
+		} catch {
 			return false;
 		}
 	}
@@ -39,7 +41,7 @@
 	function copy( input ) {
 		const clipboard = window.navigator.clipboard;
 
-		if ( clipboard && typeof clipboard.writeText === 'function' ) {
+		if ( clipboard ) {
 			return clipboard.writeText( input.value ).then(
 				() => true,
 				() => copySelection( input )
@@ -50,22 +52,21 @@
 	}
 
 	document.querySelectorAll( '[data-corex-copy]' ).forEach( ( field ) => {
-		const input = field.querySelector( '[data-corex-copy-value]' );
-		const button = field.querySelector( '[data-corex-copy-button]' );
-		const status = field.querySelector( '[data-corex-copy-status]' );
-
 		// The script is written beside each field, so a page with two fields runs it twice.
-		if ( ! input || ! button || ! status || field.dataset.corexCopy ) {
+		if ( field.dataset.corexCopy ) {
 			return;
 		}
 		field.dataset.corexCopy = 'bound';
 
-		let saying = 0;
+		const input = field.querySelector( '[data-corex-copy-value]' );
+		const button = field.querySelector( '[data-corex-copy-button]' );
+		const status = field.querySelector( '[data-corex-copy-status]' );
+		let takenBack = 0;
 
 		input.addEventListener( 'focus', () => input.select() );
 
 		button.addEventListener( 'click', () => {
-			window.clearTimeout( saying );
+			window.clearTimeout( takenBack );
 
 			copy( input ).then( ( copied ) => {
 				field.classList.toggle( 'is-copied', copied );
@@ -74,7 +75,7 @@
 					: field.dataset.manual;
 
 				if ( copied ) {
-					saying = window.setTimeout( () => {
+					takenBack = window.setTimeout( () => {
 						field.classList.remove( 'is-copied' );
 						status.textContent = '';
 					}, SAID_FOR );

@@ -117,6 +117,9 @@ final class StandalonePage
      * Content-Security-Policy adds its nonce with the `wp_inline_script_attributes` filter. What
      * the script says is written here, so it is translated like the rest of the page.
      *
+     * What the button answered is written on the label's line, at its other end: over the button,
+     * and where it takes no room of its own, so the card does not move when the answer comes.
+     *
      * The field reads left to right whatever the page's direction: it is for an address or a code.
      *
      * @param string $id     the field's id, unique on the page
@@ -129,14 +132,16 @@ final class StandalonePage
         return '<div class="corex-standalone__copy" data-corex-copy'
             . ' data-copied="' . esc_attr__('Copied.', 'corex') . '"'
             . ' data-manual="' . esc_attr__('It could not be copied for you. It is selected: copy it from the keyboard.', 'corex') . '">'
+            . '<div class="corex-standalone__copy-head">'
             . '<label class="corex-standalone__copy-label" for="' . esc_attr($id) . '">' . esc_html($label) . '</label>'
+            . '<p class="corex-standalone__copy-status" role="status" aria-live="polite" data-corex-copy-status></p>'
+            . '</div>'
             . '<div class="corex-standalone__copy-row">'
             . '<input class="corex-standalone__copy-value" id="' . esc_attr($id) . '" type="text" readonly dir="ltr"'
             . ' spellcheck="false" autocomplete="off" value="' . esc_attr($value) . '" data-corex-copy-value />'
             . '<button type="button" class="button corex-standalone__copy-button" data-corex-copy-button hidden>'
             . self::copyIcons() . '<span>' . esc_html($action) . '</span></button>'
             . '</div>'
-            . '<p class="corex-standalone__copy-status" role="status" aria-live="polite" data-corex-copy-status></p>'
             . '</div>'
             . wp_get_inline_script_tag($this->read('js/corex-copy-field.js'));
     }

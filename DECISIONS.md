@@ -11351,3 +11351,63 @@ site. It puts a header it does not know on the mailer before that hook (`helpers
 which is how CoreX's mark reaches the listener there. Whether Gmail keeps a `Message-ID` it is handed or writes its own is not known. If it
 writes its own, a reply names an id the person's mail program never saw, and stands alone.
 One real reply on MUVA after the release, and its raw headers, will say.
+
+## #326 — The page that shows a preview link has a button that copies it
+
+**Date:** 2026-10-13. **Branch:** `feat/101-preview-link-copy`. **Spec:** 101, FR-011a (added by this change).
+
+The owner made a preview link on a client site and had to select the address by hand, out of
+a paragraph, on the one page that will ever show it (the link is stored nowhere, FR-013). His
+words, relayed by that client's session on 2026-10-12: "the temporarly link to view the
+website if it in coming soon and so on needs to havea copy icon to copy the link directly and
+easly".
+
+**What the page has now.** The link is in a read-only field with a label, "Preview link", and
+a button beside it with an icon and the words "Copy link". Pressing it puts the whole link on
+the clipboard and writes "Copied." into a polite live region on the label's line, over the
+button; the icon becomes a tick. After four seconds both go back, so a second press is said
+again. The field selects itself when it is focused.
+
+**The button is written hidden, and a script shows it.** With scripts off there is no button
+that does nothing: the link is in a field, and is selected and copied by hand. A browser test
+does exactly that with scripts off and reads the clipboard.
+
+**Where the Clipboard API is missing, the button still copies.** The session that relayed the
+ask proposed showing the button only where `navigator.clipboard` exists. A browser gives that
+to a page served over HTTPS or from the local machine and to no other, and the development
+sites are served over plain HTTP under a host name: there the button would not have been
+there at all, on the sites where the owner looks first. So the button is shown wherever the
+script runs. It asks the Clipboard API; where there is none, or it refuses, it selects the
+field and copies the selection the older way (`document.execCommand('copy')`); where that
+fails too it leaves the link selected and says to copy it from the keyboard, and that sentence
+stays until the next press. This is this session's reading, not the owner's words.
+
+**It belongs to `StandalonePage`.** The page is drawn by `Corex\Admin\StandalonePage`, whose
+stylesheet is in `corex-core` and is inlined. The field's markup, rules and script are one
+contract, so they are together: `StandalonePage::copyField()`, `corex-admin-standalone.css`,
+`assets/js/corex-copy-field.js`. `PreviewLinkController` passes the link and two labels. What
+the script says is written into the markup by PHP, so it is translated as the page is.
+
+**The script is inline, through WordPress's function.** The page is the answer to a POST and
+is built whole, outside the enqueue lifecycle; it already carries its stylesheet in a `style`
+element so that it asks the server for nothing. The script goes the same way, through
+`wp_get_inline_script_tag()`: CoreX sends no Content-Security-Policy, and a site that sends
+one with a nonce adds it with WordPress's `wp_inline_script_attributes` filter, which a test
+does. Where a policy forbids inline scripts and gives no nonce, the script does not run and
+the page is the scripts-off page. *Rejected:* a script file requested from the plugin's
+folder, which would make this the one standalone page that needs a second request to work.
+
+**Not changed.** The link is still shown once and is in the page once, in the field: not in
+the script, not in a second attribute, not in an address, not in storage. The card on
+Operations & Security has no copy button because it has no link.
+
+**Measured, not assumed.** In a browser, in both directions, both schemes and at 375 and
+1280 pixels: the clipboard holds the link the field holds; the card and the field do not move
+when the answer comes; the field and the button are one height, in a row and stacked; the
+button's words are whole; text is at 4.5 to 1 or better; the button shows a focus ring from
+the keyboard. Each of those was broken on purpose once and seen to fail. The answer was first
+written on a line of its own under the field, with the line kept empty so the card would not
+move: it left 56 pixels under the field against 16 above its label, and was moved.
+
+**Left.** No other CoreX page shows a value to be copied in this way. `copyField()` is on the
+class those pages would use; nothing else calls it today.
