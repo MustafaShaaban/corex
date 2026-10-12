@@ -133,3 +133,41 @@ it('rejects mutation without a valid REST nonce before changing state', function
     expect($response->get_status())->toBe(403)
         ->and(get_post_meta($submissionId, 'corex_submission_status', true))->toBe('new');
 });
+
+// WordPress finds the ids of a page of posts and then reads each one. A submission deleted
+// between the two, by a colleague or by retention, comes back as nothing where a post was:
+// the list answered with an error for everybody who was loading it at that moment. Met in the
+// browser suite, where one test deletes submissions for good while another opens the inbox.
+it('lists the inbox when a submission is deleted while the list is being read', function () {
+    $this->submissionIds[] = wp_insert_post([
+        'post_type' => 'corex_submission',
+        'post_status' => 'private',
+        'post_title' => 'Still here',
+        'meta_input' => [
+            'corex_form_slug' => 'contact',
+            'corex_submission_status' => 'new',
+            'corex_owner_type' => 'none',
+            'corex_submitter_name' => 'Sam',
+            'corex_submitter_email' => $this->submitterEmail,
+        ],
+    ]);
+    // What WordPress hands back for the one that went: nothing, among the posts. Put there
+    // by a filter, which is later than where WordPress itself would have, so WordPress's own
+    // complaint about being handed it is not this test's to hear.
+    $oneWentMissing = static fn (array $posts): array => [null, ...$posts];
+    add_filter('the_posts', $oneWentMissing);
+    add_filter('doing_it_wrong_trigger_error', '__return_false');
+
+    try {
+        $listed = $this->submissionsController->index(submissionsRequest('GET', '/corex/v1/submissions', ['search' => $this->submitterEmail]));
+    } finally {
+        remove_filter('the_posts', $oneWentMissing);
+        remove_filter('doing_it_wrong_trigger_error', '__return_false');
+    }
+    $page = $listed->get_data();
+
+    expect($listed->get_status())->toBe(200)
+        ->and($page['ok'])->toBeTrue()
+        ->and(array_column($page['data']['items'], 'submitter_email'))->toBe([$this->submitterEmail]);
+});
+

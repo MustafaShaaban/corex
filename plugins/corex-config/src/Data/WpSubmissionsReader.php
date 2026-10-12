@@ -135,11 +135,26 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         $found = new WP_Query($this->args($query, false));
 
         $rows = [];
-        foreach ($found->posts as $post) {
+        foreach (self::thePostsOf($found) as $post) {
             $rows[] = $this->shape($post);
         }
 
         return $rows;
+    }
+
+    /**
+     * The posts a query found that are still there.
+     *
+     * WordPress finds the ids of a page and then reads each post. One deleted between the two,
+     * by a colleague or by retention, is handed back as nothing where a post was. The list
+     * then answered with an error for everybody loading it at that moment: it is a page with
+     * one row fewer.
+     *
+     * @return list<\WP_Post>
+     */
+    private static function thePostsOf(WP_Query $found): array
+    {
+        return array_values(array_filter($found->posts, static fn (mixed $post): bool => $post instanceof \WP_Post));
     }
 
     public function count(DataQuery $query): int
@@ -237,7 +252,7 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         return [
             'items' => array_map(
                 fn (\WP_Post $post): array => $this->shapeInbox($post, $scope->canViewRestrictedNotes),
-                $found->posts,
+                self::thePostsOf($found),
             ),
             'total' => (int) $found->found_posts,
         ];

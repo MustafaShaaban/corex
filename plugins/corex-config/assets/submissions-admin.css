@@ -799,6 +799,11 @@
 	padding-inline-start: var(--corex-admin-space-lg);
 }
 
+/* "Send again", under a reply that did not go: apart from its words. */
+.corex-admin .corex-pane__reply .corex-pane__actions {
+	padding-block-start: var(--corex-admin-space-xs);
+}
+
 .corex-admin .corex-pane__reply-body ul {
 	list-style: disc;
 }

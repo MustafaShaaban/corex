@@ -24,6 +24,10 @@ defined('ABSPATH') || exit;
  *
  *   - `capture`: a development site. An email is kept in Email Studio and reaches nobody.
  *   - `refuse`: a production site with a provider chosen and live delivery off.
+ *   - `fail`: a production site that delivers, whose mail server takes nothing. WordPress is
+ *     answered for before it reaches its mailer (`pre_wp_mail`), so nothing is sent: the
+ *     email is tried and fails, which is the only way a browser can meet a reply that did
+ *     not go.
  *
  * A request that also carries `X-Corex-E2E-Mail-Logo` is answered as a site with a logo, which
  * the suite's own site has not: `mark` for a square one and `name` for one that is the name
@@ -43,7 +47,18 @@ add_action('plugins_loaded', static function (): void {
     $settings = [
         'capture' => ['corex_app_env' => 'development'],
         'refuse' => ['corex_app_env' => 'production', 'corex_mail_provider' => 'wp-mail', 'corex_mail_live_delivery' => '0'],
+        'fail' => ['corex_app_env' => 'production', 'corex_mail_provider' => 'wp-mail', 'corex_mail_live_delivery' => '1'],
     ][$mode] ?? [];
+    if ($mode === 'fail') {
+        // Only for the person the settings above are answered for: for anybody else they are
+        // the site's own, and so is its mail. Asked when an email is sent, by which time
+        // WordPress knows who is signed in.
+        add_filter(
+            'pre_wp_mail',
+            static fn (mixed $answered): mixed => current_user_can('manage_options') ? false : $answered,
+            PHP_INT_MAX,
+        );
+    }
 
     foreach ($settings as $option => $value) {
         add_filter(
