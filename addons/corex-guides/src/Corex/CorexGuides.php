@@ -97,6 +97,10 @@ final class CorexGuides
                         __('The buttons above the message make text bold or italic, start a bulleted or a numbered list, and add a link. Each has a keyboard shortcut, shown when you point at it. Colours, fonts and pictures come from the email design of the site, so they are not offered here.', 'corex'),
                     ),
                     new GuideStep(
+                        __('Leave it and come back, if you need to.', 'corex'),
+                        __('What you have written is kept as your draft for that message, and is there when you open it again, on any computer. Nobody else sees it. Discard draft empties the box and removes it.', 'corex'),
+                    ),
+                    new GuideStep(
                         __('Choose Preview.', 'corex'),
                         __('You see the email as it will be sent, at the width of a wide screen or of a phone, with its plain-text version below.', 'corex'),
                     ),

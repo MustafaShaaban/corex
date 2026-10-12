@@ -183,6 +183,31 @@ export function useInbox( config, filters ) {
 
 			return result ? result.preview : null;
 		},
+		// A draft is written down quietly: a save that failed is said beside the box it is
+		// about, not as a failure of the inbox, and neither reads the inbox again. Answers
+		// whether it was kept and what the server now holds: null where it holds nothing.
+		keepReplyDraft: async ( id, data ) => {
+			const result = await window.Corex.api.post(
+				`${ config.restUrl }/${ id }/reply/draft`,
+				data,
+				{ nonce: config.nonce }
+			);
+
+			return {
+				ok: Boolean( result.envelope.ok ),
+				draft: result.envelope.ok
+					? result.envelope.data?.draft || null
+					: null,
+			};
+		},
+		discardReplyDraft: async ( id ) => {
+			const result = await window.Corex.api.delete(
+				`${ config.restUrl }/${ id }/reply/draft`,
+				{ nonce: config.nonce }
+			);
+
+			return result.envelope.ok;
+		},
 		resend: async ( id, attemptId ) => {
 			const result = await mutate( `/${ id }/resend`, {
 				attempt_id: attemptId,

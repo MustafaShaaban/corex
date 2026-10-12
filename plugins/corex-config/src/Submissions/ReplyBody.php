@@ -60,6 +60,15 @@ final class ReplyBody
     private const MOST_BYTES = 200_000;
 
     /**
+     * Whether what was posted is beyond what is read as a reply. Such a message is reduced to
+     * nothing, which a route that keeps what it is given must not take for an emptied box.
+     */
+    public static function isTooLong(mixed $posted): bool
+    {
+        return is_string($posted) && strlen($posted) > self::MOST_BYTES;
+    }
+
+    /**
      * @param mixed $posted Whatever the route was sent as the message.
      *
      * @return string The reduced markup, or '' when no words are left in it.

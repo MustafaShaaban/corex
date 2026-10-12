@@ -785,6 +785,13 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Submissions\WpSubmissionReplyStore =>
                 $c->make(\Corex\Config\Submissions\WpSubmissionReplyStore::class),
         );
+        $this->container->singleton(\Corex\Config\Submissions\WpSubmissionReplyDraftStore::class);
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionReplyDraftStore::class,
+            static fn (ContainerInterface $c): \Corex\Config\Submissions\WpSubmissionReplyDraftStore =>
+                $c->make(\Corex\Config\Submissions\WpSubmissionReplyDraftStore::class),
+        );
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionReplyDrafts::class);
         $this->container->singleton(\Corex\Config\Submissions\SubmissionReplyView::class);
         $this->container->singleton(SubmissionWorkflowService::class);
         $this->container->singleton(
@@ -1113,6 +1120,11 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(JobRunner::class)->register();
         add_action('rest_api_init', function (): void {
             $this->container->make(SubmissionsController::class)->register();
+        });
+        // A reply somebody began and did not send is kept with the submission, under their
+        // name: when they are removed from the site there is nobody left to send it.
+        add_action('deleted_user', function (int $userId): void {
+            $this->container->make(\Corex\Config\Submissions\SubmissionReplyDraftStore::class)->discardAllOf($userId);
         });
         add_action('rest_api_init', function (): void {
             $this->container->make(AccessController::class)->register();

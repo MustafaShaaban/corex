@@ -17,8 +17,7 @@ import Section from './Section.js';
 import { contactOf } from './detailState.js';
 import { cleanReplyHtml, hasWords } from '../../admin/components/replyHtml.js';
 import { canSendReply, readinessNotice, replyStateOf } from './replyState.js';
-
-const NOTHING_WRITTEN = { subject: '', body: '' };
+import { NOTHING_WRITTEN, draftOf, useReplyDraft } from './useReplyDraft.js';
 
 /**
  * @param {Object} props
@@ -30,7 +29,15 @@ const NOTHING_WRITTEN = { subject: '', body: '' };
  */
 export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 	const fieldId = useId();
-	const [ reply, setReply ] = useState( NOTHING_WRITTEN );
+	// What they began on another visit and did not send is where they left it (FR-006).
+	const [ reply, setReply ] = useState( () => draftOf( record.reply_draft ) );
+	const draft = useReplyDraft( {
+		id: record.id,
+		stored: record.reply_draft,
+		reply,
+		inbox,
+		held: work.pending === 'reply',
+	} );
 	const [ outcome, setOutcome ] = useState( null );
 	const [ preview, setPreview ] = useState( null );
 	const contact = contactOf( record );
@@ -38,6 +45,11 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 	const notice = readinessNotice( delivery, mailSettingsUrl );
 	const noticeId = `${ fieldId }-delivery`;
 	const subject = useRef( null );
+	const discardButton = useRef( null );
+	const draftId = `${ fieldId }-draft`;
+	// What was done with the draft that nothing on the page now shows: it was discarded.
+	const [ draftSaid, setDraftSaid ] = useState( '' );
+	const [ focusOwed, setFocusOwed ] = useState( '' );
 	const previewButton = useRef( null );
 	const previewing = useRef( false );
 
@@ -63,8 +75,10 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 			}
 		} );
 
-	const send = () =>
-		work.during( 'reply', async () => {
+	const send = () => {
+		draft.hold();
+
+		return work.during( 'reply', async () => {
 			setOutcome( null );
 			const said = await inbox.reply( record.id, reply, contact.email );
 			// Refused before it was tried: the pane's own failure line says why.
@@ -73,11 +87,54 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 			}
 			setOutcome( said );
 			if ( ! said.keep ) {
+				draft.forget();
 				setReply( NOTHING_WRITTEN );
 				// The button that was pressed is off again; focus must not be left on it.
 				subject.current?.focus();
 			}
 		} );
+	};
+
+	const discard = async () => {
+		const discarded = await work.during( 'draft', async () => {
+			const done = await draft.discard();
+			if ( done ) {
+				setReply( NOTHING_WRITTEN );
+				setOutcome( null );
+				setDraftSaid( __( 'Draft discarded.', 'corex' ) );
+			}
+
+			return done;
+		} );
+		// The button was off while its request was out, and a button that is off holds no
+		// focus. It is gone with the draft, or it is there again to be pressed again: which
+		// is so only once the pane has drawn itself with no request out.
+		setFocusOwed( discarded ? 'subject' : 'discard' );
+	};
+
+	useEffect( () => {
+		if ( focusOwed && work.pending === '' ) {
+			( focusOwed === 'subject'
+				? subject
+				: discardButton
+			).current?.focus();
+			setFocusOwed( '' );
+		}
+	}, [ focusOwed, work.pending ] );
+
+	// Said once: when something is written again it is about a draft that is gone.
+	useEffect( () => {
+		if ( draft.state !== 'none' ) {
+			setDraftSaid( '' );
+		}
+	}, [ draft.state ] );
+
+	// What the fields are described by: what will happen to a reply, and that what is in
+	// them was written on an earlier visit. Said on the fields, since both come before them.
+	const described =
+		[ notice ? noticeId : '', draft.state === 'restored' ? draftId : '' ]
+			.filter( Boolean )
+			.join( ' ' ) || undefined;
 
 	return (
 		<Section title={ __( 'Reply', 'corex' ) }>
@@ -103,7 +160,7 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 							id={ `${ fieldId }-subject` }
 							ref={ subject }
 							type="text"
-							aria-describedby={ notice ? noticeId : undefined }
+							aria-describedby={ described }
 							value={ reply.subject }
 							onChange={ ( event ) =>
 								setReply( {
@@ -126,7 +183,7 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 								} ) )
 							}
 							labelledBy={ `${ fieldId }-body-label` }
-							describedBy={ notice ? noticeId : undefined }
+							describedBy={ described }
 							// What is typed while a reply is on its way would be emptied
 							// with it when it has gone.
 							disabled={ work.pending === 'reply' }
@@ -155,6 +212,15 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 							{ __( 'Send reply', 'corex' ) }
 						</Button>
 					</div>
+					{ draft.state !== 'none' && (
+						<DraftLine
+							id={ draftId }
+							state={ draft.state }
+							work={ work }
+							button={ discardButton }
+							onDiscard={ discard }
+						/>
+					) }
 					{ preview && (
 						<ReplyPreview
 							email={ preview }
@@ -166,17 +232,72 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 					{ /* Always there, so that what it comes to hold is announced: a region
 					     that arrives already holding its words is often not read out. */ }
 					<p className="screen-reader-text" role="status">
-						{ outcome && outcome.tone !== 'failure'
-							? [ outcome.text, outcome.detail ]
-									.filter( Boolean )
-									.join( ' ' )
-							: '' }
+						{ [
+							...( outcome && outcome.tone !== 'failure'
+								? [ outcome.text, outcome.detail ]
+								: [] ),
+							DRAFT_ANNOUNCED[ draft.state ] ||
+								( draft.state === 'none' ? draftSaid : '' ),
+						]
+							.filter( Boolean )
+							.join( ' ' ) }
 					</p>
 					{ outcome && <Outcome outcome={ outcome } /> }
 				</>
 			) }
 			<RelatedEmails record={ record } inbox={ inbox } work={ work } />
 		</Section>
+	);
+}
+
+const DRAFT_SAYS = {
+	restored: __(
+		'This is the reply you began earlier and did not send.',
+		'corex'
+	),
+	saved: __( 'Draft saved.', 'corex' ),
+	unsaved: __(
+		'The draft could not be saved. What you have written is still here.',
+		'corex'
+	),
+	undiscarded: __( 'The draft could not be discarded.', 'corex' ),
+};
+
+/** What became of the draft that has to be heard as well as seen: only what went wrong. */
+const DRAFT_ANNOUNCED = {
+	unsaved: DRAFT_SAYS.unsaved,
+	undiscarded: DRAFT_SAYS.undiscarded,
+};
+
+/**
+ * What became of the reply being written, as a draft, and the way to be rid of it.
+ *
+ * Said in the page and not announced: a draft is saved every time writing pauses, and a
+ * screen reader that said so each time would talk over the writing. What went wrong is
+ * announced, from the section's own status region, which is there before it has words.
+ *
+ * @param {Object}   props
+ * @param {string}   props.id        The id the fields are described by while the draft is one that was restored.
+ * @param {string}   props.state     `restored`, `saved`, `unsaved` or `undiscarded`.
+ * @param {Object}   props.work      The pane's `{ pending }`: which control's request is out.
+ * @param {Object}   props.button    A ref for the discard button.
+ * @param {Function} props.onDiscard Called to discard the draft and empty the box.
+ * @return {import('react').ReactElement} The line.
+ */
+function DraftLine( { id, state, work, button, onDiscard } ) {
+	return (
+		<p className="corex-pane__muted corex-pane__reply-draft">
+			<span id={ id }>{ DRAFT_SAYS[ state ] }</span>
+			<Button
+				ref={ button }
+				variant="link"
+				disabled={ work.pending !== '' }
+				onClick={ onDiscard }
+				{ ...workingProps( work.pending === 'draft' ) }
+			>
+				{ __( 'Discard draft', 'corex' ) }
+			</Button>
+		</p>
 	);
 }
 

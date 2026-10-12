@@ -22,17 +22,21 @@ final readonly class SubmissionReplyView
         private SubmissionReplyStore $replies,
         private SubmissionEmailGateway $email,
         private SubmissionOwnerNames $people,
+        private ?SubmissionReplyDrafts $drafts = null,
     ) {
     }
 
     /**
-     * @return array{replies:list<array<string,mixed>>,reply_delivery:array{mode:string,code:string,reason:string}}
+     * @param int $actorId The person looking: the reply they began is theirs alone to see.
+     *
+     * @return array{replies:list<array<string,mixed>>,reply_delivery:array{mode:string,code:string,reason:string},reply_draft:array{subject:string,body:string,saved_at:string}|null}
      */
-    public function of(int $submissionId): array
+    public function of(int $submissionId, int $actorId): array
     {
         return [
             'replies' => array_map($this->described(...), $this->replies->forSubmission($submissionId)),
             'reply_delivery' => $this->email->readiness()->toArray(),
+            'reply_draft' => $this->drafts?->of($actorId, $submissionId),
         ];
     }
 

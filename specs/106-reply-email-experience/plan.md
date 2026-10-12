@@ -197,11 +197,17 @@ send for that subject and message, from the same `ReplyComposer` (slice 2). It i
 sandboxed `<iframe srcdoc>` at 640 and 360 pixels. SC-002 is a test: the preview's HTML equals
 the captured message's body, in an integration test and again in the browser.
 
-The draft below is not built with the editor and the preview: it is its own pull request.
+The draft below was built after the editor and the preview, in its own pull request.
 
 A draft (FR-006) is the person's own, for that submission: user meta
 `corex_reply_draft_{submission}`, saved after a pause in typing, removed when the reply is sent
 or discarded. Not `localStorage`: the same person on another machine has their draft.
+
+As built, the draft is post meta on the submission, `corex_reply_draft_{user}`, not user meta:
+it quotes and names the customer, so it has to go where the submission goes (the trash, a
+permanent delete, an anonymization), and kept with the person it would have outlived all
+three. The routes are `POST` and `DELETE …/reply/draft`; the draft is read with the
+submission's detail, as `reply_draft`, and not by a request of its own.
 
 ### D8. The standard template, and the values it is drawn from (slice 2)
 
@@ -276,7 +282,7 @@ a person who may change settings.
 site that implements this seam itself has one method to add. The framework's two
 implementations are the only ones in this repository.
 
-Later slices add: `POST …/reply/preview` and `GET|PUT|DELETE …/reply/draft` (3); the filters
+Later slices add: `POST …/reply/preview` and `POST|DELETE …/reply/draft` (3); the filters
 `corex_email_brand` and `corex_email_design` (4); `POST …/replies/{reply}/send` (5).
 
 ## Slice 1: a reply says what will happen to it and what did
