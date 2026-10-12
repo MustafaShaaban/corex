@@ -34,6 +34,16 @@ All notable changes to Corex are documented here. The format follows
   vector logo is passed over, since Gmail and Outlook draw nothing for one.
   `wp corex make:email-design` writes the same header (DECISIONS #322).
 
+### Fixed
+
+- **A reply no longer keeps another plugin's mail settings from being applied.** CoreX gives
+  WordPress's mailer a reply's plain-text version through the `phpmailer_init` hook, and took
+  itself off that hook as it ran. WordPress then skips whatever listens at the next priority,
+  where something else listens at an earlier one. On a site whose mail server is set up by a
+  listener at a later priority (a snippet at 20 or 99, say) behind another plugin's at an
+  earlier one, a reply sent since v0.45.0 could leave without those settings. It now does its
+  work once and is taken off when the email has gone (DECISIONS #324).
+
 ### Client impact
 
 - **A reply's email looks different at the top**: the header is inside the card, the logo is

@@ -11177,3 +11177,31 @@ is writing does not start over for that, even if the form was renamed in the mea
 the email being answered: slice 10. And the reply route still passes a subject through
 `sanitize_text_field` (#320), which a form called "Budget <5000" now reaches without anybody
 typing it: the subject is sent as "Re: Budget &lt;5000". That fix has its own task.
+
+## #324 — A listener does not take itself off a hook while the hook is running
+
+**Date:** 2026-10-12. **Branch:** `fix/mailer-hook-skips-later-listeners`. **Found building:** spec 106, slice 10.
+
+Slice 2 (#308, in v0.45.0) hands WordPress's mailer a reply's plain-text version from a
+listener on `phpmailer_init`, and that listener removed itself as it ran, so that an email
+sent from inside the first one's sending would not leave with its words.
+
+**WordPress then skips the next priority.** Measured, not read: with listeners at priorities
+1, 10 and 99, and the one at 10 removing itself, the one at 99 does not run. With nothing
+before 10 it does, which is why every test until now passed: CoreX's listener was the first.
+The first test that put a listener in front of it, for another reason, never reached the one
+behind it.
+
+**What that did on a site.** Where another plugin listens at an earlier priority and the
+mail server is set up by a listener at a later one, a CoreX reply left without the mail
+server's settings: by PHP's own `mail()`, or not at all. A site whose mail plugin replaces
+`wp_mail()` whole, as FluentSMTP does, never runs this code. No report of it; found by a test.
+
+**Once, by a flag.** The listener does its work the first time it runs and nothing after, and
+the driver takes it off when `wp_mail()` has returned, which it already did for a send that
+never reached the hook. A test puts listeners before and after it and reads which ran; another
+sends an email from inside the first one's sending and reads that it left without its words.
+
+**For the rest of the code.** `remove_action()` or `remove_filter()` on the hook being run, by
+the callback being run, is the pattern. Every `remove_action()` and `remove_filter()` in
+`plugins/`, `addons/`, `packages/` and `theme/` was read: this was the only one.
