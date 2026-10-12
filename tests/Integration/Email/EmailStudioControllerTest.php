@@ -295,6 +295,51 @@ it('captures Development test sends and exposes truthful persisted overview coun
         ->and($data)->toHaveKeys(['health', 'variables']);
 });
 
+it('sends a test under the subject that was typed, and lists it as that', function (string $typed, string $sentAs) {
+    $request = new WP_REST_Request('POST', '/corex/v1/email-studio/test');
+    $request->set_body_params(['to' => ['sam@example.com'], 'subject' => $typed, 'body' => '<p>Hello</p>']);
+
+    $attemptId = $this->controller->testSend($request)->get_data()['data']['result']['attempt_id'] ?? '';
+    $data = $this->controller->index(new WP_REST_Request('GET', '/corex/v1/email-studio'))->get_data()['data'];
+    $listed = static fn (array $rows): array => array_column($rows, 'subject', 'attempt_id');
+
+    expect($listed($data['captures'])[$attemptId] ?? null)->toBe($sentAs)
+        ->and($listed($data['attempts'])[$attemptId] ?? null)->toBe($sentAs);
+})->with([
+    'a less-than sign' => ['Price <500 EGP', 'Price <500 EGP'],
+    'an address in angle brackets' => ['Sam <sam@example.com> asked', 'Sam <sam@example.com> asked'],
+    'a percent sign before two hex digits' => ['Save 50%de today', 'Save 50%de today'],
+    'Arabic' => ['السعر أقل من <500> جنيه & "خصم"', 'السعر أقل من <500> جنيه & "خصم"'],
+    'a line break and a header after it' => ["Hello\r\nBcc: someone@example.com", 'Hello Bcc: someone@example.com'],
+]);
+
+it('sends an email again under the subject that was typed', function () {
+    $failed = $this->attempts->record(new \Corex\Email\Delivery\EmailAttempt(
+        id: 0,
+        attemptId: \Corex\Support\Uuid::v4(),
+        requestId: \Corex\Support\Uuid::v4(),
+        parentAttemptId: null,
+        recipient: 'sam@example.com',
+        subject: 'Price <500 EGP',
+        templateSlug: null,
+        state: \Corex\Email\Delivery\EmailAttempt::STATE_FAILED,
+        provider: 'postmark',
+        providerEvent: 'failed',
+        retryable: true,
+        occurredAt: new DateTimeImmutable('now'),
+    ));
+    $request = new WP_REST_Request('POST', '/corex/v1/email-studio/attempts/' . $failed->attemptId . '/resend');
+    $request->set_url_params(['attempt' => $failed->attemptId]);
+    $request->set_body_params(['to' => ['sam@example.com'], 'subject' => $failed->subject, 'body' => '<p>Hello</p>']);
+
+    $again = $this->controller->resend($request)->get_data();
+    $resent = $this->attempts->findByAttemptId((string) ($again['data']['result']['attempt_id'] ?? ''));
+
+    expect($again['data']['result']['state'] ?? $again)->toBe('captured')
+        ->and($resent?->subject)->toBe('Price <500 EGP')
+        ->and($resent?->parentAttemptId)->toBe($failed->attemptId);
+});
+
 it('requires administrator capability and a REST nonce for mutations', function () {
     $request = new WP_REST_Request('POST', '/corex/v1/email-studio/templates');
     $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));

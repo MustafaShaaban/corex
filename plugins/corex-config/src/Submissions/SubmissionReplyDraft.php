@@ -10,6 +10,8 @@ namespace Corex\Config\Submissions;
 
 defined('ABSPATH') || exit;
 
+use Corex\Mail\SubjectLine;
+
 /**
  * A reply somebody has begun and not sent (spec 106, FR-006).
  *
@@ -18,9 +20,6 @@ defined('ABSPATH') || exit;
  */
 final readonly class SubmissionReplyDraft
 {
-    /** A subject is a line. Beyond this it is something pasted by mistake, and is cut. */
-    private const LONGEST_SUBJECT = 300;
-
     public string $subject;
     public string $htmlBody;
 
@@ -33,8 +32,8 @@ final readonly class SubmissionReplyDraft
     public function __construct(string $subject, string $htmlBody, string $savedAt)
     {
         $this->savedAt = strtotime($savedAt) === false ? '' : $savedAt;
-        $line = trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $subject));
-        $this->subject = mb_substr($line, 0, self::LONGEST_SUBJECT);
+        // Here and not only on the route: a draft is also made from what the store holds.
+        $this->subject = SubjectLine::of($subject);
         $this->htmlBody = trim($htmlBody);
     }
 

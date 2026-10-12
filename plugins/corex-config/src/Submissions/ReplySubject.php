@@ -10,6 +10,8 @@ namespace Corex\Config\Submissions;
 
 defined('ABSPATH') || exit;
 
+use Corex\Mail\SubjectLine;
+
 /**
  * The subject a reply starts with, for whoever writes it to change (spec 106, FR-035).
  *
@@ -59,8 +61,7 @@ final class ReplySubject
      */
     private static function line(string $name): string
     {
-        $plain = html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $line = trim((string) preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $plain));
+        $line = SubjectLine::of(html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
         return mb_substr($line, 0, self::LONGEST_NAME);
     }
