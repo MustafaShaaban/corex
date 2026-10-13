@@ -72,6 +72,21 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **An email is in the site's language, whoever's request draws it** (spec 106, FR-011a).
+  WordPress answers which way text runs, the page's language and every translated string
+  for the request, and in the admin a request is in the signed-in person's own profile
+  language. So on an English site, a reply sent by an administrator who reads the admin in
+  Arabic went out marked as Arabic, laid out right to left and signed off in Arabic; on an
+  Arabic site an administrator who reads it in English sent replies left to right. It
+  reached whatever such a person triggered from CoreX's admin screens, which ask their
+  routes with `_locale=user`: a reply, its preview, **Send again**, a resent notification
+  and a flow's test send; and the newsletter's "new article" email when they published a
+  post. A visitor's form and anything sent from cron were the site's already. An email is
+  now drawn inside WordPress's own switch to the site's language, and the person's screen
+  stays in theirs. The operator's own words keep their own direction, paragraph by
+  paragraph, as before. Words made before the mailer is handed them (a code-defined form's
+  subject, the Guides support request) are not covered (DECISIONS #356).
+
 - **A new submission of a form defined in code raises a notification.** Reported on
   2026-10-13 from a client site: dozens of submissions stored and no notification for any of
   them. The notification centre listened for the event of a form built in Forms & Flows, and
@@ -463,6 +478,18 @@ All notable changes to Corex are documented here. The format follows
   its button reached the window's edge once the header had a gutter.
 
 ### Client impact
+
+- **An email follows the site's language and no longer the profile language of whoever
+  triggered it.** Nothing changes for a site whose staff read the admin in the site's
+  language. Where somebody's profile language differs, the replies they send, and the
+  other emails listed under Fixed, change direction and `lang` to the site's, and CoreX's
+  own words in them are the site's translation. Nothing stored changes, and an email
+  already sent is as it was sent. A client's own email design and its `corex_email_brand`
+  filter are called inside the switch, so a string they translate is in the site's
+  language too. In PHP, the constructors of `Corex\Email\Design\ReplyComposer` and
+  `Corex\Email\Template\TemplateRenderer` take a `Corex\Email\Language\EmailLanguage` as
+  their last argument; the container gives it, and only code that makes either with `new`
+  has to pass one.
 
 - **A site whose forms are registered in code starts to get the New submission
   notification.** Nothing to set. It is raised for submissions stored from now on:

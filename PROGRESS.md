@@ -107,6 +107,22 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** An email is drawn in the site's language,
+whoever's request draws it (spec 106, FR-011a; DECISIONS #356; decided on the owner's
+standing "you decide the best for me", and his to overrule). In the admin, and in any REST
+request `wp.apiFetch` makes, WordPress answers `is_rtl()`, `get_bloginfo('language')` and
+every translation for the signed-in person's profile language: a reply sent from the inbox
+by somebody who reads the admin in Arabic left an English site as `lang="ar" dir="rtl"`
+with its footer in Arabic. `Corex\Email\Language\SiteLanguage` makes WordPress's own switch
+around the drawing in `ReplyComposer`, `TemplateRenderer` and the brand `Layout` asks for.
+`tests/Integration/Email/EmailLanguageTest.php` loads WordPress in a process of its own,
+both ways round, with no language pack. **A new place that draws an email draws it inside
+`EmailLanguage::during()`.** Leads, not built: words made before the mailer has them are
+still in the request's language (a code-defined form's subject, a flow's fallback subject,
+the Guides support request's subject and body); Email Studio's default partials are stored
+in the language of whichever request installed them (read, not run); and the recipient's
+own language, for an email to a person with an account, is the option not taken.
+
 **After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
 raises the New submission notification (DECISIONS #352; the owner's report, relayed by the
 Muva session). `FormSubmissionService` now dispatches `SubmissionProcessedEvent` once the
@@ -131,12 +147,10 @@ followed, and `Corex\Email\Template\Layout` asks for its brand when it draws.
 `tests/Integration/Foundation/BootTranslationsTest.php` loads WordPress in a process of
 its own and names the file and line of anything read early. **Before making an object in
 a provider's `boot()` to hook one action, hook the action with a closure that makes it**:
-the object brings whatever its constructor needs, on every request. Three leads, not
+the object brings whatever its constructor needs, on every request. Two leads, not
 built: `ConfigServiceProvider::boot()` still makes every admin screen, job handler and
 `admin-post.php` controller on every request (195 shared entries by the end of
-`plugins_loaded`, counted, not timed); an email's direction follows the language of
-whoever is signed in and not the site's (measured for `Layout`, read for
-`SiteEmailBrand`); and on a site without pretty permalinks the Submissions inbox said
+`plugins_loaded`, counted, not timed); and on a site without pretty permalinks the Submissions inbox said
 "The submissions could not be loaded" (seen once in a browser, not traced).
 
 **After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of

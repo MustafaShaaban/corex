@@ -14691,3 +14691,158 @@ send theirs later, from a queue of its own, and cannot report through the event:
 gets no failed-email notification from this change. A site that
 listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
 0; nothing under `sites/` in the Muva or Perego checkouts names that event.
+
+## #356 — An email is drawn in the site's language, whoever's request draws it
+
+**Date:** 2026-10-13. **Branch:** `fix/email-direction-is-the-triggering-persons`, from `main`.
+**Spec:** 106, FR-011a (added with this change).
+
+**What was reported.** A lead left by #351: an email's direction is `is_rtl()` at the moment
+the email is drawn, and `is_rtl()` answers for the language of the request. In the admin
+that is the signed-in person's own profile language, not the site's.
+
+**Confirmed, and wider than the lead.** Measured on this branch's own install (WordPress
+7.1.3, PHP 8.3, `main` at `1ecd5255`), with a stand-in language file for `ar` that holds
+the one string WordPress reads a language's direction from. Each row was drawn through the
+container's `Layout` and `ReplyComposer`, first in a PHP process of its own and then over
+HTTP on a port with one listener; mail was answered by an mu-plugin at `pre_wp_mail`.
+
+| Site | The request | `Layout` | Reply design |
+|---|---|---|---|
+| en_US | admin page, `admin-ajax.php`, `admin-post.php`, as an administrator whose profile is `ar` | `dir="rtl"` | `lang="ar" dir="rtl"` |
+| en_US | a REST route with `_locale=user`, same person | `dir="rtl"` | `lang="ar" dir="rtl"` |
+| en_US | a REST route without it, a front-end page, same person | `dir="ltr"` | `lang="en-US" dir="ltr"` |
+| ar | the same three kinds, as an administrator whose profile is `en_US` | the reverse of the above | the reverse |
+| either | nobody signed in: a front-end page, a REST route, `admin-ajax.php`, `wp-cron.php` | the site's | the site's |
+
+Three things the lead did not say:
+
+- **The words follow too.** With one string given an Arabic stand-in, a reply's footer was
+  "This message was sent by…" in Arabic in the same requests. It is the whole language of
+  the request, not only its direction: `lang`, `dir`, and every string CoreX translates
+  while it draws.
+- **A reply from the inbox was affected, on every send.** The inbox asks its routes through
+  `window.Corex.api`, which uses `wp.apiFetch` where the page has it, and `wp.apiFetch` adds
+  `_locale=user` to every request. Both admin bundles list `wp-api-fetch` as a dependency
+  (`plugins/corex-config/build/admin/index.asset.php` and `…/notification-ui/index.asset.php`, as built here), and in a browser
+  on this install the inbox's own request was
+  `…rest_route=/corex/v1/submissions…&_locale=user`. Two real replies sent through
+  `POST corex/v1/submissions/24/reply&_locale=user` as the Arabic-profile administrator were
+  handed to WordPress as `<html lang="ar" dir="rtl">` on the English site.
+- **A contact notification was affected only for a signed-in person.** The front end's
+  forms post with a plain `fetch` (read: `corex-runtime.js` falls back to it where the page
+  has no `wp.apiFetch`), so a visitor's notification was the site's. The same form posted
+  with `_locale=user` by the Arabic-profile administrator was `dir="rtl"`.
+
+**Who that reached** (read in the code, by the kind of request each send is made in; only
+the rows above were run): a reply, its preview, **Send again**, the resend of a related
+notification and a flow's test send, all from CoreX's admin screens and so with
+`_locale=user`; the newsletter's "new article" email to every subscriber when a post is
+published from the editor, quick edit or the classic screen; the Guides support request and
+the access-request form, both `admin-post.php`. With the mail queue on and Action Scheduler
+installed, a queued email can also be drawn by Action Scheduler's own runner in
+`admin-ajax.php`, with the cookies of whichever administrator's page started it (not run:
+Action Scheduler is not in this repository). The queue is off by default
+(`'mail_queue' => false`), and its WP-Cron worker draws as nobody.
+
+**The decision: the site's language.** The owner was owed the choice, between three:
+
+1. *The site's language.* What the site's visitors read and what its emails are written
+   for. Known in every request, including cron.
+2. *The recipient's language where it is known.* What WordPress does for its own emails: a
+   person with an account gets theirs, anybody else the site's. It needs every sender to
+   say who the recipient is as a person and not only as an address, it changes nothing for
+   a visitor, a subscriber or a customer, who have no account, and a notification to
+   several people has no one language.
+3. *The content's own direction.* The reply design already does this for the operator's
+   words: each paragraph and list item is `dir="auto"`, so an Arabic reply from an English
+   site reads right to left. It cannot decide the frame around them: a logo, a footer and a
+   table have no first strong character, and a template's words are CoreX's, translated,
+   not typed.
+
+The first is built, on the owner's standing answer of 2026-10-08, "you decide the best for
+me" (my reading of it: with the options and a recommendation laid out, build the
+recommendation, and ask first only for what a client cannot undo). Nothing here is stored
+and nothing is sent differently except the language of what is drawn. The third stays as it
+is, inside the first. The second can be added later behind the same seam without undoing
+this, for the emails that do go to a person with an account.
+
+**How.** `Corex\Email\Language\EmailLanguage` has one method, `during(callable $draw)`, and
+one implementation, `SiteLanguage`: `switch_to_locale(get_locale())`, draw, and
+`restore_previous_locale()` if WordPress switched. That is the switch WordPress makes for
+its own emails (`wp-includes/pluggable.php`), so the direction, `get_bloginfo('language')`
+and the translations all follow it and all come back. It is asked in three places:
+
+- `ReplyComposer::compose()`, around the brand, the design and the plain-text sign-off. A
+  client's own design and its `corex_email_brand` filter run inside it.
+- `TemplateRenderer::render()`, around a template's subject and body and the layout's wrap.
+- The closure that gives `Layout` its brand, for an Email Studio template, which is wrapped
+  by the layout with nothing else around it.
+
+WordPress answers "nothing to switch" in four cases, read in
+`class-wp-locale-switcher.php` and `l10n.php`: the request is in the site's language
+already; somebody has switched on purpose (its filter makes `get_locale()` answer the
+switched language, so the two are equal); the site's language has no files; and before
+WordPress has made the switcher. In all four the email is drawn as before and nothing is
+restored.
+
+An interface with one implementation, against YAGNI on its face. It is there because
+`TemplateRenderer` and `ReplyComposer` are unit-tested without WordPress, and a unit test
+hands them `Corex\Tests\Support\LanguageOfTheRequest`.
+
+**Not changed, and left as leads.**
+
+- *Words made before the mailer has them.* A code-defined form's subject ("New "%s" form
+  submission") and its line about files, the fallback subject of a flow's email, and the
+  Guides support request's subject, category and plain-text body are translated in the
+  request and handed over as text. They are still in the request's language. Most are made
+  in a visitor's request, where that is the site's; the Guides request is the exception.
+- *What Email Studio installs.* Its default partials ("Unsubscribe", "Preferences",
+  "Privacy") and layout names are translated once and stored, in the language of whichever
+  request first ran `init` after activation. Read, not run.
+- *An email with no shell.* A form notification that names no template, and an Email Studio
+  template with no layout, have no `<html dir>` at all: a mail client decides.
+- *WordPress's own emails* (a new account, a password reset) are WordPress's, and it
+  switches for them itself.
+
+**The tests.** `tests/Integration/Email/EmailLanguageTest.php` loads WordPress in a process
+of its own, as `BootTranslationsTest` does, as an admin request of user 1 with hooks
+WordPress adopts before it loads: the site's language, the person's profile language, `ar`
+as an installed language that reads right to left, and a mark on every string of the
+`corex` domain translated while the request is in `ar`. No language pack is needed. Both
+ways round, it asserts first that the request is the administrator's (so it cannot pass on
+any code), then the direction of the bare layout, the direction and words of the contact
+notification, the `lang`, direction and words of a reply, and that the request is back in
+the administrator's language afterwards. On `main` both cases fail at the layout. With only
+the layout's own scope removed both fail too, so each of the three places is held.
+`tests/Unit/Email/SiteLanguageTest.php` holds the order (switch, draw, restore), that
+nothing is restored where nothing was switched, and that a drawing that throws still gives
+the language back.
+
+One thing the first version of the integration test got wrong, and why the lead said
+priority 99: a `determine_current_user` filter at priority 10 is overruled by WordPress's
+own cookie check on the same hook, which answers "nobody" for a request with no cookie.
+
+**Measured after, same install.** Over HTTP, except `main`'s side of the second row, which
+was drawn in a process of its own and not sent.
+
+| Check | `main` | This branch |
+|---|---|---|
+| A reply sent as the Arabic-profile administrator, English site, `_locale=user` | `lang="ar" dir="rtl"` | `lang="en-US" dir="ltr"` |
+| The footer of that reply's preview | in Arabic | in English |
+| The same as the English-profile administrator on the Arabic site | `lang="en-US" dir="ltr"` | `lang="ar" dir="rtl"` |
+| The contact notification posted with `_locale=user` by the Arabic-profile administrator, English site | `dir="rtl"` | `dir="ltr"` |
+| `Layout` and a reply drawn in `admin-ajax.php` as that administrator | `rtl` | `ltr` |
+| The language of the request after the email is drawn | the administrator's | the administrator's |
+
+The unit suite (3,127 tests) and the integration suite (1,182) pass on this install.
+
+**Client impact.** A site whose staff all read the admin in the site's language sees no
+change. A site with a person whose profile language differs has been sending that person's
+replies, and whatever else they triggered, in their language's direction and with CoreX's
+own words in it; from this change those are in the site's language. Muva's
+`MuvaEmailDesign` is handed the same brand and now runs inside the switch: a string it
+translates is in the site's language (read on this machine, 2026-10-13; nothing under
+`sites/` in the Muva or Perego checkouts makes a `TemplateRenderer` or a `ReplyComposer`
+itself). In PHP, both constructors take an `EmailLanguage` as their last argument; the
+container gives it.
