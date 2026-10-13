@@ -13,6 +13,10 @@
  * and right to left. The answers asked for here are refusals the account service gives before
  * it reaches WordPress, so no account is made, no sign-in is counted and no email is sent.
  *
+ * And that a label belongs to the field under it (DECISIONS #337): the signed-out block prints
+ * several forms, two of which ask for the same thing, so a label is followed to its field in
+ * the browser, and a field's name is read from the browser's own accessibility tree.
+ *
  * And what the block says when there is no answer to show: a request that does not arrive or
  * is answered with a page (FR-161c), and a browser that runs no scripts (FR-161d).
  *
@@ -182,6 +186,61 @@ function placement( form ) {
 	} );
 }
 
+/**
+ * Each label of the block's fields: the form it is in, the form of the field the browser ties
+ * it to, and whether that field is the one under it.
+ *
+ * @param {import('@playwright/test').Page} page The page.
+ * @return {Promise<Object[]>} One entry for each label, in the order of the page.
+ */
+function labelTies( page ) {
+	return page
+		.locator( '.corex-account__row label' )
+		.evaluateAll( ( labels ) =>
+			labels.map( ( label ) => {
+				const kind = ( form ) =>
+					form
+						? form.getAttribute( 'data-corex-account-form' )
+						: null;
+
+				return {
+					label: label.textContent.trim(),
+					form: kind( label.closest( 'form' ) ),
+					pointsInto: kind( label.control && label.control.form ),
+					atTheFieldUnderIt:
+						label.control === label.nextElementSibling,
+				};
+			} )
+		);
+}
+
+/** Why a test that reads the browser's own accessibility tree is skipped outside Chromium. */
+const CHROMIUM_ONLY =
+	'The accessibility tree is read over the DevTools protocol, which only Chromium speaks.';
+
+/**
+ * The names Chromium itself gives the block's text fields, read from its own accessibility
+ * tree. A field it does not present (the one left for bots) is left out.
+ *
+ * @param {import('@playwright/test').Page} page The page.
+ * @return {Promise<string[]>} Their names, in the order of the page. A field with no name gives an empty one.
+ */
+async function fieldNamesInChromiumsTree( page ) {
+	const session = await page.context().newCDPSession( page );
+	const { result } = await session.send( 'Runtime.evaluate', {
+		expression: 'document.querySelector( "[data-corex-account]" )',
+	} );
+	const { nodes } = await session.send( 'Accessibility.queryAXTree', {
+		objectId: result.objectId,
+		role: 'textbox',
+	} );
+	await session.detach();
+
+	return nodes
+		.filter( ( node ) => ! node.ignored )
+		.map( ( node ) => node.name?.value ?? '' );
+}
+
 test( 'the guest account block renders the sign-in, register, and recovery forms', async ( {
 	browser,
 } ) => {
@@ -230,6 +289,43 @@ test( 'the account surface does not scroll sideways at 375px', async ( {
 	expect( overflow ).toBe( false );
 
 	await guest.close();
+} );
+
+test( 'a label of the signed-out account block belongs to the field under it, in its own form', async ( {
+	browser,
+} ) => {
+	const page = await openAccount( browser, WINDOWS[ 0 ], SIGNED_OUT );
+
+	const ties = await labelTies( page );
+	// Sign-in asks for two things and the forgotten password form for one, on every site.
+	expect( ties.length ).toBeGreaterThanOrEqual( 3 );
+	expect(
+		ties.filter(
+			( tie ) => tie.pointsInto !== tie.form || ! tie.atTheFieldUnderIt
+		),
+		'labels the browser ties to another field'
+	).toEqual( [] );
+
+	// Both forms ask for "Username or email": pressing the second one's label is what told them apart.
+	const forgot = page.locator( '[data-corex-account-form="reset-request"]' );
+	await forgot.locator( 'label' ).click();
+	await expect( forgot.locator( 'input[name="login"]' ) ).toBeFocused();
+
+	await page.context().close();
+} );
+
+test( 'every field of the signed-out account block has the name its label gives it', async ( {
+	browser,
+	browserName,
+} ) => {
+	test.skip( browserName !== 'chromium', CHROMIUM_ONLY );
+	const page = await openAccount( browser, WINDOWS[ 0 ], SIGNED_OUT );
+
+	const labels = ( await labelTies( page ) ).map( ( tie ) => tie.label );
+	expect( labels.length ).toBeGreaterThanOrEqual( 3 );
+	expect( await fieldNamesInChromiumsTree( page ) ).toEqual( labels );
+
+	await page.context().close();
 } );
 
 for ( const view of WINDOWS ) {
