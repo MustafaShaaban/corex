@@ -83,6 +83,11 @@ final class ProfileServiceProvider extends ServiceProvider
                 'session'    => __('Session', 'corex'),
                 'thisDevice' => __('this device', 'corex'),
                 'noAnswer'   => __('The site could not be reached, or its answer could not be read. Please try again.', 'corex'),
+                // What stands in a list's place in the member view (spec 068, FR-161f).
+                'noSessions'        => __('No sessions are recorded for this account.', 'corex'),
+                'sessionsNotLoaded' => __('Your sessions could not be loaded. Load this page again to see them.', 'corex'),
+                'noActivity'        => __('No activity yet.', 'corex'),
+                'activityNotLoaded' => __('Your recent activity could not be loaded. Load this page again to see it.', 'corex'),
             ],
         ]);
         wp_register_style(

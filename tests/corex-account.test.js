@@ -4,7 +4,9 @@
  * Loads the buildless script against jsdom, over the markup `AccountRenderer` prints, with the
  * server answered for. What they hold: a message is written beside the button that asked for
  * it, in one place, and is brought into the window when it would be outside it; and a request
- * that got no answer the script can read says so there too (FR-161c).
+ * that got no answer the script can read says so there too (FR-161c). And what the member
+ * view's two lists show under their headings: their rows, or that there is nothing to list,
+ * or that the list could not be loaded (FR-161f).
  */
 
 const SCRIPT = '../addons/corex-profile/assets/account.js';
@@ -42,12 +44,17 @@ function mountMember() {
 		<div class="corex-account" data-corex-account data-nonce="nonce-1">
 			${ form( 'profile' ) }
 			<section class="corex-account__sessions" data-corex-account-sessions>
+				<h3>Active sessions</h3>
 				<ul data-corex-account-session-list></ul>
 				<div class="corex-account__actions">
 					<button type="button" data-corex-account-action="revoke-others">Others</button>
 					<button type="button" data-corex-account-action="revoke-all">All</button>
 				</div>
 				${ LINE }
+			</section>
+			<section class="corex-account__notifications" data-corex-account-notifications>
+				<h3>Recent activity</h3>
+				<ul data-corex-account-notification-list></ul>
 			</section>
 		</div>
 	`;
@@ -132,6 +139,7 @@ beforeEach( () => {
 } );
 
 afterEach( () => {
+	jest.useRealTimers();
 	delete window.corexAccount;
 	delete window.fetch;
 	delete window.matchMedia;
@@ -316,3 +324,340 @@ it( 'says so in English on a page that handed the script no sentence', async () 
 		},
 	] );
 } );
+
+/** The member view's two lists: what the server gives for each, and how the page words it. */
+const LISTS = {
+	sessions: {
+		section: '[data-corex-account-sessions]',
+		route: 'account/sessions',
+		given: {
+			success: true,
+			sessions: [
+				{ ua: 'Firefox on Linux', current: true },
+				{ ua: 'Safari on iPhone', current: false },
+			],
+		},
+		rows: [ 'Firefox on Linux — this device', 'Safari on iPhone' ],
+		nothing: { success: true, sessions: [] },
+		saysNothing: 'No sessions (as the page worded it).',
+		saysNotLoaded: 'Sessions not loaded (as the page worded it).',
+	},
+	activity: {
+		section: '[data-corex-account-notifications]',
+		route: 'account/notifications',
+		given: {
+			success: true,
+			notifications: [
+				{
+					kind: 'profile.updated',
+					occurredAt: '2026-10-13T09:00:00+00:00',
+				},
+			],
+		},
+		rows: [ 'profile.updated · 2026-10-13T09:00:00+00:00' ],
+		nothing: { success: true, notifications: [] },
+		saysNothing: 'No activity (as the page worded it).',
+		saysNotLoaded: 'Activity not loaded (as the page worded it).',
+	},
+};
+
+/**
+ * The ways a request for a list ends with no list to show.
+ *
+ * @param {Object} list One of LISTS.
+ * @return {Object} What `fetch` gives, by how the request ended.
+ */
+const withoutAList = ( list ) => ( {
+	...WITHOUT_AN_ANSWER,
+	'is refused, whatever the refusal holds': () =>
+		Promise.resolve( {
+			ok: false,
+			json: () => Promise.resolve( list.given ),
+		} ),
+	'is refused as WordPress refuses a signed-out person': () =>
+		Promise.resolve( {
+			ok: false,
+			json: () =>
+				Promise.resolve( {
+					code: 'rest_cookie_invalid_nonce',
+					message: 'Cookie check failed',
+				} ),
+		} ),
+	'is answered with no list': () =>
+		Promise.resolve( {
+			ok: true,
+			json: () => Promise.resolve( { success: true } ),
+		} ),
+} );
+
+function answered( body, ok = true ) {
+	return () => Promise.resolve( { ok, json: () => Promise.resolve( body ) } );
+}
+
+/**
+ * Answers the member view's requests route by route. A list that is not named is given.
+ *
+ * @param {Object} routes What `fetch` resolves with, by the route under `corex/v1/`.
+ */
+function serverGives( routes = {} ) {
+	const answers = {
+		[ LISTS.sessions.route ]: answered( LISTS.sessions.given ),
+		[ LISTS.activity.route ]: answered( LISTS.activity.given ),
+		...routes,
+	};
+	window.fetch = jest.fn( ( url ) =>
+		answers[ url.replace( window.corexAccount.restUrl, '' ) ]()
+	);
+}
+
+/**
+ * What a person is shown under a list's heading.
+ *
+ * @param {string} name A key of LISTS.
+ * @return {{rows: string[], says: string, state: ?string}} The rows, or the sentence in their place.
+ */
+function shown( name ) {
+	const section = document.querySelector( LISTS[ name ].section );
+	const list = section.querySelector( 'ul' );
+	const note = section.querySelector( '.corex-account__list-note' );
+	const noted = note !== null && ! note.hidden;
+
+	return {
+		rows: list.hidden
+			? []
+			: Array.from( list.children ).map( ( row ) => row.textContent ),
+		says: noted ? note.textContent : '',
+		state: noted ? note.getAttribute( 'data-state' ) : null,
+	};
+}
+
+function press( action ) {
+	document
+		.querySelector( `[data-corex-account-action="${ action }"]` )
+		.click();
+}
+
+describe.each( Object.keys( LISTS ) )( 'the %s list', ( name ) => {
+	const list = LISTS[ name ];
+
+	beforeEach( () => {
+		window.corexAccount.i18n = {
+			noSessions: LISTS.sessions.saysNothing,
+			sessionsNotLoaded: LISTS.sessions.saysNotLoaded,
+			noActivity: LISTS.activity.saysNothing,
+			activityNotLoaded: LISTS.activity.saysNotLoaded,
+		};
+		mountMember();
+	} );
+
+	it( 'shows the rows the server gave, and no sentence in their place', async () => {
+		serverGives();
+		loadScript();
+		await flush();
+
+		expect( shown( name ) ).toEqual( {
+			rows: list.rows,
+			says: '',
+			state: null,
+		} );
+	} );
+
+	it( 'says there is nothing to list when the server gave an empty list', async () => {
+		serverGives( { [ list.route ]: answered( list.nothing ) } );
+		loadScript();
+		await flush();
+
+		expect( shown( name ) ).toEqual( {
+			rows: [],
+			says: list.saysNothing,
+			state: 'empty',
+		} );
+	} );
+
+	it.each( Object.keys( withoutAList( list ) ) )(
+		'says it could not be loaded when its request %s',
+		async ( ending ) => {
+			serverGives( { [ list.route ]: withoutAList( list )[ ending ] } );
+			loadScript();
+			await flush();
+
+			expect( shown( name ) ).toEqual( {
+				rows: [],
+				says: list.saysNotLoaded,
+				state: 'error',
+			} );
+		}
+	);
+
+	it( 'is not an answer to a press: it empties no message line and moves nothing', async () => {
+		serverGives( {
+			[ list.route ]: WITHOUT_AN_ANSWER[ 'does not arrive' ],
+		} );
+		loadScript();
+		await flush();
+
+		expect( messages() ).toEqual( [] );
+		expect( scrolled ).toEqual( [] );
+	} );
+} );
+
+describe( 'a list asked for again', () => {
+	beforeEach( () => {
+		window.corexAccount.i18n = {
+			sessionsNotLoaded: LISTS.sessions.saysNotLoaded,
+		};
+		mountMember();
+	} );
+
+	it( 'does not go on showing the sessions it had when the next request for them fails', async () => {
+		serverGives();
+		loadScript();
+		await flush();
+		serverGives( {
+			'account/profile': answered( {
+				success: true,
+				message: 'Profile saved.',
+			} ),
+			[ LISTS.sessions.route ]: WITHOUT_AN_ANSWER[ 'does not arrive' ],
+		} );
+
+		submit( 'profile' );
+		await flush();
+
+		expect( shown( 'sessions' ) ).toEqual( {
+			rows: [],
+			says: LISTS.sessions.saysNotLoaded,
+			state: 'error',
+		} );
+		// What the form was answered stays where it is, and is the one thing brought into view.
+		expect( messages() ).toEqual( [
+			{ in: 'profile', text: 'Profile saved.', state: 'ok' },
+		] );
+		expect( scrolled ).toHaveLength( 1 );
+	} );
+
+	it( 'shows the sessions, and takes the sentence away, once a request for them is answered', async () => {
+		serverGives( {
+			[ LISTS.sessions.route ]: WITHOUT_AN_ANSWER[ 'does not arrive' ],
+		} );
+		loadScript();
+		await flush();
+		serverGives( {
+			'account/sessions/revoke-others': answered( {
+				success: true,
+				message: 'Other sessions signed out.',
+			} ),
+		} );
+
+		press( 'revoke-others' );
+		await flush();
+
+		expect( shown( 'sessions' ) ).toEqual( {
+			rows: LISTS.sessions.rows,
+			says: '',
+			state: null,
+		} );
+	} );
+
+	it( 'is not put in place of the sessions of a person who has just signed out of every session', async () => {
+		// The page is loaded again a moment later, which jsdom cannot do: the clock is held.
+		jest.useFakeTimers();
+		serverGives();
+		loadScript();
+		await jest.advanceTimersByTimeAsync( 0 );
+		// As the site answers from then on: nobody is signed in, and the list is refused.
+		serverGives( {
+			'account/sessions/revoke-all': answered( {
+				success: true,
+				message: 'Signed out of every session.',
+			} ),
+			[ LISTS.sessions.route ]: withoutAList( LISTS.sessions )[
+				'is refused as WordPress refuses a signed-out person'
+			],
+		} );
+
+		press( 'revoke-all' );
+		await jest.advanceTimersByTimeAsync( 0 );
+
+		expect( shown( 'sessions' ) ).toEqual( {
+			rows: LISTS.sessions.rows,
+			says: '',
+			state: null,
+		} );
+	} );
+
+	it( 'shows the sessions the site holds now when signing out of every session was refused', async () => {
+		serverGives();
+		loadScript();
+		await flush();
+		serverGives( {
+			'account/sessions/revoke-all': answered(
+				{ success: false, message: 'Not allowed.' },
+				false
+			),
+			[ LISTS.sessions.route ]: answered( {
+				success: true,
+				sessions: [ { ua: 'Chrome on Windows', current: true } ],
+			} ),
+		} );
+
+		press( 'revoke-all' );
+		await flush();
+
+		expect( shown( 'sessions' ).rows ).toEqual( [
+			'Chrome on Windows — this device',
+		] );
+	} );
+} );
+
+it.each( [
+	[
+		'could not be loaded',
+		{},
+		{
+			sessions: {
+				rows: [],
+				says: 'Your sessions could not be loaded. Load this page again to see them.',
+				state: 'error',
+			},
+			activity: {
+				rows: [],
+				says: 'Your recent activity could not be loaded. Load this page again to see it.',
+				state: 'error',
+			},
+		},
+	],
+	[
+		'has nothing in it',
+		{ sessions: [], notifications: [] },
+		{
+			sessions: {
+				rows: [],
+				says: 'No sessions are recorded for this account.',
+				state: 'empty',
+			},
+			activity: {
+				rows: [],
+				says: 'No activity yet.',
+				state: 'empty',
+			},
+		},
+	],
+] )(
+	'says in English that a list %s on a page that handed the script no sentence',
+	async ( _case, body, expected ) => {
+		delete window.corexAccount.i18n;
+		mountMember();
+		serverGives( {
+			[ LISTS.sessions.route ]: answered( body ),
+			[ LISTS.activity.route ]: answered( body ),
+		} );
+		loadScript();
+		await flush();
+
+		expect( {
+			sessions: shown( 'sessions' ),
+			activity: shown( 'activity' ),
+		} ).toEqual( expected );
+	}
+);

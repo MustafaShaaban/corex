@@ -65,6 +65,21 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **In the account block, a list that did not load says so, and an empty one says it is
+  empty** (spec 068, FR-161f). A signed-in person's "Active sessions" and "Recent activity"
+  were a heading with nothing under it in both cases: when the request for the list did not
+  arrive, was answered with an error page, or was refused, and when there was nothing to
+  list. Each now shows its rows, or "No activity yet." (for sessions, "No sessions are
+  recorded for this account."), or, in the box of a refused form, "Your recent activity
+  could not be loaded. Load this page again to see it." (for sessions, "Your sessions could
+  not be loaded. Load this page again to see them."). The sentence stands where the list
+  would: it is not written as the answer to a button, so the page is not moved and no
+  other message is taken away. Rows shown earlier are not kept when a later request for
+  the list fails. **Sign out everywhere** now loads the page again, which shows the
+  sign-in form: it left the signed-out person on the member view, with the list emptied.
+  The two session buttons stand one spacing step under the list, which they touched
+  (DECISIONS #343).
+
 - **The account block says so when a request gets no answer, and when scripts are off.**
   Two cases in which pressing a button of the `corex/account` block did nothing that could
   be seen. A request that did not arrive (the visitor offline, the request blocked), or
