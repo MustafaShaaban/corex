@@ -93,6 +93,11 @@ Config::get('missing.key', 'fallback');
 
 - A dot key maps to an option named `corex_<key_with_underscores>` and to an env var
   `KEY_WITH_UNDERSCORES` uppercased (`app.name` → option `corex_app_name`, env `APP_NAME`).
+- The project root is the directory two levels above this plugin's real location, and the
+  `.env` is read from nowhere else. Linked into WordPress from a repository, that is the
+  repository. Copied into `wp-content/plugins/`, that is `wp-content/`, inside the web root:
+  do not create a `.env` there, set options. Environment variables of the server are not
+  read. See `docs/en/05-deployment/secrets-backups-zero-downtime.md`.
 - A missing `.env` is fine; a malformed `.env` is logged and ignored — boot continues on
   options/defaults. See `.env.example`.
 

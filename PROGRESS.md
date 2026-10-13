@@ -119,6 +119,19 @@ in `action.yml` and nothing updates them; only a run with `wp-cli` taken out of 
 `tools` proves a new pair. `tests/provision-wordpress-wp-cli.test.js` runs the script in
 each state a runner can be in, with a stand-in for `curl`.
 
+**After v0.45.2, not released, 2026-10-13.** The guides say which directory the `.env` is
+read from (DECISIONS #365; the first lead left in #363, run on a WordPress of the
+worktree's own). It is two levels above `corex-core`'s real location and nowhere else: the
+repository or the release directory where the plugin is linked, `wp-content/` where it is
+copied, which is inside the web root. A `.env` beside `wp-config.php` or above the web
+root is not read, environment variables are not read, and a `.env` PHP cannot read is
+treated as absent with nothing logged. The secrets guide has the section; six other pages
+point at it. **The code is not changed and a question is with the owner**: leave it, or
+let a constant in `wp-config.php` name the directory (recommended), and whether to say so
+when a `.env` is read from inside the web root or cannot be read. **One lead is left in
+#365**: by reading, the production Docker image puts Composer's `vendor/` where the plugin
+does not look for it.
+
 **After v0.45.2, not released, 2026-10-13: a security fix, and the reason for the next
 release.** A form's file field is answered by the file the request carried, and by nothing
 in its text (spec 081, FR-002a, Phase H; DECISIONS #353). What a request's body said under

@@ -14951,3 +14951,153 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #365 — The `.env` is read from two directories above `corex-core`'s real location and from nowhere else: the guides say which directory that is on each kind of install, and the code is left as it is until the owner chooses
+
+**Date:** 2026-10-13. **Branch:** `docs/env-file-location`, from `main`.
+**Spec:** none (guides). **Mode:** CoreX Framework.
+
+**The lead.** #363, "Found, and not changed", item 1, read and not run:
+`CoreServiceProvider::projectRoot()` and `Boot::projectRoot()` are
+`dirname(COREX_CORE_PATH, 2)`, which is `wp-content/` where the plugin is a real directory
+in `wp-content/plugins/`, while the secrets guide says a VM keeps its `.env` "outside the
+web root".
+
+**Run, before anything was changed.** A WordPress of this worktree's own (`main` at
+`91d52d30`, WordPress from `wp core download`, its own database, PHP 8.3.6 on Windows),
+with three `.env` files, each giving `APP_NAME` a different value: one in `wp-content/`,
+one beside `wp-config.php`, one in the directory above the web root. `Config::get('app.name')`
+was read with `wp eval-file`.
+
+| `corex-core` in `wp-content/plugins/` | `COREX_CORE_PATH` | `app.name` came from |
+|---|---|---|
+| copied (a real directory) | `…/public/wp-content/plugins/corex-core/` | `wp-content/.env` |
+| copied, `wp-content/.env` taken away | the same | no file: the default, `Corex` |
+| a junction to this worktree's `plugins/corex-core` | `<worktree>/plugins/corex-core/` | `<worktree>/.env` |
+
+So the lead is right for a copied plugin, and the second row is the part that matters: with
+no `wp-content/.env`, the two files further up were not read. A web request gave the same
+answer as WP-CLI (a must-use plugin on the scratch site echoed the value on `init`).
+`__FILE__` in the junctioned plugin's main file is the target's path, so the directory is
+the repository's whatever the web root is.
+
+Asked over HTTP for `/wp-content/.env` on the copied install:
+
+- PHP's built-in server (`php -S … -t public`): `200`, the whole file.
+- Apache 2.4.59 as WAMP ships it, whose `httpd.conf` has one rule of this kind,
+  `<Files ".ht*">`: `200`, the whole file.
+- The same Apache with `<Files ".env"> Require all denied </Files>` in the web root's
+  `.htaccess`: `403`, for `/wp-content/.env` and for `/.env`.
+
+Three more things were run because the guide's table depends on them:
+
+- `APP_NAME` set in the environment of the PHP process, with no `.env`: `getenv()` sees
+  it and `Config::get('app.name')` is the default. `DotenvSource` is array-backed and
+  reads the file only.
+- A `.env` the PHP user is denied reading (a deny entry in the file's access list;
+  `is_file()` true, `is_readable()` false), through the real `DotenvSource`: the key is
+  not held and the `BootLogger` holds no message.
+- No `.env` exists in the four checkouts on this machine (the framework's root, Muva,
+  Perego, mizzey), at the root or in a `wp-content/`. What a host has cannot be seen from
+  here.
+
+**What the lead got wrong.** The secrets guide's line is about a VM, and the VM recipe
+(`azure-vm.md`, which the EC2 recipe follows) links the plugin: `ln -sfn` from
+`releases/<tag>/plugins/*` into `releases/<tag>/wp/wp-content/plugins/`, with nginx's root
+at `releases/<tag>/wp`. By the third row above the `.env` is read from `releases/<tag>/`,
+which is outside the web root. The guide was not wrong about that layout. It was wrong, or
+silent, about four other things:
+
+1. It did not say which directory. A reader had "outside the web root" and nothing more.
+2. "Root-only", with mode `600`. PHP runs as `www-data` in that recipe. A file only `root`
+   can read is not read, and by the run above nothing says so.
+3. Every release is a new directory, so a `.env` put into one is gone at the next.
+4. It listed the database password and SMTP credentials among what "the framework reads
+   through the Config engine". The first is WordPress's, in `wp-config.php`.
+   `TransportAdvisory` says of the second that CoreX never reads them.
+
+And the four pages that say "`.env` (project root)" did not say that on a copied install
+the project root is `wp-content/`. Only `shared-host-dist.md` did.
+
+**The decision.**
+
+1. *The guides say what the code does.* The secrets guide has a new section, "Where the
+   `.env` file is read from": the rule, a table of the two kinds of install, what to do on
+   each, that environment variables are not read, and the Apache rule that was run. Its
+   table row for a VM names the release directory and the PHP user. The sentence about
+   which secrets the Config engine reads is corrected.
+2. *The other pages point at it.* The docs site's configuration guide and the core README
+   define "project root" where they use it. The two update guides and `.env.example` say
+   that on a copied install the file would be inside the web root and the option is the
+   way. `shared-host-dist.md` adds that a `.env` beside `wp-config.php` or above the web
+   root is not read.
+3. *`CoreServiceProvider::projectRoot()` gets a comment saying the same.* No statement of
+   the code is changed.
+4. *Where the code looks is not changed here.* It decides where existing sites' `.env` is
+   read from, and that is the owner's to choose. The options, as put to him:
+   - **Leave it.** The guides are now right. A copied install has no file to configure it
+     and uses options.
+   - **A constant in `wp-config.php` that names the directory** (recommended), read by
+     both `projectRoot()` methods; with no constant, as today. A copied install can then
+     keep its `.env` above the web root, and no existing site reads a different file
+     until somebody defines the constant.
+   - **Look above `ABSPATH` on a copied install.** Not recommended. It moves where an
+     existing site's file is read from on the day it updates, and the directory above
+     `ABSPATH` is inside the web root on a site installed in a subdirectory.
+   - With either of the first two: **say so when a `.env` is read from inside `ABSPATH`,
+     and when one exists and cannot be read.** Both are silent today.
+
+**The edits are placed so that open PR #409 merges beside them.** #409 changes the line
+under the secrets guide's sample heading, the `.env` blocks of both update guides, and
+the lines of the core README and the configuration guide that name the layers. Each
+addition here is a paragraph of its own, away from those lines; the sample's heading
+("mode 600, outside the web root") is left, since the section under it now says which
+directory and whose file. A trial merge of #409's branch into this one stopped on
+`DECISIONS.md` only, where both add an entry at the end; the guides, the changelog and
+`PROGRESS.md` merged, and the merged pages were read.
+
+**Weighed, and not chosen.**
+
+- *Tell a copied install to keep a `.env` and refuse it in the server.* The rule works on
+  Apache and was run. A host's server is not always Apache, a rule in `.htaccess` is one
+  migration away from being lost, and the options do the same work with nothing to
+  refuse. The guide gives the rule only for a file that is already there.
+- *A test that the guides and the code agree.* What the guides state is which directory a
+  path resolves to under a link and under a copy, on a real install. The unit suite has no
+  install, and the integration suite's install is linked. The run above is the proof, and
+  it is written down here.
+
+**Not run.**
+
+- Linux. `__FILE__` under a symbolic link was run as a Windows junction only; a real
+  symbolic link needs a privilege this session does not have. On Linux the claim rests on
+  PHP's documented behaviour and on CI: `provision-wordpress` links the plugins with
+  `ln -sfn`, and the plugin finds the repository's `vendor/autoload.php` through
+  `dirname(__DIR__, 2)` on every run, which it could not if the path were the link's.
+- The file a `root`-owned mode-`600` `.env` is to `www-data`. The unreadable case was run
+  with a Windows deny entry.
+- nginx and LiteSpeed. The 200 and the 403 are Apache's.
+- The production Docker image. That its `.env` would be in `wp-content/` is read from the
+  `Dockerfile`'s `COPY plugins/ /var/www/html/wp-content/plugins/`. Docker was not
+  running on this machine.
+- The docs site was not built.
+
+**Found, and not changed.**
+
+1. *The production Docker image may not load CoreX at all.* The `prod` target copies the
+   plugins into `wp-content/plugins/` and Composer's `vendor/` to `/var/www/html/vendor/`.
+   The plugin looks for `vendor/autoload.php` in its own directory and two directories up,
+   which is `wp-content/vendor/`. Neither is where the image puts it, and the autoloader
+   it holds maps `Corex\` to `plugins/corex-core/src` beside `vendor/`. This is the fault
+   #267 fixed for the shared-host package. Read, not run.
+2. *A `.env` that cannot be read is treated as absent and nothing is logged.* Run, above.
+   A malformed one is logged (FR-014).
+3. *A development checkout under WAMP's `www/` is served by WAMP's `localhost` site.*
+   Apache answered for a file inside this worktree at `http://localhost/corex/…`. A `.env`
+   at the repository's root is in reach of whoever that site answers. The guide now says
+   to check.
+
+**Client impact.** None from this change: no code a site runs is different. A site whose
+plugin directory is a real directory, which is every site installed from the shared-host
+package, should check that it has no `wp-content/.env`, and if it has one, move its
+values to options and delete it.

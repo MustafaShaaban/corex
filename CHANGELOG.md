@@ -473,6 +473,19 @@ All notable changes to Corex are documented here. The format follows
 - **The docs header's search field stays inside the header** in a window 320 wide, where
   its button reached the window's edge once the header had a gutter.
 
+- **The guides say which directory the `.env` is read from.** It is the directory two
+  levels above the real location of `corex-core`, and no other. Where the plugin is linked
+  into WordPress from a repository, as in a development checkout and the VM recipes, that
+  is the repository or the release directory, outside the web root. Where it is copied
+  into `wp-content/plugins/`, as in the shared-host package, that is `wp-content/`, inside
+  the web root, and a `.env` beside `wp-config.php` or above the web root is not read. The
+  secrets guide has a new section that says so, with what to do on each kind of install;
+  the configuration guide, the core README, the two update guides, the shared-host guide
+  and `.env.example` point at it. The secrets guide also said a VM's `.env` is
+  "root-only": a file the user PHP runs as cannot read is treated as absent, with nothing
+  logged. And it listed the database password and SMTP credentials among what CoreX's
+  config reads, which it does not. No code a site runs is changed (DECISIONS #365).
+
 ### Security
 
 - **A form's file field is answered by the file the request carried, and by nothing in its
@@ -825,6 +838,12 @@ All notable changes to Corex are documented here. The format follows
   catches: they now throw `Corex\Access\InvalidAccessInput`, which extends it. Read on
   2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the routes or
   either class (DECISIONS #350).
+
+- **A site installed from the shared-host package should have no `wp-content/.env`.** That
+  is the only place such a site's `.env` is read from, and a web server gives the file to
+  anybody who asks for it unless it was told not to. If one is there, move its values to
+  options and delete it. Nothing in this release changes where the file is read from
+  (DECISIONS #365).
 ## [0.45.2] — 2026-10-11
 
 Two changes on top of v0.45.1, both for a form defined in code.
