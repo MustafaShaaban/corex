@@ -33,7 +33,7 @@ jobs:
   test:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Lint + headless tests (PHP ${{ matrix.php }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         php: ['8.3']
@@ -62,7 +62,7 @@ jobs:
   js:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Lint + JS unit tests (Jest)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
@@ -135,7 +135,7 @@ jobs:
   integration:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Integration tests (real WordPress)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     services:
       mysql:
         image: mysql:8
@@ -159,7 +159,7 @@ jobs:
   integration-multisite:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Integration tests (real WordPress Multisite)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     services:
       mysql:
         image: mysql:8
@@ -190,7 +190,7 @@ jobs:
   e2e:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Browser tests (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     services:
       mysql:
         image: mysql:8
@@ -528,7 +528,7 @@ jobs:
   client-site-layout:
     if: github.repository == 'MustafaShaaban/corex'
     name: A generated client site passes every root check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     env:
       # From here on this checkout is treated as a client's repository. Without it the hygiene
       # suite would — correctly — refuse a client site committed to the framework's own.
