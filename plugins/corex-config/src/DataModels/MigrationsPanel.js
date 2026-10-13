@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { Button, Modal } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
-import { dataEndpoint } from '../admin/dataClient.js';
+import { buildMigrationsUrl, dataEndpoint } from '../admin/dataClient.js';
 import { dataModelsApi } from './dataModelsApi.js';
 import { actionSources, migrationState } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
@@ -51,11 +51,7 @@ export default function MigrationsPanel( { config, sources } ) {
 			return;
 		}
 		try {
-			const url = `${ dataEndpoint(
-				config.restUrl,
-				'',
-				'migrations'
-			) }?source=${ encodeURIComponent( sourceKey ) }`;
+			const url = buildMigrationsUrl( config.restUrl, sourceKey );
 			setStatus( loadingFrom );
 			const payload = await dataModelsApi( config, 'get', url );
 			setPlans( payload.migrations || [] );

@@ -27,6 +27,22 @@ const failed = ( message ) => ( { envelope: { ok: false, message } } );
 /** What each route answers next. */
 let answers;
 
+/** Every address the wizard asked, in order. */
+let asked;
+
+/**
+ * The last part of the route an address is for, however the site spells its routes: a path
+ * with pretty permalinks, the `rest_route` parameter without them.
+ *
+ * @param {string} url The address the wizard asked.
+ * @return {string} The route's last part, such as `plan`.
+ */
+function routeEnd( url ) {
+	const address = new URL( url, 'https://acme.test' );
+	const route = address.searchParams.get( 'rest_route' ) || address.pathname;
+	return route.split( '/' ).pop();
+}
+
 const settle = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
 async function press( id ) {
@@ -34,16 +50,18 @@ async function press( id ) {
 	await settle();
 }
 
-async function openTheWizard() {
+async function openTheWizard( restUrl = '/corex/v1/setup' ) {
 	document.body.innerHTML = '<div id="corex-setup-app"></div>';
 	window.wp = {};
 	window.corexSetup = {
-		restUrl: '/corex/v1/setup',
+		restUrl,
 		nonce: 'n',
 		adminUrl: '/wp-admin/',
 	};
-	const answerFor = async ( url ) =>
-		answers[ url.split( '/' ).pop().split( '?' )[ 0 ] ];
+	const answerFor = async ( url ) => {
+		asked.push( url );
+		return answers[ routeEnd( url ) ];
+	};
 	window.Corex = { api: { get: answerFor, post: answerFor } };
 
 	jest.isolateModules( () => {
@@ -55,6 +73,7 @@ async function openTheWizard() {
 const alert = () => document.querySelector( '#corex-setup-app [role="alert"]' );
 
 beforeEach( () => {
+	asked = [];
 	answers = {
 		state: ok( {
 			config: { kits: [ { name: 'company' } ], demoLevels: [] },
@@ -71,8 +90,8 @@ afterEach( () => {
 	delete window.wp;
 } );
 
-async function goToThePlan() {
-	await openTheWizard();
+async function goToThePlan( restUrl ) {
+	await openTheWizard( restUrl );
 	for ( let step = 0; step < 4; step++ ) {
 		await press( 'corex-setup-next' );
 	}
@@ -116,3 +135,30 @@ it( 'says nothing went wrong once a second press applies the plan', async () => 
 	expect( alert() ).toBeNull();
 	expect( document.body.textContent ).toContain( '2 pages processed.' );
 } );
+
+it.each( [
+	[
+		'pretty permalinks',
+		'https://acme.test/wp-json/corex/v1/setup',
+		'/wp-json/corex/v1/setup/plan',
+		null,
+	],
+	[
+		'no pretty permalinks',
+		'https://acme.test/index.php?rest_route=/corex/v1/setup',
+		'/index.php',
+		'/corex/v1/setup/plan',
+	],
+] )(
+	'asks for the plan of the chosen kit on a site with %s',
+	async ( _site, restUrl, path, route ) => {
+		await goToThePlan( restUrl );
+
+		const plan = new URL( asked[ asked.length - 1 ] );
+		expect( plan.pathname ).toBe( path );
+		expect( plan.searchParams.get( 'rest_route' ) ).toBe( route );
+		expect( plan.searchParams.get( 'kit' ) ).toBe( 'company' );
+		expect( plan.searchParams.get( 'level' ) ).toBe( 'standard' );
+		expect( document.body.textContent ).toContain( 'pages will be' );
+	}
+);

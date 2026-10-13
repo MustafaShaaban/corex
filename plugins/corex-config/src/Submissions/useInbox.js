@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
+	buildEmailLogUrl,
 	buildInboxUrl,
 	deleteNotice,
 	inboxReducer,
@@ -251,11 +252,7 @@ export function useInbox( config, filters ) {
 		},
 		log: ( id, attemptId ) =>
 			window.Corex.api.get(
-				`${
-					config.restUrl
-				}/${ id }/email-log?attempt_id=${ encodeURIComponent(
-					attemptId
-				) }`,
+				buildEmailLogUrl( config.restUrl, id, attemptId ),
 				{ nonce: config.nonce }
 			),
 		previewBulk: ( action, ids, parameters ) =>
