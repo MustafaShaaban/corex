@@ -16,6 +16,7 @@ use Corex\Email\Template\EmailTemplate;
 use Corex\Email\Template\Layout;
 use Corex\Email\Template\MailContext;
 use Corex\Email\Template\TemplateRenderer;
+use Corex\Tests\Support\LanguageOfTheRequest;
 
 final class GreetingTemplate extends EmailTemplate
 {
@@ -37,7 +38,10 @@ final class GreetingTemplate extends EmailTemplate
 
 function mailRenderer(): TemplateRenderer
 {
-    return new TemplateRenderer(new Layout(['name' => 'Acme', 'color' => '#0B1F3B', 'logo' => '']));
+    return new TemplateRenderer(
+        new Layout(['name' => 'Acme', 'color' => '#0B1F3B', 'logo' => '']),
+        new LanguageOfTheRequest(),
+    );
 }
 
 it('merges whitelisted context into subject and body', function () {
