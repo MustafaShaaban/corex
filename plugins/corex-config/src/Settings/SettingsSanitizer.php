@@ -31,7 +31,9 @@ final class SettingsSanitizer
         }
 
         return match ($type) {
-            'email'        => is_email(sanitize_email($raw)) ? sanitize_email($raw) : null,
+            // What was typed is what is judged. Cleaned first, an address WordPress could
+            // "repair" was saved as another one: sales@münchen.de as sales@mnchen.de.
+            'email'        => is_email(trim($raw)) ? sanitize_email(trim($raw)) : null,
             'url', 'media' => esc_url_raw($raw) !== '' ? esc_url_raw($raw) : null,
             'select'       => in_array($raw, array_keys($options), true) ? $raw : null,
             // Written into a style attribute of an email, so one form only (spec 106).

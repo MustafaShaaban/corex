@@ -67,6 +67,28 @@ it('does not warn when the From domain matches the site domain', function () {
     expect($result->hasWarnings())->toBeFalse();
 });
 
+// Spec 106, story 5: the address a site names for its replies is an address it sends from,
+// and is warned about as the general one is.
+it('warns when the reply sender address is on another domain, and says which address it means', function () {
+    $result = (new TransportAdvisory(advisoryConfig([
+        'mail.from.address' => 'hello@example.com',
+        'mail.reply.from_address' => 'answers@other-domain.net',
+    ])))->evaluate();
+    $messages = implode(' ', array_map(static fn ($n) => $n['message'], $result->notes()));
+
+    expect($result->hasWarnings())->toBeTrue()
+        ->and($messages)->toContain('Your reply sender address is on other-domain.net');
+});
+
+it('says nothing of a reply sender address on the site\'s own domain, or of none', function (array $named) {
+    $result = (new TransportAdvisory(advisoryConfig($named + ['mail.from.address' => 'hello@example.com'])))->evaluate();
+
+    expect($result->hasWarnings())->toBeFalse();
+})->with([
+    'on the site\'s domain' => [['mail.reply.from_address' => 'answers@example.com']],
+    'none' => [[]],
+]);
+
 it('reports a forced From only when a wp_mail_from filter is actually registered', function () {
     Functions\when('has_filter')->alias(static fn (string $hook): bool => $hook === 'wp_mail_from');
 

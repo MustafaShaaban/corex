@@ -3,7 +3,8 @@
 /**
  * Corex Mail defaults. The from-identity and reply-to for outgoing mail; empty
  * values fall back to the site identity (admin email / blog name). Overridable via
- * the Config engine (`mail.from.name`, `mail.from.address`, `mail.reply_to`).
+ * the Config engine (`mail.from.name`, `mail.from.address`, `mail.reply_to`, and `mail.reply.*`
+ * for a reply from the Submissions inbox).
  *
  * @package Corex\Email
  */
@@ -21,6 +22,13 @@ return [
         'address' => '',
     ],
     'reply_to' => '',
+    // The sender of a reply from the Submissions inbox. Empty, a reply leaves as any other
+    // email does (spec 106, story 5).
+    'reply' => [
+        'from_name'    => '',
+        'from_address' => '',
+        'reply_to'     => '',
+    ],
     'variables' => [
         'user.name'        => ['type' => 'text', 'label' => 'User name'],
         'user.email'       => ['type' => 'email', 'label' => 'User email'],

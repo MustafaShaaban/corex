@@ -155,7 +155,28 @@ takes its own direction, so an Arabic line in an English reply starts from the r
 The same words are sent with it as plain text, for a mail client that shows no HTML: paragraphs apart, list items
 marked, and each link followed by its address.
 
-On a development site the email is in **CoreX → Email Studio** with both versions, as it would have been sent.
+On a development site the email is in **CoreX → Email Studio** with both versions, as it would have been sent. The
+kept email records who it was for and where an answer goes, not who it was from: the sender is not shown there.
+
+### Who a reply is from
+
+A reply leaves from the site's general sender unless the site names one for replies, under **CoreX → Settings →
+Mail**:
+
+- **Reply sender name**: the name a reply is sent under. Blank, the general **From name**.
+- **Reply sender address**: the address it is sent from. Blank, the general **From address**. It has to be a
+  mailbox your mail service may send as: a relay such as an SMTP plugin sends each address through its own
+  connection, and one it does not know may be refused, rewritten, or land in spam.
+- **Replies are answered to**: where the person's answer goes. Blank, the **Default reply-to address**.
+
+Each is used alone or with the others. A name with no address anywhere is sent over the address WordPress itself
+sends from. The settings are read by a reply and by a reply sent again; no other email reads them.
+
+A transport plugin set to force a From address or name ("Force From") replaces what is set here, as it does the
+general sender. The Mail settings say so when one is.
+
+An address that is not one is not saved, and the settings screen says which field was not changed and why; what was
+there before stays. The rest of the form is saved.
 
 A site can give these emails its own colours, logo and footer line, or its own template: see
 [A site's own email design](/guides/email-design/).

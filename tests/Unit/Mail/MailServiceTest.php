@@ -141,6 +141,7 @@ it('hands the driver every field the message carried, the sender and the attachm
         'from'        => 'info@example.com',
         'attachments' => [42, 43],
         'plainText'   => 'x',
+        'fromName'    => 'Acme Sales',
     ];
     $parameters = array_map(
         static fn (ReflectionParameter $parameter): string => $parameter->getName(),
@@ -157,6 +158,27 @@ it('hands the driver every field the message carried, the sender and the attachm
         ->and($driver->sent[0]->from)->toBe('info@example.com')
         ->and($driver->sent[0]->attachments)->toBe([42, 43])
         ->and($driver->sent[0])->toEqual($message);
+});
+
+// A name is a header field like the others. CoreX's own code cleans one before it gets here;
+// a caller that built a message by hand does not get a second header through.
+it('rejects a sender\'s name with a line break in it without sending', function () {
+    $driver = fakeDriver();
+    $log    = fakeLogStore();
+
+    $result = mailService($driver, $log)->deliver(new EmailMessage(
+        ['to@example.com'],
+        [],
+        [],
+        null,
+        'Hi',
+        '<p>x</p>',
+        fromName: "Acme\r\nBcc: victim@example.com",
+    ));
+
+    expect($result->status)->toBe('rejected')
+        ->and($driver->sent)->toBe([])
+        ->and($log->records)->toBe(['rejected']);
 });
 
 it('rejects a header-injected sender without sending', function () {

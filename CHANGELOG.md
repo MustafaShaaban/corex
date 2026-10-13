@@ -8,6 +8,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A site names who its replies are from** (spec 106, slice 5). Three settings under CoreX →
+  Settings → Mail: **Reply sender name**, **Reply sender address** and **Replies are answered
+  to**. A reply from the Submissions inbox, and one sent again, leaves from them; left blank,
+  each falls back to the site's general sender as before. The Mail settings warn when the
+  reply address is on another domain than the site's, as they do for the general one
+  (DECISIONS #353).
+
 - **The page that shows a new preview link has a button that copies it** (spec 101, FR-011a;
   the owner's ask). The link is in a field of its own, labelled, with **Copy link** beside
   it: one press puts the whole link on the clipboard and the page says "Copied.", to a
@@ -71,6 +78,22 @@ All notable changes to Corex are documented here. The format follows
   signed in, as it was, and the screen shows its queue as it did (DECISIONS #346).
 
 ### Fixed
+
+- **The settings screen says when it did not save a field.** An address, a web address, a
+  colour or a choice that was not one was dropped in silence under "Settings saved", and the
+  field came back as it had been. The screen now names the field, quotes what was typed and
+  says why it was not taken, in a message that stays until it is dismissed; the field is
+  marked as not taken. Everything else in the form is saved, as before.
+- **An email address is judged as it was typed.** The settings screen cleaned an address
+  before checking it, so one WordPress could "repair" was saved as another address:
+  `sales@münchen.de` as `sales@mnchen.de`. It is now refused, and said.
+- **A From name is sent when the site names no From address.** With a name set and no
+  address, no From header was written and the email left as "WordPress". The name is now
+  sent over the address WordPress itself sends from, unless a plugin has chosen a name.
+- **A From name is cleaned as a header, not as text on a page.** "Tom & Jerry <3" was sent
+  as "Tom & Jerry &lt;3". A name is now one line with `<`, `>` and `"` taken out, at most 100
+  characters. A name that held something shaped like a tag keeps its words: "Acme <Sales>"
+  was sent as "Acme" and is now "Acme Sales".
 
 - **A new submission of a form defined in code raises a notification.** Reported on
   2026-10-13 from a client site: dozens of submissions stored and no notification for any of
@@ -463,6 +486,16 @@ All notable changes to Corex are documented here. The format follows
   its button reached the window's edge once the header had a gutter.
 
 ### Client impact
+
+- **Three new settings, `mail.reply.from_name`, `mail.reply.from_address` and
+  `mail.reply.reply_to`** (options `corex_mail_reply_from_name`,
+  `corex_mail_reply_from_address`, `corex_mail_reply_reply_to`). Blank on every site until
+  set. A site whose mail relay sends each address through its own connection has to add the
+  reply address there before naming it here. **`Corex\Email\Message\EmailMessage` gains a last,
+  optional constructor argument, `fromName`**, and a new class,
+  `Corex\Email\Message\SenderName`, holds the rule for one. A site with its own `MailDriver`
+  that wants the name has to read it; the reply's arrives cleaned. **The general From name
+  may read differently**: see Fixed.
 
 - **A site whose forms are registered in code starts to get the New submission
   notification.** Nothing to set. It is raised for submissions stored from now on:

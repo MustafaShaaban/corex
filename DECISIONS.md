@@ -14691,3 +14691,97 @@ send theirs later, from a queue of its own, and cannot report through the event:
 gets no failed-email notification from this change. A site that
 listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
 0; nothing under `sites/` in the Muva or Perego checkouts names that event.
+
+## #353 — A site names who its replies are from, and a setting that is refused is said
+
+**Date:** 2026-10-13. **Branch:** `feat/106-reply-sender`. **Spec:** 106, slice 5, its second half (story 5, FR-024).
+
+A reply left from the site's general sender, which on most sites is a no-reply address or
+the one the contact form's notifications come from: wrong for a person writing to a
+customer, and the open part of issue #150.
+
+**Three settings, each falling back to its general counterpart.** `mail.reply.from_name`,
+`mail.reply.from_address`, `mail.reply.reply_to`, under Settings → Mail. Each alone or with
+the others. A reply reads them, and so does a reply sent again (#328), which goes through
+the same call. Nothing else does.
+
+**The name travels on the message, and is still not a caller's to choose.** `EmailMessage`
+took an address for one message (#150) and deliberately no name: "a per-message display name
+would be a different and more dangerous feature, since a sender name that varies per message
+is how a spoof reads." That reasoning stands. `fromName` is there for a name an
+administrator set for one kind of message; the only code of CoreX's that fills it reads a
+setting. The driver could not have read the setting itself, since it does not know which
+message is a reply. Nothing in the type stops other code filling it, so it is guarded where
+it is used, below.
+
+**One rule for a name in a header, in one place.** `SenderName::of()`: one line, `<`, `>`
+and `"` taken out, no `=?` sequence begun, at most 100 characters. The first version had two
+rules, one in the gateway and one in the driver, and the driver's was
+`sanitize_text_field()`, which is a rule for text on a page: a review's probe sent
+"Tom & Jerry <3" as "Tom & Jerry &lt;3" and lost the "%ae" of "Save 50%ae today". It also
+found a name written as an encoded word, which a mail program decodes into whatever it
+says. The gateway applies the rule so that a site's own driver is handed a clean name;
+`WpMailDriver` applies it again, to the general From name too; and `MailService::deliver()`
+gives the name to `HeaderGuard` with the other header fields, which refuses a line break.
+This changes how an existing site's From name is cleaned, and the changelog says how.
+
+**A name with no address to stand in front of.** The driver writes `Name <address>` and
+wrote nothing where there was no address, so a name set alone, on a site that names no
+address, which is how a site starts, was dropped and the email left as "WordPress". The
+review found it; the first version's documents and one test's label said it worked. Where
+there is a name and no address, the driver's listener on `phpmailer_init`, which already
+knows its own email by a mark (#325), gives the mailer the name. Only where the mailer's
+name is still WordPress's own: a name a transport plugin chose through `wp_mail_from_name`
+is that plugin's, as it is when it replaces the name in a header. This fixes the general
+From name set alone as well.
+
+**A setting that is refused is said.** Story 5 asks that an address that is not valid "is
+refused with the reason". The settings screen already refused it, in silence: the value was
+dropped, the screen said "Settings saved", and the field came back as it had been. That was
+true of every email, web address, colour and choice on the screen, so the fix is the
+screen's and not this field's. After a save, each field that was not changed is named, with
+what was typed and why it was not taken; "Everything else was saved" says the rest. What was
+typed is not put back in the field: the stored value is what the form shows, and the message
+quotes what to type again.
+
+**How that message is drawn**, each point from the review. It is an alert that stays until
+dismissed, where "saved" goes after five seconds. It is given focus when the page loads: an
+alert that is in a page as it arrives is not reliably read out, and this one is last in the
+page. The field it names is marked as not taken and described by its line. Dismissed, focus
+goes to the first such field on the open tab, or to Save. What was typed is quoted in its
+own direction, so that "answers@" in a right-to-left sentence is not drawn "@answers", and
+only its first 80 characters: a picture pasted into a web address field is thousands. The
+marking and the focus are the page's script; without it the message still names the field.
+
+**What was typed is what is judged.** The sanitizer cleaned an address and then checked the
+cleaned one, so an address WordPress could "repair" was saved as another:
+`sales@münchen.de` as `sales@mnchen.de`, under "Settings saved". It checks what was typed.
+
+**A browser stops some of these first.** An address with nothing after the @ never reaches
+the server: the browser refuses to submit the form and says so itself. What reaches the
+server and is refused there is what a browser lets through and WordPress does not, such as
+`answers@acme`. The browser test types that.
+
+**The spec's own test is amended.** It read "the captured email's From and Reply-To are
+those". A kept email records its Reply-To and not its sender, so on a development site the
+sender is shown nowhere. Recording it is a change to what Email Studio keeps and shows, and
+is not made here: the From is read off the message WordPress's mailer builds, in a test, and
+the guide says a kept email does not show it.
+
+**Not verified:** that a relay sends from the address named. FluentSMTP and most relay
+plugins send each address through its own authenticated connection; one the relay does not
+know may be refused or rewritten by it, and a relay set to force a sender replaces this one.
+The setting's help and both guides say so, and the Mail settings' advisory now warns when
+the reply address is on another domain than the site's, as it did for the general one.
+
+**Left as it is, and known.** Email Studio's own Resend of a reply that failed rebuilds the
+email from the request and sends it from the general sender: Send again in the inbox is the
+way to send a reply again. The defaults in `addons/corex-email/config/mail.php`, the new
+`reply` block among them, are read by nothing; the settings and their fallbacks are. Most
+labels on the settings screen are not translatable, and now stand inside a translated
+sentence.
+
+**Reviewed** by an independent reading before the pull request: one must-fix (the name
+alone), eight should-fix, all acted on but the kept email's sender, which is the spec
+amendment above.
+
