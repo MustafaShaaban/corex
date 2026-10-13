@@ -14951,3 +14951,98 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #364 — An integration test that leaves a post on the install fails, and the post is deleted first; the test case asks, no transaction does
+
+**Date:** 2026-10-13. **Branch:** `test/integration-suite-leaves-no-posts`, from `main`.
+**Spec:** none (tests only). **Mode:** CoreX Framework.
+
+**What was reported.** A lead left by pull request #407: on a fresh install, one run of the
+integration suite left five rows in the posts table, and
+`tests/Integration/Forms/NotificationFileLinkTest.php` run alone left an attachment each
+time, because `CreatedPosts` listened to `wp_insert_post` and WordPress announces a new
+attachment by `add_attachment`.
+
+**What was measured.** A fresh install made by `scripts/setup-wordpress.ps1` in a worktree
+(WordPress 7.1.3, PHP 8.3.6, 23 MyISAM tables), `main` at `91d52d30`. Posts were counted by
+type before and after, and every `wp_insert_post` and `add_attachment` of the run was
+written down with the test file on the stack.
+
+- The attachment is no longer left. Pull request #399, merged the same evening, made
+  `CreatedPosts` listen to `add_attachment`; #407's branch was cut before it.
+  `NotificationFileLinkTest` alone: two posts inserted, none left.
+- One run of the whole suite: 762 posts inserted, four left.
+  `tests/Integration/Notifications/CodeFormSubmissionNotificationTest.php` left two
+  `corex_email_log` rows, one for each case of its last test. It watched for
+  `corex_submission` only; the email it answers through `pre_wp_mail` is still logged.
+  `tests/Integration/Operations/ComingSoonModeTest.php` left one `corex_submission` and one
+  `corex_email_log`: its test of a form posted while the mode is on watched for neither.
+
+**The decision.** `Corex\Tests\Integration\TestCase` watches for every post a test inserts,
+of any type, and after the file's own `afterEach` reads which are still stored. Those are
+deleted, and then the test fails, naming each as `#12 corex_email_log "its title"`.
+
+- *It fails, and does not only clean up.* A test that leaves a row is a test whose author
+  did not know the product wrote it. Deleting it quietly would keep that unknown.
+- *It deletes before it fails.* A red run costs the install nothing, and the next run does
+  not begin with this one's rows.
+- *It is in the test case's `setUp()` and `tearDown()`.* Pest runs a file's `beforeEach`
+  after the first and its `afterEach` before the second (read in
+  `vendor/pestphp/pest/src/Concerns/Testable.php`), so a post made in `beforeEach` and
+  deleted in `afterEach` is never reported. A post made in `beforeAll` is not watched.
+- *No transaction.* A developer's tables may be MyISAM, as this install's are, where a
+  rollback undoes nothing (found by #407).
+- *It calls `fail()` and adds no assertion.* An assertion in every `tearDown()` would hide
+  a test that asserts nothing, which PHPUnit reports as risky.
+
+`CreatedPosts` gains `watchAll()` and `stillStored()`. It also remembers which site of a
+network was current when the watch began and ignores a post inserted under another one:
+its id is a different post's on the first site, and `delete()` would have removed that
+one. The multisite suite uses the same test case.
+
+The two files now watch for what they write. Nothing else was reported: with the check in
+place and the two files not yet changed, three tests failed out of 1,200 and no other.
+
+**Proof.** The install was emptied and installed again. Before the run: `corex_email_asset`
+8, `page` 2, `post` 1. After 1,200 tests: the same three numbers, and the posts and
+postmeta tables the size they were. On `main` the same run left `corex_email_log` 3 and
+`corex_submission` 1 (the fourth row).
+
+**Tests.** `tests/Integration/Support/CreatedPostsTest.php`, two tests: an attachment is
+heard of and deleted with its file; a watch for every type names what is still stored and
+deletes it. With the `add_attachment` listener taken out both fail. The check itself was
+seen red on the three tests above before they were changed. The multisite suite passes
+with it (7 tests).
+
+**A unit test that passed by the order it ran in.** `tests/Unit/Email/EmailStudioServiceTest.php`,
+"it renders and dispatches the active editable template selected by a route", failed with
+`"get_bloginfo" is not defined nor mocked` when `tests/Unit/Forms` ran before it and passed
+alone and in the suite's order. `EmailRouteMessageFactory` adds the site's name and address
+when `function_exists('get_bloginfo')`, and Brain Monkey defines a function for the rest of
+the process the first time any file stubs it. The test now stubs `get_bloginfo` and
+`home_url` itself. Production code is not changed.
+
+**What it does not do.**
+
+- It hears of posts only. The same run leaves rows in three of CoreX's own tables, each
+  traced to its file by the same method: 19 `export.ready` notifications
+  (`DataModels/DataExportSetTest`, `DataModels/SubmissionsDataExportTest`,
+  `Data/DataManagementControllerTest`, `Submissions/SubmissionExportFileTest`), five
+  activity events (`Submissions/SubmissionDeleteTest`, `SubmissionTrashClockTest`,
+  `SubmissionTrashTest`) and two queued `data.export` jobs
+  (`Data/DataManagementControllerTest`). On a fresh install there are six more
+  notifications, not traced to a file: two `email.design_failed`, one `submission.new` for
+  `corex-optional-file-probe`, three `readiness.blocker`. Not fixed here.
+- It does not watch options. After a run `page_on_front` is gone, three
+  `theme_mods_corex-seam-*` options and `stylesheet_root` and `template_root` are new, and
+  one `corex_throttle_` transient is left. Not traced.
+- It cannot report what `CreatedPosts` does not hear of. A post inserted with a query, and
+  not through `wp_insert_post()`, is one.
+- mPDF's font cache under `corex-private/exports/pdf-working` is written by the first PDF
+  export of a run and left. It is a cache.
+
+**Client impact.** None for a site. A client repository runs this suite in its own CI,
+against an install that may have the client's plugin active. Not measured: if that plugin
+writes a post while one of these tests runs (a listener on a submission, say), the test
+now fails there and names the post, on a file the client does not own. The remedy is then
+here, in the test, and not in the client's repository.

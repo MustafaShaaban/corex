@@ -72,6 +72,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The integration suite leaves no post on the install it runs against, and a test that
+  would leave one fails.** One run on a fresh install left three logged emails and a
+  submission, written by listeners that two test files did not know of. The integration
+  test case now watches every post a test inserts; one still stored after the test's own
+  clean-up is deleted and the test fails, naming it. No transaction is used: a developer's
+  tables may be MyISAM. Posts by type are the same before and after 1,200 tests. Rows the
+  suite leaves in CoreX's own tables (notifications, activity, queued jobs) are listed in
+  the decision and not fixed. A unit test of Email Studio that passed or failed by the
+  order the files ran in now stubs what it calls (DECISIONS #364).
+
 - **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
   WP-CLI.** Four jobs in three runs did on 2026-10-13, each before a test had run, and each
   passed when a person ran it again. setup-php asks for WP-CLI once, with no retry, and reports a tool it
@@ -495,6 +505,11 @@ All notable changes to Corex are documented here. The format follows
   Found by the review of the change above.
 
 ### Client impact
+
+- **A client repository's CI may show a framework integration test red where it was green.**
+  The suite now fails a test that leaves a post on the install. If a client's own plugin is
+  active there and writes a post while a framework test runs, that test fails and names the
+  post. Not seen on a client site; the remedy is in the framework's test (DECISIONS #364).
 
 - **A site with a form that has a file field should take this release, and look at what it
   already stores.** Three things show an answer that was not a file the submission was

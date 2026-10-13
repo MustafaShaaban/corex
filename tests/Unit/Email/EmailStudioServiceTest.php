@@ -212,6 +212,12 @@ it('exposes only active Email Studio templates to cross-module binding controls'
 });
 
 it('renders and dispatches the active editable template selected by a route', function () {
+    // The factory hands a template the site's name and address when WordPress can be asked for
+    // them. Whether it could be asked here used to depend on an earlier file having stubbed
+    // `get_bloginfo`, so this passed in the suite's own order and failed after tests/Unit/Forms.
+    Functions\when('get_bloginfo')->justReturn('Example site');
+    Functions\when('home_url')->justReturn('https://example.com/');
+
     $store      = emailStudioServiceStore();
     $templates  = new \Corex\Email\Studio\EmailTemplateRepository($store);
     $routes     = new EmailRouteRepository($store);

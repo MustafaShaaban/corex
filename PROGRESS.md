@@ -107,6 +107,17 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13: tests only.** An integration test that leaves a
+post on the install fails, and the post is deleted first (DECISIONS #364).
+`Corex\Tests\Integration\TestCase` watches every post a test inserts, through
+`CreatedPosts::watchAll()`, and reads what is still stored after the file's own `afterEach`.
+One run on a fresh install had left four posts: `CodeFormSubmissionNotificationTest` two
+logged emails, `ComingSoonModeTest` a submission and a logged email. Both now watch for
+what they write, and posts by type are the same before and after a run. **A new test that
+writes a post it does not delete is red, with the post named: add
+`CreatedPosts::watch('<type>')` to its `beforeEach` and `->delete()` to its `afterEach`.**
+`EmailStudioServiceTest` no longer passes or fails by the order the unit files run in.
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
@@ -266,6 +277,16 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **The integration suite still leaves rows in CoreX's own tables, and changes options.**
+  Posts are checked after every test (DECISIONS #364); nothing checks the rest. One run
+  leaves 19 `export.ready` notifications (`DataModels/DataExportSetTest`,
+  `DataModels/SubmissionsDataExportTest`, `Data/DataManagementControllerTest`,
+  `Submissions/SubmissionExportFileTest`), five activity events
+  (`Submissions/SubmissionDeleteTest`, `SubmissionTrashClockTest`, `SubmissionTrashTest`)
+  and two queued `data.export` jobs (`Data/DataManagementControllerTest`). A first run on a
+  fresh install leaves six more notifications, not traced to a file. `page_on_front` is
+  gone after a run and three `theme_mods_corex-seam-*` options are new. Measured on
+  2026-10-13 by counting every table before and after.
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
   only of what Email Studio's own service sent. A form's own email listener that sends

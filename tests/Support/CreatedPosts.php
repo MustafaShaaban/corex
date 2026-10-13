@@ -27,14 +27,34 @@ final class CreatedPosts
     /** @var list<int> */
     private array $ids = [];
 
-    /** @param list<string> $postTypes */
-    private function __construct(private readonly array $postTypes)
+    /** The site that was current when the watch began. On one site this never changes. */
+    private readonly int $siteId;
+
+    /** @param list<string>|null $postTypes Null for every type. */
+    private function __construct(private readonly ?array $postTypes)
     {
+        $this->siteId = get_current_blog_id();
     }
 
     public static function watch(string ...$postTypes): self
     {
-        $watcher = new self(array_values($postTypes));
+        return self::listen(new self(array_values($postTypes)));
+    }
+
+    /**
+     * Every post, of any type: for the check that a test left nothing behind.
+     *
+     * A test names the types it writes ({@see watch()}), and what it does not know it writes it
+     * does not name. The integration test case watches for all of them around every test, and
+     * fails the one that leaves any ({@see \Corex\Tests\Integration\TestCase}).
+     */
+    public static function watchAll(): self
+    {
+        return self::listen(new self(null));
+    }
+
+    private static function listen(self $watcher): self
+    {
         add_action('wp_insert_post', [$watcher, 'remember'], 10, 3);
         // WordPress announces a new attachment by this action and not by `wp_insert_post`: a
         // watcher asked for attachments heard of none, and deleted none.
@@ -46,7 +66,7 @@ final class CreatedPosts
     /** The `add_attachment` listener. */
     public function rememberAttachment(int $postId): void
     {
-        if (in_array('attachment', $this->postTypes, true)) {
+        if ($this->watches('attachment')) {
             $this->ids[] = $postId;
         }
     }
@@ -54,15 +74,52 @@ final class CreatedPosts
     /** The `wp_insert_post` listener. An update is not a row this test created. */
     public function remember(int $postId, WP_Post $post, bool $update): void
     {
-        if (! $update && in_array($post->post_type, $this->postTypes, true)) {
+        if (! $update && $this->watches($post->post_type)) {
             $this->ids[] = $postId;
         }
+    }
+
+    /**
+     * A post inserted while another site of a network is current is not remembered: its id is
+     * another post's here, and that one is not this test's to delete.
+     */
+    private function watches(string $postType): bool
+    {
+        return get_current_blog_id() === $this->siteId
+            && ($this->postTypes === null || in_array($postType, $this->postTypes, true));
     }
 
     /** @return list<int> */
     public function ids(): array
     {
         return $this->ids;
+    }
+
+    /**
+     * The remembered posts that are still stored, each as `#12 page "Its title"`.
+     *
+     * Read from the table and not through `get_post()`, which answers from the object cache: a
+     * row a test removed with a query of its own would still be reported.
+     *
+     * @return list<string>
+     */
+    public function stillStored(): array
+    {
+        global $wpdb;
+
+        if ($this->ids === []) {
+            return [];
+        }
+
+        $stored = $wpdb->get_results(
+            "SELECT ID, post_type, post_title FROM {$wpdb->posts} WHERE ID IN ("
+            . implode(',', array_map('intval', $this->ids)) . ') ORDER BY ID',
+        );
+
+        return array_map(
+            static fn (object $post): string => sprintf('#%d %s "%s"', $post->ID, $post->post_type, $post->post_title),
+            is_array($stored) ? $stored : [],
+        );
     }
 
     /** Stop watching and permanently delete everything remembered, an attachment with its file. */
