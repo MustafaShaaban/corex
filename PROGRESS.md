@@ -111,6 +111,14 @@ carried the moved address. `addons/corex-profile/src/Reset/` holds it;
 `tests/e2e/account-reset.spec.js` walks it in a browser, with a fixture that keeps the
 email and sends nothing.
 
+**After v0.45.2, not released, 2026-10-13.** A request the Access REST routes cannot read is
+answered 400 and names the parameter (spec 079, FR-002a; DECISIONS #348). An empty reason,
+an ability, area, effect or role CoreX does not have, or a confirmation that could not be
+read, was a 500 and a fatal error in the PHP log: the service threw and the route caught
+nothing. The service now throws `Corex\Access\InvalidAccessInput` for what a caller sent,
+and `AccessController` answers that class alone; a refusal for how things stand is still
+200 and `blocked`. `tests/Integration/Access/AccessRouteRefusalTest.php` holds it through
+WordPress's REST server.
 **After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
 soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
 the first client site (FR-011a, tasks T069 to T075, DECISIONS #327). The button is shown by a
@@ -170,6 +178,19 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   v0.45.2). A site that writes its own emails, as MUVA does, is handed what it needs
   (`FormSubmittedEvent::submissionId()`, `Corex\Mail\SubmissionAddress`) and has to use it
   in its own listener: that is the site's change, not the framework's.
+- **A change to a role nobody has is taken by the Access routes.** A role key is checked
+  for its form only. Measured through the service on 2026-10-13: a change for
+  `probe_no_such_role` was previewed as allowed, answered `completed`, and its grant was
+  stored (DECISIONS #348). Nobody holds such a role, so nothing is granted to anybody; the
+  row stays and the audit log says a role was changed.
+- **A `role` in the body or the query of an Access role route is read before the one in
+  the address.** `POST corex/v1/access/roles/editor/apply` with `"role": "author"` in its
+  body changes `author`. It is how WordPress orders a request's parameters, and it needs
+  `manage_options` either way. Read from the 400 a body's `role` of `!!!` is answered; a
+  change landing on another role was not run.
+- **`changes` that is not a map is read as no changes** by the Access role routes, and
+  answered 200. Read, not run: applying no changes with a confirmation for no changes
+  would write "role changed" to the audit log.
 - **The notification email's link was not followed from a mailbox.** What it holds was read in
   tests, and the address is the one the inbox already opens a submission from. Nobody has
   received the email and pressed the link, signed in and signed out.

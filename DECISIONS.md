@@ -13197,3 +13197,127 @@ browser's offers change with it: Chromium can offer a saved address's email on t
 and forgot-password fields, and reads the registration form as a new account. No id, name,
 class or route changed. Read on this machine on 2026-10-13: nothing under `sites/` in the
 Muva or Perego checkouts names the block.
+
+## #348 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
+
+**Date:** 2026-10-13. **Branch:** `fix/access-route-refusals`. **Found by:** the measurement
+for #343, which posted an access request with an empty reason and was answered 500.
+**Decided by:** me, from the measurements below. The owner's brief named the two answers to
+choose between (a 400, or a 200 with a `blocked` result as a duplicate is answered in #343),
+asked what a script reading status codes then sees, asked for the sibling routes to be read
+for the same throw, and said to build it if it was a plain defect.
+
+**What the code did.** `AccessService` and `AccessPolicy` refuse what they are handed by
+throwing `InvalidArgumentException`, and `Confirmation` does the same in its constructor.
+The form on a denied screen catches it. `AccessController` caught nothing, so each was
+WordPress's fatal error: 500, "There has been a critical error on this website", and a
+"PHP Fatal error: Uncaught" line in the PHP log for each request.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, over HTTP
+with a REST nonce, mail answered for by `pre_wp_mail`; 31 requests, of which 21 were
+answered 500, each with a fatal error in the log):
+
+| Sent | To | Answer |
+|---|---|---|
+| an empty reason; no body at all | `POST access/requests`, as an editor | 500 |
+| an ability CoreX does not have; an area it does not have (`forms`, where the area is `forms-flows`) | the same | 500 |
+| an ability and an area; neither | the same | 500 |
+| a reason of 2,001 characters | the same | 500 |
+| a reason that is a list | the same | 200, and a request stored with the reason "Array" |
+| a key of `changes` that is not an ability; a value that is not an effect, or is a list | `POST access/roles/editor/preview`, as an administrator | 500 |
+| `changes` that is a list, or has the key `"123"` | the same | 500, a `TypeError`: PHP keeps such a key as an integer and the catalog takes a string |
+| `role` in the body as `!!!` | the same, and `GET access/roles/editor?role=!!!` | 500 |
+| `role` in the body as a list | `POST access/roles/editor/preview` | 200, a preview for a role named `array` |
+| no confirmation; one that is a string; no kind of operation; a hash that is not one; an actor of 0; an expiry or a use that is not a time | `POST access/roles/editor/apply` | 500 |
+| a confirmation that can be read and confirms another change | the same | 200, `blocked`, `confirmation_invalid` |
+| a decision on a request that is not there, with no body or a note that is a list | `POST access/requests/999999/decision` | 200, `blocked`, `request_not_pending` |
+
+The brief's lead read the 2,001-character reason and did not post it; it was posted here.
+The four requests that sent a list where text was meant also wrote "Array to string
+conversion" to the log.
+
+**1. The answer is 400, not 200 with `blocked`.** Three reasons.
+
+- *What a script reading status codes sees.* These were 500. Answered 400, a script that
+  treats anything outside 2xx as "not done" is right before and after. Answered 200, a
+  request that created nothing would move from "failed" to "succeeded" for that script. A
+  duplicate (#343) is different: it was 200 before, and stays 200.
+- *It is not the same kind of no.* Every `blocked` answer in this family is about how
+  things stand: a request no longer pending, a change the safety policy stops, a
+  confirmation for another change, a duplicate. The same request might be taken at another
+  time. An empty reason or a key CoreX does not have is refused however often it is sent.
+- *Two of the routes that read what is sent have no result to block.* A preview answers a preview, and the
+  role route a hash. One rule for the controller needs an answer every route can give.
+
+**2. The body is WordPress's own for a refused parameter.** `code` is `rest_invalid_param`,
+`data.status` is 400, `data.params` maps the parameter to the message and `data.details`
+gives it a code of its own (`reason_required`, `reason_too_long`, `target_required`,
+`target_ambiguous`, `ability_unknown`, `area_unknown`, `effect_unsupported`, `role_invalid`,
+`confirmation_malformed`). A client that reads WordPress's answer for a parameter WordPress
+refuses reads this one. These routes already answer WordPress's bodies for 401 and 403, so
+a caller already meets that shape outside 2xx. The message for an empty reason is the one
+the form on a denied screen shows. It is built as a `WP_REST_Response` with the status, as
+`JobController` and `SecuritySettingsController` build theirs, so no method's return type
+changed.
+
+**3. The service says which refusal it is.** `Corex\Access\InvalidAccessInput` extends
+`InvalidArgumentException` and carries the parameter and the code. The service, the policy
+and the controller's reading of a confirmation throw it for what a caller sent. The
+controller catches that class and nothing wider. A plain `InvalidArgumentException` (no
+requester, a request already run out, a change with no actor) is a mistake in CoreX and is
+still answered as one: a 400 there would tell a caller to correct a request with nothing
+wrong in it. The form's `catch (InvalidArgumentException)` still catches the new class,
+and what a person sees on a denied screen is unchanged.
+
+**4. A parameter that is not text is read as nothing.** A list read as text is the word
+"Array" and a PHP warning. A reason that is a list is now `reason_required` and stores
+nothing; a role that is a list is `role_invalid`; an effect that is a list is
+`effect_unsupported`, as before, without the warning.
+
+**5. A confirmation that cannot be read is 400; one that can and does not confirm is still
+`blocked`.** The second is the service's answer and was not changed.
+
+**Left as it is, deliberately.** Each is under "Open, and not hidden" in `PROGRESS.md`.
+
+- **A `role` in the body or the query is read before the one in the address.** It is how
+  WordPress orders a request's parameters, and its own routes do the same with `id`.
+- **A change to a role nobody has is taken.** Measured through the service:
+  `probe_no_such_role` was previewed as allowed, the change answered `completed` and the
+  grant was stored. A role key is checked for its form only.
+- **`changes` that is a string, or missing, is read as no changes** and answered 200.
+- **The routes declare no `args`.** WordPress could refuse a wrong type before the
+  controller ran. It could not know an ability from a key that is not one, so the service's
+  refusal would still need an answer, and that answer is what this change is.
+
+**Tests.** Unit: the service's seven refusals of a request and the policy's four of a
+change name the parameter and the code; a role key that is not one is refused for a
+preview and for a hash; a caller's own mistake is not the new class. The store, the
+activity record, the mailer and the user directory are mocks that fail the test when
+called. Integration, through WordPress's REST server against the real tables
+(`tests/Integration/Access/AccessRouteRefusalTest.php`): nine request bodies, seven role
+changes at the preview and when applying, the role route, and seven confirmations are
+answered 400 with the parameter and the code, and leave no request, no audit entry, no
+notification and no grant; a reason of exactly 2,000 characters is taken; a readable
+confirmation for another change is still `blocked`. A PHP warning while a route answers
+fails the test. Before the change 24 of its 26 failed; the two that passed hold the
+borders.
+
+Fourteen pieces of the change were then put back one at a time and the tests run. A test
+failed for twelve. One had changed nothing (a confirmation that is not a map was already
+read as an empty one) and was taken out of the change. One had no test: reading an effect
+that is a list as text gave the same 400 with a warning, which is why a warning now fails
+the test; put back again, it fails.
+
+Also run on a trial merge with `fix/access-request-duplicate` (#343, PR #387), which
+changes the same service and the store's interface: no conflict in the code, the tests,
+the guide or the specs, and the access tests pass.
+
+**Measured after the change**, the same 31 requests: the 21 that were 500 and the two
+that were taken for something nobody asked (the reason "Array", the role `array`) are
+answered 400, the other eight as before, with no fatal error and no warning in the log.
+
+**Client impact.** A script that calls these routes is answered 400 where it was answered
+500. Read on this machine on 2026-10-13: nothing under `sites/` in the Muva or Perego
+checkouts names the routes, `AccessService` or `AccessPolicy`. `AccessPolicy::preview()`
+and `AccessService` throw a subclass of what they threw, so a `catch` written for them
+still catches.

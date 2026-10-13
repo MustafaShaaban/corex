@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @package Corex\Core
+ * @package Corex
  */
 
 declare(strict_types=1);
