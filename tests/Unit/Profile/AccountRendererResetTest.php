@@ -51,8 +51,8 @@ it('shows the new-password form, and no other, to somebody who holds a reset key
         ->and($html)->toContain('data-corex-account-form="reset"')
         ->and($html)->toContain('<input type="hidden" name="login" value="sal&quot;ma" />')
         ->and($html)->toContain('<input type="hidden" name="key" value="k3yFromTheEmail" />')
-        ->and($html)->toContain('type="password" id="corex-account-password" name="password"')
-        ->and($html)->toContain('type="password" id="corex-account-password_confirm" name="password_confirm"');
+        ->and($html)->toContain('type="password" id="corex-account-reset-password" name="password"')
+        ->and($html)->toContain('type="password" id="corex-account-reset-password_confirm" name="password_confirm"');
 })->with(['signed out' => [false], 'signed in as somebody' => [true]]);
 
 it('says a link has expired above the forms, where a new one can be asked for', function () {

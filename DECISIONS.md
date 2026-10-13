@@ -12447,6 +12447,111 @@ none has `hidden`. The fields are 16 pixels narrower. A site that styles the blo
 reads the changelog's Client impact. Read on this machine: nothing under `sites/` in the
 Muva or Perego checkouts names the block.
 
+## #337 — A field of the account block has an id of its own on the page: the block, the form, the field
+
+**Date:** 2026-10-13. **Branch:** `fix/account-field-ids-own-form`, on top of
+`fix/account-message-in-view` (#336, pull request 380, open when this was written).
+**Found by:** the session that built #336, which read `label.control` for every label of
+the block and recorded two that pointed into another form. Spec 068 gains FR-161b.
+
+**What was there.** `AccountRenderer::field()` made a field's id from its name:
+`'corex-account-' . $name`. The signed-out block prints the sign-in form, the registration
+form when registration is open, and the forgot-password form, on one page. Sign-in and
+forgot-password each have a field named `login`; sign-in and registration each have one
+named `password`. So `corex-account-login` was in the page twice, and
+`corex-account-password` twice with registration open. A label names its field by id, and
+a browser gives an id to the first element that has it.
+
+**Measured before the change.** WordPress 7.1.3, a WordPress of this worktree's own,
+Chromium, signed out. `label.control` for every `.corex-account__row label`, and the name
+of every text field of the block in Chromium's own accessibility tree
+(`Accessibility.queryAXTree`, role `textbox`):
+
+| Form | Label | The field the browser ties it to | The name of the field under it |
+|---|---|---|---|
+| sign-in | Username or email | its own | "Username or email Username or email" |
+| sign-in | Password | its own | "Password Password" (registration open) |
+| registration | Password | the sign-in form's | none |
+| forgot password | Username or email | the sign-in form's | none |
+
+The other labels were tied to their own fields. So two fields had no name for a screen
+reader, two were named twice, and pressing "Username or email" over the forgot-password
+field put the cursor in the sign-in form. With registration closed, as on the site the
+browser suite runs on, the forgot-password label alone is tied to another form's field.
+**No screen reader was listened to**: the names are what Chromium's tree holds. The block printed twice on
+one page (through `do_blocks()`) repeated every id.
+
+**What was weighed.**
+
+1. *The form in the id* (`corex-account-register-password`). It mends what was measured.
+   A page that holds the block twice repeats every id again, and nothing limits a page to
+   one: the block is registered in PHP with no `supports`, and it is placed by markup. A
+   sign-in panel in a header and the account page under it is such a page.
+2. *The field inside its label, and no id.* Nothing can collide. It changes the markup the
+   stylesheet lays out (a label and a field as two children of a column) and what a site's
+   own stylesheet may select, for the same result.
+3. *The block, the form and the field in the id.* Built. The block's part is
+   `wp_unique_prefixed_id('corex-account-')`, WordPress's counter for one prefix: the
+   first block WordPress renders in a request is `corex-account-1`, the next
+   `corex-account-2`. `ProfileServiceProvider::renderBlock()` asks for it and hands it to
+   the renderer as `instance`, with what else it reads from WordPress; the renderer still
+   reads nothing itself, and without `instance` it starts an id with `corex-account`.
+   `wp_unique_id()`, which WordPress's search block uses for its field and label, was
+   tried first: its one counter is shared with everything else on the page, and the block
+   alone on a page of the default theme was numbered 2.
+
+**What an id is now.** `corex-account-1-login-password`: the block, the form (`login`,
+`register`, `reset-request`, `profile`, the values of `data-corex-account-form`), the
+field's name. The number counts the times the block was rendered in the request, which is
+1 for a page's one block as measured, and is more when something renders the page's
+content a second time (read from WordPress's function, not met). **An id of the block is
+not something to select by.** The profile guide says how a field is selected (its form and
+its name).
+
+**Measured after the change**, same install, in Chromium:
+
+- signed out with registration open, one block: 7 labelled fields, each label's control is
+  the field under it, each field has one label, no id is on the page twice (32 ids on the
+  page, the theme's among them), and each field's name in the accessibility tree is its
+  label's text, once;
+- the same with registration closed (3 labelled fields);
+- a page holding the block twice: 14 labelled fields, the same holds for each, the first
+  block's ids start `corex-account-1-` and the second's `corex-account-2-`, with
+  registration open and closed (6 labelled fields when closed);
+- pressing "Username or email" in the forgot-password form puts the cursor in that form's
+  field.
+
+**Nothing else read the old ids.** `account.js` finds a form by `data-corex-account-form`
+and a field by its name; `account.css` selects by class; the browser suite uses
+`input[name="…"]`; the Jest test builds its own markup with no ids. Searched for
+`corex-account-` across the repository.
+
+**Tests.** `tests/Unit/Profile/AccountRendererTest.php`: no id is printed twice, and every
+label points at the field beside it in its own form, each for the signed-out panel with
+registration open, with it closed, and for the signed-in panel. Before the change both
+failed for the two signed-out panels; the signed-in panel passed and is kept, because its
+ids changed too. `tests/Integration/Profile/AccountBlockFieldIdsTest.php`: the block twice
+through `do_blocks()`, for a visitor, prints no id twice (failed before the change). CI's
+site has registration closed, so the unit tests are what hold the registration form.
+`tests/e2e/product-surfaces.spec.js`, two tests on the signed-out page: each label's
+control is the field under it, in its own form, and pressing the forgot-password form's
+label focuses that form's field; and the names Chromium's accessibility tree gives the
+block's text fields are the labels' texts, in order. Both failed before the change, with
+registration open and closed, with what the table above shows. They and the eleven tests
+the spec already had pass after it, run with registration open and with it closed.
+
+**Not built, seen on the way** (each is in `PROGRESS.md`): the block's fields do not say
+what they are for (`autocomplete`), which WCAG 1.3.5 asks of a sign-in, a registration and
+a profile form and a password manager reads; and on a page holding the block twice the
+script fills the session list and the activity list of the first block only (read from
+`account.js`, not run signed in).
+
+**Client impact.** Every id of the block's fields changed, and none is fixed any more. A
+site whose own stylesheet or script selects `#corex-account-login`,
+`#corex-account-password` or another `#corex-account-…` selects nothing now, and has to
+select by form and name. Read on this machine on 2026-10-13: nothing under `sites/` in the
+Muva or Perego checkouts names the block or an id of it.
+
 ## #338 — An address too long to be a login gets a login made from its first part; one too long for an account is refused with a reason
 
 **Date:** 2026-10-13. **Branch:** `fix/account-long-address-login`, on top of #335's
@@ -12737,7 +12842,7 @@ is answered with the expired message. In Chromium the walk is
   no `page`; the block in a template that is not one page or post.
 - Without scripts the forms are not sent to the routes at all, the new one among them.
   That is the block's state on `main` and has a change of its own open.
-- The branch was begun before #335, #336 and #338 were on `main` and has them merged in. The
+- The branch was begun before #335 to #338 were on `main` and has them merged in. The
   measurements under "after the change" were made before that merge; the tests and the
   browser walk were run again after it.
 
