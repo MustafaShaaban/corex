@@ -244,6 +244,34 @@ it('accepts a bounded CSV upload and parses it server-side before the dry run', 
 });
 
 /**
+ * The file an import reads is the one the request carried as a file part. What a request's text
+ * says under `file` is not a file, and the path it names is not opened (2026-10-13).
+ */
+it('reads no file that a request names in its text', function (bool $asJson) {
+    $path = tempnam(sys_get_temp_dir(), 'corex-import-named-');
+    file_put_contents($path, "full_name,email,status\nAda,ada@example.com,active\n");
+    $payload = ['mapping' => [], 'unknown_policy' => 'reject', 'file' => [
+        'name' => 'contacts.csv', 'tmp_name' => $path, 'error' => UPLOAD_ERR_OK,
+        'size' => filesize($path), 'type' => 'text/csv',
+    ]];
+    $request = new WP_REST_Request('POST', '/corex/v1/data/rest-contacts/imports');
+    $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    $request->set_url_params(['source' => 'rest-contacts']);
+    if ($asJson) {
+        $request->set_header('Content-Type', 'application/json');
+        $request->set_body((string) wp_json_encode($payload));
+    } else {
+        $request->set_body_params($payload);
+    }
+
+    $response = $this->controller->createImport($request);
+    unlink($path);
+
+    expect((string) wp_json_encode($response->get_data()))->not->toContain('ada@example.com')
+        ->and($response->get_data()['data']['import']['accepted_rows'] ?? [])->toBe([]);
+})->with(['as JSON' => [true], 'in a form body' => [false]]);
+
+/**
  * The Data export, through the routes its screen uses (spec 103, US10).
  *
  * It queued a job and told the person to refresh. These ask how much each choice would export,
