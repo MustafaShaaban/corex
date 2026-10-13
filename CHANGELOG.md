@@ -65,6 +65,20 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **An Email Studio template's subject is sent as it was written.** A template's subject
+  was stripped of markup when the email was made, and a subject is an email's header, which
+  is plain text. A template whose subject is "Price <500 EGP" was sent as "Price";
+  "Sam <sam@example.com> asked" as "Sam  asked". A value merged into a subject was stripped
+  the same way: with the name "Sam <b>x</b> & co", "Hello {{ user.name }}" was sent as
+  "Hello Sam x & co". Both are now kept as they are, by the rule a reply's subject is read
+  by (`Corex\Mail\SubjectLine`). The stripping did not take a line break out of a merged
+  value: a name or a message with a break in it reached the email's subject, and the copy
+  Email Studio keeps, with the break. WordPress's own mailer removes one from a subject as
+  it writes it; what another mailer does with one was not measured. The merged subject is
+  now one line, with a space where the break was. This is every email sent from a template
+  through its route (a form's notification, an access request's emails) and one sent again
+  from a submission (DECISIONS #330).
+
 - **What a visitor writes in a form is kept with its backslashes.** WordPress takes one
   level of slashes off a post's fields and off a meta value on their way in, and a
   submission's answers were handed over as they were. A visitor who wrote "C:\offers\new" in
@@ -198,6 +212,13 @@ All notable changes to Corex are documented here. The format follows
   has to escape it: until now a subject with a `<` in it arrived written as entities, or
   without what stood between the angle brackets, and no longer does. Code of your own that reads a reply's `subject`, an attempt's
   or a captured email's, and prints it into a page escapes it there too.
+- **An email made from an Email Studio template can have `<`, `>` and markup in its subject
+  now**, from the template's own subject or from a value merged into it. Until now both were
+  stripped. Code of your own that prints such an email's subject into a page (an attempt's, a
+  captured email's) escapes it there, as above. A template whose subject merges a value that
+  was written as markup, a field kept as HTML say, now shows the tags in the subject: merge a
+  plain value there. A merged subject longer than 300 characters is cut at 300; it was sent
+  at any length.
 - **New class `Corex\Mail\SubjectLine`** (`SubjectLine::of($typed)`), for code of your own
   that takes a subject somebody typed. Nothing to rebuild: no screen changed.
 - **A reply's email looks different at the top**: the header is inside the card, the logo is

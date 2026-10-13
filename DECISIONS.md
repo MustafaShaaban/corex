@@ -11855,3 +11855,107 @@ whose path has a backslash in it, so that it fails without the change on a Linux
 too, where it is a folder with a backslash in its name. 49 of the 64 tests failed before
 the change.
 
+## #330 — A template's subject is a header too: sent as written, with what is merged into it, on one line
+
+**Date:** 2026-10-13. **Branch:** `fix/template-subject-kept-as-written`. **Found by:** the
+reading for #326, which measured it and left it for a change of its own.
+
+`EmailTemplateService::render()` made a template's subject with
+`trim(strip_tags($this->merge($version->subject, $context, html: false)))`, and `merge()`
+stripped each value again before putting it in. A subject is an email's header, and a header
+is plain text.
+
+**Measured before the change**, with `validateDraft()` passing and `render()` called, and
+again through a route on real WordPress, read from the captured email and the attempt. A
+template whose subject is "Price <500 EGP" gave "Price". "Sam <sam@example.com> asked" gave
+"Sam  asked". An Arabic subject with "<500>" in it lost the price. "Hello {{ user.name }}"
+with the name "Sam <b>x</b> & co" gave "Hello Sam x & co". "Tom & Jerry's "offer"" and
+"Use &amp; not &" were not changed, and are in the tests so that they stay so.
+
+**What `strip_tags()` was there for.** It came with the editor (spec 068, 2026-07-10) beside
+a test named "keeps subject and plain text free of markup". Spec 068 asks for a sanitized
+HTML body (FR-115) and calls a template "a persisted safe subject/from/body", and nowhere
+asks for a subject without markup. Markup in
+a header is not a risk: nothing draws a header. The risk in a header is a line break, since
+what follows one is read as a header of its own, and `strip_tags()` does not take a break
+out. Measured: "Hello {{ user.name }}" with the name "Sam", a line break, "Bcc:
+victim@example.com" gave a subject with the break in it; the mail driver was handed it so,
+and the captured email and the attempt kept it so. `validateDraft()` refuses a control
+character in the template's own subject. A merged value is not checked there, and a template
+may merge `submission.name` or `submission.body`, which are what somebody typed into a form.
+Email Studio's sending path has no `HeaderGuard`: that check is `MailService`'s, on the
+older path. So the stripping protected nothing a header needs protecting from. The only
+other thing it took out of what a header cannot hold was a null byte.
+
+What stood between that break and the email was WordPress's mailer. Measured on WordPress
+7.1.3: PHPMailer takes a carriage return and a line feed out of a subject as it writes it, so
+"Hello Sam", a break, "Bcc: victim@example.com" is written as the one header "Subject: Hello
+SamBcc: victim@example.com", and nobody is copied. What a mailer that replaces PHPMailer
+does with a break was not measured.
+
+**The change.** The merged subject is read by #326's rule, `Corex\Mail\SubjectLine::of()`:
+the text as it is, one line, at most 300 characters, a space where a line break or another
+control character was. A value is merged into it as it is. `merge()` is told how a value is
+written where it lands, in place of a true or a false: escaped into markup, without markup
+into the plain-text version, as it is into the subject. A value holding a placeholder is not
+read a second time; that was so before and has a test now.
+
+**One byte that is not UTF-8.** `SubjectLine` answers nothing for text that is not UTF-8,
+which is right for a subject somebody typed into a box and wrong here: one bad byte in a
+merged name would send the email with no subject at all, where it was sent with the byte
+before. The merged subject is passed through `mb_scrub()` first, so the byte costs itself
+and is written "?", in a merged value and in the template's own subject alike.
+
+**Longer than 300 characters.** A merged subject is cut at 300, as a reply's is. It was sent
+at any length. The template's own subject has no limit when it is saved; that is not changed.
+
+**Everything that reads `render()`'s subject was read**, since it can now hold `<`, `>` and
+markup:
+
+- `EmailRouteMessageFactory::prepare()` puts it in an `EmailMessage`, which
+  `EmailStudioService` hands to the mail driver as `wp_mail()`'s subject and keeps as the
+  attempt's and the captured email's. Those are one serialized value of post meta each, and
+  are printed by Email Studio's lists as React text (#326's list).
+- `EmailStudioSubmissionGateway::resend()` does the same for an email sent again from a
+  submission.
+- `applyLayout()` hands it to `Template\Layout::wrap()`, which prints it into `<title>`
+  through `htmlspecialchars()`. Without a brand layout the subject is not printed into the
+  body at all. A test now holds a subject with "</title><script>" merged into it to that.
+- Email Studio's preview does not call `render()`: it is drawn in the browser from the
+  draft's body, in a frame with every permission taken away, and has no subject in it.
+- Nothing else calls `render()`.
+
+`EmailStudioService` is handed a message by five callers: the route, the two sends of the
+screen, a reply, and the email sent again. With this change each hands it a subject of one
+line.
+
+**The older template path was read too and is left as it is.**
+`Template\TemplateRenderer` merges a value into a subject as it is, and nothing after it
+strips or encodes it. A break in a merged value stays in the subject, and
+`MailService::deliver()` refuses the whole email through `HeaderGuard` before a driver is
+handed it: nothing is split, and nothing is sent. The two paths differ there. On Email
+Studio's a break becomes a space and the email goes; on the older one the email is refused.
+CoreX's own templates on the older path merge only the site's name, a support category and
+an article's title into a subject. Both readings have a test now.
+
+**Not done.** The plain-text version `render()` makes still strips markup from a merged
+value: measured, "under <500 EGP" merged into a manual plain-text version is "under" there.
+Nothing that sends reads it. The route and the email sent again take the subject and the
+HTML, and the `EmailMessage` they build has no plain-text version: measured through a route
+on a site that delivers, the mail driver was handed none, with a manual one saved on the
+template. So an email made from a template leaves as HTML alone, whatever its Plain Text tab
+holds. Recorded in PROGRESS.md under "Open, and not hidden", not changed here.
+
+**Tests.** `tests/Unit/Email/EmailTemplateEditorTest.php`: a template's subject as written,
+for five subjects; a value merged as it is, in Arabic too; a byte that is not UTF-8 written
+"?"; a break, a tab, a null byte and
+U+2028 in a merged value made one space, and the result passed by `HeaderGuard`; the cut at
+300; the `<title>` escaped. The older test that asked for a subject "free of markup" now
+asks for it as it is. `tests/Integration/Mail/EmailStudioLifecycleTest.php`, on real
+WordPress through a route: the captured email and the attempt hold the subject as written,
+for six cases; the mail driver of a site that delivers is handed one line; an
+email sent again from a submission has the subject as written.
+`tests/Integration/Email/EmailStudioControllerTest.php`: a subject posted to the draft route
+is given back, and rendered, as written. `tests/Unit/Mail/TemplateRendererTest.php` for the
+older path. Fifteen of the first file's tests and ten of the two integration files' failed
+before the change. Each changed line was put back in turn, and a test failed for each.

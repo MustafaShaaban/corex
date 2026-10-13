@@ -91,7 +91,9 @@ What to know before resuming each:
   and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
   (DECISIONS #326; on `main` after v0.45.2, not released). A subject can now hold `<`, `>`
   and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
-  is printed before adding a place that prints one.
+  is printed before adding a place that prints one. An Email Studio template's subject, and a
+  value merged into it, are read by the same rule (DECISIONS #330; on `main` after v0.45.2,
+  not released): nothing is stripped, and a line break in a merged value is a space.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
