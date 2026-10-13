@@ -5,11 +5,13 @@
  * login / register / recovery / profile forms and posts them to the `corex/v1/account/*`
  * REST routes with the REST nonce, and writes the typed result message into the polite
  * live region under the button that asked, which it brings into the window when it is
- * outside it. On the member view it also loads active sessions and recent activity and
- * wires the "sign out other/every session" actions. With no JS a form is sent to the
- * page's own address, which does not answer it (PROGRESS.md, "Open, and not hidden").
+ * outside it. A request that got no answer it can read is said there too. On the member
+ * view it also loads active sessions and recent activity and wires the "sign out
+ * other/every session" actions. With no JS the block shows a note saying so
+ * (`AccountRenderer`), and a form is sent to the page's own address, which does not
+ * answer it (PROGRESS.md, "Open, and not hidden").
  *
- * Config comes from the localized `window.corexAccount = { restUrl, nonce }`.
+ * Config comes from the localized `window.corexAccount = { restUrl, nonce, i18n }`.
  *
  * @param {Window}   window   The browser window the account block lives in.
  * @param {Document} document That window's document.
@@ -20,6 +22,10 @@
 	const cfg = window.corexAccount || {};
 	const i18n = cfg.i18n || {};
 	const MESSAGE_LINE = '.corex-account__status';
+	const NO_ANSWER =
+		i18n.noAnswer ||
+		'The site could not be reached, or its answer could not be read. ' +
+			'Please try again.';
 	const ROUTES = {
 		login: 'account/login',
 		register: 'account/register',
@@ -84,6 +90,29 @@
 		} );
 	}
 
+	/**
+	 * Writes the answer to a request into the line of the form or section that made it.
+	 * A refusal that came with no message is one the script has no reading of: it says so.
+	 *
+	 * @param {Element} scope The form, or the section, whose control was used.
+	 * @param {Object}  out   What `post()` resolved with.
+	 */
+	function answer( scope, out ) {
+		say( scope, out.message || ( out.ok ? '' : NO_ANSWER ), out.ok );
+	}
+
+	/**
+	 * Sends a form or a button's request and resolves with what the server said of it.
+	 *
+	 * It resolves whatever happens. A request that did not arrive, and an answer that is not
+	 * JSON (an error page, a proxy's page), are a refusal with no message: nothing in them
+	 * can be shown to a person, and the caller still has to say something.
+	 *
+	 * @param {string} path  The route, under the `corex/v1` namespace.
+	 * @param {Object} body  What is sent, as JSON.
+	 * @param {string} token The REST nonce.
+	 * @return {Promise<{ok: boolean, message: string}>} Whether it was taken, and the server's message.
+	 */
 	function post( path, body, token ) {
 		return window
 			.fetch( base() + path, {
@@ -97,8 +126,14 @@
 			} )
 			.then( function ( res ) {
 				return res.json().then( function ( data ) {
-					return { ok: res.ok, data };
+					return {
+						ok: res.ok,
+						message: ( data && data.message ) || '',
+					};
 				} );
+			} )
+			.catch( function () {
+				return { ok: false, message: '' };
 			} );
 	}
 
@@ -138,8 +173,7 @@
 			}
 			clearMessages();
 			post( path, serialize( form ), token ).then( function ( out ) {
-				const msg = ( out.data && out.data.message ) || '';
-				say( form, msg, out.ok );
+				answer( form, out );
 				if ( out.ok && kind === 'profile' ) {
 					loadSessions( token );
 				}
@@ -204,10 +238,9 @@
 							? 'account/sessions/revoke-all'
 							: 'account/sessions/revoke-others';
 					post( path, {}, token ).then( function ( out ) {
-						say(
+						answer(
 							btn.closest( '[data-corex-account-sessions]' ),
-							( out.data && out.data.message ) || '',
-							out.ok
+							out
 						);
 						loadSessions( token );
 					} );
