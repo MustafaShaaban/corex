@@ -14951,3 +14951,137 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #363 — A config key is written in `.env` with no `COREX_` prefix, as the config guide says: the three update guides that said otherwise are corrected, and the update source's empty default is under the key that is read
+
+**Date:** 2026-10-13. **Branch:** `docs/updates-endpoint-env-name`, from `main`.
+**Spec:** 034 (self-update), FR-005. **Mode:** CoreX Framework.
+
+**The lead.** #361, "Found, and not changed", item 3, read and not run: the deployment guide
+and the core README name `COREX_UPDATES_ENDPOINT` as the `.env` variable of
+`updates.endpoint`, and `DotenvSource::envName()` adds no prefix.
+
+**Run, before anything was changed.** Three tests, written first, against `main` at
+`91d52d30`, in the unit suite (Pest, no WordPress):
+
+- Each guide's own `.env` line was written to a `.env` in a temporary directory and read by
+  the real `DotenvSource`, in a real `Repository`, handed to the real `UpdateService`, with
+  `wp_remote_get()` standing in for the network and keeping the address it was asked for.
+  `docs/en/05-deployment/updates-and-distribution.md` and
+  `docs-app/src/content/docs/guides/updates.md`: `fetchManifest()` asked for nothing. The
+  core README had no `.env` line to run: it gave the name in a comment above a PHP array.
+- `COREX_UPDATES_ENDPOINT=…` alone: `DotenvSource::has('updates.endpoint')` is false. With
+  `UPDATES_ENDPOINT=…` beside it, `get('updates.endpoint')` is that second value.
+- The config engine made by the real `CoreServiceProvider`, with no option stored and no
+  `.env`: `get('updates.endpoint', 'no source holds it')` answered `'no source holds it'`.
+  No source held the key the update service reads.
+
+So the lead is right, and the second thing asked is answered: the key the code reads and
+the key the default was under did not agree. `CoreServiceProvider::defaults()` names each
+config file by its basename, so `'updates' => ['endpoint' => '']` in `config/app.php` was
+`app.updates.endpoint`. `UpdateService::fetchManifest()` and
+`CapabilityFacts::gaps()` read `updates.endpoint`. Nothing reads `app.updates.endpoint`
+(searched: `plugins/`, `addons/`, `packages/`, `theme/`). The default is empty and both
+readers pass `''` as their own fallback, so no site behaved differently for it.
+
+**Which of the two is the contract.** The code's. The rule is written down four times with
+no prefix: the core README ("env var `KEY_WITH_UNDERSCORES` uppercased (`app.name` → option
+`corex_app_name`, env `APP_NAME`)"), the docs site's configuration guide, `.env.example`
+("a dot key uppercases to an ENV name"), and the mail add-on's README, which lists
+`MAIL_PROVIDER` for `mail.provider`. `FEATURES_<FLAG>` and `APP_PATH` follow it and are
+read. The update guides were the exception, and they contradicted the page they link to.
+
+**The decision.**
+
+1. *The guides are corrected to what the code reads*: `UPDATES_ENDPOINT`, in the deployment
+   guide, the docs site's update guide and the core README. Both guides now also name the
+   option, `corex_updates_endpoint`, and say that no settings screen has a field for it.
+   Each carries a short note that the page gave the other name until 2026-10-13 and what a
+   site that has that line should do. The README's sample was a PHP array headed
+   `// config/app.php`; it is now the `.env` line, because the same README says a site
+   never edits the shipped defaults, and that array, written there, set a key nothing
+   reads.
+2. *The variable name is not changed, and no second name is read.* A site that found the
+   working name has it; reading `COREX_UPDATES_ENDPOINT` as well would give one key two
+   names and every other key one.
+3. *The empty default moves to `config/updates.php`*, where it is `updates.endpoint`.
+   `config/app.php` loses the entry. It was a line in a file a developer reads to learn the
+   key's name, and it taught the wrong one. Nothing a site sees changes: the default is
+   empty in both places.
+4. *`.env.example` gets a commented `UPDATES_ENDPOINT` line.*
+
+**Every other `.env` name in `docs/`, `docs-app/` and the READMEs, checked against the
+code.** A name is right when something reads the config key it maps to, or when it is not
+a `.env` name at all and what it is said to be is what reads it.
+
+| Name | Where | What reads it |
+|---|---|---|
+| `COREX_UPDATES_ENDPOINT` | two guides, core README | nothing. Corrected, above |
+| `COREX_ENV` | `docs/en/05-deployment/secrets-backups-zero-downtime.md`, in a `.env` sample "read by the Config engine" | nothing. `app.env` is read (`AssetsServiceProvider`, the mail add-on), so the sample now says `APP_ENV` |
+| `COREX_MAIL_DRIVER`, and "host/port/credentials" | the docs site's mail guide; `.env.example` with `COREX_MAIL_HOST`, `_PORT`, `_USERNAME`, `_PASSWORD` | nothing, under any name: no code reads `mail.driver`, `mail.host`, `mail.port`, `mail.username` or `mail.password`, and CoreX has no SMTP driver. The guide now gives the five keys the add-on reads, as the add-on's README does; `.env.example` lists them commented |
+| `MWP_I18N_DRIVER` | `.env.example`, set to `polylang` | nothing. Removed from `.env.example` |
+| `APP_NAME`, `APP_ENV`, `APP_PATH`, `APP_NAMESPACE`, `APP_PREFIX` | `.env.example`, `packages/cli/README.md` | `app.*`, read. Right |
+| `FEATURES_*` | `.env.example`, the WooCommerce kit's README, the secrets guide | `features.*`, read by `Boot` and `FeatureFlags`. Right |
+| `MAIL_FROM_NAME`, `MAIL_FROM_ADDRESS`, `MAIL_REPLY_TO`, `MAIL_PROVIDER`, `MAIL_LIVE_DELIVERY` | the mail add-on's README | `mail.*`, read. Right |
+| `COREX_LOGIN_UNGUARD`, `COREX_ALLOW_RELEASE_INSTALL` | security and release guides, the CLI README | not `.env` names: PHP constants, documented as `define(…)` in `wp-config.php` and read with `defined()`. Right |
+| `COREX_BASE_URL`, `COREX_ADMIN_USER`, `COREX_ADMIN_PASS`, `COREX_LOGIN_PATH`, `COREX_WP_PATH`, `COREX_E2E_FRESH_INSTALL`, `COREX_DOCS_BASE` | `CONTRIBUTING.md`, the docs site | not `.env` names: variables of the shell that runs the browser tests or builds the docs site, read from `process.env`. Right |
+
+The line `.env.example` had above the mail names, that credentials are "encrypted at rest
+via the framework Cryptor", went with them: it described keys nothing reads.
+
+**Weighed, and not chosen.**
+
+- *Read `COREX_UPDATES_ENDPOINT` too, so a site that followed the guide starts working.*
+  It would start contacting an address on the next update check without anyone on that
+  site having changed anything, and it leaves the one key with two names. The guides now
+  say what to rename. No `.env` exists in the four checkouts on this machine (the
+  framework's root, Muva, Perego, mizzey). What a host has in its own cannot be seen
+  from here.
+- *Leave the default in `config/app.php` and correct its comment.* The comment could only
+  say that the entry is not read.
+- *Delete the default.* Both readers have their own fallback, so it would work. Kept,
+  because the file is where the key's name, its option and its `.env` name are written
+  beside the reason the default is empty.
+- *A test that checks every `.env` name in every guide.* It needs a list of every config
+  key that is read, which is not written anywhere and would be a second thing to keep
+  true. The test added runs the update guides' own lines, which is the fault that was
+  found.
+
+**Tests.** `tests/Unit/Update/UpdateSourceGuidesTest.php`: each of the three guides' `.env`
+line, through the real source and the real service, must make the service ask for the
+address on that line. `tests/Unit/Foundation/ConfigTest.php`: a prefixed name is not read
+and the plain one is. `tests/Unit/Multisite/ConfigBootWiringTest.php`: the engine the real
+provider makes holds `updates.endpoint`, empty, and holds no `app.updates.endpoint`. Four
+cases failed before the change (the three guides and the default) and pass after; the
+`ConfigTest` case passed before and after, which is the proof of which name is read. Unit
+suite: 3,150 passed. `tests/docs-links.test.js` and `tests/repo-hygiene.test.js` pass.
+
+**Not run.** No WordPress was booted for this. That `wp option update
+corex_updates_endpoint …` sets the source is read from `OptionsSource` (a dot key is the
+option `corex_` and the key with `_` for each `.`) and from the existing unit test of that
+mapping, not from a run on an install. The docs site was not built.
+
+**Found, and not changed.**
+
+1. *Where the `.env` is looked for.* `CoreServiceProvider::projectRoot()` is
+   `dirname(COREX_CORE_PATH, 2)`. In this repository that is the root. Where the plugin is
+   a real directory in `wp-content/plugins/`, it is `wp-content/`, inside the web root:
+   `shared-host-dist.md` says so and tells a shared host not to create one. The secrets
+   guide's sample is headed ".env on a VM (mode 600, outside the web root) — read by the
+   Config engine", and nothing read here lets the engine look outside `wp-content/` on
+   such an install. Read, not run.
+2. *A site told it has no update source is sent somewhere it cannot set one.*
+   `CapabilityFacts::gaps()` reports "No update source is configured" with an **Open
+   Settings** button to `corex-settings-config`. `SettingsRegistry` has no field for
+   `updates.endpoint`. A host with no command line, where a `.env` should not be created
+   either (item 1), has no supported way to set it. Read, not run.
+3. *`docs/internal/COREX-FRAMEWORK.md` §16 says translators are switched with
+   `MWP_I18N_DRIVER`.* Nothing reads it, and no `I18nHandler` class is in `plugins/` or
+   `addons/`. It is the architecture document and was not edited here.
+
+**Client impact.** A site whose `.env` has `COREX_UPDATES_ENDPOINT` renames it to
+`UPDATES_ENDPOINT`; until it does, it is offered no update. A site that set the option
+`corex_updates_endpoint`, or `UPDATES_ENDPOINT`, changes nothing. `COREX_ENV`,
+`COREX_MAIL_*` and `MWP_I18N_DRIVER` in a `.env` did nothing and can be deleted. A client
+repository that takes this release gets one new framework file,
+`plugins/corex-core/config/updates.php`.

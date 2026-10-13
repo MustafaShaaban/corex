@@ -67,6 +67,19 @@ it('reads an env var mapped from an uppercased dot key', function () {
     removeEnvDir($dir);
 });
 
+it('reads a dot key from its own uppercased name, and not from one with a COREX_ prefix', function () {
+    $prefixed = tempEnvDir("COREX_UPDATES_ENDPOINT=prefixed\n");
+    $plain = tempEnvDir("COREX_UPDATES_ENDPOINT=prefixed\nUPDATES_ENDPOINT=plain\n");
+
+    try {
+        expect((new DotenvSource($prefixed, new BootLogger(debug: false)))->has('updates.endpoint'))->toBeFalse()
+            ->and((new DotenvSource($plain, new BootLogger(debug: false)))->get('updates.endpoint'))->toBe('plain');
+    } finally {
+        removeEnvDir($prefixed);
+        removeEnvDir($plain);
+    }
+});
+
 it('treats an absent .env as empty without logging an error', function () {
     $dir = tempEnvDir();
     $logger = new BootLogger(debug: false);

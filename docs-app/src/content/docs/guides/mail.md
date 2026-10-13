@@ -126,8 +126,24 @@ seam returns a per-send result that a capability + nonce-gated action can report
 
 ## Configure
 
-`COREX_MAIL_DRIVER` (and host/port/credentials) live in `.env`; secrets are documented in
-`.env.example`, never committed. The **mail queue** is gated behind the `mail_queue`
+CoreX has no SMTP driver and reads no mail host, port, username or password. It hands each
+message to WordPress's `wp_mail()`, and the site's SMTP plugin or mail server holds those. What
+CoreX reads is who a message is from and whether it may leave the site, set in **CoreX → Settings →
+Mail** or in `.env` (`.env` wins):
+
+| Config key | WordPress option | `.env` name |
+|---|---|---|
+| `mail.from.name` | `corex_mail_from_name` | `MAIL_FROM_NAME` |
+| `mail.from.address` | `corex_mail_from_address` | `MAIL_FROM_ADDRESS` |
+| `mail.reply_to` | `corex_mail_reply_to` | `MAIL_REPLY_TO` |
+| `mail.provider` | `corex_mail_provider` | `MAIL_PROVIDER` |
+| `mail.live_delivery` | `corex_mail_live_delivery` | `MAIL_LIVE_DELIVERY` |
+
+Until 2026-10-13 this page named `COREX_MAIL_DRIVER`, and `.env.example` named it with
+`COREX_MAIL_HOST`, `COREX_MAIL_PORT`, `COREX_MAIL_USERNAME` and `COREX_MAIL_PASSWORD`. Nothing reads
+them; a `.env` that has them can drop them.
+
+The **mail queue** is gated behind the `mail_queue`
 [feature flag](/guides/configuration/). With it on, a send is deferred so the request that
 asked for it does not wait for the mail server: through Action Scheduler where that is
 installed, and through WP-Cron where it is not. On WP-Cron the message leaves on the site's next

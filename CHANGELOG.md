@@ -72,6 +72,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The update guides name the `.env` variable that is read: `UPDATES_ENDPOINT`.** The
+  deployment guide, the docs site's update guide and the core README said
+  `COREX_UPDATES_ENDPOINT`. Nothing reads that: a config key is written in `.env` in
+  capitals with `_` for each `.` and no prefix, as the configuration guide says. A site
+  that followed them had no update source, and a missing source is a silent no-op, so it
+  was offered no update. The guides also name the option, `corex_updates_endpoint`.
+  Three more names that nothing reads are corrected: `COREX_ENV` in the secrets guide (it
+  is `APP_ENV`), and `COREX_MAIL_DRIVER` with its host, port and credentials in the mail
+  guide and `.env.example`, where the five `MAIL_*` keys the mail add-on reads now are;
+  `MWP_I18N_DRIVER` is gone from `.env.example`. The update source's empty default moves
+  from `config/app.php`, where its key was `app.updates.endpoint` and nothing read it, to
+  `config/updates.php` (DECISIONS #363).
+
 - **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
   WP-CLI.** Four jobs in three runs did on 2026-10-13, each before a test had run, and each
   passed when a person ran it again. setup-php asks for WP-CLI once, with no retry, and reports a tool it
@@ -495,6 +508,12 @@ All notable changes to Corex are documented here. The format follows
   Found by the review of the change above.
 
 ### Client impact
+
+- **A site whose `.env` has `COREX_UPDATES_ENDPOINT` renames the line to
+  `UPDATES_ENDPOINT`.** Until it does it is offered no update. A site that set the option
+  `corex_updates_endpoint` changes nothing. `COREX_ENV`, `COREX_MAIL_DRIVER`,
+  `COREX_MAIL_HOST`, `COREX_MAIL_PORT`, `COREX_MAIL_USERNAME`, `COREX_MAIL_PASSWORD` and
+  `MWP_I18N_DRIVER` in a `.env` did nothing and can be deleted (DECISIONS #363).
 
 - **A site with a form that has a file field should take this release, and look at what it
   already stores.** Three things show an answer that was not a file the submission was

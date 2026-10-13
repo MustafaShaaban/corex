@@ -82,7 +82,7 @@ provider never aborts boot.
 ## Configuration
 
 `Config::get()` resolves a dot-notation key across three layers, first match wins:
-`.env` (project root) → WordPress options → shipped defaults (`config/app.php`).
+`.env` (project root) → WordPress options → shipped defaults (`config/*.php`).
 
 ```php
 use Corex\Support\Facades\Config;
@@ -97,7 +97,7 @@ Config::get('missing.key', 'fallback');
   options/defaults. See `.env.example`.
 
 Shipped config namespaces (one file each in `config/`): `app`, `query`, `security`, `theme`,
-`features`. A site overrides any key through the **settings UI** (`corex-config`, which persists
+`features`, `updates`. A site overrides any key through the **settings UI** (`corex-config`, which persists
 to the `corex_*` options the option layer reads) or `.env` — never by editing the defaults.
 
 ### Feature flags
@@ -444,9 +444,9 @@ from `updates.endpoint` (config, default empty), and a pure `UpdateChecker` deci
 — whether it advertises a newer release. If so, a standard update object is injected into WP's update
 transient and the update appears in **Plugins → Updates**, installed by WordPress's own updater.
 
-```php
-// config/app.php (or .env: COREX_UPDATES_ENDPOINT=…)
-'updates' => ['endpoint' => 'https://updates.example.com/corex/manifest.json'],
+```dotenv
+# .env (project root), or the option corex_updates_endpoint
+UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
 ```
 
 ```json

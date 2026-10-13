@@ -107,6 +107,19 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** The update guides name the `.env` variable
+that is read, `UPDATES_ENDPOINT` (DECISIONS #363). They said `COREX_UPDATES_ENDPOINT`,
+which nothing reads, so a site that followed them was offered no update and nothing said
+why. A config key has no `COREX_` prefix in `.env`; `COREX_ENV` and the `COREX_MAIL_*`
+names in the secrets guide, the mail guide and `.env.example` were wrong the same way and
+are corrected. The update source's empty default is now in `config/updates.php`, under the
+key that is read. `tests/Unit/Update/UpdateSourceGuidesTest.php` runs each guide's own
+`.env` line through the real `.env` source and the real update service. **Three leads are
+left in #363**: where the `.env` is looked for on an ordinary install is inside the web
+root while the secrets guide says outside it; the "No update source is configured" notice
+sends an administrator to a Settings screen with no field for it; and the architecture
+document names an `.env` variable nothing reads.
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it

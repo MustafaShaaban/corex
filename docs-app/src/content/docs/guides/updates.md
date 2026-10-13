@@ -38,9 +38,22 @@ optional config, never a hard dependency).
 ## Configure the endpoint
 
 ```dotenv
-# .env (project root) — or a WordPress option
-COREX_UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
+# .env (project root)
+UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
 ```
+
+Or the WordPress option `corex_updates_endpoint` (`.env` wins over it). No settings screen has a field
+for it:
+
+```bash
+wp option update corex_updates_endpoint https://updates.example.com/corex/manifest.json
+```
+
+:::caution[This page gave the wrong name until 2026-10-13]
+It said `COREX_UPDATES_ENDPOINT`, which nothing reads: a config key is written in `.env` with no
+`COREX_` prefix. A site that has that line has no update source, and its update check is the silent
+no-op described above: no update is ever offered. Rename the line to `UPDATES_ENDPOINT`.
+:::
 
 The shipped default is empty, so a fresh install never checks any remote source until you opt in.
 

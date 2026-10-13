@@ -17,7 +17,7 @@ Config::get('forms.email.recipient', '');
 
 A dot key maps to an option `corex_<key_with_underscores>` and an env var
 `KEY_WITH_UNDERSCORES` (`app.name` → option `corex_app_name`, env `APP_NAME`). Shipped
-namespaces: `app`, `query`, `security`, `theme`, `features`.
+namespaces: `app`, `query`, `security`, `theme`, `features`, `updates`.
 
 ## The settings UI
 

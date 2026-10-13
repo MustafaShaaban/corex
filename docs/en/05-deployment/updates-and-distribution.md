@@ -52,14 +52,26 @@ dependency (Constitution Principle IX).
 ## Configure the endpoint
 
 Set `updates.endpoint` to the URL of your manifest. As with all Corex config, the value can come from a
-WordPress option or the project-root `.env` (the latter wins):
+WordPress option or the project-root `.env` (the latter wins). A config key is written in `.env` in
+capitals with `_` for each `.`, and with no `COREX_` prefix:
 
 ```dotenv
 # .env (project root)
-COREX_UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
+UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
 ```
 
-The shipped default is empty (`plugins/corex-core/config/app.php`), so a fresh install never checks any
+The option is `corex_updates_endpoint`. No settings screen has a field for it, so it is set from the
+command line:
+
+```bash
+wp option update corex_updates_endpoint https://updates.example.com/corex/manifest.json
+```
+
+> **This page gave the wrong name until 2026-10-13.** It said `COREX_UPDATES_ENDPOINT`, which nothing
+> reads. A site that has that line in its `.env` has no update source, and its update check is the
+> silent no-op described above: no update is ever offered. Rename the line to `UPDATES_ENDPOINT`.
+
+The shipped default is empty (`plugins/corex-core/config/updates.php`), so a fresh install never checks any
 remote source until you opt in.
 
 ## Publish a manifest + package
