@@ -57,6 +57,32 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **What a visitor writes in a form is kept with its backslashes.** WordPress takes one
+  level of slashes off a post's fields and off a meta value on their way in, and a
+  submission's answers were handed over as they were. A visitor who wrote "C:\offers\new" in
+  a contact form was read in the inbox, on CoreX → Data and in an export as having written
+  "C:offersnew"; "\\server\share" as "\servershare"; a backslash at the end of a message was
+  gone. The same was true of everything stored the same way, and each is now handed over
+  with a level of slashes on it and read back as it was given (DECISIONS #331):
+  - a submission's answers, its sender's name, the name of its form and what came with it
+    (the campaign, the hidden values, the consent wording), for a form defined in code and
+    for a flow;
+  - a flow: its name, its fields' wording, and its rules. A rule `pattern:^\d{2,4}$` was
+    stored as `pattern:^d{2,4}$`, which no longer asks for digits, so a field held to a
+    pattern in the builder refused what it should have taken;
+  - a note on a submission, the history of a submission, and the key of the team a
+    submission is given to. The notes and the history are each written again whole when one
+    is added, so an earlier note lost one more level each time;
+  - the title, the content and the fields of any model kept through
+    `Corex\Repositories\PostRepository`, and any value written through
+    `Corex\Fields\MetaFieldDriver`. The inbox's search and a query by a field now find a
+    text with a backslash in it; they found nothing while it was stored without.
+
+  Quotes, ampersands, Arabic and accented text were never changed, and a number or a
+  switch is stored as it was. The email a form sends is built from what the visitor sent
+  and not from what was stored (read in the listener; not sent to check): what was wrong is
+  what was kept.
+
 - **The inbox no longer fails to load when a submission is deleted at that moment.**
   WordPress finds the ids of a page of submissions and then reads each one; a submission
   deleted between the two, by a colleague or by retention, came back as nothing, and the list
@@ -85,6 +111,21 @@ All notable changes to Corex are documented here. The format follows
   (DECISIONS #326).
 
 ### Client impact
+
+- **A submission, a note or a flow stored before this release with a backslash in it is
+  still stored without it.** Nothing rewrites it: what was dropped is not in the database
+  to put back, and a stored "C:offersnew" cannot be told from one that was typed so. A
+  submission already received stays as it is listed. A flow whose field has a `pattern:`
+  rule with a backslash in it (`\d`, `\s`, `\.`) is not checking what was written: open the
+  flow in the builder, write the rule again, save and publish. Whether a site holds such a
+  flow was not read.
+- **Code of your own that keeps text through `Corex\Repositories\PostRepository` or
+  `Corex\Fields\MetaFieldDriver` hands it over as it is**, without slashes, which is what
+  both always asked for. Text read from `$_POST` goes through `wp_unslash()` first, as
+  WordPress asks; text that was handed over still slashed was stored right by accident and
+  is now stored with its slashes. Code that put slashes on to get round the loss takes them
+  off. Neither the Muva nor the Perego site's own code calls either class, as read in both
+  checkouts on 2026-10-13. Nothing to rebuild: no screen changed, and no class or route did.
 
 - **A subject can hold `<`, `>` and `&` together now**, in a reply and in an email sent from
   Email Studio's **Test send** and **Resend**. A design of your own registered on

@@ -172,6 +172,24 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   as tests it took 18 ms. A search is quicker than no search. Whether a client site holds
   anything near that number was not read. Measured for DECISIONS #318, not changed.
 
+- **More writes drop a backslash, measured on 2026-10-13 and not changed yet.** A
+  comment edited or answered from Blog Pro (`CommentModerationService`), an editorial note
+  (`WpEditorialWorkflowStore`, one more level each time the post's workflow is saved), a
+  profile's display, first and last name (`WordPressAuthGateway::updateProfile()`), the
+  record of a WebP file's two paths where a path has backslashes (`WebpMeta`), and the
+  content of a Data import (`WpDataImportStore`: the file's rows are in it). A Data export,
+  a migration, a submissions export and a kit's pages (`BlueprintActivator`) are written
+  the same way and were not run. The forms and submissions half of the same list is fixed
+  (DECISIONS #331); this half is the next change. The notification preferences were
+  measured and lose nothing.
+- **What a form, a flow or a note stored before DECISIONS #331 is still without its
+  backslashes.** Nothing repairs it. A flow whose field has a `pattern:` rule with a
+  backslash in it does not check what was written until it is written again and published.
+  Whether a client site holds such a flow was not read.
+- **With ACF active, a field's value goes through `update_field()`, not measured.**
+  `FieldResolver` picks `AcfFieldDriver` when ACF is there, for a submission's answers too.
+  ACF is not in this repository, so whether it drops a backslash as WordPress's own meta
+  write did was not run, and the driver is not changed.
 - **Anonymizing a submission leaves its uploaded files on disk.** The retention panel's
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can
   find them afterwards. It is spec 105's fifth slice, not started; deleting a submission for good
