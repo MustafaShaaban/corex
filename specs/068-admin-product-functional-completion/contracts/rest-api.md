@@ -35,6 +35,11 @@ Error items contain a stable code, safe message, optional field path, and retrya
 - `POST /access/requests/{id}/decision` — approve or deny pending request
 - `POST /access/grants` — preview or apply send/grant workflow
 
+A request to an Access route that cannot be read (a parameter missing, of the wrong shape, or naming an ability, area,
+effect or role CoreX does not have) is answered `400` with WordPress's `rest_invalid_param` body, naming the parameter
+and giving a stable code under `data.details`. It is never answered as a server error, and nothing is stored (spec
+079, FR-002a).
+
 ## Add-ons
 
 - `GET /addons` — descriptors, real runtime/update/dependency state
