@@ -102,6 +102,15 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of
+open access requests, has the Access & Abilities screen's own check (`manage_options`),
+as the decision route has; asking for access keeps its own (spec 079, FR-011a; DECISIONS
+#346). `tests/Integration/Access/AccessRequestsReadTest.php` holds it through the REST
+server, for each role. A lead, not built: a role given the `corex_manage_access` ability
+and not `manage_options` is addressed by the notification of a new request and cannot open
+the screen that decides it (read in the code, not walked in a browser); the list, the
+decision route and the screen's menu entry would move to the ability together.
+
 **After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
 the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
 three questions). The reset email is still WordPress's; its link is to the page the reset

@@ -30,7 +30,8 @@ Error items contain a stable code, safe message, optional field path, and retrya
 - `GET /access/roles` — role matrix for CoreX abilities
 - `POST /access/preview` — preview grant/revoke changes and lockout risks
 - `POST /access/apply` — apply a matching confirmed preview
-- `GET /access/requests` — accessible requests
+- `GET /access/requests` — the open requests, for the people who may decide them (`manage_options`, as the
+  Access & Abilities screen and the decision route; spec 079, FR-011a)
 - `POST /access/requests` — create request
 - `POST /access/requests/{id}/decision` — approve or deny pending request
 - `POST /access/grants` — preview or apply send/grant workflow

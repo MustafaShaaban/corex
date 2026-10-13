@@ -63,6 +63,13 @@ All notable changes to Corex are documented here. The format follows
   vector logo is passed over, since Gmail and Outlook draw nothing for one.
   `wp corex make:email-design` writes the same header (DECISIONS #322).
 
+- **The list of open access requests is answered to the people who decide them** (spec
+  079, FR-011a). `GET corex/v1/access/requests` needs a REST nonce and `manage_options`,
+  which is what the Access & Abilities screen and the decision route need. The route's
+  two methods were registered together under the check that suits asking for access;
+  each now has its own. Asking for access (`POST` on the same route) is open to anybody
+  signed in, as it was, and the screen shows its queue as it did (DECISIONS #346).
+
 ### Fixed
 
 - **A member who forgot their password resets it on the account page** (spec 068, FR-158a
@@ -287,6 +294,12 @@ All notable changes to Corex are documented here. The format follows
   as before. The owner's decision (DECISIONS #334).
 
 ### Client impact
+
+- **A script that reads `GET corex/v1/access/requests` has to be signed in as somebody
+  who may open CoreX Access & Abilities.** Anybody else is answered `403`. Nothing in
+  CoreX read the list through the route: the screen is handed it with the page. In PHP,
+  `AccessController::requests()` is gone; the route's two methods call
+  `pendingRequests()` and `createRequest()`.
 
 - **The password-reset email of a site that uses the account block links to the account
   page, and a visitor chooses the new password there.** It applies to a site with the
