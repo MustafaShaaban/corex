@@ -20,6 +20,12 @@ final class AccountService
 {
     public const MIN_PASSWORD_LENGTH = 8;
 
+    /**
+     * What an account's address is held in. WordPress does not refuse a longer one: it stores
+     * nothing and reports no error, so the address is refused here, where a reason can be given.
+     */
+    public const MAX_EMAIL_LENGTH = 100;
+
     public function __construct(private readonly AuthGateway $gateway)
     {
     }
@@ -30,8 +36,9 @@ final class AccountService
             return AccountResult::fail('registration_closed', __('Registration is currently closed.', 'corex'));
         }
 
-        if (! $this->isValidEmail($request->email)) {
-            return AccountResult::fail('invalid_email', __('Please enter a valid email address.', 'corex'));
+        $emailError = $this->emailProblem($request->email);
+        if ($emailError !== null) {
+            return $emailError;
         }
 
         if (! $request->consent) {
@@ -52,12 +59,37 @@ final class AccountService
             return AccountResult::fail('email_taken', __('An account with that email already exists.', 'corex'));
         }
 
-        $login = $request->username !== '' ? $request->username : $request->email;
+        $login = $this->loginFor($request);
+        if ($login === '') {
+            return AccountResult::fail(
+                'username_required',
+                __('A username could not be made from that email address. Please choose a username.', 'corex'),
+            );
+        }
+
         if ($this->gateway->usernameExists($login)) {
             return AccountResult::fail('username_taken', __('That username is taken. Please choose another.', 'corex'));
         }
 
-        return $this->gateway->createUser($request->email, $login, $request->password);
+        return $this->gateway->createUser($request->email, $login, $request->password, $this->nameFor($request));
+    }
+
+    /**
+     * With no username the gateway says what the login is, and the person signs in with the
+     * address whatever it is.
+     */
+    private function loginFor(RegistrationRequest $request): string
+    {
+        return $request->username !== '' ? $request->username : $this->gateway->loginForAddress($request->email);
+    }
+
+    /**
+     * What the account goes by is made from what was typed, not from the login: a login made
+     * for an address is nobody's choice.
+     */
+    private function nameFor(RegistrationRequest $request): string
+    {
+        return PublicName::forLogin($request->username !== '' ? $request->username : $request->email);
     }
 
     public function login(string $login, string $password, bool $remember): AccountResult
@@ -113,8 +145,9 @@ final class AccountService
             return AccountResult::fail('forbidden', __('You can only edit your own profile.', 'corex'));
         }
 
-        if (isset($fields['email']) && ! $this->isValidEmail($fields['email'])) {
-            return AccountResult::fail('invalid_email', __('Please enter a valid email address.', 'corex'));
+        $emailError = isset($fields['email']) ? $this->emailProblem($fields['email']) : null;
+        if ($emailError !== null) {
+            return $emailError;
         }
 
         if (isset($fields['display_name']) && trim($fields['display_name']) === '') {
@@ -122,6 +155,26 @@ final class AccountService
         }
 
         return $this->gateway->updateProfile($userId, $fields);
+    }
+
+    private function emailProblem(string $email): ?AccountResult
+    {
+        if (! $this->isValidEmail($email)) {
+            return AccountResult::fail('invalid_email', __('Please enter a valid email address.', 'corex'));
+        }
+
+        if (strlen($email) > self::MAX_EMAIL_LENGTH) {
+            return AccountResult::fail(
+                'email_too_long',
+                sprintf(
+                    /* translators: %d: the most characters an account's email address can have. */
+                    __('That email address is too long for an account here. Please use one of %d characters or fewer.', 'corex'),
+                    self::MAX_EMAIL_LENGTH,
+                ),
+            );
+        }
+
+        return null;
     }
 
     /**
