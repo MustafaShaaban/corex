@@ -73,5 +73,6 @@ it('says the password was changed above the sign-in form', function () {
 it('puts no line above the forms when a reset has nothing to say', function () {
     $html = (new AccountRenderer())->render(['loggedIn' => false, 'reset' => ResetState::none()]);
 
-    expect($html)->toMatch('~^<div[^>]*data-corex-account[^>]*><div class="corex-account__grid">~');
+    // The note for a browser that runs no scripts is no message line (FR-161d).
+    expect($html)->toMatch('~^<div[^>]*data-corex-account[^>]*><noscript><p class="corex-account__noscript">[^<]*</p></noscript><div class="corex-account__grid">~');
 });

@@ -185,6 +185,16 @@ final class WordPressAuthGateway implements AuthGateway
         );
     }
 
+    /**
+     * WordPress cleans a display name a second time as it saves a user, on the slashed text
+     * {@see self::updateProfile()} hands it: an ampersand becomes `&amp;`, and a `<` that
+     * opens no tag becomes `&lt;` with the quotes after it.
+     */
+    public function displayNameAsKept(string $name): string
+    {
+        return wp_unslash((string) apply_filters('pre_user_display_name', wp_slash(sanitize_text_field($name))));
+    }
+
     public function updateProfile(int $userId, array $fields): AccountResult
     {
         $update = ['ID' => $userId];

@@ -21,16 +21,48 @@ use Corex\Profile\Reset\ResetState;
  * here, so the panel is unit-testable headlessly.
  *
  * What the server answers is written under the button that asked: each form, and the
- * session buttons, have a message line of their own (spec 068, FR-161a).
+ * session buttons, have a message line of their own (spec 068, FR-161a). A browser that
+ * runs no scripts is told above the forms that they need them (FR-161d).
  *
  * Somebody who arrives from a reset email with a key WordPress takes is shown the
  * new-password form and nothing else, whoever is signed in on that browser (FR-158b).
  *
  * A field's id holds the block it is in and its form, so no two fields of a page share
  * one and a label names the field printed beside it (spec 068, FR-161b).
+ *
+ * A field also says what it is for, in the words a browser and a password manager read
+ * (spec 068, FR-161c).
  */
 final class AccountRenderer
 {
+    /**
+     * What each field is for, by form and field name: its `autocomplete` value, one of the
+     * HTML specification's autofill field names. Sign-in asks for the password the account
+     * has and registration for one it does not have yet, which is how a password manager
+     * tells them apart. The display name is the name a member is shown by, so it is a
+     * `nickname` and not their full `name`.
+     *
+     * Registration's own username is left out on purpose: Chromium fills a field marked
+     * `username` with the person's saved email address, and an address is not always a
+     * username the form accepts (DECISIONS #342).
+     */
+    private const PURPOSES = [
+        'login'         => ['login' => 'username', 'password' => 'current-password'],
+        'register'      => [
+            'email'            => 'email',
+            'password'         => 'new-password',
+            'password_confirm' => 'new-password',
+        ],
+        'reset-request' => ['login' => 'username'],
+        'reset'         => ['password' => 'new-password', 'password_confirm' => 'new-password'],
+        'profile'       => [
+            'display_name' => 'nickname',
+            'first_name'   => 'given-name',
+            'last_name'    => 'family-name',
+            'email'        => 'email',
+        ],
+    ];
+
     /**
      * `instance` is what the ids of this block's fields start with. A page that holds the
      * block more than once hands each one its own; without one they start `corex-account`.
@@ -53,7 +85,7 @@ final class AccountRenderer
             default                             => $this->guest($ctx, $block),
         };
 
-        return '<div' . $attrs . '>' . $this->arrivalNote($reset) . $body . '</div>';
+        return '<div' . $attrs . '>' . $this->arrivalNote($reset) . $this->scriptsOffNote() . $body . '</div>';
     }
 
     /**
@@ -81,7 +113,7 @@ final class AccountRenderer
      */
     private function resetForm(ResetState $reset, string $block): string
     {
-        $field = $this->fieldsOf($block . '-reset');
+        $field = $this->fieldsOf($block, 'reset');
 
         return '<div class="corex-account__grid">'
             . '<form class="corex-account__form" data-corex-account-form="reset" method="post" novalidate>'
@@ -93,6 +125,21 @@ final class AccountRenderer
             . $this->submit(__('Save password', 'corex'))
             . '</form>'
             . '</div>';
+    }
+
+    /**
+     * Shown by a browser that runs no scripts, and by no other. The forms are sent by
+     * `account.js`; one sent without it goes to the page's own address, which does not
+     * answer it.
+     *
+     * It names no other place to sign in. WordPress's own address is the hidden one where
+     * login protection is on, and this is in the page for anybody (DECISIONS #339).
+     */
+    private function scriptsOffNote(): string
+    {
+        return '<noscript><p class="corex-account__noscript">'
+            . esc_html__('The forms and buttons below need JavaScript, which is switched off in this browser. One that is used without it is not answered. Switch JavaScript on and load this page again.', 'corex')
+            . '</p></noscript>';
     }
 
     /**
@@ -113,7 +160,7 @@ final class AccountRenderer
 
     private function loginForm(string $block): string
     {
-        $field = $this->fieldsOf($block . '-login');
+        $field = $this->fieldsOf($block, 'login');
 
         return '<form class="corex-account__form" data-corex-account-form="login" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Sign in', 'corex') . '</h2>'
@@ -127,7 +174,7 @@ final class AccountRenderer
 
     private function registerForm(string $block): string
     {
-        $field = $this->fieldsOf($block . '-register');
+        $field = $this->fieldsOf($block, 'register');
 
         return '<form class="corex-account__form" data-corex-account-form="register" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Create an account', 'corex') . '</h2>'
@@ -149,7 +196,7 @@ final class AccountRenderer
      */
     private function forgotForm(string $block, string $pageMark): string
     {
-        $field = $this->fieldsOf($block . '-reset-request');
+        $field = $this->fieldsOf($block, 'reset-request');
 
         return '<form class="corex-account__form" data-corex-account-form="reset-request" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Forgot your password?', 'corex') . '</h2>'
@@ -189,7 +236,7 @@ final class AccountRenderer
      */
     private function profileForm(array $ctx, string $block): string
     {
-        $field = $this->fieldsOf($block . '-profile');
+        $field = $this->fieldsOf($block, 'profile');
 
         return '<form class="corex-account__form" data-corex-account-form="profile" method="post" novalidate>'
             . '<h3 class="corex-account__subtitle">' . esc_html__('Profile', 'corex') . '</h3>'
@@ -225,19 +272,23 @@ final class AccountRenderer
     }
 
     /**
-     * What prints the labelled fields of one form. `$ids` is what their ids start with: two
-     * forms of one panel ask for a password, and each label has to name its own field.
+     * What prints the labelled fields of one form. Their ids start with the block and the
+     * form: two forms of one panel ask for a password, and each label has to name its own
+     * field. What a field is for is looked up in PURPOSES; a field that is not there says
+     * nothing about itself.
      *
      * @return \Closure(string $name, string $label, string $type, bool $required, string $value=): string
      */
-    private function fieldsOf(string $ids): \Closure
+    private function fieldsOf(string $block, string $form): \Closure
     {
-        return static function (string $name, string $label, string $type, bool $required, string $value = '') use ($ids): string {
-            $id = $ids . '-' . $name;
+        return static function (string $name, string $label, string $type, bool $required, string $value = '') use ($block, $form): string {
+            $id      = $block . '-' . $form . '-' . $name;
+            $purpose = self::PURPOSES[$form][$name] ?? null;
 
             return '<p class="corex-account__row">'
                 . '<label for="' . esc_attr($id) . '">' . esc_html($label) . '</label>'
                 . '<input type="' . esc_attr($type) . '" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '"'
+                . ($purpose !== null ? ' autocomplete="' . esc_attr($purpose) . '"' : '')
                 . ' value="' . esc_attr($value) . '"' . ($required ? ' required' : '') . ' />'
                 . '</p>';
         };

@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Activity\ActivityEvent;
 use Corex\Config\Activity\ActivityTable;
 
 beforeEach(function () {
@@ -26,6 +27,15 @@ it('defines the append-only activity schema with bounded-query indexes', functio
         ->toContain('UNIQUE KEY event_uuid (event_uuid)')
         ->toContain('KEY activity_area (area)')
         ->toContain('KEY activity_retention (retention_until)');
+});
+
+it('makes the label and target id columns as wide as the text a record is cut to', function () {
+    $sql   = (new ActivityTable())->schema()->createSql('wp_corex_activity_events', 'DEFAULT CHARSET=utf8mb4');
+    $width = 'VARCHAR(' . ActivityEvent::LONGEST_TEXT . ') NOT NULL';
+
+    expect($sql)->toContain('actor_label ' . $width)
+        ->toContain('target_id ' . $width)
+        ->toContain('target_label ' . $width);
 });
 
 it('publishes the activity table to the managed data registry', function () {

@@ -138,3 +138,58 @@ it('delegates bounded retention pruning', function () {
     expect($service->pruneExpired(new DateTimeImmutable(), 1))->toBe(1)
         ->and($repository->events)->toHaveCount(2);
 });
+
+/**
+ * The record as it is kept when a caller hands over these three texts, the only ones of a
+ * record that a person can have chosen: a display name, a version a package says it is.
+ */
+function recordedWith(string $actorLabel, string $targetId, string $targetLabel): ActivityEvent
+{
+    return (new ActivityService(activityRepository()))->record(
+        actorId: 9,
+        actorKind: ActivityEvent::ACTOR_USER,
+        actorLabel: $actorLabel,
+        area: ActivityEvent::AREA_SECURITY,
+        kind: 'profile.updated',
+        targetType: 'user',
+        targetId: $targetId,
+        targetLabel: $targetLabel,
+        outcome: ActivityEvent::OUTCOME_SUCCESS,
+        summary: ['key' => 'profile.updated', 'args' => []],
+        context: [],
+        sensitivity: ActivityEvent::SENSITIVITY_PERSONAL,
+        retentionUntil: new DateTimeImmutable('+1 year'),
+    );
+}
+
+it('keeps a label and a target id of exactly the length the record holds', function () {
+    $longest = str_repeat('n', ActivityEvent::LONGEST_TEXT);
+
+    $event = recordedWith($longest, $longest, $longest);
+
+    expect($event->actorLabel)->toBe($longest)
+        ->and($event->targetId)->toBe($longest)
+        ->and($event->targetLabel)->toBe($longest);
+});
+
+it('cuts a longer label or target id to that length and ends it with an ellipsis', function () {
+    $tooLong = str_repeat('n', ActivityEvent::LONGEST_TEXT + 1);
+    $cut     = str_repeat('n', ActivityEvent::LONGEST_TEXT - 1) . '…';
+
+    $event = recordedWith($tooLong, $tooLong, $tooLong);
+
+    expect($event->actorLabel)->toBe($cut)
+        ->and($event->targetId)->toBe($cut)
+        ->and($event->targetLabel)->toBe($cut);
+});
+
+it('counts the length of a label in characters, as the table does', function () {
+    // An Arabic letter is two bytes: 191 of them fit, and are 382 bytes.
+    $arabic = str_repeat('م', ActivityEvent::LONGEST_TEXT);
+
+    $event = recordedWith($arabic, '9', $arabic . 'م');
+
+    expect($event->actorLabel)->toBe($arabic)
+        ->and(mb_strlen($event->targetLabel))->toBe(ActivityEvent::LONGEST_TEXT)
+        ->and($event->targetLabel)->toBe(mb_substr($arabic, 0, ActivityEvent::LONGEST_TEXT - 1) . '…');
+});
