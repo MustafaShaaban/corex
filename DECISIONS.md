@@ -12869,3 +12869,116 @@ Ten lines of the change were then put back one at a time and the tests run. A te
 for nine. The tenth, the end of the key in the pattern that finds the address, got a case
 of its own (a longer key that begins with the email's key is another key), and fails with
 it.
+
+## #344 — The theme has a side gutter: root padding from spacing preset 40, and the four things it took width from
+
+**Date:** 2026-10-13. **Branch:** `fix/theme-phone-gutter`. **Found by:** the measurement of
+the account block for #336, which read the default page at 375 pixels and left the lead in
+PROGRESS.md. **Spec:** 068, FR-157a and FR-157b.
+
+**What the theme did.** `theme/theme.json` sets `useRootPaddingAwareAlignments` and had no
+`styles.spacing.padding`. With that setting WordPress gives the root padding to every
+constrained block (`.has-global-padding`) and to nothing else, so with none set there was
+no space at the sides at all. Nothing else supplied one: no template, part or pattern
+writes side padding, the kits apply pages and no styles, and no stylesheet of the theme
+sets any.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, Chromium,
+signed out; every template in `theme/templates`, `index` as the posts page, and each of the
+36 registered `corex/` patterns on a page of its own; at 375 and 320 pixels, left to right
+and right to left):
+
+- On every one of them the nearest line of text was 0 pixels from the edge it starts at.
+  `--wp--style--root--padding-left` and `-right` computed to `0px`.
+- The same after the company kit and then the portfolio kit were applied, on the ten pages
+  they made. A kit does not set a gutter and is not meant to.
+- It was not only a phone. At 1024 the post grids of the archive, the posts page and the
+  project archive (`align: wide`) began at pixel 0. By the rule that sizes a wide block,
+  the same holds in any window narrower than the wide size, 1200.
+- At 320 the front page, the contact and form templates and a search that finds nothing
+  scrolled sideways by 27 pixels: the form (below).
+- A block set to full width in a page's content was 768 wide at 1280, and one set to wide
+  was 768 too. The hero pattern in a page was a band 768 wide in the middle of the window.
+
+**Decided: root padding in `theme.json`, left and right, `var(--wp--preset--spacing--40)`.**
+It is where WordPress looks for it with root-padding-aware alignments, it is one value for
+every template and pattern, it reaches the editor's canvas, a site can change it in
+`brand.json` (measured: preset 50 there gives 24 pixels), and it is a token. It is the same
+preset as the block gap, so the space beside the text is the space between its blocks.
+theme.json has no logical side for padding; right-to-left reading is held by the two
+values being the same, and the browser test reads both sides in both directions.
+
+**The number is 16 pixels, and theme.json says 24.** Preset 40 is written as `1.5rem`. A
+page has it as `1rem`. theme.json is version 3, where `settings.spacing.defaultSpacingSizes`
+is true unless a theme says otherwise, and while it is true WordPress keeps its own sizes
+for the slugs it defines (20 to 80) and a theme's sizes of the same slugs are not used
+(`WP_Theme_JSON::PRESETS_METADATA`, `prevent_override`). Measured on the page: 20 is
+0.44rem for a written 0.5rem, 30 is 0.67rem for 1rem, 40 is 1rem for 1.5rem, 50 is 1.5rem
+for 2rem, 60 is 2.25rem for 3rem, 70 is 3.38rem for 4rem, 80 is 5.06rem for 6rem. Only 10
+is the theme's. The same rule gives the font sizes `small` and `medium` WordPress's values,
+and the size `2xl` is on the page as `--wp--preset--font-size--2-xl`, while the CTA block's
+stylesheet asks for `--wp--preset--font-size--2xl`. That is a defect of the token scale and
+not of this change: putting it right moves every space on every page, and is in PROGRESS.md
+for the owner. The gutter was chosen by what is measured: 16 pixels is the usual side
+margin of a phone, and if the scale is put right preset 40 becomes 24, which is also one.
+Preset 50 would be 24 today and 32 then, which at 320 leaves 256 for the text.
+
+**What the gutter took width from, and what was done.**
+
+1. **A full-width block in content.** `page`, `page-form`, `single` and
+   `single-corex_project` print the content in a constrained block inside a constrained
+   `<main>`. WordPress takes the padding off the inner one and, with it, the negative
+   margins of a full-width block inside it: with a gutter such a block stopped 16 pixels
+   short of each edge on a phone. The content block is now `align: full` in the four. It is
+   then the block that holds the gutter, and a full-width block in it reaches both edges at
+   any width. **This changes a desktop:** a full-width block in content is the window's
+   width and a wide one 1200, where both were 768. The text column did not move (256 from
+   each edge at 1280, measured before and after on every template and pattern).
+2. **The form.** `.corex-form` is a grid of twelve columns with a gap, and eleven gaps of
+   24 pixels and the button's column are 347 pixels whatever its fields span. That is the
+   27 pixels at 320. Inside the gutter it was 43 at 320, and on the search that finds
+   nothing 4 at 375 and 59 at 320. At 600 pixels
+   and under, where every field already spanned all twelve, the grid is one column. The
+   button keeps its width. The message line under the button has the row to itself there;
+   above 600 it is still in the second column, 38 pixels wide at 1280 (PROGRESS.md).
+3. **The docs header's search.** At 320 its field and button are 304 pixels and the header
+   is 288 inside the gutter: the button ended at the window's edge. The actions row and the
+   search are now no wider than what holds them (`max-inline-size`; capping one of the two
+   leaves the button at the edge, measured). Nothing moved at 375 or at 1280.
+4. **A search that finds nothing.** Its contact pattern is a full-width section inside the
+   results block, which was neither full width nor constrained, so the section kept the
+   gutter as padding inside the text column and its form stood 16 pixels in from the title.
+   The results block and its nothing-found block are now full width.
+
+**Measured after** (same install, same pages): on all 15 template pages, the posts page,
+the 36 pattern pages and the ten kit pages, at 375 and 320, both directions, the nearest
+line of text is 16 pixels or more from each edge and no page scrolls sideways. The same on
+the site switched to Arabic (`<html dir="rtl" lang="ar">`), which loads WordPress's
+right-to-left stylesheets; the browser tests set `dir` on a left-to-right page. On the
+Coming soon page the nearest text is 22 pixels from an edge at 375 (it is centred; not
+measured before). At 1280 and 1024 every element's
+box was compared before and after on those pages: the text is where it was, except in the
+places named above, and the wide post grids are 16 pixels in from each edge at 1024.
+
+**Not chosen.** A gutter written on each template's blocks (fifteen templates, two parts
+and every pattern, and the next one forgets it). A rule in a stylesheet (the theme's one
+stylesheet is attached to the navigation block and loads where one renders, and a gutter
+is a token's job). A new
+fluid token (the lead asked for a spacing preset, and the scale has to be put right first).
+Leaving the content block nested and accepting full-width blocks 16 pixels short on a
+phone.
+
+**Client sites.** Muva's, Perego's and Mizzey's themes have no `Template:` header: each is
+a theme of its own with its own `theme.json`, and none inherits this one (read on this
+machine, 2026-10-13). Neither Muva's nor Perego's sets a root padding. So the gutter and
+the templates do not reach them. The form's stylesheet does, on any site that shows a
+`corex/form`.
+
+**Tests.** `tests/e2e/theme-gutter.spec.js`: every template, a page of every registered
+pattern, the header and footer, a full-width and a wide block in content, at 375 and 320 in
+both directions; and at 1280 the text column, the two blocks, and the search that finds
+nothing. `tests/Unit/Theme/ThemePageCoverageTest.php`: every template that prints a post's
+content prints it full width, which holds a template added later. That the gutter is a
+token and not a written size was already held (`ThemeJsonTest.php`). Written before the change and seen to fail for it; then the root padding, the
+content block's alignment, the form's grid, the header's rule and the search template were
+each taken out once, and tests failed for each.

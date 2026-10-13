@@ -118,6 +118,16 @@ script and copies without the Clipboard API where a site is not served over HTTP
 scripts off the link is copied from the field by hand. `StandalonePage::copyField()` is the
 first standalone page part that carries a script.
 
+**After v0.45.2, not released, 2026-10-13.** The Corex theme has a side gutter: its root
+padding, from spacing preset 40, 16 pixels on a page (spec 068, FR-157a and FR-157b;
+DECISIONS #344). A block set to full width or to wide in a page's content is now that wide
+on a desktop too, and a `corex/form` is one column in a window 600 pixels wide or less.
+`tests/e2e/theme-gutter.spec.js` reads every template and every registered pattern at 375
+and 320 pixels in both directions: a template or a pattern added later is held by it, and
+a template that prints a post's content has to print it full width
+(`tests/Unit/Theme/ThemePageCoverageTest.php`). Client themes are themes of their own and
+are not moved.
+
 **v0.45.2, 2026-10-11.** Two changes for a form defined in code. Its notification email names
 the file it was sent with and links to the submission in the inbox, where the file is opened;
 nothing is attached (DECISIONS #319). A site that writes its own emails is handed the stored
@@ -232,11 +242,35 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   text changes; three of them in Chromium's accessibility tree on the signed-out page,
   none ignored) and from focus not being moved. Firefox's and WebKit's trees were not
   read, and the block's browser tests run in Chromium only.
-- **A page of the theme has no side gutter on a phone, on a fresh install.** Measured at
-  375 pixels on the default page template while looking at the account block: the page's
-  title, its content and the footer's text all start at the window's edge, and
-  `--wp--style--root--padding-left` computes to 0. Whether a kit or a client site sets
-  the gutter was not read. Not changed.
+- **Seven of the theme's eight spacing tokens are not the size theme.json gives them.**
+  Measured on 2026-10-13 on WordPress 7.1.3: `--wp--preset--spacing--20` to `--80` are on
+  the page as WordPress's own sizes (0.44, 0.67, 1, 1.5, 2.25, 3.38 and 5.06rem) and not
+  as the theme's (0.5, 1, 1.5, 2, 3, 4 and 6rem); only `--10` is the theme's. theme.json is
+  version 3, where a theme's sizes for the slugs WordPress defines are not used until it
+  sets `settings.spacing.defaultSpacingSizes` to false. By the same rule the font sizes
+  `small` and `medium` are WordPress's (13px, and 14 to 20px), and the size `2xl` is on
+  the page as `--wp--preset--font-size--2-xl` while the CTA block's stylesheet asks for
+  `--wp--preset--font-size--2xl`, which is nothing. So seven of the theme's spaces, and the
+  blocks' that use them, are an eighth to a third smaller than their tokens say, and the
+  gutter of DECISIONS #344 is 16 pixels where theme.json reads 24. Putting it right moves every space on every
+  page of a site that runs the theme: the owner's to ask for, with the pages looked at
+  before and after. Not changed.
+- **A word longer than the window does not break in a heading.** Measured the same day at
+  375 pixels: a search for a word of 24 letters leaves the search title 97 pixels past the
+  window's edge. A post's title breaks such a word (WordPress's stylesheet for that block
+  sets `word-break`), and its stylesheet for the search and archive title sets nothing of
+  the kind. A heading in content was not measured. Not changed.
+- **A form's message is one narrow column wide on a desktop.** Measured the same day at
+  1280 pixels with the line empty: `.corex-form__status` is placed in the grid's second
+  column, 38 pixels wide, beside the button. What a message looks like there was not
+  looked at. In a window 600 pixels wide or less it has the row to itself since DECISIONS
+  #344. Not changed.
+- **A theme made by `wp corex make:site` starts with no gutter.** Read from
+  `packages/cli/stubs/site/theme-json.stub`, not run: it sets
+  `useRootPaddingAwareAlignments` and no root padding, as the Corex theme did, and its
+  index and front-page templates have no constrained block for a padding to reach. Its
+  Coming soon template, and CoreX's own, have one and rely on the theme's root padding. A client theme's layout is the client's;
+  whether the starting point should carry a gutter is the owner's to decide.
 - **An account registered before DECISIONS #335 with no username is still named by its
   email address.** A new one is named by the part before the @. The old ones keep the
   address as display name and nickname, and in the author address, and a comment written

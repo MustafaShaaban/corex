@@ -51,6 +51,27 @@ Nested map overrides (e.g. a single radius value) are unaffected and still merge
 }
 ```
 
+The space beside a page's text, on a phone and in any window narrower than its content, is
+the theme's root padding. It is a map, so a site changes it without restating anything
+else:
+
+```jsonc
+// brand.json: a wider gutter
+{
+  "styles": {
+    "spacing": {
+      "padding": {
+        "left": "var(--wp--preset--spacing--50)",
+        "right": "var(--wp--preset--spacing--50)"
+      }
+    }
+  }
+}
+```
+
+Give both sides the same value: `theme.json` has no logical side, and a page read right to
+left is correct only while the two are equal.
+
 To recolor just one role without restating the list, override the **scalar** instead (e.g. a
 single `settings.custom` value), which merges. Point the resolver at the file with
 `config('theme.brand_path')`, or place it at the active theme root. A **missing or malformed**
