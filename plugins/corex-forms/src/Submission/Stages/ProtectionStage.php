@@ -25,6 +25,11 @@ use Corex\Forms\Submission\SubmissionStageResult;
  * real submission — it now runs the scored, typed verdict when the provider supports it, judging
  * the token against the *server's* expected action and threshold. The typed outcome, including the
  * effective threshold that judged the request, is persisted for the administrator to inspect.
+ *
+ * Both are read from the request as it was received, not from the values the stage before handed
+ * on. The validation stage runs first and keeps only the answers of the flow's fields, and neither
+ * the trap field nor the token is one: read from those values, a filled trap field was never
+ * seen and the provider was handed an empty token whatever the page had sent.
  */
 final readonly class ProtectionStage implements SubmissionStage
 {
@@ -39,8 +44,8 @@ final readonly class ProtectionStage implements SubmissionStage
 
     public function execute(SubmissionPipelineContext $context): SubmissionStageResult
     {
-        $honeypot = trim((string) ($context->values[FormSubmissionService::HONEYPOT_KEY] ?? ''));
-        $token = trim((string) ($context->values[SubmissionChallenge::TOKEN_KEY] ?? ''));
+        $honeypot = trim((string) ($context->received[FormSubmissionService::HONEYPOT_KEY] ?? ''));
+        $token = trim((string) ($context->received[SubmissionChallenge::TOKEN_KEY] ?? ''));
 
         $captcha = $this->challenge->verify(
             $token,

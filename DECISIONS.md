@@ -14691,3 +14691,101 @@ send theirs later, from a queue of its own, and cannot report through the event:
 gets no failed-email notification from this change. A site that
 listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
 0; nothing under `sites/` in the Muva or Perego checkouts names that event.
+
+## #358 — A flow's trap field and challenge token are read from the request as it was received, not from what the validation stage handed on
+
+**Date:** 2026-10-13. **Branch:** `fix/flow-protection-reads-the-request`, from `main`.
+**Spec:** 068, FR-042a (added with this change).
+
+**What was found.** A lead from reading, on 2026-10-13, then measured. A form built in
+Forms & Flows is submitted through `FlowSubmissionController` into `FormSubmissionPipeline`,
+whose stages `FormsServiceProvider` lists as validation, protection, storage, routing, email,
+inbox, timeline. `ValidationStage` ends a run that passed with
+`$context->withValues($result->values)`, and `Validator::validate()` answers only the values
+of fields in the flow's schema. `ProtectionStage` then read the trap field (`corex_hp`) and
+the challenge token (`captcha_token`) from `$context->values`. Neither is a field of a flow,
+so both were gone before the stage that judges them ran.
+
+**Measured, before the change.** Through the real `ValidationStage` and `ProtectionStage`
+(`tests/Unit/Forms/FlowProtectionSeesTheRequestTest.php`): a submission with its trap field
+filled completed, and one carrying the token its provider accepts was refused. Through the
+route on a WordPress of the worktree's own (`tests/Integration/Forms/FlowProtectionTest.php`):
+a submission with its trap field filled was answered 200 and stored; with a provider that
+accepts one token, a submission carrying that token was answered 422.
+
+So, for a form built in Forms & Flows:
+
+- *the trap field stopped nothing*, on any site;
+- *with a challenge provider configured* (and the flow not set to `captcha: off`) *every
+  submission was refused*, a real visitor's included, because the provider was handed an
+  empty token. Nothing got past a provider because of this: the failure was closed.
+
+A form defined in code is not concerned: `FormSubmissionService` judges the trap field and
+the token before it validates.
+
+**How long.** Since the stages were written: `git log -S` puts the stage order, the
+reduction in `ValidationStage` and the read in `ProtectionStage` in one commit, `adea6a6b`
+(spec 068, 2026-07-10), first released in v0.34.0. Every release from v0.34.0 to v0.45.2
+carries it. Two later changes worked on the symptom from the other end, and neither had a
+token to work with on this path: spec 071 (`a9eb73e7`, the scored verdict) and #270
+(`6edb80a6`, Turnstile and hCaptcha). `tests/e2e/helpers.js` switches captcha off for its
+flow, with a comment that the protection stage "judges an empty token" on a site with a
+provider; the browser suite therefore never ran a flow against one.
+
+**Why no test saw it.** `ProtectionStageTest` hands the stage a context that still carries
+the two keys, which no pipeline did. `FormSubmissionPipelineTest` runs stand-in stages.
+`FlowLifecycleTest` submits neither key. No test ran the two real stages one after the other.
+
+**The decision.** `SubmissionPipelineContext` carries the request as the pipeline was handed
+it, `received`, beside `values`. Where a pipeline starts it is the first values; `withValues()`,
+`withMetadata()` and `withSubmissionId()` copy it and nothing changes it. `ProtectionStage`
+reads the trap field and the token from `received`. It still takes both keys out of `values`
+on its way out, so a pipeline put together without the validation stage stores neither.
+
+**What was weighed.**
+
+- *The protection stage first.* It is the order a form defined in code is judged in. Not
+  taken: spec 068 FR-042 names the sequence, the route's answer and the builder's test run
+  list the stages in it (`FlowLifecycleTest` holds the route to that list), and a token would
+  be spent on a submission whose answers are then refused (a reCAPTCHA token that passed is
+  not accepted twice: `TokenReplayGuard`).
+- *The validation stage carrying the two keys through.* Five lines, and the same mistake left
+  in place: `values` would stay a bag of answers and other things between two stages, and the
+  validation stage would have to know which keys another stage wants.
+- *The request beside the values* (taken). What a stage judges about the request no longer
+  depends on which stage ran before it. `ValidationStage` was left reading the UTM values, the
+  page address and the consent answers from `values`: it reads them before its own reduction,
+  so no other stage decides what it sees.
+
+**What `received` holds.** What the route's sanitiser let through (`SanitizeMiddleware`
+keeps the keys of its shape and nothing else), so nothing reaches the context that did not
+before. Nothing serialises a context: the route and the builder's test run answer from
+`completed`, `submissionId`, `isTest` and the stages (`FlowSubmissionController::resultData()`,
+`FlowRestPresenter::pipeline()`), and the storage, routing and email stages read `values`.
+
+**Not measured.** A page in a browser against a real provider. The token is known to reach
+the provider's verifier when the request carries it; that a flow's page puts a token the
+provider accepts into the request is the same script and the same hidden field as a form
+defined in code (spec 104), and was not run here for a flow.
+
+**Leads, not built.**
+
+- *The builder's test run on a site with a provider configured.* By reading, not measured:
+  `FlowTestService` runs the same pipeline with the values the builder sent, which carry no
+  token, so the run stops at the protection stage unless the flow sets `captcha: off`. It did
+  before this change too. Spec 068 FR-038 says a test run runs captcha and does not say with
+  what token.
+- *A flow whose schema has a field keyed `corex_hp` or `captcha_token`* would have that
+  field's answer judged as the trap field or the token. Nothing refuses such a key.
+
+**Verification.** Unit suite 3,127 passed. Whole integration suite on the worktree's own
+WordPress 1,184 passed, with the two warnings `ComingSoonHeadTest` gives there. Guards:
+wp-guard, clean-code-guard, test-guard and docs-guard run on the diff.
+
+**Client impact.** A site with a form built in Forms & Flows: a submission whose trap field
+is filled is now refused with 422 and not stored; and, where a challenge provider is
+configured, a submission carrying a token the provider accepts is now accepted where every
+submission was refused. Nothing to set. Muva's forms and Perego's are all registered in code
+(#352, read on this machine the same day), so neither site's forms go through this path.
+`SubmissionPipelineContext` gains a seventh constructor argument, optional, and a public
+property; a site that builds a context of its own is not affected.

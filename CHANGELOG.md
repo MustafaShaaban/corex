@@ -72,6 +72,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A form built in Forms & Flows is guarded by its trap field and by the site's challenge.**
+  Found by reading and then measured, 2026-10-13. The stage that judges a submission's trap
+  field and its challenge token ran after the stage that keeps only the answers of the flow's
+  fields, and read both from what that stage handed on, where neither was left. So a filled
+  trap field stopped nothing, and on a site with a challenge provider configured every
+  submission of such a form was refused, a real visitor's included, because the provider was
+  handed an empty token. It has been so since the stages were written (v0.34.0). The stage now
+  reads both from the request as it was received. Nothing got past a provider because of
+  this. A form defined in code was never concerned (spec 068, FR-042a; DECISIONS #358).
+
 - **A new submission of a form defined in code raises a notification.** Reported on
   2026-10-13 from a client site: dozens of submissions stored and no notification for any of
   them. The notification centre listened for the event of a form built in Forms & Flows, and
@@ -463,6 +473,16 @@ All notable changes to Corex are documented here. The format follows
   its button reached the window's edge once the header had a gutter.
 
 ### Client impact
+
+- **A form built in Forms & Flows refuses a submission whose trap field is filled, and takes
+  a challenge token.** Nothing to set. A site that has such a form and a challenge provider
+  configured (reCAPTCHA, Turnstile, hCaptcha or its own) had every submission of that form
+  refused; a submission whose token the provider accepts is now stored. A site that worked
+  round that by setting the form to **Never protect this form** can set it back once it has
+  seen a submission go through on its own pages: that was not run in a browser against a
+  real provider here. The builder's test run still carries no token, so on such a site it
+  stops at the protection stage as before. `SubmissionPipelineContext` has a new public property,
+  `received`, and a seventh constructor argument that may be left out (DECISIONS #358).
 
 - **A site whose forms are registered in code starts to get the New submission
   notification.** Nothing to set. It is raised for submissions stored from now on:

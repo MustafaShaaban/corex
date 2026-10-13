@@ -107,6 +107,15 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A form built in Forms & Flows is guarded by
+its trap field and by the site's challenge (DECISIONS #358; spec 068, FR-042a). The
+protection stage read the trap field and the token from the values the validation stage
+hands on, which are the answers of the flow's fields and nothing else: a filled trap field
+passed, and a provider was handed an empty token, since v0.34.0. `SubmissionPipelineContext`
+now carries the request as it was received, `received`, and the stage reads it there.
+**A stage that judges something the request carried beside its answers reads `received`,
+not `values`.** Not run in a browser against a real provider.
+
 **After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
 raises the New submission notification (DECISIONS #352; the owner's report, relayed by the
 Muva session). `FormSubmissionService` now dispatches `SubmissionProcessedEvent` once the
@@ -235,6 +244,10 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **The builder's test run of a flow carries no challenge token**, so on a site with a
+  provider configured it stops at the protection stage unless the flow's protection is off.
+  By reading, not measured; it did before DECISIONS #358 too. Spec 068 FR-038 says a test
+  run runs captcha and does not say with what token.
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
   only of what Email Studio's own service sent. A form's own email listener that sends
