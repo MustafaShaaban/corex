@@ -52,6 +52,12 @@ person changes their display name on the block's Profile form. Covered by
   no username the login is made from the email address and the person signs in with the
   address.
 - Login delegates to `wp_signon`, inheriting core's auth filters and any login hardening.
+- A password is handed to WordPress with `wp_slash()`, as WordPress's own screens hand it
+  over, at registration, reset and sign-in. An account the add-on hashed as typed before
+  that still signs in: `wp_check_password()` finds which form it holds, one `wp_signon()`
+  is made with that form, and when it has passed the password is hashed again WordPress's
+  way (`wp_set_password()`), the account's sessions are ended and the browser is given its
+  cookie again.
 - Password reset responses are generic, so the endpoint cannot enumerate accounts.
 - Authenticated routes require a signed-in user and the REST nonce; the service also
   confirms a user only ever edits their own profile or sessions.
@@ -66,5 +72,7 @@ person changes their display name on the block's Profile form. Covered by
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
   `tests/Integration/Profile/RegistrationUsernameTest.php` — which usernames the register
-  route refuses and which it keeps. `tests/Integration/Profile/ProfileNamesKeepBackslashesTest.php`
+  route refuses and which it keeps.
+  `tests/Integration/Profile/PasswordSignsInEverywhereTest.php` — a password with a quote
+  or a backslash signs in at the add-on and the way `wp-login.php` checks it. `tests/Integration/Profile/ProfileNamesKeepBackslashesTest.php`
   — a profile's names are saved as written.

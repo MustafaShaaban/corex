@@ -12224,3 +12224,109 @@ WordPress.
 nothing under `sites/` in the Muva, Perego or Mizzey checkouts names the interface, the
 service or the account routes, and Muva's own decisions record the profile add-on as left
 off. Whether Perego or Mizzey has it on was not read from a running site.
+
+
+## #334 — The account add-on hashes a password the way WordPress's screens do, and moves an account that holds the other form when its owner signs in
+
+**Date:** 2026-10-13. **Branch:** `fix/account-password-hashed-as-wordpress-does`, on top of
+#333's branch. **Decided by:** the owner, the same day, on the table in #333 and three ways
+to go: match WordPress and move old accounts; match WordPress and accept both forms for
+good; or leave it and write it down. He chose the first, which was the one recommended.
+
+**What was wrong** is measured in #333. WordPress's screens hash and check a password as
+the text of a form, with the request's slashes still on it. The add-on handed over the
+password of a REST request, which has none. For a password with `'`, `"` or `\` in it those
+are two texts: chosen through the add-on, it was refused at `wp-login.php`; chosen on a
+WordPress screen, it was refused by the add-on.
+
+**The change**, all of it in `WordPressAuthGateway`:
+
+- `createUser()` and `resetPassword()` hand WordPress `wp_slash()` of the password, which
+  is what a WordPress screen hands it.
+- `authenticate()` signs in with `wp_slash()` of the password too, unless the account
+  still holds the hash of the password as it was typed, which is how this gateway stored
+  it until now. `holdsPasswordAsTyped()` finds that out with `wp_check_password()` against
+  the account with that username and the one with that address, the two WordPress tries.
+  It changes nothing. The sign-in is then made once, with the form the account holds.
+- When that sign-in has passed, `keepPasswordAsWordPressDoes()` hashes the password again
+  WordPress's way (`wp_set_password()`), ends the account's sessions, and gives the browser
+  a cookie again.
+
+All of this is for a password that slashing changes. A password with none of the three
+characters takes the same steps as before.
+
+**Why it is looked at and not tried twice.** The other way to accept both forms is to sign
+in with one and, if that is refused, with the other. Every refused sign-in raises
+`wp_login_failed`, and the add-on's own limiter counts each one
+(`LoginProtectionEnforcer::recordFailure()`): a wrong password with a quote in it would
+have counted as two, and locked its owner out in half the tries. Checking the stored hash
+with `wp_check_password()` raises nothing, and one `wp_signon()` follows whatever it finds.
+
+**Why the account is moved after the sign-in and not before it.** The first version of
+this change hashed the password again as soon as it had matched, before `wp_signon()`.
+That changes an account for somebody the sign-in then refuses: a person who is locked
+out, or stopped by a second factor. And it takes longer for a right password than for a
+wrong one, by one hashing, which a locked-out guesser could time. Moved afterwards,
+nothing is changed for a sign-in that is refused, and a refused sign-in does the same work
+whether the password was right or not.
+
+**Why the sessions are ended and the cookie given again.** WordPress makes a browser's
+cookie from four characters of the stored hash (read: `wp_generate_auth_cookie()`). The
+hash has just been replaced, so the cookie `wp_signon()` set a moment before is void, and
+so is the cookie of every other browser that was signed in. Their sessions would still be
+listed on the account, and none of them would work. They are ended
+(`WP_Session_Tokens::destroy_all()`), and `wp_set_auth_cookie()` gives this browser one
+that does.
+
+**Measured after the change**, over HTTP on WordPress 7.1.3 as in #333, for `'`, `"` and
+`\` alone and together:
+
+- A password chosen at the add-on's registration or through its reset route signs in at
+  the add-on and at `wp-login.php`. One chosen on `wp-login.php`'s reset screen, or given
+  through `wp/v2/users` (which takes the two quotes and refuses a backslash), signs in at
+  both. The stored hash is of the slashed text in every case.
+- An account hashed the old way, with a browser already signed in: refused at
+  `wp-login.php`; signed in at the add-on, and with the cookies that answer carried
+  `wp-admin/profile.php` answered 200; one session on the account afterwards; then
+  accepted at `wp-login.php`; and the browser that was signed in before no longer is.
+- With a password slashing does not change, the browser that was signed in before stayed
+  signed in, and its session stayed.
+
+**What moving an account also does, read and not run:** `wp_set_password()` clears the
+account's password-reset key, so a reset link that was waiting stops working, and it
+raises the `wp_set_password` action.
+
+**An account whose owner never signs in through the add-on again is never moved**, and
+keeps being refused at `wp-login.php` until its owner resets the password. Nothing lists
+those accounts: which form a hash holds can be told only with the password.
+
+**What listens on `authenticate` is now handed the slashed password by the add-on too**, as
+it always was by `wp-login.php`. Read, not run with such a plugin: one that checks a
+password somewhere else (a directory, another site) already has to take the slashes off
+for `wp-login.php`, and now sees the same text from both.
+
+**Spaces around a password were measured and are not part of this.** `wp_hash_password()`
+and `wp_authenticate()` both trim, so a password typed with a space after it is hashed and
+checked without it, at the add-on as at WordPress, before and after.
+
+**Not changed.** `AccountService` and its rules for a password (eight characters, typed
+twice) judge the text as typed. `wp/v2/users` and the profile screen refuse a password with
+a backslash in it (#333); the add-on takes one, as `wp-login.php`'s reset screen does.
+
+**Tests.** `tests/Integration/Profile/PasswordSignsInEverywhereTest.php`, on real WordPress
+through `AccountService`, twelve. For a password with both quotes and for one with a
+backslash: a password chosen at registration, and one chosen through the reset route, is
+accepted the way `wp-login.php` checks one; a password set the way a WordPress screen sets
+it signs in at the add-on; an account hashed the old way signs in with no failed sign-in
+counted and is accepted the way `wp-login.php` checks afterwards, by username and by
+address. Nine failed before the change. Three hold what has to stay so, and passed before
+it: a wrong password is one failed sign-in and leaves the stored hash as it was; an old
+account whose sign-in is refused by a listener standing where the limiter stands is not
+moved; and the browser that moved an account holds a cookie WordPress accepts, with one
+session on the account. The last was run with each of the two lines that make it so taken
+out, and failed both times.
+
+**Client impact.** A member who chose a password with a quote or a backslash through the
+account block is signed out of their other browsers the next time they sign in there,
+once. Nobody is asked to do anything. Read: Muva records the profile add-on as left off;
+whether Perego or Mizzey has it on was not read from a running site.

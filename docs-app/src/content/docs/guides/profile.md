@@ -45,6 +45,17 @@ The registration form's **Username** field is optional.
 The rule is WordPress's own `validate_username()`, so a plugin that widens or narrows what a
 username may hold through the `sanitize_user` or `validate_username` filters is followed.
 
+## Passwords
+
+A password is handed to WordPress the way WordPress's own screens hand it over, so one
+chosen on the account block signs in at `wp-login.php` too, and one chosen on a WordPress
+screen signs in on the account block. This matters for a password with `'`, `"` or `\` in
+it, which WordPress keeps with the slashes of the request it arrived in.
+
+Up to and including v0.45.2 the add-on kept such a password as it was typed. An account
+from then still signs in on the account block; the first time it does, its password is
+kept again WordPress's way, which signs that member out of their other browsers once.
+
 ## REST API
 
 All routes live under `corex/v1/account/`:
@@ -68,7 +79,8 @@ sessions.
 ## Security notes
 
 - Login inherits WordPress's own authentication filters and any login hardening from the
-  Security Center — recovery keeps working even when the login route is customized.
+  Security Center — recovery keeps working even when the login route is customized. A
+  wrong password is one failed sign-in for the limiter, whatever characters it holds.
 - Password-reset responses are deliberately generic, so the endpoint cannot be used to
   discover which emails have accounts.
 - Every account operation returns a typed result; passwords, reset keys, and session
