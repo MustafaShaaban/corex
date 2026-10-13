@@ -107,6 +107,22 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** On a site without pretty permalinks the admin
+adds its query to a REST address as the site spells it (DECISIONS #359). There a route is
+a query (`/index.php?rest_route=/corex/v1/submissions`), eight clients wrote a second `?`
+after it, and WordPress answered 404: the Submissions inbox did not open, and neither did a
+filtered Forms & Flows list, a Data model's records or table changes, an Email Studio
+health check, a submission's email log, Blog Pro's refresh or the Setup Wizard's plan.
+**A client in `plugins/corex-config/src` that adds a query to an address PHP handed it
+uses `withQuery()` from `admin/restAddress.js`, and goes into the table in
+`admin/__tests__/restAddress.test.js`.** A script with no build step cannot import it and
+sets its parameters on a `URL`, as `setup-wizard.js` does. A path is still written after
+the address by hand. `tests/e2e/rest-address-plain.spec.js` runs on CI's site, which has
+pretty permalinks, because `tests/e2e/fixtures/corex-e2e-rest-address.php` hands a page
+its REST addresses in the other spelling for a request that carries
+`X-Corex-E2E-Rest-Address: plain`; a new browser test for a screen's requests can send the
+same header.
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
@@ -168,7 +184,8 @@ built: `ConfigServiceProvider::boot()` still makes every admin screen, job handl
 `plugins_loaded`, counted, not timed); an email's direction follows the language of
 whoever is signed in and not the site's (measured for `Layout`, read for
 `SiteEmailBrand`); and on a site without pretty permalinks the Submissions inbox said
-"The submissions could not be loaded" (seen once in a browser, not traced).
+"The submissions could not be loaded" (seen once in a browser, not traced then; traced
+and fixed since, DECISIONS #359).
 
 **After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of
 open access requests, has the Access & Abilities screen's own check (`manage_options`),
@@ -266,6 +283,18 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **No browser test runs on a site that really has no permalink structure.** CI's site has
+  pretty permalinks, and `rest-address-plain.spec.js` is handed the other spelling of a
+  REST address by a fixture; the routes that answer are the same, the site is not. The
+  suite was run on such a site by hand on 2026-10-13, for the five screens of that spec
+  and `submission-file.spec.js` only. A submission's email log and an Email Studio health
+  check were not opened in a browser there: Jest holds the address each asks, and each
+  route was asked by hand. No page a visitor sees was opened there. DECISIONS #359.
+- **An admin client writes a path after the REST address it is handed, and that is right
+  only while the route is the last thing in the address.** It is, with and without pretty
+  permalinks. Something that filters `rest_url` to end in a query of its own (a language
+  parameter, say) would have the path written into that query. Read, not seen: no such
+  plugin was installed. DECISIONS #359.
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
   only of what Email Studio's own service sent. A form's own email listener that sends

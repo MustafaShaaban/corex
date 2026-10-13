@@ -72,6 +72,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **On a site without pretty permalinks, CoreX → Submissions opens, and seven other things
+  in the admin answer.** Such a site, which is what a fresh install is until its permalinks
+  are set, spells a REST route as a query (`/index.php?rest_route=/corex/v1/submissions`).
+  Eight admin clients wrote `?` and their own query after it, which made that query part
+  of the route, and WordPress answered 404 "No route was found". The inbox opened on "The
+  submissions could not be loaded". The same happened to a search or a state filter on
+  Forms & Flows, a model's records and its table changes on Data, a template's health
+  checks in Email Studio, the email log of a submission, **Refresh** on Blog Pro, and the
+  plan step of the Setup Wizard. Each now adds its query as the site spells the address.
+  A site with pretty permalinks is asked nothing differently. The browser suite covers it
+  on CI's site, which has pretty permalinks, through a fixture that hands a page the other
+  spelling (DECISIONS #359).
+
 - **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
   WP-CLI.** Four jobs in three runs did on 2026-10-13, each before a test had run, and each
   passed when a person ran it again. setup-php asks for WP-CLI once, with no retry, and reports a tool it
@@ -496,6 +509,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site's own admin script that adds a query to a CoreX REST address by hand does not
+  work on a site without pretty permalinks.** CoreX's own screens are fixed (DECISIONS
+  #359) and a site has nothing to set. A script of the site's that writes
+  `` `${ restUrl }?name=value` `` asks for a route WordPress does not know there. Set the
+  parameters on a `URL` instead (`new URL( restUrl )`, then `searchParams.set()`), as the
+  Setup Wizard does: CoreX's helper is inside its admin bundle and is not something a
+  site can import.
 - **A site with a form that has a file field should take this release, and look at what it
   already stores.** Three things show an answer that was not a file the submission was
   sent with: text where the inbox shows a file's name, a file answer the inbox shows as a

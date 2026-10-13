@@ -8,7 +8,7 @@
  * did not open on such a site.
  *
  * The second half holds every admin client that adds a query to both spellings. A client added
- * later belongs in its table. (Found 2026-10-13 on a fresh install; DECISIONS #358.)
+ * later belongs in its table. (Found 2026-10-13 on a fresh install; DECISIONS #359.)
  */
 import { withQuery } from '../restAddress.js';
 import { buildListUrl, buildMigrationsUrl } from '../dataClient.js';

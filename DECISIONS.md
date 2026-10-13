@@ -14951,3 +14951,152 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #359 — An admin client adds its query to a REST address as the site spells it, in one place; the browser suite is handed the other spelling by a fixture
+
+**Date:** 2026-10-13. **Branch:** `fix/admin-clients-plain-permalinks`. **Found by:** the
+session that built #351, which saw `tests/e2e/submission-file.spec.js` fail at the inbox on
+a fresh install and recorded it in `PROGRESS.md` as seen once and not traced. **Decided
+by:** me. The owner's brief asked for the failing request to be named, for every admin
+client to be read and the screens opened in a browser, and for one shared way of joining a
+query, with no second helper if one was already there.
+
+**What the code did.** With pretty permalinks `rest_url('corex/v1/submissions')` is a path,
+`/wp-json/corex/v1/submissions`. A site that has no permalink structure, which is what a
+fresh install has, is handed `/index.php?rest_route=/corex/v1/submissions`: the route is a
+query. Eight places took that address and wrote `?` and their own query after it. The
+query became part of the route, WordPress knew no route of that name, and the answer was
+404 `rest_no_route`. `releaseClient.js` already chose the sign from the address (#296); it
+was the only one that did.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install made by
+`scripts/setup-wordpress.ps1`, `permalink_structure` empty, served by `php -S`, in
+Chromium, mail answered for by `pre_wp_mail`):
+
+| Screen, and what was done | The request | Answer |
+|---|---|---|
+| Submissions opens | `GET …?rest_route=/corex/v1/submissions?page…&per_page=25` | 404, and the box "The submissions could not be loaded" |
+| Submissions, a search typed | the same route with `?search…` | 404 |
+| Forms & Flows opens | `GET …?rest_route=/corex/v1/flows` | 200 |
+| Forms & Flows, a search applied | `…/corex/v1/flows?search…` | 404, "No route was found matching the URL and request method." |
+| Data, Records | `…/corex/v1/data/submissions?dir…&page=1&per_page=20` | 404, the same words |
+| Data, Migrations | `…/corex/v1/data/migrations?source…` | 404 |
+| Blog Pro, Refresh | `…/corex/v1/blog/analytics?post_id=1`, and `comments` and `share-controls` the same way | 404, the same words |
+| Setup Wizard, into the plan step | `…/corex/v1/setup/plan?kit…&level=minimal` | 404, the same words |
+| A submission's email log, asked from the page with the address `useInbox` wrote | `…/corex/v1/submissions/1/email-log?attempt_id…` | 404 `rest_no_route`; joined with `&` the route itself answers, `submission_not_found` |
+| A template's health checks, asked the same way | `…/email-studio/templates/1/health?version…` | 404 `rest_no_route`; joined with `&`, `email_version_not_found` |
+
+So the lead's request is the inbox's list, on opening the screen, before anything is typed.
+The last two were asked from the page by hand because the install had no submission with
+an email attempt and no template; the other eight rows are what the screens asked
+themselves.
+
+**What did not fail**, opened or pressed in the same browser: Email Studio opening;
+Insights and its widgets; Notifications, its list and its drawer; Access & Abilities, a
+change for Editor staged and previewed (not applied); Data's Export tab; Releases opening;
+the Setup Wizard's first request. Three reasons. A path written after the address
+lengthens the route in either spelling, because the route is the last thing in it.
+Notifications asks through `wp.apiFetch` with a `path`, and its root middleware turns the
+path's `?` into `&` when the site's root has a query (`wp-includes/js/dist/api-fetch.js`).
+Releases had its own rule. Operations & Security makes no request on opening and its one
+client writes a path only; saving login protection was read, not pressed.
+
+**The helper.** `plugins/corex-config/src/admin/restAddress.js` exports
+`withQuery( address, query )`: `&` when the address has a `?`, `?` when it has none, and
+the address unchanged when there is nothing to add. It is the rule #296 put in the Releases
+client, moved to where every client of the plugin can import it, and the Releases client
+uses it now, so there is one and not two. It takes a string or a `URLSearchParams`.
+
+Three clients wrote their address inside a hook or a component, where a test could reach
+it only by drawing the screen. Each is now a function beside the ones already there:
+`buildEmailLogUrl()` in `Submissions/inbox.js`, `buildHealthUrl()` in
+`Email/emailStudioClient.js`, `buildMigrationsUrl()` in `admin/dataClient.js`.
+`blogRequest()` takes the query as an option, and the Releases client's `ask()` as a third
+argument, because both add the base themselves.
+
+**On a site with pretty permalinks nothing is asked differently.** The helper writes the
+same `?` the clients wrote. One address differs in a case nothing reaches:
+`buildInboxUrl()` with no filter at all ended in a bare `?` and now ends at the route; the
+inbox always sends a page.
+
+**Not `@wordpress/url`.** `addQueryArgs()` is WordPress's own function for this and is what
+`apiFetch` applies to these addresses. The package is not installed here (`@wordpress/url`
+does not resolve from the repository root; `plugins/corex-config/package.json` declares
+`components`, `element` and `i18n`), so using it means a new dependency for one line, and
+it writes a query again in its own encoding, which would change every address on every
+site to fix them on some.
+
+**Not on `window.Corex.api`.** The runtime is the one script every screen loads, and a
+function on it would reach a script with no build step. The address builders are pure
+functions tested without a page, and the Releases client is handed its `fetch`: each would
+then read a global, and seven test files replace `window.Corex` with a stand-in that would
+have to carry it.
+
+**The Setup Wizard is the one client the helper does not reach.**
+`addons/corex-kit-company/assets/setup-wizard.js` is a script with no build step, in an
+add-on, and cannot import a module of `corex-config`. It does not choose a sign either: it
+sets `kit` and `level` on a `URL`, which adds to whatever query the address has. On a site
+without pretty permalinks that writes the route encoded, `rest_route=%2Fcorex%2Fv1%2Fsetup%2Fplan`,
+which WordPress reads as the same route (measured: 200). A second script of that kind that
+needs a query is the moment to put the rule where both can reach it; one caller is not.
+
+**The browser suite and CI.** CI's site has pretty permalinks
+(`.github/actions/provision-wordpress/action.yml`), as a real site has, and a suite run on
+it could never see this. `tests/e2e/fixtures/corex-e2e-rest-address.php` filters
+`rest_url` for a request that carries `X-Corex-E2E-Rest-Address: plain`, from somebody who
+manages the site, and writes the address as `get_rest_url()` writes it for a site with no
+structure. WordPress registers `rest_route` as a query variable on every site
+(`rest_api_init()` in `wp-includes/rest-api.php`), so the requests the page then makes are
+answered by the same routes. The permalink setting is not answered as empty for the
+request: that would also change what the request does with the rewrite rules, and a page
+that saves them would save a site with none. `tests/e2e/rest-address-plain.spec.js` sends
+the header and reads, for five screens, the route each request was for and its answer. A
+client that joins by hand shows as a route with the query in it
+(`/corex/v1/submissions?page`). Each test first holds the page to having been handed an
+`index.php?rest_route=` address, so an install without the fixture fails in a sentence and
+not in a timeout.
+
+**Tests.** Jest: `plugins/corex-config/src/admin/__tests__/restAddress.test.js` holds the
+helper to both spellings, to a `URLSearchParams` and to nothing to add, and holds six
+clients' addresses and Blog Pro's four requests to both spellings by exact address; a
+client that adds a query later belongs in its table.
+`addons/corex-kit-company/assets/__tests__/setup-wizard.test.js` holds the wizard's plan
+request to both. The Releases client's own test of an upload without pretty permalinks
+(#296) passes unchanged. Seen failing first: the Jest file could not load (the helper and
+the three functions did not exist) and the wizard's test read the route
+`/corex/v1/setup/plan?kit=company`; with the fix taken out and the bundles built again,
+all five browser tests failed, each naming its route with the query in it, and
+`submission-file.spec.js` failed as the lead described.
+
+**Measured after the change**, the same install:
+
+- Without pretty permalinks: every request in the table is 200
+  (`…?rest_route=/corex/v1/submissions&page=1&per_page=25`, and so on), the five browser
+  tests pass twice over, and `submission-file.spec.js` passes.
+- With pretty permalinks (`/%postname%/`), where only the fixture gives the other
+  spelling, which is CI's condition: the five browser tests pass.
+- The related specs on pretty permalinks (`blog-pro`, `data-management`, `email-studio`,
+  `releases`, `setup-settings-insights`, `submission-file`, `submissions-inbox`): in the
+  first run 51 of 56 passed. Three tests of `data-management` and two of
+  `submissions-inbox` failed waiting for a dialog or a list. The same five passed alone
+  with the fix, alone without it, and in a second whole run of those files (31 of 31).
+  `php -S` is one process on Windows and I have not found what the first run was waiting
+  on; CI is the authority for those suites.
+- Jest: 1,397 passed, 2 skipped. PHP unit suite: 3,145 passed; no PHP of the framework
+  changed, only the fixture.
+
+**What CI does not cover.** A site that really has no permalink structure: CI's has one,
+and the fixture changes only the address a page is handed. That was run here, by hand. A
+submission's email log and a template's health checks on such a site in a browser: Jest
+holds their addresses, and the routes were asked by hand. A Releases upload in a browser
+without pretty permalinks: Jest only, as since #296. Anything a visitor's page asks: the
+scripts of `plugins/` and `addons/` were searched for a query joined by hand and none was
+found outside the admin (the form and newsletter blocks post to the address they are
+given, the account block adds a path), and none of those pages was opened on the plain
+install.
+
+**Client impact.** Nothing to set. A site without pretty permalinks gets the eight things
+in the table back. A site's own admin script that adds a query to a `restUrl` by hand has
+the same defect on such a site, and `withQuery()` is inside the admin bundle, not
+something a site can import: such a script sets its parameters on a `URL`, as the wizard
+does.
