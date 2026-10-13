@@ -127,17 +127,23 @@ it('sends a draft under the subject it gave back', function () {
         ->and(subjectEmailsFor($this->subjectRecipient)[0]->subject ?? null)->toBe($typed);
 });
 
-it('keeps a path in a subject, in the preview and with the submission', function () {
-    // Email Studio's own copy of the email is not read here: its store drops a backslash from
-    // everything it keeps, a body too (PROGRESS.md, "Open, and not hidden").
+it('keeps a path in a subject and in a body: in the preview, with the submission and in Email Studio', function () {
     $typed = 'C:\\offers\\new';
-    $payload = ['subject' => $typed, 'body' => '<p>Hello Salma</p>'];
+    $payload = ['subject' => $typed, 'body' => '<p>The file is at C:\\offers\\one.</p>'];
     $preview = $this->subjectController->previewReply(subjectRequest('POST', $this->subjectSubmission, 'reply/preview', $payload))->get_data();
-    $this->subjectController->reply(subjectRequest('POST', $this->subjectSubmission, 'reply', $payload));
+    $sent = $this->subjectController->reply(subjectRequest('POST', $this->subjectSubmission, 'reply', $payload))->get_data();
     $submission = $this->subjectController->show(subjectRequest('GET', $this->subjectSubmission))->get_data()['data']['submission'];
+    $email = subjectEmailsFor($this->subjectRecipient)[0] ?? null;
+    $attempt = Boot::app()->container()->make(EmailAttemptRepository::class)
+        ->findByAttemptId((string) ($sent['data']['result']['attempt_id'] ?? ''));
 
     expect($preview['data']['preview']['subject'] ?? $preview)->toBe($typed)
-        ->and($submission['replies'][0]['subject'] ?? null)->toBe($typed);
+        ->and($submission['replies'][0]['subject'] ?? null)->toBe($typed)
+        // Email Studio's own copy: the email it kept, and the attempt it lists the email under.
+        ->and($email?->subject)->toBe($typed)
+        ->and($email->body)->toContain('<title>C:\\offers\\new</title>')->toContain('The file is at C:\\offers\\one.')
+        ->and($email->plainText)->toContain('The file is at C:\\offers\\one.')
+        ->and($attempt?->subject)->toBe($typed);
 });
 
 it('makes one line of a subject before it is a header, for a reply, a preview and a draft alike', function (string $typed, string $line) {

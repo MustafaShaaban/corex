@@ -8,6 +8,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **The page that shows a new preview link has a button that copies it** (spec 101, FR-011a;
+  the owner's ask). The link is in a field of its own, labelled, with **Copy link** beside
+  it: one press puts the whole link on the clipboard and the page says "Copied.", to a
+  screen reader as well. With scripts off there is no button and the link is copied from the
+  field by hand. On a site not served over HTTPS, where a browser gives a page no clipboard,
+  the button copies by selecting the field. The link is still shown once and kept nowhere
+  (DECISIONS #327).
+
 - **A reply that was begun and not sent is kept as a draft** (spec 106, slice 3). It is
   written down when writing pauses, and is in the box again the next time that person opens
   that submission, on any machine; nobody else is shown it. Sending the reply ends it;
@@ -56,6 +64,20 @@ All notable changes to Corex are documented here. The format follows
   `wp corex make:email-design` writes the same header (DECISIONS #322).
 
 ### Fixed
+
+- **An Email Studio template's subject is sent as it was written.** A template's subject
+  was stripped of markup when the email was made, and a subject is an email's header, which
+  is plain text. A template whose subject is "Price <500 EGP" was sent as "Price";
+  "Sam <sam@example.com> asked" as "Sam  asked". A value merged into a subject was stripped
+  the same way: with the name "Sam <b>x</b> & co", "Hello {{ user.name }}" was sent as
+  "Hello Sam x & co". Both are now kept as they are, by the rule a reply's subject is read
+  by (`Corex\Mail\SubjectLine`). The stripping did not take a line break out of a merged
+  value: a name or a message with a break in it reached the email's subject, and the copy
+  Email Studio keeps, with the break. WordPress's own mailer removes one from a subject as
+  it writes it; what another mailer does with one was not measured. The merged subject is
+  now one line, with a space where the break was. This is every email sent from a template
+  through its route (a form's notification, an access request's emails) and one sent again
+  from a submission (DECISIONS #330).
 
 - **What a visitor writes in a form is kept with its backslashes.** WordPress takes one
   level of slashes off a post's fields and off a meta value on their way in, and a
@@ -134,6 +156,20 @@ All notable changes to Corex are documented here. The format follows
   a subject is printed was read first: each escapes it where it is printed
   (DECISIONS #326).
 
+- **Email Studio keeps a backslash.** Its store handed its records to WordPress as they
+  were, and WordPress takes one level of slashes off a post's title and off a meta value on
+  their way in. A backslash was gone from everything the store kept. An email with the
+  subject "C:\offers\new" was listed, among the captured emails and the attempts, as
+  "C:offersnew", and its body was kept without them too. A template, a layout or a partial
+  written with `content:"\201C"` was stored as `content:"201C"`, and an email sent by a
+  route is built from what is stored. A name with two backslashes lost one more each time
+  its record was saved again. A template version's checksum, taken before the store, was not
+  the checksum of what was read back. The store now puts a level of slashes on a record's
+  name and on its content before handing them over, as the store of a submission's replies
+  does, and each is read back as it was given. A reply's own email always left with its
+  backslashes: what was wrong was Email Studio's copy of an email, and what it keeps to
+  build emails from. Records kept before this release are not repaired (DECISIONS #329).
+
 - **A username the account form cannot keep is refused, and no longer changed and
   accepted.** WordPress does not refuse a username it does not accept: it removes what it
   does not accept and stores the rest. Somebody who registered on the account block as
@@ -161,6 +197,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A template, a layout or a partial saved in Email Studio before this release, with a
+  backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
+  not in the database to put back. Open it, write the backslash again and save. The
+  captured emails and the attempts already listed keep the subject and the body they were
+  stored with. Nothing to rebuild: no screen changed, and no class or route did.
 - **A submission, a note or a flow stored before this release with a backslash in it is
   still stored without it.** Nothing rewrites it: what was dropped is not in the database
   to put back, and a stored "C:offersnew" cannot be told from one that was typed so. A
@@ -220,6 +261,13 @@ All notable changes to Corex are documented here. The format follows
   has to escape it: until now a subject with a `<` in it arrived written as entities, or
   without what stood between the angle brackets, and no longer does. Code of your own that reads a reply's `subject`, an attempt's
   or a captured email's, and prints it into a page escapes it there too.
+- **An email made from an Email Studio template can have `<`, `>` and markup in its subject
+  now**, from the template's own subject or from a value merged into it. Until now both were
+  stripped. Code of your own that prints such an email's subject into a page (an attempt's, a
+  captured email's) escapes it there, as above. A template whose subject merges a value that
+  was written as markup, a field kept as HTML say, now shows the tags in the subject: merge a
+  plain value there. A merged subject longer than 300 characters is cut at 300; it was sent
+  at any length.
 - **New class `Corex\Mail\SubjectLine`** (`SubjectLine::of($typed)`), for code of your own
   that takes a subject somebody typed. Nothing to rebuild: no screen changed.
 - **A reply's email looks different at the top**: the header is inside the card, the logo is
@@ -276,6 +324,13 @@ All notable changes to Corex are documented here. The format follows
   `SubmissionReplyView::of()` also takes the id of the person asking. Code that takes them
   from the container is unaffected.
 - **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
+- **The page that shows a new preview link is marked up differently.** The link is the value
+  of the field `#corex-preview-link`, where it was the text of a paragraph in
+  `.corex-standalone__detail`. A browser test or a script of your own that read it there has
+  to read the field. Two strings in the `corex` text domain are new: "Copied." and "It could
+  not be copied for you. It is selected: copy it from the keyboard." The field's label and
+  the button use "Preview link" and "Copy link", which the domain already had. Nothing to set
+  and nothing to rebuild for it: the page carries its own script.
 
 ## [0.45.2] — 2026-10-11
 

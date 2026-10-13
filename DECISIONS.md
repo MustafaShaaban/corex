@@ -11433,6 +11433,66 @@ three; what is not text is refused and nothing is kept.
 `tests/Unit/Mail/SubjectLineTest.php` for the rule alone. Thirteen of the first file's
 tests and five of the second's failed before the change.
 
+## #327 — The page that shows a preview link has a button that copies it
+
+**Date:** 2026-10-13. **Branch:** `feat/101-preview-link-copy`. **Spec:** 101, FR-011a (added by this change).
+
+The owner made a preview link on a client site and had to select the address by hand, out of
+a paragraph, on the one page that will ever show it (the link is stored nowhere, FR-013). His
+words, relayed by that client's session on 2026-10-12: "the temporarly link to view the
+website if it in coming soon and so on needs to havea copy icon to copy the link directly and
+easly".
+
+**What the page has now.** The link is in a read-only field with a label, "Preview link", and
+a button beside it with an icon and the words "Copy link". Pressing it puts the whole link on
+the clipboard and writes "Copied." into a polite live region on the label's line, over the
+button; the icon becomes a tick. After four seconds both go back, so a second press is said
+again. The field selects itself when it is focused.
+
+**The button is written hidden, and a script shows it.** With scripts off there is no button
+that does nothing: the link is in a field, and is selected and copied by hand. A browser test
+does exactly that with scripts off and reads the clipboard.
+
+**Where the Clipboard API is missing, the button still copies.** The session that relayed the
+ask proposed showing the button only where `navigator.clipboard` exists. A browser gives that
+to a page served over HTTPS or from the local machine and to no other, and the development
+sites are served over plain HTTP under a host name: there the button would not have been
+there at all, on the sites where the owner looks first. So the button is shown wherever the
+script runs. It asks the Clipboard API; where there is none, or it refuses, it selects the
+field and copies the selection the older way (`document.execCommand('copy')`); where that
+fails too it leaves the link selected and says to copy it from the keyboard, and that sentence
+stays until the next press. This is this session's reading, not the owner's words.
+
+**It belongs to `StandalonePage`.** The page is drawn by `Corex\Admin\StandalonePage`, whose
+stylesheet is in `corex-core` and is inlined. The field's markup, rules and script are one
+contract, so they are together: `StandalonePage::copyField()`, `corex-admin-standalone.css`,
+`assets/js/corex-copy-field.js`. `PreviewLinkController` passes the link and two labels. What
+the script says is written into the markup by PHP, so it is translated as the page is.
+
+**The script is inline, through WordPress's function.** The page is the answer to a POST and
+is built whole, outside the enqueue lifecycle; it already carries its stylesheet in a `style`
+element so that it asks the server for nothing. The script goes the same way, through
+`wp_get_inline_script_tag()`: CoreX sends no Content-Security-Policy, and a site that sends
+one with a nonce adds it with WordPress's `wp_inline_script_attributes` filter, which a test
+does. Where a policy forbids inline scripts and gives no nonce, the script does not run and
+the page is the scripts-off page. *Rejected:* a script file requested from the plugin's
+folder, which would make this the one standalone page that needs a second request to work.
+
+**Not changed.** The link is still shown once and is in the page once, in the field: not in
+the script, not in a second attribute, not in an address, not in storage. The card on
+Operations & Security has no copy button because it has no link.
+
+**Measured, not assumed.** In a browser, in both directions, both schemes and at 375 and
+1280 pixels: the clipboard holds the link the field holds; the card and the field do not move
+when the answer comes; the field and the button are one height, in a row and stacked; the
+button's words are whole; text is at 4.5 to 1 or better; the button shows a focus ring from
+the keyboard. Each of those was broken on purpose once and seen to fail. The answer was first
+written on a line of its own under the field, with the line kept empty so the card would not
+move: it left 56 pixels under the field against 16 above its label, and was moved.
+
+**Left.** No other CoreX page shows a value to be copied in this way. `copyField()` is on the
+class those pages would use; nothing else calls it today.
+
 ## #328 — A reply that did not go is sent again as it was written, and stays one reply
 
 **Date:** 2026-10-13. **Branch:** `feat/106-reply-send-again`. **Spec:** 106, slice 5, its first half (story 4, FR-022).
@@ -11520,6 +11580,81 @@ was typed to take posts and nothing else. A team with two people in the inbox, o
 retention run, meets the same thing. The reader now passes over what is no longer there. It
 is here and not in a pull request of its own because it stood in this one's way; it is
 released code's defect, in the changelog under Fixed.
+
+## #329 — Email Studio's store slashes what it hands to WordPress, and repairs nothing it already holds
+
+**Date:** 2026-10-13. **Branch:** `fix/email-studio-store-keeps-backslashes`. **Found by:**
+reading for #326, where it was measured and left as its own change.
+
+`WpEmailStudioStore` keeps every Email Studio record as a private post: the record's name is
+the post's title, and its content is one meta value. `wp_insert_post()`, `wp_update_post()`
+and `update_post_meta()` each take one level of slashes off what they are handed, because
+they were written for the text of a request. The store handed its records over as they
+were, so one level came off text that had none to spare.
+
+**Measured on real WordPress, before the change**, through the store and through each
+repository that uses it:
+
+- A captured email with the subject `C:\offers\new and a "quote"` and the body
+  `<p>C:\offers\one</p>` was read back with `C:offersnew and a "quote"` and
+  `<p>C:offersone</p>`. Its plain-text version and a header's value lost them the same way.
+  An attempt's subject did too.
+- A template draft whose HTML holds `<style>q::before{content:"\201C"}</style>` was read
+  back with `content:"201C"`. Its subject, its sender's name and its plain text lost theirs.
+  A layout's regions and a partial's HTML and plain text did the same. An email sent by a
+  route is built from the stored version and the stored layout
+  (`EmailRouteMessageFactory`): read, not measured through a send.
+- `\"` was read back as `"`, `\'` as `'`, and a backslash at the end of a text was gone.
+- A name lost a level each time its record was written again, and a template's record is
+  written again when a draft is saved and when a version is made active: `\\server\share`
+  was `\servershare` after the first write and `servershare` after the next.
+- A template version's checksum is taken from the content before it is stored
+  (`EmailTemplateRepository::saveDraft()`). For a draft with a backslash in it, the
+  checksum computed again from what was read back was a different one. Nothing compares the
+  two today: the checksum is stored, shown by the REST answer, and checked only for its
+  shape.
+- Quotes alone, an ampersand, Arabic and accented text were not changed, and what is not
+  text (a number, a boolean, null) kept its kind. They are in the tests so that they stay
+  so.
+
+**The change.** `create()` and `update()` hand over `wp_slash($name)` as the title and
+`wp_slash($payload)` as the meta value. `wp_slash()` goes through a list of any depth and
+adds slashes to text only, and what WordPress takes off is what it put on. The two other
+meta values of a record, its type and its slug, are each held to a pattern with no
+backslash in it and are left as they were. This is what
+`WpSubmissionReplyStore` and `WpSubmissionConversationStore` already do.
+
+**Nothing relied on the stripping.** Read before the change: the store is used only inside
+the email add-on, by six repositories, and none of them, nor the controller, hands it text
+from `$_POST` or slashes anything itself; a REST request's values arrive without slashes.
+The one search inside a stored content is `forgetAttempt()`, which looks for an attempt's
+id, and an id has no backslash in it. No code compares a stored text with the text it was
+made from. `EmailTemplateCatalog` only reads.
+
+**Records already stored are not repaired.** What was dropped is not in the database: a
+stored `C:offersnew` cannot be told from one that was typed so. A template, a layout or a
+partial saved before this change with a backslash in it has to be opened and saved again.
+A template version kept before the change, with a backslash in what was written, still
+carries the checksum of what was written and not of what is stored. Captured emails and
+attempts already listed keep what they were stored with.
+
+**Found on the way, measured, and left** (PROGRESS.md, "Open, and not hidden"): a record's
+name is a post's title, and WordPress cleans a title as markup for whoever lacks
+`unfiltered_html`. In a request nobody is signed in for, `Tom & Jerry` is kept as
+`Tom &amp; Jerry` and `Price <500 EGP` as `Price &lt;500 EGP`, with and without this
+change. An administrator of a single site holds that right. A captured email's and an
+attempt's title is read by nothing: the subject they show is in the content. A template's,
+a layout's and a partial's name is read. Keeping a name out of the title is a change to
+what a record is, with its own tests.
+
+**Tests.** `tests/Integration/Email/EmailStudioStoreKeepsTextTest.php`, on real WordPress:
+the store alone, for seven texts, when a record is made and when it is written twice more;
+what is not text; a record made with nobody signed in; then a captured email, an attempt,
+a template with a draft made active, two drafts that differ by a backslash, a layout and a
+partial, each through its repository. Seventeen of its 22 tests failed before the change.
+`tests/Integration/Submissions/ReplySubjectAsTypedTest.php`: the test of a path in a
+subject now sends a path in the body too and reads Email Studio's copy, the captured email
+and the attempt, which it could not before; it failed before the change.
 
 ## #331 — The data layer, the flow store and a submission's notes slash what they hand to WordPress
 
@@ -11720,6 +11855,110 @@ whose path has a backslash in it, so that it fails without the change on a Linux
 too, where it is a folder with a backslash in its name. 49 of the 64 tests failed before
 the change.
 
+## #330 — A template's subject is a header too: sent as written, with what is merged into it, on one line
+
+**Date:** 2026-10-13. **Branch:** `fix/template-subject-kept-as-written`. **Found by:** the
+reading for #326, which measured it and left it for a change of its own.
+
+`EmailTemplateService::render()` made a template's subject with
+`trim(strip_tags($this->merge($version->subject, $context, html: false)))`, and `merge()`
+stripped each value again before putting it in. A subject is an email's header, and a header
+is plain text.
+
+**Measured before the change**, with `validateDraft()` passing and `render()` called, and
+again through a route on real WordPress, read from the captured email and the attempt. A
+template whose subject is "Price <500 EGP" gave "Price". "Sam <sam@example.com> asked" gave
+"Sam  asked". An Arabic subject with "<500>" in it lost the price. "Hello {{ user.name }}"
+with the name "Sam <b>x</b> & co" gave "Hello Sam x & co". "Tom & Jerry's "offer"" and
+"Use &amp; not &" were not changed, and are in the tests so that they stay so.
+
+**What `strip_tags()` was there for.** It came with the editor (spec 068, 2026-07-10) beside
+a test named "keeps subject and plain text free of markup". Spec 068 asks for a sanitized
+HTML body (FR-115) and calls a template "a persisted safe subject/from/body", and nowhere
+asks for a subject without markup. Markup in
+a header is not a risk: nothing draws a header. The risk in a header is a line break, since
+what follows one is read as a header of its own, and `strip_tags()` does not take a break
+out. Measured: "Hello {{ user.name }}" with the name "Sam", a line break, "Bcc:
+victim@example.com" gave a subject with the break in it; the mail driver was handed it so,
+and the captured email and the attempt kept it so. `validateDraft()` refuses a control
+character in the template's own subject. A merged value is not checked there, and a template
+may merge `submission.name` or `submission.body`, which are what somebody typed into a form.
+Email Studio's sending path has no `HeaderGuard`: that check is `MailService`'s, on the
+older path. So the stripping protected nothing a header needs protecting from. The only
+other thing it took out of what a header cannot hold was a null byte.
+
+What stood between that break and the email was WordPress's mailer. Measured on WordPress
+7.1.3: PHPMailer takes a carriage return and a line feed out of a subject as it writes it, so
+"Hello Sam", a break, "Bcc: victim@example.com" is written as the one header "Subject: Hello
+SamBcc: victim@example.com", and nobody is copied. What a mailer that replaces PHPMailer
+does with a break was not measured.
+
+**The change.** The merged subject is read by #326's rule, `Corex\Mail\SubjectLine::of()`:
+the text as it is, one line, at most 300 characters, a space where a line break or another
+control character was. A value is merged into it as it is. `merge()` is told how a value is
+written where it lands, in place of a true or a false: escaped into markup, without markup
+into the plain-text version, as it is into the subject. A value holding a placeholder is not
+read a second time; that was so before and has a test now.
+
+**One byte that is not UTF-8.** `SubjectLine` answers nothing for text that is not UTF-8,
+which is right for a subject somebody typed into a box and wrong here: one bad byte in a
+merged name would send the email with no subject at all, where it was sent with the byte
+before. The merged subject is passed through `mb_scrub()` first, so the byte costs itself
+and is written "?", in a merged value and in the template's own subject alike.
+
+**Longer than 300 characters.** A merged subject is cut at 300, as a reply's is. It was sent
+at any length. The template's own subject has no limit when it is saved; that is not changed.
+
+**Everything that reads `render()`'s subject was read**, since it can now hold `<`, `>` and
+markup:
+
+- `EmailRouteMessageFactory::prepare()` puts it in an `EmailMessage`, which
+  `EmailStudioService` hands to the mail driver as `wp_mail()`'s subject and keeps as the
+  attempt's and the captured email's. Those are one serialized value of post meta each, and
+  are printed by Email Studio's lists as React text (#326's list).
+- `EmailStudioSubmissionGateway::resend()` does the same for an email sent again from a
+  submission.
+- `applyLayout()` hands it to `Template\Layout::wrap()`, which prints it into `<title>`
+  through `htmlspecialchars()`. Without a brand layout the subject is not printed into the
+  body at all. A test now holds a subject with "</title><script>" merged into it to that.
+- Email Studio's preview does not call `render()`: it is drawn in the browser from the
+  draft's body, in a frame with every permission taken away, and has no subject in it.
+- Nothing else calls `render()`.
+
+`EmailStudioService` is handed a message by five callers: the route, the two sends of the
+screen, a reply, and the email sent again. With this change each hands it a subject of one
+line.
+
+**The older template path was read too and is left as it is.**
+`Template\TemplateRenderer` merges a value into a subject as it is, and nothing after it
+strips or encodes it. A break in a merged value stays in the subject, and
+`MailService::deliver()` refuses the whole email through `HeaderGuard` before a driver is
+handed it: nothing is split, and nothing is sent. The two paths differ there. On Email
+Studio's a break becomes a space and the email goes; on the older one the email is refused.
+CoreX's own templates on the older path merge only the site's name, a support category and
+an article's title into a subject. Both readings have a test now.
+
+**Not done.** The plain-text version `render()` makes still strips markup from a merged
+value: measured, "under <500 EGP" merged into a manual plain-text version is "under" there.
+Nothing that sends reads it. The route and the email sent again take the subject and the
+HTML, and the `EmailMessage` they build has no plain-text version: measured through a route
+on a site that delivers, the mail driver was handed none, with a manual one saved on the
+template. So an email made from a template leaves as HTML alone, whatever its Plain Text tab
+holds. Recorded in PROGRESS.md under "Open, and not hidden", not changed here.
+
+**Tests.** `tests/Unit/Email/EmailTemplateEditorTest.php`: a template's subject as written,
+for five subjects; a value merged as it is, in Arabic too; a byte that is not UTF-8 written
+"?"; a break, a tab, a null byte and
+U+2028 in a merged value made one space, and the result passed by `HeaderGuard`; the cut at
+300; the `<title>` escaped. The older test that asked for a subject "free of markup" now
+asks for it as it is. `tests/Integration/Mail/EmailStudioLifecycleTest.php`, on real
+WordPress through a route: the captured email and the attempt hold the subject as written,
+for six cases; the mail driver of a site that delivers is handed one line; an
+email sent again from a submission has the subject as written.
+`tests/Integration/Email/EmailStudioControllerTest.php`: a subject posted to the draft route
+is given back, and rendered, as written. `tests/Unit/Mail/TemplateRendererTest.php` for the
+older path. Fifteen of the first file's tests and ten of the two integration files' failed
+before the change. Each changed line was put back in turn, and a test failed for each.
 
 ## #333 — A username WordPress would alter is refused at registration; a password is still hashed as it is handed over
 
