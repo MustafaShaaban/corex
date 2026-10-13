@@ -107,6 +107,12 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A person who asks twice for the same access has
+one request (spec 079, FR-008a; DECISIONS #343). `POST corex/v1/access/requests` stored a
+request, an audit entry and a notification for every repeat; the form on a denied screen
+did not. The question is asked where the request is stored
+(`AccessRequestStore::createUnlessPending()`, under a lock named for the requester), so the
+route, the form and two asks at the same moment get one answer.
 **After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
 the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
 three questions). The reset email is still WordPress's; its link is to the page the reset
@@ -169,6 +175,27 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **`POST corex/v1/access/requests` answers 500 for a request it refuses for what it says.**
+  An empty reason, a key that is not an ability's or an area's (`forms`, where the area is
+  `forms-flows`), both an ability and an area, or neither: the service throws and the route
+  does not catch it. Measured on 2026-10-13 over HTTP, signed in as an editor: "There has
+  been a critical error on this website", and a fatal error in the PHP log for each post.
+  A reason over 2,000 characters takes the same path; that one was read, not posted. The
+  form on a denied screen catches the same refusal and shows the field error. Not changed
+  with DECISIONS #343: what the route should answer changes what a script reading status
+  codes sees, which is a decision of its own.
+- **A site that already holds the same access request twice keeps both.** Each is listed in
+  the queue and decided on its own. Nothing merges or removes them, and whether a client
+  site holds one was not read.
+- **One open request per person rests on a MySQL named lock, on one database server.** The
+  lock is asked for on the connection WordPress is using (DECISIONS #343). On a site whose
+  database plugin sends reads to replicas, two requests could ask two servers for it and
+  both be told yes; two asks at the same moment could then both be stored, as they were
+  before. Read, not run: no such site was at hand.
+- **No test in CI posts two access requests at once.** What keeps the lock in place is an
+  integration test that reads, when the row is written, that the lock is held, and
+  afterwards that it was let go. The two-process run (36 pairs, one request each) was made
+  by hand on 2026-10-13.
 
 - **A client site's own notification email does not link to the submission yet.** CoreX's
   email names a form's file and links to the submission in the inbox (DECISIONS #319,
