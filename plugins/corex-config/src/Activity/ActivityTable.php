@@ -10,6 +10,7 @@ namespace Corex\Config\Activity;
 
 defined('ABSPATH') || exit;
 
+use Corex\Activity\ActivityEvent;
 use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
@@ -29,12 +30,12 @@ final class ActivityTable
             ->datetime('occurred_at')
             ->integer('actor_id')
             ->string('actor_kind', 16)
-            ->string('actor_label', 191)
+            ->string('actor_label', ActivityEvent::LONGEST_TEXT)
             ->string('area', 32)
             ->string('kind', 100)
             ->string('target_type', 64)
-            ->string('target_id', 191)
-            ->string('target_label', 191)
+            ->string('target_id', ActivityEvent::LONGEST_TEXT)
+            ->string('target_label', ActivityEvent::LONGEST_TEXT)
             ->string('outcome', 16)
             ->text('summary')
             ->text('context_json')
