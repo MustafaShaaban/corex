@@ -62,13 +62,7 @@ final readonly class SubmissionReplyView
      */
     private function knownAs(string $slug): string
     {
-        foreach ($slug === '' ? [] : ($this->forms?->all() ?? []) as $form) {
-            if ($form['slug'] === $slug) {
-                return $form['name'];
-            }
-        }
-
-        return '';
+        return $this->forms?->nameOf($slug) ?? '';
     }
 
     /** @return array<string,mixed> */

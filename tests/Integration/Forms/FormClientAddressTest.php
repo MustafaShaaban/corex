@@ -21,6 +21,7 @@ use Corex\Forms\Submission\SubmitController;
 use Corex\Http\ClientAddress;
 use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
+use Corex\Tests\Support\NotificationRows;
 use Corex\Tests\Support\WatchedTransients;
 
 const FORM_ADDRESS_TEST_PROXY = '10.20.30.40';
@@ -81,10 +82,14 @@ beforeEach(function () {
     $this->server         = $_SERVER;
     $this->storedSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
     $this->transients     = WatchedTransients::watch('corex_throttle_');
+    // A stored submission of a form defined in code tells whoever manages submissions. On a
+    // developer's install such a row may be their own: it is handed back as it was.
+    $this->submissionNotifications = NotificationRows::snapshotPrefixed('submission.');
 });
 
 afterEach(function () {
     $_SERVER = $this->server;
+    NotificationRows::restorePrefixed('submission.', $this->submissionNotifications);
 
     if ($this->storedSettings === null) {
         delete_option(LoginProtectionSettingsStore::OPTION);
