@@ -3,12 +3,21 @@
  *
  * Progressive enhancement over the server-rendered account block: it intercepts the
  * login / register / recovery / profile forms and posts them to the `corex/v1/account/*`
- * REST routes with the REST nonce, surfacing the typed result message in a polite live
- * region. On the member view it also loads active sessions and recent activity and
- * wires the "sign out other/every session" actions. With no JS the forms still submit
- * (the REST routes accept a normal POST), so the account remains usable.
+ * REST routes with the REST nonce, and writes the typed result message into the polite
+ * live region under the button that asked, which it brings into the window when it is
+ * outside it. A request that got no answer it can read is said there too. On the member
+ * view it also loads active sessions and recent activity and wires the "sign out
+ * other/every session" actions. Under each of those two headings it shows the list, or
+ * that there is nothing to list, or that the list could not be loaded. A row is the lines
+ * the server worded for a person (a session's device and when it signed in; what happened
+ * and when): the script words nothing and formats no date. Both lists are asked for again
+ * after a profile is saved and after a session button, so that what was just done is
+ * listed. With no JS the
+ * block shows a note saying so
+ * (`AccountRenderer`), and a form is sent to the page's own address, which does not
+ * answer it (PROGRESS.md, "Open, and not hidden").
  *
- * Config comes from the localized `window.corexAccount = { restUrl, nonce }`.
+ * Config comes from the localized `window.corexAccount = { restUrl, nonce, i18n }`.
  *
  * @param {Window}   window   The browser window the account block lives in.
  * @param {Document} document That window's document.
@@ -18,12 +27,55 @@
 
 	const cfg = window.corexAccount || {};
 	const i18n = cfg.i18n || {};
+	const MESSAGE_LINE = '.corex-account__status';
+	const NO_ANSWER =
+		i18n.noAnswer ||
+		'The site could not be reached, or its answer could not be read. ' +
+			'Please try again.';
 	const ROUTES = {
 		login: 'account/login',
 		register: 'account/register',
 		'reset-request': 'account/reset-request',
 		reset: 'account/reset',
 		profile: 'account/profile',
+	};
+	const LIST_NOTE_CLASS = 'corex-account__list-note';
+	const ENTRY_CLASS = 'corex-account__entry';
+	// The member view's two lists: where each is asked for, what the answer names it,
+	// where it is drawn, the lines of one row from the top, and what stands in the
+	// list's place when there is nothing to draw.
+	const SESSIONS = {
+		path: 'account/sessions',
+		key: 'sessions',
+		selector: '[data-corex-account-session-list]',
+		nothing:
+			i18n.noSessions || 'No sessions are recorded for this account.',
+		notLoaded:
+			i18n.sessionsNotLoaded ||
+			'Your sessions could not be loaded. ' +
+				'Load this page again to see them.',
+		lines( session ) {
+			return [
+				session.device +
+					( session.current
+						? ' — ' + ( i18n.thisDevice || 'this device' )
+						: '' ),
+				session.signedIn,
+			];
+		},
+	};
+	const ACTIVITY = {
+		path: 'account/notifications',
+		key: 'notifications',
+		selector: '[data-corex-account-notification-list]',
+		nothing: i18n.noActivity || 'No activity yet.',
+		notLoaded:
+			i18n.activityNotLoaded ||
+			'Your recent activity could not be loaded. ' +
+				'Load this page again to see it.',
+		lines( event ) {
+			return [ event.label, event.when ];
+		},
 	};
 
 	function root() {
@@ -41,16 +93,70 @@
 		);
 	}
 
-	function status( message, ok ) {
-		const el = document.querySelector( '.corex-account__status' );
-		if ( ! el ) {
-			return;
-		}
-		el.textContent = message;
-		el.hidden = ! message;
-		el.setAttribute( 'data-state', ok ? 'ok' : 'error' );
+	function prefersLessMotion() {
+		return window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 	}
 
+	// One message is on the page at a time: the line of every form is emptied.
+	function clearMessages() {
+		Array.prototype.forEach.call(
+			document.querySelectorAll( MESSAGE_LINE ),
+			function ( line ) {
+				line.textContent = '';
+				line.removeAttribute( 'data-state' );
+			}
+		);
+	}
+
+	/**
+	 * Writes what the server answered into the message line of the form or section that
+	 * asked, and brings that line into the window.
+	 *
+	 * `nearest` moves the page by the least that shows the whole line, and not at all when
+	 * it already shows. Focus is left on the control the person used.
+	 *
+	 * @param {Element} scope   The form, or the section, whose control was used.
+	 * @param {string}  message What the server said.
+	 * @param {boolean} ok      Whether it took what it was sent.
+	 */
+	function say( scope, message, ok ) {
+		clearMessages();
+		if ( ! message ) {
+			return;
+		}
+		const line = scope.querySelector( MESSAGE_LINE );
+		line.textContent = message;
+		line.setAttribute( 'data-state', ok ? 'ok' : 'error' );
+		line.scrollIntoView( {
+			block: 'nearest',
+			inline: 'nearest',
+			behavior: prefersLessMotion() ? 'instant' : 'smooth',
+		} );
+	}
+
+	/**
+	 * Writes the answer to a request into the line of the form or section that made it.
+	 * A refusal that came with no message is one the script has no reading of: it says so.
+	 *
+	 * @param {Element} scope The form, or the section, whose control was used.
+	 * @param {Object}  out   What `post()` resolved with.
+	 */
+	function answer( scope, out ) {
+		say( scope, out.message || ( out.ok ? '' : NO_ANSWER ), out.ok );
+	}
+
+	/**
+	 * Sends a form or a button's request and resolves with what the server said of it.
+	 *
+	 * It resolves whatever happens. A request that did not arrive, and an answer that is not
+	 * JSON (an error page, a proxy's page), are a refusal with no message: nothing in them
+	 * can be shown to a person, and the caller still has to say something.
+	 *
+	 * @param {string} path  The route, under the `corex/v1` namespace.
+	 * @param {Object} body  What is sent, as JSON.
+	 * @param {string} token The REST nonce.
+	 * @return {Promise<{ok: boolean, message: string}>} Whether it was taken, and the server's message.
+	 */
 	function post( path, body, token ) {
 		return window
 			.fetch( base() + path, {
@@ -64,20 +170,132 @@
 			} )
 			.then( function ( res ) {
 				return res.json().then( function ( data ) {
-					return { ok: res.ok, data };
+					return {
+						ok: res.ok,
+						message: ( data && data.message ) || '',
+					};
 				} );
+			} )
+			.catch( function () {
+				return { ok: false, message: '' };
 			} );
 	}
 
-	function get( path, token ) {
+	/**
+	 * Asks for one of the member view's lists and resolves with its rows.
+	 *
+	 * It resolves whatever happens, with `null` where there is no list to show: a request
+	 * that did not arrive, an answer that is not JSON, a refusal (which WordPress words
+	 * for a developer: "Cookie check failed"), and an answer the list is not in.
+	 *
+	 * @param {string} path  The route, under the `corex/v1` namespace.
+	 * @param {string} key   The name the answer gives the list under.
+	 * @param {string} token The REST nonce.
+	 * @return {Promise<?Array>} The rows, none of them for an empty list; `null` for no list.
+	 */
+	function get( path, key, token ) {
 		return window
 			.fetch( base() + path, {
 				credentials: 'same-origin',
 				headers: { 'X-WP-Nonce': token },
 			} )
 			.then( function ( res ) {
-				return res.json();
+				return res.json().then( function ( data ) {
+					return res.ok && data && Array.isArray( data[ key ] )
+						? data[ key ]
+						: null;
+				} );
+			} )
+			.catch( function () {
+				return null;
 			} );
+	}
+
+	// The paragraph that stands in a list's place, made the first time it is needed.
+	function noteAfter( list ) {
+		const next = list.nextElementSibling;
+		if ( next && next.classList.contains( LIST_NOTE_CLASS ) ) {
+			return next;
+		}
+		const note = document.createElement( 'p' );
+		note.className = LIST_NOTE_CLASS;
+		list.insertAdjacentElement( 'afterend', note );
+		return note;
+	}
+
+	/**
+	 * Makes one row of a list: what it is on its first line, and under it what else the
+	 * server said of it. A line the server left empty is not drawn.
+	 *
+	 * @param {Array<?string>} lines The row's lines, from the top.
+	 * @return {Element} The row's `<li>`.
+	 */
+	function entry( lines ) {
+		const li = document.createElement( 'li' );
+		li.className = ENTRY_CLASS;
+		lines.filter( Boolean ).forEach( function ( text, index ) {
+			const line = document.createElement( 'span' );
+			line.className = ENTRY_CLASS + ( index === 0 ? '-main' : '-meta' );
+			line.textContent = text;
+			li.appendChild( line );
+		} );
+		return li;
+	}
+
+	/**
+	 * Draws under a list's heading what a request for the list came back with: its rows,
+	 * or a sentence in their place saying that there are none, or that the list could not
+	 * be loaded.
+	 *
+	 * Nobody pressed anything to get the sentence, so it is not an answer: it is written
+	 * where the list would be, it empties no message line and it does not move the page.
+	 * Rows drawn earlier are taken away either way: they are not what the site holds now.
+	 *
+	 * @param {Element} list The list's `<ul>`.
+	 * @param {Object}  kind SESSIONS or ACTIVITY.
+	 * @param {?Array}  rows What `get()` resolved with.
+	 */
+	function drawList( list, kind, rows ) {
+		const note = noteAfter( list );
+		const hasRows = rows !== null && rows.length > 0;
+		list.textContent = '';
+		( rows || [] ).forEach( function ( row ) {
+			list.appendChild( entry( kind.lines( row ) ) );
+		} );
+		list.hidden = ! hasRows;
+		note.hidden = hasRows;
+		if ( hasRows ) {
+			note.textContent = '';
+			note.removeAttribute( 'data-state' );
+			return;
+		}
+		note.textContent = rows ? kind.nothing : kind.notLoaded;
+		note.setAttribute( 'data-state', rows ? 'empty' : 'error' );
+	}
+
+	function loadList( kind, token ) {
+		const list = document.querySelector( kind.selector );
+		if ( ! list ) {
+			return;
+		}
+		get( kind.path, kind.key, token ).then( function ( rows ) {
+			drawList( list, kind, rows );
+		} );
+	}
+
+	// Both lists, as the site holds them now. A press that was taken changes both: a saved
+	// profile and signed-out sessions are recorded as activity.
+	function loadLists( token ) {
+		loadList( SESSIONS, token );
+		loadList( ACTIVITY, token );
+	}
+
+	// The page no longer shows who is looking at it: it is loaded again, once the answer
+	// that says so has been on it for a moment.
+	function reloadSoon() {
+		window.setTimeout( function () {
+			window.location.reload();
+		}, 600 );
 	}
 
 	function serialize( form ) {
@@ -103,57 +321,15 @@
 			if ( ! path ) {
 				return;
 			}
-			status( '', true );
+			clearMessages();
 			post( path, serialize( form ), token ).then( function ( out ) {
-				const msg = ( out.data && out.data.message ) || '';
-				status( msg, out.ok );
+				answer( form, out );
 				if ( out.ok && kind === 'profile' ) {
-					loadSessions( token );
+					loadLists( token );
 				}
 				if ( out.ok && ( kind === 'login' || kind === 'reset' ) ) {
-					window.setTimeout( function () {
-						window.location.reload();
-					}, 600 );
+					reloadSoon();
 				}
-			} );
-		} );
-	}
-
-	function loadSessions( token ) {
-		const list = document.querySelector(
-			'[data-corex-account-session-list]'
-		);
-		if ( ! list ) {
-			return;
-		}
-		get( 'account/sessions', token ).then( function ( data ) {
-			list.textContent = '';
-			( ( data && data.sessions ) || [] ).forEach( function ( s ) {
-				const li = document.createElement( 'li' );
-				li.textContent =
-					( s.ua || i18n.session || 'Session' ) +
-					( s.current
-						? ' — ' + ( i18n.thisDevice || 'this device' )
-						: '' );
-				list.appendChild( li );
-			} );
-		} );
-	}
-
-	function loadNotifications( token ) {
-		const list = document.querySelector(
-			'[data-corex-account-notification-list]'
-		);
-		if ( ! list ) {
-			return;
-		}
-		get( 'account/notifications', token ).then( function ( data ) {
-			list.textContent = '';
-			( ( data && data.notifications ) || [] ).forEach( function ( n ) {
-				const li = document.createElement( 'li' );
-				li.textContent =
-					( n.kind || '' ) + ' · ' + ( n.occurredAt || '' );
-				list.appendChild( li );
 			} );
 		} );
 	}
@@ -166,16 +342,22 @@
 					const action = btn.getAttribute(
 						'data-corex-account-action'
 					);
-					const path =
-						action === 'revoke-all'
-							? 'account/sessions/revoke-all'
-							: 'account/sessions/revoke-others';
+					const everywhere = action === 'revoke-all';
+					const path = everywhere
+						? 'account/sessions/revoke-all'
+						: 'account/sessions/revoke-others';
 					post( path, {}, token ).then( function ( out ) {
-						status(
-							( out.data && out.data.message ) || '',
-							out.ok
+						answer(
+							btn.closest( '[data-corex-account-sessions]' ),
+							out
 						);
-						loadSessions( token );
+						// Signed out everywhere, this browser too: the site would refuse
+						// the list, and the page is the signed-out one from here on.
+						if ( out.ok && everywhere ) {
+							reloadSoon();
+							return;
+						}
+						loadLists( token );
 					} );
 				} );
 			}
@@ -197,8 +379,7 @@
 		);
 
 		wireActions( token );
-		loadSessions( token );
-		loadNotifications( token );
+		loadLists( token );
 	}
 
 	if ( document.readyState === 'loading' ) {

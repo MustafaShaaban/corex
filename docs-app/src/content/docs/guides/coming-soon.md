@@ -55,9 +55,11 @@ admin the same message is in the toolbar.
 
 For a client's stakeholders, who need to see the site and should not need an account.
 
-On the same screen, **Create preview link**. The link is shown **once**, on the page that follows;
-CoreX does not keep it. Whoever opens it is served the real site in that browser for **14 days**,
-with a banner saying it is a private preview. It gives no access to the admin.
+On the same screen, **Create preview link**. The link is shown **once**, on the page that follows,
+in a field with a **Copy link** button; CoreX does not keep it. With scripts off there is no
+button, and the link is copied from the field by hand. Whoever opens it is served the real site in
+that browser for **14 days**, with a banner saying it is a private preview. It gives no access to
+the admin.
 
 | You do this | What happens |
 |---|---|

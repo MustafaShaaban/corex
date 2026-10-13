@@ -66,3 +66,27 @@ renders (Principle VI):
 All colors, sizes, spacing, radii, shadows, and fonts come from `theme.json` presets and
 custom properties. No raw literals ship in CSS (enforced by the token-consumer contract
 tests). Layout is RTL-first via logical properties.
+
+## The gutter
+
+The space between what a visitor reads and each edge of the window is the theme's root
+padding: `styles.spacing.padding` in `theme.json`, left and right, both
+`var(--wp--preset--spacing--40)`. WordPress gives it to every constrained block, so a
+template, a part or a pattern gets it by being constrained and writes no side padding of
+its own. A block set to full width runs to both edges and keeps the gutter for what is
+inside it.
+
+Two rules follow:
+
+- A template that prints a post's content prints it full width
+  (`<!-- wp:post-content {"align":"full","layout":{"type":"constrained"}} /-->`). Inside
+  the constrained `<main>` a content block that is not full width holds a full-width block
+  in it to the text column. `tests/Unit/Theme/ThemePageCoverageTest.php` holds this for
+  every template.
+- A full-width section placed inside a block that is neither full width nor constrained
+  keeps the gutter as padding and stands out of line with the text around it. Make the
+  blocks around it full width, as `templates/search.html` does for what it shows when
+  nothing is found.
+
+`tests/e2e/theme-gutter.spec.js` measures every template and every registered pattern at
+375 and 320 pixels, left to right and right to left.

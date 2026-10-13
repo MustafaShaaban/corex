@@ -43,10 +43,13 @@ final class WpFlowStore implements FlowStore
     {
         $this->assertKey($type);
         $this->assertSlug($slug);
+        // WordPress takes one level of slashes off a title and off a meta value on their way
+        // in: handed over as they are, a name and a rule such as `pattern:^\d+$` are stored
+        // without their backslashes. A type and a slug are held to patterns that have none.
         $id = wp_insert_post([
             'post_type' => self::POST_TYPE,
             'post_status' => 'private',
-            'post_title' => $name,
+            'post_title' => wp_slash($name),
             'post_name' => sanitize_title($slug),
             'post_parent' => max(0, $parentId),
         ], true);
@@ -57,7 +60,7 @@ final class WpFlowStore implements FlowStore
         // The type goes in last. It is what `query()` selects a record by, so until it is there
         // the record is in no list, and a request that stops part-way leaves a post nothing reads.
         // Written first, as it was, it left a flow without its payload for every reader to meet.
-        $stored = update_post_meta($id, self::META_PAYLOAD, $payload)
+        $stored = update_post_meta($id, self::META_PAYLOAD, wp_slash($payload))
             && update_post_meta($id, self::META_SLUG, $slug)
             && update_post_meta($id, self::META_TYPE, $type);
         if (! $stored) {
@@ -74,12 +77,12 @@ final class WpFlowStore implements FlowStore
         if ($this->find($id) === null) {
             return false;
         }
-        $updated = wp_update_post(['ID' => $id, 'post_title' => $name], true);
+        $updated = wp_update_post(['ID' => $id, 'post_title' => wp_slash($name)], true);
         if (is_wp_error($updated) || $updated === 0) {
             return false;
         }
 
-        update_post_meta($id, self::META_PAYLOAD, $payload);
+        update_post_meta($id, self::META_PAYLOAD, wp_slash($payload));
 
         return true;
     }

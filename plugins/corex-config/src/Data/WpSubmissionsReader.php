@@ -303,7 +303,9 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         ];
         foreach ($changes as $key => $value) {
             if (isset($metaKeys[$key])) {
-                update_post_meta($id, $metaKeys[$key], $value);
+                // WordPress takes one level of slashes off a meta value on its way in, and a
+                // team's key is the site's to choose.
+                update_post_meta($id, $metaKeys[$key], wp_slash($value));
             }
         }
         update_post_meta($id, 'corex_submission_updated_at', gmdate(DATE_ATOM));
@@ -329,7 +331,9 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'updated_at' => gmdate(DATE_ATOM),
         ];
         $notes[] = $note;
-        update_post_meta($id, 'corex_submission_notes', $notes);
+        // Every note is written again with each new one, and WordPress takes one level of
+        // slashes off them each time: handed over as they are, an earlier note loses one more.
+        update_post_meta($id, 'corex_submission_notes', wp_slash($notes));
         update_post_meta($id, 'corex_submission_updated_at', gmdate(DATE_ATOM));
 
         return $note;
@@ -746,6 +750,7 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'summary' => ['state' => $state],
             'created_at' => gmdate(DATE_ATOM),
         ];
-        update_post_meta($submissionId, 'corex_submission_timeline', $timeline);
+        // As in {@see \Corex\Config\Submissions\SubmissionTimelineRepository::append()}.
+        update_post_meta($submissionId, 'corex_submission_timeline', wp_slash($timeline));
     }
 }

@@ -41,8 +41,23 @@
 
 @media (max-width: 600px) { /* corex-token-allow: breakpoint */
 
+	/*
+	 * One column, not twelve that every field spans. Twelve columns keep eleven
+	 * gaps between them whatever is placed on them, and eleven gaps are wider
+	 * than what a phone has left beside the page's gutter: the fields then ran
+	 * out of the form and the page scrolled sideways.
+	 */
+	.corex-form {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
 	.corex-form__field {
-		grid-column: span 12;
+		grid-column: 1 / -1;
+	}
+
+	/* As wide as its label, which is what one column of twelve made it. */
+	.corex-form__submit {
+		justify-self: start;
 	}
 }
 

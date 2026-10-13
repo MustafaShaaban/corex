@@ -126,9 +126,15 @@ final class MailServiceProvider extends ServiceProvider
         );
         $this->container->singleton(ReplyComposer::class);
 
+        // The brand is asked for when an email is drawn. Read here, it was read whenever the
+        // layout was made, which is during `plugins_loaded` if anything booting needs the mail
+        // stack: the theme's settings were translated before `init`, and an email on a
+        // right-to-left site was drawn left to right (DECISIONS #351).
         $this->container->singleton(
             Layout::class,
-            static fn (ContainerInterface $c): Layout => new Layout(self::brand($c->make(SiteEmailBrand::class)->logo())),
+            static fn (ContainerInterface $c): Layout => new Layout(
+                static fn (): array => self::brand($c->make(SiteEmailBrand::class)->logo()),
+            ),
         );
 
         $this->container->singleton(

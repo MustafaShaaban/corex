@@ -45,14 +45,17 @@ final class AccessPolicy
         $blockers = [];
 
         foreach ($changes as $abilityKey => $effect) {
-            $ability = $this->catalog->find($abilityKey);
+            // PHP keeps the key "123" of an array as the integer 123, and a list sent where a map
+            // was meant has integers for keys. Neither is an ability, and both are refused as one
+            // that is not known and not by the type of the catalog's argument.
+            $ability = $this->catalog->find((string) $abilityKey);
 
             if ($ability === null) {
-                throw new InvalidArgumentException(sprintf('Unknown CoreX ability "%s".', $abilityKey));
+                throw new InvalidAccessInput('changes', InvalidAccessInput::ABILITY_UNKNOWN, 'A change names an unknown CoreX ability.');
             }
 
             if (! in_array($effect, self::EFFECTS, true)) {
-                throw new InvalidArgumentException(sprintf('Unsupported access effect "%s".', $effect));
+                throw new InvalidAccessInput('changes', InvalidAccessInput::EFFECT_UNSUPPORTED, 'A change names an unsupported access effect.');
             }
 
             if ($ability->locked) {

@@ -20,6 +20,26 @@ use Corex\Config\Notifications\NotificationTable;
 use Corex\Database\Schema\Migrator;
 use Corex\Operations\Confirmation;
 
+/**
+ * A subscriber of the test's own, deleted in `afterEach` through `$this->requesterId`.
+ *
+ * These tests used to borrow the first subscriber the install happened to have — and approving a
+ * request grants that account a real ability, on a developer's real site — and, finding none, to
+ * create `corex-access-requester` and leave it there.
+ *
+ * @return int|WP_Error Checked by the caller rather than cast: `(int)` turns a WP_Error into 1,
+ *                      and `afterEach` deletes the user with this id and every request they filed.
+ */
+function accessRequester(): int|WP_Error
+{
+    return wp_insert_user([
+        'user_login' => 'corex-access-requester-' . wp_generate_password(8, false),
+        'user_pass'  => wp_generate_password(),
+        'user_email' => uniqid('corex-access-', true) . '@example.test',
+        'role'       => 'subscriber',
+    ]);
+}
+
 function accessRequest(string $method, string $route, array $payload = []): WP_REST_Request
 {
     $request = new WP_REST_Request($method, $route);
@@ -65,6 +85,8 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    remove_filter('pre_wp_mail', '__return_true');
+
     global $wpdb;
     $activity = $this->migrator->fullName(ActivityTable::NAME);
     $grants = $this->migrator->fullName(AccessTables::ROLE_GRANTS);
@@ -175,19 +197,7 @@ it('previews and applies a role ability change with a confirmation', function ()
 });
 
 it('creates and approves an access request without using the protected login route', function () {
-    // Its own subscriber, deleted in `afterEach`. This used to borrow the first subscriber the
-    // install happened to have — and approving the request below grants that account a real
-    // ability, on a developer's real site — and, finding none, to create `corex-access-requester`
-    // and leave it there.
-    $requesterId = wp_insert_user([
-        'user_login' => 'corex-access-requester-' . wp_generate_password(8, false),
-        'user_pass'  => wp_generate_password(),
-        'user_email' => uniqid('corex-access-', true) . '@example.test',
-        'role'       => 'subscriber',
-    ]);
-
-    // Checked rather than cast: `(int)` turns a WP_Error into 1, and `afterEach` deletes the user
-    // with this id and every access request that user filed.
+    $requesterId = accessRequester();
     expect($requesterId)->toBeInt();
 
     $this->requesterId = $requesterId;
@@ -215,3 +225,48 @@ it('creates and approves an access request without using the protected login rou
         ->and($stored['state'])->toBe('approved')
         ->and(user_can($requesterId, CorexAbility::MANAGE_FORMS))->toBeTrue();
 });
+
+it('stores one request, one audit entry and one notification when the same thing is asked for twice', function (array $target) {
+    // A site with an email route for a new request mails its administrators from here.
+    add_filter('pre_wp_mail', '__return_true');
+
+    $requesterId = accessRequester();
+    expect($requesterId)->toBeInt();
+
+    $this->requesterId = $requesterId;
+    wp_set_current_user($requesterId);
+
+    global $wpdb;
+    $newest = [];
+    foreach ([AccessTables::REQUESTS, ActivityTable::NAME, NotificationTable::NAME] as $table) {
+        $newest[$table] = (int) $wpdb->get_var('SELECT MAX(id) FROM ' . $this->migrator->fullName($table));
+    }
+
+    $ask = fn (string $reason): WP_REST_Response => $this->controller->createRequest(
+        accessRequest('POST', '/corex/v1/access/requests', $target + ['reason' => $reason]),
+    );
+    $first  = $ask('I need to manage the forms queue.')->get_data()['data']['result'];
+    $second = $ask('I need to manage the forms queue, still.');
+    $refused = $second->get_data()['data']['result'];
+
+    // Counted from the newest row each table had before the first ask: the second ask's audit
+    // entry and notification would be about a second request, so they cannot be found through
+    // the first one's id.
+    $added = fn (string $table, string $where, string ...$values): int => (int) $wpdb->get_var($wpdb->prepare(
+        'SELECT COUNT(*) FROM ' . $this->migrator->fullName($table) . ' WHERE id > %d AND ' . $where,
+        $newest[$table],
+        ...$values,
+    ));
+
+    expect($first['state'])->toBe('completed')
+        ->and($second->get_status())->toBe(200)
+        ->and($refused['state'])->toBe('blocked')
+        ->and(array_column($refused['errors'], 'code'))->toBe(['request_already_pending'])
+        ->and($refused['affected_ids'])->toBe([])
+        ->and($added(AccessTables::REQUESTS, 'requester_id = %s', (string) $requesterId))->toBe(1)
+        ->and($added(ActivityTable::NAME, 'actor_id = %s AND kind = %s', (string) $requesterId, 'access.request.created'))->toBe(1)
+        ->and($added(NotificationTable::NAME, 'source_type = %s', 'access_request'))->toBe(1);
+})->with([
+    'an ability' => [['ability' => CorexAbility::MANAGE_FORMS]],
+    'an area'    => [['area' => 'forms-flows']],
+]);

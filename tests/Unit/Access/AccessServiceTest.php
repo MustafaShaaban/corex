@@ -52,8 +52,12 @@ beforeEach(function () {
         /** @var array<int,array<string,mixed>> */
         public array $rows = [];
 
-        public function create(int $requesterId, ?string $abilityKey, ?string $areaKey, string $reason, DateTimeImmutable $createdAt, DateTimeImmutable $expiresAt): int
+        public function createUnlessPending(int $requesterId, ?string $abilityKey, ?string $areaKey, string $reason, DateTimeImmutable $createdAt, DateTimeImmutable $expiresAt): ?int
         {
+            if ($this->pendingFor($requesterId, $abilityKey, $areaKey) !== null) {
+                return null;
+            }
+
             $id = count($this->rows) + 1;
             $this->rows[$id] = compact('id', 'requesterId', 'abilityKey', 'areaKey', 'reason', 'createdAt', 'expiresAt') + [
                 'state' => 'pending',
@@ -253,4 +257,20 @@ it('denies a request without granting an ability', function () {
     expect($result->state)->toBe(OperationResult::STATE_COMPLETED)
         ->and($this->users->granted)->toBe([])
         ->and($this->requests->rows[1]['state'])->toBe('denied');
+});
+
+it('refuses a second request for what the person is already waiting on, and tells nobody', function () {
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+
+    $first  = $this->service->requestAccess(12, CorexAbility::MANAGE_FORMS, null, 'I maintain the registration flow.', $now, $now->modify('+7 days'));
+    $second = $this->service->requestAccess(12, CorexAbility::MANAGE_FORMS, null, 'Asking again.', $now->modify('+1 minute'), $now->modify('+7 days'));
+
+    expect($first->state)->toBe(OperationResult::STATE_COMPLETED)
+        ->and($second->state)->toBe(OperationResult::STATE_BLOCKED)
+        ->and(array_column($second->errors, 'code'))->toBe(['request_already_pending'])
+        ->and($second->affectedIds)->toBe([])
+        // The audit log does not say a request was created, and the administrators are not
+        // written to a second time.
+        ->and($this->activityRepository->events)->toHaveCount(1)
+        ->and($this->notifications->calls)->toHaveCount(1);
 });

@@ -524,3 +524,65 @@ Operations screen.
 
       Not run here: the main browser project in full, and the multisite integration suite. Both
       run in CI.
+
+## Phase 9 — The link is copied at a press (US4.9, FR-011a; added 2026-10-12)
+
+The owner's ask after making a link on a client site, relayed by that site's session. Tests were
+written before the code they test.
+
+- [x] **T069** `spec.md`: the session of 2026-10-12, acceptance scenario 9 of User Story 4,
+      FR-011a, and one sentence under the assumption that the link is shown once. `plan.md`:
+      decision 13, where the field lives and why its script is inline.
+- [x] **T070** Pest, `tests/Unit/Admin/StandalonePageTest.php`: five cases on
+      `StandalonePage::copyField()`. The value in a labelled read-only field that reads left to
+      right; the value escaped as an attribute; the button written hidden, with its icon hidden
+      from a screen reader; an empty polite status and the two sentences for it; the script
+      inline through `wp_get_inline_script_tag()`, and the value in the markup once.
+- [x] **T071** Pest, `tests/Integration/Operations/PreviewLinkScreenTest.php`: the page holds the
+      link as the field's value; the field, the button and the script are in the page and the
+      page asks for no script file; the link is in the page once; a link with an ampersand is
+      escaped; a site's `wp_inline_script_attributes` filter puts its nonce on the script.
+- [x] **T072** Jest, `plugins/corex-core/assets/__tests__/corex-copy-field.test.js`: ten cases.
+      The button is shown; the field selects itself on focus; the Clipboard API is used and the
+      page says so; the answer is taken back after four seconds; with no Clipboard API, or one
+      that refuses, the selected field is copied; where that answers no or throws, the link is
+      left selected and the page says to copy it by hand, and goes on saying it; a field is
+      bound once when the script is on the page twice.
+- [x] **T073** `StandalonePage::copyField()`, `assets/js/corex-copy-field.js`, the rules in
+      `corex-admin-standalone.css`, and `PreviewLinkController::linkPage()` calling it. The
+      reader of inlined files says "asset" where it said "stylesheet". Token inventory
+      regenerated.
+- [x] **T074** Playwright, `tests/e2e/coming-soon.spec.js`: three tests, and the two older ones
+      that read the link now read the field.
+      - In both directions, both schemes and at 375 and 1280 pixels: a press puts on the
+        clipboard the link the field holds, and the page says "Copied."; the card and the field
+        do not move when it does; the label and the field start on the card's edge and the
+        answer ends over the button; the field and the button are one height, in a row with the
+        row's gap and stacked at one width; the icon is 16 pixels with 8 before the words; the
+        target is over 24 by 24; text is at 4.5 to 1 or better; the button has a focus ring
+        from the keyboard; the answer is taken back.
+      - With `navigator.clipboard` removed, the button is there and the link reaches the
+        clipboard.
+      - With scripts off there is no button, and the link is selected and copied from the field
+        with the keyboard.
+
+      Each of these was seen to fail with the code broken on purpose, one break at a time: the
+      rule that hides the button, the older way of copying, the stacked layout, the answer's
+      place, the button's gap, the field's line height, and the taking back.
+
+      The answer was first on a line of its own under the field, kept empty so the card would
+      not move. Measured, that left 56 pixels under the field against 16 above its label. It is
+      on the label's line now.
+- [x] **T075** `docs/en/03-operations/coming-soon.md` and its Arabic mirror, the docs site's
+      `guides/coming-soon.md`, `CHANGELOG.md` with its Client impact, `DECISIONS.md` #327,
+      `PROGRESS.md`. Guard Gate: `clean-code-guard` (two guards for parts the page always
+      writes were taken out of the script, and a timer renamed), `wp-guard` (nothing found),
+      `test-guard` (assertions the unit test already makes were taken out of the integration
+      test), `docs-guard` (the changelog said four new strings; two of them were already in the
+      text domain).
+
+      Run on this worktree's own WordPress, served by PHP's built-in server: Pest unit 2924,
+      integration 818 with the two warnings `ComingSoonHeadTest` gives from the command line;
+      Jest 1322 and 2 skipped; `lint:js` and `lint:css` clean on the changed files; the
+      coming-soon browser project 11 of 11. Not run here: the main browser project and the
+      multisite suite, which are CI's.

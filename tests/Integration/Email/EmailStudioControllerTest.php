@@ -174,6 +174,42 @@ it('persists creates drafts and activation through the REST boundary', function 
         ->and($overviewResponse->get_data()['data']['variables'])->toHaveKeys(['Recipient']);
 });
 
+// A subject is a header, plain text and not markup (DECISIONS #330).
+it('keeps a template\'s subject as written, from the draft route to the email it renders', function (string $written) {
+    $this->layouts->installDefaults(false, get_current_user_id(), new DateTimeImmutable());
+    $layout = $this->layouts->find('transactional');
+    $create = new WP_REST_Request('POST', '/corex/v1/email-studio/templates');
+    $create->set_body_params(['slug' => 'integration-subject', 'name' => 'Integration Subject']);
+    $templateId = (int) $this->controller->createTemplate($create)->get_data()['data']['template']['id'];
+
+    $draft = new WP_REST_Request('POST', '/corex/v1/email-studio/templates/' . $templateId . '/draft');
+    $draft->set_url_params(['id' => $templateId]);
+    $draft->set_body_params([
+        'subject'         => $written,
+        'from_name'       => 'CoreX',
+        'from_address'    => 'hello@example.com',
+        'html_body'       => '<p>Hello</p>',
+        'plain_text'      => 'Hello',
+        'plain_text_mode' => 'manual',
+        'layout_id'       => $layout?->id,
+        'layout_version'  => $layout?->version,
+        'variable_keys'   => [],
+    ]);
+    $saved = $this->controller->saveDraft($draft);
+    $detail = new WP_REST_Request('GET', '/corex/v1/email-studio/templates/' . $templateId);
+    $detail->set_url_params(['id' => $templateId]);
+    $kept = $this->templates->findVersion($templateId, 1);
+
+    expect($saved->get_status())->toBe(201)
+        ->and($this->controller->showTemplate($detail)->get_data()['data']['versions'][0]['subject'])->toBe($written)
+        ->and($this->editor->render($kept, [])['subject'])->toBe($written);
+})->with([
+    'a less-than sign' => ['Price <500 EGP'],
+    'an address in angle brackets' => ['Sam <sam@example.com> asked'],
+    'an ampersand and both quotes' => ['Tom & Jerry\'s "offer"'],
+    'Arabic' => ['السعر أقل من <500> جنيه & "خصم"'],
+]);
+
 it('rejects a draft that points to an unavailable layout revision', function () {
     $template = $this->templates->create('invalid-layout', 'Invalid layout', get_current_user_id(), new DateTimeImmutable());
     $draft = new WP_REST_Request('POST', '/corex/v1/email-studio/templates/' . $template->id . '/draft');

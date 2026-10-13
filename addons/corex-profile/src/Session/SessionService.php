@@ -11,6 +11,7 @@ namespace Corex\Profile\Session;
 defined('ABSPATH') || exit;
 
 use Corex\Profile\Account\AccountResult;
+use Corex\Profile\Support\SiteDate;
 use WP_Session_Tokens;
 
 /**
@@ -18,11 +19,19 @@ use WP_Session_Tokens;
  * pure {@see SessionList}) and lets them end other or all sessions using core's own
  * helpers — the front-office equivalent of "sign out everywhere". Destroying sessions
  * never removes the acting session unless "all" is requested by that user.
+ *
+ * A session of the list also carries what the account block prints for it: `device`, the
+ * browser and system its user agent names, and `signedIn`, when it signed in as the site
+ * writes a date (spec 068, FR-161g).
  */
 final class SessionService
 {
+    public function __construct(private readonly SiteDate $dates)
+    {
+    }
+
     /**
-     * @return list<array{current:bool,login:int,expiration:int,ip:string,ua:string}>
+     * @return list<array{current:bool,login:int,expiration:int,ip:string,ua:string,device:string,signedIn:string}>
      */
     public function active(int $userId): array
     {
@@ -31,9 +40,37 @@ final class SessionService
         }
 
         $manager = WP_Session_Tokens::get_instance($userId);
-        $current = function_exists('wp_get_session_token') ? (string) wp_get_session_token() : '';
 
-        return SessionList::format($manager->get_all(), $this->verifier($current));
+        return array_map(
+            $this->forItsOwner(...),
+            SessionList::format($manager->get_all(), $this->ownSession($manager)),
+        );
+    }
+
+    /**
+     * @param array{current:bool,login:int,expiration:int,ip:string,ua:string} $session
+     *
+     * @return array{current:bool,login:int,expiration:int,ip:string,ua:string,device:string,signedIn:string}
+     */
+    private function forItsOwner(array $session): array
+    {
+        return $session + [
+            'device'   => DeviceName::fromUserAgent($session['ua']),
+            'signedIn' => $this->signedIn($session['login']),
+        ];
+    }
+
+    /**
+     * A session WordPress recorded no sign-in time for says nothing of it.
+     */
+    private function signedIn(int $login): string
+    {
+        if ($login <= 0) {
+            return '';
+        }
+
+        /* translators: %s: a date and a time, such as "October 13, 2026 at 4:23 pm". */
+        return sprintf(__('Signed in %s', 'corex'), $this->dates->dateAndTime($login));
     }
 
     public function signOutOthers(int $userId): AccountResult
@@ -59,10 +96,16 @@ final class SessionService
     }
 
     /**
-     * Hash a raw token to its stored verifier form (WordPress stores the SHA-256 hash).
+     * The record of the session this request was made with, as the manager holds it. Null for
+     * a request with no session cookie (an application password, WP-CLI) and for a cookie that
+     * is somebody else's or has run out. The token goes to WordPress and nowhere else.
+     *
+     * @return array<string, mixed>|null
      */
-    private function verifier(string $token): string
+    private function ownSession(WP_Session_Tokens $manager): ?array
     {
-        return $token === '' ? '' : hash('sha256', $token);
+        $record = $manager->get(wp_get_session_token());
+
+        return is_array($record) ? $record : null;
     }
 }

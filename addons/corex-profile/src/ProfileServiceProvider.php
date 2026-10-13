@@ -21,8 +21,15 @@ use Corex\Profile\Account\AccountService;
 use Corex\Profile\Account\AuthGateway;
 use Corex\Profile\Account\RegistrationRequest;
 use Corex\Profile\Account\WordPressAuthGateway;
+use Corex\Profile\Notification\AccountActivity;
 use Corex\Profile\Notification\NotificationService;
+use Corex\Profile\Reset\AccountPageMark;
+use Corex\Profile\Reset\ResetEmailLink;
+use Corex\Profile\Reset\ResetLanding;
+use Corex\Profile\Reset\ResetLink;
+use Corex\Profile\Reset\ResetTicket;
 use Corex\Profile\Session\SessionService;
+use Corex\Profile\Support\SiteDate;
 use Corex\Support\EmailAnswer;
 use DateTimeImmutable;
 use WP_REST_Request;
@@ -46,11 +53,45 @@ final class ProfileServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): AccountService => new AccountService($c->make(AuthGateway::class)),
         );
 
-        $this->container->singleton(SessionService::class, static fn (): SessionService => new SessionService());
+        $this->container->singleton(SiteDate::class, static fn (): SiteDate => new SiteDate());
+
+        $this->container->singleton(
+            SessionService::class,
+            static fn (ContainerInterface $c): SessionService => new SessionService($c->make(SiteDate::class)),
+        );
 
         $this->container->singleton(
             NotificationService::class,
-            static fn (ContainerInterface $c): NotificationService => new NotificationService($c->make(ActivityService::class)),
+            static fn (ContainerInterface $c): NotificationService => new NotificationService(
+                $c->make(ActivityService::class),
+                $c->make(SiteDate::class),
+            ),
+        );
+
+        $this->registerReset();
+    }
+
+    /**
+     * A password reset that begins and ends on the page the account block is on.
+     */
+    private function registerReset(): void
+    {
+        $this->container->singleton(AccountPageMark::class, static fn (): AccountPageMark => new AccountPageMark());
+        $this->container->singleton(ResetLink::class, static fn (): ResetLink => new ResetLink());
+        $this->container->singleton(ResetTicket::class, static fn (): ResetTicket => new ResetTicket());
+
+        $this->container->singleton(
+            ResetEmailLink::class,
+            static fn (ContainerInterface $c): ResetEmailLink => new ResetEmailLink($c->make(ResetLink::class)),
+        );
+
+        // One for the request: it reads the key before the template, and the block asks it after.
+        $this->container->singleton(
+            ResetLanding::class,
+            static fn (ContainerInterface $c): ResetLanding => new ResetLanding(
+                $c->make(ResetTicket::class),
+                $c->make(ResetLink::class),
+            ),
         );
     }
 
@@ -59,6 +100,8 @@ final class ProfileServiceProvider extends ServiceProvider
         add_action('rest_api_init', [$this, 'registerRoutes']);
         add_action('init', [$this, 'registerAssets']);
         add_action('init', [$this, 'registerBlock']);
+
+        $this->container->make(ResetLanding::class)->register();
     }
 
     public function registerAssets(): void
@@ -80,8 +123,13 @@ final class ProfileServiceProvider extends ServiceProvider
             'restUrl' => esc_url_raw(rest_url('corex/v1/')),
             'nonce'   => wp_create_nonce('wp_rest'),
             'i18n'    => [
-                'session'    => __('Session', 'corex'),
                 'thisDevice' => __('this device', 'corex'),
+                'noAnswer'   => __('The site could not be reached, or its answer could not be read. Please try again.', 'corex'),
+                // What stands in a list's place in the member view (spec 068, FR-161f).
+                'noSessions'        => __('No sessions are recorded for this account.', 'corex'),
+                'sessionsNotLoaded' => __('Your sessions could not be loaded. Load this page again to see them.', 'corex'),
+                'noActivity'        => __('No activity yet.', 'corex'),
+                'activityNotLoaded' => __('Your recent activity could not be loaded. Load this page again to see it.', 'corex'),
             ],
         ]);
         wp_register_style(
@@ -111,8 +159,11 @@ final class ProfileServiceProvider extends ServiceProvider
 
         $userId = get_current_user_id();
         $user   = $userId > 0 ? get_userdata($userId) : null;
+        $pageId = is_singular() ? get_queried_object_id() : 0;
 
         $ctx = [
+            'pageMark'         => $pageId > 0 ? $this->container->make(AccountPageMark::class)->of($pageId) : '',
+            'reset'            => $this->container->make(ResetLanding::class)->state(),
             'loggedIn'         => $userId > 0,
             'registrationOpen' => (bool) get_option('users_can_register', false),
             'nonce'            => wp_create_nonce('wp_rest'),
@@ -121,6 +172,8 @@ final class ProfileServiceProvider extends ServiceProvider
             'firstName'        => $user ? (string) $user->first_name : '',
             'lastName'         => $user ? (string) $user->last_name : '',
             'email'            => $user ? (string) $user->user_email : '',
+            // A page can hold the block twice: each one's fields get ids of their own.
+            'instance'         => wp_unique_prefixed_id('corex-account-'),
         ];
 
         return (new AccountRenderer())->render($ctx);
@@ -158,7 +211,8 @@ final class ProfileServiceProvider extends ServiceProvider
             EmailAnswer::address($request['email']),
             (string) $request['password'],
             (string) $request['password_confirm'],
-            sanitize_user((string) $request['username']),
+            // As typed: a username that would be altered on its way into the account is refused.
+            trim((string) $request['username']),
             (bool) $request['consent'],
         ));
 
@@ -178,8 +232,14 @@ final class ProfileServiceProvider extends ServiceProvider
 
     public function requestReset(WP_REST_Request $request): WP_REST_Response
     {
-        $result = $this->container->make(AccountService::class)
-            ->requestPasswordReset(sanitize_text_field((string) $request['login']));
+        $login = sanitize_text_field((string) $request['login']);
+        $page  = $this->container->make(AccountPageMark::class)->publishedPage((string) $request['page']);
+
+        // The email links to the page the form was on, when that is a page of this site's.
+        $result = $this->container->make(ResetEmailLink::class)->during(
+            $page,
+            fn (): AccountResult => $this->container->make(AccountService::class)->requestPasswordReset($login),
+        );
 
         return $this->respond($result);
     }
@@ -192,6 +252,11 @@ final class ProfileServiceProvider extends ServiceProvider
             (string) $request['password'],
             (string) $request['password_confirm'],
         );
+
+        if ($result->success) {
+            // The page the form was on is loaded again, and says the password was changed.
+            $this->container->make(ResetTicket::class)->markUsed();
+        }
 
         return $this->respond($result);
     }
@@ -211,7 +276,7 @@ final class ProfileServiceProvider extends ServiceProvider
         $result = $this->container->make(AccountService::class)->updateProfile($userId, $fields);
 
         if ($result->success) {
-            $this->recordAccountEvent($userId, 'profile.updated', __('Profile updated', 'corex'));
+            $this->recordAccountEvent($userId, AccountActivity::PROFILE_UPDATED);
         }
 
         return $this->respond($result);
@@ -231,7 +296,7 @@ final class ProfileServiceProvider extends ServiceProvider
         $result = $this->container->make(SessionService::class)->signOutOthers($userId);
 
         if ($result->success) {
-            $this->recordAccountEvent($userId, 'sessions.revoked_others', __('Signed out other sessions', 'corex'));
+            $this->recordAccountEvent($userId, AccountActivity::OTHER_SESSIONS_SIGNED_OUT);
         }
 
         return $this->respond($result);
@@ -258,8 +323,11 @@ final class ProfileServiceProvider extends ServiceProvider
     /**
      * Record a permission-safe account event on the shared activity stream so the
      * user's own notifications reflect real actions (never a fabricated feed).
+     *
+     * @param string $kind One of {@see AccountActivity}'s kinds: the block lists what that
+     *                     class has a sentence for.
      */
-    private function recordAccountEvent(int $userId, string $kind, string $label): void
+    private function recordAccountEvent(int $userId, string $kind): void
     {
         if (! $this->container->has(ActivityService::class)) {
             return;

@@ -26,8 +26,229 @@ The `corex/account` block is auth-aware:
   **active sessions** with "sign out other sessions" / "sign out everywhere", and a feed
   of the account's own recent activity.
 
-The forms are progressively enhanced: with JavaScript they post to the REST API and show
-inline results; without it they still submit.
+With JavaScript the forms post to the REST API. What the server answers is written in a
+message line under the button that was pressed: each form has its own, and so do the two
+session buttons. If that line would be outside the window, the page moves by the least
+that shows it, at once for a visitor whose system asks for reduced motion. The line is a
+polite status (`role="status"`), so a screen reader announces the answer; focus stays on
+the button. One answer is shown at a time: sending a form clears the others.
+
+When a request gets no answer the block can read, the same line says "The site could not
+be reached, or its answer could not be read. Please try again." That covers a request that
+did not arrive (the visitor is offline, or something blocked it), an answer that is a page
+and not JSON (a server error page, a proxy's page), and a refusal that carries no message.
+It does not say that nothing was changed: a request can arrive and its answer be lost.
+
+### The two lists of the signed-in view
+
+**Active sessions** and **Recent activity** are loaded after the page opens. Under each
+heading there is one of three things:
+
+| What the site answered | What is shown |
+| --- | --- |
+| a list with rows | the rows |
+| a list with nothing in it | "No sessions are recorded for this account." or "No activity yet." |
+| no list: the request did not arrive, was answered with a page and not JSON, or was refused | "Your sessions could not be loaded. Load this page again to see them." or "Your recent activity could not be loaded. Load this page again to see it." |
+
+The sentence stands where the list would. It is not an answer to a button, so the page is
+not moved to it, and it is a paragraph and not a live region (`role="status"`): it is read
+where the list would be read. Rows shown earlier are not kept when a later request for the
+list fails.
+
+The first line of one row of **Active sessions** ends with "— this device": the session of
+the browser the page was opened in. It is the session **Sign out other sessions** keeps. The server
+decides which row it is, and a row never carries the session's token.
+
+After **Sign out everywhere** the page is loaded again and shows the sign-in form: that
+button signs this browser out too.
+
+### What a row says
+
+A row is two lines, which the site words and the page prints as they come.
+
+| List | First line | Second line |
+| --- | --- | --- |
+| Active sessions | the browser and the system the session signed in from, such as "Chrome on Windows" | when it signed in: "Signed in October 13, 2026 at 4:23 pm" |
+| Recent activity | what happened: "Your profile was updated." or "Your other sessions were signed out." | when: "October 13, 2026 at 4:23 pm" |
+
+- **Dates** are written in the date format, the time format and the timezone set under
+  **Settings → General**, in the site's language.
+- **A session's name** is read from what the browser said of itself when it signed in. It
+  has no version. A browser built on Chrome that does not give its own name (Brave,
+  Vivaldi) is named Chrome, an iPad that asks for desktop pages is named as a Mac, and a
+  program that names no browser is "Unknown browser". Two sessions from the same browser
+  are told apart by when they signed in.
+- **The IP address is not shown**, and neither is the browser's full identification
+  string. Both are still in what `GET sessions` answers.
+- **Recent activity lists what the account block itself records**: a saved profile, and
+  signing out the other sessions. What the same person did elsewhere, such as an
+  administrator's work in the admin, is not listed here. Signing in, a changed password
+  and **Sign out everywhere** are not recorded as activity, so they are not listed either.
+- Both lists are loaded again after a profile is saved and after **Sign out other
+  sessions**, so what was just done is in the list without loading the page again.
+
+The sentence is `<p class="corex-account__list-note">`, which the script adds after the
+list, with `data-state="empty"` or `data-state="error"`. The list (`<ul>`) is `hidden`
+while it has no rows. With `data-state="error"` the sentence takes the colours of a refused
+form, the theme's `error` and `inverse` presets.
+
+### Without JavaScript
+
+The forms need JavaScript. A browser that runs no scripts is shown a note above the forms
+that says so:
+
+> The forms and buttons below need JavaScript, which is switched off in this browser. One
+> that is used without it is not answered. Switch JavaScript on and load this page again.
+
+A form sent anyway goes to the page's own address, which shows the page again and does not
+answer it. The note does not link to WordPress's own sign-in screen: on a site with login
+protection on, that address is the hidden one, and the note is in the page for anybody.
+
+The note is `<p class="corex-account__noscript">` inside `<noscript>`, the first thing in
+the block, or the second on a page load that says what became of a password reset, where
+the reset's message line is first. A browser that runs scripts does not show it.
+
+### Styling the message line
+
+The line is `<p class="corex-account__status" role="status">`, inside each
+`.corex-account__form` and inside `.corex-account__sessions`. It carries
+`data-state="error"` or `data-state="ok"` while it holds an answer and has no box while
+it is empty. It takes its colours from the theme's `error`, `success` and `inverse`
+colour presets.
+
+### Selecting a field
+
+Select a field by its form and its name, not by its id:
+
+```css
+[data-corex-account-form="register"] input[name="password"] { /* … */ }
+```
+
+A field's id is there to tie its label to it. It holds the number of the block among
+the account blocks WordPress rendered for the page (`corex-account-1-register-password`),
+so that a page with two of them has no id twice, and that number is not promised to stay
+the same. The forms are `login`, `register`, `reset-request`, `reset` and `profile`.
+
+### What a field tells the browser
+
+Each field that asks for something about the person has an `autocomplete` value, one of
+the HTML specification's autofill field names. A browser and a password manager read it
+to offer the saved password at sign-in and a new one at registration, and WCAG 2.2
+(1.3.5, Identify Input Purpose) asks for it.
+
+| Form | Field (`name`) | `autocomplete` |
+|---|---|---|
+| `login` | `login` | `username` |
+| `login` | `password` | `current-password` |
+| `register` | `email` | `email` |
+| `register` | `username` | `username` |
+| `register` | `password`, `password_confirm` | `new-password` |
+| `reset-request` | `login` | `username` |
+| `reset` | `password`, `password_confirm` | `new-password` |
+| `profile` | `display_name` | `nickname` |
+| `profile` | `first_name` | `given-name` |
+| `profile` | `last_name` | `family-name` |
+| `profile` | `email` | `email` |
+
+Chromium writes the person's saved email address into a field marked `username` when
+they pick a saved address for the form, so at registration it writes the address into
+**Email** and into the optional **Username**. The account takes a username that is the
+person's own address as no username (see [Usernames](#usernames)), and the account made
+is the one they get with the field left empty. The display name is a `nickname` and not a
+`name`: it is the name a member is shown by, and with `name` Chromium takes it for the
+full name of a saved address and writes that over it when a fill is started there.
+Chromium does not know `nickname`: it fills nothing into that field, and its developer
+tools list the value as one it does not recognise.
+WordPress's own profile screen marks its nickname field the same way.
+
+## Usernames
+
+The registration form's **Username** field is optional.
+
+- A username WordPress would store as a different one is refused, with a message that
+  names what a username can hold: letters without accents, numbers, spaces and the
+  characters `_ . - @`. WordPress does not refuse such a username, it removes what it does
+  not accept and keeps the rest, and the person could then not sign in with the name they
+  chose. Spaces before and after it are taken off and are not a reason to refuse it.
+- A username that is the person's own email address is taken as no username. A browser
+  writes a saved address into the field, and an address is not always a username an
+  account can have: `name+shop@example.com` has a `+`, and an address can be longer than
+  a login. The two are compared without regard to capitals, after the spaces around the
+  username are taken off. Any other address typed as the username is judged as a
+  username.
+- With no username, the login is made from the email address. WordPress removes from it
+  the characters a login cannot hold (the `+` of `name+shop@example.com`, for one), and the
+  person signs in with the address.
+- A login has 60 characters at most. With no username, an address of 61 characters or more
+  gets a login made from the part before the @, and the person still signs in with the
+  address. When another account has that login, the new one ends in `-2`, or the next
+  number that is free. The account block does not show the person that login, and they do
+  not need it; an administrator reads it on the Users screen.
+- When no login can be made from a long address (its first part holds nothing a login can,
+  or twenty accounts already share it), the form asks for a username.
+
+## Email addresses
+
+An account's address has 100 characters at most. A longer one is refused at registration
+and on the **Profile** form, with a message that says so. WordPress itself reports no
+error for such an address and stores nothing.
+
+## Display names
+
+A display name has 250 characters at most. A longer one is refused on the **Profile** form
+with a message that says so, and nothing sent with it is saved. WordPress itself reports no
+error for such a name: the account keeps the name it had.
+
+WordPress keeps `&` as five characters and a `<` on its own as four, so a name with either
+in it reaches 250 sooner than it looks. The form says that too when it is the reason.
+
+A name of up to 250 characters is saved whole. The record of the change holds a name in
+191 characters, so where an administrator reads that record (the recent activity on the
+CoreX overview, for one) a longer name is its first 190 characters and an ellipsis.
+
+The rule is WordPress's own `validate_username()`, so a plugin that widens or narrows what a
+username may hold through the `sanitize_user` or `validate_username` filters is followed.
+
+## Passwords
+
+A password is handed to WordPress the way WordPress's own screens hand it over, so one
+chosen on the account block signs in at `wp-login.php` too, and one chosen on a WordPress
+screen signs in on the account block. This matters for a password with `'`, `"` or `\` in
+it, which WordPress keeps with the slashes of the request it arrived in.
+
+Up to and including v0.45.2 the add-on kept such a password as it was typed. An account
+from then still signs in on the account block; the first time it does, its password is
+kept again WordPress's way, which signs that member out of their other browsers once.
+
+## A forgotten password
+
+A member who asks for a reset link on the account page gets WordPress's password-reset
+email, with one difference: its link comes back to the page they asked from.
+
+1. The link opens that page with a **Choose a new password** form and nothing else on the
+   block.
+2. Saving it loads the page again, which says "Your password has been updated. You can now
+   sign in." above the sign-in form.
+3. A link that was already used, or is older than WordPress keeps a reset key (a day,
+   unless the site changes `password_reset_expiration`), opens the page with "This password
+   reset link is invalid or has expired. Please ask for a new one." above the forms.
+
+The member does not see `wp-login.php` at any step, and the email does not carry its
+address. On a site whose login is moved by the Security Center, that is the moved address.
+
+What to know when you build on it:
+
+- The email is still sent by WordPress (`retrieve_password()`), so its wording and its
+  sender are WordPress's, and a plugin that filters `retrieve_password_title`,
+  `retrieve_password_message` or `retrieve_password_notification_email` still does.
+- A reset asked for at `wp-login.php` itself is not changed.
+- The link's address ends in `?corex_reset_login=…&corex_reset_key=…`. The page takes both
+  out of the address at once, into a cookie of that browser's session, and continues at
+  `?corex_reset=1`. A page cache has to pass a request with a query string to WordPress,
+  as caches do by default; the answers are sent with no-cache headers.
+- The email links to the account page only when the request names it. The block's own form
+  does. A client of your own that calls `reset-request` sends the form's hidden `page`
+  field with it, or the email keeps WordPress's link.
 
 ## REST API
 
@@ -36,14 +257,14 @@ All routes live under `corex/v1/account/`:
 | Route | Auth | Purpose |
 | --- | --- | --- |
 | `POST login` | public | Sign in (delegates to `wp_signon`). |
-| `POST register` | public | Create an account (honeypot + captcha gated). |
-| `POST reset-request` | public | Email a reset link (generic response — no user enumeration). |
+| `POST register` | public | Create an account (honeypot + captcha gated). Answers `422` with the code `invalid_username` for a username WordPress would alter, `email_too_long` for an address over 100 characters, and `username_required` when no username was typed and no login can be made from the address. |
+| `POST reset-request` | public | Email a reset link (generic response — no user enumeration). With `page`, the value of the forgot-password form's hidden field, the link is to that page. |
 | `POST reset` | public | Set a new password from a valid reset key. |
-| `POST profile` | signed-in | Update the current user's profile. |
-| `GET sessions` | signed-in | List the current user's active sessions. |
+| `POST profile` | signed-in | Update the current user's profile. Answers `422` with the code `email_too_long` for an address over 100 characters, and with `display_name_too_long` for a display name WordPress would keep in more than 250. |
+| `GET sessions` | signed-in | List the current user's active sessions. Each has `device` and `signedIn`, the two lines the block prints, beside `current`, `login`, `expiration`, `ip` and `ua`. |
 | `POST sessions/revoke-others` | signed-in | End every other session. |
 | `POST sessions/revoke-all` | signed-in | End every session. |
-| `GET notifications` | signed-in | The current user's recent account activity. |
+| `GET notifications` | signed-in | The current user's recent account activity: the newest ten events the account block recorded for them. Each has `label` and `when`, the two lines the block prints, beside `kind`, `occurredAt` (ISO 8601) and the rest. |
 
 Authenticated routes require a signed-in user and the standard REST nonce
 (`X-WP-Nonce`); the service also confirms a user only ever edits their own profile or
@@ -52,8 +273,31 @@ sessions.
 ## Security notes
 
 - Login inherits WordPress's own authentication filters and any login hardening from the
-  Security Center — recovery keeps working even when the login route is customized.
+  Security Center. A wrong password is one failed sign-in for the limiter, whatever
+  characters it holds.
+- A password is reset on the account page, so the reset email does not name the login's
+  address. A signed-in member can still read that address: the **Sign out** link is
+  WordPress's own.
 - Password-reset responses are deliberately generic, so the endpoint cannot be used to
   discover which emails have accounts.
 - Every account operation returns a typed result; passwords, reset keys, and session
   tokens never appear in a response.
+
+## The name a new account is shown by
+
+A display name is what WordPress signs a comment or a post with, for every visitor.
+
+- With a username, the account is shown by it.
+- With no username, the account's login is its email address, and it is shown by the part of
+  the address before the @: `dalia.hassan@example.com` is shown as `dalia.hassan`, and its
+  author page is at `author/dalia-hassan`. The address itself is not shown. The
+  person's own address in the Username field is no username, so it makes the same
+  account. Another email address typed there is the login, and the account is shown by
+  the part before its @.
+- An address too long to be the login is shown the same way, by the part before the @.
+- The person signs in with the address either way, and changes the display name on the
+  account block's **Profile** form.
+
+An account registered before this rule (CoreX 0.45.2 and earlier) keeps the name it has,
+which is the whole address when no username was typed. Changing its display name does not
+change the comments it has already written: WordPress stores the name with each comment.

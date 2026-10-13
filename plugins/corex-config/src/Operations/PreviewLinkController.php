@@ -77,8 +77,8 @@ final class PreviewLinkController
     }
 
     /**
-     * The page that shows a link that was just made: the whole address, what it does, and that
-     * this is the only time it will be shown.
+     * The page that shows a link that was just made: the whole address in a field with a button
+     * that copies it (FR-011a), what it does, and that this is the only time it will be shown.
      */
     public function linkPage(PreviewLinkResult $result): string
     {
@@ -98,7 +98,7 @@ final class PreviewLinkController
                 : '')
             . esc_html__('Copy this link now. CoreX does not keep it, so it cannot be shown again; if it is lost, regenerate it.', 'corex')
             . '</p>'
-            . '<div class="corex-standalone__detail"><p>' . esc_html($link) . '</p></div>'
+            . $this->page->copyField('corex-preview-link', __('Preview link', 'corex'), $link, __('Copy link', 'corex'))
             . '<p class="corex-standalone__text">'
             . esc_html__('Whoever opens it sees the real site in that browser for 14 days, with a banner saying it is a private preview. It gives no access to the admin.', 'corex')
             . '</p>'

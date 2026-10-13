@@ -129,6 +129,15 @@
 	position: relative;
 }
 
+/* A search field gives way before it leaves the header. Left to itself it is
+   as wide as its field asks to be, and so is the row that holds it, which on
+   the narrowest phone is wider than the header is inside its gutter. Both
+   are capped: with only one, the other still carries the field past it. */
+.corex-header__actions,
+.corex-header__search {
+	max-inline-size: 100%;
+}
+
 /* Search overlay ----------------------------------------------------- */
 
 /* The toggle is a token-only icon button; hidden in markup and revealed by the
