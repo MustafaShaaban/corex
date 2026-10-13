@@ -93,6 +93,10 @@ Config::get('missing.key', 'fallback');
 
 - A dot key maps to an option named `corex_<key_with_underscores>` and to an env var
   `KEY_WITH_UNDERSCORES` uppercased (`app.name` → option `corex_app_name`, env `APP_NAME`).
+- An override is an option WordPress loads with the site's options (autoload on), which is how
+  `update_option()`, the settings UI and `wp option update corex_app_name "My site"` store one.
+  A key with no override costs no query. An option stored with autoload off
+  (`--autoload=no`) is not read: `wp option set-autoload corex_app_name on` makes it one.
 - A missing `.env` is fine; a malformed `.env` is logged and ignored — boot continues on
   options/defaults. See `.env.example`.
 

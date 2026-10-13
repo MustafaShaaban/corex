@@ -52,6 +52,20 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **A setting with no override costs no query, and an override is an option WordPress loads
+  with the site's options** (spec 001, FR-011a). On a site with no persistent object cache,
+  CoreX's boot asked the database for eleven options that were not there, on every request:
+  a third of a fresh site's front page. The config engine now looks for a setting's
+  override among the options WordPress has already loaded, and so does the read of an
+  add-on's feature flag, which leaves one of the eleven (the login protection settings,
+  which are not a setting's override). The front page of a fresh install runs 23 queries
+  where it ran 33. An override saved by the Settings screen, by `update_option()` or by
+  `wp option update` is read as before, and so is one a `pre_option_` filter answers.
+  **An override stored with autoload off is no longer read**; `wp option set-autoload
+  <name> on` makes it one again, and `wp option list --search='corex_*' --autoload=off`
+  lists what a site has stored that way, which on an install nobody has changed by hand is
+  only CoreX's own records (DECISIONS #361).
+
 - **The standard email's header is part of the card, and a logo of any shape fits it**
   (spec 106, slice 8). The site's logo, or its name, is now the first band of the card that
   holds the message, under the brand's edge. It stood above the card, on the canvas, limited

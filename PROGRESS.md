@@ -107,6 +107,18 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A setting with no override costs no query
+(spec 001, FR-011a; DECISIONS #361). CoreX's boot asked the database for eleven options
+that were not there on every request of a site with no persistent object cache; it asks
+for one. `Support\Config\Sources\OptionsSource` looks for an override among the options
+WordPress loaded with the site and asks WordPress only when a `pre_option` or
+`default_option` filter may answer or a site is being installed; `Corex\Boot` reads an
+add-on's feature flag through it. **An override stored with autoload off is no longer
+read**, which nothing of CoreX's stores; the entry's "Client impact" says how a site
+checks. Measured on one install: 33 queries to 23 on the front page, `plugins_loaded`
+7.5 ms to 5.6 ms. **Owed:** the client sessions are told the check before they take the
+release. What is left is under "Open, and not hidden".
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
@@ -266,6 +278,13 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **Three options of CoreX's own stores are one query each on every front-end request,
+  stored or not.** `corex_login_protection_settings` (the one query left in CoreX's boot),
+  `corex_operations_mode` and `corex_email_studio_defaults_version` are saved with autoload
+  off and read on every request. They are not settings' overrides, so #361 did not touch
+  them. The login settings decide whether the login address is hidden: they have to be
+  stored loaded, and the rows sites already hold turned over, before they can be read
+  without a query (DECISIONS #361, "Found, and not changed").
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
   only of what Email Studio's own service sent. A form's own email listener that sends

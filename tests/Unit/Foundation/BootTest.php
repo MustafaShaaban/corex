@@ -35,6 +35,10 @@ it('boots once and resolves dependencies through the Corex facade', function () 
     // array instead, which reaches ThemeServiceProvider's `(string) $config->get(...)` as an
     // array-to-string conversion — and this suite is configured to fail on warnings.
     Functions\when('get_option')->justReturn(false);
+    // No setting has an override: the config engine looks for one among the options WordPress
+    // loaded with the site, and asks for none that is not there.
+    Functions\when('wp_installing')->justReturn(false);
+    Functions\when('wp_load_alloptions')->justReturn([]);
     // Boot detects the install shape before building the Application. Stubbed explicitly rather
     // than left to function_exists(): once any test in the process mocks a WordPress function,
     // Brain Monkey defines it globally, so a later test that reaches it without an expectation

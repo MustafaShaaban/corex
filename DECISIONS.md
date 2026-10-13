@@ -14951,3 +14951,168 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #361 — A setting's override is an option WordPress loads with the site's options, so a setting with no override costs no query: CoreX's boot asks the database for one missing option where it asked for eleven
+
+**Date:** 2026-10-13. **Branch:** `perf/boot-reads-no-missing-option`, from `main`.
+**Spec:** [001](specs/001-corex-core-foundation/spec.md), FR-011a (added).
+
+**The finding.** #355, "Found, and not changed", item 1: every query CoreX's boot runs on a
+front-end request reads an option that is not in the database, eleven of them, nine through
+`Support\Config\Sources\OptionsSource::has()`. It was measured there and left. This entry
+measures it again, changes it, and says what is left.
+
+**How it was measured.** This branch's own install, served: WordPress 7.1.3, PHP 8.3.6 on
+Windows through PHP's built-in server, OPcache on and Xdebug not loaded (both asked of the
+served process), MySQL 8.3 on the same machine, every CoreX plugin and add-on active, the
+Corex theme, signed out, code at `aec8169e`. An mu-plugin defined `SAVEQUERIES` on requests
+that carried a header and wrote the queries made between the first and the last callback of
+`plugins_loaded`, each with who asked. Times are from a second mu-plugin that counts
+queries and does not keep them: the median of 200 front-page requests after five unmeasured
+ones.
+
+**Measured again, before any change.** The same eleven, each `SELECT option_value FROM
+cx_options WHERE option_name = '…' LIMIT 1` and none of them stored:
+
+| Option | Who asks |
+|---|---|
+| `corex_features_woocommerce_kit` | `Corex\Boot::featureFlagEnabled()` |
+| `corex_login_protection_settings` | `LoginProtectionSettingsStore::current()`, as `LoginRouteGuard` is made |
+| `corex_insights_psi_key`, `corex_insights_cloudflare_token`, `corex_insights_cloudflare_account_id` | the config engine, for the Insights registry |
+| `corex_theme_brand_path` | the config engine, for `ThemeServiceProvider::boot()` |
+| `corex_media_webp_enabled`, `_quality`, `_convert_jpeg`, `_convert_png`, `_min_saving` | the config engine, for `MediaSettings::fromConfig()` |
+
+The front page ran 33 queries in all, and `plugins_loaded` took 7.5 ms (7.0 to 8.7 between
+the quartiles).
+
+**What a site that has saved those settings does.** Saved as the Settings screen saves them
+(`SettingsStore::save()`, which is `update_option()` with no third argument), the nine
+config options are stored with autoload `auto`, WordPress loads them with the site's
+options, and they cost no query. Two of the eleven were left: the flag, which nothing had
+set, and the login protection settings, which their own store saves with autoload off, so
+that option is one query on every request whether it is stored or not.
+
+**What a persistent object cache does.** Not measured in #355. Measured here with
+WordPress's own object cache kept in a file between requests, written for the measurement
+(not Redis or Memcached): the first request ran the eleven, the second and third ran none.
+A site with a persistent object cache pays for these once and then not again, and this
+change is for the sites without one.
+
+**The candidates, and what each does to a site that sets an override by hand.**
+
+1. *Answer from the options WordPress loaded, and read the rest in one primed query*
+   (`wp_prime_option_caches()`). Nothing changes for an override however it was stored.
+   It needs the list of names before any is asked for, and no such list exists: the
+   shipped defaults name five namespaces and none of the Insights or WebP keys, and
+   nothing is registered with `SettingRegistry`. A list kept by hand is what the next
+   provider forgets; a list learned from earlier requests is an option written on a
+   front-end request. And it is still one query on every request.
+2. *One autoloaded option that lists which overrides exist.* No query. The list is kept
+   right by hearing `added_option` and `deleted_option`, which CoreX does not hear when
+   the command is `wp option update --skip-plugins`, nor when a row is written by SQL or
+   by a migration tool. An override set that way would be ignored until something rebuilt
+   the list.
+3. *Read these settings when they are first used.* It moves three of the eleven (the
+   Insights keys) to the Insights screen. The flag, the login settings, the brand path
+   and the WebP settings are needed on every request, and every key a provider reads
+   later is one more query again.
+4. *Answer from the options WordPress loaded, and from nothing else.* No query, no list,
+   nothing to keep right. `wp option update corex_query_max 25` stores the option with
+   autoload `auto` and `wp option add` with `on`: both are read, with plugins skipped or
+   not, because nothing of CoreX's has to hear of the write. What is no longer read is an
+   option stored with autoload off: `wp option update … --autoload=no` on an option that
+   was not there, `wp option set-autoload … off`, or anything else that sets a row's
+   autoload off. Run on this install with WP-CLI: `update` and `add` with no
+   flag, `update --skip-plugins --skip-themes`, `update --autoload=no` on an option that
+   was not there, and `set-autoload` both ways.
+
+**The decision: the fourth.** An option CoreX reads on every request is what autoload is
+for, and an override stored with autoload off was a query on every request already.
+Nothing of CoreX's stores an override that way: every `update_option()` and `add_option()`
+with autoload off in `plugins/`, `addons/` and `packages/` was read (16 calls), and none
+writes the option of a config key the code reads. What is given up is the override
+somebody deliberately stored unloaded, and it is given up in the open: the rule is in the
+spec, in the core README, and has a test of its own.
+
+**What changed.** `OptionsSource::has()` answers false, without asking WordPress, for an
+option that is not among `wp_load_alloptions()`. It asks WordPress as it did in two cases.
+When a `pre_option_{name}`, `pre_option` or `default_option_{name}` filter is hooked,
+since a filter can answer for an option that is not stored: `SiteEmailBrandTest` and
+`CaptchaWidgetGapTest` set settings that way, and a site may. And while WordPress is
+installing a site, when WordPress itself does not rely on the options it loaded. `get()`
+is as it was. `Corex\Boot::featureFlagEnabled()` reads the per-site flag through the same
+class and no longer through `get_option()`: `corex_features_<flag>` is the option of the
+config key `features.<flag>`, and `FeatureFlags` reads that key through the config engine
+once there is a container, so the two would have disagreed about a flag stored with
+autoload off. The network option it falls back to on a multisite install is read as it
+was.
+
+**Measured after the change.** Same install, same day, the series run after, before and
+after again:
+
+| Front page, 200 requests | Before | After | After, second run |
+|---|---|---|---|
+| Queries in the request | 33 | 23 | 23 |
+| Queries in `plugins_loaded` | 11 | 1 | 1 |
+| `plugins_loaded`, median | 7.5 ms | 5.7 ms | 5.6 ms |
+| between the quartiles | 7.0 to 8.7 | 5.4 to 6.7 | 5.5 to 5.8 |
+
+The whole request's medians were 88.7, 86.0 and 82.0 ms, with quartiles about 16 ms
+apart: the change is inside that. The REST index runs one query in `plugins_loaded` and
+`admin-ajax.php`, signed out, runs 13, where #355 counted 11 and 23; #355 puts twelve of
+the 13 down to the schema self-heal, its second finding, which is not this entry's.
+
+**Tests.** `tests/Unit/Foundation/ConfigTest.php`: an option that is not stored is not
+asked for (`get_option()` expected never), a stored empty value is still a value, each of
+the three filters sends the question to WordPress, an installing site asks as before, and
+a key with no option falls through to `.env` and to the shipped default.
+`tests/Unit/Config/TruthyTest.php`: `Boot` does not ask for a flag that is not stored.
+`tests/Integration/Foundation/ConfigOptionOverrideTest.php`, on WordPress: a stored
+override is read, a deleted one gives the shipped default, a setting with no override and
+a setting with a stored one each make no query (counted with WordPress's memory of
+missing options emptied first), a `pre_option_` filter is answered, and an override
+stored with autoload off is not read until `wp_set_option_autoload()` loads it.
+`tests/Integration/Foundation/BootOptionQueriesTest.php` loads WordPress in a process of
+its own, as `BootTranslationsTest` does, on a front-end and on an admin request, and fails
+if `plugins_loaded` asked one at a time for any of the ten options it names; it is skipped,
+and says so, on an install that stores one of them. The integration tests failed before
+the change: one query for a missing override, the unloaded override read, and all ten
+named options asked for. Seven unit tests that stood in for a site's options with
+`get_option()` alone now stand in for the loaded options too, five of them through
+`tests/Unit/Config/OptionFixtures.php`.
+
+**Found, and not changed.**
+
+1. *Three options of CoreX's own stores are still one query each on every front-end
+   request, and storing them does not help.* `corex_login_protection_settings` (in boot,
+   the one query left), `corex_operations_mode` (`OperationsModeStore`, after boot) and
+   `corex_email_studio_defaults_version` (`MailServiceProvider::registerEmailStudio()`,
+   after boot) are each saved with autoload off and read on every request, so a stored one
+   is a query and a missing one is a query. They are not overrides of settings and not
+   read through the config engine. The login settings decide whether the login address is
+   hidden, and a site that has saved them has them stored with autoload off: reading them
+   from the loaded options alone would turn the protection off on such a site until its
+   row was changed. That wants its own change: store them loaded, turn the stored rows over, and
+   only then read them without a query.
+2. *On a multisite install `Boot` then asks the network for the same flag*
+   (`get_site_option()`), and WordPress remembers a missing network option for one
+   request too. Read, not measured: this branch's install is a single site.
+3. *`docs/en/05-deployment/updates-and-distribution.md` and the core README name
+   `COREX_UPDATES_ENDPOINT` as the `.env` variable of `updates.endpoint`.*
+   `DotenvSource::envName()` maps that key to `UPDATES_ENDPOINT`. Read, not run.
+
+**Client impact.** A site that set a setting's override as an option with autoload off
+stops reading it and goes back to the default, or to its `.env`. Nothing CoreX does stores
+one so; a site finds out with `wp option list --search='corex_*' --autoload=off
+--fields=option_name`, or where there is no command line with `SELECT option_name FROM
+<prefix>options WHERE option_name LIKE 'corex\_%' AND autoload IN ('off', 'no',
+'auto-off')`. What that lists on a fresh install is CoreX's own: the `…_schema_version`
+options and `corex_email_studio_defaults_version`; a site in use also has, among others,
+`corex_login_protection_settings`, `corex_operations_mode` and its log,
+`corex_preview_access`, `corex_release_installed`, `corex_retention_submissions_days`,
+`corex_trash_submissions_days`, `corex_access_audit_log`, and names that begin `corex_ns_`,
+`corex_job_running_` and `corex_mail_queued_`. Any other name there that is a setting's
+option is an override that is no longer read, and `wp option set-autoload <name> on` makes
+it one again. Not checked on a client site. A client plugin that reads its own keys
+through `Config::get()` is under the same rule. Every site with no persistent object
+cache runs ten fewer queries on a front-end request.
