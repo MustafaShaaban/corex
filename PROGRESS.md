@@ -206,13 +206,17 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   hashes the password again; read before building that: the sign-in limiter counts every
   `wp_login_failed`, so two tries through `wp_signon()` count one wrong password twice, and
   a password hashed again signs that person out of their other browsers.
-- **In the account block, two labels point into another form.** Measured in a browser on
-  2026-10-13: a field's id is made from its name alone, so `corex-account-login` and
-  `corex-account-password` are each in the page twice. The registration form's "Password"
-  label and the forgot-password form's "Username or email" label belong to the sign-in
-  form's fields: pressing either label puts the cursor in the sign-in form, and the two
-  fields they sit above have no name for a screen reader. Not changed (seen while building
-  DECISIONS #336).
+- **The account block's fields do not say what they are for.** Read from
+  `AccountRenderer::fieldsOf()` on 2026-10-13, not measured: no field has an `autocomplete`
+  value (`username`, `current-password`, `new-password`, `email`, a name). WCAG 1.3.5 asks
+  for it on fields that collect something about the person, and it is what a password
+  manager reads to offer the saved password at sign-in and a new one at registration. Not
+  changed (seen while building DECISIONS #337).
+- **A page that holds the account block twice fills one block's lists.** Read from
+  `account.js`, not run: the session list and the recent-activity list are found with
+  `document.querySelector`, so a second block's lists stay empty for a signed-in person.
+  The forms of every block are answered, and since DECISIONS #337 no id is on such a page
+  twice.
 - **With scripts off, an account form is sent to the page and nothing answers.** Measured
   the same day: the forms have no address of their own, so the browser posts to the page
   it is on, which shows the empty forms again. The add-on's README and the profile guide

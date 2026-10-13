@@ -10,7 +10,11 @@ theme only presents it.
 - **`corex/account` block** — an auth-aware panel. Signed out: login, registration
   (gated by the site's *Membership → Anyone can register* setting), and a forgot-password
   form. Signed in: profile editing, active sessions, and recent account activity. Placed
-  by the **Account** page template (`page-account`).
+  by the **Account** page template (`page-account`). Each field's label is tied to it by
+  an id made of the block, the form and the field's name
+  (`corex-account-1-login-password`), so two forms that ask for the same thing, or two
+  blocks on one page, do not share one. The number is WordPress's
+  `wp_unique_prefixed_id()`: it counts the account blocks rendered in the request.
 - **`corex/v1/account/*` REST routes** — `login`, `register`, `reset-request`, `reset`
   (public auth endpoints), and `profile`, `sessions`, `sessions/revoke-others`,
   `sessions/revoke-all`, `notifications` (require a signed-in user + REST nonce).
