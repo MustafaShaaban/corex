@@ -60,7 +60,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [103](specs/103-submissions-inbox-export/spec.md), the submissions inbox and its exports | every slice | three tasks: T045, T043b, and T074b (to whom a notification went, which the server does not record) | the tasks file |
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
-| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 6. Slice 5 is built: a site names who its replies are from (#353), and its first half before it: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
+| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 6. Slice 5 is built: a site names who its replies are from (#357), and its first half before it: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built | a first installation on a shared host, watched |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | slices 1 and 2 of six: personal data marked and asked about by one rule (DECISIONS #309); several models in one export, with a history and a 30-day expiry (#312) | slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
@@ -106,6 +106,25 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**After v0.45.2, not released, 2026-10-13: a security fix, and the reason for the next
+release.** A form's file field is answered by the file the request carried, and by nothing
+in its text (spec 081, FR-002a, Phase H; DECISIONS #353). What a request's body said under
+a file field's name was kept as the answer when no file arrived, and an answer to a file
+field is read as the number of a stored file. `FileFieldAnswers` is the one place that
+rule is written, asked by `FormSubmissionService` and by the flow pipeline's
+`ValidationStage`. The attachment store asks `is_uploaded_file()` before it reads a path.
+A submission's files are removed with it by field, and not while another submission names
+them. A site's listener asks `Corex\Security\Upload\FormUploads::cameThrough()`. The Data
+import had the same mistake and reads the file part only.
+**Owed:** the Muva and Perego sessions are told what to check in what they store, and
+MUVA's `SendBriefEmails` changes to the call when it takes the release. Leads, not
+built: a flow offers a file question and has no way to take a file; an answer already
+stored that names somebody else's file is still shown by the inbox under both submissions;
+the careers form unslashes its upload's temporary path, which on a Windows host is a path
+with its backslashes removed (read, not run); the flow pipeline validates before it
+protects, and validation passes on the schema's answers only, so the honeypot and the
+challenge token may never reach the stage that reads them (read, not run).
 
 **After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
 raises the New submission notification (DECISIONS #352; the owner's report, relayed by the

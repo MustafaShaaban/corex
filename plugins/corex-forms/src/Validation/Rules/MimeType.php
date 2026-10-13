@@ -30,7 +30,16 @@ final class MimeType implements Rule
      */
     public function validate(mixed $value, array $params, array $allValues): ?string
     {
-        if (! is_array($value) || ($value['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        if ($value === null || (is_string($value) && trim($value) === '')) {
+            return null;
+        }
+
+        // Text is not a file. It was passed as an empty field, and it is not one.
+        if (! is_array($value)) {
+            return 'mime';
+        }
+
+        if (($value['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
             return null;
         }
 

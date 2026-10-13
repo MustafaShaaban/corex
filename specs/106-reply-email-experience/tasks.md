@@ -129,7 +129,7 @@ Built in two pull requests: the editor and the preview first, the draft after it
 - [x] T083 The three settings; `EmailMessage::$fromName`; `SenderName`, the one rule for a
       name in a header; the driver, also for a name with no address to stand in front of;
       `MailService::deliver()` carries and guards the new field; the settings screen names
-      each field it did not change, and a browser test of that (DECISIONS #353)
+      each field it did not change, and a browser test of that (DECISIONS #357)
 - [x] T084 Jest and Playwright: "Send again" on a reply that was not delivered. The browser
       meets a reply that did not go through a third mode of the mail fixture, `fail`, which
       answers for WordPress before it reaches its mailer

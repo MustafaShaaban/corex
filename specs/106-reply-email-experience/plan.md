@@ -373,7 +373,7 @@ pressing at once send it once (DECISIONS #328).
 As built for the sender: the three settings as planned, and `fromName` on `EmailMessage`.
 "Validated when saved" turned out to be half true: the settings screen dropped an invalid value
 in silence, for every field. It now names each field it did not change and why. A sender's
-name has one rule, `SenderName`, where the plan had none (DECISIONS #353).
+name has one rule, `SenderName`, where the plan had none (DECISIONS #357).
 
 The sender: `mail.reply.from_name`, `mail.reply.from_address`, `mail.reply.reply_to` in the
 Mail settings, validated when saved. `EmailMessage::$from` is an address only, on purpose (a
