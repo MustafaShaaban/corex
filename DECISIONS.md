@@ -14692,6 +14692,139 @@ gets no failed-email notification from this change. A site that
 listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
 0; nothing under `sites/` in the Muva or Perego checkouts names that event.
 
+## #353 — A file is what a request carried as a file part, and never what its text says: a form's file field, a flow's file question and the Data import; the store reads no file it was not sent; a submission's files are its own by field
+
+**Date:** 2026-10-13. **Branch:** `fix/forms-file-field-value`, from `main`.
+**Spec:** [081](specs/081-forms-files-end-to-end/spec.md), FR-002a and FR-004a (added), Phase H.
+
+**What was reported.** On 2026-10-13, by the session working on a client site that runs
+v0.45.2, from reading its own listener: a request to a form's route that sends no file for
+a file field, and says something under that field's name in its body, has what it said
+kept as the field's answer. Confirmed by reading `main`, and then measured.
+
+**Why it matters.** An answer to a file field is read everywhere after the route as the
+number of a file the store keeps: by the Submissions inbox, by the notification email, by
+whatever removes a submission's files with the submission, and by a site's own listener.
+The answer was not always that.
+
+**What was measured on `main`'s code** (this branch's own WordPress 7.1.3, PHP 8.3.6; each
+is a test that failed there):
+
+- What a request's body said under a file field's name was validated, stored as the
+  field's answer and returned in the response. `required` was satisfied by it. The `mime`
+  and `max_size` rules passed it: both read any value that is not an array as an empty
+  field.
+- Everything that reads a file answer then read that one: the inbox, and what removes a
+  submission's files with the submission. That last one took a file as a submission's own
+  from any of its answers, and not only from its answer to the field the file came through.
+- The notification email did not name a file for it: it names a file only for a whole
+  number, and the route hands on text.
+- An array with the keys of an upload did not reach the rules or the store through the
+  route: the route's sanitiser turns an array into an empty string. Handed to the service
+  directly it did, and was passed to the store.
+- The store refused it. `wp_handle_upload()` asks `is_uploaded_file()` and nothing was
+  moved or recorded. The store had read the file at the path it was given before that
+  call, through `wp_check_filetype_and_ext()`.
+- A flow built in Forms & Flows has the same field type and a route that reads no file
+  parts. Its file question was answered by whatever the body said.
+- Found by the review of this change, and the same mistake in another place: the Data
+  import (`POST corex/v1/data/{source}/imports`, for a person who may manage data) takes a
+  CSV as a file part. Its gateway hands on a request's text and its file parts as one
+  payload, so `file` could be something the text said, and `DataCsvParser` opened the path
+  it named.
+
+**The decision.**
+
+1. *A file field's answer is the file part, or there is none.* `FileFieldAnswers::from()`
+   removes what the body says under every file field's name, then places the file part
+   that arrived for it. `FormSubmissionService` asks it with the route's file parts, and
+   the flow pipeline's `ValidationStage` asks it with none. It is one rule in one place,
+   before validation, so `required` sees a missing file as missing.
+2. *The rules judge an upload and nothing else.* `mime` and `max_size` refuse a value that
+   is neither empty nor an upload. Nothing hands them one for a file field any more; this
+   is for a caller that is not the service.
+3. *The store reads no file it was not sent.* `AttachmentStore::store()` asks
+   `is_uploaded_file()` before it reads the path, and refuses with `not_uploaded`.
+   `wp_handle_upload()` still asks afterwards.
+4. *A submission's files are its own by field, and by being the only one that names them.*
+   `WpSubmissionTrashStore::uploadsOf()` takes an answer as a file only where the file came
+   through the field the answer is to. A file two submissions name is left while either is
+   there: a file is uploaded with one submission, and nothing records which. This is what
+   protects a site that already stores such an answer. "Names" is the same number byte for
+   byte (`'type' => 'BINARY'`): the table's collation reads the digits of another script as
+   equal, and such an answer would have kept a file for good. Known and left: two people
+   deleting the two submissions in the same moment each see the other, and the file stays
+   with nothing naming it.
+5. *The Data import reads the file part.* `DataManagementController` takes the CSV from the
+   request's file parts and from nowhere else; what the text says under `file` is not
+   opened. The parser is as it was: it is handed nothing else now, and asking
+   `is_uploaded_file()` there would refuse every file the integration suite can make.
+6. *A flow's stage drops the text before anything reads it.* `ValidationStage` wrote down
+   what was agreed to (the consent record) from the answers as they arrived, so a file
+   question marked as consent kept the text there. The answers are now reduced first.
+7. *How an upload is marked has one definition, and a site does not read it.* The two post
+   meta keys were string literals in the store and in three readers. They are named in
+   `Corex\Security\Upload\StoredUpload`. A site's listener asks
+   `Corex\Security\Upload\FormUploads::cameThrough($field, $attachmentId)`. That class is in
+   the core beside the store, and not in the forms plugin: the forms plugin writes the
+   label, and the inbox, which reads it, does not depend on that plugin.
+
+**Rejected.**
+
+- *Leaving the file field out of the route's sanitiser shape.* It would close the route and
+  leave the service, the flow pipeline and any later caller as they were.
+- *Public constants for the meta keys as the contract.* A site would then check two keys and
+  a prefix by hand, as the reporting site does today, and the framework could never change
+  how it marks a file. The question a site has is "is this the upload of that field", and
+  that is now a call.
+- *Recording the form in the label.* The label holds the field's name only, so
+  `cameThrough()` cannot say which form. Changing it would leave every file already stored
+  with the old label; the rule in point 4 does not need it.
+- *Asking `is_uploaded_file()` in the two rules as well.* They would refuse every file a
+  unit test can make, and the service already decides where their value comes from.
+
+**Tests.** `tests/Unit/Forms/FileFieldTest.php` (added cases), `FlowFileFieldTest.php`,
+`FileRulesTest.php`; `tests/Integration/Forms/FileFieldAnswerTest.php`,
+`tests/Integration/Security/AttachmentStoreUnsentFileTest.php`,
+`tests/Integration/Submissions/SubmissionDeleteTest.php` (three cases),
+`tests/Integration/Data/DataManagementControllerTest.php` (one case, two ways);
+`tests/e2e/submission-file.spec.js` (a request over HTTP with text and a file under one
+name). Each new case was run against the code before its fix. Those that pass there say
+what must not change: a file that was sent is stored, an empty answer is left to
+`required`, and an array under a required file field is refused, which the route's
+sanitiser already saw to. The rest fail there. The browser spec that uploads a real file
+through the form and opens it from the inbox passes with the store's new question. A
+second review, by a reader given the change and not the reasoning, found the Data import,
+the consent record and the collation; each has a test.
+
+`Corex\Tests\Support\CreatedPosts` now hears of a new attachment. WordPress announces one
+by `add_attachment` and not by `wp_insert_post`, so a watcher asked for attachments heard
+of none and deleted none.
+
+**Whether a site can find such an answer among what it already stores.** Yes, in three
+shapes. A file answer that is not a number: the inbox shows it as text where a file's name
+would be. A file answer that names no upload of that field: the inbox shows it as a missing
+file, which is also what a file removed since looks like. And a file that more than one
+submission names under the same field: one of them was not sent it, and the record does
+not say which; the date of the file against the dates of the two submissions does. A
+number in another kind of answer cannot be told from an honest number, and after this
+change it is only a number.
+
+**Client impact.** A site with a form that has a file field should take this release. A
+site's own listener that opens a file by the number it was handed asks
+`FormUploads::cameThrough()` and stops reading `_corex_protected` and
+`_corex_upload_context`; from this release the value it is handed for a file field is the
+number of the file this submission stored, or the key is absent. A flow with a required
+file question refuses every submission, where it took text; it could never take a file.
+`AttachmentStore::store()` answers `not_uploaded` for a file PHP did not receive, where it
+gave another reason; the careers add-on passes that reason on as `cv_not_uploaded`. A Data
+import sent as text with `file` in it is answered as an import with no file. Read on this
+machine on 2026-10-13:
+Muva's `SendBriefEmails` reads the two keys and its brief form has an optional file field;
+nothing under `sites/` in the Perego checkout, and nothing in the Mizzey checkout, has a file
+field or names the keys. `docs-app/src/content/docs/guides/forms.md` says what a listener is
+handed for a file field and shows the call.
+
 ## #354 — A runner that setup-php left without WP-CLI installs one release of it and carries on; setup-php is still asked first
 
 **Date:** 2026-10-13. **Branch:** `fix/ci-wp-cli-fallback`, from `main`.

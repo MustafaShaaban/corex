@@ -473,7 +473,47 @@ All notable changes to Corex are documented here. The format follows
 - **The docs header's search field stays inside the header** in a window 320 wide, where
   its button reached the window's edge once the header had a gutter.
 
+### Security
+
+- **A form's file field is answered by the file the request carried, and by nothing in its
+  text** (spec 081, FR-002a). When a request sent no file for a file field, what its body
+  said under the field's name was kept as the field's answer, and an answer to a file field
+  is read as the number of a stored file: a submission could name a file it was not sent
+  with. A file field with no file now has no answer. `required` says the file is missing,
+  and an optional one is stored without it. The same holds for a file question of a flow
+  built in Forms & Flows, whose route takes no file. The `mime` and `max_size` rules refuse
+  text. Reported on 2026-10-13 from a client site (DECISIONS #353).
+- **The attachment store reads no file it was not sent** (spec 081, FR-004a). It asks
+  whether PHP received the file as an upload before it reads it. WordPress asked the same
+  when the file was moved, and nothing was stored; the store had read the file by then.
+- **A submission's files are removed with it only where they are its own.** A file is taken
+  as a submission's by the answer to the field it came through, and not by any answer that
+  holds its number. A file that two submissions name stays until the last of them is
+  deleted.
+- **The Data import reads the CSV a request carried as a file, and no other.** For a person
+  who may manage data: what a request's text said under `file` was read as the upload.
+  Found by the review of the change above.
+
 ### Client impact
+
+- **A site with a form that has a file field should take this release, and look at what it
+  already stores.** Three things show an answer that was not a file the submission was
+  sent with: text where the inbox shows a file's name, a file answer the inbox shows as a
+  missing file (which is also what a file removed since looks like), and one file named by
+  more than one submission under the same field. Nothing stored is changed by the update.
+- **A site's own listener that opens a form's uploaded file asks
+  `Corex\Security\Upload\FormUploads::cameThrough($field, $attachmentId)`.** The two post
+  meta keys an upload is marked with (`_corex_protected`, `_corex_upload_context`) are the
+  framework's to change and are not a contract; a listener that reads them, as MUVA's
+  `SendBriefEmails` does, changes to the call. From this release the value a listener is
+  handed for a file field in `FormSubmittedEvent` is the number of the file this submission
+  stored, or the key is absent: it is never text.
+- **Three answers change.** A request that sends text under a file field's name gets a
+  response with no value for that field, where it got the text back. A flow with a required
+  file question refuses every submission, where it accepted text; a flow has never taken a
+  file. `AttachmentStore::store()` answers `not_uploaded` for a file PHP did not receive as
+  an upload, where it gave another reason; the careers form's answer for it is
+  `cv_not_uploaded`.
 
 - **A site whose forms are registered in code starts to get the New submission
   notification.** Nothing to set. It is raised for submissions stored from now on:

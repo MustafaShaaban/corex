@@ -119,6 +119,25 @@ in `action.yml` and nothing updates them; only a run with `wp-cli` taken out of 
 `tools` proves a new pair. `tests/provision-wordpress-wp-cli.test.js` runs the script in
 each state a runner can be in, with a stand-in for `curl`.
 
+**After v0.45.2, not released, 2026-10-13: a security fix, and the reason for the next
+release.** A form's file field is answered by the file the request carried, and by nothing
+in its text (spec 081, FR-002a, Phase H; DECISIONS #353). What a request's body said under
+a file field's name was kept as the answer when no file arrived, and an answer to a file
+field is read as the number of a stored file. `FileFieldAnswers` is the one place that
+rule is written, asked by `FormSubmissionService` and by the flow pipeline's
+`ValidationStage`. The attachment store asks `is_uploaded_file()` before it reads a path.
+A submission's files are removed with it by field, and not while another submission names
+them. A site's listener asks `Corex\Security\Upload\FormUploads::cameThrough()`. The Data
+import had the same mistake and reads the file part only.
+**Owed:** the Muva and Perego sessions are told what to check in what they store, and
+MUVA's `SendBriefEmails` changes to the call when it takes the release. Leads, not
+built: a flow offers a file question and has no way to take a file; an answer already
+stored that names somebody else's file is still shown by the inbox under both submissions;
+the careers form unslashes its upload's temporary path, which on a Windows host is a path
+with its backslashes removed (read, not run); the flow pipeline validates before it
+protects, and validation passes on the schema's answers only, so the honeypot and the
+challenge token may never reach the stage that reads them (read, not run).
+
 **After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
 raises the New submission notification (DECISIONS #352; the owner's report, relayed by the
 Muva session). `FormSubmissionService` now dispatches `SubmissionProcessedEvent` once the
