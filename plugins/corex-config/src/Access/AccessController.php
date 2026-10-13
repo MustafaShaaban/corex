@@ -127,7 +127,7 @@ final class AccessController
                 get_current_user_id(),
                 $this->roleKey($request),
                 $this->changes($request),
-                $this->confirmation($request->get_param('confirmation')),
+                $this->confirmation((array) $request->get_param('confirmation')),
                 new DateTimeImmutable('now'),
             );
 
@@ -277,11 +277,11 @@ final class AccessController
      *
      * A confirmation that can be read and confirms something else is the service's to refuse, and
      * it answers that one `blocked`.
+     *
+     * @param array<array-key,mixed> $payload
      */
-    private function confirmation(mixed $payload): Confirmation
+    private function confirmation(array $payload): Confirmation
     {
-        $payload = is_array($payload) ? $payload : [];
-
         try {
             return new Confirmation(
                 operationKind: $this->text($payload['operation_kind'] ?? ''),

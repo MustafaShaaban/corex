@@ -4,7 +4,7 @@
  * What the Access REST routes answer for a request they cannot read.
  *
  * Each of these was answered 500, "There has been a critical error on this website", with a fatal
- * error in the PHP log (measured over HTTP on 2026-10-13, DECISIONS #347): the service threw and
+ * error in the PHP log (measured over HTTP on 2026-10-13, DECISIONS #348): the service threw and
  * the route did not catch it. They go through
  * WordPress's REST server and not to the controller's methods, because the status and the body
  * that server makes of the controller's answer are what a script reads.
@@ -31,6 +31,9 @@ const REFUSAL_TEST_ROLE = 'corex_refusal_test_role';
 /**
  * Sends a JSON body to an Access route as the current user, with that user's REST nonce.
  *
+ * A PHP warning while the route answers fails the test: a list read as text is the word "Array"
+ * and a warning in the log, and for an effect the answer is the same 400 with or without it.
+ *
  * @param array<string,mixed> $body
  */
 function accessRoute(string $method, string $route, array $body = []): WP_REST_Response
@@ -45,7 +48,15 @@ function accessRoute(string $method, string $route, array $body = []): WP_REST_R
         $request->set_body((string) wp_json_encode($body));
     }
 
-    return rest_get_server()->dispatch($request);
+    set_error_handler(static function (int $level, string $message): never {
+        throw new ErrorException($message, 0, $level);
+    }, E_WARNING);
+
+    try {
+        return rest_get_server()->dispatch($request);
+    } finally {
+        restore_error_handler();
+    }
 }
 
 /**
