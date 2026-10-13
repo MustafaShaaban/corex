@@ -6,6 +6,37 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.46.0] — 2026-10-14
+
+Everything merged since v0.45.2: two days of fixes found by using CoreX on the first client
+sites, the rest of the reply email's sender, and a boot that asks the database less.
+
+**A site with a form that has a file field should take this release.** A form's file field
+is answered by the file the request carried and by nothing in its text; see Security, and
+the first entries of Client impact for what a site looks at in what it has stored.
+
+**Replies.** A site names who its replies are from. A reply is kept as a draft, starts with a
+subject, is sent in the conversation the person already has or as a new email, and can be
+sent again when it did not go. An email is drawn, and worded, in the site's language,
+whoever's request sends it.
+
+**The account block.** A forgotten password is reset on the account page. The block says what
+happened under the button that was pressed, says so when a request gets no answer, names the
+session in use, and its fields tell the browser what they are for.
+
+**Forms and the inbox.** A form built in Forms & Flows is guarded by its trap field and the
+site's challenge. A form defined in code raises a notification. What a visitor writes is kept
+with its backslashes. On a site without pretty permalinks the inbox and seven other admin
+requests are answered.
+
+**Speed.** CoreX's boot asks the database for nothing it does not need on a front-end
+request: a setting with no override costs no query, three options read on every request are
+stored loaded, and the schema check takes its lock only when a site is behind.
+
+Rebuild `plugins/corex-config` after merging: the admin bundle changed. Read Client impact
+before updating a site that has code of its own against CoreX's classes or routes; it is long
+because the list of small changes is long, and most entries end "nothing to do".
+
 ### Added
 
 - **A site names who its replies are from** (spec 106, slice 5). Three settings under CoreX →
