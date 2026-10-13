@@ -194,18 +194,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   as tests it took 18 ms. A search is quicker than no search. Whether a client site holds
   anything near that number was not read. Measured for DECISIONS #318, not changed.
 
-- **A password with a quote or a backslash in it is not the same password at CoreX's
-  sign-in and at WordPress's. The owner's decision, asked on 2026-10-13.** Measured over
-  HTTP on WordPress 7.1.3, for `'`, `"` and `\` each alone and together (DECISIONS #333 has
-  the table): a password chosen at the account add-on's registration or through its reset
-  route is hashed as typed, signs in at the add-on and is refused at `wp-login.php`; one
-  chosen on `wp-login.php`'s reset screen or given through `wp/v2/users` is hashed with
-  the request's slashes on, signs in at `wp-login.php` and is refused by the add-on.
-  Nothing is changed. Hashing it WordPress's way from now on locks out whoever registered
-  through CoreX with such a password, unless a sign-in also accepts the other form and
-  hashes the password again; read before building that: the sign-in limiter counts every
-  `wp_login_failed`, so two tries through `wp_signon()` count one wrong password twice, and
-  a password hashed again signs that person out of their other browsers.
+- **An account that chose a password with a quote or a backslash through the account
+  add-on, and whose owner has not signed in there since DECISIONS #334, is still refused at
+  `wp-login.php`.** The add-on now hashes a password WordPress's way and moves such an
+  account when its owner signs in on the account block; nothing moves the others, and
+  nothing lists them. Moving one signs its owner out of their other browsers, once
+  (measured, #334).
 - **The account block's message is out of the window when the button is in it.** Measured
   in a browser on 2026-10-13: the block's one status line is above its forms, and after
   **Create account** was pressed it was 149 pixels above a window 768 high, and 377 above

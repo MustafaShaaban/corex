@@ -11,6 +11,7 @@ namespace Corex\Profile\Account;
 defined('ABSPATH') || exit;
 
 use WP_Error;
+use WP_Session_Tokens;
 use WP_User;
 
 /**
@@ -52,7 +53,7 @@ final class WordPressAuthGateway implements AuthGateway
         $userId = wp_insert_user([
             'user_email'    => $email,
             'user_login'    => $login,
-            'user_pass'     => $password,
+            'user_pass'     => $this->asWordPressTakesIt($password),
             'role'          => get_option('default_role', 'subscriber'),
             'display_name'  => $login,
         ]);
@@ -73,15 +74,24 @@ final class WordPressAuthGateway implements AuthGateway
 
     public function authenticate(string $login, string $password, bool $remember): AccountResult
     {
+        $forWordPress = $this->asWordPressTakesIt($password);
+        $heldAsTyped  = $forWordPress !== $password && $this->holdsPasswordAsTyped($login, $password);
+
+        // One sign-in, with the form the account holds: each one that fails is counted
+        // against the person, so the other form is not tried as a second.
         $user = wp_signon([
             'user_login'    => $login,
-            'user_password' => $password,
+            'user_password' => $heldAsTyped ? $password : $forWordPress,
             'remember'      => $remember,
         ], is_ssl());
 
         if ($user instanceof WP_Error) {
             // Deliberately generic: do not reveal which of user/password was wrong.
             return AccountResult::fail('login_failed', __('Those credentials did not match. Please try again.', 'corex'));
+        }
+
+        if ($heldAsTyped) {
+            $this->keepPasswordAsWordPressDoes($user, $forWordPress, $remember);
         }
 
         wp_set_current_user($user->ID);
@@ -112,7 +122,7 @@ final class WordPressAuthGateway implements AuthGateway
             return AccountResult::fail('invalid_reset', __('This password reset link is invalid or has expired.', 'corex'));
         }
 
-        reset_password($user, $password);
+        reset_password($user, $this->asWordPressTakesIt($password));
 
         return AccountResult::ok(
             'password_reset',
@@ -148,5 +158,55 @@ final class WordPressAuthGateway implements AuthGateway
     public function currentUserId(): int
     {
         return get_current_user_id();
+    }
+
+    /**
+     * A password as WordPress's own screens hand it over. They hash and check the text of a
+     * form, which still has the request's slashes on it; the password of a REST request has
+     * none. Hashed as it arrived here, a password with a quote or a backslash in it was another
+     * password at `wp-login.php` (DECISIONS #334).
+     */
+    private function asWordPressTakesIt(string $password): string
+    {
+        return wp_slash($password);
+    }
+
+    /**
+     * Until #334 this gateway hashed a password as it was typed. Whether the account a sign-in
+     * is for still holds that hash: the one with that username or the one with that address,
+     * which are the two WordPress tries.
+     *
+     * Nothing is changed here and nothing is counted: it only decides which form the sign-in
+     * is made with.
+     */
+    private function holdsPasswordAsTyped(string $login, string $password): bool
+    {
+        $candidates = [get_user_by('login', $login)];
+        if (is_email($login)) {
+            $candidates[] = get_user_by('email', $login);
+        }
+
+        foreach ($candidates as $user) {
+            if ($user instanceof WP_User && wp_check_password($password, $user->user_pass, $user->ID)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Moves an account that has just signed in with the hash of its password as typed to the
+     * hash a WordPress screen would have stored, so that `wp-login.php` accepts it too.
+     *
+     * A browser's cookie is made from the stored hash: the one `wp_signon()` has just set is
+     * void, and so is every other browser's. Their sessions are ended, so that the account's
+     * list of sessions shows only ones that work, and this browser is given a cookie again.
+     */
+    private function keepPasswordAsWordPressDoes(WP_User $user, string $forWordPress, bool $remember): void
+    {
+        wp_set_password($forWordPress, $user->ID);
+        WP_Session_Tokens::get_instance($user->ID)->destroy_all();
+        wp_set_auth_cookie($user->ID, $remember, is_ssl());
     }
 }
