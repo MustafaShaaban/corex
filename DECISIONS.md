@@ -12886,14 +12886,15 @@ domain. `post()` in `account.js` now resolves with `{ ok, message }` and no long
 `{ ok, data }`: it is a function inside the script's closure, so nothing outside can have
 called it.
 
-## #343 — In the account block, a list that did not load says so in its own place, and an empty one says it is empty
+## #345 — In the account block, a list that did not load says so in its own place, and an empty one says it is empty
 
 **Date:** 2026-10-13. **Branch:** `fix/account-lists-say-when-they-do-not-load`, on top of
 #339's branch (PR #383, open when this was written). **Found by:** the session that built
 #339, which read it from `account.js` and recorded it in `PROGRESS.md`. Spec 068 gains
 FR-161f. The numbers between are held elsewhere: #340 by open PR #384, #341 by #385 on
-`main`, #342 by open PR #386, whose requirement is lettered FR-161c as #339's is, so
-FR-161e is left for whichever of the two is renamed.
+`main`, #342 by open PR #386, #343 by open PR #387 and #344 by open PR #388. #386's
+requirement is lettered FR-161c as #339's is, so FR-161e is left for whichever of the two
+is renamed.
 
 **What was there.** `get( path, token )` returned `fetch(...).then( res => res.json() )`,
 with no rejection handler and without looking at `res.ok`. `loadSessions()` and

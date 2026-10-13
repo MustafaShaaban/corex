@@ -228,7 +228,7 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   of what it is handed with the current session's verifier, and
   `WP_Session_Tokens::get_all()` returns `array_values()`, so the keys are 0, 1, 2.
   `SessionListTest` passes an array keyed by verifier, which WordPress never does. Not
-  changed (seen while building DECISIONS #343).
+  changed (seen while building DECISIONS #345).
 - **A row of the account block's two lists is written for a machine.** Recent activity
   lists `profile.updated · 2026-10-13T09:00:00+00:00`, an internal name and an ISO date; a
   session is the browser's whole user agent string. And recent activity is not asked for
@@ -237,7 +237,7 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **A list of the account block that does not load after a press is seen and not heard.**
   The sentence in the list's place ("Your sessions could not be loaded. Load this page
   again to see them.") is a paragraph and not a live region, so that it is not announced
-  on every visit as the page opens (DECISIONS #343, spec 068 FR-161f). The answer to the
+  on every visit as the page opens (DECISIONS #345, spec 068 FR-161f). The answer to the
   press is announced; the list failing to refresh above it is not. There is no button to
   try again: the sentence says to load the page.
 - **No screen reader was listened to on the account block.** That an answer is announced,

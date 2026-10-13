@@ -78,7 +78,7 @@ All notable changes to Corex are documented here. The format follows
   the list fails. **Sign out everywhere** now loads the page again, which shows the
   sign-in form: it left the signed-out person on the member view, with the list emptied.
   The two session buttons stand one spacing step under the list, which they touched
-  (DECISIONS #343).
+  (DECISIONS #345).
 
 - **The account block says so when a request gets no answer, and when scripts are off.**
   Two cases in which pressing a button of the `corex/account` block did nothing that could
