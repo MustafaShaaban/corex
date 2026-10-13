@@ -128,6 +128,34 @@ All notable changes to Corex are documented here. The format follows
   Username field is treated the same way. An account with a username that is not an email
   address is named by it, as before (DECISIONS #335).
 
+- **An action is recorded, and its request answered, for a person whose display name is
+  longer than 191 characters.** The activity record holds the name of who did something,
+  the name of what it was done to and that thing's id in 191 characters each, and WordPress
+  holds a display name in 250. A record with a longer name was refused by its table, and
+  the request that had already done its work answered 500. Measured over HTTP: a member who
+  saved a display name of 192 to 250 characters on the account block was answered 500, with
+  the name saved; from then on every save of that profile was, and so was "sign out other
+  sessions", which had signed them out. WordPress's own profile screen takes such a name
+  from any member (a nickname chosen as the display name), and a person so named who asked
+  for access to a part of CoreX was answered 500 with the request stored, once for each
+  try. So for every action CoreX records under a person's display name: a role's abilities
+  changed, an access request made or decided, a change applied on CoreX → Data. A name, or
+  an id, longer than the record holds is now cut to 190 characters and an ellipsis in the
+  one place every record is made
+  (`Corex\Activity\ActivityService::record()`), and the record is written. The account
+  keeps its whole name (DECISIONS #340).
+
+- **A display name too long for an account is refused on the Profile form, and no longer
+  answered "Your profile has been saved."** WordPress holds a display name in 250
+  characters and does not refuse a longer one: the account kept the name it had, nothing
+  else of the account's row was saved, a first name sent with it was, and the form said the
+  profile was saved. The same happened to 250 characters with an `&` among them, because
+  WordPress keeps `&` as `&amp;`. The account block now refuses a name WordPress would keep
+  in more than 250 characters, with a message that says how long one may be, or that a
+  character such as `&` is kept as several when that is the reason, and saves nothing
+  (`display_name_too_long`). A name of up to 250 characters is saved, in any script: the
+  count is of characters (DECISIONS #340).
+
 - **The account block says what happened under the button that was pressed.** The
   `corex/account` block had one message line, above its forms, for everything the server
   answers: a refused sign-in, a refused registration, "a reset link is on its way", a saved
@@ -367,6 +395,16 @@ All notable changes to Corex are documented here. The format follows
   switched off on Muva by its own decision record, and is inactive, with registration
   closed, on the Perego and Mizzey installs of the development machine, as read on
   2026-10-13; their live hosts were not read.
+- **A site with a gateway of its own for the account add-on has one method to add.**
+  `Corex\Profile\Account\AuthGateway` has a new method, `displayNameAsKept()`: the display
+  name as the account would hold it, which the Profile form's length rule is asked of. A
+  gateway that keeps a name as it is handed over returns it. Neither the Muva nor the
+  Perego site's own code implements the interface, as read in both checkouts on 2026-10-13.
+- **A name or an id longer than 191 characters is cut on the activity record.** Code of
+  your own that calls `Corex\Activity\ActivityService::record()` may hand it an actor's
+  label, a target's label and a target's id of any length: each is kept to 190 characters
+  and an ellipsis. Records already written are as they were, and none of them is longer:
+  the table refused those. No table changed and there is nothing to rebuild.
 - **The ids of the account block's fields changed.** Only for a site that has Corex
   Profile on and selects a field of the block by id in its own stylesheet or script.
   `corex-account-login`, `corex-account-password`, `corex-account-email` and the others
