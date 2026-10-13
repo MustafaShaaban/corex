@@ -24,6 +24,12 @@ interface AuthGateway
 
     public function usernameExists(string $login): bool;
 
+    /**
+     * Whether an account would have exactly this username. A gateway that would store a
+     * different one in its place answers false, so the person is asked for another.
+     */
+    public function acceptsUsername(string $username): bool;
+
     public function createUser(string $email, string $login, string $password): AccountResult;
 
     public function authenticate(string $login, string $password, bool $remember): AccountResult;

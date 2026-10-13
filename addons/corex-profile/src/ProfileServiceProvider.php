@@ -158,7 +158,8 @@ final class ProfileServiceProvider extends ServiceProvider
             EmailAnswer::address($request['email']),
             (string) $request['password'],
             (string) $request['password_confirm'],
-            sanitize_user((string) $request['username']),
+            // As typed: a username that would be altered on its way into the account is refused.
+            trim((string) $request['username']),
             (bool) $request['consent'],
         ));
 

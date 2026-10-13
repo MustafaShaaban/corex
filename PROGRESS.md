@@ -173,17 +173,31 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   anything near that number was not read. Measured for DECISIONS #318, not changed.
 
 - **A password with a quote or a backslash in it is not the same password at CoreX's
-  sign-in and at WordPress's.** Measured on 2026-10-13: a person who registers through the
-  account add-on with such a password is not signed in at `wp-login.php` with it, and a
-  password set on a WordPress screen is not accepted by the add-on's sign-in. WordPress's
-  own screens hash a password with the slashes of the request still on it; the add-on's
-  gateway hashes it as typed (`WordPressAuthGateway`, DECISIONS #332). Not changed: handing
-  it over slashed would lock out whoever registered through CoreX with such a password,
-  unless a sign-in tries both. An owner decision.
-- **A registration with a login WordPress will alter is accepted.** Measured on 2026-10-13:
-  the login `CORP\salma` is stored as `CORPsalma` by WordPress's own rule for a login, and
-  the person is told the account was created. Signing in with what they typed was not run.
-  The account add-on refuses an email address it would have to alter and not a login.
+  sign-in and at WordPress's. The owner's decision, asked on 2026-10-13.** Measured over
+  HTTP on WordPress 7.1.3, for `'`, `"` and `\` each alone and together (DECISIONS #333 has
+  the table): a password chosen at the account add-on's registration or through its reset
+  route is hashed as typed, signs in at the add-on and is refused at `wp-login.php`; one
+  chosen on `wp-login.php`'s reset screen or given through `wp/v2/users` is hashed with
+  the request's slashes on, signs in at `wp-login.php` and is refused by the add-on.
+  Nothing is changed. Hashing it WordPress's way from now on locks out whoever registered
+  through CoreX with such a password, unless a sign-in also accepts the other form and
+  hashes the password again; read before building that: the sign-in limiter counts every
+  `wp_login_failed`, so two tries through `wp_signon()` count one wrong password twice, and
+  a password hashed again signs that person out of their other browsers.
+- **The account block's message is out of the window when the button is in it.** Measured
+  in a browser on 2026-10-13: the block's one status line is above its forms, and after
+  **Create account** was pressed it was 149 pixels above a window 768 high, and 377 above
+  one of 375 by 812. It is announced to a screen reader (`role="status"`); somebody
+  looking at the button sees nothing happen. So for every message of the block, a refused
+  sign-in among them. Not changed.
+- **A new account's display name is its login, which is the email address when no username
+  was typed** (`WordPressAuthGateway::createUser()`). Read, not run: a display name is what
+  a comment or a post is signed with.
+- **A login made from an address is altered by WordPress, and that is left.** With no
+  username typed, `name+shop@example.com` gets the login `nameshop@example.com`; the person
+  signs in with the address, as measured (DECISIONS #333). An account registered before
+  #333 under a username WordPress changed keeps the changed one; nothing lists those
+  accounts.
 - **What was stored before DECISIONS #331 and #332 is still without its backslashes**: a
   form's answers, a flow, a note, a comment, an editorial note, a name, an imported row, a
   kit's page, and on a Windows host the record of a WebP file. Nothing repairs it. A flow whose field has a `pattern:` rule with a
