@@ -65,6 +65,26 @@ page in 50.
 An address of 60 characters or fewer is the login, as before. Covered by
 `tests/Integration/Profile/RegistrationLongAddressTest.php`.
 
+## A long display name
+
+WordPress holds a display name in 250 characters, and it holds the name as it cleans it, not
+as it was typed: an `&` is kept as `&amp;`, five characters, and a `<` that opens no tag as
+`&lt;`. It does not refuse a longer one. `wp_update_user()` hands back the account's id,
+the account keeps the name it had, and nothing else of the account's row is saved either
+(a website address sent with it was not, as measured), while a last name sent with it is.
+
+So the Profile form refuses it, with the code `display_name_too_long` and nothing saved.
+`WordPressAuthGateway::displayNameAsKept()` gives the name as WordPress would hold it
+(`sanitize_text_field()`, then the `pre_user_display_name` filters), and
+`AccountService::MAX_DISPLAY_NAME_LENGTH` is the 250 it is counted against, in characters.
+A name over 250 as typed is told the number; one within it as typed and over it as kept is
+told that a character such as `&` is kept as several.
+
+A name of up to 250 characters is saved. The record of the change on the activity stream
+holds a name in 191 characters (`Corex\Activity\ActivityEvent::LONGEST_TEXT`), and
+`ActivityService::record()` cuts a longer one to 190 and an ellipsis; the account keeps the
+whole name. Covered by `tests/Integration/Profile/ProfileDisplayNameLengthTest.php`.
+
 ## Security
 
 - Registration is honeypot- and captcha-gated (when Corex Captcha is active) and respects
@@ -100,3 +120,7 @@ An address of 60 characters or fewer is the login, as before. Covered by
   — a profile's names are saved as written.
   `tests/Integration/Profile/RegistrationLongAddressTest.php` — an address too long to be a
   login registers, and one too long for an account is refused.
+  `tests/Integration/Profile/ProfileDisplayNameLengthTest.php` — through the Profile route:
+  a display name of up to 250 characters is saved and its change recorded, a longer one is
+  refused with nothing saved, and an account given a long name on a WordPress screen keeps
+  working.

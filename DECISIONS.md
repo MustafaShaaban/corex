@@ -12500,3 +12500,189 @@ session's WordPress: four `php -S` processes of four worktrees were listening on
 answer was "Registration is currently closed." from a site that was not this one. The
 numbers above are from a port with one listener, checked with `netstat` and by the site's
 name in the REST index.
+
+## #340 — The activity record cuts a label to what its table holds, and the Profile form refuses a display name WordPress would not keep
+
+**Date:** 2026-10-13. **Branch:** `fix/activity-label-length`, from `main`. **Found by:** the
+measurement for #338, which recorded it in PROGRESS.md and left it. This is the measurement
+again over HTTP, what else it showed, and the change. Spec 068: FR-005 and FR-018 (an
+action is audited on one shared stream), FR-158 (the profile workflow).
+
+**What the code did.** The activity table holds an actor's label, a target's label and a
+target's id in `varchar(191)` each. `WpActivityRepository::append()` raises a
+`RuntimeException` when its insert is refused, and `$wpdb->insert()` refuses a value longer
+than its column. `ActivityService::record()`, which every caller records through, handed
+the three texts over as they came. Callers hand it a person's display name, which
+`wp_users.display_name` holds in `varchar(250)`.
+
+On the account add-on's Profile route, `AccountService::updateProfile()` refused only an
+empty display name, and `WordPressAuthGateway::updateProfile()` took `wp_update_user()`'s
+answer to be a saved profile unless it was a `WP_Error`. For a display name of 251
+characters that answer is the account's id, with nothing of the account's row saved: the
+name stayed, and so did a website address sent in the same call, while a last name sent
+with it was stored (measured through `wp_update_user()` itself).
+
+**Measured before the change**, on WordPress 7.1.3 over HTTP, on an install of this
+branch's own with nothing leaving it by mail. A member signed in at the account block and
+posted to `corex/v1/account/profile` with the nonce the block's page carries:
+
+| Display name | Answer | What was stored |
+|---|---|---|
+| 191 characters | 200 | the name, and one activity record |
+| 192 | **500** | the name, and the first name sent with it; no record |
+| 250 | **500** | the same |
+| 251 | **500** | the first name; the display name stayed the one of 250 |
+| then a first name only | **500** | the first name |
+| then "sign out other sessions" | **500** | not read; the route ends the sessions before it records |
+| 250, of which ten are `&` | 200, "Your profile has been saved." | the first name; the display name stayed as it was |
+
+The 500 at 251 was the stored name of 250 being recorded, not the 251. The last row is
+what a name WordPress will not keep gets when the account's stored name is short: "saved",
+and the name it had.
+
+- **WordPress keeps a display name as it cleans it.** `Tom & Jerry <3 "q"`, 18 characters,
+  was stored as `Tom &amp; Jerry &lt;3 &quot;q&quot;`, 35. Each step was then run alone:
+  `sanitize_text_field()` makes a `<` that opens no tag, and the quotes after it, into
+  entities, and leaves `&` and a quote with no `<` before it; the `pre_user_display_name`
+  filters make `&` into `&amp;`.
+- **WordPress's own profile screen takes such a name from any member.** A subscriber signed
+  in at `wp-login.php` and posted `wp-admin/profile.php` with a nickname of 200 characters
+  chosen as the display name: 302 to `profile.php?updated=1`, stored. The same at 250. At
+  251 the screen answered `updated=1` too and the display name stayed the one of 250, with
+  the nickname of 251 stored. So refusing a long name in the add-on's form does not keep
+  one out of an account, and the record has to cope with any name an account can have.
+- **It is not only the account add-on.** An editor so named posted to
+  `corex/v1/access/requests`: 500, with the request stored. A second try: 500, and a second
+  request stored. Read, not measured: `AccessService::requestAccess()` stores the request,
+  records it, and only then tells the administrators, so nobody was told of either.
+
+**Who else hands the record a text a person chose** (read, every call to `record()`):
+
+- A display name as the actor's label: `AccessService` (a role's abilities changed, an
+  access request made, one decided), `DataManagementController::mutationApply()` (a change
+  applied on CoreX → Data), `ReleaseRecord`, and the account add-on, which hands it as the
+  target's label too.
+- A release's version as the target's id and label: `ReleaseRecord`, from the manifest of
+  an uploaded package. `ReleaseManifest` asks that it begin with three numbers and puts no
+  limit on its length.
+- A role's key as the target's id and label: `AccessService`. A key is made by whatever
+  registered the role, and `assertRole()` checks its characters and not its length.
+
+The others hand over text made in code: `'User #' . $id` (the submission trash and the
+exports among them), `'CoreX Jobs'`, a run's number, a data source's key.
+
+**Decided: the record is cut in the one place every record is made.**
+`ActivityService::record()` keeps an actor's label, a target's label and a target's id to
+`ActivityEvent::LONGEST_TEXT`, 191 characters; a longer one is its first 190 and an
+ellipsis, so that a text that was cut is not read as the whole of it. `ActivityTable` makes
+the three columns that wide from the same constant, and a test holds the two together.
+The count is of characters (`mb_strlen`), as MySQL counts a `varchar` and as WordPress's
+database layer checks one: 191 Arabic letters fit, and are 382 bytes.
+
+- **In the service and not in the repository,** because the repository hands back the event
+  it was given with an id on it: cut there, what a caller is handed back would not be what
+  was stored.
+- **Not by making the columns wider.** 250 would hold a display name and not a version or a
+  role's key, which have no length. A wider column is a change to a table on every site,
+  and whatever width is chosen the service has to hold a text to it.
+- **The id is cut like the labels.** An id that was cut does not name its target. One rule
+  is kept for the three all the same: the ellipsis says it was cut, the label beside it
+  says what it was, and the other choice was a request that fails after its work is done.
+  The two callers that can hand over such an id hand the same text as the label.
+- **`kind` (100) and `target_type` (64) are not cut.** Every caller hands them a text
+  written in code. `ActivityEvent` checks the form of a kind and not its length; a kind too
+  long would still be refused by the table. Not changed.
+
+**Decided: the Profile form refuses a display name WordPress would not keep.**
+`AccountService::MAX_DISPLAY_NAME_LENGTH` is 250. A new method of the gateway,
+`AuthGateway::displayNameAsKept()`, gives the name as the account would hold it;
+`WordPressAuthGateway` answers with `sanitize_text_field()` and then the
+`pre_user_display_name` filters, on the slashed text `updateProfile()` hands WordPress, and
+a test holds it to what the database has after a save, for eight names. The service counts
+that text in characters and answers `display_name_too_long` with nothing saved. It is the
+rule #333 made for a username and #338 for an address: what WordPress would silently not
+keep is refused here, where a reason can be given.
+
+- **Two messages under the one code.** A name over 250 as typed is told "Please use one of
+  250 characters or fewer." A name within 250 as typed and over it as kept is told that a
+  character such as `&` or `<` is kept as several: told the number, that person would count
+  250 and be sent round again.
+- **250 and not a smaller number.** What a display name should be at most is a matter of
+  taste, and nobody asked for one. 250 is what the account can hold.
+- **The empty-name rule moved** into the same private method, unchanged.
+- **The form's field has no `maxlength`.** Three open pull requests rewrite
+  `AccountRenderer` (#380, #381, #383), and a `maxlength` of 250 would be wrong for a name
+  with an `&` in it. The server's answer is shown under the button like any other.
+
+**Weighed, and not built: whether a record that cannot be written should fail the request.**
+The owner's question was whether a failure to write the activity record should ever fail
+the request that did the real work. What the code does today, read:
+
+- Every caller but one lets the exception out. Each of them records after its work is
+  done, so the exception undoes nothing: it turns a request that succeeded into a 500, and
+  the person tries again. For an access request that was a second request. Three of the
+  callers are job handlers (an export, an import, a migration); what the job runner makes
+  of an exception from one was not read.
+- `ReleaseRecord::write()` catches it, with the reason written beside the catch: the
+  activity table is one of the release being installed, and the installer's own log has
+  the event either way.
+
+My recommendation, for the owner to take or overrule:
+
+1. **A member's own request** (the account add-on: a profile saved, sessions ended). The
+   record there is the member's own notification feed. Its failure should not be the
+   member's answer: catch it in `ProfileServiceProvider::recordAccountEvent()` and write it
+   to the error log.
+2. **An administrator's audited action** (a role's abilities, a change on CoreX → Data, a
+   submission deleted). There the record is the audit FR-005 asks for, and an action that
+   is done and not recorded is the thing an audit exists to prevent. The answer that keeps
+   the audit is not to swallow the failure after the work, and not to fail after it
+   either: it is to write the record in the same database transaction as the work, or
+   before it, so that work with no record cannot be. That is a change to each of those
+   services and wants a spec of its own.
+
+Neither is built here. With the three texts cut, the one cause measured is gone, and what
+is left is a database that refuses a row it has room for, which was not seen. Swallowing an
+audit failure is a security decision, and catching in one caller and not the others would
+leave two rules with no record of why. It is under "Open, and not hidden" in PROGRESS.md.
+
+**Measured after the change**, the same requests over HTTP on the same install:
+
+- A display name of 192 and of 250: 200, the name stored whole, one record each. 251: 422,
+  `display_name_too_long`, "That display name is too long to keep. Please use one of 250
+  characters or fewer.", and the first name sent with it not stored.
+- With the name of 250 stored: a first name alone, 200; "sign out other sessions", 200.
+- 250 characters of which ten are `&`: 422, with the message about `&`, nothing stored.
+- The editor with a name of 250 from WordPress's own screen, asking for access: 200, one
+  request stored.
+
+**Seen on the way, and left.**
+
+- `POST corex/v1/access/requests` stores a second request for the same ability from the
+  same person. `AccessService::pendingRequestFor()` exists, with a comment that every
+  caller must get the same answer, and the route does not ask it. Seen in the measurement
+  above, not looked into further.
+- WordPress's profile screen answers "updated" for a nickname of 251 characters chosen as
+  the display name and keeps the old name. It is WordPress's, and CoreX has no part in it.
+- A display name with `&` in it is kept by WordPress as `&amp;`. What each CoreX screen
+  prints for such a name was not read.
+
+**Tests.** Unit, `ActivityServiceTest`: a text of exactly 191 characters is kept, one of
+192 is cut to 190 and an ellipsis, and the count is of characters (Arabic).
+`ActivityTableTest`: the three columns are as wide as the constant. `AccountServiceTest`:
+250 is saved, 251 is refused with the number and without reaching the gateway, 250 Arabic
+letters are saved, and a name the gateway would keep longer is refused without the number.
+Integration, on real WordPress: `ActivityLongTextTest`, three, through the container's
+service onto the real table; `ProfileDisplayNameLengthTest`, fifteen, through the route as
+`rest_do_request()` dispatches it: three names over 191 are saved and recorded cut, three
+names WordPress would not keep are refused with nothing saved, an account given a name of
+250 the way WordPress's screen gives it saves its profile and ends its other sessions, and
+eight names are measured as the database then has them. Each part of the change was taken
+out in turn and the tests run: the cut, counting characters in the cut, the refusal, the
+gateway's measure, counting characters in the refusal, and the second message. Every one
+failed at least one test.
+
+**Client impact.** A site with a gateway of its own for the account add-on adds
+`displayNameAsKept()`. Read in both checkouts on 2026-10-13: neither Muva's nor Perego's
+own code implements `AuthGateway` or calls `ActivityService`. No table changed, no screen
+changed, and there is nothing to rebuild. Records already written are as they were.

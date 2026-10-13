@@ -94,6 +94,11 @@ What to know before resuming each:
   is printed before adding a place that prints one. An Email Studio template's subject, and a
   value merged into it, are read by the same rule (DECISIONS #330; on `main` after v0.45.2,
   not released): nothing is stripped, and a line break in a merged value is a space.
+- **The activity record.** `ActivityService::record()` cuts an actor's label, a target's
+  label and a target's id to `ActivityEvent::LONGEST_TEXT`, 191 characters, which is also
+  what `ActivityTable` makes the columns (DECISIONS #340; on `main` after v0.45.2, not
+  released). A new caller may hand over a name of any length. `kind` (100) and
+  `target_type` (64) are not cut: hand them text written in code.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -213,12 +218,23 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   comment (measured 2026-10-13). Putting them right rewrites a site's accounts and comments
   and is the owner's to ask for. The add-on is off in Muva's decision record and on the
   Perego and Mizzey development installs; their live hosts were not read.
-- **A display name of more than 191 characters breaks the Profile form.** Measured on
-  2026-10-13 through the route: a name of 192 to 250 characters is saved and the request
-  then throws, because the activity record holds a name in 191 and
-  `WpActivityRepository::append()` raises when its insert is refused; a name of 251 is not
-  stored at all, while a first name sent with it is. Seen while measuring DECISIONS #338.
-  Not changed.
+- **A record that cannot be written still fails the request that did the work.** Every
+  caller of `ActivityService::record()` but the release installer lets the repository's
+  exception out, after its work is done, so the person is answered 500 for something that
+  happened. The one cause measured, a name longer than the table holds, is gone
+  (DECISIONS #340). What is left was not seen: a database refusing a row it has room for.
+  #340 holds a recommendation and no code: a member's own request (a profile saved,
+  sessions ended) should not be failed by its record; an administrator's audited action
+  should have its record written with the work, in one transaction, so that neither can be
+  without the other, which wants a spec. The owner's to decide.
+- **`POST corex/v1/access/requests` stores a second request for the same ability from the
+  same person.** Measured on 2026-10-13 while measuring #340: two posts, two requests.
+  `AccessService::pendingRequestFor()` is asked by the form in the admin and not by the
+  route. Not looked into further, not changed.
+- **The Profile form's Display name field has no `maxlength`.** A name WordPress would not
+  keep is refused by the server with a reason (DECISIONS #340). The field was left alone
+  because three open pull requests rewrite the block's markup, and because 250 is the
+  number only for a name with no `&` or `<` in it.
 - **A login made for a long address can still be refused by something else.** An address
   of 61 to 100 characters with no username gets a login made from its first part
   (DECISIONS #338). A listener on `pre_user_login` or `illegal_user_logins`, or a second

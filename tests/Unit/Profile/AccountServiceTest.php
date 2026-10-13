@@ -354,17 +354,20 @@ it('forbids editing a profile that is not the current user', function () {
         ->and($gateway->calls)->toBe([]);
 });
 
-it('saves a display name of the longest an account holds', function () {
+it('saves a display name of the longest an account holds, counted in characters', function (string $letter) {
     $gateway = new FakeAuthGateway();
     $gateway->currentUserId = 7;
 
     $result = makeAccountService($gateway)->updateProfile(7, [
-        'display_name' => str_repeat('n', AccountService::MAX_DISPLAY_NAME_LENGTH),
+        'display_name' => str_repeat($letter, AccountService::MAX_DISPLAY_NAME_LENGTH),
     ]);
 
     expect($result->success)->toBeTrue()
         ->and($gateway->calls)->toBe(['updateProfile']);
-});
+})->with([
+    'a letter of one byte' => ['n'],
+    'an Arabic letter, which is two' => ['م'],
+]);
 
 it('refuses a display name longer than an account holds, and says how long one can be', function () {
     $gateway = new FakeAuthGateway();
@@ -379,18 +382,6 @@ it('refuses a display name longer than an account holds, and says how long one c
         ->and($result->code)->toBe('display_name_too_long')
         ->and($result->message)->toContain((string) AccountService::MAX_DISPLAY_NAME_LENGTH)
         ->and($gateway->calls)->toBe([]);
-});
-
-it('counts a display name in characters, not in bytes', function () {
-    $gateway = new FakeAuthGateway();
-    $gateway->currentUserId = 7;
-
-    // An Arabic letter is two bytes.
-    $result = makeAccountService($gateway)->updateProfile(7, [
-        'display_name' => str_repeat('م', AccountService::MAX_DISPLAY_NAME_LENGTH),
-    ]);
-
-    expect($result->success)->toBeTrue();
 });
 
 it('refuses a display name that fits as it was typed and not as the account would hold it', function () {

@@ -55,6 +55,19 @@ An account's address has 100 characters at most. A longer one is refused at regi
 and on the **Profile** form, with a message that says so. WordPress itself reports no
 error for such an address and stores nothing.
 
+## Display names
+
+A display name has 250 characters at most. A longer one is refused on the **Profile** form
+with a message that says so, and nothing sent with it is saved. WordPress itself reports no
+error for such a name: the account keeps the name it had.
+
+WordPress keeps `&` as five characters and a `<` on its own as four, so a name with either
+in it reaches 250 sooner than it looks. The form says that too when it is the reason.
+
+A name of up to 250 characters is saved whole. The record of the change holds a name in
+191 characters, so where an administrator reads that record (the recent activity on the
+CoreX overview, for one) a longer name is its first 190 characters and an ellipsis.
+
 The rule is WordPress's own `validate_username()`, so a plugin that widens or narrows what a
 username may hold through the `sanitize_user` or `validate_username` filters is followed.
 
@@ -79,7 +92,7 @@ All routes live under `corex/v1/account/`:
 | `POST register` | public | Create an account (honeypot + captcha gated). Answers `422` with the code `invalid_username` for a username WordPress would alter, `email_too_long` for an address over 100 characters, and `username_required` when no username was typed and no login can be made from the address. |
 | `POST reset-request` | public | Email a reset link (generic response — no user enumeration). |
 | `POST reset` | public | Set a new password from a valid reset key. |
-| `POST profile` | signed-in | Update the current user's profile. Answers `422` with the code `email_too_long` for an address over 100 characters. |
+| `POST profile` | signed-in | Update the current user's profile. Answers `422` with the code `email_too_long` for an address over 100 characters, and with `display_name_too_long` for a display name WordPress would keep in more than 250. |
 | `GET sessions` | signed-in | List the current user's active sessions. |
 | `POST sessions/revoke-others` | signed-in | End every other session. |
 | `POST sessions/revoke-all` | signed-in | End every session. |
