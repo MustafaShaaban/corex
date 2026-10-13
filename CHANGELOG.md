@@ -63,6 +63,13 @@ All notable changes to Corex are documented here. The format follows
   vector logo is passed over, since Gmail and Outlook draw nothing for one.
   `wp corex make:email-design` writes the same header (DECISIONS #322).
 
+- **The list of open access requests is answered to the people who decide them** (spec
+  079, FR-011a). `GET corex/v1/access/requests` needs a REST nonce and `manage_options`,
+  which is what the Access & Abilities screen and the decision route need. The route's
+  two methods were registered together under the check that suits asking for access;
+  each now has its own. Asking for access (`POST` on the same route) is open to anybody
+  signed in, as it was, and the screen shows its queue as it did (DECISIONS #346).
+
 ### Fixed
 
 - **A row of the account block's two lists is written for a person** (spec 068, FR-161g).
@@ -102,8 +109,37 @@ All notable changes to Corex are documented here. The format follows
   the page, which came back with the empty forms: a browser that runs no scripts is now
   shown a note above the forms saying that they need JavaScript. The forms still do not
   work without scripts, and the note names no other place to sign in, because on a site
-  with login protection on WordPress's own address is the hidden one (spec 068, FR-161c
+  with login protection on WordPress's own address is the hidden one (spec 068, FR-161e
   and FR-161d; DECISIONS #339).
+
+- **A member who forgot their password resets it on the account page** (spec 068, FR-158a
+  to FR-158c; the owner's decision). The account block asked WordPress for the reset email
+  and WordPress wrote its own link into it. Measured on WordPress 7.1.3: the member chose
+  the new password on `wp-login.php`, its "Log in" link led to WordPress's sign-in screen,
+  and signing in there ended at `wp-admin/profile.php`; the account page was not seen
+  again, and had no form that takes a reset key, though the route for one existed. Where
+  the Security Center moves the login, the email's link was the moved address. Now the
+  email's link is to the page the reset was asked from. That page takes the key out of its
+  address, shows a **Choose a new password** form and no other, and once the password is
+  saved says so above the sign-in form. A link that was used, or that WordPress no longer
+  takes, is answered "This password reset link is invalid or has expired. Please ask for a
+  new one." above the forms, one of which asks for one. The email is still WordPress's and is still
+  sent by WordPress: one address in it is changed, and only for a reset asked through the
+  account block (DECISIONS #341).
+
+- **Asking twice for the same access makes one request** (spec 079, FR-008a; DECISIONS
+  #343). `POST corex/v1/access/requests` stored a new request each time the same signed-in
+  person asked again for the same ability or area. Measured on WordPress 7.1.3 over HTTP:
+  two posts, two requests in the queue, two "created" entries in the audit log, two
+  notifications for whoever manages access and, on a site with an email route for
+  `access.request.created`, two emails. The form on a denied screen asked first whether a
+  request was open; the route did not, and nothing asked about a request for an area. The
+  question is now part of storing the request, so no caller can leave it out. A repeat is
+  answered `200` with `state: blocked` and the code `request_already_pending`, and nothing
+  is stored, audited or sent. Two asks at the same moment make one request as well: 36
+  pairs posted to two server processes at once stored one each. A request for something
+  else, from somebody else, or made after the first was decided or ran out, is a new
+  request. Requests a site already holds twice are left as they are.
 
 - **A long email address registers without a username, and one too long for an account is
   refused with a reason.** The registration form's Username field is optional, and without
@@ -140,6 +176,34 @@ All notable changes to Corex are documented here. The format follows
   Username field is treated the same way. An account with a username that is not an email
   address is named by it, as before (DECISIONS #335).
 
+- **An action is recorded, and its request answered, for a person whose display name is
+  longer than 191 characters.** The activity record holds the name of who did something,
+  the name of what it was done to and that thing's id in 191 characters each, and WordPress
+  holds a display name in 250. A record with a longer name was refused by its table, and
+  the request that had already done its work answered 500. Measured over HTTP: a member who
+  saved a display name of 192 to 250 characters on the account block was answered 500, with
+  the name saved; from then on every save of that profile was, and so was "sign out other
+  sessions", which had signed them out. WordPress's own profile screen takes such a name
+  from any member (a nickname chosen as the display name), and a person so named who asked
+  for access to a part of CoreX was answered 500 with the request stored, once for each
+  try. So for every action CoreX records under a person's display name: a role's abilities
+  changed, an access request made or decided, a change applied on CoreX → Data. A name, or
+  an id, longer than the record holds is now cut to 190 characters and an ellipsis in the
+  one place every record is made
+  (`Corex\Activity\ActivityService::record()`), and the record is written. The account
+  keeps its whole name (DECISIONS #340).
+
+- **A display name too long for an account is refused on the Profile form, and no longer
+  answered "Your profile has been saved."** WordPress holds a display name in 250
+  characters and does not refuse a longer one: the account kept the name it had, nothing
+  else of the account's row was saved, a first name sent with it was, and the form said the
+  profile was saved. The same happened to 250 characters with an `&` among them, because
+  WordPress keeps `&` as `&amp;`. The account block now refuses a name WordPress would keep
+  in more than 250 characters, with a message that says how long one may be, or that a
+  character such as `&` is kept as several when that is the reason, and saves nothing
+  (`display_name_too_long`). A name of up to 250 characters is saved, in any script: the
+  count is of characters (DECISIONS #340).
+
 - **The account block says what happened under the button that was pressed.** The
   `corex/account` block had one message line, above its forms, for everything the server
   answers: a refused sign-in, a refused registration, "a reset link is on its way", a saved
@@ -163,6 +227,23 @@ All notable changes to Corex are documented here. The format follows
   had theirs twice. An id now holds
   the block, the form and the field's name, so it is on the page once, also on a page that
   holds the block twice (spec 068, FR-161b; DECISIONS #337).
+
+- **A field of the account block tells the browser what it is for.** No field of the
+  `corex/account` block had an `autocomplete` value, which WCAG 2.2 asks for on a field
+  that collects something about the person (1.3.5) and which a browser and a password
+  manager read. Measured in Chromium: it read the empty registration form as a form that
+  changes a password, an old one and a new one, did not connect the forgot-password form
+  to an account, and listed four fields as missing the attribute. The sign-in fields are
+  now `username` and `current-password`, registration's email `email` and its two
+  passwords `new-password`, the forgot-password field `username`, the two passwords of
+  the form a reset link leads to `new-password`, and the profile's
+  fields `nickname` (the display name), `given-name`, `family-name` and `email`.
+  Chromium now reads registration as a new account and the forgot-password form as one
+  with a username. It offered to save the password after sign-in before, and still does.
+  Registration's optional username is left without a value: with `username` on it
+  Chromium wrote the person's saved email address into it, and an address with a `+` was
+  then refused as a username where the same person registered before (spec 068, FR-161c;
+  DECISIONS #342).
 
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
@@ -309,13 +390,48 @@ All notable changes to Corex are documented here. The format follows
   new in the `corex` text domain. Read on this machine on 2026-10-13: nothing under
   `sites/` in the Muva or Perego checkouts names the block, its lists or the two routes.
   Nothing to rebuild: the block's script and stylesheet are not built.
+- **A script that reads `GET corex/v1/access/requests` has to be signed in as somebody
+  who may open CoreX Access & Abilities.** Anybody else is answered `403`. Nothing in
+  CoreX read the list through the route: the screen is handed it with the page. In PHP,
+  `AccessController::requests()` is gone; the route's two methods call
+  `pendingRequests()` and `createRequest()`.
+
 - **The account block has a new element and a new sentence to translate.** Only for a
   site that has Corex Profile on. `<noscript><p class="corex-account__noscript">` is the
-  first child of `.corex-account`: a site that styles the block itself, or selects its
-  first child, sees it with scripting off only. Two strings are new in the `corex` text
-  domain: the note's, and "The site could not be reached, or its answer could not be
-  read. Please try again." Nothing to rebuild: the block's script and stylesheet are not
-  built.
+  first child of `.corex-account`, and the second on the two page loads that say what
+  became of a password reset, where the reset's message line stays first: a site that
+  styles the block itself, or selects its first child, sees it with scripting off only.
+  Two strings are new in the `corex` text domain: the note's, and "The site could not be
+  reached, or its answer could not be read. Please try again." Nothing to rebuild: the
+  block's script and stylesheet are not built.
+
+- **The password-reset email of a site that uses the account block links to the account
+  page, and a visitor chooses the new password there.** It applies to a site with the
+  Corex Profile add-on active and the `corex/account` block on a page; no other site sees a
+  change. The email's subject, wording and sender are unchanged: they are WordPress's. What
+  a site has to check: a page cache must pass a request with a query string to WordPress
+  (`?corex_reset_login=…&corex_reset_key=…`, then `?corex_reset=1`), which is what caches
+  do unless they were told to ignore query strings; and a site with code of its own that
+  calls `POST corex/v1/account/reset-request` keeps WordPress's link until it sends the
+  forgot-password form's hidden `page` field with the request. A plugin that rewrites the
+  whole reset email and leaves no address with the key in it is left alone. A reset asked
+  at `wp-login.php` is unchanged. For a site that styles the block itself: on the two page
+  loads that say what became of a reset, the block's first child is a
+  `.corex-account__status` again, with its `data-state`. Nothing to rebuild: no script or
+  style changed. Which client installs have the add-on on is in the entries below, and was
+  not read again for this one.
+
+- **A site with an access request store of its own has one method to rename, and a script
+  that asks for access has one field to read.** `Corex\Access\AccessRequestStore::create()`
+  is now `createUnlessPending()`: it returns `null` when the requester already has an open
+  request for the same ability or area, and has to ask and store as one step.
+  `AccessService::pendingRequestFor()` is removed; `requestAccess()` answers the question
+  itself, with a `blocked` result. A script that posts to `corex/v1/access/requests` is
+  answered `200` for a repeat, as it was, and has to read `data.result.state` to know that
+  nothing was created (DECISIONS #343). MUVA's and Perego's own code under `sites/` was
+  searched on 2026-10-13 and uses none of the three; mizzey was not read. Nothing to
+  rebuild: no script or style changed.
+
 - **The account block's message line moved, and its fields are 16 pixels narrower.** Only
   for a site that has Corex Profile on and styles the block itself. The one
   `.corex-account__status` that was the first child of `.corex-account` is gone; there is
@@ -342,6 +458,16 @@ All notable changes to Corex are documented here. The format follows
   switched off on Muva by its own decision record, and is inactive, with registration
   closed, on the Perego and Mizzey installs of the development machine, as read on
   2026-10-13; their live hosts were not read.
+- **A site with a gateway of its own for the account add-on has one method to add.**
+  `Corex\Profile\Account\AuthGateway` has a new method, `displayNameAsKept()`: the display
+  name as the account would hold it, which the Profile form's length rule is asked of. A
+  gateway that keeps a name as it is handed over returns it. Neither the Muva nor the
+  Perego site's own code implements the interface, as read in both checkouts on 2026-10-13.
+- **A name or an id longer than 191 characters is cut on the activity record.** Code of
+  your own that calls `Corex\Activity\ActivityService::record()` may hand it an actor's
+  label, a target's label and a target's id of any length: each is kept to 190 characters
+  and an ellipsis. Records already written are as they were, and none of them is longer:
+  the table refused those. No table changed and there is nothing to rebuild.
 - **The ids of the account block's fields changed.** Only for a site that has Corex
   Profile on and selects a field of the block by id in its own stylesheet or script.
   `corex-account-login`, `corex-account-password`, `corex-account-email` and the others
@@ -352,6 +478,15 @@ All notable changes to Corex are documented here. The format follows
   forms' `data-corex-account-form` values and every class are as they were. Read on this
   machine on 2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the
   block or an id of it. Nothing to rebuild.
+- **The account block's fields gain an `autocomplete` attribute.** Only for a site that
+  has Corex Profile on. Every labelled field of the block has one now, except the
+  registration form's optional username; the profile guide lists the values. A visitor's
+  browser may offer more than it did: Chromium takes the sign-in and the forgot-password
+  field for an email address as well as a username, and the registration form's passwords
+  for new ones. A site that prints its own sign-in form beside the block, or sets
+  `autocomplete` on these fields from its own script, should check that the two agree. No
+  id, name, class or route changed. Read on this machine on 2026-10-13: nothing under
+  `sites/` in the Muva or Perego checkouts names the block. Nothing to rebuild.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The

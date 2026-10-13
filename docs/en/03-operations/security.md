@@ -131,6 +131,11 @@ shows an operation identifier, a stack trace, a path or a raw API payload.
 `POST /corex/v1/access/requests/<id>/decision` answer JSON with unchanged status codes, for scripts, integrations and
 the admin screen's own controls. The admin endpoint is a second door onto the same service, not a replacement for it,
 and nothing in CoreX inspects `Accept` to decide between HTML and JSON.
+A second `POST /corex/v1/access/requests` from the same person for the same ability or area, while their first is still
+open, stores nothing. It is answered `200` with a result whose `state` is `blocked` and whose error code is
+`request_already_pending`; no audit entry is written and nobody is notified again. A script has to read
+`data.result.state`, not the status, to know whether a request was created. A request for a different ability or area,
+or one made after the first was decided or expired, is a new request.
 
 ### What the administrator sees
 
@@ -140,6 +145,11 @@ denial records the decision without granting access. Both write an audit entry.
 
 Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
 When nobody is waiting, it says nothing at all.
+
+`GET /corex/v1/access/requests` answers the same list as JSON, to the same people: it needs a REST nonce and
+`manage_options`, as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person
+who filed a request included, and a visitor who is not signed in `401`. A person sees their own open request on the
+screen that refused them, not through this route.
 
 ### A CoreX address that does not exist
 

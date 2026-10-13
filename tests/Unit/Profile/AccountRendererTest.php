@@ -8,6 +8,8 @@
  * Also that a field's id is its own on the page and its label is tied to it: the panel
  * prints several forms, and two of them have a field of the same name (DECISIONS #337).
  *
+ * And that a field tells the browser what it is for, its `autocomplete` value (DECISIONS #342).
+ *
  * @package Corex\Tests\Unit\Profile
  */
 
@@ -15,6 +17,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Profile\Block\AccountRenderer;
+use Corex\Profile\Reset\ResetState;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -193,6 +196,7 @@ dataset('account panels', [
     'the signed-out panel with registration open'   => [['loggedIn' => false, 'registrationOpen' => true]],
     'the signed-out panel with registration closed' => [['loggedIn' => false, 'registrationOpen' => false]],
     'the signed-in panel'                           => [['loggedIn' => true]],
+    'the new-password panel of a reset'             => [['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')]],
 ]);
 
 it('prints no id twice', function (array $ctx) {
@@ -233,6 +237,7 @@ function accountScriptsOffNote(string $html): array
 dataset('account views', [
     'a visitor'          => [['loggedIn' => false, 'registrationOpen' => true]],
     'a signed-in person' => [['loggedIn' => true]],
+    'somebody choosing a new password' => [['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')]],
 ]);
 
 it('tells a browser that runs no scripts, once and before anything else, that the block needs them', function (array $ctx) {
@@ -243,9 +248,71 @@ it('tells a browser that runs no scripts, once and before anything else, that th
         ->and($note['markup'])->toContain('JavaScript');
 })->with('account views');
 
+it('keeps what a password reset says first, and the note next, above the forms', function (ResetState $reset) {
+    $note = accountScriptsOffNote((new AccountRenderer())->render(['loggedIn' => false, 'reset' => $reset]));
+
+    expect($note['count'])->toBe(1)
+        ->and($note['before'])->toMatch('~^<p class="corex-account__status"[^>]*>[^<]+</p>$~');
+})->with(['a link that expired' => [ResetState::expired()], 'a password that was saved' => [ResetState::done()]]);
+
 it('names no other place to sign in in that note, which is in the page for anybody', function (array $ctx) {
     $note = accountScriptsOffNote((new AccountRenderer())->render($ctx));
 
     expect($note['markup'])->not->toBe('')
         ->and($note['markup'])->not->toContain('href');
 })->with('account views');
+
+/**
+ * What each text field tells the browser it is for: its `autocomplete` value, by form and
+ * field name, in the order printed. A field with no value gives null. A tick box and a field
+ * that travels hidden with its form collect nothing about the person and are left out.
+ *
+ * @return array<string, string|null>
+ */
+function accountFieldPurposes(string $html): array
+{
+    $xpath    = new DOMXPath(accountDocument($html));
+    $purposes = [];
+    foreach ($xpath->query('//form//input[not(@type="checkbox" or @type="hidden")]') as $field) {
+        $form                                                   = $xpath->evaluate('string(ancestor::form/@data-corex-account-form)', $field);
+        $purposes[$form . ': ' . $field->getAttribute('name')] = $field->hasAttribute('autocomplete')
+            ? $field->getAttribute('autocomplete')
+            : null;
+    }
+
+    return $purposes;
+}
+
+it('tells the browser what each field is for', function (array $ctx, array $expected) {
+    expect(accountFieldPurposes((new AccountRenderer())->render($ctx)))->toBe($expected);
+})->with([
+    'the signed-out forms, registration open' => [
+        ['loggedIn' => false, 'registrationOpen' => true],
+        [
+            'login: login'               => 'username',
+            'login: password'            => 'current-password',
+            'register: corex_hp'         => 'off',          // the field left for bots is never filled in
+            'register: email'            => 'email',
+            'register: username'         => null,           // a browser would write the address into it
+            'register: password'         => 'new-password',
+            'register: password_confirm' => 'new-password',
+            'reset-request: login'       => 'username',
+        ],
+    ],
+    'the profile form' => [
+        ['loggedIn' => true],
+        [
+            'profile: display_name' => 'nickname',
+            'profile: first_name'   => 'given-name',
+            'profile: last_name'    => 'family-name',
+            'profile: email'        => 'email',
+        ],
+    ],
+    'the new-password form of a reset' => [
+        ['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')],
+        [
+            'reset: password'         => 'new-password',
+            'reset: password_confirm' => 'new-password',
+        ],
+    ],
+]);

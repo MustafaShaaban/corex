@@ -94,6 +94,11 @@ What to know before resuming each:
   is printed before adding a place that prints one. An Email Studio template's subject, and a
   value merged into it, are read by the same rule (DECISIONS #330; on `main` after v0.45.2,
   not released): nothing is stripped, and a line break in a merged value is a space.
+- **The activity record.** `ActivityService::record()` cuts an actor's label, a target's
+  label and a target's id to `ActivityEvent::LONGEST_TEXT`, 191 characters, which is also
+  what `ActivityTable` makes the columns (DECISIONS #340; on `main` after v0.45.2, not
+  released). A new caller may hand over a name of any length. `kind` (100) and
+  `target_type` (64) are not cut: hand them text written in code.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -101,6 +106,31 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of
+open access requests, has the Access & Abilities screen's own check (`manage_options`),
+as the decision route has; asking for access keeps its own (spec 079, FR-011a; DECISIONS
+#346). `tests/Integration/Access/AccessRequestsReadTest.php` holds it through the REST
+server, for each role. A lead, not built: a role given the `corex_manage_access` ability
+and not `manage_options` is addressed by the notification of a new request and cannot open
+the screen that decides it (read in the code, not walked in a browser); the list, the
+decision route and the screen's menu entry would move to the ability together.
+
+**After v0.45.2, not released, 2026-10-13.** A person who asks twice for the same access has
+one request (spec 079, FR-008a; DECISIONS #343). `POST corex/v1/access/requests` stored a
+request, an audit entry and a notification for every repeat; the form on a denied screen
+did not. The question is asked where the request is stored
+(`AccessRequestStore::createUnlessPending()`, under a lock named for the requester), so the
+route, the form and two asks at the same moment get one answer.
+
+**After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
+the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
+three questions). The reset email is still WordPress's; its link is to the page the reset
+was asked from, where the block shows a new-password form. Before, the link was to
+`wp-login.php`, the member ended in `wp-admin`, and where the login is moved the email
+carried the moved address. `addons/corex-profile/src/Reset/` holds it;
+`tests/e2e/account-reset.spec.js` walks it in a browser, with a fixture that keeps the
+email and sends nothing.
 
 **After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
 soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
@@ -155,6 +185,27 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **`POST corex/v1/access/requests` answers 500 for a request it refuses for what it says.**
+  An empty reason, a key that is not an ability's or an area's (`forms`, where the area is
+  `forms-flows`), both an ability and an area, or neither: the service throws and the route
+  does not catch it. Measured on 2026-10-13 over HTTP, signed in as an editor: "There has
+  been a critical error on this website", and a fatal error in the PHP log for each post.
+  A reason over 2,000 characters takes the same path; that one was read, not posted. The
+  form on a denied screen catches the same refusal and shows the field error. Not changed
+  with DECISIONS #343: what the route should answer changes what a script reading status
+  codes sees, which is a decision of its own.
+- **A site that already holds the same access request twice keeps both.** Each is listed in
+  the queue and decided on its own. Nothing merges or removes them, and whether a client
+  site holds one was not read.
+- **One open request per person rests on a MySQL named lock, on one database server.** The
+  lock is asked for on the connection WordPress is using (DECISIONS #343). On a site whose
+  database plugin sends reads to replicas, two requests could ask two servers for it and
+  both be told yes; two asks at the same moment could then both be stored, as they were
+  before. Read, not run: no such site was at hand.
+- **No test in CI posts two access requests at once.** What keeps the lock in place is an
+  integration test that reads, when the row is written, that the lock is held, and
+  afterwards that it was let go. The two-process run (36 pairs, one request each) was made
+  by hand on 2026-10-13.
 
 - **A client site's own notification email does not link to the submission yet.** CoreX's
   email names a form's file and links to the submission in the inbox (DECISIONS #319,
@@ -200,12 +251,31 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   account when its owner signs in on the account block; nothing moves the others, and
   nothing lists them. Moving one signs its owner out of their other browsers, once
   (measured, #334).
-- **The account block's fields do not say what they are for.** Read from
-  `AccountRenderer::fieldsOf()` on 2026-10-13, not measured: no field has an `autocomplete`
-  value (`username`, `current-password`, `new-password`, `email`, a name). WCAG 1.3.5 asks
-  for it on fields that collect something about the person, and it is what a password
-  manager reads to offer the saved password at sign-in and a new one at registration. Not
-  changed (seen while building DECISIONS #337).
+- **The registration form's username does not say what it is for.** Every other labelled
+  field of the account block has an `autocomplete` value since DECISIONS #342. This one
+  is left without `username` because of what was measured in Chromium 153 on 2026-10-13:
+  it writes the person's saved email address into a field marked `username`, and an
+  address with a character a username cannot hold (`name+shop@example.com`) is then
+  refused as a username, where the same person registers with the field empty. The field
+  can have the value once a username that is the person's own address is taken as no
+  username in `AccountService::register()`; that file was in open pull request 384 when
+  this was written. Until then that field does not meet WCAG 1.3.5.
+- **After a registration the browser does not offer to save the new password.** Measured
+  in Chromium 153 on 2026-10-13, before and after DECISIONS #342: its password manager
+  holds the address (or the username) and the new password while the form is filled in,
+  and decides nothing when "Your account has been created" is written, because the filled
+  form stays on the page. After a sign-in the page is loaded again and it offers. Not
+  changed.
+- **Chromium does not know `nickname`.** The profile's display name has that value
+  (DECISIONS #342 has why it is not `name`). Chromium fills nothing into the field, as
+  before, and its developer tools list the value as one it does not recognise;
+  WordPress's own profile screen has the same on its nickname field. Not changed.
+- **The account block's `autocomplete` values were measured in Chromium only.** Not in
+  Firefox or Safari, not with a password manager that is not Chromium's own, and not in a
+  Chrome signed in to an account, where a made-up password would be offered at
+  registration. On the form a reset link leads to, Chromium reads a new password and its
+  confirmation and no username (the login is in a hidden field), so which saved password
+  it would offer to update was not seen.
 - **A page that holds the account block twice fills one block's lists.** Read from
   `account.js`, not run: the session list and the recent-activity list are found with
   `document.querySelector`, so a second block's lists stay empty for a signed-in person.
@@ -281,12 +351,23 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   comment (measured 2026-10-13). Putting them right rewrites a site's accounts and comments
   and is the owner's to ask for. The add-on is off in Muva's decision record and on the
   Perego and Mizzey development installs; their live hosts were not read.
-- **A display name of more than 191 characters breaks the Profile form.** Measured on
-  2026-10-13 through the route: a name of 192 to 250 characters is saved and the request
-  then throws, because the activity record holds a name in 191 and
-  `WpActivityRepository::append()` raises when its insert is refused; a name of 251 is not
-  stored at all, while a first name sent with it is. Seen while measuring DECISIONS #338.
-  Not changed.
+- **A record that cannot be written still fails the request that did the work.** Every
+  caller of `ActivityService::record()` but the release installer lets the repository's
+  exception out, after its work is done, so the person is answered 500 for something that
+  happened. The one cause measured, a name longer than the table holds, is gone
+  (DECISIONS #340). What is left was not seen: a database refusing a row it has room for.
+  #340 holds a recommendation and no code: a member's own request (a profile saved,
+  sessions ended) should not be failed by its record; an administrator's audited action
+  should have its record written with the work, in one transaction, so that neither can be
+  without the other, which wants a spec. The owner's to decide.
+- **`POST corex/v1/access/requests` stores a second request for the same ability from the
+  same person.** Measured on 2026-10-13 while measuring #340: two posts, two requests.
+  `AccessService::pendingRequestFor()` is asked by the form in the admin and not by the
+  route. Not looked into further, not changed.
+- **The Profile form's Display name field has no `maxlength`.** A name WordPress would not
+  keep is refused by the server with a reason (DECISIONS #340). The field was left alone
+  because two open pull requests rewrite the block's markup (#381, #383), and because 250
+  is the number only for a name with no `&` or `<` in it.
 - **A login made for a long address can still be refused by something else.** An address
   of 61 to 100 characters with no username gets a login made from its first part
   (DECISIONS #338). A listener on `pre_user_login` or `illegal_user_logins`, or a second
@@ -295,7 +376,20 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **A new member who chose a password is emailed a link to set one.** The account gateway
   sends WordPress's own new-user email, which reads "To set your password, visit the
   following address:". Read on 2026-10-13 from what was handed to `wp_mail()`; what
-  following the link does to the chosen password was not run. Not changed.
+  following the link does to the chosen password was not run. Not changed. Its link is
+  WordPress's own, the one the reset email carried until DECISIONS #341; what this email
+  says waits on the owner, and the two emails are meant to end up alike.
+- **The reset email is WordPress's plain text, and a page with no mark gets WordPress's
+  link.** Sending it in the standard design was put to the owner and left for the decision
+  on the new member's email (DECISIONS #341). The link comes back to the account page only
+  when the forgot-password form carried the page's mark: a page a cache stored before the
+  release does not until it is stored again, and neither does the block in a template that
+  is not one page or post.
+- **A signed-in member can read the address login protection gives the login.** The
+  account block's Sign out link and the admin bar's are WordPress's logout address, and a
+  signed-in subscriber is served `/wp-admin/`. Measured on 2026-10-13. The owner accepted
+  it (DECISIONS #341); changing it is a sign-out of the add-on's own and no admin bar for
+  members, which is not specified.
 - **A login made from an address is altered by WordPress, and that is left.** With no
   username typed, `name+shop@example.com` gets the login `nameshop@example.com`; the person
   signs in with the address, as measured (DECISIONS #333). An account registered before

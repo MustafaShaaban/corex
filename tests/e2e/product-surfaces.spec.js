@@ -17,8 +17,11 @@
  * several forms, two of which ask for the same thing, so a label is followed to its field in
  * the browser, and a field's name is read from the browser's own accessibility tree.
  *
+ * And that a field tells the browser what it is for (spec 068, FR-161c): the `autocomplete`
+ * value a browser and a password manager read, on the page a visitor is served.
+ *
  * And what the block says when there is no answer to show: a request that does not arrive or
- * is answered with a page (FR-161c), and a browser that runs no scripts (FR-161d).
+ * is answered with a page (FR-161e), and a browser that runs no scripts (FR-161d).
  *
  * And what a signed-in person is shown under "Active sessions" and "Recent activity": the
  * list, or that there is nothing to list, or that the list could not be loaded (FR-161f).
@@ -219,6 +222,51 @@ function labelTies( page ) {
 		);
 }
 
+/**
+ * What each field of a signed-out form tells the browser it is for: its `autocomplete` value,
+ * and null for a field that has none. The field left for bots is never to be filled in; the
+ * username somebody may choose at registration is left alone, because Chromium writes the
+ * person's address into a field marked `username` (DECISIONS #342).
+ */
+const SIGNED_OUT_PURPOSES = {
+	login: { login: 'username', password: 'current-password' },
+	register: {
+		corex_hp: 'off',
+		email: 'email',
+		username: null,
+		password: 'new-password',
+		password_confirm: 'new-password',
+	},
+	'reset-request': { login: 'username' },
+};
+
+/**
+ * The `autocomplete` value of each field of the block a person fills in, by form and field
+ * name. A tick box and a field that travels hidden with its form collect nothing.
+ *
+ * @param {import('@playwright/test').Page} page The page.
+ * @return {Promise<Object>} For each form on the page, its fields' values; null where a field has none.
+ */
+function fieldPurposes( page ) {
+	return page
+		.locator(
+			'[data-corex-account-form] input:not([type="checkbox"], [type="hidden"])'
+		)
+		.evaluateAll( ( fields ) => {
+			const purposes = {};
+			fields.forEach( ( field ) => {
+				const form = field.form.getAttribute(
+					'data-corex-account-form'
+				);
+				purposes[ form ] = purposes[ form ] || {};
+				purposes[ form ][ field.name ] =
+					field.getAttribute( 'autocomplete' );
+			} );
+
+			return purposes;
+		} );
+}
+
 /** Why a test that reads the browser's own accessibility tree is skipped outside Chromium. */
 const CHROMIUM_ONLY =
 	'The accessibility tree is read over the DevTools protocol, which only Chromium speaks.';
@@ -333,6 +381,25 @@ test( 'every field of the signed-out account block has the name its label gives 
 	await page.context().close();
 } );
 
+test( 'a field of the signed-out account block tells the browser what it is for', async ( {
+	browser,
+} ) => {
+	const page = await openAccount( browser, WINDOWS[ 0 ], SIGNED_OUT );
+
+	const purposes = await fieldPurposes( page );
+	// Sign-in and the forgotten password form are on every site; registration where it is open.
+	expect( Object.keys( purposes ) ).toEqual(
+		expect.arrayContaining( [ 'login', 'reset-request' ] )
+	);
+	for ( const [ form, fields ] of Object.entries( purposes ) ) {
+		expect( fields, `the fields of the ${ form } form` ).toEqual(
+			SIGNED_OUT_PURPOSES[ form ]
+		);
+	}
+
+	await page.context().close();
+} );
+
 for ( const view of WINDOWS ) {
 	test( `a refused sign-in says so under the Sign in button, in ${ view.name }`, async ( {
 		browser,
@@ -394,7 +461,7 @@ for ( const view of WINDOWS ) {
 	} );
 }
 
-/** The ways the sign-in request ends with nothing of the server's to show (FR-161c). */
+/** The ways the sign-in request ends with nothing of the server's to show (FR-161e). */
 const WITHOUT_AN_ANSWER = [
 	{
 		name: 'does not arrive',
