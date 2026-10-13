@@ -131,7 +131,7 @@ final class SupportPanel
     {
         $options = '';
 
-        foreach (SupportRequestController::categories() as $key => $label) {
+        foreach (SupportCategory::labels() as $key => $label) {
             $options .= '<option value="' . esc_attr($key) . '">' . esc_html($label) . '</option>';
         }
 

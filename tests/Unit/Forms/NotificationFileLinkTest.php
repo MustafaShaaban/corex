@@ -24,6 +24,7 @@ use Corex\Forms\Submission\NotificationDispatcher;
 use Corex\Forms\Submission\SubmissionStore;
 use Corex\Forms\Submission\UploadedFileNames;
 use Corex\Mail\SubmissionAddress;
+use Corex\Tests\Support\LanguageOfTheRequest;
 
 const INBOX_OF_41 = 'https://example.test/wp-admin/admin.php?page=corex-submissions&corex_submission=41';
 
@@ -81,7 +82,7 @@ function notificationFor(array $values, ?int $storedAs = 41, ?SubmissionAddress 
     $mailer = requestKeepingMailer();
 
     (new SendEmailListener(
-        new NotificationDispatcher(null, $mailer),
+        new NotificationDispatcher(new LanguageOfTheRequest(), null, $mailer),
         emailListenerConfig(),
         new UploadedFileNames(applicationForms()),
         $addresses ?? inboxAddresses(),

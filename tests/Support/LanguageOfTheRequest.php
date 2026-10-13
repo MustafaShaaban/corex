@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Tests\Support;
 
-use Corex\Email\Language\EmailLanguage;
+use Corex\Mail\EmailLanguage;
 
 /**
  * Draws an email in whatever language the request is in: for a unit test of what an email is

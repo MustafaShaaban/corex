@@ -85,7 +85,19 @@ All notable changes to Corex are documented here. The format follows
   now drawn inside WordPress's own switch to the site's language, and the person's screen
   stays in theirs. The operator's own words keep their own direction, paragraph by
   paragraph, as before. Words made before the mailer is handed them (a code-defined form's
-  subject, the Guides support request) are not covered (DECISIONS #356).
+  subject, the Guides support request) are the next entry's (DECISIONS #356).
+
+- **The words CoreX writes into an email are in the site's language too** (spec 106,
+  FR-011b). Three kinds of word were still in the language of whoever triggered the email,
+  on a site that has CoreX's strings translated. The notification of a form defined in
+  code: its subject, the line that says where a file is opened and its link, and "The
+  submission contained no fields."; and a flow's notification on a site without CoreX Mail.
+  A Guides support message: what it is about, "a signed-in user", "no address given", and
+  on a site without CoreX Mail the subject and every line. And what Email Studio stores the
+  first time CoreX Mail runs: the names of its layouts and partials and the words of
+  "Unsubscribe", "Preferences" and "Privacy", which were in the language of whichever
+  administrator's page happened to be first. All are now written in the site's language.
+  What a person is told on screen about a send stays in their own (DECISIONS #362).
 
 - **A new submission of a form defined in code raises a notification.** Reported on
   2026-10-13 from a client site: dozens of submissions stored and no notification for any of
@@ -487,9 +499,23 @@ All notable changes to Corex are documented here. The format follows
   already sent is as it was sent. A client's own email design and its `corex_email_brand`
   filter are called inside the switch, so a string they translate is in the site's
   language too. In PHP, the constructors of `Corex\Email\Design\ReplyComposer` and
-  `Corex\Email\Template\TemplateRenderer` take a `Corex\Email\Language\EmailLanguage` as
+  `Corex\Email\Template\TemplateRenderer` take a `Corex\Mail\EmailLanguage` as
   their last argument; the container gives it, and only code that makes either with `new`
   has to pass one.
+
+- **A form's notification, a Guides support message and Email Studio's defaults follow the
+  site's language as well.** Nothing changes on a site that does not translate CoreX's own
+  strings: CoreX ships no translations of them, so there they are English before and after.
+  On a site that does translate them, those emails stop following the profile language of
+  whoever triggered them. **Email Studio's defaults already stored on a site are not
+  rewritten**: they stay in the language they were first stored in, and can be edited in
+  Email Studio. For code that calls these classes itself:
+  `Corex\Forms\Submission\NotificationDispatcher::dispatch()` takes, as its third argument,
+  a closure that returns the `Corex\Mail\MailRequest` (it took the request), and its
+  constructor takes a `Corex\Mail\EmailLanguage` first; `Corex\Guides\Support\SupportMailer`
+  takes one first too; `Corex\Guides\Support\SupportMessage` takes `category`, a key, where
+  it took `categoryLabel`; `SupportRequestController::categories()` is
+  `SupportCategory::labels()`. The container makes all of them.
 
 - **A site whose forms are registered in code starts to get the New submission
   notification.** Nothing to set. It is raised for submissions stored from now on:

@@ -67,6 +67,11 @@ final class NotificationDispatcher
 }
 ```
 
+As built, the method is `dispatch(string $trigger, array $context, Closure $written)`. `$written`
+returns the `Corex\Mail\MailRequest` the rungs below CoreX Mail's router send. It is called only
+when one of them sends, and inside `Corex\Mail\EmailLanguage::during()`, so the notification's
+own words are in the site's language (spec 106, FR-011b; DECISIONS #362).
+
 - **Contract:** MUST NOT delete or roll back a saved submission on failure (FR-013). MUST map
   `wp_mail()` success to `accepted`, never `sent` (FR-015). MUST record `not_attempted` with a reason
   when no attempt was required or possible (FR-014/018).

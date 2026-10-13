@@ -10,7 +10,7 @@ namespace Corex\Email\Design;
 
 defined('ABSPATH') || exit;
 
-use Corex\Email\Language\EmailLanguage;
+use Corex\Mail\EmailLanguage;
 
 /**
  * The one place a reply becomes an email: the message in the site's design, and the same words

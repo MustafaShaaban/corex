@@ -10,7 +10,7 @@ namespace Corex\Email\Template;
 
 defined('ABSPATH') || exit;
 
-use Corex\Email\Language\EmailLanguage;
+use Corex\Mail\EmailLanguage;
 
 /**
  * Renders a template against a context: replaces each `{{ path }}` with the

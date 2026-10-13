@@ -22,8 +22,6 @@ use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\SiteEmailBrand;
 use Corex\Email\Design\SiteEmailDesign;
 use Corex\Email\Design\StandardEmailDesign;
-use Corex\Email\Language\EmailLanguage;
-use Corex\Email\Language\SiteLanguage;
 use Corex\Email\Log\EmailLogRepository;
 use Corex\Email\Log\EmailLogStore;
 use Corex\Email\Recipients\RecipientResolver;
@@ -55,6 +53,7 @@ use Corex\Email\Queue\MailQueueDispatcher;
 use Corex\Email\Queue\MailQueueGate;
 use Corex\Email\Queue\QueuedMailer;
 use Corex\Foundation\ServiceProvider;
+use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 use Corex\Mail\RoutedMailer;
 use Corex\Mail\MailTemplateCatalog;
@@ -110,13 +109,6 @@ final class MailServiceProvider extends ServiceProvider
                     $c->make(Layout::class),
                 );
             },
-        );
-
-        // The language an email is drawn in: the site's, not that of the request that draws it,
-        // which in the admin is the signed-in person's own (DECISIONS #356).
-        $this->container->singleton(
-            EmailLanguage::class,
-            static fn (): SiteLanguage => new SiteLanguage(),
         );
 
         // What an email is drawn from, and in. One design and one source of the site's brand,
@@ -320,15 +312,20 @@ final class MailServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->container->make(EmailLayoutRepository::class)->installDefaults(
-            class_exists('WooCommerce'),
-            get_current_user_id(),
-            new \DateTimeImmutable('now'),
-        );
-        $this->container->make(EmailPartialRepository::class)->installDefaults(
-            get_current_user_id(),
-            new \DateTimeImmutable('now'),
-        );
+        // What is stored here is named, and in three partials worded, by CoreX, and the words go
+        // out in the site's emails. They are written in the site's language, not in that of
+        // whoever's request happens to be the first to reach `init` (DECISIONS #362).
+        $this->container->make(EmailLanguage::class)->during(function (): void {
+            $this->container->make(EmailLayoutRepository::class)->installDefaults(
+                class_exists('WooCommerce'),
+                get_current_user_id(),
+                new \DateTimeImmutable('now'),
+            );
+            $this->container->make(EmailPartialRepository::class)->installDefaults(
+                get_current_user_id(),
+                new \DateTimeImmutable('now'),
+            );
+        });
         update_option('corex_email_studio_defaults_version', self::STUDIO_DEFAULTS_VERSION, false);
     }
 

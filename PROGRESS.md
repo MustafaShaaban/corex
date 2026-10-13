@@ -107,21 +107,42 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** The words CoreX writes into an email are in
+the site's language too (spec 106, FR-011b; DECISIONS #362; a lead of #356, confirmed for
+all five places it named). A subject, a line of a body or a label translated before a
+mailer had it was in the language of the request. The seam moved to the core
+(`Corex\Mail\EmailLanguage`, `SiteLanguage`), because Forms and Guides write an email on a
+site without CoreX Mail, and is asked in three places: `NotificationDispatcher::dispatch()`
+takes a closure that writes the request and calls it inside the scope (both Forms
+senders); `SupportMailer::send()` asks for both renderings, and `SupportMessage` holds what
+it is about as a key (`SupportCategory`); `MailServiceProvider::registerEmailStudio()`
+installs the defaults inside it. `tests/Integration/Email/EmailWordsLanguageTest.php` runs
+each on WordPress both ways round, through `Corex\Tests\Support\AdministratorsRequest`.
+**A sender hands over what writes its words, or writes them inside
+`EmailLanguage::during()`; it does not translate and then hand over text.** CoreX ships no
+catalogue, so this changes an email only on a site that translates these strings itself.
+**With the owner:** whether Email Studio's defaults already stored on a site are rewritten
+(recommended: no; nothing is). Leads, not built: a send's stored outcome
+(`NotificationDelivery`'s reason) is kept in the language of the request that made it;
+`CreatedPosts::watch('attachment')` never hears of an attachment, so
+`NotificationFileLinkTest` leaves a row each run, and a run of the whole integration suite
+left five rows on a fresh install. **A test must not lean on a transaction to undo what it
+writes:** this machine's tables are MyISAM and a rollback undid nothing.
+
 **After v0.45.2, not released, 2026-10-13.** An email is drawn in the site's language,
 whoever's request draws it (spec 106, FR-011a; DECISIONS #356; decided on the owner's
 standing "you decide the best for me", and his to overrule). In the admin, and in any REST
 request `wp.apiFetch` makes, WordPress answers `is_rtl()`, `get_bloginfo('language')` and
 every translation for the signed-in person's profile language: a reply sent from the inbox
 by somebody who reads the admin in Arabic left an English site as `lang="ar" dir="rtl"`
-with its footer in Arabic. `Corex\Email\Language\SiteLanguage` makes WordPress's own switch
+with its footer in Arabic. `Corex\Mail\SiteLanguage` makes WordPress's own switch
 around the drawing in `ReplyComposer`, `TemplateRenderer` and the brand `Layout` asks for.
 `tests/Integration/Email/EmailLanguageTest.php` loads WordPress in a process of its own,
 both ways round, with no language pack. **A new place that draws an email draws it inside
-`EmailLanguage::during()`.** Leads, not built: words made before the mailer has them are
-still in the request's language (a code-defined form's subject, a flow's fallback subject,
-the Guides support request's subject and body); Email Studio's default partials are stored
-in the language of whichever request installed them (read, not run); and the recipient's
-own language, for an email to a person with an account, is the option not taken.
+`EmailLanguage::during()`.** Its two leads about words made before the mailer has them and
+Email Studio's stored defaults are the entry above. Still a lead, not built: the
+recipient's own language, for an email to a person with an account, is the option not
+taken.
 
 **After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
 raises the New submission notification (DECISIONS #352; the owner's report, relayed by the

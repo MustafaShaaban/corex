@@ -68,6 +68,7 @@ use Corex\Forms\Validation\Validator;
 use Corex\Forms\Success\SuccessStateRegistry;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Http\ClientAddress;
+use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 use Corex\Mail\RoutedMailer;
 use Corex\Mail\MailTemplateCatalog;
@@ -200,6 +201,7 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(
             NotificationDispatcher::class,
             static fn (ContainerInterface $c): NotificationDispatcher => new NotificationDispatcher(
+                $c->make(EmailLanguage::class),
                 $c->has(RoutedMailer::class) ? $c->make(RoutedMailer::class) : null,
                 $c->has(Mailer::class) ? $c->make(Mailer::class) : null,
             ),

@@ -103,6 +103,15 @@ final class CoreServiceProvider extends ServiceProvider
             static fn (): AdminDateTimeFormatter => new AdminDateTimeFormatter(),
         );
 
+        // The language an email is written and drawn in: the site's, not that of the request,
+        // which in the admin is the signed-in person's own (DECISIONS #356, #362). Bound here
+        // and not by CoreX Mail: a form's notification and a Guides support message are written
+        // on a site that has not switched that add-on on, too.
+        $this->container->singleton(
+            \Corex\Mail\EmailLanguage::class,
+            static fn (): \Corex\Mail\SiteLanguage => new \Corex\Mail\SiteLanguage(),
+        );
+
         // Default kit-activation seam (spec 042): a Null Object so corex-config can always resolve
         // KitProvisioner and degrade gracefully. The kit framework overrides this binding when active.
         $this->container->singleton(

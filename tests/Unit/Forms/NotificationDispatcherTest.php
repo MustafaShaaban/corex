@@ -19,6 +19,8 @@ use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
 use Corex\Mail\RoutedMailer;
+use Corex\Tests\Support\LanguageOfTheRequest;
+use Corex\Tests\Support\MarkedLanguage;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -56,8 +58,8 @@ it('routes through CoreX Mail when a routed mailer is bound and returns a result
         }
     };
 
-    $delivery = (new NotificationDispatcher($routed, null))
-        ->dispatch('forms.contact.submitted', ['x' => 1], fallbackRequest());
+    $delivery = (new NotificationDispatcher(new LanguageOfTheRequest(), $routed, null))
+        ->dispatch('forms.contact.submitted', ['x' => 1], fallbackRequest(...));
 
     expect($routed->seenTrigger)->toBe('forms.contact.submitted')
         ->and($delivery->status)->toBe(MailResult::STATE_QUEUED)
@@ -82,7 +84,7 @@ it('falls past a routed mailer that declines (returns null) to the next rung', f
         }
     };
 
-    $delivery = (new NotificationDispatcher($routed, $attempting))->dispatch('forms.contact.submitted', [], fallbackRequest());
+    $delivery = (new NotificationDispatcher(new LanguageOfTheRequest(), $routed, $attempting))->dispatch('forms.contact.submitted', [], fallbackRequest(...));
 
     expect($delivery->status)->toBe(MailResult::STATE_CAPTURED);
 });
@@ -95,8 +97,8 @@ it('uses the wp_mail floor when nothing above it is bound, mapping true to accep
         return true;
     });
 
-    $delivery = (new NotificationDispatcher(null, null))
-        ->dispatch('forms.contact.submitted', [], fallbackRequest());
+    $delivery = (new NotificationDispatcher(new LanguageOfTheRequest(), null, null))
+        ->dispatch('forms.contact.submitted', [], fallbackRequest(...));
 
     expect($sent)->toHaveCount(1)
         ->and($delivery->status)->toBe(MailResult::STATE_ACCEPTED)  // accepted, never sent (FR-015)
@@ -106,17 +108,93 @@ it('uses the wp_mail floor when nothing above it is bound, mapping true to accep
 it('records a retryable failure when wp_mail refuses the message', function () {
     Functions\when('wp_mail')->justReturn(false);
 
-    $delivery = (new NotificationDispatcher(null, null))
-        ->dispatch('forms.contact.submitted', [], fallbackRequest());
+    $delivery = (new NotificationDispatcher(new LanguageOfTheRequest(), null, null))
+        ->dispatch('forms.contact.submitted', [], fallbackRequest(...));
 
     expect($delivery->status)->toBe(MailResult::STATE_FAILED)
         ->and($delivery->retryable)->toBeTrue();
 });
 
 it('never throws when the wp_mail floor has no recipient — records not_attempted', function () {
-    $delivery = (new NotificationDispatcher(null, null))
-        ->dispatch('forms.contact.submitted', [], new MailRequest(to: [], subject: 'x', body: 'y'));
+    $delivery = (new NotificationDispatcher(new LanguageOfTheRequest(), null, null))
+        ->dispatch('forms.contact.submitted', [], static fn (): MailRequest => new MailRequest(to: [], subject: 'x', body: 'y'));
 
     expect($delivery->status)->toBe(\Corex\Forms\Submission\NotificationDelivery::STATUS_NOT_ATTEMPTED)
         ->and($delivery->reasonCode)->toBe('no_recipient');
+});
+
+/**
+ * A caller hands over what writes the notification, and it is written here. A request made
+ * before the dispatcher had it was in the language of the request (DECISIONS #362).
+ */
+function aNotificationToWrite(): Closure
+{
+    return static fn (): MailRequest => new MailRequest(
+        to: ['admin@example.com'],
+        subject: __('New submission', 'corex'),
+    );
+}
+
+it('has the notification written in the language of the email, for a bound mailer', function () {
+    $language = new MarkedLanguage();
+    Functions\when('__')->alias($language->said(...));
+    $mailer = new class implements AttemptingMailer {
+        public ?string $subject = null;
+
+        public function send(MailRequest $request): void
+        {
+        }
+
+        public function attempt(MailRequest $request): MailResult
+        {
+            $this->subject = $request->subject;
+
+            return okResult(MailResult::STATE_CAPTURED);
+        }
+    };
+
+    (new NotificationDispatcher($language, null, $mailer))
+        ->dispatch('forms.callback.submitted', [], aNotificationToWrite());
+
+    expect($mailer->subject)->toBe('[email] New submission')
+        // And the request is in its own language again once the notification is written.
+        ->and(__('New submission', 'corex'))->toBe('New submission');
+});
+
+it('has the notification written in the language of the email, for the wp_mail floor', function () {
+    $language = new MarkedLanguage();
+    Functions\when('__')->alias($language->said(...));
+    $subjects = [];
+    Functions\when('wp_mail')->alias(function ($to, $subject) use (&$subjects): bool {
+        $subjects[] = $subject;
+
+        return true;
+    });
+
+    (new NotificationDispatcher($language, null, null))
+        ->dispatch('forms.callback.submitted', [], aNotificationToWrite());
+
+    expect($subjects)->toBe(['[email] New submission']);
+});
+
+it('does not have the notification written when the router of CoreX Mail sent one', function () {
+    $routed = new class implements RoutedMailer {
+        public function dispatch(string $trigger, array $context): ?MailResult
+        {
+            return okResult(MailResult::STATE_QUEUED);
+        }
+    };
+    $written = 0;
+
+    (new NotificationDispatcher(new LanguageOfTheRequest(), $routed, null))->dispatch(
+        'forms.contact.submitted',
+        [],
+        static function () use (&$written): MailRequest {
+            $written++;
+
+            return fallbackRequest();
+        },
+    );
+
+    expect($written)->toBe(0);
 });

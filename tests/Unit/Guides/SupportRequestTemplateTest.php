@@ -31,7 +31,7 @@ beforeEach(function () {
 function supportMessage(string $message = 'The retention guide stops before the prune step.'): SupportMessage
 {
     return new SupportMessage(
-        categoryLabel: 'A suggestion',
+        category: 'suggestion',
         message: $message,
         replyTo: 'reader@example.test',
         senderName: 'Reader',

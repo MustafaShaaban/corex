@@ -14846,3 +14846,159 @@ translates is in the site's language (read on this machine, 2026-10-13; nothing 
 `sites/` in the Muva or Perego checkouts makes a `TemplateRenderer` or a `ReplyComposer`
 itself). In PHP, both constructors take an `EmailLanguage` as their last argument; the
 container gives it.
+
+## #362 — The words an email is made of are in the site's language too: they are written where the email's language is asked for, in one place for Forms and one for Guides, and Email Studio's defaults are stored in it
+
+**Date:** 2026-10-13. **Branch:** `fix/email-words-in-the-sites-language`, from the head of
+`fix/email-direction-is-the-triggering-persons` (#356, pull request #400, open when this was
+written). **Spec:** 106, FR-011b (added with this change).
+
+**What was reported.** A lead left by #356. That change draws an email in the site's
+language: `EmailLanguage::during()` is asked by `ReplyComposer`, `TemplateRenderer` and the
+closure that gives `Layout` its brand. It does nothing for a word that a caller translates
+before a mailer has it. Such a word is in the language of the request, which in the admin,
+and in any REST request `wp.apiFetch` makes, is the signed-in person's profile language.
+The lead named five places, read and not run.
+
+**Confirmed, all five.** On this branch's own install (WordPress 7.1.3, PHP 8.3.6, at
+`2f7aeb8c`), each as an admin request in a PHP process of its own, both ways round: an
+English site whose administrator reads the admin in Arabic, and an Arabic site whose
+administrator reads it in English. Every string of the `corex` domain is marked when it is
+translated while the request is in Arabic, so a word says which language it was made in.
+Mail was answered at `pre_wp_mail`; nothing was sent, and nothing was served over HTTP.
+
+| What | English site, Arabic-profile administrator | Arabic site, English-profile administrator |
+|---|---|---|
+| A code-defined form's notification: the subject, the line about files, its link, "The submission contained no fields." | all in Arabic | all in English |
+| A flow's notification where CoreX Mail is switched off: the subject | in Arabic | in English |
+| A Guides support message through CoreX Mail: the subject | the template's words in English, what it is about in Arabic | the reverse: an Arabic subject with an English label in it |
+| The same message's "a signed-in user" and "no address given" | in Arabic | in English |
+| A Guides support message where CoreX Mail is switched off: the subject and the six lines CoreX writes | in Arabic | in English |
+| Email Studio's defaults, when that request is the first to reach `init`: five partial names, three layout names, the three link texts and their plain-text lines | stored in Arabic | stored in English |
+
+The third row is the one #356 made worse to read: the template's own words moved to the
+site's language and the label handed to it did not.
+
+**How far it reaches today.** CoreX ships no catalogue for the `corex` domain
+(`plugins/corex-core/languages` holds a README). A word of CoreX's is in another language
+only on a site that translates it itself. Read on this machine, 2026-10-13: Perego
+translates some twenty form strings through `gettext_corex` and none of the strings above;
+nothing under `sites/` in the Muva checkout translates the domain. So neither client's
+emails change with this, and a site with no translation of these strings sends them in
+English whatever its language, before and after. The defect is real where a site has the
+strings translated, and it would have arrived with the first catalogue CoreX shipped.
+
+**The decision: where the site-language scope belongs.** Two shapes were on the table.
+
+1. *Hand the mailer what to translate, not translated text.* A request would carry a
+   subject as a string and its arguments, or as a closure, and the mailer would make the
+   words. Not taken. There is no one mailer: three things send (CoreX Mail's
+   `RequestMailer`, the `wp_mail()` floor in `NotificationDispatcher`, the one in
+   `SupportMailer`), and two of the five defects are on a site where CoreX Mail is off. A
+   `MailRequest` is also written to the queue as scalars (`MailRequestPayload`), which a
+   closure is not.
+2. *Write the words inside the scope, in the place that already owns writing them.* Taken.
+
+The scope is `EmailLanguage::during()`, the seam #356 made. **It moves to the core**:
+`Corex\Mail\EmailLanguage` and `Corex\Mail\SiteLanguage`, bound by `CoreServiceProvider`.
+It was in `addons/corex-email`, and Forms and Guides must write an email on a site without
+that add-on (Principle IX); the two fallback paths are exactly the ones that run there.
+Nothing was released under the old name.
+
+It is then asked in three places, not five:
+
+- **Forms: `NotificationDispatcher`.** Both senders already go through it, and it holds
+  both rungs below CoreX Mail's router. `dispatch()` no longer takes a `MailRequest` made by
+  its caller. It takes a closure that writes one, and calls it inside the scope, only when
+  a rung below the router sends. `SendEmailListener` and `EmailStage` hand over the closure
+  and hold no language themselves. A third caller cannot hand over words it has already
+  translated without going out of its way: the type asks for what writes them. One call
+  covers the subject of both, the listener's line about files and its link, and "The
+  submission contained no fields.", which `htmlBody()` writes from inside the closure.
+- **Guides: `SupportMailer::send()`.** It builds both renderings, so it asks once for the
+  subject, the template's values and the plain text. For that to be enough the message
+  must hold no word made earlier: `SupportMessage` takes what the message is about as a
+  key (`category`) and no longer as a label, and makes the label when asked. The list of
+  keys and their labels left `SupportRequestController` for `SupportCategory`, because the
+  form's select (in the reader's language) and the email (in the email's) both read it.
+- **Email Studio: `MailServiceProvider::registerEmailStudio()`**, around the two
+  `installDefaults()` calls. What is stored is named, and in three partials worded, by
+  CoreX, and the words go out in the site's emails. This is the same thing WordPress does
+  with "Uncategorized" and its sample page: written once, in the site's language at the
+  time.
+
+Wrapping each of the five places was the alternative. It needs the seam in five classes
+and leaves the next sender to remember a sixth.
+
+**What is left in the request's language, on purpose.** What a person is told on screen
+about a send: "No notification recipient was configured.", the Guides form's answers, a
+refusal. Those are read by whoever is signed in. `NotificationDispatcher` writes them
+outside the scope.
+
+**Email Studio's defaults on a site that has them.** Nothing stored is rewritten, and the
+question is the owner's. What such a site holds: posts of type `corex_email_asset`, three
+layouts (four with WooCommerce) and five partials, written once and marked by the option
+`corex_email_studio_defaults_version`; `installDefaults()` skips a slug that exists. Their
+names, and the link text and plain-text line of "Unsubscribe", "Preferences" and
+"Privacy", are in the language of whichever request first reached `init` after CoreX Mail
+was switched on. Read, not run: from the Plugins screen that is the next page the
+administrator who activated it is sent to, in their profile language; from the command
+line it is the site's language. Given the paragraph above, on a site that does not
+translate these strings they are English. The
+rows are versions an operator can replace in Email Studio. Three things could be done:
+leave them (recommended: there is nothing to gain where no translation exists, and a
+rewrite would have to tell an untouched default from an operator's edit); append a new
+version, in the site's language, of each default nobody has edited; or offer "restore the
+defaults" in Email Studio. None is built.
+
+**The tests.** `tests/Integration/Email/EmailWordsLanguageTest.php` runs the table above on
+WordPress, ten cases, each failing before this change: the listener through the
+container's dispatcher, with a file and a stored submission said and not made; the flow's
+`EmailStage` from the container with CoreX Mail left out of the request; the Guides form
+posted through `SupportRequestController::decide()` with and without CoreX Mail; and the
+provider's own install during `init`, into an in-memory store bound just before it, so the
+site's rows and its mark are neither read nor written. With each of the three scopes taken
+out in turn, the cases of that sender fail and the others pass.
+
+The request is `Corex\Tests\Support\AdministratorsRequest`, which #356's test now uses as
+well: the hooks that decide a request's language before WordPress loads, mail answered at
+`pre_wp_mail` and reported, and plugins left out for one request through
+`option_active_plugins`. It deletes the posts a request inserts. Its first version wrapped
+the request in a transaction and rolled it back, and that undid nothing: this machine's
+tables are MyISAM. Two runs emptied the scratch install's Email Studio rows before that was
+seen. No test of this file now deletes anything.
+
+Unit: `NotificationDispatcherTest` (the notification is written in the email's language
+for a bound mailer and for the floor, and not written when the router sent one),
+`SendEmailListenerTest`, `SupportMailerTest` (every word of both renderings), with
+`Corex\Tests\Support\MarkedLanguage`, which marks a word made inside `during()`.
+
+**Not run.** A served request: every case is an admin request in a process of its own. That
+the admin's REST requests are in the profile language was measured over HTTP for #356.
+
+**Left as leads.**
+
+- *Outcomes that are stored.* `NotificationDelivery`'s reason ("No notification recipient
+  was configured.") is translated in the request and kept with the submission as
+  `safe_reason`, which `WpSubmissionsReader` and the failed-email notification read back
+  later, for whoever is reading then. Read, not run.
+- *A catalogue.* Until CoreX ships translations of its own strings, an Arabic site's
+  "Unsubscribe" is English, which is a larger gap than the one closed here.
+- *Rows other tests leave.* `CreatedPosts::watch('attachment')` never hears of an
+  attachment: WordPress announces one as `add_attachment`, not `wp_insert_post`. On this
+  install `tests/Integration/Forms/NotificationFileLinkTest.php`, run alone, left one
+  attachment row behind (two before, three after); a run of the whole integration suite
+  left five rows (an attachment, three logged emails and a submission).
+
+**Client impact.** No email changes on a site that does not translate CoreX's strings. On
+one that does, a form's notification, a Guides support message and newly stored Email
+Studio defaults are in the site's language, not in that of whoever triggered them. In PHP:
+`Corex\Email\Language\EmailLanguage` and `SiteLanguage`, added by #356 and never released,
+are `Corex\Mail\EmailLanguage` and `Corex\Mail\SiteLanguage`;
+`NotificationDispatcher::dispatch()` takes a closure that returns the `MailRequest` where
+it took the request, and its constructor takes an `EmailLanguage` first; `SupportMailer`'s
+constructor takes one first; `SupportMessage` takes `category` (a key) where it took
+`categoryLabel`; `SupportRequestController::categories()` is `SupportCategory::labels()`.
+Nothing under `sites/` in the Muva or Perego checkouts calls any of them (read on this
+machine, 2026-10-13: Perego names `SendEmailListener` and `NotificationDispatcher` in
+comments only).
