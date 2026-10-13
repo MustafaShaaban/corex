@@ -39,6 +39,30 @@ did not arrive (the visitor is offline, or something blocked it), an answer that
 and not JSON (a server error page, a proxy's page), and a refusal that carries no message.
 It does not say that nothing was changed: a request can arrive and its answer be lost.
 
+### The two lists of the signed-in view
+
+**Active sessions** and **Recent activity** are loaded after the page opens. Under each
+heading there is one of three things:
+
+| What the site answered | What is shown |
+| --- | --- |
+| a list with rows | the rows |
+| a list with nothing in it | "No sessions are recorded for this account." or "No activity yet." |
+| no list: the request did not arrive, was answered with a page and not JSON, or was refused | "Your sessions could not be loaded. Load this page again to see them." or "Your recent activity could not be loaded. Load this page again to see it." |
+
+The sentence stands where the list would. It is not an answer to a button, so the page is
+not moved to it, and it is a paragraph and not a live region (`role="status"`): it is read
+where the list would be read. Rows shown earlier are not kept when a later request for the
+list fails.
+
+After **Sign out everywhere** the page is loaded again and shows the sign-in form: that
+button signs this browser out too.
+
+The sentence is `<p class="corex-account__list-note">`, which the script adds after the
+list, with `data-state="empty"` or `data-state="error"`. The list (`<ul>`) is `hidden`
+while it has no rows. With `data-state="error"` the sentence takes the colours of a refused
+form, the theme's `error` and `inverse` presets.
+
 ### Without JavaScript
 
 The forms need JavaScript. A browser that runs no scripts is shown a note above the forms

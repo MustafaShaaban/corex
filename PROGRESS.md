@@ -292,10 +292,24 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   file blocked, or the request for it failed, a form goes to the page as it does with
   scripts off, and the note for scripts being off is not shown. Read, not run. Only forms
   that work without scripts close it (DECISIONS #339).
-- **A signed-in person's sessions and recent activity say nothing when they do not load.**
-  `get()` in `account.js` has no rejection handler, so the two lists stay empty under
-  their headings. Read, not run. A form's or a session button's request that gets no
-  answer does say so now (DECISIONS #339, FR-161e).
+- **The session a person is using is never marked "this device" in the account block.**
+  Measured on 2026-10-13: every answer of `GET account/sessions` carried
+  `"current": false`, for the only session too. `SessionList::format()` compares each key
+  of what it is handed with the current session's verifier, and
+  `WP_Session_Tokens::get_all()` returns `array_values()`, so the keys are 0, 1, 2.
+  `SessionListTest` passes an array keyed by verifier, which WordPress never does. Not
+  changed (seen while building DECISIONS #345).
+- **A row of the account block's two lists is written for a machine.** Recent activity
+  lists `profile.updated · 2026-10-13T09:00:00+00:00`, an internal name and an ISO date; a
+  session is the browser's whole user agent string. And recent activity is not asked for
+  again after a profile is saved, so the save is not listed until the page is loaded again
+  (read from the script). Not changed.
+- **A list of the account block that does not load after a press is seen and not heard.**
+  The sentence in the list's place ("Your sessions could not be loaded. Load this page
+  again to see them.") is a paragraph and not a live region, so that it is not announced
+  on every visit as the page opens (DECISIONS #345, spec 068 FR-161f). The answer to the
+  press is announced; the list failing to refresh above it is not. There is no button to
+  try again: the sentence says to load the page.
 - **No screen reader was listened to on the account block.** That an answer is announced,
   and once, is read from where it is written (one polite status, in the page before its
   text changes; three of them in Chromium's accessibility tree on the signed-out page,
