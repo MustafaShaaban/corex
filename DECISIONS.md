@@ -14951,3 +14951,168 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #360 — The schema self-heal takes its lock only when the site is behind; a site that is current is asked one read and no write
+
+**Date:** 2026-10-13. **Branch:** `perf/schema-self-heal-locks-when-due`, from `main`.
+**Spec:** 100 (FR-035, which is unchanged: no schema is written from a front-end request).
+**Follows:** #299, and the second finding of #355 (which is on pull request #398 and was
+not on `main` when this was written).
+
+**The defect.** `Database\Schema\SchemaSelfHeal::run()` runs inside
+`MultisiteServiceProvider::boot()` on every request where `is_admin() || wp_doing_cron()`.
+It took its lock first and asked what there was to do second. On a site whose schema is
+current that is every admin page, every `admin-ajax.php` call and every `wp-cron.php` run,
+and each of them did this:
+
+| | Statements |
+|---|---|
+| Read the lock (`get_transient`) | 1 `SELECT` |
+| Take it (`set_transient`) | 2 `INSERT … ON DUPLICATE KEY UPDATE` |
+| Read each component's version, stored with autoload off | 4 `SELECT`, one a component |
+| Let it go (`delete_transient`) | 2 `SELECT autoload`, 1 `SHOW FULL COLUMNS`, 2 `DELETE` |
+
+Twelve statements, four of them writes to the options table, to find nothing to do. An
+admin screen left open asks `admin-ajax.php` on a timer (WordPress's heartbeat), so a tab
+nobody is looking at wrote to the options table four times a tick.
+
+**Measured again before anything was changed.** This branch's own install, served and not
+run from the command line: WordPress 7.1.3, PHP 8.3.6 on Windows through PHP's built-in
+server (one process), OPcache on, Xdebug not loaded, MySQL 8.3 on the same machine, no
+persistent object cache, every CoreX plugin and add-on active, signed out, code at
+`aec8169e`. An mu-plugin that does nothing without a request header recorded what
+`plugins_loaded` asked of the database, with callers, and in a second mode only how long it
+took. `GET /wp-admin/admin-ajax.php?action=nothing` (answers 400, `is_admin()` true) and
+`GET /wp-cron.php`. The twelve statements were there on both, as #355 lists them. Times are
+the median of 100 requests after five unmeasured ones, with the quartiles.
+
+**The change.**
+
+1. `SchemaSelfHeal::run()` asks `SiteMigrationRunner::isDueForSite()` first and returns when
+   the answer is no. Only a request that has found the site behind reads the lock, takes it,
+   runs and lets it go.
+2. `isDueForSite()` reads every registered component's version in one go, through a new
+   `SchemaVersionStore::getMany()`. The WordPress store answers it with
+   `wp_prime_option_caches()` and then `get_option()`: one `SELECT … WHERE option_name IN (…)`
+   however many components there are, and none on a site whose object cache outlives the
+   request. `pendingSiteIds()`, which `wp corex migrate --dry-run` uses, asks the
+   same question and so makes one read a site where it made one a component a site.
+3. A run decides from what is stored when it starts. `runCurrentSite()` calls a new
+   `SchemaVersionStore::forget()` and reads the versions again before it compares them. See
+   "The lock" below for why.
+
+**Autoloaded, or read in one statement: one statement, and the options stay as they are.**
+The version options are written with autoload off (`update_option($name, $version, false)`).
+Autoloading them would make the question free on a site with no object cache: they would
+arrive in the one query WordPress already makes for its autoloaded options. It was not
+done, for three reasons.
+
+- *It would not reach the sites that exist.* `update_option()` returns before it touches
+  the row when the value written is the value stored (read in WordPress 7.1.3,
+  `wp-includes/option.php`), and a version is written only when it changes. So a site that
+  holds its versions today would keep them with autoload off until its next schema change,
+  component by component. Moving them needs a step of its own
+  (`wp_set_option_autoload_values()`), run once per site of a network, and something that
+  knows whether it has run. That is a migration, with a write, to save one read.
+- *What it saves is one statement on an admin or cron request.* Nothing on the front end
+  reads these options. Autoloaded, they would be loaded by every front-end request to be
+  read by none.
+- *The one statement is already the smaller cost where it matters.* A site with a persistent
+  object cache answers `getMany()` from the cache and asks the database nothing, and
+  `wp_prime_option_caches()` passes over any name that is autoloaded, so a site whose
+  versions were ever made autoload by hand pays nothing either.
+
+For a site that has them stored with autoload off, which is every site: nothing is
+migrated, nothing stored changes, and from its first request on this code it makes the one
+read.
+
+**The lock, and what it is still for.** Two requests must not migrate a site at once, and a
+migration is announced once (`SiteMigrated`, and `corex_site_migrated` for a site's own
+plugin). Looking before locking is the usual shape for that, and it needs the second look,
+after the lock is held, to be a real one. It would not have been: WordPress remembers an
+option for the rest of the request once it has read it, a missing one included. A request
+that looked while another was finishing the same migration, and reached the lock just
+after the other let it go, would have compared the versions it remembered, run `dbDelta()`
+again and announced the migration a second time. That was built first without the second
+read, on purpose, and the test for it failed with `corex_site_migrated` fired where the
+site was already current. `forget()` drops the request's memory of those options (their
+entries in WordPress's `options` cache group, and their names in its `notoptions` entry),
+and the runner calls it at the start of every run, whoever asked for the run: the
+self-heal, `wp corex migrate`, a new site, and the Releases screen's finishing step, which
+reads the versions itself just before it runs.
+
+What is not changed: reading the lock and taking it are still two statements, so two
+requests that both find the site behind and both read the lock before either writes it
+still both run. That has been so since spec 100. `dbDelta()` twice over the same
+declaration changes nothing the second time; the announcement is made twice. Closing it
+needs a lock the database grants to one asker (`GET_LOCK()`, as #343 used for access
+requests), and is left as a lead.
+
+**Measured after**, same install, same method:
+
+| Request | `plugins_loaded` before | after | Queries in it before | after |
+|---|---|---|---|---|
+| `admin-ajax.php`, signed out | 11.06 ms (10.32 to 12.20) | 7.37 ms (7.10 to 7.74) | 23 | 12 |
+| `wp-cron.php` | 9.87 ms (9.59 to 10.26) | 7.25 ms (7.07 to 7.58) | 23 | 12 |
+| The front page | 7.32 ms (6.92 to 7.77) | 7.16 ms (6.84 to 7.62) | 11 | 11 |
+
+The self-heal's share went from twelve statements (2.1 to 2.3 ms spent in the database) to
+one (0.19 to 0.24 ms), and from four writes to none. An admin request's boot now costs what
+a front-end request's does, within what the quartiles can tell apart. A request that finds
+the site behind was watched too, served, with the newsletter's version removed: it makes
+the one read, reads the lock, takes it, reads the versions again, runs `dbDelta()` for the
+one component, stores its version and lets the lock go, 14 statements in all through the
+heal and the runner; the request after it makes the one read.
+
+**Tests.**
+
+- `tests/Integration/Schema/SchemaSelfHealRequestTest.php`, each request a PHP process of
+  its own, as `AddonTablesTest` does it, with the assertions on statements by name and not
+  on a total: an admin request and a cron run of a site that is current write nothing that
+  names the lock or a version option, name the lock in no statement at all, and name the
+  version options in one statement at most; a site made behind (one version row removed in
+  the database, the tables left) is brought up to date by its first admin request, with the
+  lock written and deleted and `corex_site_migrated` fired once, and its second request
+  fires nothing and names no lock; and a request for which another request's migration
+  lands between its look at the versions and its lock migrates nothing and announces
+  nothing. The first two failed on `main`, the first of them for the admin request and for
+  the cron run; the last failed on the change as first built.
+- `tests/Integration/Schema/SchemaVersionStoreTest.php`, against WordPress's own options:
+  three versions in one statement, with an empty string for the one not stored; a version
+  is stored with autoload off; and a version another request wrote is not seen until
+  `forget()`, whether the first read found a version or found none. The first and the last
+  were run against the store with the line each is about taken out, and failed.
+- `tests/Multisite/SchemaSelfHealTest.php`, each request a WP-CLI process in the admin
+  context with a listener loaded before WordPress: a site of the network that is current
+  names no lock, and reads its versions in one statement from its own options table; a site
+  made behind is brought up to date under a lock every statement of which names that site's
+  options table, `corex_site_migrated` carries that site's id once, and its neighbour's
+  version is as it was. Both failed with the four production files as they are on `main`.
+- Unit: `SchemaSelfHealTest` gains "takes no lock on an admin request of a site that is
+  current", and its other cases now start from a site that is behind, since a site with
+  nothing to do no longer reaches the lock; `SiteMigrationRunnerTest` gains `isDueForSite()`
+  and "decides a run from what is stored when it starts", with a store that remembers what
+  it has read, as a request does.
+
+Run on this branch's own installs, a single site and a network: the unit suite,
+`composer test:multisite` and the whole integration suite.
+
+**Found, and not changed.**
+
+- The lock is read and then taken, as above.
+- A component that cannot be brought up to date (its table cannot be made) leaves the site
+  behind, so every admin and cron request takes the lock and tries again. That is as it
+  was, and is where the twelve statements still happen.
+- `SchemaVersionStore::get()` is no longer called by the runner. `ReleaseFinisher` calls it
+  to say which version each component moved from.
+- The numbers before this one were taken when it was written and are not on `main`: #355
+  to #357 by pull requests #398, #400 and #401, #358 by a branch on this machine that is
+  not pushed (`fix/flow-protection-reads-the-request`), and #359 by pull request #403.
+
+**Client impact.** Nothing to do, and nothing stored changes. An admin page, an
+`admin-ajax.php` call and a cron run each make eleven fewer statements, four of them
+writes. `Corex\Database\Schema\SchemaVersionStore` has two more methods, `getMany()` and
+`forget()`: a site that binds a store of its own in place of
+`WpOptionSchemaVersionStore` has to add them, and nothing in this repository does; the
+client repositories were not opened for this. `SiteMigrationRunner::isDueForSite()` is new
+and is the way to ask whether a site is behind without running anything.

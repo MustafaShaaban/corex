@@ -107,6 +107,20 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** The schema self-heal takes its lock only when
+the site is behind (DECISIONS #360; the second finding of #355). On every admin page,
+`admin-ajax.php` call and cron run of a site that was current it made twelve statements,
+four of them writes to the options table. `SchemaSelfHeal::run()` now asks
+`SiteMigrationRunner::isDueForSite()` first, which reads every component's version in one
+statement (`SchemaVersionStore::getMany()`), and a run reads the versions again once the
+lock is held (`forget()`), so a migration another request has just finished is not run or
+announced twice. The version options stay stored with autoload off. An admin request's boot
+went from 11.1 ms to 7.4 ms on a development install.
+**Leads, not built:** reading the lock and taking it are two statements, as they have been
+since spec 100, so two requests that both find a site behind can both run; a lock the
+database grants to one asker would close it. The first finding of #355 (eleven reads of
+options that are not stored, on every front-end request) is untouched.
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it

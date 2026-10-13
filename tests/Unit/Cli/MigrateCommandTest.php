@@ -71,6 +71,15 @@ final class CliSchemaVersionStore100 implements SchemaVersionStore
         return $this->versions[$this->state->siteId][$optionName] ?? '';
     }
 
+    public function getMany(array $optionNames): array
+    {
+        return array_combine($optionNames, array_map($this->get(...), $optionNames));
+    }
+
+    public function forget(array $optionNames): void
+    {
+    }
+
     public function put(string $optionName, string $version): void
     {
         $this->versions[$this->state->siteId][$optionName] = $version;

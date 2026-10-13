@@ -52,6 +52,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **An admin page, an `admin-ajax.php` call and a cron run no longer write to the options
+  table to check the schema.** The check that brings a site's CoreX tables up to date took
+  its lock before it knew whether there was anything to do: twelve statements a request,
+  four of them writes, on every admin and cron request of a site that needed nothing, and
+  an admin screen left open asks `admin-ajax.php` on a timer. It now reads the version of
+  every component in one statement, and takes the lock only when one of them is behind.
+  Measured on a development install: such a request's boot went from 11.1 ms to 7.4 ms and
+  from 23 statements to 12. A site that is behind is brought up to date as before, under
+  the lock, and announced once (DECISIONS #360).
+
 - **The standard email's header is part of the card, and a logo of any shape fits it**
   (spec 106, slice 8). The site's logo, or its name, is now the first band of the card that
   holds the message, under the brand's edge. It stood above the card, on the canvas, limited
@@ -495,6 +505,11 @@ All notable changes to Corex are documented here. The format follows
   Found by the review of the change above.
 
 ### Client impact
+
+- **Nothing to do for the schema check.** Nothing stored changes: a component's version
+  option stays where it is, with autoload off. A site that binds its own
+  `Corex\Database\Schema\SchemaVersionStore` has two methods to add, `getMany()` and
+  `forget()`. Nothing in the framework binds another.
 
 - **A site with a form that has a file field should take this release, and look at what it
   already stores.** Three things show an answer that was not a file the submission was

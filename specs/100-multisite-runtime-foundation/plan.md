@@ -405,6 +405,11 @@ This **narrows** today's behaviour (a front-end-only site used to heal on first 
 deliberate trade under FR-035 — `wp_initialize_site` covers new sites, and cron covers an upgraded
 site within the hour. Changelog it.
 
+Amended 2026-10-13 (DECISIONS #360): the lock is taken only by a request that has found a component's
+stored version different from its declared one. The versions are read in one statement first, and
+again by the runner once the lock is held. The paragraph above is otherwise as built, except that the
+heal does not run under WP-CLI (T025).
+
 ### Events
 
 Reuse `plugins/corex-core/src/Events/`. One addition:
