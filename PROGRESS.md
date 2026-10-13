@@ -107,6 +107,15 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
+the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
+three questions). The reset email is still WordPress's; its link is to the page the reset
+was asked from, where the block shows a new-password form. Before, the link was to
+`wp-login.php`, the member ended in `wp-admin`, and where the login is moved the email
+carried the moved address. `addons/corex-profile/src/Reset/` holds it;
+`tests/e2e/account-reset.spec.js` walks it in a browser, with a fixture that keeps the
+email and sends nothing.
+
 **After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
 soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
 the first client site (FR-011a, tasks T069 to T075, DECISIONS #327). The button is shown by a
@@ -205,20 +214,51 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   account when its owner signs in on the account block; nothing moves the others, and
   nothing lists them. Moving one signs its owner out of their other browsers, once
   (measured, #334).
-- **In the account block, two labels point into another form.** Measured in a browser on
-  2026-10-13: a field's id is made from its name alone, so `corex-account-login` and
-  `corex-account-password` are each in the page twice. The registration form's "Password"
-  label and the forgot-password form's "Username or email" label belong to the sign-in
-  form's fields: pressing either label puts the cursor in the sign-in form, and the two
-  fields they sit above have no name for a screen reader. Not changed (seen while building
-  DECISIONS #336).
-- **With scripts off, an account form is sent to the page and nothing answers.** Measured
-  the same day: the forms have no address of their own, so the browser posts to the page
-  it is on, which shows the empty forms again. The add-on's README and the profile guide
-  said the forms "still submit"; they now say what happens. Not changed.
-- **An account form whose request fails says nothing.** Read from `account.js`, not run:
-  a request that does not arrive, or an answer that is not JSON, ends in a rejected promise
-  nothing handles, and no message line is written.
+- **The registration form's username does not say what it is for.** Every other labelled
+  field of the account block has an `autocomplete` value since DECISIONS #342. This one
+  is left without `username` because of what was measured in Chromium 153 on 2026-10-13:
+  it writes the person's saved email address into a field marked `username`, and an
+  address with a character a username cannot hold (`name+shop@example.com`) is then
+  refused as a username, where the same person registers with the field empty. The field
+  can have the value once a username that is the person's own address is taken as no
+  username in `AccountService::register()`; that file was in open pull request 384 when
+  this was written. Until then that field does not meet WCAG 1.3.5.
+- **After a registration the browser does not offer to save the new password.** Measured
+  in Chromium 153 on 2026-10-13, before and after DECISIONS #342: its password manager
+  holds the address (or the username) and the new password while the form is filled in,
+  and decides nothing when "Your account has been created" is written, because the filled
+  form stays on the page. After a sign-in the page is loaded again and it offers. Not
+  changed.
+- **Chromium does not know `nickname`.** The profile's display name has that value
+  (DECISIONS #342 has why it is not `name`). Chromium fills nothing into the field, as
+  before, and its developer tools list the value as one it does not recognise;
+  WordPress's own profile screen has the same on its nickname field. Not changed.
+- **The account block's `autocomplete` values were measured in Chromium only.** Not in
+  Firefox or Safari, not with a password manager that is not Chromium's own, and not in a
+  Chrome signed in to an account, where a made-up password would be offered at
+  registration. On the form a reset link leads to, Chromium reads a new password and its
+  confirmation and no username (the login is in a hidden field), so which saved password
+  it would offer to update was not seen.
+- **A page that holds the account block twice fills one block's lists.** Read from
+  `account.js`, not run: the session list and the recent-activity list are found with
+  `document.querySelector`, so a second block's lists stay empty for a signed-in person.
+  The forms of every block are answered, and since DECISIONS #337 no id is on such a page
+  twice.
+- **With scripts off the account block's forms do not work. Whether they should is the
+  owner's decision, asked on 2026-10-13.** The block says so now, in a note above its
+  forms that only a browser running no scripts shows, and that names no other place to
+  sign in (DECISIONS #339, spec 068 FR-161d). A form sent anyway still goes to the page it
+  is on, with what was typed in it, and is not answered. Making the forms work without
+  scripts is a second way in for sign-in, registration and the rest, with a spec of its
+  own; #339 weighs it and recommends not now.
+- **A browser that runs scripts and did not get `account.js` is told nothing.** With the
+  file blocked, or the request for it failed, a form goes to the page as it does with
+  scripts off, and the note for scripts being off is not shown. Read, not run. Only forms
+  that work without scripts close it (DECISIONS #339).
+- **A signed-in person's sessions and recent activity say nothing when they do not load.**
+  `get()` in `account.js` has no rejection handler, so the two lists stay empty under
+  their headings. Read, not run. A form's or a session button's request that gets no
+  answer does say so now (DECISIONS #339, FR-161e).
 - **No screen reader was listened to on the account block.** That an answer is announced,
   and once, is read from where it is written (one polite status, in the page before its
   text changes; three of them in Chromium's accessibility tree on the signed-out page,
@@ -261,7 +301,20 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **A new member who chose a password is emailed a link to set one.** The account gateway
   sends WordPress's own new-user email, which reads "To set your password, visit the
   following address:". Read on 2026-10-13 from what was handed to `wp_mail()`; what
-  following the link does to the chosen password was not run. Not changed.
+  following the link does to the chosen password was not run. Not changed. Its link is
+  WordPress's own, the one the reset email carried until DECISIONS #341; what this email
+  says waits on the owner, and the two emails are meant to end up alike.
+- **The reset email is WordPress's plain text, and a page with no mark gets WordPress's
+  link.** Sending it in the standard design was put to the owner and left for the decision
+  on the new member's email (DECISIONS #341). The link comes back to the account page only
+  when the forgot-password form carried the page's mark: a page a cache stored before the
+  release does not until it is stored again, and neither does the block in a template that
+  is not one page or post.
+- **A signed-in member can read the address login protection gives the login.** The
+  account block's Sign out link and the admin bar's are WordPress's logout address, and a
+  signed-in subscriber is served `/wp-admin/`. Measured on 2026-10-13. The owner accepted
+  it (DECISIONS #341); changing it is a sign-out of the add-on's own and no admin bar for
+  members, which is not specified.
 - **A login made from an address is altered by WordPress, and that is left.** With no
   username typed, `name+shop@example.com` gets the login `nameshop@example.com`; the person
   signs in with the address, as measured (DECISIONS #333). An account registered before

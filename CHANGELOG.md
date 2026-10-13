@@ -65,6 +65,34 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The account block says so when a request gets no answer, and when scripts are off.**
+  Two cases in which pressing a button of the `corex/account` block did nothing that could
+  be seen. A request that did not arrive (the visitor offline, the request blocked), or
+  that was answered with a page and not with JSON (a server's error page, a proxy's), or
+  refused with no message, wrote nothing: the form now says "The site could not be
+  reached, or its answer could not be read. Please try again." in its own line, under its
+  button, and so do the two session buttons. And with scripting off a form was sent to
+  the page, which came back with the empty forms: a browser that runs no scripts is now
+  shown a note above the forms saying that they need JavaScript. The forms still do not
+  work without scripts, and the note names no other place to sign in, because on a site
+  with login protection on WordPress's own address is the hidden one (spec 068, FR-161e
+  and FR-161d; DECISIONS #339).
+
+- **A member who forgot their password resets it on the account page** (spec 068, FR-158a
+  to FR-158c; the owner's decision). The account block asked WordPress for the reset email
+  and WordPress wrote its own link into it. Measured on WordPress 7.1.3: the member chose
+  the new password on `wp-login.php`, its "Log in" link led to WordPress's sign-in screen,
+  and signing in there ended at `wp-admin/profile.php`; the account page was not seen
+  again, and had no form that takes a reset key, though the route for one existed. Where
+  the Security Center moves the login, the email's link was the moved address. Now the
+  email's link is to the page the reset was asked from. That page takes the key out of its
+  address, shows a **Choose a new password** form and no other, and once the password is
+  saved says so above the sign-in form. A link that was used, or that WordPress no longer
+  takes, is answered "This password reset link is invalid or has expired. Please ask for a
+  new one." above the forms, one of which asks for one. The email is still WordPress's and is still
+  sent by WordPress: one address in it is changed, and only for a reset asked through the
+  account block (DECISIONS #341).
+
 - **A long email address registers without a username, and one too long for an account is
   refused with a reason.** The registration form's Username field is optional, and without
   one the login is the email address. WordPress holds a login in 60 characters and an
@@ -140,6 +168,34 @@ All notable changes to Corex are documented here. The format follows
   it is announced once; focus stays on the button. The line is as wide as the fields above
   it: those reached 16 pixels past the form's inner edge on one side, and no longer do
   (spec 068, FR-161a; DECISIONS #336).
+
+- **In the account block, every label belongs to the field under it.** A field's id was
+  made from its name alone, and the signed-out block prints up to three forms on one
+  page: the sign-in form and the forgot-password form each ask for "Username or email",
+  and the sign-in form and the registration form each ask for "Password". The second
+  field of each pair had the first one's id. Pressing the forgot-password form's label,
+  or the registration form's "Password", put the cursor in the sign-in form; in the
+  browser's accessibility tree those two fields had no name and the sign-in form's two
+  had theirs twice. An id now holds
+  the block, the form and the field's name, so it is on the page once, also on a page that
+  holds the block twice (spec 068, FR-161b; DECISIONS #337).
+
+- **A field of the account block tells the browser what it is for.** No field of the
+  `corex/account` block had an `autocomplete` value, which WCAG 2.2 asks for on a field
+  that collects something about the person (1.3.5) and which a browser and a password
+  manager read. Measured in Chromium: it read the empty registration form as a form that
+  changes a password, an old one and a new one, did not connect the forgot-password form
+  to an account, and listed four fields as missing the attribute. The sign-in fields are
+  now `username` and `current-password`, registration's email `email` and its two
+  passwords `new-password`, the forgot-password field `username`, the two passwords of
+  the form a reset link leads to `new-password`, and the profile's
+  fields `nickname` (the display name), `given-name`, `family-name` and `email`.
+  Chromium now reads registration as a new account and the forgot-password form as one
+  with a username. It offered to save the password after sign-in before, and still does.
+  Registration's optional username is left without a value: with `username` on it
+  Chromium wrote the person's saved email address into it, and an address with a `+` was
+  then refused as a username where the same person registered before (spec 068, FR-161c;
+  DECISIONS #342).
 
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
@@ -273,6 +329,31 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **The account block has a new element and a new sentence to translate.** Only for a
+  site that has Corex Profile on. `<noscript><p class="corex-account__noscript">` is the
+  first child of `.corex-account`, and the second on the two page loads that say what
+  became of a password reset, where the reset's message line stays first: a site that
+  styles the block itself, or selects its first child, sees it with scripting off only. Two strings are new in the `corex` text
+  domain: the note's, and "The site could not be reached, or its answer could not be
+  read. Please try again." Nothing to rebuild: the block's script and stylesheet are not
+  built.
+
+- **The password-reset email of a site that uses the account block links to the account
+  page, and a visitor chooses the new password there.** It applies to a site with the
+  Corex Profile add-on active and the `corex/account` block on a page; no other site sees a
+  change. The email's subject, wording and sender are unchanged: they are WordPress's. What
+  a site has to check: a page cache must pass a request with a query string to WordPress
+  (`?corex_reset_login=…&corex_reset_key=…`, then `?corex_reset=1`), which is what caches
+  do unless they were told to ignore query strings; and a site with code of its own that
+  calls `POST corex/v1/account/reset-request` keeps WordPress's link until it sends the
+  forgot-password form's hidden `page` field with the request. A plugin that rewrites the
+  whole reset email and leaves no address with the key in it is left alone. A reset asked
+  at `wp-login.php` is unchanged. For a site that styles the block itself: on the two page
+  loads that say what became of a reset, the block's first child is a
+  `.corex-account__status` again, with its `data-state`. Nothing to rebuild: no script or
+  style changed. Which client installs have the add-on on is in the entries below, and was
+  not read again for this one.
+
 - **The account block's message line moved, and its fields are 16 pixels narrower.** Only
   for a site that has Corex Profile on and styles the block itself. The one
   `.corex-account__status` that was the first child of `.corex-account` is gone; there is
@@ -309,6 +390,25 @@ All notable changes to Corex are documented here. The format follows
   label, a target's label and a target's id of any length: each is kept to 190 characters
   and an ellipsis. Records already written are as they were, and none of them is longer:
   the table refused those. No table changed and there is nothing to rebuild.
+- **The ids of the account block's fields changed.** Only for a site that has Corex
+  Profile on and selects a field of the block by id in its own stylesheet or script.
+  `corex-account-login`, `corex-account-password`, `corex-account-email` and the others
+  are gone. An id is now `corex-account-`, the block's number on the page, the form and
+  the field's name (`corex-account-1-login-password`), and the number is not promised to
+  stay the same: select a field by its form and its name
+  (`[data-corex-account-form="login"] input[name="password"]`). The fields' names, the
+  forms' `data-corex-account-form` values and every class are as they were. Read on this
+  machine on 2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the
+  block or an id of it. Nothing to rebuild.
+- **The account block's fields gain an `autocomplete` attribute.** Only for a site that
+  has Corex Profile on. Every labelled field of the block has one now, except the
+  registration form's optional username; the profile guide lists the values. A visitor's
+  browser may offer more than it did: Chromium takes the sign-in and the forgot-password
+  field for an email address as well as a username, and the registration form's passwords
+  for new ones. A site that prints its own sign-in form beside the block, or sets
+  `autocomplete` on these fields from its own script, should check that the two agree. No
+  id, name, class or route changed. Read on this machine on 2026-10-13: nothing under
+  `sites/` in the Muva or Perego checkouts names the block. Nothing to rebuild.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The

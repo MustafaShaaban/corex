@@ -171,3 +171,19 @@
 	padding-inline-start: var(--wp--preset--spacing--40);
 	color: var(--wp--preset--color--ink-soft);
 }
+
+/*
+ * Inside <noscript>: a browser that runs scripts does not draw it. It says,
+ * above the forms, that they need JavaScript. A card like a form's, with a
+ * form's inset at its sides, so its text starts where a form's fields do.
+ */
+.corex-account__noscript {
+	margin-block: 0;
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--50);
+	overflow-wrap: anywhere;
+	color: var(--wp--preset--color--ink);
+	background-color: var(--wp--preset--color--surface-alt);
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--radius--md);
+}
