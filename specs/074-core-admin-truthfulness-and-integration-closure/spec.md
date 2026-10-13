@@ -193,6 +193,10 @@ and the presentation layer surfaces a fraction of the record.
   providers or configuration; and a direct action or documentation reference.
 - **FR-5.2** It never exposes secrets, tokens, credentials, stack traces, or private data.
 - **FR-5.3** It does not replace any user workflow.
+- **FR-5.4** *(added 2026-10-13, DECISIONS #365)* A setting left at what CoreX ships with is not
+  reported as missing. A gap is something a person chose and did not finish, and its action opens
+  a place where that person can finish it. The summary reported "No update source is configured"
+  on every site, with a button to a Settings screen that has no field for it; that gap is removed.
 
 ---
 

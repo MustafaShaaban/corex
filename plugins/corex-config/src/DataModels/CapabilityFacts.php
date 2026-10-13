@@ -126,6 +126,10 @@ final class CapabilityFacts
      * problem that took a form-submission outage to notice. Every gap names something to do and
      * where to do it; none of them repeats the value that is missing.
      *
+     * A setting left at what CoreX ships with is not one of them. An update source nobody named
+     * was listed here on every site, so the list was never empty, and its button opened a Settings
+     * screen with no field for it (DECISIONS #365).
+     *
      * @return list<array<string,mixed>>
      */
     private function gaps(): array
@@ -146,15 +150,6 @@ final class CapabilityFacts
                 'key'          => 'captcha.keys',
                 'summary'      => __('A captcha provider is selected but its keys are missing, so it is not protecting your forms. The honeypot is still on.', 'corex'),
                 'action_label' => __('Finish captcha setup', 'corex'),
-                'action_url'   => admin_url('admin.php?page=corex-settings-config'),
-            ];
-        }
-
-        if ((string) $config->get('updates.endpoint', '') === '') {
-            $gaps[] = [
-                'key'          => 'updates.endpoint',
-                'summary'      => __('No update source is configured, so CoreX will not tell you when a new version is available.', 'corex'),
-                'action_label' => __('Open Settings', 'corex'),
                 'action_url'   => admin_url('admin.php?page=corex-settings-config'),
             ];
         }

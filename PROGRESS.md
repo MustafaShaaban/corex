@@ -107,6 +107,15 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** CoreX → Data no longer lists "No update source
+is configured" under Needs finishing (spec 074, FR-5.4; the owner's decision; DECISIONS #365).
+It was on every site, because no source is the default, and its button opened a Settings
+screen with no field for it. Run on a fresh install before it was changed. The updater
+itself is as it was, and no field was added for its source: what a set source does was
+measured and is in the decision. **Not decided, and the owner's:** whether the in-admin
+updater (spec 034) is kept at all now that releases are installed from CoreX → Releases
+(under "Open, and not hidden").
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
@@ -266,6 +275,13 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **The in-admin updater has no way to be switched on from the admin, and whether it is
+  kept is not decided.** Its source is set with `wp option update corex_updates_endpoint` or
+  a `.env`, neither of which a shared host has, and nothing is published for it to find.
+  When a source is set it is fetched twice per check with `wp_remote_get()`, an internal
+  address is not refused, and WordPress is offered the package the manifest names for
+  `corex-core` alone, one plugin of a release (measured, DECISIONS #365). Spec 107 left its
+  future open. A field for the source needs those changed first, in a spec of its own.
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
   only of what Email Studio's own service sent. A form's own email listener that sends

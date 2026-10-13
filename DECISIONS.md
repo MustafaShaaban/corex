@@ -14951,3 +14951,113 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #365 — A site that named no update source is not told it has something to finish: the notice is removed, and the Settings screen gets no field for the source
+
+**Date:** 2026-10-13. **Branch:** `fix/update-source-gap-leads-nowhere`, from `main` at
+`91d52d30`. **Spec:** 074 (core admin truthfulness), FR-5; 034 (self-update) and 107
+(release from the admin) read. **Mode:** CoreX Framework. **Decided by the owner**, from four
+options laid out with what was measured.
+
+**The lead.** #363, "Found, and not changed", item 2, read and not run:
+`CapabilityFacts::gaps()` reports "No update source is configured" with an **Open Settings**
+button, and `SettingsRegistry` has no field for `updates.endpoint`.
+
+**Run, before anything was changed.** On a WordPress of the worktree's own (WordPress 7.1.3,
+CoreX 0.45.2 from `main`, database `corex_wupdsrc`, served at `127.0.0.1:8972`, no `.env`,
+no option stored):
+
+- The config engine held nothing for `updates.endpoint`, and `gather()` returned one gap,
+  `updates.endpoint`, whose button's address was `admin.php?page=corex-settings-config`.
+- In a browser, CoreX → Data, the Models tab, "What this site can do": under **Needs
+  finishing**, "These are configured far enough to look done, and are not.", then "No
+  update source is configured, so CoreX will not tell you when a new version is
+  available." and **Open Settings**. It was the only gap on a fresh install.
+- The button opened CoreX Settings with no tab chosen. The screen has nine tabs (Brand,
+  Mail, Forms, Captcha, Media, Insights, Dashboard, Guides, Advanced) and 39 controls. None
+  is named or labelled for an update, an endpoint or a manifest, and the page's markup has
+  none of "update source", `updates.endpoint`, `corex_updates_endpoint` or "manifest".
+  `SettingsRegistry::keys()` has 45 keys, none of them for it.
+
+So the lead is right: the notice sends a person to a screen where it cannot be closed.
+
+**What a source that is set does**, measured on the same install with the option
+`corex_updates_endpoint` naming a file the install itself served, and removed afterwards:
+
+- The gap went. This is also #363's "Not run": the option does set the source.
+- One `wp_update_plugins()` asked for the address twice, with a 10 second limit each time
+  and nothing kept between the two. `reject_unsafe_urls` was off, and `127.0.0.1` answered
+  200: an address on the host's own network is fetched like any other.
+- The manifest named a version above the installed one and a package address. WordPress
+  was then offered that package as an update of `corex-core/corex-core.php`: one of the 16
+  CoreX plugins on the install, at an address the manifest chose. Nothing was installed.
+- The docs site's update guide, as published that day, gives the `.env` name
+  `COREX_UPDATES_ENDPOINT`, which nothing reads (#363, on open pull request #409).
+
+**The decision.** The notice is removed. `gaps()` reports a captcha provider with no keys
+and nothing else.
+
+1. *It was not a gap by the list's own words.* The panel says the list is what "is selected
+   but not finished" and the method's comment says "a state where CoreX looks configured
+   and silently is not". No update source is what CoreX ships with. Nobody chose it.
+2. *No site could close it from where it was sent, and most could not close it at all.*
+   The two ways to set it are `wp option update` and a `.env`, which on an ordinary install
+   is looked for in `wp-content/` (#363, item 1). A shared host has no command line and is
+   told not to create that file.
+3. *Nothing is published for a site to name.* Spec 107 says so, and says the updater moves
+   one plugin of a release that is four plugins, thirteen add-ons, a theme, the
+   command-line package and one `vendor/`, and that replacing one of them "leaves a site
+   whose parts disagree". So every site showed the notice, for ever.
+4. *A list that is never empty is not read.* The one gap left, captcha keys missing, is the
+   kind that took an outage to notice. On a site with nothing half done the section now
+   says "Nothing is half-configured."
+
+The update service is not touched. A site that sets the source is still offered what its
+manifest names.
+
+**Weighed, and not chosen.**
+
+- *A field for the source on the Settings screen.* It would let an administrator type an
+  address the site then fetches from the server, twice per check, with internal addresses
+  not refused, and whose answer names a zip WordPress installs over one plugin of sixteen.
+  Each of those would have to change first, which is a change to the updater, and spec 107
+  left the updater's future undecided ("kept, removed or made to say only 'a newer release
+  exists'") and out of its scope. It needs a spec of its own if it is wanted.
+- *Keeping the notice and pointing the button at the update guide.* It corrects where the
+  button goes and nothing else: the published guide names a variable that is not read
+  until #409 merges and the docs site is built again, both of the guide's ways are closed
+  on a shared host, and the notice would still be on every site.
+- *Hiding it on a site that has installed a release from the admin.* A site would show it
+  until its first such installation, a site updated by merging its repository would show
+  it for ever, and the button would still need somewhere true to go.
+- *Reporting a source that is set and does not answer.* That would be a real gap, a thing
+  chosen and not working. Finding it costs a request to the address each time the Data
+  screen opens. Not built; nobody has a source set.
+
+**Tests.** `tests/Integration/DataModels/UpdateSourceGapTest.php`, one case, written first:
+with no captcha provider and no update source, both answered by a filter so the install's
+own settings are not read, `gather()` lists nothing. It failed before the change with the
+`updates.endpoint` gap as the difference, and passes after. `CaptchaWidgetGapTest`, beside
+it, still lists missing keys. The 54 cases of `tests/Integration/DataModels/` pass on the
+worktree's install. In the browser, after: **Needs finishing** reads "Nothing is
+half-configured.", with no item and no link.
+
+**Not run.** A multisite network. A site that defines `DISALLOW_FILE_MODS`: what a set
+source shows there was not looked at.
+
+**Found, and not changed.**
+
+1. *The update service asks with `wp_remote_get()`, twice per check, and keeps nothing.*
+   Measured above. It matters to nobody while no site has a source; it is the first thing
+   to change if the updater is kept.
+2. *Whether the updater is kept is still not decided.* Spec 107 left it open. With the
+   notice gone, nothing in the admin says the updater exists; the two update guides do.
+3. *A gap's button can open a screen the reader may not open.* The captcha gap's button
+   goes to CoreX Settings, which asks for `manage_options`
+   (`AdminDashboard`); the Data screen asks for `CorexAbility::MANAGE_DATA_MODELS` or
+   `MANAGE_DATA` (`DataModelsScreen::menuCapability()`). Read, not run.
+
+**Client impact.** None to act on. A site that takes this release stops showing "No update
+source is configured" on CoreX → Data. A site that set `corex_updates_endpoint` or
+`UPDATES_ENDPOINT` is offered updates as before. The notice's text and its button's label, "Open
+Settings", are no longer strings of CoreX; nothing else used either.

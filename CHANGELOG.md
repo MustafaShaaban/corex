@@ -72,6 +72,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **CoreX → Data no longer says a site has something to finish because it named no update
+  source.** "What this site can do" listed "No update source is configured" under Needs
+  finishing on every site, since none is what CoreX ships with, and its Open Settings button
+  opened a Settings screen that has no field for it: nine tabs and 39 controls, read on a
+  fresh install, none for an update source. The list is for what was chosen and left half
+  done, and a notice nobody could close kept it from ever being empty. The notice is removed.
+  A site with nothing half done now reads "Nothing is half-configured."; a captcha provider
+  with no keys is still listed. The updater is not changed, and the Settings screen gets no
+  field for the source: a site that sets one, as the update guide says, is offered updates
+  as before (spec 074, FR-5.4; the owner's decision; DECISIONS #365).
 - **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
   WP-CLI.** Four jobs in three runs did on 2026-10-13, each before a test had run, and each
   passed when a person ran it again. setup-php asks for WP-CLI once, with no retry, and reports a tool it
