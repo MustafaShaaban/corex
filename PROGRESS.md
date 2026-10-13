@@ -206,9 +206,21 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   one of 375 by 812. It is announced to a screen reader (`role="status"`); somebody
   looking at the button sees nothing happen. So for every message of the block, a refused
   sign-in among them. Not changed.
-- **A new account's display name is its login, which is the email address when no username
-  was typed** (`WordPressAuthGateway::createUser()`). Read, not run: a display name is what
-  a comment or a post is signed with.
+- **An account registered before DECISIONS #335 with no username is still named by its
+  email address.** A new one is named by the part before the @. The old ones keep the
+  address as display name and nickname, and in the author address, and a comment written
+  under it keeps it whatever the account is renamed to: WordPress copies the name into the
+  comment (measured 2026-10-13). Putting them right rewrites a site's accounts and comments
+  and is the owner's to ask for. The add-on is off in Muva's decision record and on the
+  Perego and Mizzey development installs; their live hosts were not read.
+- **An email address of more than 60 characters cannot register without a username.**
+  Measured on 2026-10-13: the login is made from the address, WordPress refuses a login
+  over 60 characters, and the person is told "Username may not be longer than 60
+  characters." having typed none. Not changed.
+- **A new member who chose a password is emailed a link to set one.** The account gateway
+  sends WordPress's own new-user email, which reads "To set your password, visit the
+  following address:". Read on 2026-10-13 from what was handed to `wp_mail()`; what
+  following the link does to the chosen password was not run. Not changed.
 - **A login made from an address is altered by WordPress, and that is left.** With no
   username typed, `name+shop@example.com` gets the login `nameshop@example.com`; the person
   signs in with the address, as measured (DECISIONS #333). An account registered before

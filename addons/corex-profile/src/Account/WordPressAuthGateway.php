@@ -55,8 +55,7 @@ final class WordPressAuthGateway implements AuthGateway
             'user_login'    => $login,
             'user_pass'     => $this->asWordPressTakesIt($password),
             'role'          => get_option('default_role', 'subscriber'),
-            'display_name'  => $login,
-        ]);
+        ] + $this->namesFor($login));
 
         if ($userId instanceof WP_Error) {
             return AccountResult::fail('register_failed', $userId->get_error_message());
@@ -70,6 +69,29 @@ final class WordPressAuthGateway implements AuthGateway
             __('Your account has been created. You can now sign in.', 'corex'),
             (int) $userId,
         );
+    }
+
+    /**
+     * The three names WordPress would otherwise make from the login: the display name, the
+     * nickname and the nicename, which is the address of the author page and a class on each
+     * of the account's comments. For a login that is an email address they are made from
+     * {@see PublicName}, so none of them shows the address.
+     *
+     * @return array{display_name: string, nickname: string, user_nicename?: string}
+     */
+    private function namesFor(string $login): array
+    {
+        $name  = PublicName::forLogin($login);
+        $names = ['display_name' => $name, 'nickname' => $name];
+
+        // WordPress shortens a nicename it makes itself, and refuses one it is handed that is
+        // over 50 characters or comes out empty: that one it makes from the login, as before.
+        $nicename = mb_substr($name, 0, 50);
+        if (sanitize_title(sanitize_user($nicename, true)) !== '') {
+            $names['user_nicename'] = $nicename;
+        }
+
+        return $names;
     }
 
     public function authenticate(string $login, string $password, bool $remember): AccountResult
