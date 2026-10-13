@@ -58,6 +58,31 @@ list fails.
 After **Sign out everywhere** the page is loaded again and shows the sign-in form: that
 button signs this browser out too.
 
+### What a row says
+
+A row is two lines, which the site words and the page prints as they come.
+
+| List | First line | Second line |
+| --- | --- | --- |
+| Active sessions | the browser and the system the session signed in from, such as "Chrome on Windows" | when it signed in: "Signed in October 13, 2026 at 4:23 pm" |
+| Recent activity | what happened: "Your profile was updated." or "Your other sessions were signed out." | when: "October 13, 2026 at 4:23 pm" |
+
+- **Dates** are written in the date format, the time format and the timezone set under
+  **Settings → General**, in the site's language.
+- **A session's name** is read from what the browser said of itself when it signed in. It
+  has no version. A browser built on Chrome that does not give its own name (Brave,
+  Vivaldi) is named Chrome, an iPad that asks for desktop pages is named as a Mac, and a
+  program that names no browser is "Unknown browser". Two sessions from the same browser
+  are told apart by when they signed in.
+- **The IP address is not shown**, and neither is the browser's full identification
+  string. Both are still in what `GET sessions` answers.
+- **Recent activity lists what the account block itself records**: a saved profile, and
+  signing out the other sessions. What the same person did elsewhere, such as an
+  administrator's work in the admin, is not listed here. Signing in, a changed password
+  and **Sign out everywhere** are not recorded as activity, so they are not listed either.
+- Both lists are loaded again after a profile is saved and after **Sign out other
+  sessions**, so what was just done is in the list without loading the page again.
+
 The sentence is `<p class="corex-account__list-note">`, which the script adds after the
 list, with `data-state="empty"` or `data-state="error"`. The list (`<ul>`) is `hidden`
 while it has no rows. With `data-state="error"` the sentence takes the colours of a refused
@@ -150,10 +175,10 @@ All routes live under `corex/v1/account/`:
 | `POST reset-request` | public | Email a reset link (generic response — no user enumeration). |
 | `POST reset` | public | Set a new password from a valid reset key. |
 | `POST profile` | signed-in | Update the current user's profile. Answers `422` with the code `email_too_long` for an address over 100 characters. |
-| `GET sessions` | signed-in | List the current user's active sessions. |
+| `GET sessions` | signed-in | List the current user's active sessions. Each has `device` and `signedIn`, the two lines the block prints, beside `current`, `login`, `expiration`, `ip` and `ua`. |
 | `POST sessions/revoke-others` | signed-in | End every other session. |
 | `POST sessions/revoke-all` | signed-in | End every session. |
-| `GET notifications` | signed-in | The current user's recent account activity. |
+| `GET notifications` | signed-in | The current user's recent account activity: the newest ten events the account block recorded for them. Each has `label` and `when`, the two lines the block prints, beside `kind`, `occurredAt` (ISO 8601) and the rest. |
 
 Authenticated routes require a signed-in user and the standard REST nonce
 (`X-WP-Nonce`); the service also confirms a user only ever edits their own profile or

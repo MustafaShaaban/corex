@@ -13065,3 +13065,155 @@ styles the block has a new element to style, `.corex-account__list-note` with it
 `data-state`, and the two lists are `hidden` while they have no rows. After **Sign out
 everywhere** the page is loaded again. `get()`, `loadSessions()` and `loadNotifications()`
 were inside the script's closure, so nothing outside can have called them.
+
+## #348 — A row of the account block's two lists is written for a person: the server words a sentence, a device name and a date, and the script prints them
+
+**Date:** 2026-10-13. **Branch:** `fix/account-list-rows-for-a-person`, on top of #345's branch
+(PR #389, open when this was written, itself on #339's PR #383). **Found by:** the session
+that built #345, which saw it in a browser and recorded it in `PROGRESS.md`. Spec 068 gains
+FR-161g. The numbers around it are held elsewhere: #346 by open PR #390, #347 by open PR
+#391, #349 by open PR #392 (the session in use is marked "this device"; it left #348 and
+FR-161g to this change) and #350 by open PR #393.
+
+**What was there.** `account.js` drew a row of "Recent activity" as
+`event.kind + ' · ' + event.occurredAt` and a row of "Active sessions" as `session.ua`.
+`NotificationService::forUser()` asked the activity stream for the person's ten newest
+events of any kind. After a saved profile the script asked for the sessions again and not
+for the activity.
+
+**Measured before the change.** WordPress 7.1.3, a WordPress of this worktree's own,
+Chromium 153, the administrator signed in from two browser windows, one of them sending
+an iPhone's user agent, and one event recorded for them as the Submissions screen records
+an export.
+
+| What was looked at | What was there |
+|---|---|
+| a row of recent activity | `profile.updated · 2026-10-13T13:23:23+00:00`, in UTC whatever the site's timezone |
+| the administrator's export | listed with the rest, as `submission.export.queued · 2026-10-13T13:22:46+00:00` |
+| a session, at 1280 pixels | the whole user agent string, 123 characters, on two lines (51 px) |
+| a session, at 375 pixels | the same on three lines (77 px) |
+| after **Save profile** | the script asked `POST account/profile`, then `GET account/sessions`; recent activity did not change until the page was loaded again |
+
+**What was asked, and what was chosen.**
+
+1. *Who words a row: the server, or the script from strings it is handed.* **The server.**
+   The route answers with the lines ready to print, and the script prints them. A
+   sentence belongs with the code that records its kind; a date in the site's format and
+   timezone is `wp_date()`'s work, and spec 076 already records that a browser's own
+   date words differ from WordPress's in Arabic; and a kind added later needs no change to
+   the script. Refused: handing the script a table of sentences by kind. It would still
+   need the dates from the server, and the rule for a kind it does not know would live in
+   the script.
+2. *What a row of activity says.* A sentence for what happened, and under it when:
+   "Your profile was updated." and "Your other sessions were signed out." They say what
+   happened to the account and not who did it. The list is also where a person notices
+   something they did not do, and "You updated your profile" would tell them they did.
+   `Notification\AccountActivity` holds the two kinds as constants and the sentence for
+   each; `ProfileServiceProvider` records by those constants, so nothing the add-on
+   records is without a sentence. The two strings that were handed to
+   `recordAccountEvent()` and never used ("Profile updated", "Signed out other sessions")
+   are gone with its third parameter, and so is `corexAccount.i18n.session`, the word the
+   script fell back to for a session with no user agent: the server names every session.
+3. *A kind the add-on does not know.* **Not listed.** Weighed: the internal name, which
+   is the defect; a sentence that fits anything ("Something else happened on your
+   account"), which says nothing and, for an administrator, would be most of the list;
+   leaving it out. The block's list is the account's own activity. What an administrator
+   did in the admin has its screens there.
+   So that an unlisted event does not take the place of a listed one, the stream is asked
+   for the newest ten of each listed kind and the newest ten of those are kept
+   (`NotificationService::newest()`). The stream filters by one kind at a time; with two
+   kinds that is two questions of ten rows each, on a table indexed by actor and by kind.
+   Asking for the person's newest ten and dropping the rest afterwards would list nothing
+   for a saved profile followed by ten exports: the integration test holds that case,
+   with twelve.
+   Not built: a way for another module to add a sentence. One existing kind would use it
+   (`access.request.created`, whose actor is the member who asked), and nothing asks for
+   it yet.
+4. *The date.* The site's date format and time format (Settings → General), in its
+   timezone and language, each made by `wp_date()` and joined by a translatable pattern,
+   `%1$s at %2$s`: "October 13, 2026 at 4:23 pm". `Support\SiteDate` does it. CoreX's
+   admin screens have a fixed format of their own (`AdminDateTime`, spec 076), chosen for
+   the operator. The account block is a page of the site, where the theme prints a post's
+   date by the site's settings, so it follows those. Not a relative time ("2 hours ago"):
+   it goes stale on a page left open. The instant itself stays in the answer as
+   `occurredAt`, ISO 8601, for a program.
+   The route answers in the site's language and not in the member's own: WordPress uses a
+   person's language for a REST request only when it is asked to (`_locale=user`), and
+   the page the rows are printed in is in the site's language too.
+5. *What names a session.* The browser and the system its user agent names, with no
+   version: "Chrome on Windows". `Session\DeviceName` holds six patterns for browsers and
+   seven for systems, tried in an order that puts the more specific first (Edge says
+   Chrome and Safari; an iPhone says "like Mac OS X"; Android says Linux). No parsing
+   library: what a person can check against the device in their hand is those few names,
+   and a library's database is a dependency to keep current for the versions that are
+   left out here on purpose. What it cannot tell: a browser built on Chrome that sends
+   Chrome's string (Brave, Vivaldi) is "Chrome"; an iPad asking for desktop pages is
+   "Safari on macOS"; a program that names no browser is "Unknown browser", with its
+   system when it names one. Under the name, when the session signed in: "Signed in
+   October 13, 2026 at 4:23 pm". That is what tells two sessions from one browser apart;
+   two that signed in within the same minute read the same.
+6. *The IP address.* **Not shown. My reading, and the owner's to overrule.** WordPress
+   records `$_SERVER['REMOTE_ADDR']` for a session (`WP_Session_Tokens::create()`).
+   Behind a proxy or a CDN that is the proxy's address unless the host puts the visitor's
+   back, and then every session shows the same one. An address tells most people
+   nothing, and it is personal data on a page that is read over a shoulder. `ip` and `ua`
+   are still in the route's answer, as they were: it is the person's own data, given to
+   that person.
+7. *When the lists are asked for again.* Both, after a profile that was saved and after
+   a session button that was answered: both record activity. Not after a profile that
+   was refused, where nothing was done. Not after **Sign out everywhere** that was taken
+   (FR-161f): the page is loaded again.
+
+**How a row is drawn.** `<li class="corex-account__entry">` holding
+`corex-account__entry-main` and `corex-account__entry-meta`; a line the server left empty
+is not drawn (a session WordPress recorded no sign-in time for is its name alone). The
+first line is in the page's ink and the second in `ink-soft` at the `sm` size. The rows
+have no bullets, start where their heading starts and stand one spacing step (`30`) apart.
+The two `<ul>`s have `role="list"`: Safari with VoiceOver is known not to announce a list
+whose bullets are taken away. That was not measured here.
+
+**Measured after the change**, same install, Chromium 153, at 1280 and 375 pixels, with
+the page's direction set left to right and right to left, and once more with the site
+switched to Arabic:
+
+| What was looked at | What is there |
+|---|---|
+| a row of recent activity | "Your profile was updated." over "October 13, 2026 at 1:32 pm" |
+| the administrator's export | not listed |
+| a session | "Chrome on Windows" over "Signed in October 13, 2026 at 1:32 pm"; "Safari on iPhone" for the second browser |
+| a row's height | 48 px at both widths (25.6 px and 22.4 px), one line each |
+| rows apart | 10.7 px, the `30` step; the first row 0 px under its heading, as the sentence of an empty list is |
+| where a row starts | at its heading's own edge: 256 px at 1280 and 0 px at 375 left to right; 1024 px and 375 px right to left |
+| contrast on the page's white | 17.93 to 1 for the first line, 5.80 to 1 for the second |
+| sideways scrolling | none in the four windows |
+| after **Save profile** | `POST account/profile`, `GET account/sessions`, `GET account/notifications`; the save is the first row |
+| after **Sign out other sessions** | the other browser's row is gone and "Your other sessions were signed out." is the first row |
+| the site in Arabic | "أكتوبر 13, 2026 at 1:33 م": the month and the am/pm mark from WordPress's Arabic pack; the sentences, "Signed in" and "at" in English, because CoreX has no Arabic catalogue (`PROJECT-STATUS.md`) |
+
+**Tests.** `tests/Unit/Profile/DeviceNameTest.php` (twelve user agents by name, three
+that name no browser, and that the name is handed to a translator in two parts),
+`AccountActivityTest.php`, `NotificationListTest.php`, `AccountRendererTest.php` (the
+role). `tests/Integration/Profile/AccountListRowsTest.php`, through the real REST server
+with the site set to `Asia/Riyadh`, `j F Y` and `H:i`: half past nine in the evening UTC
+is "14 October 2026 at 00:30"; a saved profile is listed as its sentence; twelve later
+exports by the same person neither show nor push it out; the newest ten of both kinds
+come newest first; a session is "Firefox on Linux", "Signed in 14 October 2026 at 00:30".
+`tests/corex-account.test.js`: a row is the lines the server gave; both lists are asked
+for again after a save and after a session button, and neither after a refused save.
+`tests/e2e/product-surfaces.spec.js`: the two lines and their alignment in the four
+windows; a session named and nothing of its user agent or address printed; a profile
+saved for real, as it is, listed without the page being loaded again. Each of the three
+new browser tests (the first in one of its four windows) was run against the script and
+stylesheet as they were, and failed.
+
+**Not done, and recorded in `PROGRESS.md`.** Signing in, a changed or reset password, a
+new account and **Sign out everywhere** write no activity event, so the list does not
+show them. Whether WebKit calls the two lists lists was not measured. A page that holds
+the block twice still fills one block's lists (#345 recorded it).
+
+**Client impact.** `GET corex/v1/account/notifications` answers with the two kinds only,
+where it answered with everything the person was the actor of; each event gained `label`
+and `when`, and each session `device` and `signedIn`. A row's markup changed and the
+lists have no bullets. Six strings are new in the `corex` text domain. Nothing under
+`sites/` in the Muva or Perego checkouts names the block, its lists or the routes (read
+on this machine, 2026-10-13). Nothing to rebuild.

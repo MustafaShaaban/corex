@@ -21,8 +21,10 @@ use Corex\Profile\Account\AccountService;
 use Corex\Profile\Account\AuthGateway;
 use Corex\Profile\Account\RegistrationRequest;
 use Corex\Profile\Account\WordPressAuthGateway;
+use Corex\Profile\Notification\AccountActivity;
 use Corex\Profile\Notification\NotificationService;
 use Corex\Profile\Session\SessionService;
+use Corex\Profile\Support\SiteDate;
 use Corex\Support\EmailAnswer;
 use DateTimeImmutable;
 use WP_REST_Request;
@@ -46,11 +48,19 @@ final class ProfileServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): AccountService => new AccountService($c->make(AuthGateway::class)),
         );
 
-        $this->container->singleton(SessionService::class, static fn (): SessionService => new SessionService());
+        $this->container->singleton(SiteDate::class, static fn (): SiteDate => new SiteDate());
+
+        $this->container->singleton(
+            SessionService::class,
+            static fn (ContainerInterface $c): SessionService => new SessionService($c->make(SiteDate::class)),
+        );
 
         $this->container->singleton(
             NotificationService::class,
-            static fn (ContainerInterface $c): NotificationService => new NotificationService($c->make(ActivityService::class)),
+            static fn (ContainerInterface $c): NotificationService => new NotificationService(
+                $c->make(ActivityService::class),
+                $c->make(SiteDate::class),
+            ),
         );
     }
 
@@ -80,7 +90,6 @@ final class ProfileServiceProvider extends ServiceProvider
             'restUrl' => esc_url_raw(rest_url('corex/v1/')),
             'nonce'   => wp_create_nonce('wp_rest'),
             'i18n'    => [
-                'session'    => __('Session', 'corex'),
                 'thisDevice' => __('this device', 'corex'),
                 'noAnswer'   => __('The site could not be reached, or its answer could not be read. Please try again.', 'corex'),
                 // What stands in a list's place in the member view (spec 068, FR-161f).
@@ -220,7 +229,7 @@ final class ProfileServiceProvider extends ServiceProvider
         $result = $this->container->make(AccountService::class)->updateProfile($userId, $fields);
 
         if ($result->success) {
-            $this->recordAccountEvent($userId, 'profile.updated', __('Profile updated', 'corex'));
+            $this->recordAccountEvent($userId, AccountActivity::PROFILE_UPDATED);
         }
 
         return $this->respond($result);
@@ -240,7 +249,7 @@ final class ProfileServiceProvider extends ServiceProvider
         $result = $this->container->make(SessionService::class)->signOutOthers($userId);
 
         if ($result->success) {
-            $this->recordAccountEvent($userId, 'sessions.revoked_others', __('Signed out other sessions', 'corex'));
+            $this->recordAccountEvent($userId, AccountActivity::OTHER_SESSIONS_SIGNED_OUT);
         }
 
         return $this->respond($result);
@@ -267,8 +276,11 @@ final class ProfileServiceProvider extends ServiceProvider
     /**
      * Record a permission-safe account event on the shared activity stream so the
      * user's own notifications reflect real actions (never a fabricated feed).
+     *
+     * @param string $kind One of {@see AccountActivity}'s kinds: the block lists what that
+     *                     class has a sentence for.
      */
-    private function recordAccountEvent(int $userId, string $kind, string $label): void
+    private function recordAccountEvent(int $userId, string $kind): void
     {
         if (! $this->container->has(ActivityService::class)) {
             return;

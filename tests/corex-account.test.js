@@ -6,7 +6,8 @@
  * it, in one place, and is brought into the window when it would be outside it; and a request
  * that got no answer the script can read says so there too (FR-161c). And what the member
  * view's two lists show under their headings: their rows, or that there is nothing to list,
- * or that the list could not be loaded (FR-161f).
+ * or that the list could not be loaded (FR-161f). A row is the lines the server worded for a
+ * person, printed as they came, and both lists are asked for again after a press (FR-161g).
  */
 
 const SCRIPT = '../addons/corex-profile/assets/account.js';
@@ -325,7 +326,10 @@ it( 'says so in English on a page that handed the script no sentence', async () 
 	] );
 } );
 
-/** The member view's two lists: what the server gives for each, and how the page words it. */
+/**
+ * The member view's two lists: what the server gives for each, and how the page words it.
+ * A row is its lines, from the top. A session comes with more than is printed of it.
+ */
 const LISTS = {
 	sessions: {
 		section: '[data-corex-account-sessions]',
@@ -333,11 +337,31 @@ const LISTS = {
 		given: {
 			success: true,
 			sessions: [
-				{ ua: 'Firefox on Linux', current: true },
-				{ ua: 'Safari on iPhone', current: false },
+				{
+					device: 'Firefox on Linux',
+					signedIn: 'Signed in 13 October 2026 at 09:00',
+					ua: 'Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0',
+					ip: '203.0.113.7',
+					login: 1791882000,
+					current: true,
+				},
+				{
+					device: 'Safari on iPhone',
+					signedIn: 'Signed in 12 October 2026 at 18:30',
+					ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) Version/17.5 Safari/604.1',
+					ip: '198.51.100.24',
+					login: 1791829800,
+					current: false,
+				},
 			],
 		},
-		rows: [ 'Firefox on Linux — this device', 'Safari on iPhone' ],
+		rows: [
+			[
+				'Firefox on Linux — this device',
+				'Signed in 13 October 2026 at 09:00',
+			],
+			[ 'Safari on iPhone', 'Signed in 12 October 2026 at 18:30' ],
+		],
 		nothing: { success: true, sessions: [] },
 		saysNothing: 'No sessions (as the page worded it).',
 		saysNotLoaded: 'Sessions not loaded (as the page worded it).',
@@ -349,12 +373,14 @@ const LISTS = {
 			success: true,
 			notifications: [
 				{
+					label: 'Your profile was updated.',
+					when: '13 October 2026 at 09:00',
 					kind: 'profile.updated',
-					occurredAt: '2026-10-13T09:00:00+00:00',
+					occurredAt: '2026-10-13T06:00:00+00:00',
 				},
 			],
 		},
-		rows: [ 'profile.updated · 2026-10-13T09:00:00+00:00' ],
+		rows: [ [ 'Your profile was updated.', '13 October 2026 at 09:00' ] ],
 		nothing: { success: true, notifications: [] },
 		saysNothing: 'No activity (as the page worded it).',
 		saysNotLoaded: 'Activity not loaded (as the page worded it).',
@@ -414,7 +440,7 @@ function serverGives( routes = {} ) {
  * What a person is shown under a list's heading.
  *
  * @param {string} name A key of LISTS.
- * @return {{rows: string[], says: string, state: ?string}} The rows, or the sentence in their place.
+ * @return {{rows: string[][], says: string, state: ?string}} The rows, each as its lines, or the sentence in their place.
  */
 function shown( name ) {
 	const section = document.querySelector( LISTS[ name ].section );
@@ -425,7 +451,11 @@ function shown( name ) {
 	return {
 		rows: list.hidden
 			? []
-			: Array.from( list.children ).map( ( row ) => row.textContent ),
+			: Array.from( list.children ).map( ( row ) =>
+					Array.from( row.children ).map(
+						( line ) => line.textContent
+					)
+				),
 		says: noted ? note.textContent : '',
 		state: noted ? note.getAttribute( 'data-state' ) : null,
 	};
@@ -597,7 +627,7 @@ describe( 'a list asked for again', () => {
 			),
 			[ LISTS.sessions.route ]: answered( {
 				success: true,
-				sessions: [ { ua: 'Chrome on Windows', current: true } ],
+				sessions: [ { device: 'Chrome on Windows', current: true } ],
 			} ),
 		} );
 
@@ -605,9 +635,113 @@ describe( 'a list asked for again', () => {
 		await flush();
 
 		expect( shown( 'sessions' ).rows ).toEqual( [
-			'Chrome on Windows — this device',
+			[ 'Chrome on Windows — this device' ],
 		] );
 	} );
+} );
+
+/** What the script asked the server for, by method and route, in the order it asked. */
+function asked() {
+	return window.fetch.mock.calls.map(
+		( [ url, options = {} ] ) =>
+			( options.method || 'GET' ) +
+			' ' +
+			url.replace( window.corexAccount.restUrl, '' )
+	);
+}
+
+describe( 'what was just done', () => {
+	const SAVED = {
+		label: 'Your profile was updated.',
+		when: '13 October 2026 at 09:05',
+	};
+	const SIGNED_OUT = {
+		label: 'Your other sessions were signed out.',
+		when: '13 October 2026 at 09:06',
+	};
+
+	beforeEach( () => {
+		mountMember();
+	} );
+
+	it( 'is listed under Recent activity once a profile is saved, without the page being loaded again', async () => {
+		serverGives();
+		loadScript();
+		await flush();
+		serverGives( {
+			'account/profile': answered( {
+				success: true,
+				message: 'Profile saved.',
+			} ),
+			[ LISTS.activity.route ]: answered( {
+				success: true,
+				notifications: [ SAVED ],
+			} ),
+		} );
+
+		submit( 'profile' );
+		await flush();
+
+		expect( shown( 'activity' ).rows ).toEqual( [
+			[ SAVED.label, SAVED.when ],
+		] );
+	} );
+
+	it( 'is listed under Recent activity once the other sessions are signed out', async () => {
+		serverGives();
+		loadScript();
+		await flush();
+		serverGives( {
+			'account/sessions/revoke-others': answered( {
+				success: true,
+				message: 'Other sessions signed out.',
+			} ),
+			[ LISTS.activity.route ]: answered( {
+				success: true,
+				notifications: [ SIGNED_OUT ],
+			} ),
+		} );
+
+		press( 'revoke-others' );
+		await flush();
+
+		expect( shown( 'activity' ).rows ).toEqual( [
+			[ SIGNED_OUT.label, SIGNED_OUT.when ],
+		] );
+	} );
+
+	it( 'is not asked about after a profile that was not saved: nothing was done', async () => {
+		serverGives();
+		loadScript();
+		await flush();
+		serverGives( {
+			'account/profile': answered(
+				{ success: false, message: 'Enter a display name.' },
+				false
+			),
+		} );
+
+		submit( 'profile' );
+		await flush();
+
+		expect( asked() ).toEqual( [ 'POST account/profile' ] );
+	} );
+} );
+
+it( 'draws a session WordPress recorded no sign-in time for as its device alone', async () => {
+	mountMember();
+	serverGives( {
+		[ LISTS.sessions.route ]: answered( {
+			success: true,
+			sessions: [
+				{ device: 'Chrome on Android', signedIn: '', current: false },
+			],
+		} ),
+	} );
+	loadScript();
+	await flush();
+
+	expect( shown( 'sessions' ).rows ).toEqual( [ [ 'Chrome on Android' ] ] );
 } );
 
 it.each( [

@@ -25,6 +25,11 @@
  * The lists are answered for in the test where a failure or an exact row is wanted, and
  * signing out everywhere is always answered for here, so the suite's own session is kept.
  *
+ * And that a row of either list is written for a person (FR-161g): a session by its browser
+ * and system and when it signed in, an event as a sentence and a date, on two lines that
+ * start where the heading starts. A profile is saved for real here, as it is, which changes
+ * nothing of the account and sends no email; "Sign out other sessions" is not pressed.
+ *
  * ENVIRONMENT-GATED: needs Apache up (http://corex.local) + `npx playwright install`.
  */
 const { test, expect } = require( '@playwright/test' );
@@ -822,6 +827,284 @@ test( 'recent activity with nothing in it says so, and not that it could not be 
 	const at = await notePlacement( page.locator( LISTS[ 1 ].panel ) );
 	expect( at.underHeadingBy ).toBeCloseTo( 0, 0 );
 	expect( at.startsFromHeadingBy ).toBeCloseTo( 0, 0 );
+
+	await page.context().close();
+} );
+
+/**
+ * The rows of a list as a person reads them (FR-161g): each row's lines, from the top.
+ *
+ * @param {import('@playwright/test').Locator} panel The sessions panel, or the activity one.
+ * @return {Promise<string[][]>} One entry for each row.
+ */
+function rowsOf( panel ) {
+	return panel
+		.locator( 'ul > li' )
+		.evaluateAll( ( rows ) =>
+			rows.map( ( row ) =>
+				Array.from( row.children ).map( ( line ) => line.textContent )
+			)
+		);
+}
+
+/** What the two lists are answered with where a test wants exact rows (FR-161g). */
+const GIVEN_ROWS = {
+	[ LISTS[ 0 ].name ]: {
+		success: true,
+		sessions: [
+			{
+				device: 'Chrome on Windows',
+				signedIn: 'Signed in October 13, 2026 at 9:00 am',
+				current: true,
+			},
+			{
+				device: 'Safari on iPhone',
+				signedIn: 'Signed in October 12, 2026 at 6:30 pm',
+				current: false,
+			},
+		],
+	},
+	[ LISTS[ 1 ].name ]: {
+		success: true,
+		notifications: [
+			{
+				// As long as a translation of it may be: it has to turn inside the window.
+				label: 'Your other sessions, on every other browser and device, were signed out.',
+				when: 'October 13, 2026 at 9:05 am',
+			},
+			{
+				label: 'Your profile was updated.',
+				when: 'October 13, 2026 at 9:00 am',
+			},
+		],
+	},
+};
+
+/**
+ * Where the rows of a list sit under its heading, in pixels.
+ *
+ * A row's start is the edge its text is read from: the left one, or the right one on a page
+ * read right to left.
+ *
+ * @param {import('@playwright/test').Locator} panel The sessions panel, or the activity one.
+ * @return {Promise<Object>} For each row, where its lines are; the gaps between rows; the spacing step they are held to.
+ */
+function rowPlacement( panel ) {
+	return panel.evaluate( ( el ) => {
+		const round = ( px ) => Math.round( px * 10 ) / 10;
+		const step = ( slug ) => {
+			const probe = document.createElement( 'div' );
+			probe.style.blockSize = `var(--wp--preset--spacing--${ slug })`;
+			el.appendChild( probe );
+			const size = probe.getBoundingClientRect().height;
+			probe.remove();
+			return round( size );
+		};
+		const rtl = window.getComputedStyle( el ).direction === 'rtl';
+		const start = ( box ) => ( rtl ? -box.right : box.left );
+		// The box of the words themselves, not of the line they are in.
+		const words = ( node ) => {
+			const range = document.createRange();
+			range.selectNodeContents( node );
+			return range.getBoundingClientRect();
+		};
+		const heading = el.querySelector( 'h3' );
+		const rows = Array.from( el.querySelectorAll( 'ul > li' ) );
+		const boxes = rows.map( ( row ) => row.getBoundingClientRect() );
+
+		return {
+			firstRowUnderHeadingBy: round(
+				boxes[ 0 ].top - heading.getBoundingClientRect().bottom
+			),
+			rows: rows.map( ( row ) => {
+				const [ first, second ] = Array.from( row.children );
+				const size = ( line ) =>
+					parseFloat( window.getComputedStyle( line ).fontSize );
+
+				return {
+					startsFromHeadingBy: round(
+						start( words( first ) ) - start( words( heading ) )
+					),
+					secondLineStartsFromFirstBy: round(
+						start( words( second ) ) - start( words( first ) )
+					),
+					secondLineUnderFirstBy: round(
+						second.getBoundingClientRect().top -
+							first.getBoundingClientRect().bottom
+					),
+					secondLineIsSmaller: size( second ) < size( first ),
+				};
+			} ),
+			gapsBetweenRows: boxes
+				.slice( 1 )
+				.map( ( box, index ) =>
+					round( box.top - boxes[ index ].bottom )
+				),
+			step: step( '30' ),
+		};
+	} );
+}
+
+for ( const view of WINDOWS ) {
+	test( `a row of either list is two lines that start where its heading starts, in ${ view.name }`, async ( {
+		browser,
+	} ) => {
+		const page = await openAccount(
+			browser,
+			view,
+			require( './global-setup' ).STORAGE_STATE,
+			true,
+			async ( opening ) => {
+				for ( const list of LISTS ) {
+					await opening.route( list.request, ( route ) =>
+						route.fulfill( {
+							status: 200,
+							contentType: 'application/json',
+							body: JSON.stringify( GIVEN_ROWS[ list.name ] ),
+						} )
+					);
+				}
+			}
+		);
+
+		for ( const list of LISTS ) {
+			const panel = page.locator( list.panel );
+			await expect( panel.locator( 'ul > li' ) ).toHaveCount( 2 );
+			await panel.locator( 'ul' ).scrollIntoViewIfNeeded();
+			const at = await rowPlacement( panel );
+
+			// Straight under the heading, as the sentence in an empty list's place is.
+			expect( at.firstRowUnderHeadingBy ).toBeCloseTo( 0, 0 );
+			for ( const row of at.rows ) {
+				expect( row.startsFromHeadingBy ).toBeCloseTo( 0, 0 );
+				expect( row.secondLineStartsFromFirstBy ).toBeCloseTo( 0, 0 );
+				expect( row.secondLineUnderFirstBy ).toBeCloseTo( 0, 0 );
+				expect( row.secondLineIsSmaller ).toBe( true );
+			}
+			// One step between a row and the next: a row's second line is nearer to its first.
+			expect( at.step ).toBeGreaterThan( 0 );
+			expect( at.gapsBetweenRows ).toHaveLength( 1 );
+			expect( at.gapsBetweenRows[ 0 ] ).toBeCloseTo( at.step, 0 );
+			// Drawn without bullets, and still a list of two to a screen reader.
+			await expect(
+				panel.getByRole( 'list' ).getByRole( 'listitem' )
+			).toHaveCount( 2 );
+			for ( const row of await panel.locator( 'ul > li' ).all() ) {
+				expect(
+					await outsideWindow( row ).then( ( { left, right } ) => ( {
+						left,
+						right,
+					} ) )
+				).toEqual( { left: 0, right: 0 } );
+			}
+		}
+		expect(
+			await page.evaluate(
+				() =>
+					document.documentElement.scrollWidth >
+					document.documentElement.clientWidth
+			),
+			'the page does not scroll sideways'
+		).toBe( false );
+
+		await page.context().close();
+	} );
+}
+
+test( 'a session is named by its browser and system, and nothing of its user agent or address is printed', async ( {
+	browser,
+} ) => {
+	// Asked of the site itself: the suite's own session is in the answer.
+	let answered;
+	const page = await openAccount(
+		browser,
+		WINDOWS[ 0 ],
+		require( './global-setup' ).STORAGE_STATE,
+		true,
+		async ( opening ) => {
+			answered = opening.waitForResponse(
+				( response ) =>
+					LISTS[ 0 ].request.test( response.url() ) &&
+					response.request().method() === 'GET'
+			);
+		}
+	);
+	const panel = page.locator( LISTS[ 0 ].panel );
+	const { sessions } = await ( await answered ).json();
+	await expect( panel.locator( 'ul > li' ) ).toHaveCount( sessions.length );
+
+	const rows = await rowsOf( panel );
+
+	// The page prints what the site worded, as it came.
+	expect( rows ).toEqual(
+		sessions.map( ( session ) => [
+			session.device + ( session.current ? ' — this device' : '' ),
+			session.signedIn,
+		] )
+	);
+	// The suite signed in with Chromium, on whatever system runs it.
+	expect( rows.map( ( [ device ] ) => device ) ).toContainEqual(
+		expect.stringMatching( /^Chrome on \S+/ )
+	);
+	for ( const [ , signedIn ] of rows ) {
+		expect( signedIn ).toMatch( /^Signed in \S/ );
+	}
+	const printed = await panel.locator( 'ul' ).innerText();
+	for ( const session of sessions ) {
+		expect( printed ).not.toContain( session.ua );
+		expect( printed ).not.toContain( session.ip );
+	}
+
+	await page.context().close();
+} );
+
+test( 'a saved profile is listed under Recent activity as a sentence and a date, without the page being loaded again', async ( {
+	browser,
+} ) => {
+	const page = await openAccount(
+		browser,
+		WINDOWS[ 0 ],
+		require( './global-setup' ).STORAGE_STATE
+	);
+	const form = page.locator( '[data-corex-account-form="profile"]' );
+	const panel = page.locator( LISTS[ 1 ].panel );
+	// Whatever the list holds as the page opens, it has been drawn: rows, or the sentence.
+	await expect(
+		panel.locator( `ul > li, ${ LIST_NOTE }` ).first()
+	).toBeVisible();
+	const askedAgain = page.waitForResponse(
+		( response ) =>
+			LISTS[ 1 ].request.test( response.url() ) &&
+			response.request().method() === 'GET'
+	);
+
+	// The profile as it is: nothing of the account changes, and no email is due.
+	await form.getByRole( 'button', { name: 'Save profile' } ).click();
+
+	await expect( form.getByRole( 'status' ) ).toHaveAttribute(
+		'data-state',
+		'ok'
+	);
+	const { notifications } = await ( await askedAgain ).json();
+	await expect( panel.locator( 'ul > li' ) ).toHaveCount(
+		notifications.length
+	);
+	const rows = await rowsOf( panel );
+
+	expect( rows[ 0 ][ 0 ] ).toBe( 'Your profile was updated.' );
+	// A date as the site writes one, and not the instant as a program does.
+	expect( rows[ 0 ][ 1 ] ).not.toMatch( /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/ );
+	expect( rows[ 0 ][ 1 ] ).toMatch( /\d/ );
+	expect( rows ).toEqual(
+		notifications.map( ( event ) => [ event.label, event.when ] )
+	);
+	// The suite's administrator does a great deal in the admin, and none of it is listed here.
+	for ( const [ sentence ] of rows ) {
+		expect( [
+			'Your profile was updated.',
+			'Your other sessions were signed out.',
+		] ).toContain( sentence );
+	}
 
 	await page.context().close();
 } );

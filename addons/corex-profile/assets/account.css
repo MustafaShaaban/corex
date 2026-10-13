@@ -171,11 +171,35 @@
 	margin-block-start: var(--wp--preset--spacing--30);
 }
 
+/*
+ * A row of either list is two lines: what it is, and under it when. The rows
+ * start where the heading above them starts, with no bullet, and stand one
+ * step apart.
+ */
 .corex-account__session-list,
 .corex-account__notification-list {
 	margin-block: 0;
-	padding-inline-start: var(--wp--preset--spacing--40);
+	padding-inline-start: 0;
+	list-style: none;
+}
+
+.corex-account__entry + .corex-account__entry {
+	margin-block-start: var(--wp--preset--spacing--30);
+}
+
+.corex-account__entry-main,
+.corex-account__entry-meta {
+	display: block;
+	overflow-wrap: anywhere;
+}
+
+.corex-account__entry-main {
+	color: var(--wp--preset--color--ink);
+}
+
+.corex-account__entry-meta {
 	color: var(--wp--preset--color--ink-soft);
+	font-size: var(--wp--preset--font-size--sm);
 }
 
 /*

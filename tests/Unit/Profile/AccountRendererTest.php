@@ -65,6 +65,13 @@ it('renders the member profile, sessions, and notifications panels', function ()
         ->and($html)->not->toContain('data-corex-account-form="login"');
 });
 
+it('says the member view\'s two lists are lists, which a browser stops saying of a list drawn without bullets', function () {
+    $html = (new AccountRenderer())->render(['loggedIn' => true]);
+
+    expect($html)->toContain('<ul class="corex-account__session-list" role="list"')
+        ->and($html)->toContain('<ul class="corex-account__notification-list" role="list"');
+});
+
 it('escapes a hostile display name', function () {
     $html = (new AccountRenderer())->render([
         'loggedIn'    => true,

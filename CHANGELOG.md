@@ -65,6 +65,18 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A row of the account block's two lists is written for a person** (spec 068, FR-161g).
+  Under "Recent activity" a row was an internal name and a machine's date,
+  `profile.updated · 2026-10-13T13:23:23+00:00`; it is now "Your profile was updated." and,
+  under it, "October 13, 2026 at 4:23 pm", in the date format, time format and timezone set
+  for the site. Under "Active sessions" a row was the browser's whole identification
+  string, three lines of it on a phone; it is now "Chrome on Windows" and, under it,
+  "Signed in October 13, 2026 at 4:23 pm". The IP address is not shown. Recent activity
+  lists what the block itself records, a saved profile and signing out the other sessions:
+  an administrator was also listed what they did in the admin, by its internal name. And a
+  saved profile is listed at once: recent activity was asked for only as the page opened.
+  The rows have no bullets and start where their heading starts (DECISIONS #348).
+
 - **In the account block, a list that did not load says so, and an empty one says it is
   empty** (spec 068, FR-161f). A signed-in person's "Active sessions" and "Recent activity"
   were a heading with nothing under it in both cases: when the request for the list did not
@@ -284,6 +296,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **The account block's two lists changed, in the page and in the routes.** Only for a
+  site that has Corex Profile on. `GET corex/v1/account/notifications` answers with the
+  newest ten events of two kinds, `profile.updated` and `sessions.revoked_others`, and no
+  longer with every event the person is the actor of: a site that read that route for a
+  person's whole activity reads less. Each event gained `label` and `when`, and each
+  session of `GET corex/v1/account/sessions` gained `device` and `signedIn`; nothing was
+  taken out of either. In the page a row is `<li class="corex-account__entry">` holding
+  two `<span>`s, where it was an `<li>` of text, and the two `<ul>`s have `role="list"`
+  and no bullets: a site that styles `.corex-account__session-list li` or
+  `.corex-account__notification-list li` itself has to look at it again. Six strings are
+  new in the `corex` text domain. Read on this machine on 2026-10-13: nothing under
+  `sites/` in the Muva or Perego checkouts names the block, its lists or the two routes.
+  Nothing to rebuild: the block's script and stylesheet are not built.
 - **The account block has a new element and a new sentence to translate.** Only for a
   site that has Corex Profile on. `<noscript><p class="corex-account__noscript">` is the
   first child of `.corex-account`: a site that styles the block itself, or selects its

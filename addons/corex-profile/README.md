@@ -31,6 +31,14 @@ theme only presents it.
   when the list could not be loaded. The four sentences are handed to the script as
   `corexAccount.i18n.noSessions`, `sessionsNotLoaded`, `noActivity` and
   `activityNotLoaded`. After **Sign out everywhere** the page is loaded again.
+- **A row of either list is two lines the server worded**, which the script prints as they
+  came: `<li class="corex-account__entry">` holding a `corex-account__entry-main` and a
+  `corex-account__entry-meta`. A session is its `device` ("Chrome on Windows") and its
+  `signedIn` ("Signed in October 13, 2026 at 4:23 pm"); an event is its `label` ("Your
+  profile was updated.") and its `when`. Dates are in the site's date and time format and
+  its timezone (Settings → General). The user agent and the IP address are in the route's
+  answer, as before, and are not printed. Both lists are asked for again after a profile is
+  saved and after a session button is answered.
 - **With scripting off** the block shows a note above its forms
   (`<noscript><p class="corex-account__noscript">`) saying that they need JavaScript. A
   form sent anyway goes to the page's own address, which does not answer it: the forms do
@@ -45,7 +53,10 @@ theme only presents it.
 | Boundary | `Account\WordPressAuthGateway` | Every WordPress auth call (`wp_signon`, `wp_insert_user`, `retrieve_password`, the reset flow, `wp_update_user`). Never reimplements hashing. |
 | Naming | `Account\PublicName` | The name a new account goes by: the username that was typed, or the part of the address before the @ when none was, or when an address was typed as the username. Pure. |
 | Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak) and ends other/all sessions via core helpers. |
-| Notifications | `Notification\NotificationService` | The signed-in user's own activity, projected from the shared core activity stream. |
+| Sessions | `Session\DeviceName` | The browser and system a user agent names, without a version. Pure; a few patterns, no parsing library. |
+| Notifications | `Notification\NotificationService` | The signed-in user's own account activity, projected from the shared core activity stream: the newest ten events of the kinds `AccountActivity` lists. |
+| Notifications | `Notification\AccountActivity` | The kinds the add-on records (`profile.updated`, `sessions.revoked_others`) and the sentence for each. |
+| Dates | `Support\SiteDate` | An instant in the site's date format, time format and timezone, by `wp_date()`. |
 | Presentation | `Block\AccountRenderer` | Pure, fully escaped HTML for the block. |
 
 Every account operation returns a typed `Account\AccountResult` — no caller infers success
@@ -110,18 +121,23 @@ An address of 60 characters or fewer is the login, as before. Covered by
 ## Testing
 
 - Unit: `tests/Unit/Profile/` — `AccountServiceTest`, `SessionListTest`,
-  `NotificationListTest`, `AccountRendererTest`.
+  `NotificationListTest`, `AccountRendererTest`, `DeviceNameTest` (which browser and system
+  a user agent is named as), `AccountActivityTest` (a sentence for each kind the add-on
+  records, none for another).
 - Script: `tests/corex-account.test.js` (Jest) — where an answer is written, that one is on
   the page at a time, how the line is brought into view, and what is said when a request
   gets no answer the script can read; and what each of the two lists shows: its rows, that
-  there is nothing to list, or that it could not be loaded.
+  there is nothing to list, or that it could not be loaded; that a row is the lines the
+  server gave, and that both lists are asked for again after a press that was taken.
 - Browser: `tests/e2e/product-surfaces.spec.js` — the message is inside the window, under
   its button and as wide as the fields, on a desktop and a phone, in both directions; a
   sign-in whose request is aborted, or answered with an error page, says so in its form;
   with scripting off the note is above the forms and inside the window; a signed-in
   person's two lists say so when their requests are aborted, answered with an error page or
   refused, in a box a step under the heading and a step above the session buttons; **Sign
-  out everywhere** loads the page again.
+  out everywhere** loads the page again; a row of either list is two lines that start where
+  its heading starts, in the four windows; a session is named by its browser and system;
+  a saved profile is listed without the page being loaded again.
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
@@ -132,3 +148,6 @@ An address of 60 characters or fewer is the login, as before. Covered by
   — a profile's names are saved as written.
   `tests/Integration/Profile/RegistrationLongAddressTest.php` — an address too long to be a
   login registers, and one too long for an account is refused.
+  `tests/Integration/Profile/AccountListRowsTest.php` — what the two list routes answer: a
+  sentence and a date in the site's timezone and format, only the add-on's own kinds, the
+  newest ten of them, and a session's device and sign-in time.
