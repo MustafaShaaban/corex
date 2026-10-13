@@ -13474,6 +13474,7 @@ is held, and afterwards it is free. Four things were taken out one at a time and
 run: the lock and its release (the lock's test failed for each), the store's question (the
 route's, the form's and the store's repeat tests failed) and the service's reading of the
 store's answer (the unit test failed).
+
 ## #344 — The theme has a side gutter: root padding from spacing preset 40, and the four things it took width from
 
 **Date:** 2026-10-13. **Branch:** `fix/theme-phone-gutter`. **Found by:** the measurement of
@@ -13831,6 +13832,136 @@ it and hold what must not change.
 answered `403`. `AccessController::requests()` is gone: `pendingRequests()` and
 `createRequest()` are the route's callbacks. Read on this machine on 2026-10-13: nothing
 under `sites/` in the Muva or Perego checkouts names the route or the controller.
+
+## #347 — A username that is the person's own email address is no username, and registration's username field says what it is for
+
+**Date:** 2026-10-13. **Branch:** `fix/account-username-is-the-address`, from `main`. It
+was built and measured on `main` at `e8ba03eb` with pull request 386's branch (#342) merged
+in, because the field's value is a line of the table 386 adds; 386 merged the same
+afternoon and `main` with it was merged into the branch, and the tests were run again on
+that. **Found by:** #342, which
+measured the refusal below and left the field without a value. Spec 068 gains FR-158d and
+FR-161c is changed. The numbers #343, #344 and #345 are on pull requests 387, 388 and 389
+and #346 on the pushed branch `fix/access-requests-list`, all four begun while this was
+built; #339 and #340 are on 383 and 384. All were open when this was written.
+
+**What was there, measured again before the change.** WordPress 7.1.3, a WordPress of this
+worktree's own with registration open and every email answered for before the mailer
+(`pre_wp_mail`); `POST corex/v1/account/register` over HTTP with the JSON the block's script
+sends.
+
+| Email | Username | Answer | Account |
+|---|---|---|---|
+| a plain address | empty | 200 | login the address, named by its first part |
+| a plain address | the same address | 200 | the same |
+| an address with a `+` | empty | 200 | login the address without the `+` (WordPress takes it out), named by its first part with the `+` |
+| an address with a `+` | the same address | 422 `invalid_username`, "A username can have letters without accents, numbers, spaces and the characters _ . - @ and no others. Please choose another." | none |
+| an address with a `+` | the same address in other capitals, or with spaces around it | 422, the same | none |
+| an address of 70 characters | empty | 200 | a login made from its first part (#338) |
+| an address of 70 characters | the same address | 422 `register_failed`, WordPress's "Username may not be longer than 60 characters." | none |
+| `kim…@example.test` | `Kim…@Example.Test` | 200 | login `Kim…@Example.Test`, named `Kim…` |
+
+And in Chromium 153.0.8010.12 (Playwright 1.63, the `chromium` channel, headless, an empty
+profile, started without `--enable-automation`), with one made-up saved address
+(`Autofill.setAddresses`) and a fill started from the registration form's Email field
+(`Autofill.trigger`), then the passwords typed, the box ticked and the form sent:
+
+| The Username field | Chromium wrote the address into | Sent as the username | Answer |
+|---|---|---|---|
+| as #342 left it, no value | Email | nothing | 200, account made |
+| `autocomplete="username"`, put on the served page by a route rewrite | Email and Username | the address | 422 `invalid_username`, the sentence above under the button |
+
+So #342's reading holds on `main`: the value alone turns away somebody the form took
+before.
+
+**The rule.** `AccountService::register()` takes a username that is the person's own
+address as no username. One private method, `chosenUsername()`, answers an empty string for
+it, and the three things that asked "was a username typed" ask that method: the check of
+what a username may hold, the login, and the account's name. So the account is the one the
+address gets with the field left empty, in every case that has: an address WordPress
+alters, an address too long to be a login, an address no login can be made from (the
+answer is then `username_required`, as with the field empty).
+
+**How the two are compared.** Without regard to capitals, and after the spaces around the
+username are taken off.
+
+- *Capitals.* `strcasecmp()`. An address reaches the comparison only after it passed
+  `FILTER_VALIDATE_EMAIL`, which takes no letter outside ASCII, so the comparison is of
+  ASCII letters and no locale is in it. WordPress finds an account by its login or its
+  address without regard to capitals (measured on this install: `username_exists()` and
+  `email_exists()` find `kim…@example.test` asked for in capitals, and it signs in so),
+  so `Jane+Shop@Example.com` beside `jane+shop@example.com` is the same address to it.
+  Compared exactly it would have been refused for the `+`, which is the refusal this
+  rule is for.
+- *Spaces.* The route takes the spaces around both off before the service sees them: the
+  username's since #333, the address's in `EmailAnswer::address()`. The service does not
+  trim again.
+- *Nothing else is taken as the same.* An address that differs from the person's by a dot,
+  by what follows a `+`, or by its domain is another address, and is judged as a username
+  as before: with a `+` it is refused, without one it is the login.
+
+When the two are the same but for capitals, the account is made from the address as it is
+in the Email field. That is one outcome that changes for somebody who was not refused:
+`Kim…@Example.Test` as the username beside `kim…@example.test` made the login
+`Kim…@Example.Test` and the name `Kim…`, and now makes the login `kim…@example.test` and
+the name `kim…`. Measured before and after. The person signs in with either, as before.
+
+**Then the field has the value.** `'username' => 'username'` in the `register` row of
+`AccountRenderer::PURPOSES`. Every labelled field of the sign-in, registration,
+forgot-password and profile forms now has an `autocomplete` value.
+
+**Measured after the change**, same install and browser, the page as it is served:
+
+- the registration form's fields read `off` (the field for bots), `email`, `username`,
+  `new-password`, `new-password`;
+- a fill from a saved `jane+…@example.test`, started from Email: the address is in Email
+  and in Username, the form sends it as the username, the answer is 200 and "Your account
+  has been created. You can now sign in." is under the button. The account has the login
+  `jane…@example.test` without the `+` and the name `jane+…`, as it has with the field
+  empty;
+- the same started from the Username field: the same;
+- the same with a saved address of 70 characters: made, with a login made from its first
+  part;
+- Chromium's developer tools raise no issue for the registration form. Before, they raised
+  `FormInputAssignedAutocompleteValueToIdOrNameAttributeError` for the username field;
+- over HTTP, every row of the first table that was refused is now made, with the login and
+  the name of the row above it; another address with a `+` as the username is still
+  refused.
+
+**Not measured.** Firefox, Safari, and a password manager that is not Chromium's own: one
+of them may write something other than an address into a field marked `username` (a
+username saved for another site, say). The field is visible and optional, and what is in
+it is judged as a username unless it is the address. What Chromium's password manager
+reads of the form was not measured again: #342 measured it with the value on the field
+and found it the same as without. A screen reader. Any popup: the browser was headless.
+
+**What was left alone.** The person is not shown the login the account was given. With
+the address in the Username field they may take the address for their login, and they sign
+in with it, so that holds.
+
+**Tests.** `tests/Unit/Profile/AccountServiceTest.php`: a username that is the address is
+not judged and gets the gateway's login for the address and the address's name, for a
+plain address, one with a `+`, one in other capitals and one too long to be a login; and
+another address is still judged. Each row says what the gateway would answer for the
+address as a username; all four failed before the change, two with `invalid_username` and
+two with the username as the login. `tests/Integration/Profile/RegistrationUsernameTest.php`, through the
+route on real WordPress: an address with a `+` in both fields, as it is and in other
+capitals with spaces around it, makes the account an empty username makes and its owner
+signs in with the address; an address of 73 characters in both fields gets a login of its
+first 60. All three failed before with 422. `tests/Unit/Profile/AccountRendererTest.php`
+and `tests/e2e/product-surfaces.spec.js` now expect `username` on the field; the unit test
+failed before the table had the row. No browser test fills the form from a saved address:
+CI's site has registration closed, a registration writes two emails, and the fill is
+started over the DevTools protocol in a Chromium with a profile, which the suite does not
+start. The measurement above is what there is, and `PROGRESS.md` says so.
+
+**Client impact.** A registration with the person's own address as the username in other
+capitals makes an account with the address as its login, where it made one with the
+username as typed. A registration that was refused for an address in the username field
+is now made. The registration form's username gains `autocomplete="username"`. No method
+was added to `AuthGateway`. Read on this machine on 2026-10-13: nothing under `sites/` in
+the Muva or Perego checkouts names the block, the account service, the gateway or the
+register route.
 
 ## #350 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
 

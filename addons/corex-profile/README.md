@@ -17,8 +17,9 @@ theme only presents it.
   `wp_unique_prefixed_id()`: it counts the account blocks rendered in the request.
   Each field also says what it is for with an `autocomplete` value (`username`,
   `current-password`, `new-password`, `email`, `nickname`, `given-name`, `family-name`),
-  which a browser and a password manager read. Registration's optional username has
-  none; the profile guide says why.
+  which a browser and a password manager read. A browser writes a saved email address
+  into a field marked `username`, registration's optional one too, and the account takes
+  the person's own address there as no username (under Security).
 - **`corex/v1/account/*` REST routes** — `login`, `register`, `reset-request`, `reset`
   (public auth endpoints), and `profile`, `sessions`, `sessions/revoke-others`,
   `sessions/revoke-all`, `notifications` (require a signed-in user + REST nonce).
@@ -153,7 +154,10 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
 - A username WordPress would store as a different one (`CORP\salma` as `CORPsalma`) is
   refused with the code `invalid_username`, by WordPress's own `validate_username()`. With
   no username the login is the email address, or one made from it when the address is over
-  60 characters, and the person signs in with the address.
+  60 characters, and the person signs in with the address. A username that is the
+  person's own address, in any capitals, is no username: `AccountService::register()`
+  does not judge it, because a browser writes a saved address into that field and an
+  address can hold a `+` or be longer than a login.
 - Login delegates to `wp_signon`, inheriting core's auth filters and any login hardening.
 - A password is handed to WordPress with `wp_slash()`, as WordPress's own screens hand it
   over, at registration, reset and sign-in. An account the add-on hashed as typed before
@@ -188,7 +192,7 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
   `tests/Integration/Profile/RegistrationUsernameTest.php` — which usernames the register
-  route refuses and which it keeps.
+  route refuses and which it keeps, and that the person's own address is no username.
   `tests/Integration/Profile/PasswordSignsInEverywhereTest.php` — a password with a quote
   or a backslash signs in at the add-on and the way `wp-login.php` checks it. `tests/Integration/Profile/ProfileNamesKeepBackslashesTest.php`
   — a profile's names are saved as written.

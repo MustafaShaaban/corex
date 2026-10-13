@@ -112,7 +112,7 @@ to offer the saved password at sign-in and a new one at registration, and WCAG 2
 | `login` | `login` | `username` |
 | `login` | `password` | `current-password` |
 | `register` | `email` | `email` |
-| `register` | `username` | none |
+| `register` | `username` | `username` |
 | `register` | `password`, `password_confirm` | `new-password` |
 | `reset-request` | `login` | `username` |
 | `reset` | `password`, `password_confirm` | `new-password` |
@@ -121,11 +121,11 @@ to offer the saved password at sign-in and a new one at registration, and WCAG 2
 | `profile` | `last_name` | `family-name` |
 | `profile` | `email` | `email` |
 
-The registration form's optional username has no value on purpose. Chromium writes the
-person's saved email address into a field marked `username` when they pick a saved
-address for the form, and an address with a character a username cannot hold (the `+`
-of `name+shop@example.com`) is then refused as a username, where the same person
-registers when the field is left empty. The display name is a `nickname` and not a
+Chromium writes the person's saved email address into a field marked `username` when
+they pick a saved address for the form, so at registration it writes the address into
+**Email** and into the optional **Username**. The account takes a username that is the
+person's own address as no username (see [Usernames](#usernames)), and the account made
+is the one they get with the field left empty. The display name is a `nickname` and not a
 `name`: it is the name a member is shown by, and with `name` Chromium takes it for the
 full name of a saved address and writes that over it when a fill is started there.
 Chromium does not know `nickname`: it fills nothing into that field, and its developer
@@ -141,6 +141,12 @@ The registration form's **Username** field is optional.
   characters `_ . - @`. WordPress does not refuse such a username, it removes what it does
   not accept and keeps the rest, and the person could then not sign in with the name they
   chose. Spaces before and after it are taken off and are not a reason to refuse it.
+- A username that is the person's own email address is taken as no username. A browser
+  writes a saved address into the field, and an address is not always a username an
+  account can have: `name+shop@example.com` has a `+`, and an address can be longer than
+  a login. The two are compared without regard to capitals, after the spaces around the
+  username are taken off. Any other address typed as the username is judged as a
+  username.
 - With no username, the login is made from the email address. WordPress removes from it
   the characters a login cannot hold (the `+` of `name+shop@example.com`, for one), and the
   person signs in with the address.
@@ -255,8 +261,10 @@ A display name is what WordPress signs a comment or a post with, for every visit
 - With a username, the account is shown by it.
 - With no username, the account's login is its email address, and it is shown by the part of
   the address before the @: `dalia.hassan@example.com` is shown as `dalia.hassan`, and its
-  author page is at `author/dalia-hassan`. The address itself is not shown. An
-  email address typed into the Username field is treated the same way.
+  author page is at `author/dalia-hassan`. The address itself is not shown. The
+  person's own address in the Username field is no username, so it makes the same
+  account. Another email address typed there is the login, and the account is shown by
+  the part before its @.
 - An address too long to be the login is shown the same way, by the part before the @.
 - The person signs in with the address either way, and changes the display name on the
   account block's **Profile** form.

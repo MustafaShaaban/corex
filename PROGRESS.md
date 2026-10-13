@@ -273,15 +273,14 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   account when its owner signs in on the account block; nothing moves the others, and
   nothing lists them. Moving one signs its owner out of their other browsers, once
   (measured, #334).
-- **The registration form's username does not say what it is for.** Every other labelled
-  field of the account block has an `autocomplete` value since DECISIONS #342. This one
-  is left without `username` because of what was measured in Chromium 153 on 2026-10-13:
-  it writes the person's saved email address into a field marked `username`, and an
-  address with a character a username cannot hold (`name+shop@example.com`) is then
-  refused as a username, where the same person registers with the field empty. The field
-  can have the value once a username that is the person's own address is taken as no
-  username in `AccountService::register()`; that file was in open pull request 384 when
-  this was written. Until then that field does not meet WCAG 1.3.5.
+- **No kept test fills the registration form from a saved address.** The form's
+  username is marked `username` since DECISIONS #347, and Chromium 153 then writes a
+  saved address into Email and into Username. That a registration filled so is made, with
+  a `+` in the address or with an address over 60 characters, was measured on 2026-10-13
+  over the DevTools protocol in a Chromium with a profile of its own. What holds it since
+  is the account rule's unit and integration tests and the two tests of the attribute. No
+  browser test registers an account: CI's site has registration closed, and a registration
+  writes two emails.
 - **After a registration the browser does not offer to save the new password.** Measured
   in Chromium 153 on 2026-10-13, before and after DECISIONS #342: its password manager
   holds the address (or the username) and the new password while the form is filled in,

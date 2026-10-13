@@ -219,16 +219,16 @@ function labelTies( page ) {
 
 /**
  * What each field of a signed-out form tells the browser it is for: its `autocomplete` value,
- * and null for a field that has none. The field left for bots is never to be filled in; the
- * username somebody may choose at registration is left alone, because Chromium writes the
- * person's address into a field marked `username` (DECISIONS #342).
+ * and null for a field that has none. The field left for bots is never to be filled in.
+ * Chromium writes the person's address into a field marked `username`, registration's own
+ * among them, and the account takes that address as no username (DECISIONS #347).
  */
 const SIGNED_OUT_PURPOSES = {
 	login: { login: 'username', password: 'current-password' },
 	register: {
 		corex_hp: 'off',
 		email: 'email',
-		username: null,
+		username: 'username',
 		password: 'new-password',
 		password_confirm: 'new-password',
 	},

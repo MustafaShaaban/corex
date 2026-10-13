@@ -286,7 +286,7 @@ it('tells the browser what each field is for', function (array $ctx, array $expe
             'login: password'            => 'current-password',
             'register: corex_hp'         => 'off',          // the field left for bots is never filled in
             'register: email'            => 'email',
-            'register: username'         => null,           // a browser would write the address into it
+            'register: username'         => 'username',     // the account takes the address in it as no username
             'register: password'         => 'new-password',
             'register: password_confirm' => 'new-password',
             'reset-request: login'       => 'username',
