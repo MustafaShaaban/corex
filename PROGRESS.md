@@ -238,13 +238,21 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   `document.querySelector`, so a second block's lists stay empty for a signed-in person.
   The forms of every block are answered, and since DECISIONS #337 no id is on such a page
   twice.
-- **With scripts off, an account form is sent to the page and nothing answers.** Measured
-  the same day: the forms have no address of their own, so the browser posts to the page
-  it is on, which shows the empty forms again. The add-on's README and the profile guide
-  said the forms "still submit"; they now say what happens. Not changed.
-- **An account form whose request fails says nothing.** Read from `account.js`, not run:
-  a request that does not arrive, or an answer that is not JSON, ends in a rejected promise
-  nothing handles, and no message line is written.
+- **With scripts off the account block's forms do not work. Whether they should is the
+  owner's decision, asked on 2026-10-13.** The block says so now, in a note above its
+  forms that only a browser running no scripts shows, and that names no other place to
+  sign in (DECISIONS #339, spec 068 FR-161d). A form sent anyway still goes to the page it
+  is on, with what was typed in it, and is not answered. Making the forms work without
+  scripts is a second way in for sign-in, registration and the rest, with a spec of its
+  own; #339 weighs it and recommends not now.
+- **A browser that runs scripts and did not get `account.js` is told nothing.** With the
+  file blocked, or the request for it failed, a form goes to the page as it does with
+  scripts off, and the note for scripts being off is not shown. Read, not run. Only forms
+  that work without scripts close it (DECISIONS #339).
+- **A signed-in person's sessions and recent activity say nothing when they do not load.**
+  `get()` in `account.js` has no rejection handler, so the two lists stay empty under
+  their headings. Read, not run. A form's or a session button's request that gets no
+  answer does say so now (DECISIONS #339, FR-161e).
 - **No screen reader was listened to on the account block.** That an answer is announced,
   and once, is read from where it is written (one polite status, in the page before its
   text changes; three of them in Chromium's accessibility tree on the signed-out page,

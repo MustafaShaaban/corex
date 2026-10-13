@@ -21,7 +21,8 @@ use Corex\Profile\Reset\ResetState;
  * here, so the panel is unit-testable headlessly.
  *
  * What the server answers is written under the button that asked: each form, and the
- * session buttons, have a message line of their own (spec 068, FR-161a).
+ * session buttons, have a message line of their own (spec 068, FR-161a). A browser that
+ * runs no scripts is told above the forms that they need them (FR-161d).
  *
  * Somebody who arrives from a reset email with a key WordPress takes is shown the
  * new-password form and nothing else, whoever is signed in on that browser (FR-158b).
@@ -86,7 +87,7 @@ final class AccountRenderer
             default                             => $this->guest($ctx, $block),
         };
 
-        return '<div' . $attrs . '>' . $this->arrivalNote($reset) . $body . '</div>';
+        return '<div' . $attrs . '>' . $this->arrivalNote($reset) . $this->scriptsOffNote() . $body . '</div>';
     }
 
     /**
@@ -126,6 +127,21 @@ final class AccountRenderer
             . $this->submit(__('Save password', 'corex'))
             . '</form>'
             . '</div>';
+    }
+
+    /**
+     * Shown by a browser that runs no scripts, and by no other. The forms are sent by
+     * `account.js`; one sent without it goes to the page's own address, which does not
+     * answer it.
+     *
+     * It names no other place to sign in. WordPress's own address is the hidden one where
+     * login protection is on, and this is in the page for anybody (DECISIONS #339).
+     */
+    private function scriptsOffNote(): string
+    {
+        return '<noscript><p class="corex-account__noscript">'
+            . esc_html__('The forms and buttons below need JavaScript, which is switched off in this browser. One that is used without it is not answered. Switch JavaScript on and load this page again.', 'corex')
+            . '</p></noscript>';
     }
 
     /**

@@ -33,7 +33,27 @@ that shows it, at once for a visitor whose system asks for reduced motion. The l
 polite status (`role="status"`), so a screen reader announces the answer; focus stays on
 the button. One answer is shown at a time: sending a form clears the others.
 
-Without JavaScript a form is sent to the page's own address, which does not answer it.
+When a request gets no answer the block can read, the same line says "The site could not
+be reached, or its answer could not be read. Please try again." That covers a request that
+did not arrive (the visitor is offline, or something blocked it), an answer that is a page
+and not JSON (a server error page, a proxy's page), and a refusal that carries no message.
+It does not say that nothing was changed: a request can arrive and its answer be lost.
+
+### Without JavaScript
+
+The forms need JavaScript. A browser that runs no scripts is shown a note above the forms
+that says so:
+
+> The forms and buttons below need JavaScript, which is switched off in this browser. One
+> that is used without it is not answered. Switch JavaScript on and load this page again.
+
+A form sent anyway goes to the page's own address, which shows the page again and does not
+answer it. The note does not link to WordPress's own sign-in screen: on a site with login
+protection on, that address is the hidden one, and the note is in the page for anybody.
+
+The note is `<p class="corex-account__noscript">` inside `<noscript>`, the first thing in
+the block, or the second on a page load that says what became of a password reset, where
+the reset's message line is first. A browser that runs scripts does not show it.
 
 ### Styling the message line
 
