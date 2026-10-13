@@ -15,13 +15,21 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Tests\Support\AdminUrlStubs;
 use Corex\Access\CorexAbility;
+use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Config\Notifications\Producers\SubmissionNotificationProducer;
+use Corex\Container\Container;
 use Corex\Events\ListenerProvider;
+use Corex\Forms\Catalog\FormCatalog;
+use Corex\Forms\Flow\FlowRepository;
+use Corex\Forms\Form;
+use Corex\Forms\FormRegistry;
 use Corex\Forms\Submission\NotificationDelivery;
 use Corex\Forms\Submission\SubmissionProcessedEvent;
 use Corex\Mail\MailResult;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationService;
+use Corex\Support\BootLogger;
+use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 use Corex\Tests\Support\RecordingNotificationService;
 
 beforeEach(function () {
@@ -30,6 +38,8 @@ beforeEach(function () {
     Functions\stubTranslationFunctions();
     // Producers name a destination now, and building it calls WordPress (spec 087, FR-014).
     AdminUrlStubs::install();
+    // The inbox's filter cleans what a site's own hook may have added to its list.
+    Functions\when('sanitize_key')->returnArg();
 });
 
 /** A NotificationService that records every published notification. */
@@ -111,4 +121,101 @@ it('is available only when the forms submission event exists', function () {
 
     expect($producer->key())->toBe('forms.submissions')
         ->and($producer->isAvailable())->toBe(class_exists(SubmissionProcessedEvent::class));
+});
+
+/*
+ * A form defined in code has no flow: it is known by its slug, and by the name it gives itself.
+ * Reported on 2026-10-13 from a client site whose forms are all defined in code.
+ */
+
+/** A form defined in code, as its submission is announced: stored, and with no flow. */
+function codeFormEvent(NotificationDelivery $delivery, string $slug = 'request-a-quote'): SubmissionProcessedEvent
+{
+    return new SubmissionProcessedEvent(
+        submissionId: 42,
+        flowId: 0,
+        flowSlug: $slug,
+        ownerId: null,
+        delivery: $delivery,
+    );
+}
+
+/** The site's forms as the inbox's filter lists them, here from forms defined in code. */
+function inboxFilterListing(Form ...$forms): FlowFilterOptions
+{
+    $registry = new FormRegistry();
+    foreach ($forms as $form) {
+        $registry->register($form);
+    }
+
+    $container = new Container();
+    $container->instance(FormCatalog::class, new FormCatalog(
+        new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false)),
+        $registry,
+    ));
+
+    return new FlowFilterOptions($container);
+}
+
+/** A form that says what it is called. */
+function quoteForm(): Form
+{
+    return new class extends Form {
+        public string $slug = 'request-a-quote';
+
+        public function label(): string
+        {
+            return 'Request a quote';
+        }
+    };
+}
+
+it('sends a form defined in code to its own rows, asked for by slug as the inbox\'s filter asks', function () {
+    $service = recordingNotificationService();
+    $listeners = new ListenerProvider();
+
+    dispatchProcessed(
+        new SubmissionNotificationProducer($service, $listeners),
+        $listeners,
+        codeFormEvent(NotificationDelivery::notAttempted('no_binding', 'No notification configured.')),
+    );
+
+    $new = $service->published[0];
+    parse_str((string) parse_url($new->action->url, PHP_URL_QUERY), $asked);
+
+    expect($service->published)->toHaveCount(1)
+        ->and($new->type)->toBe('submission.new')
+        ->and($new->dedupKey)->toBe('submission.new:request-a-quote')
+        ->and($asked)->toBe(['page' => 'corex-submissions', 'corex_form' => 'slug:request-a-quote'])
+        ->and($new->sourceType)->toBe('form')
+        ->and($new->sourceId)->toBe('request-a-quote');
+});
+
+it('names the form as the inbox\'s filter names it, in both notifications', function () {
+    $service = recordingNotificationService();
+    $listeners = new ListenerProvider();
+
+    dispatchProcessed(
+        new SubmissionNotificationProducer($service, $listeners, inboxFilterListing(quoteForm())),
+        $listeners,
+        codeFormEvent(NotificationDelivery::wpMail(false, 'attempt-3')),
+    );
+
+    expect($service->published[0]->rendered['title'])->toBe('New submission on “Request a quote”')
+        ->and($service->published[1]->type)->toBe('submission.email_failed')
+        ->and($service->published[1]->dedupKey)->toBe('submission.email_failure:request-a-quote')
+        ->and($service->published[1]->rendered['body'])->toContain('“Request a quote”');
+});
+
+it('names a form the filter does not list by its slug', function () {
+    $service = recordingNotificationService();
+    $listeners = new ListenerProvider();
+
+    dispatchProcessed(
+        new SubmissionNotificationProducer($service, $listeners, inboxFilterListing(quoteForm())),
+        $listeners,
+        codeFormEvent(NotificationDelivery::notAttempted('no_binding', 'none'), 'callback'),
+    );
+
+    expect($service->published[0]->rendered['title'])->toBe('New submission on “callback”');
 });

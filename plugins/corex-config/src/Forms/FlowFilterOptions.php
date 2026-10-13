@@ -84,6 +84,21 @@ final class FlowFilterOptions
     }
 
     /**
+     * What the site calls a form: the name it is listed under here, which is where a form
+     * defined in code says what it is called. '' where nothing lists it.
+     */
+    public function nameOf(string $slug): string
+    {
+        foreach ($slug === '' ? [] : $this->all() as $form) {
+            if ($form['slug'] === $slug) {
+                return $form['name'];
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Force injected entries into the shape both screens rely on, and keep one row per form.
      *
      * A filter is an open door: anything can come back through it. The screens key on `id` and

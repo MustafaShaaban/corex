@@ -11,8 +11,8 @@ namespace Corex\Config\Notifications\Producers;
 defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
+use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Events\ListenerProvider;
-use Corex\Forms\Submission\NotificationDelivery;
 use Corex\Forms\Submission\SubmissionProcessedEvent;
 use Corex\Notifications\Notification;
 use Corex\Notifications\NotificationAction;
@@ -30,6 +30,9 @@ use DateTimeImmutable;
  * notification. That failure sits in the `email` category on purpose, so the channel policy (T021)
  * keeps a failed submission email from itself being emailed (FR-021 loop prevention).
  *
+ * The event is the same for a form built in Forms & Flows and a form defined in code. The second
+ * has no flow, so it is linked to and recorded by its slug.
+ *
  * Dependency-aware: it produces nothing unless the forms module's submission event exists (FR-014).
  */
 final class SubmissionNotificationProducer implements NotificationProducer
@@ -37,6 +40,8 @@ final class SubmissionNotificationProducer implements NotificationProducer
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly ListenerProvider $listeners,
+        /** Asked what a form is called. Null where nothing lists the site's forms. */
+        private readonly ?FlowFilterOptions $forms = null,
     ) {
     }
 
@@ -63,7 +68,7 @@ final class SubmissionNotificationProducer implements NotificationProducer
     {
         $this->notifications->publish($this->newSubmission($event));
 
-        if ($this->deliveryFailed($event->delivery)) {
+        if ($event->delivery->failed()) {
             $this->notifications->publish($this->emailFailure($event));
         }
     }
@@ -82,9 +87,9 @@ final class SubmissionNotificationProducer implements NotificationProducer
             // Occurrences are deduplicated per form, so the count on the item says how many.
             rendered: [
                 'title' => sprintf(
-                    /* translators: %s: the form slug. */
+                    /* translators: %s: the form's name. */
                     __('New submission on “%s”', 'corex'),
-                    $event->flowSlug,
+                    $this->knownAs($event->flowSlug),
                 ),
                 // This used to read "Open the Submission Inbox to read and assign it" — an
                 // instruction to go somewhere, in a record that could have taken you there. The
@@ -95,8 +100,8 @@ final class SubmissionNotificationProducer implements NotificationProducer
             dedupKey: 'submission.new:' . $event->flowSlug,
             recipient: NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS),
             occurredAt: new DateTimeImmutable('now'),
-            sourceType: 'flow',
-            sourceId: (string) $event->flowId,
+            sourceType: self::sourceTypeOf($event),
+            sourceId: self::sourceIdOf($event),
             // Deep-linked to this form's rows, not to the inbox at large: `corex_form` is the
             // parameter the inbox already reads for exactly this ("Forms & Flows links to the
             // submissions for this form" — inbox.js), so the link and the form filter cannot mean
@@ -104,7 +109,7 @@ final class SubmissionNotificationProducer implements NotificationProducer
             action: NotificationAction::to(
                 'notifications.submission.new.action',
                 add_query_arg(
-                    ['page' => 'corex-submissions', 'corex_form' => (string) $event->flowId],
+                    ['page' => 'corex-submissions', 'corex_form' => self::inboxFilterFor($event)],
                     admin_url('admin.php'),
                 ),
                 CorexAbility::MANAGE_SUBMISSIONS,
@@ -125,16 +130,16 @@ final class SubmissionNotificationProducer implements NotificationProducer
             rendered: [
                 'title' => __('Submission notification email failed', 'corex'),
                 'body'  => sprintf(
-                    /* translators: %s: the form slug. */
+                    /* translators: %s: the form's name. */
                     __('The notification email for a “%s” submission could not be delivered.', 'corex'),
-                    $event->flowSlug,
+                    $this->knownAs($event->flowSlug),
                 ),
             ],
             dedupKey: 'submission.email_failure:' . $event->flowSlug,
             recipient: NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS),
             occurredAt: new DateTimeImmutable('now'),
-            sourceType: 'flow',
-            sourceId: (string) $event->flowId,
+            sourceType: self::sourceTypeOf($event),
+            sourceId: self::sourceIdOf($event),
             metadata: ['delivery_status' => $event->delivery->status, 'reason' => $event->delivery->safeReason],
             // A failed notification email is diagnosed in Email Studio, which holds the attempt log
             // and the route that was meant to carry it. Gated on MANAGE_EMAIL, not on the
@@ -150,12 +155,35 @@ final class SubmissionNotificationProducer implements NotificationProducer
         );
     }
 
-    /** An attempted delivery that did not succeed — never `not_attempted` (no binding) or legacy `unavailable`. */
-    private function deliveryFailed(NotificationDelivery $delivery): bool
+    /** The name the inbox's own filter lists the form under, or its slug where nothing names it. */
+    private function knownAs(string $slug): string
     {
-        return ! $delivery->successful() && ! in_array($delivery->status, [
-            NotificationDelivery::STATUS_NOT_ATTEMPTED,
-            NotificationDelivery::STATUS_UNAVAILABLE,
-        ], true);
+        $name = $this->forms?->nameOf($slug) ?? '';
+
+        return $name !== '' ? $name : $slug;
+    }
+
+    /**
+     * The value of the inbox's form filter that shows this form's rows: a flow's id, or
+     * `slug:<slug>` for a form defined in code, the two shapes the filter itself sends.
+     */
+    private static function inboxFilterFor(SubmissionProcessedEvent $event): string
+    {
+        return self::hasFlow($event) ? (string) $event->flowId : 'slug:' . $event->flowSlug;
+    }
+
+    private static function sourceTypeOf(SubmissionProcessedEvent $event): string
+    {
+        return self::hasFlow($event) ? 'flow' : 'form';
+    }
+
+    private static function sourceIdOf(SubmissionProcessedEvent $event): string
+    {
+        return self::hasFlow($event) ? (string) $event->flowId : $event->flowSlug;
+    }
+
+    private static function hasFlow(SubmissionProcessedEvent $event): bool
+    {
+        return $event->flowId !== SubmissionProcessedEvent::NO_FLOW;
     }
 }

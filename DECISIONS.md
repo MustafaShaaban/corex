@@ -14515,3 +14515,179 @@ right-to-left again with this one; nothing stored changes. In PHP,
 `SubmissionFileDelivery::register()` is gone, and `Layout`'s constructor also takes a
 closure; an array is taken as before. Read on this machine on 2026-10-13: nothing under
 `sites/` in the Muva or Perego checkouts names either class or the action.
+
+## #352 — A stored submission of a form defined in code is announced as a flow's is, so the notification centre hears of it; a form is named in a notification as the inbox's filter names it
+
+**Date:** 2026-10-13. **Branch:** `fix/code-form-submission-notification`, from `main`.
+**Spec:** none (defect fix).
+
+**What was reported.** The owner, 2026-10-13, relayed by the Muva client session (on
+v0.45.2): "i also noticed that iam not geting a notification on the corex when there is a
+new submission". Seen by that session on Muva's local copy: the notifications table held
+`readiness.blocker` and `export.ready` rows and no `submission.new`, with dozens of
+submissions stored since 2026-10-07.
+
+**The cause.** `SubmissionNotificationProducer` listens for `SubmissionProcessedEvent` and
+nothing else. That event was dispatched in one place, `FlowVisitorSubmissionService`, the
+path of a form built in Forms & Flows. A form registered in code goes through
+`FormSubmissionService`, which dispatched `FormSubmittedEvent` to the form's listeners and
+stopped. It has been so since the producer first shipped (v0.35.0). Both of Muva's forms
+and both of Perego's are registered in code (read on this machine, 2026-10-13). It is the
+same family as #318 (inbox search) and #317 (a file sent with a form): the inbox learned
+about forms defined in code and the notification centre did not.
+
+**The decision.**
+
+1. *`FormSubmissionService` dispatches `SubmissionProcessedEvent` itself*, after the form's
+   listeners have run and only when one of them stored the submission
+   (`FormSubmittedEvent::submissionId()` is not null). It carries the form's slug as
+   `flowSlug`, `flowId` 0 (named `SubmissionProcessedEvent::NO_FLOW`) and `ownerId` null: a
+   form defined in code has no flow and no owner.
+2. *The producer keeps listening for that one event.* For a form with no flow it links to
+   the inbox with `corex_form=slug:<slug>`, the shape the inbox's own filter sends for such
+   a form (`inboxFiltersFromUrl()` in `Submissions/inbox.js`), and records the source as
+   `form` and the slug, not `flow` and `0`.
+3. *The form is named as the inbox's filter names it*, through
+   `FlowFilterOptions::nameOf()`, new, which `SubmissionReplyView` now calls too in place of
+   its own copy of the loop. This changes the title for a form built in Forms & Flows as
+   well: its title held the flow's slug and now holds the flow's name. A form nothing lists
+   is called by its slug, as before.
+4. *The key is unchanged:* `submission.new:<form slug>`, and
+   `submission.email_failure:<form slug>` for the failed email.
+
+**Why the event and not a second listener.** The producer could have listened for
+`FormSubmittedEvent` as well. Two things were against it. Listeners of one event run in the
+order they were registered (`ListenerProvider`), across providers: the producer's would run
+before or after the forms provider's, which is the one that runs the form's own listeners
+and so the one that stores, depending on which plugin booted first; run before it,
+`submissionId()` is null and nothing would be raised. And a form may list its listeners in
+any order, or list none that stores. Dispatching after `dispatch()` has returned makes
+neither order matter. It also leaves one event that means "a submission was stored",
+whatever kind of form it came from, for anything else that wants to know.
+
+**`submission.email_failed` on a form defined in code.** The event has to say how the
+notification email went, and for a flow the pipeline knows. For a form in code the email
+is written by a listener, so the listener says: `FormSubmittedEvent::notifiedAs()`, new,
+and `delivery()` to read it. `SendEmailListener`, CoreX's own, now calls it with the
+result it already had and used to drop, so a form that uses it gets the failed-email
+notification exactly as a flow does (run on real WordPress with the email refused before
+WordPress handed it to anything). A failure is kept over a later listener's success: of
+two emails where one did not go, the one somebody has to look at is that one. Where no
+listener said anything the delivery is `not_attempted` with the reason code
+`not_reported`, and no failed-email notification is raised.
+
+*A site whose own listener sends the email while the request runs* reports it with
+`$event->notifiedAs(NotificationDelivery::fromResult($mailer->attempt($request)))`;
+without that line nothing is raised. The mailer the mail add-on binds as
+`Corex\Mail\Mailer` (`QueuedMailer` over `RequestMailer`) is an `AttemptingMailer`, so
+`attempt()` is there to call. Read, not run: a mail sent through that mailer goes through
+`MailService`, not through Email Studio's service, so it does not raise
+`email.delivery_failed` either; before this change such a site was told of a failed
+notification email by nothing.
+
+*A site that sends after the request cannot report it, and this change does not let it.*
+Muva is one. Told by the Muva session on 2026-10-13, which read its checkout (I read only
+the two listeners' names): `SendBriefEmails` and `SendLeadEmails` write the emails, push
+them to a queue of Muva's own and return, so the form answers the visitor at once; a
+WP-Cron job calls the mailer later, with Muva's own retries, when the event is long gone.
+There is nothing true to say while the event is handled ("queued" would be honest and
+would tell the notification centre nothing), and nothing here takes a submission id and a
+result afterwards. The same holds for CoreX's own mail queue: with it on, `attempt()`
+answers `queued`, which counts as gone, and a failure when the queue sends it is reported
+to the notification centre by nothing. So Muva's failed notification emails raise no
+notification, as before. Covering that needs a call outside the event, by submission id
+or form slug, of the shape `SubmissionConversation::began($submissionId, $request)` has
+for a reply's thread. Not built: the owner has not asked for that notification.
+
+**The other producers** under `plugins/corex-config/src/Notifications/Producers/`, read
+for the same assumption (an event that only one of two paths dispatches):
+
+| Producer | Listens for | Dispatched by | Same assumption |
+| --- | --- | --- | --- |
+| `SubmissionAssigned` | `SubmissionAssignedEvent` | `SubmissionWorkflowService`, by submission id | No: a submission of either kind is assigned the same way |
+| `AccessRequest` | `AccessRequestedEvent` | `AccessService` | No |
+| `JobFailure`, `ExportReady` | `JobFinishedEvent` | `JobRunner` | No |
+| `LoginLockout` | `LoginLockoutEvent` | `LoginProtectionEnforcer` | No |
+| `Readiness` | `ReadinessEvaluatedEvent` | `ProductionReadinessSnapshotFactory` | No |
+| `EmailDesignFailure` | `EmailDesignFailedEvent` | `SiteEmailBrand`, `SiteEmailDesign` | No |
+| `EmailStudioFailure` | `EmailStudioDeliveryFailedEvent` | `EmailStudioService` only | Yes, in part: see below |
+
+`EmailStudioFailure` hears of an email that Email Studio's service sent (a routed email, a
+reply). An email sent through `Corex\Mail\Mailer` by a listener or an add-on (Bookings,
+Careers, a site's own) goes through `MailService` and raises nothing when it fails. That
+is the gap named above; it is older than this change and is left as a lead.
+
+**What naming costs.** The name comes from the form catalog, which also counts every
+form's submissions in one grouped query, for the screens that show the count. Measured on
+this branch's install with `wp eval-file`, a process each time: about 4 ms and two queries
+with a handful of submissions; 62 to 73 ms with 10,000 (five runs). A second read in the same
+request is 0.03 ms. So a stored submission costs that much more on a site with no
+persistent object cache; with one, the count is kept for a minute. It is paid once per
+stored submission, of either kind of form, beside storing it and sending an email.
+Accepted, and written into PROGRESS as a lead: the catalog should count only for a screen
+that asks.
+
+**Tests.** `tests/Unit/Forms/FormSubmissionServiceTest.php`: a stored submission is
+announced with the slug and no flow; one nothing stored is not; the delivery a listener
+said is carried whatever order the listeners are in; a failure is kept.
+`tests/Unit/Forms/SendEmailListenerTest.php`: the listener tells the event.
+`tests/Unit/Notifications/SubmissionNotificationProducerTest.php`: the link by slug, the
+source, the name from the filter in both notifications, the slug where nothing names the
+form. `tests/Integration/Notifications/CodeFormSubmissionNotificationTest.php`, through
+the form route's controller as a visitor on real WordPress: one notification shown to a
+person holding `corex_manage_submissions` and none to a person who does not, named and
+linked; a second submission adds to it (`occurrences` 2); a form that does not store
+raises none; a form whose email WordPress could not send raises the failed-email one, and
+one whose email went does not. Each was seen failing before the change (the failed-email
+case in its first form), and that case again with the listener's line taken out. The file answers
+`pre_wp_mail` itself: a form defined in code sends through `wp_mail()` whatever
+`MailDelivery::CAPTURE` or `REFUSE` answers (the first draft of the failed-email case used
+`REFUSE` and reached `mail()`; nothing left this install, which has no mail server).
+
+**Seen in the admin**, on this branch's install served on its own port: the contact form
+sent from a page as a visitor; the Notifications screen then listed "New submission on
+“Contact”" with **Open the Submission Inbox**, whose link is
+`admin.php?page=corex-submissions&corex_form=slug:contact` and opens the inbox with the
+form filter on Contact and only that form's rows; and "Submission notification email
+failed" beside it, this install having no mail server.
+
+**Five older tests now raise a notification, and hand it back.** That screen read "5
+times" on the first look: `SubmitLifecycleTest`, `FormClientAddressTest`,
+`ChoiceAndFileSubmissionTest`, `ProtectedCodeFormTest` and one case of
+`ComingSoonModeTest` store a submission of a form defined in code, and since this change
+each left a `submission.new:` row on the install it ran on. Each now takes
+`NotificationRows::snapshotPrefixed('submission.')` before and restores it after, as
+`SubmissionKeepsBackslashesTest` already did for the contact form. After a run of the
+whole suite the install holds no `submission.` row it did not hold before (read from the
+table).
+
+**A test helper that split the suite's form registry**, found because the new file passed
+alone and failed in a run of the whole suite (the route answered 404).
+`withRegisteredForm()` in `tests/Integration/Forms/CodeFormDiscoveryTest.php` put the
+registry "back as it was" by binding a new `FormRegistry` in the container. Everything
+already made (the form route's service, the catalog) kept the old one, and for the rest
+of the run a form registered with the container's registry was unknown to the route.
+`NotificationFileLinkTest`'s header describes the symptom and works round it. The helper
+now takes its form out of the one registry. Whole integration suite after: 1180 passed.
+
+**Leads, not built.**
+
+- *A failed email sent through `Corex\Mail\Mailer` is reported by nothing* unless the
+  caller reports it (above). Bookings and Careers call `Mailer` too; whether they should
+  raise a notification was not looked at.
+- *An email sent after the request, by CoreX's queue or a site's own, cannot raise the
+  failed-email notification*: it needs a call that takes a submission id and a result
+  outside the event (above).
+- *The catalog counts submissions for every reader* (measured above).
+- *The stale sentence in `NotificationFileLinkTest`'s header* about the registry is left
+  as it is; the test still passes and was not otherwise touched.
+
+**Client impact.** A site whose forms are registered in code starts to get the New
+submission notification for submissions stored from then on; nothing is raised for those
+already in the inbox, and nothing is set. Muva's and Perego's forms all list
+`StoreSubmissionListener` (read on this machine), so each stored submission raises one.
+Perego's forms list no email listener, so they have no notification email to fail. Muva's
+send theirs later, from a queue of its own, and cannot report through the event: Muva
+gets no failed-email notification from this change. A site that
+listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
+0; nothing under `sites/` in the Muva or Perego checkouts names that event.

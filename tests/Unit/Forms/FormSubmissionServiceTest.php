@@ -18,7 +18,9 @@ use Corex\Forms\FormRegistry;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\FormSubmittedEvent;
+use Corex\Forms\Submission\NotificationDelivery;
 use Corex\Forms\Submission\SubmissionChallenge;
+use Corex\Forms\Submission\SubmissionProcessedEvent;
 use Corex\Forms\Submission\SubmissionRefusal;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
@@ -192,4 +194,88 @@ it('accepts a protected form on a site with no challenge provider', function () 
     $service    = submissionService($dispatched, protectedTestForm());
 
     expect($service->handle('callback', ['phone' => '0100'])->isOk())->toBeTrue();
+});
+
+/*
+ * A form defined in code that was stored is announced as a form built in Forms & Flows is, so
+ * whatever listens for a processed submission hears of both. The notification centre listens for
+ * that and nothing else: a site whose forms are all in code was told of no submission (reported
+ * on 2026-10-13 from a client site).
+ */
+
+const VALID_CONTACT_ANSWERS = ['name' => 'Mustafa', 'email' => 'm@example.com', 'message' => 'Hello there'];
+
+/**
+ * The contact form's service with the listeners a form would list, in their order.
+ *
+ * @param list<callable(FormSubmittedEvent):void> $formListeners
+ * @param list<SubmissionProcessedEvent>          $processed     what was announced, by reference
+ */
+function announcingService(array $formListeners, array &$processed): FormSubmissionService
+{
+    $registry = new FormRegistry();
+    $registry->register(new ContactTestForm());
+
+    $rules     = new RuleRegistry();
+    $listeners = new ListenerProvider();
+    foreach ($formListeners as $listener) {
+        $listeners->listen(FormSubmittedEvent::class, $listener);
+    }
+    $listeners->listen(SubmissionProcessedEvent::class, function (SubmissionProcessedEvent $event) use (&$processed): void {
+        $processed[] = $event;
+    });
+
+    return new FormSubmissionService(
+        $registry,
+        new SchemaResolver($rules),
+        new Validator($rules),
+        new EventDispatcher($listeners, new BootLogger(debug: false)),
+    );
+}
+
+it('announces a stored submission as processed, under the form\'s slug and with no flow', function () {
+    $processed = [];
+    $stores    = static fn (FormSubmittedEvent $event) => $event->storedAs(42);
+
+    announcingService([$stores], $processed)->handle('contact', VALID_CONTACT_ANSWERS);
+
+    expect($processed)->toHaveCount(1)
+        ->and($processed[0]->submissionId)->toBe(42)
+        ->and($processed[0]->flowSlug)->toBe('contact')
+        ->and($processed[0]->flowId)->toBe(0)
+        ->and($processed[0]->ownerId)->toBeNull()
+        ->and($processed[0]->delivery->status)->toBe(NotificationDelivery::STATUS_NOT_ATTEMPTED);
+});
+
+it('announces nothing for a submission no listener stored', function () {
+    $processed = [];
+    $onlyReads = static function (FormSubmittedEvent $event): void {
+    };
+
+    $response = announcingService([$onlyReads], $processed)->handle('contact', VALID_CONTACT_ANSWERS);
+
+    expect($response->isOk())->toBeTrue()
+        ->and($processed)->toBe([]);
+});
+
+it('announces how the notification email went, as the listener that sent it said', function () {
+    $processed = [];
+    // The order a form lists them in is the form's own: here the email is written first.
+    $emails = static fn (FormSubmittedEvent $event) => $event->notifiedAs(NotificationDelivery::wpMail(false, 'attempt-1'));
+    $stores = static fn (FormSubmittedEvent $event) => $event->storedAs(42);
+
+    announcingService([$emails, $stores], $processed)->handle('contact', VALID_CONTACT_ANSWERS);
+
+    expect($processed[0]->delivery->status)->toBe('failed')
+        ->and($processed[0]->delivery->attemptId)->toBe('attempt-1');
+});
+
+it('keeps a notification that failed when another listener\'s went', function () {
+    $event = new FormSubmittedEvent('contact', VALID_CONTACT_ANSWERS);
+
+    $event->notifiedAs(NotificationDelivery::wpMail(true, 'first-went'));
+    $event->notifiedAs(NotificationDelivery::wpMail(false, 'second-failed'));
+    $event->notifiedAs(NotificationDelivery::wpMail(true, 'third-went'));
+
+    expect($event->delivery()?->attemptId)->toBe('second-failed');
 });

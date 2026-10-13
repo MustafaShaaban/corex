@@ -267,6 +267,56 @@ by several forms is constructed once.
 A submission whose slug matches no registered `Form` — a flow defined in the database rather than in
 code — runs no listeners at all.
 
+### A stored submission is announced
+
+Once the form's listeners have run, a submission one of them stored is announced with
+`Corex\Forms\Submission\SubmissionProcessedEvent`, the event a form built in Forms & Flows raises
+too. The notification centre listens for it and raises **New submission** for whoever manages
+submissions: one item per form, keyed `submission.new:<form slug>`. A form whose listeners do not
+include `StoreSubmissionListener` (or another that calls `$event->storedAs($id)`) raises nothing.
+
+For a form registered in code the event carries `flowId` `0`
+(`SubmissionProcessedEvent::NO_FLOW`) and the form's slug as `flowSlug`.
+
+If the form's notification email fails, a second notification says so, but only when the listener
+that sent the email reports how it went. The built-in `SendEmailListener` does. A listener of your
+own reports it like this:
+
+```php
+use Corex\Forms\Submission\FormSubmittedEvent;
+use Corex\Forms\Submission\NotificationDelivery;
+use Corex\Mail\AttemptingMailer;
+use Corex\Mail\Mailer;
+use Corex\Mail\MailRequest;
+
+final class MyBrandedNotification
+{
+    public function __construct(private readonly Mailer $mailer)
+    {
+    }
+
+    public function __invoke(FormSubmittedEvent $event): void
+    {
+        $request = new MailRequest(to: ['sales@example.com'], subject: 'New enquiry', body: '…');
+
+        // A mailer that can say how the email went. The one the mail add-on binds can.
+        if ($this->mailer instanceof AttemptingMailer) {
+            $event->notifiedAs(NotificationDelivery::fromResult($this->mailer->attempt($request)));
+
+            return;
+        }
+
+        $this->mailer->send($request);
+    }
+}
+```
+
+`Corex\Mail\Mailer` is bound by the mail add-on; a site without it has no mailer to inject.
+Without `notifiedAs()` nothing is raised for the email. With the mail queue on, `attempt()`
+answers `queued`, which counts as gone. A listener that hands the email to a queue of its own
+and sends it after the request has no result to report here, and there is no call that reports
+one later: a failure of such an email raises no notification.
+
 ### What the notification contains
 
 The built-in notification is HTML, because every CoreX mail transport declares

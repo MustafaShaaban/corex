@@ -177,3 +177,12 @@ it('still sends the contact form through the contact template', function () {
 
     expect($mailer->request->templateName)->toBe('contact-notification');
 });
+
+it('tells the submission how its notification went, for whatever reads it after the listeners', function () {
+    Functions\expect('wp_mail')->once()->andReturn(false);
+    $event = submittedEvent();
+
+    (new SendEmailListener(new NotificationDispatcher(null, null), emailListenerConfig()))($event);
+
+    expect($event->delivery()?->status)->toBe(MailResult::STATE_FAILED);
+});

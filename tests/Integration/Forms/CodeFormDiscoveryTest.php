@@ -45,20 +45,20 @@ function pereGoStyleForm(string $slug): Form
 function withRegisteredForm(string $slug, callable $assert): void
 {
     $registry = \Corex\Boot::app()->container()->make(FormRegistry::class);
-    $before   = $registry->all();
 
     $registry->register(pereGoStyleForm($slug));
 
     try {
         $assert();
     } finally {
-        // FormRegistry is a keyed map with no removal, so restore it by rebuilding from the
-        // snapshot: leaving a test form behind would leak into every later test in the suite.
-        $fresh = new FormRegistry();
-        foreach ($before as $form) {
-            $fresh->register($form);
-        }
-        \Corex\Boot::app()->container()->singleton(FormRegistry::class, static fn (): FormRegistry => $fresh);
+        // FormRegistry has no removal, and leaving a test form behind would leak into every later
+        // test in the suite, so the form is taken out of the registry's own map. It used to be
+        // put back by binding a new registry in the container: the form route, the catalog and
+        // every other object already made kept the old one, and for the rest of the run a form
+        // registered with the container's registry was unknown to the route (404).
+        (function () use ($slug): void {
+            unset($this->forms[$slug]);
+        })->call($registry);
     }
 }
 
