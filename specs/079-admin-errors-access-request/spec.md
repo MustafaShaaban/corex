@@ -190,6 +190,11 @@ nothing.
 - **FR-011**: Any flash state MUST be user-bound, short-lived, single-use, non-sensitive, unreadable
   by another user, and safe against query manipulation. The submitted reason MUST NOT travel in a
   query string.
+- **FR-011a**: The list of open requests (who asked, for what, why and when) MUST be answered only
+  to a person who may decide them: what opens the Access & Abilities screen opens the list, on the
+  screen and on `GET corex/v1/access/requests` alike. Asking for access stays open to anybody
+  signed in. A person's own open request is shown to them on the denied screen (FR-005), not
+  through the list (amended 2026-10-13, DECISIONS #346).
 
 **The shared error experience**
 

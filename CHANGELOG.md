@@ -63,6 +63,13 @@ All notable changes to Corex are documented here. The format follows
   vector logo is passed over, since Gmail and Outlook draw nothing for one.
   `wp corex make:email-design` writes the same header (DECISIONS #322).
 
+- **The list of open access requests is answered to the people who decide them** (spec
+  079, FR-011a). `GET corex/v1/access/requests` needs a REST nonce and `manage_options`,
+  which is what the Access & Abilities screen and the decision route need. The route's
+  two methods were registered together under the check that suits asking for access;
+  each now has its own. Asking for access (`POST` on the same route) is open to anybody
+  signed in, as it was, and the screen shows its queue as it did (DECISIONS #346).
+
 ### Fixed
 
 - **The account block says so when a request gets no answer, and when scripts are off.**
@@ -379,6 +386,12 @@ All notable changes to Corex are documented here. The format follows
   be rebuilt. Neither Muva's nor Perego's theme sets a root padding
   (read the same day); whether their pages keep a gutter on a phone is theirs to measure,
   and `tests/e2e/theme-gutter.spec.js` shows how.
+
+- **A script that reads `GET corex/v1/access/requests` has to be signed in as somebody
+  who may open CoreX Access & Abilities.** Anybody else is answered `403`. Nothing in
+  CoreX read the list through the route: the screen is handed it with the page. In PHP,
+  `AccessController::requests()` is gone; the route's two methods call
+  `pendingRequests()` and `createRequest()`.
 
 - **The account block has a new element and a new sentence to translate.** Only for a
   site that has Corex Profile on. `<noscript><p class="corex-account__noscript">` is the

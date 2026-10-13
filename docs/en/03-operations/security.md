@@ -146,6 +146,11 @@ denial records the decision without granting access. Both write an audit entry.
 Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
 When nobody is waiting, it says nothing at all.
 
+`GET /corex/v1/access/requests` answers the same list as JSON, to the same people: it needs a REST nonce and
+`manage_options`, as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person
+who filed a request included, and a visitor who is not signed in `401`. A person sees their own open request on the
+screen that refused them, not through this route.
+
 ### A CoreX address that does not exist
 
 `?page=corex-<something-that-is-not-a-screen>` answers **404**, with no capability explanation and no request form.
