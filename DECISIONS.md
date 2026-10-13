@@ -12727,7 +12727,9 @@ name in the REST index.
 **Date:** 2026-10-13. **Branch:** `fix/account-failed-request-and-no-script`, on top of
 #336's branch. **Found by:** the session that built #336, which recorded both in
 `PROGRESS.md` and changed neither: one measured, one read from the script. Spec 068 gains
-FR-161c and FR-161d.
+FR-161e and FR-161d. The first was written as FR-161c: #342 (the fields' `autocomplete`
+values) was merged with that letter while this was open, so this one took the next that was
+free.
 
 ### 1. A request that gets no answer the block can read
 
@@ -12823,7 +12825,11 @@ when one is typed, is in that request's body.
 
 **What is built.** `AccountRenderer` prints `<noscript><p class="corex-account__noscript">`
 as the first child of the block, in both views. A browser that runs scripts does not
-render it; a browser that runs none shows it above the forms. It is one paragraph and no
+render it; a browser that runs none shows it above the forms. On the two page loads
+that say what became of a password reset (#341, merged while this was open) the reset's
+message line stays the first child, which #341's stylesheet and browser tests select,
+and the note is the second; the new-password form has the note above it as the other
+forms do. It is one paragraph and no
 live region: it is there when the page is read.
 
 **What is still so.** A form sent with scripts off still goes to the page, with what was
@@ -12881,10 +12887,316 @@ no mail.
 ### Client impact
 
 Only for a site with Corex Profile on. The block has a new first child inside
-`<noscript>`, drawn with scripting off only, and two new strings in the `corex` text
+`<noscript>` (the second child on the two page loads that say what became of a reset),
+drawn with scripting off only, and two new strings in the `corex` text
 domain. `post()` in `account.js` now resolves with `{ ok, message }` and no longer with
 `{ ok, data }`: it is a function inside the script's closure, so nothing outside can have
 called it.
+
+## #341 — A password reset asked for at the account block ends on the account page: WordPress's email, with its link to the page the reset was asked from
+
+**Date:** 2026-10-13. **Branch:** `fix/account-reset-lands-on-the-site`. **Found by:** the
+measurement of the new member's email, which read the same link in the reset email and
+left it. **Decided by the owner** on the three questions below, from the options and the
+measurements put to him before anything was built.
+
+**What the code did.** `WordPressAuthGateway::requestPasswordReset()` calls WordPress's
+`retrieve_password()`, which makes the key, writes the email and sends it. The add-on had
+a route that takes a key and a new password (`POST corex/v1/account/reset`), and
+`account.js` knew a form of the kind `reset`. `AccountRenderer` rendered no such form.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, over HTTP,
+signed out, mail answered for by `pre_wp_mail`):
+
+| | Login protection off | Login protection on, a slug set, the default addresses hidden |
+|---|---|---|
+| The email `reset-request` hands to `wp_mail()` | `[Site] Password Reset`, WordPress's text | the same |
+| Its link | `/wp-login.php?login=…&key=…&action=rp&wp_lang=en_US` | `/<slug>/?login=…&key=…&action=rp&wp_lang=en_US` |
+| The link, followed | WordPress's "Reset Password" screen | the same screen, at the slug |
+| After saving there | "Log in" leads to `wp-login.php`; signing in there ends at `wp-admin/profile.php` | the same, at the slug |
+| The account page with the link's query on it | sign-in, registration and forgot-password forms; nothing for the key | the same |
+| `POST account/reset` with the emailed key, by hand | 200, the new password signs in, the old one does not | the same |
+
+So the route worked and nothing led to it, the member finished on WordPress's screens and
+was not brought back, and where the login is moved the email carried the moved address.
+The guard's own comment says what that address is: obscurity against automated probing,
+not an access control.
+
+**Also measured, and it bounds what this change is for.** A signed-in member's account
+page names the moved address twice whatever any email says: the block's **Sign out** link
+is `wp_logout_url()`, and so is the admin bar's. A signed-in subscriber is served
+`/wp-admin/`. Hiding the address from members would take a sign-out of the add-on's own
+and no admin bar and no `wp-admin` for them.
+
+**The owner's three answers.**
+
+1. *The flow:* a new-password form in the account block, reached from the email;
+   WordPress's email kept, with only its link changed. Not chosen: the email sent through
+   CoreX's mail engine in the standard design (to be decided together with the new
+   member's email, so both get one design and one delivery rule; through the engine a
+   production site with no provider chosen sends nothing, which for this email is a member
+   who cannot get back in), and leaving the flow and correcting the README.
+2. *How the link finds the page:* from the request. Not chosen: a setting where an
+   administrator picks the account page.
+3. *The moved address and members:* it is accepted that a signed-in member can learn it.
+   The emails stop carrying it.
+
+**What is built.**
+
+- **The form names its page, and the site signs it.** The forgot-password form has a
+  hidden field `page`: the id of the page the block is rendered on, a dot, and an HMAC of
+  that id with the site's salt (`Reset\AccountPageMark`). The route takes a mark this site
+  made for a page that is still published, and nothing else. A page number alone would let
+  anybody have the email link to any page. And "does this page hold the block" cannot be
+  asked of the page: the theme's Account template places the block and the page's content
+  is empty, so `has_block()` answers no for a page that uses that template, which is the
+  first way the add-on's guide gives. The block signs where it is rendered, which is true wherever the block came from.
+  The mark does not change between renders, so a cached page carries one that still reads.
+  No address from a request is written into an email: the server makes it from the id
+  (`get_permalink()`).
+- **One address in WordPress's email is replaced.** `Reset\ResetEmailLink::during()` adds
+  a filter on `retrieve_password_message` for as long as the route's call lasts and takes
+  it off in a `finally`. It finds the address by its key, with a pattern, and does not
+  rebuild WordPress's link to look for it: with login protection on that link is not the
+  one WordPress writes, and a plugin may have put it in markup. An email with no address
+  that carries the key is returned as it came. It runs after other filters (priority 99).
+  `AuthGateway` and `AccountService` are not changed: which page an email comes back to is
+  a fact of the request, not of signing in.
+- **The key is taken out of the address before the page is drawn.** `Reset\ResetLanding`,
+  on `template_redirect`: a request with `corex_reset_login` and `corex_reset_key` has both
+  put in a cookie (`Reset\ResetTicket`: this browser's session, `HttpOnly`, `SameSite=Lax`,
+  `Secure` on HTTPS) and is redirected to the same page with `?corex_reset=1`. The address
+  it is sent to is the page's own (`get_permalink()`), not one made from what was asked
+  for, and only a request for one page or post is answered this way. It is what
+  `wp-login.php` does with its key, and the reason is stronger on a page of the site: left
+  in the address the key is in the browser's history and is read by every script the page
+  loads, and an account page loads the site's analytics, which `wp-login.php` does not.
+  The marker stays in the address so that a page cache that passes a query string through
+  to WordPress, as most do unless told otherwise, does not answer with the page it keeps
+  for everybody. Both answers go out with
+  `nocache_headers()`.
+- **The block shows the new-password form and no other**, to whoever holds a key WordPress
+  takes (`check_password_reset_key()`), signed in or not. The form carries the login and
+  the key as hidden fields, as WordPress's own form carries its key, and posts to the
+  route that was already there, which checks the key again.
+- **The page says what happened, once.** `account.js` already loads the page again after a
+  reset. The route marks the cookie as used when the password is saved; the next load of
+  the page reads that, says "Your password has been updated. You can now sign in." and
+  removes the cookie. A key WordPress refuses is answered "This password reset link is
+  invalid or has expired. Please ask for a new one.", and its cookie is removed.
+- **Where those two are said: above the forms, not under a button.** Since #336 an answer
+  is written under the button that asked for it. Nobody pressed a button for these: the
+  page was loaded. A line under the forgot-password form, the third form, is below the
+  window on a phone when the page opens, which is the defect #336 was about. So the block
+  gets a message line as its first child on those two loads and on no other. It has the
+  class of the others, and `account.js` empties every line of that class before it writes
+  an answer, so the note goes when the visitor's next answer comes. `account.js` and the
+  stylesheet are not changed.
+
+**Measured after the change**, the same way, with login protection off and on: the email's
+link is `http://127.0.0.1:8972/account/?corex_reset_login=salma&corex_reset_key=…` in both;
+followed, it answers 302 to `http://127.0.0.1:8972/account/?corex_reset=1` with the cookie and
+`Cache-Control: no-cache, must-revalidate, max-age=0, no-store, private`; the page holds
+one form, **Choose a new password**, and the key is in no address of it; the form's
+request answers 200; the page loaded again has the message and the sign-in form, and
+loaded once more has no message; the new password signs in; the same link followed again
+is answered with the expired message. In Chromium the walk is
+`tests/e2e/account-reset.spec.js`.
+
+**What is left as it was, and known.**
+
+- The email's wording, subject and sender are WordPress's, and it is plain text.
+- The new member's email is WordPress's too and still carries WordPress's link. What that
+  email says is a decision of its own, open with the owner.
+- A reset asked for from a page that carries no mark gets WordPress's link: a page a cache
+  stored before this release, until it is stored again; a client of the route that sends
+  no `page`; the block in a template that is not one page or post.
+- Without scripts the forms are not sent to the routes at all, the new one among them.
+  That is the block's state on `main` and has a change of its own open.
+- The branch was begun before #335 to #338 were on `main` and has them merged in. The
+  measurements under "after the change" were made before that merge; the tests and the
+  browser walk were run again after it.
+
+**Tests.** `tests/Integration/Profile/ResetOnTheAccountPageTest.php`, on real WordPress
+through the REST server: the email links to the page and its key is one WordPress takes;
+with the guard's own rewriting on `network_site_url` the email does not hold the slug; no
+mark, a bare page number, a mark made for another page and a page that became a draft all
+keep WordPress's link; a reset asked through `retrieve_password()` afterwards is
+WordPress's; the rendered block's mark reads back to its page; and what the landing makes
+of a good key, a wrong one, a used one and none. `tests/Unit/Profile/ResetEmailLinkTest.php`:
+the address is replaced whether it is WordPress's, the moved login's, between angle
+brackets or in a link a plugin wrote, and the rest of the email is byte for byte what it
+was. `tests/Unit/Profile/AccountRendererResetTest.php`: the mark is in the forgot-password
+form and nowhere else, the new-password form stands alone, and the message line's three
+states. `tests/e2e/account-reset.spec.js` with the fixture
+`tests/e2e/fixtures/corex-e2e-reset-mail.php`, which keeps the email a marked request would
+have sent and sends nothing. Every new unit and integration test failed before the change
+except one, which holds that the mark is left out where the block is on no page; the
+browser test was written after it. Mail was answered for
+before WordPress's mailer in every run, and no run was against the shared development
+site.
+
+Ten lines of the change were then put back one at a time and the tests run. A test failed
+for nine. The tenth, the end of the key in the pattern that finds the address, got a case
+of its own (a longer key that begins with the email's key is another key), and fails with
+it.
+
+## #342 — A field of the account block says what it is for; registration's own username does not yet, and the display name is a nickname
+
+**Date:** 2026-10-13. **Branch:** `fix/account-field-autocomplete`, from `main`. It was
+started and measured on top of pull request 381's branch (#337) and moved onto `main` when
+380, 381 and 382 merged the same afternoon. What is under "Measured after the change",
+and the registration with a `+` address with and without a value on the username, were
+measured again on `main` and came out the same. **Found by:** the session that built #337, which read
+`AccountRenderer::fieldsOf()` and left the lead in `PROGRESS.md`, not measured. Spec 068
+gains FR-161c. The numbers #339, #340 and #341 are on pull requests 383, 384 and 385, open
+when this was written.
+
+**What was there.** No field of the `corex/account` block had an `autocomplete` value; the
+field left for bots had `off`. WCAG 2.2 success criterion 1.3.5 (Identify Input Purpose,
+AA) asks for a value on a field that collects something about the person, and it is what a
+browser and a password manager read.
+
+**How it was measured.** WordPress 7.1.3, a WordPress of this worktree's own with
+registration open, Chromium 153.0.8010.12 (Playwright 1.63, the `chromium` channel, headless,
+a new empty profile for each run, started without `--enable-automation`). Four things were
+read: each field's attribute; the issues Chromium's developer tools raise (`Audits` over the
+DevTools protocol); what `chrome://autofill-internals` and
+`chrome://password-manager-internals` log about each form; and what each field holds after
+`Autofill.trigger` fills a form from a made-up saved address (`Autofill.setAddresses`).
+Chromium asked its autofill server about the forms, so a classification below is its local
+reading together with that server's answer. No popup was looked at: the browser was
+headless.
+
+**Measured before the change.**
+
+| What | Sign-in | Registration | Forgot password | Profile |
+|---|---|---|---|---|
+| Issues raised | none | `email` and `username`: the name is an autofill field name and the field has no `autocomplete` | none | `first_name` and `email`: the same |
+| Password manager, form as loaded | username `login`, password `password` | username `username`, **current** password `password`, new password `password_confirm` | not read as a credential form | not one |
+| Password manager, form typed in and sent | held `login` and `password`; after the page loaded again: "Decision: ASK the user" | held `username` (or `email` when the username was left empty), new password `password`, confirmation `password_confirm`; no decision to ask | not sent | not sent |
+
+So Chromium already offered to save at sign-in, with no value on any field. What it had
+wrong was the registration form as loaded, which it read as a form that changes a password
+(an old one and a new one), and the forgot-password form, which it did not connect to an
+account at all. After a registration it did not offer to save, typed username or not: the
+block answers in the page and the filled form stays there.
+
+**Each value against the HTML specification.** Read in the HTML Living Standard's table of
+autofill field names on 2026-10-13: `username` ("A username") and `email` ("Email
+address") belong to the group that may be on a text or an email field; `current-password`
+("The current password for the account identified by the username field (e.g. when logging
+in)") and `new-password` ("A new password (e.g. when creating an account or changing a
+password)") to the group that may be on a password field; `given-name`, `family-name`,
+`name` ("Full name") and `nickname` ("Nickname, screen name, handle: a typically short name
+used instead of the full name") to the group that may be on a text field. Each value is on
+a field of a type its group allows. WordPress 7.1.3's own screens, read in `wp-login.php`
+and `wp-admin/user-edit.php`, use the same ones: `username` and `current-password` at
+sign-in, `username` on the lost-password form, `new-password` twice on the reset form, and
+`given-name`, `family-name`, `nickname` and `email` on the profile.
+
+**What was built.** `AccountRenderer` holds one table, `PURPOSES`, of the value for each
+field by form and field name, and `fieldsOf()` now takes the block and the form and prints
+the value with the field. A field that is not in the table gets no attribute.
+
+| Form | Field | Value |
+|---|---|---|
+| sign-in | `login` | `username` |
+| sign-in | `password` | `current-password` |
+| registration | `email` | `email` |
+| registration | `username` | none (below) |
+| registration | `password`, `password_confirm` | `new-password` |
+| forgot password | `login` | `username` |
+| new password, after a reset link (#341) | `password`, `password_confirm` | `new-password` |
+| profile | `display_name` | `nickname` (below) |
+| profile | `first_name` | `given-name` |
+| profile | `last_name` | `family-name` |
+| profile | `email` | `email` |
+
+**Registration's own username has no value, and that was decided by measuring it.** The
+lead asked for `username` there, and it was built first. With it, Chromium classed the
+field as an email address (`html: HTML_TYPE_EMAIL`, where it was `UNKNOWN_TYPE` before),
+and a fill started from the Email field wrote the saved address into Email **and**
+Username; without the value it wrote Email only. For most addresses that makes the account
+it made before: with no username the login is the address already. For an address with a
+character a username cannot hold it does not. With `jane+…@example.test` saved, filled
+and sent: with the value the server answered "A username can have letters without accents,
+numbers, spaces and the characters _ . - @ and no others. Please choose another." and no
+account was made; without it the account was made, as #333 records for an address with a
+`+`. The same person, doing the same thing, would be refused after a change that was meant
+to help them, so the field is left as it was. The password manager read the registration
+form the same with and without that one value (username `username`, or `email` when it
+was left empty). What is lost: that field does not meet 1.3.5, and Chromium still raises
+its issue for it.
+
+The way to give it the value is in the account service, not in the block: a username that
+is the person's own address is no username. That is an account rule with its own cases
+(an address WordPress would alter, an address too long to be a login, which #338 gave a
+login of its own), and `AccountService.php` is in pull request 384, open as this is
+written, so it is handed over as a task and not built here.
+
+**The display name is a `nickname`, not a `name`.** It is the name a member is shown by on
+what they write, which is what the specification calls a screen name, and the form asks
+for the given and the family name in two fields of their own. Measured on the profile form
+of a signed-in person whose display name was `admin`:
+
+| Value on the display name | Chromium's type for it | Fill started from First name | Fill started from Display name | Issue raised |
+|---|---|---|---|---|
+| none (before) | `UNKNOWN_TYPE` | left as it was | not tried | none for this field |
+| `nickname` | unrecognised, autofill off for the field | left as it was | left as it was | `FormInputHasWrongButWellIntendedAutocompleteValueError` |
+| `name` | `NAME_FULL` | left as it was (Chromium did not write over a field that held something; the email was left too) | replaced by "Jane Mary Doe" | none |
+
+So with `nickname` Chromium does for that field what it did with no value, and with `name`
+it puts the full name of a saved address, middle name and all, where a public name is
+chosen. #335 was about a public name that showed more than the person meant. The price of
+`nickname` is that Chromium does not know the word, though the specification has it: its
+developer tools list the field's value as one it does not recognise. WordPress's own
+profile screen has the same on its nickname field.
+
+**Measured after the change**, same install and browser:
+
+- on the form a reset link leads to, which #341 added to `main` while this was open:
+  both passwords have `new-password`, no issue is raised, and the form is read as a new
+  password and its confirmation. Chromium reads no username there: the login travels in
+  a hidden field, which its password manager does not list among the form's fields, so
+  what it would save the new password under was not seen. Merging `main` in was clean
+  as text and broken as code: that form called `fieldsOf()` with the one argument it
+  took before, which #337's own tests caught;
+- signed out: every field has the value in the table; the only issue left is the one for
+  registration's `username`; the registration form as loaded is read as username
+  `username`, new password `password`, confirmation `password_confirm`, with no current
+  password; the forgot-password form is read as a form with a username, `login`;
+- typed in and sent, the sign-in form and the registration form are held as before, and
+  the offer to save comes after sign-in as before and not after a registration, as before;
+- with registration on the page Chromium's password manager now logs "Generation disabled:
+  no sync", which it did not log before: it reaches the question of offering a made-up
+  password and stops because the empty profile is signed in to nothing. The offer itself
+  was not seen;
+- `username` makes Chromium's address autofill treat the sign-in and the forgot-password
+  field as an email address, so it can offer a saved address's email there. Somebody signs
+  in with either, so that was left;
+- a registration filled from a saved address with a `+` in it is made, as before.
+
+**Not measured.** Firefox, Safari, and every password manager that is not Chromium's own.
+Firefox's `autocomplete` property was tried as a second parser's word on each value and
+told nothing: it was empty for every value here and for the two wrong ones set as a
+control. A Chrome signed in to an account, where a made-up password would be offered. Any
+popup. A screen reader.
+
+**Tests.** `tests/Unit/Profile/AccountRendererTest.php`, two tests: the value of every
+text field, by form and name, for the signed-out panel with registration open and for the
+signed-in panel, the field for bots and registration's username among them. Both failed
+before the change with every value empty. CI's site has registration closed, so these are
+what hold the registration form. `tests/e2e/product-surfaces.spec.js`, one test on the
+signed-out page: each field's value as the page is served, for the forms that are there.
+It failed before the change on the sign-in form and passes after it, run with registration
+open and with it closed, with the thirteen tests the spec already had.
+
+**Client impact.** The fields of the block gain an `autocomplete` attribute, and a
+browser's offers change with it: Chromium can offer a saved address's email on the sign-in
+and forgot-password fields, and reads the registration form as a new account. No id, name,
+class or route changed. Read on this machine on 2026-10-13: nothing under `sites/` in the
+Muva or Perego checkouts names the block.
 
 ## #345 — In the account block, a list that did not load says so in its own place, and an empty one says it is empty
 
@@ -12892,9 +13204,9 @@ called it.
 #339's branch (PR #383, open when this was written). **Found by:** the session that built
 #339, which read it from `account.js` and recorded it in `PROGRESS.md`. Spec 068 gains
 FR-161f. The numbers between are held elsewhere: #340 by open PR #384, #341 by #385 on
-`main`, #342 by open PR #386, #343 by open PR #387 and #344 by open PR #388. #386's
-requirement is lettered FR-161c as #339's is, so FR-161e is left for whichever of the two
-is renamed.
+`main`, #342 by #386 on `main`, #343 by open PR #387 and #344 by open PR #388. #386
+merged with FR-161c, the letter #339's first requirement had, and that one is FR-161e now;
+FR-161f was taken here to leave it the letter.
 
 **What was there.** `get( path, token )` returned `fetch(...).then( res => res.json() )`,
 with no rejection handler and without looking at `res.ok`. `loadSessions()` and
