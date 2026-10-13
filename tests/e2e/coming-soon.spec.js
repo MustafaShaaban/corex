@@ -14,7 +14,7 @@
  * into Coming soon, reviewed, and taken out again.
  */
 const { test, expect, request: apiRequest } = require( '@playwright/test' );
-const { contrast, signInAs } = require( './helpers' );
+const { contrast, pinAppearance, signInAs } = require( './helpers' );
 const { STORAGE_STATE } = require( './global-setup' );
 
 const SCREEN =
@@ -434,9 +434,7 @@ test( 'a preview link shows a stakeholder the real site until it is regenerated,
 			page.locator( '.corex-standalone__title' )
 		).toContainText( 'Preview link' );
 
-		return (
-			await page.locator( '.corex-standalone__detail p' ).innerText()
-		).trim();
+		return page.getByLabel( 'Preview link' ).inputValue();
 	};
 
 	const stakeholder = await browser.newContext( {
@@ -558,6 +556,341 @@ test( 'a preview link shows a stakeholder the real site until it is regenerated,
 	await stakeholder.close();
 } );
 
+/**
+ * The copy field as it is drawn: where its parts sit, how large they are, and in what colours.
+ *
+ * @param {import('@playwright/test').Page} page The page that shows a new link.
+ * @return {Promise<Object>} The measurements.
+ */
+function measureCopyField( page ) {
+	return page.evaluate( () => {
+		const part = ( selector ) => document.querySelector( selector );
+		const box = ( element ) => {
+			const { left, right, top, bottom, width, height } =
+				element.getBoundingClientRect();
+
+			return { left, right, top, bottom, width, height };
+		};
+		const card = part( '.corex-standalone__card' );
+		const row = part( '.corex-standalone__copy-row' );
+		const input = part( '[data-corex-copy-value]' );
+		const button = part( '[data-corex-copy-button]' );
+		const cardStyle = window.getComputedStyle( card );
+		const rowStyle = window.getComputedStyle( row );
+		const cardBox = box( card );
+
+		return {
+			card: cardBox,
+			words: box( button.querySelector( 'span' ) ),
+			iconGap: parseFloat( window.getComputedStyle( button ).columnGap ),
+			// The card's content box: what is inside its border and its padding.
+			inside: {
+				left:
+					cardBox.left +
+					parseFloat( cardStyle.borderLeftWidth ) +
+					parseFloat( cardStyle.paddingLeft ),
+				right:
+					cardBox.right -
+					parseFloat( cardStyle.borderRightWidth ) -
+					parseFloat( cardStyle.paddingRight ),
+			},
+			label: box( part( '.corex-standalone__copy-label' ) ),
+			input: box( input ),
+			button: box( button ),
+			status: box( part( '[data-corex-copy-status]' ) ),
+			gap: parseFloat( rowStyle.columnGap ),
+			rowGap: parseFloat( rowStyle.rowGap ),
+			ground: cardStyle.backgroundColor,
+			labelInk: window.getComputedStyle(
+				part( '.corex-standalone__copy-label' )
+			).color,
+			statusInk: window.getComputedStyle(
+				part( '[data-corex-copy-status]' )
+			).color,
+			inputInk: window.getComputedStyle( input ).color,
+			inputGround: window.getComputedStyle( input ).backgroundColor,
+			buttonInk: window.getComputedStyle( button ).color,
+			buttonGround: window.getComputedStyle( button ).backgroundColor,
+			buttonWordsCut: button.scrollWidth > button.clientWidth,
+			pageFits:
+				document.documentElement.scrollWidth <=
+				document.documentElement.clientWidth,
+		};
+	} );
+}
+
+test( 'the page that shows a new link copies it at a press, and holds in both directions, schemes and widths', async ( {
+	page,
+} ) => {
+	test.setTimeout( 120_000 );
+
+	await page
+		.context()
+		.grantPermissions( [ 'clipboard-read', 'clipboard-write' ] );
+	await page.goto( SCREEN );
+	await page.getByRole( 'button', { name: 'Create preview link' } ).click();
+
+	const field = page.getByLabel( 'Preview link' );
+	const button = page.getByRole( 'button', { name: 'Copy link' } );
+	const status = page.locator( '[data-corex-copy-status]' );
+	const link = await field.inputValue();
+
+	expect( link ).toContain( 'corex_preview=' );
+	await expect( field ).toHaveAttribute( 'readonly', '' );
+	// Said to a screen reader when it changes, without taking the reader from where they are.
+	await expect( status ).toHaveAttribute( 'aria-live', 'polite' );
+	await expect( status ).toHaveRole( 'status' );
+	await expect( status ).toHaveText( '' );
+
+	for ( const cell of MATRIX ) {
+		const where = describe( cell );
+
+		await page.setViewportSize( cell.viewport );
+		await page.emulateMedia( { colorScheme: cell.scheme } );
+		await pinAppearance( page, cell.scheme, cell.direction );
+		await page.evaluate( () => window.navigator.clipboard.writeText( '' ) );
+		// The answer of the cell before has been taken back.
+		await expect( status, where ).toHaveText( '', { timeout: 10_000 } );
+		const before = await measureCopyField( page );
+
+		await button.click();
+		await expect( status, where ).toHaveText( 'Copied.' );
+		expect(
+			await page.evaluate( () => window.navigator.clipboard.readText() ),
+			`the whole link is on the clipboard: ${ where }`
+		).toBe( link );
+		await expect(
+			page.locator( '.corex-standalone__copy-icon--done' ),
+			`the tick replaces the two sheets: ${ where }`
+		).toBeVisible();
+		await expect(
+			page.locator( '.corex-standalone__copy-icon--copy' ),
+			where
+		).toBeHidden();
+
+		const drawn = await measureCopyField( page );
+		const rtl = cell.direction === 'rtl';
+		// The start and end edge of a box, whichever side each is on.
+		const start = ( box ) => ( rtl ? box.right : box.left );
+		const end = ( box ) => ( rtl ? box.left : box.right );
+		const insideStart = rtl ? drawn.inside.right : drawn.inside.left;
+		const insideEnd = rtl ? drawn.inside.left : drawn.inside.right;
+
+		// The answer takes no room of its own: nothing moved when it came.
+		expect( drawn.card, `the card stays where it was: ${ where }` ).toEqual(
+			before.card
+		);
+		expect(
+			drawn.input,
+			`the field stays where it was: ${ where }`
+		).toEqual( before.input );
+		expect( drawn.pageFits, `no sideways scroll: ${ where }` ).toBe( true );
+		expect( drawn.buttonWordsCut, `the button is whole: ${ where }` ).toBe(
+			false
+		);
+		// WCAG 2.2 AA, 2.5.8: a 24 by 24 target.
+		expect(
+			drawn.button.height,
+			`target height: ${ where }`
+		).toBeGreaterThanOrEqual( 24 );
+		expect(
+			drawn.button.width,
+			`target width: ${ where }`
+		).toBeGreaterThanOrEqual( 24 );
+		// The label and the field begin on the card's start edge. The answer is on the label's
+		// line and ends on the card's end edge, which is over the button.
+		expect( start( drawn.label ), `label start: ${ where }` ).toBeCloseTo(
+			insideStart,
+			0
+		);
+		expect( start( drawn.input ), `field start: ${ where }` ).toBeCloseTo(
+			insideStart,
+			0
+		);
+		expect( end( drawn.status ), `answer end: ${ where }` ).toBeCloseTo(
+			insideEnd,
+			0
+		);
+		expect( drawn.status.bottom, `answer line: ${ where }` ).toBeCloseTo(
+			drawn.label.bottom,
+			0
+		);
+		// The icon comes before the words, with the button's gap between.
+		const icon = await page
+			.locator( '.corex-standalone__copy-icon--done' )
+			.boundingBox();
+		expect(
+			rtl
+				? icon.x - ( drawn.words.left + drawn.words.width )
+				: drawn.words.left - ( icon.x + icon.width ),
+			`icon gap: ${ where }`
+		).toBeCloseTo( drawn.iconGap, 0 );
+		expect( icon.width, `icon size: ${ where }` ).toBeCloseTo( 16, 0 );
+		expect( drawn.iconGap, `icon gap: ${ where }` ).toBeGreaterThanOrEqual(
+			8
+		);
+		expect( end( drawn.button ), `button end: ${ where }` ).toBeCloseTo(
+			insideEnd,
+			0
+		);
+
+		if ( cell.viewport.name === 'desktop' ) {
+			// One row: the same top and bottom, the button after the field, the row's gap between.
+			expect( drawn.button.top, `row top: ${ where }` ).toBeCloseTo(
+				drawn.input.top,
+				0
+			);
+			expect( drawn.button.bottom, `row bottom: ${ where }` ).toBeCloseTo(
+				drawn.input.bottom,
+				0
+			);
+			expect(
+				Math.abs( start( drawn.button ) - end( drawn.input ) ),
+				`gap in the row: ${ where }`
+			).toBeCloseTo( drawn.gap, 0 );
+			expect(
+				drawn.input.width,
+				`the field is the wide one: ${ where }`
+			).toBeGreaterThan( drawn.button.width * 2 );
+		} else {
+			// Narrow: the button under the field, at the field's width.
+			expect(
+				drawn.button.top - drawn.input.bottom,
+				`gap under the field: ${ where }`
+			).toBeCloseTo( drawn.rowGap, 0 );
+			expect(
+				drawn.button.width,
+				`button width: ${ where }`
+			).toBeCloseTo( drawn.input.width, 0 );
+			expect(
+				drawn.button.height,
+				`button height: ${ where }`
+			).toBeCloseTo( drawn.input.height, 0 );
+			expect(
+				start( drawn.button ),
+				`button start: ${ where }`
+			).toBeCloseTo( insideStart, 0 );
+		}
+
+		// WCAG 2.2 AA, 1.4.3: 4.5 to 1 for text.
+		for ( const [ name, ink, ground ] of [
+			[ 'label', drawn.labelInk, drawn.ground ],
+			[ 'answer', drawn.statusInk, drawn.ground ],
+			[ 'field', drawn.inputInk, drawn.inputGround ],
+			[ 'button', drawn.buttonInk, drawn.buttonGround ],
+		] ) {
+			expect(
+				contrast( ink, ground ),
+				`${ name } contrast: ${ where }`
+			).toBeGreaterThanOrEqual( 4.5 );
+		}
+	}
+
+	// Reached from the keyboard, the button shows where the focus is (WCAG 2.2 AA, 2.4.7).
+	await field.focus();
+	await page.keyboard.press( 'Tab' );
+	await expect( button ).toBeFocused();
+	const ring = await button.evaluate( ( element ) => {
+		const style = window.getComputedStyle( element );
+
+		return { style: style.outlineStyle, width: style.outlineWidth };
+	} );
+	expect( ring.style ).toBe( 'solid' );
+	expect( parseFloat( ring.width ) ).toBeGreaterThanOrEqual( 2 );
+
+	// A focused field is selected whole, so a keyboard copies it without the button too.
+	await field.focus();
+	expect(
+		await field.evaluate(
+			( input ) =>
+				input.selectionStart === 0 &&
+				input.selectionEnd === input.value.length
+		)
+	).toBe( true );
+
+	// The answer is taken back, so a second press is said again.
+	await expect( status ).toHaveText( '', { timeout: 10_000 } );
+	await expect(
+		page.locator( '.corex-standalone__copy-icon--copy' )
+	).toBeVisible();
+} );
+
+test( 'the link is copied where the browser has no Clipboard API', async ( {
+	page,
+} ) => {
+	await page
+		.context()
+		.grantPermissions( [ 'clipboard-read', 'clipboard-write' ] );
+
+	// A page not served over HTTPS or from this machine is given no `navigator.clipboard`.
+	const plain = await page.context().newPage();
+	await plain.addInitScript( () => {
+		Object.defineProperty( window.navigator, 'clipboard', {
+			value: undefined,
+		} );
+	} );
+	await plain.goto( SCREEN );
+	await plain.getByRole( 'button', { name: 'Regenerate link' } ).click();
+	expect(
+		await plain.evaluate( () => window.navigator.clipboard )
+	).toBeUndefined();
+
+	const link = await plain.getByLabel( 'Preview link' ).inputValue();
+	await plain.getByRole( 'button', { name: 'Copy link' } ).click();
+	await expect( plain.locator( '[data-corex-copy-status]' ) ).toHaveText(
+		'Copied.'
+	);
+	await plain.close();
+
+	// Read by a page that has the API.
+	await page.goto( SCREEN );
+	expect(
+		await page.evaluate( () => window.navigator.clipboard.readText() )
+	).toBe( link );
+} );
+
+test( 'with scripts off the link is in a field to copy by hand, and there is no button', async ( {
+	page,
+	browser,
+	baseURL,
+} ) => {
+	const context = await browser.newContext( {
+		baseURL,
+		storageState: STORAGE_STATE,
+		javaScriptEnabled: false,
+		permissions: [ 'clipboard-read', 'clipboard-write' ],
+	} );
+	const scriptless = await context.newPage();
+
+	await scriptless.goto( SCREEN );
+	await scriptless.getByRole( 'button', { name: 'Regenerate link' } ).click();
+
+	const field = scriptless.getByLabel( 'Preview link' );
+	const link = await field.inputValue();
+	expect( link ).toContain( 'corex_preview=' );
+	await expect(
+		scriptless.locator( '[data-corex-copy-button]' )
+	).toBeHidden();
+
+	// By hand: into the field, select all, copy.
+	await field.click();
+	await scriptless.keyboard.press( 'ControlOrMeta+A' );
+	await scriptless.keyboard.press( 'ControlOrMeta+C' );
+	await context.close();
+
+	await page
+		.context()
+		.grantPermissions( [ 'clipboard-read', 'clipboard-write' ] );
+	await page.goto( SCREEN );
+	expect(
+		await page.evaluate( () => window.navigator.clipboard.readText() )
+	).toBe( link );
+
+	// The link made for these tests is taken back.
+	await page.getByRole( 'button', { name: 'Revoke link' } ).click();
+	await expect( page ).toHaveURL( /corex_status=preview_revoked/ );
+} );
+
 test( 'the page, the notice and the banner hold in both directions, both schemes and both widths', async ( {
 	page,
 	browser,
@@ -645,9 +978,7 @@ test( 'the page, the notice and the banner hold in both directions, both schemes
 	await page.setViewportSize( { width: 1280, height: 800 } );
 	await page.goto( SCREEN );
 	await page.getByRole( 'button', { name: 'Create preview link' } ).click();
-	const link = (
-		await page.locator( '.corex-standalone__detail p' ).innerText()
-	).trim();
+	const link = await page.getByLabel( 'Preview link' ).inputValue();
 	await publicPage.goto( link );
 
 	for ( const cell of MATRIX ) {

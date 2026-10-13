@@ -91,7 +91,15 @@ A client's stakeholders need to see the site before launch and should not need a
 
 On **Operations & Security → Environment & Maintenance**, while the site is in Coming soon, the
 **Preview link** card has **Create preview link**. The link is shown **once**, on the page that
-follows. Copy it then: CoreX does not keep it, so it cannot be shown again.
+follows, in a field with a **Copy link** button beside it. Press the button: the page answers
+"Copied." and the link is on the clipboard, ready to paste into a message. Copy it then: CoreX
+does not keep it, so it cannot be shown again.
+
+The button is there when the browser runs the page's script. Where it does not, the link is still
+in the field: click into the field, select all of it and copy. A browser gives a page the
+clipboard only on a site served over HTTPS or from the same machine; on any other site the button
+copies by selecting the field, and if the browser refuses that as well, it leaves the link
+selected and says to copy it from the keyboard.
 
 Whoever opens the link is served the real site in that browser for **14 days**, with a banner
 saying it is a private preview the public cannot see yet. Opening the link again renews the 14

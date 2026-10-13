@@ -160,6 +160,21 @@ runs alone, and restores the previous mode whatever happens.
 replaces CoreX's default, so a new site's page is the one in its repository from the start
 (FR-020, SC-005).
 
+**13. The copy field belongs to `StandalonePage`, and its script is inlined** (FR-011a, added
+2026-10-12). The page that shows a link is drawn by `StandalonePage`, whose stylesheet is in
+`corex-core` and is inlined so the page asks the server for nothing. The field's markup, its
+rules and its script are three parts of one contract, so they sit together:
+`StandalonePage::copyField()` writes the markup and the script, `corex-admin-standalone.css` the
+rules, `assets/js/corex-copy-field.js` the behaviour. `PreviewLinkController` passes the link and
+two labels. The script goes through `wp_get_inline_script_tag()`, so a site that sends a
+Content-Security-Policy with a nonce adds it through WordPress's own
+`wp_inline_script_attributes` filter; CoreX sends no such policy itself. The button is written
+`hidden` and the script shows it: where the script does not run, for any reason, there is no
+button. The words the script says are written into the markup by PHP, so they are translated the
+way every other string on the page is. *Rejected:* a script file requested from the plugin's
+folder, which makes this the one standalone page that needs a second request to work; and a
+button in the Operations & Security card, which has no link to copy (FR-013).
+
 ## Files
 
 ```
