@@ -66,7 +66,8 @@ abstract class PostRepository implements RepositoryInterface
 
     public function create(array $attributes): Model
     {
-        $postId = (int) wp_insert_post($this->coreArgs($attributes) + ['post_type' => ($this->model())::postType()]);
+        // WordPress takes one level of slashes off a post's fields on their way in.
+        $postId = (int) wp_insert_post(wp_slash($this->coreArgs($attributes)) + ['post_type' => ($this->model())::postType()]);
 
         $this->writeFields($postId, $attributes);
 
@@ -75,7 +76,7 @@ abstract class PostRepository implements RepositoryInterface
 
     public function update(int $id, array $attributes): Model
     {
-        wp_update_post(['ID' => $id] + $this->coreArgs($attributes));
+        wp_update_post(['ID' => $id] + wp_slash($this->coreArgs($attributes)));
 
         $this->writeFields($id, $attributes);
 

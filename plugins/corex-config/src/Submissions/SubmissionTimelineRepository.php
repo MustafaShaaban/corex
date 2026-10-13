@@ -33,7 +33,9 @@ final class SubmissionTimelineRepository implements SubmissionTimelineStore
             'created_at' => (new DateTimeImmutable('now'))->format(DATE_ATOM),
         ];
         $events[] = $event;
-        update_post_meta($submissionId, self::META_KEY, $events);
+        // The whole history is written again with each event, and WordPress takes one level of
+        // slashes off it each time: handed over as it is, an earlier event loses one more.
+        update_post_meta($submissionId, self::META_KEY, wp_slash($events));
 
         return $event;
     }

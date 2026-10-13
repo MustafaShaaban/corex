@@ -11521,3 +11521,108 @@ retention run, meets the same thing. The reader now passes over what is no longe
 is here and not in a pull request of its own because it stood in this one's way; it is
 released code's defect, in the changelog under Fixed.
 
+## #331 — The data layer, the flow store and a submission's notes slash what they hand to WordPress
+
+**Date:** 2026-10-13. **Branch:** `fix/submission-stores-keep-backslashes`. **Found by:**
+the reading left as a comment on #368, which listed every write outside the email add-on
+that hands text to WordPress without `wp_slash()` and said of each: read, not measured.
+This is the first of two changes that measure that list. It takes the writes a form, a flow
+and the inbox go through. The second takes the rest.
+
+`wp_insert_post()`, `wp_update_post()` and `update_post_meta()` each take one level of
+slashes off what they are handed, because they were written for the text of a request. Text
+handed over as it is loses a level it did not have to spare. #329 is the same finding in
+Email Studio's store.
+
+**Measured on real WordPress, before the change**, each through the class named and read
+back the way a screen reads it:
+
+- `MetaFieldDriver::set()`: `C:\offers\new` was read back as `C:offersnew`,
+  `\\server\share` as `\servershare`, `content:"\201C"` as `content:"201C"`, `\"` as `"`,
+  and a backslash at the end of a text was gone. The same inside a list of any depth.
+- `SubmissionRepository::store()`, through the contact form's route: the message was read
+  without its backslashes by the inbox (`findWorkflow()`) and by the Data screen and an
+  export (`find()`).
+- `SubmissionRepository::storeFlow()`: the answers, the sender's name, the form's label,
+  each `corex_field_*` value, and the hidden values, the campaign and the consent wording.
+  The inbox's search did not find `CORP\salma.h` by `CORP\salma`: the search looks for the
+  text as typed and the stored text was another.
+- `PostRepository::create()` and `update()`: a model's title and content.
+- `WpFlowStore::create()` and `update()`: a flow's name and its content. A flow made
+  through the builder's route with the rule `pattern:^\d{2,4}$` was given back with
+  `pattern:^d{2,4}$`, and once published it refused the answer `2026` with a 422.
+- `WpSubmissionsReader::addWorkflowNote()`: a note's text. The notes of a submission are
+  one meta value, written again whole with each note: `\\server\share` in the first note
+  was `\servershare` once stored and `servershare` after the second note.
+- `SubmissionTimelineRepository::append()`, `SubmissionRepository::appendTimeline()` and
+  the retention event `WpSubmissionsReader` adds: the same one value, written again whole
+  by three writers, with the same loss on each write.
+- `WpSubmissionsReader::updateWorkflow()`: the team `CORP\sales` was stored as `CORPsales`.
+- Quotes alone, Arabic and accented text were not changed. What is not text kept its kind
+  inside a list. A single number or `true` was stored as text, and `false` as nothing,
+  before and after: that is how WordPress keeps a single meta value.
+
+**The change.** Each of those writes hands over `wp_slash()` of what it was given:
+`MetaFieldDriver::set()`; `PostRepository::create()` and `update()` for the post's own
+fields; `WpFlowStore::create()` and `update()` for the name and the content;
+`SubmissionTimelineRepository::append()`; and in `WpSubmissionsReader` the notes, the
+retention event and the value `updateWorkflow()` writes. `wp_slash()` goes through a list of
+any depth and adds slashes to text only, and what WordPress takes off is what it put on.
+`SubmissionRepository` writes through the driver and is not changed. The fix is at the
+write and not in the callers, because the driver and the repository are what a model
+written by a site goes through too.
+
+**Left as they were**, each read: a flow record's type and slug, held to patterns with no
+backslash in them; the dates, ids and fixed words the reader and `WpSubmissionTrashStore`
+write; the title `anonymizeForRetention()` writes.
+
+**Nothing relied on the stripping.** Read before the change: `FieldDriver::set()` is called
+by `PostRepository` and `SubmissionRepository` and nothing else; the two repositories built
+on `PostRepository` are `SubmissionRepository` and the email add-on's `EmailLogRepository`.
+Nothing in `plugins/`, `addons/` or `packages/` hands either of them, the flow store or
+the two workflow writes text from `$_POST`: what reaches them comes from a REST request,
+whose values arrive without slashes. Nothing slashes text before handing it over. A flow version's checksum
+is taken from its configuration each time the version is built, on the way in and on the
+way out, and the stored copy of it is compared with nothing: a draft read back carries the
+checksum of what is stored, which is what the next save is checked against, before and
+after. A query by a field (`QueryBuilder::where()`) and the inbox's search hand WordPress
+the text as typed, and now find it. The sites' own code was read in the Muva and Perego
+checkouts on this machine: neither calls the driver, a `PostRepository` or the flow store.
+
+**Records already stored are not repaired.** What was dropped is not in the database: a
+stored `C:offersnew` cannot be told from one that was typed so. A flow saved before this
+change with a backslash in a rule has to be opened, written again and published. What this
+change does stop is the loss going on: a note or an event stored without a level is written
+back as it is read from now on, and loses nothing more.
+
+**Not changed, and why:**
+
+- `AcfFieldDriver::set()` calls `update_field()`. ACF is not in this repository and was not
+  run: whether ACF takes a level of slashes off what `update_field()` is handed was not
+  measured, and it is not changed on a guess. On a site with ACF active the driver is the
+  ACF one, for a submission's answers too. PROGRESS.md, "Open, and not hidden".
+- `wp_slash()` leaves an object as it is, and WordPress goes into an object when it takes
+  the slashes off. A value object handed to the driver would still lose its backslashes.
+  Nothing hands it one today.
+- The other writes on the list (a comment, an editorial note, a profile's names, the WebP
+  record, a kit's pages, the four run stores) are the second change. The notification
+  preferences were measured and lose nothing: they hold a switch for each category.
+
+**Tests**, on real WordPress, each failing before the change for the texts with a backslash:
+`tests/Integration/Data/StoredTextKeepsBackslashesTest.php` (the driver, and a repository
+of a model defined in the test: created, updated, written back three times, found by a
+field, and made with nobody signed in); `tests/Integration/Forms/SubmissionKeepsBackslashesTest.php`
+(the contact form through its route, a flow's submission, the search, what is not text);
+`tests/Integration/Forms/FlowStoreKeepsBackslashesTest.php` (the store, the builder's
+routes, and a published flow's pattern asked of a visitor's answer);
+`tests/Integration/Submissions/SubmissionNotesKeepBackslashesTest.php` (notes, the history
+through its three writers, and the team). 62 of their 87 tests failed before the change.
+The texts they share are in `tests/Support/BackslashedText.php`.
+
+**Met while writing the tests:** a form defined in code notifies through `wp_mail()` on a
+site answered as a development one, which `MailDelivery::CAPTURE` does not hold back. The
+first two runs of the contact form's test called `mail()` once for each of its seven texts,
+on a WordPress of this worktree's own with no mail server behind it: PHP reported that it
+could not connect, and nothing left the machine. The test now answers `pre_wp_mail` as
+`SubmitLifecycleTest` does.
+
