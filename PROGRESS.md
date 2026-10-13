@@ -83,15 +83,15 @@ What to know before resuming each:
   what the Releases side relies on is written into task T080. The line a person without the
   right is shown was drawn in Jest and not walked in a browser, because no fixture account
   manages data without being an administrator.
+- **Email Studio's store.** `WpEmailStudioStore` slashes a record's name and its content
+  before handing them to WordPress, so a backslash is read back (DECISIONS #329; on `main`
+  after v0.45.2, not released). A store written beside it has to do the same: WordPress
+  unslashes a post's fields and a meta value on their way in, whoever calls it.
 - **Spec 106, a reply's subject.** It is kept as typed on the reply, preview and draft routes
   and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
   (DECISIONS #326; on `main` after v0.45.2, not released). A subject can now hold `<`, `>`
   and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
   is printed before adding a place that prints one.
-- **Email Studio's store.** `WpEmailStudioStore` slashes a record's name and its content
-  before handing them to WordPress, so a backslash is read back (DECISIONS #329; on `main`
-  after v0.45.2, not released). A store written beside it has to do the same: WordPress
-  unslashes a post's fields and a meta value on their way in, whoever calls it.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -158,12 +158,15 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **CoreX → Data → Form submissions prints that number too**, in its record view and in its
   own export. The Submissions inbox and its export name the file. Read from
   `SubmissionsSource`, not looked at in a browser.
-- **An Email Studio template's subject loses what follows a `<`.** A template's subject is run
-  through `strip_tags()` when it is merged (`EmailTemplateService::render()`): measured on
-  2026-10-13, a template whose subject is "Price <500 EGP" is sent as "Price", and
-  "Sam <sam@example.com> asked" as "Sam  asked". A reply's subject and Email Studio's own
-  **Test send** and **Resend** are kept as typed (DECISIONS #326); a template's is not, and
-  a value merged into it is stripped the same way. Not changed.
+- **An email made from an Email Studio template leaves without a plain-text version.** A
+  template has a Plain Text tab, written by hand or made from the HTML, and the health check
+  refuses one written by hand and left empty. Nothing that sends reads it: the route and the
+  email sent again from a submission build their message from the subject and the HTML
+  (`EmailRouteMessageFactory::prepare()`, `EmailStudioSubmissionGateway::resend()`). Measured
+  on 2026-10-13 through a route on a site that delivers: the mail driver was handed no
+  plain-text version, with a manual one saved on the template. A reply has one. The version
+  nobody sends also loses what follows a `<` in a merged value ("under <500 EGP" is "under"
+  there). Found while reading for DECISIONS #330, not changed.
 - **What Email Studio stored before its store kept a backslash is still without it.** The
   store slashes what it hands to WordPress now (DECISIONS #329), and nothing repairs the
   records already there: a template, a layout or a partial saved earlier with a backslash
@@ -182,6 +185,27 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   as tests it took 18 ms. A search is quicker than no search. Whether a client site holds
   anything near that number was not read. Measured for DECISIONS #318, not changed.
 
+- **A password with a quote or a backslash in it is not the same password at CoreX's
+  sign-in and at WordPress's.** Measured on 2026-10-13: a person who registers through the
+  account add-on with such a password is not signed in at `wp-login.php` with it, and a
+  password set on a WordPress screen is not accepted by the add-on's sign-in. WordPress's
+  own screens hash a password with the slashes of the request still on it; the add-on's
+  gateway hashes it as typed (`WordPressAuthGateway`, DECISIONS #332). Not changed: handing
+  it over slashed would lock out whoever registered through CoreX with such a password,
+  unless a sign-in tries both. An owner decision.
+- **A registration with a login WordPress will alter is accepted.** Measured on 2026-10-13:
+  the login `CORP\salma` is stored as `CORPsalma` by WordPress's own rule for a login, and
+  the person is told the account was created. Signing in with what they typed was not run.
+  The account add-on refuses an email address it would have to alter and not a login.
+- **What was stored before DECISIONS #331 and #332 is still without its backslashes**: a
+  form's answers, a flow, a note, a comment, an editorial note, a name, an imported row, a
+  kit's page, and on a Windows host the record of a WebP file. Nothing repairs it. A flow whose field has a `pattern:` rule with a
+  backslash in it does not check what was written until it is written again and published.
+  Whether a client site holds such a flow was not read.
+- **With ACF active, a field's value goes through `update_field()`, not measured.**
+  `FieldResolver` picks `AcfFieldDriver` when ACF is there, for a submission's answers too.
+  ACF is not in this repository, so whether it drops a backslash as WordPress's own meta
+  write did was not run, and the driver is not changed.
 - **Anonymizing a submission leaves its uploaded files on disk.** The retention panel's
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can
   find them afterwards. It is spec 105's fifth slice, not started; deleting a submission for good
