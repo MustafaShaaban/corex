@@ -107,12 +107,22 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of
+open access requests, has the Access & Abilities screen's own check (`manage_options`),
+as the decision route has; asking for access keeps its own (spec 079, FR-011a; DECISIONS
+#346). `tests/Integration/Access/AccessRequestsReadTest.php` holds it through the REST
+server, for each role. A lead, not built: a role given the `corex_manage_access` ability
+and not `manage_options` is addressed by the notification of a new request and cannot open
+the screen that decides it (read in the code, not walked in a browser); the list, the
+decision route and the screen's menu entry would move to the ability together.
+
 **After v0.45.2, not released, 2026-10-13.** A person who asks twice for the same access has
 one request (spec 079, FR-008a; DECISIONS #343). `POST corex/v1/access/requests` stored a
 request, an audit entry and a notification for every repeat; the form on a denied screen
 did not. The question is asked where the request is stored
 (`AccessRequestStore::createUnlessPending()`, under a lock named for the requester), so the
 route, the form and two asks at the same moment get one answer.
+
 **After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
 the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
 three questions). The reset email is still WordPress's; its link is to the page the reset
@@ -122,12 +132,30 @@ carried the moved address. `addons/corex-profile/src/Reset/` holds it;
 `tests/e2e/account-reset.spec.js` walks it in a browser, with a fixture that keeps the
 email and sends nothing.
 
+**After v0.45.2, not released, 2026-10-13.** A request the Access REST routes cannot read is
+answered 400 and names the parameter (spec 079, FR-002a; DECISIONS #350). An empty reason,
+an ability, area, effect or role CoreX does not have, or a confirmation that could not be
+read, was a 500 and a fatal error in the PHP log: the service threw and the route caught
+nothing. The service now throws `Corex\Access\InvalidAccessInput` for what a caller sent,
+and `AccessController` answers that class alone; a refusal for how things stand is still
+200 and `blocked`. `tests/Integration/Access/AccessRouteRefusalTest.php` holds it through
+WordPress's REST server.
 **After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
 soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
 the first client site (FR-011a, tasks T069 to T075, DECISIONS #327). The button is shown by a
 script and copies without the Clipboard API where a site is not served over HTTPS; with
 scripts off the link is copied from the field by hand. `StandalonePage::copyField()` is the
 first standalone page part that carries a script.
+
+**After v0.45.2, not released, 2026-10-13.** The Corex theme has a side gutter: its root
+padding, from spacing preset 40, 16 pixels on a page (spec 068, FR-157a and FR-157b;
+DECISIONS #344). A block set to full width or to wide in a page's content is now that wide
+on a desktop too, and a `corex/form` is one column in a window 600 pixels wide or less.
+`tests/e2e/theme-gutter.spec.js` reads every template and every registered pattern at 375
+and 320 pixels in both directions: a template or a pattern added later is held by it, and
+a template that prints a post's content has to print it full width
+(`tests/Unit/Theme/ThemePageCoverageTest.php`). Client themes are themes of their own and
+are not moved.
 
 **v0.45.2, 2026-10-11.** Two changes for a form defined in code. Its notification email names
 the file it was sent with and links to the submission in the inbox, where the file is opened;
@@ -175,15 +203,6 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
-- **`POST corex/v1/access/requests` answers 500 for a request it refuses for what it says.**
-  An empty reason, a key that is not an ability's or an area's (`forms`, where the area is
-  `forms-flows`), both an ability and an area, or neither: the service throws and the route
-  does not catch it. Measured on 2026-10-13 over HTTP, signed in as an editor: "There has
-  been a critical error on this website", and a fatal error in the PHP log for each post.
-  A reason over 2,000 characters takes the same path; that one was read, not posted. The
-  form on a denied screen catches the same refusal and shows the field error. Not changed
-  with DECISIONS #343: what the route should answer changes what a script reading status
-  codes sees, which is a decision of its own.
 - **A site that already holds the same access request twice keeps both.** Each is listed in
   the queue and decided on its own. Nothing merges or removes them, and whether a client
   site holds one was not read.
@@ -202,6 +221,19 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   v0.45.2). A site that writes its own emails, as MUVA does, is handed what it needs
   (`FormSubmittedEvent::submissionId()`, `Corex\Mail\SubmissionAddress`) and has to use it
   in its own listener: that is the site's change, not the framework's.
+- **A change to a role nobody has is taken by the Access routes.** A role key is checked
+  for its form only. Measured through the service on 2026-10-13: a change for
+  `probe_no_such_role` was previewed as allowed, answered `completed`, and its grant was
+  stored (DECISIONS #350). Nobody holds such a role, so nothing is granted to anybody; the
+  row stays and the audit log says a role was changed.
+- **A `role` in the body or the query of an Access role route is read before the one in
+  the address.** `POST corex/v1/access/roles/editor/apply` with `"role": "author"` in its
+  body changes `author`. It is how WordPress orders a request's parameters, and it needs
+  `manage_options` either way. Read from the 400 a body's `role` of `!!!` is answered; a
+  change landing on another role was not run.
+- **`changes` that is not a map is read as no changes** by the Access role routes, and
+  answered 200. Read, not run: applying no changes with a confirmation for no changes
+  would write "role changed" to the audit log.
 - **The notification email's link was not followed from a mailbox.** What it holds was read in
   tests, and the address is the one the inbox already opens a submission from. Nobody has
   received the email and pressed the link, signed in and signed out.
@@ -281,20 +313,69 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   file blocked, or the request for it failed, a form goes to the page as it does with
   scripts off, and the note for scripts being off is not shown. Read, not run. Only forms
   that work without scripts close it (DECISIONS #339).
-- **A signed-in person's sessions and recent activity say nothing when they do not load.**
-  `get()` in `account.js` has no rejection handler, so the two lists stay empty under
-  their headings. Read, not run. A form's or a session button's request that gets no
-  answer does say so now (DECISIONS #339, FR-161e).
+- **The session a person is using is never marked "this device" in the account block.**
+  Measured on 2026-10-13: every answer of `GET account/sessions` carried
+  `"current": false`, for the only session too. `SessionList::format()` compares each key
+  of what it is handed with the current session's verifier, and
+  `WP_Session_Tokens::get_all()` returns `array_values()`, so the keys are 0, 1, 2.
+  `SessionListTest` passes an array keyed by verifier, which WordPress never does. Not
+  changed (seen while building DECISIONS #345).
+- **A row of the account block's two lists is written for a machine.** Recent activity
+  lists `profile.updated · 2026-10-13T09:00:00+00:00`, an internal name and an ISO date; a
+  session is the browser's whole user agent string. And recent activity is not asked for
+  again after a profile is saved, so the save is not listed until the page is loaded again
+  (read from the script). Not changed.
+- **A list of the account block that does not load after a press is seen and not heard.**
+  The sentence in the list's place ("Your sessions could not be loaded. Load this page
+  again to see them.") is a paragraph and not a live region, so that it is not announced
+  on every visit as the page opens (DECISIONS #345, spec 068 FR-161f). The answer to the
+  press is announced; the list failing to refresh above it is not. There is no button to
+  try again: the sentence says to load the page.
 - **No screen reader was listened to on the account block.** That an answer is announced,
   and once, is read from where it is written (one polite status, in the page before its
   text changes; three of them in Chromium's accessibility tree on the signed-out page,
   none ignored) and from focus not being moved. Firefox's and WebKit's trees were not
   read, and the block's browser tests run in Chromium only.
-- **A page of the theme has no side gutter on a phone, on a fresh install.** Measured at
-  375 pixels on the default page template while looking at the account block: the page's
-  title, its content and the footer's text all start at the window's edge, and
-  `--wp--style--root--padding-left` computes to 0. Whether a kit or a client site sets
-  the gutter was not read. Not changed.
+- **Seven of the theme's eight spacing tokens are not the size theme.json gives them.**
+  Measured on 2026-10-13 on WordPress 7.1.3: `--wp--preset--spacing--20` to `--80` are on
+  the page as WordPress's own sizes (0.44, 0.67, 1, 1.5, 2.25, 3.38 and 5.06rem) and not
+  as the theme's (0.5, 1, 1.5, 2, 3, 4 and 6rem); only `--10` is the theme's. theme.json is
+  version 3, where a theme's sizes for the slugs WordPress defines are not used until it
+  sets `settings.spacing.defaultSpacingSizes` to false. By the same rule the font sizes
+  `small` and `medium` are WordPress's (13px, and 14 to 20px), and the size `2xl` is on
+  the page as `--wp--preset--font-size--2-xl` while the CTA block's stylesheet asks for
+  `--wp--preset--font-size--2xl`, which is nothing. So seven of the theme's spaces, and the
+  blocks' that use them, are an eighth to a third smaller than their tokens say, and the
+  gutter of DECISIONS #344 is 16 pixels where theme.json reads 24. Putting it right moves every space on every
+  page of a site that runs the theme: the owner's to ask for, with the pages looked at
+  before and after. Not changed.
+- **A word longer than the window does not break in a heading.** Measured the same day at
+  375 pixels: a search for a word of 24 letters leaves the search title 97 pixels past the
+  window's edge. A post's title breaks such a word (WordPress's stylesheet for that block
+  sets `word-break`), and its stylesheet for the search and archive title sets nothing of
+  the kind. A heading in content was not measured. Not changed.
+- **A form's message is one narrow column wide on a desktop.** Measured the same day at
+  1280 pixels with the line empty: `.corex-form__status` is placed in the grid's second
+  column, 38 pixels wide, beside the button. What a message looks like there was not
+  looked at. In a window 600 pixels wide or less it has the row to itself since DECISIONS
+  #344. Not changed.
+- **A project's address is "Page not found" until the permalink rules are saved again.**
+  Seen on 2026-10-13 in the browser job of pull request #388: on a newly provisioned site
+  `/projects/<a project>/` served the 404 template. That site's rules were saved before
+  its add-ons were switched on. Reproduced on a local install by saving the rules with no
+  plugin loaded: 404, and found again after WordPress's Permalinks screen was opened. Read:
+  `PortfolioServiceProvider` registers `corex_project` with the address `projects`, and
+  nothing under `plugins/`, `addons/` or `packages/` calls `flush_rewrite_rules()`. Not
+  measured: whether switching the add-on on at CoreX → Add-ons, or applying the portfolio
+  kit, leaves a site in that state, and whether another add-on's post type has the same.
+  `tests/e2e/theme-gutter.spec.js` opens the Permalinks screen before it reads a project,
+  and says why. Not changed.
+- **A theme made by `wp corex make:site` starts with no gutter.** Read from
+  `packages/cli/stubs/site/theme-json.stub`, not run: it sets
+  `useRootPaddingAwareAlignments` and no root padding, as the Corex theme did, and its
+  index and front-page templates have no constrained block for a padding to reach. Its
+  Coming soon template, and CoreX's own, have one and rely on the theme's root padding. A client theme's layout is the client's;
+  whether the starting point should carry a gutter is the owner's to decide.
 - **An account registered before DECISIONS #335 with no username is still named by its
   email address.** A new one is named by the part before the @. The old ones keep the
   address as display name and nickname, and in the author address, and a comment written

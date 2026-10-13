@@ -17,6 +17,7 @@ use Corex\Access\AccessRequestStore;
 use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
+use Corex\Access\InvalidAccessInput;
 use Corex\Access\RoleAbilityStore;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
@@ -35,6 +36,9 @@ use InvalidArgumentException;
 final class AccessService
 {
     public const ROLE_CHANGE_OPERATION = 'access.role.change';
+
+    /** The longest reason a request is stored with, in characters. */
+    public const MAX_REASON_LENGTH = 2000;
 
     public function __construct(
         private readonly CorexAbilityCatalog $catalog,
@@ -366,27 +370,47 @@ final class AccessService
         DateTimeImmutable $now,
         DateTimeImmutable $expiresAt,
     ): void {
-        if ($requesterId < 1 || trim($reason) === '' || mb_strlen($reason) > 2000 || $expiresAt <= $now) {
+        // Who asks and how long the request stands are set by the code that calls this, never by
+        // the person asking, so a wrong one is that code's mistake and not an `InvalidAccessInput`.
+        if ($requesterId < 1 || $expiresAt <= $now) {
             throw new InvalidArgumentException('Access request details are invalid.');
         }
 
-        if (($abilityKey === null) === ($areaKey === null)) {
-            throw new InvalidArgumentException('An access request must target exactly one ability or area.');
+        if (trim($reason) === '') {
+            throw new InvalidAccessInput('reason', InvalidAccessInput::REASON_REQUIRED, 'An access request needs a reason.');
+        }
+
+        if (mb_strlen($reason) > self::MAX_REASON_LENGTH) {
+            throw new InvalidAccessInput('reason', InvalidAccessInput::REASON_TOO_LONG, 'The access request reason is too long.');
+        }
+
+        $this->assertTarget($abilityKey, $areaKey);
+    }
+
+    /** A request is for one ability or for one area, and CoreX has to have it. */
+    private function assertTarget(?string $abilityKey, ?string $areaKey): void
+    {
+        if ($abilityKey === null && $areaKey === null) {
+            throw new InvalidAccessInput('ability', InvalidAccessInput::TARGET_REQUIRED, 'An access request must name an ability or an area.');
+        }
+
+        if ($abilityKey !== null && $areaKey !== null) {
+            throw new InvalidAccessInput('area', InvalidAccessInput::TARGET_AMBIGUOUS, 'An access request must name an ability or an area, not both.');
         }
 
         if ($abilityKey !== null && $this->catalog->find($abilityKey) === null) {
-            throw new InvalidArgumentException('The requested CoreX ability is unknown.');
+            throw new InvalidAccessInput('ability', InvalidAccessInput::ABILITY_UNKNOWN, 'The requested CoreX ability is unknown.');
         }
 
         if ($areaKey !== null && ! array_key_exists($areaKey, $this->catalog->grouped())) {
-            throw new InvalidArgumentException('The requested CoreX area is unknown.');
+            throw new InvalidAccessInput('area', InvalidAccessInput::AREA_UNKNOWN, 'The requested CoreX area is unknown.');
         }
     }
 
     private function assertRole(string $roleKey): void
     {
         if (preg_match('/^[a-z0-9_-]+$/', $roleKey) !== 1) {
-            throw new InvalidArgumentException('Role key is invalid.');
+            throw new InvalidAccessInput('role', InvalidAccessInput::ROLE_INVALID, 'Role key is invalid.');
         }
     }
 

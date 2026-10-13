@@ -23,6 +23,11 @@
  * And what the block says when there is no answer to show: a request that does not arrive or
  * is answered with a page (FR-161e), and a browser that runs no scripts (FR-161d).
  *
+ * And what a signed-in person is shown under "Active sessions" and "Recent activity": the
+ * list, or that there is nothing to list, or that the list could not be loaded (FR-161f).
+ * The lists are answered for in the test where a failure or an exact row is wanted, and
+ * signing out everywhere is always answered for here, so the suite's own session is kept.
+ *
  * ENVIRONMENT-GATED: needs Apache up (http://corex.local) + `npx playwright install`.
  */
 const { test, expect } = require( '@playwright/test' );
@@ -85,19 +90,27 @@ const WINDOWS = [
 /**
  * Opens the account page in a window of its own.
  *
- * @param {import('@playwright/test').Browser} browser      The browser of the test.
- * @param {Object}                             view         One of WINDOWS.
- * @param {Object|string}                      storageState Who is looking: SIGNED_OUT, or a saved session.
- * @param {boolean}                            scripts      Whether the browser runs the page's scripts.
+ * @param {import('@playwright/test').Browser}                       browser      The browser of the test.
+ * @param {Object}                                                   view         One of WINDOWS.
+ * @param {Object|string}                                            storageState Who is looking: SIGNED_OUT, or a saved session.
+ * @param {boolean}                                                  scripts      Whether the browser runs the page's scripts.
+ * @param {(page: import('@playwright/test').Page) => Promise<void>} before       What is set on the page before it opens: a request answered in the test.
  * @return {Promise<import('@playwright/test').Page>} The page, with the block in it.
  */
-async function openAccount( browser, view, storageState, scripts = true ) {
+async function openAccount(
+	browser,
+	view,
+	storageState,
+	scripts = true,
+	before = async () => {}
+) {
 	const context = await browser.newContext( {
 		storageState,
 		viewport: view.viewport,
 		javaScriptEnabled: scripts,
 	} );
 	const page = await context.newPage();
+	await before( page );
 	await page.goto( accountPath );
 	await page.evaluate( ( direction ) => {
 		document.documentElement.setAttribute( 'dir', direction );
@@ -603,6 +616,326 @@ test( 'a profile that was not saved says so under the Save profile button, on a 
 		( await placement( form ) ).covered,
 		'nothing is drawn over the message'
 	).toBe( false );
+
+	await page.context().close();
+} );
+
+/** The member view's two lists (FR-161f): the panel of each, its request, and its sentences. */
+const LISTS = [
+	{
+		name: 'sessions',
+		panel: '[data-corex-account-sessions]',
+		request: /account\/sessions(\?|$)/,
+		notLoaded:
+			'Your sessions could not be loaded. Load this page again to see them.',
+		handedAs: 'sessionsNotLoaded',
+	},
+	{
+		name: 'recent activity',
+		panel: '[data-corex-account-notifications]',
+		request: /account\/notifications(\?|$)/,
+		notLoaded:
+			'Your recent activity could not be loaded. Load this page again to see it.',
+		handedAs: 'activityNotLoaded',
+	},
+];
+
+const LIST_NOTE = '.corex-account__list-note';
+
+/** The ways a request for a list ends with no list in it. */
+const WITHOUT_A_LIST = [
+	...WITHOUT_AN_ANSWER,
+	{
+		name: 'is refused as WordPress refuses a signed-out person',
+		answer: ( route ) =>
+			route.fulfill( {
+				status: 403,
+				contentType: 'application/json',
+				body: JSON.stringify( {
+					code: 'rest_cookie_invalid_nonce',
+					message: 'Cookie check failed',
+					data: { status: 403 },
+				} ),
+			} ),
+	},
+];
+
+/**
+ * Opens the account page as the signed-in administrator, with both lists ending one way.
+ *
+ * @param {import('@playwright/test').Browser}                         browser The browser of the test.
+ * @param {Object}                                                     view    One of WINDOWS.
+ * @param {(route: import('@playwright/test').Route) => Promise<void>} answer  What a request for either list is answered with.
+ * @return {Promise<import('@playwright/test').Page>} The page, once both requests have ended.
+ */
+async function openWithLists( browser, view, answer ) {
+	const page = await openAccount(
+		browser,
+		view,
+		require( './global-setup' ).STORAGE_STATE,
+		true,
+		async ( opening ) => {
+			for ( const list of LISTS ) {
+				await opening.route( list.request, answer );
+			}
+		}
+	);
+	for ( const list of LISTS ) {
+		await expect(
+			page.locator( list.panel ).locator( LIST_NOTE )
+		).toBeVisible();
+	}
+
+	return page;
+}
+
+/**
+ * Where the sentence in a list's place sits in its panel, in pixels.
+ *
+ * @param {import('@playwright/test').Locator} panel The sessions panel, or the activity one.
+ * @return {Promise<Object>} Distances, the two spacing steps they are held to, and whether anything is drawn over the sentence.
+ */
+function notePlacement( panel ) {
+	return panel.evaluate( ( el ) => {
+		const round = ( px ) => Math.round( px * 10 ) / 10;
+		// A spacing step as this page resolves it: the presets are not a fixed number of pixels.
+		const step = ( slug ) => {
+			const probe = document.createElement( 'div' );
+			probe.style.blockSize = `var(--wp--preset--spacing--${ slug })`;
+			el.appendChild( probe );
+			const size = probe.getBoundingClientRect().height;
+			probe.remove();
+			return round( size );
+		};
+		const note = el.querySelector( '.corex-account__list-note' );
+		const box = note.getBoundingClientRect();
+		const heading = el.querySelector( 'h3' ).getBoundingClientRect();
+		const buttons = el.querySelector( '.corex-account__actions' );
+
+		return {
+			underHeadingBy: round( box.top - heading.bottom ),
+			buttonsUnderItBy: buttons
+				? round( buttons.getBoundingClientRect().top - box.bottom )
+				: null,
+			narrowerThanHeadingBy: round( heading.width - box.width ),
+			startsFromHeadingBy: round( box.left - heading.left ),
+			smallStep: step( '20' ),
+			step: step( '30' ),
+			covered:
+				document.elementFromPoint(
+					box.left + box.width / 2,
+					box.top + box.height / 2
+				) !== note,
+		};
+	} );
+}
+
+for ( const ending of WITHOUT_A_LIST ) {
+	test( `a signed-in person's lists whose request ${ ending.name } say so under their headings, on a phone`, async ( {
+		browser,
+	} ) => {
+		const uncaught = [];
+		const page = await openAccount(
+			browser,
+			WINDOWS[ 1 ],
+			require( './global-setup' ).STORAGE_STATE,
+			true,
+			async ( opening ) => {
+				opening.on( 'pageerror', ( error ) =>
+					uncaught.push( error.message )
+				);
+				for ( const list of LISTS ) {
+					await opening.route( list.request, ending.answer );
+				}
+			}
+		);
+
+		for ( const list of LISTS ) {
+			const panel = page.locator( list.panel );
+			const note = panel.locator( LIST_NOTE );
+
+			await expect( note ).toHaveText( list.notLoaded );
+			await expect( note ).toHaveAttribute( 'data-state', 'error' );
+			// The sentence is the one the page handed the script, which a translation replaces.
+			expect(
+				await page.evaluate(
+					( key ) => window.corexAccount.i18n[ key ],
+					list.handedAs
+				)
+			).toBe( list.notLoaded );
+			// No empty list is left under the heading for a screen reader to find.
+			await expect( panel.getByRole( 'list' ) ).toHaveCount( 0 );
+		}
+		// Nobody pressed anything: no message line is written, and the page is where it opened.
+		await expect(
+			page.locator( '.corex-account__status:not(:empty)' )
+		).toHaveCount( 0 );
+		expect( await page.evaluate( () => window.scrollY ) ).toBe( 0 );
+		expect( uncaught, 'no error is left for nobody to catch' ).toEqual(
+			[]
+		);
+
+		await page.context().close();
+	} );
+}
+
+for ( const view of WINDOWS ) {
+	test( `a list that could not be loaded is said under its heading and clear of the buttons, in ${ view.name }`, async ( {
+		browser,
+	} ) => {
+		const page = await openWithLists( browser, view, ( route ) =>
+			route.abort()
+		);
+
+		for ( const list of LISTS ) {
+			const panel = page.locator( list.panel );
+			// The panels are under the profile form, below the foot of the window as it opens.
+			await panel.locator( LIST_NOTE ).scrollIntoViewIfNeeded();
+			const at = await notePlacement( panel );
+
+			expect(
+				at.covered,
+				`nothing is drawn over the ${ list.name }`
+			).toBe( false );
+			// A small step under the heading it belongs to, and as wide as that heading.
+			expect( at.underHeadingBy ).toBeCloseTo( at.smallStep, 0 );
+			expect( at.startsFromHeadingBy ).toBeCloseTo( 0, 0 );
+			expect( at.narrowerThanHeadingBy ).toBeCloseTo( 0, 0 );
+			expect(
+				await outsideWindow( panel.locator( LIST_NOTE ) ).then(
+					( { left, right } ) => ( { left, right } )
+				)
+			).toEqual( { left: 0, right: 0 } );
+		}
+		// The session buttons stand one step under it, as their message line does under them.
+		const sessions = await notePlacement(
+			page.locator( LISTS[ 0 ].panel )
+		);
+		expect( sessions.buttonsUnderItBy ).toBeCloseTo( sessions.step, 0 );
+		expect(
+			await page.evaluate(
+				() =>
+					document.documentElement.scrollWidth >
+					document.documentElement.clientWidth
+			),
+			'the page does not scroll sideways'
+		).toBe( false );
+
+		await page.context().close();
+	} );
+}
+
+test( 'a signed-in person is shown their sessions, a step above the buttons', async ( {
+	browser,
+} ) => {
+	// Asked of the site itself: the suite's own session is in the answer.
+	const page = await openAccount(
+		browser,
+		WINDOWS[ 0 ],
+		require( './global-setup' ).STORAGE_STATE
+	);
+	const panel = page.locator( LISTS[ 0 ].panel );
+
+	await expect( panel.locator( 'ul > li' ).first() ).toBeVisible();
+	await expect( panel.locator( LIST_NOTE ) ).toBeHidden();
+
+	const at = await panel.evaluate( ( el ) => {
+		const list = el.querySelector( 'ul' ).getBoundingClientRect();
+		const buttons = el.querySelector( '.corex-account__actions' );
+		const line = el.querySelector( '.corex-account__status' );
+
+		return {
+			buttonsUnderTheListBy:
+				buttons.getBoundingClientRect().top - list.bottom,
+			lineUnderTheButtonsBy: parseFloat(
+				window.getComputedStyle( line ).marginBlockStart
+			),
+		};
+	} );
+	expect( at.buttonsUnderTheListBy ).toBeGreaterThan( 0 );
+	expect( at.buttonsUnderTheListBy ).toBeCloseTo(
+		at.lineUnderTheButtonsBy,
+		0
+	);
+
+	await page.context().close();
+} );
+
+test( 'recent activity with nothing in it says so, and not that it could not be loaded', async ( {
+	browser,
+} ) => {
+	const page = await openAccount(
+		browser,
+		WINDOWS[ 1 ],
+		require( './global-setup' ).STORAGE_STATE,
+		true,
+		( opening ) =>
+			opening.route( LISTS[ 1 ].request, ( route ) =>
+				route.fulfill( {
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify( {
+						success: true,
+						notifications: [],
+					} ),
+				} )
+			)
+	);
+	const note = page.locator( LISTS[ 1 ].panel ).locator( LIST_NOTE );
+
+	await expect( note ).toHaveText( 'No activity yet.' );
+	await expect( note ).toHaveAttribute( 'data-state', 'empty' );
+	// It reads as a row of the list would: straight under the heading, from where that starts.
+	const at = await notePlacement( page.locator( LISTS[ 1 ].panel ) );
+	expect( at.underHeadingBy ).toBeCloseTo( 0, 0 );
+	expect( at.startsFromHeadingBy ).toBeCloseTo( 0, 0 );
+
+	await page.context().close();
+} );
+
+test( 'signing out everywhere loads the page again without asking for the sessions list', async ( {
+	browser,
+} ) => {
+	const RELOADED = 'the page is loaded again';
+	const page = await openAccount(
+		browser,
+		WINDOWS[ 0 ],
+		require( './global-setup' ).STORAGE_STATE,
+		true,
+		// Answered here: nothing is signed out, and the suite keeps its session.
+		( opening ) =>
+			opening.route( /account\/sessions\/revoke/, ( route ) =>
+				route.fulfill( {
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify( {
+						success: true,
+						message: 'Signed out of every session.',
+					} ),
+				} )
+			)
+	);
+	const panel = page.locator( LISTS[ 0 ].panel );
+	await expect( panel.locator( 'ul > li' ).first() ).toBeVisible();
+
+	const seen = [];
+	page.on( 'request', ( request ) => {
+		const route = request.url().match( /corex\/v1\/(account\/[^?]*)/ );
+		if ( route ) {
+			seen.push( `${ request.method() } ${ route[ 1 ] }` );
+		}
+	} );
+	page.on( 'framenavigated', () => seen.push( RELOADED ) );
+
+	await panel.getByRole( 'button', { name: 'Sign out everywhere' } ).click();
+
+	await expect( panel.getByRole( 'status' ) ).toHaveText(
+		'Signed out of every session.'
+	);
+	await expect.poll( () => seen ).toContain( RELOADED );
+	expect( seen.slice( 0, seen.indexOf( RELOADED ) ) ).toEqual( [
+		'POST account/sessions/revoke-all',
+	] );
 
 	await page.context().close();
 } );

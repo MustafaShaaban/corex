@@ -187,7 +187,11 @@
             "text": "var(--wp--preset--color--ink)"
         },
         "spacing": {
-            "blockGap": "var(--wp--preset--spacing--40)"
+            "blockGap": "var(--wp--preset--spacing--40)",
+            "padding": {
+                "left": "var(--wp--preset--spacing--40)",
+                "right": "var(--wp--preset--spacing--40)"
+            }
         },
         "elements": {
             "heading": {

@@ -13475,6 +13475,364 @@ run: the lock and its release (the lock's test failed for each), the store's que
 route's, the form's and the store's repeat tests failed) and the service's reading of the
 store's answer (the unit test failed).
 
+## #344 — The theme has a side gutter: root padding from spacing preset 40, and the four things it took width from
+
+**Date:** 2026-10-13. **Branch:** `fix/theme-phone-gutter`. **Found by:** the measurement of
+the account block for #336, which read the default page at 375 pixels and left the lead in
+PROGRESS.md. **Spec:** 068, FR-157a and FR-157b.
+
+**What the theme did.** `theme/theme.json` sets `useRootPaddingAwareAlignments` and had no
+`styles.spacing.padding`. With that setting WordPress gives the root padding to every
+constrained block (`.has-global-padding`) and to nothing else, so with none set there was
+no space at the sides at all. Nothing else supplied one: no template, part or pattern
+writes side padding, the kits apply pages and no styles, and no stylesheet of the theme
+sets any.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, Chromium,
+signed out; every template in `theme/templates`, `index` as the posts page, and each of the
+36 registered `corex/` patterns on a page of its own; at 375 and 320 pixels, left to right
+and right to left):
+
+- On every one of them the nearest line of text was 0 pixels from the edge it starts at.
+  `--wp--style--root--padding-left` and `-right` computed to `0px`.
+- The same after the company kit and then the portfolio kit were applied, on the ten pages
+  they made. A kit does not set a gutter and is not meant to.
+- It was not only a phone. At 1024 the post grids of the archive, the posts page and the
+  project archive (`align: wide`) began at pixel 0. By the rule that sizes a wide block,
+  the same holds in any window narrower than the wide size, 1200.
+- At 320 the front page, the contact and form templates and a search that finds nothing
+  scrolled sideways by 27 pixels: the form (below).
+- A block set to full width in a page's content was 768 wide at 1280, and one set to wide
+  was 768 too. The hero pattern in a page was a band 768 wide in the middle of the window.
+
+**Decided: root padding in `theme.json`, left and right, `var(--wp--preset--spacing--40)`.**
+It is where WordPress looks for it with root-padding-aware alignments, it is one value for
+every template and pattern, it reaches the editor's canvas, a site can change it in
+`brand.json` (measured: preset 50 there gives 24 pixels), and it is a token. It is the same
+preset as the block gap, so the space beside the text is the space between its blocks.
+theme.json has no logical side for padding; right-to-left reading is held by the two
+values being the same, and the browser test reads both sides in both directions.
+
+**The number is 16 pixels, and theme.json says 24.** Preset 40 is written as `1.5rem`. A
+page has it as `1rem`. theme.json is version 3, where `settings.spacing.defaultSpacingSizes`
+is true unless a theme says otherwise, and while it is true WordPress keeps its own sizes
+for the slugs it defines (20 to 80) and a theme's sizes of the same slugs are not used
+(`WP_Theme_JSON::PRESETS_METADATA`, `prevent_override`). Measured on the page: 20 is
+0.44rem for a written 0.5rem, 30 is 0.67rem for 1rem, 40 is 1rem for 1.5rem, 50 is 1.5rem
+for 2rem, 60 is 2.25rem for 3rem, 70 is 3.38rem for 4rem, 80 is 5.06rem for 6rem. Only 10
+is the theme's. The same rule gives the font sizes `small` and `medium` WordPress's values,
+and the size `2xl` is on the page as `--wp--preset--font-size--2-xl`, while the CTA block's
+stylesheet asks for `--wp--preset--font-size--2xl`. That is a defect of the token scale and
+not of this change: putting it right moves every space on every page, and is in PROGRESS.md
+for the owner. The gutter was chosen by what is measured: 16 pixels is the usual side
+margin of a phone, and if the scale is put right preset 40 becomes 24, which is also one.
+Preset 50 would be 24 today and 32 then, which at 320 leaves 256 for the text.
+
+**What the gutter took width from, and what was done.**
+
+1. **A full-width block in content.** `page`, `page-form`, `single` and
+   `single-corex_project` print the content in a constrained block inside a constrained
+   `<main>`. WordPress takes the padding off the inner one and, with it, the negative
+   margins of a full-width block inside it: with a gutter such a block stopped 16 pixels
+   short of each edge on a phone. The content block is now `align: full` in the four. It is
+   then the block that holds the gutter, and a full-width block in it reaches both edges at
+   any width. **This changes a desktop:** a full-width block in content is the window's
+   width and a wide one 1200, where both were 768. The text column did not move (256 from
+   each edge at 1280, measured before and after on every template and pattern).
+2. **The form.** `.corex-form` is a grid of twelve columns with a gap, and eleven gaps of
+   24 pixels and the button's column are 347 pixels whatever its fields span. That is the
+   27 pixels at 320. Inside the gutter it was 43 at 320, and on the search that finds
+   nothing 4 at 375 and 59 at 320. At 600 pixels
+   and under, where every field already spanned all twelve, the grid is one column. The
+   button keeps its width. The message line under the button has the row to itself there;
+   above 600 it is still in the second column, 38 pixels wide at 1280 (PROGRESS.md).
+3. **The docs header's search.** At 320 its field and button are 304 pixels and the header
+   is 288 inside the gutter: the button ended at the window's edge. The actions row and the
+   search are now no wider than what holds them (`max-inline-size`; capping one of the two
+   leaves the button at the edge, measured). Nothing moved at 375 or at 1280.
+4. **A search that finds nothing.** Its contact pattern is a full-width section inside the
+   results block, which was neither full width nor constrained, so the section kept the
+   gutter as padding inside the text column and its form stood 16 pixels in from the title.
+   The results block and its nothing-found block are now full width.
+
+**Measured after** (same install, same pages): on all 15 template pages, the posts page,
+the 36 pattern pages and the ten kit pages, at 375 and 320, both directions, the nearest
+line of text is 16 pixels or more from each edge and no page scrolls sideways. The same on
+the site switched to Arabic (`<html dir="rtl" lang="ar">`), which loads WordPress's
+right-to-left stylesheets; the browser tests set `dir` on a left-to-right page. On the
+Coming soon page the nearest text is 22 pixels from an edge at 375 (it is centred; not
+measured before). At 1280 and 1024 every element's
+box was compared before and after on those pages: the text is where it was, except in the
+places named above, and the wide post grids are 16 pixels in from each edge at 1024.
+
+**Not chosen.** A gutter written on each template's blocks (fifteen templates, two parts
+and every pattern, and the next one forgets it). A rule in a stylesheet (the theme's one
+stylesheet is attached to the navigation block and loads where one renders, and a gutter
+is a token's job). A new
+fluid token (the lead asked for a spacing preset, and the scale has to be put right first).
+Leaving the content block nested and accepting full-width blocks 16 pixels short on a
+phone.
+
+**Client sites.** Muva's, Perego's and Mizzey's themes have no `Template:` header: each is
+a theme of its own with its own `theme.json`, and none inherits this one (read on this
+machine, 2026-10-13). Neither Muva's nor Perego's sets a root padding. So the gutter and
+the templates do not reach them. The form's stylesheet does, on any site that shows a
+`corex/form`.
+
+**Tests.** `tests/e2e/theme-gutter.spec.js`: every template, a page of every registered
+pattern, the header and footer, a full-width and a wide block in content, at 375 and 320 in
+both directions; and at 1280 the text column, the two blocks, and the search that finds
+nothing. `tests/Unit/Theme/ThemePageCoverageTest.php`: every template that prints a post's
+content prints it full width, which holds a template added later. That the gutter is a
+token and not a written size was already held (`ThemeJsonTest.php`). Written before the change and seen to fail for it; then the root padding, the
+content block's alignment, the form's grid, the header's rule and the search template were
+each taken out once, and tests failed for each.
+
+**What the first run in CI showed.** Ten tests failed there, all for the project template:
+the project's address answered "Page not found" (CI saves the permalink rules before the
+add-ons are switched on, and nothing saves them again; PROGRESS.md). The four tests that
+only read text had passed on that page, because a "Page not found" has text, a gutter and
+no sideways scroll. So every visit now first holds the page to the class WordPress gives
+its `<body>` (`single-corex_project`, `error404`, `page-template-page-landing`, …), and the
+spec opens WordPress's Permalinks screen, which saves the rules, before it reads a
+project. With the site put in CI's state and that step taken out, the two project tests
+fail in six seconds and name the page they were given.
+
+## #345 — In the account block, a list that did not load says so in its own place, and an empty one says it is empty
+
+**Date:** 2026-10-13. **Branch:** `fix/account-lists-say-when-they-do-not-load`, on top of
+#339's branch (PR #383, open when this was written). **Found by:** the session that built
+#339, which read it from `account.js` and recorded it in `PROGRESS.md`. Spec 068 gains
+FR-161f. The numbers between are held elsewhere: #340 by open PR #384, #341 by #385 on
+`main`, #342 by #386 on `main`, #343 by open PR #387 and #344 by open PR #388. #386
+merged with FR-161c, the letter #339's first requirement had, and that one is FR-161e now;
+FR-161f was taken here to leave it the letter.
+
+**What was there.** `get( path, token )` returned `fetch(...).then( res => res.json() )`,
+with no rejection handler and without looking at `res.ok`. `loadSessions()` and
+`loadNotifications()` emptied their list and drew `data.sessions || []` and
+`data.notifications || []`.
+
+**Run before the change** (it had only been read). WordPress 7.1.3, a WordPress of this
+worktree's own, Chromium, the administrator signed in, at 1280 and at 375 pixels wide, both
+requests ended the same way by `page.route()`:
+
+| What became of the two requests | Under "Active sessions" | Under "Recent activity" | Errors nothing caught |
+|---|---|---|---|
+| answered by the site | one row | nothing, the list 0 px high (a new install has no activity) | none |
+| did not arrive (`route.abort()`) | nothing; the two buttons 0 px under the heading | nothing, 0 px | two, `TypeError: Failed to fetch` |
+| answered 500 with an HTML page | the same | the same | two, from `res.json()` |
+| answered 401 or 403 with WordPress's JSON | the same | the same | none: read as a list with nothing in it |
+
+A list that did not load and a list with nothing in it were one picture: a heading with
+nothing under it. Two more things were found while measuring.
+
+- *A later request that fails.* After a session button whose own request was answered and
+  whose refresh did not arrive, the list kept the rows of the first load: the `.then` never
+  ran. After a refresh answered 403, the list was emptied.
+- *Sign out everywhere, pressed for real* (in a session of its own on that install). The
+  POST is answered 200, "Signed out of every session." The refresh that follows is answered
+  403 `rest_cookie_invalid_nonce`, because nobody is signed in any more. The list is
+  emptied, and the page stays the member view, with its profile form. Nothing was pressed
+  after that.
+
+**What was weighed.**
+
+1. *Write it through `say()`, into the sessions panel's message line.* Refused. `say()` is
+   for the answer to a press (FR-161a): it empties every other message line and moves the
+   page to the line. Nobody pressed anything as the page opened, the page would arrive
+   scrolled to the foot of the block, and the activity panel has no such line.
+2. *A polite status of its own in each panel.* Refused. As the page opens the sentence is
+   content of the page, and "No activity yet." would be announced on every visit to a
+   person who asked nothing. What that leaves is under "Not announced".
+3. *A row in the list.* Refused: a list of one item that is not a session.
+4. *A sentence in the list's place.* **Built.**
+5. *A "Try again" button in the sentence.* Not built. The sentence names what does it,
+   loading the page again, which is also what shows the signed-out view to a person whose
+   session has ended (the 403 above). A button is a control with states of its own (asking,
+   failed again) for a list most people never see fail.
+
+**What is built.**
+
+- `get( path, rows, token )` resolves whatever happens: with the rows, none of them for an
+  empty list, or with `null` where there is no list to show. No list is a request that did
+  not arrive, an answer that is not JSON, a refusal whatever its body holds, and an answer
+  the list is not in. WordPress words a refusal for a developer ("Cookie check failed"),
+  and that is not shown.
+- `loadList( kind, token )` replaces `loadSessions()` and `loadNotifications()`; `SESSIONS`
+  and `ACTIVITY` hold what differs between the two. Under each heading there is one of
+  three things: the rows; "No sessions are recorded for this account." or "No activity
+  yet."; or "Your sessions could not be loaded. Load this page again to see them." or
+  "Your recent activity could not be loaded. Load this page again to see it."
+- The sentence is a `<p class="corex-account__list-note">` the script puts after the
+  `<ul>`, with `data-state="empty"` or `data-state="error"`. The `<ul>` is `hidden` while
+  it has no rows, so the accessibility tree holds no empty list. The script makes the
+  paragraph: `AccountRenderer` prints what it printed, and a theme that prints the two
+  lists itself gets the sentence too.
+- The four sentences are `corexAccount.i18n.noSessions`, `sessionsNotLoaded`, `noActivity`
+  and `activityNotLoaded`, translated in `ProfileServiceProvider::registerAssets()`, with
+  the English as the script's fallback, as the entries beside them have.
+- Rows drawn earlier are taken away when a later request brings no list. They are not
+  known to be what the site holds now, and after "Sign out other sessions" they are known
+  not to be.
+- When **Sign out everywhere** is answered as taken, the list is not asked for, and the
+  page is loaded again after the 600 ms a sign-in waits (`reloadSoon()`, which the sign-in
+  and reset forms now share). The page that comes back is the signed-out one.
+
+**An empty sessions list has a sentence too.** A person signed in by WordPress's cookie
+always has a session, and the brief for this change called an empty sessions list wrong.
+The site can still answer one truthfully: a plugin that signs a person in another way (a
+token, a single sign-on) sets the current user with no session token of WordPress's. What
+the site answered is said as it answered. An answer with no `sessions` in it is not an
+empty list, and says "could not be loaded".
+
+**How it looks.** With nothing to list, the sentence reads as a row would: the list's own
+colour (`ink-soft`), from where the heading starts, with no box. A list that could not be
+loaded is in the box of a refused form (`inverse` on `error`, the same padding and
+corner), so that "this did not work" has one look across the block.
+
+**The session buttons got a step above them.** Measured before the change with rows in the
+list: the buttons' top was 0 px under the last row's line, and with no rows 0 px under the
+heading. `.corex-account__actions` now has `margin-block-start` of the theme's spacing
+step 30, which is what its message line has under it. Without it the red box touched the
+buttons. It moves the buttons down in the ordinary state as well, by 10.7 px on that
+install.
+
+**Not announced.** The sentence is a paragraph and not a live region. As the page opens it
+is read where the list would be read. When it replaces the rows after a press, the answer
+to the press is announced by the buttons' own line, and the list changing above it is not,
+as it is not when the refresh succeeds. A refresh that fails after a press is therefore
+seen and not heard. It is in `PROGRESS.md`.
+
+### Measured after the change
+
+Same install, Chromium, at 1280 and 375 pixels wide, left to right and right to left; the
+numbers are the same in both directions.
+
+| Under the heading | Its top under the heading | The buttons under it | Their line under them |
+|---|---|---|---|
+| rows of sessions | 0 px, as before | 10.7 px | 10.7 px |
+| "could not be loaded", sessions | 7 px | 10.7 px | 10.7 px |
+| "could not be loaded", activity | 7 px | no buttons | |
+| "No activity yet." | 0 px | no buttons | |
+
+- The box is as wide as the heading (768 px, and 375 on the phone, where the theme's page
+  has no gutter: `PROGRESS.md`), 47 px high on the desktop and 72.6 on the phone, where it
+  takes two lines. "No activity yet." is one line of 25.6 px. The page does not scroll
+  sideways.
+- Contrast, from the computed colours: 5.51 to 1 for the box (white on `rgb(193, 53, 43)`),
+  5.8 to 1 for the plain sentence (`rgb(90, 103, 114)` on white).
+- No error is left uncaught in any of the endings, and the page is not moved: `scrollY` is
+  0 after both lists have failed, and no message line holds anything.
+- Chromium's accessibility tree, read over CDP with the sessions list failed: the heading
+  "Active sessions", a paragraph with the sentence, the two buttons, their status. No node
+  for the hidden list.
+- **Sign out everywhere, pressed for real**: the POST is answered 200, no request is made
+  for the list, the page is loaded again, and the sign-in form is on it.
+
+### Tests
+
+`tests/corex-account.test.js`, 24 new. For each list: the rows, the sentence for an empty
+list, six ways a request ends with no list, and that the sentence empties no message line
+and moves nothing. Then a refresh that fails after the rows were shown, a refresh that
+succeeds after a failure, signing out everywhere not putting a refused list in the rows'
+place, a refused sign-out drawing the list again, and the four English sentences. 21 of
+them failed before the change; the three that passed hold what was already so (rows are
+drawn; a refused sign-out draws the list again).
+
+`tests/e2e/product-surfaces.spec.js`, ten new, with the suite's saved administrator
+session; all ten failed before the change. Both lists ended three ways (aborted, an error
+page, WordPress's 403) on a phone; the box's place in the four windows, held to the theme's
+spacing steps as the page resolves them; the real sessions of the suite's own session, a
+step above the buttons; an empty activity list; and **Sign out everywhere**, which is
+answered in the test, so nothing is signed out and the suite keeps its session.
+`openAccount()` takes a fifth argument, what is set on the page before it opens.
+
+Each part of the change was taken out once and the tests run: ten removals, every one
+failed a test that names it.
+
+`AccountRendererTest` is not changed: the markup is not.
+
+### Found, and not changed
+
+- **The session in use is never marked "this device".** Every answer of
+  `GET account/sessions` on that install carried `"current": false`, for the only session
+  too. `SessionService::active()` hands `WP_Session_Tokens::get_all()` to
+  `SessionList::format()`, which compares each key with the current session's verifier;
+  `get_all()` returns `array_values()`, so the keys are 0, 1, 2. `SessionListTest` passes
+  an array keyed by verifier, which WordPress never does.
+- **A row of recent activity is an internal name and a machine's date**
+  (`profile.updated · 2026-10-13T09:00:00+00:00`), and a row of sessions is the browser's
+  whole user agent string.
+- **Recent activity is not asked for again after a profile is saved** (read from the
+  script: only the sessions are), so the save is not listed until the page is loaded again.
+
+All three are in `PROGRESS.md`.
+
+### Client impact
+
+Only for a site with Corex Profile on and the block on a page. Four new strings in the
+`corex` text domain. The two session buttons stand one spacing step lower. A theme that
+styles the block has a new element to style, `.corex-account__list-note` with its
+`data-state`, and the two lists are `hidden` while they have no rows. After **Sign out
+everywhere** the page is loaded again. `get()`, `loadSessions()` and `loadNotifications()`
+were inside the script's closure, so nothing outside can have called them.
+
+## #346 — The list of open access requests has the Access screen's check, and asking for access keeps its own
+
+**Date:** 2026-10-13. **Branch:** `fix/access-requests-list`, from `main`.
+
+**The decision.** `corex/v1/access/requests` is one route with two methods, and they were
+registered together: one callback that looked at the method, one permission check. The
+check was the one that suits `POST`, where anybody signed in may ask for access. They are
+now two registrations. `GET` has `allowed()`, a REST nonce and `manage_options`; `POST`
+keeps `requestAllowed()`, a REST nonce and a signed-in session.
+
+**Why `manage_options` and not the `corex_manage_access` ability.** The list is the queue
+on CoreX Access & Abilities. That screen's menu entry asks for `manage_options`
+(`AccessScreen::menu()`), and so does the route that decides a request. A role given
+`corex_manage_access` and not `manage_options` opens neither today, so a list with the
+ability's check would be read by people who can do nothing with it.
+
+**A lead, not built.** The notification of a new request is addressed by the ability
+(`AccessRequestNotificationProducer`). An administrator holds it, so the people who decide
+are told. A role given the ability in the matrix and not `manage_options` is addressed as
+well (a notification is read by `current_user_can()` of its ability), and its link is to a
+screen that refuses them. Read in the code, not walked in a browser. Moving the screen to
+the ability is a change of its own: the menu entry, the decision route and the list would
+move together.
+
+**A person's own requests are not answered by the route.** The contract of spec 068 called
+`GET` "accessible requests", which reads as if each person had some. Nothing in CoreX calls
+`GET`: the screen is handed the queue with the page (`corexAccess.requests`), and the
+screen that refuses somebody reads that person's own open request on the server
+(`CurrentUserAccessRequests`), from the session and never from a passed id. Answering "your
+own" here would be a second shape of answer on one route, and a read by requester in the
+store, for no caller. The contract now says for whom the list is; a surface that lists a
+person's own requests gets a read of its own when it is built.
+
+**Measured after the change**, on WordPress 7.1.3 over HTTP, on this branch's own install,
+with two open requests from two people: the administrator is answered `200` with both; a
+subscriber who asked for nothing, each of the two requesters and an author are answered
+`403`; a visitor who is not signed in, and a signed-in request with no nonce, `401`. The
+Access screen is handed both requests with the page. An author's `POST` is answered `200`
+and stored; the author deciding their own request is answered `403`; the administrator's
+decision is recorded. No email left the install: `pre_wp_mail` was answered in the served
+process and in the tests.
+
+**Tests.** `tests/Integration/Access/AccessRequestsReadTest.php`, through the REST server
+and not by calling the controller, because the promise is the permission check and a call
+to the method never reaches it. An administrator is handed the list; a subscriber, a
+contributor, an author, an editor and the person who filed the request are answered `403`
+and nothing of the request is in the answer; a visitor `401`; a person who manages nothing
+can still ask. The five refusals failed before the change. The other three passed before
+it and hold what must not change.
+
+**Client impact.** A script that read the list as somebody without `manage_options` is
+answered `403`. `AccessController::requests()` is gone: `pendingRequests()` and
+`createRequest()` are the route's callbacks. Read on this machine on 2026-10-13: nothing
+under `sites/` in the Muva or Perego checkouts names the route or the controller.
+
 ## #347 — A username that is the person's own email address is no username, and registration's username field says what it is for
 
 **Date:** 2026-10-13. **Branch:** `fix/account-username-is-the-address`, from `main`. It
@@ -13604,3 +13962,130 @@ is now made. The registration form's username gains `autocomplete="username"`. N
 was added to `AuthGateway`. Read on this machine on 2026-10-13: nothing under `sites/` in
 the Muva or Perego checkouts names the block, the account service, the gateway or the
 register route.
+
+## #350 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
+
+**Date:** 2026-10-13. **Branch:** `fix/access-route-refusals`. **Found by:** the measurement
+for #343, which posted an access request with an empty reason and was answered 500.
+**Decided by:** me, from the measurements below. The owner's brief named the two answers to
+choose between (a 400, or a 200 with a `blocked` result as a duplicate is answered in #343),
+asked what a script reading status codes then sees, asked for the sibling routes to be read
+for the same throw, and said to build it if it was a plain defect.
+
+**What the code did.** `AccessService` and `AccessPolicy` refuse what they are handed by
+throwing `InvalidArgumentException`, and `Confirmation` does the same in its constructor.
+The form on a denied screen catches it. `AccessController` caught nothing, so each was
+WordPress's fatal error: 500, "There has been a critical error on this website", and a
+"PHP Fatal error: Uncaught" line in the PHP log for each request.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, over HTTP
+with a REST nonce, mail answered for by `pre_wp_mail`; 31 requests, of which 21 were
+answered 500, each with a fatal error in the log):
+
+| Sent | To | Answer |
+|---|---|---|
+| an empty reason; no body at all | `POST access/requests`, as an editor | 500 |
+| an ability CoreX does not have; an area it does not have (`forms`, where the area is `forms-flows`) | the same | 500 |
+| an ability and an area; neither | the same | 500 |
+| a reason of 2,001 characters | the same | 500 |
+| a reason that is a list | the same | 200, and a request stored with the reason "Array" |
+| a key of `changes` that is not an ability; a value that is not an effect, or is a list | `POST access/roles/editor/preview`, as an administrator | 500 |
+| `changes` that is a list, or has the key `"123"` | the same | 500, a `TypeError`: PHP keeps such a key as an integer and the catalog takes a string |
+| `role` in the body as `!!!` | the same, and `GET access/roles/editor?role=!!!` | 500 |
+| `role` in the body as a list | `POST access/roles/editor/preview` | 200, a preview for a role named `array` |
+| no confirmation; one that is a string; no kind of operation; a hash that is not one; an actor of 0; an expiry or a use that is not a time | `POST access/roles/editor/apply` | 500 |
+| a confirmation that can be read and confirms another change | the same | 200, `blocked`, `confirmation_invalid` |
+| a decision on a request that is not there, with no body or a note that is a list | `POST access/requests/999999/decision` | 200, `blocked`, `request_not_pending` |
+
+The brief's lead read the 2,001-character reason and did not post it; it was posted here.
+The four requests that sent a list where text was meant also wrote "Array to string
+conversion" to the log.
+
+**1. The answer is 400, not 200 with `blocked`.** Three reasons.
+
+- *What a script reading status codes sees.* These were 500. Answered 400, a script that
+  treats anything outside 2xx as "not done" is right before and after. Answered 200, a
+  request that created nothing would move from "failed" to "succeeded" for that script. A
+  duplicate (#343) is different: it was 200 before, and stays 200.
+- *It is not the same kind of no.* Every `blocked` answer in this family is about how
+  things stand: a request no longer pending, a change the safety policy stops, a
+  confirmation for another change, a duplicate. The same request might be taken at another
+  time. An empty reason or a key CoreX does not have is refused however often it is sent.
+- *Two of the routes that read what is sent have no result to block.* A preview answers a preview, and the
+  role route a hash. One rule for the controller needs an answer every route can give.
+
+**2. The body is WordPress's own for a refused parameter.** `code` is `rest_invalid_param`,
+`data.status` is 400, `data.params` maps the parameter to the message and `data.details`
+gives it a code of its own (`reason_required`, `reason_too_long`, `target_required`,
+`target_ambiguous`, `ability_unknown`, `area_unknown`, `effect_unsupported`, `role_invalid`,
+`confirmation_malformed`). A client that reads WordPress's answer for a parameter WordPress
+refuses reads this one. These routes already answer WordPress's bodies for 401 and 403, so
+a caller already meets that shape outside 2xx. The message for an empty reason is the one
+the form on a denied screen shows. It is built as a `WP_REST_Response` with the status, as
+`JobController` and `SecuritySettingsController` build theirs, so no method's return type
+changed.
+
+**3. The service says which refusal it is.** `Corex\Access\InvalidAccessInput` extends
+`InvalidArgumentException` and carries the parameter and the code. The service, the policy
+and the controller's reading of a confirmation throw it for what a caller sent. The
+controller catches that class and nothing wider. A plain `InvalidArgumentException` (no
+requester, a request already run out, a change with no actor) is a mistake in CoreX and is
+still answered as one: a 400 there would tell a caller to correct a request with nothing
+wrong in it. The form's `catch (InvalidArgumentException)` still catches the new class,
+and what a person sees on a denied screen is unchanged.
+
+**4. A parameter that is not text is read as nothing.** A list read as text is the word
+"Array" and a PHP warning. A reason that is a list is now `reason_required` and stores
+nothing; a role that is a list is `role_invalid`; an effect that is a list is
+`effect_unsupported`, as before, without the warning.
+
+**5. A confirmation that cannot be read is 400; one that can and does not confirm is still
+`blocked`.** The second is the service's answer and was not changed.
+
+**Left as it is, deliberately.** Each is under "Open, and not hidden" in `PROGRESS.md`.
+
+- **A `role` in the body or the query is read before the one in the address.** It is how
+  WordPress orders a request's parameters, and its own routes do the same with `id`.
+- **A change to a role nobody has is taken.** Measured through the service:
+  `probe_no_such_role` was previewed as allowed, the change answered `completed` and the
+  grant was stored. A role key is checked for its form only.
+- **`changes` that is a string, or missing, is read as no changes** and answered 200.
+- **The routes declare no `args`.** WordPress could refuse a wrong type before the
+  controller ran. It could not know an ability from a key that is not one, so the service's
+  refusal would still need an answer, and that answer is what this change is.
+
+**Tests.** Unit: the service's seven refusals of a request and the policy's four of a
+change name the parameter and the code; a role key that is not one is refused for a
+preview and for a hash; a caller's own mistake is not the new class. The store, the
+activity record, the mailer and the user directory are mocks that fail the test when
+called. Integration, through WordPress's REST server against the real tables
+(`tests/Integration/Access/AccessRouteRefusalTest.php`): nine request bodies, seven role
+changes at the preview and when applying, the role route, and seven confirmations are
+answered 400 with the parameter and the code, and leave no request, no audit entry, no
+notification and no grant; a reason of exactly 2,000 characters is taken; a readable
+confirmation for another change is still `blocked`. A PHP warning while a route answers
+fails the test. Before the change 24 of its 26 failed; the two that passed hold the
+borders.
+
+Fourteen pieces of the change were then put back one at a time and the tests run. A test
+failed for twelve. One had changed nothing (a confirmation that is not a map was already
+read as an empty one) and was taken out of the change. One had no test: reading an effect
+that is a list as text gave the same 400 with a warning, which is why a warning now fails
+the test; put back again, it fails.
+
+Also run on a trial merge with `fix/access-request-duplicate` (#343, PR #387), which
+changes the same service and the store's interface: no conflict in the code, the tests,
+the guide or the specs, and the access tests pass. #387 merged before this did; `main`
+was merged in, and the bullet #343 left for this defect under "Open, and not hidden" was
+taken out. The details of a request are still checked before the question #343 asks, so a
+repeat with an empty reason is answered 400 for its reason.
+
+**Measured after the change**, the same 31 requests: the 21 that were 500 and the two
+that were taken for something nobody asked (the reason "Array", the role `array`) are
+answered 400, the other eight as before, with no fatal error and no warning in the log.
+
+**Client impact.** A script that calls these routes is answered 400 where it was answered
+500. Read on this machine on 2026-10-13: nothing under `sites/` in the Muva or Perego
+checkouts names the routes, `AccessService` or `AccessPolicy`. `AccessPolicy::preview()`
+and `AccessService` throw a subclass of what they threw, so a `catch` written for them
+still catches.
