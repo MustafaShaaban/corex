@@ -23,6 +23,7 @@ theme only presents it.
 | Orchestration | `Account\AccountService` | Validation + policy (registration gate, password rules, enumeration-safe reset). Pure; unit-tested with a fake gateway. |
 | Boundary | `Account\WordPressAuthGateway` | Every WordPress auth call (`wp_signon`, `wp_insert_user`, `retrieve_password`, the reset flow, `wp_update_user`). Never reimplements hashing. |
 | Naming | `Account\PublicName` | The name a new account goes by: the username that was typed, or the part of the address before the @ when none was, or when an address was typed as the username. Pure. |
+| Reset | `Reset\ResetEmailLink`, `Reset\ResetLanding`, `Reset\ResetTicket`, `Reset\AccountPageMark`, `Reset\ResetLink` | A forgotten password is reset on the page the block is on: the email's link, the visitor's arrival, where the key is kept, and how the page is named. |
 | Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak) and ends other/all sessions via core helpers. |
 | Notifications | `Notification\NotificationService` | The signed-in user's own activity, projected from the shared core activity stream. |
 | Presentation | `Block\AccountRenderer` | Pure, fully escaped HTML for the block. |
@@ -65,6 +66,38 @@ page in 50.
 An address of 60 characters or fewer is the login, as before. Covered by
 `tests/Integration/Profile/RegistrationLongAddressTest.php`.
 
+## A forgotten password
+
+The reset begins and ends on the page the account block is on.
+
+1. **The form names its page.** The forgot-password form carries a hidden field `page`: the
+   id of the page the block is rendered on and a signature of it made with the site's salt
+   (`Reset\AccountPageMark`). The block signs the page because the page cannot be asked: the
+   Account template places the block, and the page's own content is empty.
+2. **The email is WordPress's, with one address changed.** `reset-request` still calls
+   `retrieve_password()`. While it does, `Reset\ResetEmailLink` filters
+   `retrieve_password_message` and replaces the address that carries the key with the page's:
+   `…/account/?corex_reset_login=…&corex_reset_key=…`. It runs only when the request named a
+   published page with a mark this site made. Without one (an older cached page, a client of
+   the route that sends no `page`, the block in a template that is no single page) the
+   email is as WordPress writes it, and so is the email of a reset asked at `wp-login.php`.
+3. **The key leaves the address.** `Reset\ResetLanding`, on `template_redirect`, puts the
+   login and the key in a session cookie scripts cannot read (`corex-resetpass-…`,
+   `Reset\ResetTicket`) and redirects to the same page with `?corex_reset=1`. This is what
+   `wp-login.php` does with its own key. Both answers are sent with `nocache_headers()`.
+4. **The block shows the new-password form, and no other.** WordPress checks the key
+   (`check_password_reset_key()`). The form posts to `reset`, which checks it again and
+   saves the password with `reset_password()`. A key WordPress does not take is answered
+   with a message that says so above the usual forms, where a new link can be asked for.
+5. **The page says what happened, once.** `reset` marks the cookie as used. `account.js`
+   loads the page again, as it does after a sign-in, and the block's message line reads
+   "Your password has been updated. You can now sign in." above the sign-in form. The
+   cookie is then removed.
+
+Covered by `tests/Integration/Profile/ResetOnTheAccountPageTest.php`,
+`tests/Unit/Profile/ResetEmailLinkTest.php`, `tests/Unit/Profile/AccountRendererResetTest.php`
+and, in a browser, `tests/e2e/account-reset.spec.js`.
+
 ## Security
 
 - Registration is honeypot- and captcha-gated (when Corex Captcha is active) and respects
@@ -83,8 +116,10 @@ An address of 60 characters or fewer is the login, as before. Covered by
 - Password reset responses are generic, so the endpoint cannot enumerate accounts.
 - Authenticated routes require a signed-in user and the REST nonce; the service also
   confirms a user only ever edits their own profile or sessions.
-- Recovery keeps working even when login is hardened (front-office is separate from
-  `wp-admin`).
+- A reset asked for at the block is finished at the block: its email links to the account
+  page, not to `wp-login.php`, so it does not carry the address login protection gives the
+  login. A signed-in member still reads that address in the **Sign out** link, which is
+  WordPress's own, and the new member's email still carries WordPress's link.
 
 ## Testing
 
@@ -100,3 +135,7 @@ An address of 60 characters or fewer is the login, as before. Covered by
   — a profile's names are saved as written.
   `tests/Integration/Profile/RegistrationLongAddressTest.php` — an address too long to be a
   login registers, and one too long for an account is refused.
+  `tests/Integration/Profile/ResetOnTheAccountPageTest.php` — where a reset email links to,
+  and what the account page makes of the key.
+- Browser: `tests/e2e/account-reset.spec.js` — a forgotten password is reset on the account
+  page, from the form to the sign-in with the new password.

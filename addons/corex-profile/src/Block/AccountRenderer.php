@@ -10,6 +10,8 @@ namespace Corex\Profile\Block;
 
 defined('ABSPATH') || exit;
 
+use Corex\Profile\Reset\ResetState;
+
 /**
  * Pure renderer for the front-office account block. Given a request context it returns
  * the correct panel — the login/register/recovery forms for a guest, or the profile,
@@ -17,11 +19,14 @@ defined('ABSPATH') || exit;
  * escaped; every form posts to the `corex/v1/account/*` REST routes via `account.js`
  * (progressive enhancement — the register/reset forms also carry a real nonce). No
  * WordPress state is read here, so the panel is unit-testable headlessly.
+ *
+ * Somebody who arrives from a reset email with a key WordPress takes is shown the
+ * new-password form and nothing else, whoever is signed in on that browser (FR-158b).
  */
 final class AccountRenderer
 {
     /**
-     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string} $ctx
+     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string,pageMark?:string,reset?:ResetState} $ctx
      */
     public function render(array $ctx): string
     {
@@ -30,14 +35,51 @@ final class AccountRenderer
             ' class="corex-account" data-corex-account data-nonce="%s"',
             esc_attr($nonce),
         );
+        $reset = $ctx['reset'] ?? ResetState::none();
 
-        $body = ($ctx['loggedIn'] ?? false)
-            ? $this->member($ctx)
-            : $this->guest($ctx);
+        $body = match (true) {
+            $reset->step === ResetState::CHOOSE => $this->resetForm($reset),
+            (bool) ($ctx['loggedIn'] ?? false)  => $this->member($ctx),
+            default                             => $this->guest($ctx),
+        };
 
-        return '<div' . $attrs . '>'
-            . '<p class="corex-account__status" role="status" aria-live="polite" hidden></p>'
-            . $body
+        return '<div' . $attrs . '>' . $this->messageLine($reset) . $body . '</div>';
+    }
+
+    /**
+     * The line `account.js` writes the server's answers into. It is filled here for the two
+     * things a reset says on a page that has just been loaded.
+     */
+    private function messageLine(ResetState $reset): string
+    {
+        $line = '<p class="corex-account__status" role="status" aria-live="polite"';
+
+        [$state, $message] = match ($reset->step) {
+            ResetState::EXPIRED => ['error', __('This password reset link is invalid or has expired. Please ask for a new one.', 'corex')],
+            ResetState::DONE    => ['ok', __('Your password has been updated. You can now sign in.', 'corex')],
+            default             => ['', ''],
+        };
+
+        return $message === ''
+            ? $line . ' hidden></p>'
+            : $line . ' data-state="' . esc_attr($state) . '">' . esc_html($message) . '</p>';
+    }
+
+    /**
+     * The key and the login travel with the form: `account/reset` asks for both, and
+     * WordPress checks them again when the password is saved.
+     */
+    private function resetForm(ResetState $reset): string
+    {
+        return '<div class="corex-account__grid">'
+            . '<form class="corex-account__form" data-corex-account-form="reset" method="post" novalidate>'
+            . '<h2 class="corex-account__title">' . esc_html__('Choose a new password', 'corex') . '</h2>'
+            . $this->hidden('login', $reset->login)
+            . $this->hidden('key', $reset->key)
+            . $this->field('password', __('New password', 'corex'), 'password', true)
+            . $this->field('password_confirm', __('Confirm new password', 'corex'), 'password', true)
+            . $this->submit(__('Save password', 'corex'))
+            . '</form>'
             . '</div>';
     }
 
@@ -53,7 +95,7 @@ final class AccountRenderer
         return '<div class="corex-account__grid">'
             . $this->loginForm()
             . $registration
-            . $this->forgotForm()
+            . $this->forgotForm((string) ($ctx['pageMark'] ?? ''))
             . '</div>';
     }
 
@@ -84,11 +126,17 @@ final class AccountRenderer
             . '</form>';
     }
 
-    private function forgotForm(): string
+    /**
+     * @param string $pageMark The page the block is on, signed: the email's link comes back
+     *                         to it. Empty where the block is on no page, and the email then
+     *                         links to WordPress's own screen.
+     */
+    private function forgotForm(string $pageMark): string
     {
         return '<form class="corex-account__form" data-corex-account-form="reset-request" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Forgot your password?', 'corex') . '</h2>'
             . '<p class="corex-account__note">' . esc_html__('Enter your username or email and we’ll send a reset link.', 'corex') . '</p>'
+            . ($pageMark !== '' ? $this->hidden('page', $pageMark) : '')
             . $this->field('login', __('Username or email', 'corex'), 'text', true)
             . $this->submit(__('Email a reset link', 'corex'))
             . '</form>';
@@ -163,6 +211,11 @@ final class AccountRenderer
             . '<input type="' . esc_attr($type) . '" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '"'
             . ' value="' . esc_attr($value) . '"' . ($required ? ' required' : '') . ' />'
             . '</p>';
+    }
+
+    private function hidden(string $name, string $value): string
+    {
+        return '<input type="hidden" name="' . esc_attr($name) . '" value="' . esc_attr($value) . '" />';
     }
 
     private function honeypot(): string

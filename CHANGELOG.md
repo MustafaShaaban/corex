@@ -65,6 +65,21 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A member who forgot their password resets it on the account page** (spec 068, FR-158a
+  to FR-158c; the owner's decision). The account block asked WordPress for the reset email
+  and WordPress wrote its own link into it. Measured on WordPress 7.1.3: the member chose
+  the new password on `wp-login.php`, its "Log in" link led to WordPress's sign-in screen,
+  and signing in there ended at `wp-admin/profile.php`; the account page was not seen
+  again, and had no form that takes a reset key, though the route for one existed. Where
+  the Security Center moves the login, the email's link was the moved address. Now the
+  email's link is to the page the reset was asked from. That page takes the key out of its
+  address, shows a **Choose a new password** form and no other, and once the password is
+  saved says so above the sign-in form. A link that was used, or that WordPress no longer
+  takes, is answered "This password reset link is invalid or has expired. Please ask for a
+  new one." above the form that asks for one. The email is still WordPress's and is still
+  sent by WordPress: one address in it is changed, and only for a reset asked through the
+  account block (DECISIONS #340).
+
 - **A long email address registers without a username, and one too long for an account is
   refused with a reason.** The registration form's Username field is optional, and without
   one the login is the email address. WordPress holds a login in 60 characters and an
@@ -231,6 +246,20 @@ All notable changes to Corex are documented here. The format follows
   as before. The owner's decision (DECISIONS #334).
 
 ### Client impact
+
+- **The password-reset email of a site that uses the account block links to the account
+  page, and a visitor chooses the new password there.** It applies to a site with the
+  Corex Profile add-on active and the `corex/account` block on a page; no other site sees a
+  change. The email's subject, wording and sender are unchanged: they are WordPress's. What
+  a site has to check: a page cache must pass a request with a query string to WordPress
+  (`?corex_reset_login=…&corex_reset_key=…`, then `?corex_reset=1`), which is what caches
+  do unless they were told to ignore query strings; and a site with code of its own that
+  calls `POST corex/v1/account/reset-request` keeps WordPress's link until it sends the
+  forgot-password form's hidden `page` field with the request. A plugin that rewrites the
+  whole reset email and leaves no address with the key in it is left alone. A reset asked
+  at `wp-login.php` is unchanged. Nothing to rebuild: no script or style changed. Which
+  client installs have the add-on on is in the next entry, and was not read again for this
+  one.
 
 - **An account registered through the account block before this release, with no
   username, keeps its email address as its display name** and nickname, and keeps the
