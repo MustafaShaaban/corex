@@ -212,8 +212,8 @@ it('points every label at the field beside it, in its own form', function (array
 
 /**
  * What each text field tells the browser it is for: its `autocomplete` value, by form and
- * field name, in the order printed. A field with no value gives null. The tick boxes collect
- * nothing about the person and are left out.
+ * field name, in the order printed. A field with no value gives null. A tick box and a field
+ * that travels hidden with its form collect nothing about the person and are left out.
  *
  * @return array<string, string|null>
  */
@@ -221,7 +221,7 @@ function accountFieldPurposes(string $html): array
 {
     $xpath    = new DOMXPath(accountDocument($html));
     $purposes = [];
-    foreach ($xpath->query('//form//input[not(@type="checkbox")]') as $field) {
+    foreach ($xpath->query('//form//input[not(@type="checkbox" or @type="hidden")]') as $field) {
         $form                                                   = $xpath->evaluate('string(ancestor::form/@data-corex-account-form)', $field);
         $purposes[$form . ': ' . $field->getAttribute('name')] = $field->hasAttribute('autocomplete')
             ? $field->getAttribute('autocomplete')
@@ -254,6 +254,13 @@ it('tells the browser what each field is for', function (array $ctx, array $expe
             'profile: first_name'   => 'given-name',
             'profile: last_name'    => 'family-name',
             'profile: email'        => 'email',
+        ],
+    ],
+    'the new-password form of a reset' => [
+        ['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')],
+        [
+            'reset: password'         => 'new-password',
+            'reset: password_confirm' => 'new-password',
         ],
     ],
 ]);

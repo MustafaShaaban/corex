@@ -146,7 +146,8 @@ All notable changes to Corex are documented here. The format follows
   changes a password, an old one and a new one, did not connect the forgot-password form
   to an account, and listed four fields as missing the attribute. The sign-in fields are
   now `username` and `current-password`, registration's email `email` and its two
-  passwords `new-password`, the forgot-password field `username`, and the profile's
+  passwords `new-password`, the forgot-password field `username`, the two passwords of
+  the form a reset link leads to `new-password`, and the profile's
   fields `nickname` (the display name), `given-name`, `family-name` and `email`.
   Chromium now reads registration as a new account and the forgot-password form as one
   with a username. It offered to save the password after sign-in before, and still does.
@@ -356,8 +357,8 @@ All notable changes to Corex are documented here. The format follows
   machine on 2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the
   block or an id of it. Nothing to rebuild.
 - **The account block's fields gain an `autocomplete` attribute.** Only for a site that
-  has Corex Profile on. Every labelled field of the sign-in, registration,
-  forgot-password and profile forms has one now; the profile guide lists the values. A visitor's
+  has Corex Profile on. Every labelled field of the block has one now; the profile guide
+  lists the values. A visitor's
   browser may offer more than it did: Chromium takes the sign-in and the forgot-password
   field for an email address as well as a username, and the registration form's passwords
   for new ones. A site that prints its own sign-in form beside the block, or sets

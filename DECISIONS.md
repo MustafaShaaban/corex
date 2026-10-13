@@ -12936,6 +12936,7 @@ the value with the field. A field that is not in the table gets no attribute.
 | registration | `username` | none (below) |
 | registration | `password`, `password_confirm` | `new-password` |
 | forgot password | `login` | `username` |
+| new password, after a reset link (#341) | `password`, `password_confirm` | `new-password` |
 | profile | `display_name` | `nickname` (below) |
 | profile | `first_name` | `given-name` |
 | profile | `last_name` | `family-name` |
@@ -12983,6 +12984,13 @@ profile screen has the same on its nickname field.
 
 **Measured after the change**, same install and browser:
 
+- on the form a reset link leads to, which #341 added to `main` while this was open:
+  both passwords have `new-password`, no issue is raised, and the form is read as a new
+  password and its confirmation. Chromium reads no username there: the login travels in
+  a hidden field, which its password manager does not list among the form's fields, so
+  what it would save the new password under was not seen. Merging `main` in was clean
+  as text and broken as code: that form called `fieldsOf()` with the one argument it
+  took before, which #337's own tests caught;
 - signed out: every field has the value in the table; the only issue left is the one for
   registration's `username`; the registration form as loaded is read as username
   `username`, new password `password`, confirmation `password_confirm`, with no current
@@ -13021,9 +13029,11 @@ Muva or Perego checkouts names the block.
 
 ## #347 — A username that is the person's own email address is no username, and registration's username field says what it is for
 
-**Date:** 2026-10-13. **Branch:** `fix/account-username-is-the-address`, from `main` at
-`e8ba03eb`, with pull request 386's branch (#342) merged into it: the field's value is a
-line of the table 386 adds, and 386 was open when this was built. **Found by:** #342, which
+**Date:** 2026-10-13. **Branch:** `fix/account-username-is-the-address`, from `main`. It
+was built and measured on `main` at `e8ba03eb` with pull request 386's branch (#342) merged
+in, because the field's value is a line of the table 386 adds; 386 merged the same
+afternoon and `main` with it was merged into the branch, and the tests were run again on
+that. **Found by:** #342, which
 measured the refusal below and left the field without a value. Spec 068 gains FR-158d and
 FR-161c is changed. The numbers #343, #344 and #345 are on pull requests 387, 388 and 389
 and #346 on the pushed branch `fix/access-requests-list`, all four begun while this was
@@ -13119,16 +13129,9 @@ it is judged as a username unless it is the address. What Chromium's password ma
 reads of the form was not measured again: #342 measured it with the value on the field
 and found it the same as without. A screen reader. Any popup: the browser was headless.
 
-**What was left alone.**
-
-- The reset's new-password form (#341) has no row in `PURPOSES`, so its two password
-  fields say nothing. The merge of `main` and pull request 386 also threw there: the form
-  called `fieldsOf()` with one argument and 386 gives it two. The call was given the
-  form's name so that the branch runs, and the values are left to 386, whose session was
-  told. It is in `PROGRESS.md`.
-- The person is not shown the login the account was given. With the address in the
-  Username field they may take the address for their login, and they sign in with it, so
-  that holds.
+**What was left alone.** The person is not shown the login the account was given. With
+the address in the Username field they may take the address for their login, and they sign
+in with it, so that holds.
 
 **Tests.** `tests/Unit/Profile/AccountServiceTest.php`: a username that is the address is
 not judged and gets the gateway's login for the address and the address's name, for a

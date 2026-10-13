@@ -217,11 +217,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   is the account rule's unit and integration tests and the two tests of the attribute. No
   browser test registers an account: CI's site has registration closed, and a registration
   writes two emails.
-- **The new-password form of a reset says nothing to the browser.** Read from
-  `AccountRenderer::PURPOSES` on 2026-10-13: the form DECISIONS #341 added (`reset`) has
-  no row, so its two password fields have no `autocomplete` value, where WordPress's own
-  reset form has `new-password` twice. The table is pull request 386's, open when this
-  was written, and its session was told.
 - **After a registration the browser does not offer to save the new password.** Measured
   in Chromium 153 on 2026-10-13, before and after DECISIONS #342: its password manager
   holds the address (or the username) and the new password while the form is filled in,
@@ -235,7 +230,9 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **The account block's `autocomplete` values were measured in Chromium only.** Not in
   Firefox or Safari, not with a password manager that is not Chromium's own, and not in a
   Chrome signed in to an account, where a made-up password would be offered at
-  registration.
+  registration. On the form a reset link leads to, Chromium reads a new password and its
+  confirmation and no username (the login is in a hidden field), so which saved password
+  it would offer to update was not seen.
 - **A page that holds the account block twice fills one block's lists.** Read from
   `account.js`, not run: the session list and the recent-activity list are found with
   `document.querySelector`, so a second block's lists stay empty for a signed-in person.

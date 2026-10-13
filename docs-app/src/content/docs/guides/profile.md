@@ -54,7 +54,7 @@ Select a field by its form and its name, not by its id:
 A field's id is there to tie its label to it. It holds the number of the block among
 the account blocks WordPress rendered for the page (`corex-account-1-register-password`),
 so that a page with two of them has no id twice, and that number is not promised to stay
-the same. The forms are `login`, `register`, `reset-request` and `profile`.
+the same. The forms are `login`, `register`, `reset-request`, `reset` and `profile`.
 
 ### What a field tells the browser
 
@@ -71,6 +71,7 @@ to offer the saved password at sign-in and a new one at registration, and WCAG 2
 | `register` | `username` | `username` |
 | `register` | `password`, `password_confirm` | `new-password` |
 | `reset-request` | `login` | `username` |
+| `reset` | `password`, `password_confirm` | `new-password` |
 | `profile` | `display_name` | `nickname` |
 | `profile` | `first_name` | `given-name` |
 | `profile` | `last_name` | `family-name` |

@@ -215,9 +215,8 @@ const SIGNED_OUT_PURPOSES = {
 };
 
 /**
- * The `autocomplete` value of each field of the block somebody fills in, by form and field
- * name. A tick box collects nothing about the person, and a hidden field is not theirs to fill:
- * the forgotten password form carries the page it is on in one (DECISIONS #341).
+ * The `autocomplete` value of each field of the block a person fills in, by form and field
+ * name. A tick box and a field that travels hidden with its form collect nothing.
  *
  * @param {import('@playwright/test').Page} page The page.
  * @return {Promise<Object>} For each form on the page, its fields' values; null where a field has none.
@@ -225,7 +224,7 @@ const SIGNED_OUT_PURPOSES = {
 function fieldPurposes( page ) {
 	return page
 		.locator(
-			'[data-corex-account-form] input:not([type="checkbox"]):not([type="hidden"])'
+			'[data-corex-account-form] input:not([type="checkbox"], [type="hidden"])'
 		)
 		.evaluateAll( ( fields ) => {
 			const purposes = {};

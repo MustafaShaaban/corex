@@ -55,6 +55,7 @@ final class AccountRenderer
             'password_confirm' => 'new-password',
         ],
         'reset-request' => ['login' => 'username'],
+        'reset'         => ['password' => 'new-password', 'password_confirm' => 'new-password'],
         'profile'       => [
             'display_name' => 'nickname',
             'first_name'   => 'given-name',
