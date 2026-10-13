@@ -12097,3 +12097,130 @@ email sent again from a submission has the subject as written.
 is given back, and rendered, as written. `tests/Unit/Mail/TemplateRendererTest.php` for the
 older path. Fifteen of the first file's tests and ten of the two integration files' failed
 before the change. Each changed line was put back in turn, and a test failed for each.
+
+## #333 — A username WordPress would alter is refused at registration; a password is still hashed as it is handed over
+
+**Date:** 2026-10-13. **Branch:** `fix/account-login-and-password-as-typed`. **Found by:**
+the two leads #332 left about `WordPressAuthGateway`, both measured there in the same
+process as the gateway and neither changed. This entry takes the login, and records what
+was measured about the password for the decision that is the owner's.
+
+**How it was measured.** On WordPress 7.1.3, a WordPress of this worktree's own, over HTTP:
+the add-on's routes (`POST corex/v1/account/register`, `login` and `reset`, with the JSON the
+account block's script sends) and WordPress's own screens (`wp-login.php` posted as a
+browser posts it, for the sign-in and for "choose a new password"). Every email was answered
+for before the mailer (`pre_wp_mail`) and none left: 40 in the two runs.
+
+**The login, before the change.** Each username was typed into a registration of its own,
+with a few letters of the run in it. In every case below but one the answer was 200, "Your
+account has been created. You can now sign in."
+
+| Typed | Stored as | Signs in with what was typed |
+|---|---|---|
+| `CORP\salma` | `CORPsalma` | no, at the add-on's sign-in or at `wp-login.php` |
+| `o'brien` | `obrien` | no, at either |
+| `salma!` | `salma` | no, at either |
+| `salma+x` | `salmax` | no, at either |
+| Arabic letters and then Latin ones | the Latin ones alone | no, at either |
+| Arabic letters alone | no account: WordPress answers "Cannot create a user with an empty login name." | |
+| `sälma` | `salma` | yes: a sign-in takes the accent off too |
+| `<b>salma</b>` | `salma` | yes |
+| `sal%41ma` | `salma` | yes |
+| `salma&amp;x` | `salmax` | yes |
+| two spaces inside | one space | yes |
+| spaces before and after | without them | yes |
+| `Salma K`, `SALMA`, `sal@ma`, `sal.ma-1_x` | as typed | yes |
+
+Everybody signed in with their address. So the lead #332 left open is answered: with a
+backslash, an apostrophe, an exclamation mark, a plus or a letter that is not Latin in the
+username, the person is told the account was created and is then refused with the name
+they chose, and `wp-login.php` tells them that name "is not registered on this site".
+
+Two things made the rows of the table. `wp_insert_user()` stores `sanitize_user( $login,
+true )`, which keeps unaccented letters, digits, spaces and `_ . - @`. And the route itself
+ran `sanitize_user()` without the second argument on what was typed before the service saw
+it, which is what took the markup, the accent, the percent sign and the entity off.
+
+**The change.** A username that would be stored as another is refused, by the rule the
+add-on already has for an address (`EmailAnswer::address()`, #246): what would have to be
+altered is not altered and kept, it is refused and said.
+
+- `AuthGateway::acceptsUsername()` is new. `WordPressAuthGateway` answers it with
+  WordPress's own `validate_username()`: the username is what `sanitize_user( $username,
+  true )` gives back and is not empty, and then whatever listens on `validate_username`.
+  It is the check WordPress's own registration makes (`register_new_user()`), so a plugin
+  that widens or narrows what a username may hold is followed, as read.
+- `AccountService::register()` asks it for a username that was typed, before it looks
+  anything up, and answers `invalid_username`: "A username can have letters without
+  accents, numbers, spaces and the characters _ . - @ and no others. Please choose
+  another."
+- `ProfileServiceProvider::register_account()` hands the service the username as typed with
+  the spaces around it taken off, and no longer cleans it first. Spaces around a username
+  are not a reason to refuse it, as they are not for an address.
+
+`sälma` is refused too, though the person could have signed in with it: the account would
+be named `salma`, and that is not the name they chose.
+
+Seen in a browser on the same WordPress: `CORP\salma` typed into the block's form is
+answered with that sentence in the form's status line, which is announced
+(`role="status"`), and the username stays in its field. The status line is above the
+forms, and it was outside the window when the button was pressed, in a window 768 pixels
+high and in one of 375 by 812. That is so for every message of the block, it was so before,
+and it is not changed here.
+
+**Left as it was: the login made from an address.** With no username the login is the
+address, and WordPress alters that too: `name+shop@example.com` was stored with the login
+`nameshop@example.com`. Measured: the person signs in with the address, at the add-on's
+sign-in and at `wp-login.php`. Nobody typed that login, and refusing it would turn away
+every address with a plus in it until its owner thought of a username. Read and not run:
+two addresses that differ only by what a login cannot hold are given the same login, and
+the second person is told by WordPress that the username already exists.
+
+**Not covered, each read and not run.** A listener on `pre_user_login` can still change a
+login after the check (`wp_insert_user()` applies it after `sanitize_user()`). An account
+made before this change with an altered login is not found or renamed: its owner signs in
+with the address. `createUser()` still gives a new account its login as its display name,
+which is the address when no username was typed.
+
+**The registration form's contract was read first.** Spec 068 (FR-158, FR-159) asks for
+registration and says nothing of what a username may hold; the guide and the add-on's
+README said nothing either. Both now state the rule.
+
+**The password, measured and not changed.** A password with none of `'`, `"` and `\` in it
+is one password everywhere. With any one of the three, alone or together:
+
+| Where the password was chosen | The stored hash is of | The add-on's sign-in | `wp-login.php` |
+|---|---|---|---|
+| the add-on's registration | the text as typed | signs in | refuses: "The password you entered for the username … is incorrect" |
+| the add-on's reset route | the text as typed | signs in | refuses |
+| `wp-login.php`, "choose a new password" | the text with the request's slashes on | refuses | signs in |
+| `POST wp/v2/users` as an administrator | the text with slashes on | refuses | signs in |
+
+The last row is for `'` and `"`: that route answers 400 to a password with a backslash in
+it, and the profile screen has the same rule (read: `edit_user()`, "Passwords may not
+contain the character "\\""). The reset screen takes a backslash, as measured.
+
+Two things read that bear on a fix. The add-on's sign-in limiter counts every
+`wp_login_failed` (`LoginProtectionEnforcer::recordFailure()`), so a sign-in that tried one
+form of the password and then the other through `wp_signon()` twice would count one wrong
+password as two. And a password that is hashed again changes the hash every signed-in
+browser's cookie was made from, so moving an account to the other form signs that person
+out everywhere else, once.
+
+Nothing here changes a password or a sign-in. Which form the add-on should hash, and what
+becomes of the accounts that hold the other, changes who can sign in, and is put to the
+owner with this table.
+
+**Tests.** `tests/Integration/Profile/RegistrationUsernameTest.php`, through the register
+route on real WordPress: the four kinds of username the table shows are refused and leave
+no account; a username WordPress keeps is stored as typed and signs in; spaces around one
+are taken off; and an address with a plus and no username still registers and signs in. The
+four refusals failed before the change with 200 where 422 was expected.
+`tests/Unit/Profile/AccountServiceTest.php`: the service refuses before it reaches
+WordPress.
+
+**Client impact.** A class of a site's own that implements
+`Corex\Profile\Account\AuthGateway` has to add `acceptsUsername()`. Read on this machine:
+nothing under `sites/` in the Muva, Perego or Mizzey checkouts names the interface, the
+service or the account routes, and Muva's own decisions record the profile add-on as left
+off. Whether Perego or Mizzey has it on was not read from a running site.

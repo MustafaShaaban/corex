@@ -40,6 +40,13 @@ final class WordPressAuthGateway implements AuthGateway
         return (bool) username_exists($login);
     }
 
+    public function acceptsUsername(string $username): bool
+    {
+        // wp_insert_user() does not refuse a login, it stores sanitize_user( $login, true ) of it.
+        // validate_username() is core's own answer to "would that be the same login".
+        return validate_username($username);
+    }
+
     public function createUser(string $email, string $login, string $password): AccountResult
     {
         $userId = wp_insert_user([

@@ -43,6 +43,11 @@ final class AccountService
             return $passwordError;
         }
 
+        $usernameError = $this->usernameProblem($request->username);
+        if ($usernameError !== null) {
+            return $usernameError;
+        }
+
         if ($this->gateway->emailExists($request->email)) {
             return AccountResult::fail('email_taken', __('An account with that email already exists.', 'corex'));
         }
@@ -117,6 +122,22 @@ final class AccountService
         }
 
         return $this->gateway->updateProfile($userId, $fields);
+    }
+
+    /**
+     * Only a username somebody typed is judged: with none, the login is made from the address,
+     * and the person signs in with the address.
+     */
+    private function usernameProblem(string $username): ?AccountResult
+    {
+        if ($username === '' || $this->gateway->acceptsUsername($username)) {
+            return null;
+        }
+
+        return AccountResult::fail(
+            'invalid_username',
+            __('A username can have letters without accents, numbers, spaces and the characters _ . - @ and no others. Please choose another.', 'corex'),
+        );
     }
 
     private function passwordProblem(string $password, string $confirm): ?AccountResult

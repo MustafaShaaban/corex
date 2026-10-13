@@ -186,6 +186,19 @@ All notable changes to Corex are documented here. The format follows
   backslashes: what was wrong was Email Studio's copy of an email, and what it keeps to
   build emails from. Records kept before this release are not repaired (DECISIONS #329).
 
+- **A username the account form cannot keep is refused, and no longer changed and
+  accepted.** WordPress does not refuse a username it does not accept: it removes what it
+  does not accept and stores the rest. Somebody who registered on the account block as
+  "CORP\salma" was told the account was created, was stored as "CORPsalma", and was then
+  refused at the block's sign-in and at `wp-login.php` with the name they had chosen. The
+  same with an apostrophe, an exclamation mark, a plus, or a name in Arabic letters, of
+  which only the Latin letters and digits beside it were kept. The registration now answers
+  that a username can have letters without accents, numbers, spaces and the characters
+  _ . - @, and asks for another, by WordPress's own rule for a username
+  (`validate_username()`). Spaces before and after a username are taken off, not refused.
+  Somebody who types no username is registered as before, with a login made from the
+  address, and signs in with the address (DECISIONS #333).
+
 ### Client impact
 
 - **An account registered through the account block before this release, with no
@@ -235,6 +248,17 @@ All notable changes to Corex are documented here. The format follows
   title and the markup as they are. A page it stored before this release with a block's
   attributes in it is stored without their backslashes: apply the kit again and choose to
   replace the page.
+
+- **`POST corex/v1/account/register` answers 422 with the code `invalid_username`** for a
+  username it used to change and accept: one with an accent, markup, a backslash, a quote,
+  or any character other than unaccented letters, digits, spaces and _ . - @. A page of
+  your own that posts to the route shows the message it is given, as the account block
+  does. An account registered before this release under a changed username keeps it: its
+  owner signs in with the address, or with the username as it was stored.
+- **`Corex\Profile\Account\AuthGateway` has a new method, `acceptsUsername()`.** A class of
+  your own that implements the interface has to add it. Nothing under `sites/` in the Muva,
+  Perego or Mizzey checkouts names the interface, as read on 2026-10-13. Nothing to rebuild:
+  no screen, script or style changed.
 
 - **A subject can hold `<`, `>` and `&` together now**, in a reply and in an email sent from
   Email Studio's **Test send** and **Resend**. A design of your own registered on

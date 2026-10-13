@@ -47,6 +47,10 @@ person changes their display name on the block's Profile form. Covered by
 
 - Registration is honeypot- and captcha-gated (when Corex Captcha is active) and respects
   the site registration setting.
+- A username WordPress would store as a different one (`CORP\salma` as `CORPsalma`) is
+  refused with the code `invalid_username`, by WordPress's own `validate_username()`. With
+  no username the login is made from the email address and the person signs in with the
+  address.
 - Login delegates to `wp_signon`, inheriting core's auth filters and any login hardening.
 - Password reset responses are generic, so the endpoint cannot enumerate accounts.
 - Authenticated routes require a signed-in user and the REST nonce; the service also
@@ -61,3 +65,6 @@ person changes their display name on the block's Profile form. Covered by
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
+  `tests/Integration/Profile/RegistrationUsernameTest.php` — which usernames the register
+  route refuses and which it keeps. `tests/Integration/Profile/ProfileNamesKeepBackslashesTest.php`
+  — a profile's names are saved as written.

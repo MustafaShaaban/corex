@@ -29,6 +29,22 @@ The `corex/account` block is auth-aware:
 The forms are progressively enhanced: with JavaScript they post to the REST API and show
 inline results; without it they still submit.
 
+## Usernames
+
+The registration form's **Username** field is optional.
+
+- A username WordPress would store as a different one is refused, with a message that
+  names what a username can hold: letters without accents, numbers, spaces and the
+  characters `_ . - @`. WordPress does not refuse such a username, it removes what it does
+  not accept and keeps the rest, and the person could then not sign in with the name they
+  chose. Spaces before and after it are taken off and are not a reason to refuse it.
+- With no username, the login is made from the email address. WordPress removes from it
+  the characters a login cannot hold (the `+` of `name+shop@example.com`, for one), and the
+  person signs in with the address.
+
+The rule is WordPress's own `validate_username()`, so a plugin that widens or narrows what a
+username may hold through the `sanitize_user` or `validate_username` filters is followed.
+
 ## REST API
 
 All routes live under `corex/v1/account/`:
@@ -36,7 +52,7 @@ All routes live under `corex/v1/account/`:
 | Route | Auth | Purpose |
 | --- | --- | --- |
 | `POST login` | public | Sign in (delegates to `wp_signon`). |
-| `POST register` | public | Create an account (honeypot + captcha gated). |
+| `POST register` | public | Create an account (honeypot + captcha gated). Answers `422` with the code `invalid_username` for a username WordPress would alter. |
 | `POST reset-request` | public | Email a reset link (generic response — no user enumeration). |
 | `POST reset` | public | Set a new password from a valid reset key. |
 | `POST profile` | signed-in | Update the current user's profile. |

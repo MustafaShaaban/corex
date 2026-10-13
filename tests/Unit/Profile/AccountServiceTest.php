@@ -24,6 +24,7 @@ final class FakeAuthGateway implements AuthGateway
     public bool $registrationOpen = true;
     public bool $emailExists = false;
     public bool $usernameExists = false;
+    public bool $acceptsUsername = true;
     public int $currentUserId = 0;
     /** @var list<string> */
     public array $calls = [];
@@ -41,6 +42,11 @@ final class FakeAuthGateway implements AuthGateway
     public function usernameExists(string $login): bool
     {
         return $this->usernameExists;
+    }
+
+    public function acceptsUsername(string $username): bool
+    {
+        return $this->acceptsUsername;
     }
 
     public function createUser(string $email, string $login, string $password): AccountResult
@@ -181,6 +187,22 @@ it('rejects an already-registered email', function () {
     ));
 
     expect($result->code)->toBe('email_taken')
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('refuses a username WordPress would store as a different one', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->acceptsUsername = false;
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        'jane@example.com',
+        'strongpassword',
+        'strongpassword',
+        'jane!',
+        true,
+    ));
+
+    expect($result->code)->toBe('invalid_username')
         ->and($gateway->calls)->toBe([]);
 });
 
