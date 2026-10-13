@@ -68,6 +68,13 @@ it('renders the member profile, sessions, and notifications panels', function ()
         ->and($html)->not->toContain('data-corex-account-form="login"');
 });
 
+it('says the member view\'s two lists are lists, which a browser stops saying of a list drawn without bullets', function () {
+    $html = (new AccountRenderer())->render(['loggedIn' => true]);
+
+    expect($html)->toContain('<ul class="corex-account__session-list" role="list"')
+        ->and($html)->toContain('<ul class="corex-account__notification-list" role="list"');
+});
+
 it('escapes a hostile display name', function () {
     $html = (new AccountRenderer())->render([
         'loggedIn'    => true,
@@ -286,7 +293,7 @@ it('tells the browser what each field is for', function (array $ctx, array $expe
             'login: password'            => 'current-password',
             'register: corex_hp'         => 'off',          // the field left for bots is never filled in
             'register: email'            => 'email',
-            'register: username'         => null,           // a browser would write the address into it
+            'register: username'         => 'username',     // the account takes the address in it as no username
             'register: password'         => 'new-password',
             'register: password_confirm' => 'new-password',
             'reset-request: login'       => 'username',

@@ -167,6 +167,11 @@ nothing.
   REST route calls, and redirects.
 - **FR-002**: The REST route MUST remain JSON, unchanged, for JavaScript, API consumers and tests.
   This is not a conversion of an API into a page.
+- **FR-002a**: A request the Access REST routes cannot read (a parameter missing, of the wrong
+  shape, or naming an ability, area, effect or role CoreX does not have) MUST be answered `400`
+  with a JSON body that names the parameter and carries a stable code. It MUST store nothing,
+  write no audit entry, notify nobody, and MUST NOT be answered as a server error. A request that
+  can be read and is refused for how things stand keeps its `200` and `blocked` result.
 - **FR-003**: Submission MUST follow Post/Redirect/Get, so refresh creates no second request and
   Back resubmits nothing.
 - **FR-004**: On success the user MUST land on a CoreX-designed confirmation naming what was
@@ -179,6 +184,10 @@ nothing.
 - **FR-007**: Service failure MUST produce a CoreX error state with a correlation reference and a
   retry where retrying is safe.
 - **FR-008**: Duplicate submission MUST be prevented server-side, not only by disabling a button.
+- **FR-008a**: FR-008 MUST hold for every caller of the access request service, the REST route
+  included; for a request for an area as for one for an ability; and for two submissions that
+  arrive at the same moment. A repeat MUST store nothing, write no "created" audit entry and
+  notify nobody again (DECISIONS #343).
 - **FR-009**: A JavaScript enhancement MAY submit in place, but MUST prevent navigation, keep the
   user on the page, and remain entirely optional.
 - **FR-010**: Any return address MUST be server-generated or allowlisted, same-origin, free of
@@ -186,6 +195,11 @@ nothing.
 - **FR-011**: Any flash state MUST be user-bound, short-lived, single-use, non-sensitive, unreadable
   by another user, and safe against query manipulation. The submitted reason MUST NOT travel in a
   query string.
+- **FR-011a**: The list of open requests (who asked, for what, why and when) MUST be answered only
+  to a person who may decide them: what opens the Access & Abilities screen opens the list, on the
+  screen and on `GET corex/v1/access/requests` alike. Asking for access stays open to anybody
+  signed in. A person's own open request is shown to them on the denied screen (FR-005), not
+  through the list (amended 2026-10-13, DECISIONS #346).
 
 **The shared error experience**
 

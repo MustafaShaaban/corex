@@ -139,7 +139,7 @@ it('hands over nothing a session could be taken with', function () {
 
     $sessions = sessionsListedFor($cookie);
 
-    expect(array_keys($sessions[0]))->toBe(['current', 'login', 'expiration', 'ip', 'ua'])
+    expect(array_keys($sessions[0]))->toBe(['current', 'login', 'expiration', 'ip', 'ua', 'device', 'signedIn'])
         ->and(wp_json_encode($sessions))->not->toContain($token)
         ->and(wp_json_encode($sessions))->not->toContain(hash('sha256', $token));
 });

@@ -28,6 +28,8 @@ final class FakeAuthGateway implements AuthGateway
     /** What the gateway answers for an address; null for the address itself. */
     public ?string $loginForAddress = null;
     public int $currentUserId = 0;
+    /** What the account would hold for a display name; null when that is the name as typed. */
+    public ?string $displayNameAsKept = null;
     /** @var list<string> */
     public array $calls = [];
     /** @var array{login: string, name: string}|null */
@@ -85,6 +87,11 @@ final class FakeAuthGateway implements AuthGateway
         $this->calls[] = 'resetPassword';
 
         return AccountResult::ok('reset', 'ok', 7);
+    }
+
+    public function displayNameAsKept(string $name): string
+    {
+        return $this->displayNameAsKept ?? $name;
     }
 
     public function updateProfile(int $userId, array $fields): AccountResult
@@ -263,6 +270,54 @@ it('asks for a username when the gateway has no login for the address', function
         ->and($gateway->calls)->toBe([]);
 });
 
+it('takes a username that is the person\'s own address as no username', function (string $email, string $username, bool $aUsernameAnAccountCanHave) {
+    $gateway = new FakeAuthGateway();
+    // What the gateway would answer were it asked about the address as a username. It is not
+    // asked: the account is the one the address gets with the field left empty, either way.
+    $gateway->acceptsUsername = $aUsernameAnAccountCanHave;
+    $gateway->loginForAddress = 'the-login-for-the-address';
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        $email,
+        'strongpassword',
+        'strongpassword',
+        $username,
+        true,
+    ));
+
+    expect($result->success)->toBeTrue()
+        ->and($gateway->created)->toBe([
+            'login' => 'the-login-for-the-address',
+            'name'  => substr($email, 0, (int) strrpos($email, '@')),
+        ]);
+})->with([
+    'a plain address' => ['jane@example.com', 'jane@example.com', true],
+    'an address with a plus' => ['jane+shop@example.com', 'jane+shop@example.com', false],
+    'the address in other capitals' => ['jane+shop@example.com', 'Jane+Shop@Example.COM', false],
+    // WordPress takes it as a username and refuses it when the account is made: over 60 characters.
+    'an address too long to be a login' => [
+        str_repeat('j', 55) . '@example.com',
+        str_repeat('j', 55) . '@example.com',
+        true,
+    ],
+]);
+
+it('still judges a username that is an address and not the person\'s own', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->acceptsUsername = false;
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        'jane+shop@example.com',
+        'strongpassword',
+        'strongpassword',
+        'jane+work@example.com',
+        true,
+    ));
+
+    expect($result->code)->toBe('invalid_username')
+        ->and($gateway->calls)->toBe([]);
+});
+
 it('refuses an address longer than an account holds', function () {
     $gateway = new FakeAuthGateway();
     $address = str_repeat('a', 60) . '@' . str_repeat('b', 28) . '.example.com';
@@ -344,6 +399,50 @@ it('forbids editing a profile that is not the current user', function () {
     $result = makeAccountService($gateway)->updateProfile(9, ['display_name' => 'Jane']);
 
     expect($result->code)->toBe('forbidden')
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('saves a display name of the longest an account holds, counted in characters', function (string $letter) {
+    $gateway = new FakeAuthGateway();
+    $gateway->currentUserId = 7;
+
+    $result = makeAccountService($gateway)->updateProfile(7, [
+        'display_name' => str_repeat($letter, AccountService::MAX_DISPLAY_NAME_LENGTH),
+    ]);
+
+    expect($result->success)->toBeTrue()
+        ->and($gateway->calls)->toBe(['updateProfile']);
+})->with([
+    'a letter of one byte' => ['n'],
+    'an Arabic letter, which is two' => ['م'],
+]);
+
+it('refuses a display name longer than an account holds, and says how long one can be', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->currentUserId = 7;
+
+    $result = makeAccountService($gateway)->updateProfile(7, [
+        'display_name' => str_repeat('n', AccountService::MAX_DISPLAY_NAME_LENGTH + 1),
+        'first_name' => 'Jane',
+    ]);
+
+    expect($result->success)->toBeFalse()
+        ->and($result->code)->toBe('display_name_too_long')
+        ->and($result->message)->toContain((string) AccountService::MAX_DISPLAY_NAME_LENGTH)
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('refuses a display name that fits as it was typed and not as the account would hold it', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->currentUserId = 7;
+    $gateway->displayNameAsKept = str_repeat('n', AccountService::MAX_DISPLAY_NAME_LENGTH + 1);
+
+    $result = makeAccountService($gateway)->updateProfile(7, ['display_name' => 'Tom & Jerry']);
+
+    expect($result->success)->toBeFalse()
+        ->and($result->code)->toBe('display_name_too_long')
+        // The person is within the number: telling them the number would send them in a circle.
+        ->and($result->message)->not->toContain((string) AccountService::MAX_DISPLAY_NAME_LENGTH)
         ->and($gateway->calls)->toBe([]);
 });
 

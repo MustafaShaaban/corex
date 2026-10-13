@@ -12,13 +12,23 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
+use Corex\Access\InvalidAccessInput;
 use Corex\Operations\Confirmation;
+use DateMalformedStringException;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use WP_REST_Request;
 use WP_REST_Response;
 
 /**
  * REST boundary for CoreX-owned abilities and access-request workflows.
+ *
+ * Two kinds of "no" leave here. A request that cannot be read (a parameter missing, of the wrong
+ * shape, or naming something CoreX does not have) is answered 400 and names the parameter: it is
+ * the same mistake however often it is sent. A request that can be read and that the service
+ * refuses for how things stand (a decision on a request no longer pending, a change the safety
+ * policy stops, a confirmation that confirms something else) is answered 200 with a result whose
+ * state is `blocked`.
  */
 final class AccessController
 {
@@ -53,10 +63,19 @@ final class AccessController
             'callback' => [$this, 'applyRole'],
             'permission_callback' => [$this, 'allowed'],
         ]);
+        // One route, two questions, and a check for each: anybody signed in may ask for access,
+        // and the queue of what was asked is for the people who decide it.
         register_rest_route(self::NAMESPACE, '/access/requests', [
-            'methods' => ['GET', 'POST'],
-            'callback' => [$this, 'requests'],
-            'permission_callback' => [$this, 'requestAllowed'],
+            [
+                'methods' => 'GET',
+                'callback' => [$this, 'pendingRequests'],
+                'permission_callback' => [$this, 'allowed'],
+            ],
+            [
+                'methods' => 'POST',
+                'callback' => [$this, 'createRequest'],
+                'permission_callback' => [$this, 'requestAllowed'],
+            ],
         ]);
         register_rest_route(self::NAMESPACE, '/access/requests/(?P<id>\d+)/decision', [
             'methods' => 'POST',
@@ -84,64 +103,67 @@ final class AccessController
 
     public function role(WP_REST_Request $request): WP_REST_Response
     {
-        $role = sanitize_key((string) $request->get_param('role'));
+        return $this->answer(function () use ($request): array {
+            $role = $this->roleKey($request);
 
-        return $this->ok([
-            'role' => $role,
-            'target_hash' => $this->service->roleChangeHash($role, []),
-        ]);
+            return [
+                'role' => $role,
+                'target_hash' => $this->service->roleChangeHash($role, []),
+            ];
+        });
     }
 
     public function previewRole(WP_REST_Request $request): WP_REST_Response
     {
-        $role = sanitize_key((string) $request->get_param('role'));
-        $changes = $this->changes($request);
-        $preview = $this->service->previewRoleChanges(get_current_user_id(), $role, $changes);
+        return $this->answer(function () use ($request): array {
+            $role = $this->roleKey($request);
+            $changes = $this->changes($request);
+            $preview = $this->service->previewRoleChanges(get_current_user_id(), $role, $changes);
 
-        return $this->ok([
-            'allowed' => $preview->allowed,
-            'blockers' => $preview->blockers,
-            'changes' => $preview->changes,
-            'target_hash' => $this->service->roleChangeHash($role, $changes),
-        ]);
+            return [
+                'allowed' => $preview->allowed,
+                'blockers' => $preview->blockers,
+                'changes' => $preview->changes,
+                'target_hash' => $this->service->roleChangeHash($role, $changes),
+            ];
+        });
     }
 
     public function applyRole(WP_REST_Request $request): WP_REST_Response
     {
-        $role = sanitize_key((string) $request->get_param('role'));
-        $result = $this->service->changeRoleAbilities(
-            get_current_user_id(),
-            $role,
-            $this->changes($request),
-            $this->confirmation((array) $request->get_param('confirmation')),
-            new DateTimeImmutable('now'),
-        );
+        return $this->answer(function () use ($request): array {
+            $result = $this->service->changeRoleAbilities(
+                get_current_user_id(),
+                $this->roleKey($request),
+                $this->changes($request),
+                $this->confirmation((array) $request->get_param('confirmation')),
+                new DateTimeImmutable('now'),
+            );
 
-        return $this->ok(['result' => $result->toArray()]);
+            return ['result' => $result->toArray()];
+        });
     }
 
-    public function requests(WP_REST_Request $request): WP_REST_Response
+    public function pendingRequests(WP_REST_Request $request): WP_REST_Response
     {
-        if ($request->get_method() === 'POST') {
-            return $this->createRequest($request);
-        }
-
         return $this->ok(['requests' => $this->pending->all()]);
     }
 
     public function createRequest(WP_REST_Request $request): WP_REST_Response
     {
-        $now = new DateTimeImmutable('now');
-        $result = $this->service->requestAccess(
-            get_current_user_id(),
-            $this->optionalString($request->get_param('ability')),
-            $this->optionalString($request->get_param('area')),
-            sanitize_textarea_field((string) $request->get_param('reason')),
-            $now,
-            $now->modify('+7 days'),
-        );
+        return $this->answer(function () use ($request): array {
+            $now = new DateTimeImmutable('now');
+            $result = $this->service->requestAccess(
+                get_current_user_id(),
+                $this->optionalString($request->get_param('ability')),
+                $this->optionalString($request->get_param('area')),
+                sanitize_textarea_field($this->text($request->get_param('reason'))),
+                $now,
+                $now->modify('+7 days'),
+            );
 
-        return $this->ok(['result' => $result->toArray()]);
+            return ['result' => $result->toArray()];
+        });
     }
 
     public function decideRequest(WP_REST_Request $request): WP_REST_Response
@@ -150,11 +172,78 @@ final class AccessController
             get_current_user_id(),
             (int) $request->get_param('id'),
             (bool) $request->get_param('approved'),
-            sanitize_textarea_field((string) $request->get_param('note')),
+            sanitize_textarea_field($this->text($request->get_param('note'))),
             new DateTimeImmutable('now'),
         );
 
         return $this->ok(['result' => $result->toArray()]);
+    }
+
+    /**
+     * Runs one request's work and answers with what it returns, or with a 400 when the work
+     * refuses what was sent.
+     *
+     * Only `InvalidAccessInput` is answered here. Anything else thrown is CoreX's failure and is
+     * left to WordPress to answer as one: a 400 would tell the caller to correct a request that
+     * had nothing wrong with it.
+     *
+     * @param callable():array<string,mixed> $work
+     */
+    private function answer(callable $work): WP_REST_Response
+    {
+        try {
+            return $this->ok($work());
+        } catch (InvalidAccessInput $refused) {
+            return $this->refused($refused);
+        }
+    }
+
+    /**
+     * The body WordPress itself answers for a parameter it refuses (`rest_invalid_param`), so a
+     * client that reads one reads the other. The refusal's own code is under `data.details`.
+     */
+    private function refused(InvalidAccessInput $refused): WP_REST_Response
+    {
+        $message = $this->refusalMessage($refused->refusal);
+
+        return new WP_REST_Response([
+            'code' => 'rest_invalid_param',
+            'message' => $message,
+            'data' => [
+                'status' => 400,
+                'params' => [$refused->parameter => $message],
+                'details' => [
+                    $refused->parameter => ['code' => $refused->refusal, 'message' => $message, 'data' => null],
+                ],
+            ],
+        ], 400);
+    }
+
+    private function refusalMessage(string $refusal): string
+    {
+        return match ($refusal) {
+            // The words the form on a denied screen shows for the same refusal.
+            InvalidAccessInput::REASON_REQUIRED => __('Tell the administrator why you need access — a request with no reason cannot be judged.', 'corex'),
+            InvalidAccessInput::REASON_TOO_LONG => sprintf(
+                /* translators: %s: the longest reason an access request may carry, in characters. */
+                _n(
+                    'The reason is longer than %s character. Shorten it and send the request again.',
+                    'The reason is longer than %s characters. Shorten it and send the request again.',
+                    AccessService::MAX_REASON_LENGTH,
+                    'corex',
+                ),
+                number_format_i18n(AccessService::MAX_REASON_LENGTH),
+            ),
+            InvalidAccessInput::TARGET_REQUIRED => __('Name the ability or the area the request is for.', 'corex'),
+            InvalidAccessInput::TARGET_AMBIGUOUS => __('Name an ability or an area, not both.', 'corex'),
+            InvalidAccessInput::ABILITY_UNKNOWN => __('That is not an ability CoreX has.', 'corex'),
+            InvalidAccessInput::AREA_UNKNOWN => __('That is not an area CoreX has.', 'corex'),
+            InvalidAccessInput::ROLE_INVALID => __('That is not a role key.', 'corex'),
+            InvalidAccessInput::EFFECT_UNSUPPORTED => __('An ability is set to allow, deny or inherit.', 'corex'),
+            InvalidAccessInput::CONFIRMATION_MALFORMED => __('The confirmation could not be read. Preview the change again, then apply it.', 'corex'),
+            // A refusal given no words of its own is still the caller's mistake, and still a 400.
+            default => __('The request could not be read. Nothing was changed.', 'corex'),
+        };
     }
 
     private function hasNonce(WP_REST_Request $request): bool
@@ -177,23 +266,49 @@ final class AccessController
 
         $normalized = [];
         foreach ($changes as $ability => $effect) {
-            $normalized[sanitize_key((string) $ability)] = sanitize_key((string) $effect);
+            $normalized[sanitize_key((string) $ability)] = sanitize_key($this->text($effect));
         }
 
         return $normalized;
     }
 
-    /** @param array<string,mixed> $payload */
+    private function roleKey(WP_REST_Request $request): string
+    {
+        return sanitize_key($this->text($request->get_param('role')));
+    }
+
+    /**
+     * The confirmation as it was sent, or a refusal when it cannot be one.
+     *
+     * A confirmation that can be read and confirms something else is the service's to refuse, and
+     * it answers that one `blocked`.
+     *
+     * @param array<array-key,mixed> $payload
+     */
     private function confirmation(array $payload): Confirmation
     {
-        return new Confirmation(
-            operationKind: (string) ($payload['operation_kind'] ?? ''),
-            targetHash: (string) ($payload['target_hash'] ?? ''),
-            actorId: (int) ($payload['actor_id'] ?? 0),
-            expiresAt: new DateTimeImmutable((string) ($payload['expires_at'] ?? 'now')),
-            requiredPhrase: $this->optionalString($payload['required_phrase'] ?? null),
-            usedAt: $this->optionalDate($payload['used_at'] ?? null),
-        );
+        try {
+            return new Confirmation(
+                operationKind: $this->text($payload['operation_kind'] ?? ''),
+                targetHash: $this->text($payload['target_hash'] ?? ''),
+                actorId: (int) $this->text($payload['actor_id'] ?? ''),
+                expiresAt: new DateTimeImmutable($this->text($payload['expires_at'] ?? 'now')),
+                requiredPhrase: $this->optionalString($payload['required_phrase'] ?? null),
+                usedAt: $this->optionalDate($payload['used_at'] ?? null),
+            );
+        } catch (InvalidArgumentException|DateMalformedStringException $unreadable) {
+            // The value object's own refusals, and PHP's for a time it cannot parse.
+            throw new InvalidAccessInput('confirmation', InvalidAccessInput::CONFIRMATION_MALFORMED, $unreadable->getMessage());
+        }
+    }
+
+    /**
+     * A parameter as text, or as nothing when it is not text: a list read as text is the word
+     * "Array" and a PHP warning.
+     */
+    private function text(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 
     private function optionalString(mixed $value): ?string

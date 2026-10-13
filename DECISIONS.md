@@ -12893,6 +12893,192 @@ domain. `post()` in `account.js` now resolves with `{ ok, message }` and no long
 `{ ok, data }`: it is a function inside the script's closure, so nothing outside can have
 called it.
 
+## #340 — The activity record cuts a label to what its table holds, and the Profile form refuses a display name WordPress would not keep
+
+**Date:** 2026-10-13. **Branch:** `fix/activity-label-length`, from `main`. **Found by:** the
+measurement for #338, which recorded it in PROGRESS.md and left it. This is the measurement
+again over HTTP, what else it showed, and the change. Spec 068: FR-005 and FR-018 (an
+action is audited on one shared stream), FR-158 (the profile workflow).
+
+**What the code did.** The activity table holds an actor's label, a target's label and a
+target's id in `varchar(191)` each. `WpActivityRepository::append()` raises a
+`RuntimeException` when its insert is refused, and `$wpdb->insert()` refuses a value longer
+than its column. `ActivityService::record()`, which every caller records through, handed
+the three texts over as they came. Callers hand it a person's display name, which
+`wp_users.display_name` holds in `varchar(250)`.
+
+On the account add-on's Profile route, `AccountService::updateProfile()` refused only an
+empty display name, and `WordPressAuthGateway::updateProfile()` took `wp_update_user()`'s
+answer to be a saved profile unless it was a `WP_Error`. For a display name of 251
+characters that answer is the account's id, with nothing of the account's row saved: the
+name stayed, and so did a website address sent in the same call, while a last name sent
+with it was stored (measured through `wp_update_user()` itself).
+
+**Measured before the change**, on WordPress 7.1.3 over HTTP, on an install of this
+branch's own with nothing leaving it by mail. A member signed in at the account block and
+posted to `corex/v1/account/profile` with the nonce the block's page carries:
+
+| Display name | Answer | What was stored |
+|---|---|---|
+| 191 characters | 200 | the name, and one activity record |
+| 192 | **500** | the name, and the first name sent with it; no record |
+| 250 | **500** | the same |
+| 251 | **500** | the first name; the display name stayed the one of 250 |
+| then a first name only | **500** | the first name |
+| then "sign out other sessions" | **500** | not read; the route ends the sessions before it records |
+| 250, of which ten are `&` | 200, "Your profile has been saved." | the first name; the display name stayed as it was |
+
+The 500 at 251 was the stored name of 250 being recorded, not the 251. The last row is
+what a name WordPress will not keep gets when the account's stored name is short: "saved",
+and the name it had.
+
+- **WordPress keeps a display name as it cleans it.** `Tom & Jerry <3 "q"`, 18 characters,
+  was stored as `Tom &amp; Jerry &lt;3 &quot;q&quot;`, 35. Each step was then run alone:
+  `sanitize_text_field()` makes a `<` that opens no tag, and the quotes after it, into
+  entities, and leaves `&` and a quote with no `<` before it; the `pre_user_display_name`
+  filters make `&` into `&amp;`.
+- **WordPress's own profile screen takes such a name from any member.** A subscriber signed
+  in at `wp-login.php` and posted `wp-admin/profile.php` with a nickname of 200 characters
+  chosen as the display name: 302 to `profile.php?updated=1`, stored. The same at 250. At
+  251 the screen answered `updated=1` too and the display name stayed the one of 250, with
+  the nickname of 251 stored. So refusing a long name in the add-on's form does not keep
+  one out of an account, and the record has to cope with any name an account can have.
+- **It is not only the account add-on.** An editor so named posted to
+  `corex/v1/access/requests`: 500, with the request stored. A second try: 500, and a second
+  request stored. Read, not measured: `AccessService::requestAccess()` stores the request,
+  records it, and only then tells the administrators, so nobody was told of either.
+
+**Who else hands the record a text a person chose** (read, every call to `record()`):
+
+- A display name as the actor's label: `AccessService` (a role's abilities changed, an
+  access request made, one decided), `DataManagementController::mutationApply()` (a change
+  applied on CoreX → Data), `ReleaseRecord`, and the account add-on, which hands it as the
+  target's label too.
+- A release's version as the target's id and label: `ReleaseRecord`, from the manifest of
+  an uploaded package. `ReleaseManifest` asks that it begin with three numbers and puts no
+  limit on its length.
+- A role's key as the target's id and label: `AccessService`. A key is made by whatever
+  registered the role, and `assertRole()` checks its characters and not its length.
+
+The others hand over text made in code: `'User #' . $id` (the submission trash and the
+exports among them), `'CoreX Jobs'`, a run's number, a data source's key.
+
+**Decided: the record is cut in the one place every record is made.**
+`ActivityService::record()` keeps an actor's label, a target's label and a target's id to
+`ActivityEvent::LONGEST_TEXT`, 191 characters; a longer one is its first 190 and an
+ellipsis, so that a text that was cut is not read as the whole of it. `ActivityTable` makes
+the three columns that wide from the same constant, and a test holds the two together.
+The count is of characters (`mb_strlen`), as MySQL counts a `varchar` and as WordPress's
+database layer checks one: 191 Arabic letters fit, and are 382 bytes.
+
+- **In the service and not in the repository,** because the repository hands back the event
+  it was given with an id on it: cut there, what a caller is handed back would not be what
+  was stored.
+- **Not by making the columns wider.** 250 would hold a display name and not a version or a
+  role's key, which have no length. A wider column is a change to a table on every site,
+  and whatever width is chosen the service has to hold a text to it.
+- **The id is cut like the labels.** An id that was cut does not name its target. One rule
+  is kept for the three all the same: the ellipsis says it was cut, the label beside it
+  says what it was, and the other choice was a request that fails after its work is done.
+  The two callers that can hand over such an id hand the same text as the label.
+- **`kind` (100) and `target_type` (64) are not cut.** Every caller hands them a text
+  written in code. `ActivityEvent` checks the form of a kind and not its length; a kind too
+  long would still be refused by the table. Not changed.
+
+**Decided: the Profile form refuses a display name WordPress would not keep.**
+`AccountService::MAX_DISPLAY_NAME_LENGTH` is 250. A new method of the gateway,
+`AuthGateway::displayNameAsKept()`, gives the name as the account would hold it;
+`WordPressAuthGateway` answers with `sanitize_text_field()` and then the
+`pre_user_display_name` filters, on the slashed text `updateProfile()` hands WordPress, and
+a test holds it to what the database has after a save, for eight names. The service counts
+that text in characters and answers `display_name_too_long` with nothing saved. It is the
+rule #333 made for a username and #338 for an address: what WordPress would silently not
+keep is refused here, where a reason can be given.
+
+- **Two messages under the one code.** A name over 250 as typed is told "Please use one of
+  250 characters or fewer." A name within 250 as typed and over it as kept is told that a
+  character such as `&` or `<` is kept as several: told the number, that person would count
+  250 and be sent round again.
+- **250 and not a smaller number.** What a display name should be at most is a matter of
+  taste, and nobody asked for one. 250 is what the account can hold.
+- **The empty-name rule moved** into the same private method, unchanged.
+- **The form's field has no `maxlength`.** Two open pull requests rewrite
+  `AccountRenderer` (#381, #383), and a `maxlength` of 250 would be wrong for a name with
+  an `&` in it. The server's answer is shown under the button like any other (#336).
+
+**Weighed, and not built: whether a record that cannot be written should fail the request.**
+The owner's question was whether a failure to write the activity record should ever fail
+the request that did the real work. What the code does today, read:
+
+- Every caller but one lets the exception out. Each of them records after its work is
+  done, so the exception undoes nothing: it turns a request that succeeded into a 500, and
+  the person tries again. For an access request that was a second request. Three of the
+  callers are job handlers (an export, an import, a migration); what the job runner makes
+  of an exception from one was not read.
+- `ReleaseRecord::write()` catches it, with the reason written beside the catch: the
+  activity table is one of the release being installed, and the installer's own log has
+  the event either way.
+
+My recommendation, for the owner to take or overrule:
+
+1. **A member's own request** (the account add-on: a profile saved, sessions ended). The
+   record there is the member's own notification feed. Its failure should not be the
+   member's answer: catch it in `ProfileServiceProvider::recordAccountEvent()` and write it
+   to the error log.
+2. **An administrator's audited action** (a role's abilities, a change on CoreX → Data, a
+   submission deleted). There the record is the audit FR-005 asks for, and an action that
+   is done and not recorded is the thing an audit exists to prevent. The answer that keeps
+   the audit is not to swallow the failure after the work, and not to fail after it
+   either: it is to write the record in the same database transaction as the work, or
+   before it, so that work with no record cannot be. That is a change to each of those
+   services and wants a spec of its own.
+
+Neither is built here. With the three texts cut, the one cause measured is gone, and what
+is left is a database that refuses a row it has room for, which was not seen. Swallowing an
+audit failure is a security decision, and catching in one caller and not the others would
+leave two rules with no record of why. It is under "Open, and not hidden" in PROGRESS.md.
+
+**Measured after the change**, the same requests over HTTP on the same install:
+
+- A display name of 192 and of 250: 200, the name stored whole, one record each. 251: 422,
+  `display_name_too_long`, "That display name is too long to keep. Please use one of 250
+  characters or fewer.", and the first name sent with it not stored.
+- With the name of 250 stored: a first name alone, 200; "sign out other sessions", 200.
+- 250 characters of which ten are `&`: 422, with the message about `&`, nothing stored.
+- The editor with a name of 250 from WordPress's own screen, asking for access: 200, one
+  request stored.
+
+**Seen on the way, and left.**
+
+- `POST corex/v1/access/requests` stores a second request for the same ability from the
+  same person. `AccessService::pendingRequestFor()` exists, with a comment that every
+  caller must get the same answer, and the route does not ask it. Seen in the measurement
+  above, not looked into further.
+- WordPress's profile screen answers "updated" for a nickname of 251 characters chosen as
+  the display name and keeps the old name. It is WordPress's, and CoreX has no part in it.
+- A display name with `&` in it is kept by WordPress as `&amp;`. What each CoreX screen
+  prints for such a name was not read.
+
+**Tests.** Unit, `ActivityServiceTest`: a text of exactly 191 characters is kept, one of
+192 is cut to 190 and an ellipsis, and the count is of characters (Arabic).
+`ActivityTableTest`: the three columns are as wide as the constant. `AccountServiceTest`:
+250 is saved, 251 is refused with the number and without reaching the gateway, 250 Arabic
+letters are saved, and a name the gateway would keep longer is refused without the number.
+Integration, on real WordPress: `ActivityLongTextTest`, three, through the container's
+service onto the real table; `ProfileDisplayNameLengthTest`, fifteen, through the route as
+`rest_do_request()` dispatches it: three names over 191 are saved and recorded cut, three
+names WordPress would not keep are refused with nothing saved, an account given a name of
+250 the way WordPress's screen gives it saves its profile and ends its other sessions, and
+eight names are measured as the database then has them. Each part of the change was taken
+out in turn and the tests run: the cut, counting characters in the cut, the refusal, the
+gateway's measure, counting characters in the refusal, and the second message. Every one
+failed at least one test.
+
+**Client impact.** A site with a gateway of its own for the account add-on adds
+`displayNameAsKept()`. Read in both checkouts on 2026-10-13: neither Muva's nor Perego's
+own code implements `AuthGateway` or calls `ActivityService`. No table changed, no screen
+changed, and there is nothing to rebuild. Records already written are as they were.
+
 ## #341 — A password reset asked for at the account block ends on the account page: WordPress's email, with its link to the page the reset was asked from
 
 **Date:** 2026-10-13. **Branch:** `fix/account-reset-lands-on-the-site`. **Found by:** the
@@ -13198,6 +13384,220 @@ and forgot-password fields, and reads the registration form as a new account. No
 class or route changed. Read on this machine on 2026-10-13: nothing under `sites/` in the
 Muva or Perego checkouts names the block.
 
+## #343 — One open access request per person per ability or area, asked where the request is stored
+
+**Date:** 2026-10-13. **Branch:** `fix/access-request-duplicate`. **Found by:** the
+measurement for #340, which posted the same request twice and counted two rows. **Decided
+by:** me, from the measurements below. The owner's brief named the questions (where the
+rule belongs, what the route answers, whether an area needs it) and said to build it if it
+was a plain defect. It is what spec 079 already requires (FR-008: "Duplicate submission
+MUST be prevented server-side"), kept by one caller of two.
+
+**What the code did.** `AccessService::requestAccess()` stored whatever it was handed.
+`AccessRequestFormController`, where the form on a denied screen posts, asked
+`pendingRequestFor()` first and stored nothing for a repeat. `AccessController`, the REST
+route, did not ask. `pendingRequestFor()` took an ability key only, so no caller could ask
+about a request for an area.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, over HTTP,
+signed in as an editor with a REST nonce, mail answered for by `pre_wp_mail`):
+
+| Posted to `corex/v1/access/requests` | Answer | Stored |
+|---|---|---|
+| `ability: corex_manage_forms`, twice | 200 "The access request was created.", twice | two requests, two `access.request.created` audit entries, two notifications (`access.request:<id>`, one per request) |
+| `area: forms-flows`, twice | the same | the same |
+| the same ability twice, on a site with an email route for `access.request.created` | the same | and two emails handed to `wp_mail()` |
+
+A fresh install has no such route, so there the repeat cost the administrators a second
+line in the Notification Center and the queue a second row to decide.
+
+**1. The rule is part of storing.** `AccessRequestStore::create()` is replaced by
+`createUnlessPending()`, which returns the new id, or `null` when the requester has an open
+request for the same ability or area. `requestAccess()` turns `null` into a `blocked`
+result. There is no method left that stores without asking, so a caller cannot leave the
+question out.
+
+It is in the store and not only in the service because a question followed by an insert
+does not hold for two asks that arrive together, and a second press of a button is that.
+Measured with the question in the service alone, the same request posted to two server
+processes at the same moment: one pair in three stored two requests. With the question and
+the insert under one lock: 36 pairs, one request each, one refusal each.
+
+**2. The lock.** `AccessRequestRepository` takes a MySQL named lock (`GET_LOCK`) for the
+requester, asks, inserts, and releases it in a `finally`. A unique index cannot do it: a
+person may have any number of decided requests for one ability and one open, and an index
+cannot be unique among the open rows only. MySQL lets a named lock go when its connection
+ends, so a request that dies leaves nothing to clear. The name is a hash of the database,
+the table (which carries the site's prefix) and the requester, because named locks are
+shared by every database on a server and a name is at most 64 characters. A second ask
+waits up to five seconds for the first, which is one read and one insert; a wait that runs
+out is thrown as the store's own failure ("could not create"), which the form already
+answers with a reference and "nothing was recorded".
+
+**3. What a repeat is answered.** `200`, a result with `state: blocked`, the error code
+`request_already_pending`, no affected ids, and the message "Your request has already been
+sent. An administrator has been notified and can approve or deny it." Those are the words
+the denied screen shows for an open request ("Your request has been sent", "An
+administrator has been notified and can approve or deny it"), so the route and the screen
+say one thing. `200` and `blocked`, not a 409, because that is how these routes answer
+every refusal the service makes: a decision on a request that is no longer pending, and a
+role change the safety policy stops, are both `200` with a `blocked` result, and the
+operator's guide promises the routes' status codes do not change. No audit entry is
+written for a repeat: the audit log's `access.request.created` means a request was created.
+
+**4. An area is asked about as an ability is,** and for the same target only. A request for
+the area `forms-flows` and one for an ability inside it are two requests: the area is the
+wider ask, and `pendingFor()`'s own contract refuses to treat "any request by this person"
+as a repeat.
+
+**5. The form reads no answer.** Its own question is removed, and with it
+`AccessService::pendingRequestFor()`, which had no other caller. Created or already
+waiting, it sends the browser back to the denied screen, which shows the request that
+stands. What a person sees is unchanged.
+
+**Left as it is, deliberately.**
+
+- **The details are checked before the question.** A repeat with an empty reason is refused
+  for its reason. Through the form nothing visible changes (the screen shows the open
+  request either way). Through the route a refused detail is a 500, which is its own defect
+  and is under "Open, and not hidden" in `PROGRESS.md`.
+- **Requests already stored twice** are not merged or removed.
+- **A site that reads from database replicas** may ask two servers for the lock. Under
+  "Open, and not hidden".
+
+**Tests.** Unit: the service turns the store's `null` into the `blocked` result, records
+nothing and notifies nobody. Integration, against the real table: the route twice, for an
+ability and for an area, leaves one request, one audit entry and one notification; the
+store refuses the repeat and takes a request for something else, from somebody else, after
+a decision and after an expiry; and at the moment the row is written the requester's lock
+is held, and afterwards it is free. Four things were taken out one at a time and the tests
+run: the lock and its release (the lock's test failed for each), the store's question (the
+route's, the form's and the store's repeat tests failed) and the service's reading of the
+store's answer (the unit test failed).
+
+## #344 — The theme has a side gutter: root padding from spacing preset 40, and the four things it took width from
+
+**Date:** 2026-10-13. **Branch:** `fix/theme-phone-gutter`. **Found by:** the measurement of
+the account block for #336, which read the default page at 375 pixels and left the lead in
+PROGRESS.md. **Spec:** 068, FR-157a and FR-157b.
+
+**What the theme did.** `theme/theme.json` sets `useRootPaddingAwareAlignments` and had no
+`styles.spacing.padding`. With that setting WordPress gives the root padding to every
+constrained block (`.has-global-padding`) and to nothing else, so with none set there was
+no space at the sides at all. Nothing else supplied one: no template, part or pattern
+writes side padding, the kits apply pages and no styles, and no stylesheet of the theme
+sets any.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, Chromium,
+signed out; every template in `theme/templates`, `index` as the posts page, and each of the
+36 registered `corex/` patterns on a page of its own; at 375 and 320 pixels, left to right
+and right to left):
+
+- On every one of them the nearest line of text was 0 pixels from the edge it starts at.
+  `--wp--style--root--padding-left` and `-right` computed to `0px`.
+- The same after the company kit and then the portfolio kit were applied, on the ten pages
+  they made. A kit does not set a gutter and is not meant to.
+- It was not only a phone. At 1024 the post grids of the archive, the posts page and the
+  project archive (`align: wide`) began at pixel 0. By the rule that sizes a wide block,
+  the same holds in any window narrower than the wide size, 1200.
+- At 320 the front page, the contact and form templates and a search that finds nothing
+  scrolled sideways by 27 pixels: the form (below).
+- A block set to full width in a page's content was 768 wide at 1280, and one set to wide
+  was 768 too. The hero pattern in a page was a band 768 wide in the middle of the window.
+
+**Decided: root padding in `theme.json`, left and right, `var(--wp--preset--spacing--40)`.**
+It is where WordPress looks for it with root-padding-aware alignments, it is one value for
+every template and pattern, it reaches the editor's canvas, a site can change it in
+`brand.json` (measured: preset 50 there gives 24 pixels), and it is a token. It is the same
+preset as the block gap, so the space beside the text is the space between its blocks.
+theme.json has no logical side for padding; right-to-left reading is held by the two
+values being the same, and the browser test reads both sides in both directions.
+
+**The number is 16 pixels, and theme.json says 24.** Preset 40 is written as `1.5rem`. A
+page has it as `1rem`. theme.json is version 3, where `settings.spacing.defaultSpacingSizes`
+is true unless a theme says otherwise, and while it is true WordPress keeps its own sizes
+for the slugs it defines (20 to 80) and a theme's sizes of the same slugs are not used
+(`WP_Theme_JSON::PRESETS_METADATA`, `prevent_override`). Measured on the page: 20 is
+0.44rem for a written 0.5rem, 30 is 0.67rem for 1rem, 40 is 1rem for 1.5rem, 50 is 1.5rem
+for 2rem, 60 is 2.25rem for 3rem, 70 is 3.38rem for 4rem, 80 is 5.06rem for 6rem. Only 10
+is the theme's. The same rule gives the font sizes `small` and `medium` WordPress's values,
+and the size `2xl` is on the page as `--wp--preset--font-size--2-xl`, while the CTA block's
+stylesheet asks for `--wp--preset--font-size--2xl`. That is a defect of the token scale and
+not of this change: putting it right moves every space on every page, and is in PROGRESS.md
+for the owner. The gutter was chosen by what is measured: 16 pixels is the usual side
+margin of a phone, and if the scale is put right preset 40 becomes 24, which is also one.
+Preset 50 would be 24 today and 32 then, which at 320 leaves 256 for the text.
+
+**What the gutter took width from, and what was done.**
+
+1. **A full-width block in content.** `page`, `page-form`, `single` and
+   `single-corex_project` print the content in a constrained block inside a constrained
+   `<main>`. WordPress takes the padding off the inner one and, with it, the negative
+   margins of a full-width block inside it: with a gutter such a block stopped 16 pixels
+   short of each edge on a phone. The content block is now `align: full` in the four. It is
+   then the block that holds the gutter, and a full-width block in it reaches both edges at
+   any width. **This changes a desktop:** a full-width block in content is the window's
+   width and a wide one 1200, where both were 768. The text column did not move (256 from
+   each edge at 1280, measured before and after on every template and pattern).
+2. **The form.** `.corex-form` is a grid of twelve columns with a gap, and eleven gaps of
+   24 pixels and the button's column are 347 pixels whatever its fields span. That is the
+   27 pixels at 320. Inside the gutter it was 43 at 320, and on the search that finds
+   nothing 4 at 375 and 59 at 320. At 600 pixels
+   and under, where every field already spanned all twelve, the grid is one column. The
+   button keeps its width. The message line under the button has the row to itself there;
+   above 600 it is still in the second column, 38 pixels wide at 1280 (PROGRESS.md).
+3. **The docs header's search.** At 320 its field and button are 304 pixels and the header
+   is 288 inside the gutter: the button ended at the window's edge. The actions row and the
+   search are now no wider than what holds them (`max-inline-size`; capping one of the two
+   leaves the button at the edge, measured). Nothing moved at 375 or at 1280.
+4. **A search that finds nothing.** Its contact pattern is a full-width section inside the
+   results block, which was neither full width nor constrained, so the section kept the
+   gutter as padding inside the text column and its form stood 16 pixels in from the title.
+   The results block and its nothing-found block are now full width.
+
+**Measured after** (same install, same pages): on all 15 template pages, the posts page,
+the 36 pattern pages and the ten kit pages, at 375 and 320, both directions, the nearest
+line of text is 16 pixels or more from each edge and no page scrolls sideways. The same on
+the site switched to Arabic (`<html dir="rtl" lang="ar">`), which loads WordPress's
+right-to-left stylesheets; the browser tests set `dir` on a left-to-right page. On the
+Coming soon page the nearest text is 22 pixels from an edge at 375 (it is centred; not
+measured before). At 1280 and 1024 every element's
+box was compared before and after on those pages: the text is where it was, except in the
+places named above, and the wide post grids are 16 pixels in from each edge at 1024.
+
+**Not chosen.** A gutter written on each template's blocks (fifteen templates, two parts
+and every pattern, and the next one forgets it). A rule in a stylesheet (the theme's one
+stylesheet is attached to the navigation block and loads where one renders, and a gutter
+is a token's job). A new
+fluid token (the lead asked for a spacing preset, and the scale has to be put right first).
+Leaving the content block nested and accepting full-width blocks 16 pixels short on a
+phone.
+
+**Client sites.** Muva's, Perego's and Mizzey's themes have no `Template:` header: each is
+a theme of its own with its own `theme.json`, and none inherits this one (read on this
+machine, 2026-10-13). Neither Muva's nor Perego's sets a root padding. So the gutter and
+the templates do not reach them. The form's stylesheet does, on any site that shows a
+`corex/form`.
+
+**Tests.** `tests/e2e/theme-gutter.spec.js`: every template, a page of every registered
+pattern, the header and footer, a full-width and a wide block in content, at 375 and 320 in
+both directions; and at 1280 the text column, the two blocks, and the search that finds
+nothing. `tests/Unit/Theme/ThemePageCoverageTest.php`: every template that prints a post's
+content prints it full width, which holds a template added later. That the gutter is a
+token and not a written size was already held (`ThemeJsonTest.php`). Written before the change and seen to fail for it; then the root padding, the
+content block's alignment, the form's grid, the header's rule and the search template were
+each taken out once, and tests failed for each.
+
+**What the first run in CI showed.** Ten tests failed there, all for the project template:
+the project's address answered "Page not found" (CI saves the permalink rules before the
+add-ons are switched on, and nothing saves them again; PROGRESS.md). The four tests that
+only read text had passed on that page, because a "Page not found" has text, a gutter and
+no sideways scroll. So every visit now first holds the page to the class WordPress gives
+its `<body>` (`single-corex_project`, `error404`, `page-template-page-landing`, …), and the
+spec opens WordPress's Permalinks screen, which saves the rules, before it reads a
+project. With the site put in CI's state and that step taken out, the two project tests
+fail in six seconds and name the page they were given.
+
 ## #345 — In the account block, a list that did not load says so in its own place, and an empty one says it is empty
 
 **Date:** 2026-10-13. **Branch:** `fix/account-lists-say-when-they-do-not-load`, on top of
@@ -13378,6 +13778,345 @@ styles the block has a new element to style, `.corex-account__list-note` with it
 everywhere** the page is loaded again. `get()`, `loadSessions()` and `loadNotifications()`
 were inside the script's closure, so nothing outside can have called them.
 
+## #346 — The list of open access requests has the Access screen's check, and asking for access keeps its own
+
+**Date:** 2026-10-13. **Branch:** `fix/access-requests-list`, from `main`.
+
+**The decision.** `corex/v1/access/requests` is one route with two methods, and they were
+registered together: one callback that looked at the method, one permission check. The
+check was the one that suits `POST`, where anybody signed in may ask for access. They are
+now two registrations. `GET` has `allowed()`, a REST nonce and `manage_options`; `POST`
+keeps `requestAllowed()`, a REST nonce and a signed-in session.
+
+**Why `manage_options` and not the `corex_manage_access` ability.** The list is the queue
+on CoreX Access & Abilities. That screen's menu entry asks for `manage_options`
+(`AccessScreen::menu()`), and so does the route that decides a request. A role given
+`corex_manage_access` and not `manage_options` opens neither today, so a list with the
+ability's check would be read by people who can do nothing with it.
+
+**A lead, not built.** The notification of a new request is addressed by the ability
+(`AccessRequestNotificationProducer`). An administrator holds it, so the people who decide
+are told. A role given the ability in the matrix and not `manage_options` is addressed as
+well (a notification is read by `current_user_can()` of its ability), and its link is to a
+screen that refuses them. Read in the code, not walked in a browser. Moving the screen to
+the ability is a change of its own: the menu entry, the decision route and the list would
+move together.
+
+**A person's own requests are not answered by the route.** The contract of spec 068 called
+`GET` "accessible requests", which reads as if each person had some. Nothing in CoreX calls
+`GET`: the screen is handed the queue with the page (`corexAccess.requests`), and the
+screen that refuses somebody reads that person's own open request on the server
+(`CurrentUserAccessRequests`), from the session and never from a passed id. Answering "your
+own" here would be a second shape of answer on one route, and a read by requester in the
+store, for no caller. The contract now says for whom the list is; a surface that lists a
+person's own requests gets a read of its own when it is built.
+
+**Measured after the change**, on WordPress 7.1.3 over HTTP, on this branch's own install,
+with two open requests from two people: the administrator is answered `200` with both; a
+subscriber who asked for nothing, each of the two requesters and an author are answered
+`403`; a visitor who is not signed in, and a signed-in request with no nonce, `401`. The
+Access screen is handed both requests with the page. An author's `POST` is answered `200`
+and stored; the author deciding their own request is answered `403`; the administrator's
+decision is recorded. No email left the install: `pre_wp_mail` was answered in the served
+process and in the tests.
+
+**Tests.** `tests/Integration/Access/AccessRequestsReadTest.php`, through the REST server
+and not by calling the controller, because the promise is the permission check and a call
+to the method never reaches it. An administrator is handed the list; a subscriber, a
+contributor, an author, an editor and the person who filed the request are answered `403`
+and nothing of the request is in the answer; a visitor `401`; a person who manages nothing
+can still ask. The five refusals failed before the change. The other three passed before
+it and hold what must not change.
+
+**Client impact.** A script that read the list as somebody without `manage_options` is
+answered `403`. `AccessController::requests()` is gone: `pendingRequests()` and
+`createRequest()` are the route's callbacks. Read on this machine on 2026-10-13: nothing
+under `sites/` in the Muva or Perego checkouts names the route or the controller.
+
+## #347 — A username that is the person's own email address is no username, and registration's username field says what it is for
+
+**Date:** 2026-10-13. **Branch:** `fix/account-username-is-the-address`, from `main`. It
+was built and measured on `main` at `e8ba03eb` with pull request 386's branch (#342) merged
+in, because the field's value is a line of the table 386 adds; 386 merged the same
+afternoon and `main` with it was merged into the branch, and the tests were run again on
+that. **Found by:** #342, which
+measured the refusal below and left the field without a value. Spec 068 gains FR-158d and
+FR-161c is changed. The numbers #343, #344 and #345 are on pull requests 387, 388 and 389
+and #346 on the pushed branch `fix/access-requests-list`, all four begun while this was
+built; #339 and #340 are on 383 and 384. All were open when this was written.
+
+**What was there, measured again before the change.** WordPress 7.1.3, a WordPress of this
+worktree's own with registration open and every email answered for before the mailer
+(`pre_wp_mail`); `POST corex/v1/account/register` over HTTP with the JSON the block's script
+sends.
+
+| Email | Username | Answer | Account |
+|---|---|---|---|
+| a plain address | empty | 200 | login the address, named by its first part |
+| a plain address | the same address | 200 | the same |
+| an address with a `+` | empty | 200 | login the address without the `+` (WordPress takes it out), named by its first part with the `+` |
+| an address with a `+` | the same address | 422 `invalid_username`, "A username can have letters without accents, numbers, spaces and the characters _ . - @ and no others. Please choose another." | none |
+| an address with a `+` | the same address in other capitals, or with spaces around it | 422, the same | none |
+| an address of 70 characters | empty | 200 | a login made from its first part (#338) |
+| an address of 70 characters | the same address | 422 `register_failed`, WordPress's "Username may not be longer than 60 characters." | none |
+| `kim…@example.test` | `Kim…@Example.Test` | 200 | login `Kim…@Example.Test`, named `Kim…` |
+
+And in Chromium 153.0.8010.12 (Playwright 1.63, the `chromium` channel, headless, an empty
+profile, started without `--enable-automation`), with one made-up saved address
+(`Autofill.setAddresses`) and a fill started from the registration form's Email field
+(`Autofill.trigger`), then the passwords typed, the box ticked and the form sent:
+
+| The Username field | Chromium wrote the address into | Sent as the username | Answer |
+|---|---|---|---|
+| as #342 left it, no value | Email | nothing | 200, account made |
+| `autocomplete="username"`, put on the served page by a route rewrite | Email and Username | the address | 422 `invalid_username`, the sentence above under the button |
+
+So #342's reading holds on `main`: the value alone turns away somebody the form took
+before.
+
+**The rule.** `AccountService::register()` takes a username that is the person's own
+address as no username. One private method, `chosenUsername()`, answers an empty string for
+it, and the three things that asked "was a username typed" ask that method: the check of
+what a username may hold, the login, and the account's name. So the account is the one the
+address gets with the field left empty, in every case that has: an address WordPress
+alters, an address too long to be a login, an address no login can be made from (the
+answer is then `username_required`, as with the field empty).
+
+**How the two are compared.** Without regard to capitals, and after the spaces around the
+username are taken off.
+
+- *Capitals.* `strcasecmp()`. An address reaches the comparison only after it passed
+  `FILTER_VALIDATE_EMAIL`, which takes no letter outside ASCII, so the comparison is of
+  ASCII letters and no locale is in it. WordPress finds an account by its login or its
+  address without regard to capitals (measured on this install: `username_exists()` and
+  `email_exists()` find `kim…@example.test` asked for in capitals, and it signs in so),
+  so `Jane+Shop@Example.com` beside `jane+shop@example.com` is the same address to it.
+  Compared exactly it would have been refused for the `+`, which is the refusal this
+  rule is for.
+- *Spaces.* The route takes the spaces around both off before the service sees them: the
+  username's since #333, the address's in `EmailAnswer::address()`. The service does not
+  trim again.
+- *Nothing else is taken as the same.* An address that differs from the person's by a dot,
+  by what follows a `+`, or by its domain is another address, and is judged as a username
+  as before: with a `+` it is refused, without one it is the login.
+
+When the two are the same but for capitals, the account is made from the address as it is
+in the Email field. That is one outcome that changes for somebody who was not refused:
+`Kim…@Example.Test` as the username beside `kim…@example.test` made the login
+`Kim…@Example.Test` and the name `Kim…`, and now makes the login `kim…@example.test` and
+the name `kim…`. Measured before and after. The person signs in with either, as before.
+
+**Then the field has the value.** `'username' => 'username'` in the `register` row of
+`AccountRenderer::PURPOSES`. Every labelled field of the sign-in, registration,
+forgot-password and profile forms now has an `autocomplete` value.
+
+**Measured after the change**, same install and browser, the page as it is served:
+
+- the registration form's fields read `off` (the field for bots), `email`, `username`,
+  `new-password`, `new-password`;
+- a fill from a saved `jane+…@example.test`, started from Email: the address is in Email
+  and in Username, the form sends it as the username, the answer is 200 and "Your account
+  has been created. You can now sign in." is under the button. The account has the login
+  `jane…@example.test` without the `+` and the name `jane+…`, as it has with the field
+  empty;
+- the same started from the Username field: the same;
+- the same with a saved address of 70 characters: made, with a login made from its first
+  part;
+- Chromium's developer tools raise no issue for the registration form. Before, they raised
+  `FormInputAssignedAutocompleteValueToIdOrNameAttributeError` for the username field;
+- over HTTP, every row of the first table that was refused is now made, with the login and
+  the name of the row above it; another address with a `+` as the username is still
+  refused.
+
+**Not measured.** Firefox, Safari, and a password manager that is not Chromium's own: one
+of them may write something other than an address into a field marked `username` (a
+username saved for another site, say). The field is visible and optional, and what is in
+it is judged as a username unless it is the address. What Chromium's password manager
+reads of the form was not measured again: #342 measured it with the value on the field
+and found it the same as without. A screen reader. Any popup: the browser was headless.
+
+**What was left alone.** The person is not shown the login the account was given. With
+the address in the Username field they may take the address for their login, and they sign
+in with it, so that holds.
+
+**Tests.** `tests/Unit/Profile/AccountServiceTest.php`: a username that is the address is
+not judged and gets the gateway's login for the address and the address's name, for a
+plain address, one with a `+`, one in other capitals and one too long to be a login; and
+another address is still judged. Each row says what the gateway would answer for the
+address as a username; all four failed before the change, two with `invalid_username` and
+two with the username as the login. `tests/Integration/Profile/RegistrationUsernameTest.php`, through the
+route on real WordPress: an address with a `+` in both fields, as it is and in other
+capitals with spaces around it, makes the account an empty username makes and its owner
+signs in with the address; an address of 73 characters in both fields gets a login of its
+first 60. All three failed before with 422. `tests/Unit/Profile/AccountRendererTest.php`
+and `tests/e2e/product-surfaces.spec.js` now expect `username` on the field; the unit test
+failed before the table had the row. No browser test fills the form from a saved address:
+CI's site has registration closed, a registration writes two emails, and the fill is
+started over the DevTools protocol in a Chromium with a profile, which the suite does not
+start. The measurement above is what there is, and `PROGRESS.md` says so.
+
+**Client impact.** A registration with the person's own address as the username in other
+capitals makes an account with the address as its login, where it made one with the
+username as typed. A registration that was refused for an address in the username field
+is now made. The registration form's username gains `autocomplete="username"`. No method
+was added to `AuthGateway`. Read on this machine on 2026-10-13: nothing under `sites/` in
+the Muva or Perego checkouts names the block, the account service, the gateway or the
+register route.
+
+## #348 — A row of the account block's two lists is written for a person: the server words a sentence, a device name and a date, and the script prints them
+
+**Date:** 2026-10-13. **Branch:** `fix/account-list-rows-for-a-person`, on top of #345's branch
+(PR #389, open when this was written; #339's PR #383 under it merged while this was
+built). **Found by:** the session
+that built #345, which saw it in a browser and recorded it in `PROGRESS.md`. Spec 068 gains
+FR-161g. The numbers around it are held elsewhere: #346 by PR #390, merged while this was
+built, #347 by open PR
+#391, #349 by open PR #392 (the session in use is marked "this device"; it left #348 and
+FR-161g to this change) and #350 by open PR #393.
+
+**What was there.** `account.js` drew a row of "Recent activity" as
+`event.kind + ' · ' + event.occurredAt` and a row of "Active sessions" as `session.ua`.
+`NotificationService::forUser()` asked the activity stream for the person's ten newest
+events of any kind. After a saved profile the script asked for the sessions again and not
+for the activity.
+
+**Measured before the change.** WordPress 7.1.3, a WordPress of this worktree's own,
+Chromium 153, the administrator signed in from two browser windows, one of them sending
+an iPhone's user agent, and one event recorded for them as the Submissions screen records
+an export.
+
+| What was looked at | What was there |
+|---|---|
+| a row of recent activity | `profile.updated · 2026-10-13T13:23:23+00:00`, in UTC whatever the site's timezone |
+| the administrator's export | listed with the rest, as `submission.export.queued · 2026-10-13T13:22:46+00:00` |
+| a session, at 1280 pixels | the whole user agent string, 123 characters, on two lines (51 px) |
+| a session, at 375 pixels | the same on three lines (77 px) |
+| after **Save profile** | the script asked `POST account/profile`, then `GET account/sessions`; recent activity did not change until the page was loaded again |
+
+**What was asked, and what was chosen.**
+
+1. *Who words a row: the server, or the script from strings it is handed.* **The server.**
+   The route answers with the lines ready to print, and the script prints them. A
+   sentence belongs with the code that records its kind; a date in the site's format and
+   timezone is `wp_date()`'s work, and spec 076 already records that a browser's own
+   date words differ from WordPress's in Arabic; and a kind added later needs no change to
+   the script. Refused: handing the script a table of sentences by kind. It would still
+   need the dates from the server, and the rule for a kind it does not know would live in
+   the script.
+2. *What a row of activity says.* A sentence for what happened, and under it when:
+   "Your profile was updated." and "Your other sessions were signed out." They say what
+   happened to the account and not who did it. The list is also where a person notices
+   something they did not do, and "You updated your profile" would tell them they did.
+   `Notification\AccountActivity` holds the two kinds as constants and the sentence for
+   each; `ProfileServiceProvider` records by those constants, so nothing the add-on
+   records is without a sentence. The two strings that were handed to
+   `recordAccountEvent()` and never used ("Profile updated", "Signed out other sessions")
+   are gone with its third parameter, and so is `corexAccount.i18n.session`, the word the
+   script fell back to for a session with no user agent: the server names every session.
+3. *A kind the add-on does not know.* **Not listed.** Weighed: the internal name, which
+   is the defect; a sentence that fits anything ("Something else happened on your
+   account"), which says nothing and, for an administrator, would be most of the list;
+   leaving it out. The block's list is the account's own activity. What an administrator
+   did in the admin has its screens there.
+   So that an unlisted event does not take the place of a listed one, the stream is asked
+   for the newest ten of each listed kind and the newest ten of those are kept
+   (`NotificationService::newest()`). The stream filters by one kind at a time; with two
+   kinds that is two questions of ten rows each, on a table indexed by actor and by kind.
+   Asking for the person's newest ten and dropping the rest afterwards would list nothing
+   for a saved profile followed by ten exports: the integration test holds that case,
+   with twelve.
+   Not built: a way for another module to add a sentence. One existing kind would use it
+   (`access.request.created`, whose actor is the member who asked), and nothing asks for
+   it yet.
+4. *The date.* The site's date format and time format (Settings → General), in its
+   timezone and language, each made by `wp_date()` and joined by a translatable pattern,
+   `%1$s at %2$s`: "October 13, 2026 at 4:23 pm". `Support\SiteDate` does it. CoreX's
+   admin screens have a fixed format of their own (`AdminDateTime`, spec 076), chosen for
+   the operator. The account block is a page of the site, where the theme prints a post's
+   date by the site's settings, so it follows those. Not a relative time ("2 hours ago"):
+   it goes stale on a page left open. The instant itself stays in the answer as
+   `occurredAt`, ISO 8601, for a program.
+   The route answers in the site's language and not in the member's own: WordPress uses a
+   person's language for a REST request only when it is asked to (`_locale=user`), and
+   the page the rows are printed in is in the site's language too.
+5. *What names a session.* The browser and the system its user agent names, with no
+   version: "Chrome on Windows". `Session\DeviceName` holds six patterns for browsers and
+   seven for systems, tried in an order that puts the more specific first (Edge says
+   Chrome and Safari; an iPhone says "like Mac OS X"; Android says Linux). No parsing
+   library: what a person can check against the device in their hand is those few names,
+   and a library's database is a dependency to keep current for the versions that are
+   left out here on purpose. What it cannot tell: a browser built on Chrome that sends
+   Chrome's string (Brave, Vivaldi) is "Chrome"; an iPad asking for desktop pages is
+   "Safari on macOS"; a program that names no browser is "Unknown browser", with its
+   system when it names one. Under the name, when the session signed in: "Signed in
+   October 13, 2026 at 4:23 pm". That is what tells two sessions from one browser apart;
+   two that signed in within the same minute read the same.
+6. *The IP address.* **Not shown. My reading, and the owner's to overrule.** WordPress
+   records `$_SERVER['REMOTE_ADDR']` for a session (`WP_Session_Tokens::create()`).
+   Behind a proxy or a CDN that is the proxy's address unless the host puts the visitor's
+   back, and then every session shows the same one. An address tells most people
+   nothing, and it is personal data on a page that is read over a shoulder. `ip` and `ua`
+   are still in the route's answer, as they were: it is the person's own data, given to
+   that person.
+7. *When the lists are asked for again.* Both, after a profile that was saved and after
+   a session button that was answered: both record activity. Not after a profile that
+   was refused, where nothing was done. Not after **Sign out everywhere** that was taken
+   (FR-161f): the page is loaded again.
+
+**How a row is drawn.** `<li class="corex-account__entry">` holding
+`corex-account__entry-main` and `corex-account__entry-meta`; a line the server left empty
+is not drawn (a session WordPress recorded no sign-in time for is its name alone). The
+first line is in the page's ink and the second in `ink-soft` at the `sm` size. The rows
+have no bullets, start where their heading starts and stand one spacing step (`30`) apart.
+The two `<ul>`s have `role="list"`: Safari with VoiceOver is known not to announce a list
+whose bullets are taken away. That was not measured here.
+
+**Measured after the change**, same install, Chromium 153, at 1280 and 375 pixels, with
+the page's direction set left to right and right to left, and once more with the site
+switched to Arabic:
+
+| What was looked at | What is there |
+|---|---|
+| a row of recent activity | "Your profile was updated." over "October 13, 2026 at 1:32 pm" |
+| the administrator's export | not listed |
+| a session | "Chrome on Windows" over "Signed in October 13, 2026 at 1:32 pm"; "Safari on iPhone" for the second browser |
+| a row's height | 48 px at both widths (25.6 px and 22.4 px), one line each |
+| rows apart | 10.7 px, the `30` step; the first row 0 px under its heading, as the sentence of an empty list is |
+| where a row starts | at its heading's own edge: 256 px at 1280 and 0 px at 375 left to right; 1024 px and 375 px right to left |
+| contrast on the page's white | 17.93 to 1 for the first line, 5.80 to 1 for the second |
+| sideways scrolling | none in the four windows |
+| after **Save profile** | `POST account/profile`, `GET account/sessions`, `GET account/notifications`; the save is the first row |
+| after **Sign out other sessions** | the other browser's row is gone and "Your other sessions were signed out." is the first row |
+| the site in Arabic | "أكتوبر 13, 2026 at 1:33 م": the month and the am/pm mark from WordPress's Arabic pack; the sentences, "Signed in" and "at" in English, because CoreX has no Arabic catalogue (`PROJECT-STATUS.md`) |
+
+**Tests.** `tests/Unit/Profile/DeviceNameTest.php` (twelve user agents by name, three
+that name no browser, and that the name is handed to a translator in two parts),
+`AccountActivityTest.php`, `NotificationListTest.php`, `AccountRendererTest.php` (the
+role). `tests/Integration/Profile/AccountListRowsTest.php`, through the real REST server
+with the site set to `Asia/Riyadh`, `j F Y` and `H:i`: half past nine in the evening UTC
+is "14 October 2026 at 00:30"; a saved profile is listed as its sentence; twelve later
+exports by the same person neither show nor push it out; the newest ten of both kinds
+come newest first; a session is "Firefox on Linux", "Signed in 14 October 2026 at 00:30".
+`tests/corex-account.test.js`: a row is the lines the server gave; both lists are asked
+for again after a save and after a session button, and neither after a refused save.
+`tests/e2e/product-surfaces.spec.js`: the two lines and their alignment in the four
+windows; a session named and nothing of its user agent or address printed; a profile
+saved for real, as it is, listed without the page being loaded again. Each of the three
+new browser tests (the first in one of its four windows) was run against the script and
+stylesheet as they were, and failed.
+
+**Not done, and recorded in `PROGRESS.md`.** Signing in, a changed or reset password, a
+new account and **Sign out everywhere** write no activity event, so the list does not
+show them. Whether WebKit calls the two lists lists was not measured. A page that holds
+the block twice still fills one block's lists (#345 recorded it).
+
+**Client impact.** `GET corex/v1/account/notifications` answers with the two kinds only,
+where it answered with everything the person was the actor of; each event gained `label`
+and `when`, and each session `device` and `signedIn`. A row's markup changed and the
+lists have no bullets. Six strings are new in the `corex` text domain. Nothing under
+`sites/` in the Muva or Perego checkouts names the block, its lists or the routes (read
+on this machine, 2026-10-13). Nothing to rebuild.
+
 ## #349 — The account block's session in use is known by the record WordPress holds for it, not by a key WordPress never hands over
 
 **Date:** 2026-10-13. **Branch:** `fix/account-session-this-device`, on top of #345's branch
@@ -13489,3 +14228,130 @@ sessions" now ends with " — this device". No new string (`this device` was tra
 never shown), no change to the route's shape, nothing to do. Code that called
 `SessionList::format()` with a verifier as its second argument now fails with a type
 error; nothing in this repository did but `SessionService`.
+
+## #350 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
+
+**Date:** 2026-10-13. **Branch:** `fix/access-route-refusals`. **Found by:** the measurement
+for #343, which posted an access request with an empty reason and was answered 500.
+**Decided by:** me, from the measurements below. The owner's brief named the two answers to
+choose between (a 400, or a 200 with a `blocked` result as a duplicate is answered in #343),
+asked what a script reading status codes then sees, asked for the sibling routes to be read
+for the same throw, and said to build it if it was a plain defect.
+
+**What the code did.** `AccessService` and `AccessPolicy` refuse what they are handed by
+throwing `InvalidArgumentException`, and `Confirmation` does the same in its constructor.
+The form on a denied screen catches it. `AccessController` caught nothing, so each was
+WordPress's fatal error: 500, "There has been a critical error on this website", and a
+"PHP Fatal error: Uncaught" line in the PHP log for each request.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, over HTTP
+with a REST nonce, mail answered for by `pre_wp_mail`; 31 requests, of which 21 were
+answered 500, each with a fatal error in the log):
+
+| Sent | To | Answer |
+|---|---|---|
+| an empty reason; no body at all | `POST access/requests`, as an editor | 500 |
+| an ability CoreX does not have; an area it does not have (`forms`, where the area is `forms-flows`) | the same | 500 |
+| an ability and an area; neither | the same | 500 |
+| a reason of 2,001 characters | the same | 500 |
+| a reason that is a list | the same | 200, and a request stored with the reason "Array" |
+| a key of `changes` that is not an ability; a value that is not an effect, or is a list | `POST access/roles/editor/preview`, as an administrator | 500 |
+| `changes` that is a list, or has the key `"123"` | the same | 500, a `TypeError`: PHP keeps such a key as an integer and the catalog takes a string |
+| `role` in the body as `!!!` | the same, and `GET access/roles/editor?role=!!!` | 500 |
+| `role` in the body as a list | `POST access/roles/editor/preview` | 200, a preview for a role named `array` |
+| no confirmation; one that is a string; no kind of operation; a hash that is not one; an actor of 0; an expiry or a use that is not a time | `POST access/roles/editor/apply` | 500 |
+| a confirmation that can be read and confirms another change | the same | 200, `blocked`, `confirmation_invalid` |
+| a decision on a request that is not there, with no body or a note that is a list | `POST access/requests/999999/decision` | 200, `blocked`, `request_not_pending` |
+
+The brief's lead read the 2,001-character reason and did not post it; it was posted here.
+The four requests that sent a list where text was meant also wrote "Array to string
+conversion" to the log.
+
+**1. The answer is 400, not 200 with `blocked`.** Three reasons.
+
+- *What a script reading status codes sees.* These were 500. Answered 400, a script that
+  treats anything outside 2xx as "not done" is right before and after. Answered 200, a
+  request that created nothing would move from "failed" to "succeeded" for that script. A
+  duplicate (#343) is different: it was 200 before, and stays 200.
+- *It is not the same kind of no.* Every `blocked` answer in this family is about how
+  things stand: a request no longer pending, a change the safety policy stops, a
+  confirmation for another change, a duplicate. The same request might be taken at another
+  time. An empty reason or a key CoreX does not have is refused however often it is sent.
+- *Two of the routes that read what is sent have no result to block.* A preview answers a preview, and the
+  role route a hash. One rule for the controller needs an answer every route can give.
+
+**2. The body is WordPress's own for a refused parameter.** `code` is `rest_invalid_param`,
+`data.status` is 400, `data.params` maps the parameter to the message and `data.details`
+gives it a code of its own (`reason_required`, `reason_too_long`, `target_required`,
+`target_ambiguous`, `ability_unknown`, `area_unknown`, `effect_unsupported`, `role_invalid`,
+`confirmation_malformed`). A client that reads WordPress's answer for a parameter WordPress
+refuses reads this one. These routes already answer WordPress's bodies for 401 and 403, so
+a caller already meets that shape outside 2xx. The message for an empty reason is the one
+the form on a denied screen shows. It is built as a `WP_REST_Response` with the status, as
+`JobController` and `SecuritySettingsController` build theirs, so no method's return type
+changed.
+
+**3. The service says which refusal it is.** `Corex\Access\InvalidAccessInput` extends
+`InvalidArgumentException` and carries the parameter and the code. The service, the policy
+and the controller's reading of a confirmation throw it for what a caller sent. The
+controller catches that class and nothing wider. A plain `InvalidArgumentException` (no
+requester, a request already run out, a change with no actor) is a mistake in CoreX and is
+still answered as one: a 400 there would tell a caller to correct a request with nothing
+wrong in it. The form's `catch (InvalidArgumentException)` still catches the new class,
+and what a person sees on a denied screen is unchanged.
+
+**4. A parameter that is not text is read as nothing.** A list read as text is the word
+"Array" and a PHP warning. A reason that is a list is now `reason_required` and stores
+nothing; a role that is a list is `role_invalid`; an effect that is a list is
+`effect_unsupported`, as before, without the warning.
+
+**5. A confirmation that cannot be read is 400; one that can and does not confirm is still
+`blocked`.** The second is the service's answer and was not changed.
+
+**Left as it is, deliberately.** Each is under "Open, and not hidden" in `PROGRESS.md`.
+
+- **A `role` in the body or the query is read before the one in the address.** It is how
+  WordPress orders a request's parameters, and its own routes do the same with `id`.
+- **A change to a role nobody has is taken.** Measured through the service:
+  `probe_no_such_role` was previewed as allowed, the change answered `completed` and the
+  grant was stored. A role key is checked for its form only.
+- **`changes` that is a string, or missing, is read as no changes** and answered 200.
+- **The routes declare no `args`.** WordPress could refuse a wrong type before the
+  controller ran. It could not know an ability from a key that is not one, so the service's
+  refusal would still need an answer, and that answer is what this change is.
+
+**Tests.** Unit: the service's seven refusals of a request and the policy's four of a
+change name the parameter and the code; a role key that is not one is refused for a
+preview and for a hash; a caller's own mistake is not the new class. The store, the
+activity record, the mailer and the user directory are mocks that fail the test when
+called. Integration, through WordPress's REST server against the real tables
+(`tests/Integration/Access/AccessRouteRefusalTest.php`): nine request bodies, seven role
+changes at the preview and when applying, the role route, and seven confirmations are
+answered 400 with the parameter and the code, and leave no request, no audit entry, no
+notification and no grant; a reason of exactly 2,000 characters is taken; a readable
+confirmation for another change is still `blocked`. A PHP warning while a route answers
+fails the test. Before the change 24 of its 26 failed; the two that passed hold the
+borders.
+
+Fourteen pieces of the change were then put back one at a time and the tests run. A test
+failed for twelve. One had changed nothing (a confirmation that is not a map was already
+read as an empty one) and was taken out of the change. One had no test: reading an effect
+that is a list as text gave the same 400 with a warning, which is why a warning now fails
+the test; put back again, it fails.
+
+Also run on a trial merge with `fix/access-request-duplicate` (#343, PR #387), which
+changes the same service and the store's interface: no conflict in the code, the tests,
+the guide or the specs, and the access tests pass. #387 merged before this did; `main`
+was merged in, and the bullet #343 left for this defect under "Open, and not hidden" was
+taken out. The details of a request are still checked before the question #343 asks, so a
+repeat with an empty reason is answered 400 for its reason.
+
+**Measured after the change**, the same 31 requests: the 21 that were 500 and the two
+that were taken for something nobody asked (the reason "Array", the role `array`) are
+answered 400, the other eight as before, with no fatal error and no warning in the log.
+
+**Client impact.** A script that calls these routes is answered 400 where it was answered
+500. Read on this machine on 2026-10-13: nothing under `sites/` in the Muva or Perego
+checkouts names the routes, `AccessService` or `AccessPolicy`. `AccessPolicy::preview()`
+and `AccessService` throw a subclass of what they threw, so a `catch` written for them
+still catches.

@@ -26,6 +26,13 @@ final class AccountService
      */
     public const MAX_EMAIL_LENGTH = 100;
 
+    /**
+     * What an account's display name is held in. WordPress does not refuse a longer one: it
+     * keeps the name the account had, and with it everything else of the account's row, and
+     * reports no error. So it is refused here, where a reason can be given (DECISIONS #340).
+     */
+    public const MAX_DISPLAY_NAME_LENGTH = 250;
+
     public function __construct(private readonly AuthGateway $gateway)
     {
     }
@@ -50,7 +57,8 @@ final class AccountService
             return $passwordError;
         }
 
-        $usernameError = $this->usernameProblem($request->username);
+        $username      = $this->chosenUsername($request);
+        $usernameError = $this->usernameProblem($username);
         if ($usernameError !== null) {
             return $usernameError;
         }
@@ -59,7 +67,7 @@ final class AccountService
             return AccountResult::fail('email_taken', __('An account with that email already exists.', 'corex'));
         }
 
-        $login = $this->loginFor($request);
+        $login = $this->loginFor($username, $request->email);
         if ($login === '') {
             return AccountResult::fail(
                 'username_required',
@@ -71,25 +79,41 @@ final class AccountService
             return AccountResult::fail('username_taken', __('That username is taken. Please choose another.', 'corex'));
         }
 
-        return $this->gateway->createUser($request->email, $login, $request->password, $this->nameFor($request));
+        return $this->gateway->createUser(
+            $request->email,
+            $login,
+            $request->password,
+            $this->nameFor($username, $request->email),
+        );
+    }
+
+    /**
+     * The username somebody chose, and an empty string when they chose none. Their own address
+     * in the username field is no choice: a browser writes a saved address into a field it is
+     * told is a username, and an address is not always a username an account can have. The
+     * two are compared without regard to capitals, as an account is looked up.
+     */
+    private function chosenUsername(RegistrationRequest $request): string
+    {
+        return strcasecmp($request->username, $request->email) === 0 ? '' : $request->username;
     }
 
     /**
      * With no username the gateway says what the login is, and the person signs in with the
      * address whatever it is.
      */
-    private function loginFor(RegistrationRequest $request): string
+    private function loginFor(string $username, string $email): string
     {
-        return $request->username !== '' ? $request->username : $this->gateway->loginForAddress($request->email);
+        return $username !== '' ? $username : $this->gateway->loginForAddress($email);
     }
 
     /**
      * What the account goes by is made from what was typed, not from the login: a login made
      * for an address is nobody's choice.
      */
-    private function nameFor(RegistrationRequest $request): string
+    private function nameFor(string $username, string $email): string
     {
-        return PublicName::forLogin($request->username !== '' ? $request->username : $request->email);
+        return PublicName::forLogin($username !== '' ? $username : $email);
     }
 
     public function login(string $login, string $password, bool $remember): AccountResult
@@ -150,8 +174,9 @@ final class AccountService
             return $emailError;
         }
 
-        if (isset($fields['display_name']) && trim($fields['display_name']) === '') {
-            return AccountResult::fail('empty_display_name', __('Display name cannot be empty.', 'corex'));
+        $nameError = isset($fields['display_name']) ? $this->displayNameProblem($fields['display_name']) : null;
+        if ($nameError !== null) {
+            return $nameError;
         }
 
         return $this->gateway->updateProfile($userId, $fields);
@@ -175,6 +200,43 @@ final class AccountService
         }
 
         return null;
+    }
+
+    /**
+     * A name is measured as the account would hold it, which can be longer than it was typed:
+     * WordPress holds an ampersand as five characters.
+     */
+    private function displayNameProblem(string $name): ?AccountResult
+    {
+        if (trim($name) === '') {
+            return AccountResult::fail('empty_display_name', __('Display name cannot be empty.', 'corex'));
+        }
+
+        if ($this->characters($this->gateway->displayNameAsKept($name)) <= self::MAX_DISPLAY_NAME_LENGTH) {
+            return null;
+        }
+
+        return AccountResult::fail('display_name_too_long', $this->tooLongDisplayNameMessage($name));
+    }
+
+    private function tooLongDisplayNameMessage(string $name): string
+    {
+        if ($this->characters(trim($name)) <= self::MAX_DISPLAY_NAME_LENGTH) {
+            // Within the number as typed: naming the number would send the person in a circle.
+            return __('That display name is too long to keep, because a character such as & or < is kept as several. Please shorten it.', 'corex');
+        }
+
+        return sprintf(
+            /* translators: %d: the most characters an account's display name can have. */
+            __('That display name is too long to keep. Please use one of %d characters or fewer.', 'corex'),
+            self::MAX_DISPLAY_NAME_LENGTH,
+        );
+    }
+
+    /** How long the database finds a text: it counts characters, and a letter can be several bytes. */
+    private function characters(string $text): int
+    {
+        return mb_strlen($text, 'UTF-8');
     }
 
     /**

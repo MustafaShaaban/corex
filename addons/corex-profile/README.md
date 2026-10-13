@@ -17,8 +17,9 @@ theme only presents it.
   `wp_unique_prefixed_id()`: it counts the account blocks rendered in the request.
   Each field also says what it is for with an `autocomplete` value (`username`,
   `current-password`, `new-password`, `email`, `nickname`, `given-name`, `family-name`),
-  which a browser and a password manager read. Registration's optional username has
-  none; the profile guide says why.
+  which a browser and a password manager read. A browser writes a saved email address
+  into a field marked `username`, registration's optional one too, and the account takes
+  the person's own address there as no username (under Security).
 - **`corex/v1/account/*` REST routes** — `login`, `register`, `reset-request`, `reset`
   (public auth endpoints), and `profile`, `sessions`, `sessions/revoke-others`,
   `sessions/revoke-all`, `notifications` (require a signed-in user + REST nonce).
@@ -35,12 +36,20 @@ theme only presents it.
   when the list could not be loaded. The four sentences are handed to the script as
   `corexAccount.i18n.noSessions`, `sessionsNotLoaded`, `noActivity` and
   `activityNotLoaded`. After **Sign out everywhere** the page is loaded again.
-- **The session in use** is the row of active sessions that ends with " — this device"
-  (`corexAccount.i18n.thisDevice`): the one whose `current` is true in the answer of
-  `GET corex/v1/account/sessions`. The server marks the session of the cookie the request
-  came with, and no other; a request with no session cookie (an application password)
-  marks none. A row is `current`, `login`, `expiration`, `ip` and `ua`, and never a
-  token or its hash.
+- **A row of either list is two lines the server worded**, which the script prints as they
+  came: `<li class="corex-account__entry">` holding a `corex-account__entry-main` and a
+  `corex-account__entry-meta`. A session is its `device` ("Chrome on Windows") and its
+  `signedIn` ("Signed in October 13, 2026 at 4:23 pm"); an event is its `label` ("Your
+  profile was updated.") and its `when`. Dates are in the site's date and time format and
+  its timezone (Settings → General). The user agent and the IP address are in the route's
+  answer, as before, and are not printed. Both lists are asked for again after a profile is
+  saved and after a session button is answered.
+- **The session in use** is the row of active sessions whose first line ends with
+  " — this device" (`corexAccount.i18n.thisDevice`): the one whose `current` is true in
+  the answer of `GET corex/v1/account/sessions`. The server marks the session of the
+  cookie the request came with, and no other; a request with no session cookie (an
+  application password) marks none. A row of the answer is `current`, `login`, `expiration`, `ip`, `ua`,
+  `device` and `signedIn`, and never a token or its hash.
 - **With scripting off** the block shows a note above its forms
   (`<noscript><p class="corex-account__noscript">`) saying that they need JavaScript. A
   form sent anyway goes to the page's own address, which does not answer it: the forms do
@@ -56,7 +65,10 @@ theme only presents it.
 | Naming | `Account\PublicName` | The name a new account goes by: the username that was typed, or the part of the address before the @ when none was, or when an address was typed as the username. Pure. |
 | Reset | `Reset\ResetEmailLink`, `Reset\ResetLanding`, `Reset\ResetTicket`, `Reset\AccountPageMark`, `Reset\ResetLink` | A forgotten password is reset on the page the block is on: the email's link, the visitor's arrival, where the key is kept, and how the page is named. |
 | Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak), marks the one the request was made with by the record WordPress holds for it, and ends other/all sessions via core helpers. |
-| Notifications | `Notification\NotificationService` | The signed-in user's own activity, projected from the shared core activity stream. |
+| Sessions | `Session\DeviceName` | The browser and system a user agent names, without a version. Pure; a few patterns, no parsing library. |
+| Notifications | `Notification\NotificationService` | The signed-in user's own account activity, projected from the shared core activity stream: the newest ten events of the kinds `AccountActivity` lists. |
+| Notifications | `Notification\AccountActivity` | The kinds the add-on records (`profile.updated`, `sessions.revoked_others`) and the sentence for each. |
+| Dates | `Support\SiteDate` | An instant in the site's date format, time format and timezone, by `wp_date()`. |
 | Presentation | `Block\AccountRenderer` | Pure, fully escaped HTML for the block. |
 
 Every account operation returns a typed `Account\AccountResult` — no caller infers success
@@ -96,6 +108,26 @@ page in 50.
 
 An address of 60 characters or fewer is the login, as before. Covered by
 `tests/Integration/Profile/RegistrationLongAddressTest.php`.
+
+## A long display name
+
+WordPress holds a display name in 250 characters, and it holds the name as it cleans it, not
+as it was typed: an `&` is kept as `&amp;`, five characters, and a `<` that opens no tag as
+`&lt;`. It does not refuse a longer one. `wp_update_user()` hands back the account's id,
+the account keeps the name it had, and nothing else of the account's row is saved either
+(a website address sent with it was not, as measured), while a last name sent with it is.
+
+So the Profile form refuses it, with the code `display_name_too_long` and nothing saved.
+`WordPressAuthGateway::displayNameAsKept()` gives the name as WordPress would hold it
+(`sanitize_text_field()`, then the `pre_user_display_name` filters), and
+`AccountService::MAX_DISPLAY_NAME_LENGTH` is the 250 it is counted against, in characters.
+A name over 250 as typed is told the number; one within it as typed and over it as kept is
+told that a character such as `&` is kept as several.
+
+A name of up to 250 characters is saved. The record of the change on the activity stream
+holds a name in 191 characters (`Corex\Activity\ActivityEvent::LONGEST_TEXT`), and
+`ActivityService::record()` cuts a longer one to 190 and an ellipsis; the account keeps the
+whole name. Covered by `tests/Integration/Profile/ProfileDisplayNameLengthTest.php`.
 
 ## A forgotten password
 
@@ -139,7 +171,10 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
 - A username WordPress would store as a different one (`CORP\salma` as `CORPsalma`) is
   refused with the code `invalid_username`, by WordPress's own `validate_username()`. With
   no username the login is the email address, or one made from it when the address is over
-  60 characters, and the person signs in with the address.
+  60 characters, and the person signs in with the address. A username that is the
+  person's own address, in any capitals, is no username: `AccountService::register()`
+  does not judge it, because a browser writes a saved address into that field and an
+  address can hold a `+` or be longer than a login.
 - Login delegates to `wp_signon`, inheriting core's auth filters and any login hardening.
 - A password is handed to WordPress with `wp_slash()`, as WordPress's own screens hand it
   over, at registration, reset and sign-in. An account the add-on hashed as typed before
@@ -158,18 +193,23 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
 ## Testing
 
 - Unit: `tests/Unit/Profile/` — `AccountServiceTest`, `SessionListTest`,
-  `NotificationListTest`, `AccountRendererTest`.
+  `NotificationListTest`, `AccountRendererTest`, `DeviceNameTest` (which browser and system
+  a user agent is named as), `AccountActivityTest` (a sentence for each kind the add-on
+  records, none for another).
 - Script: `tests/corex-account.test.js` (Jest) — where an answer is written, that one is on
   the page at a time, how the line is brought into view, and what is said when a request
   gets no answer the script can read; and what each of the two lists shows: its rows, that
-  there is nothing to list, or that it could not be loaded.
+  there is nothing to list, or that it could not be loaded; that a row is the lines the
+  server gave, and that both lists are asked for again after a press that was taken.
 - Browser: `tests/e2e/product-surfaces.spec.js` — the message is inside the window, under
   its button and as wide as the fields, on a desktop and a phone, in both directions; a
   sign-in whose request is aborted, or answered with an error page, says so in its form;
   with scripting off the note is above the forms and inside the window; a signed-in
   person's two lists say so when their requests are aborted, answered with an error page or
   refused, in a box a step under the heading and a step above the session buttons; exactly
-  one listed session says "this device"; **Sign out everywhere** loads the page again.
+  one listed session says "this device"; **Sign out everywhere** loads the page again; a row of either list is two lines that start where
+  its heading starts, in the four windows; a session is named by its browser and system;
+  a saved profile is listed without the page being loaded again.
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
@@ -177,12 +217,19 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
   WordPress is told which session is theirs: the only one, the right one of two, one of
   two that hold the same record, none without a session cookie, and no token in a row.
   `tests/Integration/Profile/RegistrationUsernameTest.php` — which usernames the register
-  route refuses and which it keeps.
+  route refuses and which it keeps, and that the person's own address is no username.
   `tests/Integration/Profile/PasswordSignsInEverywhereTest.php` — a password with a quote
   or a backslash signs in at the add-on and the way `wp-login.php` checks it. `tests/Integration/Profile/ProfileNamesKeepBackslashesTest.php`
   — a profile's names are saved as written.
   `tests/Integration/Profile/RegistrationLongAddressTest.php` — an address too long to be a
   login registers, and one too long for an account is refused.
+  `tests/Integration/Profile/AccountListRowsTest.php` — what the two list routes answer: a
+  sentence and a date in the site's timezone and format, only the add-on's own kinds, the
+  newest ten of them, and a session's device and sign-in time.
+  `tests/Integration/Profile/ProfileDisplayNameLengthTest.php` — through the Profile route:
+  a display name of up to 250 characters is saved and its change recorded, a longer one is
+  refused with nothing saved, and an account given a long name on a WordPress screen keeps
+  working.
   `tests/Integration/Profile/ResetOnTheAccountPageTest.php` — where a reset email links to,
   and what the account page makes of the key.
 - Browser: `tests/e2e/account-reset.spec.js` — a forgotten password is reset on the account
