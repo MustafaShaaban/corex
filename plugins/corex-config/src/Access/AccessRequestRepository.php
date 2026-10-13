@@ -26,11 +26,49 @@ final class AccessRequestRepository implements AccessRequestStore
     /** How many open requests one read returns. See {@see pending()}. */
     private const PENDING_LIMIT = 100;
 
+    /**
+     * How long a second ask waits for the first to finish before it gives up.
+     *
+     * What it waits for is one read and one insert, so this is only ever reached by a database
+     * that has stopped answering.
+     */
+    private const LOCK_WAIT_SECONDS = 5;
+
     public function __construct(private readonly Migrator $migrator)
     {
     }
 
-    public function create(
+    public function createUnlessPending(
+        int $requesterId,
+        ?string $abilityKey,
+        ?string $areaKey,
+        string $reason,
+        DateTimeImmutable $createdAt,
+        DateTimeImmutable $expiresAt,
+    ): ?int {
+        global $wpdb;
+
+        // One requester's asks go one at a time. The table cannot refuse the second row itself:
+        // a person may have any number of decided requests for one ability and only one open, and
+        // a unique index cannot say "only among the open ones". A named lock is held by this
+        // connection and let go by MySQL if the request dies, so nothing is left to clear.
+        $lock = $this->lockName($requesterId);
+        if ((int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $lock, self::LOCK_WAIT_SECONDS)) !== 1) {
+            throw new RuntimeException('CoreX could not create the access request.');
+        }
+
+        try {
+            if ($this->pendingFor($requesterId, $abilityKey, $areaKey) !== null) {
+                return null;
+            }
+
+            return $this->insert($requesterId, $abilityKey, $areaKey, $reason, $createdAt, $expiresAt);
+        } finally {
+            $wpdb->query($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock));
+        }
+    }
+
+    private function insert(
         int $requesterId,
         ?string $abilityKey,
         ?string $areaKey,
@@ -174,6 +212,20 @@ final class AccessRequestRepository implements AccessRequestStore
     private function table(): string
     {
         return $this->migrator->fullName(AccessTables::REQUESTS);
+    }
+
+    /**
+     * A name no other site on the same database server arrives at.
+     *
+     * MySQL's named locks are shared by every database on the server, so the name carries the
+     * database and the table, which carries the site's prefix. Hashed because a name may be no
+     * longer than 64 characters.
+     */
+    private function lockName(int $requesterId): string
+    {
+        global $wpdb;
+
+        return 'corex_access_' . md5($wpdb->dbname . '|' . $this->table() . '|' . $requesterId);
     }
 
     private function date(DateTimeImmutable $date): string

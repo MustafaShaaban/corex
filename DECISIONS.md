@@ -12869,3 +12869,94 @@ Ten lines of the change were then put back one at a time and the tests run. A te
 for nine. The tenth, the end of the key in the pattern that finds the address, got a case
 of its own (a longer key that begins with the email's key is another key), and fails with
 it.
+
+## #343 — One open access request per person per ability or area, asked where the request is stored
+
+**Date:** 2026-10-13. **Branch:** `fix/access-request-duplicate`. **Found by:** the
+measurement for #340, which posted the same request twice and counted two rows. **Decided
+by:** me, from the measurements below. The owner's brief named the questions (where the
+rule belongs, what the route answers, whether an area needs it) and said to build it if it
+was a plain defect. It is what spec 079 already requires (FR-008: "Duplicate submission
+MUST be prevented server-side"), kept by one caller of two.
+
+**What the code did.** `AccessService::requestAccess()` stored whatever it was handed.
+`AccessRequestFormController`, where the form on a denied screen posts, asked
+`pendingRequestFor()` first and stored nothing for a repeat. `AccessController`, the REST
+route, did not ask. `pendingRequestFor()` took an ability key only, so no caller could ask
+about a request for an area.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, over HTTP,
+signed in as an editor with a REST nonce, mail answered for by `pre_wp_mail`):
+
+| Posted to `corex/v1/access/requests` | Answer | Stored |
+|---|---|---|
+| `ability: corex_manage_forms`, twice | 200 "The access request was created.", twice | two requests, two `access.request.created` audit entries, two notifications (`access.request:<id>`, one per request) |
+| `area: forms-flows`, twice | the same | the same |
+| the same ability twice, on a site with an email route for `access.request.created` | the same | and two emails handed to `wp_mail()` |
+
+A fresh install has no such route, so there the repeat cost the administrators a second
+line in the Notification Center and the queue a second row to decide.
+
+**1. The rule is part of storing.** `AccessRequestStore::create()` is replaced by
+`createUnlessPending()`, which returns the new id, or `null` when the requester has an open
+request for the same ability or area. `requestAccess()` turns `null` into a `blocked`
+result. There is no method left that stores without asking, so a caller cannot leave the
+question out.
+
+It is in the store and not only in the service because a question followed by an insert
+does not hold for two asks that arrive together, and a second press of a button is that.
+Measured with the question in the service alone, the same request posted to two server
+processes at the same moment: one pair in three stored two requests. With the question and
+the insert under one lock: 36 pairs, one request each, one refusal each.
+
+**2. The lock.** `AccessRequestRepository` takes a MySQL named lock (`GET_LOCK`) for the
+requester, asks, inserts, and releases it in a `finally`. A unique index cannot do it: a
+person may have any number of decided requests for one ability and one open, and an index
+cannot be unique among the open rows only. MySQL lets a named lock go when its connection
+ends, so a request that dies leaves nothing to clear. The name is a hash of the database,
+the table (which carries the site's prefix) and the requester, because named locks are
+shared by every database on a server and a name is at most 64 characters. A second ask
+waits up to five seconds for the first, which is one read and one insert; a wait that runs
+out is thrown as the store's own failure ("could not create"), which the form already
+answers with a reference and "nothing was recorded".
+
+**3. What a repeat is answered.** `200`, a result with `state: blocked`, the error code
+`request_already_pending`, no affected ids, and the message "Your request has already been
+sent. An administrator has been notified and can approve or deny it." Those are the words
+the denied screen shows for an open request ("Your request has been sent", "An
+administrator has been notified and can approve or deny it"), so the route and the screen
+say one thing. `200` and `blocked`, not a 409, because that is how these routes answer
+every refusal the service makes: a decision on a request that is no longer pending, and a
+role change the safety policy stops, are both `200` with a `blocked` result, and the
+operator's guide promises the routes' status codes do not change. No audit entry is
+written for a repeat: the audit log's `access.request.created` means a request was created.
+
+**4. An area is asked about as an ability is,** and for the same target only. A request for
+the area `forms-flows` and one for an ability inside it are two requests: the area is the
+wider ask, and `pendingFor()`'s own contract refuses to treat "any request by this person"
+as a repeat.
+
+**5. The form reads no answer.** Its own question is removed, and with it
+`AccessService::pendingRequestFor()`, which had no other caller. Created or already
+waiting, it sends the browser back to the denied screen, which shows the request that
+stands. What a person sees is unchanged.
+
+**Left as it is, deliberately.**
+
+- **The details are checked before the question.** A repeat with an empty reason is refused
+  for its reason. Through the form nothing visible changes (the screen shows the open
+  request either way). Through the route a refused detail is a 500, which is its own defect
+  and is under "Open, and not hidden" in `PROGRESS.md`.
+- **Requests already stored twice** are not merged or removed.
+- **A site that reads from database replicas** may ask two servers for the lock. Under
+  "Open, and not hidden".
+
+**Tests.** Unit: the service turns the store's `null` into the `blocked` result, records
+nothing and notifies nobody. Integration, against the real table: the route twice, for an
+ability and for an area, leaves one request, one audit entry and one notification; the
+store refuses the repeat and takes a request for something else, from somebody else, after
+a decision and after an expiry; and at the moment the row is written the requester's lock
+is held, and afterwards it is free. Four things were taken out one at a time and the tests
+run: the lock and its release (the lock's test failed for each), the store's question (the
+route's, the form's and the store's repeat tests failed) and the service's reading of the
+store's answer (the unit test failed).

@@ -31,7 +31,8 @@ Error items contain a stable code, safe message, optional field path, and retrya
 - `POST /access/preview` — preview grant/revoke changes and lockout risks
 - `POST /access/apply` — apply a matching confirmed preview
 - `GET /access/requests` — accessible requests
-- `POST /access/requests` — create request
+- `POST /access/requests` — create request; a repeat of the requester's own open request stores nothing and is
+  answered `blocked` with the code `request_already_pending` (spec 079, FR-008a)
 - `POST /access/requests/{id}/decision` — approve or deny pending request
 - `POST /access/grants` — preview or apply send/grant workflow
 
