@@ -10,6 +10,8 @@ namespace Corex\Email\Template;
 
 defined('ABSPATH') || exit;
 
+use Closure;
+
 /**
  * Wraps a rendered body in a shared, on-brand HTML email shell. The brand name,
  * accent color, logo, and text direction are runtime values (from `brand.json`),
@@ -17,23 +19,30 @@ defined('ABSPATH') || exit;
  * custom properties, so the shell uses inline styles; the only literals are
  * functional email-layout structure (the de-facto 600px body width and spacing),
  * never design tokens — the brand values are injected, not hardcoded.
+ *
+ * The brand is what the site is when an email is drawn. Given as a closure it is asked then,
+ * and not when this object is made: the container makes it for whatever needs the mail stack,
+ * which can be while WordPress is still loading plugins, before it knows which way the site's
+ * text runs and before a string may be translated.
  */
 final class Layout
 {
     /**
-     * @param array{name?:string,color?:string,logo?:string,dir?:string} $brand
+     * @param array{name?:string,color?:string,logo?:string,dir?:string}|Closure():array{name?:string,color?:string,logo?:string,dir?:string} $brand
+     *        The brand, or what answers with it when an email is drawn.
      */
-    public function __construct(private readonly array $brand = [])
+    public function __construct(private readonly array|Closure $brand = [])
     {
     }
 
     /** @param array{header?:string,footer?:string,button?:string,accent?:string} $regions */
     public function wrap(string $subject, string $bodyHtml, array $regions = []): string
     {
-        $dir   = ($this->brand['dir'] ?? 'ltr') === 'rtl' ? 'rtl' : 'ltr';
-        $name  = $this->escape($this->brand['name'] ?? '');
-        $color = $this->brand['color'] ?? '';
-        $logo  = $this->brand['logo'] ?? '';
+        $brand = $this->brand instanceof Closure ? ($this->brand)() : $this->brand;
+        $dir   = ($brand['dir'] ?? 'ltr') === 'rtl' ? 'rtl' : 'ltr';
+        $name  = $this->escape($brand['name'] ?? '');
+        $color = $brand['color'] ?? '';
+        $logo  = $brand['logo'] ?? '';
 
         $brandHeader = $logo !== ''
             ? sprintf('<img src="%s" alt="%s" style="max-width:180px;height:auto" />', $this->escape($logo), $name)

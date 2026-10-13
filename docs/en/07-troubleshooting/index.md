@@ -122,11 +122,35 @@ Congratulations! ... https://corex.example.com
 
 ## Boot notices / "headers already sent" in the debug log
 
-**Cause:** historically, eagerly building the mail stack at `plugins_loaded` loaded the textdomain too early.
-This is fixed (DECISIONS #55 — lazy worker registration); a normal request boots with **zero** notices.
+**Symptom:** with `WP_DEBUG` on, every request adds this to `wp-content/debug.log`:
 
-**Fix:** ensure you are on a current version; if you see early-boot textdomain notices in a custom add-on,
-register hooks lazily (on `init`, not `plugins_loaded`).
+```text
+PHP Notice:  Function _load_textdomain_just_in_time was called incorrectly. Translation
+loading for the `corex` domain was triggered too early.
+```
+
+DECISIONS #55 records "headers already sent" warnings beside it.
+
+**Cause:** something read a translated string, or the theme's settings, while CoreX was
+booting on `plugins_loaded`. WordPress has not settled the request's language by then, nor
+which way its text runs. CoreX did this itself twice: before DECISIONS #55, and again in
+v0.45.1 and v0.45.2, where an email drawn through the shared layout was also left-to-right
+on a right-to-left site (DECISIONS #351).
+
+**Fix:** update to the release after v0.45.2. A request then boots without the notice, and
+`tests/Integration/Foundation/BootTranslationsTest.php` fails if a string of the `corex`
+domain is read before `init` again.
+
+If the notice names your own plugin's text domain, or still names `corex` after the update,
+your code is asking for something translated too early. Do not make an object in a service
+provider's `boot()` only to hook one action, because the object brings whatever its
+constructor needs. Hook the action with a closure and make the object there:
+
+```php
+add_action('admin_post_my_action', function (): void {
+    $this->container->make(MyHandler::class)->handle();
+});
+```
 
 ## See also
 

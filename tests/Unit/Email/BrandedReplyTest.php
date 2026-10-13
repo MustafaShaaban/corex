@@ -70,3 +70,17 @@ it('carries the brand direction into the document, so an RTL site sends RTL emai
 
     expect($html)->toContain('<html dir="rtl">');
 });
+
+it('asks for the brand when an email is drawn, not when the layout is made', function () {
+    // The layout is made whenever something needs the mail stack, and that can be while
+    // WordPress is still loading plugins: before it knows which way the site's text runs.
+    $direction = 'ltr';
+    $layout = new Layout(static function () use (&$direction): array {
+        return ['name' => 'Acme', 'dir' => $direction];
+    });
+
+    // What WordPress answers once it has loaded.
+    $direction = 'rtl';
+
+    expect($layout->wrap('Subject', '<p>Body</p>'))->toContain('<html dir="rtl">');
+});

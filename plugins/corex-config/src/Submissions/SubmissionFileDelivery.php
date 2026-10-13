@@ -28,20 +28,13 @@ use DomainException;
  */
 final class SubmissionFileDelivery
 {
-    /** The `admin-post.php` action this listens on. */
+    /** The `admin-post.php` action this answers. The provider hooks it, and makes this when it fires. */
     public const ACTION = 'corex_submission_file';
 
     public function __construct(
         private readonly SubmissionQueryService $submissions,
         private readonly AttachmentDelivery $delivery,
     ) {
-    }
-
-    public function register(): void
-    {
-        add_action('admin_post_' . self::ACTION, [$this, 'serve']);
-        // Signed out as well, so the answer is "sign in" and not admin-post's own "invalid action".
-        add_action('admin_post_nopriv_' . self::ACTION, [$this, 'serve']);
     }
 
     /**

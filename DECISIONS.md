@@ -13709,3 +13709,163 @@ it and hold what must not change.
 answered `403`. `AccessController::requests()` is gone: `pendingRequests()` and
 `createRequest()` are the route's callbacks. Read on this machine on 2026-10-13: nothing
 under `sites/` in the Muva or Perego checkouts names the route or the controller.
+
+## #351 — Nothing of CoreX's is translated before `init`: what answers a submission's file link is made when the link is followed, and an email's layout asks for its brand when it draws
+
+**Date:** 2026-10-13. **Branch:** `fix/boot-reads-translations-before-init`, from `main`.
+**Spec:** none (defect fix).
+
+**What was reported.** Seen on 2026-10-13 on a fresh install with `WP_DEBUG_LOG` on, while
+the Access routes were being fixed: every request wrote "Translation loading for the
+`corex` domain was triggered too early" to `debug.log`. Reproduced on this branch's own
+install (WordPress 7.1.3, PHP 8.3.6, every CoreX plugin and add-on active, the Corex
+theme, `en_US`): one notice for each request of `wp-login.php`, `admin-ajax.php`, a REST
+route, the front page and `wp-cron.php`.
+
+**The chain.** `ConfigServiceProvider::boot()` runs on `plugins_loaded` and made
+`SubmissionFileDelivery` to hook its `admin-post.php` action. That needs
+`SubmissionQueryService`, which needs `SubmissionReplyView`, which needs the
+`SubmissionEmailGateway`, and so Email Studio's service, its template service and the
+email `Layout`. The container's factory for `Layout` read the site's brand as it made
+the object: `wp_get_global_settings()`, which makes WordPress translate the theme's
+`theme.json`, and `is_rtl()`.
+
+**It arrived with pull request #354** (`a1371169`, v0.45.1), which added
+`SubmissionFileDelivery`. Run on three commits with a recorder that hears every string of
+the domain: none read before `init` on `3cd52118` (#337, which added `SubmissionReplyView`)
+or on `3b1c3253` (v0.45.0); 60 on `a1371169`. v0.45.1 and v0.45.2 carry it.
+
+**What a site got from it.**
+
+- The notice, once a request. WordPress logs the first string only; 60 were read, all of
+  them the names in `theme.json` (colours, font sizes, spacing, template parts). WordPress
+  records a path for each active plugin's text domain as it loads the plugin
+  (`wp-settings.php`), so the domain has one before `plugins_loaded` on every site,
+  whatever its language.
+- **An email drawn through `Layout` was left-to-right on a right-to-left site.** WordPress
+  makes the object `is_rtl()` asks after `setup_theme`, which is after `plugins_loaded`;
+  before that the answer is always "no". Measured on this install switched to Arabic: the contact notification was
+  drawn `<html dir="ltr">` on `main`'s code and `dir="rtl"` with this change. An Email
+  Studio template that has a layout is wrapped by the same object
+  (`EmailTemplateService::render()`); that path was read, not drawn. A reply is drawn by
+  `StandardEmailDesign` from `SiteEmailBrand`, which reads the brand when it draws, and was
+  not affected.
+- The theme's settings were read, merged and translated on every request, whether or not
+  it drew an email: three of the fifteen database queries `plugins_loaded` ran.
+- **The strings were not left untranslated**, which is what the report expected. With two
+  Arabic strings given to the install, the colour's name and a string of a plugin came
+  back in Arabic on a site whose language is Arabic, and for an administrator whose own
+  language is Arabic on an English site. What WordPress objects to is that the language is
+  worked out before it has settled; a site whose language is decided by a plugin after
+  `plugins_loaded` was not at hand, and was not measured.
+
+**The decision: two changes, in the two places the chain can be cut.**
+
+1. *What answers the file link is made when the link is followed.* `boot()` hooks
+   `admin_post_corex_submission_file` and its `nopriv` twin with a closure that makes
+   `SubmissionFileDelivery` and calls `serve()`, as the access-request form's handler a
+   few lines above it already is. `SubmissionFileDelivery::register()` is gone. A request
+   that follows no such link no longer builds the inbox's reader and the mail stack: the
+   container has resolved 195 shared entries by the end of `plugins_loaded`, where it had
+   resolved 227 (an interface and the class behind it count as two).
+2. *`Layout` asks for its brand when it draws.* Its constructor takes the brand as before,
+   or a closure that answers with it, and `wrap()` asks. The container gives it the
+   closure. This is what `SiteEmailBrand` already says of itself, "read when an email is
+   drawn"; `Layout` was the one that read when it was made.
+
+Each change alone clears the notice, the direction and the tests below. Both are made
+because they answer different questions. The first is why this request was building any
+of it. The second is why the same notice has now come from the same line twice: #55
+(2026-06-11) was the mail queue's worker reaching `Layout` at boot, and it was put right
+at the caller, which left the read where the next caller found it. A site's own plugin
+that asks for the mailer while it boots would have found it too, and no test here runs
+that plugin.
+
+**Not chosen.**
+
+- *Moving what `boot()` does to `init`.* It registers tables, the schema, the job handlers
+  and every screen's hooks, and a site's plugin may count on them once CoreX has booted.
+  One of its lines was at fault.
+- *Loading the text domain earlier, or switching the notice off.* The notice says the
+  language is not settled yet. Neither changes when it settles, and neither changes what
+  `is_rtl()` answers.
+- *Keeping the brand once it has been asked for.* A draw costs 0.08 ms with the brand
+  asked each time against 0.006 ms with it given (500 draws, this install), and an email
+  is drawn once.
+
+**The tests.** `tests/Integration/Foundation/BootTranslationsTest.php` loads WordPress in a
+process of its own, as `AddonTablesTest` does, with a listener WordPress adopts before it
+loads, on the four `gettext` filters of the `corex` domain. It fails if any string of the
+domain is read before `init` starts, on a front-end request and on an admin one, and names
+the file and line that asked and the action it asked during: on `main`,
+`MailServiceProvider.php:329 during plugins_loaded: 60, the first "Primary"`. It also
+asserts that it heard the domain at all, so a renamed filter cannot make it pass by going
+deaf. A third test loads a right-to-left site (the global a right-to-left language's file
+sets, so no language pack is needed) and reads the direction of an email drawn through
+`Layout`. A unit test holds the second change by itself: a brand that changes after the
+layout is made is the one drawn.
+
+The rule the test holds is the one WordPress prints, `init`. What WordPress checks is
+earlier, `after_setup_theme`, so the test is stricter than the notice. Nothing of CoreX's
+reads between the two today. A string read there on purpose will fail the test and not
+the log; the test's message says where, for whoever has to decide.
+
+What the tests do not hold: that the file link's handler is made late. With the second
+change in place, making it at boot again reads nothing early and no test fails. A count of
+what boot builds was not made a test: it would fail on every provider that adds a screen.
+
+**Measured, on this branch's own install.** One listener on its port; mail answered by an
+mu-plugin before any transport.
+
+| Check | `main` (`38ff9788`) | This branch |
+|---|---|---|
+| Lines one request adds to `debug.log`: `wp-login.php`, a REST route, `admin-ajax.php`, `/` | 56 or 57 each (one notice and its stack, as Xdebug prints it) | 0 each |
+| Strings of `corex` read before `init`, front-end and admin request | 60 | 0 |
+| The contact notification on a site in Arabic | `dir="ltr"` | `dir="rtl"` |
+| Shared entries the container has resolved by the end of `plugins_loaded` | 227 | 195 |
+| Queries during `plugins_loaded` | 15 | 11 |
+| `plugins_loaded`, median of 11 command-line runs, no OPcache | 150 ms | 112 ms, and 118 ms in a second series |
+| `tests/e2e/submission-file.spec.js` (the file opened signed in, refused signed out) | not run here | passes, with pretty permalinks |
+| The file link asked signed out with a nonce that is not one | not run here | `403`, "That link is no longer valid." |
+| Unit suite | not run here | 3,068 passed |
+| Integration suite | not run here | 1,136 passed, 2 warnings (`ComingSoonHeadTest`, an undefined `SERVER_NAME` on the command line; not this change) |
+
+The time is the least firm line: with the first change alone the median was 104 ms and
+with the second alone 123 ms, and the spread between runs was as wide as the difference
+between those and this branch. With the second change alone there are 12 queries, not 11.
+The other lines are counts.
+
+**What else is made on every request and need not be.** Of that chain, nothing now: the
+32 entries it resolved are eleven of the inbox's reader and its replies, and 21 of the mail
+stack. Of what is left, most. The 195 were counted on a front-end request, and an
+admin request makes the same number. By namespace: 24 under `Config\Submissions` (the
+inbox's screen, its export, its trash), 16 under `Config\DataModels`, 14 under
+`Config\Blog`, 13 under `Config\Security`, 12 under `Config\Operations`, 10 under
+`Config\Access`, and the export writers with the PDF one among them. `boot()` makes each
+admin screen, each job handler and each controller of a single `admin-post.php` action to
+call its `register()`, whatever the request is. None of them reads a translation at boot;
+the recorder says so. It is time and memory on every request, measured here only as a
+count, and it is the pattern that produced this defect: an object made to hook one action
+brings whatever its constructor needs. Not changed here. A change of its own would have
+each hook made with a closure, as these two are, or the screens registered only in the
+admin.
+
+**Leads, not built.**
+
+- *An email's direction follows the language of whoever is signed in, not the site's.*
+  For an administrator whose own language is Arabic on an English site, `Layout` drew
+  `dir="rtl"` (measured, with this change). `SiteEmailBrand` asks `is_rtl()` the same
+  way; that one was read, not run. Spec 106 says "a right-to-left site".
+- *On a site without pretty permalinks the Submissions inbox says "The submissions could
+  not be loaded".* Seen in a browser on this install before its permalinks were set.
+  The route answered `200` when asked inside WordPress. `admin/dataClient.js` joins its
+  query with `?` to an address that on such a site already has one, and
+  `Releases/releaseClient.js` joins with `&` there (#296). Which of the inbox's requests
+  failed was not traced.
+
+**Client impact.** A site on v0.45.1 or v0.45.2 whose language is right-to-left has sent
+the emails of the shared layout left-to-right since it took that release, and sends them
+right-to-left again with this one; nothing stored changes. In PHP,
+`SubmissionFileDelivery::register()` is gone, and `Layout`'s constructor also takes a
+closure; an array is taken as before. Read on this machine on 2026-10-13: nothing under
+`sites/` in the Muva or Perego checkouts names either class or the action.
