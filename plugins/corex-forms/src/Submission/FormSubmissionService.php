@@ -17,12 +17,14 @@ use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Validation\Validator;
 use Corex\Http\Middleware\Response;
 use Corex\Security\Upload\AttachmentStorage;
+use Corex\Security\Upload\FormUploads;
 
 /**
  * Orchestrates a submission once the security middleware has run: honeypot check →
- * resolve the form's schema → validate → on success, dispatch the FormSubmittedEvent.
- * Pure of WordPress; every rejection short-circuits before any side effect (FR-008,
- * FR-010, FR-011, SC-006). The side effects themselves live in the listeners.
+ * resolve the form's schema → validate → on success, dispatch the FormSubmittedEvent, and
+ * then announce the submission the listeners stored. Pure of WordPress; every rejection
+ * short-circuits before any side effect (FR-008, FR-010, FR-011, SC-006). The side effects
+ * themselves live in the listeners.
  */
 final class FormSubmissionService
 {
@@ -99,7 +101,7 @@ final class FormSubmissionService
         // Descriptors are validated in place, so `mime` and `max_size` see the real file. Nothing
         // is stored yet: FR-005 says a refused submission leaves no file behind, and the simplest
         // way to guarantee that is to have written nothing when the refusal happens.
-        $result = $this->validator->validate($schema, $this->withDescriptors($schema, $input, $files));
+        $result = $this->validator->validate($schema, FileFieldAnswers::from($schema, $input, $files));
 
         if (! $result->isValid()) {
             return Response::reject(__('Validation failed.', 'corex'), 422, $result->errors);
@@ -110,9 +112,39 @@ final class FormSubmissionService
             return Response::reject(__('The file could not be stored.', 'corex'), 422);
         }
 
-        $this->events->dispatch(new FormSubmittedEvent($slug, $values));
+        $submitted = new FormSubmittedEvent($slug, $values);
+        $this->events->dispatch($submitted);
+        $this->announce($submitted);
 
         return Response::ok($values);
+    }
+
+    /**
+     * Say that a submission was stored, as a form built in Forms & Flows says it
+     * ({@see FlowVisitorSubmissionService}), so the notification centre hears of both. It heard
+     * only of that one, and a site whose forms are all defined in code was told of no submission.
+     *
+     * Said once every listener has run, so the order a form lists its listeners in does not
+     * decide it. A submission nothing stored is not announced: there is nothing in the inbox to
+     * be told of.
+     */
+    private function announce(FormSubmittedEvent $submitted): void
+    {
+        $submissionId = $submitted->submissionId();
+        if ($submissionId === null) {
+            return;
+        }
+
+        $this->events->dispatch(new SubmissionProcessedEvent(
+            submissionId: $submissionId,
+            flowId: SubmissionProcessedEvent::NO_FLOW,
+            flowSlug: $submitted->formSlug,
+            ownerId: null,
+            delivery: $submitted->delivery() ?? NotificationDelivery::notAttempted(
+                'not_reported',
+                __('No listener of this form said how its notification email went.', 'corex'),
+            ),
+        ));
     }
 
     /**
@@ -127,47 +159,6 @@ final class FormSubmissionService
         $token = trim((string) ($input[SubmissionChallenge::TOKEN_KEY] ?? ''));
 
         return ! $this->challenge->verify($token, $form->slug, CodeFormProtection::of($form))->passed;
-    }
-
-    /**
-     * Put each uploaded descriptor where its field's value would be, so the rules can see it.
-     *
-     * @param array<string,FieldSchema>                                                            $schema
-     * @param array<string,mixed>                                                                  $input
-     * @param array<string,array{name?:string,type?:string,size?:int,tmp_name?:string,error?:int}> $files
-     *
-     * @return array<string,mixed>
-     */
-    private function withDescriptors(array $schema, array $input, array $files): array
-    {
-        foreach ($schema as $name => $field) {
-            if ($field->type !== 'file') {
-                continue;
-            }
-
-            // Absent stays absent rather than becoming an empty descriptor: `required` must be able
-            // to tell "no file was sent" from "a file was sent and it failed".
-            if (isset($files[$name]) && ! self::carriesNoFile($files[$name])) {
-                $input[$name] = $files[$name];
-            }
-        }
-
-        return $input;
-    }
-
-    /**
-     * Whether a file part arrived with no file in it.
-     *
-     * A browser posting a form as multipart sends a part for every file input, chosen or not. An
-     * empty one is the visitor leaving the field empty, which is `required`'s to judge. Passed on as
-     * an upload it got past `required`, because a descriptor is not an empty value, and then failed
-     * to be stored.
-     *
-     * @param array{name?:string,type?:string,size?:int,tmp_name?:string,error?:int} $file
-     */
-    private static function carriesNoFile(array $file): bool
-    {
-        return (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE;
     }
 
     /**
@@ -192,7 +183,7 @@ final class FormSubmissionService
                 return null;
             }
 
-            $result = $this->attachments->store($values[$name], 'form-' . $name);
+            $result = $this->attachments->store($values[$name], FormUploads::contextFor($name));
 
             if (! $result->stored) {
                 // A form with two file fields whose second upload fails must not leave the first

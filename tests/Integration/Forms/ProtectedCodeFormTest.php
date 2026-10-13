@@ -30,6 +30,7 @@ use Corex\Http\Middleware\Pipeline;
 use Corex\Security\ChallengeVerifier;
 use Corex\Security\Upload\AttachmentStorage;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\NotificationRows;
 use Corex\Tests\Support\WatchedTransients;
 
 const PROTECTED_PROBE = 'corex-protected-probe';
@@ -37,6 +38,9 @@ const PROTECTED_PROBE = 'corex-protected-probe';
 beforeEach(function () {
     $this->stored     = CreatedPosts::watch('corex_submission');
     $this->transients = WatchedTransients::watch('corex_throttle_');
+    // A stored submission of a form defined in code tells whoever manages submissions. On a
+    // developer's install such a row may be their own: it is handed back as it was.
+    $this->submissionNotifications = NotificationRows::snapshotPrefixed('submission.');
     $this->settings   = [
         'corex_captcha_driver' => get_option('corex_captcha_driver', null),
         'corex_captcha_secret' => get_option('corex_captcha_secret', null),
@@ -62,6 +66,7 @@ beforeEach(function () {
 
 afterEach(function () {
     $this->stored->delete();
+    NotificationRows::restorePrefixed('submission.', $this->submissionNotifications);
     $this->transients->restore();
     foreach ($this->settings as $option => $before) {
         $before === null ? delete_option($option) : update_option($option, $before);

@@ -19,6 +19,7 @@ use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FormSubmissionService;
+use Corex\Forms\Submission\FormSubmittedEvent;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
 use Corex\Security\Upload\AttachmentResult;
@@ -260,4 +261,91 @@ it('refuses the submission when no store is configured, rather than losing the f
     // Accepting it would report success for a submission whose file went nowhere — which is
     // exactly the shape of the careers defect this spec exists to remove.
     expect($response->isOk())->toBeFalse();
+});
+
+/**
+ * What a request can put under a file field's name without sending a file: a number as text, the
+ * same as a JSON number, and an array with the keys of an upload.
+ *
+ * @return array<string,array{0:mixed}>
+ */
+function answersThatAreNotAnUpload(): array
+{
+    return [
+        'a number as text' => ['224'],
+        'a number' => [224],
+        'an array shaped like an upload' => [pdfDescriptor()],
+    ];
+}
+
+/**
+ * A file field's answer is the file the request carried in its file parts, or there is none.
+ * Reported on 2026-10-13 from a client site: what the request's body said under the field's name
+ * was kept as the answer, and reached the listeners as the number of a stored file.
+ */
+it('leaves out what the body says under an optional file field', function (mixed $typed) {
+    $store = new SpyAttachmentStore();
+
+    $response = fileSubmissionService($store)->handle(
+        'enquire',
+        ['name' => 'Sam', 'brief' => $typed],
+        FormSubmissionService::HONEYPOT_KEY,
+        [],
+    );
+
+    expect($response->isOk())->toBeTrue()
+        ->and($response->value)->toBe(['name' => 'Sam'])
+        ->and($store->storedContexts)->toBe([]);
+})->with(answersThatAreNotAnUpload());
+
+it('says a required file is missing whatever the body says under its name', function (mixed $typed, array $files) {
+    $store = new SpyAttachmentStore();
+
+    $response = fileSubmissionService($store)->handle(
+        'apply',
+        ['name' => 'Sam', 'cv' => $typed],
+        FormSubmissionService::HONEYPOT_KEY,
+        $files,
+    );
+
+    expect($response->isOk())->toBeFalse()
+        ->and($response->value['cv'] ?? null)->toBe('required')
+        ->and($store->storedContexts)->toBe([]);
+})->with(answersThatAreNotAnUpload())->with([
+    'and no file part' => [[]],
+    'and an empty file part' => [['cv' => emptyFilePart()]],
+]);
+
+it('hands the listeners no answer for a file field the request sent no file for', function () {
+    $forms = new FormRegistry();
+    $forms->register(new EnquiryTestForm());
+    $listeners = new ListenerProvider();
+    $heard     = [];
+    $listeners->listen(FormSubmittedEvent::class, static function (FormSubmittedEvent $event) use (&$heard): void {
+        $heard[] = $event->values;
+    });
+
+    (new FormSubmissionService(
+        $forms,
+        new SchemaResolver(new RuleRegistry()),
+        new Validator(new RuleRegistry()),
+        new EventDispatcher($listeners, new BootLogger(false)),
+        new SpyAttachmentStore(),
+    ))->handle('enquire', ['name' => 'Sam', 'brief' => '224']);
+
+    expect($heard)->toBe([['name' => 'Sam']]);
+});
+
+it('stores the file that was sent, whatever the body says under the same name', function () {
+    $store = new SpyAttachmentStore();
+
+    $response = fileSubmissionService($store)->handle(
+        'apply',
+        ['name' => 'Sam', 'cv' => '224'],
+        FormSubmissionService::HONEYPOT_KEY,
+        ['cv' => pdfDescriptor()],
+    );
+
+    expect($response->isOk())->toBeTrue()
+        ->and($response->value['cv'])->toBe(901);
 });

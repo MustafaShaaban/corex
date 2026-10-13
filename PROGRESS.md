@@ -107,6 +107,51 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
+installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
+not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
+could not fetch is a line in its log, so its step ended green. `ensure-wp-cli.sh`, beside the
+provisioning action, now asks `wp` for its version after setup-php and, where there is none,
+installs WP-CLI 2.12.0 from its release with the checksum checked. **A run that took the
+fallback is green and carries a warning, "WP-CLI was installed by the fallback"**: count
+those before deciding the fallback is not needed. The release and its checksum are written
+in `action.yml` and nothing updates them; only a run with `wp-cli` taken out of setup-php's
+`tools` proves a new pair. `tests/provision-wordpress-wp-cli.test.js` runs the script in
+each state a runner can be in, with a stand-in for `curl`.
+
+**After v0.45.2, not released, 2026-10-13: a security fix, and the reason for the next
+release.** A form's file field is answered by the file the request carried, and by nothing
+in its text (spec 081, FR-002a, Phase H; DECISIONS #353). What a request's body said under
+a file field's name was kept as the answer when no file arrived, and an answer to a file
+field is read as the number of a stored file. `FileFieldAnswers` is the one place that
+rule is written, asked by `FormSubmissionService` and by the flow pipeline's
+`ValidationStage`. The attachment store asks `is_uploaded_file()` before it reads a path.
+A submission's files are removed with it by field, and not while another submission names
+them. A site's listener asks `Corex\Security\Upload\FormUploads::cameThrough()`. The Data
+import had the same mistake and reads the file part only.
+**Owed:** the Muva and Perego sessions are told what to check in what they store, and
+MUVA's `SendBriefEmails` changes to the call when it takes the release. Leads, not
+built: a flow offers a file question and has no way to take a file; an answer already
+stored that names somebody else's file is still shown by the inbox under both submissions;
+the careers form unslashes its upload's temporary path, which on a Windows host is a path
+with its backslashes removed (read, not run); the flow pipeline validates before it
+protects, and validation passes on the schema's answers only, so the honeypot and the
+challenge token may never reach the stage that reads them (read, not run).
+
+**After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
+raises the New submission notification (DECISIONS #352; the owner's report, relayed by the
+Muva session). `FormSubmissionService` now dispatches `SubmissionProcessedEvent` once the
+form's listeners have run, as the Forms & Flows path always did, and the producer names the
+form through `FlowFilterOptions::nameOf()` and links to the inbox by `slug:<slug>`. The key
+is `submission.new:<form slug>`, unchanged. `SendEmailListener` tells the event how its
+email went, so a form that uses it gets the failed-email notification too; a site with a
+listener of its own for the email calls `FormSubmittedEvent::notifiedAs()` to get it.
+**A test that registers a form registers it with the container's `FormRegistry` and
+leaves the container's binding alone:** `CodeFormDiscoveryTest`'s helper used to bind a new
+registry, and every later test's form was unknown to the route. **A form defined in code
+sends through `wp_mail()` whatever `MailDelivery` answers:** a test that submits one with
+an email listener answers `pre_wp_mail` itself.
+
 **After v0.45.2, not released, 2026-10-13.** No string of the `corex` domain is read before
 `init` (DECISIONS #351). Since v0.45.1 every request made what answers a submission's file
 link, and with it the mail stack and the email layout, which read the theme's settings and
@@ -221,6 +266,20 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
+  by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
+  only of what Email Studio's own service sent. A form's own email listener that sends
+  while the request runs reports it with `FormSubmittedEvent::notifiedAs()`. One that
+  sends afterwards cannot: Muva's two forms queue their emails and send them from WP-Cron
+  (its session's reading), and CoreX's own mail queue answers `queued`. Nothing takes a
+  submission id and a result after the event, so those failures raise no notification.
+  Bookings and Careers send through the same mailer and were not looked at.
+  DECISIONS #352.
+- **Naming a form in a notification reads the whole form catalog, which counts every
+  form's submissions.** Measured: about 4 ms with a handful of submissions, 62 to 73 ms with
+  10,000, once per stored submission on a site with no persistent object cache
+  (DECISIONS #352). The count is for the screens that show it; the catalog should count
+  only when asked.
 - **A site that already holds the same access request twice keeps both.** Each is listed in
   the queue and decided on its own. Nothing merges or removes them, and whether a client
   site holds one was not read.

@@ -36,6 +36,23 @@ runs:
         tools: composer:v2, wp-cli
         coverage: none
 
+    # The step above can end green without `wp`: setup-php asks for WP-CLI once, with no retry, and
+    # reports a tool it could not fetch in its log only. The script says what it does about that.
+    # Not `fail-fast: true` on setup-php: that stops the job at the same lost request, one step
+    # sooner, and a person still has to run it again (DECISIONS #354).
+    #
+    # The release named here is installed only when setup-php provided none, which otherwise
+    # provides the latest. The checksum is the one WP-CLI publishes beside that release, in
+    # wp-cli-<version>.phar.sha256, and the two change together. Nothing but a run that takes the
+    # fallback proves a new pair: push a commit that takes `wp-cli` out of `tools` above, read the
+    # jobs, and put it back.
+    - name: Make sure WP-CLI runs
+      shell: bash
+      env:
+        WP_CLI_FALLBACK_VERSION: '2.12.0'
+        WP_CLI_FALLBACK_SHA256: ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c
+      run: bash "$GITHUB_ACTION_PATH/ensure-wp-cli.sh"
+
     - name: Install PHP dependencies
       shell: bash
       run: composer install --prefer-dist --no-progress

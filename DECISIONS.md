@@ -14515,3 +14515,439 @@ right-to-left again with this one; nothing stored changes. In PHP,
 `SubmissionFileDelivery::register()` is gone, and `Layout`'s constructor also takes a
 closure; an array is taken as before. Read on this machine on 2026-10-13: nothing under
 `sites/` in the Muva or Perego checkouts names either class or the action.
+
+## #352 — A stored submission of a form defined in code is announced as a flow's is, so the notification centre hears of it; a form is named in a notification as the inbox's filter names it
+
+**Date:** 2026-10-13. **Branch:** `fix/code-form-submission-notification`, from `main`.
+**Spec:** none (defect fix).
+
+**What was reported.** The owner, 2026-10-13, relayed by the Muva client session (on
+v0.45.2): "i also noticed that iam not geting a notification on the corex when there is a
+new submission". Seen by that session on Muva's local copy: the notifications table held
+`readiness.blocker` and `export.ready` rows and no `submission.new`, with dozens of
+submissions stored since 2026-10-07.
+
+**The cause.** `SubmissionNotificationProducer` listens for `SubmissionProcessedEvent` and
+nothing else. That event was dispatched in one place, `FlowVisitorSubmissionService`, the
+path of a form built in Forms & Flows. A form registered in code goes through
+`FormSubmissionService`, which dispatched `FormSubmittedEvent` to the form's listeners and
+stopped. It has been so since the producer first shipped (v0.35.0). Both of Muva's forms
+and both of Perego's are registered in code (read on this machine, 2026-10-13). It is the
+same family as #318 (inbox search) and #317 (a file sent with a form): the inbox learned
+about forms defined in code and the notification centre did not.
+
+**The decision.**
+
+1. *`FormSubmissionService` dispatches `SubmissionProcessedEvent` itself*, after the form's
+   listeners have run and only when one of them stored the submission
+   (`FormSubmittedEvent::submissionId()` is not null). It carries the form's slug as
+   `flowSlug`, `flowId` 0 (named `SubmissionProcessedEvent::NO_FLOW`) and `ownerId` null: a
+   form defined in code has no flow and no owner.
+2. *The producer keeps listening for that one event.* For a form with no flow it links to
+   the inbox with `corex_form=slug:<slug>`, the shape the inbox's own filter sends for such
+   a form (`inboxFiltersFromUrl()` in `Submissions/inbox.js`), and records the source as
+   `form` and the slug, not `flow` and `0`.
+3. *The form is named as the inbox's filter names it*, through
+   `FlowFilterOptions::nameOf()`, new, which `SubmissionReplyView` now calls too in place of
+   its own copy of the loop. This changes the title for a form built in Forms & Flows as
+   well: its title held the flow's slug and now holds the flow's name. A form nothing lists
+   is called by its slug, as before.
+4. *The key is unchanged:* `submission.new:<form slug>`, and
+   `submission.email_failure:<form slug>` for the failed email.
+
+**Why the event and not a second listener.** The producer could have listened for
+`FormSubmittedEvent` as well. Two things were against it. Listeners of one event run in the
+order they were registered (`ListenerProvider`), across providers: the producer's would run
+before or after the forms provider's, which is the one that runs the form's own listeners
+and so the one that stores, depending on which plugin booted first; run before it,
+`submissionId()` is null and nothing would be raised. And a form may list its listeners in
+any order, or list none that stores. Dispatching after `dispatch()` has returned makes
+neither order matter. It also leaves one event that means "a submission was stored",
+whatever kind of form it came from, for anything else that wants to know.
+
+**`submission.email_failed` on a form defined in code.** The event has to say how the
+notification email went, and for a flow the pipeline knows. For a form in code the email
+is written by a listener, so the listener says: `FormSubmittedEvent::notifiedAs()`, new,
+and `delivery()` to read it. `SendEmailListener`, CoreX's own, now calls it with the
+result it already had and used to drop, so a form that uses it gets the failed-email
+notification exactly as a flow does (run on real WordPress with the email refused before
+WordPress handed it to anything). A failure is kept over a later listener's success: of
+two emails where one did not go, the one somebody has to look at is that one. Where no
+listener said anything the delivery is `not_attempted` with the reason code
+`not_reported`, and no failed-email notification is raised.
+
+*A site whose own listener sends the email while the request runs* reports it with
+`$event->notifiedAs(NotificationDelivery::fromResult($mailer->attempt($request)))`;
+without that line nothing is raised. The mailer the mail add-on binds as
+`Corex\Mail\Mailer` (`QueuedMailer` over `RequestMailer`) is an `AttemptingMailer`, so
+`attempt()` is there to call. Read, not run: a mail sent through that mailer goes through
+`MailService`, not through Email Studio's service, so it does not raise
+`email.delivery_failed` either; before this change such a site was told of a failed
+notification email by nothing.
+
+*A site that sends after the request cannot report it, and this change does not let it.*
+Muva is one. Told by the Muva session on 2026-10-13, which read its checkout (I read only
+the two listeners' names): `SendBriefEmails` and `SendLeadEmails` write the emails, push
+them to a queue of Muva's own and return, so the form answers the visitor at once; a
+WP-Cron job calls the mailer later, with Muva's own retries, when the event is long gone.
+There is nothing true to say while the event is handled ("queued" would be honest and
+would tell the notification centre nothing), and nothing here takes a submission id and a
+result afterwards. The same holds for CoreX's own mail queue: with it on, `attempt()`
+answers `queued`, which counts as gone, and a failure when the queue sends it is reported
+to the notification centre by nothing. So Muva's failed notification emails raise no
+notification, as before. Covering that needs a call outside the event, by submission id
+or form slug, of the shape `SubmissionConversation::began($submissionId, $request)` has
+for a reply's thread. Not built: the owner has not asked for that notification.
+
+**The other producers** under `plugins/corex-config/src/Notifications/Producers/`, read
+for the same assumption (an event that only one of two paths dispatches):
+
+| Producer | Listens for | Dispatched by | Same assumption |
+| --- | --- | --- | --- |
+| `SubmissionAssigned` | `SubmissionAssignedEvent` | `SubmissionWorkflowService`, by submission id | No: a submission of either kind is assigned the same way |
+| `AccessRequest` | `AccessRequestedEvent` | `AccessService` | No |
+| `JobFailure`, `ExportReady` | `JobFinishedEvent` | `JobRunner` | No |
+| `LoginLockout` | `LoginLockoutEvent` | `LoginProtectionEnforcer` | No |
+| `Readiness` | `ReadinessEvaluatedEvent` | `ProductionReadinessSnapshotFactory` | No |
+| `EmailDesignFailure` | `EmailDesignFailedEvent` | `SiteEmailBrand`, `SiteEmailDesign` | No |
+| `EmailStudioFailure` | `EmailStudioDeliveryFailedEvent` | `EmailStudioService` only | Yes, in part: see below |
+
+`EmailStudioFailure` hears of an email that Email Studio's service sent (a routed email, a
+reply). An email sent through `Corex\Mail\Mailer` by a listener or an add-on (Bookings,
+Careers, a site's own) goes through `MailService` and raises nothing when it fails. That
+is the gap named above; it is older than this change and is left as a lead.
+
+**What naming costs.** The name comes from the form catalog, which also counts every
+form's submissions in one grouped query, for the screens that show the count. Measured on
+this branch's install with `wp eval-file`, a process each time: about 4 ms and two queries
+with a handful of submissions; 62 to 73 ms with 10,000 (five runs). A second read in the same
+request is 0.03 ms. So a stored submission costs that much more on a site with no
+persistent object cache; with one, the count is kept for a minute. It is paid once per
+stored submission, of either kind of form, beside storing it and sending an email.
+Accepted, and written into PROGRESS as a lead: the catalog should count only for a screen
+that asks.
+
+**Tests.** `tests/Unit/Forms/FormSubmissionServiceTest.php`: a stored submission is
+announced with the slug and no flow; one nothing stored is not; the delivery a listener
+said is carried whatever order the listeners are in; a failure is kept.
+`tests/Unit/Forms/SendEmailListenerTest.php`: the listener tells the event.
+`tests/Unit/Notifications/SubmissionNotificationProducerTest.php`: the link by slug, the
+source, the name from the filter in both notifications, the slug where nothing names the
+form. `tests/Integration/Notifications/CodeFormSubmissionNotificationTest.php`, through
+the form route's controller as a visitor on real WordPress: one notification shown to a
+person holding `corex_manage_submissions` and none to a person who does not, named and
+linked; a second submission adds to it (`occurrences` 2); a form that does not store
+raises none; a form whose email WordPress could not send raises the failed-email one, and
+one whose email went does not. Each was seen failing before the change (the failed-email
+case in its first form), and that case again with the listener's line taken out. The file answers
+`pre_wp_mail` itself: a form defined in code sends through `wp_mail()` whatever
+`MailDelivery::CAPTURE` or `REFUSE` answers (the first draft of the failed-email case used
+`REFUSE` and reached `mail()`; nothing left this install, which has no mail server).
+
+**Seen in the admin**, on this branch's install served on its own port: the contact form
+sent from a page as a visitor; the Notifications screen then listed "New submission on
+“Contact”" with **Open the Submission Inbox**, whose link is
+`admin.php?page=corex-submissions&corex_form=slug:contact` and opens the inbox with the
+form filter on Contact and only that form's rows; and "Submission notification email
+failed" beside it, this install having no mail server.
+
+**Five older tests now raise a notification, and hand it back.** That screen read "5
+times" on the first look: `SubmitLifecycleTest`, `FormClientAddressTest`,
+`ChoiceAndFileSubmissionTest`, `ProtectedCodeFormTest` and one case of
+`ComingSoonModeTest` store a submission of a form defined in code, and since this change
+each left a `submission.new:` row on the install it ran on. Each now takes
+`NotificationRows::snapshotPrefixed('submission.')` before and restores it after, as
+`SubmissionKeepsBackslashesTest` already did for the contact form. After a run of the
+whole suite the install holds no `submission.` row it did not hold before (read from the
+table).
+
+**A test helper that split the suite's form registry**, found because the new file passed
+alone and failed in a run of the whole suite (the route answered 404).
+`withRegisteredForm()` in `tests/Integration/Forms/CodeFormDiscoveryTest.php` put the
+registry "back as it was" by binding a new `FormRegistry` in the container. Everything
+already made (the form route's service, the catalog) kept the old one, and for the rest
+of the run a form registered with the container's registry was unknown to the route.
+`NotificationFileLinkTest`'s header describes the symptom and works round it. The helper
+now takes its form out of the one registry. Whole integration suite after: 1180 passed.
+
+**Leads, not built.**
+
+- *A failed email sent through `Corex\Mail\Mailer` is reported by nothing* unless the
+  caller reports it (above). Bookings and Careers call `Mailer` too; whether they should
+  raise a notification was not looked at.
+- *An email sent after the request, by CoreX's queue or a site's own, cannot raise the
+  failed-email notification*: it needs a call that takes a submission id and a result
+  outside the event (above).
+- *The catalog counts submissions for every reader* (measured above).
+- *The stale sentence in `NotificationFileLinkTest`'s header* about the registry is left
+  as it is; the test still passes and was not otherwise touched.
+
+**Client impact.** A site whose forms are registered in code starts to get the New
+submission notification for submissions stored from then on; nothing is raised for those
+already in the inbox, and nothing is set. Muva's and Perego's forms all list
+`StoreSubmissionListener` (read on this machine), so each stored submission raises one.
+Perego's forms list no email listener, so they have no notification email to fail. Muva's
+send theirs later, from a queue of its own, and cannot report through the event: Muva
+gets no failed-email notification from this change. A site that
+listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
+0; nothing under `sites/` in the Muva or Perego checkouts names that event.
+
+## #353 — A file is what a request carried as a file part, and never what its text says: a form's file field, a flow's file question and the Data import; the store reads no file it was not sent; a submission's files are its own by field
+
+**Date:** 2026-10-13. **Branch:** `fix/forms-file-field-value`, from `main`.
+**Spec:** [081](specs/081-forms-files-end-to-end/spec.md), FR-002a and FR-004a (added), Phase H.
+
+**What was reported.** On 2026-10-13, by the session working on a client site that runs
+v0.45.2, from reading its own listener: a request to a form's route that sends no file for
+a file field, and says something under that field's name in its body, has what it said
+kept as the field's answer. Confirmed by reading `main`, and then measured.
+
+**Why it matters.** An answer to a file field is read everywhere after the route as the
+number of a file the store keeps: by the Submissions inbox, by the notification email, by
+whatever removes a submission's files with the submission, and by a site's own listener.
+The answer was not always that.
+
+**What was measured on `main`'s code** (this branch's own WordPress 7.1.3, PHP 8.3.6; each
+is a test that failed there):
+
+- What a request's body said under a file field's name was validated, stored as the
+  field's answer and returned in the response. `required` was satisfied by it. The `mime`
+  and `max_size` rules passed it: both read any value that is not an array as an empty
+  field.
+- Everything that reads a file answer then read that one: the inbox, and what removes a
+  submission's files with the submission. That last one took a file as a submission's own
+  from any of its answers, and not only from its answer to the field the file came through.
+- The notification email did not name a file for it: it names a file only for a whole
+  number, and the route hands on text.
+- An array with the keys of an upload did not reach the rules or the store through the
+  route: the route's sanitiser turns an array into an empty string. Handed to the service
+  directly it did, and was passed to the store.
+- The store refused it. `wp_handle_upload()` asks `is_uploaded_file()` and nothing was
+  moved or recorded. The store had read the file at the path it was given before that
+  call, through `wp_check_filetype_and_ext()`.
+- A flow built in Forms & Flows has the same field type and a route that reads no file
+  parts. Its file question was answered by whatever the body said.
+- Found by the review of this change, and the same mistake in another place: the Data
+  import (`POST corex/v1/data/{source}/imports`, for a person who may manage data) takes a
+  CSV as a file part. Its gateway hands on a request's text and its file parts as one
+  payload, so `file` could be something the text said, and `DataCsvParser` opened the path
+  it named.
+
+**The decision.**
+
+1. *A file field's answer is the file part, or there is none.* `FileFieldAnswers::from()`
+   removes what the body says under every file field's name, then places the file part
+   that arrived for it. `FormSubmissionService` asks it with the route's file parts, and
+   the flow pipeline's `ValidationStage` asks it with none. It is one rule in one place,
+   before validation, so `required` sees a missing file as missing.
+2. *The rules judge an upload and nothing else.* `mime` and `max_size` refuse a value that
+   is neither empty nor an upload. Nothing hands them one for a file field any more; this
+   is for a caller that is not the service.
+3. *The store reads no file it was not sent.* `AttachmentStore::store()` asks
+   `is_uploaded_file()` before it reads the path, and refuses with `not_uploaded`.
+   `wp_handle_upload()` still asks afterwards.
+4. *A submission's files are its own by field, and by being the only one that names them.*
+   `WpSubmissionTrashStore::uploadsOf()` takes an answer as a file only where the file came
+   through the field the answer is to. A file two submissions name is left while either is
+   there: a file is uploaded with one submission, and nothing records which. This is what
+   protects a site that already stores such an answer. "Names" is the same number byte for
+   byte (`'type' => 'BINARY'`): the table's collation reads the digits of another script as
+   equal, and such an answer would have kept a file for good. Known and left: two people
+   deleting the two submissions in the same moment each see the other, and the file stays
+   with nothing naming it.
+5. *The Data import reads the file part.* `DataManagementController` takes the CSV from the
+   request's file parts and from nowhere else; what the text says under `file` is not
+   opened. The parser is as it was: it is handed nothing else now, and asking
+   `is_uploaded_file()` there would refuse every file the integration suite can make.
+6. *A flow's stage drops the text before anything reads it.* `ValidationStage` wrote down
+   what was agreed to (the consent record) from the answers as they arrived, so a file
+   question marked as consent kept the text there. The answers are now reduced first.
+7. *How an upload is marked has one definition, and a site does not read it.* The two post
+   meta keys were string literals in the store and in three readers. They are named in
+   `Corex\Security\Upload\StoredUpload`. A site's listener asks
+   `Corex\Security\Upload\FormUploads::cameThrough($field, $attachmentId)`. That class is in
+   the core beside the store, and not in the forms plugin: the forms plugin writes the
+   label, and the inbox, which reads it, does not depend on that plugin.
+
+**Rejected.**
+
+- *Leaving the file field out of the route's sanitiser shape.* It would close the route and
+  leave the service, the flow pipeline and any later caller as they were.
+- *Public constants for the meta keys as the contract.* A site would then check two keys and
+  a prefix by hand, as the reporting site does today, and the framework could never change
+  how it marks a file. The question a site has is "is this the upload of that field", and
+  that is now a call.
+- *Recording the form in the label.* The label holds the field's name only, so
+  `cameThrough()` cannot say which form. Changing it would leave every file already stored
+  with the old label; the rule in point 4 does not need it.
+- *Asking `is_uploaded_file()` in the two rules as well.* They would refuse every file a
+  unit test can make, and the service already decides where their value comes from.
+
+**Tests.** `tests/Unit/Forms/FileFieldTest.php` (added cases), `FlowFileFieldTest.php`,
+`FileRulesTest.php`; `tests/Integration/Forms/FileFieldAnswerTest.php`,
+`tests/Integration/Security/AttachmentStoreUnsentFileTest.php`,
+`tests/Integration/Submissions/SubmissionDeleteTest.php` (three cases),
+`tests/Integration/Data/DataManagementControllerTest.php` (one case, two ways);
+`tests/e2e/submission-file.spec.js` (a request over HTTP with text and a file under one
+name). Each new case was run against the code before its fix. Those that pass there say
+what must not change: a file that was sent is stored, an empty answer is left to
+`required`, and an array under a required file field is refused, which the route's
+sanitiser already saw to. The rest fail there. The browser spec that uploads a real file
+through the form and opens it from the inbox passes with the store's new question. A
+second review, by a reader given the change and not the reasoning, found the Data import,
+the consent record and the collation; each has a test.
+
+`Corex\Tests\Support\CreatedPosts` now hears of a new attachment. WordPress announces one
+by `add_attachment` and not by `wp_insert_post`, so a watcher asked for attachments heard
+of none and deleted none.
+
+**Whether a site can find such an answer among what it already stores.** Yes, in three
+shapes. A file answer that is not a number: the inbox shows it as text where a file's name
+would be. A file answer that names no upload of that field: the inbox shows it as a missing
+file, which is also what a file removed since looks like. And a file that more than one
+submission names under the same field: one of them was not sent it, and the record does
+not say which; the date of the file against the dates of the two submissions does. A
+number in another kind of answer cannot be told from an honest number, and after this
+change it is only a number.
+
+**Client impact.** A site with a form that has a file field should take this release. A
+site's own listener that opens a file by the number it was handed asks
+`FormUploads::cameThrough()` and stops reading `_corex_protected` and
+`_corex_upload_context`; from this release the value it is handed for a file field is the
+number of the file this submission stored, or the key is absent. A flow with a required
+file question refuses every submission, where it took text; it could never take a file.
+`AttachmentStore::store()` answers `not_uploaded` for a file PHP did not receive, where it
+gave another reason; the careers add-on passes that reason on as `cv_not_uploaded`. A Data
+import sent as text with `file` in it is answered as an import with no file. Read on this
+machine on 2026-10-13:
+Muva's `SendBriefEmails` reads the two keys and its brief form has an optional file field;
+nothing under `sites/` in the Perego checkout, and nothing in the Mizzey checkout, has a file
+field or names the keys. `docs-app/src/content/docs/guides/forms.md` says what a listener is
+handed for a file field and shows the call.
+
+## #354 — A runner that setup-php left without WP-CLI installs one release of it and carries on; setup-php is still asked first
+
+**Date:** 2026-10-13. **Branch:** `fix/ci-wp-cli-fallback`, from `main`.
+**Spec:** none (CI only). **Mode:** Deployment.
+
+**What was reported.** CI runs on 2026-10-13 stopped before any test ran, three times in
+one afternoon, on pull requests #393, #392 and #395: runs 38409781471, 38438603219 and
+38439973866. Each passed when a person ran it again with `gh run rerun <run> --failed`.
+
+**What the logs say.** Four jobs failed in those three runs: the browser job and the
+multisite job in the first attempt of the first run (jobs 115338724966 and 115338725374),
+the multisite job in the second (115439002365) and the integration job in the third
+(115443704432). In all four, `shivammathur/setup-php@v2` printed
+`✓ composer Added composer 2.10.3`, then `✗ wp-cli Could not setup wp-cli`, and its step
+ended `outcome=success`. `composer install` ran. The first step that calls WP-CLI,
+`wp core download`, ended `wp: command not found`, exit code 127. The line about WP-CLI
+came 9 and 17 seconds after Composer's in the first run, and 0.2 to 0.3 seconds after it
+in the other two, so the request did not fail the same way each time. A job that passed
+the same afternoon logged `✓ wp-cli Added wp-cli 2.12.0`.
+
+**Why a missing tool is a green step.** Read in setup-php's source at the commit those jobs
+ran, `eb7c497e`:
+
+- Asked for `wp-cli` with no version, it requests
+  `https://github.com/wp-cli/builds/blob/gh-pages/phar/wp-cli.phar?raw=true`
+  (`addWPCLI()` in `src/tools.ts`): a file on a branch of WP-CLI's builds repository.
+- It makes that request once, with `curl -sL` (`curl_opts` and `get()` in
+  `src/scripts/unix.sh`). There is no retry.
+- Any status but 200 is logged and the script goes on (`add_tool()` in
+  `src/scripts/tools/add_tools.sh`). Only Composer stops the step. Its README says so:
+  tools that cannot be set up "leave an error message in the logs, the execution is not
+  interrupted".
+- A 404 has a message of its own, "Failed to download", so these were not 404.
+
+What the request did get is not known: setup-php logs no status, and the failed request
+was not reproduced here. No file was left at `/usr/local/bin/wp`, or the next step would
+have run it.
+
+**The decision.** A step after setup-php in `.github/actions/provision-wordpress`, the
+script `ensure-wp-cli.sh` beside it:
+
+1. It asks `wp` for its version. An answer that starts `WP-CLI` and a digit ends the
+   step: setup-php provided it, as on almost every run.
+2. With no such answer it downloads
+   `https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar`, with
+   `curl --retry 5 --retry-all-errors`. That is the release's own download and not the
+   builds repository's branch, so the second try does not ask the address that just
+   failed.
+3. It refuses the file unless its SHA-256 is
+   `ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c`. That value was read
+   on 2026-10-13 in two places that agree: the digest GitHub's API reports for the
+   release's file, and `wp-cli-2.12.0.phar.sha256`, which WP-CLI publishes beside it.
+4. It installs the file as `/usr/local/bin/wp`, where setup-php puts its tools, asks for
+   the version again, and prints a warning that the run took the fallback.
+
+It asks for the version and does not look for a file called `wp`, because of what
+setup-php's script does with an answer that is not 200: `curl -o` writes the answer's body
+to `/usr/local/bin/wp` and the script marks it executable. That was read, not seen in a
+log. An empty file marked executable runs and exits 0, so the answer is read as well as the
+exit code.
+
+The release and its checksum are in `action.yml`, as the step's environment, and the
+script checks their shape on every run: a version typed as `2.12`, or a checksum cut
+short, fails the pull request that typed it and not the run, months later, that needs it.
+
+2.12.0 is the latest release of WP-CLI (published 2025-05-07) and is what setup-php
+provides today, so a run that takes the fallback tests with the same WP-CLI as one that
+does not.
+
+**Weighed, and not chosen.**
+
+- *`fail-fast: true` on setup-php.* It stops the job at the same lost request, one step
+  sooner and with a clearer message. A person still runs it again. GitHub Actions has no
+  retry for a step that uses an action, and a third-party action that retries another
+  would be a new dependency with the job's token in reach, to work around one `curl`.
+- *Naming the release and checksum in setup-php's own `tools`*
+  (`wp-cli:2.12.0@sha256:…`, which it supports). It moves the request to the release's
+  download and checks the file, and it is still one request with no retry, in a step that
+  still ends green without the tool.
+- *Not asking setup-php for WP-CLI, and always installing the named release.* One path
+  and no second source. It was not chosen for the reason WordPress is not pinned (#221):
+  `wp corex` is part of what CoreX ships, a site runs it on whatever WP-CLI it has, and CI
+  on the latest WP-CLI is how a release of WP-CLI that breaks it is found. A named release
+  nothing updates would hide that. As a fallback the same named release costs nothing: it
+  is used on the runs that had no WP-CLI at all.
+
+**Tests.** `tests/provision-wordpress-wp-cli.test.js`, eight cases, runs the script in
+bash with a search path made for each case and a stand-in for `curl` that writes down the
+address asked and answers with a file the case names; nothing reaches the network. A
+WP-CLI that works is left alone and nothing is downloaded. A runner with no `wp` gets the
+release, from the release's address, and a warning. An empty file or a page of HTML where
+`wp` belongs is replaced. A download with another checksum installs nothing. A download
+that fails names the address. A version or a checksum of the wrong shape fails on a runner
+that needs no fallback. Each of three changes to the script made a case fail: the checksum
+never checked, any answer from `wp` counted as WP-CLI, the shape of the pair not checked.
+
+On Windows the test finds Git's bash from `git --exec-path`. `bash` there is the launcher
+for the Linux subsystem, and Git's `bin/bash.exe` puts `/mingw64/bin`, with the real
+`curl`, ahead of the search path it is given (run on this machine: `usr/bin/bash.exe`
+keeps the path as given).
+
+**Run on a runner.** The fallback has nothing to do on a run where setup-php works, so
+the first commits of pull request #397 took `wp-cli` out of setup-php's `tools`, and every
+job that provisions WordPress had to take it (run 38445834843, 2026-10-13). In the
+multisite job's log: `No working wp on this runner. Installing WP-CLI 2.12.0 from …`,
+the warning 0.4 seconds later, then `wp core download` and `Success: WordPress
+downloaded.` The checksum in `action.yml` is therefore the checksum of the file that
+address serves. All four jobs that provision WordPress did so with it, each carries the
+warning, and each went on to run its suite. The last commit puts `wp-cli` back.
+
+**What it does not do.**
+
+- The fallback is a download too. If the release's address fails five tries in a row the
+  job is red, now with an error that names the address.
+- Nothing updates the named release: Dependabot does not read it. It is the fallback and
+  not what a normal run tests with, so an old one costs little until it is too old for
+  the PHP in use. A warning that a run took the fallback while setup-php, on other runs,
+  logs a newer WP-CLI is the sign to move it. `action.yml` says how to prove a new pair.
+- The other workflows that use setup-php ask it for Composer only, which it already treats
+  as fatal. They are not changed.
+- Why setup-php's request failed four times in one afternoon is not known, and nothing
+  here makes it fail less often. The warning is what counts it.
+
+**Client impact.** None for a site. A client repository carries
+`.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
+the fallback when it takes the release this is in; it has nothing to set.
