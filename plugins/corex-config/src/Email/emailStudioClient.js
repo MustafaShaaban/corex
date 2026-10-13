@@ -1,6 +1,7 @@
 /**
  * Pure state, endpoint, validation, and preview helpers for Email Studio.
  */
+import { withQuery } from '../admin/restAddress.js';
 
 export const TABS = [
 	{ key: 'overview' },
@@ -129,6 +130,21 @@ export function buildEndpoint( base, kind, id = '' ) {
 	return `${ String( base ).replace( /\/$/, '' ) }/${ ENDPOINTS[ kind ](
 		id
 	) }`;
+}
+
+/**
+ * The address of the health checks of one version of a template.
+ *
+ * @param {string} base       The Email Studio routes' base.
+ * @param {number} templateId The template.
+ * @param {number} version    Which of its versions is checked.
+ * @return {string} The request URL.
+ */
+export function buildHealthUrl( base, templateId, version ) {
+	return withQuery(
+		buildEndpoint( base, 'health', templateId ),
+		`version=${ encodeURIComponent( version ) }`
+	);
 }
 
 export function validateDraftForm( draft, translate = ( value ) => value ) {

@@ -10,6 +10,7 @@
  * the screen drifted apart before DECISIONS #157.
  */
 import { __ } from '@wordpress/i18n';
+import { withQuery } from '../admin/restAddress.js';
 import { blogEndpoint } from './blogProState.js';
 
 /**
@@ -23,12 +24,14 @@ import { blogEndpoint } from './blogProState.js';
  * @param {Object}                           [options]        Request options.
  * @param {string}                           [options.method] HTTP method; defaults to GET.
  * @param {Object}                           [options.data]   JSON body, for the write routes.
+ * @param {string}                           [options.query]  What the request adds to the address.
  * @return {Promise<Object>} The envelope's `data`.
  */
 export async function blogRequest( config, path, options = {} ) {
-	const { method = 'GET', data } = options;
+	const { method = 'GET', data, query = '' } = options;
+	const address = withQuery( blogEndpoint( config.restUrl, path ), query );
 
-	const response = await fetch( blogEndpoint( config.restUrl, path ), {
+	const response = await fetch( address, {
 		method,
 		credentials: 'same-origin',
 		headers: {
@@ -100,13 +103,13 @@ export function moderateComment( config, commentId, action ) {
  * @return {Promise<Object>} Analytics, comments, authors and share controls for that post.
  */
 export async function loadBlogData( config, postId ) {
-	const query = `?post_id=${ encodeURIComponent( postId ) }`;
+	const query = `post_id=${ encodeURIComponent( postId ) }`;
 
 	const [ analytics, comments, authors, shareControls ] = await Promise.all( [
-		blogRequest( config, `blog/analytics${ query }` ),
-		blogRequest( config, `blog/comments${ query }` ),
+		blogRequest( config, 'blog/analytics', { query } ),
+		blogRequest( config, 'blog/comments', { query } ),
 		blogRequest( config, 'blog/authors' ),
-		blogRequest( config, `blog/share-controls${ query }` ),
+		blogRequest( config, 'blog/share-controls', { query } ),
 	] );
 
 	return {

@@ -349,12 +349,14 @@
 			// The step used to stay as it was, with nothing said, until the plan arrived, and
 			// a second press asked for it again.
 			showWorking( pressed );
-			const res = await api.get(
-				`${ restUrl }/plan?kit=${ encodeURIComponent(
-					state.kit
-				) }&level=${ encodeURIComponent( state.level ) }`,
-				{ nonce }
-			);
+			// On a site without pretty permalinks the route is itself a query
+			// (`?rest_route=/corex/v1/setup/plan`), and a `?` written after it made the kit
+			// part of the route. A `URL` adds to whatever query the address has. This script
+			// has no build step, so it cannot use the admin's `withQuery()`.
+			const plan = new URL( `${ restUrl }/plan`, window.location.href );
+			plan.searchParams.set( 'kit', state.kit );
+			plan.searchParams.set( 'level', state.level );
+			const res = await api.get( plan.toString(), { nonce } );
 			state.plan = res.envelope.ok ? res.envelope.data : null;
 			state.planError = res.envelope.ok
 				? ''

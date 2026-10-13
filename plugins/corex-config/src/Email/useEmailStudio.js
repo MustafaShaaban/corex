@@ -8,6 +8,7 @@ import {
 import { __ } from '@wordpress/i18n';
 import {
 	buildEndpoint,
+	buildHealthUrl,
 	composePreviewHtml,
 	emailStudioReducer,
 	initialEmailStudioState,
@@ -409,13 +410,12 @@ function useHealth( { config, dispatch, selection } ) {
 	}, [ selection.detail?.template.id ] );
 	const runHealth = async () => {
 		dispatch( { type: 'mutating', control: 'health' } );
-		const endpoint = buildEndpoint(
-			config.restUrl,
-			'health',
-			selection.detail.template.id
-		);
 		const result = await window.Corex.api.get(
-			`${ endpoint }?version=${ selection.detail.template.draft_version }`,
+			buildHealthUrl(
+				config.restUrl,
+				selection.detail.template.id,
+				selection.detail.template.draft_version
+			),
 			{ nonce: config.nonce }
 		);
 		if ( ! result.envelope.ok ) {
