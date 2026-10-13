@@ -215,6 +215,21 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   `FieldResolver` picks `AcfFieldDriver` when ACF is there, for a submission's answers too.
   ACF is not in this repository, so whether it drops a backslash as WordPress's own meta
   write did was not run, and the driver is not changed.
+- **An account registered before DECISIONS #335 with no username is still named by its
+  email address.** A new one is named by the part before the @. The old ones keep the
+  address as display name and nickname, and in the author address, and a comment written
+  under it keeps it whatever the account is renamed to: WordPress copies the name into the
+  comment (measured 2026-10-13). Putting them right rewrites a site's accounts and comments
+  and is the owner's to ask for. The add-on is off in Muva's decision record and on the
+  Perego and Mizzey development installs; their live hosts were not read.
+- **An email address of more than 60 characters cannot register without a username.**
+  Measured on 2026-10-13: the login is made from the address, WordPress refuses a login
+  over 60 characters, and the person is told "Username may not be longer than 60
+  characters." having typed none. Not changed.
+- **A new member who chose a password is emailed a link to set one.** The account gateway
+  sends WordPress's own new-user email, which reads "To set your password, visit the
+  following address:". Read on 2026-10-13 from what was handed to `wp_mail()`; whether
+  the link then replaces the chosen password was not run. Not changed.
 - **Anonymizing a submission leaves its uploaded files on disk.** The retention panel's
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can
   find them afterwards. It is spec 105's fifth slice, not started; deleting a submission for good

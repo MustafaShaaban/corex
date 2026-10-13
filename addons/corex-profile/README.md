@@ -22,12 +22,26 @@ theme only presents it.
 | --- | --- | --- |
 | Orchestration | `Account\AccountService` | Validation + policy (registration gate, password rules, enumeration-safe reset). Pure; unit-tested with a fake gateway. |
 | Boundary | `Account\WordPressAuthGateway` | Every WordPress auth call (`wp_signon`, `wp_insert_user`, `retrieve_password`, the reset flow, `wp_update_user`). Never reimplements hashing. |
+| Naming | `Account\PublicName` | The name a new account goes by: its login, or the part before the @ when the login is an email address. Pure. |
 | Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak) and ends other/all sessions via core helpers. |
 | Notifications | `Notification\NotificationService` | The signed-in user's own activity, projected from the shared core activity stream. |
 | Presentation | `Block\AccountRenderer` | Pure, fully escaped HTML for the block. |
 
 Every account operation returns a typed `Account\AccountResult` — no caller infers success
 from a void call. Passwords, reset keys, and session tokens never appear in a result.
+
+## The name of a new account
+
+The registration form's Username field is optional, and without one the login is the email
+address. WordPress would make the display name, the nickname and the address of the author
+page from that login, and a comment would be signed with the address for every visitor to
+read. `WordPressAuthGateway::createUser()` hands WordPress those three names itself, made
+from the part of the address before the @: `dalia.hassan@example.com` is shown as
+`dalia.hassan`, with the author address `dalia-hassan`. An email address typed as the
+username is treated the same way; any other username is the name, as WordPress has it. The
+person changes their display name on the block's Profile form. Covered by
+`tests/Unit/Profile/PublicNameTest.php` and
+`tests/Integration/Profile/RegistrationPublicNameTest.php`.
 
 ## Security
 
