@@ -112,7 +112,7 @@ carried the moved address. `addons/corex-profile/src/Reset/` holds it;
 email and sends nothing.
 
 **After v0.45.2, not released, 2026-10-13.** A request the Access REST routes cannot read is
-answered 400 and names the parameter (spec 079, FR-002a; DECISIONS #348). An empty reason,
+answered 400 and names the parameter (spec 079, FR-002a; DECISIONS #350). An empty reason,
 an ability, area, effect or role CoreX does not have, or a confirmation that could not be
 read, was a 500 and a fatal error in the PHP log: the service threw and the route caught
 nothing. The service now throws `Corex\Access\InvalidAccessInput` for what a caller sent,
@@ -181,7 +181,7 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **A change to a role nobody has is taken by the Access routes.** A role key is checked
   for its form only. Measured through the service on 2026-10-13: a change for
   `probe_no_such_role` was previewed as allowed, answered `completed`, and its grant was
-  stored (DECISIONS #348). Nobody holds such a role, so nothing is granted to anybody; the
+  stored (DECISIONS #350). Nobody holds such a role, so nothing is granted to anybody; the
   row stays and the audit log says a role was changed.
 - **A `role` in the body or the query of an Access role route is read before the one in
   the address.** `POST corex/v1/access/roles/editor/apply` with `"role": "author"` in its

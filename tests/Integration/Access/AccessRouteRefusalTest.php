@@ -4,7 +4,7 @@
  * What the Access REST routes answer for a request they cannot read.
  *
  * Each of these was answered 500, "There has been a critical error on this website", with a fatal
- * error in the PHP log (measured over HTTP on 2026-10-13, DECISIONS #348): the service threw and
+ * error in the PHP log (measured over HTTP on 2026-10-13, DECISIONS #350): the service threw and
  * the route did not catch it. They go through
  * WordPress's REST server and not to the controller's methods, because the status and the body
  * that server makes of the controller's answer are what a script reads.

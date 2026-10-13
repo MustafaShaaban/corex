@@ -312,7 +312,7 @@ All notable changes to Corex are documented here. The format follows
   notified. A reason sent as a list was stored as the word "Array" and is now refused. A
   request that can be read and is refused for how things stand (a decision on a request no
   longer pending, a change the safety policy stops, a confirmation for another change) is
-  still 200 with a `blocked` result (DECISIONS #348).
+  still 200 with a `blocked` result (DECISIONS #350).
 
 ### Client impact
 
@@ -528,7 +528,7 @@ All notable changes to Corex are documented here. The format follows
   that catches `InvalidArgumentException` from `AccessService` or `AccessPolicy` still
   catches: they now throw `Corex\Access\InvalidAccessInput`, which extends it. Read on
   2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the routes or
-  either class (DECISIONS #348).
+  either class (DECISIONS #350).
 ## [0.45.2] — 2026-10-11
 
 Two changes on top of v0.45.1, both for a form defined in code.

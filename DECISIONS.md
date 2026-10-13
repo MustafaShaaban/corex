@@ -13198,7 +13198,7 @@ and forgot-password fields, and reads the registration form as a new account. No
 class or route changed. Read on this machine on 2026-10-13: nothing under `sites/` in the
 Muva or Perego checkouts names the block.
 
-## #348 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
+## #350 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
 
 **Date:** 2026-10-13. **Branch:** `fix/access-route-refusals`. **Found by:** the measurement
 for #343, which posted an access request with an empty reason and was answered 500.
