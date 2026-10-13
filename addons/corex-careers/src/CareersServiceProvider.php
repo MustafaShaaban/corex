@@ -161,22 +161,42 @@ final class CareersServiceProvider extends ServiceProvider
             'cover_letter' => sanitize_textarea_field((string) $request['cover_letter']),
         ];
 
-        // Only the browser-supplied name is sanitized. `tmp_name` is a path PHP created and
-        // `wp_handle_upload()` verifies with `is_uploaded_file()`; running it through
-        // `sanitize_text_field()` — as this did — can alter a legitimate path and break the move
-        // for a file that was perfectly fine.
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- the route verifies its own nonce upstream.
-        $upload = isset($_FILES['cv']) && is_array($_FILES['cv']) ? wp_unslash($_FILES['cv']) : [];
-        $cv = $upload === [] ? [] : [
+        $result = $this->container->make(ApplicationService::class)
+            ->apply((int) $request['job_id'], $fields, $this->cv($request));
+
+        return new WP_REST_Response(['ok' => $result->stored, 'error' => $result->reason], $result->stored ? 200 : 422);
+    }
+
+    /**
+     * The CV the request carried, or an empty descriptor when it carried none.
+     *
+     * Read from the request's file parameters, which the REST server fills from `$_FILES`, as the
+     * forms route reads its files. Only what the browser said, the name and the type, is cleaned.
+     * `tmp_name` is handed on byte for byte: it is a path PHP made, and on a Windows host it is
+     * made of backslashes (`C:\Windows\Temp\php1A2B.tmp`). This used to pass the whole descriptor
+     * through `wp_unslash()`, which removed them, so the store was handed a path that named no
+     * file and every application on such a host was refused. WordPress adds no slashes to
+     * `$_FILES`, so there are none to remove.
+     *
+     * Several files under the one name (`cv[]`) put a list in every slot. One CV is what an
+     * application has, so that is answered as no file.
+     *
+     * @return array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int}
+     */
+    private function cv(WP_REST_Request $request): array
+    {
+        $upload = $request->get_file_params()['cv'] ?? null;
+
+        if (! is_array($upload) || is_array($upload['tmp_name'] ?? null)) {
+            return [];
+        }
+
+        return [
             'name'     => sanitize_file_name((string) ($upload['name'] ?? '')),
             'type'     => sanitize_mime_type((string) ($upload['type'] ?? '')),
             'tmp_name' => (string) ($upload['tmp_name'] ?? ''),
             'error'    => (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE),
             'size'     => (int) ($upload['size'] ?? 0),
         ];
-
-        $result = $this->container->make(ApplicationService::class)->apply((int) $request['job_id'], $fields, $cv);
-
-        return new WP_REST_Response(['ok' => $result->stored, 'error' => $result->reason], $result->stored ? 200 : 422);
     }
 }
