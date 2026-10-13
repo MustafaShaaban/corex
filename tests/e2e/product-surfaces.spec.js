@@ -13,6 +13,9 @@
  * and right to left. The answers asked for here are refusals the account service gives before
  * it reaches WordPress, so no account is made, no sign-in is counted and no email is sent.
  *
+ * And what the block says when there is no answer to show: a request that does not arrive or
+ * is answered with a page (FR-161c), and a browser that runs no scripts (FR-161d).
+ *
  * ENVIRONMENT-GATED: needs Apache up (http://corex.local) + `npx playwright install`.
  */
 const { test, expect } = require( '@playwright/test' );
@@ -45,6 +48,9 @@ test.beforeAll( async ( { browser } ) => {
 
 const SIGNED_OUT = { cookies: [], origins: [] };
 
+/** What a browser that runs no scripts is shown above the forms (FR-161d). */
+const SCRIPTS_OFF_NOTE = '.corex-account__noscript';
+
 /** The windows a message is looked for in. */
 const WINDOWS = [
 	{
@@ -75,12 +81,14 @@ const WINDOWS = [
  * @param {import('@playwright/test').Browser} browser      The browser of the test.
  * @param {Object}                             view         One of WINDOWS.
  * @param {Object|string}                      storageState Who is looking: SIGNED_OUT, or a saved session.
+ * @param {boolean}                            scripts      Whether the browser runs the page's scripts.
  * @return {Promise<import('@playwright/test').Page>} The page, with the block in it.
  */
-async function openAccount( browser, view, storageState ) {
+async function openAccount( browser, view, storageState, scripts = true ) {
 	const context = await browser.newContext( {
 		storageState,
 		viewport: view.viewport,
+		javaScriptEnabled: scripts,
 	} );
 	const page = await context.newPage();
 	await page.goto( accountPath );
@@ -183,6 +191,8 @@ test( 'the guest account block renders the sign-in, register, and recovery forms
 	await expect(
 		page.locator( '[data-corex-account-form="reset-request"]' )
 	).toBeVisible();
+	// The note for a browser that runs no scripts is not this browser's.
+	await expect( page.locator( SCRIPTS_OFF_NOTE ) ).toHaveCount( 0 );
 
 	await guest.close();
 } );
@@ -269,6 +279,141 @@ for ( const view of WINDOWS ) {
 		await page.context().close();
 	} );
 }
+
+/** The ways the sign-in request ends with nothing of the server's to show (FR-161c). */
+const WITHOUT_AN_ANSWER = [
+	{
+		name: 'does not arrive',
+		answer: ( route ) => route.abort(),
+	},
+	{
+		name: 'is answered with an error page and not with JSON',
+		answer: ( route ) =>
+			route.fulfill( {
+				status: 500,
+				contentType: 'text/html',
+				body: '<h1>Internal Server Error</h1>',
+			} ),
+	},
+];
+
+for ( const ending of WITHOUT_AN_ANSWER ) {
+	test( `a sign-in whose request ${ ending.name } says so under the Sign in button, on a phone`, async ( {
+		browser,
+	} ) => {
+		const page = await openAccount( browser, WINDOWS[ 1 ], SIGNED_OUT );
+		// Answered here, so the site is not asked and no sign-in is counted.
+		await page.route( /account\/login/, ending.answer );
+		const form = page.locator( '[data-corex-account-form="login"]' );
+		const field = form.locator( 'input[name="password"]' );
+
+		// The field against the foot of the window: the button and the line are below it.
+		await scrollToEdge( field, 'end' );
+		await field.focus();
+		await page.keyboard.press( 'Enter' );
+
+		const line = form.getByRole( 'status' );
+		await expect( line ).toHaveText(
+			'The site could not be reached, or its answer could not be read. Please try again.'
+		);
+		// The sentence is the one the page handed the script, which a translation replaces.
+		expect(
+			await page.evaluate( () => window.corexAccount.i18n.noAnswer )
+		).toBe( await line.textContent() );
+		await expect( line ).toHaveAttribute( 'data-state', 'error' );
+		await expect
+			.poll( () => outsideWindow( line ) )
+			.toEqual( { above: 0, below: 0, left: 0, right: 0 } );
+
+		await page.context().close();
+	} );
+}
+
+for ( const view of WINDOWS ) {
+	test( `with scripts off the block says above its forms that they need JavaScript, in ${ view.name }`, async ( {
+		browser,
+	} ) => {
+		const page = await openAccount( browser, view, SIGNED_OUT, false );
+		const note = page.locator( SCRIPTS_OFF_NOTE );
+
+		await expect( note ).toContainText( 'need JavaScript' );
+		// Read before a form is filled in: in the window as the page opens.
+		expect( await outsideWindow( note ) ).toEqual( {
+			above: 0,
+			below: 0,
+			left: 0,
+			right: 0,
+		} );
+
+		const at = await note.evaluate( ( el ) => {
+			const box = el.getBoundingClientRect();
+			const block = el
+				.closest( '[data-corex-account]' )
+				.getBoundingClientRect();
+			const form = document
+				.querySelector( '[data-corex-account-form]' )
+				.getBoundingClientRect();
+			const field = document
+				.querySelector( '.corex-account__row input' )
+				.getBoundingClientRect();
+			const style = window.getComputedStyle( el );
+			const inset =
+				parseFloat( style.paddingInlineStart ) +
+				parseFloat( style.borderInlineStartWidth );
+			const round = ( px ) => Math.round( px * 10 ) / 10;
+
+			return {
+				textStartsFromTheFieldsBy: round(
+					style.direction === 'rtl'
+						? field.right - ( box.right - inset )
+						: box.left + inset - field.left
+				),
+				aboveTheFirstFormBy: round( form.top - box.bottom ),
+				gapOfTheBlock: round(
+					parseFloat(
+						window.getComputedStyle(
+							el.closest( '[data-corex-account]' )
+						).rowGap
+					)
+				),
+				narrowerThanTheBlockBy: round( block.width - box.width ),
+			};
+		} );
+		// One gap of the block above the forms, and as wide as the block.
+		expect( at.aboveTheFirstFormBy ).toBeCloseTo( at.gapOfTheBlock, 0 );
+		expect( at.narrowerThanTheBlockBy ).toBeCloseTo( 0, 0 );
+		// Its text starts where the fields of the form under it start.
+		expect( at.textStartsFromTheFieldsBy ).toBeCloseTo( 0, 0 );
+
+		await page.context().close();
+	} );
+}
+
+test( 'with scripts off a sign-in that is pressed anyway comes back to the page, which still says why', async ( {
+	browser,
+} ) => {
+	const page = await openAccount( browser, WINDOWS[ 1 ], SIGNED_OUT, false );
+	const asked = [];
+	page.on( 'request', ( request ) => asked.push( request.url() ) );
+	const form = page.locator( '[data-corex-account-form="login"]' );
+
+	await form.locator( 'input[name="login"]' ).fill( 'nobody' );
+	await Promise.all( [
+		page.waitForEvent( 'load' ),
+		form.getByRole( 'button', { name: 'Sign in' } ).click(),
+	] );
+
+	await expect( page.locator( SCRIPTS_OFF_NOTE ) ).toBeInViewport( {
+		ratio: 1,
+	} );
+	// The form went to the page and not to the sign-in route: no sign-in was counted.
+	expect( asked.filter( ( url ) => /account\/login/.test( url ) ) ).toEqual(
+		[]
+	);
+	await expect( form.getByRole( 'status' ) ).toHaveText( '' );
+
+	await page.context().close();
+} );
 
 test( 'a profile that was not saved says so under the Save profile button, on a phone', async ( {
 	browser,

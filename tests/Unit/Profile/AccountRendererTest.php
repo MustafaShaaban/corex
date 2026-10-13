@@ -125,3 +125,41 @@ it('keeps an empty message line in the page, so a screen reader is told when a m
     expect(array_column($lines, 'hidden'))->toBe([false, false, false])
         ->and(array_column($lines, 'live'))->toBe(['polite', 'polite', 'polite']);
 });
+
+/**
+ * What a browser that runs no scripts is shown in place of an answer (spec 068, FR-161d).
+ *
+ * @return array{count:int,before:string,markup:string} How many notes, what the block holds
+ *                                                      before the first, and the note's own markup.
+ */
+function accountScriptsOffNote(string $html): array
+{
+    $count = preg_match_all('#<noscript>(.*?)</noscript>#s', $html, $notes);
+
+    return [
+        'count'  => (int) $count,
+        'before' => (string) preg_replace('#^<div[^>]*>#', '', (string) strstr($html, '<noscript>', true)),
+        'markup' => $notes[1][0] ?? '',
+    ];
+}
+
+dataset('account views', [
+    'a visitor'          => [['loggedIn' => false, 'registrationOpen' => true]],
+    'a signed-in person' => [['loggedIn' => true]],
+]);
+
+it('tells a browser that runs no scripts, once and before anything else, that the block needs them', function (array $ctx) {
+    $note = accountScriptsOffNote((new AccountRenderer())->render($ctx));
+
+    expect($note['count'])->toBe(1)
+        ->and($note['before'])->toBe('')
+        ->and($note['markup'])->toContain('JavaScript');
+})->with('account views');
+
+it('names no other place to sign in in that note, which is in the page for anybody', function (array $ctx) {
+    $note = accountScriptsOffNote((new AccountRenderer())->render($ctx));
+
+    expect($note['markup'])->not->toBe('')
+        ->and($note['markup'])->not->toContain('href');
+})->with('account views');
+

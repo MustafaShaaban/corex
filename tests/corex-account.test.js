@@ -3,12 +3,16 @@
  *
  * Loads the buildless script against jsdom, over the markup `AccountRenderer` prints, with the
  * server answered for. What they hold: a message is written beside the button that asked for
- * it, in one place, and is brought into the window when it would be outside it.
+ * it, in one place, and is brought into the window when it would be outside it; and a request
+ * that got no answer the script can read says so there too (FR-161c).
  */
 
 const SCRIPT = '../addons/corex-profile/assets/account.js';
 
 const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+/** The sentence the page hands the script for a request that got no answer it can read. */
+const NO_ANSWER = 'No answer came back (as the page worded it).';
 
 const LINE =
 	'<p class="corex-account__status" role="status" aria-live="polite"></p>';
@@ -70,6 +74,23 @@ function serverAnswers( message, ok = false ) {
 	);
 }
 
+/** The ways a request ends with nothing of the server's to show. */
+const WITHOUT_AN_ANSWER = {
+	'does not arrive': () =>
+		Promise.reject( new TypeError( 'Failed to fetch' ) ),
+	'is answered with a page and not with JSON': () =>
+		Promise.resolve( {
+			ok: true,
+			json: () =>
+				Promise.reject( new SyntaxError( 'Unexpected token <' ) ),
+		} ),
+	'is refused with no message': () =>
+		Promise.resolve( {
+			ok: false,
+			json: () => Promise.resolve( {} ),
+		} ),
+};
+
 function submit( kind ) {
 	document
 		.querySelector( `[data-corex-account-form="${ kind }"]` )
@@ -97,7 +118,10 @@ let scrolled;
 beforeEach( () => {
 	reducedMotion = false;
 	scrolled = [];
-	window.corexAccount = { restUrl: 'https://site.test/wp-json/corex/v1/' };
+	window.corexAccount = {
+		restUrl: 'https://site.test/wp-json/corex/v1/',
+		i18n: { noAnswer: NO_ANSWER },
+	};
 	window.matchMedia = jest.fn( ( query ) => ( {
 		matches: reducedMotion && query.includes( 'prefers-reduced-motion' ),
 	} ) );
@@ -228,13 +252,67 @@ it( 'moves the page at once for a person who asked for less motion', async () =>
 	] );
 } );
 
-it( 'does not move the page for an answer that says nothing', async () => {
+it( 'does not move the page for an answer that was taken and says nothing', async () => {
 	mountGuest();
-	serverAnswers( '' );
+	serverAnswers( '', true );
+	loadScript();
+
+	submit( 'reset-request' );
+	await flush();
+
+	expect( scrolled ).toEqual( [] );
+} );
+
+it.each( Object.keys( WITHOUT_AN_ANSWER ) )(
+	'says in the form that asked when its request %s',
+	async ( ending ) => {
+		mountGuest();
+		window.fetch = jest.fn( WITHOUT_AN_ANSWER[ ending ] );
+		loadScript();
+
+		submit( 'reset-request' );
+		await flush();
+
+		expect( messages() ).toEqual( [
+			{ in: 'reset-request', text: NO_ANSWER, state: 'error' },
+		] );
+	}
+);
+
+it( 'says beside the session buttons when their request does not arrive', async () => {
+	mountMember();
+	// The lists the member view loads are answered; what a button asks for is not.
+	window.fetch = jest.fn( ( url, options = {} ) =>
+		options.method === 'POST'
+			? Promise.reject( new TypeError( 'Failed to fetch' ) )
+			: Promise.resolve( { ok: true, json: () => Promise.resolve( {} ) } )
+	);
+	loadScript();
+
+	document
+		.querySelector( '[data-corex-account-action="revoke-all"]' )
+		.click();
+	await flush();
+
+	expect( messages() ).toEqual( [
+		{ in: 'corex-account__sessions', text: NO_ANSWER, state: 'error' },
+	] );
+} );
+
+it( 'says so in English on a page that handed the script no sentence', async () => {
+	delete window.corexAccount.i18n;
+	mountGuest();
+	window.fetch = jest.fn( WITHOUT_AN_ANSWER[ 'does not arrive' ] );
 	loadScript();
 
 	submit( 'login' );
 	await flush();
 
-	expect( scrolled ).toEqual( [] );
+	expect( messages() ).toEqual( [
+		{
+			in: 'login',
+			text: 'The site could not be reached, or its answer could not be read. Please try again.',
+			state: 'error',
+		},
+	] );
 } );

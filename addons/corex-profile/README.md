@@ -16,8 +16,15 @@ theme only presents it.
   `sessions/revoke-all`, `notifications` (require a signed-in user + REST nonce).
 - **`account.js`** — posts each form to its REST route and writes the answer in that
   form's own message line, under its button (`.corex-account__status`, a polite status),
-  bringing the line into the window when it is outside it. Without JavaScript a form is
-  sent to the page's own address, which does not answer it.
+  bringing the line into the window when it is outside it. A request that does not arrive,
+  or is answered with something that is not JSON, or is refused with no message, is said
+  in that line too, in one sentence the server hands the script
+  (`corexAccount.i18n.noAnswer`).
+- **With scripting off** the block shows a note above its forms
+  (`<noscript><p class="corex-account__noscript">`) saying that they need JavaScript. A
+  form sent anyway goes to the page's own address, which does not answer it: the forms do
+  not work without scripts. The note names no other place to sign in, because WordPress's
+  own address is the hidden one on a site with login protection on.
 
 ## Architecture
 
@@ -52,9 +59,12 @@ from a void call. Passwords, reset keys, and session tokens never appear in a re
 - Unit: `tests/Unit/Profile/` — `AccountServiceTest`, `SessionListTest`,
   `NotificationListTest`, `AccountRendererTest`.
 - Script: `tests/corex-account.test.js` (Jest) — where an answer is written, that one is on
-  the page at a time, and how the line is brought into view.
+  the page at a time, how the line is brought into view, and what is said when a request
+  gets no answer the script can read.
 - Browser: `tests/e2e/product-surfaces.spec.js` — the message is inside the window, under
-  its button and as wide as the fields, on a desktop and a phone, in both directions.
+  its button and as wide as the fields, on a desktop and a phone, in both directions; a
+  sign-in whose request is aborted, or answered with an error page, says so in its form;
+  with scripting off the note is above the forms and inside the window.
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
