@@ -364,6 +364,21 @@ All notable changes to Corex are documented here. The format follows
   Somebody who types no username is registered as before, with a login made from the
   address, and signs in with the address (DECISIONS #333).
 
+- **A request the Access routes cannot read is answered 400 and says which parameter, not
+  500** (spec 079, FR-002a). `POST corex/v1/access/requests` with no reason, a reason over
+  2,000 characters, an ability or an area CoreX does not have, both, or neither, was
+  answered "There has been a critical error on this website" and wrote a fatal error to
+  the PHP log each time; any signed-in person could send one. The role routes
+  (`access/roles/<role>`, `/preview`, `/apply`) did the same for an administrator who sent
+  an ability or an effect CoreX does not have, a `role` that is not a role key, or a
+  confirmation that could not be read. Measured over HTTP on WordPress 7.1.3: 21 such
+  requests were 500. Each is now 400 with WordPress's `rest_invalid_param` body: the
+  parameter, a message, and a code a script can branch on. Nothing is stored, audited or
+  notified. A reason sent as a list was stored as the word "Array" and is now refused. A
+  request that can be read and is refused for how things stand (a decision on a request no
+  longer pending, a change the safety policy stops, a confirmation for another change) is
+  still 200 with a `blocked` result (DECISIONS #350).
+
 - **A password with a quote or a backslash in it is one password at the account block and
   at WordPress's own screens.** WordPress's screens keep and check a password as the text
   of a form, with the request's slashes on it; the account add-on handed over the password
@@ -376,6 +391,26 @@ All notable changes to Corex are documented here. The format follows
   which `wp-login.php` accepts it too. A wrong password is counted as one failed sign-in,
   as before. The owner's decision (DECISIONS #334).
 
+- **The theme keeps a gutter beside what a visitor reads.** On a phone the title, the text,
+  the header and the footer of every template began at the edge of the window, and a wide
+  block, such as the grid of posts, did the same in a window 1024 pixels wide.
+  The theme now has a side padding of its own, from a spacing token, the same on both
+  sides: 16 pixels. It is set once, in `theme.json`, and a site that runs the theme changes
+  it in its `brand.json`. Measured on every template and every pattern, at 375 and 320
+  pixels, left to right and right to left, before and after a kit (spec 068, FR-157a;
+  DECISIONS #344).
+- **A block set to full width in a page's content is the window's width.** In a page, a
+  post or a project it was held to the text column, 768 pixels, on a desktop: a hero
+  pattern placed in a page was a band in the middle of the window. A block set to wide was
+  held to the same. Both are now what they say, with the text of a full-width block inside
+  the gutter (FR-157b).
+- **A form fits a narrow phone.** The `corex/form` block could not be narrower than 347
+  pixels, so a page that held one scrolled sideways in a window 320 wide: the front page,
+  the contact and form templates, and a search that finds nothing. In a window 600 pixels
+  wide or less its fields are now one column. Wider than that, nothing changed.
+- **The docs header's search field stays inside the header** in a window 320 wide, where
+  its button reached the window's edge once the header had a gutter.
+
 ### Client impact
 
 - **A right-to-left site on v0.45.1 or v0.45.2 sends the emails of the shared layout
@@ -385,6 +420,23 @@ All notable changes to Corex are documented here. The format follows
   PHP, `SubmissionFileDelivery::register()` is gone: the provider hooks the action. The
   constructor of `Corex\Email\Template\Layout` also takes a closure that answers with the
   brand; an array is taken as before.
+
+- **A site whose theme is its own is not moved by the theme's new gutter.** The side
+  padding and the template changes are in the Corex theme. Muva's, Perego's and Mizzey's
+  themes are themes of their own, not children of it, with their own `theme.json` (read on
+  this machine, 2026-10-13), so none of their pages moves. A site that does run the Corex
+  theme gets the gutter on every page, and a block set to full width or to wide in a
+  page's content becomes that wide on a desktop, where it was held to the text column: look
+  at pages that hold one. A template such a site saved a copy of in the Site Editor keeps
+  the old markup; there, set its Content block to full width, or reset the template. What
+  does reach every site is the form: in a window 600 pixels wide or less a `corex/form` is
+  one column (`grid-template-columns` on `.corex-form`, and a field is `grid-column: 1 / -1`
+  where it was `span 12`). A site that restyles the form's grid at that width should look
+  at it on a phone. The form's stylesheet is one of the framework's built files: the
+  `npm run build` of a site's update steps makes it, and nothing of the site's own has to
+  be rebuilt. Neither Muva's nor Perego's theme sets a root padding
+  (read the same day); whether their pages keep a gutter on a phone is theirs to measure,
+  and `tests/e2e/theme-gutter.spec.js` shows how.
 
 - **A script that reads `GET corex/v1/access/requests` has to be signed in as somebody
   who may open CoreX Access & Abilities.** Anybody else is answered `403`. Nothing in
@@ -618,6 +670,14 @@ All notable changes to Corex are documented here. The format follows
   the button use "Preview link" and "Copy link", which the domain already had. Nothing to set
   and nothing to rebuild for it: the page carries its own script.
 
+- **A script that calls `corex/v1/access/...` is answered 400 where it was answered 500.**
+  One that treats any status outside 2xx as "not done" needs no change. One that retries
+  on 5xx stops retrying a request that could never succeed. The codes are listed under
+  "What the REST routes answer" in `docs/en/03-operations/security.md`. A site's own PHP
+  that catches `InvalidArgumentException` from `AccessService` or `AccessPolicy` still
+  catches: they now throw `Corex\Access\InvalidAccessInput`, which extends it. Read on
+  2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the routes or
+  either class (DECISIONS #350).
 ## [0.45.2] — 2026-10-11
 
 Two changes on top of v0.45.1, both for a form defined in code.

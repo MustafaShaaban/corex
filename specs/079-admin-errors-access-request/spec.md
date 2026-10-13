@@ -167,6 +167,11 @@ nothing.
   REST route calls, and redirects.
 - **FR-002**: The REST route MUST remain JSON, unchanged, for JavaScript, API consumers and tests.
   This is not a conversion of an API into a page.
+- **FR-002a**: A request the Access REST routes cannot read (a parameter missing, of the wrong
+  shape, or naming an ability, area, effect or role CoreX does not have) MUST be answered `400`
+  with a JSON body that names the parameter and carries a stable code. It MUST store nothing,
+  write no audit entry, notify nobody, and MUST NOT be answered as a server error. A request that
+  can be read and is refused for how things stand keeps its `200` and `blocked` result.
 - **FR-003**: Submission MUST follow Post/Redirect/Get, so refresh creates no second request and
   Back resubmits nothing.
 - **FR-004**: On success the user MUST land on a CoreX-designed confirmation naming what was
