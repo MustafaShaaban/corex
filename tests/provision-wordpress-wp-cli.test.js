@@ -161,7 +161,7 @@ describe( 'ensure-wp-cli.sh, after setup-php', () => {
 		expect( run.status ).toBe( 0 );
 		expect( on.addressesAsked() ).toEqual( [ RELEASE_ADDRESS ] );
 		expect( on.wpInstalled() ).toBe( answersAs( RELEASE ) );
-		expect( run.stdout ).toMatch( /^::warning / m );
+		expect( run.stdout ).toMatch( /^::warning /m );
 	} );
 
 	test.each( [
