@@ -351,6 +351,21 @@ All notable changes to Corex are documented here. The format follows
   Somebody who types no username is registered as before, with a login made from the
   address, and signs in with the address (DECISIONS #333).
 
+- **A request the Access routes cannot read is answered 400 and says which parameter, not
+  500** (spec 079, FR-002a). `POST corex/v1/access/requests` with no reason, a reason over
+  2,000 characters, an ability or an area CoreX does not have, both, or neither, was
+  answered "There has been a critical error on this website" and wrote a fatal error to
+  the PHP log each time; any signed-in person could send one. The role routes
+  (`access/roles/<role>`, `/preview`, `/apply`) did the same for an administrator who sent
+  an ability or an effect CoreX does not have, a `role` that is not a role key, or a
+  confirmation that could not be read. Measured over HTTP on WordPress 7.1.3: 21 such
+  requests were 500. Each is now 400 with WordPress's `rest_invalid_param` body: the
+  parameter, a message, and a code a script can branch on. Nothing is stored, audited or
+  notified. A reason sent as a list was stored as the word "Array" and is now refused. A
+  request that can be read and is refused for how things stand (a decision on a request no
+  longer pending, a change the safety policy stops, a confirmation for another change) is
+  still 200 with a `blocked` result (DECISIONS #350).
+
 - **A password with a quote or a backslash in it is one password at the account block and
   at WordPress's own screens.** WordPress's screens keep and check a password as the text
   of a form, with the request's slashes on it; the account add-on handed over the password
@@ -634,6 +649,14 @@ All notable changes to Corex are documented here. The format follows
   the button use "Preview link" and "Copy link", which the domain already had. Nothing to set
   and nothing to rebuild for it: the page carries its own script.
 
+- **A script that calls `corex/v1/access/...` is answered 400 where it was answered 500.**
+  One that treats any status outside 2xx as "not done" needs no change. One that retries
+  on 5xx stops retrying a request that could never succeed. The codes are listed under
+  "What the REST routes answer" in `docs/en/03-operations/security.md`. A site's own PHP
+  that catches `InvalidArgumentException` from `AccessService` or `AccessPolicy` still
+  catches: they now throw `Corex\Access\InvalidAccessInput`, which extends it. Read on
+  2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the routes or
+  either class (DECISIONS #350).
 ## [0.45.2] — 2026-10-11
 
 Two changes on top of v0.45.1, both for a form defined in code.
