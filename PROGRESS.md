@@ -222,13 +222,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   file blocked, or the request for it failed, a form goes to the page as it does with
   scripts off, and the note for scripts being off is not shown. Read, not run. Only forms
   that work without scripts close it (DECISIONS #339).
-- **The session a person is using is never marked "this device" in the account block.**
-  Measured on 2026-10-13: every answer of `GET account/sessions` carried
-  `"current": false`, for the only session too. `SessionList::format()` compares each key
-  of what it is handed with the current session's verifier, and
-  `WP_Session_Tokens::get_all()` returns `array_values()`, so the keys are 0, 1, 2.
-  `SessionListTest` passes an array keyed by verifier, which WordPress never does. Not
-  changed (seen while building DECISIONS #345).
 - **A row of the account block's two lists is written for a machine.** Recent activity
   lists `profile.updated · 2026-10-13T09:00:00+00:00`, an internal name and an ISO date; a
   session is the browser's whole user agent string. And recent activity is not asked for

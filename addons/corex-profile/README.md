@@ -31,6 +31,12 @@ theme only presents it.
   when the list could not be loaded. The four sentences are handed to the script as
   `corexAccount.i18n.noSessions`, `sessionsNotLoaded`, `noActivity` and
   `activityNotLoaded`. After **Sign out everywhere** the page is loaded again.
+- **The session in use** is the row of active sessions that ends with " — this device"
+  (`corexAccount.i18n.thisDevice`): the one whose `current` is true in the answer of
+  `GET corex/v1/account/sessions`. The server marks the session of the cookie the request
+  came with, and no other; a request with no session cookie (an application password)
+  marks none. A row is `current`, `login`, `expiration`, `ip` and `ua`, and never a
+  token or its hash.
 - **With scripting off** the block shows a note above its forms
   (`<noscript><p class="corex-account__noscript">`) saying that they need JavaScript. A
   form sent anyway goes to the page's own address, which does not answer it: the forms do
@@ -44,7 +50,7 @@ theme only presents it.
 | Orchestration | `Account\AccountService` | Validation + policy (registration gate, password rules, enumeration-safe reset). Pure; unit-tested with a fake gateway. |
 | Boundary | `Account\WordPressAuthGateway` | Every WordPress auth call (`wp_signon`, `wp_insert_user`, `retrieve_password`, the reset flow, `wp_update_user`). Never reimplements hashing. |
 | Naming | `Account\PublicName` | The name a new account goes by: the username that was typed, or the part of the address before the @ when none was, or when an address was typed as the username. Pure. |
-| Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak) and ends other/all sessions via core helpers. |
+| Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak), marks the one the request was made with by the record WordPress holds for it, and ends other/all sessions via core helpers. |
 | Notifications | `Notification\NotificationService` | The signed-in user's own activity, projected from the shared core activity stream. |
 | Presentation | `Block\AccountRenderer` | Pure, fully escaped HTML for the block. |
 
@@ -120,11 +126,14 @@ An address of 60 characters or fewer is the login, as before. Covered by
   sign-in whose request is aborted, or answered with an error page, says so in its form;
   with scripting off the note is above the forms and inside the window; a signed-in
   person's two lists say so when their requests are aborted, answered with an error page or
-  refused, in a box a step under the heading and a step above the session buttons; **Sign
-  out everywhere** loads the page again.
+  refused, in a box a step under the heading and a step above the session buttons; exactly
+  one listed session says "this device"; **Sign out everywhere** loads the page again.
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
+  `tests/Integration/Profile/SessionThisDeviceTest.php` — a person signed in on real
+  WordPress is told which session is theirs: the only one, the right one of two, one of
+  two that hold the same record, none without a session cookie, and no token in a row.
   `tests/Integration/Profile/RegistrationUsernameTest.php` — which usernames the register
   route refuses and which it keeps.
   `tests/Integration/Profile/PasswordSignsInEverywhereTest.php` — a password with a quote

@@ -31,9 +31,8 @@ final class SessionService
         }
 
         $manager = WP_Session_Tokens::get_instance($userId);
-        $current = function_exists('wp_get_session_token') ? (string) wp_get_session_token() : '';
 
-        return SessionList::format($manager->get_all(), $this->verifier($current));
+        return SessionList::format($manager->get_all(), $this->ownSession($manager));
     }
 
     public function signOutOthers(int $userId): AccountResult
@@ -59,10 +58,16 @@ final class SessionService
     }
 
     /**
-     * Hash a raw token to its stored verifier form (WordPress stores the SHA-256 hash).
+     * The record of the session this request was made with, as the manager holds it. Null for
+     * a request with no session cookie (an application password, WP-CLI) and for a cookie that
+     * is somebody else's or has run out. The token goes to WordPress and nowhere else.
+     *
+     * @return array<string, mixed>|null
      */
-    private function verifier(string $token): string
+    private function ownSession(WP_Session_Tokens $manager): ?array
     {
-        return $token === '' ? '' : hash('sha256', $token);
+        $record = $manager->get(wp_get_session_token());
+
+        return is_array($record) ? $record : null;
     }
 }

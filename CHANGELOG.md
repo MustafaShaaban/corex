@@ -65,6 +65,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The account block says which of a person's sessions is the one they are using**
+  (spec 068, FR-161h). Under "Active sessions" the session of the browser that opened
+  the page is meant to end with " — this device". No row ever did, on any site: the
+  list was looked up by a key WordPress does not hand over. The server now knows the
+  session by the record WordPress holds for it, and marks that row and no other. A
+  request made with an application password has no session and marks none. Two sign-ins
+  in the same second from one address and browser read the same, and one of the two is
+  marked. **Sign out other sessions** did not rely on the mark and is not changed
+  (DECISIONS #349).
+
 - **In the account block, a list that did not load says so, and an empty one says it is
   empty** (spec 068, FR-161f). A signed-in person's "Active sessions" and "Recent activity"
   were a heading with nothing under it in both cases: when the request for the list did not
