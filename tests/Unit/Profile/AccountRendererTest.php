@@ -8,6 +8,8 @@
  * Also that a field's id is its own on the page and its label is tied to it: the panel
  * prints several forms, and two of them have a field of the same name (DECISIONS #337).
  *
+ * And that a field tells the browser what it is for, its `autocomplete` value (DECISIONS #342).
+ *
  * @package Corex\Tests\Unit\Profile
  */
 
@@ -207,3 +209,51 @@ it('points every label at the field beside it, in its own form', function (array
     expect($labels)->not->toBeEmpty()
         ->and(array_column($astray, 'pointsInto', 'label'))->toBe([]);
 })->with('account panels');
+
+/**
+ * What each text field tells the browser it is for: its `autocomplete` value, by form and
+ * field name, in the order printed. A field with no value gives null. The tick boxes collect
+ * nothing about the person and are left out.
+ *
+ * @return array<string, string|null>
+ */
+function accountFieldPurposes(string $html): array
+{
+    $xpath    = new DOMXPath(accountDocument($html));
+    $purposes = [];
+    foreach ($xpath->query('//form//input[not(@type="checkbox")]') as $field) {
+        $form                                                   = $xpath->evaluate('string(ancestor::form/@data-corex-account-form)', $field);
+        $purposes[$form . ': ' . $field->getAttribute('name')] = $field->hasAttribute('autocomplete')
+            ? $field->getAttribute('autocomplete')
+            : null;
+    }
+
+    return $purposes;
+}
+
+it('tells the browser what each field is for', function (array $ctx, array $expected) {
+    expect(accountFieldPurposes((new AccountRenderer())->render($ctx)))->toBe($expected);
+})->with([
+    'the signed-out forms, registration open' => [
+        ['loggedIn' => false, 'registrationOpen' => true],
+        [
+            'login: login'               => 'username',
+            'login: password'            => 'current-password',
+            'register: corex_hp'         => 'off',          // the field left for bots is never filled in
+            'register: email'            => 'email',
+            'register: username'         => null,           // a browser would write the address into it
+            'register: password'         => 'new-password',
+            'register: password_confirm' => 'new-password',
+            'reset-request: login'       => 'username',
+        ],
+    ],
+    'the profile form' => [
+        ['loggedIn' => true],
+        [
+            'profile: display_name' => 'nickname',
+            'profile: first_name'   => 'given-name',
+            'profile: last_name'    => 'family-name',
+            'profile: email'        => 'email',
+        ],
+    ],
+]);
