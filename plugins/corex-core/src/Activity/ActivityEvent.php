@@ -55,6 +55,13 @@ final class ActivityEvent
     public const SENSITIVITY_PERSONAL     = 'personal';
     public const SENSITIVITY_SECURITY     = 'security';
 
+    /**
+     * How many characters the record holds an actor's label, a target's label and a target's
+     * id in. The table's columns are made this wide, and a longer text is cut to it before it
+     * is a record: {@see ActivityService::record()}.
+     */
+    public const LONGEST_TEXT = 191;
+
     private const ACTOR_KINDS = [self::ACTOR_USER, self::ACTOR_SYSTEM, self::ACTOR_CLI, self::ACTOR_CRON];
 
     private const AREAS = [

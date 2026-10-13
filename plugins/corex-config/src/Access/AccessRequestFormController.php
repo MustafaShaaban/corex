@@ -112,15 +112,13 @@ final class AccessRequestFormController
             return $screen;
         }
 
-        // Server-side, so a second tab, a double-click and a replayed POST are all covered. A
-        // disabled button covers none of them.
-        if ($this->service->pendingRequestFor($userId, $ability) !== null) {
-            return $screen;
-        }
-
         $now = new DateTimeImmutable('now');
 
         try {
+            // A second tab, a second press and a replayed POST are refused by the service, which
+            // is where the REST route's callers are refused too; a disabled button covers none of
+            // them. The answer is not read: created or already waiting, the screen shows the
+            // request that stands.
             $this->service->requestAccess($userId, $ability, null, $reason, $now, $now->modify('+7 days'));
         } catch (InvalidArgumentException) {
             // The service refused the details themselves — an over-long reason is the reachable

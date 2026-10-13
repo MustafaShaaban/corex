@@ -49,12 +49,12 @@ final class ActivityService
             occurredAt: $occurredAt ?? new DateTimeImmutable('now'),
             actorId: $actorId,
             actorKind: $actorKind,
-            actorLabel: $actorLabel,
+            actorLabel: $this->fitted($actorLabel),
             area: $area,
             kind: $kind,
             targetType: $targetType,
-            targetId: $targetId,
-            targetLabel: $targetLabel,
+            targetId: $this->fitted($targetId),
+            targetLabel: $this->fitted($targetLabel),
             outcome: $outcome,
             summary: $summary,
             context: $context,
@@ -63,6 +63,23 @@ final class ActivityService
         );
 
         return $this->repository->append($event);
+    }
+
+    /**
+     * A label, or the id of what was acted on, as the record can hold it.
+     *
+     * A caller hands over a person's display name, or the version a package says it is, and
+     * neither has a length the caller chose. The table refused a longer one, and the request
+     * that had already done its work ended in an error (DECISIONS #340). A text that was cut
+     * ends with an ellipsis, so that it is not read as the whole of it.
+     */
+    private function fitted(string $text): string
+    {
+        if (mb_strlen($text, 'UTF-8') <= ActivityEvent::LONGEST_TEXT) {
+            return $text;
+        }
+
+        return mb_substr($text, 0, ActivityEvent::LONGEST_TEXT - 1, 'UTF-8') . '…';
     }
 
     public function find(int $id): ?ActivityEvent

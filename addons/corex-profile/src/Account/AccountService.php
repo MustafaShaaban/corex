@@ -26,6 +26,13 @@ final class AccountService
      */
     public const MAX_EMAIL_LENGTH = 100;
 
+    /**
+     * What an account's display name is held in. WordPress does not refuse a longer one: it
+     * keeps the name the account had, and with it everything else of the account's row, and
+     * reports no error. So it is refused here, where a reason can be given (DECISIONS #340).
+     */
+    public const MAX_DISPLAY_NAME_LENGTH = 250;
+
     public function __construct(private readonly AuthGateway $gateway)
     {
     }
@@ -167,8 +174,9 @@ final class AccountService
             return $emailError;
         }
 
-        if (isset($fields['display_name']) && trim($fields['display_name']) === '') {
-            return AccountResult::fail('empty_display_name', __('Display name cannot be empty.', 'corex'));
+        $nameError = isset($fields['display_name']) ? $this->displayNameProblem($fields['display_name']) : null;
+        if ($nameError !== null) {
+            return $nameError;
         }
 
         return $this->gateway->updateProfile($userId, $fields);
@@ -192,6 +200,43 @@ final class AccountService
         }
 
         return null;
+    }
+
+    /**
+     * A name is measured as the account would hold it, which can be longer than it was typed:
+     * WordPress holds an ampersand as five characters.
+     */
+    private function displayNameProblem(string $name): ?AccountResult
+    {
+        if (trim($name) === '') {
+            return AccountResult::fail('empty_display_name', __('Display name cannot be empty.', 'corex'));
+        }
+
+        if ($this->characters($this->gateway->displayNameAsKept($name)) <= self::MAX_DISPLAY_NAME_LENGTH) {
+            return null;
+        }
+
+        return AccountResult::fail('display_name_too_long', $this->tooLongDisplayNameMessage($name));
+    }
+
+    private function tooLongDisplayNameMessage(string $name): string
+    {
+        if ($this->characters(trim($name)) <= self::MAX_DISPLAY_NAME_LENGTH) {
+            // Within the number as typed: naming the number would send the person in a circle.
+            return __('That display name is too long to keep, because a character such as & or < is kept as several. Please shorten it.', 'corex');
+        }
+
+        return sprintf(
+            /* translators: %d: the most characters an account's display name can have. */
+            __('That display name is too long to keep. Please use one of %d characters or fewer.', 'corex'),
+            self::MAX_DISPLAY_NAME_LENGTH,
+        );
+    }
+
+    /** How long the database finds a text: it counts characters, and a letter can be several bytes. */
+    private function characters(string $text): int
+    {
+        return mb_strlen($text, 'UTF-8');
     }
 
     /**
