@@ -23,6 +23,12 @@ use WP_User;
  */
 final class WordPressAuthGateway implements AuthGateway
 {
+    /** What WordPress holds a login in; it refuses a longer one. */
+    private const MAX_LOGIN_LENGTH = 60;
+
+    /** How many logins are tried for one address before its owner is asked for a username. */
+    private const LOGINS_TRIED = 20;
+
     public function registrationOpen(): bool
     {
         return (bool) get_option('users_can_register', false);
@@ -48,17 +54,44 @@ final class WordPressAuthGateway implements AuthGateway
         return validate_username($username);
     }
 
-    public function createUser(string $email, string $login, string $password): AccountResult
+    public function loginForAddress(string $email): string
+    {
+        if (mb_strlen($email) <= self::MAX_LOGIN_LENGTH) {
+            return $email;
+        }
+
+        // What WordPress would keep of the part before the @: it stores a login without the
+        // characters a login cannot have, and an address may have several of them.
+        $kept = sanitize_user(PublicName::forLogin($email), true);
+
+        for ($number = 1; $kept !== '' && $number <= self::LOGINS_TRIED; $number++) {
+            $suffix = $number === 1 ? '' : '-' . $number;
+            $login  = substr($kept, 0, self::MAX_LOGIN_LENGTH - strlen($suffix)) . $suffix;
+
+            if (! $this->usernameExists($login)) {
+                return $login;
+            }
+        }
+
+        return '';
+    }
+
+    public function createUser(string $email, string $login, string $password, string $name): AccountResult
     {
         $userId = wp_insert_user([
             'user_email'    => $email,
             'user_login'    => $login,
             'user_pass'     => $this->asWordPressTakesIt($password),
             'role'          => get_option('default_role', 'subscriber'),
-        ] + $this->namesFor($login));
+        ] + $this->namesFor($name));
 
         if ($userId instanceof WP_Error) {
             return AccountResult::fail('register_failed', $userId->get_error_message());
+        }
+
+        // WordPress hands back 0, and no error, for an account its database did not take.
+        if ($userId < 1) {
+            return AccountResult::fail('register_failed', __('The account could not be created. Please try again.', 'corex'));
         }
 
         // Core new-user notifications (admin + user). Never auto-authenticate here.
@@ -74,14 +107,13 @@ final class WordPressAuthGateway implements AuthGateway
     /**
      * The three names WordPress would otherwise make from the login: the display name, the
      * nickname and the nicename, which is the address of the author page and a class on each
-     * of the account's comments. For a login that is an email address they are made from
-     * {@see PublicName}, so none of them shows the address.
+     * of the account's comments. They are made from the name the account goes by, which the
+     * service makes with {@see PublicName} so that none of them shows an address.
      *
      * @return array{display_name: string, nickname: string, user_nicename?: string}
      */
-    private function namesFor(string $login): array
+    private function namesFor(string $name): array
     {
-        $name  = PublicName::forLogin($login);
         $names = ['display_name' => $name, 'nickname' => $name];
 
         // WordPress shortens a nicename it makes itself, and refuses one it is handed that is

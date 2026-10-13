@@ -65,6 +65,25 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A long email address registers without a username, and one too long for an account is
+  refused with a reason.** The registration form's Username field is optional, and without
+  one the login is the email address. WordPress holds a login in 60 characters and an
+  address in 100. Measured on WordPress 7.1.3: an address of 61 characters or more with no
+  username was answered "Username may not be longer than 60 characters.", to somebody who
+  had typed none; and an address of 101 with a username was answered "Your account has been
+  created. You can now sign in." with no account stored, because WordPress reports no error
+  for an address its database does not take. Now an address of 61 to 100 characters gets a
+  login made from the part before the @ (what a login can hold of it, 60 characters at
+  most, with `-2` or the next free number when an account has it), and its owner signs in
+  with the address as everybody with no username does. The account is named by the part
+  of the address before the @, as any account with no username is. When no login can be
+  made, the form asks for a username (`username_required`). An address of more than 100
+  characters is refused at registration and on the Profile form, which failed silently in
+  the same way, with a message that says how long one may be (`email_too_long`). An address
+  of 60 characters or fewer is the login, as before. For a developer: `AuthGateway` has a
+  new method, `loginForAddress()`, and `createUser()` takes the account's name as a fourth
+  argument; a site's own gateway has to add both (DECISIONS #338).
+
 - **A new account with no username is no longer named by its email address.** The
   registration form's Username field is optional, and an account made without one has its
   address as its login. The account add-on handed that login to WordPress as the display
