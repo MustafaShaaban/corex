@@ -60,7 +60,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [103](specs/103-submissions-inbox-export/spec.md), the submissions inbox and its exports | every slice | three tasks: T045, T043b, and T074b (to whom a notification went, which the server does not record) | the tasks file |
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
-| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then the rest of 5 (the reply's sender). Slice 5's first half is built: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
+| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 6. Slice 5 is built: a site names who its replies are from (#357), and its first half before it: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built | a first installation on a shared host, watched |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | slices 1 and 2 of six: personal data marked and asked about by one rule (DECISIONS #309); several models in one export, with a history and a 30-day expiry (#312) | slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
@@ -119,6 +119,118 @@ handed, through WordPress's REST server. **WordPress adds slashes to `$_GET`, `$
 is unslashed. The careers form has no browser test; the real upload was made by hand with
 `curl` on a worktree's own WordPress, on Windows.
 
+**After v0.45.2, not released, 2026-10-13.** A form built in Forms & Flows is guarded by
+its trap field and by the site's challenge (DECISIONS #358; spec 068, FR-042a). The
+protection stage read the trap field and the token from the values the validation stage
+hands on, which are the answers of the flow's fields and nothing else: a filled trap field
+passed, and a provider was handed an empty token, since v0.34.0. `SubmissionPipelineContext`
+now carries the request as it was received, `received`, and the stage reads it there.
+**A stage that judges something the request carried beside its answers reads `received`,
+not `values`.** Not run in a browser against a real provider.
+
+**After v0.45.2, not released, 2026-10-13.** On a site without pretty permalinks the admin
+adds its query to a REST address as the site spells it (DECISIONS #359). There a route is
+a query (`/index.php?rest_route=/corex/v1/submissions`), eight clients wrote a second `?`
+after it, and WordPress answered 404: the Submissions inbox did not open, and neither did a
+filtered Forms & Flows list, a Data model's records or table changes, an Email Studio
+health check, a submission's email log, Blog Pro's refresh or the Setup Wizard's plan.
+**A client in `plugins/corex-config/src` that adds a query to an address PHP handed it
+uses `withQuery()` from `admin/restAddress.js`, and goes into the table in
+`admin/__tests__/restAddress.test.js`.** A script with no build step cannot import it and
+sets its parameters on a `URL`, as `setup-wizard.js` does. A path is still written after
+the address by hand. `tests/e2e/rest-address-plain.spec.js` runs on CI's site, which has
+pretty permalinks, because `tests/e2e/fixtures/corex-e2e-rest-address.php` hands a page
+its REST addresses in the other spelling for a request that carries
+`X-Corex-E2E-Rest-Address: plain`; a new browser test for a screen's requests can send the
+same header.
+
+**After v0.45.2, not released, 2026-10-13.** The schema self-heal takes its lock only when
+the site is behind (DECISIONS #360; the second finding of #355). On every admin page,
+`admin-ajax.php` call and cron run of a site that was current it made twelve statements,
+four of them writes to the options table. `SchemaSelfHeal::run()` now asks
+`SiteMigrationRunner::isDueForSite()` first, which reads every component's version in one
+statement (`SchemaVersionStore::getMany()`), and a run reads the versions again once the
+lock is held (`forget()`), so a migration another request has just finished is not run or
+announced twice. The version options stay stored with autoload off. An admin request's boot
+went from 11.1 ms to 7.4 ms on a development install.
+**Leads, not built:** reading the lock and taking it are two statements, as they have been
+since spec 100, so two requests that both find a site behind can both run; a lock the
+database grants to one asker would close it. The first finding of #355 (eleven reads of
+options that are not stored, on every front-end request) is closed by #361 and #366.
+
+**After v0.45.2, not released, 2026-10-13.** A setting with no override costs no query
+(spec 001, FR-011a; DECISIONS #361). CoreX's boot asked the database for eleven options
+that were not there on every request of a site with no persistent object cache; it asks
+for one. `Support\Config\Sources\OptionsSource` looks for an override among the options
+WordPress loaded with the site and asks WordPress only when a `pre_option` or
+`default_option` filter may answer or a site is being installed; `Corex\Boot` reads an
+add-on's feature flag through it. **An override stored with autoload off is no longer
+read**, which nothing of CoreX's stores; the entry's "Client impact" says how a site
+checks. Measured on one install: 33 queries to 23 on the front page, `plugins_loaded`
+7.5 ms to 5.6 ms. **Owed:** the client sessions are told the check before they take the
+release. What was left, three options of CoreX's own stores, is closed by #366.
+
+**After v0.45.2, not released, 2026-10-13.** The update guides name the `.env` variable
+that is read, `UPDATES_ENDPOINT` (DECISIONS #363). They said `COREX_UPDATES_ENDPOINT`,
+which nothing reads, so a site that followed them was offered no update and nothing said
+why. A config key has no `COREX_` prefix in `.env`; `COREX_ENV` and the `COREX_MAIL_*`
+names in the secrets guide, the mail guide and `.env.example` were wrong the same way and
+are corrected. The update source's empty default is now in `config/updates.php`, under the
+key that is read. `tests/Unit/Update/UpdateSourceGuidesTest.php` runs each guide's own
+`.env` line through the real `.env` source and the real update service. **Three leads are
+left in #363**: where the `.env` is looked for on an ordinary install is inside the web
+root while the secrets guide says outside it; the "No update source is configured" notice
+sends an administrator to a Settings screen with no field for it; and the architecture
+document names an `.env` variable nothing reads. The first is written up since (DECISIONS
+#368) and the second is removed (DECISIONS #365).
+
+**After v0.45.2, not released, 2026-10-13: tests only.** An integration test that leaves a
+post on the install fails, and the post is deleted first (DECISIONS #364).
+`Corex\Tests\Integration\TestCase` watches every post a test inserts, through
+`CreatedPosts::watchAll()`, and reads what is still stored after the file's own `afterEach`.
+One run on a fresh install had left four posts: `CodeFormSubmissionNotificationTest` two
+logged emails, `ComingSoonModeTest` a submission and a logged email. Both now watch for
+what they write, and posts by type are the same before and after a run. **A new test that
+writes a post it does not delete is red, with the post named: add
+`CreatedPosts::watch('<type>')` to its `beforeEach` and `->delete()` to its `afterEach`.**
+`EmailStudioServiceTest` no longer passes or fails by the order the unit files run in.
+
+**After v0.45.2, not released, 2026-10-13.** CoreX → Data no longer lists "No update source
+is configured" under Needs finishing (spec 074, FR-5.4; the owner's decision; DECISIONS #365).
+It was on every site, because no source is the default, and its button opened a Settings
+screen with no field for it. Run on a fresh install before it was changed. The updater
+itself is as it was, and no field was added for its source: what a set source does was
+measured and is in the decision. **Not decided, and the owner's:** whether the in-admin
+updater (spec 034) is kept at all now that releases are installed from CoreX → Releases
+(under "Open, and not hidden").
+
+**After v0.45.2, not released, 2026-10-13.** Three options CoreX reads on every request
+cost no query (spec 001, FR-011b; DECISIONS #366). The login protection settings, the
+operations mode and the Email Studio's defaults version were saved with autoload off and
+were one query each on every request, stored or not. `Corex\Support\Options\LoadedOptions`
+stores them loaded (`store()`), and on a cron or an admin request turns over the rows a
+site holds and writes a row that says nothing is stored where there is none
+(`ensureLoaded()`, last on `init`). **No read changed:** each store still asks
+`get_option()`, so a site between receiving the files and its first cron request reads
+what it read, at the query it cost. The first of #361's leads is closed by this; with
+pull request #405 as well, CoreX's boot asks the database nothing on a front-end request.
+Measured on one install: 35 queries to 32 on the front page, 25 to 22 with #405 merged
+in. A provider with a new option that every request reads registers it and writes it
+through `store()`. What was seen and left is in the entry's "Found, and not changed".
+
+**After v0.45.2, not released, 2026-10-13.** CI was run on Ubuntu 26.04 before GitHub moves
+`ubuntu-latest` to it (2026-10-19 to 2026-11-19; a run lands on either image until then), and
+the one job that failed there is changed (DECISIONS #367). Draft pull request #406, not to be
+merged, named `ubuntu-26.04` on every job that runs on a pull request. Seven passed as they
+are. The browser job stopped on `E: Unable to locate package php8.3-fpm`: the new archive has
+`php8.5-fpm` only. Once setup-php has set up PHP 8.3 a PHP-FPM for it is running on both
+images, so the job asks apt for the package only where no `php-fpm8.3` is on the path.
+With that, the browser job gave 481 passed, 7 skipped and 6 passed on each image. `runs-on`
+stays `ubuntu-latest`, for the reason WordPress stays at `latest` (#221). **Not tried on the
+new image: `docs.yml`, which runs on a push to `main` only, and `azure-pipelines.yml`**,
+which selects PHP 8.3 with a command that ends `|| true` and would build with the image's
+PHP 8.5 where there is no PHP 8.3 to select (read in the file, not run).
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
@@ -130,6 +242,19 @@ those before deciding the fallback is not needed. The release and its checksum a
 in `action.yml` and nothing updates them; only a run with `wp-cli` taken out of setup-php's
 `tools` proves a new pair. `tests/provision-wordpress-wp-cli.test.js` runs the script in
 each state a runner can be in, with a stand-in for `curl`.
+
+**After v0.45.2, not released, 2026-10-13.** The guides say which directory the `.env` is
+read from (DECISIONS #368; the first lead left in #363, run on a WordPress of the
+worktree's own). It is two levels above `corex-core`'s real location and nowhere else: the
+repository or the release directory where the plugin is linked, `wp-content/` where it is
+copied, which is inside the web root. A `.env` beside `wp-config.php` or above the web
+root is not read, environment variables are not read, and a `.env` PHP cannot read is
+treated as absent with nothing logged. The secrets guide has the section; six other pages
+point at it. **The code is not changed and a question is with the owner**: leave it, or
+let a constant in `wp-config.php` name the directory (recommended), and whether to say so
+when a `.env` is read from inside the web root or cannot be read. **One lead is left in
+#368**: by reading, the production Docker image puts Composer's `vendor/` where the plugin
+does not look for it.
 
 **After v0.45.2, not released, 2026-10-13: a security fix, and the reason for the next
 release.** A form's file field is answered by the file the request carried, and by nothing
@@ -144,11 +269,47 @@ import had the same mistake and reads the file part only.
 **Owed:** the Muva and Perego sessions are told what to check in what they store, and
 MUVA's `SendBriefEmails` changes to the call when it takes the release. Leads, not
 built: a flow offers a file question and has no way to take a file; an answer already
-stored that names somebody else's file is still shown by the inbox under both submissions;
-the careers form unslashes its upload's temporary path, which on a Windows host is a path
-with its backslashes removed (read, not run); the flow pipeline validates before it
-protects, and validation passes on the schema's answers only, so the honeypot and the
-challenge token may never reach the stage that reads them (read, not run).
+stored that names somebody else's file is still shown by the inbox under both submissions.
+Two more leads were measured and are fixed since: the careers form's upload path on a
+Windows host (pull request #402), and a flow's trap field and challenge token never
+reaching the stage that reads them (DECISIONS #358).
+
+**After v0.45.2, not released, 2026-10-13.** The words CoreX writes into an email are in
+the site's language too (spec 106, FR-011b; DECISIONS #362; a lead of #356, confirmed for
+all five places it named). A subject, a line of a body or a label translated before a
+mailer had it was in the language of the request. The seam moved to the core
+(`Corex\Mail\EmailLanguage`, `SiteLanguage`), because Forms and Guides write an email on a
+site without CoreX Mail, and is asked in three places: `NotificationDispatcher::dispatch()`
+takes a closure that writes the request and calls it inside the scope (both Forms
+senders); `SupportMailer::send()` asks for both renderings, and `SupportMessage` holds what
+it is about as a key (`SupportCategory`); `MailServiceProvider::registerEmailStudio()`
+installs the defaults inside it. `tests/Integration/Email/EmailWordsLanguageTest.php` runs
+each on WordPress both ways round, through `Corex\Tests\Support\AdministratorsRequest`.
+**A sender hands over what writes its words, or writes them inside
+`EmailLanguage::during()`; it does not translate and then hand over text.** CoreX ships no
+catalogue, so this changes an email only on a site that translates these strings itself.
+**With the owner:** whether Email Studio's defaults already stored on a site are rewritten
+(recommended: no; nothing is). Leads, not built: a send's stored outcome
+(`NotificationDelivery`'s reason) is kept in the language of the request that made it;
+`CreatedPosts::watch('attachment')` never hears of an attachment, so
+`NotificationFileLinkTest` leaves a row each run, and a run of the whole integration suite
+left five rows on a fresh install. **A test must not lean on a transaction to undo what it
+writes:** this machine's tables are MyISAM and a rollback undid nothing.
+
+**After v0.45.2, not released, 2026-10-13.** An email is drawn in the site's language,
+whoever's request draws it (spec 106, FR-011a; DECISIONS #356; decided on the owner's
+standing "you decide the best for me", and his to overrule). In the admin, and in any REST
+request `wp.apiFetch` makes, WordPress answers `is_rtl()`, `get_bloginfo('language')` and
+every translation for the signed-in person's profile language: a reply sent from the inbox
+by somebody who reads the admin in Arabic left an English site as `lang="ar" dir="rtl"`
+with its footer in Arabic. `Corex\Mail\SiteLanguage` makes WordPress's own switch
+around the drawing in `ReplyComposer`, `TemplateRenderer` and the brand `Layout` asks for.
+`tests/Integration/Email/EmailLanguageTest.php` loads WordPress in a process of its own,
+both ways round, with no language pack. **A new place that draws an email draws it inside
+`EmailLanguage::during()`.** Its two leads about words made before the mailer has them and
+Email Studio's stored defaults are the entry above. Still a lead, not built: the
+recipient's own language, for an email to a person with an account, is the option not
+taken.
 
 **After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
 raises the New submission notification (DECISIONS #352; the owner's report, relayed by the
@@ -174,13 +335,17 @@ followed, and `Corex\Email\Template\Layout` asks for its brand when it draws.
 `tests/Integration/Foundation/BootTranslationsTest.php` loads WordPress in a process of
 its own and names the file and line of anything read early. **Before making an object in
 a provider's `boot()` to hook one action, hook the action with a closure that makes it**:
-the object brings whatever its constructor needs, on every request. Three leads, not
-built: `ConfigServiceProvider::boot()` still makes every admin screen, job handler and
+the object brings whatever its constructor needs, on every request. That
+`ConfigServiceProvider::boot()` still makes every admin screen, job handler and
 `admin-post.php` controller on every request (195 shared entries by the end of
-`plugins_loaded`, counted, not timed); an email's direction follows the language of
-whoever is signed in and not the site's (measured for `Layout`, read for
-`SiteEmailBrand`); and on a site without pretty permalinks the Submissions inbox said
-"The submissions could not be loaded" (seen once in a browser, not traced).
+`plugins_loaded`) has since been timed and is left as it is: at most 1.1 ms of an 82 ms
+front-end request and 0.13 MB of a 5.8 MB peak (DECISIONS #355; CoreX's whole boot is
+7.2 ms there). What that measurement found instead, eleven reads of options that are not
+stored and the schema self-heal's lock on every admin request, is fixed since (DECISIONS
+#360, #361, #366). The two other leads are closed too: an email's direction followed the
+language of whoever is signed in and not the site's (DECISIONS #356), and on a site
+without pretty permalinks the Submissions inbox said "The submissions could not be
+loaded" (DECISIONS #359).
 
 **After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of
 open access requests, has the Access & Abilities screen's own check (`manage_options`),
@@ -215,6 +380,7 @@ nothing. The service now throws `Corex\Access\InvalidAccessInput` for what a cal
 and `AccessController` answers that class alone; a refusal for how things stand is still
 200 and `blocked`. `tests/Integration/Access/AccessRouteRefusalTest.php` holds it through
 WordPress's REST server.
+
 **After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
 soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
 the first client site (FR-011a, tasks T069 to T075, DECISIONS #327). The button is shown by a
@@ -278,6 +444,39 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **The builder's test run of a flow carries no challenge token**, so on a site with a
+  provider configured it stops at the protection stage unless the flow's protection is off.
+  By reading, not measured; it did before DECISIONS #358 too. Spec 068 FR-038 says a test
+  run runs captcha and does not say with what token.
+- **No browser test runs on a site that really has no permalink structure.** CI's site has
+  pretty permalinks, and `rest-address-plain.spec.js` is handed the other spelling of a
+  REST address by a fixture; the routes that answer are the same, the site is not. The
+  suite was run on such a site by hand on 2026-10-13, for the five screens of that spec
+  and `submission-file.spec.js` only. A submission's email log and an Email Studio health
+  check were not opened in a browser there: Jest holds the address each asks, and each
+  route was asked by hand. No page a visitor sees was opened there. DECISIONS #359.
+- **An admin client writes a path after the REST address it is handed, and that is right
+  only while the route is the last thing in the address.** It is, with and without pretty
+  permalinks. Something that filters `rest_url` to end in a query of its own (a language
+  parameter, say) would have the path written into that query. Read, not seen: no such
+  plugin was installed. DECISIONS #359.
+- **The integration suite still leaves rows in CoreX's own tables, and changes options.**
+  Posts are checked after every test (DECISIONS #364); nothing checks the rest. One run
+  leaves 19 `export.ready` notifications (`DataModels/DataExportSetTest`,
+  `DataModels/SubmissionsDataExportTest`, `Data/DataManagementControllerTest`,
+  `Submissions/SubmissionExportFileTest`), five activity events
+  (`Submissions/SubmissionDeleteTest`, `SubmissionTrashClockTest`, `SubmissionTrashTest`)
+  and two queued `data.export` jobs (`Data/DataManagementControllerTest`). A first run on a
+  fresh install leaves six more notifications, not traced to a file. `page_on_front` is
+  gone after a run and three `theme_mods_corex-seam-*` options are new. Measured on
+  2026-10-13 by counting every table before and after.
+- **The in-admin updater has no way to be switched on from the admin, and whether it is
+  kept is not decided.** Its source is set with `wp option update corex_updates_endpoint` or
+  a `.env`, neither of which a shared host has, and nothing is published for it to find.
+  When a source is set it is fetched twice per check with `wp_remote_get()`, an internal
+  address is not refused, and WordPress is offered the package the manifest names for
+  `corex-core` alone, one plugin of a release (measured, DECISIONS #365). Spec 107 left its
+  future open. A field for the source needs those changed first, in a spec of its own.
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
   only of what Email Studio's own service sent. A form's own email listener that sends
