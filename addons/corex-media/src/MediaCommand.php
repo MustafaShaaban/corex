@@ -68,7 +68,7 @@ final class MediaCommand
             if ($ok && is_file($output)) {
                 // Track + gate the backfilled derivative the same way an upload does (spec 062).
                 $meta = WebpMeta::measure($action['path'], $output, $this->settings->quality, $this->settings->minSaving);
-                update_post_meta($action['id'], WebpMeta::META_KEY, $meta->toArray());
+                update_post_meta($action['id'], WebpMeta::META_KEY, wp_slash($meta->toArray()));
                 $converted++;
             } else {
                 $failed++;

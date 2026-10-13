@@ -11626,3 +11626,97 @@ on a WordPress of this worktree's own with no mail server behind it: PHP reporte
 could not connect, and nothing left the machine. The test now answers `pre_wp_mail` as
 `SubmitLifecycleTest` does.
 
+## #332 — The rest of the writes slash what they hand to WordPress; a password is left as it is handed over
+
+**Date:** 2026-10-13. **Branch:** `fix/blog-profile-runs-keep-backslashes`, on top of #331's
+branch, whose test texts it shares. **Found by:** the same reading as #331. This is its
+second half: what is not a form, a flow or the inbox.
+
+**Measured on real WordPress, before the change:**
+
+- `CommentModerationService`: an edited comment and a reply were published without their
+  backslashes (`C:\offers\new` as `C:offersnew`). A reply's writer is named by their
+  display name, read from the database and handed to `wp_insert_comment()` as it was: a
+  writer shown as `CORP\salma.h` signed the reply `CORPsalma.h`.
+- `WpEditorialWorkflowStore::save()`: the notes are one meta value, written again whole
+  each time the post's workflow is saved. `\\server\share` in a note was `\servershare`
+  once stored and `servershare` after the item was saved again.
+- `WordPressAuthGateway::updateProfile()`: a display name, a first name and a last name.
+  `wp_insert_user()` takes the slashes off the user's own fields, and `update_user_meta()`
+  off the first and last name.
+- The four run stores (`WpDataImportStore`, `WpDataExportStore`, `WpMigrationRunStore`,
+  `WpSubmissionExportStore`): a run's content. An import's header, its rows, its mapping,
+  its accepted and its refused rows; the import's job commits the accepted rows from the
+  stored run (`DataImportJobHandler`, read). A migration's description and its plan, which
+  its job runs from the stored run (`MigrationJobHandler`, read): a statement ending in
+  `DEFAULT 'Jerry\'s \"offer\"'` was stored ending in `DEFAULT 'Jerry's "offer"'`. An
+  export's query. Each run is written again whole when its
+  job is attached and when it ends.
+- `BlueprintActivator`, through `seedPages()` and each of the four ways a page is stored
+  (created, an empty page filled, a page replaced by choice, a page created beside one that
+  was kept): the title `Research \ Development` lost its backslash, and the content
+  `{"heading":"Tom \u0026 Jerry's \u0022offer\u0022","path":"C:\\offers\\new"}` was stored
+  as `{"heading":"Tom u0026 Jerry's u0022offeru0022","path":"C:\offers\new"}`. The kits in
+  this repository were read. The company kit's pages each name patterns; the portfolio
+  kit's two are a pattern, headings and a block with no attributes; the Woo kit has no
+  pages. None holds a backslash, so no shipped page was affected.
+- `WebpMeta`, through a real upload: on this Windows machine the record of a converted
+  picture named `C:wamp64www…wp/wp-content/uploads/…` for a file at
+  `C:\wamp64\www\…\wp/wp-content/uploads/…`. WordPress builds the uploads folder from
+  `ABSPATH`, which on Windows has backslashes. `WebpResetCommand` deletes the file the
+  record names, on a reset and when the picture is deleted (read).
+- `WpNotificationPreferenceStore`: nothing lost. It holds a switch for each category, and
+  a category is one of a fixed list. Not changed.
+
+**The change.** `wp_slash()` at each of those writes: the comment's text in `edit()` and
+the whole comment in `reply()`; the notes; the three names; the run in each store's
+`persist()`; the record at both places it is written (`MediaServiceProvider`,
+`MediaCommand`); and a page's title and content in `BlueprintActivator::persist()`.
+
+**Left as they were**, each read: a run's hash and its actor, a hex text and a number; the
+file's name, extension and type the two export stores keep; the fixed words the kit and the
+editorial store write; an email address, in which WordPress allows no backslash.
+
+**A password is not changed, and what was read says why it must not be changed here.**
+`wp_insert_user()` hashes `user_pass` as it is handed over, before it takes the slashes off
+the other fields, and `wp_update_user()` does the same. So the gateway, which hands over
+the password of a REST request, hashes the password as it was typed. WordPress's own
+screens do not: `wp_signon()` reads `$_POST['pwd']` without taking its slashes off,
+`wp-login.php` hands `reset_password()` the slashed `$_POST['pass1']`, and its REST users
+controller hands `wp_insert_user()` a slashed password. Measured: a person registered
+through the gateway with the password `it's a "pass\word"` is not signed in by the text
+`wp-login.php` would check, and a password set the way a WordPress screen sets it is not
+accepted the way the gateway checks it. This is for a password with `'`, `"` or `\` in it,
+and it was so before this change. Slashing the password in the gateway would make new
+accounts agree with WordPress and lock out every account that registered through CoreX
+with such a password. It is a decision of its own, in PROGRESS.md.
+
+**`createUser()` is not changed either.** It hands over the login as the display name.
+Measured: a login `CORP\salma` is stored `CORPsalma` by WordPress's own rule for a login
+(`sanitize_user()`), and the display name beside it the same. Slashing the display name
+would keep `CORP\salma` there beside a login that is another text. The defect is before
+it: a registration with a login WordPress will alter is accepted. PROGRESS.md.
+
+**Nothing relied on the stripping.** Read: the comment's text, the notes and the names come
+from REST requests, which arrive without slashes (`BlogProController`,
+`ProfileServiceProvider`); the runs are built from requests and from files; a kit's page
+comes from a blueprint's code. A migration's preview is kept by another store
+(`WpMigrationPreviewStore`) and its checksum is compared with the provider's own definition,
+not with the stored run. A run is found again by its hash, which is not text.
+`WpDataExportStore::saveFile()` keeps only a file's name, for two reasons its comment
+gives; the second, that a path stops being true when a site moves, still stands.
+
+**Records already stored are not repaired**, for the reason in #331. A row imported without
+a backslash stays so. On a Windows host a record made before this change still names no
+file.
+
+**Tests**, on real WordPress: `tests/Integration/Blog/BlogTextKeepsBackslashesTest.php`,
+`tests/Integration/Profile/ProfileNamesKeepBackslashesTest.php` (which also holds the
+password and the email address still),
+`tests/Integration/DataModels/RunStoresKeepBackslashesTest.php`,
+`tests/Integration/Kit/KitPageKeepsMarkupTest.php` and
+`tests/Integration/Media/WebpRecordKeepsPathsTest.php`. The last uploads into a folder
+whose path has a backslash in it, so that it fails without the change on a Linux runner
+too, where it is a folder with a backslash in its name. 49 of the 64 tests failed before
+the change.
+

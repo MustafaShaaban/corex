@@ -53,7 +53,9 @@ final class WpEditorialWorkflowStore implements EditorialWorkflowStore
         update_post_meta($item->postId, self::ASSIGNEE_META, $item->assigneeId ?? 0);
         update_post_meta($item->postId, self::DUE_META, $this->nullableDate($item->dueAt));
         update_post_meta($item->postId, self::SCHEDULE_META, $this->nullableDate($item->scheduledAt));
-        update_post_meta($item->postId, self::NOTES_META, array_map($this->noteRow(...), $item->notes));
+        // Every note is written again with each save, and WordPress takes one level of slashes
+        // off them each time: handed over as they are, a note loses one more on every save.
+        update_post_meta($item->postId, self::NOTES_META, wp_slash(array_map($this->noteRow(...), $item->notes)));
     }
 
     public function updateNativeStatus(int $postId, string $status, ?DateTimeImmutable $scheduledAt = null): void

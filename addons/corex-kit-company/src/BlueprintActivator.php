@@ -146,13 +146,15 @@ final class BlueprintActivator
      */
     private function persist(PageDisposition $disposition, array $page): array
     {
+        // WordPress takes one level of slashes off a title and a content on their way in, and a
+        // block's attributes are JSON, in which an ampersand and a quote are written with one.
         if ($disposition->action === PageDisposition::CREATE) {
             $id = wp_insert_post([
-                'post_title'   => $page['title'],
+                'post_title'   => wp_slash($page['title']),
                 'post_name'    => $page['slug'],
                 'post_status'  => 'publish',
                 'post_type'    => 'page',
-                'post_content' => $page['content'],
+                'post_content' => wp_slash($page['content']),
             ]);
 
             if (! is_int($id) || $id <= 0) {
@@ -171,7 +173,7 @@ final class BlueprintActivator
                 return ['pageId' => null, 'persistedAs' => null];
             }
 
-            wp_update_post(['ID' => $existing->ID, 'post_content' => $page['content']]);
+            wp_update_post(['ID' => $existing->ID, 'post_content' => wp_slash($page['content'])]);
 
             // A kit placeholder stays Corex-owned (created → deleted on reset); a user's empty page becomes
             // adopted (reset only empties it, never deletes a page the user already had).
@@ -192,7 +194,7 @@ final class BlueprintActivator
                 return ['pageId' => null, 'persistedAs' => null];
             }
 
-            wp_update_post(['ID' => $existing->ID, 'post_content' => $page['content']]);
+            wp_update_post(['ID' => $existing->ID, 'post_content' => wp_slash($page['content'])]);
             update_post_meta($existing->ID, self::PAGE_META, PageDisposition::PERSISTED_REPLACED);
 
             return ['pageId' => $existing->ID, 'persistedAs' => PageDisposition::PERSISTED_REPLACED];
@@ -201,11 +203,11 @@ final class BlueprintActivator
         // Suffix leaves the operator's page untouched and creates the kit page under a fresh, non-colliding slug.
         if ($disposition->action === PageDisposition::SUFFIX) {
             $id = wp_insert_post([
-                'post_title'   => $page['title'],
+                'post_title'   => wp_slash($page['title']),
                 'post_name'    => $disposition->persistSlug(),
                 'post_status'  => 'publish',
                 'post_type'    => 'page',
-                'post_content' => $page['content'],
+                'post_content' => wp_slash($page['content']),
             ]);
 
             if (! is_int($id) || $id <= 0) {
