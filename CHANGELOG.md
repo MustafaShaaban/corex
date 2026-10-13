@@ -128,6 +128,19 @@ All notable changes to Corex are documented here. The format follows
   (`display_name_too_long`). A name of up to 250 characters is saved, in any script: the
   count is of characters (DECISIONS #340).
 
+- **The account block says what happened under the button that was pressed.** The
+  `corex/account` block had one message line, above its forms, for everything the server
+  answers: a refused sign-in, a refused registration, "a reset link is on its way", a saved
+  profile. With the button in the window the line was often outside it: 292 to 340 pixels
+  above a desktop window, and up to 521 above a phone's. A screen reader was told; somebody
+  looking at the button saw nothing happen. Each form now has a message line of its own
+  under its button, and so have the two session buttons. If the line would be outside the
+  window the page moves by the least that shows it, at once for a visitor who asked their
+  system for reduced motion. One answer is on the page at a time, written in one place, so
+  it is announced once; focus stays on the button. The line is as wide as the fields above
+  it: those reached 16 pixels past the form's inner edge on one side, and no longer do
+  (spec 068, FR-161a; DECISIONS #336).
+
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
   is plain text. A template whose subject is "Price <500 EGP" was sent as "Price";
@@ -260,6 +273,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **The account block's message line moved, and its fields are 16 pixels narrower.** Only
+  for a site that has Corex Profile on and styles the block itself. The one
+  `.corex-account__status` that was the first child of `.corex-account` is gone; there is
+  one inside each `.corex-account__form`, after its button, and one inside
+  `.corex-account__sessions`. It no longer has the `hidden` attribute: an empty line is in
+  the page with no box, so a rule written for `.corex-account__status[hidden]` matches
+  nothing, and one for `.corex-account__status` now matches several elements. The fields
+  (`.corex-account__row input`) are sized with their padding and border inside their
+  width. Read on this machine: nothing under `sites/` in the Muva or Perego checkouts
+  names the block. Nothing to rebuild: the block's script and stylesheet are not built.
 - **An account registered through the account block before this release, with no
   username, keeps its email address as its display name** and nickname, and keeps the
   address, without its punctuation, in the address of its author page. Nothing rewrites

@@ -8,6 +8,11 @@
  * 375px. Docs navigation (version selector, sidebar, search) is verified separately by
  * the PHP `DocsNavigationTest`, since the docs site is a static build.
  *
+ * It also holds where the block says what the server answered (spec 068, FR-161a): beside the
+ * button that was pressed, inside the window, on a desktop and on a phone, read left to right
+ * and right to left. The answers asked for here are refusals the account service gives before
+ * it reaches WordPress, so no account is made, no sign-in is counted and no email is sent.
+ *
  * ENVIRONMENT-GATED: needs Apache up (http://corex.local) + `npx playwright install`.
  */
 const { test, expect } = require( '@playwright/test' );
@@ -38,6 +43,124 @@ test.beforeAll( async ( { browser } ) => {
 	await context.close();
 } );
 
+const SIGNED_OUT = { cookies: [], origins: [] };
+
+/** The windows a message is looked for in. */
+const WINDOWS = [
+	{
+		name: 'a desktop window',
+		viewport: { width: 1280, height: 720 },
+		direction: 'ltr',
+	},
+	{
+		name: 'a phone',
+		viewport: { width: 375, height: 812 },
+		direction: 'ltr',
+	},
+	{
+		name: 'a desktop window read right to left',
+		viewport: { width: 1280, height: 720 },
+		direction: 'rtl',
+	},
+	{
+		name: 'a phone read right to left',
+		viewport: { width: 375, height: 812 },
+		direction: 'rtl',
+	},
+];
+
+/**
+ * Opens the account page in a window of its own.
+ *
+ * @param {import('@playwright/test').Browser} browser      The browser of the test.
+ * @param {Object}                             view         One of WINDOWS.
+ * @param {Object|string}                      storageState Who is looking: SIGNED_OUT, or a saved session.
+ * @return {Promise<import('@playwright/test').Page>} The page, with the block in it.
+ */
+async function openAccount( browser, view, storageState ) {
+	const context = await browser.newContext( {
+		storageState,
+		viewport: view.viewport,
+	} );
+	const page = await context.newPage();
+	await page.goto( accountPath );
+	await page.evaluate( ( direction ) => {
+		document.documentElement.setAttribute( 'dir', direction );
+		document.body.setAttribute( 'dir', direction );
+	}, view.direction );
+	await expect( page.locator( '[data-corex-account]' ) ).toBeVisible();
+
+	return page;
+}
+
+/**
+ * Puts a control against the top or the foot of the window, as a person who scrolled there.
+ *
+ * @param {import('@playwright/test').Locator} control The button or field.
+ * @param {'start'|'end'}                      edge    The window's top, or its foot.
+ */
+async function scrollToEdge( control, edge ) {
+	await control.evaluate(
+		( el, block ) => el.scrollIntoView( { block, behavior: 'instant' } ),
+		edge
+	);
+}
+
+/**
+ * How far a form's message line reaches outside the window, in pixels on each side.
+ *
+ * @param {import('@playwright/test').Locator} line The message line.
+ * @return {Promise<Object>} Zero on every side when the whole line is in the window.
+ */
+function outsideWindow( line ) {
+	return line.evaluate( ( el ) => {
+		const box = el.getBoundingClientRect();
+		const root = document.documentElement;
+		const beyond = ( px ) => Math.max( 0, Math.round( px ) );
+
+		return {
+			above: beyond( -box.top ),
+			below: beyond( box.bottom - root.clientHeight ),
+			left: beyond( -box.left ),
+			right: beyond( box.right - root.clientWidth ),
+		};
+	} );
+}
+
+/**
+ * Where a form's message line sits against the form's own button and fields.
+ *
+ * @param {import('@playwright/test').Locator} form The form.
+ * @return {Promise<Object>} Distances in pixels, and whether anything is drawn over the line.
+ */
+function placement( form ) {
+	return form.evaluate( ( el ) => {
+		const line = el.querySelector( '.corex-account__status' );
+		const box = line.getBoundingClientRect();
+		const button = el
+			.querySelector( 'button[type="submit"]' )
+			.getBoundingClientRect();
+		const field = el
+			.querySelector( '.corex-account__row input' )
+			.getBoundingClientRect();
+		const round = ( px ) => Math.round( px * 10 ) / 10;
+
+		return {
+			underButtonBy: round( box.top - button.bottom ),
+			gapBetweenRows: round(
+				parseFloat( window.getComputedStyle( el ).rowGap )
+			),
+			leftOfFieldBy: round( field.left - box.left ),
+			rightOfFieldBy: round( box.right - field.right ),
+			covered:
+				document.elementFromPoint(
+					box.left + box.width / 2,
+					box.top + box.height / 2
+				) !== line,
+		};
+	} );
+}
+
 test( 'the guest account block renders the sign-in, register, and recovery forms', async ( {
 	browser,
 } ) => {
@@ -60,17 +183,6 @@ test( 'the guest account block renders the sign-in, register, and recovery forms
 	await expect(
 		page.locator( '[data-corex-account-form="reset-request"]' )
 	).toBeVisible();
-
-	// Empty sign-in submit is blocked by native validation (no request leaves the browser).
-	const login = page.locator( '[data-corex-account-form="login"]' );
-	await login.getByRole( 'button', { name: /sign in/i } ).click();
-	await expect
-		.poll( () =>
-			login
-				.locator( 'input[name="login"]' )
-				.evaluate( ( el ) => el.checkValidity() )
-		)
-		.toBe( false );
 
 	await guest.close();
 } );
@@ -95,6 +207,96 @@ test( 'the account surface does not scroll sideways at 375px', async ( {
 	expect( overflow ).toBe( false );
 
 	await guest.close();
+} );
+
+for ( const view of WINDOWS ) {
+	test( `a refused sign-in says so under the Sign in button, in ${ view.name }`, async ( {
+		browser,
+	} ) => {
+		const page = await openAccount( browser, view, SIGNED_OUT );
+		const form = page.locator( '[data-corex-account-form="login"]' );
+		const button = form.getByRole( 'button', { name: 'Sign in' } );
+
+		// The button against the top of the window: everything above it is out of sight.
+		await scrollToEdge( button, 'start' );
+		await button.click();
+
+		const line = form.getByRole( 'status' );
+		await expect( line ).toHaveText(
+			'Please enter your username and password.'
+		);
+		await expect
+			.poll( () => outsideWindow( line ) )
+			.toEqual( { above: 0, below: 0, left: 0, right: 0 } );
+
+		const at = await placement( form );
+		expect( at.covered, 'nothing is drawn over the message' ).toBe( false );
+		// One row's gap under the button, like every other row of the form.
+		expect( at.underButtonBy ).toBeCloseTo( at.gapBetweenRows, 0 );
+		// As wide as the fields above it, on both sides.
+		expect( at.leftOfFieldBy ).toBeCloseTo( 0, 0 );
+		expect( at.rightOfFieldBy ).toBeCloseTo( 0, 0 );
+
+		await page.context().close();
+	} );
+
+	test( `a reset link asked for with Enter at the foot of ${ view.name } is answered in the window`, async ( {
+		browser,
+	} ) => {
+		const page = await openAccount( browser, view, SIGNED_OUT );
+		const form = page.locator(
+			'[data-corex-account-form="reset-request"]'
+		);
+		const field = form.locator( 'input[name="login"]' );
+
+		// The field against the foot of the window: the button and the line are below it.
+		await scrollToEdge( field, 'end' );
+		await field.focus();
+		await page.keyboard.press( 'Enter' );
+
+		const line = form.getByRole( 'status' );
+		await expect( line ).toHaveText(
+			'Please enter your username or email.'
+		);
+		await expect
+			.poll( () => outsideWindow( line ) )
+			.toEqual( { above: 0, below: 0, left: 0, right: 0 } );
+		// Said in one place: a screen reader is told once.
+		await expect(
+			page.getByText( 'Please enter your username or email.' )
+		).toHaveCount( 1 );
+
+		await page.context().close();
+	} );
+}
+
+test( 'a profile that was not saved says so under the Save profile button, on a phone', async ( {
+	browser,
+} ) => {
+	const page = await openAccount(
+		browser,
+		WINDOWS[ 1 ],
+		require( './global-setup' ).STORAGE_STATE
+	);
+	const form = page.locator( '[data-corex-account-form="profile"]' );
+	const button = form.getByRole( 'button', { name: 'Save profile' } );
+
+	await form.locator( 'input[name="display_name"]' ).fill( '' );
+	await scrollToEdge( button, 'start' );
+	await button.click();
+
+	const line = form.getByRole( 'status' );
+	await expect( line ).toHaveText( 'Display name cannot be empty.' );
+	await expect
+		.poll( () => outsideWindow( line ) )
+		.toEqual( { above: 0, below: 0, left: 0, right: 0 } );
+	// A signed-in person has the toolbar across the top of the window.
+	expect(
+		( await placement( form ) ).covered,
+		'nothing is drawn over the message'
+	).toBe( false );
+
+	await page.context().close();
 } );
 
 test.afterAll( async ( { browser } ) => {

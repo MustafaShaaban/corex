@@ -205,12 +205,30 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   account when its owner signs in on the account block; nothing moves the others, and
   nothing lists them. Moving one signs its owner out of their other browsers, once
   (measured, #334).
-- **The account block's message is out of the window when the button is in it.** Measured
-  in a browser on 2026-10-13: the block's one status line is above its forms, and after
-  **Create account** was pressed it was 149 pixels above a window 768 high, and 377 above
-  one of 375 by 812. It is announced to a screen reader (`role="status"`); somebody
-  looking at the button sees nothing happen. So for every message of the block, a refused
-  sign-in among them. Not changed.
+- **In the account block, two labels point into another form.** Measured in a browser on
+  2026-10-13: a field's id is made from its name alone, so `corex-account-login` and
+  `corex-account-password` are each in the page twice. The registration form's "Password"
+  label and the forgot-password form's "Username or email" label belong to the sign-in
+  form's fields: pressing either label puts the cursor in the sign-in form, and the two
+  fields they sit above have no name for a screen reader. Not changed (seen while building
+  DECISIONS #336).
+- **With scripts off, an account form is sent to the page and nothing answers.** Measured
+  the same day: the forms have no address of their own, so the browser posts to the page
+  it is on, which shows the empty forms again. The add-on's README and the profile guide
+  said the forms "still submit"; they now say what happens. Not changed.
+- **An account form whose request fails says nothing.** Read from `account.js`, not run:
+  a request that does not arrive, or an answer that is not JSON, ends in a rejected promise
+  nothing handles, and no message line is written.
+- **No screen reader was listened to on the account block.** That an answer is announced,
+  and once, is read from where it is written (one polite status, in the page before its
+  text changes; three of them in Chromium's accessibility tree on the signed-out page,
+  none ignored) and from focus not being moved. Firefox's and WebKit's trees were not
+  read, and the block's browser tests run in Chromium only.
+- **A page of the theme has no side gutter on a phone, on a fresh install.** Measured at
+  375 pixels on the default page template while looking at the account block: the page's
+  title, its content and the footer's text all start at the window's edge, and
+  `--wp--style--root--padding-left` computes to 0. Whether a kit or a client site sets
+  the gutter was not read. Not changed.
 - **An account registered before DECISIONS #335 with no username is still named by its
   email address.** A new one is named by the part before the @. The old ones keep the
   address as display name and nickname, and in the author address, and a comment written

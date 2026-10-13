@@ -71,3 +71,57 @@ it('escapes a hostile display name', function () {
     expect($html)->not->toContain('<script>alert(1)</script>')
         ->and($html)->toContain('&lt;script&gt;');
 });
+
+/**
+ * The message lines of a rendered panel, each with the form or section that holds it.
+ *
+ * @return list<array{holder:string,afterButton:bool,hidden:bool,live:string}>
+ */
+function accountMessageLines(string $html): array
+{
+    $document = new DOMDocument();
+    $document->loadHTML('<?xml encoding="utf-8"?>' . $html, LIBXML_NOERROR | LIBXML_NOWARNING);
+
+    $lines = [];
+    foreach ((new DOMXPath($document))->query('//*[@role="status"]') as $line) {
+        $holder   = $line->parentNode;
+        $previous = $line->previousSibling;
+        $lines[]  = [
+            'holder'      => $holder->getAttribute('data-corex-account-form')
+                ?: ($holder->hasAttribute('data-corex-account-sessions') ? 'sessions' : $holder->nodeName),
+            'afterButton' => $previous !== null
+                && (new DOMXPath($document))->query('descendant-or-self::button', $previous)->length > 0,
+            'hidden'      => $line->hasAttribute('hidden'),
+            'live'        => $line->getAttribute('aria-live'),
+        ];
+    }
+
+    return $lines;
+}
+
+it('gives each guest form a message line of its own, straight after its button', function () {
+    $lines = accountMessageLines((new AccountRenderer())->render([
+        'loggedIn'         => false,
+        'registrationOpen' => true,
+    ]));
+
+    expect(array_column($lines, 'holder'))->toBe(['login', 'register', 'reset-request'])
+        ->and(array_column($lines, 'afterButton'))->toBe([true, true, true]);
+});
+
+it('gives the profile form and the session buttons a message line each', function () {
+    $lines = accountMessageLines((new AccountRenderer())->render(['loggedIn' => true]));
+
+    expect(array_column($lines, 'holder'))->toBe(['profile', 'sessions'])
+        ->and(array_column($lines, 'afterButton'))->toBe([true, true]);
+});
+
+it('keeps an empty message line in the page, so a screen reader is told when a message arrives', function () {
+    $lines = accountMessageLines((new AccountRenderer())->render([
+        'loggedIn'         => false,
+        'registrationOpen' => true,
+    ]));
+
+    expect(array_column($lines, 'hidden'))->toBe([false, false, false])
+        ->and(array_column($lines, 'live'))->toBe(['polite', 'polite', 'polite']);
+});
