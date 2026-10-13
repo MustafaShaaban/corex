@@ -72,6 +72,18 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A careers application is accepted on a Windows host.** On a server that runs Windows,
+  every application sent to `POST corex/v1/careers/apply` was refused (422,
+  `cv_move_failed`), whatever the CV. PHP names an uploaded file's temporary copy with
+  backslashes there (`C:\Windows\Temp\php1A2B.tmp`), and the route passed the whole
+  description of the file through `wp_unslash()`, which removed them: the path handed on
+  named no file. Measured with a real upload on Windows: refused before, stored after, the
+  file kept byte for byte. The route now reads the file as the forms route does, from the
+  request, cleans only the name and the type the browser gave, and hands the path on as PHP
+  made it. A request that sends several files under the one name (`cv[]`) is answered as
+  one with no CV, where it logged PHP warnings. On a Linux host the path has no backslash
+  and nothing changes.
+
 - **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
   WP-CLI.** Four jobs in three runs did on 2026-10-13, each before a test had run, and each
   passed when a person ran it again. setup-php asks for WP-CLI once, with no retry, and reports a tool it

@@ -107,6 +107,18 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A careers application is accepted on a Windows
+host. `CareersServiceProvider::apply()` passed `$_FILES['cv']` through `wp_unslash()`, which
+took the backslashes out of `tmp_name` (`C:\wamp64\tmp\phpA2C3.tmp` became
+`C:wamp64tmpphpA2C3.tmp`), so every application there was refused: `cv_move_failed` in every
+release so far, `cv_not_uploaded` on `main` since the store asks `is_uploaded_file()`. The
+route now reads the request's file parameters as the forms route does and hands `tmp_name`
+on untouched. `tests/Integration/Careers/ApplyRouteUploadTest.php` holds what the store is
+handed, through WordPress's REST server. **WordPress adds slashes to `$_GET`, `$_POST`,
+`$_COOKIE` and `$_SERVER`, and none to `$_FILES`:** nothing read from a file's description
+is unslashed. The careers form has no browser test; the real upload was made by hand with
+`curl` on a worktree's own WordPress, on Windows.
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
