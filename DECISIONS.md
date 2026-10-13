@@ -14951,3 +14951,115 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #364 — CI follows `ubuntu-latest` onto Ubuntu 26.04, and the browser job serves with the PHP-FPM already on the runner
+
+**Date:** 2026-10-13. **Branch:** `ci/browser-job-serves-with-the-fpm-it-has`, from `main`.
+**Spec:** none (CI only). **Mode:** Deployment.
+
+**What was seen.** Every CI job on 2026-10-13 carried GitHub's notice that the
+`ubuntu-latest` label moves to Ubuntu 26.04
+([actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748)).
+The issue says the move is made over several weeks, from 2026-10-19 to 2026-11-19. Until
+it is done, the same commit runs on Ubuntu 24.04 on one run and on 26.04 on the next.
+Every job in `ci.yml`, `codeql.yml`, `dependency-security.yml` and `docs.yml` has
+`runs-on: ubuntu-latest`.
+
+**What was run.** Draft pull request #406, which is not to be merged, named
+`ubuntu-26.04` on every job that runs on a pull request: the six jobs of `ci.yml`, CodeQL
+and the dependency audit. The label is the one the runner-images README gives for the x64
+image. The jobs ran on image 20260927.149.1, Ubuntu 26.04.1.
+
+The first push, with nothing else changed (CI run 38452938344; CodeQL and the dependency
+audit are runs of their own, 38452938315 and 38452938342):
+
+- Seven of the eight jobs passed. `shivammathur/setup-php@v2` logged
+  `Installed PHP 8.3.35` and `Added wp-cli 2.12.0`. The unit suite gave `3145 passed`,
+  Jest `1383 passed`, the integration suite `2 warnings, 1198 passed`, which is the line
+  the last run on `main` gave on 24.04, and the multisite suite `7 passed`. The job that
+  generates a client site passed every step.
+- The browser job failed in the step "Serve WordPress", on
+  `sudo apt-get install -y -qq nginx php8.3-fpm`:
+  `E: Unable to locate package php8.3-fpm`, exit code 100. The steps that prove the
+  server and run the specs were skipped, so no browser spec ran. `npx playwright install --with-deps chromium` had
+  passed in the step before.
+
+Run 38453427884 added a step that prints what the runner has when "Serve WordPress"
+starts. On Ubuntu 26.04:
+
+- `apt-cache policy` knows `php8.5-fpm` and has no entry for `php8.3-fpm`. The image's
+  package sources are `ubuntu.sources` and `microsoft-prod.list`. `dpkg -l` lists 44
+  `php8.5` packages and no `php8.3` package.
+- PHP 8.3 is there all the same, as files setup-php put in place and not as packages:
+  `/usr/sbin/php-fpm8.3`, `/etc/php/8.3/fpm/` with `pool.d/www.conf` listening on
+  `/run/php/php8.3-fpm.sock`, and a `php8.3-fpm.service` that systemd reports
+  `active (running)`.
+
+With the package asked for only where no `php-fpm8.3` is on the path, and every other line
+of the step as it was, the job passed: `site up`, the error-log proof, `"jit_on": false`
+from `/etc/php/8.3/fpm/php.ini`, then `481 passed`, `7 skipped`, and `6 passed` for the
+installation of a release.
+
+Run 38454557848 ran the browser job with that step on both images. Ubuntu 24.04 (image
+20261004.327.1) and Ubuntu 26.04 each gave `481 passed`, `7 skipped` and `6 passed`. On
+24.04 the image has the `php8.3-fpm` package (8.3.6-0ubuntu0.24.04.11), setup-php logs
+`Updated to PHP 8.3.35`, and `php-fpm8.3` is on the path too. So neither image took the
+branch that asks apt for the package.
+
+**The decision.** The owner's, asked on 2026-10-13 with the three runs in front of him:
+follow `ubuntu-latest`, and change the step.
+
+- `runs-on` stays `ubuntu-latest` on every job.
+- "Serve WordPress" asks apt for `php8.3-fpm` only when `command -v php-fpm8.3` finds
+  nothing. Everything after that line is unchanged: the pool file, the settings directory,
+  the socket and the service are the ones PHP 8.3 has on both images.
+
+It is the reasoning of #221. A runner image is an input to a CI result that is not in git,
+as the WordPress version is. The current image is what a contributor's fork and a client
+repository run on, and a job that fails on it is something to find out. The nightly run on
+`main` (#221) is where the next image is met.
+
+**Weighed, and not chosen.**
+
+- *Naming `ubuntu-24.04` on every job.* Nothing moves while the label does. CI then stays
+  on an image GitHub will retire, somebody has to remember to move it, and the first try
+  on 26.04 on that day fails as it did on this one.
+- *Naming `ubuntu-26.04` on every job, with the same change to the step.* One known image
+  from today and no weeks of two. It gives up the next move as well, for the same cost as
+  the line above, one image later.
+- *Installing `php8.5-fpm` on 26.04 and serving with it.* The browser specs would run on
+  PHP 8.5 on some runs and on 8.3 on others, while the unit and integration suites run on
+  8.3. Which PHP CoreX is tested on is a decision of its own and is not made by a runner
+  image.
+- *Adding a package source that has `php8.3-fpm` for Ubuntu 26.04.* A third-party source
+  on the runner, to install a second copy of what setup-php already put there.
+
+**Tests.** None added. A test that reads `ci.yml` for the words of this step would pass
+on a step that does not work. What proves it is the job itself on each image: run
+38454557848 for both, and from here every run on whichever image it lands on.
+
+**What it does not do.**
+
+- The job still names `8.3` in the socket, the pool file, the settings file, the service
+  and PHP-FPM's log, as before. They are where PHP 8.3 keeps them on both images. If CI
+  moves to another PHP, they move with `php-version`.
+- The branch that asks apt for `php8.3-fpm` was taken on neither image, so it has not run
+  since this change. It is the line the step had before, kept for a runner that has no
+  PHP-FPM for PHP 8.3 once setup-php is done.
+- `docs.yml` runs on a push to `main` only and was not run on the new image. Its build job
+  sets up PHP 8.3 with setup-php, installs Composer's and npm's packages, generates the
+  class reference and builds the docs site, which the Jest job also does and did on 26.04.
+  Its deploy job is one action, `actions/deploy-pages`, and was not run.
+- `azure-pipelines.yml` builds on `vmImage: 'ubuntu-latest'` too, and the issue names
+  Azure DevOps beside GitHub Actions. It selects PHP with
+  `sudo update-alternatives --set php /usr/bin/php8.3 || true`. Where there is no
+  `/usr/bin/php8.3` that command fails, `|| true` hides it, and the package would be built
+  and verified with the image's PHP 8.5. This was read and not run.
+- A later image can change something else. The job proves the JIT is off and where PHP's
+  log goes on every run, so a change in where setup-php's PHP reads its settings stops the
+  job before the specs.
+
+**Client impact.** None for a site. A client repository carries `ci.yml` as a framework
+file, so its browser job passes on Ubuntu 26.04 when it takes the release this is in.
+Until then a client repository's browser job fails on the runs that land on 26.04, from
+2026-10-19, and passes on the runs that land on 24.04.

@@ -83,6 +83,15 @@ All notable changes to Corex are documented here. The format follows
   WP-CLI; WordPress is still installed at `latest`. Nothing a site runs changes
   (DECISIONS #354).
 
+- **The browser job in CI runs on Ubuntu 26.04 as well as on 24.04.** GitHub moves the
+  `ubuntu-latest` label to Ubuntu 26.04 between 2026-10-19 and 2026-11-19, and a run lands
+  on either image until it is done. Tried on the new image on 2026-10-13, every job passed
+  but the browser job, which stopped on `E: Unable to locate package php8.3-fpm` before a
+  spec had run: Ubuntu 26.04's archive has `php8.5-fpm` only. The package was not needed.
+  Once setup-php has set up PHP 8.3 a PHP-FPM for it is on the runner, running, on both
+  images, and the job now asks apt for `php8.3-fpm` only on a runner that has none. `runs-on` stays
+  `ubuntu-latest`. Nothing a site runs changes (DECISIONS #364).
+
 - **A new submission of a form defined in code raises a notification.** Reported on
   2026-10-13 from a client site: dozens of submissions stored and no notification for any of
   them. The notification centre listened for the event of a form built in Forms & Flows, and

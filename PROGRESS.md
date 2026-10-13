@@ -107,6 +107,19 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** CI was run on Ubuntu 26.04 before GitHub moves
+`ubuntu-latest` to it (2026-10-19 to 2026-11-19; a run lands on either image until then), and
+the one job that failed there is changed (DECISIONS #364). Draft pull request #406, not to be
+merged, named `ubuntu-26.04` on every job that runs on a pull request. Seven passed as they
+are. The browser job stopped on `E: Unable to locate package php8.3-fpm`: the new archive has
+`php8.5-fpm` only. Once setup-php has set up PHP 8.3 a PHP-FPM for it is running on both
+images, so the job asks apt for the package only where no `php-fpm8.3` is on the path.
+With that, the browser job gave 481 passed, 7 skipped and 6 passed on each image. `runs-on`
+stays `ubuntu-latest`, for the reason WordPress stays at `latest` (#221). **Not tried on the
+new image: `docs.yml`, which runs on a push to `main` only, and `azure-pipelines.yml`**,
+which selects PHP 8.3 with a command that ends `|| true` and would build with the image's
+PHP 8.5 where there is no PHP 8.3 to select (read in the file, not run).
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
