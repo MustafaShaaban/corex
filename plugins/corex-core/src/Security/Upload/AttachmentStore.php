@@ -55,6 +55,13 @@ final class AttachmentStore implements AttachmentStorage
             return AttachmentResult::refused($descriptor->reason);
         }
 
+        // Asked before the file is read. `wp_handle_upload()` asks the same below and refuses, but
+        // by then the bytes at this path had been read, and the reason given said whether a file
+        // was there and what it held. A path PHP did not receive in this request is not opened.
+        if (! is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
+            return AttachmentResult::refused('not_uploaded');
+        }
+
         $directory = ProtectedUploads::ensure();
         if ($directory === '') {
             return AttachmentResult::refused('no_directory');
@@ -117,9 +124,9 @@ final class AttachmentStore implements AttachmentStorage
             wp_generate_attachment_metadata($attachmentId, (string) $moved['file']),
         );
 
-        update_post_meta($attachmentId, '_corex_protected', '1');
+        update_post_meta($attachmentId, StoredUpload::MARKER, '1');
         if ($context !== '') {
-            update_post_meta($attachmentId, '_corex_upload_context', sanitize_key($context));
+            update_post_meta($attachmentId, StoredUpload::CONTEXT, sanitize_key($context));
         }
 
         return AttachmentResult::stored($attachmentId);
@@ -128,12 +135,12 @@ final class AttachmentStore implements AttachmentStorage
     /**
      * Remove a stored file and its attachment.
      *
-     * Only touches attachments this store created: `_corex_protected` is the marker, and without
-     * the check a caller could hand this an arbitrary id and delete a site's logo.
+     * Only touches attachments this store created: without the check a caller could hand this an
+     * arbitrary id and delete a site's logo.
      */
     public function forget(int $attachmentId): bool
     {
-        if ($attachmentId <= 0 || get_post_meta($attachmentId, '_corex_protected', true) !== '1') {
+        if (StoredUpload::contextOf($attachmentId) === null) {
             return false;
         }
 

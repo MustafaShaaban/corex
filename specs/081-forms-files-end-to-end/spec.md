@@ -147,10 +147,16 @@ The person notified of a submission gets the document with it, or a link they ca
 - **FR-001**: A `file` field type MUST exist in the registry, and the block MUST render it. The
   unreachable `'file'` entry in `FieldRenderer::INPUT_TYPES` MUST become reachable or be removed.
 - **FR-002**: The submit pipeline MUST accept `multipart/form-data` and read `$_FILES`.
+- **FR-002a**: A `file` field's answer MUST be the file the request carried in its file parts,
+  or absent. What the request's body says under the field's name MUST NOT be kept, validated
+  or handed to a listener. Where a route reads no file parts (a flow built in Forms & Flows),
+  a `file` field has no answer. Added 2026-10-13 (DECISIONS #353).
 - **FR-003**: Uploads MUST be validated for mime type **by content**, extension, and size, with an
   allow-list. Rejection MUST be field-level and MUST name the constraint.
 - **FR-004**: A validated file MUST be stored through WordPress's own upload handling, and the
   submission MUST store a reference to it rather than a path.
+- **FR-004a**: The store MUST NOT read a file PHP did not receive as an upload in the request
+  it is storing for. Added 2026-10-13 (DECISIONS #353).
 - **FR-005**: A refused submission MUST leave no stored file.
 - **FR-006**: Forms without a file field MUST be unaffected — same payload handling, same
   sanitisation, same tests.

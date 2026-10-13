@@ -36,8 +36,19 @@ final class CreatedPosts
     {
         $watcher = new self(array_values($postTypes));
         add_action('wp_insert_post', [$watcher, 'remember'], 10, 3);
+        // WordPress announces a new attachment by this action and not by `wp_insert_post`: a
+        // watcher asked for attachments heard of none, and deleted none.
+        add_action('add_attachment', [$watcher, 'rememberAttachment']);
 
         return $watcher;
+    }
+
+    /** The `add_attachment` listener. */
+    public function rememberAttachment(int $postId): void
+    {
+        if (in_array('attachment', $this->postTypes, true)) {
+            $this->ids[] = $postId;
+        }
     }
 
     /** The `wp_insert_post` listener. An update is not a row this test created. */
@@ -54,10 +65,11 @@ final class CreatedPosts
         return $this->ids;
     }
 
-    /** Stop watching and permanently delete everything remembered. */
+    /** Stop watching and permanently delete everything remembered, an attachment with its file. */
     public function delete(): void
     {
         remove_action('wp_insert_post', [$this, 'remember'], 10);
+        remove_action('add_attachment', [$this, 'rememberAttachment']);
 
         foreach ($this->ids as $postId) {
             wp_delete_post($postId, true);

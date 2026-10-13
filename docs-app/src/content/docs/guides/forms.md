@@ -197,6 +197,28 @@ declares. A file field without `required` can be left empty.
 'cv' => ['type' => 'file', 'rules' => ['required', 'mime:application/pdf', 'max_size:2']],
 ```
 
+**A file field is answered by a file, and by nothing else.** Its answer is the file the request
+carried for it. What a request says under the field's name in its text is not kept: with no file,
+the field has no answer, and `required` says so. A listener is handed the number the file was
+stored under, as an integer, or no value for that field at all.
+
+A listener of your own that opens the file (to attach it to an email, or to send it on) asks the
+framework whether that number is a file sent through that field, and does not read the
+attachment's meta:
+
+```php
+use Corex\Security\Upload\FormUploads;
+
+$cv = $event->values['cv'] ?? null;
+
+if (is_int($cv) && FormUploads::cameThrough('cv', $cv)) {
+    $path = get_attached_file($cv);
+}
+```
+
+The question is about the field's name, not about which form: a file is recorded with the field it
+came through.
+
 **A site can add a rule of its own.** It is a class that implements
 `Corex\Forms\Validation\Rule` and returns an error key, or `null` when the answer passes. Register
 it on the `RuleRegistry` from the container under a name no rule already has (lower-case letters,

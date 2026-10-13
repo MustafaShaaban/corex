@@ -10,15 +10,14 @@ namespace Corex\Config\Submissions;
 
 defined('ABSPATH') || exit;
 
+use Corex\Security\Upload\FormUploads;
+
 /**
  * Form uploads as WordPress holds them: private attachments in the protected uploads directory,
  * each marked by {@see \Corex\Security\Upload\AttachmentStore} with the field it came through.
  */
 final class WpSubmissionFiles implements SubmissionFiles
 {
-    /** What a form's upload is recorded as having come through, before the field's name. */
-    private const FORM_CONTEXT = 'form-';
-
     public function uploaded(string $field, int $attachmentId): ?array
     {
         if (! $this->cameThrough($field, $attachmentId)) {
@@ -49,9 +48,6 @@ final class WpSubmissionFiles implements SubmissionFiles
      */
     private function cameThrough(string $field, int $attachmentId): bool
     {
-        return $attachmentId > 0
-            && get_post_type($attachmentId) === 'attachment'
-            && get_post_meta($attachmentId, '_corex_protected', true) === '1'
-            && get_post_meta($attachmentId, '_corex_upload_context', true) === sanitize_key(self::FORM_CONTEXT . $field);
+        return FormUploads::cameThrough($field, $attachmentId);
     }
 }
