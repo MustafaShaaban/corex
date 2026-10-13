@@ -14951,3 +14951,1932 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+## #355 — Making every admin screen while CoreX boots costs about a millisecond a request, and is left as it is; where the boot's time goes
+
+**Date:** 2026-10-13. **Branch:** `perf/boot-makes-screens-when-asked`, from `main`.
+**Spec:** none (a measurement; no code changed).
+
+**The question.** #351 counted 195 shared entries in the container by the end of
+`plugins_loaded` on a front-end request, most of them admin screens, `admin-post.php`
+controllers and job handlers that `ConfigServiceProvider::boot()` makes to call their
+`register()`. It was counted there and not timed, and it was left as a lead: hook each with
+a closure, or register the screens only in the admin. This entry times it.
+
+**How it was measured.** This branch's own install, served and not run from the command
+line: WordPress 7.1.3, PHP 8.3.6 on Windows through PHP's built-in server (one process),
+OPcache on as `php.ini` has it (timestamps checked every two seconds, no JIT), Xdebug not
+loaded, MySQL 8.3 on the same machine, no persistent object cache, every CoreX plugin and
+add-on active, the Corex theme, signed out, code at `1ecd5255`. An mu-plugin wrapped
+`Corex\Boot::boot()` on requests that carried a header and wrote the time, the memory, the
+files included and the queries to a file. Each figure is the median of 200 requests after
+five unmeasured ones. The split by provider and by statement came from timers put into the
+container, the provider loop and `boot()` for 100 requests and taken out again; those runs
+are about a millisecond slower in all than the runs without them.
+
+**What CoreX's boot costs.**
+
+| Request | `Boot::boot()` | The whole request | Kept after boot | Queries in boot |
+|---|---|---|---|---|
+| The front page | 7.2 ms (6.9 to 8.0 between the quartiles) | 86 ms | 508 KB | 11 |
+| The REST index | 7.2 ms | 65 ms | 508 KB | 11 |
+| `admin-ajax.php`, signed out | 10.4 ms | 56 ms | 512 KB | 23 |
+| `wp-cron.php` (30 requests, with the timers in) | 11.3 ms | not read | not read | 23 |
+
+On the front page boot includes 389 files and declares 312 classes; the request ends having
+included 1,003 files, with a peak of 5.80 MB and 33 queries. Nothing else is hooked to
+`plugins_loaded` that matters: the whole action is 7.4 ms.
+
+**By provider, front page.** Every provider's `register()` together: 0.49 ms. Their
+`boot()`: `ConfigServiceProvider` 3.4 ms (284 KB, 4 queries), `BlocksServiceProvider`
+1.7 ms, `MediaServiceProvider` 0.75 ms (5 queries), `CoreServiceProvider` 0.32 ms,
+`ThemeServiceProvider` 0.2 ms (1 query), `ProfileServiceProvider` 0.17 ms, and no other
+above 0.05 ms.
+
+**Inside `ConfigServiceProvider::boot()`.** Its 43 `make(X::class)->register()` statements
+take 2.4 ms and keep 139 KB. Five of them are 1.3 ms of that:
+
+| Statement | Time | Why |
+|---|---|---|
+| `InsightsScreen` | 0.48 ms | 3 queries: the registry behind it reads three settings as it is made |
+| `RetentionScheduler` | 0.37 ms | includes 34 files; no query |
+| `LoginRouteGuard` | 0.25 ms | 1 query: the login protection settings |
+| `ReleasesScreen` | 0.11 ms | |
+| `LoginProtectionEnforcer` | 0.10 ms | |
+
+The other 38 take between 0.016 and 0.07 ms each. Making the four job handlers takes
+0.27 ms (the export handler 0.17 ms of it, with the writers and the PDF one, 27 files). By
+namespace, the making alone: `Config\Insights` 0.46 ms, `Config\Security` 0.39 ms,
+`Config\Retention` 0.36 ms, `Config\Submissions` 0.23 ms, `Config\Notifications` 0.15 ms,
+`Config\DataModels` 0.12 ms, `Config\Access` 0.11 ms, `Config\Releases` 0.09 ms, and every
+other under 0.06 ms. A shared dependency is counted against whichever statement asked for
+it first.
+
+**What not making them would save.** Run as an upper bound and not as a proposal: 33
+statements of `boot()` skipped unless `is_admin()`, which is every screen, every
+`admin-post.php` controller, the dashboard's parts, the notification bell and the toolbar,
+more than could really be skipped (the toolbar is on the front end for whoever is signed
+in). Front page, 200 requests each, with `main` run before and after:
+
+| | `main`, before | 33 skipped | 32 skipped, `InsightsScreen` kept | `main`, after |
+|---|---|---|---|---|
+| `Boot::boot()` | 7.06 ms | 5.95 ms | 6.46 ms | 7.10 ms |
+| Kept after boot | 508 KB | 420 KB | 424 KB | 508 KB |
+| Peak at the end of the request | 5.80 MB | 5.66 MB | 5.67 MB | 5.80 MB |
+| Files included in boot | 389 | 281 | 296 | 389 |
+| Queries in boot | 11 | 8 | 11 | 11 |
+| Entries resolved by the end of `plugins_loaded` | 195 | 133 | 140 | 195 |
+| The whole request | 82.1 ms | 80.5 ms | 80.8 ms | 83.0 ms |
+
+So at most 1.1 ms of an 82 ms request and 0.13 MB of a 5.8 MB peak. Half of the time is
+one screen's three queries; the other 32 statements are 0.6 ms between them. The whole
+request's own figure moves by less than its quartiles are apart (79.7 to 90.0 ms on `main`).
+
+**The decision: `boot()` is left as it is.** A change would move 33 hook registrations
+behind closures or behind `is_admin()`, for about 1.3% of a front-end
+request. It would also have to keep what is there on purpose: the access gate registered
+before the admin error handler, what cron and the command line need, and whatever a site's
+own plugin finds hooked once `corex_booted` has fired. #351's rule stands for what is added
+from here on, because the cost of one object is whatever its constructor reaches: before
+making an object in `boot()` to hook one action, hook the action with a closure that makes
+it. `InsightsScreen` is the one statement where that reach is paid for on every request,
+and its queries are part of the first finding below, which a change to where config is
+read from would remove without touching the screen.
+
+**No test is added.** Nothing changed. A count of what boot resolves would fail on every
+new screen (#351 said so); a time would fail on a slow runner.
+
+**Found, and not changed. Both cost more than what was asked about.**
+
+1. *Every query CoreX's boot runs on a front-end request, all 11, reads an option that is
+   not in the database.* One for the WooCommerce kit's feature flag (`Boot::enabledFlags()`),
+   one for `corex_login_protection_settings`, three for the Insights keys, one for
+   `corex_theme_brand_path`, five for the media add-on's WebP settings
+   (`MediaSettings::fromConfig()`). Nine of them come through
+   `Support\Config\Sources\OptionsSource::has()`, which asks `get_option()` for a
+   `corex_`-named override of each config key that is read. This install holds five options
+   named `corex…`, and none of these. WordPress remembers that an option does not exist in
+   its object cache, which lasts one request unless the site has a persistent one (read in
+   WordPress, not run on such a site), so a site that has never saved those settings asks
+   again on every request: 11 of the front page's 33 queries, at 0.11 to 0.15 ms each here
+   and more where the database is another machine. It grows with every config key a
+   provider reads while it boots.
+2. *On every admin, `admin-ajax.php` and `wp-cron.php` request the schema self-heal takes a
+   lock, finds nothing to do and lets it go: 12 queries, four of them writes, 2.7 ms.*
+   `Database\Schema\SchemaSelfHeal::run()` reads the transient `corex_schema_migrating`
+   (one `SELECT`), sets it (two `INSERT`s), reads each component's version (four `SELECT`s; the version options are
+   stored with autoload off), and deletes the transient (two `SELECT`s, a `SHOW FULL
+   COLUMNS` and two `DELETE`s). That is `MultisiteServiceProvider::boot()` at 2.7 ms, where
+   it is 0.04 ms on a front-end request, and it is why an admin request's boot is 10.4 ms
+   and not 7.2. An admin screen left open asks `admin-ajax.php` on a timer (WordPress's
+   heartbeat), and each ask writes to the options table four times. #299 took
+   `dbDelta()` out of every request; the lock around the version check stayed.
+3. *`BlocksServiceProvider::boot()` takes 1.7 ms.* `PluginRealpathRegistrar::register()`
+   asks the file system about each mounted plugin's main file. This install reaches its
+   plugins through Windows junctions, where that is slow. The registrar passes over a
+   plugin that is a real directory under the plugins folder, so a packaged site should
+   pay little of it; that was read and not measured, and is not followed further here.
+
+**Client impact.** None: no file under `plugins/`, `addons/`, `packages/` or `theme/`
+changed. The two findings are true of every site on this code. Neither was measured on a
+client site.
+## #356 — An email is drawn in the site's language, whoever's request draws it
+
+**Date:** 2026-10-13. **Branch:** `fix/email-direction-is-the-triggering-persons`, from `main`.
+**Spec:** 106, FR-011a (added with this change).
+
+**What was reported.** A lead left by #351: an email's direction is `is_rtl()` at the moment
+the email is drawn, and `is_rtl()` answers for the language of the request. In the admin
+that is the signed-in person's own profile language, not the site's.
+
+**Confirmed, and wider than the lead.** Measured on this branch's own install (WordPress
+7.1.3, PHP 8.3, `main` at `1ecd5255`), with a stand-in language file for `ar` that holds
+the one string WordPress reads a language's direction from. Each row was drawn through the
+container's `Layout` and `ReplyComposer`, first in a PHP process of its own and then over
+HTTP on a port with one listener; mail was answered by an mu-plugin at `pre_wp_mail`.
+
+| Site | The request | `Layout` | Reply design |
+|---|---|---|---|
+| en_US | admin page, `admin-ajax.php`, `admin-post.php`, as an administrator whose profile is `ar` | `dir="rtl"` | `lang="ar" dir="rtl"` |
+| en_US | a REST route with `_locale=user`, same person | `dir="rtl"` | `lang="ar" dir="rtl"` |
+| en_US | a REST route without it, a front-end page, same person | `dir="ltr"` | `lang="en-US" dir="ltr"` |
+| ar | the same three kinds, as an administrator whose profile is `en_US` | the reverse of the above | the reverse |
+| either | nobody signed in: a front-end page, a REST route, `admin-ajax.php`, `wp-cron.php` | the site's | the site's |
+
+Three things the lead did not say:
+
+- **The words follow too.** With one string given an Arabic stand-in, a reply's footer was
+  "This message was sent by…" in Arabic in the same requests. It is the whole language of
+  the request, not only its direction: `lang`, `dir`, and every string CoreX translates
+  while it draws.
+- **A reply from the inbox was affected, on every send.** The inbox asks its routes through
+  `window.Corex.api`, which uses `wp.apiFetch` where the page has it, and `wp.apiFetch` adds
+  `_locale=user` to every request. Both admin bundles list `wp-api-fetch` as a dependency
+  (`plugins/corex-config/build/admin/index.asset.php` and `…/notification-ui/index.asset.php`, as built here), and in a browser
+  on this install the inbox's own request was
+  `…rest_route=/corex/v1/submissions…&_locale=user`. Two real replies sent through
+  `POST corex/v1/submissions/24/reply&_locale=user` as the Arabic-profile administrator were
+  handed to WordPress as `<html lang="ar" dir="rtl">` on the English site.
+- **A contact notification was affected only for a signed-in person.** The front end's
+  forms post with a plain `fetch` (read: `corex-runtime.js` falls back to it where the page
+  has no `wp.apiFetch`), so a visitor's notification was the site's. The same form posted
+  with `_locale=user` by the Arabic-profile administrator was `dir="rtl"`.
+
+**Who that reached** (read in the code, by the kind of request each send is made in; only
+the rows above were run): a reply, its preview, **Send again**, the resend of a related
+notification and a flow's test send, all from CoreX's admin screens and so with
+`_locale=user`; the newsletter's "new article" email to every subscriber when a post is
+published from the editor, quick edit or the classic screen; the Guides support request and
+the access-request form, both `admin-post.php`. With the mail queue on and Action Scheduler
+installed, a queued email can also be drawn by Action Scheduler's own runner in
+`admin-ajax.php`, with the cookies of whichever administrator's page started it (not run:
+Action Scheduler is not in this repository). The queue is off by default
+(`'mail_queue' => false`), and its WP-Cron worker draws as nobody.
+
+**The decision: the site's language.** The owner was owed the choice, between three:
+
+1. *The site's language.* What the site's visitors read and what its emails are written
+   for. Known in every request, including cron.
+2. *The recipient's language where it is known.* What WordPress does for its own emails: a
+   person with an account gets theirs, anybody else the site's. It needs every sender to
+   say who the recipient is as a person and not only as an address, it changes nothing for
+   a visitor, a subscriber or a customer, who have no account, and a notification to
+   several people has no one language.
+3. *The content's own direction.* The reply design already does this for the operator's
+   words: each paragraph and list item is `dir="auto"`, so an Arabic reply from an English
+   site reads right to left. It cannot decide the frame around them: a logo, a footer and a
+   table have no first strong character, and a template's words are CoreX's, translated,
+   not typed.
+
+The first is built, on the owner's standing answer of 2026-10-08, "you decide the best for
+me" (my reading of it: with the options and a recommendation laid out, build the
+recommendation, and ask first only for what a client cannot undo). Nothing here is stored
+and nothing is sent differently except the language of what is drawn. The third stays as it
+is, inside the first. The second can be added later behind the same seam without undoing
+this, for the emails that do go to a person with an account.
+
+**How.** `Corex\Email\Language\EmailLanguage` has one method, `during(callable $draw)`, and
+one implementation, `SiteLanguage`: `switch_to_locale(get_locale())`, draw, and
+`restore_previous_locale()` if WordPress switched. That is the switch WordPress makes for
+its own emails (`wp-includes/pluggable.php`), so the direction, `get_bloginfo('language')`
+and the translations all follow it and all come back. It is asked in three places:
+
+- `ReplyComposer::compose()`, around the brand, the design and the plain-text sign-off. A
+  client's own design and its `corex_email_brand` filter run inside it.
+- `TemplateRenderer::render()`, around a template's subject and body and the layout's wrap.
+- The closure that gives `Layout` its brand, for an Email Studio template, which is wrapped
+  by the layout with nothing else around it.
+
+WordPress answers "nothing to switch" in four cases, read in
+`class-wp-locale-switcher.php` and `l10n.php`: the request is in the site's language
+already; somebody has switched on purpose (its filter makes `get_locale()` answer the
+switched language, so the two are equal); the site's language has no files; and before
+WordPress has made the switcher. In all four the email is drawn as before and nothing is
+restored.
+
+An interface with one implementation, against YAGNI on its face. It is there because
+`TemplateRenderer` and `ReplyComposer` are unit-tested without WordPress, and a unit test
+hands them `Corex\Tests\Support\LanguageOfTheRequest`.
+
+**Not changed, and left as leads.**
+
+- *Words made before the mailer has them.* A code-defined form's subject ("New "%s" form
+  submission") and its line about files, the fallback subject of a flow's email, and the
+  Guides support request's subject, category and plain-text body are translated in the
+  request and handed over as text. They are still in the request's language. Most are made
+  in a visitor's request, where that is the site's; the Guides request is the exception.
+- *What Email Studio installs.* Its default partials ("Unsubscribe", "Preferences",
+  "Privacy") and layout names are translated once and stored, in the language of whichever
+  request first ran `init` after activation. Read, not run.
+- *An email with no shell.* A form notification that names no template, and an Email Studio
+  template with no layout, have no `<html dir>` at all: a mail client decides.
+- *WordPress's own emails* (a new account, a password reset) are WordPress's, and it
+  switches for them itself.
+
+**The tests.** `tests/Integration/Email/EmailLanguageTest.php` loads WordPress in a process
+of its own, as `BootTranslationsTest` does, as an admin request of user 1 with hooks
+WordPress adopts before it loads: the site's language, the person's profile language, `ar`
+as an installed language that reads right to left, and a mark on every string of the
+`corex` domain translated while the request is in `ar`. No language pack is needed. Both
+ways round, it asserts first that the request is the administrator's (so it cannot pass on
+any code), then the direction of the bare layout, the direction and words of the contact
+notification, the `lang`, direction and words of a reply, and that the request is back in
+the administrator's language afterwards. On `main` both cases fail at the layout. With only
+the layout's own scope removed both fail too, so each of the three places is held.
+`tests/Unit/Email/SiteLanguageTest.php` holds the order (switch, draw, restore), that
+nothing is restored where nothing was switched, and that a drawing that throws still gives
+the language back.
+
+One thing the first version of the integration test got wrong, and why the lead said
+priority 99: a `determine_current_user` filter at priority 10 is overruled by WordPress's
+own cookie check on the same hook, which answers "nobody" for a request with no cookie.
+
+**Measured after, same install.** Over HTTP, except `main`'s side of the second row, which
+was drawn in a process of its own and not sent.
+
+| Check | `main` | This branch |
+|---|---|---|
+| A reply sent as the Arabic-profile administrator, English site, `_locale=user` | `lang="ar" dir="rtl"` | `lang="en-US" dir="ltr"` |
+| The footer of that reply's preview | in Arabic | in English |
+| The same as the English-profile administrator on the Arabic site | `lang="en-US" dir="ltr"` | `lang="ar" dir="rtl"` |
+| The contact notification posted with `_locale=user` by the Arabic-profile administrator, English site | `dir="rtl"` | `dir="ltr"` |
+| `Layout` and a reply drawn in `admin-ajax.php` as that administrator | `rtl` | `ltr` |
+| The language of the request after the email is drawn | the administrator's | the administrator's |
+
+The unit suite (3,127 tests) and the integration suite (1,182) pass on this install.
+
+**Client impact.** A site whose staff all read the admin in the site's language sees no
+change. A site with a person whose profile language differs has been sending that person's
+replies, and whatever else they triggered, in their language's direction and with CoreX's
+own words in it; from this change those are in the site's language. Muva's
+`MuvaEmailDesign` is handed the same brand and now runs inside the switch: a string it
+translates is in the site's language (read on this machine, 2026-10-13; nothing under
+`sites/` in the Muva or Perego checkouts makes a `TemplateRenderer` or a `ReplyComposer`
+itself). In PHP, both constructors take an `EmailLanguage` as their last argument; the
+container gives it.
+## #357 — A site names who its replies are from, and a setting that is refused is said
+
+**Date:** 2026-10-13. **Branch:** `feat/106-reply-sender`. **Spec:** 106, slice 5, its second half (story 5, FR-024).
+
+(#354 to #356 are held by three pull requests open the same day: the CI runner's WP-CLI, what
+boot makes, and the language an email is drawn in.)
+
+A reply left from the site's general sender, which on most sites is a no-reply address or
+the one the contact form's notifications come from: wrong for a person writing to a
+customer, and the open part of issue #150.
+
+**Three settings, each falling back to its general counterpart.** `mail.reply.from_name`,
+`mail.reply.from_address`, `mail.reply.reply_to`, under Settings → Mail. Each alone or with
+the others. A reply reads them, and so does a reply sent again (#328), which goes through
+the same call. Nothing else does.
+
+**The name travels on the message, and is still not a caller's to choose.** `EmailMessage`
+took an address for one message (#150) and deliberately no name: "a per-message display name
+would be a different and more dangerous feature, since a sender name that varies per message
+is how a spoof reads." That reasoning stands. `fromName` is there for a name an
+administrator set for one kind of message; the only code of CoreX's that fills it reads a
+setting. The driver could not have read the setting itself, since it does not know which
+message is a reply. Nothing in the type stops other code filling it, so it is guarded where
+it is used, below.
+
+**One rule for a name in a header, in one place.** `SenderName::of()`: one line, `<`, `>`
+and `"` taken out, no `=?` sequence begun, at most 100 characters. The first version had two
+rules, one in the gateway and one in the driver, and the driver's was
+`sanitize_text_field()`, which is a rule for text on a page: a review's probe sent
+"Tom & Jerry <3" as "Tom & Jerry &lt;3" and lost the "%ae" of "Save 50%ae today". It also
+found a name written as an encoded word, which a mail program decodes into whatever it
+says. The gateway applies the rule so that a site's own driver is handed a clean name;
+`WpMailDriver` applies it again, to the general From name too; and `MailService::deliver()`
+gives the name to `HeaderGuard` with the other header fields, which refuses a line break.
+This changes how an existing site's From name is cleaned, and the changelog says how.
+
+**A name with no address to stand in front of.** The driver writes `Name <address>` and
+wrote nothing where there was no address, so a name set alone, on a site that names no
+address, which is how a site starts, was dropped and the email left as "WordPress". The
+review found it; the first version's documents and one test's label said it worked. Where
+there is a name and no address, the driver's listener on `phpmailer_init`, which already
+knows its own email by a mark (#325), gives the mailer the name. Only where the mailer's
+name is still WordPress's own: a name a transport plugin chose through `wp_mail_from_name`
+is that plugin's, as it is when it replaces the name in a header. This fixes the general
+From name set alone as well.
+
+**A setting that is refused is said.** Story 5 asks that an address that is not valid "is
+refused with the reason". The settings screen already refused it, in silence: the value was
+dropped, the screen said "Settings saved", and the field came back as it had been. That was
+true of every email, web address, colour and choice on the screen, so the fix is the
+screen's and not this field's. After a save, each field that was not changed is named, with
+what was typed and why it was not taken; "Everything else was saved" says the rest. What was
+typed is not put back in the field: the stored value is what the form shows, and the message
+quotes what to type again.
+
+**How that message is drawn**, each point from the review. It is an alert that stays until
+dismissed, where "saved" goes after five seconds. It is given focus when the page loads: an
+alert that is in a page as it arrives is not reliably read out, and this one is last in the
+page. The field it names is marked as not taken and described by its line. Dismissed, focus
+goes to the first such field on the open tab, or to Save. What was typed is quoted in its
+own direction, so that "answers@" in a right-to-left sentence is not drawn "@answers", and
+only its first 80 characters: a picture pasted into a web address field is thousands. The
+marking and the focus are the page's script; without it the message still names the field.
+
+**What was typed is what is judged.** The sanitizer cleaned an address and then checked the
+cleaned one, so an address WordPress could "repair" was saved as another:
+`sales@münchen.de` as `sales@mnchen.de`, under "Settings saved". It checks what was typed.
+
+**A browser stops some of these first.** An address with nothing after the @ never reaches
+the server: the browser refuses to submit the form and says so itself. What reaches the
+server and is refused there is what a browser lets through and WordPress does not, such as
+`answers@acme`. The browser test types that.
+
+**The spec's own test is amended.** It read "the captured email's From and Reply-To are
+those". A kept email records its Reply-To and not its sender, so on a development site the
+sender is shown nowhere. Recording it is a change to what Email Studio keeps and shows, and
+is not made here: the From is read off the message WordPress's mailer builds, in a test, and
+the guide says a kept email does not show it.
+
+**Not verified:** that a relay sends from the address named. FluentSMTP and most relay
+plugins send each address through its own authenticated connection; one the relay does not
+know may be refused or rewritten by it, and a relay set to force a sender replaces this one.
+The setting's help and both guides say so, and the Mail settings' advisory now warns when
+the reply address is on another domain than the site's, as it did for the general one.
+
+**Left as it is, and known.** Email Studio's own Resend of a reply that failed rebuilds the
+email from the request and sends it from the general sender: Send again in the inbox is the
+way to send a reply again. The defaults in `addons/corex-email/config/mail.php`, the new
+`reply` block among them, are read by nothing; the settings and their fallbacks are. Most
+labels on the settings screen are not translatable, and now stand inside a translated
+sentence.
+
+**Reviewed** by an independent reading before the pull request: one must-fix (the name
+alone), eight should-fix, all acted on but the kept email's sender, which is the spec
+amendment above.
+
+## #358 — A flow's trap field and challenge token are read from the request as it was received, not from what the validation stage handed on
+
+**Date:** 2026-10-13. **Branch:** `fix/flow-protection-reads-the-request`, from `main`.
+**Spec:** 068, FR-042a (added with this change).
+
+**What was found.** A lead from reading, on 2026-10-13, then measured. A form built in
+Forms & Flows is submitted through `FlowSubmissionController` into `FormSubmissionPipeline`,
+whose stages `FormsServiceProvider` lists as validation, protection, storage, routing, email,
+inbox, timeline. `ValidationStage` ends a run that passed with
+`$context->withValues($result->values)`, and `Validator::validate()` answers only the values
+of fields in the flow's schema. `ProtectionStage` then read the trap field (`corex_hp`) and
+the challenge token (`captcha_token`) from `$context->values`. Neither is a field of a flow,
+so both were gone before the stage that judges them ran.
+
+**Measured, before the change.** Through the real `ValidationStage` and `ProtectionStage`
+(`tests/Unit/Forms/FlowProtectionSeesTheRequestTest.php`): a submission with its trap field
+filled completed, and one carrying the token its provider accepts was refused. Through the
+route on a WordPress of the worktree's own (`tests/Integration/Forms/FlowProtectionTest.php`):
+a submission with its trap field filled was answered 200 and stored; with a provider that
+accepts one token, a submission carrying that token was answered 422.
+
+So, for a form built in Forms & Flows:
+
+- *the trap field stopped nothing*, on any site;
+- *with a challenge provider configured* (and the flow not set to `captcha: off`) *every
+  submission was refused*, a real visitor's included, because the provider was handed an
+  empty token. Nothing got past a provider because of this: the failure was closed.
+
+A form defined in code is not concerned: `FormSubmissionService` judges the trap field and
+the token before it validates.
+
+**How long.** Since the stages were written: `git log -S` puts the stage order, the
+reduction in `ValidationStage` and the read in `ProtectionStage` in one commit, `adea6a6b`
+(spec 068, 2026-07-10), first released in v0.34.0. Every release from v0.34.0 to v0.45.2
+carries it. Two later changes worked on the symptom from the other end, and neither had a
+token to work with on this path: spec 071 (`a9eb73e7`, the scored verdict) and #270
+(`6edb80a6`, Turnstile and hCaptcha). `tests/e2e/helpers.js` switches captcha off for its
+flow, with a comment that the protection stage "judges an empty token" on a site with a
+provider; the browser suite therefore never ran a flow against one.
+
+**Why no test saw it.** `ProtectionStageTest` hands the stage a context that still carries
+the two keys, which no pipeline did. `FormSubmissionPipelineTest` runs stand-in stages.
+`FlowLifecycleTest` submits neither key. No test ran the two real stages one after the other.
+
+**The decision.** `SubmissionPipelineContext` carries the request as the pipeline was handed
+it, `received`, beside `values`. Where a pipeline starts it is the first values; `withValues()`,
+`withMetadata()` and `withSubmissionId()` copy it and nothing changes it. `ProtectionStage`
+reads the trap field and the token from `received`. It still takes both keys out of `values`
+on its way out, so a pipeline put together without the validation stage stores neither.
+
+**What was weighed.**
+
+- *The protection stage first.* It is the order a form defined in code is judged in. Not
+  taken: spec 068 FR-042 names the sequence, the route's answer and the builder's test run
+  list the stages in it (`FlowLifecycleTest` holds the route to that list), and a token would
+  be spent on a submission whose answers are then refused (a reCAPTCHA token that passed is
+  not accepted twice: `TokenReplayGuard`).
+- *The validation stage carrying the two keys through.* Five lines, and the same mistake left
+  in place: `values` would stay a bag of answers and other things between two stages, and the
+  validation stage would have to know which keys another stage wants.
+- *The request beside the values* (taken). What a stage judges about the request no longer
+  depends on which stage ran before it. `ValidationStage` was left reading the UTM values, the
+  page address and the consent answers from `values`: it reads them before its own reduction,
+  so no other stage decides what it sees.
+
+**What `received` holds.** What the route's sanitiser let through (`SanitizeMiddleware`
+keeps the keys of its shape and nothing else), so nothing reaches the context that did not
+before. Nothing serialises a context: the route and the builder's test run answer from
+`completed`, `submissionId`, `isTest` and the stages (`FlowSubmissionController::resultData()`,
+`FlowRestPresenter::pipeline()`), and the storage, routing and email stages read `values`.
+
+**Not measured.** A page in a browser against a real provider. The token is known to reach
+the provider's verifier when the request carries it; that a flow's page puts a token the
+provider accepts into the request is the same script and the same hidden field as a form
+defined in code (spec 104), and was not run here for a flow.
+
+**Leads, not built.**
+
+- *The builder's test run on a site with a provider configured.* By reading, not measured:
+  `FlowTestService` runs the same pipeline with the values the builder sent, which carry no
+  token, so the run stops at the protection stage unless the flow sets `captcha: off`. It did
+  before this change too. Spec 068 FR-038 says a test run runs captcha and does not say with
+  what token.
+- *A flow whose schema has a field keyed `corex_hp` or `captcha_token`* would have that
+  field's answer judged as the trap field or the token. Nothing refuses such a key.
+
+**Verification.** With `main` at #399 merged in: unit suite 3,148 passed; whole integration
+suite on the worktree's own WordPress 1,202 passed, with the two warnings
+`ComingSoonHeadTest` gives there. Guards:
+wp-guard, clean-code-guard, test-guard and docs-guard run on the diff.
+
+**Client impact.** A site with a form built in Forms & Flows: a submission whose trap field
+is filled is now refused with 422 and not stored; and, where a challenge provider is
+configured, a submission carrying a token the provider accepts is now accepted where every
+submission was refused. Nothing to set. Muva's forms and Perego's are all registered in code
+(#352, read on this machine the same day), so neither site's forms go through this path.
+`SubmissionPipelineContext` gains a seventh constructor argument, optional, and a public
+property; a site that builds a context of its own is not affected.
+
+## #359 — An admin client adds its query to a REST address as the site spells it, in one place; the browser suite is handed the other spelling by a fixture
+
+**Date:** 2026-10-13. **Branch:** `fix/admin-clients-plain-permalinks`. **Found by:** the
+session that built #351, which saw `tests/e2e/submission-file.spec.js` fail at the inbox on
+a fresh install and recorded it in `PROGRESS.md` as seen once and not traced. **Decided
+by:** me. The owner's brief asked for the failing request to be named, for every admin
+client to be read and the screens opened in a browser, and for one shared way of joining a
+query, with no second helper if one was already there.
+
+**What the code did.** With pretty permalinks `rest_url('corex/v1/submissions')` is a path,
+`/wp-json/corex/v1/submissions`. A site that has no permalink structure, which is what a
+fresh install has, is handed `/index.php?rest_route=/corex/v1/submissions`: the route is a
+query. Eight places took that address and wrote `?` and their own query after it. The
+query became part of the route, WordPress knew no route of that name, and the answer was
+404 `rest_no_route`. `releaseClient.js` already chose the sign from the address (#296); it
+was the only one that did.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install made by
+`scripts/setup-wordpress.ps1`, `permalink_structure` empty, served by `php -S`, in
+Chromium, mail answered for by `pre_wp_mail`):
+
+| Screen, and what was done | The request | Answer |
+|---|---|---|
+| Submissions opens | `GET …?rest_route=/corex/v1/submissions?page…&per_page=25` | 404, and the box "The submissions could not be loaded" |
+| Submissions, a search typed | the same route with `?search…` | 404 |
+| Forms & Flows opens | `GET …?rest_route=/corex/v1/flows` | 200 |
+| Forms & Flows, a search applied | `…/corex/v1/flows?search…` | 404, "No route was found matching the URL and request method." |
+| Data, Records | `…/corex/v1/data/submissions?dir…&page=1&per_page=20` | 404, the same words |
+| Data, Migrations | `…/corex/v1/data/migrations?source…` | 404 |
+| Blog Pro, Refresh | `…/corex/v1/blog/analytics?post_id=1`, and `comments` and `share-controls` the same way | 404, the same words |
+| Setup Wizard, into the plan step | `…/corex/v1/setup/plan?kit…&level=minimal` | 404, the same words |
+| A submission's email log, asked from the page with the address `useInbox` wrote | `…/corex/v1/submissions/1/email-log?attempt_id…` | 404 `rest_no_route`; joined with `&` the route itself answers, `submission_not_found` |
+| A template's health checks, asked the same way | `…/email-studio/templates/1/health?version…` | 404 `rest_no_route`; joined with `&`, `email_version_not_found` |
+
+So the lead's request is the inbox's list, on opening the screen, before anything is typed.
+The last two were asked from the page by hand because the install had no submission with
+an email attempt and no template; the other eight rows are what the screens asked
+themselves.
+
+**What did not fail**, opened or pressed in the same browser: Email Studio opening;
+Insights and its widgets; Notifications, its list and its drawer; Access & Abilities, a
+change for Editor staged and previewed (not applied); Data's Export tab; Releases opening;
+the Setup Wizard's first request. Three reasons. A path written after the address
+lengthens the route in either spelling, because the route is the last thing in it.
+Notifications asks through `wp.apiFetch` with a `path`, and its root middleware turns the
+path's `?` into `&` when the site's root has a query (`wp-includes/js/dist/api-fetch.js`).
+Releases had its own rule. Operations & Security makes no request on opening and its one
+client writes a path only; saving login protection was read, not pressed.
+
+**The helper.** `plugins/corex-config/src/admin/restAddress.js` exports
+`withQuery( address, query )`: `&` when the address has a `?`, `?` when it has none, and
+the address unchanged when there is nothing to add. It is the rule #296 put in the Releases
+client, moved to where every client of the plugin can import it, and the Releases client
+uses it now, so there is one and not two. It takes a string or a `URLSearchParams`.
+
+Three clients wrote their address inside a hook or a component, where a test could reach
+it only by drawing the screen. Each is now a function beside the ones already there:
+`buildEmailLogUrl()` in `Submissions/inbox.js`, `buildHealthUrl()` in
+`Email/emailStudioClient.js`, `buildMigrationsUrl()` in `admin/dataClient.js`.
+`blogRequest()` takes the query as an option, and the Releases client's `ask()` as a third
+argument, because both add the base themselves.
+
+**On a site with pretty permalinks nothing is asked differently.** The helper writes the
+same `?` the clients wrote. One address differs in a case nothing reaches:
+`buildInboxUrl()` with no filter at all ended in a bare `?` and now ends at the route; the
+inbox always sends a page.
+
+**Not `@wordpress/url`.** `addQueryArgs()` is WordPress's own function for this and is what
+`apiFetch` applies to these addresses. The package is not installed here (`@wordpress/url`
+does not resolve from the repository root; `plugins/corex-config/package.json` declares
+`components`, `element` and `i18n`), so using it means a new dependency for one line, and
+it writes a query again in its own encoding, which would change every address on every
+site to fix them on some.
+
+**Not on `window.Corex.api`.** The runtime is the one script every screen loads, and a
+function on it would reach a script with no build step. The address builders are pure
+functions tested without a page, and the Releases client is handed its `fetch`: each would
+then read a global, and seven test files replace `window.Corex` with a stand-in that would
+have to carry it.
+
+**The Setup Wizard is the one client the helper does not reach.**
+`addons/corex-kit-company/assets/setup-wizard.js` is a script with no build step, in an
+add-on, and cannot import a module of `corex-config`. It does not choose a sign either: it
+sets `kit` and `level` on a `URL`, which adds to whatever query the address has. On a site
+without pretty permalinks that writes the route encoded, `rest_route=%2Fcorex%2Fv1%2Fsetup%2Fplan`,
+which WordPress reads as the same route (measured: 200). A second script of that kind that
+needs a query is the moment to put the rule where both can reach it; one caller is not.
+
+**The browser suite and CI.** CI's site has pretty permalinks
+(`.github/actions/provision-wordpress/action.yml`), as a real site has, and a suite run on
+it could never see this. `tests/e2e/fixtures/corex-e2e-rest-address.php` filters
+`rest_url` for a request that carries `X-Corex-E2E-Rest-Address: plain`, from somebody who
+manages the site, and writes the address as `get_rest_url()` writes it for a site with no
+structure. WordPress registers `rest_route` as a query variable on every site
+(`rest_api_init()` in `wp-includes/rest-api.php`), so the requests the page then makes are
+answered by the same routes. The permalink setting is not answered as empty for the
+request: that would also change what the request does with the rewrite rules, and a page
+that saves them would save a site with none. `tests/e2e/rest-address-plain.spec.js` sends
+the header and reads, for five screens, the route each request was for and its answer. A
+client that joins by hand shows as a route with the query in it
+(`/corex/v1/submissions?page`). Each test first holds the page to having been handed an
+`index.php?rest_route=` address, so an install without the fixture fails in a sentence and
+not in a timeout.
+
+**Tests.** Jest: `plugins/corex-config/src/admin/__tests__/restAddress.test.js` holds the
+helper to both spellings, to a `URLSearchParams` and to nothing to add, and holds six
+clients' addresses and Blog Pro's four requests to both spellings by exact address; a
+client that adds a query later belongs in its table.
+`addons/corex-kit-company/assets/__tests__/setup-wizard.test.js` holds the wizard's plan
+request to both. The Releases client's own test of an upload without pretty permalinks
+(#296) passes unchanged. Seen failing first: the Jest file could not load (the helper and
+the three functions did not exist) and the wizard's test read the route
+`/corex/v1/setup/plan?kit=company`; with the fix taken out and the bundles built again,
+all five browser tests failed, each naming its route with the query in it, and
+`submission-file.spec.js` failed as the lead described.
+
+**Measured after the change**, the same install:
+
+- Without pretty permalinks: every request in the table is 200
+  (`…?rest_route=/corex/v1/submissions&page=1&per_page=25`, and so on), the five browser
+  tests pass twice over, and `submission-file.spec.js` passes.
+- With pretty permalinks (`/%postname%/`), where only the fixture gives the other
+  spelling, which is CI's condition: the five browser tests pass.
+- The related specs on pretty permalinks (`blog-pro`, `data-management`, `email-studio`,
+  `releases`, `setup-settings-insights`, `submission-file`, `submissions-inbox`): in the
+  first run 51 of 56 passed. Three tests of `data-management` and two of
+  `submissions-inbox` failed waiting for a dialog or a list. The same five passed alone
+  with the fix, alone without it, and in a second whole run of those files (31 of 31).
+  `php -S` is one process on Windows and I have not found what the first run was waiting
+  on; CI is the authority for those suites.
+- Jest: 1,397 passed, 2 skipped. PHP unit suite: 3,145 passed; no PHP of the framework
+  changed, only the fixture.
+
+**What CI does not cover.** A site that really has no permalink structure: CI's has one,
+and the fixture changes only the address a page is handed. That was run here, by hand. A
+submission's email log and a template's health checks on such a site in a browser: Jest
+holds their addresses, and the routes were asked by hand. A Releases upload in a browser
+without pretty permalinks: Jest only, as since #296. Anything a visitor's page asks: the
+scripts of `plugins/` and `addons/` were searched for a query joined by hand and none was
+found outside the admin (the form and newsletter blocks post to the address they are
+given, the account block adds a path), and none of those pages was opened on the plain
+install.
+
+**Client impact.** Nothing to set. A site without pretty permalinks gets the eight things
+in the table back. A site's own admin script that adds a query to a `restUrl` by hand has
+the same defect on such a site, and `withQuery()` is inside the admin bundle, not
+something a site can import: such a script sets its parameters on a `URL`, as the wizard
+does.
+
+## #360 — The schema self-heal takes its lock only when the site is behind; a site that is current is asked one read and no write
+
+**Date:** 2026-10-13. **Branch:** `perf/schema-self-heal-locks-when-due`, from `main`.
+**Spec:** 100 (FR-035, which is unchanged: no schema is written from a front-end request).
+**Follows:** #299, and the second finding of #355 (which is on pull request #398 and was
+not on `main` when this was written).
+
+**The defect.** `Database\Schema\SchemaSelfHeal::run()` runs inside
+`MultisiteServiceProvider::boot()` on every request where `is_admin() || wp_doing_cron()`.
+It took its lock first and asked what there was to do second. On a site whose schema is
+current that is every admin page, every `admin-ajax.php` call and every `wp-cron.php` run,
+and each of them did this:
+
+| | Statements |
+|---|---|
+| Read the lock (`get_transient`) | 1 `SELECT` |
+| Take it (`set_transient`) | 2 `INSERT … ON DUPLICATE KEY UPDATE` |
+| Read each component's version, stored with autoload off | 4 `SELECT`, one a component |
+| Let it go (`delete_transient`) | 2 `SELECT autoload`, 1 `SHOW FULL COLUMNS`, 2 `DELETE` |
+
+Twelve statements, four of them writes to the options table, to find nothing to do. An
+admin screen left open asks `admin-ajax.php` on a timer (WordPress's heartbeat), so a tab
+nobody is looking at wrote to the options table four times a tick.
+
+**Measured again before anything was changed.** This branch's own install, served and not
+run from the command line: WordPress 7.1.3, PHP 8.3.6 on Windows through PHP's built-in
+server (one process), OPcache on, Xdebug not loaded, MySQL 8.3 on the same machine, no
+persistent object cache, every CoreX plugin and add-on active, signed out, code at
+`aec8169e`. An mu-plugin that does nothing without a request header recorded what
+`plugins_loaded` asked of the database, with callers, and in a second mode only how long it
+took. `GET /wp-admin/admin-ajax.php?action=nothing` (answers 400, `is_admin()` true) and
+`GET /wp-cron.php`. The twelve statements were there on both, as #355 lists them. Times are
+the median of 100 requests after five unmeasured ones, with the quartiles.
+
+**The change.**
+
+1. `SchemaSelfHeal::run()` asks `SiteMigrationRunner::isDueForSite()` first and returns when
+   the answer is no. Only a request that has found the site behind reads the lock, takes it,
+   runs and lets it go.
+2. `isDueForSite()` reads every registered component's version in one go, through a new
+   `SchemaVersionStore::getMany()`. The WordPress store answers it with
+   `wp_prime_option_caches()` and then `get_option()`: one `SELECT … WHERE option_name IN (…)`
+   however many components there are, and none on a site whose object cache outlives the
+   request. `pendingSiteIds()`, which `wp corex migrate --dry-run` uses, asks the
+   same question and so makes one read a site where it made one a component a site.
+3. A run decides from what is stored when it starts. `runCurrentSite()` calls a new
+   `SchemaVersionStore::forget()` and reads the versions again before it compares them. See
+   "The lock" below for why.
+
+**Autoloaded, or read in one statement: one statement, and the options stay as they are.**
+The version options are written with autoload off (`update_option($name, $version, false)`).
+Autoloading them would make the question free on a site with no object cache: they would
+arrive in the one query WordPress already makes for its autoloaded options. It was not
+done, for three reasons.
+
+- *It would not reach the sites that exist.* `update_option()` returns before it touches
+  the row when the value written is the value stored (read in WordPress 7.1.3,
+  `wp-includes/option.php`), and a version is written only when it changes. So a site that
+  holds its versions today would keep them with autoload off until its next schema change,
+  component by component. Moving them needs a step of its own
+  (`wp_set_option_autoload_values()`), run once per site of a network, and something that
+  knows whether it has run. That is a migration, with a write, to save one read.
+- *What it saves is one statement on an admin or cron request.* Nothing on the front end
+  reads these options. Autoloaded, they would be loaded by every front-end request to be
+  read by none.
+- *The one statement is already the smaller cost where it matters.* A site with a persistent
+  object cache answers `getMany()` from the cache and asks the database nothing, and
+  `wp_prime_option_caches()` passes over any name that is autoloaded, so a site whose
+  versions were ever made autoload by hand pays nothing either.
+
+For a site that has them stored with autoload off, which is every site: nothing is
+migrated, nothing stored changes, and from its first request on this code it makes the one
+read.
+
+**The lock, and what it is still for.** Two requests must not migrate a site at once, and a
+migration is announced once (`SiteMigrated`, and `corex_site_migrated` for a site's own
+plugin). Looking before locking is the usual shape for that, and it needs the second look,
+after the lock is held, to be a real one. It would not have been: WordPress remembers an
+option for the rest of the request once it has read it, a missing one included. A request
+that looked while another was finishing the same migration, and reached the lock just
+after the other let it go, would have compared the versions it remembered, run `dbDelta()`
+again and announced the migration a second time. That was built first without the second
+read, on purpose, and the test for it failed with `corex_site_migrated` fired where the
+site was already current. `forget()` drops the request's memory of those options (their
+entries in WordPress's `options` cache group, and their names in its `notoptions` entry),
+and the runner calls it at the start of every run, whoever asked for the run: the
+self-heal, `wp corex migrate`, a new site, and the Releases screen's finishing step, which
+reads the versions itself just before it runs.
+
+What is not changed: reading the lock and taking it are still two statements, so two
+requests that both find the site behind and both read the lock before either writes it
+still both run. That has been so since spec 100. `dbDelta()` twice over the same
+declaration changes nothing the second time; the announcement is made twice. Closing it
+needs a lock the database grants to one asker (`GET_LOCK()`, as #343 used for access
+requests), and is left as a lead.
+
+**Measured after**, same install, same method:
+
+| Request | `plugins_loaded` before | after | Queries in it before | after |
+|---|---|---|---|---|
+| `admin-ajax.php`, signed out | 11.06 ms (10.32 to 12.20) | 7.37 ms (7.10 to 7.74) | 23 | 12 |
+| `wp-cron.php` | 9.87 ms (9.59 to 10.26) | 7.25 ms (7.07 to 7.58) | 23 | 12 |
+| The front page | 7.32 ms (6.92 to 7.77) | 7.16 ms (6.84 to 7.62) | 11 | 11 |
+
+The self-heal's share went from twelve statements (2.1 to 2.3 ms spent in the database) to
+one (0.19 to 0.24 ms), and from four writes to none. An admin request's boot now costs what
+a front-end request's does, within what the quartiles can tell apart. A request that finds
+the site behind was watched too, served, with the newsletter's version removed: it makes
+the one read, reads the lock, takes it, reads the versions again, runs `dbDelta()` for the
+one component, stores its version and lets the lock go, 14 statements in all through the
+heal and the runner; the request after it makes the one read.
+
+**Tests.**
+
+- `tests/Integration/Schema/SchemaSelfHealRequestTest.php`, each request a PHP process of
+  its own, as `AddonTablesTest` does it, with the assertions on statements by name and not
+  on a total: an admin request and a cron run of a site that is current write nothing that
+  names the lock or a version option, name the lock in no statement at all, and name the
+  version options in one statement at most; a site made behind (one version row removed in
+  the database, the tables left) is brought up to date by its first admin request, with the
+  lock written and deleted and `corex_site_migrated` fired once, and its second request
+  fires nothing and names no lock; and a request for which another request's migration
+  lands between its look at the versions and its lock migrates nothing and announces
+  nothing. The first two failed on `main`, the first of them for the admin request and for
+  the cron run; the last failed on the change as first built.
+- `tests/Integration/Schema/SchemaVersionStoreTest.php`, against WordPress's own options:
+  three versions in one statement, with an empty string for the one not stored; a version
+  is stored with autoload off; and a version another request wrote is not seen until
+  `forget()`, whether the first read found a version or found none. The first and the last
+  were run against the store with the line each is about taken out, and failed.
+- `tests/Multisite/SchemaSelfHealTest.php`, each request a WP-CLI process in the admin
+  context with a listener loaded before WordPress: a site of the network that is current
+  names no lock, and reads its versions in one statement from its own options table; a site
+  made behind is brought up to date under a lock every statement of which names that site's
+  options table, `corex_site_migrated` carries that site's id once, and its neighbour's
+  version is as it was. Both failed with the four production files as they are on `main`.
+- Unit: `SchemaSelfHealTest` gains "takes no lock on an admin request of a site that is
+  current", and its other cases now start from a site that is behind, since a site with
+  nothing to do no longer reaches the lock; `SiteMigrationRunnerTest` gains `isDueForSite()`
+  and "decides a run from what is stored when it starts", with a store that remembers what
+  it has read, as a request does.
+
+Run on this branch's own installs, a single site and a network: the unit suite,
+`composer test:multisite` and the whole integration suite.
+
+**Found, and not changed.**
+
+- The lock is read and then taken, as above.
+- A component that cannot be brought up to date (its table cannot be made) leaves the site
+  behind, so every admin and cron request takes the lock and tries again. That is as it
+  was, and is where the twelve statements still happen.
+- `SchemaVersionStore::get()` is no longer called by the runner. `ReleaseFinisher` calls it
+  to say which version each component moved from.
+- The numbers before this one were taken when it was written and are not on `main`: #355
+  to #357 by pull requests #398, #400 and #401, #358 by a branch on this machine that is
+  not pushed (`fix/flow-protection-reads-the-request`), and #359 by pull request #403.
+
+**Client impact.** Nothing to do, and nothing stored changes. An admin page, an
+`admin-ajax.php` call and a cron run each make eleven fewer statements, four of them
+writes. `Corex\Database\Schema\SchemaVersionStore` has two more methods, `getMany()` and
+`forget()`: a site that binds a store of its own in place of
+`WpOptionSchemaVersionStore` has to add them, and nothing in this repository does; the
+client repositories were not opened for this. `SiteMigrationRunner::isDueForSite()` is new
+and is the way to ask whether a site is behind without running anything.
+
+## #361 — A setting's override is an option WordPress loads with the site's options, so a setting with no override costs no query: CoreX's boot asks the database for one missing option where it asked for eleven
+
+**Date:** 2026-10-13. **Branch:** `perf/boot-reads-no-missing-option`, from `main`.
+**Spec:** [001](specs/001-corex-core-foundation/spec.md), FR-011a (added).
+
+**The finding.** #355, "Found, and not changed", item 1: every query CoreX's boot runs on a
+front-end request reads an option that is not in the database, eleven of them, nine through
+`Support\Config\Sources\OptionsSource::has()`. It was measured there and left. This entry
+measures it again, changes it, and says what is left.
+
+**How it was measured.** This branch's own install, served: WordPress 7.1.3, PHP 8.3.6 on
+Windows through PHP's built-in server, OPcache on and Xdebug not loaded (both asked of the
+served process), MySQL 8.3 on the same machine, every CoreX plugin and add-on active, the
+Corex theme, signed out, code at `aec8169e`. An mu-plugin defined `SAVEQUERIES` on requests
+that carried a header and wrote the queries made between the first and the last callback of
+`plugins_loaded`, each with who asked. Times are from a second mu-plugin that counts
+queries and does not keep them: the median of 200 front-page requests after five unmeasured
+ones.
+
+**Measured again, before any change.** The same eleven, each `SELECT option_value FROM
+cx_options WHERE option_name = '…' LIMIT 1` and none of them stored:
+
+| Option | Who asks |
+|---|---|
+| `corex_features_woocommerce_kit` | `Corex\Boot::featureFlagEnabled()` |
+| `corex_login_protection_settings` | `LoginProtectionSettingsStore::current()`, as `LoginRouteGuard` is made |
+| `corex_insights_psi_key`, `corex_insights_cloudflare_token`, `corex_insights_cloudflare_account_id` | the config engine, for the Insights registry |
+| `corex_theme_brand_path` | the config engine, for `ThemeServiceProvider::boot()` |
+| `corex_media_webp_enabled`, `_quality`, `_convert_jpeg`, `_convert_png`, `_min_saving` | the config engine, for `MediaSettings::fromConfig()` |
+
+The front page ran 33 queries in all, and `plugins_loaded` took 7.5 ms (7.0 to 8.7 between
+the quartiles).
+
+**What a site that has saved those settings does.** Saved as the Settings screen saves them
+(`SettingsStore::save()`, which is `update_option()` with no third argument), the nine
+config options are stored with autoload `auto`, WordPress loads them with the site's
+options, and they cost no query. Two of the eleven were left: the flag, which nothing had
+set, and the login protection settings, which their own store saves with autoload off, so
+that option is one query on every request whether it is stored or not.
+
+**What a persistent object cache does.** Not measured in #355. Measured here with
+WordPress's own object cache kept in a file between requests, written for the measurement
+(not Redis or Memcached): the first request ran the eleven, the second and third ran none.
+A site with a persistent object cache pays for these once and then not again, and this
+change is for the sites without one.
+
+**The candidates, and what each does to a site that sets an override by hand.**
+
+1. *Answer from the options WordPress loaded, and read the rest in one primed query*
+   (`wp_prime_option_caches()`). Nothing changes for an override however it was stored.
+   It needs the list of names before any is asked for, and no such list exists: the
+   shipped defaults name five namespaces and none of the Insights or WebP keys, and
+   nothing is registered with `SettingRegistry`. A list kept by hand is what the next
+   provider forgets; a list learned from earlier requests is an option written on a
+   front-end request. And it is still one query on every request.
+2. *One autoloaded option that lists which overrides exist.* No query. The list is kept
+   right by hearing `added_option` and `deleted_option`, which CoreX does not hear when
+   the command is `wp option update --skip-plugins`, nor when a row is written by SQL or
+   by a migration tool. An override set that way would be ignored until something rebuilt
+   the list.
+3. *Read these settings when they are first used.* It moves three of the eleven (the
+   Insights keys) to the Insights screen. The flag, the login settings, the brand path
+   and the WebP settings are needed on every request, and every key a provider reads
+   later is one more query again.
+4. *Answer from the options WordPress loaded, and from nothing else.* No query, no list,
+   nothing to keep right. `wp option update corex_query_max 25` stores the option with
+   autoload `auto` and `wp option add` with `on`: both are read, with plugins skipped or
+   not, because nothing of CoreX's has to hear of the write. What is no longer read is an
+   option stored with autoload off: `wp option update … --autoload=no` on an option that
+   was not there, `wp option set-autoload … off`, or anything else that sets a row's
+   autoload off. Run on this install with WP-CLI: `update` and `add` with no
+   flag, `update --skip-plugins --skip-themes`, `update --autoload=no` on an option that
+   was not there, and `set-autoload` both ways.
+
+**The decision: the fourth.** An option CoreX reads on every request is what autoload is
+for, and an override stored with autoload off was a query on every request already.
+Nothing of CoreX's stores an override that way: every `update_option()` and `add_option()`
+with autoload off in `plugins/`, `addons/` and `packages/` was read (16 calls), and none
+writes the option of a config key the code reads. What is given up is the override
+somebody deliberately stored unloaded, and it is given up in the open: the rule is in the
+spec, in the core README, and has a test of its own.
+
+**What changed.** `OptionsSource::has()` answers false, without asking WordPress, for an
+option that is not among `wp_load_alloptions()`. It asks WordPress as it did in two cases.
+When a `pre_option_{name}`, `pre_option` or `default_option_{name}` filter is hooked,
+since a filter can answer for an option that is not stored: `SiteEmailBrandTest` and
+`CaptchaWidgetGapTest` set settings that way, and a site may. And while WordPress is
+installing a site, when WordPress itself does not rely on the options it loaded. `get()`
+is as it was. `Corex\Boot::featureFlagEnabled()` reads the per-site flag through the same
+class and no longer through `get_option()`: `corex_features_<flag>` is the option of the
+config key `features.<flag>`, and `FeatureFlags` reads that key through the config engine
+once there is a container, so the two would have disagreed about a flag stored with
+autoload off. The network option it falls back to on a multisite install is read as it
+was.
+
+**Measured after the change.** Same install, same day, the series run after, before and
+after again:
+
+| Front page, 200 requests | Before | After | After, second run |
+|---|---|---|---|
+| Queries in the request | 33 | 23 | 23 |
+| Queries in `plugins_loaded` | 11 | 1 | 1 |
+| `plugins_loaded`, median | 7.5 ms | 5.7 ms | 5.6 ms |
+| between the quartiles | 7.0 to 8.7 | 5.4 to 6.7 | 5.5 to 5.8 |
+
+The whole request's medians were 88.7, 86.0 and 82.0 ms, with quartiles about 16 ms
+apart: the change is inside that. The REST index runs one query in `plugins_loaded` and
+`admin-ajax.php`, signed out, runs 13, where #355 counted 11 and 23; #355 puts twelve of
+the 13 down to the schema self-heal, its second finding, which is not this entry's.
+
+**Tests.** `tests/Unit/Foundation/ConfigTest.php`: an option that is not stored is not
+asked for (`get_option()` expected never), a stored empty value is still a value, each of
+the three filters sends the question to WordPress, an installing site asks as before, and
+a key with no option falls through to `.env` and to the shipped default.
+`tests/Unit/Config/TruthyTest.php`: `Boot` does not ask for a flag that is not stored.
+`tests/Integration/Foundation/ConfigOptionOverrideTest.php`, on WordPress: a stored
+override is read, a deleted one gives the shipped default, a setting with no override and
+a setting with a stored one each make no query (counted with WordPress's memory of
+missing options emptied first), a `pre_option_` filter is answered, and an override
+stored with autoload off is not read until `wp_set_option_autoload()` loads it.
+`tests/Integration/Foundation/BootOptionQueriesTest.php` loads WordPress in a process of
+its own, as `BootTranslationsTest` does, on a front-end and on an admin request, and fails
+if `plugins_loaded` asked one at a time for any of the ten options it names; it is skipped,
+and says so, on an install that stores one of them. The integration tests failed before
+the change: one query for a missing override, the unloaded override read, and all ten
+named options asked for. Seven unit tests that stood in for a site's options with
+`get_option()` alone now stand in for the loaded options too, five of them through
+`tests/Unit/Config/OptionFixtures.php`.
+
+**Found, and not changed.**
+
+1. *Three options of CoreX's own stores are still one query each on every front-end
+   request, and storing them does not help.* `corex_login_protection_settings` (in boot,
+   the one query left), `corex_operations_mode` (`OperationsModeStore`, after boot) and
+   `corex_email_studio_defaults_version` (`MailServiceProvider::registerEmailStudio()`,
+   after boot) are each saved with autoload off and read on every request, so a stored one
+   is a query and a missing one is a query. They are not overrides of settings and not
+   read through the config engine. The login settings decide whether the login address is
+   hidden, and a site that has saved them has them stored with autoload off: reading them
+   from the loaded options alone would turn the protection off on such a site until its
+   row was changed. That wants its own change: store them loaded, turn the stored rows over, and
+   only then read them without a query.
+2. *On a multisite install `Boot` then asks the network for the same flag*
+   (`get_site_option()`), and WordPress remembers a missing network option for one
+   request too. Read, not measured: this branch's install is a single site.
+3. *`docs/en/05-deployment/updates-and-distribution.md` and the core README name
+   `COREX_UPDATES_ENDPOINT` as the `.env` variable of `updates.endpoint`.*
+   `DotenvSource::envName()` maps that key to `UPDATES_ENDPOINT`. Read, not run.
+
+**Client impact.** A site that set a setting's override as an option with autoload off
+stops reading it and goes back to the default, or to its `.env`. Nothing CoreX does stores
+one so; a site finds out with `wp option list --search='corex_*' --autoload=off
+--fields=option_name`, or where there is no command line with `SELECT option_name FROM
+<prefix>options WHERE option_name LIKE 'corex\_%' AND autoload IN ('off', 'no',
+'auto-off')`. What that lists on a fresh install is CoreX's own: the `…_schema_version`
+options and `corex_email_studio_defaults_version`; a site in use also has, among others,
+`corex_login_protection_settings`, `corex_operations_mode` and its log,
+`corex_preview_access`, `corex_release_installed`, `corex_retention_submissions_days`,
+`corex_trash_submissions_days`, `corex_access_audit_log`, and names that begin `corex_ns_`,
+`corex_job_running_` and `corex_mail_queued_`. Any other name there that is a setting's
+option is an override that is no longer read, and `wp option set-autoload <name> on` makes
+it one again. Not checked on a client site. A client plugin that reads its own keys
+through `Config::get()` is under the same rule. Every site with no persistent object
+cache runs ten fewer queries on a front-end request.
+
+## #362 — The words an email is made of are in the site's language too: they are written where the email's language is asked for, in one place for Forms and one for Guides, and Email Studio's defaults are stored in it
+
+**Date:** 2026-10-13. **Branch:** `fix/email-words-in-the-sites-language`, from the head of
+`fix/email-direction-is-the-triggering-persons` (#356, pull request #400, open when this was
+written). **Spec:** 106, FR-011b (added with this change).
+
+**What was reported.** A lead left by #356. That change draws an email in the site's
+language: `EmailLanguage::during()` is asked by `ReplyComposer`, `TemplateRenderer` and the
+closure that gives `Layout` its brand. It does nothing for a word that a caller translates
+before a mailer has it. Such a word is in the language of the request, which in the admin,
+and in any REST request `wp.apiFetch` makes, is the signed-in person's profile language.
+The lead named five places, read and not run.
+
+**Confirmed, all five.** On this branch's own install (WordPress 7.1.3, PHP 8.3.6, at
+`2f7aeb8c`), each as an admin request in a PHP process of its own, both ways round: an
+English site whose administrator reads the admin in Arabic, and an Arabic site whose
+administrator reads it in English. Every string of the `corex` domain is marked when it is
+translated while the request is in Arabic, so a word says which language it was made in.
+Mail was answered at `pre_wp_mail`; nothing was sent, and nothing was served over HTTP.
+
+| What | English site, Arabic-profile administrator | Arabic site, English-profile administrator |
+|---|---|---|
+| A code-defined form's notification: the subject, the line about files, its link, "The submission contained no fields." | all in Arabic | all in English |
+| A flow's notification where CoreX Mail is switched off: the subject | in Arabic | in English |
+| A Guides support message through CoreX Mail: the subject | the template's words in English, what it is about in Arabic | the reverse: an Arabic subject with an English label in it |
+| The same message's "a signed-in user" and "no address given" | in Arabic | in English |
+| A Guides support message where CoreX Mail is switched off: the subject and the six lines CoreX writes | in Arabic | in English |
+| Email Studio's defaults, when that request is the first to reach `init`: five partial names, three layout names, the three link texts and their plain-text lines | stored in Arabic | stored in English |
+
+The third row is the one #356 made worse to read: the template's own words moved to the
+site's language and the label handed to it did not.
+
+**How far it reaches today.** CoreX ships no catalogue for the `corex` domain
+(`plugins/corex-core/languages` holds a README). A word of CoreX's is in another language
+only on a site that translates it itself. Read on this machine, 2026-10-13: Perego
+translates some twenty form strings through `gettext_corex` and none of the strings above;
+nothing under `sites/` in the Muva checkout translates the domain. So neither client's
+emails change with this, and a site with no translation of these strings sends them in
+English whatever its language, before and after. The defect is real where a site has the
+strings translated, and it would have arrived with the first catalogue CoreX shipped.
+
+**The decision: where the site-language scope belongs.** Two shapes were on the table.
+
+1. *Hand the mailer what to translate, not translated text.* A request would carry a
+   subject as a string and its arguments, or as a closure, and the mailer would make the
+   words. Not taken. There is no one mailer: three things send (CoreX Mail's
+   `RequestMailer`, the `wp_mail()` floor in `NotificationDispatcher`, the one in
+   `SupportMailer`), and two of the five defects are on a site where CoreX Mail is off. A
+   `MailRequest` is also written to the queue as scalars (`MailRequestPayload`), which a
+   closure is not.
+2. *Write the words inside the scope, in the place that already owns writing them.* Taken.
+
+The scope is `EmailLanguage::during()`, the seam #356 made. **It moves to the core**:
+`Corex\Mail\EmailLanguage` and `Corex\Mail\SiteLanguage`, bound by `CoreServiceProvider`.
+It was in `addons/corex-email`, and Forms and Guides must write an email on a site without
+that add-on (Principle IX); the two fallback paths are exactly the ones that run there.
+Nothing was released under the old name.
+
+It is then asked in three places, not five:
+
+- **Forms: `NotificationDispatcher`.** Both senders already go through it, and it holds
+  both rungs below CoreX Mail's router. `dispatch()` no longer takes a `MailRequest` made by
+  its caller. It takes a closure that writes one, and calls it inside the scope, only when
+  a rung below the router sends. `SendEmailListener` and `EmailStage` hand over the closure
+  and hold no language themselves. A third caller cannot hand over words it has already
+  translated without going out of its way: the type asks for what writes them. One call
+  covers the subject of both, the listener's line about files and its link, and "The
+  submission contained no fields.", which `htmlBody()` writes from inside the closure.
+- **Guides: `SupportMailer::send()`.** It builds both renderings, so it asks once for the
+  subject, the template's values and the plain text. For that to be enough the message
+  must hold no word made earlier: `SupportMessage` takes what the message is about as a
+  key (`category`) and no longer as a label, and makes the label when asked. The list of
+  keys and their labels left `SupportRequestController` for `SupportCategory`, because the
+  form's select (in the reader's language) and the email (in the email's) both read it.
+- **Email Studio: `MailServiceProvider::registerEmailStudio()`**, around the two
+  `installDefaults()` calls. What is stored is named, and in three partials worded, by
+  CoreX, and the words go out in the site's emails. This is the same thing WordPress does
+  with "Uncategorized" and its sample page: written once, in the site's language at the
+  time.
+
+Wrapping each of the five places was the alternative. It needs the seam in five classes
+and leaves the next sender to remember a sixth.
+
+**What is left in the request's language, on purpose.** What a person is told on screen
+about a send: "No notification recipient was configured.", the Guides form's answers, a
+refusal. Those are read by whoever is signed in. `NotificationDispatcher` writes them
+outside the scope.
+
+**Email Studio's defaults on a site that has them.** Nothing stored is rewritten, and the
+question is the owner's. What such a site holds: posts of type `corex_email_asset`, three
+layouts (four with WooCommerce) and five partials, written once and marked by the option
+`corex_email_studio_defaults_version`; `installDefaults()` skips a slug that exists. Their
+names, and the link text and plain-text line of "Unsubscribe", "Preferences" and
+"Privacy", are in the language of whichever request first reached `init` after CoreX Mail
+was switched on. Read, not run: from the Plugins screen that is the next page the
+administrator who activated it is sent to, in their profile language; from the command
+line it is the site's language. Given the paragraph above, on a site that does not
+translate these strings they are English. The
+rows are versions an operator can replace in Email Studio. Three things could be done:
+leave them (recommended: there is nothing to gain where no translation exists, and a
+rewrite would have to tell an untouched default from an operator's edit); append a new
+version, in the site's language, of each default nobody has edited; or offer "restore the
+defaults" in Email Studio. None is built.
+
+**The tests.** `tests/Integration/Email/EmailWordsLanguageTest.php` runs the table above on
+WordPress, ten cases, each failing before this change: the listener through the
+container's dispatcher, with a file and a stored submission said and not made; the flow's
+`EmailStage` from the container with CoreX Mail left out of the request; the Guides form
+posted through `SupportRequestController::decide()` with and without CoreX Mail; and the
+provider's own install during `init`, into an in-memory store bound just before it, so the
+site's rows and its mark are neither read nor written. With each of the three scopes taken
+out in turn, the cases of that sender fail and the others pass.
+
+The request is `Corex\Tests\Support\AdministratorsRequest`, which #356's test now uses as
+well: the hooks that decide a request's language before WordPress loads, mail answered at
+`pre_wp_mail` and reported, and plugins left out for one request through
+`option_active_plugins`. It deletes the posts a request inserts. Its first version wrapped
+the request in a transaction and rolled it back, and that undid nothing: this machine's
+tables are MyISAM. Two runs emptied the scratch install's Email Studio rows before that was
+seen. No test of this file now deletes anything.
+
+Unit: `NotificationDispatcherTest` (the notification is written in the email's language
+for a bound mailer and for the floor, and not written when the router sent one),
+`SendEmailListenerTest`, `SupportMailerTest` (every word of both renderings), with
+`Corex\Tests\Support\MarkedLanguage`, which marks a word made inside `during()`.
+
+**Not run.** A served request: every case is an admin request in a process of its own. That
+the admin's REST requests are in the profile language was measured over HTTP for #356.
+
+**Left as leads.**
+
+- *Outcomes that are stored.* `NotificationDelivery`'s reason ("No notification recipient
+  was configured.") is translated in the request and kept with the submission as
+  `safe_reason`, which `WpSubmissionsReader` and the failed-email notification read back
+  later, for whoever is reading then. Read, not run.
+- *A catalogue.* Until CoreX ships translations of its own strings, an Arabic site's
+  "Unsubscribe" is English, which is a larger gap than the one closed here.
+- *Rows other tests leave.* `CreatedPosts::watch('attachment')` never hears of an
+  attachment: WordPress announces one as `add_attachment`, not `wp_insert_post`. On this
+  install `tests/Integration/Forms/NotificationFileLinkTest.php`, run alone, left one
+  attachment row behind (two before, three after); a run of the whole integration suite
+  left five rows (an attachment, three logged emails and a submission).
+
+**Client impact.** No email changes on a site that does not translate CoreX's strings. On
+one that does, a form's notification, a Guides support message and newly stored Email
+Studio defaults are in the site's language, not in that of whoever triggered them. In PHP:
+`Corex\Email\Language\EmailLanguage` and `SiteLanguage`, added by #356 and never released,
+are `Corex\Mail\EmailLanguage` and `Corex\Mail\SiteLanguage`;
+`NotificationDispatcher::dispatch()` takes a closure that returns the `MailRequest` where
+it took the request, and its constructor takes an `EmailLanguage` first; `SupportMailer`'s
+constructor takes one first; `SupportMessage` takes `category` (a key) where it took
+`categoryLabel`; `SupportRequestController::categories()` is `SupportCategory::labels()`.
+Nothing under `sites/` in the Muva or Perego checkouts calls any of them (read on this
+machine, 2026-10-13: Perego names `SendEmailListener` and `NotificationDispatcher` in
+comments only).
+
+## #363 — A config key is written in `.env` with no `COREX_` prefix, as the config guide says: the three update guides that said otherwise are corrected, and the update source's empty default is under the key that is read
+
+**Date:** 2026-10-13. **Branch:** `docs/updates-endpoint-env-name`, from `main`.
+**Spec:** 034 (self-update), FR-005. **Mode:** CoreX Framework.
+
+**The lead.** #361, "Found, and not changed", item 3, read and not run: the deployment guide
+and the core README name `COREX_UPDATES_ENDPOINT` as the `.env` variable of
+`updates.endpoint`, and `DotenvSource::envName()` adds no prefix.
+
+**Run, before anything was changed.** Three tests, written first, against `main` at
+`91d52d30`, in the unit suite (Pest, no WordPress):
+
+- Each guide's own `.env` line was written to a `.env` in a temporary directory and read by
+  the real `DotenvSource`, in a real `Repository`, handed to the real `UpdateService`, with
+  `wp_remote_get()` standing in for the network and keeping the address it was asked for.
+  `docs/en/05-deployment/updates-and-distribution.md` and
+  `docs-app/src/content/docs/guides/updates.md`: `fetchManifest()` asked for nothing. The
+  core README had no `.env` line to run: it gave the name in a comment above a PHP array.
+- `COREX_UPDATES_ENDPOINT=…` alone: `DotenvSource::has('updates.endpoint')` is false. With
+  `UPDATES_ENDPOINT=…` beside it, `get('updates.endpoint')` is that second value.
+- The config engine made by the real `CoreServiceProvider`, with no option stored and no
+  `.env`: `get('updates.endpoint', 'no source holds it')` answered `'no source holds it'`.
+  No source held the key the update service reads.
+
+So the lead is right, and the second thing asked is answered: the key the code reads and
+the key the default was under did not agree. `CoreServiceProvider::defaults()` names each
+config file by its basename, so `'updates' => ['endpoint' => '']` in `config/app.php` was
+`app.updates.endpoint`. `UpdateService::fetchManifest()` and
+`CapabilityFacts::gaps()` read `updates.endpoint`. Nothing reads `app.updates.endpoint`
+(searched: `plugins/`, `addons/`, `packages/`, `theme/`). The default is empty and both
+readers pass `''` as their own fallback, so no site behaved differently for it.
+
+**Which of the two is the contract.** The code's. The rule is written down four times with
+no prefix: the core README ("env var `KEY_WITH_UNDERSCORES` uppercased (`app.name` → option
+`corex_app_name`, env `APP_NAME`)"), the docs site's configuration guide, `.env.example`
+("a dot key uppercases to an ENV name"), and the mail add-on's README, which lists
+`MAIL_PROVIDER` for `mail.provider`. `FEATURES_<FLAG>` and `APP_PATH` follow it and are
+read. The update guides were the exception, and they contradicted the page they link to.
+
+**The decision.**
+
+1. *The guides are corrected to what the code reads*: `UPDATES_ENDPOINT`, in the deployment
+   guide, the docs site's update guide and the core README. Both guides now also name the
+   option, `corex_updates_endpoint`, and say that no settings screen has a field for it.
+   Each carries a short note that the page gave the other name until 2026-10-13 and what a
+   site that has that line should do. The README's sample was a PHP array headed
+   `// config/app.php`; it is now the `.env` line, because the same README says a site
+   never edits the shipped defaults, and that array, written there, set a key nothing
+   reads.
+2. *The variable name is not changed, and no second name is read.* A site that found the
+   working name has it; reading `COREX_UPDATES_ENDPOINT` as well would give one key two
+   names and every other key one.
+3. *The empty default moves to `config/updates.php`*, where it is `updates.endpoint`.
+   `config/app.php` loses the entry. It was a line in a file a developer reads to learn the
+   key's name, and it taught the wrong one. Nothing a site sees changes: the default is
+   empty in both places.
+4. *`.env.example` gets a commented `UPDATES_ENDPOINT` line.*
+
+**Every other `.env` name in `docs/`, `docs-app/` and the READMEs, checked against the
+code.** A name is right when something reads the config key it maps to, or when it is not
+a `.env` name at all and what it is said to be is what reads it.
+
+| Name | Where | What reads it |
+|---|---|---|
+| `COREX_UPDATES_ENDPOINT` | two guides, core README | nothing. Corrected, above |
+| `COREX_ENV` | `docs/en/05-deployment/secrets-backups-zero-downtime.md`, in a `.env` sample "read by the Config engine" | nothing. `app.env` is read (`AssetsServiceProvider`, the mail add-on), so the sample now says `APP_ENV` |
+| `COREX_MAIL_DRIVER`, and "host/port/credentials" | the docs site's mail guide; `.env.example` with `COREX_MAIL_HOST`, `_PORT`, `_USERNAME`, `_PASSWORD` | nothing, under any name: no code reads `mail.driver`, `mail.host`, `mail.port`, `mail.username` or `mail.password`, and CoreX has no SMTP driver. The guide now gives the five keys the add-on reads, as the add-on's README does; `.env.example` lists them commented |
+| `MWP_I18N_DRIVER` | `.env.example`, set to `polylang` | nothing. Removed from `.env.example` |
+| `APP_NAME`, `APP_ENV`, `APP_PATH`, `APP_NAMESPACE`, `APP_PREFIX` | `.env.example`, `packages/cli/README.md` | `app.*`, read. Right |
+| `FEATURES_*` | `.env.example`, the WooCommerce kit's README, the secrets guide | `features.*`, read by `Boot` and `FeatureFlags`. Right |
+| `MAIL_FROM_NAME`, `MAIL_FROM_ADDRESS`, `MAIL_REPLY_TO`, `MAIL_PROVIDER`, `MAIL_LIVE_DELIVERY` | the mail add-on's README | `mail.*`, read. Right |
+| `COREX_LOGIN_UNGUARD`, `COREX_ALLOW_RELEASE_INSTALL` | security and release guides, the CLI README | not `.env` names: PHP constants, documented as `define(…)` in `wp-config.php` and read with `defined()`. Right |
+| `COREX_BASE_URL`, `COREX_ADMIN_USER`, `COREX_ADMIN_PASS`, `COREX_LOGIN_PATH`, `COREX_WP_PATH`, `COREX_E2E_FRESH_INSTALL`, `COREX_DOCS_BASE` | `CONTRIBUTING.md`, the docs site | not `.env` names: variables of the shell that runs the browser tests or builds the docs site, read from `process.env`. Right |
+
+The line `.env.example` had above the mail names, that credentials are "encrypted at rest
+via the framework Cryptor", went with them: it described keys nothing reads.
+
+**Weighed, and not chosen.**
+
+- *Read `COREX_UPDATES_ENDPOINT` too, so a site that followed the guide starts working.*
+  It would start contacting an address on the next update check without anyone on that
+  site having changed anything, and it leaves the one key with two names. The guides now
+  say what to rename. No `.env` exists in the four checkouts on this machine (the
+  framework's root, Muva, Perego, mizzey). What a host has in its own cannot be seen
+  from here.
+- *Leave the default in `config/app.php` and correct its comment.* The comment could only
+  say that the entry is not read.
+- *Delete the default.* Both readers have their own fallback, so it would work. Kept,
+  because the file is where the key's name, its option and its `.env` name are written
+  beside the reason the default is empty.
+- *A test that checks every `.env` name in every guide.* It needs a list of every config
+  key that is read, which is not written anywhere and would be a second thing to keep
+  true. The test added runs the update guides' own lines, which is the fault that was
+  found.
+
+**Tests.** `tests/Unit/Update/UpdateSourceGuidesTest.php`: each of the three guides' `.env`
+line, through the real source and the real service, must make the service ask for the
+address on that line. `tests/Unit/Foundation/ConfigTest.php`: a prefixed name is not read
+and the plain one is. `tests/Unit/Multisite/ConfigBootWiringTest.php`: the engine the real
+provider makes holds `updates.endpoint`, empty, and holds no `app.updates.endpoint`. Four
+cases failed before the change (the three guides and the default) and pass after; the
+`ConfigTest` case passed before and after, which is the proof of which name is read. Unit
+suite: 3,150 passed. `tests/docs-links.test.js` and `tests/repo-hygiene.test.js` pass.
+
+**Not run.** No WordPress was booted for this. That `wp option update
+corex_updates_endpoint …` sets the source is read from `OptionsSource` (a dot key is the
+option `corex_` and the key with `_` for each `.`) and from the existing unit test of that
+mapping, not from a run on an install. The docs site was not built.
+
+**Found, and not changed.**
+
+1. *Where the `.env` is looked for.* `CoreServiceProvider::projectRoot()` is
+   `dirname(COREX_CORE_PATH, 2)`. In this repository that is the root. Where the plugin is
+   a real directory in `wp-content/plugins/`, it is `wp-content/`, inside the web root:
+   `shared-host-dist.md` says so and tells a shared host not to create one. The secrets
+   guide's sample is headed ".env on a VM (mode 600, outside the web root) — read by the
+   Config engine", and nothing read here lets the engine look outside `wp-content/` on
+   such an install. Read, not run.
+2. *A site told it has no update source is sent somewhere it cannot set one.*
+   `CapabilityFacts::gaps()` reports "No update source is configured" with an **Open
+   Settings** button to `corex-settings-config`. `SettingsRegistry` has no field for
+   `updates.endpoint`. A host with no command line, where a `.env` should not be created
+   either (item 1), has no supported way to set it. Read, not run.
+3. *`docs/internal/COREX-FRAMEWORK.md` §16 says translators are switched with
+   `MWP_I18N_DRIVER`.* Nothing reads it, and no `I18nHandler` class is in `plugins/` or
+   `addons/`. It is the architecture document and was not edited here.
+
+**Client impact.** A site whose `.env` has `COREX_UPDATES_ENDPOINT` renames it to
+`UPDATES_ENDPOINT`; until it does, it is offered no update. A site that set the option
+`corex_updates_endpoint`, or `UPDATES_ENDPOINT`, changes nothing. `COREX_ENV`,
+`COREX_MAIL_*` and `MWP_I18N_DRIVER` in a `.env` did nothing and can be deleted. A client
+repository that takes this release gets one new framework file,
+`plugins/corex-core/config/updates.php`.
+
+## #364 — An integration test that leaves a post on the install fails, and the post is deleted first; the test case asks, no transaction does
+
+**Date:** 2026-10-13. **Branch:** `test/integration-suite-leaves-no-posts`, from `main`.
+**Spec:** none (tests only). **Mode:** CoreX Framework.
+
+**What was reported.** A lead left by pull request #407: on a fresh install, one run of the
+integration suite left five rows in the posts table, and
+`tests/Integration/Forms/NotificationFileLinkTest.php` run alone left an attachment each
+time, because `CreatedPosts` listened to `wp_insert_post` and WordPress announces a new
+attachment by `add_attachment`.
+
+**What was measured.** A fresh install made by `scripts/setup-wordpress.ps1` in a worktree
+(WordPress 7.1.3, PHP 8.3.6, 23 MyISAM tables), `main` at `91d52d30`. Posts were counted by
+type before and after, and every `wp_insert_post` and `add_attachment` of the run was
+written down with the test file on the stack.
+
+- The attachment is no longer left. Pull request #399, merged the same evening, made
+  `CreatedPosts` listen to `add_attachment`; #407's branch was cut before it.
+  `NotificationFileLinkTest` alone: two posts inserted, none left.
+- One run of the whole suite: 762 posts inserted, four left.
+  `tests/Integration/Notifications/CodeFormSubmissionNotificationTest.php` left two
+  `corex_email_log` rows, one for each case of its last test. It watched for
+  `corex_submission` only; the email it answers through `pre_wp_mail` is still logged.
+  `tests/Integration/Operations/ComingSoonModeTest.php` left one `corex_submission` and one
+  `corex_email_log`: its test of a form posted while the mode is on watched for neither.
+
+**The decision.** `Corex\Tests\Integration\TestCase` watches for every post a test inserts,
+of any type, and after the file's own `afterEach` reads which are still stored. Those are
+deleted, and then the test fails, naming each as `#12 corex_email_log "its title"`.
+
+- *It fails, and does not only clean up.* A test that leaves a row is a test whose author
+  did not know the product wrote it. Deleting it quietly would keep that unknown.
+- *It deletes before it fails.* A red run costs the install nothing, and the next run does
+  not begin with this one's rows.
+- *It is in the test case's `setUp()` and `tearDown()`.* Pest runs a file's `beforeEach`
+  after the first and its `afterEach` before the second (read in
+  `vendor/pestphp/pest/src/Concerns/Testable.php`), so a post made in `beforeEach` and
+  deleted in `afterEach` is never reported. A post made in `beforeAll` is not watched.
+- *No transaction.* A developer's tables may be MyISAM, as this install's are, where a
+  rollback undoes nothing (found by #407).
+- *It calls `fail()` and adds no assertion.* An assertion in every `tearDown()` would hide
+  a test that asserts nothing, which PHPUnit reports as risky.
+
+`CreatedPosts` gains `watchAll()` and `stillStored()`. It also remembers which site of a
+network was current when the watch began and ignores a post inserted under another one:
+its id is a different post's on the first site, and `delete()` would have removed that
+one. The multisite suite uses the same test case.
+
+The two files now watch for what they write. Nothing else was reported: with the check in
+place and the two files not yet changed, three tests failed out of 1,200 and no other.
+
+**Proof.** The install was emptied and installed again. Before the run: `corex_email_asset`
+8, `page` 2, `post` 1. After 1,200 tests: the same three numbers, and the posts and
+postmeta tables the size they were. On `main` the same run left `corex_email_log` 3 and
+`corex_submission` 1 (the fourth row).
+
+**Tests.** `tests/Integration/Support/CreatedPostsTest.php`, two tests: an attachment is
+heard of and deleted with its file; a watch for every type names what is still stored and
+deletes it. With the `add_attachment` listener taken out both fail. The check itself was
+seen red on the three tests above before they were changed. The multisite suite passes
+with it (7 tests).
+
+**A unit test that passed by the order it ran in.** `tests/Unit/Email/EmailStudioServiceTest.php`,
+"it renders and dispatches the active editable template selected by a route", failed with
+`"get_bloginfo" is not defined nor mocked` when `tests/Unit/Forms` ran before it and passed
+alone and in the suite's order. `EmailRouteMessageFactory` adds the site's name and address
+when `function_exists('get_bloginfo')`, and Brain Monkey defines a function for the rest of
+the process the first time any file stubs it. The test now stubs `get_bloginfo` and
+`home_url` itself. Production code is not changed.
+
+**What it does not do.**
+
+- It hears of posts only. The same run leaves rows in three of CoreX's own tables, each
+  traced to its file by the same method: 19 `export.ready` notifications
+  (`DataModels/DataExportSetTest`, `DataModels/SubmissionsDataExportTest`,
+  `Data/DataManagementControllerTest`, `Submissions/SubmissionExportFileTest`), five
+  activity events (`Submissions/SubmissionDeleteTest`, `SubmissionTrashClockTest`,
+  `SubmissionTrashTest`) and two queued `data.export` jobs
+  (`Data/DataManagementControllerTest`). On a fresh install there are six more
+  notifications, not traced to a file: two `email.design_failed`, one `submission.new` for
+  `corex-optional-file-probe`, three `readiness.blocker`. Not fixed here.
+- It does not watch options. After a run `page_on_front` is gone, three
+  `theme_mods_corex-seam-*` options and `stylesheet_root` and `template_root` are new, and
+  one `corex_throttle_` transient is left. Not traced.
+- It cannot report what `CreatedPosts` does not hear of. A post inserted with a query, and
+  not through `wp_insert_post()`, is one.
+- mPDF's font cache under `corex-private/exports/pdf-working` is written by the first PDF
+  export of a run and left. It is a cache.
+
+**Client impact.** None for a site. A client repository runs this suite in its own CI,
+against an install that may have the client's plugin active. Not measured: if that plugin
+writes a post while one of these tests runs (a listener on a submission, say), the test
+now fails there and names the post, on a file the client does not own. The remedy is then
+here, in the test, and not in the client's repository.
+
+## #365 — A site that named no update source is not told it has something to finish: the notice is removed, and the Settings screen gets no field for the source
+
+**Date:** 2026-10-13. **Branch:** `fix/update-source-gap-leads-nowhere`, from `main` at
+`91d52d30`. **Spec:** 074 (core admin truthfulness), FR-5; 034 (self-update) and 107
+(release from the admin) read. **Mode:** CoreX Framework. **Decided by the owner**, from four
+options laid out with what was measured.
+
+**The lead.** #363, "Found, and not changed", item 2, read and not run:
+`CapabilityFacts::gaps()` reports "No update source is configured" with an **Open Settings**
+button, and `SettingsRegistry` has no field for `updates.endpoint`.
+
+**Run, before anything was changed.** On a WordPress of the worktree's own (WordPress 7.1.3,
+CoreX 0.45.2 from `main`, database `corex_wupdsrc`, served at `127.0.0.1:8972`, no `.env`,
+no option stored):
+
+- The config engine held nothing for `updates.endpoint`, and `gather()` returned one gap,
+  `updates.endpoint`, whose button's address was `admin.php?page=corex-settings-config`.
+- In a browser, CoreX → Data, the Models tab, "What this site can do": under **Needs
+  finishing**, "These are configured far enough to look done, and are not.", then "No
+  update source is configured, so CoreX will not tell you when a new version is
+  available." and **Open Settings**. It was the only gap on a fresh install.
+- The button opened CoreX Settings with no tab chosen. The screen has nine tabs (Brand,
+  Mail, Forms, Captcha, Media, Insights, Dashboard, Guides, Advanced) and 39 controls. None
+  is named or labelled for an update, an endpoint or a manifest, and the page's markup has
+  none of "update source", `updates.endpoint`, `corex_updates_endpoint` or "manifest".
+  `SettingsRegistry::keys()` has 45 keys, none of them for it.
+
+So the lead is right: the notice sends a person to a screen where it cannot be closed.
+
+**What a source that is set does**, measured on the same install with the option
+`corex_updates_endpoint` naming a file the install itself served, and removed afterwards:
+
+- The gap went. This is also #363's "Not run": the option does set the source.
+- One `wp_update_plugins()` asked for the address twice, with a 10 second limit each time
+  and nothing kept between the two. `reject_unsafe_urls` was off, and `127.0.0.1` answered
+  200: an address on the host's own network is fetched like any other.
+- The manifest named a version above the installed one and a package address. WordPress
+  was then offered that package as an update of `corex-core/corex-core.php`: one of the 16
+  CoreX plugins on the install, at an address the manifest chose. Nothing was installed.
+- The docs site's update guide, as published that day, gives the `.env` name
+  `COREX_UPDATES_ENDPOINT`, which nothing reads (#363, on open pull request #409).
+
+**The decision.** The notice is removed. `gaps()` reports a captcha provider with no keys
+and nothing else.
+
+1. *It was not a gap by the list's own words.* The panel says the list is what "is selected
+   but not finished" and the method's comment says "a state where CoreX looks configured
+   and silently is not". No update source is what CoreX ships with. Nobody chose it.
+2. *No site could close it from where it was sent, and most could not close it at all.*
+   The two ways to set it are `wp option update` and a `.env`, which on an ordinary install
+   is looked for in `wp-content/` (#363, item 1). A shared host has no command line and is
+   told not to create that file.
+3. *Nothing is published for a site to name.* Spec 107 says so, and says the updater moves
+   one plugin of a release that is four plugins, thirteen add-ons, a theme, the
+   command-line package and one `vendor/`, and that replacing one of them "leaves a site
+   whose parts disagree". So every site showed the notice, for ever.
+4. *A list that is never empty is not read.* The one gap left, captcha keys missing, is the
+   kind that took an outage to notice. On a site with nothing half done the section now
+   says "Nothing is half-configured."
+
+The update service is not touched. A site that sets the source is still offered what its
+manifest names.
+
+**Weighed, and not chosen.**
+
+- *A field for the source on the Settings screen.* It would let an administrator type an
+  address the site then fetches from the server, twice per check, with internal addresses
+  not refused, and whose answer names a zip WordPress installs over one plugin of sixteen.
+  Each of those would have to change first, which is a change to the updater, and spec 107
+  left the updater's future undecided ("kept, removed or made to say only 'a newer release
+  exists'") and out of its scope. It needs a spec of its own if it is wanted.
+- *Keeping the notice and pointing the button at the update guide.* It corrects where the
+  button goes and nothing else: the published guide names a variable that is not read
+  until #409 merges and the docs site is built again, both of the guide's ways are closed
+  on a shared host, and the notice would still be on every site.
+- *Hiding it on a site that has installed a release from the admin.* A site would show it
+  until its first such installation, a site updated by merging its repository would show
+  it for ever, and the button would still need somewhere true to go.
+- *Reporting a source that is set and does not answer.* That would be a real gap, a thing
+  chosen and not working. Finding it costs a request to the address each time the Data
+  screen opens. Not built; nobody has a source set.
+
+**Tests.** `tests/Integration/DataModels/UpdateSourceGapTest.php`, one case, written first:
+with no captcha provider and no update source, both answered by a filter so the install's
+own settings are not read, `gather()` lists nothing. It failed before the change with the
+`updates.endpoint` gap as the difference, and passes after. `CaptchaWidgetGapTest`, beside
+it, still lists missing keys. The 54 cases of `tests/Integration/DataModels/` pass on the
+worktree's install. In the browser, after: **Needs finishing** reads "Nothing is
+half-configured.", with no item and no link.
+
+**Not run.** A multisite network. A site that defines `DISALLOW_FILE_MODS`: what a set
+source shows there was not looked at.
+
+**Found, and not changed.**
+
+1. *The update service asks with `wp_remote_get()`, twice per check, and keeps nothing.*
+   Measured above. It matters to nobody while no site has a source; it is the first thing
+   to change if the updater is kept.
+2. *Whether the updater is kept is still not decided.* Spec 107 left it open. With the
+   notice gone, nothing in the admin says the updater exists; the two update guides do.
+3. *A gap's button can open a screen the reader may not open.* The captcha gap's button
+   goes to CoreX Settings, which asks for `manage_options`
+   (`AdminDashboard`); the Data screen asks for `CorexAbility::MANAGE_DATA_MODELS` or
+   `MANAGE_DATA` (`DataModelsScreen::menuCapability()`). Read, not run.
+
+**Client impact.** None to act on. A site that takes this release stops showing "No update
+source is configured" on CoreX → Data. A site that set `corex_updates_endpoint` or
+`UPDATES_ENDPOINT` is offered updates as before. The notice's text and its button's label, "Open
+Settings", are no longer strings of CoreX; nothing else used either.
+
+## #366 — An option CoreX reads on every request is stored where WordPress loads it with the site's options, and a row that says nothing is stored stands in for a missing one: the login protection settings, the operations mode and the Email Studio's defaults version cost no query
+
+**Date:** 2026-10-13. **Branch:** `perf/own-store-options-loaded`, from `main`.
+**Spec:** [001](specs/001-corex-core-foundation/spec.md), FR-011b (added).
+
+**The finding.** #361, "Found, and not changed", item 1 (pull request #405, open when this
+was written): three options of CoreX's own stores are each one query on every request, and
+storing them does not help, because each is saved with autoload off. They are not
+overrides of settings and are not read through the config engine, so #361 left them. This
+entry measures them again, changes how they are stored, and says what a site does between
+receiving the files and having its rows changed.
+
+**How it was measured.** This branch's own install, served: WordPress 7.1.3, PHP 8.3.6 on
+Windows through PHP's built-in server, OPcache on, no JIT and Xdebug not loaded (all three
+asked of the served process), MySQL 8.3.0 on the same machine, no persistent object cache,
+every CoreX plugin and add-on active, the Corex theme, signed out. An mu-plugin defined
+`SAVEQUERIES` on requests that carried a header and wrote every query that asks for one
+option by name, with who asked and whether it fell between the first and the last callback
+of `plugins_loaded`. Counts of a whole request are `$wpdb->num_queries` at shutdown, from a
+second mu-plugin that keeps no query; they are three higher than what `SAVEQUERIES` keeps,
+which starts when the mu-plugin defines it. Times are the median of 200 front-page
+requests after five unmeasured ones. The install was told not to start cron runs of its
+own (`DISABLE_WP_CRON`) so that a state under measurement stayed as it was put.
+
+**Measured again, before any change.** Code at `91d52d30`, a fresh install:
+
+| Option | Stored on a fresh install | Who asks | On which requests |
+|---|---|---|---|
+| `corex_login_protection_settings` | no | `LoginProtectionSettingsStore::current()`, as the container makes the settings for `LoginRouteGuard` in `ConfigServiceProvider::boot()` | every one: the front page, the REST index, `wp-login.php`, `admin-ajax.php` |
+| `corex_email_studio_defaults_version` | yes, autoload off | `MailServiceProvider::registerEmailStudio()`, on `init` | every one |
+| `corex_operations_mode` | no | `OperationsModeStore::current()`, for `MaintenanceGuard` on `template_redirect` | a front-end page; not the REST index, `wp-login.php` or `admin-ajax.php` |
+
+Each is `SELECT option_value FROM cx_options WHERE option_name = '…' LIMIT 1`. The front
+page ran 35 queries. With #405's change merged in locally the same three were asked, the
+front page ran 25, and the login settings were the one query left in `plugins_loaded`.
+
+**Whether each has to be read on every request.**
+
+- *The login protection settings: yes.* The guard decides, for every request, whether it
+  is the hidden login address and whether a default endpoint is to be refused.
+- *The operations mode: yes, on a front-end page,* and it is read nowhere else. The
+  maintenance and coming-soon guards decide what a visitor is shown.
+- *The Email Studio defaults version: it is an install-time check that runs on every
+  request.* The add-on compares the stored version with its own on `init` and installs
+  the layouts and partials a release added when they differ. Run there, the first request
+  after a release's files land installs them, whoever makes it. Moving the check to admin
+  and cron requests would leave a site sending email before its new defaults were
+  installed, and what an email does then was not read. With the row loaded the check is a
+  comparison against an array WordPress already holds, so it is left where it is.
+
+**What a missing row costs, and the three ways to stop paying it.** WordPress loads every
+option stored with autoload on in one query before any plugin runs. An option that is not
+among them is asked for by name, and a miss is remembered for that request only. So a row
+stored loaded costs nothing, and a missing row and an unloaded one cost the same query
+and cannot be told apart without it.
+
+1. *Leave a missing row at one query.* Nothing can go wrong. A site that never saved its
+   login protection or declared a mode, which is every new site, goes on paying two
+   queries on every front-end page for as long as it stays so.
+2. *A marker: one loaded option that promises every stored row of these is loaded, so
+   that a name missing from the loaded options is answered as "not stored" with no
+   query.* It makes what the login settings **answer** depend on where their row is
+   kept. A row set back to autoload off after the marker was written, by
+   `wp option set-autoload`, by a plugin that tidies autoloaded options, or by a row
+   written with SQL, would be read as not stored: the login address no longer hidden,
+   the default endpoints open and lockouts off, with the Security screen's own read
+   saying the same wrong thing. Refused for that.
+3. *Write the row.* An option with a row that is loaded is never missing. The row of a
+   site that stored nothing holds what the store already reads as nothing: an empty
+   array for the login settings, an empty string for the mode. Reading stays
+   `get_option()`, which is right for a loaded row, an unloaded one and none, so where a
+   row is kept decides what a read costs and never what it answers.
+
+**The decision: the third.** No read was changed.
+
+**What changed.**
+
+- *`Corex\Support\Options\LoadedOptions`, in core.* A provider registers each option of
+  its own that every request reads, with the value that says nothing is stored:
+  `ConfigServiceProvider` the login settings (`[]`) and the operations mode (`''`),
+  `MailServiceProvider` the defaults version (`''`).
+- *Stored loaded from now on.* `LoadedOptions::store()` is `update_option()` with
+  autoload on, then `wp_set_option_autoload()`, because `update_option()` leaves a row's
+  autoload as it was when the value is the one it holds. It replaces
+  `update_option(…, false)` in `LoginProtectionSettingsStore::save()`,
+  `SecurityResetLoginCommand`, `SecurityTrustedProxiesCommand`,
+  `OperationsModeStore::set()` and `MailServiceProvider::registerEmailStudio()`. The
+  mode's history stays in an option of its own with autoload off: it is read where it is
+  shown.
+- *The rows sites already hold are turned over, and the missing ones written,* by
+  `LoadedOptions::ensureLoaded()`, hooked last on `init`. It compares the registered
+  names with the options WordPress loaded and does nothing more when all are there, on
+  any request. When one is not, an admin or a cron request, and no other, sets the
+  autoload of the rows that exist (`wp_set_option_autoload_values()`) and inserts the
+  rest. Those are the requests the schema self-heal writes on, for the same reason: spec
+  100's FR-035 keeps schema writes off the front end, and this follows it though it is
+  not schema.
+- *The insert is `INSERT IGNORE`, not `add_option()`.* A request that asked for the
+  option before another request saved it still believes it is missing, and
+  `add_option()` trusts that belief and writes with `ON DUPLICATE KEY UPDATE`: it would
+  replace settings an administrator had saved a moment earlier with the row that says
+  nothing is stored. `INSERT IGNORE` leaves a row that is there alone. The request's
+  memory of the loaded options, of the missing ones and of that option is dropped after.
+
+**Where a one-time data change runs in CoreX, and why this is not one.** There is one
+runner, `SiteMigrationRunner`, with four callers (the self-heal on admin and cron
+requests, `wp corex migrate`, the release finisher, and a new site of a network). It
+creates the tables of a component whose version is behind and has no step for data; #360
+(pull request #404) makes the self-heal skip it altogether on a site that is current. A
+step there would need a version to bump and would run once. The turn-over is a check of
+how things stand and not a step: it costs nothing while the rows are loaded, and it
+repairs a row that is deleted or set back to autoload off at the next admin or cron
+request. It is not called from `wp corex migrate`.
+
+**Between receiving the files and the turn-over.** A site reads all three as it did: one
+query each, and the same answers. A site that hid its login address keeps it hidden and
+keeps its slug, a declared mode stays declared. That is the state `EveryRequestOptionQueriesTest`
+calls "just deployed", and it lasts until the first cron or admin request. On this
+install, before cron was switched off for the measurement, a `wp-cron.php` request that
+WordPress started itself did it. Not run: a site whose only cron is `wp cron event run`,
+where WP-CLI has loaded WordPress before the command says it is cron; its first admin
+request should be the one. An admin request is whatever WordPress counts as one, a
+signed-out call to `admin-ajax.php` included: the write is the same whoever asks, and is
+made once.
+
+**Measured after the change.** Same install and day. "Before the turn-over" is a site as
+`main` leaves it and as this branch leaves it until its first cron request: no login
+settings, no mode, the defaults version stored unloaded. "After" is one `wp-cron.php`
+request later. Each series was run twice, alternating.
+
+| Front page, 200 requests | Before the turn-over | After | Before, again | After, again |
+|---|---|---|---|---|
+| Queries in the request, this branch | 35 | 32 | 35 | 32 |
+| `plugins_loaded`, median | 8.5 ms | 7.1 ms | 7.3 ms | 7.0 ms |
+| Queries in the request, with #405 merged in | 25 | 22 | 25 | 22 |
+| Queries in `plugins_loaded`, with #405 | 1 | 0 | 1 | 0 |
+| `plugins_loaded`, median, with #405 | 5.60 ms | 5.32 ms | 5.67 ms | 5.34 ms |
+| between the quartiles, with #405 | 5.47 to 5.80 | 5.20 to 5.59 | 5.48 to 6.02 | 5.19 to 5.57 |
+
+The first series of the first row's pair ran cold (its quartiles were 7.8 to 9.6 ms) and
+says nothing; the other three are 0.2 to 0.3 ms apart, which is what the one query in
+boot costs here. The cold series aside, the whole request's medians were between 81 and
+86 ms with quartiles 10 to 15 ms apart: the change is inside that. With #405, the REST index keeps 9 queries
+where it kept 11 and `wp-login.php` 6 where it kept 8, as `SAVEQUERIES` counts them, and
+none of the three options is asked for on any of them. With both changes CoreX's boot
+asks the database nothing on a front-end request. The saving is larger where the database
+is another machine; that was not measured.
+
+**Tests.** All on WordPress, since every question here is what WordPress does with a row.
+
+- `tests/Integration/Support/LoadedOptionsTest.php`: a row stored unloaded is turned over
+  and keeps its value; a missing one gets the registered value, loaded; a front-end
+  request writes nothing and still reads the unloaded row; a second run asks the database
+  nothing; a value another request saves between the look and the insert is kept (the
+  save is made from a `query` filter as the insert goes out, and `add_option()` in its
+  place fails the test); `store()` leaves a row loaded from no row, from an unloaded row
+  with another value and from an unloaded row with the same value.
+- `tests/Integration/Security/LoginProtectionSettingsLoadedTest.php`: a hidden login
+  address and its slug read the same while the row is unloaded and after the turn-over,
+  and the guard still hides `wp-login.php`; a site that never saved gets the row and the
+  same settings; a save that changes nothing in an unloaded row leaves it loaded; so do
+  the reset-login and the trusted-proxies commands.
+- `tests/Integration/Operations/OperationsModeLoadedTest.php`: a declared mode is kept;
+  a site that declared none gets the row, is still not declared, inherits what it did
+  and gains no entry in its history; `set()` stores loaded.
+- `tests/Integration/Email/EmailStudioDefaultsVersionLoadedTest.php`: installing the
+  defaults stores the version loaded; a version stored unloaded is turned over and kept.
+- `tests/Integration/Foundation/EveryRequestOptionQueriesTest.php` names the three
+  options and runs each request in a process of its own, as #405's
+  `BootOptionQueriesTest` does: a front page, a cron request, a front page. Over the whole request, the render
+  included, the first front page asks for all three, which also shows the probe hears
+  them, and the last for none, on a site that stored nothing and on one that stored each
+  unloaded with its login address hidden.
+
+Every one failed before the change. With the change in, three faults were put in one at
+a time and each failed the last file: the `init` hook removed, the mode not registered,
+the defaults version not registered. Seven unit test files that stand in for
+`update_option()` now stand in for `wp_set_option_autoload()` beside it. The browser
+suite's `security-access.spec.js` puts the login settings back through `store()`.
+`tests/Support/OptionRow.php` reads and restores a row with its autoload, which
+`SavedOption` does not.
+
+**Found, and not changed.**
+
+1. *WordPress's own missing options are the same query on a fresh install:* `WPLANG`,
+   `can_compress_scripts` and `site_logo` on the front page, three `…_crop` options on
+   the REST index, `using_application_passwords` on `wp-login.php`. They are WordPress's
+   to store. `can_compress_scripts` is asked by WordPress's script loader, which
+   `DynamicBlockRegistrar::register()` is the first in the request to reach.
+2. *The Email Studio installs its defaults on whichever request comes first after a
+   release,* a visitor's included, as user 0 and with no lock around it. Read, not run
+   with two requests at once.
+3. *The turn-over is not part of `wp corex migrate`.* A site that runs it after a
+   deployment still waits for its first cron or admin request.
+4. *`Corex\Tests\Support\SavedOption::restore()` puts an option back with autoload off,*
+   so a development install that runs the suite holds the mode unloaded until its next
+   admin or cron request.
+5. *Not run on a network.* Options are per site and so is the turn-over, on that site's
+   own admin and cron requests; a site of a network that nobody opens and whose cron
+   never runs keeps its queries. The multisite suite has no test of this.
+
+**Client impact.** Nothing to do, and nothing a visitor or an administrator can see. On
+the first cron or admin request after a site takes the release, three rows of its options
+table change: `corex_login_protection_settings`, `corex_operations_mode` and
+`corex_email_studio_defaults_version` are stored with autoload on, and a site that never
+saved the first or declared the second gains the row, holding an empty array and an
+empty string. They are no longer in what `wp option list --search='corex_*'
+--autoload=off` lists, which #361's client impact said they were. Code of a site's own
+that reads `get_option('corex_operations_mode')` and takes `false` for "not declared"
+gets `''` there now; `OperationsModeStore::isDeclared()` is the question to ask. Code of
+a site's own that writes one of the three with autoload off is corrected at the next
+admin or cron request. A site's plugin with an option of its own that every request
+reads can register it the same way. `OperationsModeStore::OPTION` is public and
+`MailServiceProvider::STUDIO_DEFAULTS_OPTION` is new. Not checked on a client site, nor
+against the framework files Perego patches. With #405, a site with no persistent object
+cache runs thirteen fewer queries on a front-end page than `main` did before either.
+
+## #367 — CI follows `ubuntu-latest` onto Ubuntu 26.04, and the browser job serves with the PHP-FPM already on the runner
+
+**Date:** 2026-10-13. **Branch:** `ci/browser-job-serves-with-the-fpm-it-has`, from `main`.
+**Spec:** none (CI only). **Mode:** Deployment.
+
+**What was seen.** Every CI job on 2026-10-13 carried GitHub's notice that the
+`ubuntu-latest` label moves to Ubuntu 26.04
+([actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748)).
+The issue says the move is made over several weeks, from 2026-10-19 to 2026-11-19. Until
+it is done, the same commit runs on Ubuntu 24.04 on one run and on 26.04 on the next.
+Every job in `ci.yml`, `codeql.yml`, `dependency-security.yml` and `docs.yml` has
+`runs-on: ubuntu-latest`.
+
+**What was run.** Draft pull request #406, which is not to be merged, named
+`ubuntu-26.04` on every job that runs on a pull request: the six jobs of `ci.yml`, CodeQL
+and the dependency audit. The label is the one the runner-images README gives for the x64
+image. The jobs ran on image 20260927.149.1, Ubuntu 26.04.1.
+
+The first push, with nothing else changed (CI run 38452938344; CodeQL and the dependency
+audit are runs of their own, 38452938315 and 38452938342):
+
+- Seven of the eight jobs passed. `shivammathur/setup-php@v2` logged
+  `Installed PHP 8.3.35` and `Added wp-cli 2.12.0`. The unit suite gave `3145 passed`,
+  Jest `1383 passed`, the integration suite `2 warnings, 1198 passed`, which is the line
+  the last run on `main` gave on 24.04, and the multisite suite `7 passed`. The job that
+  generates a client site passed every step.
+- The browser job failed in the step "Serve WordPress", on
+  `sudo apt-get install -y -qq nginx php8.3-fpm`:
+  `E: Unable to locate package php8.3-fpm`, exit code 100. The steps that prove the
+  server and run the specs were skipped, so no browser spec ran. `npx playwright install --with-deps chromium` had
+  passed in the step before.
+
+Run 38453427884 added a step that prints what the runner has when "Serve WordPress"
+starts. On Ubuntu 26.04:
+
+- `apt-cache policy` knows `php8.5-fpm` and has no entry for `php8.3-fpm`. The image's
+  package sources are `ubuntu.sources` and `microsoft-prod.list`. `dpkg -l` lists 44
+  `php8.5` packages and no `php8.3` package.
+- PHP 8.3 is there all the same, as files setup-php put in place and not as packages:
+  `/usr/sbin/php-fpm8.3`, `/etc/php/8.3/fpm/` with `pool.d/www.conf` listening on
+  `/run/php/php8.3-fpm.sock`, and a `php8.3-fpm.service` that systemd reports
+  `active (running)`.
+
+With the package asked for only where no `php-fpm8.3` is on the path, and every other line
+of the step as it was, the job passed: `site up`, the error-log proof, `"jit_on": false`
+from `/etc/php/8.3/fpm/php.ini`, then `481 passed`, `7 skipped`, and `6 passed` for the
+installation of a release.
+
+Run 38454557848 ran the browser job with that step on both images. Ubuntu 24.04 (image
+20261004.327.1) and Ubuntu 26.04 each gave `481 passed`, `7 skipped` and `6 passed`. On
+24.04 the image has the `php8.3-fpm` package (8.3.6-0ubuntu0.24.04.11), setup-php logs
+`Updated to PHP 8.3.35`, and `php-fpm8.3` is on the path too. So neither image took the
+branch that asks apt for the package.
+
+**The decision.** The owner's, asked on 2026-10-13 with the three runs in front of him:
+follow `ubuntu-latest`, and change the step.
+
+- `runs-on` stays `ubuntu-latest` on every job.
+- "Serve WordPress" asks apt for `php8.3-fpm` only when `command -v php-fpm8.3` finds
+  nothing. Everything after that line is unchanged: the pool file, the settings directory,
+  the socket and the service are the ones PHP 8.3 has on both images.
+
+It is the reasoning of #221. A runner image is an input to a CI result that is not in git,
+as the WordPress version is. The current image is what a contributor's fork and a client
+repository run on, and a job that fails on it is something to find out. The nightly run on
+`main` (#221) is where the next image is met.
+
+**Weighed, and not chosen.**
+
+- *Naming `ubuntu-24.04` on every job.* Nothing moves while the label does. CI then stays
+  on an image GitHub will retire, somebody has to remember to move it, and the first try
+  on 26.04 on that day fails as it did on this one.
+- *Naming `ubuntu-26.04` on every job, with the same change to the step.* One known image
+  from today and no weeks of two. It gives up the next move as well, for the same cost as
+  the line above, one image later.
+- *Installing `php8.5-fpm` on 26.04 and serving with it.* The browser specs would run on
+  PHP 8.5 on some runs and on 8.3 on others, while the unit and integration suites run on
+  8.3. Which PHP CoreX is tested on is a decision of its own and is not made by a runner
+  image.
+- *Adding a package source that has `php8.3-fpm` for Ubuntu 26.04.* A third-party source
+  on the runner, to install a second copy of what setup-php already put there.
+
+**Tests.** None added. A test that reads `ci.yml` for the words of this step would pass
+on a step that does not work. What proves it is the job itself on each image: run
+38454557848 for both, and from here every run on whichever image it lands on.
+
+**What it does not do.**
+
+- The job still names `8.3` in the socket, the pool file, the settings file, the service
+  and PHP-FPM's log, as before. They are where PHP 8.3 keeps them on both images. If CI
+  moves to another PHP, they move with `php-version`.
+- The branch that asks apt for `php8.3-fpm` was taken on neither image, so it has not run
+  since this change. It is the line the step had before, kept for a runner that has no
+  PHP-FPM for PHP 8.3 once setup-php is done.
+- `docs.yml` runs on a push to `main` only and was not run on the new image. Its build job
+  sets up PHP 8.3 with setup-php, installs Composer's and npm's packages, generates the
+  class reference and builds the docs site, which the Jest job also does and did on 26.04.
+  Its deploy job is one action, `actions/deploy-pages`, and was not run.
+- `azure-pipelines.yml` builds on `vmImage: 'ubuntu-latest'` too, and the issue names
+  Azure DevOps beside GitHub Actions. It selects PHP with
+  `sudo update-alternatives --set php /usr/bin/php8.3 || true`. Where there is no
+  `/usr/bin/php8.3` that command fails, `|| true` hides it, and the package would be built
+  and verified with the image's PHP 8.5. This was read and not run.
+- A later image can change something else. The job proves the JIT is off and where PHP's
+  log goes on every run, so a change in where setup-php's PHP reads its settings stops the
+  job before the specs.
+
+**Client impact.** None for a site. A client repository carries `ci.yml` as a framework
+file, so its browser job passes on Ubuntu 26.04 when it takes the release this is in.
+Until then a client repository's browser job fails on the runs that land on 26.04, from
+2026-10-19, and passes on the runs that land on 24.04.
+
+## #368 — The `.env` is read from two directories above `corex-core`'s real location and from nowhere else: the guides say which directory that is on each kind of install, and the code is left as it is until the owner chooses
+
+**Date:** 2026-10-13. **Branch:** `docs/env-file-location`, from `main`.
+**Spec:** none (guides). **Mode:** CoreX Framework.
+
+**The lead.** #363, "Found, and not changed", item 1, read and not run:
+`CoreServiceProvider::projectRoot()` and `Boot::projectRoot()` are
+`dirname(COREX_CORE_PATH, 2)`, which is `wp-content/` where the plugin is a real directory
+in `wp-content/plugins/`, while the secrets guide says a VM keeps its `.env` "outside the
+web root".
+
+**Run, before anything was changed.** A WordPress of this worktree's own (`main` at
+`91d52d30`, WordPress from `wp core download`, its own database, PHP 8.3.6 on Windows),
+with three `.env` files, each giving `APP_NAME` a different value: one in `wp-content/`,
+one beside `wp-config.php`, one in the directory above the web root. `Config::get('app.name')`
+was read with `wp eval-file`.
+
+| `corex-core` in `wp-content/plugins/` | `COREX_CORE_PATH` | `app.name` came from |
+|---|---|---|
+| copied (a real directory) | `…/public/wp-content/plugins/corex-core/` | `wp-content/.env` |
+| copied, `wp-content/.env` taken away | the same | no file: the default, `Corex` |
+| a junction to this worktree's `plugins/corex-core` | `<worktree>/plugins/corex-core/` | `<worktree>/.env` |
+
+So the lead is right for a copied plugin, and the second row is the part that matters: with
+no `wp-content/.env`, the two files further up were not read. A web request gave the same
+answer as WP-CLI (a must-use plugin on the scratch site echoed the value on `init`).
+`__FILE__` in the junctioned plugin's main file is the target's path, so the directory is
+the repository's whatever the web root is.
+
+Asked over HTTP for `/wp-content/.env` on the copied install:
+
+- PHP's built-in server (`php -S … -t public`): `200`, the whole file.
+- Apache 2.4.59 as WAMP ships it, whose `httpd.conf` has one rule of this kind,
+  `<Files ".ht*">`: `200`, the whole file.
+- The same Apache with `<Files ".env"> Require all denied </Files>` in the web root's
+  `.htaccess`: `403`, for `/wp-content/.env` and for `/.env`.
+
+Three more things were run because the guide's table depends on them:
+
+- `APP_NAME` set in the environment of the PHP process, with no `.env`: `getenv()` sees
+  it and `Config::get('app.name')` is the default. `DotenvSource` is array-backed and
+  reads the file only.
+- A `.env` the PHP user is denied reading (a deny entry in the file's access list;
+  `is_file()` true, `is_readable()` false), through the real `DotenvSource`: the key is
+  not held and the `BootLogger` holds no message.
+- No `.env` exists in the four checkouts on this machine (the framework's root, Muva,
+  Perego, mizzey), at the root or in a `wp-content/`. What a host has cannot be seen from
+  here.
+
+**What the lead got wrong.** The secrets guide's line is about a VM, and the VM recipe
+(`azure-vm.md`, which the EC2 recipe follows) links the plugin: `ln -sfn` from
+`releases/<tag>/plugins/*` into `releases/<tag>/wp/wp-content/plugins/`, with nginx's root
+at `releases/<tag>/wp`. By the third row above the `.env` is read from `releases/<tag>/`,
+which is outside the web root. The guide was not wrong about that layout. It was wrong, or
+silent, about four other things:
+
+1. It did not say which directory. A reader had "outside the web root" and nothing more.
+2. "Root-only", with mode `600`. PHP runs as `www-data` in that recipe. A file only `root`
+   can read is not read, and by the run above nothing says so.
+3. Every release is a new directory, so a `.env` put into one is gone at the next.
+4. It listed the database password and SMTP credentials among what "the framework reads
+   through the Config engine". The first is WordPress's, in `wp-config.php`.
+   `TransportAdvisory` says of the second that CoreX never reads them.
+
+And the four pages that say "`.env` (project root)" did not say that on a copied install
+the project root is `wp-content/`. Only `shared-host-dist.md` did.
+
+**The decision.**
+
+1. *The guides say what the code does.* The secrets guide has a new section, "Where the
+   `.env` file is read from": the rule, a table of the two kinds of install, what to do on
+   each, that environment variables are not read, and the Apache rule that was run. Its
+   table row for a VM names the release directory and the PHP user. The sentence about
+   which secrets the Config engine reads is corrected.
+2. *The other pages point at it.* The docs site's configuration guide and the core README
+   define "project root" where they use it. The two update guides and `.env.example` say
+   that on a copied install the file would be inside the web root and the option is the
+   way. `shared-host-dist.md` adds that a `.env` beside `wp-config.php` or above the web
+   root is not read.
+3. *`CoreServiceProvider::projectRoot()` gets a comment saying the same.* No statement of
+   the code is changed.
+4. *Where the code looks is not changed here.* It decides where existing sites' `.env` is
+   read from, and that is the owner's to choose. The options, as put to him:
+   - **Leave it.** The guides are now right. A copied install has no file to configure it
+     and uses options.
+   - **A constant in `wp-config.php` that names the directory** (recommended), read by
+     both `projectRoot()` methods; with no constant, as today. A copied install can then
+     keep its `.env` above the web root, and no existing site reads a different file
+     until somebody defines the constant.
+   - **Look above `ABSPATH` on a copied install.** Not recommended. It moves where an
+     existing site's file is read from on the day it updates, and the directory above
+     `ABSPATH` is inside the web root on a site installed in a subdirectory.
+   - With either of the first two: **say so when a `.env` is read from inside `ABSPATH`,
+     and when one exists and cannot be read.** Both are silent today.
+
+**The edits are placed so that open PR #409 merges beside them.** #409 changes the line
+under the secrets guide's sample heading, the `.env` blocks of both update guides, and
+the lines of the core README and the configuration guide that name the layers. Each
+addition here is a paragraph of its own, away from those lines; the sample's heading
+("mode 600, outside the web root") is left, since the section under it now says which
+directory and whose file. A trial merge of #409's branch into this one stopped on
+`DECISIONS.md` only, where both add an entry at the end; the guides, the changelog and
+`PROGRESS.md` merged, and the merged pages were read.
+
+**Weighed, and not chosen.**
+
+- *Tell a copied install to keep a `.env` and refuse it in the server.* The rule works on
+  Apache and was run. A host's server is not always Apache, a rule in `.htaccess` is one
+  migration away from being lost, and the options do the same work with nothing to
+  refuse. The guide gives the rule only for a file that is already there.
+- *A test that the guides and the code agree.* What the guides state is which directory a
+  path resolves to under a link and under a copy, on a real install. The unit suite has no
+  install, and the integration suite's install is linked. The run above is the proof, and
+  it is written down here.
+
+**Not run.**
+
+- Linux. `__FILE__` under a symbolic link was run as a Windows junction only; a real
+  symbolic link needs a privilege this session does not have. On Linux the claim rests on
+  PHP's documented behaviour and on CI: `provision-wordpress` links the plugins with
+  `ln -sfn`, and the plugin finds the repository's `vendor/autoload.php` through
+  `dirname(__DIR__, 2)` on every run, which it could not if the path were the link's.
+- The file a `root`-owned mode-`600` `.env` is to `www-data`. The unreadable case was run
+  with a Windows deny entry.
+- nginx and LiteSpeed. The 200 and the 403 are Apache's.
+- The production Docker image. That its `.env` would be in `wp-content/` is read from the
+  `Dockerfile`'s `COPY plugins/ /var/www/html/wp-content/plugins/`. Docker was not
+  running on this machine.
+- The docs site was not built.
+
+**Found, and not changed.**
+
+1. *The production Docker image may not load CoreX at all.* The `prod` target copies the
+   plugins into `wp-content/plugins/` and Composer's `vendor/` to `/var/www/html/vendor/`.
+   The plugin looks for `vendor/autoload.php` in its own directory and two directories up,
+   which is `wp-content/vendor/`. Neither is where the image puts it, and the autoloader
+   it holds maps `Corex\` to `plugins/corex-core/src` beside `vendor/`. This is the fault
+   #267 fixed for the shared-host package. Read, not run.
+2. *A `.env` that cannot be read is treated as absent and nothing is logged.* Run, above.
+   A malformed one is logged (FR-014).
+3. *A development checkout under WAMP's `www/` is served by WAMP's `localhost` site.*
+   Apache answered for a file inside this worktree at `http://localhost/corex/…`. A `.env`
+   at the repository's root is in reach of whoever that site answers. The guide now says
+   to check.
+
+**Client impact.** None from this change: no code a site runs is different. A site whose
+plugin directory is a real directory, which is every site installed from the shared-host
+package, should check that it has no `wp-content/.env`, and if it has one, move its
+values to options and delete it.

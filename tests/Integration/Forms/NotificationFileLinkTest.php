@@ -31,6 +31,7 @@ use Corex\Mail\SubmissionAddress;
 use Corex\Security\Upload\ProtectedUploads;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\LanguageOfTheRequest;
 
 const NOTIFIED_FORM = 'corex-notified-file-probe';
 
@@ -91,7 +92,7 @@ it('names the file and links to the submission that was stored, at the address t
     $event = new FormSubmittedEvent(NOTIFIED_FORM, ['name' => 'Salma', 'cv' => $cv]);
     ($container->make(StoreSubmissionListener::class))($event);
     (new SendEmailListener(
-        new NotificationDispatcher(null, $this->mailer),
+        new NotificationDispatcher(new LanguageOfTheRequest(), null, $this->mailer),
         $container->make(ConfigInterface::class),
         new UploadedFileNames($forms),
         $container->make(SubmissionAddress::class),

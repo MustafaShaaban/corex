@@ -3,6 +3,7 @@
  * React component so the client<->server contract (contracts/data-screen.md) is unit-tested
  * headlessly: no DOM, no network. The screen (index.js) is a thin shell over these.
  */
+import { withQuery } from './restAddress.js';
 
 /**
  * Append a param only when it carries a non-empty value (so the server never sees blank
@@ -38,7 +39,7 @@ export function buildListUrl( restUrl, sourceKey, query = {} ) {
 	appendQuery( params, query );
 	params.set( 'page', String( query.page || 1 ) );
 	params.set( 'per_page', String( query.perPage || 20 ) );
-	return `${ restUrl }/${ sourceKey }?${ params.toString() }`;
+	return withQuery( `${ restUrl }/${ sourceKey }`, params );
 }
 
 /**
@@ -218,6 +219,20 @@ export function dataReducer( state, action ) {
 		default:
 			return state;
 	}
+}
+
+/**
+ * The address of the table changes a model has, pending and applied.
+ *
+ * @param {string} restUrl   REST base, e.g. .../wp-json/corex/v1/data
+ * @param {string} sourceKey The model whose changes are asked for.
+ * @return {string} the request URL
+ */
+export function buildMigrationsUrl( restUrl, sourceKey ) {
+	return withQuery(
+		dataEndpoint( restUrl, '', 'migrations' ),
+		`source=${ encodeURIComponent( sourceKey ) }`
+	);
 }
 
 export function dataEndpoint( restUrl, sourceKey, action, id = null ) {

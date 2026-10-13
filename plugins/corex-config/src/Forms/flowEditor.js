@@ -2,6 +2,7 @@
  * Pure state and immutable editing helpers for the Forms & Flows builder.
  */
 
+import { withQuery } from '../admin/restAddress.js';
 import { generateUuid } from './uuid.js';
 
 const FLOW_ACTIONS = [ 'preview', 'publish', 'unpublish', 'close', 'test' ];
@@ -166,9 +167,7 @@ export function buildFlowListUrl( base, search = '', state = '' ) {
 	if ( state ) {
 		query.set( 'state', state );
 	}
-	return query.toString()
-		? `${ flowEndpoint( base ) }?${ query }`
-		: flowEndpoint( base );
+	return withQuery( flowEndpoint( base ), query );
 }
 
 export function draftFromDetail( detail ) {

@@ -10,7 +10,9 @@ namespace Corex\Forms\Submission;
 
 defined('ABSPATH') || exit;
 
+use Closure;
 use Corex\Mail\AttemptingMailer;
+use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
@@ -31,19 +33,26 @@ use DateTimeImmutable;
  *
  * The mailers are injected as nullable collaborators (resolved conditionally by the provider),
  * not looked up from a container — domain logic holds no service locator (Principle IV).
+ *
+ * It is also where a notification's own words are written: a caller hands over what writes
+ * them, and they are written in the email's language ({@see EmailLanguage}).
  */
 final readonly class NotificationDispatcher
 {
     public function __construct(
+        private EmailLanguage $language,
         private ?RoutedMailer $routed = null,
         private ?Mailer $mailer = null,
     ) {
     }
 
     /**
-     * @param array<string,mixed> $context Merge/routing data for the CoreX Mail path.
+     * @param array<string,mixed>   $context Merge/routing data for the CoreX Mail path.
+     * @param Closure():MailRequest $write Writes the notification the rungs below the router
+     *                                       send. Asked only when one of them sends, and asked
+     *                                       in the email's language.
      */
-    public function dispatch(string $trigger, array $context, MailRequest $fallback): NotificationDelivery
+    public function dispatch(string $trigger, array $context, Closure $write): NotificationDelivery
     {
         // Rung 1 — CoreX Mail's trigger router. A null return means "no route matched"; fall through.
         if ($this->routed !== null) {
@@ -52,6 +61,12 @@ final readonly class NotificationDispatcher
                 return NotificationDelivery::fromResult($result);
             }
         }
+
+        // The notification is written here, and not by whoever asked for it to be sent, so that
+        // there is one place where its words are made: a subject translated by the caller was
+        // in the language of the request, which for a resend, a flow's test send or any other
+        // request from the admin is the signed-in person's own (DECISIONS #362).
+        $fallback = $this->language->during($write);
 
         // Rung 2 — a bound mailer with (or without) a truthful result.
         if ($this->mailer !== null) {

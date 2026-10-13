@@ -76,6 +76,15 @@ final class LifecycleVersionStore100 implements SchemaVersionStore
         return $this->versions[$optionName] ?? '';
     }
 
+    public function getMany(array $optionNames): array
+    {
+        return array_combine($optionNames, array_map($this->get(...), $optionNames));
+    }
+
+    public function forget(array $optionNames): void
+    {
+    }
+
     public function put(string $optionName, string $version): void
     {
         $this->versions[$optionName] = $version;

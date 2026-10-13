@@ -490,3 +490,84 @@ it('sends an email a site asks for under an id made of its request\'s', function
         ->and($built)->toContain('Message-ID: ' . $expected)
         ->and(preg_match_all('/^Message-ID:/mi', $built))->toBe(1);
 })->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// Spec 106, story 5: a reply leaves from the name and address the site names for replies. Read
+// from the message WordPress's own mailer built: the name is written by this driver into a
+// header WordPress then takes apart, so what a name may hold is decided here.
+/**
+ * The From line WordPress's mailer wrote for one message, with the site's general sender
+ * answered for the test as `$general` says.
+ *
+ * @param array{name?:string,address?:string} $general   The site's own From name and address.
+ * @param array<string,array{0:callable,1:int}> $listening Hooks on for the length of the send.
+ */
+function fromLineOf(EmailMessage $message, array $general = [], array $listening = []): string
+{
+    $name = static fn (): string => $general['name'] ?? '';
+    $address = static fn (): string => $general['address'] ?? '';
+    add_filter('pre_option_corex_mail_from_name', $name);
+    add_filter('pre_option_corex_mail_from_address', $address);
+
+    try {
+        $built = builtWhileSending($message, $listening)['built'][0] ?? '';
+    } finally {
+        remove_filter('pre_option_corex_mail_from_name', $name);
+        remove_filter('pre_option_corex_mail_from_address', $address);
+    }
+    preg_match('/^From: (.*?)\r?$/m', $built, $line);
+
+    expect(preg_match_all('/^From:/m', $built))->toBe(1)
+        // Whatever a name held, it is a name: no header of its own, and nobody added.
+        ->and(preg_match('/^Bcc:/mi', $built))->toBe(0);
+
+    return $line[1] ?? '';
+}
+
+/** A reply to Salma, from the address and under the name given. */
+function aMessageFrom(?string $address, ?string $name): EmailMessage
+{
+    return new EmailMessage(['salma@example.com'], [], [], 'sales@example.com', 'Re: your message', '<p>Hello Salma</p>', from: $address, fromName: $name);
+}
+
+it('sends a message from the name and the address it carries', function (?string $name, string $written) {
+    expect(fromLineOf(aMessageFrom('answers@example.com', $name), ['name' => 'Acme', 'address' => 'office@example.com']))->toBe($written);
+})->with([
+    'a name' => ['Acme Sales', 'Acme Sales <answers@example.com>'],
+    // What would end the name and begin an address, or a second header, is taken out.
+    'a name that tries to be an address' => ['Acme <boss@example.org>', '"Acme boss@example.org" <answers@example.com>'],
+    // One line, which WordPress's mailer puts in quotes for its colon.
+    'a name with a second line' => ["Acme\r\nBcc: hidden@example.com", '"Acme Bcc: hidden@example.com" <answers@example.com>'],
+    'no name of its own: the site\'s general one' => [null, 'Acme <answers@example.com>'],
+])->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// A name set alone, on a site that names no address anywhere, which is how a site starts. With
+// no address there is no From header to write the name in: it was dropped, and the email left
+// as "WordPress".
+//
+// The address is answered for the test, as for the others here: WordPress makes one of the
+// site's host, and its mailer refuses the one a CI site's host makes.
+it('sends under a name that has no address to stand in front of, from the address WordPress sends from', function (?string $ofTheMessage, string $ofTheSite, string $name) {
+    $line = fromLineOf(aMessageFrom(null, $ofTheMessage), ['name' => $ofTheSite], ['wp_mail_from' => aSenderTheMailerTakes()]);
+
+    expect($line)->toBe($name . ' <site@example.com>');
+})->with([
+    'the reply\'s' => ['Acme Sales', '', 'Acme Sales'],
+    'the reply\'s, over the site\'s' => ['Acme Sales', 'Acme', 'Acme Sales'],
+    'the site\'s general one' => [null, 'Acme', 'Acme'],
+])->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+
+// A name something else chose for this site's email is that thing's to choose: a transport
+// plugin that forces one does so through this filter.
+it('leaves a name something else gave the email where it has only a name of its own to offer', function () {
+    $forced = static fn (): string => 'Forced by the transport';
+    add_filter('wp_mail_from_name', $forced);
+
+    try {
+        $line = fromLineOf(aMessageFrom(null, 'Acme Sales'), [], ['wp_mail_from' => aSenderTheMailerTakes()]);
+    } finally {
+        remove_filter('wp_mail_from_name', $forced);
+    }
+
+    expect($line)->toBe('Forced by the transport <site@example.com>');
+})->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
+

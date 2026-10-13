@@ -168,3 +168,154 @@ test( 'the three surfaces have no horizontal overflow at mobile width', async ( 
 		expect( fits, `horizontal overflow on ${ slug }` ).toBe( true );
 	}
 } );
+
+// Spec 106, story 5: the three settings of a reply's sender, and a save that says what it did
+// not take. An address typed wrongly was dropped in silence under "Settings saved".
+test( 'Settings refuses a reply sender address that is not one, says so until dismissed, and saves the rest', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	const open = async () => {
+		await page.goto(
+			'/wp-admin/admin.php?page=corex-settings-config&corex_tab=mail'
+		);
+		await expect(
+			page.getByRole( 'tab', { name: 'Mail' } )
+		).toHaveAttribute( 'aria-selected', 'true' );
+	};
+	const field = ( name ) => page.locator( `[name="${ name }"]` );
+	const save = () =>
+		page.getByRole( 'button', { name: 'Save settings' } ).click();
+	await page.setViewportSize( { width: 1280, height: 900 } );
+	await open();
+	const before = {
+		name: await field( 'mail_reply_from_name' ).inputValue(),
+		address: await field( 'mail_reply_from_address' ).inputValue(),
+	};
+
+	try {
+		// An address a browser lets through and WordPress does not: no dot after the @.
+		// One with nothing after the @ is stopped by the browser, with its own words.
+		await field( 'mail_reply_from_name' ).fill( 'Acme Sales' );
+		await field( 'mail_reply_from_address' ).fill( 'answers@acme' );
+		await save();
+
+		const refused = page.locator( '.corex-toast' );
+		await expect( refused ).toHaveAttribute( 'role', 'alert' );
+		await expect( refused ).toContainText(
+			'Reply sender address was not changed: "answers@acme" is not an email address.'
+		);
+		await expect( refused ).toContainText( 'Everything else was saved.' );
+		await expect( refused ).not.toContainText( 'Settings saved.' );
+		// It is the last thing in the page and was there when the page arrived, which a
+		// screen reader does not reliably announce: it has focus, which reads it. And the
+		// field it is about says it was not taken, and is described by its line.
+		await expect( refused ).toBeFocused();
+		await expect( field( 'mail_reply_from_address' ) ).toHaveAttribute(
+			'aria-invalid',
+			'true'
+		);
+		const itsLine = refused.locator(
+			'[data-corex-refused="mail_reply_from_address"]'
+		);
+		await expect( field( 'mail_reply_from_address' ) ).toHaveAttribute(
+			'aria-describedby',
+			new RegExp( `(^| )${ await itsLine.getAttribute( 'id' ) }( |$)` )
+		);
+		await expect( field( 'mail_reply_from_name' ) ).not.toHaveAttribute(
+			'aria-invalid',
+			'true'
+		);
+		// The rest was saved, the Mail tab is still the one open, and the field that was
+		// refused is as it was.
+		await expect( field( 'mail_reply_from_name' ) ).toHaveValue(
+			'Acme Sales'
+		);
+		await expect( field( 'mail_reply_from_address' ) ).toHaveValue(
+			before.address
+		);
+
+		// Where it stands: inside the window, its lines one under another, the button to
+		// dismiss it beside them and inside it.
+		const measured = await refused.evaluate( ( toast ) => {
+			const box = ( node ) => node.getBoundingClientRect();
+			const lines = [ ...toast.querySelectorAll( 'p' ) ].map( box );
+			const dismiss = box( toast.querySelector( 'button' ) );
+			const whole = box( toast );
+
+			return {
+				lines: lines.length,
+				stacked: lines.every(
+					( line, at ) =>
+						at === 0 || line.top >= lines[ at - 1 ].bottom
+				),
+				gaps: lines
+					.slice( 1 )
+					.map( ( line, at ) =>
+						Math.round( line.top - lines[ at ].bottom )
+					),
+				dismissInside:
+					dismiss.left >= whole.left &&
+					dismiss.right <= whole.right &&
+					dismiss.top >= whole.top &&
+					dismiss.bottom <= whole.bottom,
+				dismissBesideTheLines: lines.every(
+					( line ) =>
+						line.right <= dismiss.left || line.left >= dismiss.right
+				),
+				inWindow:
+					whole.left >= 0 &&
+					whole.right <= window.innerWidth &&
+					whole.bottom <= window.innerHeight,
+			};
+		} );
+		expect( measured.lines ).toBe( 2 );
+		expect( measured.stacked, 'one line under another' ).toBe( true );
+		expect( measured.gaps[ 0 ], 'apart' ).toBeGreaterThanOrEqual( 2 );
+		expect( measured.dismissInside, 'the button inside it' ).toBe( true );
+		expect( measured.dismissBesideTheLines, 'beside the words' ).toBe(
+			true
+		);
+		expect( measured.inWindow, 'inside the window' ).toBe( true );
+
+		// It names what to type again: it does not go away by itself, as "saved" does.
+		await page.waitForTimeout( 6000 );
+		await expect( refused ).toBeVisible();
+		// Dismissed by the keyboard, the field to type again is where the keyboard is:
+		// the button that was pressed went with the message.
+		await refused.getByRole( 'button', { name: 'Dismiss' } ).focus();
+		await page.keyboard.press( 'Enter' );
+		await expect( refused ).toHaveCount( 0 );
+		await expect( field( 'mail_reply_from_address' ) ).toBeFocused();
+
+		// Typed as an address, it is saved, and that is all that is said.
+		await field( 'mail_reply_from_address' ).fill( 'answers@example.com' );
+		await save();
+		const saved = page.locator( '.corex-toast' );
+		await expect( saved ).toHaveAttribute( 'role', 'status' );
+		await expect( saved ).toContainText( 'Settings saved.' );
+		await expect( field( 'mail_reply_from_address' ) ).toHaveValue(
+			'answers@example.com'
+		);
+	} finally {
+		// As they were: a reply sent by another test leaves as this site's replies do. What
+		// goes wrong here is said and not thrown, so that it does not stand in for whatever
+		// failed above.
+		try {
+			await open();
+			await field( 'mail_reply_from_name' ).fill( before.name );
+			await field( 'mail_reply_from_address' ).fill( before.address );
+			await save();
+			await expect( page.locator( '.corex-toast' ) ).toContainText(
+				'Settings saved.'
+			);
+		} catch ( notRestored ) {
+			// eslint-disable-next-line no-console
+			console.warn(
+				`The reply sender settings were not put back: ${ notRestored.message }`
+			);
+		}
+	}
+
+	expect( errors ).toEqual( [] );
+} );

@@ -8,6 +8,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A site names who its replies are from** (spec 106, slice 5). Three settings under CoreX →
+  Settings → Mail: **Reply sender name**, **Reply sender address** and **Replies are answered
+  to**. A reply from the Submissions inbox, and one sent again, leaves from them; left blank,
+  each falls back to the site's general sender as before. The Mail settings warn when the
+  reply address is on another domain than the site's, as they do for the general one
+  (DECISIONS #357).
+
 - **The page that shows a new preview link has a button that copies it** (spec 101, FR-011a;
   the owner's ask). The link is in a field of its own, labelled, with **Copy link** beside
   it: one press puts the whole link on the clipboard and the page says "Copied.", to a
@@ -52,6 +59,29 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **An admin page, an `admin-ajax.php` call and a cron run no longer write to the options
+  table to check the schema.** The check that brings a site's CoreX tables up to date took
+  its lock before it knew whether there was anything to do: twelve statements a request,
+  four of them writes, on every admin and cron request of a site that needed nothing, and
+  an admin screen left open asks `admin-ajax.php` on a timer. It now reads the version of
+  every component in one statement, and takes the lock only when one of them is behind.
+  Measured on a development install: such a request's boot went from 11.1 ms to 7.4 ms and
+  from 23 statements to 12. A site that is behind is brought up to date as before, under
+  the lock, and announced once (DECISIONS #360).
+- **A setting with no override costs no query, and an override is an option WordPress loads
+  with the site's options** (spec 001, FR-011a). On a site with no persistent object cache,
+  CoreX's boot asked the database for eleven options that were not there, on every request:
+  a third of a fresh site's front page. The config engine now looks for a setting's
+  override among the options WordPress has already loaded, and so does the read of an
+  add-on's feature flag, which leaves one of the eleven (the login protection settings,
+  which are not a setting's override). The front page of a fresh install runs 23 queries
+  where it ran 33. An override saved by the Settings screen, by `update_option()` or by
+  `wp option update` is read as before, and so is one a `pre_option_` filter answers.
+  **An override stored with autoload off is no longer read**; `wp option set-autoload
+  <name> on` makes it one again, and `wp option list --search='corex_*' --autoload=off`
+  lists what a site has stored that way, which on an install nobody has changed by hand is
+  only CoreX's own records (DECISIONS #361).
+
 - **The standard email's header is part of the card, and a logo of any shape fits it**
   (spec 106, slice 8). The site's logo, or its name, is now the first band of the card that
   holds the message, under the brand's edge. It stood above the card, on the canvas, limited
@@ -70,6 +100,17 @@ All notable changes to Corex are documented here. The format follows
   each now has its own. Asking for access (`POST` on the same route) is open to anybody
   signed in, as it was, and the screen shows its queue as it did (DECISIONS #346).
 
+- **Three options CoreX reads on every request cost no query** (spec 001, FR-011b). The
+  login protection settings, the operations mode and the version of the Email Studio's
+  installed defaults were each saved with autoload off and read on every request: one
+  query each, stored or not, on a site with no persistent object cache. They are now
+  stored where WordPress loads them with the site's options. On the first cron or admin
+  request after a site takes the release, the rows it already holds are turned over, and
+  a site that never saved its login protection or declared a mode is given a row that
+  says so. Until then each is read as before, with the same answer: a hidden login
+  address stays hidden and keeps its slug. Nothing reads these options differently. The
+  front page of a fresh install runs three fewer queries (DECISIONS #366).
+
 ### Fixed
 
 - **A careers application is accepted on a Windows host.** On a server that runs Windows,
@@ -83,7 +124,59 @@ All notable changes to Corex are documented here. The format follows
   made it. A request that sends several files under the one name (`cv[]`) is answered as
   one with no CV, where it logged PHP warnings. On a Linux host the path has no backslash
   and nothing changes.
+- **A form built in Forms & Flows is guarded by its trap field and by the site's challenge.**
+  Found by reading and then measured, 2026-10-13. The stage that judges a submission's trap
+  field and its challenge token ran after the stage that keeps only the answers of the flow's
+  fields, and read both from what that stage handed on, where neither was left. So a filled
+  trap field stopped nothing, and on a site with a challenge provider configured every
+  submission of such a form was refused, a real visitor's included, because the provider was
+  handed an empty token. It has been so since the stages were written (v0.34.0). The stage now
+  reads both from the request as it was received. Nothing got past a provider because of
+  this. A form defined in code was never concerned (spec 068, FR-042a; DECISIONS #358).
+- **On a site without pretty permalinks, CoreX → Submissions opens, and seven other things
+  in the admin answer.** Such a site, which is what a fresh install is until its permalinks
+  are set, spells a REST route as a query (`/index.php?rest_route=/corex/v1/submissions`).
+  Eight admin clients wrote `?` and their own query after it, which made that query part
+  of the route, and WordPress answered 404 "No route was found". The inbox opened on "The
+  submissions could not be loaded". The same happened to a search or a state filter on
+  Forms & Flows, a model's records and its table changes on Data, a template's health
+  checks in Email Studio, the email log of a submission, **Refresh** on Blog Pro, and the
+  plan step of the Setup Wizard. Each now adds its query as the site spells the address.
+  A site with pretty permalinks is asked nothing differently. The browser suite covers it
+  on CI's site, which has pretty permalinks, through a fixture that hands a page the other
+  spelling (DECISIONS #359).
+- **The update guides name the `.env` variable that is read: `UPDATES_ENDPOINT`.** The
+  deployment guide, the docs site's update guide and the core README said
+  `COREX_UPDATES_ENDPOINT`. Nothing reads that: a config key is written in `.env` in
+  capitals with `_` for each `.` and no prefix, as the configuration guide says. A site
+  that followed them had no update source, and a missing source is a silent no-op, so it
+  was offered no update. The guides also name the option, `corex_updates_endpoint`.
+  Three more names that nothing reads are corrected: `COREX_ENV` in the secrets guide (it
+  is `APP_ENV`), and `COREX_MAIL_DRIVER` with its host, port and credentials in the mail
+  guide and `.env.example`, where the five `MAIL_*` keys the mail add-on reads now are;
+  `MWP_I18N_DRIVER` is gone from `.env.example`. The update source's empty default moves
+  from `config/app.php`, where its key was `app.updates.endpoint` and nothing read it, to
+  `config/updates.php` (DECISIONS #363).
+- **The integration suite leaves no post on the install it runs against, and a test that
+  would leave one fails.** One run on a fresh install left three logged emails and a
+  submission, written by listeners that two test files did not know of. The integration
+  test case now watches every post a test inserts; one still stored after the test's own
+  clean-up is deleted and the test fails, naming it. No transaction is used: a developer's
+  tables may be MyISAM. Posts by type are the same before and after 1,200 tests. Rows the
+  suite leaves in CoreX's own tables (notifications, activity, queued jobs) are listed in
+  the decision and not fixed. A unit test of Email Studio that passed or failed by the
+  order the files ran in now stubs what it calls (DECISIONS #364).
 
+- **CoreX → Data no longer says a site has something to finish because it named no update
+  source.** "What this site can do" listed "No update source is configured" under Needs
+  finishing on every site, since none is what CoreX ships with, and its Open Settings button
+  opened a Settings screen that has no field for it: nine tabs and 39 controls, read on a
+  fresh install, none for an update source. The list is for what was chosen and left half
+  done, and a notice nobody could close kept it from ever being empty. The notice is removed.
+  A site with nothing half done now reads "Nothing is half-configured."; a captcha provider
+  with no keys is still listed. The updater is not changed, and the Settings screen gets no
+  field for the source: a site that sets one, as the update guide says, is offered updates
+  as before (spec 074, FR-5.4; the owner's decision; DECISIONS #365).
 - **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
   WP-CLI.** Four jobs in three runs did on 2026-10-13, each before a test had run, and each
   passed when a person ran it again. setup-php asks for WP-CLI once, with no retry, and reports a tool it
@@ -94,6 +187,55 @@ All notable changes to Corex are documented here. The format follows
   carries a warning saying so. setup-php is still asked first and still provides the latest
   WP-CLI; WordPress is still installed at `latest`. Nothing a site runs changes
   (DECISIONS #354).
+- **An email is in the site's language, whoever's request draws it** (spec 106, FR-011a).
+  WordPress answers which way text runs, the page's language and every translated string
+  for the request, and in the admin a request is in the signed-in person's own profile
+  language. So on an English site, a reply sent by an administrator who reads the admin in
+  Arabic went out marked as Arabic, laid out right to left and signed off in Arabic; on an
+  Arabic site an administrator who reads it in English sent replies left to right. It
+  reached whatever such a person triggered from CoreX's admin screens, which ask their
+  routes with `_locale=user`: a reply, its preview, **Send again**, a resent notification
+  and a flow's test send; and the newsletter's "new article" email when they published a
+  post. A visitor's form and anything sent from cron were the site's already. An email is
+  now drawn inside WordPress's own switch to the site's language, and the person's screen
+  stays in theirs. The operator's own words keep their own direction, paragraph by
+  paragraph, as before. Words made before the mailer is handed them (a code-defined form's
+  subject, the Guides support request) are the next entry's (DECISIONS #356).
+- **The words CoreX writes into an email are in the site's language too** (spec 106,
+  FR-011b). Three kinds of word were still in the language of whoever triggered the email,
+  on a site that has CoreX's strings translated. The notification of a form defined in
+  code: its subject, the line that says where a file is opened and its link, and "The
+  submission contained no fields."; and a flow's notification on a site without CoreX Mail.
+  A Guides support message: what it is about, "a signed-in user", "no address given", and
+  on a site without CoreX Mail the subject and every line. And what Email Studio stores the
+  first time CoreX Mail runs: the names of its layouts and partials and the words of
+  "Unsubscribe", "Preferences" and "Privacy", which were in the language of whichever
+  administrator's page happened to be first. All are now written in the site's language.
+  What a person is told on screen about a send stays in their own (DECISIONS #362).
+- **The settings screen says when it did not save a field.** An address, a web address, a
+  colour or a choice that was not one was dropped in silence under "Settings saved", and the
+  field came back as it had been. The screen now names the field, quotes what was typed and
+  says why it was not taken, in a message that stays until it is dismissed; the field is
+  marked as not taken. Everything else in the form is saved, as before.
+- **An email address is judged as it was typed.** The settings screen cleaned an address
+  before checking it, so one WordPress could "repair" was saved as another address:
+  `sales@münchen.de` as `sales@mnchen.de`. It is now refused, and said.
+- **A From name is sent when the site names no From address.** With a name set and no
+  address, no From header was written and the email left as "WordPress". The name is now
+  sent over the address WordPress itself sends from, unless a plugin has chosen a name.
+- **A From name is cleaned as a header, not as text on a page.** "Tom & Jerry <3" was sent
+  as "Tom & Jerry &lt;3". A name is now one line with `<`, `>` and `"` taken out, at most 100
+  characters. A name that held something shaped like a tag keeps its words: "Acme <Sales>"
+  was sent as "Acme" and is now "Acme Sales".
+
+- **The browser job in CI runs on Ubuntu 26.04 as well as on 24.04.** GitHub moves the
+  `ubuntu-latest` label to Ubuntu 26.04 between 2026-10-19 and 2026-11-19, and a run lands
+  on either image until it is done. Tried on the new image on 2026-10-13, every job passed
+  but the browser job, which stopped on `E: Unable to locate package php8.3-fpm` before a
+  spec had run: Ubuntu 26.04's archive has `php8.5-fpm` only. The package was not needed.
+  Once setup-php has set up PHP 8.3 a PHP-FPM for it is on the runner, running, on both
+  images, and the job now asks apt for `php8.3-fpm` only on a runner that has none. `runs-on` stays
+  `ubuntu-latest`. Nothing a site runs changes (DECISIONS #367).
 
 - **A new submission of a form defined in code raises a notification.** Reported on
   2026-10-13 from a client site: dozens of submissions stored and no notification for any of
@@ -485,6 +627,19 @@ All notable changes to Corex are documented here. The format follows
 - **The docs header's search field stays inside the header** in a window 320 wide, where
   its button reached the window's edge once the header had a gutter.
 
+- **The guides say which directory the `.env` is read from.** It is the directory two
+  levels above the real location of `corex-core`, and no other. Where the plugin is linked
+  into WordPress from a repository, as in a development checkout and the VM recipes, that
+  is the repository or the release directory, outside the web root. Where it is copied
+  into `wp-content/plugins/`, as in the shared-host package, that is `wp-content/`, inside
+  the web root, and a `.env` beside `wp-config.php` or above the web root is not read. The
+  secrets guide has a new section that says so, with what to do on each kind of install;
+  the configuration guide, the core README, the two update guides, the shared-host guide
+  and `.env.example` point at it. The secrets guide also said a VM's `.env` is
+  "root-only": a file the user PHP runs as cannot read is treated as absent, with nothing
+  logged. And it listed the database password and SMTP credentials among what CoreX's
+  config reads, which it does not. No code a site runs is changed (DECISIONS #368).
+
 ### Security
 
 - **A form's file field is answered by the file the request carried, and by nothing in its
@@ -508,6 +663,55 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Three new settings, `mail.reply.from_name`, `mail.reply.from_address` and
+  `mail.reply.reply_to`** (options `corex_mail_reply_from_name`,
+  `corex_mail_reply_from_address`, `corex_mail_reply_reply_to`). Blank on every site until
+  set. A site whose mail relay sends each address through its own connection has to add the
+  reply address there before naming it here. **`Corex\Email\Message\EmailMessage` gains a last,
+  optional constructor argument, `fromName`**, and a new class,
+  `Corex\Email\Message\SenderName`, holds the rule for one. A site with its own `MailDriver`
+  that wants the name has to read it; the reply's arrives cleaned. **The general From name
+  may read differently**: see Fixed.
+- **A form built in Forms & Flows refuses a submission whose trap field is filled, and takes
+  a challenge token.** Nothing to set. A site that has such a form and a challenge provider
+  configured (reCAPTCHA, Turnstile, hCaptcha or its own) had every submission of that form
+  refused; a submission whose token the provider accepts is now stored. A site that worked
+  round that by setting the form to **Never protect this form** can set it back once it has
+  seen a submission go through on its own pages: that was not run in a browser against a
+  real provider here. The builder's test run still carries no token, so on such a site it
+  stops at the protection stage as before. `SubmissionPipelineContext` has a new public property,
+  `received`, and a seventh constructor argument that may be left out (DECISIONS #358).
+
+- **A site's own admin script that adds a query to a CoreX REST address by hand does not
+  work on a site without pretty permalinks.** CoreX's own screens are fixed (DECISIONS
+  #359) and a site has nothing to set. A script of the site's that writes
+  `` `${ restUrl }?name=value` `` asks for a route WordPress does not know there. Set the
+  parameters on a `URL` instead (`new URL( restUrl )`, then `searchParams.set()`), as the
+  Setup Wizard does: CoreX's helper is inside its admin bundle and is not something a
+  site can import.
+- **Nothing to do for the schema check.** Nothing stored changes: a component's version
+  option stays where it is, with autoload off. A site that binds its own
+  `Corex\Database\Schema\SchemaVersionStore` has two methods to add, `getMany()` and
+  `forget()`. Nothing in the framework binds another.
+- **A site whose `.env` has `COREX_UPDATES_ENDPOINT` renames the line to
+  `UPDATES_ENDPOINT`.** Until it does it is offered no update. A site that set the option
+  `corex_updates_endpoint` changes nothing. `COREX_ENV`, `COREX_MAIL_DRIVER`,
+  `COREX_MAIL_HOST`, `COREX_MAIL_PORT`, `COREX_MAIL_USERNAME`, `COREX_MAIL_PASSWORD` and
+  `MWP_I18N_DRIVER` in a `.env` did nothing and can be deleted (DECISIONS #363).
+- **A client repository's CI may show a framework integration test red where it was green.**
+  The suite now fails a test that leaves a post on the install. If a client's own plugin is
+  active there and writes a post while a framework test runs, that test fails and names the
+  post. Not seen on a client site; the remedy is in the framework's test (DECISIONS #364).
+
+- **Three rows of a site's options table change on its first cron or admin request after
+  this release, and there is nothing to do.** `corex_login_protection_settings`,
+  `corex_operations_mode` and `corex_email_studio_defaults_version` are stored with
+  autoload on; a site that never saved the first or declared the second gains the row,
+  holding an empty array and an empty string. Code of a site's own that reads
+  `get_option('corex_operations_mode')` and takes `false` for "not declared" gets `''`
+  now: ask `OperationsModeStore::isDeclared()`. A site's plugin with an option of its own
+  that every request reads can keep it loaded the same way, with
+  `Corex\Support\Options\LoadedOptions` (DECISIONS #366).
 - **A site with a form that has a file field should take this release, and look at what it
   already stores.** Three things show an answer that was not a file the submission was
   sent with: text where the inbox shows a file's name, a file answer the inbox shows as a
@@ -526,6 +730,31 @@ All notable changes to Corex are documented here. The format follows
   file. `AttachmentStore::store()` answers `not_uploaded` for a file PHP did not receive as
   an upload, where it gave another reason; the careers form's answer for it is
   `cv_not_uploaded`.
+- **An email follows the site's language and no longer the profile language of whoever
+  triggered it.** Nothing changes for a site whose staff read the admin in the site's
+  language. Where somebody's profile language differs, the replies they send, and the
+  other emails listed under Fixed, change direction and `lang` to the site's, and CoreX's
+  own words in them are the site's translation. Nothing stored changes, and an email
+  already sent is as it was sent. A client's own email design and its `corex_email_brand`
+  filter are called inside the switch, so a string they translate is in the site's
+  language too. In PHP, the constructors of `Corex\Email\Design\ReplyComposer` and
+  `Corex\Email\Template\TemplateRenderer` take a `Corex\Mail\EmailLanguage` as
+  their last argument; the container gives it, and only code that makes either with `new`
+  has to pass one.
+
+- **A form's notification, a Guides support message and Email Studio's defaults follow the
+  site's language as well.** Nothing changes on a site that does not translate CoreX's own
+  strings: CoreX ships no translations of them, so there they are English before and after.
+  On a site that does translate them, those emails stop following the profile language of
+  whoever triggered them. **Email Studio's defaults already stored on a site are not
+  rewritten**: they stay in the language they were first stored in, and can be edited in
+  Email Studio. For code that calls these classes itself:
+  `Corex\Forms\Submission\NotificationDispatcher::dispatch()` takes, as its third argument,
+  a closure that returns the `Corex\Mail\MailRequest` (it took the request), and its
+  constructor takes a `Corex\Mail\EmailLanguage` first; `Corex\Guides\Support\SupportMailer`
+  takes one first too; `Corex\Guides\Support\SupportMessage` takes `category`, a key, where
+  it took `categoryLabel`; `SupportRequestController::categories()` is
+  `SupportCategory::labels()`. The container makes all of them.
 
 - **A site whose forms are registered in code starts to get the New submission
   notification.** Nothing to set. It is raised for submissions stored from now on:
@@ -837,6 +1066,12 @@ All notable changes to Corex are documented here. The format follows
   catches: they now throw `Corex\Access\InvalidAccessInput`, which extends it. Read on
   2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the routes or
   either class (DECISIONS #350).
+
+- **A site installed from the shared-host package should have no `wp-content/.env`.** That
+  is the only place such a site's `.env` is read from, and a web server gives the file to
+  anybody who asks for it unless it was told not to. If one is there, move its values to
+  options and delete it. Nothing in this release changes where the file is read from
+  (DECISIONS #368).
 ## [0.45.2] — 2026-10-11
 
 Two changes on top of v0.45.1, both for a form defined in code.

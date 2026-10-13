@@ -13,6 +13,7 @@
  */
 
 import { __, sprintf } from '@wordpress/i18n';
+import { withQuery } from '../admin/restAddress.js';
 import { createSha256 } from './sha256.js';
 
 /** The key every answer of the Releases routes carries (`ReleaseRestGateway::MARK`). */
@@ -175,16 +176,20 @@ export function createReleaseClient( {
 	/**
 	 * Ask until the site answers, waiting longer each time; then give up and say so.
 	 *
-	 * @param {string} path   The route, after the base.
-	 * @param {Object} [init] What `fetch` is given.
+	 * @param {string} path    The route, after the base.
+	 * @param {Object} [init]  What `fetch` is given.
+	 * @param {string} [query] What the request adds to the address.
 	 * @return {Promise<Object>} The marked answer, whether it is a yes or a no.
 	 */
-	async function ask( path, init = {} ) {
+	async function ask( path, init = {}, query = '' ) {
 		for ( let attempt = 0; attempt < tries; attempt++ ) {
 			if ( attempt > 0 ) {
 				await wait( FIRST_WAIT_MS * 2 ** ( attempt - 1 ) );
 			}
-			const answer = await once( restUrl + path, init );
+			const answer = await once(
+				withQuery( restUrl + path, query ),
+				init
+			);
 			if ( answer ) {
 				return answer;
 			}
@@ -217,10 +222,6 @@ export function createReleaseClient( {
 		return answer.data;
 	}
 
-	// A site without pretty permalinks spells its routes as a query
-	// (`?rest_route=/corex/v1/releases`): what a request adds of its own joins with `&`.
-	const querySign = restUrl.includes( '?' ) ? '&' : '?';
-
 	const json = ( body ) => ( {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -248,12 +249,13 @@ export function createReleaseClient( {
 
 		while ( held < file.size ) {
 			const answer = await ask(
-				`${ route }${ querySign }offset=${ held }`,
+				route,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/octet-stream' },
 					body: file.slice( held, held + partBytes ),
-				}
+				},
+				`offset=${ held }`
 			);
 
 			// Out of step is the site saying how much it holds: the answer to a part

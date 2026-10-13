@@ -53,6 +53,7 @@ use Corex\Email\Queue\MailQueueDispatcher;
 use Corex\Email\Queue\MailQueueGate;
 use Corex\Email\Queue\QueuedMailer;
 use Corex\Foundation\ServiceProvider;
+use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 use Corex\Mail\RoutedMailer;
 use Corex\Mail\MailTemplateCatalog;
@@ -60,6 +61,7 @@ use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
+use Corex\Support\Options\LoadedOptions;
 
 /**
  * Boots the mail engine: binds the headless cores (renderer, header guard, recipient
@@ -69,6 +71,12 @@ use Corex\Support\Config\FeatureFlags;
  */
 final class MailServiceProvider extends ServiceProvider
 {
+    /**
+     * Holds the version of the Email Studio defaults a site has installed. Compared on `init` of
+     * every request, so it is stored where WordPress loads it with the site's options.
+     */
+    public const STUDIO_DEFAULTS_OPTION = 'corex_email_studio_defaults_version';
+
     private const STUDIO_DEFAULTS_VERSION = '3';
 
     public function register(): void
@@ -132,14 +140,21 @@ final class MailServiceProvider extends ServiceProvider
         // right-to-left site was drawn left to right (DECISIONS #351).
         $this->container->singleton(
             Layout::class,
+            // Asked in the email's language as well: an Email Studio template is wrapped by
+            // this layout with nothing else around it to say which way the site's text runs.
             static fn (ContainerInterface $c): Layout => new Layout(
-                static fn (): array => self::brand($c->make(SiteEmailBrand::class)->logo()),
+                static fn (): array => $c->make(EmailLanguage::class)->during(
+                    static fn (): array => self::brand($c->make(SiteEmailBrand::class)->logo()),
+                ),
             ),
         );
 
         $this->container->singleton(
             TemplateRenderer::class,
-            static fn (ContainerInterface $c): TemplateRenderer => new TemplateRenderer($c->make(Layout::class)),
+            static fn (ContainerInterface $c): TemplateRenderer => new TemplateRenderer(
+                $c->make(Layout::class),
+                $c->make(EmailLanguage::class),
+            ),
         );
 
         $this->container->singleton(UserDirectory::class, WpUserDirectory::class);
@@ -256,6 +271,7 @@ final class MailServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerEmailLogPostType']);
         add_action('init', [$this, 'registerEmailStudio']);
         add_action('rest_api_init', [$this, 'registerEmailStudioRoutes']);
+        $this->container->make(LoadedOptions::class)->register(self::STUDIO_DEFAULTS_OPTION, '');
 
         $this->container->make(TemplateRegistry::class)->register(
             $this->container->make(ContactNotificationTemplate::class),
@@ -300,20 +316,25 @@ final class MailServiceProvider extends ServiceProvider
     public function registerEmailStudio(): void
     {
         $this->container->make(WpEmailStudioStore::class)->registerPostType();
-        if (get_option('corex_email_studio_defaults_version') === self::STUDIO_DEFAULTS_VERSION) {
+        if (get_option(self::STUDIO_DEFAULTS_OPTION) === self::STUDIO_DEFAULTS_VERSION) {
             return;
         }
 
-        $this->container->make(EmailLayoutRepository::class)->installDefaults(
-            class_exists('WooCommerce'),
-            get_current_user_id(),
-            new \DateTimeImmutable('now'),
-        );
-        $this->container->make(EmailPartialRepository::class)->installDefaults(
-            get_current_user_id(),
-            new \DateTimeImmutable('now'),
-        );
-        update_option('corex_email_studio_defaults_version', self::STUDIO_DEFAULTS_VERSION, false);
+        // What is stored here is named, and in three partials worded, by CoreX, and the words go
+        // out in the site's emails. They are written in the site's language, not in that of
+        // whoever's request happens to be the first to reach `init` (DECISIONS #362).
+        $this->container->make(EmailLanguage::class)->during(function (): void {
+            $this->container->make(EmailLayoutRepository::class)->installDefaults(
+                class_exists('WooCommerce'),
+                get_current_user_id(),
+                new \DateTimeImmutable('now'),
+            );
+            $this->container->make(EmailPartialRepository::class)->installDefaults(
+                get_current_user_id(),
+                new \DateTimeImmutable('now'),
+            );
+        });
+        LoadedOptions::store(self::STUDIO_DEFAULTS_OPTION, self::STUDIO_DEFAULTS_VERSION);
     }
 
     public function registerEmailStudioRoutes(): void

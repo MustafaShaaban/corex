@@ -92,6 +92,22 @@ final class SettingsRegistry implements FieldSections
                         'label' => __('Default reply-to address', 'corex'),
                         'type'  => 'email',
                     ],
+                    // Who a reply from the Submissions inbox is from (spec 106, story 5).
+                    'mail.reply.from_name' => [
+                        'label' => __('Reply sender name', 'corex'),
+                        'type'  => 'text',
+                        'help'  => __('The name a reply from the Submissions inbox is sent under. Leave blank for the From name above.', 'corex'),
+                    ],
+                    'mail.reply.from_address' => [
+                        'label' => __('Reply sender address', 'corex'),
+                        'type'  => 'email',
+                        'help'  => __('The address a reply is sent from. It has to be a mailbox your mail service may send as, or the reply may be refused or land in spam. Leave blank for the From address above.', 'corex'),
+                    ],
+                    'mail.reply.reply_to' => [
+                        'label' => __('Replies are answered to', 'corex'),
+                        'type'  => 'email',
+                        'help'  => __('Where the person\'s answer to a reply goes. Leave blank for the default reply-to address above.', 'corex'),
+                    ],
                     'mail.provider'     => [
                         'label'   => __('Delivery provider', 'corex'),
                         'type'    => 'select',

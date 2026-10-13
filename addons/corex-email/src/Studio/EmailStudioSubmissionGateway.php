@@ -15,6 +15,7 @@ use Corex\Email\Delivery\DeliveryPolicy;
 use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Message\EmailMessage;
+use Corex\Email\Message\SenderName;
 use Corex\Mail\MessageId;
 use Corex\Mail\MailResult;
 use Corex\Mail\ReplyConversation;
@@ -101,7 +102,8 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
                 [$recipient],
                 [],
                 [],
-                $this->replyToAddress(),
+                // Where an answer to a reply goes, and where one to any other email does.
+                $this->addressSetAs('mail.reply.reply_to') ?? $this->replyToAddress(),
                 $subject,
                 $email->html,
                 // An email says which one it answers, and names the ones before it: that is
@@ -110,7 +112,11 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
                     'In-Reply-To' => $within->latest(),
                     'References' => implode(' ', $within->messageIds),
                 ],
+                // The sender a site names for its replies (spec 106, FR-024). Null is the site's
+                // general one, as before.
+                from: $this->addressSetAs('mail.reply.from_address'),
                 plainText: $email->text,
+                fromName: $this->replySenderName(),
             ),
             $this->deliveryContext(),
         );
@@ -166,11 +172,32 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
      */
     private function replyToAddress(): ?string
     {
-        $configured = trim((string) $this->config->get('mail.reply_to', ''));
+        return $this->addressSetAs('mail.reply_to');
+    }
+
+    /**
+     * The address a setting holds, or null where it holds none or what it holds is not one:
+     * the settings screen refuses that, and an option can be written past the screen.
+     */
+    private function addressSetAs(string $setting): ?string
+    {
+        $configured = trim((string) $this->config->get($setting, ''));
 
         return $configured !== '' && is_email($configured) !== false
             ? sanitize_email($configured)
             : null;
+    }
+
+    /**
+     * The name replies are sent under, as a name may stand in a header, or null where the
+     * site names none. Cleaned here and not left to a driver: a site's own driver is handed
+     * a name it can write as it is.
+     */
+    private function replySenderName(): ?string
+    {
+        $name = SenderName::of((string) $this->config->get('mail.reply.from_name', ''));
+
+        return $name !== '' ? $name : null;
     }
 
     public function resend(string $attemptId, string $recipient, array $context): MailResult

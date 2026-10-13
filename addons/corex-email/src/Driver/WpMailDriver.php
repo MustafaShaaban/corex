@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Closure;
 use Corex\Email\Message\AttachmentResolver;
 use Corex\Email\Message\EmailMessage;
+use Corex\Email\Message\SenderName;
 use Corex\Mail\MessageId;
 use Corex\Support\Config\ConfigInterface;
 
@@ -20,7 +21,8 @@ use Corex\Support\Config\ConfigInterface;
  * The default driver: delivers via `wp_mail`, honoring whatever SMTP/MTA the site
  * already has. The from-identity comes from the Config engine (`mail.from.*`) and is
  * sanitized before it becomes a header (defense-in-depth alongside the HeaderGuard).
- * Sends HTML email, with a plain-text alternative when the message brings one.
+ * Sends HTML email, with a plain-text alternative when the message brings one. A message may
+ * bring a sender's address and a sender's name of its own; each falls back to the configured one.
  */
 final class WpMailDriver implements MailDriver
 {
@@ -48,6 +50,9 @@ final class WpMailDriver implements MailDriver
      */
     private const MARK = 'X-Corex-Send';
 
+    /** The name WordPress sends under when it was given none (`wp_mail()`). */
+    private const WORDPRESS_OWN_NAME = 'WordPress';
+
     public function __construct(
         private readonly ConfigInterface $config,
         // Defaulted so every existing construction site keeps working; the resolver is stateless.
@@ -59,10 +64,14 @@ final class WpMailDriver implements MailDriver
     {
         $headers = ['Content-Type: text/html; charset=UTF-8'];
 
-        $from = $this->fromHeader($message->from);
+        $name = $this->senderName($message->fromName);
+        $from = $this->fromHeader($message->from, $name);
         if ($from !== '') {
             $headers[] = 'From: ' . $from;
         }
+        // A name with no address to stand in front of: there is no From header to write it
+        // in, so WordPress's mailer is given it, over the address WordPress sends from.
+        $nameAlone = $from === '' && $name !== '' ? $name : null;
 
         $replyTo = ($message->replyTo !== null && $message->replyTo !== '')
             ? $message->replyTo
@@ -83,7 +92,7 @@ final class WpMailDriver implements MailDriver
         // sent under, and which email it answers.
         $mark = bin2hex(random_bytes(8));
         $mailer = null;
-        $prepared = $this->beforeSending($message, $mark, $mailer);
+        $prepared = $this->beforeSending($message, $mark, $mailer, $nameAlone);
         if ($prepared !== null) {
             $headers[] = self::MARK . ': ' . $mark;
             add_action('phpmailer_init', $prepared, self::AFTER_THE_MAIL_SERVER_IS_SET_UP);
@@ -128,16 +137,18 @@ final class WpMailDriver implements MailDriver
      * taken as it was given could carry a second header behind it, and a recipient nobody sees.
      *
      * @param string      $mark   What this email is known by at the mailer: {@see MARK}.
+     * @param string|null $nameAlone A sender's name that had no address to be written in front
+     *                               of, for the mailer to send under; null where there is none.
      * @param object|null $mailer Set to the mailer once it has been handed this email, for the
      *                            caller to take the id back off it.
      */
-    private function beforeSending(EmailMessage $message, string $mark, ?object &$mailer): ?Closure
+    private function beforeSending(EmailMessage $message, string $mark, ?object &$mailer, ?string $nameAlone = null): ?Closure
     {
         $plainText = $message->plainText !== null && trim($message->plainText) !== '' ? $message->plainText : null;
         $messageId = MessageId::isOne($message->headers['Message-ID'] ?? null) ? $message->headers['Message-ID'] : null;
         $answers = MessageId::isOne($message->headers['In-Reply-To'] ?? null) ? $message->headers['In-Reply-To'] : null;
         $before = MessageId::allIn((string) ($message->headers['References'] ?? ''));
-        if ($plainText === null && $messageId === null && $answers === null && $before === []) {
+        if ($plainText === null && $messageId === null && $answers === null && $before === [] && $nameAlone === null) {
             return null;
         }
 
@@ -146,7 +157,7 @@ final class WpMailDriver implements MailDriver
         // listens at an earlier one: on a site whose mail server is set up by a listener at
         // priority 20, behind another plugin's at 5, a reply left without the mail server's
         // settings. The caller takes it off, when `wp_mail()` has returned.
-        return static function (object $phpmailer) use ($plainText, $messageId, $answers, $before, $mark, &$mailer): void {
+        return static function (object $phpmailer) use ($plainText, $messageId, $answers, $before, $mark, $nameAlone, &$mailer): void {
             if (! self::isThisDriversEmail($phpmailer, $mark)) {
                 // Another email, sent while this one was on its way. If it comes after this
                 // one, WordPress has emptied its mailer for it of everything but this one's
@@ -158,6 +169,11 @@ final class WpMailDriver implements MailDriver
             $mailer = $phpmailer;
             if ($plainText !== null) {
                 $phpmailer->AltBody = $plainText;
+            }
+            // Only where nobody chose a name: one a transport plugin forces is its own, as it
+            // is when it replaces the name in a From header.
+            if ($nameAlone !== null && ($phpmailer->FromName ?? '') === self::WORDPRESS_OWN_NAME) {
+                $phpmailer->FromName = $nameAlone;
             }
             if ($messageId !== null) {
                 $phpmailer->MessageID = $messageId;
@@ -253,13 +269,15 @@ final class WpMailDriver implements MailDriver
      * mailbox is its own authenticated connection — so a site with three properly configured
      * mailboxes could previously still send everything through one of them (#150).
      *
+     * The name is the one {@see senderName()} answered. With no address at all there is no
+     * header to write: '' is answered, and a name is handed to the mailer another way.
+     *
      * The message's own address wins when it carries one and it is a real address. An unusable
      * value falls back to the configured sender rather than emitting a broken header: a message
      * that arrives from the wrong mailbox is a smaller failure than one that does not arrive.
      */
-    private function fromHeader(?string $messageFrom = null): string
+    private function fromHeader(?string $messageFrom, string $name): string
     {
-        $name    = sanitize_text_field((string) $this->config->get('mail.from.name', ''));
         $address = sanitize_email((string) $this->config->get('mail.from.address', ''));
 
         $requested = $messageFrom === null ? '' : sanitize_email(trim($messageFrom));
@@ -272,5 +290,18 @@ final class WpMailDriver implements MailDriver
         }
 
         return $name !== '' ? sprintf('%s <%s>', $name, $address) : $address;
+    }
+
+    /**
+     * The name an email is sent under: the message's own where it carries one, and the
+     * site's configured one otherwise. '' where neither names any.
+     *
+     * Cleaned here whoever it came from, by the one rule for a name in a header.
+     */
+    private function senderName(?string $messageName): string
+    {
+        $name = SenderName::of((string) ($messageName ?? ''));
+
+        return $name !== '' ? $name : SenderName::of((string) $this->config->get('mail.from.name', ''));
     }
 }

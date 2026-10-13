@@ -24,6 +24,7 @@ beforeEach(function () {
 
     $GLOBALS['corex_test_options'] = ['corex_operations_mode' => OperationsMode::STAGING];
     Functions\when('get_option')->alias(static fn (string $key, $default = false) => $GLOBALS['corex_test_options'][$key] ?? $default);
+    Functions\when('wp_set_option_autoload')->justReturn(true);
     Functions\when('update_option')->alias(static function (string $key, $value): bool {
         $GLOBALS['corex_test_options'][$key] = $value;
 

@@ -124,9 +124,12 @@ Built in two pull requests: the editor and the preview first, the draft after it
 - [x] T081 `SubmissionEmailService::sendAgain()`; `POST …/replies/{reply}/send`;
       `SubmissionReplyStore::replace()`, and an integration test of the row written over in
       place, also one an earlier release kept
-- [ ] T082 Pest unit and integration: with a reply sender set, From, its name and Reply-To are
-      those; without, as today; an invalid address is refused when saved
-- [ ] T083 The three settings; `EmailMessage::$fromName`; the driver
+- [x] T082 Pest unit and integration: with a reply sender set, From, its name and Reply-To are
+      those; without, as today; an invalid address is refused when saved, and the screen says so
+- [x] T083 The three settings; `EmailMessage::$fromName`; `SenderName`, the one rule for a
+      name in a header; the driver, also for a name with no address to stand in front of;
+      `MailService::deliver()` carries and guards the new field; the settings screen names
+      each field it did not change, and a browser test of that (DECISIONS #357)
 - [x] T084 Jest and Playwright: "Send again" on a reply that was not delivered. The browser
       meets a reply that did not go through a third mode of the mail fixture, `fail`, which
       answers for WordPress before it reaches its mailer

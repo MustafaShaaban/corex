@@ -240,9 +240,11 @@ A site says which name and address its replies are sent from, and where an answe
 **Why this priority**: a reply from a no-reply or a general address reads wrongly and may be
 answered into nowhere. It is the open part of issue #150.
 
-**Independent Test**: set a reply sender name and address; send a reply; the captured email's
-From and Reply-To are those; clear the setting; the next reply leaves from the site's general
-sender as today.
+**Independent Test**: set a reply sender name and address; send a reply; the email's From and
+Reply-To are those; clear the setting; the next reply leaves from the site's general sender as
+today. *(Amended 2026-10-13: this read "the captured email's From". An email kept on a
+development site records its Reply-To and not its sender, so the From is read off the message
+WordPress's mailer builds, in a test, and on a delivered email.)*
 
 **Acceptance Scenarios**:
 
@@ -450,6 +452,15 @@ of this story is built before he answers.
 - **FR-010**: The template MUST have a footer that names the site.
 - **FR-011**: The template MUST hold its layout and stay readable at phone width, in a mail client
   set dark, with images off, and right to left.
+- **FR-011a**: An email MUST be drawn in the site's language: its direction, its `lang` and the
+  words CoreX writes into it. It MUST NOT follow the language of the request that draws it, which
+  in the admin is the profile language of whoever is signed in. The words the person wrote keep
+  their own direction (story 2, scenario 4). Added 2026-10-13 (DECISIONS #356).
+- **FR-011b**: A word CoreX writes into an email before a mailer has it MUST be in the site's
+  language as well: a subject, a line of a body, a label handed to a template as a value. So
+  MUST a default Email Studio stores, when it is first stored. This holds on a site without
+  CoreX Mail, where a form's notification and a Guides support message are sent by WordPress.
+  A default already stored is not rewritten. Added 2026-10-13 (DECISIONS #362).
 - **FR-012**: The colours and type an email uses MUST be defined once, for every email CoreX
   sends, and not inside one add-on.
 - **FR-013**: Every reply MUST be sent with a plain-text version beside the HTML one, with the

@@ -8,6 +8,16 @@ description: The layered Config engine, the admin settings UI, and feature flags
 `Config::get()` resolves a dot-notation key across three layers, first match wins:
 **`.env`** (project root) → **WordPress options** → **shipped defaults** (`config/*.php`).
 
+:::caution[What the project root is]
+It is the directory two levels above the real location of the `corex-core` plugin, and the
+`.env` is read from nowhere else. Where the plugin is **linked** into WordPress (a
+development checkout, a release directory on a server) that is the repository, outside
+the web root. Where it is **copied** into `wp-content/plugins/` (the shared-host package)
+that is `wp-content/`, inside the web root: do not create a `.env` there, set options
+instead. Environment variables of the server are not read. The deployment guide has the
+detail: `docs/en/05-deployment/secrets-backups-zero-downtime.md`.
+:::
+
 ```php
 use Corex\Support\Facades\Config;
 
@@ -17,7 +27,7 @@ Config::get('forms.email.recipient', '');
 
 A dot key maps to an option `corex_<key_with_underscores>` and an env var
 `KEY_WITH_UNDERSCORES` (`app.name` → option `corex_app_name`, env `APP_NAME`). Shipped
-namespaces: `app`, `query`, `security`, `theme`, `features`.
+namespaces: `app`, `query`, `security`, `theme`, `features`, `updates`.
 
 ## The settings UI
 

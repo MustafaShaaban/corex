@@ -10,11 +10,16 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
+use Corex\Support\Options\LoadedOptions;
+
 /**
- * Persists the CoreX operations mode and a bounded change audit log (spec 065). The mode lives in a
- * prefixed, autoload-off option; the audit log is a short capped list of {time, user, from, to}. When
- * no mode has been declared it truthfully falls back to `wp_get_environment_type()`, so the Overview
- * badge shows a real value from the first load. This is the only boundary that writes the mode.
+ * Persists the CoreX operations mode and a bounded change audit log (spec 065). The mode is read on
+ * every front-end page, so it lives in a prefixed option WordPress loads with the site's
+ * ({@see LoadedOptions}); the audit log, read only where it is shown, is a short capped list of
+ * {time, user, from, to} in an autoload-off option of its own. When no mode has been declared, which
+ * is no row or a row holding an empty string, it truthfully falls back to `wp_get_environment_type()`,
+ * so the Overview badge shows a real value from the first load. This is the only boundary that
+ * writes a mode.
  *
  * Since spec 101 the log also holds the preview link's events — created, regenerated, revoked — as
  * rows of their own kind: {time, user, event}. They are part of the same story an operator reads
@@ -22,7 +27,7 @@ defined('ABSPATH') || exit;
  */
 final class OperationsModeStore
 {
-    private const OPTION = 'corex_operations_mode';
+    public const OPTION = 'corex_operations_mode';
     private const LOG    = 'corex_operations_mode_log';
     private const MAX_LOG = 20;
 
@@ -87,7 +92,7 @@ final class OperationsModeStore
             return $to;
         }
 
-        update_option(self::OPTION, $to, false);
+        LoadedOptions::store(self::OPTION, $to);
         $this->appendLog($from, $to, $userId);
 
         return $to;

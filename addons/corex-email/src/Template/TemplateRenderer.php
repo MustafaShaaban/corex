@@ -10,6 +10,8 @@ namespace Corex\Email\Template;
 
 defined('ABSPATH') || exit;
 
+use Corex\Mail\EmailLanguage;
+
 /**
  * Renders a template against a context: replaces each `{{ path }}` with the
  * whitelisted context value — escaped for HTML in the body, plain in the subject —
@@ -19,16 +21,22 @@ defined('ABSPATH') || exit;
  */
 final class TemplateRenderer
 {
-    public function __construct(private readonly Layout $layout)
-    {
+    public function __construct(
+        private readonly Layout $layout,
+        private readonly EmailLanguage $language,
+    ) {
     }
 
     public function render(EmailTemplate $template, MailContext $context): RenderedEmail
     {
-        $subject = $this->merge($template->subject($context), $context, escape: false);
-        $body    = $this->layout->wrap($subject, $this->merge($template->body($context), $context, escape: true));
+        // A template's own words are translated as it is asked for them, and the layout reads
+        // which way the text runs as it wraps: both in the email's language.
+        return $this->language->during(function () use ($template, $context): RenderedEmail {
+            $subject = $this->merge($template->subject($context), $context, escape: false);
+            $body    = $this->layout->wrap($subject, $this->merge($template->body($context), $context, escape: true));
 
-        return new RenderedEmail($subject, $body);
+            return new RenderedEmail($subject, $body);
+        });
     }
 
     private function merge(string $text, MailContext $context, bool $escape): string

@@ -31,12 +31,7 @@ final readonly class TransportAdvisory
     {
         $notes = [$this->generalGuidance()];
 
-        $mismatch = $this->fromDomainMismatch();
-        if ($mismatch !== null) {
-            $notes[] = $mismatch;
-        }
-
-        $notes = array_merge($notes, $this->forcedHeaderNotes());
+        $notes = array_merge($notes, $this->domainMismatches(), $this->forcedHeaderNotes());
 
         return new TransportAdvisoryResult($notes);
     }
@@ -53,29 +48,34 @@ final readonly class TransportAdvisory
         ];
     }
 
-    /** @return array{level:string,message:string}|null */
-    private function fromDomainMismatch(): ?array
+    /**
+     * A warning for each address the site sends from that is on another domain than the
+     * site's: the general one, and the one it names for replies (spec 106, story 5).
+     *
+     * @return list<array{level:string,message:string}>
+     */
+    private function domainMismatches(): array
     {
-        $address = (string) $this->config->get('mail.from.address', '');
-        if ($address === '' || ! str_contains($address, '@')) {
-            return null;
-        }
-
-        $fromDomain = strtolower(substr(strrchr($address, '@') ?: '@', 1));
         $siteHost = strtolower((string) wp_parse_url((string) home_url(), PHP_URL_HOST));
-        if ($fromDomain === '' || $siteHost === '' || $fromDomain === $siteHost) {
-            return null;
+        $said = [
+            /* translators: 1: configured From domain, 2: site domain. */
+            'mail.from.address' => __('Your From address is on %1$s, a different domain from this site (%2$s). Some providers rewrite or flag mail whose domain is not authorised to send. Confirm your transport plugin is allowed to send as this domain.', 'corex'),
+            /* translators: 1: the reply sender address's domain, 2: site domain. */
+            'mail.reply.from_address' => __('Your reply sender address is on %1$s, a different domain from this site (%2$s). Some providers rewrite or flag mail whose domain is not authorised to send. Confirm your transport plugin is allowed to send as this domain.', 'corex'),
+        ];
+        $notes = [];
+        foreach ($said as $setting => $sentence) {
+            $address = (string) $this->config->get($setting, '');
+            $domain = str_contains($address, '@') ? strtolower(substr(strrchr($address, '@') ?: '@', 1)) : '';
+            if ($domain !== '' && $siteHost !== '' && $domain !== $siteHost) {
+                $notes[] = [
+                    'level' => TransportAdvisoryResult::LEVEL_WARNING,
+                    'message' => sprintf($sentence, $domain, $siteHost),
+                ];
+            }
         }
 
-        return [
-            'level'   => TransportAdvisoryResult::LEVEL_WARNING,
-            'message' => sprintf(
-                /* translators: 1: configured From domain, 2: site domain. */
-                __('Your From address is on %1$s, a different domain from this site (%2$s). Some providers rewrite or flag mail whose domain is not authorised to send. Confirm your transport plugin is allowed to send as this domain.', 'corex'),
-                $fromDomain,
-                $siteHost,
-            ),
-        ];
+        return $notes;
     }
 
     /** @return list<array{level:string,message:string}> */

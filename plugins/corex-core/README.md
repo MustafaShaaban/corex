@@ -82,7 +82,7 @@ provider never aborts boot.
 ## Configuration
 
 `Config::get()` resolves a dot-notation key across three layers, first match wins:
-`.env` (project root) → WordPress options → shipped defaults (`config/app.php`).
+`.env` (project root) → WordPress options → shipped defaults (`config/*.php`).
 
 ```php
 use Corex\Support\Facades\Config;
@@ -93,11 +93,20 @@ Config::get('missing.key', 'fallback');
 
 - A dot key maps to an option named `corex_<key_with_underscores>` and to an env var
   `KEY_WITH_UNDERSCORES` uppercased (`app.name` → option `corex_app_name`, env `APP_NAME`).
+- An override is an option WordPress loads with the site's options (autoload on), which is how
+  `update_option()`, the settings UI and `wp option update corex_app_name "My site"` store one.
+  A key with no override costs no query. An option stored with autoload off
+  (`--autoload=no`) is not read: `wp option set-autoload corex_app_name on` makes it one.
+- The project root is the directory two levels above this plugin's real location, and the
+  `.env` is read from nowhere else. Linked into WordPress from a repository, that is the
+  repository. Copied into `wp-content/plugins/`, that is `wp-content/`, inside the web root:
+  do not create a `.env` there, set options. Environment variables of the server are not
+  read. See `docs/en/05-deployment/secrets-backups-zero-downtime.md`.
 - A missing `.env` is fine; a malformed `.env` is logged and ignored — boot continues on
   options/defaults. See `.env.example`.
 
 Shipped config namespaces (one file each in `config/`): `app`, `query`, `security`, `theme`,
-`features`. A site overrides any key through the **settings UI** (`corex-config`, which persists
+`features`, `updates`. A site overrides any key through the **settings UI** (`corex-config`, which persists
 to the `corex_*` options the option layer reads) or `.env` — never by editing the defaults.
 
 ### Feature flags
@@ -444,9 +453,9 @@ from `updates.endpoint` (config, default empty), and a pure `UpdateChecker` deci
 — whether it advertises a newer release. If so, a standard update object is injected into WP's update
 transient and the update appears in **Plugins → Updates**, installed by WordPress's own updater.
 
-```php
-// config/app.php (or .env: COREX_UPDATES_ENDPOINT=…)
-'updates' => ['endpoint' => 'https://updates.example.com/corex/manifest.json'],
+```dotenv
+# .env (project root), or the option corex_updates_endpoint
+UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
 ```
 
 ```json

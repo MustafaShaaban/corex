@@ -1,4 +1,5 @@
 import { __, _n, sprintf } from '@wordpress/i18n';
+import { withQuery } from '../admin/restAddress.js';
 
 /** The two views of the inbox (spec 105): what is in it, and what was moved to the trash. */
 export const VIEW_INBOX = 'inbox';
@@ -214,7 +215,22 @@ export function buildInboxUrl( base, filters ) {
 		}
 	} );
 
-	return `${ base }?${ params.toString() }`;
+	return withQuery( base, params );
+}
+
+/**
+ * The address of what was sent in one attempt to email about a submission.
+ *
+ * @param {string}        base      The Submissions routes' base.
+ * @param {number}        id        The submission.
+ * @param {string|number} attemptId The attempt whose log is asked for.
+ * @return {string} The request URL.
+ */
+export function buildEmailLogUrl( base, id, attemptId ) {
+	return withQuery(
+		`${ base }/${ id }/email-log`,
+		`attempt_id=${ encodeURIComponent( attemptId ) }`
+	);
 }
 
 export function normalizeInboxPage( payload = {} ) {

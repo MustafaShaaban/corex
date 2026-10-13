@@ -25,6 +25,8 @@ use Corex\Multisite\RuntimeContexts;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 
+require_once dirname(__DIR__) . '/Config/OptionFixtures.php';
+
 beforeEach(function (): void {
     // CoreServiceProvider::projectRoot() reads this constant with no fallback, unlike Boot's.
     if (! defined('COREX_CORE_PATH')) {
@@ -67,7 +69,7 @@ it('cannot resolve the config engine when the runtime contexts are missing', fun
 });
 
 it('falls through both network sources to the code defaults on a single-site install', function () {
-    Functions\when('get_option')->alias(static fn (string $key, $default = false) => $default);
+    siteWithOptions([]);
 
     $container = configWiringContainer();
     RuntimeContexts::detect()->seedInto($container);
@@ -78,4 +80,19 @@ it('falls through both network sources to the code defaults on a single-site ins
     // A key only the code defaults hold, so resolution has to pass both new network sources
     // without either claiming it — the SC-007 guarantee, exercised through the real provider.
     expect($config->get('app.env'))->not->toBeNull();
+});
+
+// Each config file is a namespace of its own, so a default written under `updates` in
+// config/app.php was `app.updates.endpoint`, a key nothing reads (2026-10-13, DECISIONS #363).
+it('ships the update source default under the key the update service reads', function () {
+    siteWithOptions([]);
+
+    $container = configWiringContainer();
+    RuntimeContexts::detect()->seedInto($container);
+
+    (new CoreServiceProvider($container))->register();
+    $config = $container->make(ConfigInterface::class);
+
+    expect($config->get('updates.endpoint', 'no source holds it'))->toBe('')
+        ->and($config->has('app.updates.endpoint'))->toBeFalse();
 });

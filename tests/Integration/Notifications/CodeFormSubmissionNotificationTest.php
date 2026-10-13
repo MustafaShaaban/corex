@@ -117,6 +117,8 @@ beforeEach(function () {
     $this->answersMail  = fn (): bool => $this->mailAccepted;
     add_filter('pre_wp_mail', $this->answersMail);
     $this->stored       = CreatedPosts::watch('corex_submission');
+    // The email is answered before it is sent and is still logged, as any email of the site's is.
+    $this->emailLogs    = CreatedPosts::watch('corex_email_log');
     $this->transients   = WatchedTransients::watch('corex_throttle_');
     // A run that died before its afterEach leaves its rows, and the next would add to them.
     NotificationRows::forgetPrefixed('submission.new:' . NOTIFIED_PROBE);
@@ -138,6 +140,7 @@ afterEach(function () {
     NotificationRows::forgetPrefixed('submission.new:' . NOTIFIED_PROBE);
     NotificationRows::forgetPrefixed('submission.email_failure:' . NOTIFIED_PROBE);
     $this->stored->delete();
+    $this->emailLogs->delete();
     $this->transients->restore();
     remove_filter('pre_wp_mail', $this->answersMail);
     MailDelivery::stop($this->mailSettings);

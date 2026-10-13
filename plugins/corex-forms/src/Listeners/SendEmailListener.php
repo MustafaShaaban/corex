@@ -77,7 +77,9 @@ final class SendEmailListener
             $recipient = (string) get_option('admin_email');
         }
 
-        $request = new MailRequest(
+        // Handed over as what writes it: the dispatcher asks in the email's language, so the
+        // subject and the lines CoreX adds to the body are the site's and not the request's.
+        $write = static fn (): MailRequest => new MailRequest(
             to: $recipient !== '' ? [$recipient] : [],
             templateName: $event->formSlug === self::CONTACT_FORM ? self::CONTACT_TEMPLATE : null,
             context: $context,
@@ -94,7 +96,7 @@ final class SendEmailListener
             replyTo: self::submitterAddress($event->values),
         );
 
-        return $this->dispatcher->dispatch('forms.' . $event->formSlug . '.submitted', $context, $request);
+        return $this->dispatcher->dispatch('forms.' . $event->formSlug . '.submitted', $context, $write);
     }
 
     /**

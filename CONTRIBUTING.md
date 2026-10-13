@@ -148,6 +148,8 @@ from setup-php, which provides the latest; on a runner where setup-php could not
 WP-CLI 2.12.0 itself and the run carries a warning that it did. The job then
 copies the must-use fixtures, seeds a `/contact/` page, three stored submissions and five users who are not
 administrators, builds the bundles, and serves the install with nginx and php-fpm at `http://127.0.0.1:8080`.
+A php-fpm for PHP 8.3 is on the runner once setup-php has run, on Ubuntu 24.04 and on 26.04; the job asks apt for
+`php8.3-fpm` only on a runner that has none.
 php-fpm runs with OPcache on and the JIT off, and the job checks that the JIT is off before the specs start.
 
 The job sets `COREX_E2E_FRESH_INSTALL`, which skips three tests by title: `CANNOT_RUN_ON_A_FRESH_INSTALL` in

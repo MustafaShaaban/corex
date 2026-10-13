@@ -54,6 +54,18 @@ final class EmailMessage
          * FR-013). Null for a message that has none: it is sent as HTML alone, as before.
          */
         public readonly ?string $plainText = null,
+        /**
+         * The name this one message is sent under, or null for the configured one (spec 106,
+         * story 5).
+         *
+         * Not for a caller to choose per message, which is why `$from` above is an address
+         * alone: a sender's name that varies with the message is how a spoof reads. This is
+         * for a name an administrator set for one kind of message, a reply from the inbox:
+         * the only code of CoreX's that fills it reads a setting, through {@see SenderName}.
+         * Nothing stops other code filling it, so the mail service refuses one with a line
+         * break in it and `WpMailDriver` cleans it again; a driver of a site's own has to.
+         */
+        public readonly ?string $fromName = null,
     ) {
     }
 

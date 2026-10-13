@@ -17,6 +17,7 @@ use Corex\Email\Design\PlainText;
 use Corex\Email\Design\EmailBrandSource;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\StandardEmailDesign;
+use Corex\Tests\Support\LanguageOfTheRequest;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -400,7 +401,7 @@ it('composes a reply as the designed document and the same words in plain text',
         }
     };
 
-    $email = (new ReplyComposer(new StandardEmailDesign(), $site))->compose(
+    $email = (new ReplyComposer(new StandardEmailDesign(), $site, new LanguageOfTheRequest()))->compose(
         'sam@example.com',
         'Re: your message',
         '<p>Thanks, Sam.</p><p>See <a href="https://example.com/offer">the offer</a>.</p>',

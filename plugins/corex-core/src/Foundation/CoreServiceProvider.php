@@ -26,6 +26,7 @@ use Corex\Support\Config\Sources\NetworkLockSource;
 use Corex\Support\Config\Sources\OptionsSource;
 use Corex\Support\DateTime\AdminDateTime;
 use Corex\Support\DateTime\AdminDateTimeFormatter;
+use Corex\Support\Options\LoadedOptions;
 use Corex\Update\UpdateChecker;
 use Corex\Update\UpdateService;
 
@@ -38,6 +39,8 @@ final class CoreServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(SettingRegistry::class);
+        // One list for every provider: each names the options of its own that every request reads.
+        $this->container->singleton(LoadedOptions::class);
 
         $this->container->singleton(ConfigInterface::class, function (ContainerInterface $container): Repository {
             $registry = $container->make(SettingRegistry::class);
@@ -103,6 +106,15 @@ final class CoreServiceProvider extends ServiceProvider
             static fn (): AdminDateTimeFormatter => new AdminDateTimeFormatter(),
         );
 
+        // The language an email is written and drawn in: the site's, not that of the request,
+        // which in the admin is the signed-in person's own (DECISIONS #356, #362). Bound here
+        // and not by CoreX Mail: a form's notification and a Guides support message are written
+        // on a site that has not switched that add-on on, too.
+        $this->container->singleton(
+            \Corex\Mail\EmailLanguage::class,
+            static fn (): \Corex\Mail\SiteLanguage => new \Corex\Mail\SiteLanguage(),
+        );
+
         // Default kit-activation seam (spec 042): a Null Object so corex-config can always resolve
         // KitProvisioner and degrade gracefully. The kit framework overrides this binding when active.
         $this->container->singleton(
@@ -126,6 +138,13 @@ final class CoreServiceProvider extends ServiceProvider
         add_action('init', static function (): void {
             load_plugin_textdomain('corex', false, dirname(plugin_basename(COREX_CORE_FILE)) . '/languages');
         });
+
+        // Last on `init`, once every provider has booted and named its options, and once what an
+        // add-on stores on `init` is stored.
+        $container = $this->container;
+        add_action('init', static function () use ($container): void {
+            $container->make(LoadedOptions::class)->ensureLoaded();
+        }, PHP_INT_MAX);
     }
 
     /**
@@ -153,6 +172,11 @@ final class CoreServiceProvider extends ServiceProvider
         return $defaults;
     }
 
+    /**
+     * The one directory a `.env` is read from: two levels above this plugin's real location
+     * (`__FILE__` follows a link). Linked into WordPress from a repository, that is the
+     * repository. Copied into wp-content/plugins/, it is wp-content/, inside the web root.
+     */
     private function projectRoot(): string
     {
         return dirname(COREX_CORE_PATH, 2);

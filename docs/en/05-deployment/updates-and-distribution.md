@@ -52,15 +52,32 @@ dependency (Constitution Principle IX).
 ## Configure the endpoint
 
 Set `updates.endpoint` to the URL of your manifest. As with all Corex config, the value can come from a
-WordPress option or the project-root `.env` (the latter wins):
+WordPress option or the project-root `.env` (the latter wins). A config key is written in `.env` in
+capitals with `_` for each `.`, and with no `COREX_` prefix:
 
 ```dotenv
 # .env (project root)
-COREX_UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
+UPDATES_ENDPOINT=https://updates.example.com/corex/manifest.json
 ```
 
-The shipped default is empty (`plugins/corex-core/config/app.php`), so a fresh install never checks any
+The option is `corex_updates_endpoint`. No settings screen has a field for it, so it is set from the
+command line:
+
+```bash
+wp option update corex_updates_endpoint https://updates.example.com/corex/manifest.json
+```
+
+> **This page gave the wrong name until 2026-10-13.** It said `COREX_UPDATES_ENDPOINT`, which nothing
+> reads. A site that has that line in its `.env` has no update source, and its update check is the
+> silent no-op described above: no update is ever offered. Rename the line to `UPDATES_ENDPOINT`.
+
+The shipped default is empty (`plugins/corex-core/config/updates.php`), so a fresh install never checks any
 remote source until you opt in.
+
+The project root is the repository only where `corex-core` is linked into WordPress. Where the plugin is copied
+into `wp-content/plugins/`, as in the shared-host package, it is `wp-content/`, inside the web root: set the
+option there and do not create a `.env`. See
+[where the `.env` file is read from](./secrets-backups-zero-downtime.md#where-the-env-file-is-read-from).
 
 ## Publish a manifest + package
 
