@@ -1,6 +1,6 @@
 # Corex — what works, what is partial, what is not built
 
-**Version 0.45.2** · updated 2026-10-11
+**Version 0.46.0** · updated 2026-10-14
 
 This page exists so you do not have to read the git history to find out what you are adopting.
 Everything below is traceable to something in this repository — a spec, a policy file, a test

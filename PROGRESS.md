@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.45.2** — tag `v0.45.2`, reachable from `main`.
+- **Latest published release: v0.46.0** — tag `v0.46.0`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,14 +40,19 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Nothing is in flight** (2026-10-11). v0.45.2 holds everything on `main`, and no pull
-request is open. It is v0.45.1 and two changes after it: a form's notification email names
-the file it was sent with and links to the submission in the inbox, and does not attach it
-(spec 081, Phase G; DECISIONS #319; the owner's decision); and the inbox's search finds a
-submission of a form defined in code by the sender its row shows (spec 103, T110 to T113;
-DECISIONS #318). The owner asked for the framework to be left stable so the client sites can
-take one release and be worked on without it; this section says where each unfinished spec
-stops, so work resumes from here and not from a transcript.
+**Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
+is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull
+requests still open on 2026-10-14 were landed together (pull request #415) and the release
+cut on the owner's word, so the client sites take one release. What each change is, is
+under "Recently landed" and in the changelog. This section says where each unfinished
+spec stops, so work resumes from here and not from a transcript.
+
+**Begun and not finished, 2026-10-13:** the integration test case fails a test that leaves a
+post (DECISIONS #364) and checks nothing else. Measured: one run leaves 19 notifications, 5
+activity events, 2 queued jobs and changed options, by the files named under "Open, and not
+hidden". Every CoreX table has an auto-increment `id` and every insert into them is one row,
+so this process's own inserts can be heard through the `query` filter and `$wpdb->insert_id`.
+Nothing of it is on `main`.
 
 **Spec 107 is built and released, and has not run on the host it is for.** The Releases screen
 installs and goes back, and the operator's guide and the first-installation runbook are written
@@ -85,19 +90,17 @@ What to know before resuming each:
   manages data without being an administrator.
 - **Email Studio's store.** `WpEmailStudioStore` slashes a record's name and its content
   before handing them to WordPress, so a backslash is read back (DECISIONS #329; on `main`
-  after v0.45.2, not released). A store written beside it has to do the same: WordPress
+  in v0.46.0). A store written beside it has to do the same: WordPress
   unslashes a post's fields and a meta value on their way in, whoever calls it.
 - **Spec 106, a reply's subject.** It is kept as typed on the reply, preview and draft routes
   and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
-  (DECISIONS #326; on `main` after v0.45.2, not released). A subject can now hold `<`, `>`
+  (DECISIONS #326; in v0.46.0). A subject can now hold `<`, `>`
   and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
   is printed before adding a place that prints one. An Email Studio template's subject, and a
-  value merged into it, are read by the same rule (DECISIONS #330; on `main` after v0.45.2,
-  not released): nothing is stripped, and a line break in a merged value is a space.
+  value merged into it, are read by the same rule (DECISIONS #330; in v0.46.0): nothing is stripped, and a line break in a merged value is a space.
 - **The activity record.** `ActivityService::record()` cuts an actor's label, a target's
   label and a target's id to `ActivityEvent::LONGEST_TEXT`, 191 characters, which is also
-  what `ActivityTable` makes the columns (DECISIONS #340; on `main` after v0.45.2, not
-  released). A new caller may hand over a name of any length. `kind` (100) and
+  what `ActivityTable` makes the columns (DECISIONS #340; in v0.46.0). A new caller may hand over a name of any length. `kind` (100) and
   `target_type` (64) are not cut: hand them text written in code.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
@@ -107,7 +110,7 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
-**After v0.45.2, not released, 2026-10-13.** A careers application is accepted on a Windows
+**In v0.46.0, 2026-10-13.** A careers application is accepted on a Windows
 host. `CareersServiceProvider::apply()` passed `$_FILES['cv']` through `wp_unslash()`, which
 took the backslashes out of `tmp_name` (`C:\wamp64\tmp\phpA2C3.tmp` became
 `C:wamp64tmpphpA2C3.tmp`), so every application there was refused: `cv_move_failed` in every
@@ -119,7 +122,7 @@ handed, through WordPress's REST server. **WordPress adds slashes to `$_GET`, `$
 is unslashed. The careers form has no browser test; the real upload was made by hand with
 `curl` on a worktree's own WordPress, on Windows.
 
-**After v0.45.2, not released, 2026-10-13.** A form built in Forms & Flows is guarded by
+**In v0.46.0, 2026-10-13.** A form built in Forms & Flows is guarded by
 its trap field and by the site's challenge (DECISIONS #358; spec 068, FR-042a). The
 protection stage read the trap field and the token from the values the validation stage
 hands on, which are the answers of the flow's fields and nothing else: a filled trap field
@@ -128,7 +131,7 @@ now carries the request as it was received, `received`, and the stage reads it t
 **A stage that judges something the request carried beside its answers reads `received`,
 not `values`.** Not run in a browser against a real provider.
 
-**After v0.45.2, not released, 2026-10-13.** On a site without pretty permalinks the admin
+**In v0.46.0, 2026-10-13.** On a site without pretty permalinks the admin
 adds its query to a REST address as the site spells it (DECISIONS #359). There a route is
 a query (`/index.php?rest_route=/corex/v1/submissions`), eight clients wrote a second `?`
 after it, and WordPress answered 404: the Submissions inbox did not open, and neither did a
@@ -144,7 +147,7 @@ its REST addresses in the other spelling for a request that carries
 `X-Corex-E2E-Rest-Address: plain`; a new browser test for a screen's requests can send the
 same header.
 
-**After v0.45.2, not released, 2026-10-13.** The schema self-heal takes its lock only when
+**In v0.46.0, 2026-10-13.** The schema self-heal takes its lock only when
 the site is behind (DECISIONS #360; the second finding of #355). On every admin page,
 `admin-ajax.php` call and cron run of a site that was current it made twelve statements,
 four of them writes to the options table. `SchemaSelfHeal::run()` now asks
@@ -158,7 +161,7 @@ since spec 100, so two requests that both find a site behind can both run; a loc
 database grants to one asker would close it. The first finding of #355 (eleven reads of
 options that are not stored, on every front-end request) is closed by #361 and #366.
 
-**After v0.45.2, not released, 2026-10-13.** A setting with no override costs no query
+**In v0.46.0, 2026-10-13.** A setting with no override costs no query
 (spec 001, FR-011a; DECISIONS #361). CoreX's boot asked the database for eleven options
 that were not there on every request of a site with no persistent object cache; it asks
 for one. `Support\Config\Sources\OptionsSource` looks for an override among the options
@@ -170,7 +173,7 @@ checks. Measured on one install: 33 queries to 23 on the front page, `plugins_lo
 7.5 ms to 5.6 ms. **Owed:** the client sessions are told the check before they take the
 release. What was left, three options of CoreX's own stores, is closed by #366.
 
-**After v0.45.2, not released, 2026-10-13.** The update guides name the `.env` variable
+**In v0.46.0, 2026-10-13.** The update guides name the `.env` variable
 that is read, `UPDATES_ENDPOINT` (DECISIONS #363). They said `COREX_UPDATES_ENDPOINT`,
 which nothing reads, so a site that followed them was offered no update and nothing said
 why. A config key has no `COREX_` prefix in `.env`; `COREX_ENV` and the `COREX_MAIL_*`
@@ -184,7 +187,7 @@ sends an administrator to a Settings screen with no field for it; and the archit
 document names an `.env` variable nothing reads. The first is written up since (DECISIONS
 #368) and the second is removed (DECISIONS #365).
 
-**After v0.45.2, not released, 2026-10-13: tests only.** An integration test that leaves a
+**In v0.46.0, 2026-10-13: tests only.** An integration test that leaves a
 post on the install fails, and the post is deleted first (DECISIONS #364).
 `Corex\Tests\Integration\TestCase` watches every post a test inserts, through
 `CreatedPosts::watchAll()`, and reads what is still stored after the file's own `afterEach`.
@@ -195,7 +198,7 @@ writes a post it does not delete is red, with the post named: add
 `CreatedPosts::watch('<type>')` to its `beforeEach` and `->delete()` to its `afterEach`.**
 `EmailStudioServiceTest` no longer passes or fails by the order the unit files run in.
 
-**After v0.45.2, not released, 2026-10-13.** CoreX → Data no longer lists "No update source
+**In v0.46.0, 2026-10-13.** CoreX → Data no longer lists "No update source
 is configured" under Needs finishing (spec 074, FR-5.4; the owner's decision; DECISIONS #365).
 It was on every site, because no source is the default, and its button opened a Settings
 screen with no field for it. Run on a fresh install before it was changed. The updater
@@ -204,7 +207,7 @@ measured and is in the decision. **Not decided, and the owner's:** whether the i
 updater (spec 034) is kept at all now that releases are installed from CoreX → Releases
 (under "Open, and not hidden").
 
-**After v0.45.2, not released, 2026-10-13.** Three options CoreX reads on every request
+**In v0.46.0, 2026-10-13.** Three options CoreX reads on every request
 cost no query (spec 001, FR-011b; DECISIONS #366). The login protection settings, the
 operations mode and the Email Studio's defaults version were saved with autoload off and
 were one query each on every request, stored or not. `Corex\Support\Options\LoadedOptions`
@@ -218,7 +221,7 @@ Measured on one install: 35 queries to 32 on the front page, 25 to 22 with #405 
 in. A provider with a new option that every request reads registers it and writes it
 through `store()`. What was seen and left is in the entry's "Found, and not changed".
 
-**After v0.45.2, not released, 2026-10-13.** CI was run on Ubuntu 26.04 before GitHub moves
+**In v0.46.0, 2026-10-13.** CI was run on Ubuntu 26.04 before GitHub moves
 `ubuntu-latest` to it (2026-10-19 to 2026-11-19; a run lands on either image until then), and
 the one job that failed there is changed (DECISIONS #367). Draft pull request #406, not to be
 merged, named `ubuntu-26.04` on every job that runs on a pull request. Seven passed as they
@@ -231,7 +234,7 @@ new image: `docs.yml`, which runs on a push to `main` only, and `azure-pipelines
 which selects PHP 8.3 with a command that ends `|| true` and would build with the image's
 PHP 8.5 where there is no PHP 8.3 to select (read in the file, not run).
 
-**After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
+**In v0.46.0, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
 could not fetch is a line in its log, so its step ended green. `ensure-wp-cli.sh`, beside the
@@ -243,7 +246,7 @@ in `action.yml` and nothing updates them; only a run with `wp-cli` taken out of 
 `tools` proves a new pair. `tests/provision-wordpress-wp-cli.test.js` runs the script in
 each state a runner can be in, with a stand-in for `curl`.
 
-**After v0.45.2, not released, 2026-10-13.** The guides say which directory the `.env` is
+**In v0.46.0, 2026-10-13.** The guides say which directory the `.env` is
 read from (DECISIONS #368; the first lead left in #363, run on a WordPress of the
 worktree's own). It is two levels above `corex-core`'s real location and nowhere else: the
 repository or the release directory where the plugin is linked, `wp-content/` where it is
@@ -256,7 +259,7 @@ when a `.env` is read from inside the web root or cannot be read. **One lead is 
 #368**: by reading, the production Docker image puts Composer's `vendor/` where the plugin
 does not look for it.
 
-**After v0.45.2, not released, 2026-10-13: a security fix, and the reason for the next
+**In v0.46.0, 2026-10-13: a security fix, and the reason for the next
 release.** A form's file field is answered by the file the request carried, and by nothing
 in its text (spec 081, FR-002a, Phase H; DECISIONS #353). What a request's body said under
 a file field's name was kept as the answer when no file arrived, and an answer to a file
@@ -274,7 +277,7 @@ Two more leads were measured and are fixed since: the careers form's upload path
 Windows host (pull request #402), and a flow's trap field and challenge token never
 reaching the stage that reads them (DECISIONS #358).
 
-**After v0.45.2, not released, 2026-10-13.** The words CoreX writes into an email are in
+**In v0.46.0, 2026-10-13.** The words CoreX writes into an email are in
 the site's language too (spec 106, FR-011b; DECISIONS #362; a lead of #356, confirmed for
 all five places it named). A subject, a line of a body or a label translated before a
 mailer had it was in the language of the request. The seam moved to the core
@@ -296,7 +299,7 @@ catalogue, so this changes an email only on a site that translates these strings
 left five rows on a fresh install. **A test must not lean on a transaction to undo what it
 writes:** this machine's tables are MyISAM and a rollback undid nothing.
 
-**After v0.45.2, not released, 2026-10-13.** An email is drawn in the site's language,
+**In v0.46.0, 2026-10-13.** An email is drawn in the site's language,
 whoever's request draws it (spec 106, FR-011a; DECISIONS #356; decided on the owner's
 standing "you decide the best for me", and his to overrule). In the admin, and in any REST
 request `wp.apiFetch` makes, WordPress answers `is_rtl()`, `get_bloginfo('language')` and
@@ -311,7 +314,7 @@ Email Studio's stored defaults are the entry above. Still a lead, not built: the
 recipient's own language, for an email to a person with an account, is the option not
 taken.
 
-**After v0.45.2, not released, 2026-10-13.** A stored submission of a form defined in code
+**In v0.46.0, 2026-10-13.** A stored submission of a form defined in code
 raises the New submission notification (DECISIONS #352; the owner's report, relayed by the
 Muva session). `FormSubmissionService` now dispatches `SubmissionProcessedEvent` once the
 form's listeners have run, as the Forms & Flows path always did, and the producer names the
@@ -325,7 +328,7 @@ registry, and every later test's form was unknown to the route. **A form defined
 sends through `wp_mail()` whatever `MailDelivery` answers:** a test that submits one with
 an email listener answers `pre_wp_mail` itself.
 
-**After v0.45.2, not released, 2026-10-13.** No string of the `corex` domain is read before
+**In v0.46.0, 2026-10-13.** No string of the `corex` domain is read before
 `init` (DECISIONS #351). Since v0.45.1 every request made what answers a submission's file
 link, and with it the mail stack and the email layout, which read the theme's settings and
 the site's direction as it was made: WordPress logged "Translation loading for the `corex`
@@ -347,7 +350,7 @@ language of whoever is signed in and not the site's (DECISIONS #356), and on a s
 without pretty permalinks the Submissions inbox said "The submissions could not be
 loaded" (DECISIONS #359).
 
-**After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of
+**In v0.46.0, 2026-10-13.** `GET corex/v1/access/requests`, the list of
 open access requests, has the Access & Abilities screen's own check (`manage_options`),
 as the decision route has; asking for access keeps its own (spec 079, FR-011a; DECISIONS
 #346). `tests/Integration/Access/AccessRequestsReadTest.php` holds it through the REST
@@ -356,14 +359,14 @@ and not `manage_options` is addressed by the notification of a new request and c
 the screen that decides it (read in the code, not walked in a browser); the list, the
 decision route and the screen's menu entry would move to the ability together.
 
-**After v0.45.2, not released, 2026-10-13.** A person who asks twice for the same access has
+**In v0.46.0, 2026-10-13.** A person who asks twice for the same access has
 one request (spec 079, FR-008a; DECISIONS #343). `POST corex/v1/access/requests` stored a
 request, an audit entry and a notification for every repeat; the form on a denied screen
 did not. The question is asked where the request is stored
 (`AccessRequestStore::createUnlessPending()`, under a lock named for the requester), so the
 route, the form and two asks at the same moment get one answer.
 
-**After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
+**In v0.46.0, 2026-10-13.** A member who forgot their password resets it on
 the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
 three questions). The reset email is still WordPress's; its link is to the page the reset
 was asked from, where the block shows a new-password form. Before, the link was to
@@ -372,7 +375,7 @@ carried the moved address. `addons/corex-profile/src/Reset/` holds it;
 `tests/e2e/account-reset.spec.js` walks it in a browser, with a fixture that keeps the
 email and sends nothing.
 
-**After v0.45.2, not released, 2026-10-13.** A request the Access REST routes cannot read is
+**In v0.46.0, 2026-10-13.** A request the Access REST routes cannot read is
 answered 400 and names the parameter (spec 079, FR-002a; DECISIONS #350). An empty reason,
 an ability, area, effect or role CoreX does not have, or a confirmation that could not be
 read, was a 500 and a fatal error in the PHP log: the service threw and the route caught
@@ -381,14 +384,14 @@ and `AccessController` answers that class alone; a refusal for how things stand 
 200 and `blocked`. `tests/Integration/Access/AccessRouteRefusalTest.php` holds it through
 WordPress's REST server.
 
-**After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
+**In v0.46.0, 2026-10-13.** The page that shows a new preview link (Coming
 soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
 the first client site (FR-011a, tasks T069 to T075, DECISIONS #327). The button is shown by a
 script and copies without the Clipboard API where a site is not served over HTTPS; with
 scripts off the link is copied from the field by hand. `StandalonePage::copyField()` is the
 first standalone page part that carries a script.
 
-**After v0.45.2, not released, 2026-10-13.** The Corex theme has a side gutter: its root
+**In v0.46.0, 2026-10-13.** The Corex theme has a side gutter: its root
 padding, from spacing preset 40, 16 pixels on a page (spec 068, FR-157a and FR-157b;
 DECISIONS #344). A block set to full width or to wide in a page's content is now that wide
 on a desktop too, and a `corex/form` is one column in a window 600 pixels wide or less.
