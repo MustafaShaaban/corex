@@ -46,6 +46,18 @@ final class SiteMigrationRunner
     }
 
     /**
+     * Whether a run would have anything to do: a registered component's stored version
+     * differs from the one it declares. One read, and no write.
+     *
+     * It answers from what the request has read, which is enough to decide that a site
+     * needs no run. A run that follows reads again (see runCurrentSite()).
+     */
+    public function isDueForSite(int $siteId): bool
+    {
+        return $this->scope->run($siteId, fn (): bool => $this->isDue($this->storedVersions()));
+    }
+
+    /**
      * Continues after a throwing site and returns that failure, unlike the provider
      * repository's boot isolation which can only log it (spec 100 FR-031).
      *
@@ -95,22 +107,39 @@ final class SiteMigrationRunner
         $pending = [];
 
         foreach ($this->network->siteIds($batchSize, $offset) as $siteId) {
-            $isPending = $this->scope->run($siteId, function (): bool {
-                foreach ($this->schemas->all() as $component) {
-                    if ($this->versions->get($component->optionName) !== $component->version) {
-                        return true;
-                    }
-                }
-
-                return false;
-            });
-
-            if ($isPending) {
+            if ($this->isDueForSite($siteId)) {
                 $pending[] = $siteId;
             }
         }
 
         return $pending;
+    }
+
+    /** @return array<string, string> The site in scope's stored version, by option name. */
+    private function storedVersions(): array
+    {
+        return $this->versions->getMany($this->optionNames());
+    }
+
+    /** @return list<string> */
+    private function optionNames(): array
+    {
+        return array_map(
+            static fn (SchemaComponent $component): string => $component->optionName,
+            $this->schemas->all(),
+        );
+    }
+
+    /** @param array<string, string> $stored */
+    private function isDue(array $stored): bool
+    {
+        foreach ($this->schemas->all() as $component) {
+            if ($stored[$component->optionName] !== $component->version) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function durationSince(float $started): float
@@ -129,12 +158,18 @@ final class SiteMigrationRunner
             );
         }
 
+        // What is stored now, and not what this request read earlier: a caller that asked
+        // isDueForSite() first may have been answered before another request finished the
+        // same migration, and would run it and announce it a second time.
+        $this->versions->forget($this->optionNames());
+        $stored = $this->storedVersions();
+
         $componentsMigrated = [];
         $tablesCreated = [];
         $errors = [];
 
         foreach ($this->schemas->all() as $component) {
-            $componentResult = $this->migrateComponent($siteId, $component);
+            $componentResult = $this->migrateComponent($siteId, $component, $stored[$component->optionName]);
 
             if ($componentResult['error'] !== null) {
                 $errors[] = $componentResult['error'];
@@ -155,10 +190,8 @@ final class SiteMigrationRunner
     }
 
     /** @return array{migrated: bool, tables: list<string>, error: ?string} */
-    private function migrateComponent(int $siteId, SchemaComponent $component): array
+    private function migrateComponent(int $siteId, SchemaComponent $component, string $fromVersion): array
     {
-        $fromVersion = $this->versions->get($component->optionName);
-
         if ($fromVersion === $component->version) {
             return ['migrated' => false, 'tables' => [], 'error' => null];
         }

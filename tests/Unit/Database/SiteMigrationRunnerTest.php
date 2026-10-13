@@ -68,13 +68,23 @@ final class FakeSchemaMigrator100 implements SchemaMigrator
     }
 }
 
+/**
+ * Remembers a version once it has read it, as a request remembers an option: a change made to
+ * `$versions` afterwards is another request's, and is seen only after `forget()`.
+ */
 final class ArraySchemaVersionStore100 implements SchemaVersionStore
 {
-    /** @var array<string, string> */
+    /** @var array<string, string> What is stored. */
     public array $versions = [];
 
     /** @var list<array{0: string, 1: string}> */
     public array $puts = [];
+
+    /** @var list<list<string>> The option names of each read of several versions at once. */
+    public array $readsOfSeveral = [];
+
+    /** @var array<string, string> */
+    private array $remembered = [];
 
     /** @var list<string> */
     private array $timeline;
@@ -87,7 +97,19 @@ final class ArraySchemaVersionStore100 implements SchemaVersionStore
 
     public function get(string $optionName): string
     {
-        return $this->versions[$optionName] ?? '';
+        return $this->remembered[$optionName] ??= $this->versions[$optionName] ?? '';
+    }
+
+    public function getMany(array $optionNames): array
+    {
+        $this->readsOfSeveral[] = $optionNames;
+
+        return array_combine($optionNames, array_map($this->get(...), $optionNames));
+    }
+
+    public function forget(array $optionNames): void
+    {
+        $this->remembered = array_diff_key($this->remembered, array_flip($optionNames));
     }
 
     public function put(string $optionName, string $version): void
@@ -95,6 +117,7 @@ final class ArraySchemaVersionStore100 implements SchemaVersionStore
         $this->timeline[] = 'put:' . $optionName . '=' . $version;
         $this->puts[] = [$optionName, $version];
         $this->versions[$optionName] = $version;
+        $this->remembered[$optionName] = $version;
     }
 }
 
@@ -214,6 +237,37 @@ it('performs zero schema writes when every component is current', function () {
         ->and($migrator->created)->toBe([])
         ->and($versions->puts)->toBe([])
         ->and($scope->siteIds)->toBe([1]);
+});
+
+it('says a site is due when a stored version differs, from one read made on that site', function () {
+    [$runner, $migrator, $versions, $scope] = migrationRunner100();
+
+    $behind = $runner->isDueForSite(4);
+    $versions->put('corex_product_foundation_schema_version', '3');
+    $current = $runner->isDueForSite(4);
+
+    expect($behind)->toBeTrue()
+        ->and($current)->toBeFalse()
+        ->and($versions->readsOfSeveral)->toBe([
+            ['corex_product_foundation_schema_version'],
+            ['corex_product_foundation_schema_version'],
+        ])
+        ->and($scope->siteIds)->toBe([4, 4])
+        ->and($migrator->created)->toBe([]);
+});
+
+it('decides a run from what is stored when it starts, not from what the request read before', function () {
+    [$runner, $migrator, $versions] = migrationRunner100();
+    $due = $runner->isDueForSite(1);
+
+    // Another request finishes the same migration before this one starts its own.
+    $versions->versions['corex_product_foundation_schema_version'] = '3';
+    $result = $runner->runForSite(1);
+
+    expect($due)->toBeTrue()
+        ->and($result->outcome)->toBe(SiteMigrationOutcome::AlreadyCurrent)
+        ->and($migrator->created)->toBe([])
+        ->and($versions->puts)->toBe([]);
 });
 
 it('creates every table then verifies every table before writing the version', function () {

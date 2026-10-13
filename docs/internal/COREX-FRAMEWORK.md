@@ -140,7 +140,9 @@ cleanup. Existing networks migrate explicitly with `wp corex migrate --network`.
 table registers its component while it boots: `ConfigServiceProvider` for the foundation, and the
 Newsletter, Bookings and Careers add-ons for theirs. `MultisiteServiceProvider`, whose boot runs the
 self-heal, boots after every other provider, add-ons included, so the heal sees all of them. No provider
-calls `Migrator::create()` from a hook: that is `dbDelta()` on every request.
+calls `Migrator::create()` from a hook: that is `dbDelta()` on every request. The heal reads every
+component's version in one statement and takes its per-site lock only when one of them is behind, so an
+admin or cron request of a site that is current makes one read for it and no write (DECISIONS #360).
 
 **Config.** The resolution chain gains two network layers around the site option, so precedence is
 `.env` → network **lock** → site option → network **default** → code default. Both network layers read
