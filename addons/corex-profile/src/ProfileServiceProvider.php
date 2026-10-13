@@ -115,6 +115,7 @@ final class ProfileServiceProvider extends ServiceProvider
             'i18n'    => [
                 'session'    => __('Session', 'corex'),
                 'thisDevice' => __('this device', 'corex'),
+                'noAnswer'   => __('The site could not be reached, or its answer could not be read. Please try again.', 'corex'),
             ],
         ]);
         wp_register_style(

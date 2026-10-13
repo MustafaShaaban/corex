@@ -211,6 +211,51 @@ it('points every label at the field beside it, in its own form', function (array
 })->with('account panels');
 
 /**
+ * What a browser that runs no scripts is shown in place of an answer (spec 068, FR-161d).
+ *
+ * @return array{count:int,before:string,markup:string} How many notes, what the block holds
+ *                                                      before the first, and the note's own markup.
+ */
+function accountScriptsOffNote(string $html): array
+{
+    $count = preg_match_all('#<noscript>(.*?)</noscript>#s', $html, $notes);
+
+    return [
+        'count'  => (int) $count,
+        'before' => (string) preg_replace('#^<div[^>]*>#', '', (string) strstr($html, '<noscript>', true)),
+        'markup' => $notes[1][0] ?? '',
+    ];
+}
+
+dataset('account views', [
+    'a visitor'          => [['loggedIn' => false, 'registrationOpen' => true]],
+    'a signed-in person' => [['loggedIn' => true]],
+    'somebody choosing a new password' => [['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')]],
+]);
+
+it('tells a browser that runs no scripts, once and before anything else, that the block needs them', function (array $ctx) {
+    $note = accountScriptsOffNote((new AccountRenderer())->render($ctx));
+
+    expect($note['count'])->toBe(1)
+        ->and($note['before'])->toBe('')
+        ->and($note['markup'])->toContain('JavaScript');
+})->with('account views');
+
+it('keeps what a password reset says first, and the note next, above the forms', function (ResetState $reset) {
+    $note = accountScriptsOffNote((new AccountRenderer())->render(['loggedIn' => false, 'reset' => $reset]));
+
+    expect($note['count'])->toBe(1)
+        ->and($note['before'])->toMatch('~^<p class="corex-account__status"[^>]*>[^<]+</p>$~');
+})->with(['a link that expired' => [ResetState::expired()], 'a password that was saved' => [ResetState::done()]]);
+
+it('names no other place to sign in in that note, which is in the page for anybody', function (array $ctx) {
+    $note = accountScriptsOffNote((new AccountRenderer())->render($ctx));
+
+    expect($note['markup'])->not->toBe('')
+        ->and($note['markup'])->not->toContain('href');
+})->with('account views');
+
+/**
  * What each text field tells the browser it is for: its `autocomplete` value, by form and
  * field name, in the order printed. A field with no value gives null. A tick box and a field
  * that travels hidden with its form collect nothing about the person and are left out.

@@ -65,6 +65,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The account block says so when a request gets no answer, and when scripts are off.**
+  Two cases in which pressing a button of the `corex/account` block did nothing that could
+  be seen. A request that did not arrive (the visitor offline, the request blocked), or
+  that was answered with a page and not with JSON (a server's error page, a proxy's), or
+  refused with no message, wrote nothing: the form now says "The site could not be
+  reached, or its answer could not be read. Please try again." in its own line, under its
+  button, and so do the two session buttons. And with scripting off a form was sent to
+  the page, which came back with the empty forms: a browser that runs no scripts is now
+  shown a note above the forms saying that they need JavaScript. The forms still do not
+  work without scripts, and the note names no other place to sign in, because on a site
+  with login protection on WordPress's own address is the hidden one (spec 068, FR-161e
+  and FR-161d; DECISIONS #339).
+
 - **A member who forgot their password resets it on the account page** (spec 068, FR-158a
   to FR-158c; the owner's decision). The account block asked WordPress for the reset email
   and WordPress wrote its own link into it. Measured on WordPress 7.1.3: the member chose
@@ -287,6 +300,15 @@ All notable changes to Corex are documented here. The format follows
   as before. The owner's decision (DECISIONS #334).
 
 ### Client impact
+
+- **The account block has a new element and a new sentence to translate.** Only for a
+  site that has Corex Profile on. `<noscript><p class="corex-account__noscript">` is the
+  first child of `.corex-account`, and the second on the two page loads that say what
+  became of a password reset, where the reset's message line stays first: a site that
+  styles the block itself, or selects its first child, sees it with scripting off only. Two strings are new in the `corex` text
+  domain: the note's, and "The site could not be reached, or its answer could not be
+  read. Please try again." Nothing to rebuild: the block's script and stylesheet are not
+  built.
 
 - **The password-reset email of a site that uses the account block links to the account
   page, and a visitor chooses the new password there.** It applies to a site with the
