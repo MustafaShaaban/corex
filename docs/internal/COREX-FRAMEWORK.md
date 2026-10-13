@@ -144,6 +144,15 @@ calls `Migrator::create()` from a hook: that is `dbDelta()` on every request. Th
 component's version in one statement and takes its per-site lock only when one of them is behind, so an
 admin or cron request of a site that is current makes one read for it and no write (DECISIONS #360).
 
+**Options read on every request.** An option stored with autoload off is a query each time a request first
+asks for it, and so is an option with no row. A provider whose store is read on every request registers the
+option with `Support\Options\LoadedOptions` while it boots, with the value the store reads as "nothing
+stored", and the store writes through `LoadedOptions::store()`. On an admin or a cron request the registry
+turns over a row that is not loaded and writes a row for an option that has none; it costs nothing once they
+are loaded. Stores read with `get_option()` as before, so where a row is kept never decides an answer. The
+login protection settings, the operations mode and the Email Studio's defaults version are kept so
+(DECISIONS #366). An option read only on a screen stays with autoload off.
+
 **Config.** The resolution chain gains two network layers around the site option, so precedence is
 `.env` → network **lock** → site option → network **default** → code default. Both network layers read
 `corex_network_<key>` and are distinguished by the `SettingScope` the key was registered with; an

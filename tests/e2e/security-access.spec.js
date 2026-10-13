@@ -293,10 +293,11 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 			return;
 		}
 		// The captured JSON is embedded as a heredoc so no amount of quoting in the stored
-		// settings can break out of it.
+		// settings can break out of it. Stored as the store stores it: loaded with the site's
+		// options.
 		wpEval(
-			'update_option( "corex_login_protection_settings", json_decode( <<<\'COREX_JSON\'\n' +
-				`${ restore }\nCOREX_JSON, true ), false );`
+			'\\Corex\\Support\\Options\\LoadedOptions::store( "corex_login_protection_settings", json_decode( <<<\'COREX_JSON\'\n' +
+				`${ restore }\nCOREX_JSON, true ) );`
 		);
 	} );
 

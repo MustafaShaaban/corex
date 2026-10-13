@@ -1077,6 +1077,12 @@ final class ConfigServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Read on every request: the login settings below, as the login guard is made, and the
+        // operations mode by the maintenance and coming-soon guards on every front-end page.
+        $loadedOptions = $this->container->make(\Corex\Support\Options\LoadedOptions::class);
+        $loadedOptions->register(\Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore::OPTION, []);
+        $loadedOptions->register(OperationsModeStore::OPTION, '');
+
         $activityTable = $this->container->make(ActivityTable::class);
         $this->container->make(ManagedTables::class)->register($activityTable->managed());
 

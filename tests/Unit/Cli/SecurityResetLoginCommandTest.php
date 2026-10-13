@@ -16,6 +16,7 @@ use Corex\Config\Security\LoginProtection\LoginSlug;
 function corexRecoveryOptions(array &$options): void
 {
     Functions\when('get_option')->alias(static fn (string $key, $default = false) => $options[$key] ?? $default);
+    Functions\when('wp_set_option_autoload')->justReturn(true);
     Functions\when('update_option')->alias(static function (string $key, mixed $value) use (&$options): bool {
         $options[$key] = $value;
 

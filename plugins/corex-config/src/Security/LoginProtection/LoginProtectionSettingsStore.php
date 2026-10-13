@@ -10,8 +10,13 @@ namespace Corex\Config\Security\LoginProtection;
 
 defined('ABSPATH') || exit;
 
+use Corex\Support\Options\LoadedOptions;
+
 /**
  * Reads and normalizes persisted login-protection settings.
+ *
+ * The settings are read as CoreX boots, on every request, so they are stored where WordPress loads
+ * them with the site's options ({@see LoadedOptions}). Whatever writes this option writes it so.
  */
 final class LoginProtectionSettingsStore
 {
@@ -37,7 +42,7 @@ final class LoginProtectionSettingsStore
             'retain_days'              => max(1, (int) ($input['retain_days'] ?? 30)),
             'successful_login_logging' => (bool) ($input['successful_login_logging'] ?? true),
         ];
-        update_option(self::OPTION, $stored, false);
+        LoadedOptions::store(self::OPTION, $stored);
 
         return $this->current();
     }

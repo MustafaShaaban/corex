@@ -26,6 +26,7 @@ use Corex\Support\Config\Sources\NetworkLockSource;
 use Corex\Support\Config\Sources\OptionsSource;
 use Corex\Support\DateTime\AdminDateTime;
 use Corex\Support\DateTime\AdminDateTimeFormatter;
+use Corex\Support\Options\LoadedOptions;
 use Corex\Update\UpdateChecker;
 use Corex\Update\UpdateService;
 
@@ -38,6 +39,8 @@ final class CoreServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(SettingRegistry::class);
+        // One list for every provider: each names the options of its own that every request reads.
+        $this->container->singleton(LoadedOptions::class);
 
         $this->container->singleton(ConfigInterface::class, function (ContainerInterface $container): Repository {
             $registry = $container->make(SettingRegistry::class);
@@ -135,6 +138,13 @@ final class CoreServiceProvider extends ServiceProvider
         add_action('init', static function (): void {
             load_plugin_textdomain('corex', false, dirname(plugin_basename(COREX_CORE_FILE)) . '/languages');
         });
+
+        // Last on `init`, once every provider has booted and named its options, and once what an
+        // add-on stores on `init` is stored.
+        $container = $this->container;
+        add_action('init', static function () use ($container): void {
+            $container->make(LoadedOptions::class)->ensureLoaded();
+        }, PHP_INT_MAX);
     }
 
     /**
