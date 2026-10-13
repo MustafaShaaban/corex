@@ -134,8 +134,27 @@ All notable changes to Corex are documented here. The format follows
   a subject is printed was read first: each escapes it where it is printed
   (DECISIONS #326).
 
+- **Email Studio keeps a backslash.** Its store handed its records to WordPress as they
+  were, and WordPress takes one level of slashes off a post's title and off a meta value on
+  their way in. A backslash was gone from everything the store kept. An email with the
+  subject "C:\offers\new" was listed, among the captured emails and the attempts, as
+  "C:offersnew", and its body was kept without them too. A template, a layout or a partial
+  written with `content:"\201C"` was stored as `content:"201C"`, and an email sent by a
+  route is built from what is stored. A name with two backslashes lost one more each time
+  its record was saved again. A template version's checksum, taken before the store, was not
+  the checksum of what was read back. The store now puts a level of slashes on a record's
+  name and on its content before handing them over, as the store of a submission's replies
+  does, and each is read back as it was given. A reply's own email always left with its
+  backslashes: what was wrong was Email Studio's copy of an email, and what it keeps to
+  build emails from. Records kept before this release are not repaired (DECISIONS #329).
+
 ### Client impact
 
+- **A template, a layout or a partial saved in Email Studio before this release, with a
+  backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
+  not in the database to put back. Open it, write the backslash again and save. The
+  captured emails and the attempts already listed keep the subject and the body they were
+  stored with. Nothing to rebuild: no screen changed, and no class or route did.
 - **A submission, a note or a flow stored before this release with a backslash in it is
   still stored without it.** Nothing rewrites it: what was dropped is not in the database
   to put back, and a stored "C:offersnew" cannot be told from one that was typed so. A

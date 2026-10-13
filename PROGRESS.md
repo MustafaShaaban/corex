@@ -83,6 +83,10 @@ What to know before resuming each:
   what the Releases side relies on is written into task T080. The line a person without the
   right is shown was drawn in Jest and not walked in a browser, because no fixture account
   manages data without being an administrator.
+- **Email Studio's store.** `WpEmailStudioStore` slashes a record's name and its content
+  before handing them to WordPress, so a backslash is read back (DECISIONS #329; on `main`
+  after v0.45.2, not released). A store written beside it has to do the same: WordPress
+  unslashes a post's fields and a meta value on their way in, whoever calls it.
 - **Spec 106, a reply's subject.** It is kept as typed on the reply, preview and draft routes
   and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
   (DECISIONS #326; on `main` after v0.45.2, not released). A subject can now hold `<`, `>`
@@ -154,18 +158,27 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **CoreX → Data → Form submissions prints that number too**, in its record view and in its
   own export. The Submissions inbox and its export name the file. Read from
   `SubmissionsSource`, not looked at in a browser.
-- **An Email Studio template's subject loses what follows a `<`.** A template's subject is run
-  through `strip_tags()` when it is merged (`EmailTemplateService::render()`): measured on
-  2026-10-13, a template whose subject is "Price <500 EGP" is sent as "Price", and
-  "Sam <sam@example.com> asked" as "Sam  asked". A reply's subject and Email Studio's own
-  **Test send** and **Resend** are kept as typed (DECISIONS #326); a template's is not, and
-  a value merged into it is stripped the same way. Not changed.
-- **Email Studio's store drops a backslash from everything it keeps.** Its records go to
-  `update_post_meta()` without `wp_slash()` (`WpEmailStudioStore::create()` and `update()`).
-  Measured on 2026-10-13: an email with the subject "C:\offers\new" is listed, in Email
-  Studio's captured emails and attempts, as "C:offersnew", and its body loses them too. A
-  template, a layout and a partial are kept by the same store. The email itself leaves with
-  its backslashes, and a reply kept with its submission has them. Not changed.
+- **An email made from an Email Studio template leaves without a plain-text version.** A
+  template has a Plain Text tab, written by hand or made from the HTML, and the health check
+  refuses one written by hand and left empty. Nothing that sends reads it: the route and the
+  email sent again from a submission build their message from the subject and the HTML
+  (`EmailRouteMessageFactory::prepare()`, `EmailStudioSubmissionGateway::resend()`). Measured
+  on 2026-10-13 through a route on a site that delivers: the mail driver was handed no
+  plain-text version, with a manual one saved on the template. A reply has one. The version
+  nobody sends also loses what follows a `<` in a merged value ("under <500 EGP" is "under"
+  there). Found while reading for DECISIONS #330, not changed.
+- **What Email Studio stored before its store kept a backslash is still without it.** The
+  store slashes what it hands to WordPress now (DECISIONS #329), and nothing repairs the
+  records already there: a template, a layout or a partial saved earlier with a backslash
+  in it has to be opened and saved again. Whether a client site holds one was not read.
+- **A name in Email Studio is cleaned as markup for a person who may not post markup.** A
+  template's, a layout's and a partial's name is a post's title, and WordPress cleans a
+  title for whoever lacks `unfiltered_html`. Measured on 2026-10-13 in a request nobody is
+  signed in for: `Tom & Jerry` is kept as `Tom &amp; Jerry` and `Price <500 EGP` as
+  `Price &lt;500 EGP`, and the screens print a name as text. An administrator of a single
+  site is not affected. By WordPress's rule an administrator of a site in a network is, and
+  so is one on a site that sets `DISALLOW_UNFILTERED_HTML`: read, not measured. The content
+  of a record is not a title and is kept as written. Not changed.
 - **The inbox's list is slow on a site with many thousands of submissions.** Measured on
   2026-10-11 with 10,000 of them: the statement that lists the inbox with no search took
   0.6 s, and 1.2 s on a second seeding; without the clause that leaves out submissions marked

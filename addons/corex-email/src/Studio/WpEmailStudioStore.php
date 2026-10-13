@@ -12,6 +12,10 @@ defined('ABSPATH') || exit;
 
 /**
  * Private WordPress persistence for Email Studio assets and immutable events.
+ *
+ * WordPress takes one level of slashes off a post's title and off a meta value on their way in,
+ * so each is handed over with one put on: a record is read back as the text it was given, a
+ * path or a CSS escape in it included.
  */
 final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
 {
@@ -48,7 +52,7 @@ final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
         $id = wp_insert_post([
             'post_type'   => self::POST_TYPE,
             'post_status' => 'private',
-            'post_title'  => $name,
+            'post_title'  => wp_slash($name),
             'post_name'   => sanitize_title($slug),
             'post_parent' => max(0, $parentId),
         ], true);
@@ -59,7 +63,7 @@ final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
 
         update_post_meta($id, self::META_TYPE, $type);
         update_post_meta($id, self::META_SLUG, $slug);
-        update_post_meta($id, self::META_PAYLOAD, $payload);
+        update_post_meta($id, self::META_PAYLOAD, wp_slash($payload));
 
         // A payload the database would not take whole comes back as something else. A record
         // like that is not left behind: it could not be read, and nothing would ever remove it.
@@ -80,13 +84,13 @@ final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
 
         $updated = wp_update_post([
             'ID'         => $id,
-            'post_title' => $name,
+            'post_title' => wp_slash($name),
         ], true);
         if (is_wp_error($updated) || $updated === 0) {
             return false;
         }
 
-        update_post_meta($id, self::META_PAYLOAD, $payload);
+        update_post_meta($id, self::META_PAYLOAD, wp_slash($payload));
 
         return true;
     }
