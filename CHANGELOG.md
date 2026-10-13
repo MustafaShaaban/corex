@@ -196,6 +196,18 @@ All notable changes to Corex are documented here. The format follows
   Somebody who types no username is registered as before, with a login made from the
   address, and signs in with the address (DECISIONS #333).
 
+- **A password with a quote or a backslash in it is one password at the account block and
+  at WordPress's own screens.** WordPress's screens keep and check a password as the text
+  of a form, with the request's slashes on it; the account add-on handed over the password
+  as it was typed. A member who chose "it's-my-password" on the account block was refused
+  at `wp-login.php` with it, and a member who chose theirs on WordPress's own reset
+  screen was refused by the account block. The add-on now hands a
+  password over the way a WordPress screen does, at registration, at a reset and at
+  sign-in. An account that chose such a password through the add-on before this release
+  still signs in at the account block, and is moved to WordPress's form as it does, after
+  which `wp-login.php` accepts it too. A wrong password is counted as one failed sign-in,
+  as before. The owner's decision (DECISIONS #334).
+
 ### Client impact
 
 - **The account block's message line moved, and its fields are 16 pixels narrower.** Only
@@ -246,6 +258,19 @@ All notable changes to Corex are documented here. The format follows
   your own that posts to the route shows the message it is given, as the account block
   does. An account registered before this release under a changed username keeps it: its
   owner signs in with the address, or with the username as it was stored.
+- **A member whose password has a quote or a backslash in it, and who chose it on the
+  account block, is signed out of their other browsers once**: the next time they sign in
+  on the account block, when their account is moved (DECISIONS #334). WordPress makes a
+  browser's cookie from the stored password, so it does the same after any password
+  change; the add-on ends those sessions, so that the account's list shows only ones that
+  work.
+  A password-reset link that was waiting for that account stops working, and whatever
+  listens on WordPress's `wp_set_password` action is told, as read in WordPress. Nobody has
+  to do anything. A member with such a password who does not sign in on the account block
+  again is not moved, and `wp-login.php` goes on refusing them until they reset it.
+- **Code of your own that listens on `authenticate`** is handed a password by the account
+  block's sign-in with a level of slashes on it, as it always was by `wp-login.php`. Read,
+  not run with such code.
 - **`Corex\Profile\Account\AuthGateway` has a new method, `acceptsUsername()`.** A class of
   your own that implements the interface has to add it. Nothing under `sites/` in the Muva,
   Perego or Mizzey checkouts names the interface, as read on 2026-10-13. Nothing to rebuild:
