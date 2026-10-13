@@ -85,6 +85,48 @@ it('finds the files uploaded with a submission by the answers that point at them
         ->and(get_post($logo))->not->toBeNull();
 });
 
+/**
+ * A file is a submission's own when the answer that names it answers the field the file came
+ * through. A number typed into another question is a number (reported on 2026-10-13).
+ */
+it('leaves a form upload that a number in another answer happens to name', function () {
+    $this->made[] = $cv = uploadedWithAForm();
+    $this->made[] = $id = deletableSubmission(['corex_field_years' => (string) $cv]);
+
+    expect($this->trash->uploadsOf($id))->toBe([]);
+});
+
+/**
+ * A file is uploaded with one submission. Where two name it, one of them was not sent it, and
+ * which one is not recorded: the file stays for as long as either does.
+ */
+it('leaves a file that another submission names too, until the last of them is deleted', function () {
+    $this->made[] = $cv = uploadedWithAForm();
+    $this->made[] = $first = deletableSubmission(['corex_field_cv' => (string) $cv]);
+    $this->made[] = $second = deletableSubmission(['corex_field_cv' => (string) $cv]);
+    $this->trash->trash($first, $this->administrator, SubmissionTrashStore::VIA_INBOX);
+
+    expect($this->trash->uploadsOf($second))->toBe([]);
+
+    wp_delete_post($second, true);
+
+    expect(get_post_type($cv))->toBe('attachment')
+        ->and($this->trash->uploadsOf($first))->toBe([$cv]);
+});
+
+/**
+ * "Names it" is the same number, digit for digit. The database's collation reads the digits of
+ * another script as equal to these, and an answer written in them is not this file's number.
+ */
+it('does not take an answer in another script’s digits for a file’s number', function () {
+    $this->made[] = $cv = uploadedWithAForm();
+    $this->made[] = $id = deletableSubmission(['corex_field_cv' => (string) $cv]);
+    $inArabicIndic = strtr((string) $cv, array_combine(range(0, 9), ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩']));
+    $this->made[] = deletableSubmission(['corex_field_cv' => $inArabicIndic]);
+
+    expect($this->trash->uploadsOf($id))->toBe([$cv]);
+});
+
 it('finds the email attempts made for a submission, wherever it recorded them', function () {
     $this->made[] = $id = deletableSubmission([
         'corex_email_json' => ['state' => 'sent', 'bindings' => [

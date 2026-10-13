@@ -10,6 +10,7 @@ namespace Corex\Forms\Submission\Stages;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Submission\FileFieldAnswers;
 use Corex\Forms\Submission\FlowSchemaFactory;
 use Corex\Forms\Submission\SubmissionPipelineContext;
 use Corex\Forms\Submission\SubmissionStage;
@@ -31,11 +32,13 @@ final readonly class ValidationStage implements SubmissionStage
 
     public function execute(SubmissionPipelineContext $context): SubmissionStageResult
     {
+        $schema = $this->schemas->make($context->version->configuration);
+        // A flow's route reads no file parts, so a file question has no answer here. What the
+        // body says under its key is not one, and it is dropped before anything below reads the
+        // answers: the rules, and what is written down beside them.
+        $context          = $context->withValues(FileFieldAnswers::from($schema, $context->values));
         $boundaryMetadata = $this->boundaryMetadata($context);
-        $result = $this->validator->validate(
-            $this->schemas->make($context->version->configuration),
-            $context->values,
-        );
+        $result           = $this->validator->validate($schema, $context->values);
         if (! $result->isValid()) {
             return SubmissionStageResult::failure(
                 $this->key(),

@@ -10,6 +10,7 @@ namespace Corex\Config\Submissions;
 
 defined('ABSPATH') || exit;
 
+use Corex\Security\Upload\FormUploads;
 use DomainException;
 use RuntimeException;
 
@@ -28,6 +29,9 @@ use RuntimeException;
 final readonly class WpSubmissionTrashStore implements SubmissionTrashStore
 {
     private const POST_TYPE = 'corex_submission';
+
+    /** The post meta an answer is stored under, before its field's name. */
+    private const ANSWER = 'corex_field_';
 
     /** What CoreX records of a trashing. */
     private const RECORD = ['corex_trashed_at', 'corex_trashed_by', 'corex_trashed_via'];
@@ -77,9 +81,14 @@ final readonly class WpSubmissionTrashStore implements SubmissionTrashStore
     {
         $uploads = [];
         foreach ((array) get_post_meta($id) as $key => $values) {
+            if (! str_starts_with((string) $key, self::ANSWER)) {
+                continue;
+            }
+
             // An uploaded file's answer is the id of its attachment.
-            $value = str_starts_with((string) $key, 'corex_field_') ? ($values[0] ?? '') : '';
-            if (is_numeric($value) && $this->isFormUpload((int) $value)) {
+            $field = substr((string) $key, strlen(self::ANSWER));
+            $value = $values[0] ?? '';
+            if (is_string($value) && ctype_digit($value) && $this->isItsUpload($id, $field, (int) $value)) {
                 $uploads[] = (int) $value;
             }
         }
@@ -87,11 +96,47 @@ final readonly class WpSubmissionTrashStore implements SubmissionTrashStore
         return array_values(array_unique($uploads));
     }
 
+    /**
+     * Whether an attachment is the file this submission was sent as its answer to one field.
+     *
+     * The field is part of the test: a number typed into another question is a number, whatever
+     * attachment has it. So is every other submission: a file is uploaded with one, and where two
+     * name it nothing records which was sent it. It is left for as long as either is there, and
+     * goes with the last.
+     */
+    private function isItsUpload(int $id, string $field, int $attachmentId): bool
+    {
+        if (! FormUploads::cameThrough($field, $attachmentId)) {
+            return false;
+        }
+
+        $naming = new \WP_Query([
+            'post_type' => self::POST_TYPE,
+            // Trashed ones too: a submission in the trash still holds its file.
+            'post_status' => array_keys(get_post_stati()),
+            'posts_per_page' => 2,
+            'fields' => 'ids',
+            'no_found_rows' => true,
+            'update_post_term_cache' => false,
+            // Asked of the database, whatever another plugin would add to a query of posts.
+            'suppress_filters' => true,
+            // Byte for byte. The table's collation reads the digits of another script as equal
+            // to these, and an answer written in them is not this file's number.
+            'meta_query' => [[
+                'key' => self::ANSWER . $field,
+                'value' => (string) $attachmentId,
+                'type' => 'BINARY',
+            ]],
+        ]);
+
+        return array_diff(array_map('intval', $naming->posts), [$id]) === [];
+    }
+
     public function forgetUpload(int $attachmentId): bool
     {
         // Only what a visitor uploaded through a form: never an attachment an answer merely
         // happens to share a number with.
-        return $this->isFormUpload($attachmentId) && wp_delete_attachment($attachmentId, true) instanceof \WP_Post;
+        return FormUploads::holds($attachmentId) && wp_delete_attachment($attachmentId, true) instanceof \WP_Post;
     }
 
     public function emailAttemptsOf(int $id): array
@@ -171,14 +216,6 @@ final readonly class WpSubmissionTrashStore implements SubmissionTrashStore
         if (! wp_delete_post($id, true) instanceof \WP_Post) {
             throw new RuntimeException(__('The submission could not be deleted.', 'corex'));
         }
-    }
-
-    /** Whether an attachment is a file a visitor uploaded through a form, kept in protected uploads. */
-    private function isFormUpload(int $attachmentId): bool
-    {
-        return get_post_type($attachmentId) === 'attachment'
-            && get_post_meta($attachmentId, '_corex_protected', true) === '1'
-            && str_starts_with((string) get_post_meta($attachmentId, '_corex_upload_context', true), 'form-');
     }
 
     /** The post's status, or '' when it is not a submission. */

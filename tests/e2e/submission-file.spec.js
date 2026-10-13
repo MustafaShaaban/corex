@@ -143,3 +143,61 @@ test( 'opens a file sent with a form from its submission, by name, and gives it 
 	expect( ( await refused.body() ).includes( '%PDF' ) ).toBe( false );
 	await signedOut.dispose();
 } );
+
+/**
+ * A file field is answered by the file a request carried, and by nothing in its text (reported
+ * on 2026-10-13 from a client site). Sent as a visitor's browser sends a form, without the page:
+ * a browser does not send text and a file under one name, and a request can.
+ */
+test( 'takes the file a request carried as a file field’s answer, and no text in its place', async ( {
+	page,
+	baseURL,
+} ) => {
+	await page.goto( '/wp-admin/' );
+	const made = await wordpress( page, 'POST', '/wp/v2/pages', {
+		title: `File form ${ STAMP } as a request`,
+		status: 'publish',
+		content: `<!-- wp:corex/form {"formSlug":"${ FORM }"} /-->`,
+	} );
+	pageId = made.id;
+
+	// Signed out, with the nonce the page gives a visitor.
+	const visitor = await request.newContext( {
+		baseURL,
+		storageState: { cookies: [], origins: [] },
+	} );
+	const markup = await ( await visitor.get( made.link ) ).text();
+	const nonce = markup.match( /data-corex-nonce="([^"]+)"/ )[ 1 ];
+	const send = async ( withFile ) => {
+		const parts = new FormData();
+		parts.append( 'name', 'Salma Fixture' );
+		parts.append( 'email', EMAIL );
+		// The number of a post every install has, where the file's would be.
+		parts.append( 'cv', '1' );
+		if ( withFile ) {
+			parts.append(
+				'cv',
+				new Blob( [ PDF ], { type: 'application/pdf' } ),
+				FILE_NAME
+			);
+		}
+		const response = await visitor.post(
+			`/?rest_route=/corex/v1/forms/${ FORM }`,
+			{ headers: { 'X-WP-Nonce': nonce }, multipart: parts }
+		);
+		expect( response.status() ).toBe( 200 );
+
+		return ( await response.json() ).data.values;
+	};
+
+	expect( await send( false ) ).toEqual( {
+		name: 'Salma Fixture',
+		email: EMAIL,
+	} );
+
+	const { cv } = await send( true );
+	expect( typeof cv ).toBe( 'number' );
+	expect( cv ).toBeGreaterThan( 1 );
+
+	await visitor.dispose();
+} );
