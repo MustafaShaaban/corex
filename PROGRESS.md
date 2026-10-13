@@ -102,6 +102,15 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
+the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
+three questions). The reset email is still WordPress's; its link is to the page the reset
+was asked from, where the block shows a new-password form. Before, the link was to
+`wp-login.php`, the member ended in `wp-admin`, and where the login is moved the email
+carried the moved address. `addons/corex-profile/src/Reset/` holds it;
+`tests/e2e/account-reset.spec.js` walks it in a browser, with a fixture that keeps the
+email and sends nothing.
+
 **After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
 soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
 the first client site (FR-011a, tasks T069 to T075, DECISIONS #327). The button is shown by a
@@ -257,7 +266,20 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **A new member who chose a password is emailed a link to set one.** The account gateway
   sends WordPress's own new-user email, which reads "To set your password, visit the
   following address:". Read on 2026-10-13 from what was handed to `wp_mail()`; what
-  following the link does to the chosen password was not run. Not changed.
+  following the link does to the chosen password was not run. Not changed. Its link is
+  WordPress's own, the one the reset email carried until DECISIONS #341; what this email
+  says waits on the owner, and the two emails are meant to end up alike.
+- **The reset email is WordPress's plain text, and a page with no mark gets WordPress's
+  link.** Sending it in the standard design was put to the owner and left for the decision
+  on the new member's email (DECISIONS #341). The link comes back to the account page only
+  when the forgot-password form carried the page's mark: a page a cache stored before the
+  release does not until it is stored again, and neither does the block in a template that
+  is not one page or post.
+- **A signed-in member can read the address login protection gives the login.** The
+  account block's Sign out link and the admin bar's are WordPress's logout address, and a
+  signed-in subscriber is served `/wp-admin/`. Measured on 2026-10-13. The owner accepted
+  it (DECISIONS #341); changing it is a sign-out of the add-on's own and no admin bar for
+  members, which is not specified.
 - **A login made from an address is altered by WordPress, and that is left.** With no
   username typed, `name+shop@example.com` gets the login `nameshop@example.com`; the person
   signs in with the address, as measured (DECISIONS #333). An account registered before

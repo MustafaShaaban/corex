@@ -78,6 +78,21 @@ All notable changes to Corex are documented here. The format follows
   with login protection on WordPress's own address is the hidden one (spec 068, FR-161c
   and FR-161d; DECISIONS #339).
 
+- **A member who forgot their password resets it on the account page** (spec 068, FR-158a
+  to FR-158c; the owner's decision). The account block asked WordPress for the reset email
+  and WordPress wrote its own link into it. Measured on WordPress 7.1.3: the member chose
+  the new password on `wp-login.php`, its "Log in" link led to WordPress's sign-in screen,
+  and signing in there ended at `wp-admin/profile.php`; the account page was not seen
+  again, and had no form that takes a reset key, though the route for one existed. Where
+  the Security Center moves the login, the email's link was the moved address. Now the
+  email's link is to the page the reset was asked from. That page takes the key out of its
+  address, shows a **Choose a new password** form and no other, and once the password is
+  saved says so above the sign-in form. A link that was used, or that WordPress no longer
+  takes, is answered "This password reset link is invalid or has expired. Please ask for a
+  new one." above the forms, one of which asks for one. The email is still WordPress's and is still
+  sent by WordPress: one address in it is changed, and only for a reset asked through the
+  account block (DECISIONS #341).
+
 - **A long email address registers without a username, and one too long for an account is
   refused with a reason.** The registration form's Username field is optional, and without
   one the login is the email address. WordPress holds a login in 60 characters and an
@@ -271,11 +286,29 @@ All notable changes to Corex are documented here. The format follows
 
 - **The account block has a new element and a new sentence to translate.** Only for a
   site that has Corex Profile on. `<noscript><p class="corex-account__noscript">` is the
-  first child of `.corex-account`: a site that styles the block itself, or selects its
-  first child, sees it with scripting off only. Two strings are new in the `corex` text
+  first child of `.corex-account`, and the second on the two page loads that say what
+  became of a password reset, where the reset's message line stays first: a site that
+  styles the block itself, or selects its first child, sees it with scripting off only. Two strings are new in the `corex` text
   domain: the note's, and "The site could not be reached, or its answer could not be
   read. Please try again." Nothing to rebuild: the block's script and stylesheet are not
   built.
+
+- **The password-reset email of a site that uses the account block links to the account
+  page, and a visitor chooses the new password there.** It applies to a site with the
+  Corex Profile add-on active and the `corex/account` block on a page; no other site sees a
+  change. The email's subject, wording and sender are unchanged: they are WordPress's. What
+  a site has to check: a page cache must pass a request with a query string to WordPress
+  (`?corex_reset_login=…&corex_reset_key=…`, then `?corex_reset=1`), which is what caches
+  do unless they were told to ignore query strings; and a site with code of its own that
+  calls `POST corex/v1/account/reset-request` keeps WordPress's link until it sends the
+  forgot-password form's hidden `page` field with the request. A plugin that rewrites the
+  whole reset email and leaves no address with the key in it is left alone. A reset asked
+  at `wp-login.php` is unchanged. For a site that styles the block itself: on the two page
+  loads that say what became of a reset, the block's first child is a
+  `.corex-account__status` again, with its `data-state`. Nothing to rebuild: no script or
+  style changed. Which client installs have the add-on on is in the entries below, and was
+  not read again for this one.
+
 - **The account block's message line moved, and its fields are 16 pixels narrower.** Only
   for a site that has Corex Profile on and styles the block itself. The one
   `.corex-account__status` that was the first child of `.corex-account` is gone; there is

@@ -405,6 +405,9 @@ Owners can trust that visible data is real, personal information is controlled, 
 - **FR-156**: Theme templates MUST cover Home, About, Services, Contact, Landing, Blog, Single Post, Portfolio/Project, Search, No Results, 404, Maintenance, Loading, Comments, Newsletter, and Footer as approved.
 - **FR-157**: Theme templates MUST use real site content or truthful empty states and MUST not embed business logic in the theme.
 - **FR-158**: Approved authentication/profile surfaces MUST provide login, registration, forgot/reset password, profile, notifications, and active-session workflows through the appropriate product layer.
+- **FR-158a**: The email of a password reset asked for at the account block MUST link to the page the reset was asked from, when that page is a published page of the site that showed the block. It MUST otherwise be left as WordPress writes it, and a reset asked at WordPress's own screen MUST NOT be changed. (DECISIONS #341)
+- **FR-158b**: A visitor who follows that link MUST be able to choose the new password on that page. The key MUST be out of the address before the page is drawn, the page MUST show the new-password form and no other, and a cache MUST NOT keep it.
+- **FR-158c**: Once the password is saved the page MUST say so, once, and offer the sign-in form. A key WordPress does not take MUST be answered with a message that says so, beside the form that asks for a new link.
 - **FR-159**: Authentication workflows MUST keep back-office and front-office concerns separate and preserve lockout-safe recovery.
 - **FR-160**: Approved Docs UI MUST provide sidebar, search, command palette, version selector, API/class reference, copy actions, previous/next, and on-page navigation.
 - **FR-161**: Every block and component MUST use product design tokens, direction-aware layout, conditional assets, accessible semantics, and resilient no-content/error states.

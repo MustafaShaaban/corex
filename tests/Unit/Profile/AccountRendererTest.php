@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Profile\Block\AccountRenderer;
+use Corex\Profile\Reset\ResetState;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -186,6 +187,7 @@ dataset('account panels', [
     'the signed-out panel with registration open'   => [['loggedIn' => false, 'registrationOpen' => true]],
     'the signed-out panel with registration closed' => [['loggedIn' => false, 'registrationOpen' => false]],
     'the signed-in panel'                           => [['loggedIn' => true]],
+    'the new-password panel of a reset'             => [['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')]],
 ]);
 
 it('prints no id twice', function (array $ctx) {
@@ -226,6 +228,7 @@ function accountScriptsOffNote(string $html): array
 dataset('account views', [
     'a visitor'          => [['loggedIn' => false, 'registrationOpen' => true]],
     'a signed-in person' => [['loggedIn' => true]],
+    'somebody choosing a new password' => [['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')]],
 ]);
 
 it('tells a browser that runs no scripts, once and before anything else, that the block needs them', function (array $ctx) {
@@ -235,6 +238,13 @@ it('tells a browser that runs no scripts, once and before anything else, that th
         ->and($note['before'])->toBe('')
         ->and($note['markup'])->toContain('JavaScript');
 })->with('account views');
+
+it('keeps what a password reset says first, and the note next, above the forms', function (ResetState $reset) {
+    $note = accountScriptsOffNote((new AccountRenderer())->render(['loggedIn' => false, 'reset' => $reset]));
+
+    expect($note['count'])->toBe(1)
+        ->and($note['before'])->toMatch('~^<p class="corex-account__status"[^>]*>[^<]+</p>$~');
+})->with(['a link that expired' => [ResetState::expired()], 'a password that was saved' => [ResetState::done()]]);
 
 it('names no other place to sign in in that note, which is in the page for anybody', function (array $ctx) {
     $note = accountScriptsOffNote((new AccountRenderer())->render($ctx));
