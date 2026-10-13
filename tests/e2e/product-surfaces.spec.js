@@ -215,14 +215,17 @@ const SIGNED_OUT_PURPOSES = {
 };
 
 /**
- * The `autocomplete` value of each text field of the block, by form and field name.
+ * The `autocomplete` value of each field of the block a person fills in, by form and field
+ * name. A tick box and a field that travels hidden with its form collect nothing.
  *
  * @param {import('@playwright/test').Page} page The page.
  * @return {Promise<Object>} For each form on the page, its fields' values; null where a field has none.
  */
 function fieldPurposes( page ) {
 	return page
-		.locator( '[data-corex-account-form] input:not([type="checkbox"])' )
+		.locator(
+			'[data-corex-account-form] input:not([type="checkbox"], [type="hidden"])'
+		)
 		.evaluateAll( ( fields ) => {
 			const purposes = {};
 			fields.forEach( ( field ) => {

@@ -22,6 +22,11 @@ use Corex\Profile\Account\AuthGateway;
 use Corex\Profile\Account\RegistrationRequest;
 use Corex\Profile\Account\WordPressAuthGateway;
 use Corex\Profile\Notification\NotificationService;
+use Corex\Profile\Reset\AccountPageMark;
+use Corex\Profile\Reset\ResetEmailLink;
+use Corex\Profile\Reset\ResetLanding;
+use Corex\Profile\Reset\ResetLink;
+use Corex\Profile\Reset\ResetTicket;
 use Corex\Profile\Session\SessionService;
 use Corex\Support\EmailAnswer;
 use DateTimeImmutable;
@@ -52,6 +57,32 @@ final class ProfileServiceProvider extends ServiceProvider
             NotificationService::class,
             static fn (ContainerInterface $c): NotificationService => new NotificationService($c->make(ActivityService::class)),
         );
+
+        $this->registerReset();
+    }
+
+    /**
+     * A password reset that begins and ends on the page the account block is on.
+     */
+    private function registerReset(): void
+    {
+        $this->container->singleton(AccountPageMark::class, static fn (): AccountPageMark => new AccountPageMark());
+        $this->container->singleton(ResetLink::class, static fn (): ResetLink => new ResetLink());
+        $this->container->singleton(ResetTicket::class, static fn (): ResetTicket => new ResetTicket());
+
+        $this->container->singleton(
+            ResetEmailLink::class,
+            static fn (ContainerInterface $c): ResetEmailLink => new ResetEmailLink($c->make(ResetLink::class)),
+        );
+
+        // One for the request: it reads the key before the template, and the block asks it after.
+        $this->container->singleton(
+            ResetLanding::class,
+            static fn (ContainerInterface $c): ResetLanding => new ResetLanding(
+                $c->make(ResetTicket::class),
+                $c->make(ResetLink::class),
+            ),
+        );
     }
 
     public function boot(): void
@@ -59,6 +90,8 @@ final class ProfileServiceProvider extends ServiceProvider
         add_action('rest_api_init', [$this, 'registerRoutes']);
         add_action('init', [$this, 'registerAssets']);
         add_action('init', [$this, 'registerBlock']);
+
+        $this->container->make(ResetLanding::class)->register();
     }
 
     public function registerAssets(): void
@@ -111,8 +144,11 @@ final class ProfileServiceProvider extends ServiceProvider
 
         $userId = get_current_user_id();
         $user   = $userId > 0 ? get_userdata($userId) : null;
+        $pageId = is_singular() ? get_queried_object_id() : 0;
 
         $ctx = [
+            'pageMark'         => $pageId > 0 ? $this->container->make(AccountPageMark::class)->of($pageId) : '',
+            'reset'            => $this->container->make(ResetLanding::class)->state(),
             'loggedIn'         => $userId > 0,
             'registrationOpen' => (bool) get_option('users_can_register', false),
             'nonce'            => wp_create_nonce('wp_rest'),
@@ -181,8 +217,14 @@ final class ProfileServiceProvider extends ServiceProvider
 
     public function requestReset(WP_REST_Request $request): WP_REST_Response
     {
-        $result = $this->container->make(AccountService::class)
-            ->requestPasswordReset(sanitize_text_field((string) $request['login']));
+        $login = sanitize_text_field((string) $request['login']);
+        $page  = $this->container->make(AccountPageMark::class)->publishedPage((string) $request['page']);
+
+        // The email links to the page the form was on, when that is a page of this site's.
+        $result = $this->container->make(ResetEmailLink::class)->during(
+            $page,
+            fn (): AccountResult => $this->container->make(AccountService::class)->requestPasswordReset($login),
+        );
 
         return $this->respond($result);
     }
@@ -195,6 +237,11 @@ final class ProfileServiceProvider extends ServiceProvider
             (string) $request['password'],
             (string) $request['password_confirm'],
         );
+
+        if ($result->success) {
+            // The page the form was on is loaded again, and says the password was changed.
+            $this->container->make(ResetTicket::class)->markUsed();
+        }
 
         return $this->respond($result);
     }
