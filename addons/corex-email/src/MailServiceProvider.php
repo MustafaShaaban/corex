@@ -22,6 +22,8 @@ use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\SiteEmailBrand;
 use Corex\Email\Design\SiteEmailDesign;
 use Corex\Email\Design\StandardEmailDesign;
+use Corex\Email\Language\EmailLanguage;
+use Corex\Email\Language\SiteLanguage;
 use Corex\Email\Log\EmailLogRepository;
 use Corex\Email\Log\EmailLogStore;
 use Corex\Email\Recipients\RecipientResolver;
@@ -110,6 +112,13 @@ final class MailServiceProvider extends ServiceProvider
             },
         );
 
+        // The language an email is drawn in: the site's, not that of the request that draws it,
+        // which in the admin is the signed-in person's own (DECISIONS #356).
+        $this->container->singleton(
+            EmailLanguage::class,
+            static fn (): SiteLanguage => new SiteLanguage(),
+        );
+
         // What an email is drawn from, and in. One design and one source of the site's brand,
         // for every email that is drawn through them (spec 106): a reply first.
         $this->container->singleton(SiteEmailBrand::class);
@@ -132,14 +141,21 @@ final class MailServiceProvider extends ServiceProvider
         // right-to-left site was drawn left to right (DECISIONS #351).
         $this->container->singleton(
             Layout::class,
+            // Asked in the email's language as well: an Email Studio template is wrapped by
+            // this layout with nothing else around it to say which way the site's text runs.
             static fn (ContainerInterface $c): Layout => new Layout(
-                static fn (): array => self::brand($c->make(SiteEmailBrand::class)->logo()),
+                static fn (): array => $c->make(EmailLanguage::class)->during(
+                    static fn (): array => self::brand($c->make(SiteEmailBrand::class)->logo()),
+                ),
             ),
         );
 
         $this->container->singleton(
             TemplateRenderer::class,
-            static fn (ContainerInterface $c): TemplateRenderer => new TemplateRenderer($c->make(Layout::class)),
+            static fn (ContainerInterface $c): TemplateRenderer => new TemplateRenderer(
+                $c->make(Layout::class),
+                $c->make(EmailLanguage::class),
+            ),
         );
 
         $this->container->singleton(UserDirectory::class, WpUserDirectory::class);

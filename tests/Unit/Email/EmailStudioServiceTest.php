@@ -31,6 +31,7 @@ use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailBrandSource;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\StandardEmailDesign;
+use Corex\Tests\Support\LanguageOfTheRequest;
 use Corex\Mail\MessageId;
 use Corex\Mail\ReplyConversation;
 use Corex\Mail\UnavailableSubmissionEmailGateway;
@@ -431,7 +432,7 @@ function replyGateway(array $settings, ?array $studio = null): EmailStudioSubmis
             {
                 return EmailBrand::standard('Acme', 'https://acme.test/');
             }
-        }),
+        }, new LanguageOfTheRequest()),
     );
 }
 

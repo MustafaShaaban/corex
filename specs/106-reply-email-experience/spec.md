@@ -450,6 +450,10 @@ of this story is built before he answers.
 - **FR-010**: The template MUST have a footer that names the site.
 - **FR-011**: The template MUST hold its layout and stay readable at phone width, in a mail client
   set dark, with images off, and right to left.
+- **FR-011a**: An email MUST be drawn in the site's language: its direction, its `lang` and the
+  words CoreX writes into it. It MUST NOT follow the language of the request that draws it, which
+  in the admin is the profile language of whoever is signed in. The words the person wrote keep
+  their own direction (story 2, scenario 4). Added 2026-10-13 (DECISIONS #356).
 - **FR-012**: The colours and type an email uses MUST be defined once, for every email CoreX
   sends, and not inside one add-on.
 - **FR-013**: Every reply MUST be sent with a plain-text version beside the HTML one, with the
