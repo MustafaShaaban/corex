@@ -16,7 +16,7 @@ defined('ABSPATH') || exit;
  * The email stays WordPress's: `retrieve_password()` makes the key, writes the email and
  * sends it, and whatever else filters that email still does. One thing in it is changed, the
  * address that carries the key, and only while a reset asked through the account block is
- * being answered. A reset asked at `wp-login.php` is not touched (DECISIONS #340).
+ * being answered. A reset asked at `wp-login.php` is not touched (DECISIONS #341).
  */
 final class ResetEmailLink
 {

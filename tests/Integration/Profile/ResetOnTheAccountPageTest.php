@@ -7,7 +7,7 @@
  * `wp-login.php?login=…&key=…&action=rp`. The member chose the new password on WordPress's
  * screen and was sent on to `wp-admin`, and never came back to the site's account page, which
  * had no form that takes a reset key. Where login protection hides the login, the link was the
- * hidden address (measured 2026-10-13 on WordPress 7.1.3, DECISIONS #340).
+ * hidden address (measured 2026-10-13 on WordPress 7.1.3, DECISIONS #341).
  *
  * No email leaves: `pre_wp_mail` is answered, and what was handed over is read.
  *

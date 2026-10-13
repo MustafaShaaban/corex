@@ -78,7 +78,7 @@ All notable changes to Corex are documented here. The format follows
   takes, is answered "This password reset link is invalid or has expired. Please ask for a
   new one." above the forms, one of which asks for one. The email is still WordPress's and is still
   sent by WordPress: one address in it is changed, and only for a reset asked through the
-  account block (DECISIONS #340).
+  account block (DECISIONS #341).
 
 - **A long email address registers without a username, and one too long for an account is
   refused with a reason.** The registration form's Username field is optional, and without

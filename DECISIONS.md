@@ -12617,7 +12617,7 @@ answer was "Registration is currently closed." from a site that was not this one
 numbers above are from a port with one listener, checked with `netstat` and by the site's
 name in the REST index.
 
-## #340 — A password reset asked for at the account block ends on the account page: WordPress's email, with its link to the page the reset was asked from
+## #341 — A password reset asked for at the account block ends on the account page: WordPress's email, with its link to the page the reset was asked from
 
 **Date:** 2026-10-13. **Branch:** `fix/account-reset-lands-on-the-site`. **Found by:** the
 measurement of the new member's email, which read the same link in the reset email and

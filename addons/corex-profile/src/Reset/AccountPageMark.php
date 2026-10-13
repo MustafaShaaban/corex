@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
  * A page number alone would let anybody have the email link to any page of the site. Whether
  * a page shows the block cannot be read from the page either: the theme's Account template
  * places the block, and the page's own content is empty. So the block signs the page as it
- * renders on it, and only a mark this site made is taken (DECISIONS #340).
+ * renders on it, and only a mark this site made is taken (DECISIONS #341).
  *
  * The mark is the same on every render, so a page that is served from a cache carries one
  * that still reads.

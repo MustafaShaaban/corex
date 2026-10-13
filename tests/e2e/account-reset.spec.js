@@ -5,7 +5,7 @@
  * Measured on 2026-10-13: the account block's reset email carried WordPress's own link, the
  * member chose the new password on `wp-login.php` and was sent on to `wp-admin`, and the
  * account page had no form that takes a reset key. Where login protection hides the login,
- * the link was the hidden address (DECISIONS #340).
+ * the link was the hidden address (DECISIONS #341).
  *
  * This is the walk a member makes, in a browser because three things in it exist nowhere
  * else: the form's script sends the page mark, the key is taken out of the address before

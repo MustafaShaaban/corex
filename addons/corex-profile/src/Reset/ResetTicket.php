@@ -16,7 +16,7 @@ defined('ABSPATH') || exit;
  *
  * It is how `wp-login.php` does it, and for the same reason. Left in the address, the key is
  * in the browser's history and is read by every script the page loads; an account page of a
- * client's site loads scripts `wp-login.php` does not (DECISIONS #340).
+ * client's site loads scripts `wp-login.php` does not (DECISIONS #341).
  */
 final class ResetTicket
 {
