@@ -313,7 +313,9 @@ final class MyBrandedNotification
 
 `Corex\Mail\Mailer` is bound by the mail add-on; a site without it has no mailer to inject.
 Without `notifiedAs()` nothing is raised for the email. With the mail queue on, `attempt()`
-answers `queued`, which counts as gone.
+answers `queued`, which counts as gone. A listener that hands the email to a queue of its own
+and sends it after the request has no result to report here, and there is no call that reports
+one later: a failure of such an email raises no notification.
 
 ### What the notification contains
 

@@ -475,7 +475,10 @@ All notable changes to Corex are documented here. The format follows
   email only if that listener says how it went:
   `$event->notifiedAs(NotificationDelivery::fromResult($mailer->attempt($request)))`, where
   the mailer is an `AttemptingMailer` (the one the mail add-on binds is). Without that line
-  nothing is raised for the email, as before. In PHP: `FormSubmittedEvent` gains
+  nothing is raised for the email, as before. That line is for a listener that sends while
+  the request runs. A site that queues the email and sends it afterwards (Muva does, from
+  WP-Cron) has no result to report then, and nothing in this change takes one later: its
+  failed notification emails raise no notification, as before. In PHP: `FormSubmittedEvent` gains
   `notifiedAs()` and `delivery()`; `Corex\Forms\Submission\SubmissionProcessedEvent` is now
   also dispatched for a form defined in code, with `flowId` 0
   (`SubmissionProcessedEvent::NO_FLOW`) and `ownerId` null, so a listener a site has on it

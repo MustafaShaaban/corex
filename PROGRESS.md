@@ -237,11 +237,13 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
-  only of what Email Studio's own service sent. A site whose form lists its own email
-  listener (Muva's two forms do) is told of a failed notification email only once that
-  listener calls `FormSubmittedEvent::notifiedAs()`; Bookings and Careers send through the
-  same mailer and were not looked at. With the mail queue on, an email that fails when the
-  queue sends it is reported by nothing (read, not run). DECISIONS #352.
+  only of what Email Studio's own service sent. A form's own email listener that sends
+  while the request runs reports it with `FormSubmittedEvent::notifiedAs()`. One that
+  sends afterwards cannot: Muva's two forms queue their emails and send them from WP-Cron
+  (its session's reading), and CoreX's own mail queue answers `queued`. Nothing takes a
+  submission id and a result after the event, so those failures raise no notification.
+  Bookings and Careers send through the same mailer and were not looked at.
+  DECISIONS #352.
 - **Naming a form in a notification reads the whole form catalog, which counts every
   form's submissions.** Measured: about 4 ms with a handful of submissions, 62 to 73 ms with
   10,000, once per stored submission on a site with no persistent object cache

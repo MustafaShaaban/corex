@@ -111,8 +111,9 @@ inbox to be told of.
   form's rows.
 - **`submission.email_failed`** (key `submission.email_failure:<form slug>`) is raised when the form's own
   notification email was tried and did not go. For a form registered in code that is known only if the listener that
-  sent the email says so. CoreX's `SendEmailListener` does. A listener of your own does it with one line, shown in the
-  forms guide under "A stored submission is announced".
+  sent the email says so. CoreX's `SendEmailListener` does. A listener of your own that sends while the request runs
+  does it with one line, shown in the forms guide under "A stored submission is announced". An email sent after the
+  request, from a queue, raises no notification when it fails.
 
 ## REST API
 

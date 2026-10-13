@@ -14576,18 +14576,28 @@ two emails where one did not go, the one somebody has to look at is that one. Wh
 listener said anything the delivery is `not_attempted` with the reason code
 `not_reported`, and no failed-email notification is raised.
 
-*A site that sends its own emails, as Muva does* (`SendBriefEmails`, `SendLeadEmails` in
-place of `SendEmailListener`, read on this machine): nothing is raised for a failed email
-unless its listener calls
-`$event->notifiedAs(NotificationDelivery::fromResult($mailer->attempt($request)))`. The
-mailer the mail add-on binds as `Corex\Mail\Mailer` (`QueuedMailer` over `RequestMailer`)
-is an `AttemptingMailer`, so `attempt()` is there to call. Read, not run: a mail sent
-through that mailer goes through `MailService`, not through Email Studio's service, so it
-does not raise `email.delivery_failed` either; before this change such a site was told of
-a failed notification email by nothing, and it still is until its listener adds that
-line. With the mail queue on, `attempt()` answers `queued`, which counts as gone: a
-failure when the queue later sends it is not reported to the notification centre by
-anything. Not built here.
+*A site whose own listener sends the email while the request runs* reports it with
+`$event->notifiedAs(NotificationDelivery::fromResult($mailer->attempt($request)))`;
+without that line nothing is raised. The mailer the mail add-on binds as
+`Corex\Mail\Mailer` (`QueuedMailer` over `RequestMailer`) is an `AttemptingMailer`, so
+`attempt()` is there to call. Read, not run: a mail sent through that mailer goes through
+`MailService`, not through Email Studio's service, so it does not raise
+`email.delivery_failed` either; before this change such a site was told of a failed
+notification email by nothing.
+
+*A site that sends after the request cannot report it, and this change does not let it.*
+Muva is one. Told by the Muva session on 2026-10-13, which read its checkout (I read only
+the two listeners' names): `SendBriefEmails` and `SendLeadEmails` write the emails, push
+them to a queue of Muva's own and return, so the form answers the visitor at once; a
+WP-Cron job calls the mailer later, with Muva's own retries, when the event is long gone.
+There is nothing true to say while the event is handled ("queued" would be honest and
+would tell the notification centre nothing), and nothing here takes a submission id and a
+result afterwards. The same holds for CoreX's own mail queue: with it on, `attempt()`
+answers `queued`, which counts as gone, and a failure when the queue sends it is reported
+to the notification centre by nothing. So Muva's failed notification emails raise no
+notification, as before. Covering that needs a call outside the event, by submission id
+or form slug, of the shape `SubmissionConversation::began($submissionId, $request)` has
+for a reply's thread. Not built: the owner has not asked for that notification.
 
 **The other producers** under `plugins/corex-config/src/Notifications/Producers/`, read
 for the same assumption (an event that only one of two paths dispatches):
@@ -14665,8 +14675,9 @@ now takes its form out of the one registry. Whole integration suite after: 1180 
 - *A failed email sent through `Corex\Mail\Mailer` is reported by nothing* unless the
   caller reports it (above). Bookings and Careers call `Mailer` too; whether they should
   raise a notification was not looked at.
-- *A queued email that fails when the queue sends it* is not reported to the notification
-  centre (read, not run).
+- *An email sent after the request, by CoreX's queue or a site's own, cannot raise the
+  failed-email notification*: it needs a call that takes a submission id and a result
+  outside the event (above).
 - *The catalog counts submissions for every reader* (measured above).
 - *The stale sentence in `NotificationFileLinkTest`'s header* about the registry is left
   as it is; the test still passes and was not otherwise touched.
@@ -14675,7 +14686,8 @@ now takes its form out of the one registry. Whole integration suite after: 1180 
 submission notification for submissions stored from then on; nothing is raised for those
 already in the inbox, and nothing is set. Muva's and Perego's forms all list
 `StoreSubmissionListener` (read on this machine), so each stored submission raises one.
-Perego's forms list no email listener, and Muva's list their own: neither gets the
-failed-email notification until a listener of theirs calls `notifiedAs()`. A site that
+Perego's forms list no email listener, so they have no notification email to fail. Muva's
+send theirs later, from a queue of its own, and cannot report through the event: Muva
+gets no failed-email notification from this change. A site that
 listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
 0; nothing under `sites/` in the Muva or Perego checkouts names that event.
