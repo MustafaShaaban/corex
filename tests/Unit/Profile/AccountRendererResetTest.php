@@ -58,7 +58,7 @@ it('shows the new-password form, and no other, to somebody who holds a reset key
 it('says a link has expired above the forms, where a new one can be asked for', function () {
     $html = (new AccountRenderer())->render(['loggedIn' => false, 'reset' => ResetState::expired()]);
 
-    expect($html)->toMatch('~<p class="corex-account__status" role="status" aria-live="polite" data-state="error">[^<]*expired[^<]*</p>~')
+    expect($html)->toMatch('~^<div[^>]*><p class="corex-account__status" role="status" aria-live="polite" data-state="error">[^<]*expired[^<]*</p>~')
         ->and($html)->toContain('data-corex-account-form="reset-request"')
         ->and($html)->not->toContain('data-corex-account-form="reset"');
 });
@@ -66,12 +66,12 @@ it('says a link has expired above the forms, where a new one can be asked for', 
 it('says the password was changed above the sign-in form', function () {
     $html = (new AccountRenderer())->render(['loggedIn' => false, 'reset' => ResetState::done()]);
 
-    expect($html)->toMatch('~<p class="corex-account__status" role="status" aria-live="polite" data-state="ok">[^<]*updated[^<]*</p>~')
+    expect($html)->toMatch('~^<div[^>]*><p class="corex-account__status" role="status" aria-live="polite" data-state="ok">[^<]*updated[^<]*</p>~')
         ->and($html)->toContain('data-corex-account-form="login"');
 });
 
-it('keeps the message line empty and hidden when there is nothing to say', function () {
+it('puts no line above the forms when a reset has nothing to say', function () {
     $html = (new AccountRenderer())->render(['loggedIn' => false, 'reset' => ResetState::none()]);
 
-    expect($html)->toContain('<p class="corex-account__status" role="status" aria-live="polite" hidden></p>');
+    expect($html)->toMatch('~^<div[^>]*data-corex-account[^>]*><div class="corex-account__grid">~');
 });

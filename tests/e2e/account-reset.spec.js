@@ -142,17 +142,47 @@ test( 'a forgotten password is reset on the account page', async ( {
 test( 'a link whose key was used says so, and a new one can be asked for', async ( {
 	page,
 } ) => {
+	await page.setViewportSize( { width: 375, height: 800 } );
 	await page.goto( usedLink );
 
-	await expect(
-		page.getByText( 'This password reset link is invalid or has expired.' )
-	).toBeVisible();
-	await expect(
-		page.locator( '[data-corex-account-form="reset-request"]' )
-	).toBeVisible();
+	// Above the forms and in the window when the page opens, on a phone too: the form
+	// that asks for a new link is the third, and nobody pressed its button.
+	const note = page.locator(
+		'[data-corex-account] > .corex-account__status:first-child'
+	);
+	await expect( note ).toHaveText(
+		'This password reset link is invalid or has expired. Please ask for a new one.'
+	);
+	await expect( note ).toBeInViewport( { ratio: 1 } );
+
+	// It stands off the forms by the block's own gap, as the block's parts do.
+	const gaps = await page
+		.locator( '[data-corex-account]' )
+		.evaluate( ( block ) => {
+			const forms = block.querySelector( '.corex-account__grid' );
+			return {
+				noteToForms: Math.round(
+					forms.getBoundingClientRect().top -
+						block.firstElementChild.getBoundingClientRect().bottom
+				),
+				block: Math.round(
+					parseFloat( window.getComputedStyle( block ).rowGap )
+				),
+			};
+		} );
+	expect( gaps.noteToForms ).toBe( gaps.block );
+
+	const forgot = page.locator( '[data-corex-account-form="reset-request"]' );
+	await expect( forgot ).toBeVisible();
 	await expect(
 		page.locator( '[data-corex-account-form="reset"]' )
 	).toHaveCount( 0 );
+
+	// The visitor's next answer takes the note's place.
+	await forgot.locator( 'input[name="login"]' ).fill( LOGIN );
+	await forgot.getByRole( 'button', { name: 'Email a reset link' } ).click();
+	await expect( forgot.getByText( 'If an account matches' ) ).toBeVisible();
+	await expect( note ).toBeEmpty();
 } );
 
 test( 'the new-password form is laid out as the other account forms are', async ( {
@@ -178,6 +208,9 @@ test( 'the new-password form is laid out as the other account forms are', async 
 			};
 			return {
 				form: box( el ),
+				padding: parseFloat(
+					window.getComputedStyle( el ).paddingInlineEnd
+				),
 				fields: Array.from(
 					el.querySelectorAll( 'input[type="password"]' ),
 					box
@@ -197,7 +230,10 @@ test( 'the new-password form is laid out as the other account forms are', async 
 		for ( const field of boxes.fields ) {
 			expect( field.left ).toBe( boxes.fields[ 0 ].left );
 			expect( field.width ).toBe( boxes.fields[ 0 ].width );
-			expect( field.right ).toBeLessThanOrEqual( boxes.form.right );
+			// Inside the form's padding, not only inside its border.
+			expect( field.right ).toBeLessThanOrEqual(
+				boxes.form.right - boxes.padding
+			);
 		}
 		expect( boxes.button.left ).toBe( boxes.fields[ 0 ].left );
 	}

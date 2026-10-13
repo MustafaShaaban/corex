@@ -16,9 +16,12 @@ use Corex\Profile\Reset\ResetState;
  * Pure renderer for the front-office account block. Given a request context it returns
  * the correct panel — the login/register/recovery forms for a guest, or the profile,
  * sessions, and notifications panels for a signed-in user. All dynamic values are
- * escaped; every form posts to the `corex/v1/account/*` REST routes via `account.js`
- * (progressive enhancement — the register/reset forms also carry a real nonce). No
- * WordPress state is read here, so the panel is unit-testable headlessly.
+ * escaped; every form posts to the `corex/v1/account/*` REST routes via `account.js`,
+ * with the REST nonce the block carries in `data-nonce`. No WordPress state is read
+ * here, so the panel is unit-testable headlessly.
+ *
+ * What the server answers is written under the button that asked: each form, and the
+ * session buttons, have a message line of their own (spec 068, FR-161a).
  *
  * Somebody who arrives from a reset email with a key WordPress takes is shown the
  * new-password form and nothing else, whoever is signed in on that browser (FR-158b).
@@ -43,17 +46,16 @@ final class AccountRenderer
             default                             => $this->guest($ctx),
         };
 
-        return '<div' . $attrs . '>' . $this->messageLine($reset) . $body . '</div>';
+        return '<div' . $attrs . '>' . $this->arrivalNote($reset) . $body . '</div>';
     }
 
     /**
-     * The line `account.js` writes the server's answers into. It is filled here for the two
-     * things a reset says on a page that has just been loaded.
+     * What a reset says on a page that has just been loaded, above the forms: nobody pressed
+     * a button for it to be written under. It is a message line like the others, so
+     * `account.js` empties it when the next answer is written.
      */
-    private function messageLine(ResetState $reset): string
+    private function arrivalNote(ResetState $reset): string
     {
-        $line = '<p class="corex-account__status" role="status" aria-live="polite"';
-
         [$state, $message] = match ($reset->step) {
             ResetState::EXPIRED => ['error', __('This password reset link is invalid or has expired. Please ask for a new one.', 'corex')],
             ResetState::DONE    => ['ok', __('Your password has been updated. You can now sign in.', 'corex')],
@@ -61,8 +63,9 @@ final class AccountRenderer
         };
 
         return $message === ''
-            ? $line . ' hidden></p>'
-            : $line . ' data-state="' . esc_attr($state) . '">' . esc_html($message) . '</p>';
+            ? ''
+            : '<p class="corex-account__status" role="status" aria-live="polite" data-state="' . esc_attr($state) . '">'
+                . esc_html($message) . '</p>';
     }
 
     /**
@@ -191,7 +194,9 @@ final class AccountRenderer
             . esc_html__('Sign out other sessions', 'corex') . '</button>'
             . '<button type="button" class="corex-account__btn" data-corex-account-action="revoke-all">'
             . esc_html__('Sign out everywhere', 'corex') . '</button>'
-            . '</div></section>';
+            . '</div>'
+            . $this->messageLine()
+            . '</section>';
     }
 
     private function notificationsPanel(): string
@@ -228,6 +233,17 @@ final class AccountRenderer
 
     private function submit(string $label): string
     {
-        return '<button type="submit" class="corex-account__submit">' . esc_html($label) . '</button>';
+        return '<button type="submit" class="corex-account__submit">' . esc_html($label) . '</button>'
+            . $this->messageLine();
+    }
+
+    /**
+     * The line `account.js` writes an answer into. It is printed empty and not hidden, so
+     * it is in the accessibility tree before its text changes; the stylesheet gives an
+     * empty line no box.
+     */
+    private function messageLine(): string
+    {
+        return '<p class="corex-account__status" role="status" aria-live="polite"></p>';
     }
 }

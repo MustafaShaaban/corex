@@ -76,7 +76,7 @@ All notable changes to Corex are documented here. The format follows
   address, shows a **Choose a new password** form and no other, and once the password is
   saved says so above the sign-in form. A link that was used, or that WordPress no longer
   takes, is answered "This password reset link is invalid or has expired. Please ask for a
-  new one." above the form that asks for one. The email is still WordPress's and is still
+  new one." above the forms, one of which asks for one. The email is still WordPress's and is still
   sent by WordPress: one address in it is changed, and only for a reset asked through the
   account block (DECISIONS #340).
 
@@ -114,6 +114,19 @@ All notable changes to Corex are documented here. The format follows
   and its owner signs in with the address as before. An email address typed into the
   Username field is treated the same way. An account with a username that is not an email
   address is named by it, as before (DECISIONS #335).
+
+- **The account block says what happened under the button that was pressed.** The
+  `corex/account` block had one message line, above its forms, for everything the server
+  answers: a refused sign-in, a refused registration, "a reset link is on its way", a saved
+  profile. With the button in the window the line was often outside it: 292 to 340 pixels
+  above a desktop window, and up to 521 above a phone's. A screen reader was told; somebody
+  looking at the button saw nothing happen. Each form now has a message line of its own
+  under its button, and so have the two session buttons. If the line would be outside the
+  window the page moves by the least that shows it, at once for a visitor who asked their
+  system for reduced motion. One answer is on the page at a time, written in one place, so
+  it is announced once; focus stays on the button. The line is as wide as the fields above
+  it: those reached 16 pixels past the form's inner edge on one side, and no longer do
+  (spec 068, FR-161a; DECISIONS #336).
 
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
@@ -257,10 +270,22 @@ All notable changes to Corex are documented here. The format follows
   calls `POST corex/v1/account/reset-request` keeps WordPress's link until it sends the
   forgot-password form's hidden `page` field with the request. A plugin that rewrites the
   whole reset email and leaves no address with the key in it is left alone. A reset asked
-  at `wp-login.php` is unchanged. Nothing to rebuild: no script or style changed. Which
-  client installs have the add-on on is in the next entry, and was not read again for this
-  one.
+  at `wp-login.php` is unchanged. For a site that styles the block itself: on the two page
+  loads that say what became of a reset, the block's first child is a
+  `.corex-account__status` again, with its `data-state`. Nothing to rebuild: no script or
+  style changed. Which client installs have the add-on on is in the entries below, and was
+  not read again for this one.
 
+- **The account block's message line moved, and its fields are 16 pixels narrower.** Only
+  for a site that has Corex Profile on and styles the block itself. The one
+  `.corex-account__status` that was the first child of `.corex-account` is gone; there is
+  one inside each `.corex-account__form`, after its button, and one inside
+  `.corex-account__sessions`. It no longer has the `hidden` attribute: an empty line is in
+  the page with no box, so a rule written for `.corex-account__status[hidden]` matches
+  nothing, and one for `.corex-account__status` now matches several elements. The fields
+  (`.corex-account__row input`) are sized with their padding and border inside their
+  width. Read on this machine: nothing under `sites/` in the Muva or Perego checkouts
+  names the block. Nothing to rebuild: the block's script and stylesheet are not built.
 - **An account registered through the account block before this release, with no
   username, keeps its email address as its display name** and nickname, and keeps the
   address, without its punctuation, in the address of its author page. Nothing rewrites
