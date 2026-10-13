@@ -25,11 +25,15 @@ final class FakeAuthGateway implements AuthGateway
     public bool $emailExists = false;
     public bool $usernameExists = false;
     public bool $acceptsUsername = true;
+    /** What the gateway answers for an address; null for the address itself. */
+    public ?string $loginForAddress = null;
     public int $currentUserId = 0;
     /** What the account would hold for a display name; null when that is the name as typed. */
     public ?string $displayNameAsKept = null;
     /** @var list<string> */
     public array $calls = [];
+    /** @var array{login: string, name: string}|null */
+    public ?array $created = null;
 
     public function registrationOpen(): bool
     {
@@ -51,9 +55,15 @@ final class FakeAuthGateway implements AuthGateway
         return $this->acceptsUsername;
     }
 
-    public function createUser(string $email, string $login, string $password): AccountResult
+    public function loginForAddress(string $email): string
+    {
+        return $this->loginForAddress ?? $email;
+    }
+
+    public function createUser(string $email, string $login, string $password, string $name): AccountResult
     {
         $this->calls[] = 'createUser';
+        $this->created = ['login' => $login, 'name' => $name];
 
         return AccountResult::ok('registered', 'ok', 42);
     }
@@ -213,6 +223,85 @@ it('refuses a username WordPress would store as a different one', function () {
         ->and($gateway->calls)->toBe([]);
 });
 
+it('gives an account with no username the login the gateway has for its address, and names it by the address', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->loginForAddress = 'janeshop-2';
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        'jane+shop@example.com',
+        'strongpassword',
+        'strongpassword',
+        '',
+        true,
+    ));
+
+    expect($result->success)->toBeTrue()
+        ->and($gateway->created)->toBe(['login' => 'janeshop-2', 'name' => 'jane+shop']);
+});
+
+it('names an account by the username somebody typed', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->loginForAddress = 'never-asked-for';
+
+    makeAccountService($gateway)->register(new RegistrationRequest(
+        'jane@example.com',
+        'strongpassword',
+        'strongpassword',
+        'Jane D',
+        true,
+    ));
+
+    expect($gateway->created)->toBe(['login' => 'Jane D', 'name' => 'Jane D']);
+});
+
+it('asks for a username when the gateway has no login for the address', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->loginForAddress = '';
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        'jane@example.com',
+        'strongpassword',
+        'strongpassword',
+        '',
+        true,
+    ));
+
+    expect($result->code)->toBe('username_required')
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('refuses an address longer than an account holds', function () {
+    $gateway = new FakeAuthGateway();
+    $address = str_repeat('a', 60) . '@' . str_repeat('b', 28) . '.example.com';
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        $address,
+        'strongpassword',
+        'strongpassword',
+        'jane',
+        true,
+    ));
+
+    expect(strlen($address))->toBe(101)
+        ->and($result->code)->toBe('email_too_long')
+        ->and($result->message)->toContain('100')
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('registers an address of the longest an account holds', function () {
+    $gateway = new FakeAuthGateway();
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        str_repeat('a', 60) . '@' . str_repeat('b', 27) . '.example.com',
+        'strongpassword',
+        'strongpassword',
+        'jane',
+        true,
+    ));
+
+    expect($result->success)->toBeTrue();
+});
+
 it('requires both fields to log in', function () {
     $gateway = new FakeAuthGateway();
     $result = makeAccountService($gateway)->login('', 'secret', false);
@@ -329,4 +418,17 @@ it('updates the current user profile', function () {
 
     expect($result->success)->toBeTrue()
         ->and($gateway->calls)->toBe(['updateProfile']);
+});
+
+it('refuses to change a profile to an address longer than an account holds', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->currentUserId = 7;
+
+    $result = makeAccountService($gateway)->updateProfile(7, [
+        'display_name' => 'Jane Doe',
+        'email' => str_repeat('a', 60) . '@' . str_repeat('b', 28) . '.example.com',
+    ]);
+
+    expect($result->code)->toBe('email_too_long')
+        ->and($gateway->calls)->toBe([]);
 });

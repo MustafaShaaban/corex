@@ -65,6 +65,41 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A long email address registers without a username, and one too long for an account is
+  refused with a reason.** The registration form's Username field is optional, and without
+  one the login is the email address. WordPress holds a login in 60 characters and an
+  address in 100. Measured on WordPress 7.1.3: an address of 61 characters or more with no
+  username was answered "Username may not be longer than 60 characters.", to somebody who
+  had typed none; and an address of 101 with a username was answered "Your account has been
+  created. You can now sign in." with no account stored, because WordPress reports no error
+  for an address its database does not take. Now an address of 61 to 100 characters gets a
+  login made from the part before the @ (what a login can hold of it, 60 characters at
+  most, with `-2` or the next free number when an account has it), and its owner signs in
+  with the address as everybody with no username does. The account is named by the part
+  of the address before the @, as any account with no username is. When no login can be
+  made, the form asks for a username (`username_required`). An address of more than 100
+  characters is refused at registration and on the Profile form, which failed silently in
+  the same way, with a message that says how long one may be (`email_too_long`). An address
+  of 60 characters or fewer is the login, as before. For a developer: `AuthGateway` has a
+  new method, `loginForAddress()`, and `createUser()` takes the account's name as a fourth
+  argument; a site's own gateway has to add both (DECISIONS #338).
+
+- **A new account with no username is no longer named by its email address.** The
+  registration form's Username field is optional, and an account made without one has its
+  address as its login. The account add-on handed that login to WordPress as the display
+  name, and WordPress made the nickname and the address of the author page from it too.
+  Measured on WordPress 7.1.3, for a visitor who is not signed in: a comment by
+  `dalia.hassan@example.com` was signed `dalia.hassan@example.com` on the post's page, in
+  `wp/v2/comments` and in the comments feed, and its markup had the class
+  `comment-author-dalia-hassanexample-com`; once a post was published in that account's
+  name, `wp/v2/users/<id>` gave the address as the name and `dalia-hassanexample-com` as
+  the slug, and the post's page and the posts feed named the address. Such an account is
+  now named by the part of its address before the @: the display name and the nickname are
+  `dalia.hassan`, and the author address is `dalia-hassan`. Its login is still the address,
+  and its owner signs in with the address as before. An email address typed into the
+  Username field is treated the same way. An account with a username that is not an email
+  address is named by it, as before (DECISIONS #335).
+
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
   is plain text. A template whose subject is "Price <500 EGP" was sent as "Price";
@@ -197,6 +232,22 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **An account registered through the account block before this release, with no
+  username, keeps its email address as its display name** and nickname, and keeps the
+  address, without its punctuation, in the address of its author page. Nothing rewrites
+  them: a display name may by now be one its owner chose, and a changed author address
+  breaks the links to it.
+  `wp user list --fields=ID,user_login,user_nicename,display_name,user_email` shows them:
+  such an account's login is its address. Its owner can change the display name
+  on the account block's **Profile** form. That does not change the nickname or the author
+  address, and, as measured, it does not change the comments already written: WordPress
+  copies the name into each comment when it is posted. From this release, on a site with
+  the add-on active and registration open, a new member who typed no username is shown
+  "Signed in as" the first part of their address, and their comments are signed with it.
+  Nothing to rebuild: no screen, script, style, route or interface changed. The add-on is
+  switched off on Muva by its own decision record, and is inactive, with registration
+  closed, on the Perego and Mizzey installs of the development machine, as read on
+  2026-10-13; their live hosts were not read.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The
