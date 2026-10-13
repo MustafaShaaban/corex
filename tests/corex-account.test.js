@@ -4,7 +4,7 @@
  * Loads the buildless script against jsdom, over the markup `AccountRenderer` prints, with the
  * server answered for. What they hold: a message is written beside the button that asked for
  * it, in one place, and is brought into the window when it would be outside it; and a request
- * that got no answer the script can read says so there too (FR-161c).
+ * that got no answer the script can read says so there too (FR-161e).
  */
 
 const SCRIPT = '../addons/corex-profile/assets/account.js';

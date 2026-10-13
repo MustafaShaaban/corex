@@ -12727,7 +12727,9 @@ name in the REST index.
 **Date:** 2026-10-13. **Branch:** `fix/account-failed-request-and-no-script`, on top of
 #336's branch. **Found by:** the session that built #336, which recorded both in
 `PROGRESS.md` and changed neither: one measured, one read from the script. Spec 068 gains
-FR-161c and FR-161d.
+FR-161e and FR-161d. The first was written as FR-161c: #342 (the fields' `autocomplete`
+values) was merged with that letter while this was open, so this one took the next that was
+free.
 
 ### 1. A request that gets no answer the block can read
 
@@ -13038,3 +13040,160 @@ Ten lines of the change were then put back one at a time and the tests run. A te
 for nine. The tenth, the end of the key in the pattern that finds the address, got a case
 of its own (a longer key that begins with the email's key is another key), and fails with
 it.
+
+## #342 — A field of the account block says what it is for; registration's own username does not yet, and the display name is a nickname
+
+**Date:** 2026-10-13. **Branch:** `fix/account-field-autocomplete`, from `main`. It was
+started and measured on top of pull request 381's branch (#337) and moved onto `main` when
+380, 381 and 382 merged the same afternoon. What is under "Measured after the change",
+and the registration with a `+` address with and without a value on the username, were
+measured again on `main` and came out the same. **Found by:** the session that built #337, which read
+`AccountRenderer::fieldsOf()` and left the lead in `PROGRESS.md`, not measured. Spec 068
+gains FR-161c. The numbers #339, #340 and #341 are on pull requests 383, 384 and 385, open
+when this was written.
+
+**What was there.** No field of the `corex/account` block had an `autocomplete` value; the
+field left for bots had `off`. WCAG 2.2 success criterion 1.3.5 (Identify Input Purpose,
+AA) asks for a value on a field that collects something about the person, and it is what a
+browser and a password manager read.
+
+**How it was measured.** WordPress 7.1.3, a WordPress of this worktree's own with
+registration open, Chromium 153.0.8010.12 (Playwright 1.63, the `chromium` channel, headless,
+a new empty profile for each run, started without `--enable-automation`). Four things were
+read: each field's attribute; the issues Chromium's developer tools raise (`Audits` over the
+DevTools protocol); what `chrome://autofill-internals` and
+`chrome://password-manager-internals` log about each form; and what each field holds after
+`Autofill.trigger` fills a form from a made-up saved address (`Autofill.setAddresses`).
+Chromium asked its autofill server about the forms, so a classification below is its local
+reading together with that server's answer. No popup was looked at: the browser was
+headless.
+
+**Measured before the change.**
+
+| What | Sign-in | Registration | Forgot password | Profile |
+|---|---|---|---|---|
+| Issues raised | none | `email` and `username`: the name is an autofill field name and the field has no `autocomplete` | none | `first_name` and `email`: the same |
+| Password manager, form as loaded | username `login`, password `password` | username `username`, **current** password `password`, new password `password_confirm` | not read as a credential form | not one |
+| Password manager, form typed in and sent | held `login` and `password`; after the page loaded again: "Decision: ASK the user" | held `username` (or `email` when the username was left empty), new password `password`, confirmation `password_confirm`; no decision to ask | not sent | not sent |
+
+So Chromium already offered to save at sign-in, with no value on any field. What it had
+wrong was the registration form as loaded, which it read as a form that changes a password
+(an old one and a new one), and the forgot-password form, which it did not connect to an
+account at all. After a registration it did not offer to save, typed username or not: the
+block answers in the page and the filled form stays there.
+
+**Each value against the HTML specification.** Read in the HTML Living Standard's table of
+autofill field names on 2026-10-13: `username` ("A username") and `email` ("Email
+address") belong to the group that may be on a text or an email field; `current-password`
+("The current password for the account identified by the username field (e.g. when logging
+in)") and `new-password` ("A new password (e.g. when creating an account or changing a
+password)") to the group that may be on a password field; `given-name`, `family-name`,
+`name` ("Full name") and `nickname` ("Nickname, screen name, handle: a typically short name
+used instead of the full name") to the group that may be on a text field. Each value is on
+a field of a type its group allows. WordPress 7.1.3's own screens, read in `wp-login.php`
+and `wp-admin/user-edit.php`, use the same ones: `username` and `current-password` at
+sign-in, `username` on the lost-password form, `new-password` twice on the reset form, and
+`given-name`, `family-name`, `nickname` and `email` on the profile.
+
+**What was built.** `AccountRenderer` holds one table, `PURPOSES`, of the value for each
+field by form and field name, and `fieldsOf()` now takes the block and the form and prints
+the value with the field. A field that is not in the table gets no attribute.
+
+| Form | Field | Value |
+|---|---|---|
+| sign-in | `login` | `username` |
+| sign-in | `password` | `current-password` |
+| registration | `email` | `email` |
+| registration | `username` | none (below) |
+| registration | `password`, `password_confirm` | `new-password` |
+| forgot password | `login` | `username` |
+| new password, after a reset link (#341) | `password`, `password_confirm` | `new-password` |
+| profile | `display_name` | `nickname` (below) |
+| profile | `first_name` | `given-name` |
+| profile | `last_name` | `family-name` |
+| profile | `email` | `email` |
+
+**Registration's own username has no value, and that was decided by measuring it.** The
+lead asked for `username` there, and it was built first. With it, Chromium classed the
+field as an email address (`html: HTML_TYPE_EMAIL`, where it was `UNKNOWN_TYPE` before),
+and a fill started from the Email field wrote the saved address into Email **and**
+Username; without the value it wrote Email only. For most addresses that makes the account
+it made before: with no username the login is the address already. For an address with a
+character a username cannot hold it does not. With `jane+…@example.test` saved, filled
+and sent: with the value the server answered "A username can have letters without accents,
+numbers, spaces and the characters _ . - @ and no others. Please choose another." and no
+account was made; without it the account was made, as #333 records for an address with a
+`+`. The same person, doing the same thing, would be refused after a change that was meant
+to help them, so the field is left as it was. The password manager read the registration
+form the same with and without that one value (username `username`, or `email` when it
+was left empty). What is lost: that field does not meet 1.3.5, and Chromium still raises
+its issue for it.
+
+The way to give it the value is in the account service, not in the block: a username that
+is the person's own address is no username. That is an account rule with its own cases
+(an address WordPress would alter, an address too long to be a login, which #338 gave a
+login of its own), and `AccountService.php` is in pull request 384, open as this is
+written, so it is handed over as a task and not built here.
+
+**The display name is a `nickname`, not a `name`.** It is the name a member is shown by on
+what they write, which is what the specification calls a screen name, and the form asks
+for the given and the family name in two fields of their own. Measured on the profile form
+of a signed-in person whose display name was `admin`:
+
+| Value on the display name | Chromium's type for it | Fill started from First name | Fill started from Display name | Issue raised |
+|---|---|---|---|---|
+| none (before) | `UNKNOWN_TYPE` | left as it was | not tried | none for this field |
+| `nickname` | unrecognised, autofill off for the field | left as it was | left as it was | `FormInputHasWrongButWellIntendedAutocompleteValueError` |
+| `name` | `NAME_FULL` | left as it was (Chromium did not write over a field that held something; the email was left too) | replaced by "Jane Mary Doe" | none |
+
+So with `nickname` Chromium does for that field what it did with no value, and with `name`
+it puts the full name of a saved address, middle name and all, where a public name is
+chosen. #335 was about a public name that showed more than the person meant. The price of
+`nickname` is that Chromium does not know the word, though the specification has it: its
+developer tools list the field's value as one it does not recognise. WordPress's own
+profile screen has the same on its nickname field.
+
+**Measured after the change**, same install and browser:
+
+- on the form a reset link leads to, which #341 added to `main` while this was open:
+  both passwords have `new-password`, no issue is raised, and the form is read as a new
+  password and its confirmation. Chromium reads no username there: the login travels in
+  a hidden field, which its password manager does not list among the form's fields, so
+  what it would save the new password under was not seen. Merging `main` in was clean
+  as text and broken as code: that form called `fieldsOf()` with the one argument it
+  took before, which #337's own tests caught;
+- signed out: every field has the value in the table; the only issue left is the one for
+  registration's `username`; the registration form as loaded is read as username
+  `username`, new password `password`, confirmation `password_confirm`, with no current
+  password; the forgot-password form is read as a form with a username, `login`;
+- typed in and sent, the sign-in form and the registration form are held as before, and
+  the offer to save comes after sign-in as before and not after a registration, as before;
+- with registration on the page Chromium's password manager now logs "Generation disabled:
+  no sync", which it did not log before: it reaches the question of offering a made-up
+  password and stops because the empty profile is signed in to nothing. The offer itself
+  was not seen;
+- `username` makes Chromium's address autofill treat the sign-in and the forgot-password
+  field as an email address, so it can offer a saved address's email there. Somebody signs
+  in with either, so that was left;
+- a registration filled from a saved address with a `+` in it is made, as before.
+
+**Not measured.** Firefox, Safari, and every password manager that is not Chromium's own.
+Firefox's `autocomplete` property was tried as a second parser's word on each value and
+told nothing: it was empty for every value here and for the two wrong ones set as a
+control. A Chrome signed in to an account, where a made-up password would be offered. Any
+popup. A screen reader.
+
+**Tests.** `tests/Unit/Profile/AccountRendererTest.php`, two tests: the value of every
+text field, by form and name, for the signed-out panel with registration open and for the
+signed-in panel, the field for bots and registration's username among them. Both failed
+before the change with every value empty. CI's site has registration closed, so these are
+what hold the registration form. `tests/e2e/product-surfaces.spec.js`, one test on the
+signed-out page: each field's value as the page is served, for the forms that are there.
+It failed before the change on the sign-in form and passes after it, run with registration
+open and with it closed, with the thirteen tests the spec already had.
+
+**Client impact.** The fields of the block gain an `autocomplete` attribute, and a
+browser's offers change with it: Chromium can offer a saved address's email on the sign-in
+and forgot-password fields, and reads the registration form as a new account. No id, name,
+class or route changed. Read on this machine on 2026-10-13: nothing under `sites/` in the
+Muva or Perego checkouts names the block.
