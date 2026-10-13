@@ -63,7 +63,29 @@ All notable changes to Corex are documented here. The format follows
   vector logo is passed over, since Gmail and Outlook draw nothing for one.
   `wp corex make:email-design` writes the same header (DECISIONS #322).
 
+- **The list of open access requests is answered to the people who decide them** (spec
+  079, FR-011a). `GET corex/v1/access/requests` needs a REST nonce and `manage_options`,
+  which is what the Access & Abilities screen and the decision route need. The route's
+  two methods were registered together under the check that suits asking for access;
+  each now has its own. Asking for access (`POST` on the same route) is open to anybody
+  signed in, as it was, and the screen shows its queue as it did (DECISIONS #346).
+
 ### Fixed
+
+- **In the account block, a list that did not load says so, and an empty one says it is
+  empty** (spec 068, FR-161f). A signed-in person's "Active sessions" and "Recent activity"
+  were a heading with nothing under it in both cases: when the request for the list did not
+  arrive, was answered with an error page, or was refused, and when there was nothing to
+  list. Each now shows its rows, or "No activity yet." (for sessions, "No sessions are
+  recorded for this account."), or, in the box of a refused form, "Your recent activity
+  could not be loaded. Load this page again to see it." (for sessions, "Your sessions could
+  not be loaded. Load this page again to see them."). The sentence stands where the list
+  would: it is not written as the answer to a button, so the page is not moved and no
+  other message is taken away. Rows shown earlier are not kept when a later request for
+  the list fails. **Sign out everywhere** now loads the page again, which shows the
+  sign-in form: it left the signed-out person on the member view, with the list emptied.
+  The two session buttons stand one spacing step under the list, which they touched
+  (DECISIONS #345).
 
 - **The account block says so when a request gets no answer, and when scripts are off.**
   Two cases in which pressing a button of the `corex/account` block did nothing that could
@@ -358,14 +380,20 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A script that reads `GET corex/v1/access/requests` has to be signed in as somebody
+  who may open CoreX Access & Abilities.** Anybody else is answered `403`. Nothing in
+  CoreX read the list through the route: the screen is handed it with the page. In PHP,
+  `AccessController::requests()` is gone; the route's two methods call
+  `pendingRequests()` and `createRequest()`.
+
 - **The account block has a new element and a new sentence to translate.** Only for a
   site that has Corex Profile on. `<noscript><p class="corex-account__noscript">` is the
   first child of `.corex-account`, and the second on the two page loads that say what
   became of a password reset, where the reset's message line stays first: a site that
-  styles the block itself, or selects its first child, sees it with scripting off only. Two strings are new in the `corex` text
-  domain: the note's, and "The site could not be reached, or its answer could not be
-  read. Please try again." Nothing to rebuild: the block's script and stylesheet are not
-  built.
+  styles the block itself, or selects its first child, sees it with scripting off only.
+  Two strings are new in the `corex` text domain: the note's, and "The site could not be
+  reached, or its answer could not be read. Please try again." Nothing to rebuild: the
+  block's script and stylesheet are not built.
 
 - **The password-reset email of a site that uses the account block links to the account
   page, and a visitor chooses the new password there.** It applies to a site with the

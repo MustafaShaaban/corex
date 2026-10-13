@@ -13475,6 +13475,241 @@ run: the lock and its release (the lock's test failed for each), the store's que
 route's, the form's and the store's repeat tests failed) and the service's reading of the
 store's answer (the unit test failed).
 
+## #345 — In the account block, a list that did not load says so in its own place, and an empty one says it is empty
+
+**Date:** 2026-10-13. **Branch:** `fix/account-lists-say-when-they-do-not-load`, on top of
+#339's branch (PR #383, open when this was written). **Found by:** the session that built
+#339, which read it from `account.js` and recorded it in `PROGRESS.md`. Spec 068 gains
+FR-161f. The numbers between are held elsewhere: #340 by open PR #384, #341 by #385 on
+`main`, #342 by #386 on `main`, #343 by open PR #387 and #344 by open PR #388. #386
+merged with FR-161c, the letter #339's first requirement had, and that one is FR-161e now;
+FR-161f was taken here to leave it the letter.
+
+**What was there.** `get( path, token )` returned `fetch(...).then( res => res.json() )`,
+with no rejection handler and without looking at `res.ok`. `loadSessions()` and
+`loadNotifications()` emptied their list and drew `data.sessions || []` and
+`data.notifications || []`.
+
+**Run before the change** (it had only been read). WordPress 7.1.3, a WordPress of this
+worktree's own, Chromium, the administrator signed in, at 1280 and at 375 pixels wide, both
+requests ended the same way by `page.route()`:
+
+| What became of the two requests | Under "Active sessions" | Under "Recent activity" | Errors nothing caught |
+|---|---|---|---|
+| answered by the site | one row | nothing, the list 0 px high (a new install has no activity) | none |
+| did not arrive (`route.abort()`) | nothing; the two buttons 0 px under the heading | nothing, 0 px | two, `TypeError: Failed to fetch` |
+| answered 500 with an HTML page | the same | the same | two, from `res.json()` |
+| answered 401 or 403 with WordPress's JSON | the same | the same | none: read as a list with nothing in it |
+
+A list that did not load and a list with nothing in it were one picture: a heading with
+nothing under it. Two more things were found while measuring.
+
+- *A later request that fails.* After a session button whose own request was answered and
+  whose refresh did not arrive, the list kept the rows of the first load: the `.then` never
+  ran. After a refresh answered 403, the list was emptied.
+- *Sign out everywhere, pressed for real* (in a session of its own on that install). The
+  POST is answered 200, "Signed out of every session." The refresh that follows is answered
+  403 `rest_cookie_invalid_nonce`, because nobody is signed in any more. The list is
+  emptied, and the page stays the member view, with its profile form. Nothing was pressed
+  after that.
+
+**What was weighed.**
+
+1. *Write it through `say()`, into the sessions panel's message line.* Refused. `say()` is
+   for the answer to a press (FR-161a): it empties every other message line and moves the
+   page to the line. Nobody pressed anything as the page opened, the page would arrive
+   scrolled to the foot of the block, and the activity panel has no such line.
+2. *A polite status of its own in each panel.* Refused. As the page opens the sentence is
+   content of the page, and "No activity yet." would be announced on every visit to a
+   person who asked nothing. What that leaves is under "Not announced".
+3. *A row in the list.* Refused: a list of one item that is not a session.
+4. *A sentence in the list's place.* **Built.**
+5. *A "Try again" button in the sentence.* Not built. The sentence names what does it,
+   loading the page again, which is also what shows the signed-out view to a person whose
+   session has ended (the 403 above). A button is a control with states of its own (asking,
+   failed again) for a list most people never see fail.
+
+**What is built.**
+
+- `get( path, rows, token )` resolves whatever happens: with the rows, none of them for an
+  empty list, or with `null` where there is no list to show. No list is a request that did
+  not arrive, an answer that is not JSON, a refusal whatever its body holds, and an answer
+  the list is not in. WordPress words a refusal for a developer ("Cookie check failed"),
+  and that is not shown.
+- `loadList( kind, token )` replaces `loadSessions()` and `loadNotifications()`; `SESSIONS`
+  and `ACTIVITY` hold what differs between the two. Under each heading there is one of
+  three things: the rows; "No sessions are recorded for this account." or "No activity
+  yet."; or "Your sessions could not be loaded. Load this page again to see them." or
+  "Your recent activity could not be loaded. Load this page again to see it."
+- The sentence is a `<p class="corex-account__list-note">` the script puts after the
+  `<ul>`, with `data-state="empty"` or `data-state="error"`. The `<ul>` is `hidden` while
+  it has no rows, so the accessibility tree holds no empty list. The script makes the
+  paragraph: `AccountRenderer` prints what it printed, and a theme that prints the two
+  lists itself gets the sentence too.
+- The four sentences are `corexAccount.i18n.noSessions`, `sessionsNotLoaded`, `noActivity`
+  and `activityNotLoaded`, translated in `ProfileServiceProvider::registerAssets()`, with
+  the English as the script's fallback, as the entries beside them have.
+- Rows drawn earlier are taken away when a later request brings no list. They are not
+  known to be what the site holds now, and after "Sign out other sessions" they are known
+  not to be.
+- When **Sign out everywhere** is answered as taken, the list is not asked for, and the
+  page is loaded again after the 600 ms a sign-in waits (`reloadSoon()`, which the sign-in
+  and reset forms now share). The page that comes back is the signed-out one.
+
+**An empty sessions list has a sentence too.** A person signed in by WordPress's cookie
+always has a session, and the brief for this change called an empty sessions list wrong.
+The site can still answer one truthfully: a plugin that signs a person in another way (a
+token, a single sign-on) sets the current user with no session token of WordPress's. What
+the site answered is said as it answered. An answer with no `sessions` in it is not an
+empty list, and says "could not be loaded".
+
+**How it looks.** With nothing to list, the sentence reads as a row would: the list's own
+colour (`ink-soft`), from where the heading starts, with no box. A list that could not be
+loaded is in the box of a refused form (`inverse` on `error`, the same padding and
+corner), so that "this did not work" has one look across the block.
+
+**The session buttons got a step above them.** Measured before the change with rows in the
+list: the buttons' top was 0 px under the last row's line, and with no rows 0 px under the
+heading. `.corex-account__actions` now has `margin-block-start` of the theme's spacing
+step 30, which is what its message line has under it. Without it the red box touched the
+buttons. It moves the buttons down in the ordinary state as well, by 10.7 px on that
+install.
+
+**Not announced.** The sentence is a paragraph and not a live region. As the page opens it
+is read where the list would be read. When it replaces the rows after a press, the answer
+to the press is announced by the buttons' own line, and the list changing above it is not,
+as it is not when the refresh succeeds. A refresh that fails after a press is therefore
+seen and not heard. It is in `PROGRESS.md`.
+
+### Measured after the change
+
+Same install, Chromium, at 1280 and 375 pixels wide, left to right and right to left; the
+numbers are the same in both directions.
+
+| Under the heading | Its top under the heading | The buttons under it | Their line under them |
+|---|---|---|---|
+| rows of sessions | 0 px, as before | 10.7 px | 10.7 px |
+| "could not be loaded", sessions | 7 px | 10.7 px | 10.7 px |
+| "could not be loaded", activity | 7 px | no buttons | |
+| "No activity yet." | 0 px | no buttons | |
+
+- The box is as wide as the heading (768 px, and 375 on the phone, where the theme's page
+  has no gutter: `PROGRESS.md`), 47 px high on the desktop and 72.6 on the phone, where it
+  takes two lines. "No activity yet." is one line of 25.6 px. The page does not scroll
+  sideways.
+- Contrast, from the computed colours: 5.51 to 1 for the box (white on `rgb(193, 53, 43)`),
+  5.8 to 1 for the plain sentence (`rgb(90, 103, 114)` on white).
+- No error is left uncaught in any of the endings, and the page is not moved: `scrollY` is
+  0 after both lists have failed, and no message line holds anything.
+- Chromium's accessibility tree, read over CDP with the sessions list failed: the heading
+  "Active sessions", a paragraph with the sentence, the two buttons, their status. No node
+  for the hidden list.
+- **Sign out everywhere, pressed for real**: the POST is answered 200, no request is made
+  for the list, the page is loaded again, and the sign-in form is on it.
+
+### Tests
+
+`tests/corex-account.test.js`, 24 new. For each list: the rows, the sentence for an empty
+list, six ways a request ends with no list, and that the sentence empties no message line
+and moves nothing. Then a refresh that fails after the rows were shown, a refresh that
+succeeds after a failure, signing out everywhere not putting a refused list in the rows'
+place, a refused sign-out drawing the list again, and the four English sentences. 21 of
+them failed before the change; the three that passed hold what was already so (rows are
+drawn; a refused sign-out draws the list again).
+
+`tests/e2e/product-surfaces.spec.js`, ten new, with the suite's saved administrator
+session; all ten failed before the change. Both lists ended three ways (aborted, an error
+page, WordPress's 403) on a phone; the box's place in the four windows, held to the theme's
+spacing steps as the page resolves them; the real sessions of the suite's own session, a
+step above the buttons; an empty activity list; and **Sign out everywhere**, which is
+answered in the test, so nothing is signed out and the suite keeps its session.
+`openAccount()` takes a fifth argument, what is set on the page before it opens.
+
+Each part of the change was taken out once and the tests run: ten removals, every one
+failed a test that names it.
+
+`AccountRendererTest` is not changed: the markup is not.
+
+### Found, and not changed
+
+- **The session in use is never marked "this device".** Every answer of
+  `GET account/sessions` on that install carried `"current": false`, for the only session
+  too. `SessionService::active()` hands `WP_Session_Tokens::get_all()` to
+  `SessionList::format()`, which compares each key with the current session's verifier;
+  `get_all()` returns `array_values()`, so the keys are 0, 1, 2. `SessionListTest` passes
+  an array keyed by verifier, which WordPress never does.
+- **A row of recent activity is an internal name and a machine's date**
+  (`profile.updated · 2026-10-13T09:00:00+00:00`), and a row of sessions is the browser's
+  whole user agent string.
+- **Recent activity is not asked for again after a profile is saved** (read from the
+  script: only the sessions are), so the save is not listed until the page is loaded again.
+
+All three are in `PROGRESS.md`.
+
+### Client impact
+
+Only for a site with Corex Profile on and the block on a page. Four new strings in the
+`corex` text domain. The two session buttons stand one spacing step lower. A theme that
+styles the block has a new element to style, `.corex-account__list-note` with its
+`data-state`, and the two lists are `hidden` while they have no rows. After **Sign out
+everywhere** the page is loaded again. `get()`, `loadSessions()` and `loadNotifications()`
+were inside the script's closure, so nothing outside can have called them.
+
+## #346 — The list of open access requests has the Access screen's check, and asking for access keeps its own
+
+**Date:** 2026-10-13. **Branch:** `fix/access-requests-list`, from `main`.
+
+**The decision.** `corex/v1/access/requests` is one route with two methods, and they were
+registered together: one callback that looked at the method, one permission check. The
+check was the one that suits `POST`, where anybody signed in may ask for access. They are
+now two registrations. `GET` has `allowed()`, a REST nonce and `manage_options`; `POST`
+keeps `requestAllowed()`, a REST nonce and a signed-in session.
+
+**Why `manage_options` and not the `corex_manage_access` ability.** The list is the queue
+on CoreX Access & Abilities. That screen's menu entry asks for `manage_options`
+(`AccessScreen::menu()`), and so does the route that decides a request. A role given
+`corex_manage_access` and not `manage_options` opens neither today, so a list with the
+ability's check would be read by people who can do nothing with it.
+
+**A lead, not built.** The notification of a new request is addressed by the ability
+(`AccessRequestNotificationProducer`). An administrator holds it, so the people who decide
+are told. A role given the ability in the matrix and not `manage_options` is addressed as
+well (a notification is read by `current_user_can()` of its ability), and its link is to a
+screen that refuses them. Read in the code, not walked in a browser. Moving the screen to
+the ability is a change of its own: the menu entry, the decision route and the list would
+move together.
+
+**A person's own requests are not answered by the route.** The contract of spec 068 called
+`GET` "accessible requests", which reads as if each person had some. Nothing in CoreX calls
+`GET`: the screen is handed the queue with the page (`corexAccess.requests`), and the
+screen that refuses somebody reads that person's own open request on the server
+(`CurrentUserAccessRequests`), from the session and never from a passed id. Answering "your
+own" here would be a second shape of answer on one route, and a read by requester in the
+store, for no caller. The contract now says for whom the list is; a surface that lists a
+person's own requests gets a read of its own when it is built.
+
+**Measured after the change**, on WordPress 7.1.3 over HTTP, on this branch's own install,
+with two open requests from two people: the administrator is answered `200` with both; a
+subscriber who asked for nothing, each of the two requesters and an author are answered
+`403`; a visitor who is not signed in, and a signed-in request with no nonce, `401`. The
+Access screen is handed both requests with the page. An author's `POST` is answered `200`
+and stored; the author deciding their own request is answered `403`; the administrator's
+decision is recorded. No email left the install: `pre_wp_mail` was answered in the served
+process and in the tests.
+
+**Tests.** `tests/Integration/Access/AccessRequestsReadTest.php`, through the REST server
+and not by calling the controller, because the promise is the permission check and a call
+to the method never reaches it. An administrator is handed the list; a subscriber, a
+contributor, an author, an editor and the person who filed the request are answered `403`
+and nothing of the request is in the answer; a visitor `401`; a person who manages nothing
+can still ask. The five refusals failed before the change. The other three passed before
+it and hold what must not change.
+
+**Client impact.** A script that read the list as somebody without `manage_options` is
+answered `403`. `AccessController::requests()` is gone: `pendingRequests()` and
+`createRequest()` are the route's callbacks. Read on this machine on 2026-10-13: nothing
+under `sites/` in the Muva or Perego checkouts names the route or the controller.
+
 ## #350 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
 
 **Date:** 2026-10-13. **Branch:** `fix/access-route-refusals`. **Found by:** the measurement

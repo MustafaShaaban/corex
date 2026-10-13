@@ -63,10 +63,19 @@ final class AccessController
             'callback' => [$this, 'applyRole'],
             'permission_callback' => [$this, 'allowed'],
         ]);
+        // One route, two questions, and a check for each: anybody signed in may ask for access,
+        // and the queue of what was asked is for the people who decide it.
         register_rest_route(self::NAMESPACE, '/access/requests', [
-            'methods' => ['GET', 'POST'],
-            'callback' => [$this, 'requests'],
-            'permission_callback' => [$this, 'requestAllowed'],
+            [
+                'methods' => 'GET',
+                'callback' => [$this, 'pendingRequests'],
+                'permission_callback' => [$this, 'allowed'],
+            ],
+            [
+                'methods' => 'POST',
+                'callback' => [$this, 'createRequest'],
+                'permission_callback' => [$this, 'requestAllowed'],
+            ],
         ]);
         register_rest_route(self::NAMESPACE, '/access/requests/(?P<id>\d+)/decision', [
             'methods' => 'POST',
@@ -135,12 +144,8 @@ final class AccessController
         });
     }
 
-    public function requests(WP_REST_Request $request): WP_REST_Response
+    public function pendingRequests(WP_REST_Request $request): WP_REST_Response
     {
-        if ($request->get_method() === 'POST') {
-            return $this->createRequest($request);
-        }
-
         return $this->ok(['requests' => $this->pending->all()]);
     }
 

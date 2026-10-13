@@ -143,7 +143,8 @@
 	margin-block-start: var(--wp--preset--spacing--30);
 }
 
-.corex-account__status[data-state="error"] {
+.corex-account__status[data-state="error"],
+.corex-account__list-note[data-state="error"] {
 	background-color: var(--wp--preset--color--error);
 	color: var(--wp--preset--color--inverse);
 }
@@ -159,10 +160,15 @@
 	gap: var(--wp--preset--spacing--50);
 }
 
+/*
+ * The session buttons stand one step under the list, or under the sentence in
+ * its place, as their message line stands one step under them.
+ */
 .corex-account__actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--wp--preset--spacing--30);
+	margin-block-start: var(--wp--preset--spacing--30);
 }
 
 .corex-account__session-list,
@@ -170,6 +176,23 @@
 	margin-block: 0;
 	padding-inline-start: var(--wp--preset--spacing--40);
 	color: var(--wp--preset--color--ink-soft);
+}
+
+/*
+ * What stands in a list's place under "Active sessions" or "Recent activity"
+ * when the script has no rows to draw. With nothing to list it reads as a row
+ * would. A list that could not be loaded is said in the box of a refusal.
+ */
+.corex-account__list-note {
+	margin-block: 0;
+	overflow-wrap: anywhere;
+	color: var(--wp--preset--color--ink-soft);
+}
+
+.corex-account__list-note[data-state="error"] {
+	margin-block-start: var(--wp--preset--spacing--20);
+	padding: var(--wp--preset--spacing--30);
+	border-radius: var(--wp--custom--radius--sm);
 }
 
 /*

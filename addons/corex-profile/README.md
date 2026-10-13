@@ -28,6 +28,13 @@ theme only presents it.
   or is answered with something that is not JSON, or is refused with no message, is said
   in that line too, in one sentence the server hands the script
   (`corexAccount.i18n.noAnswer`).
+- **The two lists of the signed-in view**, active sessions and recent activity, are loaded
+  by `account.js`. Under each heading there is the list, or a sentence in its place
+  (`<p class="corex-account__list-note">`, which the script adds after the `<ul>`):
+  `data-state="empty"` when the server answered with nothing to list, `data-state="error"`
+  when the list could not be loaded. The four sentences are handed to the script as
+  `corexAccount.i18n.noSessions`, `sessionsNotLoaded`, `noActivity` and
+  `activityNotLoaded`. After **Sign out everywhere** the page is loaded again.
 - **With scripting off** the block shows a note above its forms
   (`<noscript><p class="corex-account__noscript">`) saying that they need JavaScript. A
   form sent anyway goes to the page's own address, which does not answer it: the forms do
@@ -168,11 +175,15 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
   `NotificationListTest`, `AccountRendererTest`.
 - Script: `tests/corex-account.test.js` (Jest) — where an answer is written, that one is on
   the page at a time, how the line is brought into view, and what is said when a request
-  gets no answer the script can read.
+  gets no answer the script can read; and what each of the two lists shows: its rows, that
+  there is nothing to list, or that it could not be loaded.
 - Browser: `tests/e2e/product-surfaces.spec.js` — the message is inside the window, under
   its button and as wide as the fields, on a desktop and a phone, in both directions; a
   sign-in whose request is aborted, or answered with an error page, says so in its form;
-  with scripting off the note is above the forms and inside the window.
+  with scripting off the note is above the forms and inside the window; a signed-in
+  person's two lists say so when their requests are aborted, answered with an error page or
+  refused, in a box a step under the heading and a step above the session buttons; **Sign
+  out everywhere** loads the page again.
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
