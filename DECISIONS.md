@@ -13713,9 +13713,11 @@ under `sites/` in the Muva or Perego checkouts names the route or the controller
 ## #348 — A row of the account block's two lists is written for a person: the server words a sentence, a device name and a date, and the script prints them
 
 **Date:** 2026-10-13. **Branch:** `fix/account-list-rows-for-a-person`, on top of #345's branch
-(PR #389, open when this was written, itself on #339's PR #383). **Found by:** the session
+(PR #389, open when this was written; #339's PR #383 under it merged while this was
+built). **Found by:** the session
 that built #345, which saw it in a browser and recorded it in `PROGRESS.md`. Spec 068 gains
-FR-161g. The numbers around it are held elsewhere: #346 by open PR #390, #347 by open PR
+FR-161g. The numbers around it are held elsewhere: #346 by PR #390, merged while this was
+built, #347 by open PR
 #391, #349 by open PR #392 (the session in use is marked "this device"; it left #348 and
 FR-161g to this change) and #350 by open PR #393.
 
