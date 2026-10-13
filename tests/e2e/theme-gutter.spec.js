@@ -103,6 +103,31 @@ const paths = {
 	'archive-corex_project': '/projects/',
 };
 
+/**
+ * The class WordPress gives the `<body>` of each page read here, by which a page is known to be
+ * the one it is read as. Without it a "Page not found" passes for any template: it has text, a
+ * gutter and no sideways scroll, and it is what a project's address answered on the first run of
+ * this file on a newly provisioned site.
+ */
+const BODY_CLASS = {
+	'front-page': 'home',
+	page: 'page-template-default',
+	...Object.fromEntries(
+		PAGE_TEMPLATES.filter( Boolean ).map( ( template ) => [
+			template,
+			`page-template-${ template }`,
+		] )
+	),
+	[ PATTERNS ]: 'page-template-default',
+	single: 'single-post',
+	archive: 'category',
+	search: 'search-results',
+	'search, nothing found': 'search-no-results',
+	404: 'error404',
+	'single-corex_project': 'single-corex_project',
+	'archive-corex_project': 'post-type-archive-corex_project',
+};
+
 /** Every template in theme/templates but `index`, which a site reaches only as its posts page. */
 const TEMPLATES = [
 	'front-page',
@@ -211,7 +236,7 @@ async function everyPattern( { page, nonce } ) {
 const pathOf = ( link ) => new URL( link ).pathname;
 
 /**
- * Go to one of the pages and set the direction it is read in.
+ * Go to one of the pages, see that it is that page, and set the direction it is read in.
  *
  * @param {import('@playwright/test').Page} page      The page.
  * @param {string}                          name      A key of `paths`.
@@ -219,6 +244,10 @@ const pathOf = ( link ) => new URL( link ).pathname;
  */
 async function visit( page, name, direction ) {
 	await page.goto( paths[ name ] );
+	await expect(
+		page.locator( 'body' ),
+		`${ paths[ name ] } is read as ${ name }`
+	).toHaveClass( new RegExp( `(^|\\s)${ BODY_CLASS[ name ] }(\\s|$)` ) );
 	await page
 		.locator( 'html' )
 		.evaluate(
@@ -380,6 +409,12 @@ test.beforeAll( async ( { browser } ) => {
 		LONG_AGO
 	);
 	paths[ 'single-corex_project' ] = pathOf( project.link );
+
+	// A project's address, and the archive's, answer "Page not found" on a site whose permalink
+	// rules were last saved before the portfolio add-on was switched on: nothing in the framework
+	// saves them again (PROGRESS.md, "Open, and not hidden"). WordPress saves them whenever its
+	// Permalinks screen is opened, and what is measured here is the templates, so it is opened.
+	await session.page.goto( '/wp-admin/options-permalink.php' );
 
 	await session.context.close();
 } );

@@ -12982,3 +12982,13 @@ content prints it full width, which holds a template added later. That the gutte
 token and not a written size was already held (`ThemeJsonTest.php`). Written before the change and seen to fail for it; then the root padding, the
 content block's alignment, the form's grid, the header's rule and the search template were
 each taken out once, and tests failed for each.
+
+**What the first run in CI showed.** Ten tests failed there, all for the project template:
+the project's address answered "Page not found" (CI saves the permalink rules before the
+add-ons are switched on, and nothing saves them again; PROGRESS.md). The four tests that
+only read text had passed on that page, because a "Page not found" has text, a gutter and
+no sideways scroll. So every visit now first holds the page to the class WordPress gives
+its `<body>` (`single-corex_project`, `error404`, `page-template-page-landing`, …), and the
+spec opens WordPress's Permalinks screen, which saves the rules, before it reads a
+project. With the site put in CI's state and that step taken out, the two project tests
+fail in six seconds and name the page they were given.

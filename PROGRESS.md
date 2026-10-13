@@ -265,6 +265,17 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   column, 38 pixels wide, beside the button. What a message looks like there was not
   looked at. In a window 600 pixels wide or less it has the row to itself since DECISIONS
   #344. Not changed.
+- **A project's address is "Page not found" until the permalink rules are saved again.**
+  Seen on 2026-10-13 in the browser job of pull request #388: on a newly provisioned site
+  `/projects/<a project>/` served the 404 template. That site's rules were saved before
+  its add-ons were switched on. Reproduced on a local install by saving the rules with no
+  plugin loaded: 404, and found again after WordPress's Permalinks screen was opened. Read:
+  `PortfolioServiceProvider` registers `corex_project` with the address `projects`, and
+  nothing under `plugins/`, `addons/` or `packages/` calls `flush_rewrite_rules()`. Not
+  measured: whether switching the add-on on at CoreX → Add-ons, or applying the portfolio
+  kit, leaves a site in that state, and whether another add-on's post type has the same.
+  `tests/e2e/theme-gutter.spec.js` opens the Permalinks screen before it reads a project,
+  and says why. Not changed.
 - **A theme made by `wp corex make:site` starts with no gutter.** Read from
   `packages/cli/stubs/site/theme-json.stub`, not run: it sets
   `useRootPaddingAwareAlignments` and no root padding, as the Corex theme did, and its
