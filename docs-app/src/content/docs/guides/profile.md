@@ -62,6 +62,19 @@ The line is `<p class="corex-account__status" role="status">`, inside each
 it is empty. It takes its colours from the theme's `error`, `success` and `inverse`
 colour presets.
 
+### Selecting a field
+
+Select a field by its form and its name, not by its id:
+
+```css
+[data-corex-account-form="register"] input[name="password"] { /* … */ }
+```
+
+A field's id is there to tie its label to it. It holds the number of the block among
+the account blocks WordPress rendered for the page (`corex-account-1-register-password`),
+so that a page with two of them has no id twice, and that number is not promised to stay
+the same. The forms are `login`, `register`, `reset-request` and `profile`.
+
 ## Usernames
 
 The registration form's **Username** field is optional.

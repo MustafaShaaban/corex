@@ -122,6 +122,8 @@ final class ProfileServiceProvider extends ServiceProvider
             'firstName'        => $user ? (string) $user->first_name : '',
             'lastName'         => $user ? (string) $user->last_name : '',
             'email'            => $user ? (string) $user->user_email : '',
+            // A page can hold the block twice: each one's fields get ids of their own.
+            'instance'         => wp_unique_prefixed_id('corex-account-'),
         ];
 
         return (new AccountRenderer())->render($ctx);
