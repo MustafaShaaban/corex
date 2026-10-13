@@ -320,17 +320,41 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   `WP_Session_Tokens::get_all()` returns `array_values()`, so the keys are 0, 1, 2.
   `SessionListTest` passes an array keyed by verifier, which WordPress never does. Not
   changed (seen while building DECISIONS #345).
-- **A row of the account block's two lists is written for a machine.** Recent activity
-  lists `profile.updated · 2026-10-13T09:00:00+00:00`, an internal name and an ISO date; a
-  session is the browser's whole user agent string. And recent activity is not asked for
-  again after a profile is saved, so the save is not listed until the page is loaded again
-  (read from the script). Not changed.
+- **The account block's "Recent activity" lists two things, because two are recorded.** A
+  row is a sentence and a date now, and a session is named by its browser and system
+  (DECISIONS #348, spec 068 FR-161g). What the add-on records is a saved profile and
+  signing out the other sessions. Signing in, a changed or reset password, a new account
+  and **Sign out everywhere** write no activity event (read from
+  `ProfileServiceProvider`), so the list is silent about the things a person most wants to
+  see there. Recording them is a change to what the product keeps about a person, with a
+  retention period, and is the owner's to ask for.
+- **What a person did elsewhere in the product is not in the account block's list.** The
+  add-on has a sentence for its own two kinds and lists no other (#348). A member who
+  asked for access is the actor of `access.request.created` and is not shown it there;
+  the Access add-on would have to word it. No way for another module to add a sentence
+  was built: nothing asks for one yet.
+- **A session's IP address is not shown in the account block. My reading, the owner's to
+  overrule.** WordPress records the address the request came from, which behind a proxy
+  or a CDN is the proxy's unless the host puts the visitor's back; an address means little
+  to most people, and it is personal data on a page read over a shoulder (#348). It is
+  still in the route's answer. A session's name is read from a few tokens of its user
+  agent: Brave and Vivaldi read as Chrome, an iPad asking for desktop pages as a Mac.
+- **On an Arabic site the account block's rows are English sentences in a right-to-left
+  line.** Measured on 2026-10-13 with WordPress's Arabic pack: the month and the am/pm
+  mark of a date are Arabic ("أكتوبر 13, 2026 at 1:33 م"), the sentence, "Signed in" and
+  "at" are English, and an English sentence's full stop is drawn at its left. The layout
+  is right; the words wait for the Arabic catalogue `PROJECT-STATUS.md` says is owed.
 - **A list of the account block that does not load after a press is seen and not heard.**
   The sentence in the list's place ("Your sessions could not be loaded. Load this page
   again to see them.") is a paragraph and not a live region, so that it is not announced
   on every visit as the page opens (DECISIONS #345, spec 068 FR-161f). The answer to the
   press is announced; the list failing to refresh above it is not. There is no button to
   try again: the sentence says to load the page.
+- **Whether WebKit still calls the account block's two lists lists was not measured.**
+  They are drawn without bullets, and Safari with VoiceOver is known to stop announcing a
+  list whose bullets are taken away; `role="list"` on the two `<ul>`s is the usual remedy
+  and is what was added (#348). Chromium's tree was not the question, and no screen reader
+  was listened to.
 - **No screen reader was listened to on the account block.** That an answer is announced,
   and once, is read from where it is written (one polite status, in the page before its
   text changes; three of them in Chromium's accessibility tree on the signed-out page,

@@ -250,11 +250,15 @@ final class AccountRenderer
             . '</form>';
     }
 
+    /**
+     * The two lists are drawn without bullets, and WebKit stops calling a list a list when
+     * its bullets are taken away: the role says it again (FR-161g).
+     */
     private function sessionsPanel(): string
     {
         return '<section class="corex-account__sessions" data-corex-account-sessions>'
             . '<h3 class="corex-account__subtitle">' . esc_html__('Active sessions', 'corex') . '</h3>'
-            . '<ul class="corex-account__session-list" data-corex-account-session-list></ul>'
+            . '<ul class="corex-account__session-list" role="list" data-corex-account-session-list></ul>'
             . '<div class="corex-account__actions">'
             . '<button type="button" class="corex-account__btn" data-corex-account-action="revoke-others">'
             . esc_html__('Sign out other sessions', 'corex') . '</button>'
@@ -269,7 +273,7 @@ final class AccountRenderer
     {
         return '<section class="corex-account__notifications" data-corex-account-notifications>'
             . '<h3 class="corex-account__subtitle">' . esc_html__('Recent activity', 'corex') . '</h3>'
-            . '<ul class="corex-account__notification-list" data-corex-account-notification-list></ul>'
+            . '<ul class="corex-account__notification-list" role="list" data-corex-account-notification-list></ul>'
             . '</section>';
     }
 
