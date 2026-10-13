@@ -97,6 +97,11 @@ Config::get('missing.key', 'fallback');
   `update_option()`, the settings UI and `wp option update corex_app_name "My site"` store one.
   A key with no override costs no query. An option stored with autoload off
   (`--autoload=no`) is not read: `wp option set-autoload corex_app_name on` makes it one.
+- The project root is the directory two levels above this plugin's real location, and the
+  `.env` is read from nowhere else. Linked into WordPress from a repository, that is the
+  repository. Copied into `wp-content/plugins/`, that is `wp-content/`, inside the web root:
+  do not create a `.env` there, set options. Environment variables of the server are not
+  read. See `docs/en/05-deployment/secrets-backups-zero-downtime.md`.
 - A missing `.env` is fine; a malformed `.env` is logged and ignored — boot continues on
   options/defaults. See `.env.example`.
 

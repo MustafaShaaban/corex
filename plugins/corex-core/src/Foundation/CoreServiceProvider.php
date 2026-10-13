@@ -172,6 +172,11 @@ final class CoreServiceProvider extends ServiceProvider
         return $defaults;
     }
 
+    /**
+     * The one directory a `.env` is read from: two levels above this plugin's real location
+     * (`__FILE__` follows a link). Linked into WordPress from a repository, that is the
+     * repository. Copied into wp-content/plugins/, it is wp-content/, inside the web root.
+     */
     private function projectRoot(): string
     {
         return dirname(COREX_CORE_PATH, 2);

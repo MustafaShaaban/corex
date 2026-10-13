@@ -57,6 +57,11 @@ no-op described above: no update is ever offered. Rename the line to `UPDATES_EN
 
 The shipped default is empty, so a fresh install never checks any remote source until you opt in.
 
+The project root is the repository only where `corex-core` is linked into WordPress. Where the plugin
+is copied into `wp-content/plugins/`, as in the shared-host package, it is `wp-content/`, inside the
+web root: set the option there and do not create a `.env`. See
+[Settings & feature flags](/guides/configuration/).
+
 ## Publish a release
 
 Host two artifacts where your sites can reach them (a static host, S3/CloudFront, or **GitHub Releases**):

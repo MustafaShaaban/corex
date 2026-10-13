@@ -74,6 +74,11 @@ wp option update corex_updates_endpoint https://updates.example.com/corex/manife
 The shipped default is empty (`plugins/corex-core/config/updates.php`), so a fresh install never checks any
 remote source until you opt in.
 
+The project root is the repository only where `corex-core` is linked into WordPress. Where the plugin is copied
+into `wp-content/plugins/`, as in the shared-host package, it is `wp-content/`, inside the web root: set the
+option there and do not create a `.env`. See
+[where the `.env` file is read from](./secrets-backups-zero-downtime.md#where-the-env-file-is-read-from).
+
 ## Publish a manifest + package
 
 You need two artifacts on a host you control (a static file host, S3/CloudFront, or **GitHub Releases** all
