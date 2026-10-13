@@ -83,6 +83,30 @@ All notable changes to Corex are documented here. The format follows
   and not from what was stored (read in the listener; not sent to check): what was wrong is
   what was kept.
 
+- **A comment, an editorial note, a profile's names, an import's rows and a kit's page are
+  kept with their backslashes.** The rest of the same defect, each write measured before it
+  was changed (DECISIONS #332):
+  - a comment edited or answered from Blog Pro was published without them: a reply saying
+    "C:\offers\new" read "C:offersnew";
+  - a post's editorial notes lost one more level each time the post's workflow was saved;
+  - a display name, a first name and a last name saved on the account page:
+    "CORP\salma.h" was saved as "CORPsalma.h";
+  - CoreX → Data: an import keeps the rows of its file in its run and commits them from
+    there, so a row was imported without its backslashes. A migration is run from the plan
+    kept in its run, where `\'` in a statement had become `'`. A Data export and a
+    submissions export kept the search they were asked for without them;
+  - a page a kit creates, fills or replaces: a block's attributes are JSON, in which
+    WordPress writes `&` as `\u0026`, and `"Tom \u0026 Jerry"` was stored as
+    `"Tom u0026 Jerry"`. The pages CoreX ships name a pattern each and hold no backslash, so
+    none of them was affected; a kit of a site's own with a block's attributes in a page was;
+  - the record of a WebP file names the picture and its WebP by their paths. On a Windows
+    host every separator of a path is a backslash, so the record named two files that are
+    not there, and `wp corex media reset-webp` deletes the file the record names. A Linux
+    host's paths have none and its records were right.
+
+  The notification preferences were measured too and lose nothing: they hold a switch for
+  each category. A password is not touched by any of this.
+
 - **The inbox no longer fails to load when a submission is deleted at that moment.**
   WordPress finds the ids of a page of submissions and then reads each one; a submission
   deleted between the two, by a colleague or by retention, came back as nothing, and the list
@@ -126,6 +150,18 @@ All notable changes to Corex are documented here. The format follows
   is now stored with its slashes. Code that put slashes on to get round the loss takes them
   off. Neither the Muva nor the Perego site's own code calls either class, as read in both
   checkouts on 2026-10-13. Nothing to rebuild: no screen changed, and no class or route did.
+- **Rows imported on CoreX → Data before this release, from a file with a backslash in it,
+  were imported without it**, and comments, editorial notes and names saved before it are
+  stored without theirs. Nothing repairs them: a name or a note is written again, and an
+  imported row is corrected where it was imported to.
+- **A site on a Windows host has WebP records that name no file.** `wp corex media
+  reset-webp` finds nothing to delete for a picture converted before this release, and
+  deleting such a picture leaves its `.webp` beside where it was. Read in the command, not
+  run on such a site. A site on a Linux host is not affected.
+- **A kit of your own that hands `BlueprintActivator::seedPages()` a page** hands it the
+  title and the markup as they are. A page it stored before this release with a block's
+  attributes in it is stored without their backslashes: apply the kit again and choose to
+  replace the page.
 
 - **A subject can hold `<`, `>` and `&` together now**, in a reply and in an email sent from
   Email Studio's **Test send** and **Resend**. A design of your own registered on

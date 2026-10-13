@@ -87,7 +87,9 @@ final class WpDataImportStore implements DataImportStore
 
     private function persist(DataImportRun $run): void
     {
-        update_post_meta($run->id, self::PAYLOAD, $run->toArray());
+        // The run is written again whole each time it changes, and WordPress takes one level of
+        // slashes off it each time: handed over as it is, its text loses one more on each.
+        update_post_meta($run->id, self::PAYLOAD, wp_slash($run->toArray()));
         update_post_meta($run->id, self::HASH, $run->inputHash);
         update_post_meta($run->id, self::ACTOR, $run->actorId);
     }

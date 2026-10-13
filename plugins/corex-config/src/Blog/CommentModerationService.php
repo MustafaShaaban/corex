@@ -110,9 +110,10 @@ final class CommentModerationService
             throw new InvalidArgumentException('Edited comment body is required.');
         }
 
+        // WordPress takes one level of slashes off a comment on its way in.
         $updated = wp_update_comment([
             'comment_ID' => $request->commentId,
-            'comment_content' => $body,
+            'comment_content' => wp_slash($body),
         ]);
         if ($updated === false || (int) $updated < 1) {
             throw new RuntimeException('CoreX could not edit the native comment.');
@@ -129,7 +130,8 @@ final class CommentModerationService
         }
 
         $user = get_userdata($request->actorId);
-        $replyId = wp_insert_comment([
+        // As in edit(): the writer's name is text too, and is read from where it has no slashes.
+        $replyId = wp_insert_comment(wp_slash([
             'comment_post_ID' => (int) $comment->comment_post_ID,
             'comment_parent' => $request->commentId,
             'user_id' => $request->actorId,
@@ -137,7 +139,7 @@ final class CommentModerationService
             'comment_author_email' => $user ? (string) $user->user_email : '',
             'comment_content' => $body,
             'comment_approved' => '1',
-        ]);
+        ]));
 
         if ((int) $replyId < 1) {
             throw new RuntimeException('CoreX could not create the native comment reply.');

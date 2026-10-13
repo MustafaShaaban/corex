@@ -172,18 +172,21 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   as tests it took 18 ms. A search is quicker than no search. Whether a client site holds
   anything near that number was not read. Measured for DECISIONS #318, not changed.
 
-- **More writes drop a backslash, measured on 2026-10-13 and not changed yet.** A
-  comment edited or answered from Blog Pro (`CommentModerationService`), an editorial note
-  (`WpEditorialWorkflowStore`, one more level each time the post's workflow is saved), a
-  profile's display, first and last name (`WordPressAuthGateway::updateProfile()`), the
-  record of a WebP file's two paths where a path has backslashes (`WebpMeta`), and the
-  content of a Data import (`WpDataImportStore`: the file's rows are in it). A Data export,
-  a migration, a submissions export and a kit's pages (`BlueprintActivator`) are written
-  the same way and were not run. The forms and submissions half of the same list is fixed
-  (DECISIONS #331); this half is the next change. The notification preferences were
-  measured and lose nothing.
-- **What a form, a flow or a note stored before DECISIONS #331 is still without its
-  backslashes.** Nothing repairs it. A flow whose field has a `pattern:` rule with a
+- **A password with a quote or a backslash in it is not the same password at CoreX's
+  sign-in and at WordPress's.** Measured on 2026-10-13: a person who registers through the
+  account add-on with such a password is not signed in at `wp-login.php` with it, and a
+  password set on a WordPress screen is not accepted by the add-on's sign-in. WordPress's
+  own screens hash a password with the slashes of the request still on it; the add-on's
+  gateway hashes it as typed (`WordPressAuthGateway`, DECISIONS #332). Not changed: handing
+  it over slashed would lock out whoever registered through CoreX with such a password,
+  unless a sign-in tries both. An owner decision.
+- **A registration with a login WordPress will alter is accepted.** Measured on 2026-10-13:
+  the login `CORP\salma` is stored as `CORPsalma` by WordPress's own rule for a login, and
+  the person is told the account was created. Signing in with what they typed was not run.
+  The account add-on refuses an email address it would have to alter and not a login.
+- **What was stored before DECISIONS #331 and #332 is still without its backslashes**: a
+  form's answers, a flow, a note, a comment, an editorial note, a name, an imported row, a
+  kit's page, and on a Windows host the record of a WebP file. Nothing repairs it. A flow whose field has a `pattern:` rule with a
   backslash in it does not check what was written until it is written again and published.
   Whether a client site holds such a flow was not read.
 - **With ACF active, a field's value goes through `update_field()`, not measured.**
