@@ -92,6 +92,25 @@ it('keeps comments on the single post template', function () {
     expect(corexTemplate('single'))->toContain('wp:comments');
 });
 
+it('prints a post\'s content full width in every template that prints one', function () {
+    // Inside a constrained <main>, a content block that is not full width holds a block an editor
+    // set to full width to the text column on a desktop, and short of the window by the gutter
+    // on a phone (DECISIONS #344).
+    $printsContent = array_filter(
+        glob(ThemeContract::root() . '/theme/templates/*.html') ?: [],
+        static fn (string $file): bool => str_contains((string) file_get_contents($file), '<!-- wp:post-content'),
+    );
+
+    expect($printsContent)->not->toBeEmpty();
+
+    foreach ($printsContent as $file) {
+        expect((string) file_get_contents($file))->toMatch(
+            '/<!-- wp:post-content \{[^\n]*"align":"full"/',
+            basename($file) . ' prints the content at the width of the text column',
+        );
+    }
+});
+
 it('embeds no PHP business logic in block templates', function () {
     foreach (glob(ThemeContract::root() . '/theme/templates/*.html') ?: [] as $file) {
         expect(str_contains((string) file_get_contents($file), '<?php'))

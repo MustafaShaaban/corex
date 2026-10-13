@@ -363,7 +363,44 @@ All notable changes to Corex are documented here. The format follows
   which `wp-login.php` accepts it too. A wrong password is counted as one failed sign-in,
   as before. The owner's decision (DECISIONS #334).
 
+- **The theme keeps a gutter beside what a visitor reads.** On a phone the title, the text,
+  the header and the footer of every template began at the edge of the window, and a wide
+  block, such as the grid of posts, did the same in a window 1024 pixels wide.
+  The theme now has a side padding of its own, from a spacing token, the same on both
+  sides: 16 pixels. It is set once, in `theme.json`, and a site that runs the theme changes
+  it in its `brand.json`. Measured on every template and every pattern, at 375 and 320
+  pixels, left to right and right to left, before and after a kit (spec 068, FR-157a;
+  DECISIONS #344).
+- **A block set to full width in a page's content is the window's width.** In a page, a
+  post or a project it was held to the text column, 768 pixels, on a desktop: a hero
+  pattern placed in a page was a band in the middle of the window. A block set to wide was
+  held to the same. Both are now what they say, with the text of a full-width block inside
+  the gutter (FR-157b).
+- **A form fits a narrow phone.** The `corex/form` block could not be narrower than 347
+  pixels, so a page that held one scrolled sideways in a window 320 wide: the front page,
+  the contact and form templates, and a search that finds nothing. In a window 600 pixels
+  wide or less its fields are now one column. Wider than that, nothing changed.
+- **The docs header's search field stays inside the header** in a window 320 wide, where
+  its button reached the window's edge once the header had a gutter.
+
 ### Client impact
+
+- **A site whose theme is its own is not moved by the theme's new gutter.** The side
+  padding and the template changes are in the Corex theme. Muva's, Perego's and Mizzey's
+  themes are themes of their own, not children of it, with their own `theme.json` (read on
+  this machine, 2026-10-13), so none of their pages moves. A site that does run the Corex
+  theme gets the gutter on every page, and a block set to full width or to wide in a
+  page's content becomes that wide on a desktop, where it was held to the text column: look
+  at pages that hold one. A template such a site saved a copy of in the Site Editor keeps
+  the old markup; there, set its Content block to full width, or reset the template. What
+  does reach every site is the form: in a window 600 pixels wide or less a `corex/form` is
+  one column (`grid-template-columns` on `.corex-form`, and a field is `grid-column: 1 / -1`
+  where it was `span 12`). A site that restyles the form's grid at that width should look
+  at it on a phone. The form's stylesheet is one of the framework's built files: the
+  `npm run build` of a site's update steps makes it, and nothing of the site's own has to
+  be rebuilt. Neither Muva's nor Perego's theme sets a root padding
+  (read the same day); whether their pages keep a gutter on a phone is theirs to measure,
+  and `tests/e2e/theme-gutter.spec.js` shows how.
 
 - **A script that reads `GET corex/v1/access/requests` has to be signed in as somebody
   who may open CoreX Access & Abilities.** Anybody else is answered `403`. Nothing in
