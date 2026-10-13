@@ -44,6 +44,12 @@ theme only presents it.
   its timezone (Settings → General). The user agent and the IP address are in the route's
   answer, as before, and are not printed. Both lists are asked for again after a profile is
   saved and after a session button is answered.
+- **The session in use** is the row of active sessions whose first line ends with
+  " — this device" (`corexAccount.i18n.thisDevice`): the one whose `current` is true in
+  the answer of `GET corex/v1/account/sessions`. The server marks the session of the
+  cookie the request came with, and no other; a request with no session cookie (an
+  application password) marks none. A row of the answer is `current`, `login`, `expiration`, `ip`, `ua`,
+  `device` and `signedIn`, and never a token or its hash.
 - **With scripting off** the block shows a note above its forms
   (`<noscript><p class="corex-account__noscript">`) saying that they need JavaScript. A
   form sent anyway goes to the page's own address, which does not answer it: the forms do
@@ -58,7 +64,7 @@ theme only presents it.
 | Boundary | `Account\WordPressAuthGateway` | Every WordPress auth call (`wp_signon`, `wp_insert_user`, `retrieve_password`, the reset flow, `wp_update_user`). Never reimplements hashing. |
 | Naming | `Account\PublicName` | The name a new account goes by: the username that was typed, or the part of the address before the @ when none was, or when an address was typed as the username. Pure. |
 | Reset | `Reset\ResetEmailLink`, `Reset\ResetLanding`, `Reset\ResetTicket`, `Reset\AccountPageMark`, `Reset\ResetLink` | A forgotten password is reset on the page the block is on: the email's link, the visitor's arrival, where the key is kept, and how the page is named. |
-| Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak) and ends other/all sessions via core helpers. |
+| Sessions | `Session\SessionService` + `Session\SessionList` | Lists a user's sessions (pure formatter, no token leak), marks the one the request was made with by the record WordPress holds for it, and ends other/all sessions via core helpers. |
 | Sessions | `Session\DeviceName` | The browser and system a user agent names, without a version. Pure; a few patterns, no parsing library. |
 | Notifications | `Notification\NotificationService` | The signed-in user's own account activity, projected from the shared core activity stream: the newest ten events of the kinds `AccountActivity` lists. |
 | Notifications | `Notification\AccountActivity` | The kinds the add-on records (`profile.updated`, `sessions.revoked_others`) and the sentence for each. |
@@ -200,13 +206,16 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
   sign-in whose request is aborted, or answered with an error page, says so in its form;
   with scripting off the note is above the forms and inside the window; a signed-in
   person's two lists say so when their requests are aborted, answered with an error page or
-  refused, in a box a step under the heading and a step above the session buttons; **Sign
-  out everywhere** loads the page again; a row of either list is two lines that start where
+  refused, in a box a step under the heading and a step above the session buttons; exactly
+  one listed session says "this device"; **Sign out everywhere** loads the page again; a row of either list is two lines that start where
   its heading starts, in the four windows; a session is named by its browser and system;
   a saved profile is listed without the page being loaded again.
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
+  `tests/Integration/Profile/SessionThisDeviceTest.php` — a person signed in on real
+  WordPress is told which session is theirs: the only one, the right one of two, one of
+  two that hold the same record, none without a session cookie, and no token in a row.
   `tests/Integration/Profile/RegistrationUsernameTest.php` — which usernames the register
   route refuses and which it keeps, and that the person's own address is no username.
   `tests/Integration/Profile/PasswordSignsInEverywhereTest.php` — a password with a quote

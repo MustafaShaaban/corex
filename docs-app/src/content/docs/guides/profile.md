@@ -55,6 +55,10 @@ not moved to it, and it is a paragraph and not a live region (`role="status"`): 
 where the list would be read. Rows shown earlier are not kept when a later request for the
 list fails.
 
+The first line of one row of **Active sessions** ends with "— this device": the session of
+the browser the page was opened in. It is the session **Sign out other sessions** keeps. The server
+decides which row it is, and a row never carries the session's token.
+
 After **Sign out everywhere** the page is loaded again and shows the sign-in form: that
 button signs this browser out too.
 

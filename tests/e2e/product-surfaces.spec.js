@@ -866,6 +866,27 @@ test( 'a signed-in person is shown their sessions, a step above the buttons', as
 	await page.context().close();
 } );
 
+test( 'the session a person is using, and no other, is marked "this device"', async ( {
+	browser,
+} ) => {
+	// Asked of the site itself, with the suite's own session: a stubbed answer said "this
+	// device" for as long as the server never did (DECISIONS #349). The session is one of
+	// several when the suite has signed in before, and the only one on a new site.
+	const page = await openAccount(
+		browser,
+		WINDOWS[ 0 ],
+		require( './global-setup' ).STORAGE_STATE
+	);
+	const sessions = page.locator( LISTS[ 0 ].panel ).locator( 'ul > li' );
+
+	await expect( sessions.first() ).toBeVisible();
+	await expect( sessions.filter( { hasText: 'this device' } ) ).toHaveCount(
+		1
+	);
+
+	await page.context().close();
+} );
+
 test( 'recent activity with nothing in it says so, and not that it could not be loaded', async ( {
 	browser,
 } ) => {

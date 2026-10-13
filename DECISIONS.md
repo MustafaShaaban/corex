@@ -14117,6 +14117,118 @@ lists have no bullets. Six strings are new in the `corex` text domain. Nothing u
 `sites/` in the Muva or Perego checkouts names the block, its lists or the routes (read
 on this machine, 2026-10-13). Nothing to rebuild.
 
+## #349 — The account block's session in use is known by the record WordPress holds for it, not by a key WordPress never hands over
+
+**Date:** 2026-10-13. **Branch:** `fix/account-session-this-device`, on top of #345's branch
+(PR #389, open when this was written). **Found by:** the session that built #345, which
+measured it and recorded it in `PROGRESS.md`. Spec 068 gains FR-161h. The numbers between
+are held elsewhere: #346 by open PR #390, #347 by the pushed branch
+`fix/account-username-is-the-address`, and #348, with FR-161g, by a change to what a row of
+the block's two lists says, which was being built in another worktree and was not pushed.
+
+**What was there.** `SessionService::active()` handed
+`WP_Session_Tokens::get_instance( $userId )->get_all()` to `SessionList::format()` with the
+SHA-256 of `wp_get_session_token()`, and the formatter marked the row whose array key was
+that hash. `get_all()` is `array_values( $this->get_sessions() )`: the keys are 0, 1, 2.
+`get_sessions()`, which is keyed by the hash, is protected. No row was ever marked, so
+`account.js` never wrote " — this device". `SessionListTest` handed the formatter an array
+keyed by `'verifier-old'` and `'verifier-new'` and passed.
+
+**Run before the change.** `tests/Integration/Profile/SessionThisDeviceTest.php`, on a
+WordPress 7.1.3 of this worktree's own, signs a person in with `wp_set_auth_cookie()` and
+asks `GET corex/v1/account/sessions` with the cookie that sign-in made. One session: its
+row said `"current": false`. Two sessions: none marked, asked from either.
+
+**What was weighed.**
+
+1. *The record of the request's own session, from `WP_Session_Tokens::get( $token )`,
+   compared with the rows.* **Built.** `get()` and `get_all()` are the two public ways in,
+   and both read the same store in the same request. The token goes to WordPress and to
+   nothing else; no hash of it is made in the add-on any more.
+2. *Read the `session_tokens` user meta, which is keyed by the hash.* Refused. That is the
+   inside of one store. A site may put another in its place (the `session_token_manager`
+   filter, for sessions held outside the database), and the list would then be empty or
+   wrong. It would also bring every session's verifier into the add-on's code to mark one.
+3. *Reach `get_sessions()` by reflection or by a subclass.* Refused: a protected method of
+   a class WordPress may change, and `get_instance()` builds the class, not the caller.
+4. *Give each new session an id of its own (`attach_session_information`) and compare
+   that.* Refused. A session that began before the change has none, so the comparison of
+   records would still be needed; and every session of every account would carry a value
+   for the sake of one label.
+
+**Two sessions with the same record.** A record is the sign-in's second, its expiry, the
+address and the browser's user agent, and whatever a plugin attached. Two sign-ins in one
+second from one address and one build of a browser hold the same record, and nothing
+WordPress hands over tells them apart. One row is marked, the first of them, and never
+two. The two rows read the same in every field the list shows, and one of them is the
+request's: the list says "one of these is this device", which is so. Which of the two
+array entries carries the mark cannot be seen and changes nothing. **Sign out other
+sessions** is not decided by the mark: `wp_destroy_other_sessions()` keeps the session of
+the request's token and ends the twin, after which the list holds one row, marked.
+
+**What is built.**
+
+- `SessionList::format( array $records, ?array $current = null )`. It is still a pure
+  formatter. It is handed the list as WordPress gives it and the request's own record, or
+  null, and marks the first record identical to it (`===`: the same keys and values, as
+  the one store gave both). It decides the mark before it sorts.
+- `SessionService::active()` asks the manager for both. `ownSession()` gives null when the
+  request has no session cookie, and when the cookie's token is not a live session of that
+  person. The `function_exists( 'wp_get_session_token' )` guard is gone: the function is
+  in `wp-includes/user.php`, which WordPress always loads. `verifier()` is gone.
+- A row is still `current`, `login`, `expiration`, `ip`, `ua`. Anything else a record
+  carries is not copied into it.
+
+**What is not marked, and is right not to be.** A request made with an application
+password, or from WP-CLI, is a person and no session: no row is marked. So is a person a
+plugin signed in without one of WordPress's session tokens.
+
+**A limit, read and not run.** A replacement session store that gives a session's record
+one way from `get()` and another from `get_all()` (a different order of keys, a number as a
+string) would get no mark, as before this change. WordPress's own store gives both from one
+array. Nothing in this repository replaces the store.
+
+### Measured after the change
+
+The same install, over HTTP, the administrator signed in at `wp-login.php` from two
+browser contexts with user agents of their own, each asking the route with its own nonce.
+The browser suite's saved session was a third.
+
+| Who asked | Rows | Marked |
+|---|---|---|
+| the first browser, before the second signed in | 2 | its own |
+| the first browser, both signed in | 3 | its own |
+| the second browser, both signed in | 3 | its own |
+| the second browser, after its **Sign out other sessions** (answered 200) | 1 | its own |
+
+Every row's keys were `current,login,expiration,ip,ua`.
+
+### Tests
+
+- `tests/Integration/Profile/SessionThisDeviceTest.php`, new, five tests on real
+  WordPress through the route: the only session is marked; of two, the one of the browser
+  that asks, from either; one of two that hold the same record; none for a request with no
+  session cookie; a row has five keys and neither the token nor its hash is anywhere in
+  the answer. The first three failed before the change. The last two passed, and hold what
+  was already so.
+- `tests/Unit/Profile/SessionListTest.php`, rewritten: it hands the formatter a plain list
+  and a record. Nine cases; the six that hand over a record could not run against the
+  old signature.
+- `tests/e2e/product-surfaces.spec.js`, one new: with the suite's saved administrator
+  session, exactly one listed session says "this device". It failed before the change.
+  It is the assertion #345's browser test tried first and dropped.
+- `tests/corex-account.test.js` is not changed. It already held that a row whose answer
+  says `current: true` reads " — this device", with a stubbed answer, which is why it
+  passed while no site ever answered that.
+
+### Client impact
+
+Only for a site with Corex Profile on and the block on a page: one row of "Active
+sessions" now ends with " — this device". No new string (`this device` was translated and
+never shown), no change to the route's shape, nothing to do. Code that called
+`SessionList::format()` with a verifier as its second argument now fails with a type
+error; nothing in this repository did but `SessionService`.
+
 ## #350 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
 
 **Date:** 2026-10-13. **Branch:** `fix/access-route-refusals`. **Found by:** the measurement
