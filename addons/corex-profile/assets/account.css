@@ -49,6 +49,7 @@
 }
 
 .corex-account__row input {
+	box-sizing: border-box;
 	inline-size: 100%;
 	padding: var(--wp--preset--spacing--20);
 	font-family: var(--wp--preset--font-family--body);
@@ -71,8 +72,14 @@
 	margin-block: 0;
 }
 
-/* Off-screen honeypot — present for bots, invisible and skipped for people. */
-.corex-account__hp {
+/*
+ * Two things that are in the page and have no box. The honeypot: present for
+ * bots, invisible and skipped for people. A message line with no message: it
+ * stays in the page so that a screen reader already knows of it when a message
+ * is written into it.
+ */
+.corex-account__hp,
+.corex-account__status:empty {
 	position: absolute;
 	inline-size: 1px;
 	block-size: 1px;
@@ -113,11 +120,27 @@
 	outline-offset: var(--wp--custom--focus--offset);
 }
 
+/*
+ * What the server answered, under the button that asked. The scroll margin is
+ * the room left between the line and the edge of the window when the script
+ * brings it into view.
+ */
 .corex-account__status {
+	margin-block: 0;
+	overflow-wrap: anywhere;
+	scroll-margin-block: var(--wp--preset--spacing--40);
 	padding: var(--wp--preset--spacing--30);
 	border-radius: var(--wp--custom--radius--sm);
 	background-color: var(--wp--preset--color--surface-alt);
 	color: var(--wp--preset--color--ink);
+}
+
+.corex-account__status:empty {
+	padding: 0;
+}
+
+.corex-account__actions + .corex-account__status {
+	margin-block-start: var(--wp--preset--spacing--30);
 }
 
 .corex-account__status[data-state="error"] {

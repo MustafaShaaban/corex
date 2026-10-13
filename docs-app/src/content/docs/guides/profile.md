@@ -26,8 +26,22 @@ The `corex/account` block is auth-aware:
   **active sessions** with "sign out other sessions" / "sign out everywhere", and a feed
   of the account's own recent activity.
 
-The forms are progressively enhanced: with JavaScript they post to the REST API and show
-inline results; without it they still submit.
+With JavaScript the forms post to the REST API. What the server answers is written in a
+message line under the button that was pressed: each form has its own, and so do the two
+session buttons. If that line would be outside the window, the page moves by the least
+that shows it, at once for a visitor whose system asks for reduced motion. The line is a
+polite status (`role="status"`), so a screen reader announces the answer; focus stays on
+the button. One answer is shown at a time: sending a form clears the others.
+
+Without JavaScript a form is sent to the page's own address, which does not answer it.
+
+### Styling the message line
+
+The line is `<p class="corex-account__status" role="status">`, inside each
+`.corex-account__form` and inside `.corex-account__sessions`. It carries
+`data-state="error"` or `data-state="ok"` while it holds an answer and has no box while
+it is empty. It takes its colours from the theme's `error`, `success` and `inverse`
+colour presets.
 
 ## Usernames
 

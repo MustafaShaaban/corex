@@ -12086,3 +12086,120 @@ WordPress.
 nothing under `sites/` in the Muva, Perego or Mizzey checkouts names the interface, the
 service or the account routes, and Muva's own decisions record the profile add-on as left
 off. Whether Perego or Mizzey has it on was not read from a running site.
+
+## #336 — The account block's answer is written under the button that asked, and brought into the window
+
+**Date:** 2026-10-13. **Branch:** `fix/account-message-in-view`. **Found by:** the session
+that built #333, which pressed **Create account** with a refused username and measured the
+block's one message line 149 pixels above a window 768 high. Recorded in `PROGRESS.md` and
+not changed there. Spec 068 gains FR-161a.
+
+**What was there.** `AccountRenderer` printed one `<p class="corex-account__status"
+role="status" aria-live="polite" hidden>` as the first child of the block, above every
+form. `account.js` wrote every answer into it: a refused sign-in, a refused registration,
+the reset request's answer, a saved profile, the answer to a session button.
+
+**Measured before the change.** WordPress 7.1.3, a WordPress of this worktree's own,
+Chromium, signed out, registration open. The submit button of each form was put against
+the top or the foot of the window, as somebody who scrolled to it, and pressed with the
+form empty. "Above" is how far the top of the message line was above the top of the window.
+
+| Window | Form | Button at the top | Button at the foot |
+|---|---|---|---|
+| 1280 by 720 | sign-in | 339 above | in the window, 339 above the button |
+| 1280 by 720 | registration | 340 above | in the window, 492 above the button |
+| 1280 by 720 | forgot password | 340 above | 127 above |
+| 1366 by 768 | sign-in, registration, forgot password | 292 above | in the window; forgot password 79 above |
+| 375 by 812 | sign-in | 329 above | in the window, 329 above the button |
+| 375 by 812 | registration | 521 above | 32 above (its lower 15 pixels showing) |
+| 375 by 812 | forgot password | 521 above | 308 above |
+
+The same numbers were read at 1280 and at 375 with the page set right to left. No test
+covered a message.
+
+**What was weighed.**
+
+1. *Keep the one line and move the page to it.* The smallest change. On a phone the line
+   is 329 to 1,089 pixels above the button, so showing it takes the button of the two
+   lower forms out of a window 812 high: the person is shown the answer and loses the
+   place it is about. With three forms on the page, a line above all of them does not say
+   which form it answers.
+2. *A line for each form, under its button.* The answer is where the eye is, and belongs
+   visibly to one form. Not enough alone: with the button at the foot of the window, or
+   Enter pressed in a field that is, the line appears below the window. Measured with the
+   scroll taken out: 100 pixels below.
+3. *Both: a line for each form, and the page moved only when that line is not wholly in
+   the window.* Built. The move is `scrollIntoView({ block: 'nearest' })`, which does
+   nothing when the line already shows and otherwise moves by the least that shows it, so
+   the button stays in the window too. It is smooth, and immediate
+   (`behavior: 'instant'`) when `prefers-reduced-motion: reduce` matches.
+
+**Under the button, not above it.** A line that appeared above the button would push the
+button down from under the pointer. Under it, nothing the person is pointing at moves; the
+form grows at its foot.
+
+**Announced once.** An answer is written into one element. `say()` empties every message
+line of the block before it writes, and a submit empties them while the answer is awaited,
+so one answer is on the page at a time, as when there was one line. Focus is not moved to
+the line: it stays on the control that was used. The line no longer has `hidden`: it is
+printed empty and stays in the page, and the stylesheet gives an empty line no box (the
+rule the honeypot already had). The reason is the common guidance for a live region, that
+it be in the page and empty before its text changes; it is my reading of that guidance,
+not something heard. What was read, in Chromium's own accessibility tree: on a page
+holding only `<p role="status" hidden></p>` there is no `status` node; with the same
+element empty and clipped as the stylesheet clips it there is one, not ignored; and on the
+block's signed-out page after the change there are three before any answer, none ignored. **No screen reader was listened to**; that is under "Open, and not hidden".
+
+**The fields were wider than the form's inside, and the line showed it.** The fields are
+`inline-size: 100%` with padding and a border and no `box-sizing`, so each reached 16.1
+pixels past the form's inner edge on the ending side (measured: 25 pixels of inset before
+the field, 9 after). A message line sized by the form sat 16 pixels short of the fields
+above it. `box-sizing: border-box` on the fields; both are now inset 25 pixels on each
+side. This is a second change in the same stylesheet, made here because the new line is
+what made the difference visible.
+
+**Measured after the change**, same install, in four windows (1280 by 720 and 375 by 812,
+each left to right and right to left), every form refused, then a profile refused and
+saved, then **Sign out other sessions**:
+
+- the line is wholly in the window in every case, with the button at the top and at the
+  foot of the window;
+- it starts 10.7 pixels under the button, which is the form's own gap between rows
+  (`--wp--preset--spacing--30`), and under the session buttons by the same;
+- its two sides are the fields' two sides (25 pixels from the form's edge), in both
+  directions;
+- it is 47 pixels high with one line of text, and 25 pixels (the form's padding and
+  border) above the form's foot;
+- its text on the error colour is 5.5 to 1 and on the success colour 5.0 to 1;
+- an empty line is 1 by 1 pixel, out of the layout, and the page does not scroll sideways.
+
+**Tests.** `tests/e2e/product-surfaces.spec.js`, nine new tests on a real page: a refused
+sign-in with the button at the top of the window, and a reset link asked for with Enter
+from a field at the foot of it, each in the four windows; and a refused profile for a
+signed-in person on a phone. They assert that the line is wholly inside the window, that
+nothing is drawn over it, that it is one row's gap under the button and as wide as the
+fields, and that the answer is in the page once. All nine failed before the change (no
+line in the form). With the scroll taken out, the four "foot of the window" tests fail at
+100 pixels below; with `box-sizing` taken out, the four sign-in tests fail at 16.1 pixels.
+The refusals asked for are ones `AccountService` gives before it reaches WordPress (empty
+credentials, an empty login, an empty display name): no account is made, no sign-in is
+counted by the limiter and no email is sent. The spec's first test lost an assertion that
+said an empty sign-in "is blocked by native validation (no request leaves the browser)":
+the forms are `novalidate`, a request does leave, and what it asserted was true either way.
+`tests/corex-account.test.js` (Jest, the first the script has): where each form's answer
+and a session button's is written, that a second form's answer leaves one on the page,
+that the line is brought into view by `nearest`, smoothly or at once under reduced motion,
+and that an answer with no text moves nothing. `tests/Unit/Profile/AccountRendererTest.php`:
+each form and the session buttons have a line straight after their button, and none is
+hidden.
+
+**Not built, seen on the way** (each is in `PROGRESS.md`): two labels of the block point
+into another form, because a field's id is made from its name alone; with scripts off a
+form is sent to the page and nothing answers; a request that fails writes no message; the
+theme's page has no side gutter on a phone on a fresh install.
+
+**Client impact.** The markup of the block changed: the one message line that was the
+block's first child is gone, there is one in each form and one in the sessions panel, and
+none has `hidden`. The fields are 16 pixels narrower. A site that styles the block itself
+reads the changelog's Client impact. Read on this machine: nothing under `sites/` in the
+Muva or Perego checkouts names the block.
