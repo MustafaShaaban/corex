@@ -1181,7 +1181,16 @@ final class ConfigServiceProvider extends ServiceProvider
         // refusal that used to reach WordPress's white box (spec 083).
         $this->container->make(\Corex\Admin\Errors\AdminDieHandler::class)->register();
         $this->container->make(\Corex\Security\Upload\AttachmentDelivery::class)->register();
-        $this->container->make(\Corex\Config\Submissions\SubmissionFileDelivery::class)->register();
+        // The link to one file of one submission. What answers it is made when the link is
+        // followed, as the access-request handler above is: it reads submissions the way the
+        // inbox does, and making that on every request made the mail stack with it, which read
+        // the theme's settings and their translations before `init` (DECISIONS #351). Signed
+        // out as well, so the answer is "sign in" and not admin-post's own "invalid action".
+        foreach (['admin_post_', 'admin_post_nopriv_'] as $prefix) {
+            add_action($prefix . \Corex\Config\Submissions\SubmissionFileDelivery::ACTION, function (): void {
+                $this->container->make(\Corex\Config\Submissions\SubmissionFileDelivery::class)->serve();
+            });
+        }
         $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();

@@ -107,6 +107,24 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** No string of the `corex` domain is read before
+`init` (DECISIONS #351). Since v0.45.1 every request made what answers a submission's file
+link, and with it the mail stack and the email layout, which read the theme's settings and
+the site's direction as it was made: WordPress logged "Translation loading for the `corex`
+domain was triggered too early" on every request, and the contact notification was drawn
+left to right on a right-to-left site. The link's handler is now made when the link is
+followed, and `Corex\Email\Template\Layout` asks for its brand when it draws.
+`tests/Integration/Foundation/BootTranslationsTest.php` loads WordPress in a process of
+its own and names the file and line of anything read early. **Before making an object in
+a provider's `boot()` to hook one action, hook the action with a closure that makes it**:
+the object brings whatever its constructor needs, on every request. Three leads, not
+built: `ConfigServiceProvider::boot()` still makes every admin screen, job handler and
+`admin-post.php` controller on every request (195 shared entries by the end of
+`plugins_loaded`, counted, not timed); an email's direction follows the language of
+whoever is signed in and not the site's (measured for `Layout`, read for
+`SiteEmailBrand`); and on a site without pretty permalinks the Submissions inbox said
+"The submissions could not be loaded" (seen once in a browser, not traced).
+
 **After v0.45.2, not released, 2026-10-13.** `GET corex/v1/access/requests`, the list of
 open access requests, has the Access & Abilities screen's own check (`manage_options`),
 as the decision route has; asking for access keeps its own (spec 079, FR-011a; DECISIONS

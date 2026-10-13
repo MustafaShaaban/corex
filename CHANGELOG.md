@@ -72,6 +72,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Every request of a site with `WP_DEBUG` on logged "Translation loading for the `corex`
+  domain was triggered too early", and an email on a right-to-left site was drawn left to
+  right.** Since v0.45.1. The link that opens a file sent with a form was hooked by an
+  object made on every request. Making it made the inbox's reader and the mail stack, and
+  the email layout read the site's brand as it was made: the theme's settings, which
+  WordPress translated before `init`, and the direction of the site's text, asked before
+  WordPress knew it. The contact notification was `dir="ltr"` on a site in Arabic, and an
+  Email Studio template that has a layout is drawn by the same object; a reply was not
+  affected. What answers the link is now made when the link is followed, and the layout
+  asks for the brand when it draws an email. While CoreX boots a request also runs four
+  fewer database queries. A test loads WordPress in a process of its own and fails if a
+  string of the `corex` domain is read before `init` (DECISIONS #351).
+
 - **The account block says which of a person's sessions is the one they are using**
   (spec 068, FR-161h). Under "Active sessions" the session of the browser that opened
   the page is meant to end with " — this device". No row ever did, on any site: the
@@ -437,6 +450,14 @@ All notable changes to Corex are documented here. The format follows
   its button reached the window's edge once the header had a gutter.
 
 ### Client impact
+
+- **A right-to-left site on v0.45.1 or v0.45.2 sends the emails of the shared layout
+  right-to-left again.** Those are the contact notification and an Email Studio template
+  that has a layout. They have been left-to-right since the site took either release.
+  Nothing stored changes, and an email already sent is as it was sent. In
+  PHP, `SubmissionFileDelivery::register()` is gone: the provider hooks the action. The
+  constructor of `Corex\Email\Template\Layout` also takes a closure that answers with the
+  brand; an array is taken as before.
 
 - **A site whose theme is its own is not moved by the theme's new gutter.** The side
   padding and the template changes are in the Corex theme. Muva's, Perego's and Mizzey's
