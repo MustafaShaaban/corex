@@ -93,3 +93,34 @@ it('still registers somebody who typed no username, whatever their address holds
     expect($response->get_status())->toBe(200)
         ->and(wp_authenticate($this->email, REGISTRATION_PASSWORD))->toBeInstanceOf(WP_User::class);
 });
+
+it('registers somebody whose username is their own address as it does with no username', function (callable $typed) {
+    // A browser writes a saved address into a field marked as a username (measured in Chromium
+    // 153, DECISIONS #347). The address is not judged as a username: the plus would refuse it.
+    $this->email = 'corex-login-' . $this->tag . '+shop@example.com';
+
+    $response = registerAccount($this->email, $typed($this->email));
+
+    $account = get_user_by('email', $this->email);
+    expect($response->get_status())->toBe(200)
+        ->and($account->user_login)->toBe('corex-login-' . $this->tag . 'shop@example.com')
+        ->and($account->display_name)->toBe('corex-login-' . $this->tag . '+shop')
+        ->and(wp_authenticate($this->email, REGISTRATION_PASSWORD))->toBeInstanceOf(WP_User::class);
+})->with([
+    'as it is in the email field' => [static fn (string $email): string => $email],
+    'in other capitals, with spaces around it' => [static fn (string $email): string => '  ' . strtoupper($email) . ' '],
+]);
+
+it('gives an address too long to be a login a login of its own, also when it is the username', function () {
+    // 73 characters. WordPress refuses a login over 60, and said so when the address was typed
+    // into the username field: "Username may not be longer than 60 characters."
+    $firstPart   = 'corex-login-' . $this->tag . '-' . str_repeat('l', 40);
+    $this->email = $firstPart . '@example.com';
+
+    $response = registerAccount($this->email, $this->email);
+
+    $account = get_user_by('email', $this->email);
+    expect($response->get_status())->toBe(200)
+        ->and($account->user_login)->toBe(substr($firstPart, 0, 60))
+        ->and($account->display_name)->toBe($firstPart);
+});

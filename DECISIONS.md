@@ -13474,6 +13474,7 @@ is held, and afterwards it is free. Four things were taken out one at a time and
 run: the lock and its release (the lock's test failed for each), the store's question (the
 route's, the form's and the store's repeat tests failed) and the service's reading of the
 store's answer (the unit test failed).
+
 ## #344 — The theme has a side gutter: root padding from spacing preset 40, and the four things it took width from
 
 **Date:** 2026-10-13. **Branch:** `fix/theme-phone-gutter`. **Found by:** the measurement of
@@ -13831,6 +13832,402 @@ it and hold what must not change.
 answered `403`. `AccessController::requests()` is gone: `pendingRequests()` and
 `createRequest()` are the route's callbacks. Read on this machine on 2026-10-13: nothing
 under `sites/` in the Muva or Perego checkouts names the route or the controller.
+
+## #347 — A username that is the person's own email address is no username, and registration's username field says what it is for
+
+**Date:** 2026-10-13. **Branch:** `fix/account-username-is-the-address`, from `main`. It
+was built and measured on `main` at `e8ba03eb` with pull request 386's branch (#342) merged
+in, because the field's value is a line of the table 386 adds; 386 merged the same
+afternoon and `main` with it was merged into the branch, and the tests were run again on
+that. **Found by:** #342, which
+measured the refusal below and left the field without a value. Spec 068 gains FR-158d and
+FR-161c is changed. The numbers #343, #344 and #345 are on pull requests 387, 388 and 389
+and #346 on the pushed branch `fix/access-requests-list`, all four begun while this was
+built; #339 and #340 are on 383 and 384. All were open when this was written.
+
+**What was there, measured again before the change.** WordPress 7.1.3, a WordPress of this
+worktree's own with registration open and every email answered for before the mailer
+(`pre_wp_mail`); `POST corex/v1/account/register` over HTTP with the JSON the block's script
+sends.
+
+| Email | Username | Answer | Account |
+|---|---|---|---|
+| a plain address | empty | 200 | login the address, named by its first part |
+| a plain address | the same address | 200 | the same |
+| an address with a `+` | empty | 200 | login the address without the `+` (WordPress takes it out), named by its first part with the `+` |
+| an address with a `+` | the same address | 422 `invalid_username`, "A username can have letters without accents, numbers, spaces and the characters _ . - @ and no others. Please choose another." | none |
+| an address with a `+` | the same address in other capitals, or with spaces around it | 422, the same | none |
+| an address of 70 characters | empty | 200 | a login made from its first part (#338) |
+| an address of 70 characters | the same address | 422 `register_failed`, WordPress's "Username may not be longer than 60 characters." | none |
+| `kim…@example.test` | `Kim…@Example.Test` | 200 | login `Kim…@Example.Test`, named `Kim…` |
+
+And in Chromium 153.0.8010.12 (Playwright 1.63, the `chromium` channel, headless, an empty
+profile, started without `--enable-automation`), with one made-up saved address
+(`Autofill.setAddresses`) and a fill started from the registration form's Email field
+(`Autofill.trigger`), then the passwords typed, the box ticked and the form sent:
+
+| The Username field | Chromium wrote the address into | Sent as the username | Answer |
+|---|---|---|---|
+| as #342 left it, no value | Email | nothing | 200, account made |
+| `autocomplete="username"`, put on the served page by a route rewrite | Email and Username | the address | 422 `invalid_username`, the sentence above under the button |
+
+So #342's reading holds on `main`: the value alone turns away somebody the form took
+before.
+
+**The rule.** `AccountService::register()` takes a username that is the person's own
+address as no username. One private method, `chosenUsername()`, answers an empty string for
+it, and the three things that asked "was a username typed" ask that method: the check of
+what a username may hold, the login, and the account's name. So the account is the one the
+address gets with the field left empty, in every case that has: an address WordPress
+alters, an address too long to be a login, an address no login can be made from (the
+answer is then `username_required`, as with the field empty).
+
+**How the two are compared.** Without regard to capitals, and after the spaces around the
+username are taken off.
+
+- *Capitals.* `strcasecmp()`. An address reaches the comparison only after it passed
+  `FILTER_VALIDATE_EMAIL`, which takes no letter outside ASCII, so the comparison is of
+  ASCII letters and no locale is in it. WordPress finds an account by its login or its
+  address without regard to capitals (measured on this install: `username_exists()` and
+  `email_exists()` find `kim…@example.test` asked for in capitals, and it signs in so),
+  so `Jane+Shop@Example.com` beside `jane+shop@example.com` is the same address to it.
+  Compared exactly it would have been refused for the `+`, which is the refusal this
+  rule is for.
+- *Spaces.* The route takes the spaces around both off before the service sees them: the
+  username's since #333, the address's in `EmailAnswer::address()`. The service does not
+  trim again.
+- *Nothing else is taken as the same.* An address that differs from the person's by a dot,
+  by what follows a `+`, or by its domain is another address, and is judged as a username
+  as before: with a `+` it is refused, without one it is the login.
+
+When the two are the same but for capitals, the account is made from the address as it is
+in the Email field. That is one outcome that changes for somebody who was not refused:
+`Kim…@Example.Test` as the username beside `kim…@example.test` made the login
+`Kim…@Example.Test` and the name `Kim…`, and now makes the login `kim…@example.test` and
+the name `kim…`. Measured before and after. The person signs in with either, as before.
+
+**Then the field has the value.** `'username' => 'username'` in the `register` row of
+`AccountRenderer::PURPOSES`. Every labelled field of the sign-in, registration,
+forgot-password and profile forms now has an `autocomplete` value.
+
+**Measured after the change**, same install and browser, the page as it is served:
+
+- the registration form's fields read `off` (the field for bots), `email`, `username`,
+  `new-password`, `new-password`;
+- a fill from a saved `jane+…@example.test`, started from Email: the address is in Email
+  and in Username, the form sends it as the username, the answer is 200 and "Your account
+  has been created. You can now sign in." is under the button. The account has the login
+  `jane…@example.test` without the `+` and the name `jane+…`, as it has with the field
+  empty;
+- the same started from the Username field: the same;
+- the same with a saved address of 70 characters: made, with a login made from its first
+  part;
+- Chromium's developer tools raise no issue for the registration form. Before, they raised
+  `FormInputAssignedAutocompleteValueToIdOrNameAttributeError` for the username field;
+- over HTTP, every row of the first table that was refused is now made, with the login and
+  the name of the row above it; another address with a `+` as the username is still
+  refused.
+
+**Not measured.** Firefox, Safari, and a password manager that is not Chromium's own: one
+of them may write something other than an address into a field marked `username` (a
+username saved for another site, say). The field is visible and optional, and what is in
+it is judged as a username unless it is the address. What Chromium's password manager
+reads of the form was not measured again: #342 measured it with the value on the field
+and found it the same as without. A screen reader. Any popup: the browser was headless.
+
+**What was left alone.** The person is not shown the login the account was given. With
+the address in the Username field they may take the address for their login, and they sign
+in with it, so that holds.
+
+**Tests.** `tests/Unit/Profile/AccountServiceTest.php`: a username that is the address is
+not judged and gets the gateway's login for the address and the address's name, for a
+plain address, one with a `+`, one in other capitals and one too long to be a login; and
+another address is still judged. Each row says what the gateway would answer for the
+address as a username; all four failed before the change, two with `invalid_username` and
+two with the username as the login. `tests/Integration/Profile/RegistrationUsernameTest.php`, through the
+route on real WordPress: an address with a `+` in both fields, as it is and in other
+capitals with spaces around it, makes the account an empty username makes and its owner
+signs in with the address; an address of 73 characters in both fields gets a login of its
+first 60. All three failed before with 422. `tests/Unit/Profile/AccountRendererTest.php`
+and `tests/e2e/product-surfaces.spec.js` now expect `username` on the field; the unit test
+failed before the table had the row. No browser test fills the form from a saved address:
+CI's site has registration closed, a registration writes two emails, and the fill is
+started over the DevTools protocol in a Chromium with a profile, which the suite does not
+start. The measurement above is what there is, and `PROGRESS.md` says so.
+
+**Client impact.** A registration with the person's own address as the username in other
+capitals makes an account with the address as its login, where it made one with the
+username as typed. A registration that was refused for an address in the username field
+is now made. The registration form's username gains `autocomplete="username"`. No method
+was added to `AuthGateway`. Read on this machine on 2026-10-13: nothing under `sites/` in
+the Muva or Perego checkouts names the block, the account service, the gateway or the
+register route.
+
+## #348 — A row of the account block's two lists is written for a person: the server words a sentence, a device name and a date, and the script prints them
+
+**Date:** 2026-10-13. **Branch:** `fix/account-list-rows-for-a-person`, on top of #345's branch
+(PR #389, open when this was written; #339's PR #383 under it merged while this was
+built). **Found by:** the session
+that built #345, which saw it in a browser and recorded it in `PROGRESS.md`. Spec 068 gains
+FR-161g. The numbers around it are held elsewhere: #346 by PR #390, merged while this was
+built, #347 by open PR
+#391, #349 by open PR #392 (the session in use is marked "this device"; it left #348 and
+FR-161g to this change) and #350 by open PR #393.
+
+**What was there.** `account.js` drew a row of "Recent activity" as
+`event.kind + ' · ' + event.occurredAt` and a row of "Active sessions" as `session.ua`.
+`NotificationService::forUser()` asked the activity stream for the person's ten newest
+events of any kind. After a saved profile the script asked for the sessions again and not
+for the activity.
+
+**Measured before the change.** WordPress 7.1.3, a WordPress of this worktree's own,
+Chromium 153, the administrator signed in from two browser windows, one of them sending
+an iPhone's user agent, and one event recorded for them as the Submissions screen records
+an export.
+
+| What was looked at | What was there |
+|---|---|
+| a row of recent activity | `profile.updated · 2026-10-13T13:23:23+00:00`, in UTC whatever the site's timezone |
+| the administrator's export | listed with the rest, as `submission.export.queued · 2026-10-13T13:22:46+00:00` |
+| a session, at 1280 pixels | the whole user agent string, 123 characters, on two lines (51 px) |
+| a session, at 375 pixels | the same on three lines (77 px) |
+| after **Save profile** | the script asked `POST account/profile`, then `GET account/sessions`; recent activity did not change until the page was loaded again |
+
+**What was asked, and what was chosen.**
+
+1. *Who words a row: the server, or the script from strings it is handed.* **The server.**
+   The route answers with the lines ready to print, and the script prints them. A
+   sentence belongs with the code that records its kind; a date in the site's format and
+   timezone is `wp_date()`'s work, and spec 076 already records that a browser's own
+   date words differ from WordPress's in Arabic; and a kind added later needs no change to
+   the script. Refused: handing the script a table of sentences by kind. It would still
+   need the dates from the server, and the rule for a kind it does not know would live in
+   the script.
+2. *What a row of activity says.* A sentence for what happened, and under it when:
+   "Your profile was updated." and "Your other sessions were signed out." They say what
+   happened to the account and not who did it. The list is also where a person notices
+   something they did not do, and "You updated your profile" would tell them they did.
+   `Notification\AccountActivity` holds the two kinds as constants and the sentence for
+   each; `ProfileServiceProvider` records by those constants, so nothing the add-on
+   records is without a sentence. The two strings that were handed to
+   `recordAccountEvent()` and never used ("Profile updated", "Signed out other sessions")
+   are gone with its third parameter, and so is `corexAccount.i18n.session`, the word the
+   script fell back to for a session with no user agent: the server names every session.
+3. *A kind the add-on does not know.* **Not listed.** Weighed: the internal name, which
+   is the defect; a sentence that fits anything ("Something else happened on your
+   account"), which says nothing and, for an administrator, would be most of the list;
+   leaving it out. The block's list is the account's own activity. What an administrator
+   did in the admin has its screens there.
+   So that an unlisted event does not take the place of a listed one, the stream is asked
+   for the newest ten of each listed kind and the newest ten of those are kept
+   (`NotificationService::newest()`). The stream filters by one kind at a time; with two
+   kinds that is two questions of ten rows each, on a table indexed by actor and by kind.
+   Asking for the person's newest ten and dropping the rest afterwards would list nothing
+   for a saved profile followed by ten exports: the integration test holds that case,
+   with twelve.
+   Not built: a way for another module to add a sentence. One existing kind would use it
+   (`access.request.created`, whose actor is the member who asked), and nothing asks for
+   it yet.
+4. *The date.* The site's date format and time format (Settings → General), in its
+   timezone and language, each made by `wp_date()` and joined by a translatable pattern,
+   `%1$s at %2$s`: "October 13, 2026 at 4:23 pm". `Support\SiteDate` does it. CoreX's
+   admin screens have a fixed format of their own (`AdminDateTime`, spec 076), chosen for
+   the operator. The account block is a page of the site, where the theme prints a post's
+   date by the site's settings, so it follows those. Not a relative time ("2 hours ago"):
+   it goes stale on a page left open. The instant itself stays in the answer as
+   `occurredAt`, ISO 8601, for a program.
+   The route answers in the site's language and not in the member's own: WordPress uses a
+   person's language for a REST request only when it is asked to (`_locale=user`), and
+   the page the rows are printed in is in the site's language too.
+5. *What names a session.* The browser and the system its user agent names, with no
+   version: "Chrome on Windows". `Session\DeviceName` holds six patterns for browsers and
+   seven for systems, tried in an order that puts the more specific first (Edge says
+   Chrome and Safari; an iPhone says "like Mac OS X"; Android says Linux). No parsing
+   library: what a person can check against the device in their hand is those few names,
+   and a library's database is a dependency to keep current for the versions that are
+   left out here on purpose. What it cannot tell: a browser built on Chrome that sends
+   Chrome's string (Brave, Vivaldi) is "Chrome"; an iPad asking for desktop pages is
+   "Safari on macOS"; a program that names no browser is "Unknown browser", with its
+   system when it names one. Under the name, when the session signed in: "Signed in
+   October 13, 2026 at 4:23 pm". That is what tells two sessions from one browser apart;
+   two that signed in within the same minute read the same.
+6. *The IP address.* **Not shown. My reading, and the owner's to overrule.** WordPress
+   records `$_SERVER['REMOTE_ADDR']` for a session (`WP_Session_Tokens::create()`).
+   Behind a proxy or a CDN that is the proxy's address unless the host puts the visitor's
+   back, and then every session shows the same one. An address tells most people
+   nothing, and it is personal data on a page that is read over a shoulder. `ip` and `ua`
+   are still in the route's answer, as they were: it is the person's own data, given to
+   that person.
+7. *When the lists are asked for again.* Both, after a profile that was saved and after
+   a session button that was answered: both record activity. Not after a profile that
+   was refused, where nothing was done. Not after **Sign out everywhere** that was taken
+   (FR-161f): the page is loaded again.
+
+**How a row is drawn.** `<li class="corex-account__entry">` holding
+`corex-account__entry-main` and `corex-account__entry-meta`; a line the server left empty
+is not drawn (a session WordPress recorded no sign-in time for is its name alone). The
+first line is in the page's ink and the second in `ink-soft` at the `sm` size. The rows
+have no bullets, start where their heading starts and stand one spacing step (`30`) apart.
+The two `<ul>`s have `role="list"`: Safari with VoiceOver is known not to announce a list
+whose bullets are taken away. That was not measured here.
+
+**Measured after the change**, same install, Chromium 153, at 1280 and 375 pixels, with
+the page's direction set left to right and right to left, and once more with the site
+switched to Arabic:
+
+| What was looked at | What is there |
+|---|---|
+| a row of recent activity | "Your profile was updated." over "October 13, 2026 at 1:32 pm" |
+| the administrator's export | not listed |
+| a session | "Chrome on Windows" over "Signed in October 13, 2026 at 1:32 pm"; "Safari on iPhone" for the second browser |
+| a row's height | 48 px at both widths (25.6 px and 22.4 px), one line each |
+| rows apart | 10.7 px, the `30` step; the first row 0 px under its heading, as the sentence of an empty list is |
+| where a row starts | at its heading's own edge: 256 px at 1280 and 0 px at 375 left to right; 1024 px and 375 px right to left |
+| contrast on the page's white | 17.93 to 1 for the first line, 5.80 to 1 for the second |
+| sideways scrolling | none in the four windows |
+| after **Save profile** | `POST account/profile`, `GET account/sessions`, `GET account/notifications`; the save is the first row |
+| after **Sign out other sessions** | the other browser's row is gone and "Your other sessions were signed out." is the first row |
+| the site in Arabic | "أكتوبر 13, 2026 at 1:33 م": the month and the am/pm mark from WordPress's Arabic pack; the sentences, "Signed in" and "at" in English, because CoreX has no Arabic catalogue (`PROJECT-STATUS.md`) |
+
+**Tests.** `tests/Unit/Profile/DeviceNameTest.php` (twelve user agents by name, three
+that name no browser, and that the name is handed to a translator in two parts),
+`AccountActivityTest.php`, `NotificationListTest.php`, `AccountRendererTest.php` (the
+role). `tests/Integration/Profile/AccountListRowsTest.php`, through the real REST server
+with the site set to `Asia/Riyadh`, `j F Y` and `H:i`: half past nine in the evening UTC
+is "14 October 2026 at 00:30"; a saved profile is listed as its sentence; twelve later
+exports by the same person neither show nor push it out; the newest ten of both kinds
+come newest first; a session is "Firefox on Linux", "Signed in 14 October 2026 at 00:30".
+`tests/corex-account.test.js`: a row is the lines the server gave; both lists are asked
+for again after a save and after a session button, and neither after a refused save.
+`tests/e2e/product-surfaces.spec.js`: the two lines and their alignment in the four
+windows; a session named and nothing of its user agent or address printed; a profile
+saved for real, as it is, listed without the page being loaded again. Each of the three
+new browser tests (the first in one of its four windows) was run against the script and
+stylesheet as they were, and failed.
+
+**Not done, and recorded in `PROGRESS.md`.** Signing in, a changed or reset password, a
+new account and **Sign out everywhere** write no activity event, so the list does not
+show them. Whether WebKit calls the two lists lists was not measured. A page that holds
+the block twice still fills one block's lists (#345 recorded it).
+
+**Client impact.** `GET corex/v1/account/notifications` answers with the two kinds only,
+where it answered with everything the person was the actor of; each event gained `label`
+and `when`, and each session `device` and `signedIn`. A row's markup changed and the
+lists have no bullets. Six strings are new in the `corex` text domain. Nothing under
+`sites/` in the Muva or Perego checkouts names the block, its lists or the routes (read
+on this machine, 2026-10-13). Nothing to rebuild.
+
+## #349 — The account block's session in use is known by the record WordPress holds for it, not by a key WordPress never hands over
+
+**Date:** 2026-10-13. **Branch:** `fix/account-session-this-device`, on top of #345's branch
+(PR #389, open when this was written). **Found by:** the session that built #345, which
+measured it and recorded it in `PROGRESS.md`. Spec 068 gains FR-161h. The numbers between
+are held elsewhere: #346 by open PR #390, #347 by the pushed branch
+`fix/account-username-is-the-address`, and #348, with FR-161g, by a change to what a row of
+the block's two lists says, which was being built in another worktree and was not pushed.
+
+**What was there.** `SessionService::active()` handed
+`WP_Session_Tokens::get_instance( $userId )->get_all()` to `SessionList::format()` with the
+SHA-256 of `wp_get_session_token()`, and the formatter marked the row whose array key was
+that hash. `get_all()` is `array_values( $this->get_sessions() )`: the keys are 0, 1, 2.
+`get_sessions()`, which is keyed by the hash, is protected. No row was ever marked, so
+`account.js` never wrote " — this device". `SessionListTest` handed the formatter an array
+keyed by `'verifier-old'` and `'verifier-new'` and passed.
+
+**Run before the change.** `tests/Integration/Profile/SessionThisDeviceTest.php`, on a
+WordPress 7.1.3 of this worktree's own, signs a person in with `wp_set_auth_cookie()` and
+asks `GET corex/v1/account/sessions` with the cookie that sign-in made. One session: its
+row said `"current": false`. Two sessions: none marked, asked from either.
+
+**What was weighed.**
+
+1. *The record of the request's own session, from `WP_Session_Tokens::get( $token )`,
+   compared with the rows.* **Built.** `get()` and `get_all()` are the two public ways in,
+   and both read the same store in the same request. The token goes to WordPress and to
+   nothing else; no hash of it is made in the add-on any more.
+2. *Read the `session_tokens` user meta, which is keyed by the hash.* Refused. That is the
+   inside of one store. A site may put another in its place (the `session_token_manager`
+   filter, for sessions held outside the database), and the list would then be empty or
+   wrong. It would also bring every session's verifier into the add-on's code to mark one.
+3. *Reach `get_sessions()` by reflection or by a subclass.* Refused: a protected method of
+   a class WordPress may change, and `get_instance()` builds the class, not the caller.
+4. *Give each new session an id of its own (`attach_session_information`) and compare
+   that.* Refused. A session that began before the change has none, so the comparison of
+   records would still be needed; and every session of every account would carry a value
+   for the sake of one label.
+
+**Two sessions with the same record.** A record is the sign-in's second, its expiry, the
+address and the browser's user agent, and whatever a plugin attached. Two sign-ins in one
+second from one address and one build of a browser hold the same record, and nothing
+WordPress hands over tells them apart. One row is marked, the first of them, and never
+two. The two rows read the same in every field the list shows, and one of them is the
+request's: the list says "one of these is this device", which is so. Which of the two
+array entries carries the mark cannot be seen and changes nothing. **Sign out other
+sessions** is not decided by the mark: `wp_destroy_other_sessions()` keeps the session of
+the request's token and ends the twin, after which the list holds one row, marked.
+
+**What is built.**
+
+- `SessionList::format( array $records, ?array $current = null )`. It is still a pure
+  formatter. It is handed the list as WordPress gives it and the request's own record, or
+  null, and marks the first record identical to it (`===`: the same keys and values, as
+  the one store gave both). It decides the mark before it sorts.
+- `SessionService::active()` asks the manager for both. `ownSession()` gives null when the
+  request has no session cookie, and when the cookie's token is not a live session of that
+  person. The `function_exists( 'wp_get_session_token' )` guard is gone: the function is
+  in `wp-includes/user.php`, which WordPress always loads. `verifier()` is gone.
+- A row is still `current`, `login`, `expiration`, `ip`, `ua`. Anything else a record
+  carries is not copied into it.
+
+**What is not marked, and is right not to be.** A request made with an application
+password, or from WP-CLI, is a person and no session: no row is marked. So is a person a
+plugin signed in without one of WordPress's session tokens.
+
+**A limit, read and not run.** A replacement session store that gives a session's record
+one way from `get()` and another from `get_all()` (a different order of keys, a number as a
+string) would get no mark, as before this change. WordPress's own store gives both from one
+array. Nothing in this repository replaces the store.
+
+### Measured after the change
+
+The same install, over HTTP, the administrator signed in at `wp-login.php` from two
+browser contexts with user agents of their own, each asking the route with its own nonce.
+The browser suite's saved session was a third.
+
+| Who asked | Rows | Marked |
+|---|---|---|
+| the first browser, before the second signed in | 2 | its own |
+| the first browser, both signed in | 3 | its own |
+| the second browser, both signed in | 3 | its own |
+| the second browser, after its **Sign out other sessions** (answered 200) | 1 | its own |
+
+Every row's keys were `current,login,expiration,ip,ua`.
+
+### Tests
+
+- `tests/Integration/Profile/SessionThisDeviceTest.php`, new, five tests on real
+  WordPress through the route: the only session is marked; of two, the one of the browser
+  that asks, from either; one of two that hold the same record; none for a request with no
+  session cookie; a row has five keys and neither the token nor its hash is anywhere in
+  the answer. The first three failed before the change. The last two passed, and hold what
+  was already so.
+- `tests/Unit/Profile/SessionListTest.php`, rewritten: it hands the formatter a plain list
+  and a record. Nine cases; the six that hand over a record could not run against the
+  old signature.
+- `tests/e2e/product-surfaces.spec.js`, one new: with the suite's saved administrator
+  session, exactly one listed session says "this device". It failed before the change.
+  It is the assertion #345's browser test tried first and dropped.
+- `tests/corex-account.test.js` is not changed. It already held that a row whose answer
+  says `current: true` reads " — this device", with a stubbed answer, which is why it
+  passed while no site ever answered that.
+
+### Client impact
+
+Only for a site with Corex Profile on and the block on a page: one row of "Active
+sessions" now ends with " — this device". No new string (`this device` was translated and
+never shown), no change to the route's shape, nothing to do. Code that called
+`SessionList::format()` with a verifier as its second argument now fails with a type
+error; nothing in this repository did but `SessionService`.
 
 ## #350 — A request the Access routes cannot read is answered 400 and names the parameter; a refusal for how things stand stays 200 and blocked
 

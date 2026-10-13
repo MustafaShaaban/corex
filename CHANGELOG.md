@@ -85,6 +85,28 @@ All notable changes to Corex are documented here. The format follows
   fewer database queries. A test loads WordPress in a process of its own and fails if a
   string of the `corex` domain is read before `init` (DECISIONS #351).
 
+- **The account block says which of a person's sessions is the one they are using**
+  (spec 068, FR-161h). Under "Active sessions" the session of the browser that opened
+  the page is meant to end with " — this device". No row ever did, on any site: the
+  list was looked up by a key WordPress does not hand over. The server now knows the
+  session by the record WordPress holds for it, and marks that row and no other. A
+  request made with an application password has no session and marks none. Two sign-ins
+  in the same second from one address and browser read the same, and one of the two is
+  marked. **Sign out other sessions** did not rely on the mark and is not changed
+  (DECISIONS #349).
+
+- **A row of the account block's two lists is written for a person** (spec 068, FR-161g).
+  Under "Recent activity" a row was an internal name and a machine's date,
+  `profile.updated · 2026-10-13T13:23:23+00:00`; it is now "Your profile was updated." and,
+  under it, "October 13, 2026 at 4:23 pm", in the date format, time format and timezone set
+  for the site. Under "Active sessions" a row was the browser's whole identification
+  string, three lines of it on a phone; it is now "Chrome on Windows" and, under it,
+  "Signed in October 13, 2026 at 4:23 pm". The IP address is not shown. Recent activity
+  lists what the block itself records, a saved profile and signing out the other sessions:
+  an administrator was also listed what they did in the admin, by its internal name. And a
+  saved profile is listed at once: recent activity was asked for only as the page opened.
+  The rows have no bullets and start where their heading starts (DECISIONS #348).
+
 - **In the account block, a list that did not load says so, and an empty one says it is
   empty** (spec 068, FR-161f). A signed-in person's "Active sessions" and "Recent activity"
   were a heading with nothing under it in both cases: when the request for the list did not
@@ -241,10 +263,26 @@ All notable changes to Corex are documented here. The format follows
   fields `nickname` (the display name), `given-name`, `family-name` and `email`.
   Chromium now reads registration as a new account and the forgot-password form as one
   with a username. It offered to save the password after sign-in before, and still does.
-  Registration's optional username is left without a value: with `username` on it
-  Chromium wrote the person's saved email address into it, and an address with a `+` was
-  then refused as a username where the same person registered before (spec 068, FR-161c;
-  DECISIONS #342).
+  Registration's optional username is `username` too, with the account rule of the next
+  entry: with the value alone Chromium wrote the person's saved email address into it,
+  and an address with a `+` was then refused as a username where the same person
+  registered before (spec 068, FR-161c; DECISIONS #342 and #347).
+
+- **A username that is the person's own email address is taken as no username.** The
+  registration form's Username field is optional, and with none the login is made from
+  the address. Somebody whose address was in both fields was judged by the one in
+  Username: `name+shop@example.com` was refused with "A username can have letters without
+  accents, numbers, spaces and the characters _ . - @ and no others.", and an address of
+  61 characters or more with WordPress's "Username may not be longer than 60
+  characters."; the same person registered with the field left empty. A browser puts the
+  address there: Chromium writes a saved address into a field marked `username`. The
+  account service now takes the person's own address in Username, in any capitals, as no
+  username, so the account is the one the address gets with the field empty: the same
+  login, the same name, the same answer. Any other username, another address among them,
+  is judged as before. Measured in Chromium 153 with the field marked `username`: a
+  registration filled from a saved address with a `+` in it had the address in both
+  fields and was refused before the change, and is made after it (spec 068, FR-158d;
+  DECISIONS #347).
 
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
@@ -438,6 +476,19 @@ All notable changes to Corex are documented here. The format follows
   (read the same day); whether their pages keep a gutter on a phone is theirs to measure,
   and `tests/e2e/theme-gutter.spec.js` shows how.
 
+- **The account block's two lists changed, in the page and in the routes.** Only for a
+  site that has Corex Profile on. `GET corex/v1/account/notifications` answers with the
+  newest ten events of two kinds, `profile.updated` and `sessions.revoked_others`, and no
+  longer with every event the person is the actor of: a site that read that route for a
+  person's whole activity reads less. Each event gained `label` and `when`, and each
+  session of `GET corex/v1/account/sessions` gained `device` and `signedIn`; nothing was
+  taken out of either. In the page a row is `<li class="corex-account__entry">` holding
+  two `<span>`s, where it was an `<li>` of text, and the two `<ul>`s have `role="list"`
+  and no bullets: a site that styles `.corex-account__session-list li` or
+  `.corex-account__notification-list li` itself has to look at it again. Six strings are
+  new in the `corex` text domain. Read on this machine on 2026-10-13: nothing under
+  `sites/` in the Muva or Perego checkouts names the block, its lists or the two routes.
+  Nothing to rebuild: the block's script and stylesheet are not built.
 - **A script that reads `GET corex/v1/access/requests` has to be signed in as somebody
   who may open CoreX Access & Abilities.** Anybody else is answered `403`. Nothing in
   CoreX read the list through the route: the screen is handed it with the page. In PHP,
@@ -527,14 +578,25 @@ All notable changes to Corex are documented here. The format follows
   machine on 2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the
   block or an id of it. Nothing to rebuild.
 - **The account block's fields gain an `autocomplete` attribute.** Only for a site that
-  has Corex Profile on. Every labelled field of the block has one now, except the
-  registration form's optional username; the profile guide lists the values. A visitor's
+  has Corex Profile on. Every labelled field of the block has one now; the profile guide
+  lists the values. A visitor's
   browser may offer more than it did: Chromium takes the sign-in and the forgot-password
   field for an email address as well as a username, and the registration form's passwords
   for new ones. A site that prints its own sign-in form beside the block, or sets
   `autocomplete` on these fields from its own script, should check that the two agree. No
   id, name, class or route changed. Read on this machine on 2026-10-13: nothing under
   `sites/` in the Muva or Perego checkouts names the block. Nothing to rebuild.
+- **A registration with the person's own address as the username can make a different
+  account than it did.** Only for a site that has Corex Profile on and registration open.
+  Where the address was typed into Username in other capitals than into Email
+  (`Kim@Example.com` beside `kim@example.com`), the login was the username as typed and
+  the account was named `Kim`; the login is now the address as it is in Email, and the
+  name `kim`. Where the address was refused as a username (a `+` in it, or over 60
+  characters) the account is now made. The same address in both fields in the same
+  capitals makes the account it made before. No method was added to `AuthGateway`, so a
+  site's own gateway needs no change. Read on this machine on 2026-10-13: nothing under
+  `sites/` in the Muva or Perego checkouts names the block, the account service, the
+  gateway or the register route. Nothing to rebuild.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The

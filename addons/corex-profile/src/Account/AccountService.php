@@ -57,7 +57,8 @@ final class AccountService
             return $passwordError;
         }
 
-        $usernameError = $this->usernameProblem($request->username);
+        $username      = $this->chosenUsername($request);
+        $usernameError = $this->usernameProblem($username);
         if ($usernameError !== null) {
             return $usernameError;
         }
@@ -66,7 +67,7 @@ final class AccountService
             return AccountResult::fail('email_taken', __('An account with that email already exists.', 'corex'));
         }
 
-        $login = $this->loginFor($request);
+        $login = $this->loginFor($username, $request->email);
         if ($login === '') {
             return AccountResult::fail(
                 'username_required',
@@ -78,25 +79,41 @@ final class AccountService
             return AccountResult::fail('username_taken', __('That username is taken. Please choose another.', 'corex'));
         }
 
-        return $this->gateway->createUser($request->email, $login, $request->password, $this->nameFor($request));
+        return $this->gateway->createUser(
+            $request->email,
+            $login,
+            $request->password,
+            $this->nameFor($username, $request->email),
+        );
+    }
+
+    /**
+     * The username somebody chose, and an empty string when they chose none. Their own address
+     * in the username field is no choice: a browser writes a saved address into a field it is
+     * told is a username, and an address is not always a username an account can have. The
+     * two are compared without regard to capitals, as an account is looked up.
+     */
+    private function chosenUsername(RegistrationRequest $request): string
+    {
+        return strcasecmp($request->username, $request->email) === 0 ? '' : $request->username;
     }
 
     /**
      * With no username the gateway says what the login is, and the person signs in with the
      * address whatever it is.
      */
-    private function loginFor(RegistrationRequest $request): string
+    private function loginFor(string $username, string $email): string
     {
-        return $request->username !== '' ? $request->username : $this->gateway->loginForAddress($request->email);
+        return $username !== '' ? $username : $this->gateway->loginForAddress($email);
     }
 
     /**
      * What the account goes by is made from what was typed, not from the login: a login made
      * for an address is nobody's choice.
      */
-    private function nameFor(RegistrationRequest $request): string
+    private function nameFor(string $username, string $email): string
     {
-        return PublicName::forLogin($request->username !== '' ? $request->username : $request->email);
+        return PublicName::forLogin($username !== '' ? $username : $email);
     }
 
     public function login(string $login, string $password, bool $remember): AccountResult

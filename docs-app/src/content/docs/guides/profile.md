@@ -55,8 +55,37 @@ not moved to it, and it is a paragraph and not a live region (`role="status"`): 
 where the list would be read. Rows shown earlier are not kept when a later request for the
 list fails.
 
+The first line of one row of **Active sessions** ends with "— this device": the session of
+the browser the page was opened in. It is the session **Sign out other sessions** keeps. The server
+decides which row it is, and a row never carries the session's token.
+
 After **Sign out everywhere** the page is loaded again and shows the sign-in form: that
 button signs this browser out too.
+
+### What a row says
+
+A row is two lines, which the site words and the page prints as they come.
+
+| List | First line | Second line |
+| --- | --- | --- |
+| Active sessions | the browser and the system the session signed in from, such as "Chrome on Windows" | when it signed in: "Signed in October 13, 2026 at 4:23 pm" |
+| Recent activity | what happened: "Your profile was updated." or "Your other sessions were signed out." | when: "October 13, 2026 at 4:23 pm" |
+
+- **Dates** are written in the date format, the time format and the timezone set under
+  **Settings → General**, in the site's language.
+- **A session's name** is read from what the browser said of itself when it signed in. It
+  has no version. A browser built on Chrome that does not give its own name (Brave,
+  Vivaldi) is named Chrome, an iPad that asks for desktop pages is named as a Mac, and a
+  program that names no browser is "Unknown browser". Two sessions from the same browser
+  are told apart by when they signed in.
+- **The IP address is not shown**, and neither is the browser's full identification
+  string. Both are still in what `GET sessions` answers.
+- **Recent activity lists what the account block itself records**: a saved profile, and
+  signing out the other sessions. What the same person did elsewhere, such as an
+  administrator's work in the admin, is not listed here. Signing in, a changed password
+  and **Sign out everywhere** are not recorded as activity, so they are not listed either.
+- Both lists are loaded again after a profile is saved and after **Sign out other
+  sessions**, so what was just done is in the list without loading the page again.
 
 The sentence is `<p class="corex-account__list-note">`, which the script adds after the
 list, with `data-state="empty"` or `data-state="error"`. The list (`<ul>`) is `hidden`
@@ -112,7 +141,7 @@ to offer the saved password at sign-in and a new one at registration, and WCAG 2
 | `login` | `login` | `username` |
 | `login` | `password` | `current-password` |
 | `register` | `email` | `email` |
-| `register` | `username` | none |
+| `register` | `username` | `username` |
 | `register` | `password`, `password_confirm` | `new-password` |
 | `reset-request` | `login` | `username` |
 | `reset` | `password`, `password_confirm` | `new-password` |
@@ -121,11 +150,11 @@ to offer the saved password at sign-in and a new one at registration, and WCAG 2
 | `profile` | `last_name` | `family-name` |
 | `profile` | `email` | `email` |
 
-The registration form's optional username has no value on purpose. Chromium writes the
-person's saved email address into a field marked `username` when they pick a saved
-address for the form, and an address with a character a username cannot hold (the `+`
-of `name+shop@example.com`) is then refused as a username, where the same person
-registers when the field is left empty. The display name is a `nickname` and not a
+Chromium writes the person's saved email address into a field marked `username` when
+they pick a saved address for the form, so at registration it writes the address into
+**Email** and into the optional **Username**. The account takes a username that is the
+person's own address as no username (see [Usernames](#usernames)), and the account made
+is the one they get with the field left empty. The display name is a `nickname` and not a
 `name`: it is the name a member is shown by, and with `name` Chromium takes it for the
 full name of a saved address and writes that over it when a fill is started there.
 Chromium does not know `nickname`: it fills nothing into that field, and its developer
@@ -141,6 +170,12 @@ The registration form's **Username** field is optional.
   characters `_ . - @`. WordPress does not refuse such a username, it removes what it does
   not accept and keeps the rest, and the person could then not sign in with the name they
   chose. Spaces before and after it are taken off and are not a reason to refuse it.
+- A username that is the person's own email address is taken as no username. A browser
+  writes a saved address into the field, and an address is not always a username an
+  account can have: `name+shop@example.com` has a `+`, and an address can be longer than
+  a login. The two are compared without regard to capitals, after the spaces around the
+  username are taken off. Any other address typed as the username is judged as a
+  username.
 - With no username, the login is made from the email address. WordPress removes from it
   the characters a login cannot hold (the `+` of `name+shop@example.com`, for one), and the
   person signs in with the address.
@@ -226,10 +261,10 @@ All routes live under `corex/v1/account/`:
 | `POST reset-request` | public | Email a reset link (generic response — no user enumeration). With `page`, the value of the forgot-password form's hidden field, the link is to that page. |
 | `POST reset` | public | Set a new password from a valid reset key. |
 | `POST profile` | signed-in | Update the current user's profile. Answers `422` with the code `email_too_long` for an address over 100 characters, and with `display_name_too_long` for a display name WordPress would keep in more than 250. |
-| `GET sessions` | signed-in | List the current user's active sessions. |
+| `GET sessions` | signed-in | List the current user's active sessions. Each has `device` and `signedIn`, the two lines the block prints, beside `current`, `login`, `expiration`, `ip` and `ua`. |
 | `POST sessions/revoke-others` | signed-in | End every other session. |
 | `POST sessions/revoke-all` | signed-in | End every session. |
-| `GET notifications` | signed-in | The current user's recent account activity. |
+| `GET notifications` | signed-in | The current user's recent account activity: the newest ten events the account block recorded for them. Each has `label` and `when`, the two lines the block prints, beside `kind`, `occurredAt` (ISO 8601) and the rest. |
 
 Authenticated routes require a signed-in user and the standard REST nonce
 (`X-WP-Nonce`); the service also confirms a user only ever edits their own profile or
@@ -255,8 +290,10 @@ A display name is what WordPress signs a comment or a post with, for every visit
 - With a username, the account is shown by it.
 - With no username, the account's login is its email address, and it is shown by the part of
   the address before the @: `dalia.hassan@example.com` is shown as `dalia.hassan`, and its
-  author page is at `author/dalia-hassan`. The address itself is not shown. An
-  email address typed into the Username field is treated the same way.
+  author page is at `author/dalia-hassan`. The address itself is not shown. The
+  person's own address in the Username field is no username, so it makes the same
+  account. Another email address typed there is the login, and the account is shown by
+  the part before its @.
 - An address too long to be the login is shown the same way, by the part before the @.
 - The person signs in with the address either way, and changes the display name on the
   account block's **Profile** form.

@@ -270,6 +270,54 @@ it('asks for a username when the gateway has no login for the address', function
         ->and($gateway->calls)->toBe([]);
 });
 
+it('takes a username that is the person\'s own address as no username', function (string $email, string $username, bool $aUsernameAnAccountCanHave) {
+    $gateway = new FakeAuthGateway();
+    // What the gateway would answer were it asked about the address as a username. It is not
+    // asked: the account is the one the address gets with the field left empty, either way.
+    $gateway->acceptsUsername = $aUsernameAnAccountCanHave;
+    $gateway->loginForAddress = 'the-login-for-the-address';
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        $email,
+        'strongpassword',
+        'strongpassword',
+        $username,
+        true,
+    ));
+
+    expect($result->success)->toBeTrue()
+        ->and($gateway->created)->toBe([
+            'login' => 'the-login-for-the-address',
+            'name'  => substr($email, 0, (int) strrpos($email, '@')),
+        ]);
+})->with([
+    'a plain address' => ['jane@example.com', 'jane@example.com', true],
+    'an address with a plus' => ['jane+shop@example.com', 'jane+shop@example.com', false],
+    'the address in other capitals' => ['jane+shop@example.com', 'Jane+Shop@Example.COM', false],
+    // WordPress takes it as a username and refuses it when the account is made: over 60 characters.
+    'an address too long to be a login' => [
+        str_repeat('j', 55) . '@example.com',
+        str_repeat('j', 55) . '@example.com',
+        true,
+    ],
+]);
+
+it('still judges a username that is an address and not the person\'s own', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->acceptsUsername = false;
+
+    $result = makeAccountService($gateway)->register(new RegistrationRequest(
+        'jane+shop@example.com',
+        'strongpassword',
+        'strongpassword',
+        'jane+work@example.com',
+        true,
+    ));
+
+    expect($result->code)->toBe('invalid_username')
+        ->and($gateway->calls)->toBe([]);
+});
+
 it('refuses an address longer than an account holds', function () {
     $gateway = new FakeAuthGateway();
     $address = str_repeat('a', 60) . '@' . str_repeat('b', 28) . '.example.com';

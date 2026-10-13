@@ -8,7 +8,11 @@
  * outside it. A request that got no answer it can read is said there too. On the member
  * view it also loads active sessions and recent activity and wires the "sign out
  * other/every session" actions. Under each of those two headings it shows the list, or
- * that there is nothing to list, or that the list could not be loaded. With no JS the
+ * that there is nothing to list, or that the list could not be loaded. A row is the lines
+ * the server worded for a person (a session's device and when it signed in; what happened
+ * and when): the script words nothing and formats no date. Both lists are asked for again
+ * after a profile is saved and after a session button, so that what was just done is
+ * listed. With no JS the
  * block shows a note saying so
  * (`AccountRenderer`), and a form is sent to the page's own address, which does not
  * answer it (PROGRESS.md, "Open, and not hidden").
@@ -36,8 +40,10 @@
 		profile: 'account/profile',
 	};
 	const LIST_NOTE_CLASS = 'corex-account__list-note';
+	const ENTRY_CLASS = 'corex-account__entry';
 	// The member view's two lists: where each is asked for, what the answer names it,
-	// where it is drawn, and what stands in its place when there is nothing to draw.
+	// where it is drawn, the lines of one row from the top, and what stands in the
+	// list's place when there is nothing to draw.
 	const SESSIONS = {
 		path: 'account/sessions',
 		key: 'sessions',
@@ -48,13 +54,14 @@
 			i18n.sessionsNotLoaded ||
 			'Your sessions could not be loaded. ' +
 				'Load this page again to see them.',
-		label( session ) {
-			return (
-				( session.ua || i18n.session || 'Session' ) +
-				( session.current
-					? ' — ' + ( i18n.thisDevice || 'this device' )
-					: '' )
-			);
+		lines( session ) {
+			return [
+				session.device +
+					( session.current
+						? ' — ' + ( i18n.thisDevice || 'this device' )
+						: '' ),
+				session.signedIn,
+			];
 		},
 	};
 	const ACTIVITY = {
@@ -66,8 +73,8 @@
 			i18n.activityNotLoaded ||
 			'Your recent activity could not be loaded. ' +
 				'Load this page again to see it.',
-		label( event ) {
-			return ( event.kind || '' ) + ' · ' + ( event.occurredAt || '' );
+		lines( event ) {
+			return [ event.label, event.when ];
 		},
 	};
 
@@ -217,6 +224,25 @@
 	}
 
 	/**
+	 * Makes one row of a list: what it is on its first line, and under it what else the
+	 * server said of it. A line the server left empty is not drawn.
+	 *
+	 * @param {Array<?string>} lines The row's lines, from the top.
+	 * @return {Element} The row's `<li>`.
+	 */
+	function entry( lines ) {
+		const li = document.createElement( 'li' );
+		li.className = ENTRY_CLASS;
+		lines.filter( Boolean ).forEach( function ( text, index ) {
+			const line = document.createElement( 'span' );
+			line.className = ENTRY_CLASS + ( index === 0 ? '-main' : '-meta' );
+			line.textContent = text;
+			li.appendChild( line );
+		} );
+		return li;
+	}
+
+	/**
 	 * Draws under a list's heading what a request for the list came back with: its rows,
 	 * or a sentence in their place saying that there are none, or that the list could not
 	 * be loaded.
@@ -234,9 +260,7 @@
 		const hasRows = rows !== null && rows.length > 0;
 		list.textContent = '';
 		( rows || [] ).forEach( function ( row ) {
-			const li = document.createElement( 'li' );
-			li.textContent = kind.label( row );
-			list.appendChild( li );
+			list.appendChild( entry( kind.lines( row ) ) );
 		} );
 		list.hidden = ! hasRows;
 		note.hidden = hasRows;
@@ -257,6 +281,13 @@
 		get( kind.path, kind.key, token ).then( function ( rows ) {
 			drawList( list, kind, rows );
 		} );
+	}
+
+	// Both lists, as the site holds them now. A press that was taken changes both: a saved
+	// profile and signed-out sessions are recorded as activity.
+	function loadLists( token ) {
+		loadList( SESSIONS, token );
+		loadList( ACTIVITY, token );
 	}
 
 	// The page no longer shows who is looking at it: it is loaded again, once the answer
@@ -294,7 +325,7 @@
 			post( path, serialize( form ), token ).then( function ( out ) {
 				answer( form, out );
 				if ( out.ok && kind === 'profile' ) {
-					loadList( SESSIONS, token );
+					loadLists( token );
 				}
 				if ( out.ok && ( kind === 'login' || kind === 'reset' ) ) {
 					reloadSoon();
@@ -326,7 +357,7 @@
 							reloadSoon();
 							return;
 						}
-						loadList( SESSIONS, token );
+						loadLists( token );
 					} );
 				} );
 			}
@@ -348,8 +379,7 @@
 		);
 
 		wireActions( token );
-		loadList( SESSIONS, token );
-		loadList( ACTIVITY, token );
+		loadLists( token );
 	}
 
 	if ( document.readyState === 'loading' ) {
