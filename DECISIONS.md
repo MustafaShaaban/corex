@@ -11855,6 +11855,144 @@ whose path has a backslash in it, so that it fails without the change on a Linux
 too, where it is a folder with a backslash in its name. 49 of the 64 tests failed before
 the change.
 
+## #335 — A new account is not named by its email address: the part before the @, in the three names WordPress makes from a login
+
+**Date:** 2026-10-13. **Branch:** `fix/account-display-name-not-the-address`. **Found by:**
+the reading for #333, which recorded it in PROGRESS.md as read and not run. This is the
+measurement and the change.
+
+**What the code did.** The registration form's Username field is optional.
+`AccountService::register()` makes the login the email address when it is left empty, and
+`WordPressAuthGateway::createUser()` handed `wp_insert_user()` `'display_name' => $login`.
+
+**Measured over HTTP on WordPress 7.1.3, before the change.** Two accounts registered
+through `POST corex/v1/account/register` with no username, each then signed in through the
+add-on and posted one comment through `wp-comments-post.php`; a moderator approved it; an
+editor then published one post in the account's name. What was stored:
+
+| | `dalia.hassan@example.com` | `name+shop@example.com` |
+|---|---|---|
+| `user_login` | `dalia.hassan@example.com` | `nameshop@example.com` |
+| `user_nicename` | `dalia-hassanexample-com` | `nameshopexample-com` |
+| `display_name` | `dalia.hassan@example.com` | `name+shop@example.com` |
+| `nickname` | `dalia.hassan@example.com` | `nameshop@example.com` |
+| the comment's `comment_author` | `dalia.hassan@example.com` | `name+shop@example.com` |
+
+What a request with no cookie was given:
+
+| Where | Shows the address | Shows the nicename |
+|---|---|---|
+| the post's page, at the comment | yes, as the comment's author | yes, as the class `comment-author-<nicename>` |
+| `GET wp/v2/comments/<id>` | yes, in `author_name` | no |
+| the comments feed | yes, in `dc:creator` | no |
+| `GET wp/v2/users/<id>`, the account having no published post | no: 401 | no |
+| `GET wp/v2/users/<id>`, one post published in its name | yes, in `name` | yes, in `slug` |
+| that post's page | yes, as the author | no |
+| the posts feed | yes, in `dc:creator` | no |
+
+The account block prints the display name to the account's owner in "Signed in as"; that is
+the owner reading their own address. The two emails WordPress sent the moderator about the
+comment name the address twice each, as the author and as the email, which a moderator is
+shown anyway.
+
+**What others do, read and not run.**
+
+- WordPress's own registration (`register_new_user()` in `wp-includes/user.php`, 7.1.3, read
+  in this install) refuses an empty username, so its login is never the address unless
+  somebody types it. It hands `wp_insert_user()` no display name, and `wp_insert_user()`
+  then uses the first and last name if there are any and the login if not. "Left for
+  WordPress to choose" is therefore the login, which here is the address: it would have
+  changed nothing. The nickname defaults to the login, and the nicename to
+  `sanitize_title()` of the login's first 50 characters.
+- WooCommerce (`wc_create_new_customer()` and `wc_create_new_customer_username()` in
+  `plugins/woocommerce/includes/wc-user-functions.php`, read from its `trunk` on GitHub on
+  2026-10-13; WooCommerce is not in this repository) makes a login for a customer who gave
+  none: the first and last name if it has them, otherwise the part of the address before
+  the @, or the domain when that part is `sales`, `hello`, `mail`, `contact` or `info`,
+  with a hyphen and four random digits added when the login is taken. It hands over no display name,
+  so the customer is named by that login.
+
+**The decision.** A login that is an email address is not a name to sign with.
+`Corex\Profile\Account\PublicName::forLogin()` answers the part before the @ for such a
+login and the login itself for any other, and `createUser()` hands WordPress three names
+made from it:
+
+- `display_name` and `nickname`: the name, as it is in the address (`name+shop`).
+- `user_nicename`: the name's first 50 characters, which WordPress cleans as it cleans any
+  nicename (`nameshop`) and makes unique itself. It refuses a nicename over 50 characters
+  and one that comes out empty, so the first is cut here and the second is not handed
+  over: for `+!+@host.example.com` WordPress makes the nicename from the login as before,
+  `host-example-com`, which has no part of the name in it.
+
+The login is left as it is. The person signs in with the address, as #333 measured, and
+`wp/v2/users` has no login in what it gives a visitor.
+
+**An address typed as the username is treated the same.** The rule is asked of the login,
+not of whether the Username field was empty: `salma@example.org` typed there is as much an
+address on a comment as one the add-on put there. A username with an @ that is not an
+address (`salma@home`) is a username.
+
+**Why the part before the @ and not something neutral.** It is what WooCommerce does, it
+is recognisably the person's, and its owner can change it on the Profile form. It is still
+a part of the address: `dalia.hassan` on a comment says more than "Member 41" would.
+Nothing better is known about somebody who gave an address and a password. A registration
+form that asks for a name would be the better answer and is a product change.
+
+**It opens no new way to take somebody's name.** Somebody who registers as
+`admin@elsewhere.example` is now shown as "admin". The Profile form already lets any member
+set any display name, "admin" included; it is written here so that nobody reads it as new.
+
+**Where the rule lives.** In the gateway, with `PublicName` as a pure class beside it. The
+nickname and the nicename are WordPress's, and WordPress makes them from the login unless
+it is told otherwise: which fields have to be told is knowledge of WordPress. The
+`AuthGateway` interface is unchanged, so a class of a site's own that implements it does
+not change either.
+
+**Existing accounts are not rewritten.** An account registered before this keeps its three
+names. A display name may be one its owner has since chosen and cannot be told from one
+they did not; a changed nicename breaks every link to the author page. Measured on the
+first account above: after its display name was changed to "Dalia H.", the post's page
+still showed the address four times at the old comment and the new name not at all, because
+WordPress copies the author's name into the comment's row when it is posted; the posts feed
+showed "Dalia H.". So putting an old account right is three things, the account's names,
+its nicename and its comments' author column, and each is a rewrite of a site's data. The
+owner's word is needed for it; nothing here does it.
+
+**Whether a client site is changed by this.** The add-on is left off on Muva by its own
+DECISIONS #4, and is inactive, with registration closed, on the Perego and Mizzey installs
+of the development machine (read on 2026-10-13 with `wp plugin list` and
+`wp option get users_can_register`; their live hosts were not read). So nothing a visitor of
+those sites sees changes, which is why this was built without asking first.
+
+**Not done, and recorded in PROGRESS.md.**
+
+- An address of more than 60 characters cannot register without a username. Measured:
+  `POST register` with a 74-character address and no username answers 422, "Username may
+  not be longer than 60 characters.", to somebody who typed no username. Older than this
+  change.
+- The email a new member is sent is WordPress's "Login Details", which says "To set your
+  password, visit the following address:" with a reset link, to somebody who has just
+  chosen a password. Read from what was handed to `wp_mail()` in the same run, not looked
+  into.
+
+**Tests.** `tests/Unit/Profile/PublicNameTest.php`: four logins that are addresses and four
+that are not. `tests/Integration/Profile/RegistrationPublicNameTest.php`, on real WordPress
+through the REST server: the three names of an account with no username; that it signs in
+with its address; that a comment it posts is given to a visitor by `wp/v2/comments` with
+the name and with no part of the address's host, and has no such part in its classes; a
+typed username kept as the name; a typed address not kept as one; a first part of 52
+characters; a first part no nicename can be made from. Five of the seven failed before the
+change. Each line of the change was put back in turn and a test failed for each, but one: a
+condition that left the nicename of a login that is not an address to WordPress, which no
+test could tell from handing over the same nicename, and which was removed.
+
+**Verified after the change, over HTTP on the same install:** `karim.adel@example.com` is
+stored with the login `karim.adel@example.com`, the nicename `karim-adel`, and the display
+name and nickname `karim.adel`; the account block reads "Signed in as karim.adel"; the
+address is in none of the seven places of the table above, and neither is the login. Mail
+was answered for before WordPress's mailer in every run (`pre_wp_mail`), on a WordPress of
+this worktree's own.
+
 ## #330 — A template's subject is a header too: sent as written, with what is merged into it, on one line
 
 **Date:** 2026-10-13. **Branch:** `fix/template-subject-kept-as-written`. **Found by:** the

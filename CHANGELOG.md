@@ -65,6 +65,22 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A new account with no username is no longer named by its email address.** The
+  registration form's Username field is optional, and an account made without one has its
+  address as its login. The account add-on handed that login to WordPress as the display
+  name, and WordPress made the nickname and the address of the author page from it too.
+  Measured on WordPress 7.1.3, for a visitor who is not signed in: a comment by
+  `dalia.hassan@example.com` was signed `dalia.hassan@example.com` on the post's page, in
+  `wp/v2/comments` and in the comments feed, and its markup had the class
+  `comment-author-dalia-hassanexample-com`; once a post was published in that account's
+  name, `wp/v2/users/<id>` gave the address as the name and `dalia-hassanexample-com` as
+  the slug, and the post's page and the posts feed named the address. Such an account is
+  now named by the part of its address before the @: the display name and the nickname are
+  `dalia.hassan`, and the author address is `dalia-hassan`. Its login is still the address,
+  and its owner signs in with the address as before. An email address typed into the
+  Username field is treated the same way. An account with a username that is not an email
+  address is named by it, as before (DECISIONS #335).
+
 - **The account block says what happened under the button that was pressed.** The
   `corex/account` block had one message line, above its forms, for everything the server
   answers: a refused sign-in, a refused registration, "a reset link is on its way", a saved
@@ -220,6 +236,22 @@ All notable changes to Corex are documented here. The format follows
   (`.corex-account__row input`) are sized with their padding and border inside their
   width. Read on this machine: nothing under `sites/` in the Muva or Perego checkouts
   names the block. Nothing to rebuild: the block's script and stylesheet are not built.
+- **An account registered through the account block before this release, with no
+  username, keeps its email address as its display name** and nickname, and keeps the
+  address, without its punctuation, in the address of its author page. Nothing rewrites
+  them: a display name may by now be one its owner chose, and a changed author address
+  breaks the links to it.
+  `wp user list --fields=ID,user_login,user_nicename,display_name,user_email` shows them:
+  such an account's login is its address. Its owner can change the display name
+  on the account block's **Profile** form. That does not change the nickname or the author
+  address, and, as measured, it does not change the comments already written: WordPress
+  copies the name into each comment when it is posted. From this release, on a site with
+  the add-on active and registration open, a new member who typed no username is shown
+  "Signed in as" the first part of their address, and their comments are signed with it.
+  Nothing to rebuild: no screen, script, style, route or interface changed. The add-on is
+  switched off on Muva by its own decision record, and is inactive, with registration
+  closed, on the Perego and Mizzey installs of the development machine, as read on
+  2026-10-13; their live hosts were not read.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The

@@ -99,3 +99,19 @@ sessions.
   discover which emails have accounts.
 - Every account operation returns a typed result; passwords, reset keys, and session
   tokens never appear in a response.
+
+## The name a new account is shown by
+
+A display name is what WordPress signs a comment or a post with, for every visitor.
+
+- With a username, the account is shown by it.
+- With no username, the account's login is its email address, and it is shown by the part of
+  the address before the @: `dalia.hassan@example.com` is shown as `dalia.hassan`, and its
+  author page is at `author/dalia-hassan`. The address itself is not shown. An
+  email address typed into the Username field is treated the same way.
+- The person signs in with the address either way, and changes the display name on the
+  account block's **Profile** form.
+
+An account registered before this rule (CoreX 0.45.2 and earlier) keeps the name it has,
+which is the whole address when no username was typed. Changing its display name does not
+change the comments it has already written: WordPress stores the name with each comment.
