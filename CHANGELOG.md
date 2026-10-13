@@ -150,10 +150,26 @@ All notable changes to Corex are documented here. The format follows
   fields `nickname` (the display name), `given-name`, `family-name` and `email`.
   Chromium now reads registration as a new account and the forgot-password form as one
   with a username. It offered to save the password after sign-in before, and still does.
-  Registration's optional username is left without a value: with `username` on it
-  Chromium wrote the person's saved email address into it, and an address with a `+` was
-  then refused as a username where the same person registered before (spec 068, FR-161c;
-  DECISIONS #342).
+  Registration's optional username is `username` too, with the account rule of the next
+  entry: with the value alone Chromium wrote the person's saved email address into it,
+  and an address with a `+` was then refused as a username where the same person
+  registered before (spec 068, FR-161c; DECISIONS #342 and #347).
+
+- **A username that is the person's own email address is taken as no username.** The
+  registration form's Username field is optional, and with none the login is made from
+  the address. Somebody whose address was in both fields was judged by the one in
+  Username: `name+shop@example.com` was refused with "A username can have letters without
+  accents, numbers, spaces and the characters _ . - @ and no others.", and an address of
+  61 characters or more with WordPress's "Username may not be longer than 60
+  characters."; the same person registered with the field left empty. A browser puts the
+  address there: Chromium writes a saved address into a field marked `username`. The
+  account service now takes the person's own address in Username, in any capitals, as no
+  username, so the account is the one the address gets with the field empty: the same
+  login, the same name, the same answer. Any other username, another address among them,
+  is judged as before. Measured in Chromium 153 with the field marked `username`: a
+  registration filled from a saved address with a `+` in it had the address in both
+  fields and was refused before the change, and is made after it (spec 068, FR-158d;
+  DECISIONS #347).
 
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
@@ -340,14 +356,25 @@ All notable changes to Corex are documented here. The format follows
   machine on 2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the
   block or an id of it. Nothing to rebuild.
 - **The account block's fields gain an `autocomplete` attribute.** Only for a site that
-  has Corex Profile on. Every labelled field of the block has one now, except the
-  registration form's optional username; the profile guide lists the values. A visitor's
+  has Corex Profile on. Every labelled field of the sign-in, registration,
+  forgot-password and profile forms has one now; the profile guide lists the values. A visitor's
   browser may offer more than it did: Chromium takes the sign-in and the forgot-password
   field for an email address as well as a username, and the registration form's passwords
   for new ones. A site that prints its own sign-in form beside the block, or sets
   `autocomplete` on these fields from its own script, should check that the two agree. No
   id, name, class or route changed. Read on this machine on 2026-10-13: nothing under
   `sites/` in the Muva or Perego checkouts names the block. Nothing to rebuild.
+- **A registration with the person's own address as the username can make a different
+  account than it did.** Only for a site that has Corex Profile on and registration open.
+  Where the address was typed into Username in other capitals than into Email
+  (`Kim@Example.com` beside `kim@example.com`), the login was the username as typed and
+  the account was named `Kim`; the login is now the address as it is in Email, and the
+  name `kim`. Where the address was refused as a username (a `+` in it, or over 60
+  characters) the account is now made. The same address in both fields in the same
+  capitals makes the account it made before. No method was added to `AuthGateway`, so a
+  site's own gateway needs no change. Read on this machine on 2026-10-13: nothing under
+  `sites/` in the Muva or Perego checkouts names the block, the account service, the
+  gateway or the register route. Nothing to rebuild.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The

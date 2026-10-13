@@ -198,16 +198,16 @@ function labelTies( page ) {
 
 /**
  * What each field of a signed-out form tells the browser it is for: its `autocomplete` value,
- * and null for a field that has none. The field left for bots is never to be filled in; the
- * username somebody may choose at registration is left alone, because Chromium writes the
- * person's address into a field marked `username` (DECISIONS #342).
+ * and null for a field that has none. The field left for bots is never to be filled in.
+ * Chromium writes the person's address into a field marked `username`, registration's own
+ * among them, and the account takes that address as no username (DECISIONS #347).
  */
 const SIGNED_OUT_PURPOSES = {
 	login: { login: 'username', password: 'current-password' },
 	register: {
 		corex_hp: 'off',
 		email: 'email',
-		username: null,
+		username: 'username',
 		password: 'new-password',
 		password_confirm: 'new-password',
 	},
@@ -215,14 +215,18 @@ const SIGNED_OUT_PURPOSES = {
 };
 
 /**
- * The `autocomplete` value of each text field of the block, by form and field name.
+ * The `autocomplete` value of each field of the block somebody fills in, by form and field
+ * name. A tick box collects nothing about the person, and a hidden field is not theirs to fill:
+ * the forgotten password form carries the page it is on in one (DECISIONS #341).
  *
  * @param {import('@playwright/test').Page} page The page.
  * @return {Promise<Object>} For each form on the page, its fields' values; null where a field has none.
  */
 function fieldPurposes( page ) {
 	return page
-		.locator( '[data-corex-account-form] input:not([type="checkbox"])' )
+		.locator(
+			'[data-corex-account-form] input:not([type="checkbox"]):not([type="hidden"])'
+		)
 		.evaluateAll( ( fields ) => {
 			const purposes = {};
 			fields.forEach( ( field ) => {

@@ -41,14 +41,16 @@ final class AccountRenderer
      * tells them apart. The display name is the name a member is shown by, so it is a
      * `nickname` and not their full `name`.
      *
-     * Registration's own username is left out on purpose: Chromium fills a field marked
-     * `username` with the person's saved email address, and an address is not always a
-     * username the form accepts (DECISIONS #342).
+     * Chromium fills a field marked `username` with the person's saved email address, also
+     * the one registration has beside its email field. The account service takes that
+     * address as no username ({@see \Corex\Profile\Account\AccountService::register()}),
+     * so the value is safe there (DECISIONS #347).
      */
     private const PURPOSES = [
         'login'         => ['login' => 'username', 'password' => 'current-password'],
         'register'      => [
             'email'            => 'email',
+            'username'         => 'username',
             'password'         => 'new-password',
             'password_confirm' => 'new-password',
         ],
