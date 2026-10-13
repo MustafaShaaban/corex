@@ -334,10 +334,30 @@ jobs:
       # up at all — the editor element never appeared, with no console error and nothing 404ing, so
       # it was not a missing asset or a starved worker pool. A real server also gives proper rewrite
       # routing instead of the built-in server's blanket index.php fallback.
+      # PROBE ONLY (pull request #406, not to be merged). On ubuntu-26.04 the step below stopped at
+      # "E: Unable to locate package php8.3-fpm". This prints what PHP-FPM the runner has once
+      # setup-php has run, and nothing here can fail the job.
+      - name: Probe, what PHP-FPM this runner has
+        run: |
+          set +e
+          echo "::group::binaries";            command -v php php-fpm php-fpm8.3 php-fpm8.5; ls -l /usr/sbin/php-fpm* /etc/alternatives/php-fpm* 2>&1; php -v; echo "::endgroup::"
+          echo "::group::/etc/php";            ls /etc/php /etc/php/8.3 /etc/php/8.3/fpm /etc/php/8.3/fpm/pool.d 2>&1; ls /etc/php/8.3/fpm/conf.d 2>&1 | tail -n 15; grep -n '^listen\|^user\|^group' /etc/php/8.3/fpm/pool.d/www.conf 2>&1; echo "::endgroup::"
+          echo "::group::systemd units";       systemctl list-unit-files 'php*' --no-pager 2>&1; systemctl status php8.3-fpm --no-pager 2>&1 | head -n 15; ls -l /run/php 2>&1; echo "::endgroup::"
+          echo "::group::packages";            dpkg -l 2>/dev/null | grep -i 'php\|nginx' | awk '{print $1, $2, $3}'; echo "::endgroup::"
+          echo "::group::apt";                 ls /etc/apt/sources.list.d 2>&1; sudo apt-get update -qq 2>&1 | tail -n 5; apt-cache policy php8.3-fpm php8.5-fpm php-fpm nginx 2>&1; echo "::endgroup::"
+          echo "::group::php-fpm log so far";  sudo cat /var/log/php8.3-fpm.log 2>&1; echo "::endgroup::"
+          exit 0
+
       - name: Serve WordPress
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq nginx php8.3-fpm
+          # PROBE ONLY: the package is asked for only where setup-php left no php-fpm8.3 behind.
+          if command -v php-fpm8.3 > /dev/null; then
+            echo "php-fpm8.3 is already here: $(command -v php-fpm8.3)"
+            sudo apt-get install -y -qq nginx
+          else
+            sudo apt-get install -y -qq nginx php8.3-fpm
+          fi
           sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
           server {
             listen 8080 default_server;
