@@ -17,6 +17,9 @@ defined('ABSPATH') || exit;
  * registered with no username has its address as its login, and an address is not a thing to
  * sign a comment with for every visitor to read. Such an account goes by the part of the
  * address before the @, which is what its owner can change on their profile.
+ *
+ * An address too long to be a login is named the same way, from the address and not from the
+ * login made for it ({@see AuthGateway::loginForAddress()}).
  */
 final class PublicName
 {

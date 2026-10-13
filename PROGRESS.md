@@ -213,10 +213,17 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   comment (measured 2026-10-13). Putting them right rewrites a site's accounts and comments
   and is the owner's to ask for. The add-on is off in Muva's decision record and on the
   Perego and Mizzey development installs; their live hosts were not read.
-- **An email address of more than 60 characters cannot register without a username.**
-  Measured on 2026-10-13: the login is made from the address, WordPress refuses a login
-  over 60 characters, and the person is told "Username may not be longer than 60
-  characters." having typed none. Not changed.
+- **A display name of more than 191 characters breaks the Profile form.** Measured on
+  2026-10-13 through the route: a name of 192 to 250 characters is saved and the request
+  then throws, because the activity record holds a name in 191 and
+  `WpActivityRepository::append()` raises when its insert is refused; a name of 251 is not
+  stored at all, while a first name sent with it is. Seen while measuring DECISIONS #338.
+  Not changed.
+- **A login made for a long address can still be refused by something else.** An address
+  of 61 to 100 characters with no username gets a login made from its first part
+  (DECISIONS #338). A listener on `pre_user_login` or `illegal_user_logins`, or a second
+  registration at the same moment for the same login, ends in WordPress's own message
+  about a username the person did not type. Read, not run.
 - **A new member who chose a password is emailed a link to set one.** The account gateway
   sends WordPress's own new-user email, which reads "To set your password, visit the
   following address:". Read on 2026-10-13 from what was handed to `wp_mail()`; what
