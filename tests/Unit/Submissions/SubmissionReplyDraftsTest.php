@@ -126,6 +126,10 @@ function draftedReplyGateway(string $state): SubmissionEmailGateway
 function draftedReplyService(SubmissionReplyDraftStore $drafts, string $state): SubmissionEmailService
 {
     $replies = new class() implements SubmissionReplyStore {
+        public function replace(int $submissionId, SubmissionReplyRecord $was, SubmissionReplyRecord $now): void
+        {
+        }
+
         public function add(int $submissionId, SubmissionReplyRecord $reply): void
         {
         }

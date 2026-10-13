@@ -120,7 +120,8 @@ final class WordPressAuthGateway implements AuthGateway
 
         foreach (['display_name', 'first_name', 'last_name'] as $key) {
             if (isset($fields[$key])) {
-                $update[$key] = sanitize_text_field($fields[$key]);
+                // WordPress takes one level of slashes off a user's fields on their way in.
+                $update[$key] = wp_slash(sanitize_text_field($fields[$key]));
             }
         }
 

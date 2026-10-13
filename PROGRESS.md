@@ -60,7 +60,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [103](specs/103-submissions-inbox-export/spec.md), the submissions inbox and its exports | every slice | three tasks: T045, T043b, and T074b (to whom a notification went, which the server does not record) | the tasks file |
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
-| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 5. Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
+| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then the rest of 5 (the reply's sender). Slice 5's first half is built: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built | a first installation on a shared host, watched |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | slices 1 and 2 of six: personal data marked and asked about by one rule (DECISIONS #309); several models in one export, with a history and a 30-day expiry (#312) | slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
@@ -165,18 +165,45 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   plain-text version, with a manual one saved on the template. A reply has one. The version
   nobody sends also loses what follows a `<` in a merged value ("under <500 EGP" is "under"
   there). Found while reading for DECISIONS #330, not changed.
-- **Email Studio's store drops a backslash from everything it keeps.** Its records go to
-  `update_post_meta()` without `wp_slash()` (`WpEmailStudioStore::create()` and `update()`).
-  Measured on 2026-10-13: an email with the subject "C:\offers\new" is listed, in Email
-  Studio's captured emails and attempts, as "C:offersnew", and its body loses them too. A
-  template, a layout and a partial are kept by the same store. The email itself leaves with
-  its backslashes, and a reply kept with its submission has them. Not changed.
+- **What Email Studio stored before its store kept a backslash is still without it.** The
+  store slashes what it hands to WordPress now (DECISIONS #329), and nothing repairs the
+  records already there: a template, a layout or a partial saved earlier with a backslash
+  in it has to be opened and saved again. Whether a client site holds one was not read.
+- **A name in Email Studio is cleaned as markup for a person who may not post markup.** A
+  template's, a layout's and a partial's name is a post's title, and WordPress cleans a
+  title for whoever lacks `unfiltered_html`. Measured on 2026-10-13 in a request nobody is
+  signed in for: `Tom & Jerry` is kept as `Tom &amp; Jerry` and `Price <500 EGP` as
+  `Price &lt;500 EGP`, and the screens print a name as text. An administrator of a single
+  site is not affected. By WordPress's rule an administrator of a site in a network is, and
+  so is one on a site that sets `DISALLOW_UNFILTERED_HTML`: read, not measured. The content
+  of a record is not a title and is kept as written. Not changed.
 - **The inbox's list is slow on a site with many thousands of submissions.** Measured on
   2026-10-11 with 10,000 of them: the statement that lists the inbox with no search took
   0.6 s, and 1.2 s on a second seeding; without the clause that leaves out submissions marked
   as tests it took 18 ms. A search is quicker than no search. Whether a client site holds
   anything near that number was not read. Measured for DECISIONS #318, not changed.
 
+- **A password with a quote or a backslash in it is not the same password at CoreX's
+  sign-in and at WordPress's.** Measured on 2026-10-13: a person who registers through the
+  account add-on with such a password is not signed in at `wp-login.php` with it, and a
+  password set on a WordPress screen is not accepted by the add-on's sign-in. WordPress's
+  own screens hash a password with the slashes of the request still on it; the add-on's
+  gateway hashes it as typed (`WordPressAuthGateway`, DECISIONS #332). Not changed: handing
+  it over slashed would lock out whoever registered through CoreX with such a password,
+  unless a sign-in tries both. An owner decision.
+- **A registration with a login WordPress will alter is accepted.** Measured on 2026-10-13:
+  the login `CORP\salma` is stored as `CORPsalma` by WordPress's own rule for a login, and
+  the person is told the account was created. Signing in with what they typed was not run.
+  The account add-on refuses an email address it would have to alter and not a login.
+- **What was stored before DECISIONS #331 and #332 is still without its backslashes**: a
+  form's answers, a flow, a note, a comment, an editorial note, a name, an imported row, a
+  kit's page, and on a Windows host the record of a WebP file. Nothing repairs it. A flow whose field has a `pattern:` rule with a
+  backslash in it does not check what was written until it is written again and published.
+  Whether a client site holds such a flow was not read.
+- **With ACF active, a field's value goes through `update_field()`, not measured.**
+  `FieldResolver` picks `AcfFieldDriver` when ACF is there, for a submission's answers too.
+  ACF is not in this repository, so whether it drops a backslash as WordPress's own meta
+  write did was not run, and the driver is not changed.
 - **Anonymizing a submission leaves its uploaded files on disk.** The retention panel's
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can
   find them afterwards. It is spec 105's fifth slice, not started; deleting a submission for good

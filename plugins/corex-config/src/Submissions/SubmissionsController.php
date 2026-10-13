@@ -40,6 +40,7 @@ final readonly class SubmissionsController
         $this->route('/submissions/(?P<id>\d+)/reply/preview', 'POST', 'previewReply');
         $this->route('/submissions/(?P<id>\d+)/reply/draft', 'POST', 'keepReplyDraft');
         $this->route('/submissions/(?P<id>\d+)/reply/draft', 'DELETE', 'discardReplyDraft');
+        $this->route('/submissions/(?P<id>\d+)/replies/(?P<reply>[0-9a-f-]{36})/send', 'POST', 'sendReplyAgain');
         $this->route('/submissions/(?P<id>\d+)/resend', 'POST', 'resend');
         $this->route('/submissions/(?P<id>\d+)/email-log', 'GET', 'emailLog');
         $this->route('/submissions/(?P<id>\d+)', 'DELETE', 'destroy');
@@ -171,6 +172,28 @@ final readonly class SubmissionsController
             );
 
             return Response::ok(['result' => $sent->result->toArray(), 'recorded' => $sent->recorded]);
+        });
+    }
+
+    /**
+     * Sends a reply that did not go another time, as it was written (spec 106, FR-022). The
+     * request names the reply and carries nothing else: what is sent is what is kept.
+     */
+    public function sendReplyAgain(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, [], function () use ($request): Response {
+            $sent = $this->services->email->sendAgain(
+                $this->scope(),
+                $this->changeable($request),
+                // From the path, which a body or a query string cannot answer for.
+                RouteParam::string($request, 'reply'),
+            );
+
+            return Response::ok([
+                'result' => $sent->result->toArray(),
+                'recorded' => $sent->recorded,
+                'draft_ended' => $sent->draftEnded,
+            ]);
         });
     }
 
@@ -531,6 +554,7 @@ final readonly class SubmissionsController
             'args' => [
                 'id' => ['sanitize_callback' => 'absint'],
                 'export' => ['sanitize_callback' => 'absint'],
+                'reply' => ['sanitize_callback' => 'sanitize_key'],
             ],
         ]);
     }

@@ -11433,6 +11433,293 @@ three; what is not text is refused and nothing is kept.
 `tests/Unit/Mail/SubjectLineTest.php` for the rule alone. Thirteen of the first file's
 tests and five of the second's failed before the change.
 
+## #328 — A reply that did not go is sent again as it was written, and stays one reply
+
+**Date:** 2026-10-13. **Branch:** `feat/106-reply-send-again`. **Spec:** 106, slice 5, its first half (story 4, FR-022).
+
+(#326 and #327 are held by two pull requests open the same day: the reply's subject kept as
+typed, and the copy button on the preview link.)
+
+Slice 1 lists a reply that was not sent, with the reason, "so the next person to open the
+submission knows the lead has not been answered". There was nothing they could do about it
+but write the reply again.
+
+**What is sent is what is kept.** The route names the reply and carries nothing else:
+`POST corex/v1/submissions/{id}/replies/{reply}/send`. The reply is the one the address
+names, read from the path, which a body or a query string cannot answer for. The subject and
+the message are the stored ones, reduced when they were first sent. Somebody who wants to say
+something else writes a reply.
+
+**One reply, tried twice.** The new sending is added to the reply's own list of attempts,
+which has been a list since slice 1 and never held more than one. The reply keeps who wrote
+it and when; the history says who sent it again. The list of replies says "Tried 2 times":
+"sent" would be untrue of a reply that failed both times.
+
+**By anybody who may answer the submission.** Not only whoever wrote it: it is the second
+person who finds it.
+
+**Which replies: the ones known not to have gone.** A reply whose last sending failed, was
+rejected or was returned. Not one that went or is waiting; not one kept on a site that keeps
+its email, which was not meant to arrive; and not one in a state this code does not know. The
+first version went by exclusion ("anything that is not sent or on its way"), which a state
+added to the mail seam later would have fallen into: the customer answered twice because of a
+word nobody listed. The server decides, and tells the pane with each reply
+(`can_send_again`), so there is one rule and not two that have to agree.
+
+**Claimed before it is sent.** The first version checked the reply, sent the email, and then
+wrote the reply over itself only if it was still as read. That protected the record and not
+the customer: two people pressing in the seconds a mail server takes both passed the check,
+and both emails went. Now the reply is written over itself as being sent (a last attempt in
+state `sending`, with no id) before the email is handed over, by matching the row as the
+database holds it, which the database does in one step. The second request finds the row
+changed and is refused with "Somebody else is sending this reply again", having sent
+nothing. When the email system has answered, what happened takes the place of the sending
+begun. The row is matched as stored and not as read, since a reply kept by an earlier
+release has fewer fields than the same reply read back.
+
+**A sending that was begun and never ended** (the request died between the two writes) would
+leave the reply waiting for ever. After ten minutes it can be sent again, and what happens
+then takes the abandoned sending's place. Ten minutes is far longer than a mail server is
+waited for and short enough that the lead is answered the same morning.
+
+**Which way it goes is decided when it goes.** A reply that was to join the conversation
+joins it where there still is one, answering the latest email the person has, and is sent as
+a new email otherwise and listed as one from then on. The spec's line "it keeps the place in
+the conversation it was first given" is read as that: the choice is kept, not the email it
+would have answered on the day it failed.
+
+**The writer's own draft.** A reply that fails stays in its writer's box and as their draft,
+for them to try again (FR-031). Sent again from the list by that same person, it has gone,
+and the box would still hold it with Send reply ready: the customer answered twice, the
+second time as a new reply. So where the draft of the person sending again is that same
+reply, subject and message, it is discarded with the sending, the route says so
+(`draft_ended`), and the pane empties the box. A draft that says anything else is theirs
+and is left.
+
+**What is said when it could not be written down.** A first sending that went and could not
+be kept says the reply "is not listed here". Of a reply sent again that is untrue, beside
+the reply it is about: it says the sending could not be written down, that the submission
+may go on listing the reply as it was, and not to send it again.
+
+**Not built here:** the reply's own sender (story 5), which is the other half of slice 5.
+
+**Reviewed** by an independent reading before the pull request. It found the two ways the
+customer could still be answered twice (the claim, the draft), the exclusion list, the
+reply read from where a body could answer for it, and "Sent 2 times" on a reply that never
+went. Each has a test that fails without its fix.
+
+**Found on the way, not this slice's:** Email Studio's store writes a record without
+`wp_slash()`, so an email kept on a development site loses its backslashes ("C:\offers" is
+kept as "C:offers"). The delivered email is not affected. Filed as a task of its own.
+
+**The inbox's list, fixed in the same pull request.** This slice's browser run failed on a
+test it had not touched: the inbox answered with an error while another test, in another
+worker, was deleting submissions for good. WordPress reads a page of posts in two steps, ids
+and then each post, and hands back nothing for one that went in between; the reader's list
+was typed to take posts and nothing else. A team with two people in the inbox, or a
+retention run, meets the same thing. The reader now passes over what is no longer there. It
+is here and not in a pull request of its own because it stood in this one's way; it is
+released code's defect, in the changelog under Fixed.
+
+## #331 — The data layer, the flow store and a submission's notes slash what they hand to WordPress
+
+**Date:** 2026-10-13. **Branch:** `fix/submission-stores-keep-backslashes`. **Found by:**
+the reading left as a comment on #368, which listed every write outside the email add-on
+that hands text to WordPress without `wp_slash()` and said of each: read, not measured.
+This is the first of two changes that measure that list. It takes the writes a form, a flow
+and the inbox go through. The second takes the rest.
+
+`wp_insert_post()`, `wp_update_post()` and `update_post_meta()` each take one level of
+slashes off what they are handed, because they were written for the text of a request. Text
+handed over as it is loses a level it did not have to spare. #329 is the same finding in
+Email Studio's store.
+
+**Measured on real WordPress, before the change**, each through the class named and read
+back the way a screen reads it:
+
+- `MetaFieldDriver::set()`: `C:\offers\new` was read back as `C:offersnew`,
+  `\\server\share` as `\servershare`, `content:"\201C"` as `content:"201C"`, `\"` as `"`,
+  and a backslash at the end of a text was gone. The same inside a list of any depth.
+- `SubmissionRepository::store()`, through the contact form's route: the message was read
+  without its backslashes by the inbox (`findWorkflow()`) and by the Data screen and an
+  export (`find()`).
+- `SubmissionRepository::storeFlow()`: the answers, the sender's name, the form's label,
+  each `corex_field_*` value, and the hidden values, the campaign and the consent wording.
+  The inbox's search did not find `CORP\salma.h` by `CORP\salma`: the search looks for the
+  text as typed and the stored text was another.
+- `PostRepository::create()` and `update()`: a model's title and content.
+- `WpFlowStore::create()` and `update()`: a flow's name and its content. A flow made
+  through the builder's route with the rule `pattern:^\d{2,4}$` was given back with
+  `pattern:^d{2,4}$`, and once published it refused the answer `2026` with a 422.
+- `WpSubmissionsReader::addWorkflowNote()`: a note's text. The notes of a submission are
+  one meta value, written again whole with each note: `\\server\share` in the first note
+  was `\servershare` once stored and `servershare` after the second note.
+- `SubmissionTimelineRepository::append()`, `SubmissionRepository::appendTimeline()` and
+  the retention event `WpSubmissionsReader` adds: the same one value, written again whole
+  by three writers, with the same loss on each write.
+- `WpSubmissionsReader::updateWorkflow()`: the team `CORP\sales` was stored as `CORPsales`.
+- Quotes alone, Arabic and accented text were not changed. What is not text kept its kind
+  inside a list. A single number or `true` was stored as text, and `false` as nothing,
+  before and after: that is how WordPress keeps a single meta value.
+
+**The change.** Each of those writes hands over `wp_slash()` of what it was given:
+`MetaFieldDriver::set()`; `PostRepository::create()` and `update()` for the post's own
+fields; `WpFlowStore::create()` and `update()` for the name and the content;
+`SubmissionTimelineRepository::append()`; and in `WpSubmissionsReader` the notes, the
+retention event and the value `updateWorkflow()` writes. `wp_slash()` goes through a list of
+any depth and adds slashes to text only, and what WordPress takes off is what it put on.
+`SubmissionRepository` writes through the driver and is not changed. The fix is at the
+write and not in the callers, because the driver and the repository are what a model
+written by a site goes through too.
+
+**Left as they were**, each read: a flow record's type and slug, held to patterns with no
+backslash in them; the dates, ids and fixed words the reader and `WpSubmissionTrashStore`
+write; the title `anonymizeForRetention()` writes.
+
+**Nothing relied on the stripping.** Read before the change: `FieldDriver::set()` is called
+by `PostRepository` and `SubmissionRepository` and nothing else; the two repositories built
+on `PostRepository` are `SubmissionRepository` and the email add-on's `EmailLogRepository`.
+Nothing in `plugins/`, `addons/` or `packages/` hands either of them, the flow store or
+the two workflow writes text from `$_POST`: what reaches them comes from a REST request,
+whose values arrive without slashes. Nothing slashes text before handing it over. A flow version's checksum
+is taken from its configuration each time the version is built, on the way in and on the
+way out, and the stored copy of it is compared with nothing: a draft read back carries the
+checksum of what is stored, which is what the next save is checked against, before and
+after. A query by a field (`QueryBuilder::where()`) and the inbox's search hand WordPress
+the text as typed, and now find it. The sites' own code was read in the Muva and Perego
+checkouts on this machine: neither calls the driver, a `PostRepository` or the flow store.
+
+**Records already stored are not repaired.** What was dropped is not in the database: a
+stored `C:offersnew` cannot be told from one that was typed so. A flow saved before this
+change with a backslash in a rule has to be opened, written again and published. What this
+change does stop is the loss going on: a note or an event stored without a level is written
+back as it is read from now on, and loses nothing more.
+
+**Not changed, and why:**
+
+- `AcfFieldDriver::set()` calls `update_field()`. ACF is not in this repository and was not
+  run: whether ACF takes a level of slashes off what `update_field()` is handed was not
+  measured, and it is not changed on a guess. On a site with ACF active the driver is the
+  ACF one, for a submission's answers too. PROGRESS.md, "Open, and not hidden".
+- `wp_slash()` leaves an object as it is, and WordPress goes into an object when it takes
+  the slashes off. A value object handed to the driver would still lose its backslashes.
+  Nothing hands it one today.
+- The other writes on the list (a comment, an editorial note, a profile's names, the WebP
+  record, a kit's pages, the four run stores) are the second change. The notification
+  preferences were measured and lose nothing: they hold a switch for each category.
+
+**Tests**, on real WordPress, each failing before the change for the texts with a backslash:
+`tests/Integration/Data/StoredTextKeepsBackslashesTest.php` (the driver, and a repository
+of a model defined in the test: created, updated, written back three times, found by a
+field, and made with nobody signed in); `tests/Integration/Forms/SubmissionKeepsBackslashesTest.php`
+(the contact form through its route, a flow's submission, the search, what is not text);
+`tests/Integration/Forms/FlowStoreKeepsBackslashesTest.php` (the store, the builder's
+routes, and a published flow's pattern asked of a visitor's answer);
+`tests/Integration/Submissions/SubmissionNotesKeepBackslashesTest.php` (notes, the history
+through its three writers, and the team). 62 of their 87 tests failed before the change.
+The texts they share are in `tests/Support/BackslashedText.php`.
+
+**Met while writing the tests:** a form defined in code notifies through `wp_mail()` on a
+site answered as a development one, which `MailDelivery::CAPTURE` does not hold back. The
+first two runs of the contact form's test called `mail()` once for each of its seven texts,
+on a WordPress of this worktree's own with no mail server behind it: PHP reported that it
+could not connect, and nothing left the machine. The test now answers `pre_wp_mail` as
+`SubmitLifecycleTest` does.
+
+## #332 — The rest of the writes slash what they hand to WordPress; a password is left as it is handed over
+
+**Date:** 2026-10-13. **Branch:** `fix/blog-profile-runs-keep-backslashes`, on top of #331's
+branch, whose test texts it shares. **Found by:** the same reading as #331. This is its
+second half: what is not a form, a flow or the inbox.
+
+**Measured on real WordPress, before the change:**
+
+- `CommentModerationService`: an edited comment and a reply were published without their
+  backslashes (`C:\offers\new` as `C:offersnew`). A reply's writer is named by their
+  display name, read from the database and handed to `wp_insert_comment()` as it was: a
+  writer shown as `CORP\salma.h` signed the reply `CORPsalma.h`.
+- `WpEditorialWorkflowStore::save()`: the notes are one meta value, written again whole
+  each time the post's workflow is saved. `\\server\share` in a note was `\servershare`
+  once stored and `servershare` after the item was saved again.
+- `WordPressAuthGateway::updateProfile()`: a display name, a first name and a last name.
+  `wp_insert_user()` takes the slashes off the user's own fields, and `update_user_meta()`
+  off the first and last name.
+- The four run stores (`WpDataImportStore`, `WpDataExportStore`, `WpMigrationRunStore`,
+  `WpSubmissionExportStore`): a run's content. An import's header, its rows, its mapping,
+  its accepted and its refused rows; the import's job commits the accepted rows from the
+  stored run (`DataImportJobHandler`, read). A migration's description and its plan, which
+  its job runs from the stored run (`MigrationJobHandler`, read): a statement ending in
+  `DEFAULT 'Jerry\'s \"offer\"'` was stored ending in `DEFAULT 'Jerry's "offer"'`. An
+  export's query. Each run is written again whole when its
+  job is attached and when it ends.
+- `BlueprintActivator`, through `seedPages()` and each of the four ways a page is stored
+  (created, an empty page filled, a page replaced by choice, a page created beside one that
+  was kept): the title `Research \ Development` lost its backslash, and the content
+  `{"heading":"Tom \u0026 Jerry's \u0022offer\u0022","path":"C:\\offers\\new"}` was stored
+  as `{"heading":"Tom u0026 Jerry's u0022offeru0022","path":"C:\offers\new"}`. The kits in
+  this repository were read. The company kit's pages each name patterns; the portfolio
+  kit's two are a pattern, headings and a block with no attributes; the Woo kit has no
+  pages. None holds a backslash, so no shipped page was affected.
+- `WebpMeta`, through a real upload: on this Windows machine the record of a converted
+  picture named `C:wamp64www…wp/wp-content/uploads/…` for a file at
+  `C:\wamp64\www\…\wp/wp-content/uploads/…`. WordPress builds the uploads folder from
+  `ABSPATH`, which on Windows has backslashes. `WebpResetCommand` deletes the file the
+  record names, on a reset and when the picture is deleted (read).
+- `WpNotificationPreferenceStore`: nothing lost. It holds a switch for each category, and
+  a category is one of a fixed list. Not changed.
+
+**The change.** `wp_slash()` at each of those writes: the comment's text in `edit()` and
+the whole comment in `reply()`; the notes; the three names; the run in each store's
+`persist()`; the record at both places it is written (`MediaServiceProvider`,
+`MediaCommand`); and a page's title and content in `BlueprintActivator::persist()`.
+
+**Left as they were**, each read: a run's hash and its actor, a hex text and a number; the
+file's name, extension and type the two export stores keep; the fixed words the kit and the
+editorial store write; an email address, in which WordPress allows no backslash.
+
+**A password is not changed, and what was read says why it must not be changed here.**
+`wp_insert_user()` hashes `user_pass` as it is handed over, before it takes the slashes off
+the other fields, and `wp_update_user()` does the same. So the gateway, which hands over
+the password of a REST request, hashes the password as it was typed. WordPress's own
+screens do not: `wp_signon()` reads `$_POST['pwd']` without taking its slashes off,
+`wp-login.php` hands `reset_password()` the slashed `$_POST['pass1']`, and its REST users
+controller hands `wp_insert_user()` a slashed password. Measured: a person registered
+through the gateway with the password `it's a "pass\word"` is not signed in by the text
+`wp-login.php` would check, and a password set the way a WordPress screen sets it is not
+accepted the way the gateway checks it. This is for a password with `'`, `"` or `\` in it,
+and it was so before this change. Slashing the password in the gateway would make new
+accounts agree with WordPress and lock out every account that registered through CoreX
+with such a password. It is a decision of its own, in PROGRESS.md.
+
+**`createUser()` is not changed either.** It hands over the login as the display name.
+Measured: a login `CORP\salma` is stored `CORPsalma` by WordPress's own rule for a login
+(`sanitize_user()`), and the display name beside it the same. Slashing the display name
+would keep `CORP\salma` there beside a login that is another text. The defect is before
+it: a registration with a login WordPress will alter is accepted. PROGRESS.md.
+
+**Nothing relied on the stripping.** Read: the comment's text, the notes and the names come
+from REST requests, which arrive without slashes (`BlogProController`,
+`ProfileServiceProvider`); the runs are built from requests and from files; a kit's page
+comes from a blueprint's code. A migration's preview is kept by another store
+(`WpMigrationPreviewStore`) and its checksum is compared with the provider's own definition,
+not with the stored run. A run is found again by its hash, which is not text.
+`WpDataExportStore::saveFile()` keeps only a file's name, for two reasons its comment
+gives; the second, that a path stops being true when a site moves, still stands.
+
+**Records already stored are not repaired**, for the reason in #331. A row imported without
+a backslash stays so. On a Windows host a record made before this change still names no
+file.
+
+**Tests**, on real WordPress: `tests/Integration/Blog/BlogTextKeepsBackslashesTest.php`,
+`tests/Integration/Profile/ProfileNamesKeepBackslashesTest.php` (which also holds the
+password and the email address still),
+`tests/Integration/DataModels/RunStoresKeepBackslashesTest.php`,
+`tests/Integration/Kit/KitPageKeepsMarkupTest.php` and
+`tests/Integration/Media/WebpRecordKeepsPathsTest.php`. The last uploads into a folder
+whose path has a backslash in it, so that it fails without the change on a Linux runner
+too, where it is a folder with a backslash in its name. 49 of the 64 tests failed before
+the change.
+
 ## #330 — A template's subject is a header too: sent as written, with what is merged into it, on one line
 
 **Date:** 2026-10-13. **Branch:** `fix/template-subject-kept-as-written`. **Found by:** the

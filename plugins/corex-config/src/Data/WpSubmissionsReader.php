@@ -135,11 +135,26 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         $found = new WP_Query($this->args($query, false));
 
         $rows = [];
-        foreach ($found->posts as $post) {
+        foreach (self::thePostsOf($found) as $post) {
             $rows[] = $this->shape($post);
         }
 
         return $rows;
+    }
+
+    /**
+     * The posts a query found that are still there.
+     *
+     * WordPress finds the ids of a page and then reads each post. One deleted between the two,
+     * by a colleague or by retention, is handed back as nothing where a post was. The list
+     * then answered with an error for everybody loading it at that moment: it is a page with
+     * one row fewer.
+     *
+     * @return list<\WP_Post>
+     */
+    private static function thePostsOf(WP_Query $found): array
+    {
+        return array_values(array_filter($found->posts, static fn (mixed $post): bool => $post instanceof \WP_Post));
     }
 
     public function count(DataQuery $query): int
@@ -237,7 +252,7 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         return [
             'items' => array_map(
                 fn (\WP_Post $post): array => $this->shapeInbox($post, $scope->canViewRestrictedNotes),
-                $found->posts,
+                self::thePostsOf($found),
             ),
             'total' => (int) $found->found_posts,
         ];
@@ -288,7 +303,9 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         ];
         foreach ($changes as $key => $value) {
             if (isset($metaKeys[$key])) {
-                update_post_meta($id, $metaKeys[$key], $value);
+                // WordPress takes one level of slashes off a meta value on its way in, and a
+                // team's key is the site's to choose.
+                update_post_meta($id, $metaKeys[$key], wp_slash($value));
             }
         }
         update_post_meta($id, 'corex_submission_updated_at', gmdate(DATE_ATOM));
@@ -314,7 +331,9 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'updated_at' => gmdate(DATE_ATOM),
         ];
         $notes[] = $note;
-        update_post_meta($id, 'corex_submission_notes', $notes);
+        // Every note is written again with each new one, and WordPress takes one level of
+        // slashes off them each time: handed over as they are, an earlier note loses one more.
+        update_post_meta($id, 'corex_submission_notes', wp_slash($notes));
         update_post_meta($id, 'corex_submission_updated_at', gmdate(DATE_ATOM));
 
         return $note;
@@ -731,6 +750,7 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'summary' => ['state' => $state],
             'created_at' => gmdate(DATE_ATOM),
         ];
-        update_post_meta($submissionId, 'corex_submission_timeline', $timeline);
+        // As in {@see \Corex\Config\Submissions\SubmissionTimelineRepository::append()}.
+        update_post_meta($submissionId, 'corex_submission_timeline', wp_slash($timeline));
     }
 }
