@@ -28,6 +28,8 @@ final class FakeAuthGateway implements AuthGateway
     /** What the gateway answers for an address; null for the address itself. */
     public ?string $loginForAddress = null;
     public int $currentUserId = 0;
+    /** What the account would hold for a display name; null when that is the name as typed. */
+    public ?string $displayNameAsKept = null;
     /** @var list<string> */
     public array $calls = [];
     /** @var array{login: string, name: string}|null */
@@ -85,6 +87,11 @@ final class FakeAuthGateway implements AuthGateway
         $this->calls[] = 'resetPassword';
 
         return AccountResult::ok('reset', 'ok', 7);
+    }
+
+    public function displayNameAsKept(string $name): string
+    {
+        return $this->displayNameAsKept ?? $name;
     }
 
     public function updateProfile(int $userId, array $fields): AccountResult
@@ -344,6 +351,50 @@ it('forbids editing a profile that is not the current user', function () {
     $result = makeAccountService($gateway)->updateProfile(9, ['display_name' => 'Jane']);
 
     expect($result->code)->toBe('forbidden')
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('saves a display name of the longest an account holds, counted in characters', function (string $letter) {
+    $gateway = new FakeAuthGateway();
+    $gateway->currentUserId = 7;
+
+    $result = makeAccountService($gateway)->updateProfile(7, [
+        'display_name' => str_repeat($letter, AccountService::MAX_DISPLAY_NAME_LENGTH),
+    ]);
+
+    expect($result->success)->toBeTrue()
+        ->and($gateway->calls)->toBe(['updateProfile']);
+})->with([
+    'a letter of one byte' => ['n'],
+    'an Arabic letter, which is two' => ['م'],
+]);
+
+it('refuses a display name longer than an account holds, and says how long one can be', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->currentUserId = 7;
+
+    $result = makeAccountService($gateway)->updateProfile(7, [
+        'display_name' => str_repeat('n', AccountService::MAX_DISPLAY_NAME_LENGTH + 1),
+        'first_name' => 'Jane',
+    ]);
+
+    expect($result->success)->toBeFalse()
+        ->and($result->code)->toBe('display_name_too_long')
+        ->and($result->message)->toContain((string) AccountService::MAX_DISPLAY_NAME_LENGTH)
+        ->and($gateway->calls)->toBe([]);
+});
+
+it('refuses a display name that fits as it was typed and not as the account would hold it', function () {
+    $gateway = new FakeAuthGateway();
+    $gateway->currentUserId = 7;
+    $gateway->displayNameAsKept = str_repeat('n', AccountService::MAX_DISPLAY_NAME_LENGTH + 1);
+
+    $result = makeAccountService($gateway)->updateProfile(7, ['display_name' => 'Tom & Jerry']);
+
+    expect($result->success)->toBeFalse()
+        ->and($result->code)->toBe('display_name_too_long')
+        // The person is within the number: telling them the number would send them in a circle.
+        ->and($result->message)->not->toContain((string) AccountService::MAX_DISPLAY_NAME_LENGTH)
         ->and($gateway->calls)->toBe([]);
 });
 
