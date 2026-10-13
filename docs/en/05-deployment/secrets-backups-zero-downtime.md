@@ -31,7 +31,7 @@ hard-coded.
 
 ```bash
 # .env on a VM (mode 600, outside the web root) — read by the Config engine
-COREX_ENV=production
+APP_ENV=production
 FEATURES_MAIL_QUEUE=1
 ```
 

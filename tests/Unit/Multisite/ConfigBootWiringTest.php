@@ -81,3 +81,18 @@ it('falls through both network sources to the code defaults on a single-site ins
     // without either claiming it — the SC-007 guarantee, exercised through the real provider.
     expect($config->get('app.env'))->not->toBeNull();
 });
+
+// Each config file is a namespace of its own, so a default written under `updates` in
+// config/app.php was `app.updates.endpoint`, a key nothing reads (2026-10-13, DECISIONS #363).
+it('ships the update source default under the key the update service reads', function () {
+    Functions\when('get_option')->alias(static fn (string $key, $default = false) => $default);
+
+    $container = configWiringContainer();
+    RuntimeContexts::detect()->seedInto($container);
+
+    (new CoreServiceProvider($container))->register();
+    $config = $container->make(ConfigInterface::class);
+
+    expect($config->get('updates.endpoint', 'no source holds it'))->toBe('')
+        ->and($config->has('app.updates.endpoint'))->toBeFalse();
+});
