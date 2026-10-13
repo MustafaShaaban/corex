@@ -49,6 +49,12 @@ interface AuthGateway
     public function resetPassword(string $key, string $login, string $password): AccountResult;
 
     /**
+     * A display name as an account would hold it. A name is cleaned on its way in, and what is
+     * kept can be longer than what was typed; whether a name fits is asked of this text.
+     */
+    public function displayNameAsKept(string $name): string;
+
+    /**
      * @param array<string, string> $fields display_name, first_name, last_name, email
      */
     public function updateProfile(int $userId, array $fields): AccountResult;
