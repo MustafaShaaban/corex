@@ -14691,3 +14691,132 @@ send theirs later, from a queue of its own, and cannot report through the event:
 gets no failed-email notification from this change. A site that
 listens for `SubmissionProcessedEvent` itself now hears of code forms too, with `flowId`
 0; nothing under `sites/` in the Muva or Perego checkouts names that event.
+
+## #355 — Making every admin screen while CoreX boots costs about a millisecond a request, and is left as it is; where the boot's time goes
+
+**Date:** 2026-10-13. **Branch:** `perf/boot-makes-screens-when-asked`, from `main`.
+**Spec:** none (a measurement; no code changed).
+
+**The question.** #351 counted 195 shared entries in the container by the end of
+`plugins_loaded` on a front-end request, most of them admin screens, `admin-post.php`
+controllers and job handlers that `ConfigServiceProvider::boot()` makes to call their
+`register()`. It was counted there and not timed, and it was left as a lead: hook each with
+a closure, or register the screens only in the admin. This entry times it.
+
+**How it was measured.** This branch's own install, served and not run from the command
+line: WordPress 7.1.3, PHP 8.3.6 on Windows through PHP's built-in server (one process),
+OPcache on as `php.ini` has it (timestamps checked every two seconds, no JIT), Xdebug not
+loaded, MySQL 8.3 on the same machine, no persistent object cache, every CoreX plugin and
+add-on active, the Corex theme, signed out, code at `1ecd5255`. An mu-plugin wrapped
+`Corex\Boot::boot()` on requests that carried a header and wrote the time, the memory, the
+files included and the queries to a file. Each figure is the median of 200 requests after
+five unmeasured ones. The split by provider and by statement came from timers put into the
+container, the provider loop and `boot()` for 100 requests and taken out again; those runs
+are about a millisecond slower in all than the runs without them.
+
+**What CoreX's boot costs.**
+
+| Request | `Boot::boot()` | The whole request | Kept after boot | Queries in boot |
+|---|---|---|---|---|
+| The front page | 7.2 ms (6.9 to 8.0 between the quartiles) | 86 ms | 508 KB | 11 |
+| The REST index | 7.2 ms | 65 ms | 508 KB | 11 |
+| `admin-ajax.php`, signed out | 10.4 ms | 56 ms | 512 KB | 23 |
+| `wp-cron.php` (30 requests, with the timers in) | 11.3 ms | not read | not read | 23 |
+
+On the front page boot includes 389 files and declares 312 classes; the request ends having
+included 1,003 files, with a peak of 5.80 MB and 33 queries. Nothing else is hooked to
+`plugins_loaded` that matters: the whole action is 7.4 ms.
+
+**By provider, front page.** Every provider's `register()` together: 0.49 ms. Their
+`boot()`: `ConfigServiceProvider` 3.4 ms (284 KB, 4 queries), `BlocksServiceProvider`
+1.7 ms, `MediaServiceProvider` 0.75 ms (5 queries), `CoreServiceProvider` 0.32 ms,
+`ThemeServiceProvider` 0.2 ms (1 query), `ProfileServiceProvider` 0.17 ms, and no other
+above 0.05 ms.
+
+**Inside `ConfigServiceProvider::boot()`.** Its 43 `make(X::class)->register()` statements
+take 2.4 ms and keep 139 KB. Five of them are 1.3 ms of that:
+
+| Statement | Time | Why |
+|---|---|---|
+| `InsightsScreen` | 0.48 ms | 3 queries: the registry behind it reads three settings as it is made |
+| `RetentionScheduler` | 0.37 ms | includes 34 files; no query |
+| `LoginRouteGuard` | 0.25 ms | 1 query: the login protection settings |
+| `ReleasesScreen` | 0.11 ms | |
+| `LoginProtectionEnforcer` | 0.10 ms | |
+
+The other 38 take between 0.016 and 0.07 ms each. Making the four job handlers takes
+0.27 ms (the export handler 0.17 ms of it, with the writers and the PDF one, 27 files). By
+namespace, the making alone: `Config\Insights` 0.46 ms, `Config\Security` 0.39 ms,
+`Config\Retention` 0.36 ms, `Config\Submissions` 0.23 ms, `Config\Notifications` 0.15 ms,
+`Config\DataModels` 0.12 ms, `Config\Access` 0.11 ms, `Config\Releases` 0.09 ms, and every
+other under 0.06 ms. A shared dependency is counted against whichever statement asked for
+it first.
+
+**What not making them would save.** Run as an upper bound and not as a proposal: 33
+statements of `boot()` skipped unless `is_admin()`, which is every screen, every
+`admin-post.php` controller, the dashboard's parts, the notification bell and the toolbar,
+more than could really be skipped (the toolbar is on the front end for whoever is signed
+in). Front page, 200 requests each, with `main` run before and after:
+
+| | `main`, before | 33 skipped | 32 skipped, `InsightsScreen` kept | `main`, after |
+|---|---|---|---|---|
+| `Boot::boot()` | 7.06 ms | 5.95 ms | 6.46 ms | 7.10 ms |
+| Kept after boot | 508 KB | 420 KB | 424 KB | 508 KB |
+| Peak at the end of the request | 5.80 MB | 5.66 MB | 5.67 MB | 5.80 MB |
+| Files included in boot | 389 | 281 | 296 | 389 |
+| Queries in boot | 11 | 8 | 11 | 11 |
+| Entries resolved by the end of `plugins_loaded` | 195 | 133 | 140 | 195 |
+| The whole request | 82.1 ms | 80.5 ms | 80.8 ms | 83.0 ms |
+
+So at most 1.1 ms of an 82 ms request and 0.13 MB of a 5.8 MB peak. Half of the time is
+one screen's three queries; the other 32 statements are 0.6 ms between them. The whole
+request's own figure moves by less than its quartiles are apart (79.7 to 90.0 ms on `main`).
+
+**The decision: `boot()` is left as it is.** A change would move 33 hook registrations
+behind closures or behind `is_admin()`, for about 1.3% of a front-end
+request. It would also have to keep what is there on purpose: the access gate registered
+before the admin error handler, what cron and the command line need, and whatever a site's
+own plugin finds hooked once `corex_booted` has fired. #351's rule stands for what is added
+from here on, because the cost of one object is whatever its constructor reaches: before
+making an object in `boot()` to hook one action, hook the action with a closure that makes
+it. `InsightsScreen` is the one statement where that reach is paid for on every request,
+and its queries are part of the first finding below, which a change to where config is
+read from would remove without touching the screen.
+
+**No test is added.** Nothing changed. A count of what boot resolves would fail on every
+new screen (#351 said so); a time would fail on a slow runner.
+
+**Found, and not changed. Both cost more than what was asked about.**
+
+1. *Every query CoreX's boot runs on a front-end request, all 11, reads an option that is
+   not in the database.* One for the WooCommerce kit's feature flag (`Boot::enabledFlags()`),
+   one for `corex_login_protection_settings`, three for the Insights keys, one for
+   `corex_theme_brand_path`, five for the media add-on's WebP settings
+   (`MediaSettings::fromConfig()`). Nine of them come through
+   `Support\Config\Sources\OptionsSource::has()`, which asks `get_option()` for a
+   `corex_`-named override of each config key that is read. This install holds five options
+   named `corex…`, and none of these. WordPress remembers that an option does not exist in
+   its object cache, which lasts one request unless the site has a persistent one (read in
+   WordPress, not run on such a site), so a site that has never saved those settings asks
+   again on every request: 11 of the front page's 33 queries, at 0.11 to 0.15 ms each here
+   and more where the database is another machine. It grows with every config key a
+   provider reads while it boots.
+2. *On every admin, `admin-ajax.php` and `wp-cron.php` request the schema self-heal takes a
+   lock, finds nothing to do and lets it go: 12 queries, four of them writes, 2.7 ms.*
+   `Database\Schema\SchemaSelfHeal::run()` reads the transient `corex_schema_migrating`
+   (one `SELECT`), sets it (two `INSERT`s), reads each component's version (four `SELECT`s; the version options are
+   stored with autoload off), and deletes the transient (two `SELECT`s, a `SHOW FULL
+   COLUMNS` and two `DELETE`s). That is `MultisiteServiceProvider::boot()` at 2.7 ms, where
+   it is 0.04 ms on a front-end request, and it is why an admin request's boot is 10.4 ms
+   and not 7.2. An admin screen left open asks `admin-ajax.php` on a timer (WordPress's
+   heartbeat), and each ask writes to the options table four times. #299 took
+   `dbDelta()` out of every request; the lock around the version check stayed.
+3. *`BlocksServiceProvider::boot()` takes 1.7 ms.* `PluginRealpathRegistrar::register()`
+   asks the file system about each mounted plugin's main file. This install reaches its
+   plugins through Windows junctions, where that is slow. The registrar passes over a
+   plugin that is a real directory under the plugins folder, so a packaged site should
+   pay little of it; that was read and not measured, and is not followed further here.
+
+**Client impact.** None: no file under `plugins/`, `addons/`, `packages/` or `theme/`
+changed. The two findings are true of every site on this code. Neither was measured on a
+client site.

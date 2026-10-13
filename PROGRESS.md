@@ -131,10 +131,13 @@ followed, and `Corex\Email\Template\Layout` asks for its brand when it draws.
 `tests/Integration/Foundation/BootTranslationsTest.php` loads WordPress in a process of
 its own and names the file and line of anything read early. **Before making an object in
 a provider's `boot()` to hook one action, hook the action with a closure that makes it**:
-the object brings whatever its constructor needs, on every request. Three leads, not
-built: `ConfigServiceProvider::boot()` still makes every admin screen, job handler and
+the object brings whatever its constructor needs, on every request. That
+`ConfigServiceProvider::boot()` still makes every admin screen, job handler and
 `admin-post.php` controller on every request (195 shared entries by the end of
-`plugins_loaded`, counted, not timed); an email's direction follows the language of
+`plugins_loaded`) has since been timed and is left as it is: at most 1.1 ms of an 82 ms
+front-end request and 0.13 MB of a 5.8 MB peak (DECISIONS #355; CoreX's whole boot is
+7.2 ms there). What that measurement found instead is under "Open, and not hidden". Two
+leads, not built: an email's direction follows the language of
 whoever is signed in and not the site's (measured for `Layout`, read for
 `SiteEmailBrand`); and on a site without pretty permalinks the Submissions inbox said
 "The submissions could not be loaded" (seen once in a browser, not traced).
@@ -235,6 +238,18 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **CoreX's boot asks the database for 11 options that do not exist, on every request of a
+  site with no persistent object cache.** They are a third of the front page's 33 queries
+  on a fresh install: the WooCommerce kit's flag, the login protection settings, three
+  Insights keys, the theme's brand path and five WebP settings. Nine come through
+  `Support\Config\Sources\OptionsSource::has()`, which asks for an override of each
+  config key a provider reads while it boots. Measured on one install, not on a client
+  site (DECISIONS #355).
+- **Every admin, `admin-ajax.php` and `wp-cron.php` request takes the schema self-heal's
+  lock and lets it go with nothing to do: 12 queries, four of them writes, 2.7 ms.**
+  `Database\Schema\SchemaSelfHeal::run()` sets and deletes a transient around reading four
+  version options. An admin screen left open writes to the options table four times each
+  time WordPress's heartbeat asks (DECISIONS #355).
 - **A failed email sent through `Corex\Mail\Mailer` is reported to the notification centre
   by nothing, unless whoever sent it says so.** Email Studio's failure notification hears
   only of what Email Studio's own service sent. A form's own email listener that sends
