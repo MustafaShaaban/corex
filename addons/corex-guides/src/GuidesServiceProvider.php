@@ -17,6 +17,7 @@ use Corex\Email\Template\TemplateRegistry;
 use Corex\Guides\Support\SupportMailer;
 use Corex\Guides\Support\SupportRequestController;
 use Corex\Guides\Support\SupportRequestTemplate;
+use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 
 /**
@@ -45,6 +46,7 @@ final class GuidesServiceProvider extends ServiceProvider
         $this->container->singleton(
             SupportMailer::class,
             static fn (ContainerInterface $c): SupportMailer => new SupportMailer(
+                $c->make(EmailLanguage::class),
                 $c->has(Mailer::class) ? $c->make(Mailer::class) : null,
                 // Resolved when SupportMailer is first built — inside the `admin_post` closure,
                 // long after boot — so this reflects whether the template was actually registered

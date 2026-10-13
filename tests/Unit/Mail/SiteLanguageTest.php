@@ -7,13 +7,13 @@
  * What the switch changes is WordPress's and is held against WordPress in `EmailLanguageTest`.
  * Here: that the switch is made around the drawing, and undone exactly when it was made.
  *
- * @package Corex\Tests\Unit\Email
+ * @package Corex\Tests\Unit\Mail
  */
 
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use Corex\Email\Language\SiteLanguage;
+use Corex\Mail\SiteLanguage;
 
 it('switches to the site language for the drawing and back after it', function () {
     $steps = [];

@@ -1,12 +1,12 @@
 <?php
 
 /**
- * @package Corex\Email
+ * @package Corex
  */
 
 declare(strict_types=1);
 
-namespace Corex\Email\Language;
+namespace Corex\Mail;
 
 defined('ABSPATH') || exit;
 

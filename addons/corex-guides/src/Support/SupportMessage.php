@@ -20,14 +20,22 @@ defined('ABSPATH') || exit;
  *
  * Everything here is already sanitized by {@see SupportRequestController}. This object formats; it
  * does not clean.
+ *
+ * It holds no word of the email. What the message is about is a key, and every label and every
+ * stand-in ("a signed-in user") is translated when a rendering is asked for. {@see SupportMailer}
+ * asks in the email's language; the request that posted the form is in the sender's own
+ * (DECISIONS #362).
  */
 final readonly class SupportMessage
 {
     /** Beyond this it is an attachment, not a note. Applied once, here, for both renderings. */
     public const MAX_MESSAGE = 4000;
 
+    /**
+     * @param string $category What the message is about: a key of {@see SupportCategory}.
+     */
     public function __construct(
-        public string $categoryLabel,
+        public string $category,
         public string $message,
         public string $replyTo,
         public string $senderName,
@@ -42,8 +50,14 @@ final readonly class SupportMessage
             /* translators: 1: the site name, 2: what the message is about. */
             __('[%1$s] Guides support: %2$s', 'corex'),
             $this->siteName,
-            $this->categoryLabel,
+            $this->categoryLabel(),
         );
+    }
+
+    /** What the message is about, in words. */
+    public function categoryLabel(): string
+    {
+        return SupportCategory::label($this->category);
     }
 
     /** The message, truncated once so neither rendering has to remember to. */
@@ -76,7 +90,7 @@ final readonly class SupportMessage
             __('A CoreX Guides reader sent this from the admin.', 'corex'),
             '',
             /* translators: %s: what the message is about, e.g. "A suggestion". */
-            sprintf(__('About: %s', 'corex'), $this->categoryLabel),
+            sprintf(__('About: %s', 'corex'), $this->categoryLabel()),
             /* translators: %s: the sender's display name. */
             sprintf(__('From: %s', 'corex'), $this->sender()),
             /* translators: %s: the sender's email address. */
@@ -102,7 +116,7 @@ final readonly class SupportMessage
     {
         return [
             'support' => [
-                'category' => $this->categoryLabel,
+                'category' => $this->categoryLabel(),
                 'sender'   => $this->sender(),
                 'reply_to' => $this->replyAddress(),
                 'site'     => $this->siteUrl,

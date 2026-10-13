@@ -21,6 +21,8 @@ use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
 use Corex\Mail\Mailer;
 use Corex\Support\Uuid;
+use Corex\Tests\Support\LanguageOfTheRequest;
+use Corex\Tests\Support\MarkedLanguage;
 
 beforeEach(function () {
     Functions\when('is_email')->alias(
@@ -39,7 +41,7 @@ beforeEach(function () {
 function supportFixture(string $replyTo = '', string $message = 'B'): SupportMessage
 {
     return new SupportMessage(
-        categoryLabel: 'A question',
+        category: 'question',
         message: $message,
         replyTo: $replyTo,
         senderName: 'Reader',
@@ -98,7 +100,7 @@ it('falls through to wp_mail when no mailer is bound', function () {
         },
     );
 
-    $delivery = (new SupportMailer())->send(
+    $delivery = (new SupportMailer(new LanguageOfTheRequest()))->send(
         'support@example.test',
         supportFixture('reader@example.test'),
     );
@@ -115,7 +117,7 @@ it('falls through to wp_mail when no mailer is bound', function () {
 it('reports a wp_mail refusal as not sent', function () {
     Functions\when('wp_mail')->justReturn(false);
 
-    $delivery = (new SupportMailer())->send('support@example.test', supportFixture());
+    $delivery = (new SupportMailer(new LanguageOfTheRequest()))->send('support@example.test', supportFixture());
 
     expect($delivery->sent)->toBeFalse()
         ->and($delivery->reason)->toBe(SupportDelivery::REASON_TRANSPORT);
@@ -125,7 +127,7 @@ it('prefers a bound mailer over wp_mail', function () {
     Functions\when('wp_mail')->justReturn(false);
     $mailer = recordingMailer();
 
-    $delivery = (new SupportMailer($mailer))->send('support@example.test', supportFixture('reader@example.test'));
+    $delivery = (new SupportMailer(new LanguageOfTheRequest(), $mailer))->send('support@example.test', supportFixture('reader@example.test'));
 
     expect($delivery->sent)->toBeTrue()
         ->and($mailer->sent)->toHaveCount(1)
@@ -134,7 +136,7 @@ it('prefers a bound mailer over wp_mail', function () {
 });
 
 it('keeps the real result when the bound mailer reports one', function (string $state, bool $sent) {
-    $delivery = (new SupportMailer(attemptingMailer($state)))->send('support@example.test', supportFixture());
+    $delivery = (new SupportMailer(new LanguageOfTheRequest(), attemptingMailer($state)))->send('support@example.test', supportFixture());
 
     expect($delivery->sent)->toBe($sent);
 })->with([
@@ -154,7 +156,7 @@ it('keeps the real result when the bound mailer reports one', function (string $
 it('drops a reply address that would not validate rather than passing it into a header', function () {
     $mailer = recordingMailer();
 
-    (new SupportMailer($mailer))->send(
+    (new SupportMailer(new LanguageOfTheRequest(), $mailer))->send(
         'support@example.test',
         supportFixture("reader@example.test\r\nBcc: everyone@example.test"),
     );
@@ -165,7 +167,7 @@ it('drops a reply address that would not validate rather than passing it into a 
 it('refuses outright when there is no recipient to send to', function () {
     $mailer = recordingMailer();
 
-    $delivery = (new SupportMailer($mailer))->send('', supportFixture());
+    $delivery = (new SupportMailer(new LanguageOfTheRequest(), $mailer))->send('', supportFixture());
 
     expect($delivery->sent)->toBeFalse()
         ->and($delivery->reason)->toBe(SupportDelivery::REASON_NO_RECIPIENT)
@@ -184,7 +186,7 @@ it('survives a mailer that throws despite its contract', function () {
         }
     };
 
-    $delivery = (new SupportMailer($thrower))->send('support@example.test', supportFixture());
+    $delivery = (new SupportMailer(new LanguageOfTheRequest(), $thrower))->send('support@example.test', supportFixture());
 
     expect($delivery->sent)->toBeFalse()
         ->and($delivery->reason)->toBe(SupportDelivery::REASON_TRANSPORT);
@@ -201,7 +203,7 @@ it('survives a mailer that throws despite its contract', function () {
 it('renders through the template on the mailer rung and as plain text on the floor', function () {
     $mailer = recordingMailer();
 
-    (new SupportMailer($mailer, 'corex-guides-support'))->send(
+    (new SupportMailer(new LanguageOfTheRequest(), $mailer, 'corex-guides-support'))->send(
         'support@example.test',
         supportFixture('reader@example.test'),
     );
@@ -219,7 +221,7 @@ it('renders through the template on the mailer rung and as plain text on the flo
 it('sends the plain-text body when no template is available, even with a mailer bound', function () {
     $mailer = recordingMailer();
 
-    (new SupportMailer($mailer))->send('support@example.test', supportFixture());
+    (new SupportMailer(new LanguageOfTheRequest(), $mailer))->send('support@example.test', supportFixture());
 
     expect($mailer->sent[0]->templateName)->toBeNull()
         ->and($mailer->sent[0]->body)->toContain('A CoreX Guides reader sent this from the admin.');
@@ -236,11 +238,71 @@ it('always sends plain text through the wp_mail floor', function () {
         return true;
     });
 
-    (new SupportMailer(null, 'corex-guides-support'))->send(
+    (new SupportMailer(new LanguageOfTheRequest(), null, 'corex-guides-support'))->send(
         'support@example.test',
         supportFixture(),
     );
 
     expect($sent[0][2])->toContain('About: A question')
         ->and($sent[0][2])->toContain("\n");
+});
+
+/**
+ * The form is posted from the admin, so the request is in the sender's own language. What the
+ * message is about arrives as a key, and every word of both renderings is made when the mailer
+ * asks for it (DECISIONS #362).
+ */
+it('has every word of the message made in the language of the email, through CoreX Mail', function () {
+    $language = new MarkedLanguage();
+    Functions\when('__')->alias($language->said(...));
+    $mailer = recordingMailer();
+
+    (new SupportMailer($language, $mailer, 'corex-guides-support'))->send('support@example.test', new SupportMessage(
+        category: 'suggestion',
+        message: 'Where is the export?',
+        replyTo: '',
+        senderName: '',
+        siteName: 'Example Site',
+        siteUrl: 'https://example.test',
+    ));
+
+    expect($mailer->sent[0]->subject)->toBe('[email] [Example Site] Guides support: [email] A suggestion')
+        ->and($mailer->sent[0]->context['support'])->toMatchArray([
+            'category' => '[email] A suggestion',
+            'sender' => '[email] a signed-in user',
+            'reply_to' => '[email] no address given',
+        ]);
+});
+
+it('has every word of the message made in the language of the email, through the wp_mail floor', function () {
+    $language = new MarkedLanguage();
+    Functions\when('__')->alias($language->said(...));
+    $sent = [];
+    Functions\when('wp_mail')->alias(static function (...$args) use (&$sent): bool {
+        $sent = $args;
+
+        return true;
+    });
+
+    (new SupportMailer($language))->send('support@example.test', new SupportMessage(
+        category: 'broken',
+        message: 'The export does nothing.',
+        replyTo: '',
+        senderName: '',
+        siteName: 'Example Site',
+        siteUrl: 'https://example.test',
+    ));
+
+    expect($sent[1])->toBe('[email] [Example Site] Guides support: [email] Something is not working')
+        ->and(explode("\n", $sent[2]))->toBe([
+            '[email] A CoreX Guides reader sent this from the admin.',
+            '',
+            '[email] About: [email] Something is not working',
+            '[email] From: [email] a signed-in user',
+            '[email] Reply to: [email] no address given',
+            '[email] Site: https://example.test',
+            '',
+            '[email] Message:',
+            'The export does nothing.',
+        ]);
 });

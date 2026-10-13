@@ -456,6 +456,11 @@ of this story is built before he answers.
   words CoreX writes into it. It MUST NOT follow the language of the request that draws it, which
   in the admin is the profile language of whoever is signed in. The words the person wrote keep
   their own direction (story 2, scenario 4). Added 2026-10-13 (DECISIONS #356).
+- **FR-011b**: A word CoreX writes into an email before a mailer has it MUST be in the site's
+  language as well: a subject, a line of a body, a label handed to a template as a value. So
+  MUST a default Email Studio stores, when it is first stored. This holds on a site without
+  CoreX Mail, where a form's notification and a Guides support message are sent by WordPress.
+  A default already stored is not rewritten. Added 2026-10-13 (DECISIONS #362).
 - **FR-012**: The colours and type an email uses MUST be defined once, for every email CoreX
   sends, and not inside one add-on.
 - **FR-013**: Every reply MUST be sent with a plain-text version beside the HTML one, with the

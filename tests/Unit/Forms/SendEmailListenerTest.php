@@ -21,6 +21,8 @@ use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
 use Corex\Mail\RoutedMailer;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Tests\Support\LanguageOfTheRequest;
+use Corex\Tests\Support\MarkedLanguage;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -75,7 +77,7 @@ it('returns the captured outcome from a result-bearing CoreX mailer', function (
         }
     };
 
-    $delivery = (new SendEmailListener(new NotificationDispatcher(null, $mailer), emailListenerConfig()))
+    $delivery = (new SendEmailListener(new NotificationDispatcher(new LanguageOfTheRequest(), null, $mailer), emailListenerConfig()))
         ->dispatch(submittedEvent());
 
     expect($delivery->status)->toBe(MailResult::STATE_CAPTURED);
@@ -102,7 +104,7 @@ it('uses an active Email Studio route before the wp_mail floor', function () {
         }
     };
 
-    $delivery = (new SendEmailListener(new NotificationDispatcher($router, null), emailListenerConfig()))
+    $delivery = (new SendEmailListener(new NotificationDispatcher(new LanguageOfTheRequest(), $router, null), emailListenerConfig()))
         ->dispatch(submittedEvent());
 
     expect($delivery->status)->toBe(MailResult::STATE_CAPTURED)
@@ -113,7 +115,7 @@ it('uses an active Email Studio route before the wp_mail floor', function () {
 it('records wp_mail acceptance as accepted, never sent, when CoreX Mail is absent', function () {
     Functions\expect('wp_mail')->once()->andReturn(true);
 
-    $delivery = (new SendEmailListener(new NotificationDispatcher(null, null), emailListenerConfig()))
+    $delivery = (new SendEmailListener(new NotificationDispatcher(new LanguageOfTheRequest(), null, null), emailListenerConfig()))
         ->dispatch(submittedEvent());
 
     expect($delivery->status)->toBe(MailResult::STATE_ACCEPTED)
@@ -160,7 +162,7 @@ function requestKeepingMailer(): AttemptingMailer
 it('sends a form other than the contact form its own fields, not the contact template', function () {
     $mailer = requestKeepingMailer();
 
-    (new SendEmailListener(new NotificationDispatcher(null, $mailer), emailListenerConfig()))
+    (new SendEmailListener(new NotificationDispatcher(new LanguageOfTheRequest(), null, $mailer), emailListenerConfig()))
         ->dispatch(new FormSubmittedEvent('callback', ['phone' => '01016999700', 'company' => 'Acme']));
 
     expect($mailer->request->templateName)->toBeNull()
@@ -172,7 +174,7 @@ it('sends a form other than the contact form its own fields, not the contact tem
 it('still sends the contact form through the contact template', function () {
     $mailer = requestKeepingMailer();
 
-    (new SendEmailListener(new NotificationDispatcher(null, $mailer), emailListenerConfig()))
+    (new SendEmailListener(new NotificationDispatcher(new LanguageOfTheRequest(), null, $mailer), emailListenerConfig()))
         ->dispatch(submittedEvent());
 
     expect($mailer->request->templateName)->toBe('contact-notification');
@@ -182,7 +184,25 @@ it('tells the submission how its notification went, for whatever reads it after 
     Functions\expect('wp_mail')->once()->andReturn(false);
     $event = submittedEvent();
 
-    (new SendEmailListener(new NotificationDispatcher(null, null), emailListenerConfig()))($event);
+    (new SendEmailListener(new NotificationDispatcher(new LanguageOfTheRequest(), null, null), emailListenerConfig()))($event);
 
     expect($event->delivery()?->status)->toBe(MailResult::STATE_FAILED);
+});
+
+/**
+ * The subject and the line that stands for an empty submission are CoreX's words. Translated as
+ * the listener ran, they were in the language of the request: a notification sent again from
+ * the inbox was in the language of whoever pressed the button (DECISIONS #362).
+ */
+it('has its own words written in the language of the email', function () {
+    $language = new MarkedLanguage();
+    Functions\when('__')->alias($language->said(...));
+    Functions\when('esc_html__')->alias($language->said(...));
+    $mailer = requestKeepingMailer();
+
+    (new SendEmailListener(new NotificationDispatcher($language, null, $mailer), emailListenerConfig()))
+        ->dispatch(new FormSubmittedEvent('callback', []));
+
+    expect($mailer->request->subject)->toBe('[email] New "callback" form submission')
+        ->and($mailer->request->body)->toBe('<p>[email] The submission contained no fields.</p>');
 });

@@ -24,6 +24,7 @@ use Corex\Guides\Support\SupportRequestController;
 use Corex\Guides\Support\SupportSettings;
 use Corex\Security\Admin\AdminGuard;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Tests\Support\LanguageOfTheRequest;
 
 /** @param array<string,mixed> $stored */
 function supportSettings(array $stored = []): SupportSettings
@@ -93,7 +94,7 @@ function submitSupport(array $post, array $settings = [], bool $validNonce = tru
     $controller = new SupportRequestController(
         new AdminGuard(),
         supportSettings($settings),
-        new SupportMailer(),
+        new SupportMailer(new LanguageOfTheRequest()),
         $flash,
     );
 

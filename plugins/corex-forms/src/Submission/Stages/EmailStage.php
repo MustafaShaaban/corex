@@ -125,7 +125,9 @@ final readonly class EmailStage implements SubmissionStage
             $recipients = $adminEmail !== '' ? [$adminEmail] : [];
         }
 
-        $request = new MailRequest(
+        // Handed over as what writes it: the dispatcher asks in the email's language. A flow's
+        // test send is made from the admin, in the language of whoever is testing.
+        $write = static fn (): MailRequest => new MailRequest(
             to: $recipients,
             subject: sprintf(
                 /* translators: %s: form slug */
@@ -138,7 +140,7 @@ final readonly class EmailStage implements SubmissionStage
         $delivery = $this->dispatcher->dispatch(
             'forms.' . $context->flow->slug . '.submitted',
             $mailContext,
-            $request,
+            $write,
         );
 
         $next = $context->withMetadata([

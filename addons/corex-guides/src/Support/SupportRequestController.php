@@ -45,47 +45,12 @@ final class SupportRequestController
 
     private const THROTTLE_PREFIX = 'corex_guides_support_sent_';
 
-    /**
-     * What somebody can be asking about. Keys, not free text, so the subject line is predictable
-     * and nothing the sender types can shape the email's own structure.
-     *
-     * @var list<string>
-     */
-    private const CATEGORIES = ['question', 'suggestion', 'missing', 'broken'];
-
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly SupportSettings $settings,
         private readonly SupportMailer $mailer,
         private readonly SupportFlash $flash,
     ) {
-    }
-
-    /** @return array<string,string> Category key => the label a reader chooses by. */
-    public static function categories(): array
-    {
-        $labels = [];
-
-        foreach (self::CATEGORIES as $key) {
-            $labels[$key] = self::categoryLabel($key);
-        }
-
-        return $labels;
-    }
-
-    /**
-     * Written as a `match` over literals rather than a lookup in a translated array, because the
-     * string extractor reads `__()` calls in the source and cannot follow `__($array[$key])` — that
-     * form compiles, ships, and is simply never translated.
-     */
-    private static function categoryLabel(string $key): string
-    {
-        return match ($key) {
-            'suggestion' => __('A suggestion', 'corex'),
-            'missing'    => __('Something is missing from the guides', 'corex'),
-            'broken'     => __('Something is not working', 'corex'),
-            default      => __('A question', 'corex'),
-        };
     }
 
     /**
@@ -140,10 +105,6 @@ final class SupportRequestController
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified above.
         $from = isset($_POST['corex_guides_email']) ? EmailAnswer::address(wp_unslash($_POST['corex_guides_email'])) : '';
 
-        if (! in_array($category, self::CATEGORIES, true)) {
-            $category = self::CATEGORIES[0];
-        }
-
         if (trim($message) === '') {
             $this->flash->store($userId, SupportFlash::EMPTY_MESSAGE, $message);
 
@@ -158,7 +119,10 @@ final class SupportRequestController
             return $screen;
         }
 
-        $delivery = $this->mailer->send($this->settings->recipient(), $this->message($category, $message, $from));
+        $delivery = $this->mailer->send(
+            $this->settings->recipient(),
+            $this->message(SupportCategory::known($category), $message, $from),
+        );
 
         if (! $delivery->sent) {
             // The typed text comes back with the form. Losing somebody's words because a mail
@@ -180,13 +144,17 @@ final class SupportRequestController
      * Composing the body here was fine while there was one rendering. There are two now — branded
      * HTML through Corex Mail, plain text through `wp_mail()` — and assembling the same fields
      * twice is how they drift (spec 093).
+     *
+     * No word of the email is made here. This request is in the language of whoever posted the
+     * form; the message is handed what it is about as a key and writes its own words when the
+     * mailer asks for them, in the email's language (DECISIONS #362).
      */
     private function message(string $category, string $message, string $from): SupportMessage
     {
         $user = wp_get_current_user();
 
         return new SupportMessage(
-            categoryLabel: self::categoryLabel($category),
+            category: $category,
             message: $message,
             replyTo: $from,
             senderName: (string) $user->display_name,

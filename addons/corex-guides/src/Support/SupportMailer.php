@@ -11,6 +11,7 @@ namespace Corex\Guides\Support;
 defined('ABSPATH') || exit;
 
 use Corex\Mail\AttemptingMailer;
+use Corex\Mail\EmailLanguage;
 use Corex\Mail\MailRequest;
 use Corex\Mail\Mailer;
 use Throwable;
@@ -31,10 +32,16 @@ use WP_Error;
  * import `Corex\Forms\Submission\NotificationDispatcher`, which is the same ladder one plugin over:
  * corex-forms is optional, and a help form must not stop working because a site does not use forms
  * (Principle IX). The cost is this file; the alternative was a hard dependency on an optional plugin.
+ *
+ * Both rungs send words CoreX wrote, and this is where they are made: in the email's language
+ * ({@see EmailLanguage}), not in that of the request, which is the sender's own because the form
+ * is posted from the admin (DECISIONS #362).
  */
 final class SupportMailer
 {
     /**
+     * @param EmailLanguage $language Asked for the email's language, which the message's words
+     *                              are made in.
      * @param ?Mailer $mailer       Bound only by `addons/corex-email`; null on installs without it.
      * @param ?string $templateName The registered template to render through, or null to send the
      *                              plain-text body even on the Mailer rung. The provider passes a
@@ -43,6 +50,7 @@ final class SupportMailer
      *                              for one that does not exist.
      */
     public function __construct(
+        private readonly EmailLanguage $language,
         private readonly ?Mailer $mailer = null,
         private readonly ?string $templateName = null,
     ) {
@@ -62,7 +70,11 @@ final class SupportMailer
         // header is a header-injection surface, and losing the reply address is better than
         // refusing to deliver the message at all.
         $replyTo = is_email($message->replyTo) ? $message->replyTo : '';
-        $subject = $message->subject();
+
+        // Every word of both renderings, made once and in one language.
+        [$subject, $context, $plainText] = $this->language->during(
+            static fn (): array => [$message->subject(), $message->context(), $message->plainText()],
+        );
 
         if ($this->mailer !== null) {
             // The branded template, because this rung's driver stamps `text/html` on everything —
@@ -70,16 +82,16 @@ final class SupportMailer
             return $this->viaMailer(new MailRequest(
                 to: [$recipient],
                 templateName: $this->templateName,
-                context: $message->context(),
+                context: $context,
                 subject: $subject,
-                body: $message->plainText(),
+                body: $plainText,
                 replyTo: $replyTo !== '' ? $replyTo : null,
             ));
         }
 
         // The floor sends no `Content-Type`, so the client reads it as `text/plain` and the line
         // breaks are real. Plain text is the right rendering here, not a fallback that looks worse.
-        return $this->viaWpMail($recipient, $subject, $message->plainText(), $replyTo);
+        return $this->viaWpMail($recipient, $subject, $plainText, $replyTo);
     }
 
     private function viaMailer(MailRequest $request): SupportDelivery
