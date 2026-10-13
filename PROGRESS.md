@@ -194,18 +194,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   as tests it took 18 ms. A search is quicker than no search. Whether a client site holds
   anything near that number was not read. Measured for DECISIONS #318, not changed.
 
-- **A password with a quote or a backslash in it is not the same password at CoreX's
-  sign-in and at WordPress's. The owner's decision, asked on 2026-10-13.** Measured over
-  HTTP on WordPress 7.1.3, for `'`, `"` and `\` each alone and together (DECISIONS #333 has
-  the table): a password chosen at the account add-on's registration or through its reset
-  route is hashed as typed, signs in at the add-on and is refused at `wp-login.php`; one
-  chosen on `wp-login.php`'s reset screen or given through `wp/v2/users` is hashed with
-  the request's slashes on, signs in at `wp-login.php` and is refused by the add-on.
-  Nothing is changed. Hashing it WordPress's way from now on locks out whoever registered
-  through CoreX with such a password, unless a sign-in also accepts the other form and
-  hashes the password again; read before building that: the sign-in limiter counts every
-  `wp_login_failed`, so two tries through `wp_signon()` count one wrong password twice, and
-  a password hashed again signs that person out of their other browsers.
+- **An account that chose a password with a quote or a backslash through the account
+  add-on, and whose owner has not signed in there since DECISIONS #334, is still refused at
+  `wp-login.php`.** The add-on now hashes a password WordPress's way and moves such an
+  account when its owner signs in on the account block; nothing moves the others, and
+  nothing lists them. Moving one signs its owner out of their other browsers, once
+  (measured, #334).
 - **The account block's fields do not say what they are for.** Read from
   `AccountRenderer::fieldsOf()` on 2026-10-13, not measured: no field has an `autocomplete`
   value (`username`, `current-password`, `new-password`, `email`, a name). WCAG 1.3.5 asks
@@ -234,9 +228,28 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   title, its content and the footer's text all start at the window's edge, and
   `--wp--style--root--padding-left` computes to 0. Whether a kit or a client site sets
   the gutter was not read. Not changed.
-- **A new account's display name is its login, which is the email address when no username
-  was typed** (`WordPressAuthGateway::createUser()`). Read, not run: a display name is what
-  a comment or a post is signed with.
+- **An account registered before DECISIONS #335 with no username is still named by its
+  email address.** A new one is named by the part before the @. The old ones keep the
+  address as display name and nickname, and in the author address, and a comment written
+  under it keeps it whatever the account is renamed to: WordPress copies the name into the
+  comment (measured 2026-10-13). Putting them right rewrites a site's accounts and comments
+  and is the owner's to ask for. The add-on is off in Muva's decision record and on the
+  Perego and Mizzey development installs; their live hosts were not read.
+- **A display name of more than 191 characters breaks the Profile form.** Measured on
+  2026-10-13 through the route: a name of 192 to 250 characters is saved and the request
+  then throws, because the activity record holds a name in 191 and
+  `WpActivityRepository::append()` raises when its insert is refused; a name of 251 is not
+  stored at all, while a first name sent with it is. Seen while measuring DECISIONS #338.
+  Not changed.
+- **A login made for a long address can still be refused by something else.** An address
+  of 61 to 100 characters with no username gets a login made from its first part
+  (DECISIONS #338). A listener on `pre_user_login` or `illegal_user_logins`, or a second
+  registration at the same moment for the same login, ends in WordPress's own message
+  about a username the person did not type. Read, not run.
+- **A new member who chose a password is emailed a link to set one.** The account gateway
+  sends WordPress's own new-user email, which reads "To set your password, visit the
+  following address:". Read on 2026-10-13 from what was handed to `wp_mail()`; what
+  following the link does to the chosen password was not run. Not changed.
 - **A login made from an address is altered by WordPress, and that is left.** With no
   username typed, `name+shop@example.com` gets the login `nameshop@example.com`; the person
   signs in with the address, as measured (DECISIONS #333). An account registered before

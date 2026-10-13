@@ -65,6 +65,41 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A long email address registers without a username, and one too long for an account is
+  refused with a reason.** The registration form's Username field is optional, and without
+  one the login is the email address. WordPress holds a login in 60 characters and an
+  address in 100. Measured on WordPress 7.1.3: an address of 61 characters or more with no
+  username was answered "Username may not be longer than 60 characters.", to somebody who
+  had typed none; and an address of 101 with a username was answered "Your account has been
+  created. You can now sign in." with no account stored, because WordPress reports no error
+  for an address its database does not take. Now an address of 61 to 100 characters gets a
+  login made from the part before the @ (what a login can hold of it, 60 characters at
+  most, with `-2` or the next free number when an account has it), and its owner signs in
+  with the address as everybody with no username does. The account is named by the part
+  of the address before the @, as any account with no username is. When no login can be
+  made, the form asks for a username (`username_required`). An address of more than 100
+  characters is refused at registration and on the Profile form, which failed silently in
+  the same way, with a message that says how long one may be (`email_too_long`). An address
+  of 60 characters or fewer is the login, as before. For a developer: `AuthGateway` has a
+  new method, `loginForAddress()`, and `createUser()` takes the account's name as a fourth
+  argument; a site's own gateway has to add both (DECISIONS #338).
+
+- **A new account with no username is no longer named by its email address.** The
+  registration form's Username field is optional, and an account made without one has its
+  address as its login. The account add-on handed that login to WordPress as the display
+  name, and WordPress made the nickname and the address of the author page from it too.
+  Measured on WordPress 7.1.3, for a visitor who is not signed in: a comment by
+  `dalia.hassan@example.com` was signed `dalia.hassan@example.com` on the post's page, in
+  `wp/v2/comments` and in the comments feed, and its markup had the class
+  `comment-author-dalia-hassanexample-com`; once a post was published in that account's
+  name, `wp/v2/users/<id>` gave the address as the name and `dalia-hassanexample-com` as
+  the slug, and the post's page and the posts feed named the address. Such an account is
+  now named by the part of its address before the @: the display name and the nickname are
+  `dalia.hassan`, and the author address is `dalia-hassan`. Its login is still the address,
+  and its owner signs in with the address as before. An email address typed into the
+  Username field is treated the same way. An account with a username that is not an email
+  address is named by it, as before (DECISIONS #335).
+
 - **The account block says what happened under the button that was pressed.** The
   `corex/account` block had one message line, above its forms, for everything the server
   answers: a refused sign-in, a refused registration, "a reset link is on its way", a saved
@@ -207,6 +242,18 @@ All notable changes to Corex are documented here. The format follows
   Somebody who types no username is registered as before, with a login made from the
   address, and signs in with the address (DECISIONS #333).
 
+- **A password with a quote or a backslash in it is one password at the account block and
+  at WordPress's own screens.** WordPress's screens keep and check a password as the text
+  of a form, with the request's slashes on it; the account add-on handed over the password
+  as it was typed. A member who chose "it's-my-password" on the account block was refused
+  at `wp-login.php` with it, and a member who chose theirs on WordPress's own reset
+  screen was refused by the account block. The add-on now hands a
+  password over the way a WordPress screen does, at registration, at a reset and at
+  sign-in. An account that chose such a password through the add-on before this release
+  still signs in at the account block, and is moved to WordPress's form as it does, after
+  which `wp-login.php` accepts it too. A wrong password is counted as one failed sign-in,
+  as before. The owner's decision (DECISIONS #334).
+
 ### Client impact
 
 - **The account block's message line moved, and its fields are 16 pixels narrower.** Only
@@ -219,6 +266,22 @@ All notable changes to Corex are documented here. The format follows
   (`.corex-account__row input`) are sized with their padding and border inside their
   width. Read on this machine: nothing under `sites/` in the Muva or Perego checkouts
   names the block. Nothing to rebuild: the block's script and stylesheet are not built.
+- **An account registered through the account block before this release, with no
+  username, keeps its email address as its display name** and nickname, and keeps the
+  address, without its punctuation, in the address of its author page. Nothing rewrites
+  them: a display name may by now be one its owner chose, and a changed author address
+  breaks the links to it.
+  `wp user list --fields=ID,user_login,user_nicename,display_name,user_email` shows them:
+  such an account's login is its address. Its owner can change the display name
+  on the account block's **Profile** form. That does not change the nickname or the author
+  address, and, as measured, it does not change the comments already written: WordPress
+  copies the name into each comment when it is posted. From this release, on a site with
+  the add-on active and registration open, a new member who typed no username is shown
+  "Signed in as" the first part of their address, and their comments are signed with it.
+  Nothing to rebuild: no screen, script, style, route or interface changed. The add-on is
+  switched off on Muva by its own decision record, and is inactive, with registration
+  closed, on the Perego and Mizzey installs of the development machine, as read on
+  2026-10-13; their live hosts were not read.
 - **The ids of the account block's fields changed.** Only for a site that has Corex
   Profile on and selects a field of the block by id in its own stylesheet or script.
   `corex-account-login`, `corex-account-password`, `corex-account-email` and the others
@@ -267,6 +330,19 @@ All notable changes to Corex are documented here. The format follows
   your own that posts to the route shows the message it is given, as the account block
   does. An account registered before this release under a changed username keeps it: its
   owner signs in with the address, or with the username as it was stored.
+- **A member whose password has a quote or a backslash in it, and who chose it on the
+  account block, is signed out of their other browsers once**: the next time they sign in
+  on the account block, when their account is moved (DECISIONS #334). WordPress makes a
+  browser's cookie from the stored password, so it does the same after any password
+  change; the add-on ends those sessions, so that the account's list shows only ones that
+  work.
+  A password-reset link that was waiting for that account stops working, and whatever
+  listens on WordPress's `wp_set_password` action is told, as read in WordPress. Nobody has
+  to do anything. A member with such a password who does not sign in on the account block
+  again is not moved, and `wp-login.php` goes on refusing them until they reset it.
+- **Code of your own that listens on `authenticate`** is handed a password by the account
+  block's sign-in with a level of slashes on it, as it always was by `wp-login.php`. Read,
+  not run with such code.
 - **`Corex\Profile\Account\AuthGateway` has a new method, `acceptsUsername()`.** A class of
   your own that implements the interface has to add it. Nothing under `sites/` in the Muva,
   Perego or Mizzey checkouts names the interface, as read on 2026-10-13. Nothing to rebuild:
