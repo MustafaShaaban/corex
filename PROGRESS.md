@@ -94,6 +94,11 @@ What to know before resuming each:
   is printed before adding a place that prints one. An Email Studio template's subject, and a
   value merged into it, are read by the same rule (DECISIONS #330; on `main` after v0.45.2,
   not released): nothing is stripped, and a line break in a merged value is a space.
+- **The activity record.** `ActivityService::record()` cuts an actor's label, a target's
+  label and a target's id to `ActivityEvent::LONGEST_TEXT`, 191 characters, which is also
+  what `ActivityTable` makes the columns (DECISIONS #340; on `main` after v0.45.2, not
+  released). A new caller may hand over a name of any length. `kind` (100) and
+  `target_type` (64) are not cut: hand them text written in code.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -110,6 +115,13 @@ server, for each role. A lead, not built: a role given the `corex_manage_access`
 and not `manage_options` is addressed by the notification of a new request and cannot open
 the screen that decides it (read in the code, not walked in a browser); the list, the
 decision route and the screen's menu entry would move to the ability together.
+
+**After v0.45.2, not released, 2026-10-13.** A person who asks twice for the same access has
+one request (spec 079, FR-008a; DECISIONS #343). `POST corex/v1/access/requests` stored a
+request, an audit entry and a notification for every repeat; the form on a denied screen
+did not. The question is asked where the request is stored
+(`AccessRequestStore::createUnlessPending()`, under a lock named for the requester), so the
+route, the form and two asks at the same moment get one answer.
 
 **After v0.45.2, not released, 2026-10-13.** A member who forgot their password resets it on
 the account page (spec 068, FR-158a to FR-158c; DECISIONS #341; the owner's decision on
@@ -173,6 +185,27 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+- **`POST corex/v1/access/requests` answers 500 for a request it refuses for what it says.**
+  An empty reason, a key that is not an ability's or an area's (`forms`, where the area is
+  `forms-flows`), both an ability and an area, or neither: the service throws and the route
+  does not catch it. Measured on 2026-10-13 over HTTP, signed in as an editor: "There has
+  been a critical error on this website", and a fatal error in the PHP log for each post.
+  A reason over 2,000 characters takes the same path; that one was read, not posted. The
+  form on a denied screen catches the same refusal and shows the field error. Not changed
+  with DECISIONS #343: what the route should answer changes what a script reading status
+  codes sees, which is a decision of its own.
+- **A site that already holds the same access request twice keeps both.** Each is listed in
+  the queue and decided on its own. Nothing merges or removes them, and whether a client
+  site holds one was not read.
+- **One open request per person rests on a MySQL named lock, on one database server.** The
+  lock is asked for on the connection WordPress is using (DECISIONS #343). On a site whose
+  database plugin sends reads to replicas, two requests could ask two servers for it and
+  both be told yes; two asks at the same moment could then both be stored, as they were
+  before. Read, not run: no such site was at hand.
+- **No test in CI posts two access requests at once.** What keeps the lock in place is an
+  integration test that reads, when the row is written, that the lock is held, and
+  afterwards that it was let go. The two-process run (36 pairs, one request each) was made
+  by hand on 2026-10-13.
 
 - **A client site's own notification email does not link to the submission yet.** CoreX's
   email names a form's file and links to the submission in the inbox (DECISIONS #319,
@@ -248,13 +281,21 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   `document.querySelector`, so a second block's lists stay empty for a signed-in person.
   The forms of every block are answered, and since DECISIONS #337 no id is on such a page
   twice.
-- **With scripts off, an account form is sent to the page and nothing answers.** Measured
-  the same day: the forms have no address of their own, so the browser posts to the page
-  it is on, which shows the empty forms again. The add-on's README and the profile guide
-  said the forms "still submit"; they now say what happens. Not changed.
-- **An account form whose request fails says nothing.** Read from `account.js`, not run:
-  a request that does not arrive, or an answer that is not JSON, ends in a rejected promise
-  nothing handles, and no message line is written.
+- **With scripts off the account block's forms do not work. Whether they should is the
+  owner's decision, asked on 2026-10-13.** The block says so now, in a note above its
+  forms that only a browser running no scripts shows, and that names no other place to
+  sign in (DECISIONS #339, spec 068 FR-161d). A form sent anyway still goes to the page it
+  is on, with what was typed in it, and is not answered. Making the forms work without
+  scripts is a second way in for sign-in, registration and the rest, with a spec of its
+  own; #339 weighs it and recommends not now.
+- **A browser that runs scripts and did not get `account.js` is told nothing.** With the
+  file blocked, or the request for it failed, a form goes to the page as it does with
+  scripts off, and the note for scripts being off is not shown. Read, not run. Only forms
+  that work without scripts close it (DECISIONS #339).
+- **A signed-in person's sessions and recent activity say nothing when they do not load.**
+  `get()` in `account.js` has no rejection handler, so the two lists stay empty under
+  their headings. Read, not run. A form's or a session button's request that gets no
+  answer does say so now (DECISIONS #339, FR-161e).
 - **No screen reader was listened to on the account block.** That an answer is announced,
   and once, is read from where it is written (one polite status, in the page before its
   text changes; three of them in Chromium's accessibility tree on the signed-out page,
@@ -272,12 +313,23 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   comment (measured 2026-10-13). Putting them right rewrites a site's accounts and comments
   and is the owner's to ask for. The add-on is off in Muva's decision record and on the
   Perego and Mizzey development installs; their live hosts were not read.
-- **A display name of more than 191 characters breaks the Profile form.** Measured on
-  2026-10-13 through the route: a name of 192 to 250 characters is saved and the request
-  then throws, because the activity record holds a name in 191 and
-  `WpActivityRepository::append()` raises when its insert is refused; a name of 251 is not
-  stored at all, while a first name sent with it is. Seen while measuring DECISIONS #338.
-  Not changed.
+- **A record that cannot be written still fails the request that did the work.** Every
+  caller of `ActivityService::record()` but the release installer lets the repository's
+  exception out, after its work is done, so the person is answered 500 for something that
+  happened. The one cause measured, a name longer than the table holds, is gone
+  (DECISIONS #340). What is left was not seen: a database refusing a row it has room for.
+  #340 holds a recommendation and no code: a member's own request (a profile saved,
+  sessions ended) should not be failed by its record; an administrator's audited action
+  should have its record written with the work, in one transaction, so that neither can be
+  without the other, which wants a spec. The owner's to decide.
+- **`POST corex/v1/access/requests` stores a second request for the same ability from the
+  same person.** Measured on 2026-10-13 while measuring #340: two posts, two requests.
+  `AccessService::pendingRequestFor()` is asked by the form in the admin and not by the
+  route. Not looked into further, not changed.
+- **The Profile form's Display name field has no `maxlength`.** A name WordPress would not
+  keep is refused by the server with a reason (DECISIONS #340). The field was left alone
+  because two open pull requests rewrite the block's markup (#381, #383), and because 250
+  is the number only for a name with no `&` or `<` in it.
 - **A login made for a long address can still be refused by something else.** An address
   of 61 to 100 characters with no username gets a login made from its first part
   (DECISIONS #338). A listener on `pre_user_login` or `illegal_user_logins`, or a second
