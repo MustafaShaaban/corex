@@ -20,23 +20,30 @@ defined('ABSPATH') || exit;
  *
  * What the server answers is written under the button that asked: each form, and the
  * session buttons, have a message line of their own (spec 068, FR-161a).
+ *
+ * A field's id holds the block it is in and its form, so no two fields of a page share
+ * one and a label names the field printed beside it (spec 068, FR-161b).
  */
 final class AccountRenderer
 {
     /**
-     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string} $ctx
+     * `instance` is what the ids of this block's fields start with. A page that holds the
+     * block more than once hands each one its own; without one they start `corex-account`.
+     *
+     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string,instance?:string} $ctx
      */
     public function render(array $ctx): string
     {
         $nonce = (string) ($ctx['nonce'] ?? '');
+        $block = (string) ($ctx['instance'] ?? 'corex-account');
         $attrs = sprintf(
             ' class="corex-account" data-corex-account data-nonce="%s"',
             esc_attr($nonce),
         );
 
         $body = ($ctx['loggedIn'] ?? false)
-            ? $this->member($ctx)
-            : $this->guest($ctx);
+            ? $this->member($ctx, $block)
+            : $this->guest($ctx, $block);
 
         return '<div' . $attrs . '>' . $body . '</div>';
     }
@@ -44,52 +51,58 @@ final class AccountRenderer
     /**
      * @param array<string, mixed> $ctx
      */
-    private function guest(array $ctx): string
+    private function guest(array $ctx, string $block): string
     {
         $registration = (bool) ($ctx['registrationOpen'] ?? false)
-            ? $this->registerForm()
+            ? $this->registerForm($block)
             : '<p class="corex-account__note">' . esc_html__('Registration is currently closed.', 'corex') . '</p>';
 
         return '<div class="corex-account__grid">'
-            . $this->loginForm()
+            . $this->loginForm($block)
             . $registration
-            . $this->forgotForm()
+            . $this->forgotForm($block)
             . '</div>';
     }
 
-    private function loginForm(): string
+    private function loginForm(string $block): string
     {
+        $field = $this->fieldsOf($block . '-login');
+
         return '<form class="corex-account__form" data-corex-account-form="login" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Sign in', 'corex') . '</h2>'
-            . $this->field('login', __('Username or email', 'corex'), 'text', true)
-            . $this->field('password', __('Password', 'corex'), 'password', true)
+            . $field('login', __('Username or email', 'corex'), 'text', true)
+            . $field('password', __('Password', 'corex'), 'password', true)
             . '<label class="corex-account__check"><input type="checkbox" name="remember" value="1" /> '
             . esc_html__('Keep me signed in', 'corex') . '</label>'
             . $this->submit(__('Sign in', 'corex'))
             . '</form>';
     }
 
-    private function registerForm(): string
+    private function registerForm(string $block): string
     {
+        $field = $this->fieldsOf($block . '-register');
+
         return '<form class="corex-account__form" data-corex-account-form="register" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Create an account', 'corex') . '</h2>'
             . $this->honeypot()
-            . $this->field('email', __('Email', 'corex'), 'email', true)
-            . $this->field('username', __('Username', 'corex'), 'text', false)
-            . $this->field('password', __('Password', 'corex'), 'password', true)
-            . $this->field('password_confirm', __('Confirm password', 'corex'), 'password', true)
+            . $field('email', __('Email', 'corex'), 'email', true)
+            . $field('username', __('Username', 'corex'), 'text', false)
+            . $field('password', __('Password', 'corex'), 'password', true)
+            . $field('password_confirm', __('Confirm password', 'corex'), 'password', true)
             . '<label class="corex-account__check"><input type="checkbox" name="consent" value="1" required /> '
             . esc_html__('I agree to the terms and privacy policy.', 'corex') . '</label>'
             . $this->submit(__('Create account', 'corex'))
             . '</form>';
     }
 
-    private function forgotForm(): string
+    private function forgotForm(string $block): string
     {
+        $field = $this->fieldsOf($block . '-reset-request');
+
         return '<form class="corex-account__form" data-corex-account-form="reset-request" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Forgot your password?', 'corex') . '</h2>'
             . '<p class="corex-account__note">' . esc_html__('Enter your username or email and we’ll send a reset link.', 'corex') . '</p>'
-            . $this->field('login', __('Username or email', 'corex'), 'text', true)
+            . $field('login', __('Username or email', 'corex'), 'text', true)
             . $this->submit(__('Email a reset link', 'corex'))
             . '</form>';
     }
@@ -97,7 +110,7 @@ final class AccountRenderer
     /**
      * @param array<string, mixed> $ctx
      */
-    private function member(array $ctx): string
+    private function member(array $ctx, string $block): string
     {
         $name = esc_html((string) ($ctx['displayName'] ?? ''));
         $logout = esc_url((string) ($ctx['logoutUrl'] ?? ''));
@@ -112,7 +125,7 @@ final class AccountRenderer
             ) . '</p>'
             . '<a class="corex-account__logout" href="' . $logout . '">' . esc_html__('Sign out', 'corex') . '</a>'
             . '</div>'
-            . $this->profileForm($ctx)
+            . $this->profileForm($ctx, $block)
             . $this->sessionsPanel()
             . $this->notificationsPanel()
             . '</div>';
@@ -121,14 +134,16 @@ final class AccountRenderer
     /**
      * @param array<string, mixed> $ctx
      */
-    private function profileForm(array $ctx): string
+    private function profileForm(array $ctx, string $block): string
     {
+        $field = $this->fieldsOf($block . '-profile');
+
         return '<form class="corex-account__form" data-corex-account-form="profile" method="post" novalidate>'
             . '<h3 class="corex-account__subtitle">' . esc_html__('Profile', 'corex') . '</h3>'
-            . $this->field('display_name', __('Display name', 'corex'), 'text', true, (string) ($ctx['displayName'] ?? ''))
-            . $this->field('first_name', __('First name', 'corex'), 'text', false, (string) ($ctx['firstName'] ?? ''))
-            . $this->field('last_name', __('Last name', 'corex'), 'text', false, (string) ($ctx['lastName'] ?? ''))
-            . $this->field('email', __('Email', 'corex'), 'email', true, (string) ($ctx['email'] ?? ''))
+            . $field('display_name', __('Display name', 'corex'), 'text', true, (string) ($ctx['displayName'] ?? ''))
+            . $field('first_name', __('First name', 'corex'), 'text', false, (string) ($ctx['firstName'] ?? ''))
+            . $field('last_name', __('Last name', 'corex'), 'text', false, (string) ($ctx['lastName'] ?? ''))
+            . $field('email', __('Email', 'corex'), 'email', true, (string) ($ctx['email'] ?? ''))
             . $this->submit(__('Save profile', 'corex'))
             . '</form>';
     }
@@ -156,15 +171,23 @@ final class AccountRenderer
             . '</section>';
     }
 
-    private function field(string $name, string $label, string $type, bool $required, string $value = ''): string
+    /**
+     * What prints the labelled fields of one form. `$ids` is what their ids start with: two
+     * forms of one panel ask for a password, and each label has to name its own field.
+     *
+     * @return \Closure(string $name, string $label, string $type, bool $required, string $value=): string
+     */
+    private function fieldsOf(string $ids): \Closure
     {
-        $id = 'corex-account-' . $name;
+        return static function (string $name, string $label, string $type, bool $required, string $value = '') use ($ids): string {
+            $id = $ids . '-' . $name;
 
-        return '<p class="corex-account__row">'
-            . '<label for="' . esc_attr($id) . '">' . esc_html($label) . '</label>'
-            . '<input type="' . esc_attr($type) . '" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '"'
-            . ' value="' . esc_attr($value) . '"' . ($required ? ' required' : '') . ' />'
-            . '</p>';
+            return '<p class="corex-account__row">'
+                . '<label for="' . esc_attr($id) . '">' . esc_html($label) . '</label>'
+                . '<input type="' . esc_attr($type) . '" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '"'
+                . ' value="' . esc_attr($value) . '"' . ($required ? ' required' : '') . ' />'
+                . '</p>';
+        };
     }
 
     private function honeypot(): string

@@ -113,6 +113,17 @@ All notable changes to Corex are documented here. The format follows
   it: those reached 16 pixels past the form's inner edge on one side, and no longer do
   (spec 068, FR-161a; DECISIONS #336).
 
+- **In the account block, every label belongs to the field under it.** A field's id was
+  made from its name alone, and the signed-out block prints up to three forms on one
+  page: the sign-in form and the forgot-password form each ask for "Username or email",
+  and the sign-in form and the registration form each ask for "Password". The second
+  field of each pair had the first one's id. Pressing the forgot-password form's label,
+  or the registration form's "Password", put the cursor in the sign-in form; in the
+  browser's accessibility tree those two fields had no name and the sign-in form's two
+  had theirs twice. An id now holds
+  the block, the form and the field's name, so it is on the page once, also on a page that
+  holds the block twice (spec 068, FR-161b; DECISIONS #337).
+
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
   is plain text. A template whose subject is "Price <500 EGP" was sent as "Price";
@@ -271,6 +282,16 @@ All notable changes to Corex are documented here. The format follows
   switched off on Muva by its own decision record, and is inactive, with registration
   closed, on the Perego and Mizzey installs of the development machine, as read on
   2026-10-13; their live hosts were not read.
+- **The ids of the account block's fields changed.** Only for a site that has Corex
+  Profile on and selects a field of the block by id in its own stylesheet or script.
+  `corex-account-login`, `corex-account-password`, `corex-account-email` and the others
+  are gone. An id is now `corex-account-`, the block's number on the page, the form and
+  the field's name (`corex-account-1-login-password`), and the number is not promised to
+  stay the same: select a field by its form and its name
+  (`[data-corex-account-form="login"] input[name="password"]`). The fields' names, the
+  forms' `data-corex-account-form` values and every class are as they were. Read on this
+  machine on 2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the
+  block or an id of it. Nothing to rebuild.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The
