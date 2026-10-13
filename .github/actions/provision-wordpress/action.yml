@@ -33,7 +33,7 @@ runs:
       with:
         php-version: ${{ inputs.php-version }}
         extensions: mysqli, zip, gd
-        tools: composer:v2
+        tools: composer:v2, wp-cli
         coverage: none
 
     # The step above can end green without `wp`: setup-php asks for WP-CLI once, with no retry, and

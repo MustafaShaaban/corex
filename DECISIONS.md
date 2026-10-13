@@ -14515,3 +14515,130 @@ right-to-left again with this one; nothing stored changes. In PHP,
 `SubmissionFileDelivery::register()` is gone, and `Layout`'s constructor also takes a
 closure; an array is taken as before. Read on this machine on 2026-10-13: nothing under
 `sites/` in the Muva or Perego checkouts names either class or the action.
+
+## #354 — A runner that setup-php left without WP-CLI installs one release of it and carries on; setup-php is still asked first
+
+**Date:** 2026-10-13. **Branch:** `fix/ci-wp-cli-fallback`, from `main`.
+**Spec:** none (CI only). **Mode:** Deployment.
+
+**What was reported.** CI runs on 2026-10-13 stopped before any test ran, three times in
+one afternoon, on pull requests #393, #392 and #395: runs 38409781471, 38438603219 and
+38439973866. Each passed when a person ran it again with `gh run rerun <run> --failed`.
+
+**What the logs say.** Four jobs failed in those three runs: the browser job and the
+multisite job in the first attempt of the first run (jobs 115338724966 and 115338725374),
+the multisite job in the second (115439002365) and the integration job in the third
+(115443704432). In all four, `shivammathur/setup-php@v2` printed
+`✓ composer Added composer 2.10.3`, then `✗ wp-cli Could not setup wp-cli`, and its step
+ended `outcome=success`. `composer install` ran. The first step that calls WP-CLI,
+`wp core download`, ended `wp: command not found`, exit code 127. The line about WP-CLI
+came 9 and 17 seconds after Composer's in the first run, and 0.2 to 0.3 seconds after it
+in the other two, so the request did not fail the same way each time. A job that passed
+the same afternoon logged `✓ wp-cli Added wp-cli 2.12.0`.
+
+**Why a missing tool is a green step.** Read in setup-php's source at the commit those jobs
+ran, `eb7c497e`:
+
+- Asked for `wp-cli` with no version, it requests
+  `https://github.com/wp-cli/builds/blob/gh-pages/phar/wp-cli.phar?raw=true`
+  (`addWPCLI()` in `src/tools.ts`): a file on a branch of WP-CLI's builds repository.
+- It makes that request once, with `curl -sL` (`curl_opts` and `get()` in
+  `src/scripts/unix.sh`). There is no retry.
+- Any status but 200 is logged and the script goes on (`add_tool()` in
+  `src/scripts/tools/add_tools.sh`). Only Composer stops the step. Its README says so:
+  tools that cannot be set up "leave an error message in the logs, the execution is not
+  interrupted".
+- A 404 has a message of its own, "Failed to download", so these were not 404.
+
+What the request did get is not known: setup-php logs no status, and the failed request
+was not reproduced here. No file was left at `/usr/local/bin/wp`, or the next step would
+have run it.
+
+**The decision.** A step after setup-php in `.github/actions/provision-wordpress`, the
+script `ensure-wp-cli.sh` beside it:
+
+1. It asks `wp` for its version. An answer that starts `WP-CLI` and a digit ends the
+   step: setup-php provided it, as on almost every run.
+2. With no such answer it downloads
+   `https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar`, with
+   `curl --retry 5 --retry-all-errors`. That is the release's own download and not the
+   builds repository's branch, so the second try does not ask the address that just
+   failed.
+3. It refuses the file unless its SHA-256 is
+   `ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c`. That value was read
+   on 2026-10-13 in two places that agree: the digest GitHub's API reports for the
+   release's file, and `wp-cli-2.12.0.phar.sha256`, which WP-CLI publishes beside it.
+4. It installs the file as `/usr/local/bin/wp`, where setup-php puts its tools, asks for
+   the version again, and prints a warning that the run took the fallback.
+
+It asks for the version and does not look for a file called `wp`, because of what
+setup-php's script does with an answer that is not 200: `curl -o` writes the answer's body
+to `/usr/local/bin/wp` and the script marks it executable. That was read, not seen in a
+log. An empty file marked executable runs and exits 0, so the answer is read as well as the
+exit code.
+
+The release and its checksum are in `action.yml`, as the step's environment, and the
+script checks their shape on every run: a version typed as `2.12`, or a checksum cut
+short, fails the pull request that typed it and not the run, months later, that needs it.
+
+2.12.0 is the latest release of WP-CLI (published 2025-05-07) and is what setup-php
+provides today, so a run that takes the fallback tests with the same WP-CLI as one that
+does not.
+
+**Weighed, and not chosen.**
+
+- *`fail-fast: true` on setup-php.* It stops the job at the same lost request, one step
+  sooner and with a clearer message. A person still runs it again. GitHub Actions has no
+  retry for a step that uses an action, and a third-party action that retries another
+  would be a new dependency with the job's token in reach, to work around one `curl`.
+- *Naming the release and checksum in setup-php's own `tools`*
+  (`wp-cli:2.12.0@sha256:…`, which it supports). It moves the request to the release's
+  download and checks the file, and it is still one request with no retry, in a step that
+  still ends green without the tool.
+- *Not asking setup-php for WP-CLI, and always installing the named release.* One path
+  and no second source. It was not chosen for the reason WordPress is not pinned (#221):
+  `wp corex` is part of what CoreX ships, a site runs it on whatever WP-CLI it has, and CI
+  on the latest WP-CLI is how a release of WP-CLI that breaks it is found. A named release
+  nothing updates would hide that. As a fallback the same named release costs nothing: it
+  is used on the runs that had no WP-CLI at all.
+
+**Tests.** `tests/provision-wordpress-wp-cli.test.js`, eight cases, runs the script in
+bash with a search path made for each case and a stand-in for `curl` that writes down the
+address asked and answers with a file the case names; nothing reaches the network. A
+WP-CLI that works is left alone and nothing is downloaded. A runner with no `wp` gets the
+release, from the release's address, and a warning. An empty file or a page of HTML where
+`wp` belongs is replaced. A download with another checksum installs nothing. A download
+that fails names the address. A version or a checksum of the wrong shape fails on a runner
+that needs no fallback. Each of three changes to the script made a case fail: the checksum
+never checked, any answer from `wp` counted as WP-CLI, the shape of the pair not checked.
+
+On Windows the test finds Git's bash from `git --exec-path`. `bash` there is the launcher
+for the Linux subsystem, and Git's `bin/bash.exe` puts `/mingw64/bin`, with the real
+`curl`, ahead of the search path it is given (run on this machine: `usr/bin/bash.exe`
+keeps the path as given).
+
+**Run on a runner.** The fallback has nothing to do on a run where setup-php works, so
+the first commits of pull request #397 took `wp-cli` out of setup-php's `tools`, and every
+job that provisions WordPress had to take it (run 38445834843, 2026-10-13). In the
+multisite job's log: `No working wp on this runner. Installing WP-CLI 2.12.0 from …`,
+the warning 0.4 seconds later, then `wp core download` and `Success: WordPress
+downloaded.` The checksum in `action.yml` is therefore the checksum of the file that
+address serves. All four jobs provisioned WordPress with it (PROOF_RESULT). The last
+commit put `wp-cli` back, and that run is the one the merge was made on.
+
+**What it does not do.**
+
+- The fallback is a download too. If the release's address fails five tries in a row the
+  job is red, now with an error that names the address.
+- Nothing updates the named release: Dependabot does not read it. It is the fallback and
+  not what a normal run tests with, so an old one costs little until it is too old for
+  the PHP in use. A warning that a run took the fallback while setup-php, on other runs,
+  logs a newer WP-CLI is the sign to move it. `action.yml` says how to prove a new pair.
+- The other workflows that use setup-php ask it for Composer only, which it already treats
+  as fatal. They are not changed.
+- Why setup-php's request failed four times in one afternoon is not known, and nothing
+  here makes it fail less often. The warning is what counts it.
+
+**Client impact.** None for a site. A client repository carries
+`.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
+the fallback when it takes the release this is in; it has nothing to set.

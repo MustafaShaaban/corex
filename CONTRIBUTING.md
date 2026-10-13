@@ -143,7 +143,9 @@ repository only), and it is a required check on `main`. `ci.yml` declares no `wo
 on-demand run: to run the job again, re-run it from the pull request's checks.
 
 The job does not use wp-env. `.github/actions/provision-wordpress` installs the latest WordPress into `./wp`,
-links the theme, the plugins and the add-ons into it, activates them, and installs the CoreX schema. The job then
+links the theme, the plugins and the add-ons into it, activates them, and installs the CoreX schema. WP-CLI comes
+from setup-php, which provides the latest; on a runner where setup-php could not fetch it, the action installs
+WP-CLI 2.12.0 itself and the run carries a warning that it did. The job then
 copies the must-use fixtures, seeds a `/contact/` page, three stored submissions and five users who are not
 administrators, builds the bundles, and serves the install with nginx and php-fpm at `http://127.0.0.1:8080`.
 php-fpm runs with OPcache on and the JIT off, and the job checks that the JIT is off before the specs start.

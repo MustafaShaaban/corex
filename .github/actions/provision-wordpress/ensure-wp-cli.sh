@@ -5,7 +5,7 @@
 # setup-php is asked for WP-CLI and normally provides the latest stable build. It asks for that
 # build once, with no retry, and a tool it could not fetch is a line in its log and not a failure:
 # its step ends green with no `wp`, and the job stops one step later on "wp: command not found"
-# (three jobs on 2026-10-13, DECISIONS #354). Whatever the server did answer is written to
+# (four jobs in three runs on 2026-10-13, DECISIONS #354). Whatever the server did answer is written to
 # /usr/local/bin/wp and marked executable, so a file of that name is not proof of anything.
 #
 # So `wp` is asked for its version. When it has none to give, one release of WP-CLI is installed

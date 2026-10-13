@@ -72,6 +72,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
+  WP-CLI.** Four jobs in three runs did on 2026-10-13, each before a test had run, and each
+  passed when a person ran it again. setup-php asks for WP-CLI once, with no retry, and reports a tool it
+  could not fetch in its log only, so its step ended green and the next one had no `wp`. The
+  provisioning action now asks `wp` for its version after setup-php. Where there is none it
+  installs WP-CLI 2.12.0 from that release's own download, trying again when the connection
+  fails, and refuses a file whose SHA-256 is not the one written in the action. The run then
+  carries a warning saying so. setup-php is still asked first and still provides the latest
+  WP-CLI; WordPress is still installed at `latest`. Nothing a site runs changes
+  (DECISIONS #354).
+
 - **Every request of a site with `WP_DEBUG` on logged "Translation loading for the `corex`
   domain was triggered too early", and an email on a right-to-left site was drawn left to
   right.** Since v0.45.1. The link that opens a file sent with a form was hooked by an

@@ -107,6 +107,18 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
+installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
+not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it
+could not fetch is a line in its log, so its step ended green. `ensure-wp-cli.sh`, beside the
+provisioning action, now asks `wp` for its version after setup-php and, where there is none,
+installs WP-CLI 2.12.0 from its release with the checksum checked. **A run that took the
+fallback is green and carries a warning, "WP-CLI was installed by the fallback"**: count
+those before deciding the fallback is not needed. The release and its checksum are written
+in `action.yml` and nothing updates them; only a run with `wp-cli` taken out of setup-php's
+`tools` proves a new pair. `tests/provision-wordpress-wp-cli.test.js` runs the script in
+each state a runner can be in, with a stand-in for `curl`.
+
 **After v0.45.2, not released, 2026-10-13.** No string of the `corex` domain is read before
 `init` (DECISIONS #351). Since v0.45.1 every request made what answers a submission's file
 link, and with it the mail stack and the email layout, which read the theme's settings and
