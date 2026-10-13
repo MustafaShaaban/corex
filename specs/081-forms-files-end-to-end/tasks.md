@@ -113,6 +113,37 @@ FR-011 and SC-004 are amended to say so. Tests first.
 - [x] **T075** `UploadedFileNames`; `SendEmailListener` names the files and adds the link.
 - [x] **T076** Guards, `PROGRESS.md`, DECISIONS #319, `CHANGELOG.md`.
 
+## Phase H — a file field is answered by a file (reported 2026-10-13)
+
+A form's route kept what the request's body said under a file field's name when no file part
+arrived for it, and an answer to a file field is read as the number of a stored file. FR-002a
+and FR-004a are added. Tests first; each new case was run against the code before its fix,
+and DECISIONS #353 says which pass there and why.
+
+- [x] **T080** Pest, unit: the service leaves out what the body says under a file field
+      (as text, as a number, as an array shaped like an upload), says a required file is
+      missing, hands the listeners no such answer, and stores the file that was sent.
+- [x] **T081** Pest, unit: a flow's validation stage passes on no answer to a file question;
+      the `mime` and `max_size` rules refuse text and leave an empty answer to `required`.
+- [x] **T082** Pest, integration: through the route's controller, nothing is stored as the
+      field's answer, the inbox shows no file, and deleting that submission leaves the file
+      of another; the store refuses a file on the server that was not uploaded, before
+      reading it; a submission's files are its own by field, and a file two submissions name
+      stays until the last is deleted.
+- [x] **T083** Playwright, over HTTP: text and a file sent under one name are stored as the
+      file, and text alone is no answer.
+- [x] **T084** `FileFieldAnswers`, asked by `FormSubmissionService` and by the flow pipeline's
+      `ValidationStage`; `MimeType` and `MaxFileSize` refuse text.
+- [x] **T085** `AttachmentStore` asks `is_uploaded_file()` before it reads; `StoredUpload`
+      names the two meta keys once; `FormUploads` is the call a site's listener makes.
+- [x] **T086** `WpSubmissionTrashStore::uploadsOf()`: by field, and not while another
+      submission names the file.
+- [x] **T087** From the review of the change, each with a test first: the Data import reads
+      the file part only (`DataManagementController::uploadedCsv()`); `ValidationStage` drops
+      the text before it writes the consent record; "another submission names it" is
+      compared byte for byte.
+- [x] **T088** Guards, `PROGRESS.md`, DECISIONS #353, `CHANGELOG.md`.
+
 ## Deliberately not done
 
 - **Multi-file per field.** One file per field is the decided scope: a field that sometimes holds

@@ -95,7 +95,7 @@ final class AttachmentDelivery
      */
     public function deliver(int $attachmentId): never
     {
-        if (get_post_meta($attachmentId, '_corex_protected', true) !== '1') {
+        if (StoredUpload::contextOf($attachmentId) === null) {
             // Not ours to serve. Anything else in the media library has its own URL and its own
             // rules, and turning this into a general file reader is how it becomes an LFI.
             wp_die(esc_html__('That file is not available here.', 'corex'), 404);

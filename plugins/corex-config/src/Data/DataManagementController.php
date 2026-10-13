@@ -109,7 +109,7 @@ final readonly class DataManagementController
 
     public function createImport(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->mutate($request, $this->importShape(), function (Request $safe) use ($request): Response {
+        return $this->gateway->mutate($request, $this->importShape($request), function (Request $safe) use ($request): Response {
             $input = $safe->input;
             if (is_array($input['file'] ?? null)) {
                 $input = [...$input, ...$input['file']];
@@ -309,13 +309,29 @@ final readonly class DataManagementController
     }
 
     /** @return array<string,callable|string> */
-    private function importShape(): array
+    private function importShape(WP_REST_Request $request): array
     {
         return [
             'header' => $this->stringList(...), 'rows' => $this->rows(...), 'mapping' => $this->mapping(...),
             'unknown_policy' => 'sanitize_key', 'file_name' => 'sanitize_file_name',
-            'file' => fn (mixed $value): array => $this->services->csv->parse(is_array($value) ? $value : []),
+            'file' => fn (): array => $this->uploadedCsv($request),
         ];
+    }
+
+    /**
+     * The CSV the request carried as a file part, parsed.
+     *
+     * Read from the request's file parts and from nowhere else. The gateway hands on a request's
+     * text and its file parts as one payload, so `file` can be something the text said: an array
+     * naming a path on the server, which the parser opened and answered with.
+     *
+     * @return array{file_name:string,header:list<string>,rows:list<list<string>>}|array{}
+     */
+    private function uploadedCsv(WP_REST_Request $request): array
+    {
+        $part = $request->get_file_params()['file'] ?? null;
+
+        return is_array($part) ? $this->services->csv->parse($part) : [];
     }
 
     /** @return array<string,callable|string> */
