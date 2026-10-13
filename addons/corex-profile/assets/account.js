@@ -3,10 +3,11 @@
  *
  * Progressive enhancement over the server-rendered account block: it intercepts the
  * login / register / recovery / profile forms and posts them to the `corex/v1/account/*`
- * REST routes with the REST nonce, surfacing the typed result message in a polite live
- * region. On the member view it also loads active sessions and recent activity and
- * wires the "sign out other/every session" actions. With no JS the forms still submit
- * (the REST routes accept a normal POST), so the account remains usable.
+ * REST routes with the REST nonce, and writes the typed result message into the polite
+ * live region under the button that asked, which it brings into the window when it is
+ * outside it. On the member view it also loads active sessions and recent activity and
+ * wires the "sign out other/every session" actions. With no JS a form is sent to the
+ * page's own address, which does not answer it (PROGRESS.md, "Open, and not hidden").
  *
  * Config comes from the localized `window.corexAccount = { restUrl, nonce }`.
  *
@@ -18,6 +19,7 @@
 
 	const cfg = window.corexAccount || {};
 	const i18n = cfg.i18n || {};
+	const MESSAGE_LINE = '.corex-account__status';
 	const ROUTES = {
 		login: 'account/login',
 		register: 'account/register',
@@ -41,14 +43,45 @@
 		);
 	}
 
-	function status( message, ok ) {
-		const el = document.querySelector( '.corex-account__status' );
-		if ( ! el ) {
+	function prefersLessMotion() {
+		return window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+	}
+
+	// One message is on the page at a time: the line of every form is emptied.
+	function clearMessages() {
+		Array.prototype.forEach.call(
+			document.querySelectorAll( MESSAGE_LINE ),
+			function ( line ) {
+				line.textContent = '';
+				line.removeAttribute( 'data-state' );
+			}
+		);
+	}
+
+	/**
+	 * Writes what the server answered into the message line of the form or section that
+	 * asked, and brings that line into the window.
+	 *
+	 * `nearest` moves the page by the least that shows the whole line, and not at all when
+	 * it already shows. Focus is left on the control the person used.
+	 *
+	 * @param {Element} scope   The form, or the section, whose control was used.
+	 * @param {string}  message What the server said.
+	 * @param {boolean} ok      Whether it took what it was sent.
+	 */
+	function say( scope, message, ok ) {
+		clearMessages();
+		if ( ! message ) {
 			return;
 		}
-		el.textContent = message;
-		el.hidden = ! message;
-		el.setAttribute( 'data-state', ok ? 'ok' : 'error' );
+		const line = scope.querySelector( MESSAGE_LINE );
+		line.textContent = message;
+		line.setAttribute( 'data-state', ok ? 'ok' : 'error' );
+		line.scrollIntoView( {
+			block: 'nearest',
+			inline: 'nearest',
+			behavior: prefersLessMotion() ? 'instant' : 'smooth',
+		} );
 	}
 
 	function post( path, body, token ) {
@@ -103,10 +136,10 @@
 			if ( ! path ) {
 				return;
 			}
-			status( '', true );
+			clearMessages();
 			post( path, serialize( form ), token ).then( function ( out ) {
 				const msg = ( out.data && out.data.message ) || '';
-				status( msg, out.ok );
+				say( form, msg, out.ok );
 				if ( out.ok && kind === 'profile' ) {
 					loadSessions( token );
 				}
@@ -171,7 +204,8 @@
 							? 'account/sessions/revoke-all'
 							: 'account/sessions/revoke-others';
 					post( path, {}, token ).then( function ( out ) {
-						status(
+						say(
+							btn.closest( '[data-corex-account-sessions]' ),
 							( out.data && out.data.message ) || '',
 							out.ok
 						);

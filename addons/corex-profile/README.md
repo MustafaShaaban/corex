@@ -14,7 +14,10 @@ theme only presents it.
 - **`corex/v1/account/*` REST routes** — `login`, `register`, `reset-request`, `reset`
   (public auth endpoints), and `profile`, `sessions`, `sessions/revoke-others`,
   `sessions/revoke-all`, `notifications` (require a signed-in user + REST nonce).
-- **`account.js`** — progressive enhancement: the forms still submit without JavaScript.
+- **`account.js`** — posts each form to its REST route and writes the answer in that
+  form's own message line, under its button (`.corex-account__status`, a polite status),
+  bringing the line into the window when it is outside it. Without JavaScript a form is
+  sent to the page's own address, which does not answer it.
 
 ## Architecture
 
@@ -90,6 +93,10 @@ An address of 60 characters or fewer is the login, as before. Covered by
 
 - Unit: `tests/Unit/Profile/` — `AccountServiceTest`, `SessionListTest`,
   `NotificationListTest`, `AccountRendererTest`.
+- Script: `tests/corex-account.test.js` (Jest) — where an answer is written, that one is on
+  the page at a time, and how the line is brought into view.
+- Browser: `tests/e2e/product-surfaces.spec.js` — the message is inside the window, under
+  its button and as wide as the fields, on a desktop and a phone, in both directions.
 - Integration: `tests/Integration/Profile/ProfileLifecycleTest.php` — the real lifecycle
   on WordPress (register → duplicate guard → credential validity → profile edit → reset →
   sessions; plus the registration-disabled gate).
