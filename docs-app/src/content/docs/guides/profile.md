@@ -56,6 +56,37 @@ the account blocks WordPress rendered for the page (`corex-account-1-register-pa
 so that a page with two of them has no id twice, and that number is not promised to stay
 the same. The forms are `login`, `register`, `reset-request` and `profile`.
 
+### What a field tells the browser
+
+Each field that asks for something about the person has an `autocomplete` value, one of
+the HTML specification's autofill field names. A browser and a password manager read it
+to offer the saved password at sign-in and a new one at registration, and WCAG 2.2
+(1.3.5, Identify Input Purpose) asks for it.
+
+| Form | Field (`name`) | `autocomplete` |
+|---|---|---|
+| `login` | `login` | `username` |
+| `login` | `password` | `current-password` |
+| `register` | `email` | `email` |
+| `register` | `username` | none |
+| `register` | `password`, `password_confirm` | `new-password` |
+| `reset-request` | `login` | `username` |
+| `profile` | `display_name` | `nickname` |
+| `profile` | `first_name` | `given-name` |
+| `profile` | `last_name` | `family-name` |
+| `profile` | `email` | `email` |
+
+The registration form's optional username has no value on purpose. Chromium writes the
+person's saved email address into a field marked `username` when they pick a saved
+address for the form, and an address with a character a username cannot hold (the `+`
+of `name+shop@example.com`) is then refused as a username, where the same person
+registers when the field is left empty. The display name is a `nickname` and not a
+`name`: it is the name a member is shown by, and with `name` Chromium takes it for the
+full name of a saved address and writes that over it when a fill is started there.
+Chromium does not know `nickname`: it fills nothing into that field, and its developer
+tools list the value as one it does not recognise.
+WordPress's own profile screen marks its nickname field the same way.
+
 ## Usernames
 
 The registration form's **Username** field is optional.

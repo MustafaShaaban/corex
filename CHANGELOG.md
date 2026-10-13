@@ -124,6 +124,22 @@ All notable changes to Corex are documented here. The format follows
   the block, the form and the field's name, so it is on the page once, also on a page that
   holds the block twice (spec 068, FR-161b; DECISIONS #337).
 
+- **A field of the account block tells the browser what it is for.** No field of the
+  `corex/account` block had an `autocomplete` value, which WCAG 2.2 asks for on a field
+  that collects something about the person (1.3.5) and which a browser and a password
+  manager read. Measured in Chromium: it read the empty registration form as a form that
+  changes a password, an old one and a new one, did not connect the forgot-password form
+  to an account, and listed four fields as missing the attribute. The sign-in fields are
+  now `username` and `current-password`, registration's email `email` and its two
+  passwords `new-password`, the forgot-password field `username`, and the profile's
+  fields `nickname` (the display name), `given-name`, `family-name` and `email`.
+  Chromium now reads registration as a new account and the forgot-password form as one
+  with a username. It offered to save the password after sign-in before, and still does.
+  Registration's optional username is left without a value: with `username` on it
+  Chromium wrote the person's saved email address into it, and an address with a `+` was
+  then refused as a username where the same person registered before (spec 068, FR-161c;
+  DECISIONS #342).
+
 - **An Email Studio template's subject is sent as it was written.** A template's subject
   was stripped of markup when the email was made, and a subject is an email's header, which
   is plain text. A template whose subject is "Price <500 EGP" was sent as "Price";
@@ -292,6 +308,15 @@ All notable changes to Corex are documented here. The format follows
   forms' `data-corex-account-form` values and every class are as they were. Read on this
   machine on 2026-10-13: nothing under `sites/` in the Muva or Perego checkouts names the
   block or an id of it. Nothing to rebuild.
+- **The account block's fields gain an `autocomplete` attribute.** Only for a site that
+  has Corex Profile on. Every labelled field of the block has one now, except the
+  registration form's optional username; the profile guide lists the values. A visitor's
+  browser may offer more than it did: Chromium takes the sign-in and the forgot-password
+  field for an email address as well as a username, and the registration form's passwords
+  for new ones. A site that prints its own sign-in form beside the block, or sets
+  `autocomplete` on these fields from its own script, should check that the two agree. No
+  id, name, class or route changed. Read on this machine on 2026-10-13: nothing under
+  `sites/` in the Muva or Perego checkouts names the block. Nothing to rebuild.
 - **A template, a layout or a partial saved in Email Studio before this release, with a
   backslash in it, is still stored without it.** Nothing rewrites it: what was dropped is
   not in the database to put back. Open it, write the backslash again and save. The
