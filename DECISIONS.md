@@ -12446,3 +12446,173 @@ block's first child is gone, there is one in each form and one in the sessions p
 none has `hidden`. The fields are 16 pixels narrower. A site that styles the block itself
 reads the changelog's Client impact. Read on this machine: nothing under `sites/` in the
 Muva or Perego checkouts names the block.
+
+## #338 — An address too long to be a login gets a login made from its first part; one too long for an account is refused with a reason
+
+**Date:** 2026-10-13. **Branch:** `fix/account-long-address-login`, on top of #335's
+branch, whose `PublicName` it uses. **Found by:** the measurement for #335, which recorded
+it in PROGRESS.md and left it. This is the measurement again, what else it showed, and the
+change.
+
+**What the code did.** The registration form's Username field is optional.
+`AccountService::register()` made the login the email address when it was left empty, and
+`WordPressAuthGateway::createUser()` took `wp_insert_user()`'s answer to be an account
+unless it was a `WP_Error`.
+
+**The limits, read off the install and tried one character either side** (WordPress 7.1.3,
+this worktree's own, over HTTP through `POST corex/v1/account/register` unless it says
+otherwise):
+
+| What | Holds | At the limit | One over |
+|---|---|---|---|
+| `user_login` | `varchar(60)` | a login of 60 is stored | `wp_insert_user()` answers `user_login_too_long`, "Username may not be longer than 60 characters." |
+| `user_email` | `varchar(100)` | an address of 100 is stored | `wp_insert_user()` answers `0`, no error, and stores nothing; `wp_update_user()` answers the account's id and changes nothing, not the display name sent with it either |
+| `user_nicename` | `varchar(50)` | one of 50 handed over is stored | one handed over is refused, `user_nicename_too_long`; one WordPress makes from the login is cut to 50 |
+| the first part of an address | 64, by PHP's `FILTER_VALIDATE_EMAIL` | 64 passes | 65 is `invalid_email` at the add-on; WordPress's `is_email()` would take it |
+
+An address of 254 characters passes both PHP's check and WordPress's, so one of any length
+up to that reached `wp_insert_user()`.
+
+**Measured before the change.**
+
+| Request | Answer | Stored |
+|---|---|---|
+| the lead's address, 74 characters, no username | 422 `register_failed`, "Username may not be longer than 60 characters." | nothing |
+| 60 characters, no username | 200 | login is the address |
+| 61 characters, no username | 422, the same message | nothing |
+| 61 characters, a username typed | 200 | the username; signs in with the address |
+| 100 characters, a username typed | 200 | the address whole |
+| **101 characters, a username typed** | **200, "Your account has been created. You can now sign in."** | **nothing** |
+| 101 characters, no username | 422, the message about the username | nothing |
+
+The row in bold was not in the lead. The database layer refuses a value longer than its
+column, `wp_insert_user()` does not look at what the insert answered and hands back the
+insert id, which is `0`, and the gateway called that an account. No user meta was left
+behind for user `0`.
+
+**The two answers that were weighed for 61 to 100 characters.**
+
+1. *Make a login.* The person asked for no username and is given an account. Nothing new
+   is asked of them, and they sign in as everybody with no username does, with the address:
+   WordPress looks an address up in `user_email`, whatever the login is.
+2. *Ask for a username.* One message, no rule to explain. But the field is optional, the
+   reason is a limit of the software and not anything about the person, and a form that
+   turns somebody away for the length of their address is the defect in other words.
+
+The first is built, and the second is what is left when no login can be made. The lead
+named WooCommerce's `wc_create_new_customer_username()` as a model; its source was not read
+here, so nothing below is claimed to be what it does.
+
+**The rule.** `AuthGateway::loginForAddress()`, in the WordPress gateway:
+
+- An address of 60 characters or fewer is the login, as it was.
+- A longer one gets what `sanitize_user( …, true )` keeps of the part before the @, cut to
+  60. That is the form WordPress would store, so the login looked up is the login that
+  will be stored: a first part `dalia+shop` is looked up as `daliashop`.
+- When an account has that login, `-2` is put after it, then `-3`, up to `-20`, and the
+  first part is cut further so that the whole is 60 at most.
+- When nothing of the first part can be in a login, or all twenty are taken, the answer is
+  an empty string, and the service answers `username_required`, "A username could not be
+  made from that email address. Please choose a username."
+
+One thing changes for somebody who could register before. WordPress measures a login
+after it has cleaned it, so an address of 61 characters or more that lost enough characters
+to fit in 60 was stored with what was left of the address as its login. It now gets a login
+made from its first part. Read in `wp_insert_user()`, not run: the one such address tried
+was still 61 after cleaning.
+
+Twenty is a number chosen, not measured: each try is one lookup, and the first parts that
+long addresses share are `info`, `admin`, `sales`, where a site with twenty of one is not
+expected. It is not a protection against anything.
+
+**The account is named from the address, not from the login made for it.** #335 named an
+account from its login because the login was the address. A login `info-2` is nobody's
+choice and not a name, so the service now says what the account goes by:
+`PublicName::forLogin()` of what was typed, the username or else the address. The gateway's
+`createUser()` takes that name as a fourth argument and no longer works it out. For every
+address of 60 characters or fewer the three names are what #335 made them; its tests pass
+unchanged. Measured after: `admin@` a long domain is stored with the login `admin-2`, the
+nicename `admin-2`, and the display name `admin`. #335 already wrote down that a display
+name of `admin` is open to any member through the Profile form.
+
+**Over 100 characters.** Refused in the service with the code `email_too_long`, "That email
+address is too long for an account here. Please use one of 100 characters or fewer.", at
+registration and on the Profile form, which had the same silent failure through
+`wp_update_user()`. The number is a constant of `AccountService`
+(`MAX_EMAIL_LENGTH`): the message has to say it, and one gateway exists. And
+`createUser()` answers `register_failed` for any `0` from `wp_insert_user()`, so a row the
+database did not take for another reason is not called an account either.
+
+**The interface changed, which #335 avoided.** `AuthGateway` gains `loginForAddress()` and
+`createUser()` gains `$name`. A class of a site's own that implements the interface has to
+add both. None was found: the Muva, Perego and Mizzey checkouts on the development machine
+were searched for `implements AuthGateway` and hold only the framework's own gateway and
+the unit test's fake.
+
+**Whether a client site's visitors see a change.** The add-on is left off on Muva by its
+own DECISIONS #4 and is inactive, with registration closed, on the Perego and Mizzey
+installs of the development machine (#335's reading of the same day; their live hosts were
+not read). On a site that has it on, what changes for a visitor is that a registration
+which failed now succeeds, that one which was answered "created" with nothing stored is
+refused with a reason, and two new messages. That is why it was built without asking
+first; the owner is told of it in the session's report.
+
+**Left as it was.**
+
+- An address of 60 characters or fewer with a character a login cannot hold is still
+  stored with the address less that character as its login (`name+shop@example.com` as
+  `nameshop@example.com`, #333).
+- The add-on does not show the person the login made for them, and they do not need it.
+  WordPress's email to a new member has the login in its link and not in its text (read
+  in `wp_new_user_notification()`).
+- Two registrations at the same moment that are given the same login: the second is
+  refused by WordPress, "Sorry, that username already exists!". Read, not run.
+- A listener on `pre_user_login` or `illegal_user_logins` can still refuse or change a
+  login made here, and the person is then told about a username they did not type. Read,
+  not run.
+- No spec is changed. Spec 068 (FR-158, FR-159) asks for registration and says nothing of
+  lengths.
+
+**Seen on the way, not changed, recorded in PROGRESS.md.** On the Profile form a display
+name of 192 to 250 characters is saved and the request then throws: the activity record's
+`actor_label` is `varchar(191)` and `WpActivityRepository::append()` raises when its insert
+is refused. One of 251 is not stored at all (`display_name` is `varchar(250)`), while a
+first name sent with it is. Measured through `rest_do_request()` on the same install.
+
+**Tests.** `tests/Unit/Profile/AccountServiceTest.php`, with the fake gateway: the login
+the gateway gives is the one the account is created with, and the name is made from the
+address whatever that login is; a typed username is both; no login is
+`username_required`; 101 characters is `email_too_long` at registration and on the
+profile, and 100 is not.
+`tests/Integration/Profile/RegistrationLongAddressTest.php`, on real WordPress through the
+REST server: 74 characters with no username registers, signs in with the address and has
+the three names of #335; 60 characters is still the address; a second account with the same
+first part, and one whose cleaned first part is somebody's username, get `-2`; a first
+part of 64 is cut to 60, and to 58 with its number; nothing a login can hold, and twenty
+logins taken, are `username_required`, and the same address registers with a username; 101
+characters is refused with and without a username and 100 registers; the gateway handed a
+101-character address answers `register_failed`; the Profile route refuses 101 and changes
+nothing. Fifteen of the seventeen failed before the change; the two that passed are the
+address of 60, which was not to move, and the registration with a username.
+
+Each line of the change was then put back in turn, twelve times, and a test failed for
+eleven. The twelfth is the condition that stops an empty cleaned first part from being
+tried as a login. Without it the answer is the same, because WordPress finds no account
+with an empty login. It is kept: it is one lookup fewer, and the answer then does not rest
+on what WordPress says about an empty login.
+
+**Verified after the change, over HTTP on the same install:** the lead's address answers
+200 and is stored with the login `a.very.long.first.part.of.an.address.indeed`, the
+nicename `a-very-long-first-part-of-an-address-indeed`, the display name and nickname of
+the first part, and the address whole; it signs in through the add-on with the address and
+with the login. An address of 60 is stored as before. One of 101 answers 422
+`email_too_long` with and without a username, and nothing is stored. Mail was answered for
+before WordPress's mailer in every run (`pre_wp_mail`, by an mu-plugin of the worktree's
+install and by the tests), and no run was against the shared development site.
+
+**One thing about the measuring itself.** The first run over HTTP was answered by another
+session's WordPress: four `php -S` processes of four worktrees were listening on
+`127.0.0.1:8947` within about half a minute of each other, which Windows allows, and the
+answer was "Registration is currently closed." from a site that was not this one. The
+numbers above are from a port with one listener, checked with `netstat` and by the site's
+name in the REST index.

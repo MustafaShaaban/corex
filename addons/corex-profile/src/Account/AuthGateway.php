@@ -30,7 +30,17 @@ interface AuthGateway
      */
     public function acceptsUsername(string $username): bool;
 
-    public function createUser(string $email, string $login, string $password): AccountResult;
+    /**
+     * The login of an account registered with no username. It is the address, unless an account
+     * cannot have that address as its login: then it is one made from the address that no
+     * account has. An empty string when none can be made, and the person is asked for a username.
+     */
+    public function loginForAddress(string $email): string;
+
+    /**
+     * @param string $name What the account goes by: the name its comments and posts are signed with.
+     */
+    public function createUser(string $email, string $login, string $password, string $name): AccountResult;
 
     public function authenticate(string $login, string $password, bool $remember): AccountResult;
 
