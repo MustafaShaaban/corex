@@ -12726,9 +12726,9 @@ keep is refused here, where a reason can be given.
 - **250 and not a smaller number.** What a display name should be at most is a matter of
   taste, and nobody asked for one. 250 is what the account can hold.
 - **The empty-name rule moved** into the same private method, unchanged.
-- **The form's field has no `maxlength`.** Three open pull requests rewrite
-  `AccountRenderer` (#380, #381, #383), and a `maxlength` of 250 would be wrong for a name
-  with an `&` in it. The server's answer is shown under the button like any other.
+- **The form's field has no `maxlength`.** Two open pull requests rewrite
+  `AccountRenderer` (#381, #383), and a `maxlength` of 250 would be wrong for a name with
+  an `&` in it. The server's answer is shown under the button like any other (#336).
 
 **Weighed, and not built: whether a record that cannot be written should fail the request.**
 The owner's question was whether a failure to write the activity record should ever fail

@@ -251,8 +251,8 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   route. Not looked into further, not changed.
 - **The Profile form's Display name field has no `maxlength`.** A name WordPress would not
   keep is refused by the server with a reason (DECISIONS #340). The field was left alone
-  because three open pull requests rewrite the block's markup, and because 250 is the
-  number only for a name with no `&` or `<` in it.
+  because two open pull requests rewrite the block's markup (#381, #383), and because 250
+  is the number only for a name with no `&` or `<` in it.
 - **A login made for a long address can still be refused by something else.** An address
   of 61 to 100 characters with no username gets a login made from its first part
   (DECISIONS #338). A listener on `pre_user_login` or `illegal_user_logins`, or a second
