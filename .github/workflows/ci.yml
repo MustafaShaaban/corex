@@ -337,7 +337,19 @@ jobs:
       - name: Serve WordPress
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq nginx php8.3-fpm
+          # PHP-FPM is asked of apt only where it is not already here. Once setup-php has set up
+          # PHP 8.3 the runner has one: /usr/sbin/php-fpm8.3, /etc/php/8.3/fpm and a php8.3-fpm
+          # service that is running, on Ubuntu 24.04 and on 26.04 alike. Ubuntu 26.04's
+          # archive has php8.5-fpm and no php8.3-fpm, so asking for the package there
+          # stopped this job on "Unable to locate package php8.3-fpm" before a spec had run
+          # (pull request #406). `ubuntu-latest` is 24.04 on one run and 26.04 on the next
+          # while GitHub moves the label, and is followed on purpose (DECISIONS #364).
+          if command -v php-fpm8.3 > /dev/null; then
+            echo "php-fpm8.3 is here: $(command -v php-fpm8.3)"
+            sudo apt-get install -y -qq nginx
+          else
+            sudo apt-get install -y -qq nginx php8.3-fpm
+          fi
           sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
           server {
             listen 8080 default_server;
@@ -375,7 +387,7 @@ jobs:
           # which the step below is there to catch.
           echo 'opcache.jit=disable' | sudo tee /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
           echo 'opcache.jit_buffer_size=0' | sudo tee -a /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
-          # restart, not start: installing the package already started it, with the old pool.
+          # restart, not start: it is already running, with the old pool.
           sudo systemctl restart php8.3-fpm
           sudo nginx -t
           sudo systemctl restart nginx
