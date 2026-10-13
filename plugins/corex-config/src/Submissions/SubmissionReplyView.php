@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Mail\SubmissionEmailGateway;
+use DateTimeImmutable;
 
 /**
  * What the pane shows about replying to one submission: what was already answered, and what
@@ -78,6 +79,8 @@ final readonly class SubmissionReplyView
             'actor_name' => $this->people->nameOf('user', (string) $reply->actorId),
             'state' => $reply->state(),
             'message' => $reply->message(),
+            // Decided here and read by the pane: one rule for which replies did not go.
+            'can_send_again' => $reply->canBeSentAgain(new DateTimeImmutable('now')),
         ];
     }
 }

@@ -26,6 +26,8 @@ final class MetaFieldDriver implements FieldDriver
 
     public function set(int $entityId, string $key, mixed $value): void
     {
-        update_post_meta($entityId, $key, $value);
+        // WordPress takes one level of slashes off a meta value on its way in: handed over as
+        // it is, text is stored without its backslashes. A value that is not text is not changed.
+        update_post_meta($entityId, $key, wp_slash($value));
     }
 }

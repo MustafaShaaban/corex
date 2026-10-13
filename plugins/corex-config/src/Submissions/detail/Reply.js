@@ -13,7 +13,7 @@ import {
 	useState,
 } from '@wordpress/element';
 import { Button } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexErrorState from '../../admin/components/CorexErrorState.js';
 import CorexRichText from '../../admin/components/CorexRichText.js';
 import CorexTime from '../../admin/components/CorexTime.js';
@@ -134,6 +134,8 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 	const noticeId = `${ fieldId }-delivery`;
 	const subject = useRef( null );
 	const discardButton = useRef( null );
+	// The "Send again" button of each listed reply that has one, by the reply's id.
+	const againButtons = useRef( {} );
 	const draftId = `${ fieldId }-draft`;
 	// What was done with the draft that nothing on the page now shows: it was discarded.
 	const [ draftSaid, setDraftSaid ] = useState( '' );
@@ -204,12 +206,43 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 		setFocusOwed( discarded ? 'subject' : 'discard' );
 	};
 
+	// A reply that did not go, sent again as it was written (FR-022). What is in the box is
+	// somebody's own, and is not what is sent.
+	const sendAgain = async ( replyId ) => {
+		const said = await work.during( `again:${ replyId }`, async () => {
+			setOutcome( null );
+			const happened = await inbox.sendReplyAgain(
+				record.id,
+				replyId,
+				contact.email
+			);
+			if ( happened ) {
+				setOutcome( happened );
+			}
+			// What was in the box was this same reply, which has now gone: the server
+			// discarded it as a draft, and left in the box it would be sent again.
+			if ( happened?.draftEnded ) {
+				draft.forget();
+				startOver();
+			}
+
+			return happened;
+		} );
+		// Its button was off while its request was out. It is gone with a reply that went,
+		// or there again for one that did not.
+		setFocusOwed( said && ! said.keep ? 'subject' : `again:${ replyId }` );
+	};
+
 	useEffect( () => {
 		if ( focusOwed && work.pending === '' ) {
-			( focusOwed === 'subject'
-				? subject
-				: discardButton
-			).current?.focus();
+			const owed = {
+				subject: subject.current,
+				discard: discardButton.current,
+			};
+			(
+				owed[ focusOwed ] ??
+				againButtons.current[ focusOwed.replace( /^again:/, '' ) ]
+			)?.focus();
 			setFocusOwed( '' );
 		}
 	}, [ focusOwed, work.pending ] );
@@ -231,7 +264,16 @@ export default function Reply( { record, inbox, work, mailSettingsUrl = '' } ) {
 
 	return (
 		<Section title={ __( 'Reply', 'corex' ) }>
-			<Replies replies={ record.replies || [] } />
+			<Replies
+				replies={ record.replies || [] }
+				again={ {
+					offered:
+						Boolean( contact.email ) && canSendReply( delivery ),
+					pending: work.pending,
+					buttons: againButtons,
+					onSend: sendAgain,
+				} }
+			/>
 			{ ! contact.email && (
 				<p className="corex-pane__muted">
 					{ __(
@@ -547,9 +589,10 @@ function Outcome( { outcome } ) {
  *
  * @param {Object}        props
  * @param {Array<Object>} props.replies The submission's `replies`.
+ * @param {Object}        props.again   Sending a reply that did not go again: `{ offered, pending, buttons, onSend }`. `offered` is false where a reply from this site would be refused or there is nobody to send it to. Which replies did not go is the server's to say: each reply's `can_send_again`.
  * @return {import('react').ReactElement|null} The list, or nothing when nobody has answered.
  */
-function Replies( { replies } ) {
+function Replies( { replies, again } ) {
 	if ( replies.length === 0 ) {
 		return null;
 	}
@@ -561,9 +604,14 @@ function Replies( { replies } ) {
 		>
 			{ replies.map( ( reply ) => {
 				const state = replyStateOf( reply.state );
+				const times = ( reply.attempts || [] ).length;
 
 				return (
-					<li key={ reply.id } className="corex-pane__reply">
+					<li
+						key={ reply.id }
+						className="corex-pane__reply"
+						data-reply={ reply.id }
+					>
 						<div className="corex-pane__reply-head">
 							<strong>
 								<bdi>{ reply.subject }</bdi>
@@ -579,7 +627,24 @@ function Replies( { replies } ) {
 							</span>
 						</div>
 						<p className="corex-pane__reply-meta">
-							{ WAYS[ reply.thread ]?.listed || WAYS.new.listed }
+							<span>
+								{ WAYS[ reply.thread ]?.listed ||
+									WAYS.new.listed }
+							</span>
+							{ times > 1 && (
+								<span>
+									{ sprintf(
+										/* translators: %d: how many times sending one reply was tried. */
+										_n(
+											'Tried %d time',
+											'Tried %d times',
+											times,
+											'corex'
+										),
+										times
+									) }
+								</span>
+							) }
 						</p>
 						<p className="corex-pane__reply-meta">
 							<span>
@@ -611,6 +676,24 @@ function Replies( { replies } ) {
 							<p className="corex-pane__muted">
 								{ reply.message }
 							</p>
+						) }
+						{ again.offered && reply.can_send_again && (
+							<div className="corex-pane__actions">
+								<Button
+									ref={ ( node ) => {
+										again.buttons.current[ reply.id ] =
+											node;
+									} }
+									variant="secondary"
+									disabled={ again.pending !== '' }
+									onClick={ () => again.onSend( reply.id ) }
+									{ ...workingProps(
+										again.pending === `again:${ reply.id }`
+									) }
+								>
+									{ __( 'Send again', 'corex' ) }
+								</Button>
+							</div>
 						) }
 					</li>
 				);

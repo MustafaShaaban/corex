@@ -7,6 +7,7 @@ import {
 	readinessNotice,
 	replyOutcome,
 	replyStateOf,
+	emailHistoryLine,
 } from '../detail/replyState.js';
 import { historyLine } from '../detail/detailState.js';
 
@@ -335,5 +336,44 @@ describe( 'the history', () => {
 		expect(
 			historyLine( { stage: 'email', outcome: 'failure' }, {} )
 		).toBe( 'Reply could not be sent' );
+	} );
+} );
+
+describe( 'a reply sent again', () => {
+	it( 'is said in the history as sent again, or as not', () => {
+		const line = ( outcome, state ) =>
+			emailHistoryLine( {
+				outcome,
+				summary: { action: 'reply_again', state },
+			} );
+
+		expect( line( 'success', 'sent' ) ).toBe( 'Reply sent again' );
+		expect( line( 'failure', 'failed' ) ).toBe(
+			'Reply could not be sent again'
+		);
+		// On a site that keeps its email it did not go, and the history does not say it did.
+		expect( line( 'success', 'captured' ) ).toBe(
+			'Reply kept on this site, not delivered'
+		);
+	} );
+
+	// It is listed already. "Not listed here" would be untrue, beside the reply it is about.
+	it( 'says of a sending that could not be written down what is true of a listed reply', () => {
+		const first = replyOutcome(
+			{ state: 'sent' },
+			'salma@example.com',
+			false
+		);
+		const again = replyOutcome(
+			{ state: 'sent' },
+			'salma@example.com',
+			false,
+			true
+		);
+
+		expect( first.detail ).toContain( 'it is not listed here' );
+		expect( again.detail ).not.toContain( 'not listed' );
+		expect( again.detail ).toContain( 'Do not send it again.' );
+		expect( again.text ).toBe( 'Reply sent to salma@example.com.' );
 	} );
 } );

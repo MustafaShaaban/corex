@@ -122,7 +122,10 @@ final readonly class SubmissionConversation
         $attempts = [];
         foreach ($this->replies->forSubmission($submissionId) as $reply) {
             foreach ($reply->attempts as $attempt) {
-                $attempts[] = $attempt['attempt_id'];
+                // A sending that was begun and has not ended has no email yet.
+                if ($attempt['attempt_id'] !== '') {
+                    $attempts[] = $attempt['attempt_id'];
+                }
             }
         }
 

@@ -123,7 +123,9 @@ final class MediaServiceProvider extends ServiceProvider
                 // Measure the derivative + apply the activation gate (spec 062), and track the result so
                 // delivery can decide whether to serve it and reset-webp knows it is CoreX-generated.
                 $meta = WebpMeta::measure($file, $plan->outputPath, $settings->quality, $settings->minSaving);
-                update_post_meta($id, WebpMeta::META_KEY, $meta->toArray());
+                // WordPress takes one level of slashes off a meta value on its way in, and each
+                // separator of a path on a Windows host is one.
+                update_post_meta($id, WebpMeta::META_KEY, wp_slash($meta->toArray()));
             }
 
             return $metadata; // unchanged — the WebP is a sibling; WP's own sizes are untouched

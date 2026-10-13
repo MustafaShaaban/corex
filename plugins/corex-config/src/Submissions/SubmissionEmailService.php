@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Mail\MailResult;
 use Corex\Mail\SubmissionEmailGateway;
+use DateTimeImmutable;
 use DomainException;
 
 /**
@@ -19,6 +20,15 @@ use DomainException;
  */
 final readonly class SubmissionEmailService
 {
+    /**
+     * The states in which a reply has gone, is on its way, or is kept as sent: what was being
+     * written is then no longer a draft. The ones the pane empties its box for (`replyState.js`).
+     */
+    private const GONE = [
+        MailResult::STATE_QUEUED, MailResult::STATE_SENT, MailResult::STATE_ACCEPTED,
+        MailResult::STATE_OPENED, MailResult::STATE_CAPTURED,
+    ];
+
     public function __construct(
         private SubmissionWorkflowStore $submissions,
         private SubmissionEmailGateway $email,
@@ -57,6 +67,124 @@ final readonly class SubmissionEmailService
     }
 
     /**
+     * Sends a reply that did not go another time, as it was written, and adds what happened
+     * to it (spec 106, FR-022).
+     *
+     * By anybody who may answer the submission, not only whoever wrote it: it is the second
+     * person picking the lead up who finds a reply that did not arrive. It goes in the
+     * conversation where it was to and there still is one, and as a new email otherwise.
+     *
+     * The reply is written down as being sent before the email is handed over. Two people
+     * pressing the button in the seconds a mail server takes would otherwise both pass the
+     * check above it, and the customer would have the reply twice.
+     *
+     * @throws DomainException When the submission is not the person's to answer, the reply is
+     *                         not one of its replies, it does not need sending again,
+     *                         somebody is already sending it, or a reply from this site
+     *                         would be refused.
+     */
+    public function sendAgain(SubmissionAccessScope $scope, int $submissionId, string $replyId): SentReply
+    {
+        $record = $this->accessible($scope, $submissionId);
+        $recipient = $this->recipient($record);
+        $kept = $this->keptReply($submissionId, $replyId);
+        $now = new DateTimeImmutable('now');
+        if (! $kept->canBeSentAgain($now)) {
+            throw new DomainException(__('This reply does not need sending again.', 'corex'));
+        }
+        $readiness = $this->email->readiness();
+        if (! $readiness->sendable()) {
+            throw new DomainException($readiness->reason);
+        }
+        $begun = $this->begunAgain($submissionId, $kept, $now);
+        $within = $kept->inConversation ? $this->conversation?->of($record) : null;
+
+        try {
+            $result = $this->email->reply($recipient, $kept->subject, $kept->bodyHtml, $within);
+        } catch (DomainException $refused) {
+            // Nothing went. The reply is as it was, for the next person to send again.
+            $this->writtenOver($submissionId, $begun, $kept);
+
+            throw $refused;
+        }
+
+        // The email has gone or been refused by now, as with a first sending: what cannot be
+        // written down is said, and is not an error.
+        $recorded = $this->writtenOver($submissionId, $begun, $begun->sentAgain($result, $within !== null && ! $within->isEmpty()));
+        if ($recorded) {
+            $this->noted($scope, $submissionId, $result, $kept->id);
+        }
+
+        return new SentReply($result, $recorded, $this->endsTheirDraftOf($scope, $submissionId, $kept, $result));
+    }
+
+    private function keptReply(int $submissionId, string $replyId): SubmissionReplyRecord
+    {
+        foreach ($this->replies->forSubmission($submissionId) as $reply) {
+            if ($reply->id === $replyId) {
+                return $reply;
+            }
+        }
+
+        throw new DomainException(__('That reply is not on this submission.', 'corex'));
+    }
+
+    /**
+     * Writes the reply down as being sent, in place of itself as it was read.
+     *
+     * @throws DomainException When it is no longer as it was read: somebody else got there first.
+     */
+    private function begunAgain(int $submissionId, SubmissionReplyRecord $kept, DateTimeImmutable $now): SubmissionReplyRecord
+    {
+        $begun = $kept->beingSentAgain($now);
+        if (! $this->writtenOver($submissionId, $kept, $begun)) {
+            throw new DomainException(__('Somebody else is sending this reply again. Open the submission again to see what happened.', 'corex'));
+        }
+
+        return $begun;
+    }
+
+    private function writtenOver(int $submissionId, SubmissionReplyRecord $was, SubmissionReplyRecord $now): bool
+    {
+        try {
+            $this->replies->replace($submissionId, $was, $now);
+
+            return true;
+        } catch (DomainException) {
+            return false;
+        }
+    }
+
+    /** The history's entry for a reply sent again. The reply is recorded whether or not this is. */
+    private function noted(SubmissionAccessScope $scope, int $submissionId, MailResult $result, string $replyId): void
+    {
+        try {
+            $this->recordOutcome($scope, $submissionId, 'reply_again', $result, $replyId);
+        } catch (DomainException) {
+            // The reply says what happened to it; only the history's line is missing.
+        }
+    }
+
+    /**
+     * Discards the draft of the person who sent a reply again, where it holds that same reply.
+     *
+     * A reply that was not sent stays in its writer's box and as their draft, for them to try
+     * again. Sent again from where it is listed, it has gone: left in the box it would be sent
+     * a second time, as a new reply.
+     */
+    private function endsTheirDraftOf(SubmissionAccessScope $scope, int $submissionId, SubmissionReplyRecord $kept, MailResult $result): bool
+    {
+        $draft = $this->drafts?->find($submissionId, $scope->actorId);
+        $same = $draft !== null && trim($draft->subject) === trim($kept->subject) && $draft->htmlBody === trim($kept->bodyHtml);
+        if (! $same || ! in_array($result->state, self::GONE, true)) {
+            return false;
+        }
+        $this->drafts?->discard($submissionId, $scope->actorId);
+
+        return true;
+    }
+
+    /**
      * What was being written has gone, or is kept as sent: it is no longer a draft. A reply
      * that was not sent stays one, for the person to try again.
      *
@@ -65,11 +193,7 @@ final readonly class SubmissionEmailService
      */
     private function forgetDraft(SubmissionAccessScope $scope, int $submissionId, MailResult $result): void
     {
-        $gone = [
-            MailResult::STATE_QUEUED, MailResult::STATE_SENT, MailResult::STATE_ACCEPTED,
-            MailResult::STATE_OPENED, MailResult::STATE_CAPTURED,
-        ];
-        if (in_array($result->state, $gone, true)) {
+        if (in_array($result->state, self::GONE, true)) {
             $this->drafts?->discard($submissionId, $scope->actorId);
         }
     }

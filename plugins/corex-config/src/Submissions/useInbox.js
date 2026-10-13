@@ -177,6 +177,35 @@ export function useInbox( config, filters ) {
 			);
 			return outcome;
 		},
+		// A reply that did not go, sent again as it was written (FR-022). Answers as a
+		// first sending does; what is in the reply box is not part of it.
+		sendReplyAgain: async ( id, replyId, address ) => {
+			const result = await mutate(
+				`/${ id }/replies/${ encodeURIComponent( replyId ) }/send`,
+				{}
+			);
+			if ( ! result ) {
+				// Refused: most often a colleague has sent it in the meantime. The reply is
+				// read again, so that what is offered is what can still be done.
+				await reload( id );
+				return null;
+			}
+			const outcome = {
+				...replyOutcome(
+					result.result,
+					address,
+					result.recorded !== false,
+					true
+				),
+				// The person's own draft was this same reply, and went with it.
+				draftEnded: Boolean( result.draft_ended ),
+			};
+			await refreshRecord(
+				id,
+				outcome.tone === 'failure' ? '' : outcome.text
+			);
+			return outcome;
+		},
 		// The email a reply would be sent as, built by what builds the sent one (FR-005).
 		previewReply: async ( id, data ) => {
 			const result = await mutate( `/${ id }/reply/preview`, data );
