@@ -351,18 +351,6 @@ All notable changes to Corex are documented here. The format follows
   Somebody who types no username is registered as before, with a login made from the
   address, and signs in with the address (DECISIONS #333).
 
-- **A password with a quote or a backslash in it is one password at the account block and
-  at WordPress's own screens.** WordPress's screens keep and check a password as the text
-  of a form, with the request's slashes on it; the account add-on handed over the password
-  as it was typed. A member who chose "it's-my-password" on the account block was refused
-  at `wp-login.php` with it, and a member who chose theirs on WordPress's own reset
-  screen was refused by the account block. The add-on now hands a
-  password over the way a WordPress screen does, at registration, at a reset and at
-  sign-in. An account that chose such a password through the add-on before this release
-  still signs in at the account block, and is moved to WordPress's form as it does, after
-  which `wp-login.php` accepts it too. A wrong password is counted as one failed sign-in,
-  as before. The owner's decision (DECISIONS #334).
-
 - **A request the Access routes cannot read is answered 400 and says which parameter, not
   500** (spec 079, FR-002a). `POST corex/v1/access/requests` with no reason, a reason over
   2,000 characters, an ability or an area CoreX does not have, both, or neither, was
@@ -377,6 +365,18 @@ All notable changes to Corex are documented here. The format follows
   request that can be read and is refused for how things stand (a decision on a request no
   longer pending, a change the safety policy stops, a confirmation for another change) is
   still 200 with a `blocked` result (DECISIONS #350).
+
+- **A password with a quote or a backslash in it is one password at the account block and
+  at WordPress's own screens.** WordPress's screens keep and check a password as the text
+  of a form, with the request's slashes on it; the account add-on handed over the password
+  as it was typed. A member who chose "it's-my-password" on the account block was refused
+  at `wp-login.php` with it, and a member who chose theirs on WordPress's own reset
+  screen was refused by the account block. The add-on now hands a
+  password over the way a WordPress screen does, at registration, at a reset and at
+  sign-in. An account that chose such a password through the add-on before this release
+  still signs in at the account block, and is moved to WordPress's form as it does, after
+  which `wp-login.php` accepts it too. A wrong password is counted as one failed sign-in,
+  as before. The owner's decision (DECISIONS #334).
 
 ### Client impact
 
