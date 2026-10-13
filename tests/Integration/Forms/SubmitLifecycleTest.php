@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 use Corex\Boot;
 use Corex\Forms\Submission\SubmitController;
+use Corex\Tests\Support\NotificationRows;
 use Corex\Tests\Support\WatchedTransients;
 
 function submitController(): SubmitController
@@ -69,10 +70,14 @@ beforeEach(function () {
     // Every submit that gets past the nonce is counted by the rate limiter, in a transient keyed
     // by form and client. A second run inside the window finds the first run's counter.
     $this->transients = WatchedTransients::watch('corex_throttle_');
+    // A stored submission of a form defined in code tells whoever manages submissions. On a
+    // developer's install such a row may be their own: it is handed back as it was.
+    $this->submissionNotifications = NotificationRows::snapshotPrefixed('submission.');
 });
 
 afterEach(function () {
     remove_action('wp_insert_post', $this->rememberCreatedPost, 10);
+    NotificationRows::restorePrefixed('submission.', $this->submissionNotifications);
 
     foreach ($this->createdPosts as $postId) {
         wp_delete_post($postId, true);

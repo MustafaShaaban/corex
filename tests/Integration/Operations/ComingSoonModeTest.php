@@ -329,12 +329,15 @@ it('accepts a form posted to the REST API while the mode is on', function () {
     // US2.3: a form on the coming-soon page submits to REST, which the mode never intercepts. This
     // dispatches through the real REST server, so anything the mode hooked there would be in the way.
     add_filter('pre_wp_mail', '__return_true');
+    // The stored submission tells whoever manages submissions; the row is not this install's to keep.
+    $notifications = \Corex\Tests\Support\NotificationRows::snapshotPrefixed('submission.');
     $request = new WP_REST_Request('POST', '/corex/v1/forms/contact');
     $request->set_body_params(['name' => 'Acme visitor', 'email' => 'visitor@example.test', 'message' => 'Tell me when you launch.']);
     $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
 
     $response = rest_get_server()->dispatch($request);
     remove_filter('pre_wp_mail', '__return_true');
+    \Corex\Tests\Support\NotificationRows::restorePrefixed('submission.', $notifications);
 
     expect(get_option(COREX_COMING_SOON_MODE_OPTION))->toBe(OperationsMode::COMING_SOON)
         ->and($response->get_status())->toBe(200)

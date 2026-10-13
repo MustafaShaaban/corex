@@ -14634,6 +14634,23 @@ case in its first form), and that case again with the listener's line taken out.
 `MailDelivery::CAPTURE` or `REFUSE` answers (the first draft of the failed-email case used
 `REFUSE` and reached `mail()`; nothing left this install, which has no mail server).
 
+**Seen in the admin**, on this branch's install served on its own port: the contact form
+sent from a page as a visitor; the Notifications screen then listed "New submission on
+“Contact”" with **Open the Submission Inbox**, whose link is
+`admin.php?page=corex-submissions&corex_form=slug:contact` and opens the inbox with the
+form filter on Contact and only that form's rows; and "Submission notification email
+failed" beside it, this install having no mail server.
+
+**Five older tests now raise a notification, and hand it back.** That screen read "5
+times" on the first look: `SubmitLifecycleTest`, `FormClientAddressTest`,
+`ChoiceAndFileSubmissionTest`, `ProtectedCodeFormTest` and one case of
+`ComingSoonModeTest` store a submission of a form defined in code, and since this change
+each left a `submission.new:` row on the install it ran on. Each now takes
+`NotificationRows::snapshotPrefixed('submission.')` before and restores it after, as
+`SubmissionKeepsBackslashesTest` already did for the contact form. After a run of the
+whole suite the install holds no `submission.` row it did not hold before (read from the
+table).
+
 **A test helper that split the suite's form registry**, found because the new file passed
 alone and failed in a run of the whole suite (the route answered 404).
 `withRegisteredForm()` in `tests/Integration/Forms/CodeFormDiscoveryTest.php` put the
