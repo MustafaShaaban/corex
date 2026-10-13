@@ -8,6 +8,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **The page that shows a new preview link has a button that copies it** (spec 101, FR-011a;
+  the owner's ask). The link is in a field of its own, labelled, with **Copy link** beside
+  it: one press puts the whole link on the clipboard and the page says "Copied.", to a
+  screen reader as well. With scripts off there is no button and the link is copied from the
+  field by hand. On a site not served over HTTPS, where a browser gives a page no clipboard,
+  the button copies by selecting the field. The link is still shown once and kept nowhere
+  (DECISIONS #327).
+
 - **A reply that was begun and not sent is kept as a draft** (spec 106, slice 3). It is
   written down when writing pauses, and is in the box again the next time that person opens
   that submission, on any machine; nobody else is shown it. Sending the reply ends it;
@@ -246,6 +254,13 @@ All notable changes to Corex are documented here. The format follows
   `SubmissionReplyView::of()` also takes the id of the person asking. Code that takes them
   from the container is unaffected.
 - **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
+- **The page that shows a new preview link is marked up differently.** The link is the value
+  of the field `#corex-preview-link`, where it was the text of a paragraph in
+  `.corex-standalone__detail`. A browser test or a script of your own that read it there has
+  to read the field. Two strings in the `corex` text domain are new: "Copied." and "It could
+  not be copied for you. It is selected: copy it from the keyboard." The field's label and
+  the button use "Preview link" and "Copy link", which the domain already had. Nothing to set
+  and nothing to rebuild for it: the page carries its own script.
 
 ## [0.45.2] — 2026-10-11
 

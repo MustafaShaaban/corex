@@ -98,6 +98,29 @@ the session coordinating the open threads, not typed into it.
   be sent to the coming-soon page. → Changed: those shortcuts keep working. Where login protection
   hides the login route it already switches them off, and then they are ordinary addresses.
 
+### Session 2026-10-12 — the owner's ask after using the link
+
+The owner created a preview link on a client site and had to select the address by hand, in a
+paragraph of text, on the one page that will ever show it. His words, relayed by that client's
+session: "the temporarly link to view the website if it in coming soon and so on needs to havea
+copy icon to copy the link directly and easly".
+
+- Found: User Story 4 has the operator "copy" the link, and nothing in this spec said how. The
+  page showed it as a paragraph. → Added: FR-011a and acceptance scenario 9. The link is in a
+  field of its own with a button that copies it and says that it did.
+- Found: the page is the answer to a POST and loads no script. A button that needs a script is
+  worth nothing where scripts are off, and a browser gives the Clipboard API only to a page
+  served over HTTPS or from the local machine. → Stated in FR-011a: without scripts the link is
+  still in a field that can be selected and copied by hand and no button is shown; where the
+  Clipboard API is missing the button copies the older way, and where that fails too it selects
+  the link and says so.
+- Not changed: the link is still shown once and stored nowhere (FR-013). The card on Operations &
+  Security gets no copy button, because it has no link to copy.
+
+The fallback is this session's reading and not the owner's words: his sentence asks for the icon.
+It is built because the development sites are served over plain HTTP, where a button that exists
+only with the Clipboard API would not be there at all.
+
 One thing implementation settled that needed no change to this spec, recorded because it is not
 obvious: **the home URL is the home path with nothing on it that WordPress acts on.** `/?feed=rss2`,
 `/?p=12` and `/?s=term` share the home path, and WordPress renders a feed before it chooses any
@@ -217,6 +240,10 @@ page is served.
    treated as anonymous.
 8. **Given** a browser with preview access, **When** it loads any front-end page, **Then** a banner
    states that the site is a private preview the public cannot see yet, and it cannot be dismissed.
+9. **Given** a link was just created or regenerated, **When** the operator presses **Copy link** on
+   the page that shows it, **Then** the whole link is on the clipboard and the page says it was
+   copied, to a screen reader as well. **Given** the same page with scripts off, **Then** the link
+   is in a field the operator can select and copy, and there is no button that does nothing.
 
 ---
 
@@ -320,6 +347,16 @@ served is the one in the client theme, and it can be opened and changed in the S
   create one secret preview link, to regenerate it, and to revoke it leaving none. A valid link MUST
   grant the browser that opens it front-end access to the real site for a bounded period, and MUST
   then be removed from the visible address.
+- **FR-011a**: The page that shows a new link MUST hold it in a read-only field with a visible
+  label, and MUST offer a button, with an icon and the words "Copy link", that puts the whole link
+  on the clipboard and reports the result in a polite live region. The button MUST be absent where
+  scripts do not run, and the field MUST then still be selectable and copyable by hand. Where the
+  browser has no Clipboard API the button MUST fall back to copying the selected field, and where
+  that fails it MUST leave the link selected and say that it has to be copied from the keyboard.
+  The field and the button MUST be styled from the admin's tokens only, MUST hold in both
+  directions and both colour schemes, and the button MUST be a pointer target of at least 24 by 24
+  CSS pixels with a visible focus indicator. The link MUST NOT be written anywhere else by this:
+  not into an address, not into storage, not into the history.
 - **FR-012**: Regenerating or revoking the link MUST revoke every access granted by the previous
   one. Creating, regenerating and revoking MUST each be recorded in the history with the operator's
   name, and the record MUST NOT contain the secret.
@@ -407,6 +444,6 @@ served is the one in the client theme, and it can be opened and changed in the S
 - **The link is shown once**, when it is created or regenerated, and cannot be shown again. That
   follows from FR-013: what is stored cannot be turned back into the link. An operator who has lost
   it regenerates it, which revokes the lost one. The screen always says whether a link exists, when
-  it was created and by whom.
+  it was created and by whom. The page that shows it has a button that copies it (FR-011a).
 - **WordPress's "discourage search engines" setting** is the control for a client who wants the
   page hidden until launch. This spec adds no second one.

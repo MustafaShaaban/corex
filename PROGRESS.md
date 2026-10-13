@@ -100,6 +100,13 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** The page that shows a new preview link (Coming
+soon, spec 101) holds it in a field with a **Copy link** button, the owner's ask relayed from
+the first client site (FR-011a, tasks T069 to T075, DECISIONS #327). The button is shown by a
+script and copies without the Clipboard API where a site is not served over HTTPS; with
+scripts off the link is copied from the field by hand. `StandalonePage::copyField()` is the
+first standalone page part that carries a script.
+
 **v0.45.2, 2026-10-11.** Two changes for a form defined in code. Its notification email names
 the file it was sent with and links to the submission in the inbox, where the file is opened;
 nothing is attached (DECISIONS #319). A site that writes its own emails is handed the stored
