@@ -155,19 +155,12 @@ final class SubmissionNotificationProducer implements NotificationProducer
         );
     }
 
-    /**
-     * What the site calls the form: the name the inbox's own filter lists it under, which is
-     * where a form defined in code says what it is called. Its slug where nothing names it.
-     */
+    /** The name the inbox's own filter lists the form under, or its slug where nothing names it. */
     private function knownAs(string $slug): string
     {
-        foreach ($this->forms?->all() ?? [] as $form) {
-            if ($form['slug'] === $slug) {
-                return $form['name'];
-            }
-        }
+        $name = $this->forms?->nameOf($slug) ?? '';
 
-        return $slug;
+        return $name !== '' ? $name : $slug;
     }
 
     /**

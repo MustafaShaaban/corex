@@ -72,6 +72,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A new submission of a form defined in code raises a notification.** Reported on
+  2026-10-13 from a client site: dozens of submissions stored and no notification for any of
+  them. The notification centre listened for the event of a form built in Forms & Flows, and
+  a form registered in code never raised it, so a site whose forms are all in code was told
+  of nothing, since the notification centre first shipped (v0.35.0). A stored submission of
+  a form defined in code now raises the same **New submission** notification, for whoever
+  manages submissions: one item per form that counts its submissions, named as the inbox's
+  filter names the form (a form built in Forms & Flows is named so too, where it was called
+  by its slug), with a link that opens the inbox on that form's rows. A submission that was
+  not stored raises none. When the form's own notification email, the one CoreX sends,
+  could not be sent, the **Submission notification email failed** notification is raised
+  for it as well (DECISIONS #352).
+
 - **Every request of a site with `WP_DEBUG` on logged "Translation loading for the `corex`
   domain was triggered too early", and an email on a right-to-left site was drawn left to
   right.** Since v0.45.1. The link that opens a file sent with a form was hooked by an
@@ -450,6 +463,24 @@ All notable changes to Corex are documented here. The format follows
   its button reached the window's edge once the header had a gutter.
 
 ### Client impact
+
+- **A site whose forms are registered in code starts to get the New submission
+  notification.** Nothing to set. It is raised for submissions stored from now on:
+  submissions already in the inbox get none. Its key is `submission.new:<form slug>`, the
+  slug the form is registered under, the same shape a form built in Forms & Flows has
+  always had; a site that publishes a notification of its own for the same form under that
+  key adds to the same item, and under any other key makes a second one. The failed-email
+  notification's key is `submission.email_failure:<form slug>`. A site whose form lists a
+  listener of its own for the email, in place of `SendEmailListener`, is told of a failed
+  email only if that listener says how it went:
+  `$event->notifiedAs(NotificationDelivery::fromResult($mailer->attempt($request)))`, where
+  the mailer is an `AttemptingMailer` (the one the mail add-on binds is). Without that line
+  nothing is raised for the email, as before. In PHP: `FormSubmittedEvent` gains
+  `notifiedAs()` and `delivery()`; `Corex\Forms\Submission\SubmissionProcessedEvent` is now
+  also dispatched for a form defined in code, with `flowId` 0
+  (`SubmissionProcessedEvent::NO_FLOW`) and `ownerId` null, so a listener a site has on it
+  hears of those submissions too and must not take the id for a flow's;
+  `NotificationDelivery` gains `failed()`; `FlowFilterOptions` gains `nameOf()`.
 
 - **A right-to-left site on v0.45.1 or v0.45.2 sends the emails of the shared layout
   right-to-left again.** Those are the contact notification and an Email Studio template

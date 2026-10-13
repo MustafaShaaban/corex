@@ -188,8 +188,7 @@ it('sends a form defined in code to its own rows, asked for by slug as the inbox
         ->and($new->dedupKey)->toBe('submission.new:request-a-quote')
         ->and($asked)->toBe(['page' => 'corex-submissions', 'corex_form' => 'slug:request-a-quote'])
         ->and($new->sourceType)->toBe('form')
-        ->and($new->sourceId)->toBe('request-a-quote')
-        ->and($new->recipient->canBeSeenBy(99, fn (string $a): bool => $a === CorexAbility::MANAGE_SUBMISSIONS))->toBeTrue();
+        ->and($new->sourceId)->toBe('request-a-quote');
 });
 
 it('names the form as the inbox\'s filter names it, in both notifications', function () {

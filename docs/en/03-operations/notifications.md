@@ -99,6 +99,21 @@ present simply produces nothing. The shipped producers are:
 Repeated occurrences of the same condition merge into one growing notification (an occurrence count) rather than a
 flood. Condition-based notifications — a readiness blocker, a lockout — clear themselves when the condition ends.
 
+### New submissions, for both kinds of form
+
+`submission.new` is raised when a submission is **stored**, whether the form was built in Forms & Flows or
+registered in code (`Corex\Forms\Form`). A form whose listeners do not store raises nothing: there is nothing in the
+inbox to be told of.
+
+- **One item per form.** The key is `submission.new:<form slug>`, and each further submission of that form adds to
+  the item's count. A notification a site publishes itself under the same key adds to the same item.
+- **The form is named** as the Submissions inbox's form filter names it, and the item's link opens the inbox on that
+  form's rows.
+- **`submission.email_failed`** (key `submission.email_failure:<form slug>`) is raised when the form's own
+  notification email was tried and did not go. For a form registered in code that is known only if the listener that
+  sent the email says so. CoreX's `SendEmailListener` does. A listener of your own does it with one line, shown in the
+  forms guide under "A stored submission is announced".
+
 ## REST API
 
 All routes live under `corex/v1/notifications` and return the standard `{ ok, message, data }` envelope. Reads

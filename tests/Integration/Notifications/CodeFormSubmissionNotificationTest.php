@@ -20,6 +20,7 @@ use Corex\Access\CorexAbility;
 use Corex\Boot;
 use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
+use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
 use Corex\Forms\Submission\SubmitController;
 use Corex\Notifications\NotificationQuery;
@@ -108,9 +109,13 @@ function notifiedProbeReader(string $login, ?string $ability): int
 }
 
 beforeEach(function () {
-    // No form here writes an email, and a development install may deliver for real: asked for
-    // all the same, so that a listener added later cannot send from this file.
+    // One form here writes an email, and a development install may deliver for real. A form
+    // defined in code sends through wp_mail() whatever the site decides for an email, so the
+    // email is answered here, before WordPress hands it to anything: nothing leaves this file.
     $this->mailSettings = MailDelivery::answerAs(MailDelivery::CAPTURE);
+    $this->mailAccepted = true;
+    $this->answersMail  = fn (): bool => $this->mailAccepted;
+    add_filter('pre_wp_mail', $this->answersMail);
     $this->stored       = CreatedPosts::watch('corex_submission');
     $this->transients   = WatchedTransients::watch('corex_throttle_');
     // A run that died before its afterEach leaves its rows, and the next would add to them.
@@ -120,6 +125,10 @@ beforeEach(function () {
     $forms = Boot::app()->container()->make(FormRegistry::class);
     $forms->register(notifiedProbeForm(NOTIFIED_PROBE, [StoreSubmissionListener::class]));
     $forms->register(notifiedProbeForm(NOTIFIED_PROBE . '-unstored', []));
+    $forms->register(notifiedProbeForm(
+        NOTIFIED_PROBE . '-emailed',
+        [StoreSubmissionListener::class, SendEmailListener::class],
+    ));
 
     $this->manager  = notifiedProbeReader(NOTIFIED_PROBE_READER, CorexAbility::MANAGE_SUBMISSIONS);
     $this->stranger = notifiedProbeReader(NOTIFIED_PROBE_READER . '-without', null);
@@ -130,6 +139,7 @@ afterEach(function () {
     NotificationRows::forgetPrefixed('submission.email_failure:' . NOTIFIED_PROBE);
     $this->stored->delete();
     $this->transients->restore();
+    remove_filter('pre_wp_mail', $this->answersMail);
     MailDelivery::stop($this->mailSettings);
 
     wp_set_current_user(0);
@@ -172,3 +182,17 @@ it('says nothing of a submission that was not stored', function () {
         ->and($this->stored->ids())->toBe([])
         ->and(notifiedProbeItemsShownTo($this->manager))->toBe([]);
 });
+
+it('says so when the form\'s own notification email did not go, and only then', function (bool $accepted, array $told) {
+    $this->mailAccepted = $accepted;
+
+    submitNotifiedProbe(NOTIFIED_PROBE . '-emailed');
+
+    $types = array_column(notifiedProbeItemsShownTo($this->manager), 'type');
+    sort($types);
+
+    expect($types)->toBe($told);
+})->with([
+    'an email WordPress took' => [true, ['submission.new']],
+    'an email WordPress could not send' => [false, ['submission.email_failed', 'submission.new']],
+]);
