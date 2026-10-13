@@ -11,6 +11,7 @@ declare(strict_types=1);
 use Corex\Access\AccessPolicy;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
+use Corex\Access\InvalidAccessInput;
 
 beforeEach(function () {
     $this->policy = new AccessPolicy(CorexAbilityCatalog::defaults());
@@ -76,9 +77,25 @@ it('blocks edits to code-locked ability definitions', function () {
         ->and(array_column($preview->blockers, 'code'))->toContain('ability_locked');
 });
 
-it('rejects unknown abilities and effects', function () {
-    expect(fn () => $this->policy->preview(1, ['corex_unknown' => AccessPolicy::EFFECT_ALLOW], [], [1]))
-        ->toThrow(InvalidArgumentException::class)
-        ->and(fn () => $this->policy->preview(1, [CorexAbility::MANAGE_FORMS => 'maybe'], [], [1]))
-        ->toThrow(InvalidArgumentException::class);
+it('refuses a change it cannot read, and says which part of it', function (array $changes, string $refusal) {
+    expect(fn () => $this->policy->preview(1, $changes, [], [1]))->toThrow(function (InvalidAccessInput $refused) use ($refusal) {
+        expect($refused->parameter)->toBe('changes')
+            ->and($refused->refusal)->toBe($refusal);
+    });
+})->with([
+    'an ability CoreX does not have' => [['corex_unknown' => AccessPolicy::EFFECT_ALLOW], InvalidAccessInput::ABILITY_UNKNOWN],
+    // PHP keeps the key "123" of an array as the integer 123, and a list's keys are integers.
+    'a key that is a number'         => [['123' => AccessPolicy::EFFECT_ALLOW], InvalidAccessInput::ABILITY_UNKNOWN],
+    'a list where a map was meant'   => [[AccessPolicy::EFFECT_ALLOW], InvalidAccessInput::ABILITY_UNKNOWN],
+    'an effect CoreX does not have'  => [[CorexAbility::MANAGE_FORMS => 'maybe'], InvalidAccessInput::EFFECT_UNSUPPORTED],
+]);
+
+it('refuses a change with nobody behind it as a mistake in the code that called it', function () {
+    $preview = fn () => $this->policy->preview(0, [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW], [], [1]);
+
+    // Not an `InvalidAccessInput`: a route answers that one as the caller's mistake, and a change
+    // with no actor is a mistake in CoreX.
+    expect($preview)->toThrow(function (InvalidArgumentException $thrown) {
+        expect($thrown)->not->toBeInstanceOf(InvalidAccessInput::class);
+    });
 });
