@@ -123,6 +123,16 @@ final class NotificationDelivery
         ], true);
     }
 
+    /**
+     * An attempt that was made and did not go. Not `not_attempted` (nothing was to be sent) and
+     * not `unavailable` (nobody knows): neither is a failure anyone can act on.
+     */
+    public function failed(): bool
+    {
+        return ! $this->successful()
+            && ! in_array($this->status, [self::STATUS_NOT_ATTEMPTED, self::STATUS_UNAVAILABLE], true);
+    }
+
     /** @return array<string,mixed> */
     public function toArray(): array
     {

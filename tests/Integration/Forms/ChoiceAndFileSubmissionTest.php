@@ -19,6 +19,7 @@ use Corex\Forms\FormRegistry;
 use Corex\Forms\Listeners\StoreSubmissionListener;
 use Corex\Forms\Submission\SubmitController;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\NotificationRows;
 use Corex\Tests\Support\WatchedTransients;
 
 const ENQUIRY_PROBE = 'corex-enquiry-probe';
@@ -26,6 +27,9 @@ const ENQUIRY_PROBE = 'corex-enquiry-probe';
 beforeEach(function () {
     $this->stored     = CreatedPosts::watch('corex_submission');
     $this->transients = WatchedTransients::watch('corex_throttle_');
+    // A stored submission of a form defined in code tells whoever manages submissions. On a
+    // developer's install such a row may be their own: it is handed back as it was.
+    $this->submissionNotifications = NotificationRows::snapshotPrefixed('submission.');
 
     Boot::app()->container()->make(FormRegistry::class)->register(new class extends Form {
         public string $slug = ENQUIRY_PROBE;
@@ -52,6 +56,7 @@ beforeEach(function () {
 
 afterEach(function () {
     $this->stored->delete();
+    NotificationRows::restorePrefixed('submission.', $this->submissionNotifications);
     $this->transients->restore();
 });
 

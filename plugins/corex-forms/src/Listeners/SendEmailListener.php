@@ -57,7 +57,7 @@ final class SendEmailListener
 
     public function __invoke(FormSubmittedEvent $event): void
     {
-        $this->dispatch($event);
+        $event->notifiedAs($this->dispatch($event));
     }
 
     public function dispatch(FormSubmittedEvent $event): NotificationDelivery

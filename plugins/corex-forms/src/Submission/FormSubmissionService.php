@@ -20,9 +20,10 @@ use Corex\Security\Upload\AttachmentStorage;
 
 /**
  * Orchestrates a submission once the security middleware has run: honeypot check →
- * resolve the form's schema → validate → on success, dispatch the FormSubmittedEvent.
- * Pure of WordPress; every rejection short-circuits before any side effect (FR-008,
- * FR-010, FR-011, SC-006). The side effects themselves live in the listeners.
+ * resolve the form's schema → validate → on success, dispatch the FormSubmittedEvent, and
+ * then announce the submission the listeners stored. Pure of WordPress; every rejection
+ * short-circuits before any side effect (FR-008, FR-010, FR-011, SC-006). The side effects
+ * themselves live in the listeners.
  */
 final class FormSubmissionService
 {
@@ -110,9 +111,39 @@ final class FormSubmissionService
             return Response::reject(__('The file could not be stored.', 'corex'), 422);
         }
 
-        $this->events->dispatch(new FormSubmittedEvent($slug, $values));
+        $submitted = new FormSubmittedEvent($slug, $values);
+        $this->events->dispatch($submitted);
+        $this->announce($submitted);
 
         return Response::ok($values);
+    }
+
+    /**
+     * Say that a submission was stored, as a form built in Forms & Flows says it
+     * ({@see FlowVisitorSubmissionService}), so the notification centre hears of both. It heard
+     * only of that one, and a site whose forms are all defined in code was told of no submission.
+     *
+     * Said once every listener has run, so the order a form lists its listeners in does not
+     * decide it. A submission nothing stored is not announced: there is nothing in the inbox to
+     * be told of.
+     */
+    private function announce(FormSubmittedEvent $submitted): void
+    {
+        $submissionId = $submitted->submissionId();
+        if ($submissionId === null) {
+            return;
+        }
+
+        $this->events->dispatch(new SubmissionProcessedEvent(
+            submissionId: $submissionId,
+            flowId: SubmissionProcessedEvent::NO_FLOW,
+            flowSlug: $submitted->formSlug,
+            ownerId: null,
+            delivery: $submitted->delivery() ?? NotificationDelivery::notAttempted(
+                'not_reported',
+                __('No listener of this form said how its notification email went.', 'corex'),
+            ),
+        ));
     }
 
     /**
