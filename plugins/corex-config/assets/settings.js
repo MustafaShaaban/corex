@@ -205,10 +205,45 @@
 		if ( ! toast ) {
 			return;
 		}
+		// What says a setting was refused names the fields: each is marked as not taken and
+		// described by its line, for whoever reaches the field and not the message.
+		const refused = Array.prototype.slice
+			.call( toast.querySelectorAll( '[data-corex-refused]' ) )
+			.map( function ( line ) {
+				const field = document.getElementById(
+					line.getAttribute( 'data-corex-refused' )
+				);
+				if ( field ) {
+					field.setAttribute( 'aria-invalid', 'true' );
+					field.setAttribute(
+						'aria-describedby',
+						[ field.getAttribute( 'aria-describedby' ), line.id ]
+							.filter( Boolean )
+							.join( ' ' )
+					);
+				}
+
+				return field;
+			} )
+			.filter( Boolean );
 
 		function remove() {
-			if ( toast.parentNode ) {
-				toast.parentNode.removeChild( toast );
+			if ( ! toast.parentNode ) {
+				return;
+			}
+			const held = toast.contains( toast.ownerDocument.activeElement );
+			toast.parentNode.removeChild( toast );
+			// The button that was pressed went with it. Focus goes to the first field to
+			// type again where it is on the open tab, and to the way to save otherwise.
+			if ( held ) {
+				const next =
+					refused.filter( function ( field ) {
+						return field.offsetParent !== null;
+					} )[ 0 ] ||
+					document.querySelector( '.corex-settings__save button' );
+				if ( next ) {
+					next.focus();
+				}
 			}
 		}
 
@@ -217,10 +252,18 @@
 			dismiss.addEventListener( 'click', remove );
 		}
 
+		// An alert that is in the page as it arrives is not reliably read out, and this one
+		// is the last thing in the page: it is given focus, which reads it.
+		if ( toast.hasAttribute( 'data-corex-toast-stays' ) ) {
+			toast.focus();
+		}
+
 		const reduce =
 			window.matchMedia &&
 			window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
-		if ( ! reduce ) {
+		// What says a setting was refused stays until it is dismissed: it names what to
+		// type again, and is not read in five seconds.
+		if ( ! reduce && ! toast.hasAttribute( 'data-corex-toast-stays' ) ) {
 			window.setTimeout( remove, 5000 );
 		}
 	}

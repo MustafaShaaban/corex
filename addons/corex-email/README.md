@@ -21,10 +21,14 @@ transport.
 | `mail.from.name` | `corex_mail_from_name` | `MAIL_FROM_NAME` |
 | `mail.from.address` | `corex_mail_from_address` | `MAIL_FROM_ADDRESS` |
 | `mail.reply_to` | `corex_mail_reply_to` | `MAIL_REPLY_TO` |
+| `mail.reply.from_name` | `corex_mail_reply_from_name` | `MAIL_REPLY_FROM_NAME` |
+| `mail.reply.from_address` | `corex_mail_reply_from_address` | `MAIL_REPLY_FROM_ADDRESS` |
+| `mail.reply.reply_to` | `corex_mail_reply_reply_to` | `MAIL_REPLY_REPLY_TO` |
 | `mail.provider` | `corex_mail_provider` | `MAIL_PROVIDER` |
 | `mail.live_delivery` | `corex_mail_live_delivery` | `MAIL_LIVE_DELIVERY` |
 
-An empty sender falls back to the site identity. For deliberate Production delivery through the built-in driver,
+An empty sender falls back to the site identity. The three `mail.reply.*` values are read by a reply from the
+Submissions inbox only, and each falls back to its general counterpart. For deliberate Production delivery through the built-in driver,
 open **CoreX → Settings → Mail**, select `wp-mail`, verify the site's WordPress transport, then enable live delivery.
 
 ## Functional Email Studio

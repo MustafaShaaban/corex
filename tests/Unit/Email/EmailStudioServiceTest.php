@@ -664,6 +664,7 @@ it('carries every field of a message when headers are added to it', function () 
         'from@example.com',
         [12, 13],
         'Hello',
+        'Acme Sales',
     );
     $given = (new ReflectionClass(EmailMessage::class))->getConstructor()->getNumberOfParameters();
 
@@ -671,7 +672,7 @@ it('carries every field of a message when headers are added to it', function () 
 
     // Every field was given a value of its own above: one added to the class and not here
     // fails the first line, and one not carried fails the second.
-    expect(count(get_object_vars($message)))->toBe($given)->toBe(10)
+    expect(count(get_object_vars($message)))->toBe($given)->toBe(11)
         ->and(array_replace(get_object_vars($with), ['headers' => $message->headers]))->toBe(get_object_vars($message))
         ->and($with->headers)->toBe(['Message-ID' => '<new@acme.test>', 'X-Kept' => 'yes']);
 });
@@ -685,4 +686,42 @@ it('lets nothing but an id into a conversation', function () {
         ->and($conversation->subject)->toBe('Subject Bcc: x')
         ->and((new ReplyConversation([], 'A subject'))->subject)->toBe('');
 });
+
+// Spec 106, story 5 (FR-024): a site says which name and address its replies are sent from,
+// and where an answer to them goes. Without them a reply leaves as it always did.
+it('sends a reply from the sender the site names for replies, and as before where it names none', function (array $named, ?string $from, ?string $fromName, ?string $replyTo) {
+    Functions\when('sanitize_key')->returnArg();
+    Functions\when('sanitize_email')->returnArg();
+    Functions\when('is_email')->alias(static fn (mixed $address): string|false => is_string($address) && filter_var($address, FILTER_VALIDATE_EMAIL) !== false ? $address : false);
+    $studio = emailStudioService();
+    $delivers = ['app.env' => 'production', 'mail.provider' => 'postmark', 'mail.live_delivery' => '1'];
+
+    replyGateway($named + $delivers, $studio)->reply('sam@example.com', 'Re: Contact', '<p>Thanks, Sam.</p>');
+    $sent = $studio[3]->sent[0];
+
+    expect($sent->from)->toBe($from)
+        ->and($sent->fromName)->toBe($fromName)
+        ->and($sent->replyTo)->toBe($replyTo)
+        // Who it goes to is the person who wrote in, whatever the sender.
+        ->and($sent->to)->toBe(['sam@example.com']);
+})->with([
+    'a name, an address and where answers go' => [
+        ['mail.reply.from_name' => 'Acme Sales', 'mail.reply.from_address' => 'answers@acme.test', 'mail.reply.reply_to' => 'sales@acme.test', 'mail.reply_to' => 'office@acme.test'],
+        'answers@acme.test', 'Acme Sales', 'sales@acme.test',
+    ],
+    'nothing named for replies' => [['mail.reply_to' => 'office@acme.test'], null, null, 'office@acme.test'],
+    'nothing named at all' => [[], null, null, null],
+    'a name alone: the site\'s own address, under that name' => [['mail.reply.from_name' => 'Acme Sales'], null, 'Acme Sales', null],
+    'an address alone: answers go to the site\'s general address' => [
+        ['mail.reply.from_address' => 'answers@acme.test', 'mail.reply_to' => 'office@acme.test'],
+        'answers@acme.test', null, 'office@acme.test',
+    ],
+    // A value an option was given by hand, past the settings screen.
+    'addresses that are not addresses' => [
+        ['mail.reply.from_address' => 'answers at acme', 'mail.reply.reply_to' => 'sales@', 'mail.reply_to' => 'office@acme.test'],
+        null, null, 'office@acme.test',
+    ],
+    'a name with a second line in it' => [['mail.reply.from_name' => "Acme\r\nBcc: x@example.com  "], null, 'Acme Bcc: x@example.com', null],
+    'a name of spaces' => [['mail.reply.from_name' => '   '], null, null, null],
+]);
 

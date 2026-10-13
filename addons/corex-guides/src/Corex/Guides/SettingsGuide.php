@@ -147,6 +147,11 @@ final class SettingsGuide
                     __('Useful when you send from something like noreply@ but want answers to reach a real inbox.', 'corex'),
                 ),
                 new GuideStep(
+                    __('Reply sender name, Reply sender address and Replies are answered to — who a reply from Submissions is from.', 'corex'),
+                    __('A reply written in the Submissions inbox leaves under this name, from this address, and the person\'s answer goes where the third says. Leave any of them blank and that part is as for every other email: the From name, the From address, the default reply-to address.', 'corex'),
+                    warning: __('The address has to be a mailbox your mail service may send as. An SMTP plugin sends each address through its own connection: add the address there first, or replies may be refused, sent from another address, or land in spam. A transport plugin set to force a From address replaces this one.', 'corex'),
+                ),
+                new GuideStep(
                     __('Delivery provider — Disabled, or WordPress wp_mail.', 'corex'),
                     __('This chooses how mail physically leaves. Disabled means nothing is sent.', 'corex'),
                 ),
@@ -158,7 +163,7 @@ final class SettingsGuide
                 new GuideStep(
                     __('Email accent colour, Email logo and Email footer line — how an email from this site looks.', 'corex'),
                     __('A reply sent from Submissions is drawn with these: the colour of the edge along the top, the mark above the message, and the line under it. Leave any of them blank for CoreX\'s colour, the site\'s own logo, and a line naming the site.', 'corex'),
-                    warning: __('The colour has to be six-digit hex, such as #0B1F3B. Anything else is not saved and the field keeps what it had.', 'corex'),
+                    warning: __('The colour has to be six-digit hex, such as #0B1F3B. Anything else is not saved: the field keeps what it had, and the screen says which field it did not change and why.', 'corex'),
                 ),
             ],
         );

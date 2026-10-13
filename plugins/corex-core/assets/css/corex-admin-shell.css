@@ -2096,6 +2096,21 @@ body.corex-admin-screen .corex-admin__shell {
 	margin: 0;
 }
 
+/* It can be long, and it stays: never taller than the window. */
+.corex-admin .corex-toast[data-corex-toast-stays] {
+	align-items: flex-start;
+	max-block-size: calc(100vh - 2 * var(--corex-admin-space-lg));
+	overflow-y: auto;
+}
+
+/* More than one thing to say: a line each, the dismiss button beside. */
+.corex-admin .corex-toast__messages {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+}
+
 .corex-admin .corex-toast__dismiss {
 	flex: none;
 	padding: 0;

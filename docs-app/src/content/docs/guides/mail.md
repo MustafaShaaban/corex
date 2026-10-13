@@ -124,6 +124,26 @@ output; Delivery logs are real site-wide attempts and are labelled as not yet fi
 The studio does not mutate code-defined templates or routing. Test Send stays disabled until the neutral `Mailer`
 seam returns a per-send result that a capability + nonce-gated action can report truthfully.
 
+## The sender of a reply
+
+`mail.reply.from_name`, `mail.reply.from_address` and `mail.reply.reply_to` name who a reply from
+the Submissions inbox is from and where an answer to it goes. Each falls back to its general
+counterpart (`mail.from.name`, `mail.from.address`, `mail.reply_to`). They are set under
+**CoreX → Settings → Mail**, or as any config value is. No other email reads them.
+
+`EmailMessage` has a `fromName` for this. It is not for a caller to vary per message: a sender's
+name that changes with the message is how a spoof reads. A name is cleaned by one rule,
+`Corex\Email\Message\SenderName::of()`: one line, `<`, `>` and `"` taken out, no `=?` sequence,
+at most 100 characters. The gateway that sends a reply applies it and `WpMailDriver` applies it
+again, to the general From name too. The mail service refuses a name with a line break in it. A
+driver of your own is handed the reply's name already cleaned, and has to clean a name it reads
+from anywhere else.
+
+A name with no address to stand in front of (none set for replies and none set for the site) is
+given to WordPress's mailer directly, where no plugin has chosen a name. A `wp_mail_from` or
+`wp_mail_from_name` filter, which is how a transport plugin forces a sender, is applied by
+WordPress after the header this driver writes and replaces it.
+
 ## Configure
 
 `COREX_MAIL_DRIVER` (and host/port/credentials) live in `.env`; secrets are documented in

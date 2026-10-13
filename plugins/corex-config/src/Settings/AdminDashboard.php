@@ -23,11 +23,22 @@ defined('ABSPATH') || exit;
  */
 final class AdminDashboard
 {
+    /** How much of what was typed a refusal quotes. */
+    private const QUOTED_AT_MOST = 80;
+
     private string $hook = '';
     private string $settingsHook = '';
 
     /** True once a verified settings POST has been persisted this request, so the save toast shows. */
     private bool $justSaved = false;
+
+    /**
+     * The fields of that save that were not changed, because what was typed is not what the
+     * field takes: each with its name in the form, its label, its type and what was typed.
+     *
+     * @var list<array{name:string,label:string,type:string,typed:string}>
+     */
+    private array $refused = [];
 
     public function __construct(
         private readonly SettingsRegistry $registry,
@@ -157,7 +168,7 @@ final class AdminDashboard
         );
 
         if ($this->justSaved) {
-            echo $this->savedToast();
+            echo $this->refused === [] ? $this->savedToast() : $this->refusedToast();
         }
 
         echo $this->page->close();
@@ -301,6 +312,8 @@ final class AdminDashboard
             return;
         }
 
+        // What an earlier save in this process refused is not this one's to report.
+        $this->refused = [];
         foreach ($this->registry->sections() as $section) {
             foreach ($section['fields'] as $key => $field) {
                 $this->saveField((string) $key, $field);
@@ -329,11 +342,78 @@ final class AdminDashboard
     }
 
     /**
+     * What a save says when a field was not changed (spec 106, story 5): which field, what was
+     * typed, and why it was not taken. The rest was saved, and it says that too.
+     *
+     * It was said as "Settings saved": an address typed wrongly was dropped, and the field
+     * came back as it had been with nothing to say why. An alert and not a status, since
+     * something somebody asked for did not happen; it stays until it is dismissed.
+     */
+    private function refusedToast(): string
+    {
+        $lines = '';
+        foreach ($this->refused as $field) {
+            // The label and what was typed are each escaped where they stand. What was typed
+            // keeps its own direction: in a right-to-left sentence "answers@" would otherwise
+            // be drawn as "@answers".
+            $lines .= sprintf(
+                '<p class="corex-toast__message" id="corex-refused-%1$s" data-corex-refused="%1$s">%2$s</p>',
+                esc_attr($field['name']),
+                sprintf(
+                    esc_html($this->whyRefused($field['type'])),
+                    esc_html($field['label']),
+                    '<bdi>' . esc_html(self::asTyped($field['typed'])) . '</bdi>',
+                ),
+            );
+        }
+
+        // It can be given focus, which the page's script does when it loads: an alert that
+        // is already in a page as it arrives is not reliably read out, and it is the last
+        // thing in the page.
+        return sprintf(
+            '<div class="corex-toast corex-toast--warning" role="alert" tabindex="-1" data-corex-toast data-corex-toast-stays>'
+            . '<div class="corex-toast__messages">%1$s<p class="corex-toast__message">%2$s</p></div>'
+            . '<button type="button" class="corex-toast__dismiss" data-corex-toast-dismiss'
+            . ' aria-label="%3$s">&times;</button>'
+            . '</div>',
+            $lines,
+            esc_html__('Everything else was saved.', 'corex'),
+            esc_attr__('Dismiss', 'corex'),
+        );
+    }
+
+    /**
+     * What was typed, short enough to quote: its beginning, where it is long. A picture
+     * pasted into a web address field as `data:` is thousands of characters.
+     */
+    private static function asTyped(string $typed): string
+    {
+        $text = trim(wp_check_invalid_utf8($typed, true));
+
+        return mb_strlen($text) > self::QUOTED_AT_MOST ? mb_substr($text, 0, self::QUOTED_AT_MOST) . '…' : $text;
+    }
+
+    /** The sentence for a value a field of that type does not take. */
+    private function whyRefused(string $type): string
+    {
+        return match ($type) {
+            /* translators: 1: a setting's label. 2: what was typed into it. */
+            'email' => __('%1$s was not changed: "%2$s" is not an email address.', 'corex'),
+            /* translators: 1: a setting's label. 2: what was typed into it. */
+            'url', 'media' => __('%1$s was not changed: "%2$s" is not a web address.', 'corex'),
+            /* translators: 1: a setting's label. 2: what was typed into it. */
+            'hex-colour' => __('%1$s was not changed: "%2$s" is not a six-digit colour such as #0B1F3B.', 'corex'),
+            /* translators: 1: a setting's label. 2: what was chosen for it. */
+            default => __('%1$s was not changed: "%2$s" is not one of its choices.', 'corex'),
+        };
+    }
+
+    /**
      * Persists one field by type. A checkbox absent from the post is an explicit "off" (so a
      * toggle can be turned off); an empty write-only secret is left untouched (never cleared
      * by re-saving the form); everything else is sanitized text.
      */
-    /** @param array{type?:string,options?:array<string,string>} $field */
+    /** @param array{type?:string,label?:string,options?:array<string,string>} $field */
     private function saveField(string $key, array $field): void
     {
         $name = str_replace('.', '_', $key);
@@ -356,6 +436,9 @@ final class AdminDashboard
 
         $value = $this->sanitizer->sanitize($raw, $type, $field['options'] ?? []);
         if ($value === null) {
+            // Not saved, and said: what was there stays there.
+            $this->refused[] = ['name' => $name, 'label' => (string) ($field['label'] ?? $key), 'type' => $type, 'typed' => $raw];
+
             return;
         }
 

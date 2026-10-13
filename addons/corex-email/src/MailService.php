@@ -39,6 +39,7 @@ final class MailService
         $rejection = $this->guard->inspect([
             'subject'  => $message->subject,
             'from'     => $message->from ?? '',
+            'from name' => $message->fromName ?? '',
             'reply-to' => $message->replyTo ?? '',
         ]);
 
@@ -63,6 +64,7 @@ final class MailService
             from: $message->from,
             attachments: $message->attachments,
             plainText: $message->plainText,
+            fromName: $message->fromName,
         );
 
         if ($clean->to === []) {

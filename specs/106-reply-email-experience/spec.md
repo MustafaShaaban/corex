@@ -240,9 +240,11 @@ A site says which name and address its replies are sent from, and where an answe
 **Why this priority**: a reply from a no-reply or a general address reads wrongly and may be
 answered into nowhere. It is the open part of issue #150.
 
-**Independent Test**: set a reply sender name and address; send a reply; the captured email's
-From and Reply-To are those; clear the setting; the next reply leaves from the site's general
-sender as today.
+**Independent Test**: set a reply sender name and address; send a reply; the email's From and
+Reply-To are those; clear the setting; the next reply leaves from the site's general sender as
+today. *(Amended 2026-10-13: this read "the captured email's From". An email kept on a
+development site records its Reply-To and not its sender, so the From is read off the message
+WordPress's mailer builds, in a test, and on a delivered email.)*
 
 **Acceptance Scenarios**:
 
