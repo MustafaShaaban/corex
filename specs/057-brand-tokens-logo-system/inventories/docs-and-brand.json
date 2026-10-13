@@ -259,10 +259,10 @@
       "path": "docs-app/src/content/docs/guides/updates.md",
       "lines": [
         12,
-        77,
-        82,
-        86,
-        91
+        95,
+        100,
+        104,
+        109
       ],
       "topics": [
         "brand.json"
@@ -280,15 +280,15 @@
     {
       "path": "plugins/corex-core/README.md",
       "lines": [
-        333,
-        363,
-        364,
-        368,
-        370,
-        375,
-        380,
-        458,
-        464
+        342,
+        372,
+        373,
+        377,
+        379,
+        384,
+        389,
+        467,
+        473
       ],
       "topics": [
         "brand.json",

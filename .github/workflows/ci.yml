@@ -343,7 +343,7 @@ jobs:
           # archive has php8.5-fpm and no php8.3-fpm, so asking for the package there
           # stopped this job on "Unable to locate package php8.3-fpm" before a spec had run
           # (pull request #406). `ubuntu-latest` is 24.04 on one run and 26.04 on the next
-          # while GitHub moves the label, and is followed on purpose (DECISIONS #364).
+          # while GitHub moves the label, and is followed on purpose (DECISIONS #367).
           if command -v php-fpm8.3 > /dev/null; then
             echo "php-fpm8.3 is here: $(command -v php-fpm8.3)"
             sudo apt-get install -y -qq nginx
