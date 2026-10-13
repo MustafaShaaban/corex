@@ -184,6 +184,10 @@ nothing.
 - **FR-007**: Service failure MUST produce a CoreX error state with a correlation reference and a
   retry where retrying is safe.
 - **FR-008**: Duplicate submission MUST be prevented server-side, not only by disabling a button.
+- **FR-008a**: FR-008 MUST hold for every caller of the access request service, the REST route
+  included; for a request for an area as for one for an ability; and for two submissions that
+  arrive at the same moment. A repeat MUST store nothing, write no "created" audit entry and
+  notify nobody again (DECISIONS #343).
 - **FR-009**: A JavaScript enhancement MAY submit in place, but MUST prevent navigation, keep the
   user on the page, and remain entirely optional.
 - **FR-010**: Any return address MUST be server-generated or allowlisted, same-origin, free of

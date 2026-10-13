@@ -143,18 +143,13 @@ final class AccessService
     }
 
     /**
-     * The requester's own open request for this ability, or null.
+     * Files a request, unless this person is already waiting on one for the same ability or area.
      *
-     * Lives here rather than in the controller because "is this a duplicate" is a decision about
-     * access requests, and both the browser form and any future caller must get the same answer.
-     *
-     * @return array<string,mixed>|null
+     * The second ask is refused here and not by a caller, so the REST route, the form in the admin
+     * and anything written later give one answer: nothing is stored, nothing is audited as
+     * created and nobody is notified again. A request for something else, from somebody else, or
+     * made after the earlier one was decided or ran out, is a new request.
      */
-    public function pendingRequestFor(int $requesterId, string $abilityKey): ?array
-    {
-        return $this->requests->pendingFor($requesterId, $abilityKey, null);
-    }
-
     public function requestAccess(
         int $requesterId,
         ?string $abilityKey,
@@ -164,7 +159,7 @@ final class AccessService
         DateTimeImmutable $expiresAt,
     ): OperationResult {
         $this->assertRequest($requesterId, $abilityKey, $areaKey, $reason, $now, $expiresAt);
-        $requestId = $this->requests->create(
+        $requestId = $this->requests->createUnlessPending(
             $requesterId,
             $abilityKey,
             $areaKey,
@@ -172,6 +167,14 @@ final class AccessService
             $now,
             $expiresAt,
         );
+
+        if ($requestId === null) {
+            return $this->blocked(
+                'request_already_pending',
+                __('Your request has already been sent. An administrator has been notified and can approve or deny it.', 'corex'),
+                $now,
+            );
+        }
 
         $event = $this->activity->record(
             actorId: $requesterId,

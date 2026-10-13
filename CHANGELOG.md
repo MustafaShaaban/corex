@@ -93,6 +93,20 @@ All notable changes to Corex are documented here. The format follows
   sent by WordPress: one address in it is changed, and only for a reset asked through the
   account block (DECISIONS #341).
 
+- **Asking twice for the same access makes one request** (spec 079, FR-008a; DECISIONS
+  #343). `POST corex/v1/access/requests` stored a new request each time the same signed-in
+  person asked again for the same ability or area. Measured on WordPress 7.1.3 over HTTP:
+  two posts, two requests in the queue, two "created" entries in the audit log, two
+  notifications for whoever manages access and, on a site with an email route for
+  `access.request.created`, two emails. The form on a denied screen asked first whether a
+  request was open; the route did not, and nothing asked about a request for an area. The
+  question is now part of storing the request, so no caller can leave it out. A repeat is
+  answered `200` with `state: blocked` and the code `request_already_pending`, and nothing
+  is stored, audited or sent. Two asks at the same moment make one request as well: 36
+  pairs posted to two server processes at once stored one each. A request for something
+  else, from somebody else, or made after the first was decided or ran out, is a new
+  request. Requests a site already holds twice are left as they are.
+
 - **A long email address registers without a username, and one too long for an account is
   refused with a reason.** The registration form's Username field is optional, and without
   one the login is the email address. WordPress holds a login in 60 characters and an
@@ -368,6 +382,17 @@ All notable changes to Corex are documented here. The format follows
   `.corex-account__status` again, with its `data-state`. Nothing to rebuild: no script or
   style changed. Which client installs have the add-on on is in the entries below, and was
   not read again for this one.
+
+- **A site with an access request store of its own has one method to rename, and a script
+  that asks for access has one field to read.** `Corex\Access\AccessRequestStore::create()`
+  is now `createUnlessPending()`: it returns `null` when the requester already has an open
+  request for the same ability or area, and has to ask and store as one step.
+  `AccessService::pendingRequestFor()` is removed; `requestAccess()` answers the question
+  itself, with a `blocked` result. A script that posts to `corex/v1/access/requests` is
+  answered `200` for a repeat, as it was, and has to read `data.result.state` to know that
+  nothing was created (DECISIONS #343). MUVA's and Perego's own code under `sites/` was
+  searched on 2026-10-13 and uses none of the three; mizzey was not read. Nothing to
+  rebuild: no script or style changed.
 
 - **The account block's message line moved, and its fields are 16 pixels narrower.** Only
   for a site that has Corex Profile on and styles the block itself. The one

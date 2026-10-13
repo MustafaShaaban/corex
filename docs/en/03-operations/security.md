@@ -131,6 +131,11 @@ shows an operation identifier, a stack trace, a path or a raw API payload.
 `POST /corex/v1/access/requests/<id>/decision` answer JSON, as [What the REST routes answer](#what-the-rest-routes-answer) sets out, for scripts, integrations and
 the admin screen's own controls. The admin endpoint is a second door onto the same service, not a replacement for it,
 and nothing in CoreX inspects `Accept` to decide between HTML and JSON.
+A second `POST /corex/v1/access/requests` from the same person for the same ability or area, while their first is still
+open, stores nothing. It is answered `200` with a result whose `state` is `blocked` and whose error code is
+`request_already_pending`; no audit entry is written and nobody is notified again. A script has to read
+`data.result.state`, not the status, to know whether a request was created. A request for a different ability or area,
+or one made after the first was decided or expired, is a new request.
 
 ### What the administrator sees
 
@@ -164,8 +169,9 @@ This is for a script or an integration that calls `/corex/v1/access/...`. The ad
 A `200` from a route that changes something does not say that anything was created or changed: read
 `data.result.state`.
 
-**Refused for how things stand** is a decision on a request that is no longer pending, a role change the safety policy
-stops, or a confirmation that confirms a different change or has run out. A preview of a role change the policy would
+**Refused for how things stand** is a second request for what the person is already waiting on, a decision on a request
+that is no longer pending, a role change the safety policy stops, or a confirmation that confirms a different change or
+has run out. A preview of a role change the policy would
 stop is not a refusal: it is answered `200` with `data.allowed` false and the reasons in `data.blockers`.
 
 **Not readable** is a request that would be refused however often it was sent. Nothing is stored, no audit entry is
