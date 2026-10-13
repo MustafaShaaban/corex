@@ -23,6 +23,8 @@ use Corex\Support\Config\Sources\NetworkDefaultsSource;
 use Corex\Support\Config\Sources\NetworkLockSource;
 use Corex\Support\Config\Sources\OptionsSource;
 
+require_once __DIR__ . '/OptionFixtures.php';
+
 function networkConfigMultisite(bool $enabled): MultisiteContext
 {
     return new class ($enabled) implements MultisiteContext {
@@ -163,11 +165,7 @@ it('keeps the old and new resolution chains identical when no network value is s
         'corex_collision' => 'site collision',
     ];
 
-    Functions\when('get_option')->alias(
-        static fn (string $name, mixed $default = false): mixed => array_key_exists($name, $siteOptions)
-            ? $siteOptions[$name]
-            : $default,
-    );
+    siteWithOptions($siteOptions);
     Functions\when('get_network_option')->returnArg(2);
 
     $directory = networkConfigEnv("ENV_ONLY=environment\nCOLLISION=\"environment collision\"\n");
@@ -221,11 +219,7 @@ it('orders locks defaults site options and environment values by their declared 
         'corex_network_default_env' => 'network default env',
     ];
 
-    Functions\when('get_option')->alias(
-        static fn (string $name, mixed $default = false): mixed => array_key_exists($name, $siteOptions)
-            ? $siteOptions[$name]
-            : $default,
-    );
+    siteWithOptions($siteOptions);
     Functions\when('get_network_option')->alias(
         static fn (int $networkId, string $name, mixed $default = false): mixed => array_key_exists($name, $networkOptions)
             ? $networkOptions[$name]
@@ -277,11 +271,7 @@ it('honors a network lock registered after the config singleton was resolved', f
         define('COREX_CORE_PATH', dirname(__DIR__, 3) . '/plugins/corex-core/');
     }
 
-    Functions\when('get_option')->alias(
-        static fn (string $name, mixed $default = false): mixed => $name === 'corex_dynamic_key'
-            ? 'site value'
-            : $default,
-    );
+    siteWithOptions(['corex_dynamic_key' => 'site value']);
     Functions\when('get_network_option')->alias(
         static fn (int $networkId, string $name, mixed $default = false): mixed => $name === 'corex_network_dynamic_key'
             ? 'network value'

@@ -25,6 +25,8 @@ use Corex\Multisite\RuntimeContexts;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 
+require_once dirname(__DIR__) . '/Config/OptionFixtures.php';
+
 beforeEach(function (): void {
     // CoreServiceProvider::projectRoot() reads this constant with no fallback, unlike Boot's.
     if (! defined('COREX_CORE_PATH')) {
@@ -67,7 +69,7 @@ it('cannot resolve the config engine when the runtime contexts are missing', fun
 });
 
 it('falls through both network sources to the code defaults on a single-site install', function () {
-    Functions\when('get_option')->alias(static fn (string $key, $default = false) => $default);
+    siteWithOptions([]);
 
     $container = configWiringContainer();
     RuntimeContexts::detect()->seedInto($container);

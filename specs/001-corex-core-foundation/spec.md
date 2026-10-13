@@ -209,6 +209,13 @@ without having been listed anywhere by hand.
 
 - **FR-011**: The framework MUST resolve a configuration value by key using the precedence
   `.env` → WordPress options → shipped defaults (first match wins).
+- **FR-011a**: The WordPress options layer holds a key when the option named for it
+  (`corex_` and the key with its dots as underscores) is loaded with the site's options, which
+  is how `update_option()` and `wp option update` store one, or when a `pre_option` or
+  `default_option` filter answers for it. Resolving a key that has no override MUST NOT query
+  the database. An option stored with autoload off is not an override. While WordPress is
+  installing a site the layer asks WordPress for the option as it did. `Corex\Boot` reads an
+  add-on's feature flag through the same layer (added 2026-10-13, DECISIONS #361).
 - **FR-012**: Reading a missing key MUST return a caller-supplied fallback (or a documented empty
   result when none is supplied), never a fatal error.
 - **FR-013**: The `.env` layer MUST be optional — absence of a `.env` file MUST NOT break config

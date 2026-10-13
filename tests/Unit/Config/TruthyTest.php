@@ -18,6 +18,8 @@ use Corex\Support\Config\FeatureFlags;
 use Corex\Support\Config\Sources\DotenvSource;
 use Corex\Support\Config\Truthy;
 
+require_once __DIR__ . '/OptionFixtures.php';
+
 function invokeBootFeatureFlag(string $flag): bool
 {
     $method = new ReflectionMethod(Boot::class, 'featureFlagEnabled');
@@ -80,6 +82,8 @@ it('uses the canonical yes value in all three former feature-flag call sites', f
 
             return str_starts_with($name, 'corex_features_') ? 'yes' : $default;
         });
+        Functions\when('wp_installing')->justReturn(false);
+        Functions\when('wp_load_alloptions')->justReturn(['corex_features_woocommerce_kit' => 'yes']);
         Functions\when('is_multisite')->justReturn(false);
 
         $config = new class implements ConfigInterface {
@@ -123,12 +127,30 @@ it('lets an array-backed dotenv feature value gate boot before database options'
     }
 });
 
+it('does not ask WordPress for a feature flag option that is not stored', function () {
+    $directory = truthyEnv();
+
+    try {
+        replaceBootDotenv(new DotenvSource($directory, new BootLogger(false)));
+        Functions\when('wp_installing')->justReturn(false);
+        Functions\when('wp_load_alloptions')->justReturn([]);
+        // Boot reads this flag on every request, and asking is a query on each of them.
+        Functions\expect('get_option')->never();
+        Functions\when('is_multisite')->justReturn(false);
+
+        expect(invokeBootFeatureFlag('woocommerce_kit'))->toBeFalse();
+    } finally {
+        replaceBootDotenv(null);
+        removeTruthyEnv($directory);
+    }
+});
+
 it('falls back from an absent site feature option to the multisite network option', function () {
     $directory = truthyEnv();
 
     try {
         replaceBootDotenv(new DotenvSource($directory, new BootLogger(false)));
-        Functions\when('get_option')->justReturn(false);
+        siteWithOptions([]);
         Functions\when('is_multisite')->justReturn(true);
         Functions\when('get_site_option')->alias(
             static fn (string $name, mixed $default = false): mixed => $name === 'corex_features_woocommerce_kit'

@@ -33,6 +33,7 @@ use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\Sources\DotenvSource;
+use Corex\Support\Config\Sources\OptionsSource;
 use Corex\Support\Config\Truthy;
 use Corex\Theme\NavigationServiceProvider;
 use Corex\Theme\ThemeServiceProvider;
@@ -78,6 +79,8 @@ final class Boot
     private static ?Application $app = null;
 
     private static ?DotenvSource $dotenv = null;
+
+    private static ?OptionsSource $options = null;
 
     private static ?PluginActivationInspector $pluginActivationInspector = null;
 
@@ -253,19 +256,14 @@ final class Boot
             return Truthy::of($dotenv->get($key));
         }
 
-        $optionValue = false;
-
-        if (function_exists('get_option')) {
-            $optionValue = get_option('corex_features_' . $flag, false);
-
-            if ($optionValue !== false) {
-                return Truthy::of($optionValue);
-            }
+        // The same reader the config engine uses once there is a container, so the flag that
+        // decides whether an add-on boots is the flag FeatureFlags reports afterwards.
+        if (function_exists('get_option') && self::options()->has($key)) {
+            return Truthy::of(self::options()->get($key));
         }
 
         if (
-            $optionValue === false
-            && function_exists('is_multisite')
+            function_exists('is_multisite')
             && is_multisite()
             && function_exists('get_site_option')
         ) {
@@ -278,6 +276,11 @@ final class Boot
     private static function dotenv(): DotenvSource
     {
         return self::$dotenv ??= new DotenvSource(self::projectRoot(), new BootLogger(false));
+    }
+
+    private static function options(): OptionsSource
+    {
+        return self::$options ??= new OptionsSource();
     }
 
     private static function projectRoot(): string
