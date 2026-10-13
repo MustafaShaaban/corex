@@ -189,8 +189,13 @@ jobs:
   # appear together. They needed a served site, so they only ever ran on a developer's machine.
   e2e:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
-    name: Browser tests (Playwright)
-    runs-on: ubuntu-26.04
+    # PROBE ONLY: both images, since both serve `ubuntu-latest` while the label moves.
+    name: Browser tests (Playwright, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
     services:
       mysql:
         image: mysql:8
