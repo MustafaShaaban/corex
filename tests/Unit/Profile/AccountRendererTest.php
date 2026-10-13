@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Profile\Block\AccountRenderer;
+use Corex\Profile\Reset\ResetState;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -186,6 +187,7 @@ dataset('account panels', [
     'the signed-out panel with registration open'   => [['loggedIn' => false, 'registrationOpen' => true]],
     'the signed-out panel with registration closed' => [['loggedIn' => false, 'registrationOpen' => false]],
     'the signed-in panel'                           => [['loggedIn' => true]],
+    'the new-password panel of a reset'             => [['loggedIn' => false, 'reset' => ResetState::choose('salma', 'k3y')]],
 ]);
 
 it('prints no id twice', function (array $ctx) {

@@ -12721,3 +12721,151 @@ session's WordPress: four `php -S` processes of four worktrees were listening on
 answer was "Registration is currently closed." from a site that was not this one. The
 numbers above are from a port with one listener, checked with `netstat` and by the site's
 name in the REST index.
+
+## #341 — A password reset asked for at the account block ends on the account page: WordPress's email, with its link to the page the reset was asked from
+
+**Date:** 2026-10-13. **Branch:** `fix/account-reset-lands-on-the-site`. **Found by:** the
+measurement of the new member's email, which read the same link in the reset email and
+left it. **Decided by the owner** on the three questions below, from the options and the
+measurements put to him before anything was built.
+
+**What the code did.** `WordPressAuthGateway::requestPasswordReset()` calls WordPress's
+`retrieve_password()`, which makes the key, writes the email and sends it. The add-on had
+a route that takes a key and a new password (`POST corex/v1/account/reset`), and
+`account.js` knew a form of the kind `reset`. `AccountRenderer` rendered no such form.
+
+**Measured before the change** (WordPress 7.1.3, this worktree's own install, over HTTP,
+signed out, mail answered for by `pre_wp_mail`):
+
+| | Login protection off | Login protection on, a slug set, the default addresses hidden |
+|---|---|---|
+| The email `reset-request` hands to `wp_mail()` | `[Site] Password Reset`, WordPress's text | the same |
+| Its link | `/wp-login.php?login=…&key=…&action=rp&wp_lang=en_US` | `/<slug>/?login=…&key=…&action=rp&wp_lang=en_US` |
+| The link, followed | WordPress's "Reset Password" screen | the same screen, at the slug |
+| After saving there | "Log in" leads to `wp-login.php`; signing in there ends at `wp-admin/profile.php` | the same, at the slug |
+| The account page with the link's query on it | sign-in, registration and forgot-password forms; nothing for the key | the same |
+| `POST account/reset` with the emailed key, by hand | 200, the new password signs in, the old one does not | the same |
+
+So the route worked and nothing led to it, the member finished on WordPress's screens and
+was not brought back, and where the login is moved the email carried the moved address.
+The guard's own comment says what that address is: obscurity against automated probing,
+not an access control.
+
+**Also measured, and it bounds what this change is for.** A signed-in member's account
+page names the moved address twice whatever any email says: the block's **Sign out** link
+is `wp_logout_url()`, and so is the admin bar's. A signed-in subscriber is served
+`/wp-admin/`. Hiding the address from members would take a sign-out of the add-on's own
+and no admin bar and no `wp-admin` for them.
+
+**The owner's three answers.**
+
+1. *The flow:* a new-password form in the account block, reached from the email;
+   WordPress's email kept, with only its link changed. Not chosen: the email sent through
+   CoreX's mail engine in the standard design (to be decided together with the new
+   member's email, so both get one design and one delivery rule; through the engine a
+   production site with no provider chosen sends nothing, which for this email is a member
+   who cannot get back in), and leaving the flow and correcting the README.
+2. *How the link finds the page:* from the request. Not chosen: a setting where an
+   administrator picks the account page.
+3. *The moved address and members:* it is accepted that a signed-in member can learn it.
+   The emails stop carrying it.
+
+**What is built.**
+
+- **The form names its page, and the site signs it.** The forgot-password form has a
+  hidden field `page`: the id of the page the block is rendered on, a dot, and an HMAC of
+  that id with the site's salt (`Reset\AccountPageMark`). The route takes a mark this site
+  made for a page that is still published, and nothing else. A page number alone would let
+  anybody have the email link to any page. And "does this page hold the block" cannot be
+  asked of the page: the theme's Account template places the block and the page's content
+  is empty, so `has_block()` answers no for a page that uses that template, which is the
+  first way the add-on's guide gives. The block signs where it is rendered, which is true wherever the block came from.
+  The mark does not change between renders, so a cached page carries one that still reads.
+  No address from a request is written into an email: the server makes it from the id
+  (`get_permalink()`).
+- **One address in WordPress's email is replaced.** `Reset\ResetEmailLink::during()` adds
+  a filter on `retrieve_password_message` for as long as the route's call lasts and takes
+  it off in a `finally`. It finds the address by its key, with a pattern, and does not
+  rebuild WordPress's link to look for it: with login protection on that link is not the
+  one WordPress writes, and a plugin may have put it in markup. An email with no address
+  that carries the key is returned as it came. It runs after other filters (priority 99).
+  `AuthGateway` and `AccountService` are not changed: which page an email comes back to is
+  a fact of the request, not of signing in.
+- **The key is taken out of the address before the page is drawn.** `Reset\ResetLanding`,
+  on `template_redirect`: a request with `corex_reset_login` and `corex_reset_key` has both
+  put in a cookie (`Reset\ResetTicket`: this browser's session, `HttpOnly`, `SameSite=Lax`,
+  `Secure` on HTTPS) and is redirected to the same page with `?corex_reset=1`. The address
+  it is sent to is the page's own (`get_permalink()`), not one made from what was asked
+  for, and only a request for one page or post is answered this way. It is what
+  `wp-login.php` does with its key, and the reason is stronger on a page of the site: left
+  in the address the key is in the browser's history and is read by every script the page
+  loads, and an account page loads the site's analytics, which `wp-login.php` does not.
+  The marker stays in the address so that a page cache that passes a query string through
+  to WordPress, as most do unless told otherwise, does not answer with the page it keeps
+  for everybody. Both answers go out with
+  `nocache_headers()`.
+- **The block shows the new-password form and no other**, to whoever holds a key WordPress
+  takes (`check_password_reset_key()`), signed in or not. The form carries the login and
+  the key as hidden fields, as WordPress's own form carries its key, and posts to the
+  route that was already there, which checks the key again.
+- **The page says what happened, once.** `account.js` already loads the page again after a
+  reset. The route marks the cookie as used when the password is saved; the next load of
+  the page reads that, says "Your password has been updated. You can now sign in." and
+  removes the cookie. A key WordPress refuses is answered "This password reset link is
+  invalid or has expired. Please ask for a new one.", and its cookie is removed.
+- **Where those two are said: above the forms, not under a button.** Since #336 an answer
+  is written under the button that asked for it. Nobody pressed a button for these: the
+  page was loaded. A line under the forgot-password form, the third form, is below the
+  window on a phone when the page opens, which is the defect #336 was about. So the block
+  gets a message line as its first child on those two loads and on no other. It has the
+  class of the others, and `account.js` empties every line of that class before it writes
+  an answer, so the note goes when the visitor's next answer comes. `account.js` and the
+  stylesheet are not changed.
+
+**Measured after the change**, the same way, with login protection off and on: the email's
+link is `http://127.0.0.1:8972/account/?corex_reset_login=salma&corex_reset_key=…` in both;
+followed, it answers 302 to `http://127.0.0.1:8972/account/?corex_reset=1` with the cookie and
+`Cache-Control: no-cache, must-revalidate, max-age=0, no-store, private`; the page holds
+one form, **Choose a new password**, and the key is in no address of it; the form's
+request answers 200; the page loaded again has the message and the sign-in form, and
+loaded once more has no message; the new password signs in; the same link followed again
+is answered with the expired message. In Chromium the walk is
+`tests/e2e/account-reset.spec.js`.
+
+**What is left as it was, and known.**
+
+- The email's wording, subject and sender are WordPress's, and it is plain text.
+- The new member's email is WordPress's too and still carries WordPress's link. What that
+  email says is a decision of its own, open with the owner.
+- A reset asked for from a page that carries no mark gets WordPress's link: a page a cache
+  stored before this release, until it is stored again; a client of the route that sends
+  no `page`; the block in a template that is not one page or post.
+- Without scripts the forms are not sent to the routes at all, the new one among them.
+  That is the block's state on `main` and has a change of its own open.
+- The branch was begun before #335 to #338 were on `main` and has them merged in. The
+  measurements under "after the change" were made before that merge; the tests and the
+  browser walk were run again after it.
+
+**Tests.** `tests/Integration/Profile/ResetOnTheAccountPageTest.php`, on real WordPress
+through the REST server: the email links to the page and its key is one WordPress takes;
+with the guard's own rewriting on `network_site_url` the email does not hold the slug; no
+mark, a bare page number, a mark made for another page and a page that became a draft all
+keep WordPress's link; a reset asked through `retrieve_password()` afterwards is
+WordPress's; the rendered block's mark reads back to its page; and what the landing makes
+of a good key, a wrong one, a used one and none. `tests/Unit/Profile/ResetEmailLinkTest.php`:
+the address is replaced whether it is WordPress's, the moved login's, between angle
+brackets or in a link a plugin wrote, and the rest of the email is byte for byte what it
+was. `tests/Unit/Profile/AccountRendererResetTest.php`: the mark is in the forgot-password
+form and nowhere else, the new-password form stands alone, and the message line's three
+states. `tests/e2e/account-reset.spec.js` with the fixture
+`tests/e2e/fixtures/corex-e2e-reset-mail.php`, which keeps the email a marked request would
+have sent and sends nothing. Every new unit and integration test failed before the change
+except one, which holds that the mark is left out where the block is on no page; the
+browser test was written after it. Mail was answered for
+before WordPress's mailer in every run, and no run was against the shared development
+site.
+
+Ten lines of the change were then put back one at a time and the tests run. A test failed
+for nine. The tenth, the end of the key in the pattern that finds the address, got a case
+of its own (a longer key that begins with the email's key is another key), and fails with
+it.

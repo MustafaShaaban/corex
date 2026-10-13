@@ -10,6 +10,8 @@ namespace Corex\Profile\Block;
 
 defined('ABSPATH') || exit;
 
+use Corex\Profile\Reset\ResetState;
+
 /**
  * Pure renderer for the front-office account block. Given a request context it returns
  * the correct panel — the login/register/recovery forms for a guest, or the profile,
@@ -21,6 +23,9 @@ defined('ABSPATH') || exit;
  * What the server answers is written under the button that asked: each form, and the
  * session buttons, have a message line of their own (spec 068, FR-161a).
  *
+ * Somebody who arrives from a reset email with a key WordPress takes is shown the
+ * new-password form and nothing else, whoever is signed in on that browser (FR-158b).
+ *
  * A field's id holds the block it is in and its form, so no two fields of a page share
  * one and a label names the field printed beside it (spec 068, FR-161b).
  */
@@ -30,7 +35,7 @@ final class AccountRenderer
      * `instance` is what the ids of this block's fields start with. A page that holds the
      * block more than once hands each one its own; without one they start `corex-account`.
      *
-     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string,instance?:string} $ctx
+     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string,instance?:string,pageMark?:string,reset?:ResetState} $ctx
      */
     public function render(array $ctx): string
     {
@@ -40,12 +45,54 @@ final class AccountRenderer
             ' class="corex-account" data-corex-account data-nonce="%s"',
             esc_attr($nonce),
         );
+        $reset = $ctx['reset'] ?? ResetState::none();
 
-        $body = ($ctx['loggedIn'] ?? false)
-            ? $this->member($ctx, $block)
-            : $this->guest($ctx, $block);
+        $body = match (true) {
+            $reset->step === ResetState::CHOOSE => $this->resetForm($reset, $block),
+            (bool) ($ctx['loggedIn'] ?? false)  => $this->member($ctx, $block),
+            default                             => $this->guest($ctx, $block),
+        };
 
-        return '<div' . $attrs . '>' . $body . '</div>';
+        return '<div' . $attrs . '>' . $this->arrivalNote($reset) . $body . '</div>';
+    }
+
+    /**
+     * What a reset says on a page that has just been loaded, above the forms: nobody pressed
+     * a button for it to be written under. It is a message line like the others, so
+     * `account.js` empties it when the next answer is written.
+     */
+    private function arrivalNote(ResetState $reset): string
+    {
+        [$state, $message] = match ($reset->step) {
+            ResetState::EXPIRED => ['error', __('This password reset link is invalid or has expired. Please ask for a new one.', 'corex')],
+            ResetState::DONE    => ['ok', __('Your password has been updated. You can now sign in.', 'corex')],
+            default             => ['', ''],
+        };
+
+        return $message === ''
+            ? ''
+            : '<p class="corex-account__status" role="status" aria-live="polite" data-state="' . esc_attr($state) . '">'
+                . esc_html($message) . '</p>';
+    }
+
+    /**
+     * The key and the login travel with the form: `account/reset` asks for both, and
+     * WordPress checks them again when the password is saved.
+     */
+    private function resetForm(ResetState $reset, string $block): string
+    {
+        $field = $this->fieldsOf($block . '-reset');
+
+        return '<div class="corex-account__grid">'
+            . '<form class="corex-account__form" data-corex-account-form="reset" method="post" novalidate>'
+            . '<h2 class="corex-account__title">' . esc_html__('Choose a new password', 'corex') . '</h2>'
+            . $this->hidden('login', $reset->login)
+            . $this->hidden('key', $reset->key)
+            . $field('password', __('New password', 'corex'), 'password', true)
+            . $field('password_confirm', __('Confirm new password', 'corex'), 'password', true)
+            . $this->submit(__('Save password', 'corex'))
+            . '</form>'
+            . '</div>';
     }
 
     /**
@@ -60,7 +107,7 @@ final class AccountRenderer
         return '<div class="corex-account__grid">'
             . $this->loginForm($block)
             . $registration
-            . $this->forgotForm($block)
+            . $this->forgotForm($block, (string) ($ctx['pageMark'] ?? ''))
             . '</div>';
     }
 
@@ -95,13 +142,19 @@ final class AccountRenderer
             . '</form>';
     }
 
-    private function forgotForm(string $block): string
+    /**
+     * @param string $pageMark The page the block is on, signed: the email's link comes back
+     *                         to it. Empty where the block is on no page, and the email then
+     *                         links to WordPress's own screen.
+     */
+    private function forgotForm(string $block, string $pageMark): string
     {
         $field = $this->fieldsOf($block . '-reset-request');
 
         return '<form class="corex-account__form" data-corex-account-form="reset-request" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Forgot your password?', 'corex') . '</h2>'
             . '<p class="corex-account__note">' . esc_html__('Enter your username or email and we’ll send a reset link.', 'corex') . '</p>'
+            . ($pageMark !== '' ? $this->hidden('page', $pageMark) : '')
             . $field('login', __('Username or email', 'corex'), 'text', true)
             . $this->submit(__('Email a reset link', 'corex'))
             . '</form>';
@@ -188,6 +241,11 @@ final class AccountRenderer
                 . ' value="' . esc_attr($value) . '"' . ($required ? ' required' : '') . ' />'
                 . '</p>';
         };
+    }
+
+    private function hidden(string $name, string $value): string
+    {
+        return '<input type="hidden" name="' . esc_attr($name) . '" value="' . esc_attr($value) . '" />';
     }
 
     private function honeypot(): string
