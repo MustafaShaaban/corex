@@ -14799,8 +14799,8 @@ job that provisions WordPress had to take it (run 38445834843, 2026-10-13). In t
 multisite job's log: `No working wp on this runner. Installing WP-CLI 2.12.0 from …`,
 the warning 0.4 seconds later, then `wp core download` and `Success: WordPress
 downloaded.` The checksum in `action.yml` is therefore the checksum of the file that
-address serves. All four jobs provisioned WordPress with it (PROOF_RESULT). The last
-commit put `wp-cli` back, and that run is the one the merge was made on.
+address serves. All four jobs that provision WordPress did so with it, each carries the
+warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 
 **What it does not do.**
 
