@@ -107,6 +107,20 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.2, not released, 2026-10-13.** Three options CoreX reads on every request
+cost no query (spec 001, FR-011b; DECISIONS #366). The login protection settings, the
+operations mode and the Email Studio's defaults version were saved with autoload off and
+were one query each on every request, stored or not. `Corex\Support\Options\LoadedOptions`
+stores them loaded (`store()`), and on a cron or an admin request turns over the rows a
+site holds and writes a row that says nothing is stored where there is none
+(`ensureLoaded()`, last on `init`). **No read changed:** each store still asks
+`get_option()`, so a site between receiving the files and its first cron request reads
+what it read, at the query it cost. The first of #361's leads is closed by this; with
+pull request #405 as well, CoreX's boot asks the database nothing on a front-end request.
+Measured on one install: 35 queries to 32 on the front page, 25 to 22 with #405 merged
+in. A provider with a new option that every request reads registers it and writes it
+through `store()`. What was seen and left is in the entry's "Found, and not changed".
+
 **After v0.45.2, not released, 2026-10-13.** A CI job that setup-php left without WP-CLI
 installs it and carries on (DECISIONS #354). Four jobs in three runs that day stopped on `wp: command
 not found` before any test ran: setup-php asks for WP-CLI once, with no retry, and a tool it

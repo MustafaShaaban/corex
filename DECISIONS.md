@@ -14951,3 +14951,220 @@ warning, and each went on to run its suite. The last commit puts `wp-cli` back.
 **Client impact.** None for a site. A client repository carries
 `.github/actions/provision-wordpress` and `ci.yml` as framework files, so its own CI gets
 the fallback when it takes the release this is in; it has nothing to set.
+
+## #366 — An option CoreX reads on every request is stored where WordPress loads it with the site's options, and a row that says nothing is stored stands in for a missing one: the login protection settings, the operations mode and the Email Studio's defaults version cost no query
+
+**Date:** 2026-10-13. **Branch:** `perf/own-store-options-loaded`, from `main`.
+**Spec:** [001](specs/001-corex-core-foundation/spec.md), FR-011b (added).
+
+**The finding.** #361, "Found, and not changed", item 1 (pull request #405, open when this
+was written): three options of CoreX's own stores are each one query on every request, and
+storing them does not help, because each is saved with autoload off. They are not
+overrides of settings and are not read through the config engine, so #361 left them. This
+entry measures them again, changes how they are stored, and says what a site does between
+receiving the files and having its rows changed.
+
+**How it was measured.** This branch's own install, served: WordPress 7.1.3, PHP 8.3.6 on
+Windows through PHP's built-in server, OPcache on, no JIT and Xdebug not loaded (all three
+asked of the served process), MySQL 8.3.0 on the same machine, no persistent object cache,
+every CoreX plugin and add-on active, the Corex theme, signed out. An mu-plugin defined
+`SAVEQUERIES` on requests that carried a header and wrote every query that asks for one
+option by name, with who asked and whether it fell between the first and the last callback
+of `plugins_loaded`. Counts of a whole request are `$wpdb->num_queries` at shutdown, from a
+second mu-plugin that keeps no query; they are three higher than what `SAVEQUERIES` keeps,
+which starts when the mu-plugin defines it. Times are the median of 200 front-page
+requests after five unmeasured ones. The install was told not to start cron runs of its
+own (`DISABLE_WP_CRON`) so that a state under measurement stayed as it was put.
+
+**Measured again, before any change.** Code at `91d52d30`, a fresh install:
+
+| Option | Stored on a fresh install | Who asks | On which requests |
+|---|---|---|---|
+| `corex_login_protection_settings` | no | `LoginProtectionSettingsStore::current()`, as the container makes the settings for `LoginRouteGuard` in `ConfigServiceProvider::boot()` | every one: the front page, the REST index, `wp-login.php`, `admin-ajax.php` |
+| `corex_email_studio_defaults_version` | yes, autoload off | `MailServiceProvider::registerEmailStudio()`, on `init` | every one |
+| `corex_operations_mode` | no | `OperationsModeStore::current()`, for `MaintenanceGuard` on `template_redirect` | a front-end page; not the REST index, `wp-login.php` or `admin-ajax.php` |
+
+Each is `SELECT option_value FROM cx_options WHERE option_name = '…' LIMIT 1`. The front
+page ran 35 queries. With #405's change merged in locally the same three were asked, the
+front page ran 25, and the login settings were the one query left in `plugins_loaded`.
+
+**Whether each has to be read on every request.**
+
+- *The login protection settings: yes.* The guard decides, for every request, whether it
+  is the hidden login address and whether a default endpoint is to be refused.
+- *The operations mode: yes, on a front-end page,* and it is read nowhere else. The
+  maintenance and coming-soon guards decide what a visitor is shown.
+- *The Email Studio defaults version: it is an install-time check that runs on every
+  request.* The add-on compares the stored version with its own on `init` and installs
+  the layouts and partials a release added when they differ. Run there, the first request
+  after a release's files land installs them, whoever makes it. Moving the check to admin
+  and cron requests would leave a site sending email before its new defaults were
+  installed, and what an email does then was not read. With the row loaded the check is a
+  comparison against an array WordPress already holds, so it is left where it is.
+
+**What a missing row costs, and the three ways to stop paying it.** WordPress loads every
+option stored with autoload on in one query before any plugin runs. An option that is not
+among them is asked for by name, and a miss is remembered for that request only. So a row
+stored loaded costs nothing, and a missing row and an unloaded one cost the same query
+and cannot be told apart without it.
+
+1. *Leave a missing row at one query.* Nothing can go wrong. A site that never saved its
+   login protection or declared a mode, which is every new site, goes on paying two
+   queries on every front-end page for as long as it stays so.
+2. *A marker: one loaded option that promises every stored row of these is loaded, so
+   that a name missing from the loaded options is answered as "not stored" with no
+   query.* It makes what the login settings **answer** depend on where their row is
+   kept. A row set back to autoload off after the marker was written, by
+   `wp option set-autoload`, by a plugin that tidies autoloaded options, or by a row
+   written with SQL, would be read as not stored: the login address no longer hidden,
+   the default endpoints open and lockouts off, with the Security screen's own read
+   saying the same wrong thing. Refused for that.
+3. *Write the row.* An option with a row that is loaded is never missing. The row of a
+   site that stored nothing holds what the store already reads as nothing: an empty
+   array for the login settings, an empty string for the mode. Reading stays
+   `get_option()`, which is right for a loaded row, an unloaded one and none, so where a
+   row is kept decides what a read costs and never what it answers.
+
+**The decision: the third.** No read was changed.
+
+**What changed.**
+
+- *`Corex\Support\Options\LoadedOptions`, in core.* A provider registers each option of
+  its own that every request reads, with the value that says nothing is stored:
+  `ConfigServiceProvider` the login settings (`[]`) and the operations mode (`''`),
+  `MailServiceProvider` the defaults version (`''`).
+- *Stored loaded from now on.* `LoadedOptions::store()` is `update_option()` with
+  autoload on, then `wp_set_option_autoload()`, because `update_option()` leaves a row's
+  autoload as it was when the value is the one it holds. It replaces
+  `update_option(…, false)` in `LoginProtectionSettingsStore::save()`,
+  `SecurityResetLoginCommand`, `SecurityTrustedProxiesCommand`,
+  `OperationsModeStore::set()` and `MailServiceProvider::registerEmailStudio()`. The
+  mode's history stays in an option of its own with autoload off: it is read where it is
+  shown.
+- *The rows sites already hold are turned over, and the missing ones written,* by
+  `LoadedOptions::ensureLoaded()`, hooked last on `init`. It compares the registered
+  names with the options WordPress loaded and does nothing more when all are there, on
+  any request. When one is not, an admin or a cron request, and no other, sets the
+  autoload of the rows that exist (`wp_set_option_autoload_values()`) and inserts the
+  rest. Those are the requests the schema self-heal writes on, for the same reason: spec
+  100's FR-035 keeps schema writes off the front end, and this follows it though it is
+  not schema.
+- *The insert is `INSERT IGNORE`, not `add_option()`.* A request that asked for the
+  option before another request saved it still believes it is missing, and
+  `add_option()` trusts that belief and writes with `ON DUPLICATE KEY UPDATE`: it would
+  replace settings an administrator had saved a moment earlier with the row that says
+  nothing is stored. `INSERT IGNORE` leaves a row that is there alone. The request's
+  memory of the loaded options, of the missing ones and of that option is dropped after.
+
+**Where a one-time data change runs in CoreX, and why this is not one.** There is one
+runner, `SiteMigrationRunner`, with four callers (the self-heal on admin and cron
+requests, `wp corex migrate`, the release finisher, and a new site of a network). It
+creates the tables of a component whose version is behind and has no step for data; #360
+(pull request #404) makes the self-heal skip it altogether on a site that is current. A
+step there would need a version to bump and would run once. The turn-over is a check of
+how things stand and not a step: it costs nothing while the rows are loaded, and it
+repairs a row that is deleted or set back to autoload off at the next admin or cron
+request. It is not called from `wp corex migrate`.
+
+**Between receiving the files and the turn-over.** A site reads all three as it did: one
+query each, and the same answers. A site that hid its login address keeps it hidden and
+keeps its slug, a declared mode stays declared. That is the state `EveryRequestOptionQueriesTest`
+calls "just deployed", and it lasts until the first cron or admin request. On this
+install, before cron was switched off for the measurement, a `wp-cron.php` request that
+WordPress started itself did it. Not run: a site whose only cron is `wp cron event run`,
+where WP-CLI has loaded WordPress before the command says it is cron; its first admin
+request should be the one. An admin request is whatever WordPress counts as one, a
+signed-out call to `admin-ajax.php` included: the write is the same whoever asks, and is
+made once.
+
+**Measured after the change.** Same install and day. "Before the turn-over" is a site as
+`main` leaves it and as this branch leaves it until its first cron request: no login
+settings, no mode, the defaults version stored unloaded. "After" is one `wp-cron.php`
+request later. Each series was run twice, alternating.
+
+| Front page, 200 requests | Before the turn-over | After | Before, again | After, again |
+|---|---|---|---|---|
+| Queries in the request, this branch | 35 | 32 | 35 | 32 |
+| `plugins_loaded`, median | 8.5 ms | 7.1 ms | 7.3 ms | 7.0 ms |
+| Queries in the request, with #405 merged in | 25 | 22 | 25 | 22 |
+| Queries in `plugins_loaded`, with #405 | 1 | 0 | 1 | 0 |
+| `plugins_loaded`, median, with #405 | 5.60 ms | 5.32 ms | 5.67 ms | 5.34 ms |
+| between the quartiles, with #405 | 5.47 to 5.80 | 5.20 to 5.59 | 5.48 to 6.02 | 5.19 to 5.57 |
+
+The first series of the first row's pair ran cold (its quartiles were 7.8 to 9.6 ms) and
+says nothing; the other three are 0.2 to 0.3 ms apart, which is what the one query in
+boot costs here. The cold series aside, the whole request's medians were between 81 and
+86 ms with quartiles 10 to 15 ms apart: the change is inside that. With #405, the REST index keeps 9 queries
+where it kept 11 and `wp-login.php` 6 where it kept 8, as `SAVEQUERIES` counts them, and
+none of the three options is asked for on any of them. With both changes CoreX's boot
+asks the database nothing on a front-end request. The saving is larger where the database
+is another machine; that was not measured.
+
+**Tests.** All on WordPress, since every question here is what WordPress does with a row.
+
+- `tests/Integration/Support/LoadedOptionsTest.php`: a row stored unloaded is turned over
+  and keeps its value; a missing one gets the registered value, loaded; a front-end
+  request writes nothing and still reads the unloaded row; a second run asks the database
+  nothing; a value another request saves between the look and the insert is kept (the
+  save is made from a `query` filter as the insert goes out, and `add_option()` in its
+  place fails the test); `store()` leaves a row loaded from no row, from an unloaded row
+  with another value and from an unloaded row with the same value.
+- `tests/Integration/Security/LoginProtectionSettingsLoadedTest.php`: a hidden login
+  address and its slug read the same while the row is unloaded and after the turn-over,
+  and the guard still hides `wp-login.php`; a site that never saved gets the row and the
+  same settings; a save that changes nothing in an unloaded row leaves it loaded; so do
+  the reset-login and the trusted-proxies commands.
+- `tests/Integration/Operations/OperationsModeLoadedTest.php`: a declared mode is kept;
+  a site that declared none gets the row, is still not declared, inherits what it did
+  and gains no entry in its history; `set()` stores loaded.
+- `tests/Integration/Email/EmailStudioDefaultsVersionLoadedTest.php`: installing the
+  defaults stores the version loaded; a version stored unloaded is turned over and kept.
+- `tests/Integration/Foundation/EveryRequestOptionQueriesTest.php` names the three
+  options and runs each request in a process of its own, as #405's
+  `BootOptionQueriesTest` does: a front page, a cron request, a front page. Over the whole request, the render
+  included, the first front page asks for all three, which also shows the probe hears
+  them, and the last for none, on a site that stored nothing and on one that stored each
+  unloaded with its login address hidden.
+
+Every one failed before the change. With the change in, three faults were put in one at
+a time and each failed the last file: the `init` hook removed, the mode not registered,
+the defaults version not registered. Seven unit test files that stand in for
+`update_option()` now stand in for `wp_set_option_autoload()` beside it. The browser
+suite's `security-access.spec.js` puts the login settings back through `store()`.
+`tests/Support/OptionRow.php` reads and restores a row with its autoload, which
+`SavedOption` does not.
+
+**Found, and not changed.**
+
+1. *WordPress's own missing options are the same query on a fresh install:* `WPLANG`,
+   `can_compress_scripts` and `site_logo` on the front page, three `…_crop` options on
+   the REST index, `using_application_passwords` on `wp-login.php`. They are WordPress's
+   to store. `can_compress_scripts` is asked by WordPress's script loader, which
+   `DynamicBlockRegistrar::register()` is the first in the request to reach.
+2. *The Email Studio installs its defaults on whichever request comes first after a
+   release,* a visitor's included, as user 0 and with no lock around it. Read, not run
+   with two requests at once.
+3. *The turn-over is not part of `wp corex migrate`.* A site that runs it after a
+   deployment still waits for its first cron or admin request.
+4. *`Corex\Tests\Support\SavedOption::restore()` puts an option back with autoload off,*
+   so a development install that runs the suite holds the mode unloaded until its next
+   admin or cron request.
+5. *Not run on a network.* Options are per site and so is the turn-over, on that site's
+   own admin and cron requests; a site of a network that nobody opens and whose cron
+   never runs keeps its queries. The multisite suite has no test of this.
+
+**Client impact.** Nothing to do, and nothing a visitor or an administrator can see. On
+the first cron or admin request after a site takes the release, three rows of its options
+table change: `corex_login_protection_settings`, `corex_operations_mode` and
+`corex_email_studio_defaults_version` are stored with autoload on, and a site that never
+saved the first or declared the second gains the row, holding an empty array and an
+empty string. They are no longer in what `wp option list --search='corex_*'
+--autoload=off` lists, which #361's client impact said they were. Code of a site's own
+that reads `get_option('corex_operations_mode')` and takes `false` for "not declared"
+gets `''` there now; `OperationsModeStore::isDeclared()` is the question to ask. Code of
+a site's own that writes one of the three with autoload off is corrected at the next
+admin or cron request. A site's plugin with an option of its own that every request
+reads can register it the same way. `OperationsModeStore::OPTION` is public and
+`MailServiceProvider::STUDIO_DEFAULTS_OPTION` is new. Not checked on a client site, nor
+against the framework files Perego patches. With #405, a site with no persistent object
+cache runs thirteen fewer queries on a front-end page than `main` did before either.

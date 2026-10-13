@@ -70,6 +70,17 @@ All notable changes to Corex are documented here. The format follows
   each now has its own. Asking for access (`POST` on the same route) is open to anybody
   signed in, as it was, and the screen shows its queue as it did (DECISIONS #346).
 
+- **Three options CoreX reads on every request cost no query** (spec 001, FR-011b). The
+  login protection settings, the operations mode and the version of the Email Studio's
+  installed defaults were each saved with autoload off and read on every request: one
+  query each, stored or not, on a site with no persistent object cache. They are now
+  stored where WordPress loads them with the site's options. On the first cron or admin
+  request after a site takes the release, the rows it already holds are turned over, and
+  a site that never saved its login protection or declared a mode is given a row that
+  says so. Until then each is read as before, with the same answer: a hidden login
+  address stays hidden and keeps its slug. Nothing reads these options differently. The
+  front page of a fresh install runs three fewer queries (DECISIONS #366).
+
 ### Fixed
 
 - **A CI job no longer stops on `wp: command not found` when setup-php could not fetch
@@ -496,6 +507,15 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Three rows of a site's options table change on its first cron or admin request after
+  this release, and there is nothing to do.** `corex_login_protection_settings`,
+  `corex_operations_mode` and `corex_email_studio_defaults_version` are stored with
+  autoload on; a site that never saved the first or declared the second gains the row,
+  holding an empty array and an empty string. Code of a site's own that reads
+  `get_option('corex_operations_mode')` and takes `false` for "not declared" gets `''`
+  now: ask `OperationsModeStore::isDeclared()`. A site's plugin with an option of its own
+  that every request reads can keep it loaded the same way, with
+  `Corex\Support\Options\LoadedOptions` (DECISIONS #366).
 - **A site with a form that has a file field should take this release, and look at what it
   already stores.** Three things show an answer that was not a file the submission was
   sent with: text where the inbox shows a file's name, a file answer the inbox shows as a

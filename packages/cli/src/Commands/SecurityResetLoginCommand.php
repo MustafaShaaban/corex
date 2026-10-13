@@ -14,6 +14,7 @@ use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginLockoutStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
 use Corex\Config\Security\LoginProtection\LoginUrl;
+use Corex\Support\Options\LoadedOptions;
 use DateTimeImmutable;
 
 /**
@@ -37,7 +38,7 @@ final class SecurityResetLoginCommand
         // Reset the slug too: recovery exists for owners locked out by a bad one, and leaving it
         // in place means re-enabling protection walks straight back into the same lockout.
         $settings['custom_slug'] = LoginSlug::DEFAULT;
-        update_option(LoginProtectionSettingsStore::OPTION, $settings, false);
+        LoadedOptions::store(LoginProtectionSettingsStore::OPTION, $settings);
 
         return [
             'restored_login_url' => $this->restoredLoginUrl(),

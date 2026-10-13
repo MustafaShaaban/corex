@@ -60,6 +60,7 @@ use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
+use Corex\Support\Options\LoadedOptions;
 
 /**
  * Boots the mail engine: binds the headless cores (renderer, header guard, recipient
@@ -69,6 +70,12 @@ use Corex\Support\Config\FeatureFlags;
  */
 final class MailServiceProvider extends ServiceProvider
 {
+    /**
+     * Holds the version of the Email Studio defaults a site has installed. Compared on `init` of
+     * every request, so it is stored where WordPress loads it with the site's options.
+     */
+    public const STUDIO_DEFAULTS_OPTION = 'corex_email_studio_defaults_version';
+
     private const STUDIO_DEFAULTS_VERSION = '3';
 
     public function register(): void
@@ -256,6 +263,7 @@ final class MailServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerEmailLogPostType']);
         add_action('init', [$this, 'registerEmailStudio']);
         add_action('rest_api_init', [$this, 'registerEmailStudioRoutes']);
+        $this->container->make(LoadedOptions::class)->register(self::STUDIO_DEFAULTS_OPTION, '');
 
         $this->container->make(TemplateRegistry::class)->register(
             $this->container->make(ContactNotificationTemplate::class),
@@ -300,7 +308,7 @@ final class MailServiceProvider extends ServiceProvider
     public function registerEmailStudio(): void
     {
         $this->container->make(WpEmailStudioStore::class)->registerPostType();
-        if (get_option('corex_email_studio_defaults_version') === self::STUDIO_DEFAULTS_VERSION) {
+        if (get_option(self::STUDIO_DEFAULTS_OPTION) === self::STUDIO_DEFAULTS_VERSION) {
             return;
         }
 
@@ -313,7 +321,7 @@ final class MailServiceProvider extends ServiceProvider
             get_current_user_id(),
             new \DateTimeImmutable('now'),
         );
-        update_option('corex_email_studio_defaults_version', self::STUDIO_DEFAULTS_VERSION, false);
+        LoadedOptions::store(self::STUDIO_DEFAULTS_OPTION, self::STUDIO_DEFAULTS_VERSION);
     }
 
     public function registerEmailStudioRoutes(): void

@@ -209,6 +209,16 @@ without having been listed anywhere by hand.
 
 - **FR-011**: The framework MUST resolve a configuration value by key using the precedence
   `.env` → WordPress options → shipped defaults (first match wins).
+- **FR-011b**: An option of CoreX's own that is read on every request (the login protection
+  settings, the operations mode, the Email Studio's defaults version) MUST be stored where
+  WordPress loads it with the site's options, and a store MUST go on reading it with
+  `get_option()`: where a row is kept decides what a read costs and never what it answers. A
+  provider registers such an option with `Corex\Support\Options\LoadedOptions` and the value
+  its store reads as "nothing stored", and writes it through `LoadedOptions::store()`. On an
+  admin or a cron request, and on no other, a registered option whose row is not loaded is
+  turned over, and one with no row is given a row holding that value, without replacing a row
+  another request wrote meanwhile. Once every registered row is loaded the check MUST NOT
+  query the database (added 2026-10-13, DECISIONS #366; FR-011a is pull request #405's).
 - **FR-012**: Reading a missing key MUST return a caller-supplied fallback (or a documented empty
   result when none is supplied), never a fatal error.
 - **FR-013**: The `.env` layer MUST be optional — absence of a `.env` file MUST NOT break config

@@ -11,6 +11,7 @@ namespace Corex\Cli\Commands;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Support\Options\LoadedOptions;
 
 /**
  * Says which proxies a site trusts to report a visitor's address.
@@ -54,7 +55,7 @@ final class SecurityTrustedProxiesCommand
         $settings                         = $this->settings();
         $settings['trusted_proxy_mode']   = $ranges !== [];
         $settings['trusted_proxy_ranges'] = $ranges;
-        update_option(LoginProtectionSettingsStore::OPTION, $settings, false);
+        LoadedOptions::store(LoginProtectionSettingsStore::OPTION, $settings);
 
         return [];
     }
