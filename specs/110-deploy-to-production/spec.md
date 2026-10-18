@@ -576,7 +576,8 @@ Written without asking; each is the owner's to overrule.
   of Perego takes are measured on the host before the plan is final.
 - **The finishing step's failure on UltaHost is fixed before this spec is planned, on its own.**
   It is a defect of v0.46.0 that strands any installation, not only a deploy. Its cause on that host
-  (a header the host drops, a cache that keeps the 503, or something else) is found and fixed as a
+  (a header the host drops, or something else; the 503 seen on 2026-10-18 was WordPress's own
+  answer from PHP, with no cache header, so a cache is ruled out) is found and fixed as a
   fix to spec 107, and released, before a deploy is built on top of it. FR-045 is what a deploy adds
   on top of that fix.
 - **Production's own Releases screen is unchanged for a person using it.** Everything spec 107 does
