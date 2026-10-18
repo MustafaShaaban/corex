@@ -132,6 +132,8 @@ final class ReleaseDesk
             'replaces'           => $inspection->replaces,
             'older'              => $inspection->older,
             'client_unconfirmed' => $inspection->clientUnconfirmed,
+            // A plugin or theme the site has a newer version of goes back to the package's (FR-029).
+            'downgrades'         => $inspection->downgrades,
             'files'              => $inspection->files,
             'bytes'              => $inspection->bytes,
             // WordPress is not replaced by a release (FR-026): the two are said where they differ.

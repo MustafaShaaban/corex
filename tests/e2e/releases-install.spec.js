@@ -9,7 +9,9 @@
  * Then the site goes back to the release before, from the same screen, and the record of both
  * is read off it. Last, it is installed again on a host that does not hand the installation's
  * key header to PHP, as the host of 2026-10-18 did not: the key in the address gets it through
- * WordPress's maintenance answer (FR-024a), and the record says so.
+ * WordPress's maintenance answer (FR-024a), and the record says so. Then a package whose
+ * plugin is older than the one on the site: it is named with what the package is, and the
+ * installation waits until going back to it is said (FR-029).
  *
  * The release is one made here. It owns a single plugin folder of its own, so nothing of CoreX
  * moves. The folder is put on the site first, as an earlier release would have left it, with a
@@ -39,8 +41,19 @@ const VERSION = '99.1.0';
 const A_PACKAGE = `corex-release-e2e-${ VERSION }-20261011-120000.zip`;
 const FOLDER = 'wp-content/plugins/corex-e2e-released';
 
-const PLUGIN_OF = ( release ) =>
-	`<?php\n/**\n * Plugin Name: CoreX E2E released plugin\n * Description: ${ release }\n */\n`;
+const PLUGIN = 'CoreX E2E released plugin';
+
+/**
+ * The plugin's main file.
+ *
+ * @param {string}      release Which release it is from, in its description.
+ * @param {string|null} version The version its header gives; none where null.
+ * @return {string} The file.
+ */
+const PLUGIN_OF = ( release, version = null ) =>
+	`<?php\n/**\n * Plugin Name: ${ PLUGIN }\n * Description: ${ release }\n${
+		version ? ` * Version: ${ version }\n` : ''
+	} */\n`;
 
 /** The admin's spacing tokens, in pixels at the admin's 16px root. */
 const SPACE_SM = 12;
@@ -81,11 +94,14 @@ function measured( files ) {
 /**
  * A package whose description is true of it, as the builder makes one.
  *
- * @param {string|null} client The client it is built for; null for the framework alone.
+ * @param {string|null} client        The client it is built for; null for the framework alone.
+ * @param {string|null} pluginVersion The version the plugin's header gives; none where null.
  * @return {string} The zip's path.
  */
-function packageFor( client ) {
-	const files = { 'corex-e2e-released.php': PLUGIN_OF( VERSION ) };
+function packageFor( client, pluginVersion = null ) {
+	const files = {
+		'corex-e2e-released.php': PLUGIN_OF( VERSION, pluginVersion ),
+	};
 	const zip = new AdmZip();
 
 	zip.addFile(
@@ -140,16 +156,17 @@ function forgetTheInstallation() {
 /**
  * Put the plugin on the site as an earlier release left it, with a file no release holds now.
  *
+ * @param {string|null} version The version the plugin's header gives; none where null.
  * @return {string|null} Null where WP-CLI cannot reach the install.
  */
-function leaveAnEarlierRelease() {
+function leaveAnEarlierRelease( version = null ) {
 	return wpEval(
 		THE_INSTALLER +
 			// Whoever the web server runs as has to be able to move it: on a site made for a
 			// test run that is another user than the one WP-CLI runs as.
 			'mkdir( $folder ); chmod( $folder, 0777 );' +
 			`file_put_contents( "$folder/corex-e2e-released.php", ${ JSON.stringify(
-				PLUGIN_OF( 'the release before' )
+				PLUGIN_OF( 'the release before', version )
 			) } );` +
 			'file_put_contents( "$folder/left-behind.php", \'<?php // shipped by the release before, and not by this one\' );' +
 			"echo 'left';"
@@ -575,4 +592,64 @@ test( 'a release is installed where the host does not hand the key’s header to
 			maintenance: false,
 		} );
 	}
+} );
+
+test( 'a plugin the package holds an older version of is named before anything is typed, and installing waits for it to be said', async ( {
+	page,
+} ) => {
+	forgetTheInstallation();
+	const before = leaveAnEarlierRelease( '2.0.0' );
+	test.skip(
+		before === null,
+		'the newer plugin is put on the site through WP-CLI, which cannot reach this install'
+	);
+	const overview = await openReleases( page );
+	onlyWhereTheHostCanInstall( overview );
+	const client = overview.installed.known ? overview.installed.client : null;
+
+	await page
+		.locator( '#corex-releases-file' )
+		.setInputFiles( packageFor( client, '1.0.0' ) );
+	await page.getByRole( 'button', { name: 'Send to the site' } ).click();
+
+	// Said with what the package is, before the version is asked for.
+	const goesBack = `${ PLUGIN }: 2.0.0 on the site, 1.0.0 in the package`;
+	const statement = page.locator( '.corex-releases__statement' );
+	await expect( statement ).toContainText(
+		'This package holds older versions of these than the site has.'
+	);
+	await expect( statement.getByRole( 'listitem' ) ).toContainText( [
+		goesBack,
+	] );
+
+	await statement
+		.getByRole( 'button', { name: 'Install this release…' } )
+		.click();
+	const confirm = page.locator( '.corex-releases__confirm' );
+	await expect( confirm.getByRole( 'listitem' ) ).toContainText( [
+		goesBack,
+	] );
+
+	await confirm.locator( '#corex-releases-version' ).fill( VERSION );
+	if ( client && ! overview.installed.known ) {
+		await confirm.locator( '#corex-releases-client' ).fill( client );
+	}
+	const install = confirm.getByRole( 'button', {
+		name: `Install CoreX ${ VERSION }`,
+	} );
+	await expect( install ).toBeDisabled();
+	await confirm
+		.getByLabel( 'The plugins and themes listed above go back' )
+		.check();
+	await expect( install ).toBeEnabled();
+
+	// Declining leaves the plugin on the site as it was.
+	await confirm.getByRole( 'button', { name: 'Do not install' } ).click();
+	await expect( page.locator( '.corex-releases__confirm' ) ).toHaveCount( 0 );
+	expect(
+		wpEval(
+			THE_INSTALLER +
+				"echo get_file_data( \"$folder/corex-e2e-released.php\", [ 'Version' => 'Version' ] )['Version'];"
+		)
+	).toBe( '2.0.0' );
 } );

@@ -127,6 +127,7 @@ final class ReleasesController
                 sanitize_text_field((string) $request->get_param('phrase')),
                 $request->get_param('client') === null ? null : sanitize_text_field((string) $request->get_param('client')),
                 rest_sanitize_boolean($request->get_param('older') ?? false),
+                rest_sanitize_boolean($request->get_param('downgrade') ?? false),
             ),
             get_current_user_id(),
             new DateTimeImmutable('now'),

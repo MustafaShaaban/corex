@@ -86,6 +86,7 @@ final class ReleaseInstallation
                 older: $inspection->older,
                 clientUnconfirmed: $inspection->clientUnconfirmed,
                 replaced: $this->installed->description(),
+                downgrades: $inspection->downgrades,
             );
             $progress->save($this->store);
 
@@ -257,6 +258,10 @@ final class ReleaseInstallation
 
         if ($progress->older && ! $given->olderAccepted) {
             throw new ReleaseRefused(self::NOT_CONFIRMED, __('This is an older release than the one the site runs. Say that an older release is meant, and confirm again.', 'corex'));
+        }
+
+        if ($progress->downgrades !== [] && ! $given->downgradeAccepted) {
+            throw new ReleaseRefused(self::NOT_CONFIRMED, __('This package holds older versions of plugins or themes than the site has. Say that they are meant to go back to those versions, and confirm again.', 'corex'));
         }
 
         if ($progress->clientUnconfirmed && $manifest->client !== null && trim((string) $given->client) !== $manifest->client) {

@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Config\Releases\InstalledRelease;
+use Corex\Config\Releases\ReleaseDowngrades;
 use Corex\Config\Releases\ReleasePackageInspector;
 use Corex\Config\Releases\ReleaseRefused;
 use Corex\Tests\Support\ReleasePackages;
@@ -32,6 +33,7 @@ beforeEach(function () {
 
     $this->inspector = fn (string $php = '8.3.6', string $wordPress = '7.1.3') => new ReleasePackageInspector(
         new InstalledRelease($this->site),
+        new ReleaseDowngrades($this->site),
         $php,
         $wordPress,
     );

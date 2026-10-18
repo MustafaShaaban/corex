@@ -55,6 +55,7 @@ const STATEMENT = {
 	replaces: '0.44.0',
 	older: false,
 	client_unconfirmed: false,
+	downgrades: [],
 	files: 2650,
 	bytes: 28228940,
 	wordpress: { package: '7.1.3', site: '7.1.3' },
@@ -329,6 +330,36 @@ describe( 'before it is confirmed', () => {
 		expect( asked.at( -1 ).given ).toEqual( [
 			'0.45.0',
 			{ older: true, client: 'acme' },
+		] );
+	} );
+
+	it( 'names the plugins that go back to an older version, and is not sent until that is said', async () => {
+		await askToInstall( {
+			...PREPARED,
+			downgrades: [
+				{
+					path: 'wp-content/plugins/advanced-custom-fields-pro',
+					name: 'Advanced Custom Fields PRO',
+					site: '6.8.6',
+					package: '6.8.4',
+				},
+			],
+		} );
+		type( 'corex-releases-version', '0.45.0' );
+
+		expect( container.textContent ).toContain(
+			'Advanced Custom Fields PRO: 6.8.6 on the site, 6.8.4 in the package'
+		);
+		expect( button( 'Install CoreX 0.45.0' ).disabled ).toBe( true );
+
+		act( () =>
+			container.querySelector( '#corex-releases-downgrade' ).click()
+		);
+		press( 'Install CoreX 0.45.0' );
+
+		expect( asked.at( -1 ).given ).toEqual( [
+			'0.45.0',
+			{ older: false, downgrade: true },
 		] );
 	} );
 

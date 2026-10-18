@@ -6,6 +6,16 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **CoreX → Releases says when a package would put a plugin or theme back to an older version
+  than the site has, and installs it only when that is confirmed** (spec 107, FR-029;
+  DECISIONS #370). Perego's package of 2026-10-18 held six third-party plugins older than the
+  copies updated in the site's admin since it was built; installing it would have put all six
+  back without a word. The statement names each with the site's version and the package's,
+  before the version is typed, and the confirmation asks for a box to be ticked, which the site
+  checks as well. CoreX's own folders are left to the older-release question.
+
 ### Fixed
 
 - **The request that puts a release in place no longer deletes the release kept from the
@@ -33,6 +43,12 @@ All notable changes to Corex are documented here. The format follows
 - `wp-content/corex-releases/discarded/` is new. It holds the release before the kept one until
   Releases has been opened a few times, and is closed to the web server like the rest of
   `corex-releases/`. Nothing to do.
+- **A package that carries third-party plugins (`--with-plugin`) may now ask for one more
+  confirmation.** Where a plugin was updated in the site's admin after the package was built,
+  Releases lists it with both versions and asks for a box to be ticked before it installs. To
+  keep the site's newer copy, build the package again from the plugin folder the site runs now.
+  The screen and the site's check come with the release that brings them, so the installation
+  of this release itself is not yet asked.
 
 ## [0.46.0] — 2026-10-14
 
