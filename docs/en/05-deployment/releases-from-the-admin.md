@@ -133,8 +133,8 @@ measured it. [Shared-host dist artifact](./shared-host-dist.md) has the builder 
 | Database | The release just installed brings the database to itself and lists what moved | Held off until it ends |
 
 Each step is one or more short requests, so a host that cuts a request off after some seconds is
-not in the way. Up to the fourth step nothing of the site has changed, and the installation can
-be given up.
+not in the way. Until the first folder of the fourth step moves, nothing of the site has
+changed, and the installation can be given up.
 
 While visitors are held off they get WordPress's own "briefly unavailable for scheduled
 maintenance" answer, for the seconds between the folders moving and the database step ending.
@@ -157,6 +157,29 @@ Open **CoreX → Releases** again. It says where the installation stands and goe
 before the folders moved it can be gone on with or given up; cut off while they were moving, it
 is finished or every folder is put back, and the screen says which; after they moved, it
 finishes the database step. None of that needs the recovery link.
+
+An installation that stopped as the release was being put in place, before its first folder
+moved, can be given up too: the screen says no folder moved. Giving it up lets visitors in, and
+removes its recovery plugin, the unpacked release and the table copies it made. The
+release kept from the installation before is still the one to go back to, unless the stopped
+step had already set it aside: then **The release before** is no longer shown. Once a folder
+has moved, **Give it up** is not offered: go on with it, which finishes the move or puts every
+folder back, or go back to the release before.
+
+If the screen finds what an installation left and no installation in progress, it shows **Left
+from an installation** with each thing and where it is on the server:
+
+| It names | What it is |
+|---|---|
+| A release unpacked for an installation that is no longer in progress | `wp-content/corex-releases/staging/` holds folders |
+| The release recovery plugin | `wp-content/mu-plugins/corex-release-recovery.php` asks for the key of no installation and of no kept release: it has nothing to put back |
+| Folders kept as a previous release, with no journal | `wp-content/corex-releases/previous/` holds folders and no `journal.json`: they cannot be gone back to |
+
+**Remove them** removes all of it and changes nothing of the release the site runs. The folders
+are set aside to `discarded/` and deleted a few seconds at a time each time Releases is opened.
+If the site cannot remove them, delete them in the host's file manager. A `.maintenance` file
+left in the folder WordPress is in is not listed: WordPress stops honouring it ten minutes after
+the time written in it, and the host's file manager removes it.
 
 If the folders have moved and nobody comes back, WordPress stops holding visitors off by itself
 after ten minutes. The site then serves the new release, and CoreX brings the database up to

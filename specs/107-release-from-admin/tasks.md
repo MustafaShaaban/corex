@@ -88,3 +88,12 @@ files before slice 4.
 - [x] T070 `docs/en/05-deployment/releases-from-the-admin.md`: building the zip, a third-party plugin in it (D17), the configuration line and what it does not give (D16), installing, what is and is not replaced (D18), the recovery link, the database step and what going back does not undo (D19), that this is not a backup
 - [x] T071 `docs/en/05-deployment/first-installation-by-hand.md`: the first installation, still by hand, and the move of a site updated by extraction to the screen (D20)
 - [x] T072 `updates-and-distribution.md` and `updating-a-client-site.md` point to it; the docs site; guards; notes
+
+## After the first installations on a shared host (2026-10-18; DECISIONS #370)
+
+- [x] T080 [P] Pest unit: `ReleaseSwap::hasMovedNothing()` — cut off before the first rename, after it unmarked, before the second; after going back. `ReleaseRecoveryPlugin::keyHash()`
+- [x] T081 `ReleaseSteps::hasMovedNothing()`; `ReleaseInstallation::cancel()` and `ReleaseReturn` ask it; giving up at the swap withdraws this installation's safeguards only (FR-022a)
+- [x] T082 Pest integration: a swap cut off before its first folder moved is given up, one that moved two is refused; Perego's case with a kept release; the leftovers named and removed; nothing removed while an installation stands
+- [x] T083 `ReleaseLeftovers`, `POST releases/leftovers/remove`, `leftovers` in the overview (FR-022b)
+- [x] T084 Jest, then the screen: **Give it up** at the swap when nothing moved; **Left from an installation** with **Remove them**
+- [x] T085 The guide's "If the page is closed" section; guards; notes

@@ -268,6 +268,42 @@ it('does not say the site is as it was when a folder that had moved will not go 
         ->and($this->journal->status())->toBe(ReleaseJournal::UNDONE);
 });
 
+it('says whether a swap cut off has moved a folder yet, by the folders where its journal cannot say', function (int $renames, bool $beforeTheRename, bool $movedNothing) {
+    $done   = 0;
+    $cutOff = function (string $from, string $to) use (&$done, $renames, $beforeTheRename): bool {
+        if ($done === $renames && $beforeTheRename) {
+            throw new RequestCutOff();
+        }
+        $moved = rename($from, $to);
+        if (++$done === $renames && ! $beforeTheRename) {
+            throw new RequestCutOff();
+        }
+
+        return $moved;
+    };
+
+    try {
+        ($this->swapWith)($cutOff)->swap($this->manifest, OWNED_BEFORE);
+    } catch (RequestCutOff) {
+        // The next request, in a new process, asks before it goes on.
+    }
+
+    expect(($this->swapWith)()->hasMovedNothing())->toBe($movedNothing);
+})->with([
+    // The first rename is marked `started`, and the folder is still where it was.
+    'before the first rename'          => [0, true, true],
+    // Also `started`, and the folders say it was made.
+    'after the first rename, unmarked' => [1, false, false],
+    'before the second rename'         => [1, true, false],
+]);
+
+it('has moved nothing once every folder is back', function () {
+    ($this->swapWith)()->swap($this->manifest, OWNED_BEFORE);
+    ($this->swapWith)()->undo();
+
+    expect(($this->swapWith)()->hasMovedNothing())->toBeTrue();
+});
+
 it('has nothing to settle when no swap was cut off', function () {
     expect(($this->swapWith)()->settle())->toBeNull();
 

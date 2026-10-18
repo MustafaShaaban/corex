@@ -72,6 +72,17 @@ final class ReleaseRecoveryPlugin
     }
 
     /**
+     * The hash of the key the plugin on the site asks for, as it was written into it; null when
+     * there is none, or it is not one this class wrote.
+     */
+    public function keyHash(): ?string
+    {
+        $contents = $this->isWritten() ? (string) file_get_contents($this->file()) : '';
+
+        return preg_match('/hash_equals\( \'([0-9a-f]{64})\'/', $contents, $found) === 1 ? $found[1] : null;
+    }
+
+    /**
      * The address that puts the previous release back.
      *
      * @param string $home The site's front address.
@@ -82,7 +93,8 @@ final class ReleaseRecoveryPlugin
         return rtrim($home, '/') . '/?' . ReleaseMaintenance::ARGUMENT . '=' . rawurlencode($key) . '&' . self::ARGUMENT . '=1';
     }
 
-    private function file(): string
+    /** Where the plugin is on the server, written or not. */
+    public function file(): string
     {
         return rtrim($this->mustUseFolder, '/\\') . '/' . self::FILE;
     }

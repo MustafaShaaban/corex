@@ -52,6 +52,13 @@ the Releases record's entries of 2026-10-18 from Perego (something cleared the i
 state before the owner pressed the button again), and the next real installation's record
 (`key_from`). Spec 110 (draft PR #417) waits on this one.
 
+**2026-10-18: branch `fix/107-give-up-a-swap-that-moved-nothing`**, stacked on the branch
+above (DECISIONS #370, spec 107 amended: FR-022a, FR-022b). An installation stopped at the swap
+before its first folder moved can be given up from the screen; what an installation left with
+none in progress (an unpacked release, a recovery plugin no installation holds the key of, a
+kept release with no journal) is named and removed on **Remove them**. Not merged, not
+released; to be retargeted at `main` once PR #418 merges.
+
 **Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
 is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull
 requests still open on 2026-10-14 were landed together (pull request #415) and the release

@@ -58,15 +58,35 @@ final class ReleaseSteps
     }
 
     /**
-     * Give up an installation that has changed nothing of the site: remove what it unpacked,
-     * and the table copies if it had begun making them.
+     * Whether an installation has moved no folder of the site (FR-022a): it stands before the
+     * swap, or at it with no rename of its own made. A journal that is not this installation's,
+     * the one of the installation before or none, is of a swap this one has not begun.
+     */
+    public function hasMovedNothing(ReleaseProgress $progress): bool
+    {
+        if ($progress->isBeforeTheSwap()) {
+            return true;
+        }
+
+        return $progress->step === ReleaseProgress::SWAP
+            && (! $this->journal->isOf($progress->keyHash) || $this->swap->hasMovedNothing());
+    }
+
+    /**
+     * Give up an installation that has changed nothing of the site: let visitors in where it
+     * had begun to put the release in place, and remove its way back, what it unpacked, and the
+     * table copies if it had begun making them.
      *
-     * The copies and the way back of the installation before are left: until this one copies
-     * and swaps, they are still that one's, and still good.
+     * The copies and the way back of the installation before are left where this one has not
+     * replaced them: until it copies and swaps, they are still that one's, and still good.
      */
     public function abandon(ReleaseProgress $progress): void
     {
-        $this->staging->clear();
+        if ($progress->step === ReleaseProgress::SWAP) {
+            $this->safeguards->withdraw($progress->keyHash);
+        }
+
+        $this->staging->setAside();
 
         $beganCopying = $progress->step === ReleaseProgress::SWAP
             || ($progress->step === ReleaseProgress::COPY_TABLES && $progress->cursor > 0);
@@ -163,7 +183,7 @@ final class ReleaseSteps
      */
     private function hasFinishedASwapItBegan(ReleaseProgress $progress): bool
     {
-        if (($this->journal->about()['for'] ?? null) !== $progress->keyHash) {
+        if (! $this->journal->isOf($progress->keyHash)) {
             return false;
         }
 

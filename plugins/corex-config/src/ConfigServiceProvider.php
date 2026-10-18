@@ -58,6 +58,7 @@ use Corex\Config\Releases\ReleaseFinisher;
 use Corex\Config\Releases\ReleaseHostFacts;
 use Corex\Config\Releases\ReleaseInstallation;
 use Corex\Config\Releases\ReleaseJournal;
+use Corex\Config\Releases\ReleaseLeftovers;
 use Corex\Config\Releases\ReleaseMaintenance;
 use Corex\Config\Releases\ReleaseOverview;
 use Corex\Config\Releases\ReleasePackageInspector;
@@ -681,6 +682,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(ReleaseCompletion::class);
         $this->container->singleton(ReleaseReturn::class);
         $this->container->singleton(ReleaseUpkeep::class);
+        $this->container->singleton(ReleaseLeftovers::class);
         $this->container->singleton(ReleaseOverview::class);
         $this->container->singleton(ReleaseRestGateway::class);
         $this->container->singleton(ReleasesController::class);

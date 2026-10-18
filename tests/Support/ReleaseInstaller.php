@@ -26,6 +26,7 @@ use Corex\Config\Releases\ReleaseFinisher;
 use Corex\Config\Releases\ReleaseHostFacts;
 use Corex\Config\Releases\ReleaseInstallation;
 use Corex\Config\Releases\ReleaseJournal;
+use Corex\Config\Releases\ReleaseLeftovers;
 use Corex\Config\Releases\ReleaseMaintenance;
 use Corex\Config\Releases\ReleaseOverview;
 use Corex\Config\Releases\ReleasePackageInspector;
@@ -144,32 +145,19 @@ final class ReleaseInstaller
                 $allowedByConfiguration,
             ),
         );
-        $return   = new ReleaseReturn($this->store, $swap, $this->journal, $staging, $safeguards, $this->installed, $this->copies, $record);
-        $versions = $container->make(SchemaVersionStore::class);
-        $scope    = $container->make(SiteScope::class);
-        $network  = $container->make(NetworkContext::class);
+        $steps        = new ReleaseSteps($this->store, $staging, $this->copies, $swap, $this->journal, $safeguards, $this->installed);
+        $installation = new ReleaseInstallation($this->store, $desk, $this->installed, $steps, $safeguards, $record, $this->root);
+        $leftovers    = new ReleaseLeftovers($this->store, $staging, $this->journal, $this->recovery);
+        $return       = new ReleaseReturn($this->store, $swap, $this->journal, $staging, $safeguards, $this->installed, $this->copies, $record, $steps);
+        $versions     = $container->make(SchemaVersionStore::class);
+        $scope        = $container->make(SiteScope::class);
+        $network      = $container->make(NetworkContext::class);
 
         $this->controller = new ReleasesController(
             $container->make(ReleaseRestGateway::class),
             $desk,
             new ReleaseUpload($this->store),
-            new ReleaseInstallation(
-                $this->store,
-                $desk,
-                $this->installed,
-                new ReleaseSteps(
-                    $this->store,
-                    $staging,
-                    $this->copies,
-                    $swap,
-                    $this->journal,
-                    $safeguards,
-                    $this->installed,
-                ),
-                $safeguards,
-                $record,
-                $this->root,
-            ),
+            $installation,
             new ReleaseCompletion(
                 $this->store,
                 new ReleaseFinisher(
@@ -186,8 +174,9 @@ final class ReleaseInstaller
                 $this->journal,
                 $record,
             ),
-            new ReleaseOverview($desk, new ReleaseUpkeep($this->store, $return, $this->copies), $return, $record),
+            new ReleaseOverview($desk, new ReleaseUpkeep($this->store, $return, $this->copies), $return, $record, $installation, $leftovers),
             $return,
+            $leftovers,
         );
     }
 

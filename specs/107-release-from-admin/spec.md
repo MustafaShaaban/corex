@@ -16,7 +16,9 @@ guide says so where an operator reads it.
 
 **Amended 2026-10-18** (DECISIONS #369): the first installation on a shared host was held in
 WordPress's maintenance answer until its ten minutes ran out. FR-024a, FR-024b and the last
-sentence of FR-025 are what was added; the clarification of that date says why.
+sentence of FR-025 are what was added; the clarification of that date says why. The second
+installation there stopped at the swap with nothing moved, and the screen could neither give it
+up nor say what was left on the host (DECISIONS #370): FR-022a and FR-022b were added.
 
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
@@ -212,6 +214,25 @@ six tries; WordPress lets requests in again only after ten minutes.
   out WordPress's ten minutes; then **CoreX → Releases** offers **Finish the installation**,
   which ends it in one request (measured on the copy). Every installation after it gets
   through at once.
+- Q: An installation stopped at the swap, and the folders did not move. Can it be given up?
+  → A: Yes, from the screen, as one before the swap is. Perego's second installation that day
+  stopped there: visitors were held off, nothing was moved, and the screen offered only to go
+  on with it. Whether a folder moved is read off the swap's journal: there is none of this
+  installation's, or every rename in it is still to be made, or one that was being made when
+  the request died is found by the folders not to have been. Giving it up lets visitors in,
+  removes the recovery file, the unpacked release and the table copies it made, and records it
+  as cancelled. Once any folder has moved it is refused, as before: the way out of that is going
+  on, or going back (FR-022a). Not chosen: putting back the release kept from the installation
+  before, which the swap may already have set aside and the screen begun to delete.
+- Q: What does the screen say when it finds what an installation left and no installation in
+  progress? → A: It names each thing and offers to remove it. Afterwards Perego's screen said
+  "No installation is in progress" while the unpacked release, a partly deleted kept release
+  and the recovery file were still on the host, and the owner removed them in the host's file
+  manager. What is left is: an unpacked release in `staging/`; a recovery file whose key is
+  neither an installation's nor the kept release's; and a `previous/` that holds folders with no
+  journal saying what they are, which cannot be gone back to. Removing them changes nothing of
+  the release the site runs. It is not done unasked when the screen opens: one of them is a
+  must-use plugin, and the administrator is told what it is before it goes (FR-022b).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -357,6 +378,10 @@ to the release that caused it.
 
 - The request that is replacing files is cut off by the host: the site must come back as the
   release it was, or as the new one, and say which.
+- The request that puts the release in place is cut off before its first folder moves: the
+  screen offers to go on with it or to give it up (FR-022a).
+- The installation's record is gone and what it left is still on the host: the screen names it
+  and offers to remove it (FR-022b).
 - The host forbids changing files from PHP, or the site's directories are not writable: the
   screen says so when it is opened, not after an upload.
 - There is not enough disk space, or not enough of the host's file allowance, for the package,
@@ -428,6 +453,14 @@ to the release that caused it.
   is.
 - **FR-022**: An installation cut off part-way MUST leave the site as one release or the other,
   and the screen MUST say which when it is next opened.
+- **FR-022a**: An installation that has moved no folder of the site MUST be able to be given up
+  from the screen, including one that stopped at the swap before its first folder moved. Giving
+  it up MUST let visitors in, remove its recovery file and what it unpacked, and be recorded.
+  One that has moved a folder MUST NOT be given up: it is gone on with, or gone back from.
+- **FR-022b**: When no installation is in progress and the screen finds what one left (an
+  unpacked release, a recovery file no installation or kept release holds the key of, a kept
+  release with no journal), it MUST name each with where it is and offer to remove them, and
+  removing them MUST change nothing of the release the site runs.
 - **FR-023**: Only one installation may run at a time.
 - **FR-024**: While files are being replaced a visitor MUST get the site as it was or a
   maintenance answer.

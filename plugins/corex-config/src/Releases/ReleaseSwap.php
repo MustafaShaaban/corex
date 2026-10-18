@@ -112,6 +112,24 @@ final class ReleaseSwap
         return $this->run();
     }
 
+    /**
+     * Whether the last swap has moved no folder: every rename in its journal is still to be
+     * made, or was being made when its request died and the folders say it was not (FR-022a).
+     */
+    public function hasMovedNothing(): bool
+    {
+        foreach ($this->journal->moves() as $move) {
+            $unmade = $move['state'] === ReleaseJournal::PENDING
+                || ($move['state'] === ReleaseJournal::STARTED && ! self::wasMade($move));
+
+            if (! $unmade) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /** Go back: every rename the last swap made, made the other way, last first. */
     public function undo(): void
     {
@@ -194,21 +212,24 @@ final class ReleaseSwap
         return $misplaced;
     }
 
-    /**
-     * A rename marked `started` was being made when its request died. Whether it was made is
-     * read off the folders: it was, if the folder is gone from where it was and is where it
-     * was going.
-     */
+    /** A rename marked `started` was being made when its request died: the folders say whether it was. */
     private function askTheFoldersWhatWasStarted(): void
     {
         foreach ($this->journal->moves() as $index => $move) {
-            if ($move['state'] !== ReleaseJournal::STARTED) {
-                continue;
+            if ($move['state'] === ReleaseJournal::STARTED) {
+                $this->journal->mark($index, self::wasMade($move) ? ReleaseJournal::DONE : ReleaseJournal::PENDING);
             }
-
-            $made = ! file_exists($move['from']) && file_exists($move['to']);
-            $this->journal->mark($index, $made ? ReleaseJournal::DONE : ReleaseJournal::PENDING);
         }
+    }
+
+    /**
+     * A rename was made if the folder is gone from where it was and is where it was going.
+     *
+     * @param array{from:string,to:string} $move
+     */
+    private static function wasMade(array $move): bool
+    {
+        return ! file_exists($move['from']) && file_exists($move['to']);
     }
 
     /**
