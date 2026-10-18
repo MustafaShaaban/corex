@@ -7,7 +7,9 @@
  * the files are in place and the database step has not run, a visitor gets WordPress's own
  * maintenance answer; afterwards the site is served again.
  * Then the site goes back to the release before, from the same screen, and the record of both
- * is read off it.
+ * is read off it. Last, it is installed again on a host that does not hand the installation's
+ * key header to PHP, as the host of 2026-10-18 did not: the key in the address gets it through
+ * WordPress's maintenance answer (FR-024a), and the record says so.
  *
  * The release is one made here. It owns a single plugin folder of its own, so nothing of CoreX
  * moves. The folder is put on the site first, as an earlier release would have left it, with a
@@ -128,7 +130,7 @@ function forgetTheInstallation() {
 	return wpEval(
 		THE_INSTALLER +
 			"$store = $make( 'ReleaseStore' ); $store->clearState();" +
-			"foreach ( [ 'staging', 'previous' ] as $area ) { $store->empty( $area ); }" +
+			"foreach ( [ 'staging', 'previous', 'discarded' ] as $area ) { $store->empty( $area ); }" +
 			`$sent = $store->fileIn( 'incoming', '${ A_PACKAGE }' ); if ( is_file( $sent ) ) { unlink( $sent ); }` +
 			"$make( 'ReleaseSafeguards' )->remove(); $make( 'InstalledRelease' )->forget();" +
 			"$make( 'ReleaseTableCopies' )->discard(); $remove( $folder ); echo 'forgotten';"
@@ -510,6 +512,66 @@ test( 'the site goes back to the release before from the screen, and what happen
 		expect( JSON.parse( after ) ).toEqual( {
 			files: [ 'corex-e2e-released.php', 'left-behind.php' ],
 			recovery: false,
+			maintenance: false,
+		} );
+	}
+} );
+
+test( 'a release is installed where the host does not hand the key’s header to PHP', async ( {
+	page,
+} ) => {
+	const overview = await openReleases( page );
+	onlyWhereTheHostCanInstall( overview );
+	const client = await askToInstall( page, overview );
+	const confirm = page.locator( '.corex-releases__confirm' );
+
+	// Every request of the installation reaches the site without the header, as a host that
+	// drops it hands them to PHP. Only the address carries the key now.
+	const stripped = [];
+	await page.route(
+		( url ) =>
+			/install\/(confirm|step|finish)/.test(
+				decodeURIComponent( url.href )
+			),
+		async ( route ) => {
+			const headers = { ...route.request().headers() };
+			delete headers[ 'x-corex-release-key' ];
+			stripped.push(
+				new URL( route.request().url() ).searchParams.has(
+					'corex_release_key'
+				)
+			);
+			await route.continue( { headers } );
+		}
+	);
+
+	await confirm.locator( '#corex-releases-version' ).fill( VERSION );
+	if ( overview.installed.known === false && client ) {
+		await confirm.locator( '#corex-releases-client' ).fill( client );
+	}
+	await confirm
+		.getByRole( 'button', { name: `Install CoreX ${ VERSION }` } )
+		.click();
+
+	// Through WordPress's maintenance at once, not when its ten minutes are up.
+	await expect(
+		page.getByRole( 'heading', { name: `CoreX ${ VERSION } is installed` } )
+	).toBeFocused( { timeout: 60000 } );
+	expect( stripped.length ).toBeGreaterThan( 2 );
+	expect( stripped.every( Boolean ), 'the key is in every address' ).toBe(
+		true
+	);
+
+	// The record says how the finishing request got through.
+	const recorded = wpEval(
+		THE_INSTALLER +
+			"$log = $make( 'ReleaseStore' )->log(); $last = end( $log );" +
+			"echo wp_json_encode( [ 'event' => $last['event'] ?? '', 'key_from' => $last['key_from'] ?? '', 'maintenance' => is_file( ABSPATH . '.maintenance' ) ] );"
+	);
+	if ( recorded !== null ) {
+		expect( JSON.parse( recorded ) ).toEqual( {
+			event: 'installed',
+			key_from: 'address',
 			maintenance: false,
 		} );
 	}

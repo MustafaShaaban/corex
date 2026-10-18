@@ -210,6 +210,9 @@ export default function ReleaseInstall( {
 				outcome: await runInstallation( client, {
 					from,
 					onStand: setStand,
+					// Until the next answer: a stand the site gives says nothing of waiting.
+					onWait: () =>
+						setStand( ( last ) => ( { ...last, waiting: true } ) ),
 				} ),
 			} );
 		} catch ( failure ) {

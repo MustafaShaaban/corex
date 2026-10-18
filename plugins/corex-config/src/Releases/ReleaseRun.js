@@ -59,7 +59,7 @@ function stateOf( at, place ) {
 
 /**
  * @param {Object} props         Component props.
- * @param {Object} props.stand   Where the installation stands: `{ step, cursor, of }`.
+ * @param {Object} props.stand   Where the installation stands: `{ step, cursor, of }`, and `waiting` while the site has not answered the last request.
  * @param {string} props.version The release being installed.
  * @return {Element} The panel.
  */
@@ -132,6 +132,12 @@ export function ReleaseProgress( { stand, version } ) {
 								__( '%1$s of %2$s.', 'corex' ),
 								Number( stand.cursor ).toLocaleString(),
 								Number( stand.of ).toLocaleString()
+							) }
+					{ stand.waiting &&
+						' ' +
+							__(
+								'The site has not answered yet. While a release is put in place WordPress holds the site in maintenance, for up to ten minutes; this page goes on asking until it answers.',
+								'corex'
 							) }
 				</p>
 			</div>

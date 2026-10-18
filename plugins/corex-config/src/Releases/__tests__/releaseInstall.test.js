@@ -446,6 +446,27 @@ describe( 'while it runs', () => {
 		expect( container.querySelector( `a[href="${ LINK }"]` ) ).toBeNull();
 	} );
 
+	it( 'says it is waiting while the site does not answer, and stops saying so when it does', async () => {
+		await answer( 'step', standing( 'finish' ) );
+		const finishing = asked.find(
+			( { question, done } ) => question === 'finish' && ! done
+		);
+		const status = () =>
+			container.querySelector( '.corex-releases__run [role="status"]' )
+				.textContent;
+
+		// What the client says before it waits to ask again.
+		act( () => finishing.given[ 0 ].onWait( 15000 ) );
+
+		expect( status() ).toContain(
+			'The site has not answered yet. While a release is put in place WordPress holds the site in maintenance, for up to ten minutes; this page goes on asking until it answers.'
+		);
+
+		await answer( 'finish', { ...standing( 'finish' ), done: false } );
+
+		expect( status() ).not.toContain( 'has not answered' );
+	} );
+
 	it( 'offers the way back when the site stops answering with the files in place', async () => {
 		await answer( 'step', standing( 'finish' ) );
 		await answer( 'finish', new ReleaseUnreachableError( 'No answer.' ) );

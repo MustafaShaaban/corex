@@ -129,7 +129,7 @@ measured it. [Shared-host dist artifact](./shared-host-dist.md) has the builder 
 | Unpack | The release's folders are unpacked into `wp-content/corex-releases/staging/` | Served as before |
 | Check | Each folder is counted and hashed and compared with what the package says it holds | Served as before |
 | Copy tables | Each of CoreX's tables is copied as it is | Served as before |
-| Put in place | Each folder of the running release is moved to `previous/` and the unpacked one moved in | Held off |
+| Put in place | The release kept from the installation before is set aside to `discarded/`; each folder of the running release is moved to `previous/` and the unpacked one moved in | Held off |
 | Database | The release just installed brings the database to itself and lists what moved | Held off until it ends |
 
 Each step is one or more short requests, so a host that cuts a request off after some seconds is
@@ -138,6 +138,18 @@ be given up.
 
 While visitors are held off they get WordPress's own "briefly unavailable for scheduled
 maintenance" answer, for the seconds between the folders moving and the database step ending.
+
+The screen's own requests get through that answer with the installation's key, which goes in
+each request's address as well as in a header: some shared hosts do not hand a request's headers
+to PHP. If the site still answers nothing the screen can read, the progress panel says it is
+waiting, and the screen goes on asking for up to eleven minutes. WordPress lets every request in
+by itself ten minutes after the folders moved, so the installation then finishes without
+anybody pressing anything. Keep the page open until it says the release is installed.
+
+The record of an installation says how its last request got through (`key_from` in
+`corex-releases/log.json`): `header`, `server_headers` (the header was not handed to PHP, and
+was read where the web server keeps it), `address`, or `not_needed` (WordPress had already
+let requests in).
 
 ### If the page is closed, or the connection drops
 
@@ -245,6 +257,7 @@ A package the host cannot install today (see the table further up) is not remove
 |---|---|---|
 | `wp-content/corex-releases/incoming/` | Packages received and not yet installed | Installed, refused, or seven days old |
 | `wp-content/corex-releases/previous/` | The folders the last installation replaced | The next installation, or going back |
+| `wp-content/corex-releases/discarded/` | The release kept before, set aside by the next installation | Deleted a few seconds at a time each time Releases is opened |
 | `wp-content/corex-releases/log.json` | The record: the last fifty events | Kept |
 | `wp-content/mu-plugins/corex-release-recovery.php` | The way back that needs no admin | The next installation, or going back |
 | `.maintenance` in the folder WordPress is in | WordPress's maintenance answer | The end of the database step |

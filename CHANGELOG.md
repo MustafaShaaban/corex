@@ -6,6 +6,34 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **The request that puts a release in place no longer deletes the release kept from the
+  installation before** (spec 107, FR-024b; DECISIONS #369). A client site's second installation
+  from CoreX → Releases on its shared host (Perego, LiteSpeed) ended with "The site did not
+  answer after 6 tries", ten minutes of maintenance and the release not in place; its first,
+  with nothing kept yet, had finished. Deleting that site's kept release took 11.8 s on a
+  development machine, with visitors held off. It is now set aside by one rename and deleted a
+  few seconds at a time when Releases is opened.
+- **An installation gets through WordPress's maintenance answer on a host that does not hand PHP
+  its request headers** (FR-024a, FR-025). Reproduced on a copy of a site with the key's header
+  dropped: the same six failed tries. The installation's key now goes in the address as well as
+  the header, the maintenance file looks for it in the header, in the headers as the web server
+  holds them and in the address, and the screen goes on asking for as long as WordPress's
+  maintenance can last, saying that it is waiting. An installation's record says where its key
+  was found (`key_from`).
+
+### Client impact
+
+- **The installation that brings this release is run by the one it replaces**, and so deletes
+  the kept release while visitors are held off. Before installing it on a shared host, delete
+  the contents of `wp-content/corex-releases/previous/` in the host's file manager (keep the
+  folder): it is only the way back to the release before the running one. If it still ends with
+  "The site did not answer", wait ten minutes and open **CoreX → Releases**.
+- `wp-content/corex-releases/discarded/` is new. It holds the release before the kept one until
+  Releases has been opened a few times, and is closed to the web server like the rest of
+  `corex-releases/`. Nothing to do.
+
 ## [0.46.0] — 2026-10-14
 
 Everything merged since v0.45.2: two days of fixes found by using CoreX on the first client

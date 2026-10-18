@@ -22,6 +22,7 @@ use RecursiveIteratorIterator;
  *     incoming/   packages being received, and packages put there by hand
  *     staging/    the release paths of the package being installed, unpacked
  *     previous/   the folders the last installation replaced
+ *     discarded/  what an installation set aside to be deleted when nobody is held off for it
  *     state.json  the installation in progress
  *     log.json    what happened: installations, refusals, returns (the last fifty)
  *
@@ -40,7 +41,7 @@ final class ReleaseStore
 
     private const LOCK = 'lock';
 
-    private const AREAS = ['incoming', 'staging', 'previous'];
+    private const AREAS = ['incoming', 'staging', 'previous', 'discarded'];
 
     private const STATE = 'state.json';
 
@@ -122,7 +123,7 @@ final class ReleaseStore
     }
 
     /**
-     * One of the three folders, made if it was not there.
+     * One of the folders, made if it was not there.
      *
      * @throws InvalidArgumentException For a folder this place does not have.
      * @throws ReleaseRefused           When the host will not let the place be made.
@@ -137,7 +138,7 @@ final class ReleaseStore
     }
 
     /**
-     * Remove everything one of the three folders holds, and leave the folder.
+     * Remove everything one of the folders holds, and leave the folder.
      *
      * @throws InvalidArgumentException For a folder this place does not have.
      */
@@ -155,7 +156,53 @@ final class ReleaseStore
     }
 
     /**
-     * Where a file of the given name is kept in one of the three folders.
+     * Empty one of the folders by one rename: what it held goes to `discarded/`, to be deleted
+     * by `discard()`. Deleting a release's files one by one can take longer than a host lets a
+     * request run, and this is asked while visitors are held off.
+     *
+     * @throws InvalidArgumentException For a folder this place does not have.
+     */
+    public function setAside(string $area): void
+    {
+        $folder = $this->folder($area);
+
+        if (! (new FilesystemIterator($folder))->valid()) {
+            return;
+        }
+
+        // The paths are this class's own. A folder that will not move is an answer here, not a
+        // warning in the response: this is asked by a request whose answer the screen reads as JSON.
+        $setAside = @rename($folder, $this->folder('discarded') . '/' . $area . '-' . bin2hex(random_bytes(4))); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rename_rename
+
+        // A host that will not let the folder move has it emptied where it is, as before.
+        $setAside ? wp_mkdir_p($folder) : $this->empty($area);
+    }
+
+    /**
+     * Delete what was set aside, for as long as there is time. What is left is deleted next time.
+     *
+     * @param float $seconds How long this request may spend on it.
+     */
+    public function discard(float $seconds): void
+    {
+        $until   = microtime(true) + $seconds;
+        $entries = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($this->folder('discarded'), FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($entries as $entry) {
+            if (microtime(true) >= $until) {
+                return;
+            }
+
+            // The paths are this class's own, under the installer's folder.
+            $entry->isDir() ? rmdir($entry->getPathname()) : unlink($entry->getPathname()); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+        }
+    }
+
+    /**
+     * Where a file of the given name is kept in one of the folders.
      *
      * A name, never a path: what a package is called comes from an upload, and a name that
      * could climb would let an upload choose where on the site it is written.
