@@ -43,6 +43,7 @@ final class ReleaseReturn
         private readonly InstalledRelease $installed,
         private readonly ReleaseTableCopies $copies,
         private readonly ReleaseRecord $record,
+        private readonly ReleaseSteps $steps,
     ) {
     }
 
@@ -150,8 +151,9 @@ final class ReleaseReturn
     }
 
     /**
-     * An installation that is unpacking or checking has changed nothing, and its staged folders
-     * are where a return puts the release it moves out. It is cancelled first.
+     * An installation that is unpacking, checking, or stopped at the swap before a folder moved
+     * has changed nothing, and its staged folders are where a return puts the release it moves
+     * out. It is given up first.
      *
      * @throws ReleaseRefused
      */
@@ -159,7 +161,7 @@ final class ReleaseReturn
     {
         $standing = ReleaseProgress::standing($this->store);
 
-        if ($standing !== null && $standing->isBeforeTheSwap() && $standing->step !== ReleaseProgress::AWAITING) {
+        if ($standing !== null && $standing->step !== ReleaseProgress::AWAITING && $this->steps->hasMovedNothing($standing)) {
             throw new ReleaseRefused(
                 self::INSTALLING,
                 __('An installation is in progress and has not moved anything yet. Give it up first, then go back.', 'corex'),

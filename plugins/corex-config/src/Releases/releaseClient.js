@@ -137,7 +137,7 @@ async function sha256Of( file ) {
  * @param {(ms: number) => Promise<void>} [options.wait]  Waits a number of milliseconds.
  * @param {number}                        [options.tries] How many times a request is made before giving up, when no installation is in hand.
  * @param {() => number}                  [options.now]   The time in milliseconds, as `Date.now` gives it.
- * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, cancel, goBack }`.
+ * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, goBack, cancel, removeLeftovers }`.
  */
 export function createReleaseClient( {
 	restUrl,
@@ -386,5 +386,6 @@ export function createReleaseClient( {
 		finish,
 		goBack: ( phrase ) => data( '/return', json( { phrase } ) ),
 		cancel,
+		removeLeftovers: () => data( '/leftovers/remove', json( {} ) ),
 	};
 }

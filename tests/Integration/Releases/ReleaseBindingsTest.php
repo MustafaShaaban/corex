@@ -30,5 +30,6 @@ it('serves every route of an installation', function () {
         '/corex/v1/releases/install/step',
         '/corex/v1/releases/install/finish',
         '/corex/v1/releases/install/cancel',
+        '/corex/v1/releases/leftovers/remove',
     );
 });
