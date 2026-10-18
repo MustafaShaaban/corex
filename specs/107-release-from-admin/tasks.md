@@ -69,6 +69,8 @@ files before slice 4.
 - [x] T052 Pest integration, on real WordPress: a whole installation of a fixture release that replaces one real plugin folder and adds a table — every step in order, the confirmation required and bound to the package, one installation at a time, the record written, an activity event recorded with no key in it
 - [x] T052b Pest integration: an installation is refused where it starts when the host has a blocker (FR-018); the folders the running release holds and the package does not are named before the confirmation (FR-028); a second installation, and a second request of the same one, are told one is running; an installation left after the swap is reported unfinished and finished from the screen without its key (FR-035); one left before the swap can be cancelled
 - [x] T053 `ReleaseInstallation`; the routes for each step; OPcache cleared after the swap where it can be
+- [x] T053b Pest unit, then `ReleaseFolderVersion` and `ReleaseDowngrades`: a plugin or theme the package holds an older version of than the site is named with both versions; one of the same or a newer version, one not on the site, one without a version, and CoreX's own folders are not (FR-029, DECISIONS #371)
+- [x] T053c Pest integration, Jest and Playwright: the statement and the confirmation name it before the version is typed; confirming without saying so is refused by the site and not offered by the screen (FR-029)
 - [x] T054 The screen: confirm with the version typed, progress by step, the recovery link shown and downloadable before confirming, the outcome
 - [x] T055 Playwright: an installation of the fixture release from the screen to "installed"; a visitor's request during it gets the maintenance answer
 - [x] T056 Guards; UI/UX gate; notes

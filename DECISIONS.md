@@ -17107,3 +17107,77 @@ the leftovers panel names, removes and reloads, and says why when refused.
 installation stopped before it moved a folder, and is shown what one left instead of "No
 installation is in progress". The guide's "If the page is closed" section says what each
 leftover is.
+
+## #371 — A package that would put a plugin or theme back to an older version than the site has says so before the version is typed, and is installed only when that is confirmed
+
+**Date:** 2026-10-18. **Branch:** `feat/107-refuse-third-party-downgrade`, stacked on
+`fix/107-release-key-through-maintenance` (PR #418, DECISIONS #369), which changes the same
+Releases files. **Spec:** 107, amended: FR-029, a clarification and an edge case of
+2026-10-18. **Mode:** CoreX Framework.
+
+**Why.** The second follow-up the Perego session asked for in #369. Perego's staged package
+`0.46.0-20261018-110130` carried ACF 6.8.6, FluentSMTP 2.2.95, Polylang 3.8.6, Rank Math
+1.0.275, Site Kit 1.184.0 and UpdraftPlus 1.26.8, each older than the copy the owner had
+updated in the live admin after the package was built. A release replaces its folders whole
+(FR-027), so a swap of that package would have put all six back, and nothing on the screen
+said so. The only version the screen compared was CoreX's own (FR-015).
+
+**Decided.**
+
+1. **What is compared is the version each folder's header gives**, read as WordPress's
+   `get_file_data()` reads it (the first 8 KB, the same pattern): a plugin's from the first PHP
+   file at the folder's top, in name order, whose header has `Plugin Name:`; a theme's from
+   `style.css` with `Theme Name:`. `ReleaseFolderVersion` holds that rule and is told how to
+   read a file, so the same rule reads the folder on the site and the folder inside the
+   package, from the zip, before anything is unpacked. Not WordPress's own function: it reads
+   only files on disk, and the inspector's tests run without WordPress.
+2. **`ReleaseDowngrades` lists each folder whose version in the package is lower** than the
+   site's, by `version_compare`, with the site's name for it and both versions. It is asked by
+   `ReleasePackageInspector` with the zip open, so the statement (`ReleaseDesk::statementOf`,
+   `downgrades`) has it, and `prepare` asks again and keeps it in the installation's state.
+   Folders it does not compare: one that is not on the site (nothing goes back), one whose
+   version cannot be read on either side, `vendor` and `packages` (no header), and one whose
+   version in the package is the release's own. CoreX's plugins and theme carry the release's
+   version, so going back on them is going back to an older release, which FR-015's own box
+   asks about; listing them too would ask the same question twice.
+3. **The statement names them before anything is typed**, and the confirmation panel names
+   them again with a checkbox of its own, separate from the older-release one. The site
+   refuses `confirm` with `not_confirmed` unless `downgrade` is sent true where the
+   installation kept any (`ReleaseInstallation::refuseUnlessConfirmed`), so a request made
+   without the screen is held to it as well.
+4. **The installation's state keeps the list under a new key, `downgrades`, read as none where
+   it is missing.** `ReleaseProgress::PROTOCOL` stays 1: a release that wrote no such key is
+   read the same way, and the release before ignores a key it does not know. The list is only
+   read at `confirm`, which the release that prepared the installation answers.
+5. **The sentence says what to do instead**: build the package again from the plugin folder
+   the site runs now. The guide says the same where `--with-plugin` is described.
+
+**Not chosen.**
+
+- *Refusing the package outright.* Going back to a plugin's older version is sometimes what is
+  meant (an update that broke the site), and the package is the only way a shared host without
+  a command line gets it.
+- *Keeping the site's newer folder and installing the rest.* A release's folder would then not
+  hold what the package holds (FR-027), the record of what was installed would be wrong, and
+  the site would be served from two releases' folders (FR-020).
+- *Comparing CoreX's own folders as well.* See 2: the older-release box already asks it.
+- *Checking again at `confirm` whether the site changed since `prepare`.* A plugin updated in
+  another tab in the fifteen minutes a confirmation is good for is not caught. The swap itself
+  comes minutes after `confirm` in any case; there is always a window, and it was left as it is.
+
+**Verified.** Pest unit `ReleaseDowngradesTest` (three cases: named with both versions, a
+plugin's main file found after another PHP file; the same, newer, unversioned and CoreX's own
+not listed; a folder not on the site not compared) and the Releases unit suite, 187 passing.
+Pest integration `ReleaseInstallationTest`: the statement and `prepare` name the plugin,
+`confirm` without `downgrade` is refused and leaves the installation awaiting, with it is
+taken; the file fails with the check removed. Jest: the statement lists it, the confirmation
+is not sent until the box is ticked and sends `downgrade: true`; 117 passing. Playwright
+`releases-install.spec.js` on a scratch WordPress served by `php -S`: a plugin of version 2.0.0
+on the site and 1.0.0 in the package is named in the statement and the confirmation, Install
+stays disabled until the box is ticked, and declining leaves 2.0.0 on the site; all 8 tests of
+the project pass (one earlier run missed the RTL layout gap of the first measure test by 23
+pixels and passed on the next run; that test was not changed).
+
+**Client impact.** A package built with `--with-plugin` from plugin copies older than the
+site's asks for one more box to be ticked, and names them. The installation that brings this
+release is run by the release it replaces, so it is not yet asked.

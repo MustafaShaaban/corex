@@ -101,6 +101,11 @@ site, and replaced whole. Do not copy a plugin into `dist/` after the build and 
 Such a package installs, and leaves the site's copy of that plugin as it is, because nothing
 measured it. [Shared-host dist artifact](./shared-host-dist.md) has the builder in full.
 
+Build from the copy of the plugin the site runs now. A plugin updated in the site's admin after
+the package was built is newer on the site than in the package, and installing the package
+puts it back to the package's copy. The statement names each such plugin or theme before you
+type the version (see [Install](#install)).
+
 ## Install
 
 1. **Open CoreX → Releases.** It says which release the site runs and for whom, and whether
@@ -111,14 +116,19 @@ measured it. [Shared-host dist artifact](./shared-host-dist.md) has the builder 
    being sent.
 3. **Read the statement.** The release, when it was built and for which client, what it
    replaces, how many files. Reading changes nothing on the site. A package that is wrong is
-   refused here, in words, and removed: see [Refusals](#refusals).
+   refused here, in words, and removed: see [Refusals](#refusals). A plugin or theme the
+   package holds an older version of than the site has is listed here with both versions, as
+   the header of its main file (a theme's `style.css`) gives them. CoreX's own plugins and
+   theme are not listed: they carry the release's version, and an older release is asked about
+   in step 6. To keep the site's newer copies, build the package again from them.
 4. **Press Install this release….** Nothing is installed yet. The next panel gives the
    **recovery link** and says what installing does.
 5. **Save the recovery link.** Copy it or press **Save it as a file**. It is shown once. It is
    what puts the previous release back if the admin does not load afterwards.
 6. **Type the version and press Install.** An older release than the one running needs a box
-   ticked as well. A site that cannot say whose it is asks for the client's name, as the
-   statement gives it.
+   ticked as well. So does a package that puts plugins or themes back to older versions: the
+   panel lists them again, and the site refuses the installation until that box is ticked. A
+   site that cannot say whose it is asks for the client's name, as the statement gives it.
 7. **Keep the page open** until it says the release is installed. It lists what changed in the
    database, or says nothing needed to.
 

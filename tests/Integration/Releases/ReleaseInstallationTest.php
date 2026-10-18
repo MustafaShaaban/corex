@@ -31,6 +31,7 @@ use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaMigrator;
 use Corex\Database\Schema\Table;
 use Corex\Tests\Support\ReleaseInstaller;
+use Corex\Tests\Support\ReleasePackages;
 
 const INSTALLED_VERSION_OPTION = 'corex_release_install_fixture_schema_version';
 
@@ -347,6 +348,36 @@ it('asks twice for an older release, and for the client by name on a site that d
     expect($prepared['client_unconfirmed'])->toBeTrue()
         ->and(askTheInstaller('POST', '/releases/install/confirm', ['phrase' => '0.45.0', 'client' => 'globex'])->get_data())->toMatchArray(['ok' => false, 'reason' => ReleaseInstallation::NOT_CONFIRMED])
         ->and(askTheInstaller('POST', '/releases/install/confirm', ['phrase' => '0.45.0', 'client' => 'acme'])->get_data()['ok'])->toBeTrue();
+});
+
+it('names a plugin the package would put back to an older version, and installs it only when that is said', function () {
+    $updated = RUNNING_0_44;
+    $updated['wp-content/plugins/acme-site/acme-site.php'] = "<?php
+/*
+ * Plugin Name: Acme Site
+ * Version: 2.1.0
+ */";
+    $site = ($this->site)($updated);
+    $site->give(ReleasePackages::faithful(
+        [...ReleaseInstaller::RELEASE_0_45, 'wp-content/plugins/acme-site/acme-site.php' => "<?php
+/*
+ * Plugin Name: Acme Site
+ * Version: 2.0.0
+ */"],
+        [],
+        ['corex_version' => '0.45.0'],
+    ), THE_PACKAGE);
+
+    $inspected = askTheInstaller('POST', '/releases/inspect', ['package' => THE_PACKAGE])->get_data()['data'];
+    $prepared  = askTheInstaller('POST', '/releases/install/prepare', ['package' => THE_PACKAGE])->get_data()['data'];
+    $downgrade = [['path' => 'wp-content/plugins/acme-site', 'name' => 'Acme Site', 'site' => '2.1.0', 'package' => '2.0.0']];
+
+    // Said with what the package is, before anything is typed, and again where it is confirmed.
+    expect($inspected['downgrades'])->toBe($downgrade)
+        ->and($prepared['downgrades'])->toBe($downgrade)
+        ->and(askTheInstaller('POST', '/releases/install/confirm', ['phrase' => '0.45.0'])->get_data())->toMatchArray(['ok' => false, 'reason' => ReleaseInstallation::NOT_CONFIRMED])
+        ->and(ReleaseProgress::standing($site->store)?->step)->toBe(ReleaseProgress::AWAITING)
+        ->and(askTheInstaller('POST', '/releases/install/confirm', ['phrase' => '0.45.0', 'downgrade' => true])->get_data()['ok'])->toBeTrue();
 });
 
 it('leaves the site as it was when a folder will not move, and says the release was not installed', function () {

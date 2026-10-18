@@ -54,6 +54,7 @@ use Corex\Config\Releases\InstalledRelease;
 use Corex\Config\Releases\ReleaseCompletion;
 use Corex\Config\Releases\ReleaseContentHash;
 use Corex\Config\Releases\ReleaseDesk;
+use Corex\Config\Releases\ReleaseDowngrades;
 use Corex\Config\Releases\ReleaseFinisher;
 use Corex\Config\Releases\ReleaseHostFacts;
 use Corex\Config\Releases\ReleaseInstallation;
@@ -584,6 +585,8 @@ final class ConfigServiceProvider extends ServiceProvider
             ReleasePackageInspector::class,
             static fn (ContainerInterface $c): ReleasePackageInspector => new ReleasePackageInspector(
                 $c->make(InstalledRelease::class),
+                // The folder a release's paths are relative to: the one wp-content is in.
+                new ReleaseDowngrades(dirname(WP_CONTENT_DIR)),
                 PHP_VERSION,
                 (string) get_bloginfo('version'),
             ),

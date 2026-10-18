@@ -22,6 +22,7 @@ use Corex\Config\Releases\InstalledRelease;
 use Corex\Config\Releases\ReleaseCompletion;
 use Corex\Config\Releases\ReleaseContentHash;
 use Corex\Config\Releases\ReleaseDesk;
+use Corex\Config\Releases\ReleaseDowngrades;
 use Corex\Config\Releases\ReleaseFinisher;
 use Corex\Config\Releases\ReleaseHostFacts;
 use Corex\Config\Releases\ReleaseInstallation;
@@ -138,7 +139,7 @@ final class ReleaseInstaller
         $record     = new ReleaseRecord($this->store, new ActivityService($this->activity), static fn (int $id): string => 'User ' . $id);
         $desk       = new ReleaseDesk(
             $this->store,
-            new ReleasePackageInspector($this->installed, PHP_VERSION, '7.1.3'),
+            new ReleasePackageInspector($this->installed, new ReleaseDowngrades($this->root), PHP_VERSION, '7.1.3'),
             $this->installed,
             static fn (): ReleaseHostFacts => ReleaseHostFacts::ofThisHost(
                 [$content, $content . '/plugins', $content . '/themes', $content . '/mu-plugins', $root],

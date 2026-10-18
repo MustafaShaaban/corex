@@ -59,6 +59,15 @@ none in progress (an unpacked release, a recovery plugin no installation holds t
 kept release with no journal) is named and removed on **Remove them**. Not merged, not
 released; to be retargeted at `main` once PR #418 merges.
 
+**2026-10-18: branch `feat/107-refuse-third-party-downgrade`** (DECISIONS #371, spec 107
+amended: FR-029), stacked on PR #418's branch because it changes the same Releases files.
+The second follow-up the Perego session asked for in #369: a package that would put a plugin or
+theme back to an older version than the site has (by its header's `Version:`) says so in the
+statement, before the version is typed, and the installation is refused unless that is
+confirmed in its own checkbox. Pest, Jest and the Releases browser spec cover it. Not merged,
+not released. The first follow-up of #369 (giving up an installation stranded at the swap from
+the screen) is PR #419 (DECISIONS #370), stacked on #418 as well.
+
 **Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
 is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull
 requests still open on 2026-10-14 were landed together (pull request #415) and the release

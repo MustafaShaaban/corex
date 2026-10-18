@@ -1,8 +1,9 @@
 /**
  * What an administrator is told, and asked, before a release is installed (spec 107, FR-015,
- * FR-028, FR-041, FR-042, FR-050, FR-062; plan D8).
+ * FR-028, FR-029, FR-041, FR-042, FR-050, FR-062; plan D8).
  *
- * Told: what is replaced and what leaves the site with it, the way back that needs no admin,
+ * Told: what is replaced and what leaves the site with it, which plugins and themes go back to
+ * an older version, the way back that needs no admin,
  * what going back does not undo, and that none of this is a backup. Asked: the version, typed.
  *
  * The way back is first, and can be saved as a file, because it is for the day this screen
@@ -12,6 +13,7 @@ import { useEffect, useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
 import { workingProps } from '../admin/components/working.js';
+import ReleaseDowngrades from './ReleaseDowngrades.js';
 import { saveRecoveryFile } from './recoveryFile.js';
 
 function Folders( { folders } ) {
@@ -94,6 +96,15 @@ function WhatChanges( { prepared } ) {
 					<Folders folders={ prepared.drops } />
 				</>
 			) }
+			{ prepared.downgrades.length > 0 && (
+				<ReleaseDowngrades
+					downgrades={ prepared.downgrades }
+					says={ __(
+						'The site has newer versions of these than the package holds. Installing puts each back to the package’s version:',
+						'corex'
+					) }
+				/>
+			) }
 			<p className="corex-releases__line">
 				{ sprintf(
 					/* translators: %d: a number of days. */
@@ -113,7 +124,7 @@ function WhatChanges( { prepared } ) {
  * @param {Object}                                props.prepared  The site's answer to `prepare`.
  * @param {boolean}                               props.working   Whether the confirmation has been sent and not answered.
  * @param {string}                                props.problem   Why the last confirmation was not taken, in the site's words.
- * @param {(typed: string, more: Object) => void} props.onConfirm Called with what was typed and `{ client, older }`.
+ * @param {(typed: string, more: Object) => void} props.onConfirm Called with what was typed and `{ older, client, downgrade }`.
  * @param {() => void}                            props.onCancel  Called when the administrator decides not to.
  * @return {Element} The panel.
  */
@@ -128,15 +139,18 @@ export default function ReleaseConfirm( {
 	const [ typed, setTyped ] = useState( '' );
 	const [ client, setClient ] = useState( '' );
 	const [ older, setOlder ] = useState( false );
+	const [ downgrade, setDowngrade ] = useState( false );
 
 	useEffect( () => {
 		heading.current.focus();
 	}, [] );
 
 	const asksClient = prepared.client_unconfirmed && prepared.client;
+	const asksDowngrade = prepared.downgrades.length > 0;
 	const ready =
 		typed.trim() === prepared.version &&
 		( ! prepared.older || older ) &&
+		( ! asksDowngrade || downgrade ) &&
 		( ! asksClient || client.trim() === prepared.client );
 
 	return (
@@ -166,6 +180,7 @@ export default function ReleaseConfirm( {
 						onConfirm( typed.trim(), {
 							older,
 							...( asksClient && { client: client.trim() } ),
+							...( asksDowngrade && { downgrade } ),
 						} );
 					}
 				} }
@@ -236,6 +251,25 @@ export default function ReleaseConfirm( {
 						<label htmlFor="corex-releases-older">
 							{ __(
 								'This is an older release than the one the site runs, and that is what I mean to install.',
+								'corex'
+							) }
+						</label>
+					</div>
+				) }
+				{ asksDowngrade && (
+					<div className="corex-releases__check">
+						<input
+							id="corex-releases-downgrade"
+							type="checkbox"
+							checked={ downgrade }
+							disabled={ working }
+							onChange={ ( event ) =>
+								setDowngrade( event.target.checked )
+							}
+						/>
+						<label htmlFor="corex-releases-downgrade">
+							{ __(
+								'The plugins and themes listed above go back to the package’s older versions, and that is what I mean to install.',
 								'corex'
 							) }
 						</label>

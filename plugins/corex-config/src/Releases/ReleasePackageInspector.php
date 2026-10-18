@@ -19,7 +19,8 @@ use ZipArchive;
  * In order, stopping at the first refusal: it is a zip; its description is at its top and can be
  * relied on; it is for this site's client; this host can run it; it holds every folder it says
  * it does; and no entry in it would be written outside the package, or is a thing a release
- * never holds.
+ * never holds. A package that is not refused is then compared with the site: which of its
+ * plugins and themes are older than the site's (FR-029).
  *
  * It reads. It writes nothing, anywhere: a refusal leaves the site exactly as it was (FR-016),
  * because there is nothing here that could have changed it.
@@ -56,6 +57,7 @@ final class ReleasePackageInspector
      */
     public function __construct(
         private readonly InstalledRelease $installed,
+        private readonly ReleaseDowngrades $downgrades,
         private readonly string $phpVersion,
         private readonly string $wordPressVersion,
     ) {
@@ -74,6 +76,7 @@ final class ReleasePackageInspector
             $this->refuseAPackageForSomebodyElse($manifest);
             $this->refuseWhatThisHostCannotRun($manifest);
             $this->refuseWhatIsNotSafeToUnpack($zip, $manifest);
+            $downgrades = $this->downgrades->in($zip, $manifest);
         } finally {
             $zip->close();
         }
@@ -87,6 +90,7 @@ final class ReleasePackageInspector
             ! $this->installed->isKnown(),
             ...$this->measure($manifest),
             siteWordPress: $this->wordPressVersion,
+            downgrades: $downgrades,
         );
     }
 

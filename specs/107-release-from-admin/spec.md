@@ -20,6 +20,11 @@ sentence of FR-025 are what was added; the clarification of that date says why. 
 installation there stopped at the swap with nothing moved, and the screen could neither give it
 up nor say what was left on the host (DECISIONS #370): FR-022a and FR-022b were added.
 
+**Amended 2026-10-18, again** (DECISIONS #371): a package from the same installation held six
+third-party plugins older than the ones updated in the site's admin since it was built, and
+installing it would have put all six back without a word. FR-029 is what was added; the
+clarification of that date says how it was decided.
+
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
 hosting. That session sent the outline in full after the first draft was written; this draft
@@ -234,6 +239,21 @@ six tries; WordPress lets requests in again only after ten minutes.
   the release the site runs. It is not done unasked when the screen opens: one of them is a
   must-use plugin, and the administrator is told what it is before it goes (FR-022b).
 
+- Q: What is done when a package would put a plugin or theme back to an older version than the
+  one on the site? → A: It is said with what the package is, before the version is typed, and
+  again where the installation is confirmed, naming each one with the site's version and the
+  package's; the installation is refused unless the administrator says, in a separate
+  checkbox, that going back to those versions is meant (FR-029). Perego's staged package
+  `0.46.0-20261018-110130` held ACF 6.8.6, FluentSMTP 2.2.95, Polylang 3.8.6, Rank Math
+  1.0.275, Site Kit 1.184.0 and UpdraftPlus 1.26.8, each older than the copy the owner had
+  updated in the live admin since. The version is the one each folder's header gives, read as
+  WordPress reads it, on the site and inside the package before anything is unpacked. A folder
+  whose version in the package is the release's own is one of CoreX's: going back on those is
+  going back to an older release, which FR-015 asks about. Not chosen: refusing the package
+  outright, because going back to a plugin's older version is sometimes the point (an update
+  that broke the site); keeping the site's newer folder, because a release's folder then would
+  not hold what the package holds (FR-027) and the site would be a mixture of two (FR-020).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — A release is put on the site from the admin (Priority: P1)
@@ -392,6 +412,9 @@ to the release that caused it.
 - A release that removes a plugin or an add-on the site has active: the folder goes out with the
   previous release, WordPress finds the plugin missing and switches it off, and the screen named
   the folder before the owner confirmed (FR-028).
+- A package built before a plugin it carries was updated in the site's admin: installing it
+  would put the plugin back to the package's older copy. The screen names it with both versions
+  and the installation waits for that to be confirmed (FR-029).
 - A site that has been updated by extracting zips, with files in its folders no release holds
   any more: the first installation from the screen replaces each folder whole (FR-027).
 - The browser is closed after the files are swapped and before the database step: the
@@ -479,6 +502,12 @@ to the release that caused it.
   package, named to the builder, and is then checked and replaced as every other folder of the
   release is. Before the owner confirms, the screen MUST name every folder the running release
   holds and this package does not, because installing moves each of those out of the site.
+- **FR-029**: A package that holds an older version of a plugin or theme than the one on the
+  site, by the version its header gives, MUST say so with what the package is, before the
+  version is typed, naming each with both versions. Installing it MUST be refused unless the
+  administrator confirms, separately from the version and from FR-015's older release, that
+  those plugins and themes are meant to go back. CoreX's own folders, which carry the release's
+  version, are FR-015's to ask about.
 
 **The database**
 

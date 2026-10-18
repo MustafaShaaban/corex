@@ -1,6 +1,6 @@
 /**
  * What a package is, stated before anything on the site changes (spec 107, FR-010, FR-015,
- * FR-017, FR-026): its release, when it was built and for whom, what it would replace, and
+ * FR-017, FR-026, FR-029): its release, when it was built and for whom, what it would replace, and
  * whatever on this host or about this package a person has to know before installing it. Where
  * nothing stands in the way, the way on to installing it is here.
  *
@@ -12,6 +12,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import CorexTime from '../admin/components/CorexTime.js';
 import { workingProps } from '../admin/components/working.js';
 import { sizeOf } from '../Submissions/export/exportState.js';
+import ReleaseDowngrades from './ReleaseDowngrades.js';
 
 /**
  * The lines of the statement, each a name and what the package says for it.
@@ -135,6 +136,15 @@ export default function ReleaseStatement( { statement, pending, onInstall } ) {
 						<li key={ caution }>{ caution }</li>
 					) ) }
 				</ul>
+			) }
+			{ statement.downgrades.length > 0 && (
+				<ReleaseDowngrades
+					downgrades={ statement.downgrades }
+					says={ __(
+						'This package holds older versions of these than the site has. Installing it puts each back to the package’s version, and will need saying so. To keep the site’s versions, build the package again from the updated copies.',
+						'corex'
+					) }
+				/>
 			) }
 			{ statement.blockers.length > 0 ? (
 				<p className="corex-releases__line">

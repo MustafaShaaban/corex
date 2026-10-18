@@ -37,6 +37,7 @@ const STATEMENT = {
 	replaces: '0.43.5',
 	older: false,
 	client_unconfirmed: false,
+	downgrades: [],
 	files: 2650,
 	bytes: 28228940,
 	blockers: [],
@@ -220,6 +221,31 @@ describe( 'a package on the site', () => {
 
 		expect( container.textContent ).toContain(
 			'This is an older release than the one this site is running.'
+		);
+	} );
+
+	it( 'names each plugin the package would put back to an older version, before anything is typed', async () => {
+		press( 'Read this package' );
+		await answer( 'inspect', {
+			...STATEMENT,
+			downgrades: [
+				{
+					path: 'wp-content/plugins/advanced-custom-fields-pro',
+					name: 'Advanced Custom Fields PRO',
+					site: '6.8.6',
+					package: '6.8.4',
+				},
+			],
+		} );
+
+		const statement = container.querySelector(
+			'.corex-releases__statement'
+		);
+		expect( statement.textContent ).toContain(
+			'This package holds older versions of these than the site has.'
+		);
+		expect( statement.textContent ).toContain(
+			'Advanced Custom Fields PRO: 6.8.6 on the site, 6.8.4 in the package'
 		);
 	} );
 
