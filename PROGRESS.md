@@ -47,6 +47,15 @@ cut on the owner's word, so the client sites take one release. What each change 
 under "Recently landed" and in the changelog. This section says where each unfinished
 spec stops, so work resumes from here and not from a transcript.
 
+**Spec 110 is drafted and waits on the owner (2026-10-18).**
+[`specs/110-deploy-to-production/spec.md`](specs/110-deploy-to-production/spec.md): a release is
+built on the local (development) install's CoreX → Releases and deployed to production from there,
+code only, with production backed up first. It came from the Perego session. Three questions are
+the owner's, under "Questions for the owner": how production is backed up (this reopens spec 107's
+decision 4), whether production needs a configuration line before it accepts a deploy, and whether
+the sites' packaging scripts are retired. Nothing is planned or built until the owner has answered
+them; `/speckit-plan` comes next.
+
 **Begun and not finished, 2026-10-13:** the integration test case fails a test that leaves a
 post (DECISIONS #364) and checks nothing else. Measured: one run leaves 19 notifications, 5
 activity events, 2 queued jobs and changed options, by the files named under "Open, and not
