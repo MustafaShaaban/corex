@@ -6,6 +6,32 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **An installation from CoreX → Releases gets through WordPress's maintenance answer on a host
+  that does not hand PHP its request headers** (spec 107, FR-024a, FR-025; DECISIONS #369). The
+  first installation on a shared host (Perego, LiteSpeed) ended with "The site did not answer
+  after 6 tries" and the site held in maintenance for ten minutes. The installation's key now
+  goes in the address as well as the header, the maintenance file looks for it in the header,
+  in the headers as the web server holds them and in the address, and the screen goes on asking
+  for as long as WordPress's maintenance can last, saying that it is waiting. An installation's
+  record says where its key was found (`key_from`).
+- **The request that puts a release in place no longer deletes the release kept from the
+  installation before** (FR-024b). That took 11.8 s for a client site's release on a development
+  machine, with visitors held off; on a host with a request time limit it could leave the site
+  in maintenance with nothing moved. It is set aside by one rename and deleted a few seconds at
+  a time when Releases is opened.
+
+### Client impact
+
+- **The installation that brings this release is run by the one it replaces.** On a host that
+  drops the header it may still end with "The site did not answer". Wait ten minutes, open
+  **CoreX → Releases** and press **Finish the installation**. Every installation after it gets
+  through at once.
+- `wp-content/corex-releases/discarded/` is new. It holds the release before the kept one until
+  Releases has been opened a few times, and is closed to the web server like the rest of
+  `corex-releases/`. Nothing to do.
+
 ## [0.46.0] — 2026-10-14
 
 Everything merged since v0.45.2: two days of fixes found by using CoreX on the first client

@@ -40,6 +40,17 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**2026-10-18: branch `fix/107-release-key-through-maintenance`** (DECISIONS #369, spec 107
+amended: FR-024a, FR-024b, FR-025). Perego's first installation from CoreX → Releases on its
+shared host stopped with "The site did not answer after 6 tries" and ten minutes of
+maintenance. Reproduced on a copy of a site with the key's header dropped; fixed by the key in
+the address as well, a gate that looks in three places, a screen that asks through WordPress's
+ten minutes, and the kept release set aside instead of deleted while visitors are held off.
+Not merged, not released. Owed: the next real installation's record (`key_from` in
+`corex-releases/log.json`), and Perego's answer on whether its `previous/` held a release that
+day (the 404 is explained by the deletion only if it did). Spec 110 (draft PR #417) waits on
+this one.
+
 **Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
 is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull
 requests still open on 2026-10-14 were landed together (pull request #415) and the release
@@ -66,7 +77,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 6. Slice 5 is built: a site names who its replies are from (#357), and its first half before it: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
-| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built | a first installation on a shared host, watched |
+| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built; the first installation on a shared host (Perego, 2026-10-18) stranded in maintenance, fixed on the branch above (#369) | an installation of that fix on a shared host, watched, and its record read |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | slices 1 and 2 of six: personal data marked and asked about by one rule (DECISIONS #309); several models in one export, with a history and a 30-day expiry (#312) | slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
 

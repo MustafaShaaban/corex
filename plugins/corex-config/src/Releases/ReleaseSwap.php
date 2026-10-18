@@ -61,7 +61,8 @@ final class ReleaseSwap
     /**
      * Put the staged release in place.
      *
-     * What the last installation replaced is discarded first: one previous release is kept.
+     * What the last installation replaced is set aside first, by one rename: one previous
+     * release is kept. Deleting it is left to a request that holds nobody off (FR-024b).
      *
      * @param list<string>        $ownedBefore The folders the running release recorded as its own.
      * @param array<string,mixed> $about       What the journal keeps of this swap beside its renames.
@@ -70,7 +71,7 @@ final class ReleaseSwap
      */
     public function swap(ReleaseManifest $manifest, array $ownedBefore, array $about = []): void
     {
-        $this->store->empty('previous');
+        $this->store->setAside('previous');
         $this->journal->begin($this->movesFor($manifest, $ownedBefore), $about);
 
         $outcome = $this->run();

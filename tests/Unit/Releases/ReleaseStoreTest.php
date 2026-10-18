@@ -48,7 +48,43 @@ it('makes its place, closed to a web server, with a folder for each thing it kee
         ->and(is_file($root . '/web.config'))->toBeTrue()
         ->and(is_dir($root . '/incoming'))->toBeTrue()
         ->and(is_dir($root . '/staging'))->toBeTrue()
-        ->and(is_dir($root . '/previous'))->toBeTrue();
+        ->and(is_dir($root . '/previous'))->toBeTrue()
+        ->and(is_dir($root . '/discarded'))->toBeTrue();
+});
+
+it('sets a folder\'s contents aside in one move, and leaves the folder empty', function () {
+    $kept = $this->store->folder('previous');
+    mkdir($kept . '/wp-content/plugins/corex-core', 0777, true);
+    file_put_contents($kept . '/wp-content/plugins/corex-core/corex-core.php', '<?php // 0.43');
+    file_put_contents($kept . '/journal.json', '{}');
+
+    $this->store->setAside('previous');
+
+    $setAside = glob($this->store->folder('discarded') . '/previous-*') ?: [];
+    expect(scandir($kept))->toBe(['.', '..'])
+        ->and($setAside)->toHaveCount(1)
+        ->and((string) file_get_contents($setAside[0] . '/wp-content/plugins/corex-core/corex-core.php'))->toBe('<?php // 0.43');
+});
+
+it('sets nothing aside from a folder that holds nothing', function () {
+    $this->store->setAside('previous');
+
+    expect(scandir($this->store->folder('discarded')))->toBe(['.', '..']);
+});
+
+it('deletes what was set aside for as long as it is given, and the rest the next time', function () {
+    $kept = $this->store->folder('previous');
+    mkdir($kept . '/wp-content/themes/corex', 0777, true);
+    file_put_contents($kept . '/wp-content/themes/corex/style.css', '/* 0.43 */');
+    $this->store->setAside('previous');
+
+    $this->store->discard(0.0);
+    $leftWithNoTime = count(glob($this->store->folder('discarded') . '/*') ?: []);
+    $this->store->discard(5.0);
+
+    expect($leftWithNoTime)->toBe(1)
+        ->and(scandir($this->store->folder('discarded')))->toBe(['.', '..'])
+        ->and(is_dir($kept))->toBeTrue();
 });
 
 it('answers where a received package is kept', function () {

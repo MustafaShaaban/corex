@@ -8,7 +8,7 @@
  * as one only if it carries the installer's mark, and anything else as "wait and ask again".
  *
  * The network is the one thing replaced: `fetch` answers what each test scripts, in order, and
- * waiting takes no time.
+ * waiting takes no time. The clock moves only by what the client waits.
  */
 import { createHash } from 'node:crypto';
 
@@ -42,6 +42,14 @@ const challengePage = response(
 	200,
 	'<html><body>Checking your browser…</body></html>'
 );
+// WordPress's own answer while a release is put in place, to a request it did not let through.
+const maintenancePage = response( 503, {
+	code: 'wp_die',
+	message:
+		'Briefly unavailable for scheduled maintenance. Check back in a minute.',
+	data: { status: 503 },
+} );
+const TEN_MINUTES = 10 * 60 * 1000;
 
 /**
  * A client over a scripted network.
@@ -53,6 +61,7 @@ const challengePage = response(
 function scripted( answers, restUrl = REST ) {
 	const sent = [];
 	const waited = [];
+	let clock = 0;
 	const fetch = async ( url, init ) => {
 		sent.push( { url, ...init } );
 		const next = answers.shift();
@@ -70,7 +79,11 @@ function scripted( answers, restUrl = REST ) {
 			restUrl,
 			nonce: 'a-nonce',
 			fetch,
-			wait: async ( ms ) => waited.push( ms ),
+			wait: async ( ms ) => {
+				waited.push( ms );
+				clock += ms;
+			},
+			now: () => clock,
 			tries: 4,
 		} ),
 		sent,
@@ -328,8 +341,10 @@ describe( 'an installation', () => {
 	const prepared = marked( { version: '0.45.0', key: KEY } );
 	const standing = marked( { step: 'verify', cursor: 0, of: 3 } );
 	const keyOf = ( request ) => request.headers[ 'X-Corex-Release-Key' ];
+	const keyed = ( route ) => `${ REST }${ route }?corex_release_key=${ KEY }`;
+	const done = marked( { done: true, version: '0.45.0', changes: [] } );
 
-	it( 'carries the installation’s key on every request once the site has given one', async () => {
+	it( 'carries the installation’s key on every request once the site has given one, in its header and its address', async () => {
 		const { client, sent } = scripted( [
 			marked( { packages: [] } ),
 			prepared,
@@ -344,7 +359,8 @@ describe( 'an installation', () => {
 		await client.step();
 		await client.finish();
 
-		// WordPress's maintenance answer lets through the request that carries it, and no other.
+		// WordPress's maintenance answer lets through the request that carries it, and no
+		// other; a shared host may not hand the header to PHP, and the address always arrives.
 		expect( sent.map( keyOf ) ).toEqual( [
 			undefined,
 			undefined,
@@ -355,10 +371,95 @@ describe( 'an installation', () => {
 		expect( sent.map( ( request ) => request.url ) ).toEqual( [
 			REST,
 			`${ REST }/install/prepare`,
-			`${ REST }/install/confirm`,
-			`${ REST }/install/step`,
-			`${ REST }/install/finish`,
+			keyed( '/install/confirm' ),
+			keyed( '/install/step' ),
+			keyed( '/install/finish' ),
 		] );
+	} );
+
+	it( 'adds the key to the address as the site spells it, where its routes are a query', async () => {
+		const plain =
+			'https://acme.test/index.php?rest_route=/corex/v1/releases';
+		const { client, sent } = scripted( [ prepared, standing ], plain );
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+		await client.step();
+
+		expect( sent[ 1 ].url ).toBe(
+			`${ plain }/install/step&corex_release_key=${ KEY }`
+		);
+	} );
+
+	it( 'goes on asking through WordPress’s maintenance, and finishes when the site answers', async () => {
+		// Thirty-two of WordPress's maintenance answers: nine minutes of them, at most fifteen
+		// seconds apart. That is the host of 2026-10-18, where the key did not get through
+		// and WordPress let the request in by itself when its ten minutes were up.
+		const { client, sent, waited } = scripted( [
+			prepared,
+			...Array( 32 ).fill( maintenancePage ),
+			done,
+		] );
+		const waits = [];
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+
+		await expect(
+			client.finish( { onWait: ( ms ) => waits.push( ms ) } )
+		).resolves.toEqual( { done: true, version: '0.45.0', changes: [] } );
+		expect( sent ).toHaveLength( 34 );
+		expect( Math.max( ...waited ) ).toBe( 15000 );
+		expect( waits ).toEqual( waited );
+	} );
+
+	it( 'gives up only after WordPress’s maintenance would have ended by itself, saying how many times it asked', async () => {
+		const { client, sent, waited } = scripted( [
+			prepared,
+			...Array( 60 ).fill( maintenancePage ),
+		] );
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+
+		const failure = client.step();
+		await expect( failure ).rejects.toThrow( ReleaseUnreachableError );
+		const asked = sent.length - 1;
+		await expect( failure ).rejects.toThrow(
+			`The site did not answer after ${ asked } tries.`
+		);
+		const waitedInAll = waited.reduce( ( sum, ms ) => sum + ms, 0 );
+		expect( waitedInAll ).toBeGreaterThan( TEN_MINUTES );
+		// The last wait was the one that reached past them: no try is wasted after.
+		expect( waitedInAll - waited.at( -1 ) ).toBeLessThan(
+			TEN_MINUTES + 60 * 1000
+		);
+	} );
+
+	it( 'lets go of the key once the installation is finished', async () => {
+		const { client, sent } = scripted( [
+			prepared,
+			done,
+			marked( { packages: [] } ),
+		] );
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+		await client.finish();
+		await client.overview();
+
+		expect( keyOf( sent[ 2 ] ) ).toBeUndefined();
+		expect( sent[ 2 ].url ).toBe( REST );
+	} );
+
+	it( 'does not let go of the key while a network’s sites are still being brought to the release', async () => {
+		const { client, sent } = scripted( [
+			prepared,
+			marked( { step: 'finish', cursor: 20, of: 0, done: false } ),
+			done,
+		] );
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+		await client.finish();
+		await client.finish();
+
+		expect( keyOf( sent[ 2 ] ) ).toBe( KEY );
 	} );
 
 	it( 'sends what was typed, and what else the confirmation needs', async () => {

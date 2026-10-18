@@ -16880,3 +16880,110 @@ directory and whose file. A trial merge of #409's branch into this one stopped o
 plugin directory is a real directory, which is every site installed from the shared-host
 package, should check that it has no `wp-content/.env`, and if it has one, move its
 values to options and delete it.
+
+## #369 — An installation's key goes in the address as well as the header, the maintenance file looks for it in three places and says which it found, the screen asks for as long as WordPress's maintenance can last, and the kept release is set aside instead of deleted while visitors are held off
+
+**Date:** 2026-10-18. **Branch:** `fix/107-release-key-through-maintenance`, from `main`
+(`17cb68ab`, v0.46.0). **Spec:** 107, amended: FR-024a, FR-024b, FR-025's last sentence,
+clarification "Session 2026-10-18". **Mode:** CoreX Framework.
+
+**What happened.** Perego's first installation from CoreX → Releases on its shared host
+(peregoads.com: LiteSpeed, HTTP/2, cPanel, no command line; package
+`0.46.0-20261018-110130` over `0.46.0-20261018-100818`; the owner watching with the page
+open) ended with "The site did not answer after 6 tries". The site answered WordPress's
+own 503 (`retry-after: 600`, no cache header of any kind) from 11:22:38 to about 11:31 GMT.
+Afterwards `wp-content/themes/perego-theme/assets/images/share-default.jpg`, a file only
+the new release holds, answered 404. The same host drops the `Authorization` header before
+PHP: `SetEnvIf` and `CGIPassAuth` in `.htaccess` did not bring it back, a `getallheaders()`
+fallback in `wp-config.php` did. Muva's rehearsal of 2026-10-14 ended the same way when its
+page had been closed and opened again.
+
+**Reproduced, on this machine.** A copy of a site made from the builder's own output
+(`build:dist --zip`, 19 release paths), its own database, served by `php -S` through a
+router that logs each request's status and whether `X-Corex-Release-Key` reached PHP, and
+can drop that header before WordPress, as the host drops `Authorization`. A Playwright
+script installed the package through the screen, the page kept open.
+
+| Run | Code running | Header | Result |
+|---|---|---|---|
+| 1 | v0.46.0 | reaches PHP | installed in 10 s |
+| 2 | v0.46.0 | dropped | the swap answered `finish` (4.3 s); the six `install/finish` tries got WordPress's 503 in 31 s; "The site did not answer after 6 tries"; `.maintenance` left |
+| 2, ten minutes later | v0.46.0 | dropped | Releases said "The files of CoreX 0.46.0 are in place … Finish the installation"; pressed: installed in one request (`state.json` at `finish`, the journal `swapped`, 38 moves done) |
+| 3 | v0.46.0, installing this change | reaches PHP | installed; the swap request took 6 s, most of it deleting the kept release |
+| 4 | this change | dropped | installed in 10 s, no try repeated; the swap request took 0.8 s; the record says `key_from: server_headers` |
+
+So the six tries are explained: the gate in `.maintenance` read the key from
+`$_SERVER['HTTP_X_COREX_RELEASE_KEY']` or the query, the client sent it only as the header,
+and the client's tries (1 + 2 + 4 + 8 + 16 s) ended nine and a half minutes before
+WordPress's maintenance did. On a host that does not hand PHP the header, every installation
+stops there.
+
+**What it does not explain.** In run 2 the new release was in place; on Perego's host it was
+not (the 404). Something stopped the swap request there. The request that puts a release in
+place deleted the previous kept release file by file, after raising maintenance and before
+the first rename, with no time limit (`ReleaseStore::empty('previous')` in
+`ReleaseSwap::swap()`). Measured: Perego's release folders, unzipped from its 100818 package,
+are 9,983 files and 11,596 entries, and that loop removed them in 11.82 s on this machine's
+SSD. On a shared host with I/O limits it can pass a request's time limit, leaving visitors
+held off and no folder moved; the retries of that step were then turned away like the
+finishing ones. This is a cause that fits the 404, not one measured on the host: whether the
+host's `previous/` held a release that day was asked of the Perego session and not answered
+when this was written.
+
+**Decided.**
+
+1. **The gate looks in three places, the first that holds the key opens it, and it says which.** The header as PHP
+   was handed it, the header as the web server holds it (`getallheaders()`, compared without
+   case), the query argument. It defines `COREX_RELEASE_KEY_FROM`; `ReleaseMaintenance::keyCameFrom()`
+   reads it (`header`, `server_headers`, `address`, or `not_needed` for a request that came in
+   after maintenance ended), and `ReleaseCompletion` writes it into the record of an
+   installation that finished or failed, as `key_from`. The gate is a nowdoc template filled
+   by `strtr`, as the recovery plugin is.
+2. **The client sends the key in both, on every request of an installation.** It cannot know
+   which one a host lets through, and a request turned away costs ten minutes. The key is
+   let go of when `finish` answers `done`.
+3. **While an installation is in hand, "wait and ask again" lasts eleven minutes**
+   (WordPress's ten, and one for the swap request itself), at most fifteen seconds between
+   tries, instead of six tries. An installation whose key never gets through finishes by
+   itself once WordPress lets requests in, which `ReleaseCompletion` already allowed
+   ("It asks for no key"). The screen says it is waiting, in the progress panel's status
+   line. Without an installation in hand the six tries stay.
+4. **The kept release is set aside, not deleted, while visitors are held off.**
+   `ReleaseStore::setAside('previous')` moves the folder into a new area, `discarded/`, by one
+   rename, and makes it again, empty; a host that refuses the rename has it emptied as before.
+   `ReleaseUpkeep` deletes from `discarded/` for four seconds each time the screen opens,
+   until it is gone. Run 4: the next screen's opening removed run 3's set-aside release.
+5. **A CI workflow serves the gate from OpenLiteSpeed** (`release-gate.yml`): the key in the
+   header, in the address, in neither, and a wrong key, with what LiteSpeed handed PHP printed.
+   Docker was not running on this machine, so this is where LiteSpeed's behaviour is read.
+
+**Not chosen.**
+
+- *The address alone.* It is what gets through any host, but the header is not written to
+  access logs, and on a host that hands it over it is what the record should say was used.
+- *The request's body.* The gate runs before WordPress loads anything and would parse JSON
+  from `php://input` for every request while maintenance is on.
+- *Asking the owner to add the header to `wp-config.php` as was done for `Authorization`.*
+  Every client site would need it, and a site that forgot would strand again.
+- *Deleting the kept release before raising maintenance.* Until this installation moves
+  folders, the kept release is still the running release's way back.
+- *Finishing an interrupted installation on the screen with no wait.* During maintenance the
+  admin itself answers 503 unless the key is in its address, and a reopened page has no key.
+  That is spec 110's (FR-045 there); here the screen keeps asking until WordPress lets it in.
+
+**The installation that brings this.** It is run by the release it replaces: its swap writes
+v0.46.0's gate and its page is v0.46.0's client. On a host that drops the header it can
+still wait out the ten minutes. Then **CoreX → Releases** offers **Finish the installation**,
+which ends it (run 2, ten minutes later). Every installation after it gets through at once.
+
+**Found, and not changed.** `build:dist` copies nothing when the checkout's own path holds
+a `.claude` folder (`FORBIDDEN_SEGMENTS` is matched against the absolute source path), so it
+cannot build from a session worktree. The package for the runs above was built from a copy
+of the tree outside it.
+
+**Client impact.** A site that takes this release gets through an installation on a host
+that does not hand PHP the key's header. The installation that brings it may still need
+**Finish the installation** after ten minutes on such a host. An installation's record now
+carries `key_from`. A folder `wp-content/corex-releases/discarded/` appears, holding the
+release before the kept one until the screen has been opened a few times; it is closed to
+the web server like the rest of `corex-releases/`.

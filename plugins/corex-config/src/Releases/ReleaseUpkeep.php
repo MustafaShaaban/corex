@@ -18,8 +18,10 @@ use DateTimeImmutable;
  *
  * Nothing here runs on a schedule: the host this is written for allows no new scheduled job.
  * So what has to go after a time goes when somebody next looks. A copy of the tables that has
- * been kept its days, a package nobody installed, and a return made through the recovery link
- * that CoreX has not heard of yet.
+ * been kept its days, a package nobody installed, a return made through the recovery link
+ * that CoreX has not heard of yet, and the release before the previous one, which an
+ * installation sets aside and does not delete while visitors are held off (FR-024b): a few
+ * seconds of it each time, until it is gone.
  */
 final class ReleaseUpkeep
 {
@@ -27,6 +29,9 @@ final class ReleaseUpkeep
     public const PACKAGE_DAYS = 7;
 
     private const A_DAY = 86400;
+
+    /** How long opening the screen spends deleting what an installation set aside. */
+    private const DISCARDING_SECONDS = 4.0;
 
     public function __construct(
         private readonly ReleaseStore $store,
@@ -49,6 +54,7 @@ final class ReleaseUpkeep
             $this->store->exclusively(function () use ($now): void {
                 $this->return->takeInOneMadeByTheLink($now);
                 $this->copies->discardExpired($now);
+                $this->store->discard(self::DISCARDING_SECONDS);
                 $this->store->discardUnused(
                     $now->getTimestamp() - self::PACKAGE_DAYS * self::A_DAY,
                     (string) ReleaseProgress::standing($this->store)?->package,

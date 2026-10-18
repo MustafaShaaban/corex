@@ -296,6 +296,11 @@ it('forgets the release before the last one when another is installed', function
     }
     ($this->swapWith)()->swap($this->manifest, $this->manifest->releasePaths);
 
+    // The release before it is set aside in one move, not deleted while visitors are held off.
+    $setAside = glob($this->store->folder('discarded') . '/previous-*') ?: [];
+
     expect((string) file_get_contents($previous . '/wp-content/plugins/corex-core/corex-core.php'))->toBe('<?php // core 0.44')
-        ->and(is_dir($previous . '/wp-content/plugins/corex-legacy'))->toBeFalse();
+        ->and(is_dir($previous . '/wp-content/plugins/corex-legacy'))->toBeFalse()
+        ->and($setAside)->toHaveCount(1)
+        ->and(is_file($setAside[0] . '/wp-content/plugins/corex-legacy/legacy.php'))->toBeTrue();
 });

@@ -1,0 +1,82 @@
+name: Release gate on LiteSpeed
+
+# The shared hosts CoreX → Releases is written for run LiteSpeed, and the first real
+# installation (2026-10-18, a LiteSpeed host that hands PHP no `Authorization` header) was held
+# in WordPress's maintenance answer until its ten minutes were up. This serves the gate an
+# installation writes from OpenLiteSpeed and asks it as the Releases screen does: with the key
+# in its header, in its address, and with neither (spec 107, FR-024a; DECISIONS #369). It also
+# prints what LiteSpeed handed PHP, for whoever reads the next host's behaviour against it.
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/corex-config/src/Releases/ReleaseMaintenance.php'
+      - 'tests/release-gate/**'
+      - '.github/workflows/release-gate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/corex-config/src/Releases/ReleaseMaintenance.php'
+      - 'tests/release-gate/**'
+      - '.github/workflows/release-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  litespeed:
+    name: The release key gets through maintenance on LiteSpeed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Start OpenLiteSpeed
+        run: |
+          set -euo pipefail
+          docker run -d --name ols -p 8088:8088 litespeedtech/openlitespeed:latest
+          for _ in $(seq 1 60); do
+            curl -s -o /dev/null http://127.0.0.1:8088/ && break
+            sleep 1
+          done
+          docker exec ols /usr/local/lsws/bin/lshttpd -v || true
+
+      - name: Serve the gate an installation writes
+        run: |
+          set -euo pipefail
+          mkdir gate
+          php tests/release-gate/write-gate.php "$PWD/gate" the-installation-key
+          # The image's own site: the default virtual host's document root.
+          root=$(docker exec ols sh -c 'for d in /var/www/vhosts/localhost/html /usr/local/lsws/Example/html; do [ -d "$d" ] && echo "$d" && break; done')
+          echo "document root: $root"
+          docker cp gate/. "ols:$root/"
+          docker exec ols chmod -R a+rX "$root"
+
+      - name: Ask it as the Releases screen does
+        run: |
+          set -euo pipefail
+          ask() { curl -s --fail-with-body "$@"; }
+          probe=http://127.0.0.1:8088/probe.php
+
+          echo '--- the key in its header, with an Authorization header beside it'
+          header=$(ask -H 'X-Corex-Release-Key: the-installation-key' -H 'Authorization: Basic dXNlcjpwYXNz' "$probe")
+          echo "$header"
+          echo '--- the key in its address'
+          address=$(ask "$probe?corex_release_key=the-installation-key")
+          echo "$address"
+          echo '--- no key'
+          none=$(ask "$probe")
+          echo "$none"
+          echo '--- a wrong key in both'
+          wrong=$(ask -H 'X-Corex-Release-Key: a-guess' "$probe?corex_release_key=a-guess")
+          echo "$wrong"
+
+          jq -e '.held_off == false and (.key_from == "header" or .key_from == "server_headers")' <<<"$header"
+          jq -e '.held_off == false and .key_from == "address"' <<<"$address"
+          jq -e '.held_off == true and .key_from == "not_needed"' <<<"$none"
+          jq -e '.held_off == true' <<<"$wrong"

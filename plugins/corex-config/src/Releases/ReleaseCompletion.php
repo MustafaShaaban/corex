@@ -22,7 +22,9 @@ use DateTimeImmutable;
  *
  * It asks for no key. The key opens WordPress's maintenance answer, which this request has
  * already passed or which has ended by itself. So an installation whose browser went away is
- * finished by whoever next opens the Releases screen and may install releases.
+ * finished by whoever next opens the Releases screen and may install releases. What it writes
+ * down says how this request got in (`ReleaseMaintenance::keyCameFrom()`): through the gate,
+ * and with the key from where, or after maintenance had ended.
  */
 final class ReleaseCompletion
 {
@@ -114,7 +116,10 @@ final class ReleaseCompletion
         $this->staging->clear();
         $this->removeThePackage($progress->package);
         $this->store->clearState();
-        $this->record->write(ReleaseEvent::of(ReleaseEvent::INSTALLED, $progress, ['changes' => count($progress->changes)]), $actorId, $now);
+        $this->record->write(ReleaseEvent::of(ReleaseEvent::INSTALLED, $progress, [
+            'changes'  => count($progress->changes),
+            'key_from' => ReleaseMaintenance::keyCameFrom(),
+        ]), $actorId, $now);
 
         return ['done' => true, 'version' => $manifest->version, 'changes' => $progress->changes];
     }
@@ -136,7 +141,10 @@ final class ReleaseCompletion
     private function stopOn(ReleaseRefused $refused, ReleaseProgress $progress, int $actorId, DateTimeImmutable $now): void
     {
         if ($progress->failed === null) {
-            $this->record->write(ReleaseEvent::of(ReleaseEvent::FAILED, $progress, ['reason' => $refused->reason]), $actorId, $now);
+            $this->record->write(ReleaseEvent::of(ReleaseEvent::FAILED, $progress, [
+                'reason'   => $refused->reason,
+                'key_from' => ReleaseMaintenance::keyCameFrom(),
+            ]), $actorId, $now);
         }
 
         $progress->with(['step' => ReleaseProgress::FINISH, 'failed' => $refused->getMessage()])->save($this->store);

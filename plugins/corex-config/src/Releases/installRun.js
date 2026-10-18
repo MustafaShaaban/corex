@@ -54,12 +54,18 @@ async function askPastBusy( request, wait ) {
  * @param {Object}                        [options]
  * @param {string}                        [options.from]    The step the installation stands at: `finish` for one whose files are in place.
  * @param {(stand: Object) => void}       [options.onStand] Called with where the installation stands after each request.
+ * @param {(ms: number) => void}          [options.onWait]  Called when the site has not answered a request, before it is asked again.
  * @param {(ms: number) => Promise<void>} [options.wait]    Waits a number of milliseconds.
  * @return {Promise<{version: string, changes: Array}>} The release now installed, and the database changes made.
  */
 export async function runInstallation(
 	client,
-	{ from = 'unpack', onStand = () => {}, wait = sleep } = {}
+	{
+		from = 'unpack',
+		onStand = () => {},
+		onWait = () => {},
+		wait = sleep,
+	} = {}
 ) {
 	let step = from;
 	let asked = 0;
@@ -68,7 +74,7 @@ export async function runInstallation(
 		if ( asked++ > 0 ) {
 			await wait( PACE_MS );
 		}
-		return askPastBusy( request, wait );
+		return askPastBusy( () => request( { onWait } ), wait );
 	};
 
 	try {

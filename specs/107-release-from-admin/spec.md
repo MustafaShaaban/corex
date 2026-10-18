@@ -14,6 +14,10 @@ client site went public, are answered under "Clarifications".
 #301, #304, #307, #310). Nothing of it has run on the shared host it was written for: the
 guide says so where an operator reads it.
 
+**Amended 2026-10-18** (DECISIONS #369): the first installation on a shared host was held in
+WordPress's maintenance answer until its ten minutes ran out. FR-024a, FR-024b and the last
+sentence of FR-025 are what was added; the clarification of that date says why.
+
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
 hosting. That session sent the outline in full after the first draft was written; this draft
@@ -163,6 +167,47 @@ to him, so each answer is a decision made for him, with its reason, and his to o
   updated by extracting zips moves to the screen: nothing more than that line and a package from the
   builder, because its first installation from the screen replaces each folder the release owns
   whole and so clears what extracting left behind in them.
+
+### Session 2026-10-18
+
+The first installation from the screen on a shared host (Perego, a LiteSpeed host with no
+command line, the page kept open) ended with "The site did not answer after 6 tries". The site
+answered WordPress's own maintenance page for nine minutes, and afterwards it served the release
+it had before. The same host hands PHP no `Authorization` header. A copy of a site made from the
+builder's own package and served with the key's header dropped, as that host drops
+`Authorization`, did the same: the release was put in place, and each of the six requests that
+were to finish the installation got WordPress's 503 in 31 seconds. The screen gives up after
+six tries; WordPress lets requests in again only after ten minutes.
+
+- Q: How does a request of an installation get through the maintenance answer on a host that
+  does not hand its header to PHP? → A: The key goes in the address as well as in the header,
+  and the maintenance file looks for it in the header as PHP was given it, in the headers as
+  the web server holds them, and in the address. It writes down which, so the record of the
+  next installation says how it got through (FR-024a). Both go with every request: the screen
+  cannot know beforehand which one a host lets through, and a request turned away costs ten
+  minutes. The address puts the key in the host's access log, which only the site's owner
+  reads on a shared host; the key opens this installation's maintenance answer and its
+  recovery link, which was an address already, and a later installation makes a new one. Not
+  chosen: reading the request's body, which the maintenance file would have to parse before
+  WordPress has loaded anything.
+- Q: What does the screen do when the site answers nothing it can read while a release is
+  being installed? → A: It goes on asking, a request at least every fifteen seconds, for as
+  long as WordPress's maintenance answer can last, and it says on the screen that it is
+  waiting and why. WordPress lets every request in by itself ten minutes after the release
+  was put in place, so an installation whose key never gets through still finishes, ten
+  minutes late, without anybody pressing anything (FR-025).
+- Q: What else can keep the request that puts a release in place from finishing? → A: Work
+  with no end inside it. That request deleted the release kept from the installation before,
+  file by file, after holding visitors off and before moving the first folder: Perego's release
+  folders are 9,983 files and took 11.8 seconds to delete on a development machine's disk.
+  A host that ends a request after its time limit would leave visitors held off and nothing
+  moved, which is what Perego's site showed. The kept release is now set aside by one rename
+  and deleted when the screen next opens, a few seconds at a time (FR-024b). Whether this is
+  what stopped Perego's installation was not measured on the host.
+- Q: What about the installation that brings this change? → A: It is run by the release it
+  replaces. On a host that drops the header it can still wait out WordPress's ten minutes;
+  then **CoreX → Releases** offers **Finish the installation**, which ends it in one request
+  (measured on the copy). Every installation after it gets through at once.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -382,6 +427,13 @@ to the release that caused it.
 - **FR-023**: Only one installation may run at a time.
 - **FR-024**: While files are being replaced a visitor MUST get the site as it was or a
   maintenance answer.
+- **FR-024a**: A request of the installation MUST get through that maintenance answer on a host
+  that does not hand PHP the request's headers: the installation's key MUST be accepted from the
+  request's header, from the headers as the web server holds them, and from its address, and the
+  installation's record MUST say which one a finishing request's key came from.
+- **FR-024b**: While visitors are held off, an installation MUST do no work whose length grows
+  with the size of a release, other than moving folders. What it removes of the release kept
+  before is set aside and removed afterwards, a limited time per request.
 
 - **FR-027**: After an installation, a folder the release owns MUST hold exactly what the
   package holds for it. A file the release before shipped and this one does not MUST NOT remain
@@ -403,7 +455,9 @@ to the release that caused it.
   MUST be kept with the previous release. This is not a backup of the site.
 - **FR-025**: Every step that makes more than one request (an upload in parts, an installation
   in stages) MUST pace itself, and MUST treat an answer that is not its own as a reason to wait
-  and try again, not as success or as failure.
+  and try again, not as success or as failure. While an installation is in hand it MUST go on
+  trying for as long as WordPress's maintenance answer can last, and say on the screen that it
+  is waiting.
 - **FR-032**: A failed change MUST be named, MUST stop the release being reported as installed,
   and MUST leave the previous release available.
 - **FR-033**: On a network, every site's database MUST be brought to the release.
