@@ -12,6 +12,9 @@ Nothing is planned or built until the owner has reviewed this spec.
 **Input**: The owner's request through the Perego session, 2026-10-18, canonical copy in the Perego
 repository at `sites/perego/docs/corex-requests/2026-10-18-deploy-to-production.md`. The owner had
 already decided one thing before it was written: **code only; content stays edited on the live site.**
+The Perego session added two points the same day, from Perego's first real installation through CoreX
+→ Releases on its UltaHost host: the finishing step that did not get through maintenance, and a
+maintenance page in the site's own design (story 6).
 
 **What the owner asked, in the owner's words**: "if i finished updates here local and i want to deploy this
 updates to the production … why can't i do this from the website instead of waiting for you to do this
@@ -39,9 +42,23 @@ Releases. Every step before it still needs an agent and a terminal on the owner'
   of a signed-in browser session (`ReleaseRestGateway::answer()`). A request from another install,
   signed with an Application Password, has no such nonce and is refused as `not_signed`. Nothing on
   production can be driven from elsewhere today, and that is a property spec 107 relied on.
-- **A closed page strands the site for ten minutes.** The installation is stepped by the browser
-  that started it. Muva's rehearsal of 2026-10-14 closed the page part-way and the site stayed in
-  WordPress's maintenance answer until WordPress's own ten-minute limit ran out.
+- **The installation's last step does not get through maintenance, even with the page open.** The
+  installation is stepped by the browser that started it. In Muva's rehearsal of 2026-10-14, on
+  PHP's built-in server, the screen gave up while the site was in maintenance. On 2026-10-18
+  Perego's first real installation through CoreX → Releases, on the UltaHost host with the owner
+  watching and the page open, stopped at the finishing step. The screen said "The installation
+  did not finish — The site did not answer after 6 tries", and the public site still answered
+  503 "Briefly unavailable for scheduled maintenance" at 14:22 and 14:24. The finishing request
+  carries the installation's key (`X-Corex-Release-Key`), and the maintenance file lets a request
+  with that key through, so why it did not get through on that host is not yet known. It is a
+  defect of the released spec 107 and is fixed on its own, before this spec is planned (see
+  Assumptions). Either way, the owner is left to wait out WordPress's ten minutes and press
+  **Finish the installation**.
+- **The maintenance page does not look like the site.** WordPress serves it before any plugin or
+  theme has loaded, so nothing of CoreX or the site's theme styles it. WordPress offers one way to
+  change it: when `wp-content/maintenance.php` exists, WordPress includes that file instead of its
+  own page. The owner asked why the page a visitor saw during Perego's installation was not the
+  site's own.
 - **Spec 107 decided that CoreX is not the site's backup** (its decision 4, FR-061, FR-062). The
   owner now asks for "no backup, no install". That decision is the owner's to reopen, and this spec asks them
   to (question 1).
@@ -228,6 +245,39 @@ admin holds exactly those plugins, measured by the builder, and production accep
 
 ---
 
+### User Story 6: A visitor during an installation sees the site's own page (Priority: P2)
+
+While production is being updated, a visitor gets a short page in the site's colours, with its logo
+and name, in the site's language (Arabic and English on a bilingual site, laid out right to left
+where the language is). The page says the site is being updated and will be back in a few minutes.
+It is the site's page, not WordPress's.
+
+**Why this priority**: The owner asked for it after watching Perego's installation. It touches
+every installation, however it was started, so it is not only part of a deploy, and it can be built
+before the deploy is.
+
+**Independent Test**: Start an installation on a site with its own colours, logo and two languages;
+request the public site during it and confirm the page has the site's name, logo, colours and both
+languages, answers with status 503 and a "retry after" time, and loads no plugin, theme or
+external file. Remove the site's logo and confirm the page still renders with the name.
+
+**Acceptance Scenarios**:
+
+1. **Given** an installation in progress, **When** a visitor asks for any page, **Then** they get
+   the site's own maintenance page with status 503 and a "retry after" time, not WordPress's.
+2. **Given** a site whose design tokens set its colours and fonts, **When** the page is shown,
+   **Then** it uses those colours, with text contrast that meets WCAG 2.2 AA.
+3. **Given** a site in Arabic and English, **When** the page is shown, **Then** it says the same
+   thing in both, each in its own direction.
+4. **Given** the site has a logo, **When** the page is shown, **Then** the logo is on it; **and
+   given** it has none, **Then** the site's name stands in its place.
+5. **Given** a site that already has a `wp-content/maintenance.php` of its own, not written by
+   CoreX, **When** an installation runs, **Then** that file is left as it is and used.
+6. **Given** the installation ended, or went back, **When** a visitor asks for a page, **Then**
+   the site answers normally. The page is shown only while WordPress is in maintenance.
+
+---
+
 ### Edge Cases
 
 - The checkout has a commit that is not on the repository's remote: production would run code that
@@ -337,6 +387,12 @@ admin holds exactly those plugins, measured by the builder, and production accep
   MUST NOT stop it. A deploy interrupted by the PC or the network MUST resume when it can; when it
   cannot, production MUST be left as one release or the other and never held in maintenance past
   WordPress's own limit, and the local screen MUST say which release production runs.
+- **FR-045**: A deploy MUST get through production's maintenance window by itself. Its finishing
+  request MUST carry the installation's key, and it MUST keep trying for the whole of the window,
+  not a fixed small number of tries. A deploy MUST NOT end with production in maintenance and
+  the owner told to wait and press **Finish the installation**. If the window runs out before
+  production answers, the screen MUST say what production runs once it answers, and MUST finish
+  the installation from there with no step by the owner.
 - **FR-044**: A deploy MUST be refused while production has an installation in progress, from any
   source.
 
@@ -350,6 +406,22 @@ admin holds exactly those plugins, measured by the builder, and production accep
   and the install it came from. No record holds the password, the recovery key or package contents.
 - **FR-052**: Every string MUST be translatable; the screen MUST meet the admin's accessibility and
   right-to-left standards, and show loading states as the rest of the admin does (spec 108).
+
+**The maintenance page** (story 6; every installation, not only a deploy)
+
+- **FR-070**: While WordPress holds a site in maintenance for an installation, a visitor MUST get the
+  site's own maintenance page: its name, its logo when it has one, its colours and fonts, and its
+  message in each of the site's languages, each in its own direction.
+- **FR-071**: The page MUST work with nothing of WordPress, CoreX, a plugin or the theme loaded. It
+  MUST NOT call a WordPress function, read the database or fetch an external file, and MUST answer
+  with status 503 and a "retry after" time.
+- **FR-072**: The page's colours and fonts MUST come from the site's design tokens as the site
+  resolves them at runtime (`theme.json` and the site's brand overrides), taken when the
+  installation begins, not fixed when a package is built.
+- **FR-073**: A `wp-content/maintenance.php` CoreX did not write MUST be left as it is, and used.
+  The one CoreX writes MUST say in it that CoreX wrote it, and MUST be replaced whole each time.
+- **FR-074**: The page MUST meet WCAG 2.2 AA (contrast, language and direction marked, readable at
+  phone width), and its words MUST be translatable where the site's other words are.
 
 **What it must not become**
 
@@ -390,11 +462,15 @@ admin holds exactly those plugins, measured by the builder, and production accep
   there once before this feature is called done.
 - **SC-007**: A copy of the local install's database, taken alone, does not let anyone sign in to
   production.
+- **SC-008**: No deploy, and no installation started on production's own screen, ends with production
+  in maintenance and the owner told to wait. Measured on Perego's host, page open and page closed.
+- **SC-009**: A visitor during an installation on a client site sees that site's name, colours and
+  languages on every request, and is never shown WordPress's own maintenance page.
 
 ## Decided for the owner
 
-Two of the request's four questions are answered here, each with why and what it costs. Either is
-the owner's to reopen.
+Two of the request's four questions are answered here, and one point of the Perego session's
+addition of 2026-10-18; each with why and what it costs. Each is the owner's to reopen.
 
 1. **The build and the deploy run in a background process on the PC, started by the local site
    (request question 2).** The local site starts one detached process that runs the builder in a
@@ -421,6 +497,18 @@ the owner's to reopen.
    *Cost:* that password can install code on production, which is the same as full control of it.
    It is as sensitive as production's administrator password, and the screen says so where it is
    entered.
+
+3. **The maintenance page is drawn by the site when the installation begins, not built into the
+   package.** The Perego session asked for a branded `maintenance.php` shipped with each release,
+   coloured from the client's tokens. Writing it at build time would fix the site's colours into
+   the package, which the constitution forbids: design tokens are runtime, and a rebrand is
+   configuration (Principle V). A brand override changed on production after the build would not
+   reach it. So on production, just before WordPress's maintenance begins, the site writes
+   `wp-content/maintenance.php` with its tokens as they resolve at that moment. The file is
+   self-contained: no WordPress function, no database, no external file (FR-071, FR-072). It is
+   written for every installation, from production's own screen as well as from a deploy.
+   *Cost:* a site whose CoreX cannot run at the start of an installation gets WordPress's own page,
+   but such a site cannot start an installation anyway.
 
 ## Questions for the owner
 
@@ -486,6 +574,11 @@ Written without asking; each is the owner's to overrule.
 - **The host's behaviour is measured, not assumed.** Whether UltaHost's bot protection lets a
   non-browser client through, whether WordPress's scheduled events run there, and how long a backup
   of Perego takes are measured on the host before the plan is final.
+- **The finishing step's failure on UltaHost is fixed before this spec is planned, on its own.**
+  It is a defect of v0.46.0 that strands any installation, not only a deploy. Its cause on that host
+  (a header the host drops, a cache that keeps the 503, or something else) is found and fixed as a
+  fix to spec 107, and released, before a deploy is built on top of it. FR-045 is what a deploy adds
+  on top of that fix.
 - **Production's own Releases screen is unchanged for a person using it.** Everything spec 107 does
   stays, including uploading a package by hand.
 
