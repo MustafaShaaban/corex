@@ -52,6 +52,13 @@ the Releases record's entries of 2026-10-18 from Perego (something cleared the i
 state before the owner pressed the button again), and the next real installation's record
 (`key_from`). Spec 110 (draft PR #417) waits on this one.
 
+**2026-10-18: branch `fix/107-give-up-a-swap-that-moved-nothing`**, stacked on the branch
+above (DECISIONS #370, spec 107 amended: FR-022a, FR-022b). An installation stopped at the swap
+before its first folder moved can be given up from the screen; what an installation left with
+none in progress (an unpacked release, a recovery plugin no installation holds the key of, a
+kept release with no journal) is named and removed on **Remove them**. Not merged, not
+released; to be retargeted at `main` once PR #418 merges.
+
 **2026-10-18: branch `feat/107-refuse-third-party-downgrade`** (DECISIONS #371, spec 107
 amended: FR-029), stacked on PR #418's branch because it changes the same Releases files.
 The second follow-up the Perego session asked for in #369: a package that would put a plugin or

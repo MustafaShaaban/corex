@@ -156,19 +156,35 @@ final class ReleaseInstallation
     }
 
     /**
-     * Give up an installation that has not moved anything of the site.
+     * The installation in progress as the screen is told of it, with whether it can be given up;
+     * or none.
      *
-     * @throws ReleaseRefused When there is none, or its files are already in place: the way out of that is going back.
+     * @return array<string,mixed>|null `ReleaseProgress::forTheScreen()`, and `moved_nothing`.
+     *
+     * @throws ReleaseRefused When one was started by a release whose record this one cannot read.
+     */
+    public function standingForTheScreen(): ?array
+    {
+        $progress = ReleaseProgress::standing($this->store);
+
+        return $progress === null ? null : [...$progress->forTheScreen(), 'moved_nothing' => $this->steps->hasMovedNothing($progress)];
+    }
+
+    /**
+     * Give up an installation that has not moved anything of the site: before the swap, or at it
+     * before its first folder moved (FR-022a).
+     *
+     * @throws ReleaseRefused When there is none, or it has moved a folder: the way out of that is going on, or going back.
      */
     public function cancel(int $actorId, DateTimeImmutable $now): void
     {
         $this->store->exclusively(function () use ($actorId, $now): void {
             $progress = $this->standing();
 
-            if (! $progress->isBeforeTheSwap()) {
+            if (! $this->steps->hasMovedNothing($progress)) {
                 throw new ReleaseRefused(
                     self::PAST_CANCELLING,
-                    __('The files of this release are already in place, so there is nothing to cancel. Finish the installation, or go back to the previous release.', 'corex'),
+                    __('This installation has already moved folders of the site, so it can no longer be given up. Go on with it, or go back to the previous release.', 'corex'),
                 );
             }
 

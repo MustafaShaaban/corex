@@ -567,6 +567,34 @@ describe( 'an installation somebody’s browser went away from', () => {
 		expect( questions().at( -1 ) ).toBe( 'overview' );
 	} );
 
+	it( 'cannot be given up once the swap has moved a folder', async () => {
+		await openTheScreen( {
+			...OVERVIEW,
+			installation: standing( 'swap', { moved_nothing: false } ),
+		} );
+
+		expect( container.textContent ).toContain(
+			'Going on finishes it, or puts every folder back'
+		);
+		expect( button( 'Go on with it' ) ).toBeDefined();
+		expect( button( 'Give it up' ) ).toBeUndefined();
+	} );
+
+	it( 'can be given up when it stopped at the swap before a folder moved', async () => {
+		await openTheScreen( {
+			...OVERVIEW,
+			installation: standing( 'swap', { moved_nothing: true } ),
+		} );
+
+		expect( container.textContent ).toContain( 'before any folder moved' );
+		expect( button( 'Go on with it' ) ).toBeDefined();
+
+		press( 'Give it up' );
+		await answer( 'cancel', undefined );
+
+		expect( questions().at( -1 ) ).toBe( 'overview' );
+	} );
+
 	it( 'is not offered when it was only prepared: its key went with the page that asked', async () => {
 		await openTheScreen( {
 			...OVERVIEW,

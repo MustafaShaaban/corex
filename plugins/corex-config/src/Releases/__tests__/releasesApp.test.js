@@ -65,6 +65,7 @@ function waitingClient() {
 		overview: ask( 'overview' ),
 		inspect: ask( 'inspect' ),
 		upload: ask( 'upload' ),
+		removeLeftovers: ask( 'removeLeftovers' ),
 	};
 }
 
@@ -370,5 +371,58 @@ describe( 'sending a package', () => {
 			'What arrived is not the file that was sent.'
 		);
 		expect( container.querySelector( 'progress' ) ).toBeNull();
+	} );
+} );
+
+describe( 'what an installation left, when none is in progress', () => {
+	const LEFT = {
+		...OVERVIEW,
+		leftovers: [
+			{
+				what: 'staging',
+				where: '/home/acme/wp-content/corex-releases/staging',
+			},
+			{
+				what: 'recovery_file',
+				where: '/home/acme/wp-content/mu-plugins/corex-release-recovery.php',
+			},
+		],
+	};
+
+	it( 'is named, with where each thing is, and removed when asked', async () => {
+		await answer( 'overview', LEFT );
+
+		expect( container.textContent ).toContain(
+			'A release unpacked for an installation that is no longer in progress: /home/acme/wp-content/corex-releases/staging'
+		);
+		expect( container.textContent ).toContain(
+			'a must-use plugin that asks for the key of an installation that is not here'
+		);
+
+		press( 'Remove them' );
+		await answer( 'removeLeftovers', { removed: LEFT.leftovers } );
+
+		// The screen shows what is on the site now, not what it was told was removed.
+		expect( asked.at( -1 ).question ).toBe( 'overview' );
+		await answer( 'overview', OVERVIEW );
+		expect( button( 'Remove them' ) ).toBeUndefined();
+	} );
+
+	it( 'says why they could not be removed, as the site worded it', async () => {
+		await answer( 'overview', LEFT );
+
+		press( 'Remove them' );
+		await answer(
+			'removeLeftovers',
+			new ReleaseRefusedError(
+				'installation_in_progress',
+				'An installation is in progress on this site.'
+			)
+		);
+
+		expect( container.textContent ).toContain(
+			'An installation is in progress on this site.'
+		);
+		expect( button( 'Remove them' ) ).toBeDefined();
 	} );
 } );

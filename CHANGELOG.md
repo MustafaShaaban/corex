@@ -32,6 +32,15 @@ All notable changes to Corex are documented here. The format follows
   holds them and in the address, and the screen goes on asking for as long as WordPress's
   maintenance can last, saying that it is waiting. An installation's record says where its key
   was found (`key_from`).
+- **An installation that stopped as its release was being put in place, before any folder moved,
+  can be given up from CoreX → Releases** (FR-022a; DECISIONS #370). Perego's screen offered only
+  "Go on with it" there. Giving it up lets visitors in and removes its recovery plugin and the
+  unpacked release; once a folder has moved it is refused, as before.
+- **CoreX → Releases names what an installation left when none is in progress, and removes it
+  when asked** (FR-022b): an unpacked release, a recovery plugin no installation holds the key
+  of, a kept release with no journal. Perego's screen said "No installation is in progress"
+  beside them, and the owner removed them in the host's file manager. New route:
+  `POST corex/v1/releases/leftovers/remove`.
 
 ### Client impact
 

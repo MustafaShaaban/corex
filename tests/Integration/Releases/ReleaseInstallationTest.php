@@ -19,8 +19,10 @@ use Corex\Boot;
 use Corex\Config\Releases\InstalledRelease;
 use Corex\Config\Releases\ReleaseFinisher;
 use Corex\Config\Releases\ReleaseInstallation;
+use Corex\Config\Releases\ReleaseLeftovers;
 use Corex\Config\Releases\ReleaseProgress;
 use Corex\Config\Releases\ReleaseRestGateway;
+use Corex\Config\Releases\ReleaseReturn;
 use Corex\Config\Releases\ReleasesController;
 use Corex\Config\Releases\ReleaseStore;
 use Corex\Config\Releases\ReleaseSwap;
@@ -423,6 +425,135 @@ it('finishes a swap its request was cut off in the middle of, when the next requ
         ->and($site->files()['wp-content/themes/corex/style.css'])->toBe('/* 0.45 */')
         ->and(isset($site->files()['wp-content/plugins/corex-legacy/legacy.php']))->toBeFalse();
 });
+
+it('gives up an installation whose swap was cut off as its first folder was to move, and leaves the site as it was', function () {
+    $site = ($this->site)();
+    cutTheSwapOffAfter($site, 0);
+
+    $standing  = askTheInstaller('GET', '/releases')->get_data()['data']['installation'];
+    $cancelled = askTheInstaller('POST', '/releases/install/cancel')->get_data();
+    $logged    = $site->store->log();
+
+    expect($standing)->toMatchArray(['step' => ReleaseProgress::SWAP, 'moved_nothing' => true])
+        ->and($cancelled['ok'])->toBeTrue()
+        ->and($site->files())->toBe(sortedByPath(RUNNING_0_44))
+        ->and($site->maintenance->isOn())->toBeFalse()
+        ->and($site->recovery->isWritten())->toBeFalse()
+        ->and($site->store->state())->toBe([])
+        ->and(glob($site->root . '/wp-content/corex-releases/staging/*'))->toBe([])
+        ->and(end($logged))->toMatchArray(['event' => 'cancelled', 'version' => '0.45.0', 'by' => $this->admin])
+        ->and(askTheInstaller('GET', '/releases')->get_data()['data'])->toMatchArray(['installation' => null, 'leftovers' => []]);
+});
+
+it('will not give up an installation whose swap moved a folder before it was cut off', function () {
+    $site = ($this->site)();
+    cutTheSwapOffAfter($site, 2);
+
+    $standing = askTheInstaller('GET', '/releases')->get_data()['data']['installation'];
+
+    expect($standing)->toMatchArray(['step' => ReleaseProgress::SWAP, 'moved_nothing' => false])
+        ->and(askTheInstaller('POST', '/releases/install/cancel')->get_data())->toMatchArray(['ok' => false, 'reason' => ReleaseInstallation::PAST_CANCELLING])
+        ->and($site->store->state()['step'])->toBe(ReleaseProgress::SWAP)
+        ->and($site->maintenance->isOn())->toBeTrue();
+});
+
+it('gives up an installation cut off before it set the kept release aside, which stays the one to go back to', function () {
+    $site = ($this->site)();
+    $site->installTheRelease();
+    $site->giveTheRelease(['corex_version' => '0.45.1']);
+    $prepared = askTheInstaller('POST', '/releases/install/prepare', ['package' => THE_PACKAGE])->get_data()['data'];
+    askTheInstaller('POST', '/releases/install/confirm', ['phrase' => '0.45.1']);
+    stepUntil(ReleaseProgress::SWAP);
+
+    // Perego, 2026-10-18: the swap request held visitors off and was cut off before anything
+    // moved. Its safeguards are up; the release 0.45.0 replaced is still kept, with its journal.
+    $keyHash = hash('sha256', $prepared['key']);
+    $site->recovery->write($keyHash);
+    $site->maintenance->begin($keyHash, time());
+
+    $refused   = askTheInstaller('POST', '/releases/return', ['phrase' => '0.44.0'])->get_data();
+    $cancelled = askTheInstaller('POST', '/releases/install/cancel')->get_data();
+    $opened    = askTheInstaller('GET', '/releases')->get_data()['data'];
+
+    expect($refused)->toMatchArray(['ok' => false, 'reason' => ReleaseReturn::INSTALLING])
+        ->and($cancelled['ok'])->toBeTrue()
+        ->and($site->files()['wp-content/plugins/acme-site/acme-site.php'])->toBe('<?php // acme 0.45')
+        ->and($site->maintenance->isOn())->toBeFalse()
+        ->and($site->recovery->isWritten())->toBeFalse()
+        ->and($opened['installation'])->toBeNull()
+        ->and($opened['leftovers'])->toBe([])
+        ->and($opened['previous'])->toMatchArray(['status' => 'kept', 'version' => '0.44.0', 'replaced_by' => '0.45.0']);
+});
+
+it('names what an installation left when none is in progress, and removes it when asked, changing nothing of the release', function () {
+    $site = ($this->site)();
+    $site->installTheRelease();
+
+    // The way back to the kept release is not left over: it is the kept release's.
+    expect(askTheInstaller('GET', '/releases')->get_data()['data']['leftovers'])->toBe([]);
+
+    // What Perego's host held after its installation's record was gone.
+    $releases = $site->root . '/wp-content/corex-releases';
+    mkdir($releases . '/staging/wp-content/plugins/acme-site', 0777, true);
+    file_put_contents($releases . '/staging/wp-content/plugins/acme-site/acme-site.php', '<?php // unpacked, never installed');
+    unlink($site->journal->file());
+    $site->recovery->write(hash('sha256', 'a key no installation holds'));
+    $running = $site->files();
+
+    $found = askTheInstaller('GET', '/releases')->get_data()['data']['leftovers'];
+
+    expect(array_column($found, 'what'))->toBe([ReleaseLeftovers::STAGING, ReleaseLeftovers::RECOVERY_FILE, ReleaseLeftovers::PREVIOUS_UNKNOWN])
+        ->and(array_column($found, 'where'))->each->toBeString()->not->toBeEmpty();
+
+    $removed = askTheInstaller('POST', '/releases/leftovers/remove')->get_data();
+
+    expect($removed['ok'])->toBeTrue()
+        ->and($removed['data']['removed'])->toBe($found)
+        ->and($site->recovery->isWritten())->toBeFalse()
+        ->and(glob($releases . '/staging/*'))->toBe([])
+        ->and(glob($releases . '/previous/*'))->toBe([])
+        ->and($site->files())->toBe($running)
+        ->and(askTheInstaller('GET', '/releases')->get_data()['data']['leftovers'])->toBe([]);
+});
+
+it('removes nothing while an installation is in progress: what it holds is not left over', function () {
+    $site = ($this->site)();
+    ($this->confirmed)($site);
+    askTheInstaller('POST', '/releases/install/step');
+
+    expect(askTheInstaller('GET', '/releases')->get_data()['data']['leftovers'])->toBe([])
+        ->and(askTheInstaller('POST', '/releases/leftovers/remove')->get_data())->toMatchArray(['ok' => false, 'reason' => ReleaseInstallation::IN_PROGRESS])
+        ->and(glob($site->root . '/wp-content/corex-releases/staging/*'))->not->toBe([]);
+});
+
+/**
+ * Confirm the fixture release, step it to the swap, and have the swap's request die as it is
+ * about to make a rename: after the number of renames given.
+ */
+function cutTheSwapOffAfter(ReleaseInstaller $site, int $renames): void
+{
+    $site->confirmTheRelease();
+    stepUntil(ReleaseProgress::SWAP);
+
+    $done         = 0;
+    $site->rename = static function (string $from, string $to) use (&$done, $renames): bool {
+        if ($done++ === $renames) {
+            throw new InstallationRequestCutOff();
+        }
+
+        return rename($from, $to);
+    };
+
+    try {
+        askTheInstaller('POST', '/releases/install/step');
+
+        throw new RuntimeException('The swap request was not cut off.');
+    } catch (InstallationRequestCutOff) {
+        // It died there: nothing after the rename it was making ran.
+    } finally {
+        $site->rename = null;
+    }
+}
 
 /**
  * @param array<string,string> $files

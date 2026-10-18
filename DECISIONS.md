@@ -17012,6 +17012,102 @@ carries `key_from`. A folder `wp-content/corex-releases/discarded/` appears, hol
 release before the kept one until the screen has been opened a few times; it is closed to
 the web server like the rest of `corex-releases/`.
 
+## #370 — An installation that stopped at the swap before its first folder moved can be given up from the screen, and what an installation left with none in progress is named and removed on the administrator's word
+
+**Date:** 2026-10-18. **Branch:** `fix/107-give-up-a-swap-that-moved-nothing`, stacked on
+`fix/107-release-key-through-maintenance` (PR #418, DECISIONS #369), which changes the same
+swap. **Spec:** 107, amended: FR-022a, FR-022b, two clarifications in "Session 2026-10-18",
+two edge cases. **Mode:** CoreX Framework. The follow-up (a) that #369 records for the Perego
+session.
+
+**What happened.** Perego's second installation of 2026-10-18 stopped in the request that
+puts a release in place: maintenance was up, the recovery plugin written, no folder moved
+(#369 has why). CoreX → Releases then said "An installation … stopped as the release was
+being put in place" and offered only **Go on with it**. `ReleaseInstallation::cancel()`
+refused anything past `copy_tables` (`ReleaseProgress::isBeforeTheSwap()`), so an
+installation that had changed nothing could not be given up. Later the screen answered "No
+installation is in progress on this site" while `staging/` held the unpacked release,
+`previous/` was partly deleted and `mu-plugins/corex-release-recovery.php` was still there.
+The owner removed them in cPanel's file manager.
+
+**Decided.**
+
+1. **"Moved nothing" is read off the journal, by the installation's own mark.**
+   `ReleaseSteps::hasMovedNothing()` is true before the swap, and at the swap when the journal
+   on the site is not this installation's (`ReleaseJournal::isOf()`, the key hash the swap
+   wrote as `about.for`: the journal of the installation before, or none) or when
+   `ReleaseSwap::hasMovedNothing()` says so: every rename `pending`, or `started` with the
+   folders saying it was not made (the test `askTheFoldersWhatWasStarted()` already used,
+   now `wasMade()`). Anything `done` is a folder moved. A journal `undone` has every rename
+   back at `pending`, so it counts as nothing moved, which it is.
+2. **`cancel` uses it, and the screen is told it.** The refusal past it is worded for a swap
+   that has moved some folders as well as for `finish`: "This installation has already moved
+   folders of the site, so it can no longer be given up. Go on with it, or go back to the
+   previous release." `ReleaseInstallation::standingForTheScreen()` adds `moved_nothing` to
+   what the screen reads, and `ReleaseOverview` gives it (the desk no longer does: the desk
+   knows nothing of journals). The Standing panel offers **Give it up** at `swap` only when
+   `moved_nothing` is true, with its own sentence.
+3. **Giving up at the swap lets visitors in and removes only this installation's way back.**
+   `ReleaseSafeguards::withdraw($keyHash)` ends maintenance and removes the recovery plugin
+   when it asks for this installation's key (`ReleaseRecoveryPlugin::keyHash()` reads the hash
+   back from the file it wrote). A request cut off before it raised the safeguards left the
+   installation before's plugin in place, and that is still the way back to the release kept
+   for it, so it stays. The unpacked release is set aside (`ReleaseStaging::setAside()`, one
+   rename into `discarded/`), not deleted file by file, and the table copies this installation
+   made are discarded, as before. Recorded `cancelled`, as before.
+4. **Going back is refused over such an installation, as over one unpacking.**
+   `ReleaseReturn` asks the same `hasMovedNothing()`. Before, at `swap` it was let through,
+   and where the journal was still the installation before's, going back would have tried to
+   move the running release into `staging/` over the folders unpacked there.
+5. **What an installation left, with none in progress, is named and offered for removal.**
+   `ReleaseLeftovers` (new) finds three things, and only when no `state.json` stands: folders
+   in `staging/`; the recovery plugin when its key is neither the kept release's (a journal
+   `swapped` or `stuck` with that `about.for`) nor anybody's; folders in `previous/` with no
+   `journal.json`, which nothing can go back to. The overview carries them as `leftovers`
+   (`what`, `where`), and the screen shows **Left from an installation** with a sentence each,
+   the path, and **Remove them**. `POST corex/v1/releases/leftovers/remove` takes the lock,
+   refuses while an installation stands (`installation_in_progress`), sets the two folders
+   aside and removes the plugin, and answers what it removed.
+
+**Not chosen.**
+
+- *Removing the leftovers when the screen opens, unasked.* One of them is a must-use plugin,
+  and the administrator who removed things by hand once should be told what is removed before
+  it is. Opening the screen already deletes what was set aside; that is the installer's own
+  folder, this is not only that.
+- *Recording the removal.* What is removed belongs to no installation, and nothing of the
+  release the site runs changes. A kind of release event with no version would need its own
+  row in the record, the activity log's summary and the history panel.
+- *Putting back the release kept from the installation before.* #369's swap sets it aside
+  before its journal is begun, and the screen begins deleting what is set aside when it opens,
+  which is before anybody can press **Give it up**. Moving a partly deleted release back into
+  `previous/` would offer a way back that does not hold. Where the swap was cut off before it
+  set it aside, it is still in `previous/` and still offered.
+- *Listing a left `.maintenance`.* WordPress stops reading it ten minutes after the time in
+  it, and the file is also what WordPress's own updates write: removing one that is not CoreX's
+  would end somebody else's maintenance. The guide says to remove it in the file manager.
+- *Telling a partly deleted `previous/` from a whole one.* v0.46.0's deletion went file by file
+  in no fixed order, so the journal may or may not have gone with it. Without the journal the
+  folder is listed; with it, it is offered as the release before, as it was. No release after
+  #369 deletes it in place.
+
+**Tests.** Unit: `ReleaseSwap::hasMovedNothing()` for a swap cut off before the first rename,
+after it with the mark unwritten, and before the second; after going back. The recovery
+plugin's key hash read back. Integration (`ReleaseInstallationTest`, through the REST server
+on real WordPress): a swap cut off as its first folder was to move is offered for giving up
+and given up, the site as it was, maintenance down, the plugin gone, nothing left over; one
+cut off after two folders moved is refused, maintenance up; Perego's case (a kept release, the
+safeguards raised, nothing moved) given up with going back refused first and the kept release
+still offered afterwards; the three leftovers named and removed, the site's files unchanged;
+nothing removed while an installation stands. The two that give an installation up at the swap
+fail against the old `isBeforeTheSwap()` rule. Jest: the Standing panel at `swap` with and without `moved_nothing`;
+the leftovers panel names, removes and reloads, and says why when refused.
+
+**Client impact.** None to do. A site that takes this can give up, from CoreX → Releases, an
+installation stopped before it moved a folder, and is shown what one left instead of "No
+installation is in progress". The guide's "If the page is closed" section says what each
+leftover is.
+
 ## #371 — A package that would put a plugin or theme back to an older version than the site has says so before the version is typed, and is installed only when that is confirmed
 
 **Date:** 2026-10-18. **Branch:** `feat/107-refuse-third-party-downgrade`, stacked on
