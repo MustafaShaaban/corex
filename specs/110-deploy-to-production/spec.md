@@ -581,12 +581,15 @@ Written without asking; each is the owner's to overrule.
 - **The host's behaviour is measured, not assumed.** Whether UltaHost's bot protection lets a
   non-browser client through, whether WordPress's scheduled events run there, and how long a backup
   of Perego takes are measured on the host before the plan is final.
-- **The installation's failure on UltaHost is fixed before this spec is planned, on its own.**
-  It is a defect of v0.46.0 that strands any installation, not only a deploy. Its cause on that host
-  (a header the host drops, or something else; the 503 seen on 2026-10-18 was WordPress's own
-  answer from PHP, with no cache header, so a cache is ruled out) is found and fixed as a
-  fix to spec 107, and released, before a deploy is built on top of it. FR-045 is what a deploy adds
-  on top of that fix.
+- **The installation's failure on UltaHost is fixed first, on its own: done in v0.46.1.** It was
+  a defect of v0.46.0 that stranded any installation, not only a deploy. v0.46.1 (2026-10-18;
+  spec 107 FR-022a, FR-022b, FR-024a, FR-024b, FR-025, FR-029; DECISIONS #369 to #371) fixed
+  it in two ways. The request that moves the folders no longer deletes the kept release while
+  visitors are held off. The installation's key also travels in the address, so it gets through
+  on a host that drops request headers. (The 503 seen on 2026-10-18 was WordPress's own answer,
+  not a cache.) Perego installed v0.46.1 from Releases on that host the same evening, and it
+  finished. FR-045 is what a deploy adds on top: the driver, not a page, has to carry the
+  installation through the window.
 - **Production's own Releases screen is unchanged for a person using it.** Everything spec 107 does
   stays, including uploading a package by hand.
 

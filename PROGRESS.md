@@ -51,9 +51,13 @@ gate looks in three places and the screen asks through WordPress's ten minutes),
 FR-022a, FR-022b: an installation stopped before any folder moved can be given up, and what one
 left is named and removed) and #420 (#371; FR-029: a package that would put a third-party
 plugin or theme back to an older version says so and installs only when that is confirmed).
-Owed: the Releases record's entries of 2026-10-18 from Perego (something cleared the
-installation's state before the owner pressed **Finish the installation**), and the next real
-installation's record (`key_from`), watched. This section says where each unfinished spec
+Perego installed v0.46.1 itself from Releases the same evening, with `previous/` emptied by
+hand first as Client impact says, and it finished (read from outside by the Perego session:
+`corex-core` 0.46.1 active, pages answering, no `.maintenance`, the six third-party plugins
+unchanged). That installation was run by v0.46.0's code, so its record has no `key_from`.
+Owed: the Releases record's entries of the failed installation (something cleared its state
+before the owner pressed **Finish the installation**), and the `key_from` of the first
+installation run by v0.46.1. This section says where each unfinished spec
 stops, so work resumes from here and not from a transcript.
 
 **Spec 110 is drafted and waits on the owner (2026-10-18).**
@@ -72,12 +76,12 @@ hidden". Every CoreX table has an auto-increment `id` and every insert into them
 so this process's own inserts can be heard through the `query` filter and `$wpdb->insert_id`.
 Nothing of it is on `main`.
 
-**Spec 107 has run on the host it is for, once well and once not.** Perego's first
+**Spec 107 has run on the host it is for: twice well and once not.** Perego's first
 installation from CoreX → Releases on its shared host, on 2026-10-18, finished; its second,
 with a release kept, held the site in maintenance and did not put the release in place. v0.46.1
-is the fix. The operator's guide and the first-installation runbook are written
+is the fix, and its own installation there that evening finished. The operator's guide and the first-installation runbook are written
 (`docs/en/05-deployment/releases-from-the-admin.md`, `first-installation-by-hand.md`). What is
-owed is not code: the next installation on a shared host, on v0.46.1, watched; then
+owed is not code: an installation run by v0.46.1 on a shared host, watched; then
 `last_verified` on those two pages.
 
 | Spec | In v0.45.0 | Where it stops | Resume with |
