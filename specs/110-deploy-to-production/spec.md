@@ -56,7 +56,11 @@ Releases. Every step before it still needs an agent and a terminal on the owner'
   host is known to drop the `Authorization` header before PHP. That fits what was seen, and is not
   yet proven. It is a defect of the released spec 107 and is fixed on its own, before this spec
   is planned (see Assumptions). Today the owner is left to wait out WordPress's ten minutes and
-  press **Finish the installation**.
+  press **Finish the installation**. On Perego that did not help either. At 12:03 GMT the screen
+  answered "No installation is in progress on this site". The previous release was running, the
+  maintenance file was gone, and the recovery must-use plugin was still in place. The
+  installation's state was lost, its files never swapped, and the screen offered no way forward.
+  That release went up through the host's file manager instead.
 - **The maintenance page does not look like the site.** WordPress serves it before any plugin or
   theme has loaded, so nothing of CoreX or the site's theme styles it. WordPress offers one way to
   change it: when `wp-content/maintenance.php` exists, WordPress includes that file instead of its
