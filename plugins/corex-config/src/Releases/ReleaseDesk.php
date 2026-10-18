@@ -43,15 +43,11 @@ final class ReleaseDesk
     /**
      * What the screen shows when it is opened.
      *
-     * @return array{installed:array{known:bool,version:?string,client:?string},installation:?array<string,mixed>,blockers:list<array{reason:string,message:string}>,packages:list<array{name:string,bytes:int}>,part_bytes:int}
-     *
-     * @throws ReleaseRefused When an installation is in progress that this release cannot read.
+     * @return array{installed:array{known:bool,version:?string,client:?string},blockers:list<array{reason:string,message:string}>,packages:list<array{name:string,bytes:int}>,part_bytes:int}
      */
     public function overview(): array
     {
         return [
-            // An installation somebody's browser went away from is found here, and gone on with.
-            'installation' => ReleaseProgress::standing($this->store)?->forTheScreen(),
             'installed'  => [
                 'known'   => $this->installed->isKnown(),
                 'version' => $this->installed->version(),
@@ -132,6 +128,8 @@ final class ReleaseDesk
             'replaces'           => $inspection->replaces,
             'older'              => $inspection->older,
             'client_unconfirmed' => $inspection->clientUnconfirmed,
+            // A plugin or theme the site has a newer version of goes back to the package's (FR-029).
+            'downgrades'         => $inspection->downgrades,
             'files'              => $inspection->files,
             'bytes'              => $inspection->bytes,
             // WordPress is not replaced by a release (FR-026): the two are said where they differ.

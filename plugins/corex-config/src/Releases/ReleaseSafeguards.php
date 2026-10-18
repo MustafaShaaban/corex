@@ -75,6 +75,20 @@ final class ReleaseSafeguards
         $this->recovery->remove();
     }
 
+    /**
+     * Let visitors in and remove the way back of the installation whose key has this hash. One
+     * that is another's, the installation before's which this one did not get to write over,
+     * is left: it is still the way back to the release kept for it.
+     */
+    public function withdraw(string $keyHash): void
+    {
+        $this->maintenance->end();
+
+        if ($this->recovery->keyHash() === $keyHash) {
+            $this->recovery->remove();
+        }
+    }
+
     /** Whether the way back that needs no admin is on the site. */
     public function hasAWayBack(): bool
     {

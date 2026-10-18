@@ -19,23 +19,28 @@ const standing = ( step, cursor = 0, of = 0 ) => ( { step, cursor, of } );
  * @param {Object} script        What each route answers, in order.
  * @param {Array}  script.step   Answers of `step`; an Error is thrown.
  * @param {Array}  script.finish Answers of `finish`.
+ *                               Each says once, before it answers, that the site has not answered yet.
  * @return {Object} `{ client, asked }`.
  */
 function scripted( { step = [], finish = [] } ) {
 	const asked = [];
-	const next = ( name, answers ) => async () => {
-		asked.push( name );
-		const answer = answers.shift();
-		if ( answer === undefined ) {
-			throw new Error(
-				`the test scripted no more answers for ${ name }`
-			);
-		}
-		if ( answer instanceof Error ) {
-			throw answer;
-		}
-		return answer;
-	};
+	const next =
+		( name, answers ) =>
+		async ( { onWait } = {} ) => {
+			asked.push( name );
+			// A request the site has not answered yet, as the client says so.
+			onWait?.( 1000 );
+			const answer = answers.shift();
+			if ( answer === undefined ) {
+				throw new Error(
+					`the test scripted no more answers for ${ name }`
+				);
+			}
+			if ( answer instanceof Error ) {
+				throw answer;
+			}
+			return answer;
+		};
 
 	return {
 		client: {
@@ -108,6 +113,21 @@ it( 'starts at the database step for an installation whose files are already in 
 	await runInstallation( client, { ...noWaiting, from: 'finish' } );
 
 	expect( asked ).toEqual( [ 'finish' ] );
+} );
+
+it( 'says each time the site has not answered yet, as the client tells it', async () => {
+	const { client } = scripted( {
+		step: [ standing( 'finish' ) ],
+		finish: [ { done: true, version: '0.45.0', changes: [] } ],
+	} );
+	const waits = [];
+
+	await runInstallation( client, {
+		...noWaiting,
+		onWait: ( ms ) => waits.push( ms ),
+	} );
+
+	expect( waits ).toEqual( [ 1000, 1000 ] );
 } );
 
 it( 'paces itself: it waits before each request after the first', async () => {

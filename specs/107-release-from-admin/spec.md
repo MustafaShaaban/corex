@@ -14,6 +14,17 @@ client site went public, are answered under "Clarifications".
 #301, #304, #307, #310). Nothing of it has run on the shared host it was written for: the
 guide says so where an operator reads it.
 
+**Amended 2026-10-18** (DECISIONS #369): the first installation on a shared host was held in
+WordPress's maintenance answer until its ten minutes ran out. FR-024a, FR-024b and the last
+sentence of FR-025 are what was added; the clarification of that date says why. The second
+installation there stopped at the swap with nothing moved, and the screen could neither give it
+up nor say what was left on the host (DECISIONS #370): FR-022a and FR-022b were added.
+
+**Amended 2026-10-18, again** (DECISIONS #371): a package from the same installation held six
+third-party plugins older than the ones updated in the site's admin since it was built, and
+installing it would have put all six back without a word. FR-029 is what was added; the
+clarification of that date says how it was decided.
+
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
 hosting. That session sent the outline in full after the first draft was written; this draft
@@ -164,6 +175,85 @@ to him, so each answer is a decision made for him, with its reason, and his to o
   builder, because its first installation from the screen replaces each folder the release owns
   whole and so clears what extracting left behind in them.
 
+### Session 2026-10-18
+
+The first installation from the screen on a shared host (Perego, a LiteSpeed host with no
+command line, the page kept open) ended with "The site did not answer after 6 tries". The site
+answered WordPress's own maintenance page for nine minutes, and afterwards it served the release
+it had before. The same host hands PHP no `Authorization` header. A copy of a site made from the
+builder's own package and served with the key's header dropped, as that host drops
+`Authorization`, did the same: the release was put in place, and each of the six requests that
+were to finish the installation got WordPress's 503 in 31 seconds. The screen gives up after
+six tries; WordPress lets requests in again only after ten minutes.
+
+- Q: How does a request of an installation get through the maintenance answer on a host that
+  does not hand its header to PHP? → A: The key goes in the address as well as in the header,
+  and the maintenance file looks for it in the header as PHP was given it, in the headers as
+  the web server holds them, and in the address. It writes down which, so the record of the
+  next installation says how it got through (FR-024a). Both go with every request: the screen
+  cannot know beforehand which one a host lets through, and a request turned away costs ten
+  minutes. The address puts the key in the host's access log, which only the site's owner
+  reads on a shared host; the key opens this installation's maintenance answer and its
+  recovery link, which was an address already, and a later installation makes a new one. Not
+  chosen: reading the request's body, which the maintenance file would have to parse before
+  WordPress has loaded anything.
+- Q: What does the screen do when the site answers nothing it can read while a release is
+  being installed? → A: It goes on asking, a request at least every fifteen seconds, for as
+  long as WordPress's maintenance answer can last, and it says on the screen that it is
+  waiting and why. WordPress lets every request in by itself ten minutes after the release
+  was put in place, so an installation whose key never gets through still finishes, ten
+  minutes late, without anybody pressing anything (FR-025).
+- Q: What else can keep the request that puts a release in place from finishing? → A: Work
+  with no end inside it. That request deleted the release kept from the installation before,
+  file by file, after holding visitors off and before moving the first folder: Perego's release
+  folders are 9,983 files and took 11.8 seconds to delete on a development machine's disk.
+  A host that ends a request after its time limit would leave visitors held off and nothing
+  moved, which is what Perego's site showed. The kept release is now set aside by one rename
+  and deleted when the screen next opens, a few seconds at a time (FR-024b). It is the cause
+  that fits Perego best: an installation earlier the same day, from the same screen, with
+  nothing kept yet, finished without trouble, so on that host the key's header did reach PHP;
+  this one, with a release kept, did not finish. It was not measured on the host.
+- Q: What about the installation that brings this change? → A: It is run by the release it
+  replaces, which still deletes the kept release while visitors are held off: on a shared host
+  its contents are deleted by hand first. On a host that drops the header it can still wait
+  out WordPress's ten minutes; then **CoreX → Releases** offers **Finish the installation**,
+  which ends it in one request (measured on the copy). Every installation after it gets
+  through at once.
+- Q: An installation stopped at the swap, and the folders did not move. Can it be given up?
+  → A: Yes, from the screen, as one before the swap is. Perego's second installation that day
+  stopped there: visitors were held off, nothing was moved, and the screen offered only to go
+  on with it. Whether a folder moved is read off the swap's journal: there is none of this
+  installation's, or every rename in it is still to be made, or one that was being made when
+  the request died is found by the folders not to have been. Giving it up lets visitors in,
+  removes the recovery file, the unpacked release and the table copies it made, and records it
+  as cancelled. Once any folder has moved it is refused, as before: the way out of that is going
+  on, or going back (FR-022a). Not chosen: putting back the release kept from the installation
+  before, which the swap may already have set aside and the screen begun to delete.
+- Q: What does the screen say when it finds what an installation left and no installation in
+  progress? → A: It names each thing and offers to remove it. Afterwards Perego's screen said
+  "No installation is in progress" while the unpacked release, a partly deleted kept release
+  and the recovery file were still on the host, and the owner removed them in the host's file
+  manager. What is left is: an unpacked release in `staging/`; a recovery file whose key is
+  neither an installation's nor the kept release's; and a `previous/` that holds folders with no
+  journal saying what they are, which cannot be gone back to. Removing them changes nothing of
+  the release the site runs. It is not done unasked when the screen opens: one of them is a
+  must-use plugin, and the administrator is told what it is before it goes (FR-022b).
+
+- Q: What is done when a package would put a plugin or theme back to an older version than the
+  one on the site? → A: It is said with what the package is, before the version is typed, and
+  again where the installation is confirmed, naming each one with the site's version and the
+  package's; the installation is refused unless the administrator says, in a separate
+  checkbox, that going back to those versions is meant (FR-029). Perego's staged package
+  `0.46.0-20261018-110130` held ACF 6.8.6, FluentSMTP 2.2.95, Polylang 3.8.6, Rank Math
+  1.0.275, Site Kit 1.184.0 and UpdraftPlus 1.26.8, each older than the copy the owner had
+  updated in the live admin since. The version is the one each folder's header gives, read as
+  WordPress reads it, on the site and inside the package before anything is unpacked. A folder
+  whose version in the package is the release's own is one of CoreX's: going back on those is
+  going back to an older release, which FR-015 asks about. Not chosen: refusing the package
+  outright, because going back to a plugin's older version is sometimes the point (an update
+  that broke the site); keeping the site's newer folder, because a release's folder then would
+  not hold what the package holds (FR-027) and the site would be a mixture of two (FR-020).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — A release is put on the site from the admin (Priority: P1)
@@ -308,6 +398,10 @@ to the release that caused it.
 
 - The request that is replacing files is cut off by the host: the site must come back as the
   release it was, or as the new one, and say which.
+- The request that puts the release in place is cut off before its first folder moves: the
+  screen offers to go on with it or to give it up (FR-022a).
+- The installation's record is gone and what it left is still on the host: the screen names it
+  and offers to remove it (FR-022b).
 - The host forbids changing files from PHP, or the site's directories are not writable: the
   screen says so when it is opened, not after an upload.
 - There is not enough disk space, or not enough of the host's file allowance, for the package,
@@ -318,6 +412,9 @@ to the release that caused it.
 - A release that removes a plugin or an add-on the site has active: the folder goes out with the
   previous release, WordPress finds the plugin missing and switches it off, and the screen named
   the folder before the owner confirmed (FR-028).
+- A package built before a plugin it carries was updated in the site's admin: installing it
+  would put the plugin back to the package's older copy. The screen names it with both versions
+  and the installation waits for that to be confirmed (FR-029).
 - A site that has been updated by extracting zips, with files in its folders no release holds
   any more: the first installation from the screen replaces each folder whole (FR-027).
 - The browser is closed after the files are swapped and before the database step: the
@@ -379,9 +476,24 @@ to the release that caused it.
   is.
 - **FR-022**: An installation cut off part-way MUST leave the site as one release or the other,
   and the screen MUST say which when it is next opened.
+- **FR-022a**: An installation that has moved no folder of the site MUST be able to be given up
+  from the screen, including one that stopped at the swap before its first folder moved. Giving
+  it up MUST let visitors in, remove its recovery file and what it unpacked, and be recorded.
+  One that has moved a folder MUST NOT be given up: it is gone on with, or gone back from.
+- **FR-022b**: When no installation is in progress and the screen finds what one left (an
+  unpacked release, a recovery file no installation or kept release holds the key of, a kept
+  release with no journal), it MUST name each with where it is and offer to remove them, and
+  removing them MUST change nothing of the release the site runs.
 - **FR-023**: Only one installation may run at a time.
 - **FR-024**: While files are being replaced a visitor MUST get the site as it was or a
   maintenance answer.
+- **FR-024a**: A request of the installation MUST get through that maintenance answer on a host
+  that does not hand PHP the request's headers: the installation's key MUST be accepted from the
+  request's header, from the headers as the web server holds them, and from its address, and the
+  installation's record MUST say which one a finishing request's key came from.
+- **FR-024b**: While visitors are held off, an installation MUST do no work whose length grows
+  with the size of a release, other than moving folders. What it removes of the release kept
+  before is set aside and removed afterwards, a limited time per request.
 
 - **FR-027**: After an installation, a folder the release owns MUST hold exactly what the
   package holds for it. A file the release before shipped and this one does not MUST NOT remain
@@ -390,6 +502,12 @@ to the release that caused it.
   package, named to the builder, and is then checked and replaced as every other folder of the
   release is. Before the owner confirms, the screen MUST name every folder the running release
   holds and this package does not, because installing moves each of those out of the site.
+- **FR-029**: A package that holds an older version of a plugin or theme than the one on the
+  site, by the version its header gives, MUST say so with what the package is, before the
+  version is typed, naming each with both versions. Installing it MUST be refused unless the
+  administrator confirms, separately from the version and from FR-015's older release, that
+  those plugins and themes are meant to go back. CoreX's own folders, which carry the release's
+  version, are FR-015's to ask about.
 
 **The database**
 
@@ -403,7 +521,9 @@ to the release that caused it.
   MUST be kept with the previous release. This is not a backup of the site.
 - **FR-025**: Every step that makes more than one request (an upload in parts, an installation
   in stages) MUST pace itself, and MUST treat an answer that is not its own as a reason to wait
-  and try again, not as success or as failure.
+  and try again, not as success or as failure. While an installation is in hand it MUST go on
+  trying for as long as WordPress's maintenance answer can last, and say on the screen that it
+  is waiting.
 - **FR-032**: A failed change MUST be named, MUST stop the release being reported as installed,
   and MUST leave the previous release available.
 - **FR-033**: On a network, every site's database MUST be brought to the release.

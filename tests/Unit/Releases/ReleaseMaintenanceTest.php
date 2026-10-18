@@ -9,6 +9,9 @@
  * in maintenance while that is less than ten minutes old. A real WordPress answering a visitor
  * with it is the browser test's to show.
  *
+ * Each reading runs in a PHP process of its own: the gate defines a constant when it lets a
+ * request through, saying where the key was, and a constant cannot be taken back.
+ *
  * @package Corex\Tests\Unit\Releases
  */
 
@@ -22,31 +25,50 @@ use Corex\Config\Releases\ReleaseRefused;
 const THE_KEY = 'f3b1c2d4e5a697887766554433221100ffeeddccbbaa99887766554433221100';
 
 /**
- * WordPress's reading of the file, for a request with the given header and query.
+ * WordPress's reading of the file, for a request with the given server variables, query and
+ * headers as the web server holds them, in a PHP process of its own.
  *
- * @return array{inMaintenance:bool,scrapeBypassOpen:bool}
+ * @param array<string,mixed>       $server  What PHP was handed as `$_SERVER`.
+ * @param array<string,mixed>       $get     The query.
+ * @param array<string,string>|null $headers What `getallheaders()` answers; null where PHP has no such function.
+ *
+ * @return array{inMaintenance:bool,scrapeBypassOpen:bool,keyFrom:string}
  */
-function wordPressReads(string $file, array $server = [], array $get = []): array
+function wordPressReads(string $file, array $server = [], array $get = [], ?array $headers = null): array
 {
-    $read = static function () use ($file, $server, $get): mixed {
-        global $upgrading;
-        $_SERVER = array_merge($_SERVER, $server);
-        $_GET    = $get;
+    $reader = $file . '.reader.php';
+    file_put_contents($reader, '<?php
+        $request = json_decode(stream_get_contents(STDIN), true);
+        if (is_array($request["headers"])) {
+            function getallheaders(): array { return $GLOBALS["request"]["headers"]; }
+        }
+        define("ABSPATH", __DIR__ . "/");
+        require ' . var_export(dirname(__DIR__, 3) . '/plugins/corex-config/src/Releases/ReleaseMaintenance.php', true) . ';
+        $read = static function () use ($request): mixed {
+            global $upgrading;
+            $_SERVER = array_merge($_SERVER, $request["server"]);
+            $_GET    = $request["get"];
+            require ' . var_export($file, true) . ';
+            return $upgrading;
+        };
+        $upgrading = $read();
+        echo json_encode([
+            "inMaintenance"    => (time() - $upgrading) < 600,
+            // WordPress lets a request carrying the MD5 of an integer `$upgrading` through.
+            "scrapeBypassOpen" => is_int($upgrading),
+            "keyFrom"          => Corex\Config\Releases\ReleaseMaintenance::keyCameFrom(),
+        ]);
+    ');
 
-        require $file;
+    $process = proc_open([PHP_BINARY, $reader], [0 => ['pipe', 'r'], 1 => ['pipe', 'w']], $pipes);
+    fwrite($pipes[0], (string) json_encode(['server' => $server, 'get' => $get, 'headers' => $headers]));
+    fclose($pipes[0]);
+    $read = (string) stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    proc_close($process);
+    unlink($reader);
 
-        return $upgrading;
-    };
-
-    $kept      = [$_SERVER, $_GET];
-    $upgrading = $read();
-    [$_SERVER, $_GET] = $kept;
-
-    return [
-        'inMaintenance'    => (time() - $upgrading) < 600,
-        // WordPress lets a request carrying the MD5 of an integer `$upgrading` through.
-        'scrapeBypassOpen' => is_int($upgrading),
-    ];
+    return json_decode($read, true) ?? throw new RuntimeException('The reading said: ' . $read);
 }
 
 beforeEach(function () {
@@ -69,18 +91,30 @@ it('keeps every request out, as WordPress reads it', function () {
         ->and(wordPressReads($this->site . '/.maintenance')['inMaintenance'])->toBeTrue()
         ->and(wordPressReads($this->site . '/.maintenance', get: ['corex_release_key' => 'a-guess'])['inMaintenance'])->toBeTrue()
         ->and(wordPressReads($this->site . '/.maintenance', server: ['HTTP_X_COREX_RELEASE_KEY' => ''])['inMaintenance'])->toBeTrue()
+        ->and(wordPressReads($this->site . '/.maintenance', headers: ['X-Corex-Release-Key' => 'a-guess'])['inMaintenance'])->toBeTrue()
         // Not a string: an argument sent as a list.
         ->and(wordPressReads($this->site . '/.maintenance', get: ['corex_release_key' => [THE_KEY]])['inMaintenance'])->toBeTrue();
 });
 
-it('lets through the one request that carries the installation\'s key', function (array $server, array $get) {
+it('lets through the one request that carries the installation\'s key, and says where it was', function (array $server, array $get, ?array $headers, string $from) {
     $this->maintenance->begin(hash('sha256', THE_KEY), time());
 
-    expect(wordPressReads($this->site . '/.maintenance', $server, $get)['inMaintenance'])->toBeFalse();
+    expect(wordPressReads($this->site . '/.maintenance', $server, $get, $headers))
+        ->toMatchArray(['inMaintenance' => false, 'keyFrom' => $from]);
 })->with([
-    'in its header, as the finishing request does' => [['HTTP_X_COREX_RELEASE_KEY' => THE_KEY], []],
-    'in its address, as the recovery link does'    => [[], ['corex_release_key' => THE_KEY]],
+    'in its header, as PHP was handed it' => [['HTTP_X_COREX_RELEASE_KEY' => THE_KEY], [], null, ReleaseMaintenance::FROM_HEADER],
+    // The host of 2026-10-18 hands PHP no `Authorization` header. One that keeps this one from
+    // PHP too may still hold it where the web server keeps the request's headers.
+    'in its header, as the web server holds it, spelt as any client spells it' => [[], [], ['x-corex-release-key' => THE_KEY], ReleaseMaintenance::FROM_SERVER],
+    'in its address, as the screen and the recovery link send it' => [[], ['corex_release_key' => THE_KEY], ['Accept' => '*/*'], ReleaseMaintenance::FROM_ADDRESS],
+    'in its address, where a stale key is in its header' => [['HTTP_X_COREX_RELEASE_KEY' => 'a-stale-key'], ['corex_release_key' => THE_KEY], null, ReleaseMaintenance::FROM_ADDRESS],
 ]);
+
+it('says no key was needed by a request that came in after maintenance ended by itself', function () {
+    $this->maintenance->begin(hash('sha256', THE_KEY), time() - 601);
+
+    expect(wordPressReads($this->site . '/.maintenance')['keyFrom'])->toBe(ReleaseMaintenance::NOT_NEEDED);
+});
 
 it('holds the key\'s hash and never the key', function () {
     $this->maintenance->begin(hash('sha256', THE_KEY), time());

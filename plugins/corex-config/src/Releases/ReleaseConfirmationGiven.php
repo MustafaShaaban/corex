@@ -18,12 +18,14 @@ final readonly class ReleaseConfirmationGiven
     /**
      * @param string      $phrase        What was typed for the version being installed.
      * @param string|null $client        The client's name, typed, on a site that could not say whose it is.
-     * @param bool        $olderAccepted That an older release than the one running is meant.
+     * @param bool        $olderAccepted     That an older release than the one running is meant.
+     * @param bool        $downgradeAccepted That the plugins and themes the package holds older versions of are meant to go back to them.
      */
     public function __construct(
         public string $phrase,
         public ?string $client,
         public bool $olderAccepted,
+        public bool $downgradeAccepted,
     ) {
     }
 }

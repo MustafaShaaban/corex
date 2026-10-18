@@ -37,6 +37,7 @@ const STATEMENT = {
 	replaces: '0.43.5',
 	older: false,
 	client_unconfirmed: false,
+	downgrades: [],
 	files: 2650,
 	bytes: 28228940,
 	blockers: [],
@@ -64,6 +65,7 @@ function waitingClient() {
 		overview: ask( 'overview' ),
 		inspect: ask( 'inspect' ),
 		upload: ask( 'upload' ),
+		removeLeftovers: ask( 'removeLeftovers' ),
 	};
 }
 
@@ -222,6 +224,31 @@ describe( 'a package on the site', () => {
 		);
 	} );
 
+	it( 'names each plugin the package would put back to an older version, before anything is typed', async () => {
+		press( 'Read this package' );
+		await answer( 'inspect', {
+			...STATEMENT,
+			downgrades: [
+				{
+					path: 'wp-content/plugins/advanced-custom-fields-pro',
+					name: 'Advanced Custom Fields PRO',
+					site: '6.8.6',
+					package: '6.8.4',
+				},
+			],
+		} );
+
+		const statement = container.querySelector(
+			'.corex-releases__statement'
+		);
+		expect( statement.textContent ).toContain(
+			'This package holds older versions of these than the site has.'
+		);
+		expect( statement.textContent ).toContain(
+			'Advanced Custom Fields PRO: 6.8.6 on the site, 6.8.4 in the package'
+		);
+	} );
+
 	it( 'says whose the package is, on a site that cannot say whose it is itself', async () => {
 		press( 'Read this package' );
 		await answer( 'inspect', { ...STATEMENT, client_unconfirmed: true } );
@@ -344,5 +371,58 @@ describe( 'sending a package', () => {
 			'What arrived is not the file that was sent.'
 		);
 		expect( container.querySelector( 'progress' ) ).toBeNull();
+	} );
+} );
+
+describe( 'what an installation left, when none is in progress', () => {
+	const LEFT = {
+		...OVERVIEW,
+		leftovers: [
+			{
+				what: 'staging',
+				where: '/home/acme/wp-content/corex-releases/staging',
+			},
+			{
+				what: 'recovery_file',
+				where: '/home/acme/wp-content/mu-plugins/corex-release-recovery.php',
+			},
+		],
+	};
+
+	it( 'is named, with where each thing is, and removed when asked', async () => {
+		await answer( 'overview', LEFT );
+
+		expect( container.textContent ).toContain(
+			'A release unpacked for an installation that is no longer in progress: /home/acme/wp-content/corex-releases/staging'
+		);
+		expect( container.textContent ).toContain(
+			'a must-use plugin that asks for the key of an installation that is not here'
+		);
+
+		press( 'Remove them' );
+		await answer( 'removeLeftovers', { removed: LEFT.leftovers } );
+
+		// The screen shows what is on the site now, not what it was told was removed.
+		expect( asked.at( -1 ).question ).toBe( 'overview' );
+		await answer( 'overview', OVERVIEW );
+		expect( button( 'Remove them' ) ).toBeUndefined();
+	} );
+
+	it( 'says why they could not be removed, as the site worded it', async () => {
+		await answer( 'overview', LEFT );
+
+		press( 'Remove them' );
+		await answer(
+			'removeLeftovers',
+			new ReleaseRefusedError(
+				'installation_in_progress',
+				'An installation is in progress on this site.'
+			)
+		);
+
+		expect( container.textContent ).toContain(
+			'An installation is in progress on this site.'
+		);
+		expect( button( 'Remove them' ) ).toBeDefined();
 	} );
 } );

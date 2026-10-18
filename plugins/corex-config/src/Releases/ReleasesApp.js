@@ -159,6 +159,88 @@ function Running( { installed, blockers } ) {
 }
 
 /**
+ * What each thing an installation can leave behind is, said to the administrator who is
+ * asked to remove it.
+ *
+ * @param {string} what What the site calls it.
+ * @return {string} The sentence.
+ */
+function leftoverSentence( what ) {
+	switch ( what ) {
+		case 'staging':
+			return __(
+				'A release unpacked for an installation that is no longer in progress:',
+				'corex'
+			);
+		case 'recovery_file':
+			return __(
+				'The release recovery plugin, a must-use plugin that asks for the key of an installation that is not here. It has nothing to put back:',
+				'corex'
+			);
+		case 'previous_unknown':
+		default:
+			return __(
+				'Folders kept as a previous release, with no journal saying what they are. They cannot be gone back to:',
+				'corex'
+			);
+	}
+}
+
+/**
+ * What an installation left on the site when none is in progress (FR-022b): named, with
+ * where it is, and removed when the administrator says so.
+ *
+ * @param {Object}     props           Component props.
+ * @param {Array}      props.leftovers `{ what, where }`, as the site found them.
+ * @param {string}     props.pending   What the screen is busy with, if anything.
+ * @param {string}     props.problem   Why removing them did not work, when it did not.
+ * @param {() => void} props.onRemove  Called when the administrator asks for them to go.
+ * @return {Element} The panel.
+ */
+function Leftovers( { leftovers, pending, problem, onRemove } ) {
+	return (
+		<Panel
+			id="corex-releases-leftovers"
+			title={ __( 'Left from an installation', 'corex' ) }
+		>
+			<p className="corex-releases__line">
+				{ __(
+					'No installation is in progress, and one left these on the site. Nothing uses them, and removing them changes nothing of the release the site runs.',
+					'corex'
+				) }
+			</p>
+			<ul className="corex-releases__cautions">
+				{ leftovers.map( ( { what, where } ) => (
+					<li key={ what }>
+						{ leftoverSentence( what ) } <code>{ where }</code>
+					</li>
+				) ) }
+			</ul>
+			<p className="corex-releases__line corex-releases__line--quiet">
+				{ __(
+					'If the site cannot remove them, delete them in the host’s file manager.',
+					'corex'
+				) }
+			</p>
+			<div className="corex-releases__actions">
+				<button
+					type="button"
+					className="button"
+					disabled={ pending !== '' }
+					onClick={ onRemove }
+					{ ...workingProps( pending === 'leftovers' ) }
+				>
+					{ __( 'Remove them', 'corex' ) }
+				</button>
+			</div>
+			{ problem && (
+				<CorexErrorState scale="action" message={ problem } />
+			) }
+		</Panel>
+	);
+}
+
+/**
  * The site is back on the release before: said where the panel that offered it was.
  *
  * @param {Object}     props          Component props.
@@ -355,6 +437,8 @@ export default function ReleasesApp( { client } ) {
 	const [ prepared, setPrepared ] = useState( null );
 	// The site's answer once it has gone back to the release before, until it has been read.
 	const [ returned, setReturned ] = useState( null );
+	// Why what an installation left could not be removed, when it could not.
+	const [ leftoversProblem, setLeftoversProblem ] = useState( '' );
 
 	// An installation somebody's browser went away from, which this one can go on with. One
 	// that was only prepared is not shown: its key went with the page that asked for it.
@@ -377,6 +461,17 @@ export default function ReleasesApp( { client } ) {
 	const leaveTheInstallation = () => {
 		setPrepared( null );
 		setOutcome( null );
+		load();
+	};
+
+	const removeLeftovers = async () => {
+		setLeftoversProblem( '' );
+		try {
+			await client.removeLeftovers();
+		} catch ( failure ) {
+			setLeftoversProblem( failure.message );
+			return;
+		}
 		load();
 	};
 
@@ -433,6 +528,16 @@ export default function ReleasesApp( { client } ) {
 							installed={ overview.installed }
 							blockers={ overview.blockers }
 						/>
+						{ ! installing && overview.leftovers?.length > 0 && (
+							<Leftovers
+								leftovers={ overview.leftovers }
+								pending={ pending }
+								problem={ leftoversProblem }
+								onRemove={ () =>
+									during( 'leftovers', removeLeftovers )
+								}
+							/>
+						) }
 						{ ! installing && (
 							<>
 								<Send

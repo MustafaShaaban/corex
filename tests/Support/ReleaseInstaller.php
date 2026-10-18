@@ -22,10 +22,12 @@ use Corex\Config\Releases\InstalledRelease;
 use Corex\Config\Releases\ReleaseCompletion;
 use Corex\Config\Releases\ReleaseContentHash;
 use Corex\Config\Releases\ReleaseDesk;
+use Corex\Config\Releases\ReleaseDowngrades;
 use Corex\Config\Releases\ReleaseFinisher;
 use Corex\Config\Releases\ReleaseHostFacts;
 use Corex\Config\Releases\ReleaseInstallation;
 use Corex\Config\Releases\ReleaseJournal;
+use Corex\Config\Releases\ReleaseLeftovers;
 use Corex\Config\Releases\ReleaseMaintenance;
 use Corex\Config\Releases\ReleaseOverview;
 use Corex\Config\Releases\ReleasePackageInspector;
@@ -137,39 +139,26 @@ final class ReleaseInstaller
         $record     = new ReleaseRecord($this->store, new ActivityService($this->activity), static fn (int $id): string => 'User ' . $id);
         $desk       = new ReleaseDesk(
             $this->store,
-            new ReleasePackageInspector($this->installed, PHP_VERSION, '7.1.3'),
+            new ReleasePackageInspector($this->installed, new ReleaseDowngrades($this->root), PHP_VERSION, '7.1.3'),
             $this->installed,
             static fn (): ReleaseHostFacts => ReleaseHostFacts::ofThisHost(
                 [$content, $content . '/plugins', $content . '/themes', $content . '/mu-plugins', $root],
                 $allowedByConfiguration,
             ),
         );
-        $return   = new ReleaseReturn($this->store, $swap, $this->journal, $staging, $safeguards, $this->installed, $this->copies, $record);
-        $versions = $container->make(SchemaVersionStore::class);
-        $scope    = $container->make(SiteScope::class);
-        $network  = $container->make(NetworkContext::class);
+        $steps        = new ReleaseSteps($this->store, $staging, $this->copies, $swap, $this->journal, $safeguards, $this->installed);
+        $installation = new ReleaseInstallation($this->store, $desk, $this->installed, $steps, $safeguards, $record, $this->root);
+        $leftovers    = new ReleaseLeftovers($this->store, $staging, $this->journal, $this->recovery);
+        $return       = new ReleaseReturn($this->store, $swap, $this->journal, $staging, $safeguards, $this->installed, $this->copies, $record, $steps);
+        $versions     = $container->make(SchemaVersionStore::class);
+        $scope        = $container->make(SiteScope::class);
+        $network      = $container->make(NetworkContext::class);
 
         $this->controller = new ReleasesController(
             $container->make(ReleaseRestGateway::class),
             $desk,
             new ReleaseUpload($this->store),
-            new ReleaseInstallation(
-                $this->store,
-                $desk,
-                $this->installed,
-                new ReleaseSteps(
-                    $this->store,
-                    $staging,
-                    $this->copies,
-                    $swap,
-                    $this->journal,
-                    $safeguards,
-                    $this->installed,
-                ),
-                $safeguards,
-                $record,
-                $this->root,
-            ),
+            $installation,
             new ReleaseCompletion(
                 $this->store,
                 new ReleaseFinisher(
@@ -186,8 +175,9 @@ final class ReleaseInstaller
                 $this->journal,
                 $record,
             ),
-            new ReleaseOverview($desk, new ReleaseUpkeep($this->store, $return, $this->copies), $return, $record),
+            new ReleaseOverview($desk, new ReleaseUpkeep($this->store, $return, $this->copies), $return, $record, $installation, $leftovers),
             $return,
+            $leftovers,
         );
     }
 

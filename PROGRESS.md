@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.46.0** — tag `v0.46.0`, reachable from `main`.
+- **Latest published release: v0.46.1** — tag `v0.46.1`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,12 +40,21 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
-is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull
-requests still open on 2026-10-14 were landed together (pull request #415) and the release
-cut on the owner's word, so the client sites take one release. What each change is, is
-under "Recently landed" and in the changelog. This section says where each unfinished
-spec stops, so work resumes from here and not from a transcript.
+**Nothing is in flight but spec 110** (2026-10-18). v0.46.1 holds everything on `main`; the
+only open pull request is #417, the draft of spec 110, which waits on the owner's three
+questions. v0.46.1 is v0.46.0 and three changes to CoreX → Releases, made after Perego's second
+installation from it on its shared host (LiteSpeed) held the site in maintenance for ten
+minutes with the release not in place, and landed on the owner's word: #418 (DECISIONS #369;
+spec 107 FR-024a, FR-024b, FR-025: the kept release is set aside by one rename instead of
+deleted while visitors are held off, and the installation's key goes in the address too, the
+gate looks in three places and the screen asks through WordPress's ten minutes), #419 (#370;
+FR-022a, FR-022b: an installation stopped before any folder moved can be given up, and what one
+left is named and removed) and #420 (#371; FR-029: a package that would put a third-party
+plugin or theme back to an older version says so and installs only when that is confirmed).
+Owed: the Releases record's entries of 2026-10-18 from Perego (something cleared the
+installation's state before the owner pressed **Finish the installation**), and the next real
+installation's record (`key_from`), watched. This section says where each unfinished spec
+stops, so work resumes from here and not from a transcript.
 
 **Spec 110 is drafted and waits on the owner (2026-10-18).**
 [`specs/110-deploy-to-production/spec.md`](specs/110-deploy-to-production/spec.md): a release is
@@ -63,11 +72,13 @@ hidden". Every CoreX table has an auto-increment `id` and every insert into them
 so this process's own inserts can be heard through the `query` filter and `$wpdb->insert_id`.
 Nothing of it is on `main`.
 
-**Spec 107 is built and released, and has not run on the host it is for.** The Releases screen
-installs and goes back, and the operator's guide and the first-installation runbook are written
+**Spec 107 has run on the host it is for, once well and once not.** Perego's first
+installation from CoreX → Releases on its shared host, on 2026-10-18, finished; its second,
+with a release kept, held the site in maintenance and did not put the release in place. v0.46.1
+is the fix. The operator's guide and the first-installation runbook are written
 (`docs/en/05-deployment/releases-from-the-admin.md`, `first-installation-by-hand.md`). What is
-owed is not code: the first installation on a shared host, of a release that changes nothing
-important, by somebody who can watch it; then `last_verified` on those two pages.
+owed is not code: the next installation on a shared host, on v0.46.1, watched; then
+`last_verified` on those two pages.
 
 | Spec | In v0.45.0 | Where it stops | Resume with |
 |---|---|---|---|
@@ -75,7 +86,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 6. Slice 5 is built: a site names who its replies are from (#357), and its first half before it: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
-| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built | a first installation on a shared host, watched |
+| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built; the first installation on a shared host (Perego, 2026-10-18) stranded in maintenance, fixed on the branch above (#369) | an installation of that fix on a shared host, watched, and its record read |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | slices 1 and 2 of six: personal data marked and asked about by one rule (DECISIONS #309); several models in one export, with a history and a 30-day expiry (#312) | slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
 
@@ -118,6 +129,11 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**In v0.46.1, 2026-10-18.** CoreX → Releases on a shared host: #418, #419 and #420, described
+under "In flight" above and in the changelog. The installation that brings v0.46.1 is run by
+v0.46.0's code, so on a shared host the contents of `wp-content/corex-releases/previous/` are
+deleted by hand before it is installed (the changelog's Client impact).
 
 **In v0.46.0, 2026-10-13.** A careers application is accepted on a Windows
 host. `CareersServiceProvider::apply()` passed `$_FILES['cv']` through `wp_unslash()`, which

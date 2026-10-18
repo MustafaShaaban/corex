@@ -24,6 +24,7 @@ final readonly class ReleaseInspection
      * @param int             $files             Files in the folders the release owns.
      * @param int             $bytes             Their size.
      * @param string          $siteWordPress     The WordPress the site runs. A release does not replace WordPress, so one built with another is said before it is installed.
+     * @param list<array{path:string,name:string,site:string,package:string}> $downgrades The plugins and themes the package holds an older version of than the site: installing it needs saying so (FR-029).
      */
     public function __construct(
         public ReleaseManifest $manifest,
@@ -33,6 +34,7 @@ final readonly class ReleaseInspection
         public int $files,
         public int $bytes,
         public string $siteWordPress = '',
+        public array $downgrades = [],
     ) {
     }
 }

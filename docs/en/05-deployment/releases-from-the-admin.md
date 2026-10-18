@@ -101,6 +101,11 @@ site, and replaced whole. Do not copy a plugin into `dist/` after the build and 
 Such a package installs, and leaves the site's copy of that plugin as it is, because nothing
 measured it. [Shared-host dist artifact](./shared-host-dist.md) has the builder in full.
 
+Build from the copy of the plugin the site runs now. A plugin updated in the site's admin after
+the package was built is newer on the site than in the package, and installing the package
+puts it back to the package's copy. The statement names each such plugin or theme before you
+type the version (see [Install](#install)).
+
 ## Install
 
 1. **Open CoreX → Releases.** It says which release the site runs and for whom, and whether
@@ -111,14 +116,19 @@ measured it. [Shared-host dist artifact](./shared-host-dist.md) has the builder 
    being sent.
 3. **Read the statement.** The release, when it was built and for which client, what it
    replaces, how many files. Reading changes nothing on the site. A package that is wrong is
-   refused here, in words, and removed: see [Refusals](#refusals).
+   refused here, in words, and removed: see [Refusals](#refusals). A plugin or theme the
+   package holds an older version of than the site has is listed here with both versions, as
+   the header of its main file (a theme's `style.css`) gives them. CoreX's own plugins and
+   theme are not listed: they carry the release's version, and an older release is asked about
+   in step 6. To keep the site's newer copies, build the package again from them.
 4. **Press Install this release….** Nothing is installed yet. The next panel gives the
    **recovery link** and says what installing does.
 5. **Save the recovery link.** Copy it or press **Save it as a file**. It is shown once. It is
    what puts the previous release back if the admin does not load afterwards.
 6. **Type the version and press Install.** An older release than the one running needs a box
-   ticked as well. A site that cannot say whose it is asks for the client's name, as the
-   statement gives it.
+   ticked as well. So does a package that puts plugins or themes back to older versions: the
+   panel lists them again, and the site refuses the installation until that box is ticked. A
+   site that cannot say whose it is asks for the client's name, as the statement gives it.
 7. **Keep the page open** until it says the release is installed. It lists what changed in the
    database, or says nothing needed to.
 
@@ -129,15 +139,27 @@ measured it. [Shared-host dist artifact](./shared-host-dist.md) has the builder 
 | Unpack | The release's folders are unpacked into `wp-content/corex-releases/staging/` | Served as before |
 | Check | Each folder is counted and hashed and compared with what the package says it holds | Served as before |
 | Copy tables | Each of CoreX's tables is copied as it is | Served as before |
-| Put in place | Each folder of the running release is moved to `previous/` and the unpacked one moved in | Held off |
+| Put in place | The release kept from the installation before is set aside to `discarded/`; each folder of the running release is moved to `previous/` and the unpacked one moved in | Held off |
 | Database | The release just installed brings the database to itself and lists what moved | Held off until it ends |
 
 Each step is one or more short requests, so a host that cuts a request off after some seconds is
-not in the way. Up to the fourth step nothing of the site has changed, and the installation can
-be given up.
+not in the way. Until the first folder of the fourth step moves, nothing of the site has
+changed, and the installation can be given up.
 
 While visitors are held off they get WordPress's own "briefly unavailable for scheduled
 maintenance" answer, for the seconds between the folders moving and the database step ending.
+
+The screen's own requests get through that answer with the installation's key, which goes in
+each request's address as well as in a header: some shared hosts do not hand a request's headers
+to PHP. If the site still answers nothing the screen can read, the progress panel says it is
+waiting, and the screen goes on asking for up to eleven minutes. WordPress lets every request in
+by itself ten minutes after the folders moved, so the installation then finishes without
+anybody pressing anything. Keep the page open until it says the release is installed.
+
+The record of an installation says how its last request got through (`key_from` in
+`corex-releases/log.json`): `header`, `server_headers` (the header was not handed to PHP, and
+was read where the web server keeps it), `address`, or `not_needed` (WordPress had already
+let requests in).
 
 ### If the page is closed, or the connection drops
 
@@ -145,6 +167,29 @@ Open **CoreX → Releases** again. It says where the installation stands and goe
 before the folders moved it can be gone on with or given up; cut off while they were moving, it
 is finished or every folder is put back, and the screen says which; after they moved, it
 finishes the database step. None of that needs the recovery link.
+
+An installation that stopped as the release was being put in place, before its first folder
+moved, can be given up too: the screen says no folder moved. Giving it up lets visitors in, and
+removes its recovery plugin, the unpacked release and the table copies it made. The
+release kept from the installation before is still the one to go back to, unless the stopped
+step had already set it aside: then **The release before** is no longer shown. Once a folder
+has moved, **Give it up** is not offered: go on with it, which finishes the move or puts every
+folder back, or go back to the release before.
+
+If the screen finds what an installation left and no installation in progress, it shows **Left
+from an installation** with each thing and where it is on the server:
+
+| It names | What it is |
+|---|---|
+| A release unpacked for an installation that is no longer in progress | `wp-content/corex-releases/staging/` holds folders |
+| The release recovery plugin | `wp-content/mu-plugins/corex-release-recovery.php` asks for the key of no installation and of no kept release: it has nothing to put back |
+| Folders kept as a previous release, with no journal | `wp-content/corex-releases/previous/` holds folders and no `journal.json`: they cannot be gone back to |
+
+**Remove them** removes all of it and changes nothing of the release the site runs. The folders
+are set aside to `discarded/` and deleted a few seconds at a time each time Releases is opened.
+If the site cannot remove them, delete them in the host's file manager. A `.maintenance` file
+left in the folder WordPress is in is not listed: WordPress stops honouring it ten minutes after
+the time written in it, and the host's file manager removes it.
 
 If the folders have moved and nobody comes back, WordPress stops holding visitors off by itself
 after ten minutes. The site then serves the new release, and CoreX brings the database up to
@@ -245,6 +290,7 @@ A package the host cannot install today (see the table further up) is not remove
 |---|---|---|
 | `wp-content/corex-releases/incoming/` | Packages received and not yet installed | Installed, refused, or seven days old |
 | `wp-content/corex-releases/previous/` | The folders the last installation replaced | The next installation, or going back |
+| `wp-content/corex-releases/discarded/` | The release kept before, set aside by the next installation | Deleted a few seconds at a time each time Releases is opened |
 | `wp-content/corex-releases/log.json` | The record: the last fifty events | Kept |
 | `wp-content/mu-plugins/corex-release-recovery.php` | The way back that needs no admin | The next installation, or going back |
 | `.maintenance` in the folder WordPress is in | WordPress's maintenance answer | The end of the database step |

@@ -8,7 +8,7 @@ This page is generated from [`PROJECT-STATUS.md`](https://github.com/MustafaShaa
 root, which is the canonical copy. Edit that file; this one is rebuilt from it.
 :::
 
-**Version 0.46.0** · updated 2026-10-14
+**Version 0.46.1** · updated 2026-10-14
 
 This page exists so you do not have to read the git history to find out what you are adopting.
 Everything below is traceable to something in this repository — a spec, a policy file, a test

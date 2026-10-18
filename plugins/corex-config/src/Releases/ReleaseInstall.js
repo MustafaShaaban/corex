@@ -65,6 +65,20 @@ function accountOf( standing ) {
 			canGiveUp: false,
 		};
 	}
+	if ( standing.step === 'swap' && standing.moved_nothing ) {
+		return {
+			says: sprintf(
+				/* translators: %s: a CoreX version number. */
+				__(
+					'An installation of CoreX %s stopped as the release was about to be put in place, before any folder moved. Visitors may be held off until it is gone on with or given up. Giving it up lets them in, and the site stays the release it is.',
+					'corex'
+				),
+				version
+			),
+			go: __( 'Go on with it', 'corex' ),
+			canGiveUp: true,
+		};
+	}
 	if ( standing.step === 'swap' ) {
 		return {
 			says: sprintf(
@@ -210,6 +224,9 @@ export default function ReleaseInstall( {
 				outcome: await runInstallation( client, {
 					from,
 					onStand: setStand,
+					// Until the next answer: a stand the site gives says nothing of waiting.
+					onWait: () =>
+						setStand( ( last ) => ( { ...last, waiting: true } ) ),
 				} ),
 			} );
 		} catch ( failure ) {

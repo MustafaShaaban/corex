@@ -119,6 +119,15 @@ final class ReleaseStaging
     }
 
     /**
+     * Remove everything that is staged by one rename, for a request that should not spend a
+     * release's worth of deleting: what was staged is deleted when the screen next opens.
+     */
+    public function setAside(): void
+    {
+        $this->store->setAside('staging');
+    }
+
+    /**
      * Write one entry of the package where it is staged, if a release owns it.
      *
      * @throws ReleaseRefused For an entry whose path leaves the folder it is in.

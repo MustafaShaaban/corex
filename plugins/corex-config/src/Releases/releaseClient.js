@@ -10,6 +10,13 @@
  *
  * A refusal is an answer. It is marked, it is not asked for again, and it is given as the site
  * worded it.
+ *
+ * Once an installation is in hand, its key goes with every request, in a header and in the
+ * address: a shared host may not hand a header to PHP, and WordPress's maintenance answer lets
+ * through only a request whose key it finds (FR-024a). And "wait and ask again" then lasts as
+ * long as that answer can: WordPress lets every request in by itself ten minutes after the
+ * release was put in place, so a client that is still asking then finishes the installation
+ * whatever the host did to its key.
  */
 
 import { __, sprintf } from '@wordpress/i18n';
@@ -22,10 +29,20 @@ const MARK = 'corex_release';
 /** The header an installation's key is carried in (`ReleaseMaintenance::HEADER`). */
 const KEY_HEADER = 'X-Corex-Release-Key';
 
-/** How long to wait before the second try; doubled before each one after. */
+/** The query argument it is carried in as well (`ReleaseMaintenance::ARGUMENT`). */
+const KEY_ARGUMENT = 'corex_release_key';
+
+/** How long to wait before the second try; doubled before each one after, up to the longest. */
 const FIRST_WAIT_MS = 1000;
+const LONGEST_WAIT_MS = 15000;
 
 const DEFAULT_TRIES = 6;
+
+/**
+ * How long a request of an installation is asked again: WordPress's ten minutes of maintenance
+ * (`wp_is_maintenance_mode()`), and one more for the request that put the release in place.
+ */
+const MAINTENANCE_MS = 11 * 60 * 1000;
 
 /** How much of a file is read at a time where the hash is computed here. */
 const HASHED_AT_A_TIME = 4 * 1024 * 1024;
@@ -118,8 +135,9 @@ async function sha256Of( file ) {
  * @param {string}                        options.nonce   The REST nonce the screen was given.
  * @param {typeof window.fetch}           [options.fetch] `fetch`, or what stands in for it.
  * @param {(ms: number) => Promise<void>} [options.wait]  Waits a number of milliseconds.
- * @param {number}                        [options.tries] How many times a request is made before giving up.
- * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, cancel, goBack }`.
+ * @param {number}                        [options.tries] How many times a request is made before giving up, when no installation is in hand.
+ * @param {() => number}                  [options.now]   The time in milliseconds, as `Date.now` gives it.
+ * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, goBack, cancel, removeLeftovers }`.
  */
 export function createReleaseClient( {
 	restUrl,
@@ -127,6 +145,7 @@ export function createReleaseClient( {
 	fetch = window.fetch.bind( window ),
 	wait = sleep,
 	tries = DEFAULT_TRIES,
+	now = Date.now,
 } ) {
 	// The key of the installation in hand. The site makes it when an installation is prepared
 	// and keeps only its hash; it is held here for as long as the page is open, and goes with
@@ -144,7 +163,7 @@ export function createReleaseClient( {
 	async function once( url, init ) {
 		let response;
 		try {
-			response = await fetch( url, {
+			response = await fetch( withKey( url ), {
 				credentials: 'same-origin',
 				...init,
 				headers: {
@@ -174,18 +193,48 @@ export function createReleaseClient( {
 	}
 
 	/**
+	 * An address with the installation's key added, when there is one in hand.
+	 *
+	 * @param {string} url The address.
+	 * @return {string} The address the request is made to.
+	 */
+	function withKey( url ) {
+		return installationKey
+			? withQuery(
+					url,
+					`${ KEY_ARGUMENT }=${ encodeURIComponent( installationKey ) }`
+				)
+			: url;
+	}
+
+	/**
+	 * Whether to ask again after a try that brought no answer: for as long as WordPress's
+	 * maintenance answer can last while an installation is in hand, and for the tries given
+	 * otherwise.
+	 *
+	 * @param {number} made    How many tries have been made.
+	 * @param {number} started When the first was made.
+	 * @return {boolean} Whether to ask again.
+	 */
+	function asksAgain( made, started ) {
+		return installationKey
+			? now() - started < MAINTENANCE_MS
+			: made < tries;
+	}
+
+	/**
 	 * Ask until the site answers, waiting longer each time; then give up and say so.
 	 *
-	 * @param {string} path    The route, after the base.
-	 * @param {Object} [init]  What `fetch` is given.
-	 * @param {string} [query] What the request adds to the address.
+	 * @param {string}               path     The route, after the base.
+	 * @param {Object}               [init]   What `fetch` is given.
+	 * @param {string}               [query]  What the request adds to the address.
+	 * @param {(ms: number) => void} [onWait] Called before each wait, with how long it is.
 	 * @return {Promise<Object>} The marked answer, whether it is a yes or a no.
 	 */
-	async function ask( path, init = {}, query = '' ) {
-		for ( let attempt = 0; attempt < tries; attempt++ ) {
-			if ( attempt > 0 ) {
-				await wait( FIRST_WAIT_MS * 2 ** ( attempt - 1 ) );
-			}
+	async function ask( path, init = {}, query = '', onWait = () => {} ) {
+		let made = 1;
+
+		for ( const started = now(); ; made++ ) {
 			const answer = await once(
 				withQuery( restUrl + path, query ),
 				init
@@ -193,6 +242,15 @@ export function createReleaseClient( {
 			if ( answer ) {
 				return answer;
 			}
+			if ( ! asksAgain( made, started ) ) {
+				break;
+			}
+			const ms = Math.min(
+				FIRST_WAIT_MS * 2 ** ( made - 1 ),
+				LONGEST_WAIT_MS
+			);
+			onWait( ms );
+			await wait( ms );
 		}
 
 		throw new ReleaseUnreachableError(
@@ -202,7 +260,7 @@ export function createReleaseClient( {
 					'The site did not answer after %d tries. Nothing is assumed about what it did: open this screen again to see.',
 					'corex'
 				),
-				tries
+				made
 			)
 		);
 	}
@@ -210,12 +268,13 @@ export function createReleaseClient( {
 	/**
 	 * Ask, and take a no as an error carrying the site's own words.
 	 *
-	 * @param {string} path   The route, after the base.
-	 * @param {Object} [init] What `fetch` is given.
+	 * @param {string}               path     The route, after the base.
+	 * @param {Object}               [init]   What `fetch` is given.
+	 * @param {(ms: number) => void} [onWait] Called before each wait for an answer.
 	 * @return {Promise<Object>} The answer's data.
 	 */
-	async function data( path, init ) {
-		const answer = await ask( path, init );
+	async function data( path, init, onWait ) {
+		const answer = await ask( path, init, '', onWait );
 		if ( ! answer.ok ) {
 			throw new ReleaseRefusedError( answer.reason, answer.message );
 		}
@@ -298,6 +357,23 @@ export function createReleaseClient( {
 		installationKey = null;
 	}
 
+	/**
+	 * The release just installed brings the database to it, a part at a time. When it says it
+	 * is done the installation is over, and so is its key.
+	 *
+	 * @param {Object}               [options]
+	 * @param {(ms: number) => void} [options.onWait] Called before each wait for an answer.
+	 * @return {Promise<Object>} Where the installation stands, or `{ done, version, changes }`.
+	 */
+	async function finish( { onWait } = {} ) {
+		const stand = await data( '/install/finish', json( {} ), onWait );
+		if ( stand.done ) {
+			installationKey = null;
+		}
+
+		return stand;
+	}
+
 	return {
 		overview: () => data( '' ),
 		inspect: ( name ) => data( '/inspect', json( { package: name } ) ),
@@ -305,9 +381,11 @@ export function createReleaseClient( {
 		prepare,
 		confirm: ( phrase, more = {} ) =>
 			data( '/install/confirm', json( { phrase, ...more } ) ),
-		step: () => data( '/install/step', json( {} ) ),
-		finish: () => data( '/install/finish', json( {} ) ),
+		step: ( { onWait } = {} ) =>
+			data( '/install/step', json( {} ), onWait ),
+		finish,
 		goBack: ( phrase ) => data( '/return', json( { phrase } ) ),
 		cancel,
+		removeLeftovers: () => data( '/leftovers/remove', json( {} ) ),
 	};
 }

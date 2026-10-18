@@ -18,7 +18,7 @@ use WP_REST_Response;
  * The Releases screen's routes (spec 107, slices 3 and 4).
  *
  *     GET  releases                         what is installed, what the host cannot do, the packages here,
- *                                           and an installation in progress
+ *                                           an installation in progress, or what one left
  *     GET  releases/uploads/{hash}          how much of an upload the site holds
  *     POST releases/uploads/{hash}          a part of a package, as the request's body
  *     POST releases/uploads/{hash}/complete all of it has been sent: keep it, if it is what was sent
@@ -29,8 +29,12 @@ use WP_REST_Response;
  *     POST releases/install/finish          the database step, answered by the release just installed
  *     POST releases/install/cancel          give up an installation that has moved nothing
  *     POST releases/return                  go back to the release before, with what confirms it typed
+ *     POST releases/leftovers/remove        remove what an installation left, when none is in progress
  *
- * Only `step`, `finish` and `return` change a file of the site outside `wp-content/corex-releases/`.
+ * Only `step`, `finish`, `return`, `cancel` and `leftovers/remove` change a file of the site
+ * outside `wp-content/corex-releases/`. `cancel` changes only the maintenance file and the
+ * recovery plugin, for an installation that stopped at the swap; `leftovers/remove` only the
+ * recovery plugin.
  *
  * `install/finish` is a contract between releases: the release that asks for it is not the
  * release that answers. Its path, that it takes no argument, and the shape of its answer
@@ -49,6 +53,7 @@ final class ReleasesController
         private readonly ReleaseCompletion $completion,
         private readonly ReleaseOverview $opening,
         private readonly ReleaseReturn $return,
+        private readonly ReleaseLeftovers $leftovers,
     ) {
     }
 
@@ -65,6 +70,7 @@ final class ReleasesController
         $this->route('/releases/install/finish', 'POST', 'finish');
         $this->route('/releases/install/cancel', 'POST', 'cancel');
         $this->route('/releases/return', 'POST', 'goBack');
+        $this->route('/releases/leftovers/remove', 'POST', 'removeLeftovers');
     }
 
     public function overview(WP_REST_Request $request): WP_REST_Response
@@ -127,6 +133,7 @@ final class ReleasesController
                 sanitize_text_field((string) $request->get_param('phrase')),
                 $request->get_param('client') === null ? null : sanitize_text_field((string) $request->get_param('client')),
                 rest_sanitize_boolean($request->get_param('older') ?? false),
+                rest_sanitize_boolean($request->get_param('downgrade') ?? false),
             ),
             get_current_user_id(),
             new DateTimeImmutable('now'),
@@ -165,6 +172,11 @@ final class ReleasesController
             get_current_user_id(),
             new DateTimeImmutable('now'),
         ));
+    }
+
+    public function removeLeftovers(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->answer($request, fn (): array => ['removed' => $this->leftovers->remove()]);
     }
 
     private function route(string $path, string $method, string $callback): void

@@ -75,6 +75,15 @@ final class ReleaseJournal
     }
 
     /**
+     * Whether the last swap is the one of the installation whose key has this hash: whoever began
+     * it said so in what it is of, as `for`.
+     */
+    public function isOf(string $keyHash): bool
+    {
+        return ($this->about()['for'] ?? null) === $keyHash;
+    }
+
+    /**
      * @return list<array{from:string,to:string,state:string}>
      */
     public function moves(): array

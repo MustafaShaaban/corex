@@ -65,6 +65,7 @@ final readonly class ReleaseProgress
      * @param array<string,mixed>|null                                          $replaced          The description of the release that was running, where the site had one.
      * @param list<array{site:int,component:string,from:string,to:string}>      $changes           The database changes made so far.
      * @param string|null                                                       $failed            Why the database step stopped, when it did.
+     * @param list<array{path:string,name:string,site:string,package:string}>   $downgrades        The plugins and themes the package holds older versions of than the site (FR-029). Read as none where a release kept nothing under it, so it did not change `PROTOCOL`.
      */
     public function __construct(
         public string $step,
@@ -81,6 +82,7 @@ final readonly class ReleaseProgress
         public ?array $replaced,
         public array $changes = [],
         public ?string $failed = null,
+        public array $downgrades = [],
     ) {
     }
 
@@ -119,6 +121,7 @@ final readonly class ReleaseProgress
             is_array($state['replaced'] ?? null) ? $state['replaced'] : null,
             array_values((array) ($state['changes'] ?? [])),
             is_string($state['failed'] ?? null) ? $state['failed'] : null,
+            array_values((array) ($state['downgrades'] ?? [])),
         );
     }
 
@@ -140,6 +143,7 @@ final readonly class ReleaseProgress
             'replaced'           => $this->replaced,
             'changes'            => $this->changes,
             'failed'             => $this->failed,
+            'downgrades'         => $this->downgrades,
         ]);
     }
 

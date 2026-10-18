@@ -131,6 +131,14 @@ it('holds the key\'s hash and never the key', function () {
         ->and($written)->not->toContain(RECOVERY_KEY);
 });
 
+it('reads back the hash of the key it asks for, and none once it is removed', function () {
+    expect($this->recovery->keyHash())->toBe(hash('sha256', RECOVERY_KEY));
+
+    $this->recovery->remove();
+
+    expect($this->recovery->keyHash())->toBeNull();
+});
+
 it('gives the address that asks for it', function () {
     expect($this->recovery->link('https://acme.test/', RECOVERY_KEY))
         ->toBe('https://acme.test/?corex_release_key=' . RECOVERY_KEY . '&corex_release_recover=1');

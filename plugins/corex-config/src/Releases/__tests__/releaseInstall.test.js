@@ -55,6 +55,7 @@ const STATEMENT = {
 	replaces: '0.44.0',
 	older: false,
 	client_unconfirmed: false,
+	downgrades: [],
 	files: 2650,
 	bytes: 28228940,
 	wordpress: { package: '7.1.3', site: '7.1.3' },
@@ -332,6 +333,36 @@ describe( 'before it is confirmed', () => {
 		] );
 	} );
 
+	it( 'names the plugins that go back to an older version, and is not sent until that is said', async () => {
+		await askToInstall( {
+			...PREPARED,
+			downgrades: [
+				{
+					path: 'wp-content/plugins/advanced-custom-fields-pro',
+					name: 'Advanced Custom Fields PRO',
+					site: '6.8.6',
+					package: '6.8.4',
+				},
+			],
+		} );
+		type( 'corex-releases-version', '0.45.0' );
+
+		expect( container.textContent ).toContain(
+			'Advanced Custom Fields PRO: 6.8.6 on the site, 6.8.4 in the package'
+		);
+		expect( button( 'Install CoreX 0.45.0' ).disabled ).toBe( true );
+
+		act( () =>
+			container.querySelector( '#corex-releases-downgrade' ).click()
+		);
+		press( 'Install CoreX 0.45.0' );
+
+		expect( asked.at( -1 ).given ).toEqual( [
+			'0.45.0',
+			{ older: false, downgrade: true },
+		] );
+	} );
+
 	it( 'says why a confirmation was not taken, and can be tried again', async () => {
 		await askToInstall();
 		type( 'corex-releases-version', '0.45.0' );
@@ -446,6 +477,27 @@ describe( 'while it runs', () => {
 		expect( container.querySelector( `a[href="${ LINK }"]` ) ).toBeNull();
 	} );
 
+	it( 'says it is waiting while the site does not answer, and stops saying so when it does', async () => {
+		await answer( 'step', standing( 'finish' ) );
+		const finishing = asked.find(
+			( { question, done } ) => question === 'finish' && ! done
+		);
+		const status = () =>
+			container.querySelector( '.corex-releases__run [role="status"]' )
+				.textContent;
+
+		// What the client says before it waits to ask again.
+		act( () => finishing.given[ 0 ].onWait( 15000 ) );
+
+		expect( status() ).toContain(
+			'The site has not answered yet. While a release is put in place WordPress holds the site in maintenance, for up to ten minutes; this page goes on asking until it answers.'
+		);
+
+		await answer( 'finish', { ...standing( 'finish' ), done: false } );
+
+		expect( status() ).not.toContain( 'has not answered' );
+	} );
+
 	it( 'offers the way back when the site stops answering with the files in place', async () => {
 		await answer( 'step', standing( 'finish' ) );
 		await answer( 'finish', new ReleaseUnreachableError( 'No answer.' ) );
@@ -507,6 +559,34 @@ describe( 'an installation somebody’s browser went away from', () => {
 		expect( container.textContent ).toContain(
 			'Nothing of the site has changed yet.'
 		);
+		expect( button( 'Go on with it' ) ).toBeDefined();
+
+		press( 'Give it up' );
+		await answer( 'cancel', undefined );
+
+		expect( questions().at( -1 ) ).toBe( 'overview' );
+	} );
+
+	it( 'cannot be given up once the swap has moved a folder', async () => {
+		await openTheScreen( {
+			...OVERVIEW,
+			installation: standing( 'swap', { moved_nothing: false } ),
+		} );
+
+		expect( container.textContent ).toContain(
+			'Going on finishes it, or puts every folder back'
+		);
+		expect( button( 'Go on with it' ) ).toBeDefined();
+		expect( button( 'Give it up' ) ).toBeUndefined();
+	} );
+
+	it( 'can be given up when it stopped at the swap before a folder moved', async () => {
+		await openTheScreen( {
+			...OVERVIEW,
+			installation: standing( 'swap', { moved_nothing: true } ),
+		} );
+
+		expect( container.textContent ).toContain( 'before any folder moved' );
 		expect( button( 'Go on with it' ) ).toBeDefined();
 
 		press( 'Give it up' );

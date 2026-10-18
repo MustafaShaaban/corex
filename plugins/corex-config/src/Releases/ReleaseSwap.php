@@ -61,7 +61,8 @@ final class ReleaseSwap
     /**
      * Put the staged release in place.
      *
-     * What the last installation replaced is discarded first: one previous release is kept.
+     * What the last installation replaced is set aside first, by one rename: one previous
+     * release is kept. Deleting it is left to a request that holds nobody off (FR-024b).
      *
      * @param list<string>        $ownedBefore The folders the running release recorded as its own.
      * @param array<string,mixed> $about       What the journal keeps of this swap beside its renames.
@@ -70,7 +71,7 @@ final class ReleaseSwap
      */
     public function swap(ReleaseManifest $manifest, array $ownedBefore, array $about = []): void
     {
-        $this->store->empty('previous');
+        $this->store->setAside('previous');
         $this->journal->begin($this->movesFor($manifest, $ownedBefore), $about);
 
         $outcome = $this->run();
@@ -109,6 +110,24 @@ final class ReleaseSwap
         $this->askTheFoldersWhatWasStarted();
 
         return $this->run();
+    }
+
+    /**
+     * Whether the last swap has moved no folder: every rename in its journal is still to be
+     * made, or was being made when its request died and the folders say it was not (FR-022a).
+     */
+    public function hasMovedNothing(): bool
+    {
+        foreach ($this->journal->moves() as $move) {
+            $unmade = $move['state'] === ReleaseJournal::PENDING
+                || ($move['state'] === ReleaseJournal::STARTED && ! self::wasMade($move));
+
+            if (! $unmade) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** Go back: every rename the last swap made, made the other way, last first. */
@@ -193,21 +212,24 @@ final class ReleaseSwap
         return $misplaced;
     }
 
-    /**
-     * A rename marked `started` was being made when its request died. Whether it was made is
-     * read off the folders: it was, if the folder is gone from where it was and is where it
-     * was going.
-     */
+    /** A rename marked `started` was being made when its request died: the folders say whether it was. */
     private function askTheFoldersWhatWasStarted(): void
     {
         foreach ($this->journal->moves() as $index => $move) {
-            if ($move['state'] !== ReleaseJournal::STARTED) {
-                continue;
+            if ($move['state'] === ReleaseJournal::STARTED) {
+                $this->journal->mark($index, self::wasMade($move) ? ReleaseJournal::DONE : ReleaseJournal::PENDING);
             }
-
-            $made = ! file_exists($move['from']) && file_exists($move['to']);
-            $this->journal->mark($index, $made ? ReleaseJournal::DONE : ReleaseJournal::PENDING);
         }
+    }
+
+    /**
+     * A rename was made if the folder is gone from where it was and is where it was going.
+     *
+     * @param array{from:string,to:string} $move
+     */
+    private static function wasMade(array $move): bool
+    {
+        return ! file_exists($move['from']) && file_exists($move['to']);
     }
 
     /**

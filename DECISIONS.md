@@ -16880,3 +16880,304 @@ directory and whose file. A trial merge of #409's branch into this one stopped o
 plugin directory is a real directory, which is every site installed from the shared-host
 package, should check that it has no `wp-content/.env`, and if it has one, move its
 values to options and delete it.
+
+## #369 — An installation's key goes in the address as well as the header, the maintenance file looks for it in three places and says which it found, the screen asks for as long as WordPress's maintenance can last, and the kept release is set aside instead of deleted while visitors are held off
+
+**Date:** 2026-10-18. **Branch:** `fix/107-release-key-through-maintenance`, from `main`
+(`17cb68ab`, v0.46.0). **Spec:** 107, amended: FR-024a, FR-024b, FR-025's last sentence,
+clarification "Session 2026-10-18". **Mode:** CoreX Framework.
+
+**What happened.** Perego's first installation from CoreX → Releases on its shared host
+(peregoads.com: LiteSpeed, HTTP/2, cPanel, no command line; package
+`0.46.0-20261018-110130` over `0.46.0-20261018-100818`; the owner watching with the page
+open) ended with "The site did not answer after 6 tries". The site answered WordPress's
+own 503 (`retry-after: 600`, no cache header of any kind) from 11:22:38 to about 11:31 GMT.
+Afterwards `wp-content/themes/perego-theme/assets/images/share-default.jpg`, a file only
+the new release holds, answered 404. The same host drops the `Authorization` header before
+PHP: `SetEnvIf` and `CGIPassAuth` in `.htaccess` did not bring it back, a `getallheaders()`
+fallback in `wp-config.php` did. Muva's rehearsal of 2026-10-14 ended the same way when its
+page had been closed and opened again.
+
+**Reproduced, on this machine.** A copy of a site made from the builder's own output
+(`build:dist --zip`, 19 release paths), its own database, served by `php -S` through a
+router that logs each request's status and whether `X-Corex-Release-Key` reached PHP, and
+can drop that header before WordPress, as the host drops `Authorization`. A Playwright
+script installed the package through the screen, the page kept open.
+
+| Run | Code running | Header | Result |
+|---|---|---|---|
+| 1 | v0.46.0 | reaches PHP | installed in 10 s |
+| 2 | v0.46.0 | dropped | the swap answered `finish` (4.3 s); the six `install/finish` tries got WordPress's 503 in 31 s; "The site did not answer after 6 tries"; `.maintenance` left |
+| 2, ten minutes later | v0.46.0 | dropped | Releases said "The files of CoreX 0.46.0 are in place … Finish the installation"; pressed: installed in one request (`state.json` at `finish`, the journal `swapped`, 38 moves done) |
+| 3 | v0.46.0, installing this change | reaches PHP | installed; the swap request took 6 s, most of it deleting the kept release |
+| 4 | this change | dropped | installed in 10 s, no try repeated; the swap request took 0.8 s; the record says `key_from: server_headers` |
+
+So the six tries are explained: the gate in `.maintenance` read the key from
+`$_SERVER['HTTP_X_COREX_RELEASE_KEY']` or the query, the client sent it only as the header,
+and the client's tries (1 + 2 + 4 + 8 + 16 s) ended nine and a half minutes before
+WordPress's maintenance did. On a host that does not hand PHP the header, every installation
+stops there.
+
+**What it does not explain: Perego.** In run 2 the new release was in place; on Perego's
+host it was not (the 404). And the Perego session reported afterwards that 100818 had been
+installed from the same screen earlier that day without trouble. That installation's
+finishing request got through the gate, so on that host the key's header does reach PHP: the
+dropped header is a failure that was reproduced, not the one Perego had. What differed
+between the two: for 100818 `previous/` was empty; for 110130 it held the release 100818
+replaced. The request that puts a release in place deleted that kept release file by file,
+after raising maintenance and before the first rename, with no time limit
+(`ReleaseStore::empty('previous')` in `ReleaseSwap::swap()`). Measured: Perego's release
+folders, unzipped from its 100818 package, are 9,983 files and 11,596 entries, and that loop
+removed them in 11.82 s on this machine's SSD. On a shared host with I/O limits it can pass a
+request's time limit, leaving visitors held off and no folder moved; each retry raised
+maintenance again and went on deleting. This is the cause that fits; it was not measured on
+the host, whose error log was not read.
+
+**Not explained yet.** When the owner pressed the screen's button afterwards (12:02 GMT), the
+answer was "No installation is in progress on this site": CoreX's state for 110130 had been
+cleared, and the screen offered no way forward. In v0.46.0 only a finished installation, a
+cancel, a refused step or a return clears it, and each writes the record. The record's
+entries for that day were asked of the Perego session; they decide which it was.
+
+**Decided.**
+
+1. **The gate looks in three places, the first that holds the key opens it, and it says which.** The header as PHP
+   was handed it, the header as the web server holds it (`getallheaders()`, compared without
+   case), the query argument. It defines `COREX_RELEASE_KEY_FROM`; `ReleaseMaintenance::keyCameFrom()`
+   reads it (`header`, `server_headers`, `address`, or `not_needed` for a request that came in
+   after maintenance ended), and `ReleaseCompletion` writes it into the record of an
+   installation that finished or failed, as `key_from`. The gate is a nowdoc template filled
+   by `strtr`, as the recovery plugin is.
+2. **The client sends the key in both, on every request of an installation.** It cannot know
+   which one a host lets through, and a request turned away costs ten minutes. The key is
+   let go of when `finish` answers `done`.
+3. **While an installation is in hand, "wait and ask again" lasts eleven minutes**
+   (WordPress's ten, and one for the swap request itself), at most fifteen seconds between
+   tries, instead of six tries. An installation whose key never gets through finishes by
+   itself once WordPress lets requests in, which `ReleaseCompletion` already allowed
+   ("It asks for no key"). The screen says it is waiting, in the progress panel's status
+   line. Without an installation in hand the six tries stay.
+4. **The kept release is set aside, not deleted, while visitors are held off.**
+   `ReleaseStore::setAside('previous')` moves the folder into a new area, `discarded/`, by one
+   rename, and makes it again, empty; a host that refuses the rename has it emptied as before.
+   `ReleaseUpkeep` deletes from `discarded/` for four seconds each time the screen opens,
+   until it is gone. Run 4: the next screen's opening removed run 3's set-aside release.
+5. **A CI workflow serves the gate from OpenLiteSpeed** (`release-gate.yml`): the key in the
+   header, in the address, in neither, and a wrong key, with what LiteSpeed handed PHP printed.
+   Docker was not running on this machine, so this is where LiteSpeed's behaviour is read.
+   Its first green run (OpenLiteSpeed 1.9.3, `sapi: litespeed`): the key's header reached
+   `$_SERVER` (`key_from: header`), and so did `Authorization`; the address and no-key cases
+   answered as expected. So a stock LiteSpeed hands the header over, as Perego's host did for
+   100818; dropping it is a host's own configuration, as `Authorization` is there.
+
+**Follow-ups the Perego session asked for, not built here.** (a) An installation stranded at
+the swap with nothing moved must be abandonable from the screen: today the screen offers only
+"Go on with it" there, and after the state was cleared it offered nothing, so the owner removed
+the leftovers by hand. (b) A package must be refused, or flagged before the version is typed,
+when it would put an older copy of a plugin over a newer one on the site: Perego's staged
+110130 carried six plugins older than the ones the owner had since updated in the admin.
+
+**Not chosen.**
+
+- *The address alone.* It is what gets through any host, but the header is not written to
+  access logs, and on a host that hands it over it is what the record should say was used.
+- *The request's body.* The gate runs before WordPress loads anything and would parse JSON
+  from `php://input` for every request while maintenance is on.
+- *Asking the owner to add the header to `wp-config.php` as was done for `Authorization`.*
+  Every client site would need it, and a site that forgot would strand again.
+- *Deleting the kept release before raising maintenance.* Until this installation moves
+  folders, the kept release is still the running release's way back.
+- *Finishing an interrupted installation on the screen with no wait.* During maintenance the
+  admin itself answers 503 unless the key is in its address, and a reopened page has no key.
+  That is spec 110's (FR-045 there); here the screen keeps asking until WordPress lets it in.
+
+**The installation that brings this.** It is run by the release it replaces: its swap deletes
+the kept release, writes v0.46.0's gate, and its page is v0.46.0's client. So on a shared host
+the kept release is deleted by hand first (the contents of `corex-releases/previous/`, which
+is only the way back to the release before the running one). On a host that drops the header
+it can still wait out the ten minutes; then **CoreX → Releases** offers **Finish the
+installation**, which ends it (run 2, ten minutes later). Every installation after it gets
+through at once.
+
+**Found, and not changed.** `build:dist` copies nothing when the checkout's own path holds
+a `.claude` folder (`FORBIDDEN_SEGMENTS` is matched against the absolute source path), so it
+cannot build from a session worktree. The package for the runs above was built from a copy
+of the tree outside it.
+
+**Client impact.** A site that takes this release does not delete its kept release while
+visitors are held off, and gets through an installation on a host that does not hand PHP the
+key's header. The installation that brings it may still need
+**Finish the installation** after ten minutes on such a host. An installation's record now
+carries `key_from`. A folder `wp-content/corex-releases/discarded/` appears, holding the
+release before the kept one until the screen has been opened a few times; it is closed to
+the web server like the rest of `corex-releases/`.
+
+## #370 — An installation that stopped at the swap before its first folder moved can be given up from the screen, and what an installation left with none in progress is named and removed on the administrator's word
+
+**Date:** 2026-10-18. **Branch:** `fix/107-give-up-a-swap-that-moved-nothing`, stacked on
+`fix/107-release-key-through-maintenance` (PR #418, DECISIONS #369), which changes the same
+swap. **Spec:** 107, amended: FR-022a, FR-022b, two clarifications in "Session 2026-10-18",
+two edge cases. **Mode:** CoreX Framework. The follow-up (a) that #369 records for the Perego
+session.
+
+**What happened.** Perego's second installation of 2026-10-18 stopped in the request that
+puts a release in place: maintenance was up, the recovery plugin written, no folder moved
+(#369 has why). CoreX → Releases then said "An installation … stopped as the release was
+being put in place" and offered only **Go on with it**. `ReleaseInstallation::cancel()`
+refused anything past `copy_tables` (`ReleaseProgress::isBeforeTheSwap()`), so an
+installation that had changed nothing could not be given up. Later the screen answered "No
+installation is in progress on this site" while `staging/` held the unpacked release,
+`previous/` was partly deleted and `mu-plugins/corex-release-recovery.php` was still there.
+The owner removed them in cPanel's file manager.
+
+**Decided.**
+
+1. **"Moved nothing" is read off the journal, by the installation's own mark.**
+   `ReleaseSteps::hasMovedNothing()` is true before the swap, and at the swap when the journal
+   on the site is not this installation's (`ReleaseJournal::isOf()`, the key hash the swap
+   wrote as `about.for`: the journal of the installation before, or none) or when
+   `ReleaseSwap::hasMovedNothing()` says so: every rename `pending`, or `started` with the
+   folders saying it was not made (the test `askTheFoldersWhatWasStarted()` already used,
+   now `wasMade()`). Anything `done` is a folder moved. A journal `undone` has every rename
+   back at `pending`, so it counts as nothing moved, which it is.
+2. **`cancel` uses it, and the screen is told it.** The refusal past it is worded for a swap
+   that has moved some folders as well as for `finish`: "This installation has already moved
+   folders of the site, so it can no longer be given up. Go on with it, or go back to the
+   previous release." `ReleaseInstallation::standingForTheScreen()` adds `moved_nothing` to
+   what the screen reads, and `ReleaseOverview` gives it (the desk no longer does: the desk
+   knows nothing of journals). The Standing panel offers **Give it up** at `swap` only when
+   `moved_nothing` is true, with its own sentence.
+3. **Giving up at the swap lets visitors in and removes only this installation's way back.**
+   `ReleaseSafeguards::withdraw($keyHash)` ends maintenance and removes the recovery plugin
+   when it asks for this installation's key (`ReleaseRecoveryPlugin::keyHash()` reads the hash
+   back from the file it wrote). A request cut off before it raised the safeguards left the
+   installation before's plugin in place, and that is still the way back to the release kept
+   for it, so it stays. The unpacked release is set aside (`ReleaseStaging::setAside()`, one
+   rename into `discarded/`), not deleted file by file, and the table copies this installation
+   made are discarded, as before. Recorded `cancelled`, as before.
+4. **Going back is refused over such an installation, as over one unpacking.**
+   `ReleaseReturn` asks the same `hasMovedNothing()`. Before, at `swap` it was let through,
+   and where the journal was still the installation before's, going back would have tried to
+   move the running release into `staging/` over the folders unpacked there.
+5. **What an installation left, with none in progress, is named and offered for removal.**
+   `ReleaseLeftovers` (new) finds three things, and only when no `state.json` stands: folders
+   in `staging/`; the recovery plugin when its key is neither the kept release's (a journal
+   `swapped` or `stuck` with that `about.for`) nor anybody's; folders in `previous/` with no
+   `journal.json`, which nothing can go back to. The overview carries them as `leftovers`
+   (`what`, `where`), and the screen shows **Left from an installation** with a sentence each,
+   the path, and **Remove them**. `POST corex/v1/releases/leftovers/remove` takes the lock,
+   refuses while an installation stands (`installation_in_progress`), sets the two folders
+   aside and removes the plugin, and answers what it removed.
+
+**Not chosen.**
+
+- *Removing the leftovers when the screen opens, unasked.* One of them is a must-use plugin,
+  and the administrator who removed things by hand once should be told what is removed before
+  it is. Opening the screen already deletes what was set aside; that is the installer's own
+  folder, this is not only that.
+- *Recording the removal.* What is removed belongs to no installation, and nothing of the
+  release the site runs changes. A kind of release event with no version would need its own
+  row in the record, the activity log's summary and the history panel.
+- *Putting back the release kept from the installation before.* #369's swap sets it aside
+  before its journal is begun, and the screen begins deleting what is set aside when it opens,
+  which is before anybody can press **Give it up**. Moving a partly deleted release back into
+  `previous/` would offer a way back that does not hold. Where the swap was cut off before it
+  set it aside, it is still in `previous/` and still offered.
+- *Listing a left `.maintenance`.* WordPress stops reading it ten minutes after the time in
+  it, and the file is also what WordPress's own updates write: removing one that is not CoreX's
+  would end somebody else's maintenance. The guide says to remove it in the file manager.
+- *Telling a partly deleted `previous/` from a whole one.* v0.46.0's deletion went file by file
+  in no fixed order, so the journal may or may not have gone with it. Without the journal the
+  folder is listed; with it, it is offered as the release before, as it was. No release after
+  #369 deletes it in place.
+
+**Tests.** Unit: `ReleaseSwap::hasMovedNothing()` for a swap cut off before the first rename,
+after it with the mark unwritten, and before the second; after going back. The recovery
+plugin's key hash read back. Integration (`ReleaseInstallationTest`, through the REST server
+on real WordPress): a swap cut off as its first folder was to move is offered for giving up
+and given up, the site as it was, maintenance down, the plugin gone, nothing left over; one
+cut off after two folders moved is refused, maintenance up; Perego's case (a kept release, the
+safeguards raised, nothing moved) given up with going back refused first and the kept release
+still offered afterwards; the three leftovers named and removed, the site's files unchanged;
+nothing removed while an installation stands. The two that give an installation up at the swap
+fail against the old `isBeforeTheSwap()` rule. Jest: the Standing panel at `swap` with and without `moved_nothing`;
+the leftovers panel names, removes and reloads, and says why when refused.
+
+**Client impact.** None to do. A site that takes this can give up, from CoreX → Releases, an
+installation stopped before it moved a folder, and is shown what one left instead of "No
+installation is in progress". The guide's "If the page is closed" section says what each
+leftover is.
+
+## #371 — A package that would put a plugin or theme back to an older version than the site has says so before the version is typed, and is installed only when that is confirmed
+
+**Date:** 2026-10-18. **Branch:** `feat/107-refuse-third-party-downgrade`, stacked on
+`fix/107-release-key-through-maintenance` (PR #418, DECISIONS #369), which changes the same
+Releases files. **Spec:** 107, amended: FR-029, a clarification and an edge case of
+2026-10-18. **Mode:** CoreX Framework.
+
+**Why.** The second follow-up the Perego session asked for in #369. Perego's staged package
+`0.46.0-20261018-110130` carried ACF 6.8.6, FluentSMTP 2.2.95, Polylang 3.8.6, Rank Math
+1.0.275, Site Kit 1.184.0 and UpdraftPlus 1.26.8, each older than the copy the owner had
+updated in the live admin after the package was built. A release replaces its folders whole
+(FR-027), so a swap of that package would have put all six back, and nothing on the screen
+said so. The only version the screen compared was CoreX's own (FR-015).
+
+**Decided.**
+
+1. **What is compared is the version each folder's header gives**, read as WordPress's
+   `get_file_data()` reads it (the first 8 KB, the same pattern): a plugin's from the first PHP
+   file at the folder's top, in name order, whose header has `Plugin Name:`; a theme's from
+   `style.css` with `Theme Name:`. `ReleaseFolderVersion` holds that rule and is told how to
+   read a file, so the same rule reads the folder on the site and the folder inside the
+   package, from the zip, before anything is unpacked. Not WordPress's own function: it reads
+   only files on disk, and the inspector's tests run without WordPress.
+2. **`ReleaseDowngrades` lists each folder whose version in the package is lower** than the
+   site's, by `version_compare`, with the site's name for it and both versions. It is asked by
+   `ReleasePackageInspector` with the zip open, so the statement (`ReleaseDesk::statementOf`,
+   `downgrades`) has it, and `prepare` asks again and keeps it in the installation's state.
+   Folders it does not compare: one that is not on the site (nothing goes back), one whose
+   version cannot be read on either side, `vendor` and `packages` (no header), and one whose
+   version in the package is the release's own. CoreX's plugins and theme carry the release's
+   version, so going back on them is going back to an older release, which FR-015's own box
+   asks about; listing them too would ask the same question twice.
+3. **The statement names them before anything is typed**, and the confirmation panel names
+   them again with a checkbox of its own, separate from the older-release one. The site
+   refuses `confirm` with `not_confirmed` unless `downgrade` is sent true where the
+   installation kept any (`ReleaseInstallation::refuseUnlessConfirmed`), so a request made
+   without the screen is held to it as well.
+4. **The installation's state keeps the list under a new key, `downgrades`, read as none where
+   it is missing.** `ReleaseProgress::PROTOCOL` stays 1: a release that wrote no such key is
+   read the same way, and the release before ignores a key it does not know. The list is only
+   read at `confirm`, which the release that prepared the installation answers.
+5. **The sentence says what to do instead**: build the package again from the plugin folder
+   the site runs now. The guide says the same where `--with-plugin` is described.
+
+**Not chosen.**
+
+- *Refusing the package outright.* Going back to a plugin's older version is sometimes what is
+  meant (an update that broke the site), and the package is the only way a shared host without
+  a command line gets it.
+- *Keeping the site's newer folder and installing the rest.* A release's folder would then not
+  hold what the package holds (FR-027), the record of what was installed would be wrong, and
+  the site would be served from two releases' folders (FR-020).
+- *Comparing CoreX's own folders as well.* See 2: the older-release box already asks it.
+- *Checking again at `confirm` whether the site changed since `prepare`.* A plugin updated in
+  another tab in the fifteen minutes a confirmation is good for is not caught. The swap itself
+  comes minutes after `confirm` in any case; there is always a window, and it was left as it is.
+
+**Verified.** Pest unit `ReleaseDowngradesTest` (three cases: named with both versions, a
+plugin's main file found after another PHP file; the same, newer, unversioned and CoreX's own
+not listed; a folder not on the site not compared) and the Releases unit suite, 187 passing.
+Pest integration `ReleaseInstallationTest`: the statement and `prepare` name the plugin,
+`confirm` without `downgrade` is refused and leaves the installation awaiting, with it is
+taken; the file fails with the check removed. Jest: the statement lists it, the confirmation
+is not sent until the box is ticked and sends `downgrade: true`; 117 passing. Playwright
+`releases-install.spec.js` on a scratch WordPress served by `php -S`: a plugin of version 2.0.0
+on the site and 1.0.0 in the package is named in the statement and the confirmation, Install
+stays disabled until the box is ticked, and declining leaves 2.0.0 on the site; all 8 tests of
+the project pass (one earlier run missed the RTL layout gap of the first measure test by 23
+pixels and passed on the next run; that test was not changed).
+
+**Client impact.** A package built with `--with-plugin` from plugin copies older than the
+site's asks for one more box to be ticked, and names them. The installation that brings this
+release is run by the release it replaces, so it is not yet asked.

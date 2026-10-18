@@ -6,6 +6,79 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.46.1] — 2026-10-18
+
+CoreX → Releases on a shared host, after Perego's second installation from it on 2026-10-18
+ended with the site held in maintenance for ten minutes and the release not in place.
+
+**A site that installs from CoreX → Releases should take this release, and read Client impact
+first.** The installation that brings it is still run by v0.46.0's code, so on a shared host
+the contents of `wp-content/corex-releases/previous/` are deleted in the host's file manager
+before it is installed.
+
+**What changed.** The request that puts a release in place no longer deletes the release kept
+from the installation before while visitors are held off. An installation's key also travels
+in the address, so it gets through WordPress's maintenance answer on a host that drops request
+headers, and the screen keeps asking for as long as that answer can last. An installation that
+stopped before any folder moved can be given up from the screen, and what an installation left
+behind is named and removed when asked. A package that would put a third-party plugin or theme
+back to an older version than the site has says so, and installs only when that is confirmed.
+
+Rebuild `plugins/corex-config` after merging: the admin bundle changed.
+
+### Added
+
+- **CoreX → Releases says when a package would put a plugin or theme back to an older version
+  than the site has, and installs it only when that is confirmed** (spec 107, FR-029;
+  DECISIONS #371). Perego's package of 2026-10-18 held six third-party plugins older than the
+  copies updated in the site's admin since it was built; installing it would have put all six
+  back without a word. The statement names each with the site's version and the package's,
+  before the version is typed, and the confirmation asks for a box to be ticked, which the site
+  checks as well. CoreX's own folders are left to the older-release question.
+
+### Fixed
+
+- **The request that puts a release in place no longer deletes the release kept from the
+  installation before** (spec 107, FR-024b; DECISIONS #369). A client site's second installation
+  from CoreX → Releases on its shared host (Perego, LiteSpeed) ended with "The site did not
+  answer after 6 tries", ten minutes of maintenance and the release not in place; its first,
+  with nothing kept yet, had finished. Deleting that site's kept release took 11.8 s on a
+  development machine, with visitors held off. It is now set aside by one rename and deleted a
+  few seconds at a time when Releases is opened.
+- **An installation gets through WordPress's maintenance answer on a host that does not hand PHP
+  its request headers** (FR-024a, FR-025). Reproduced on a copy of a site with the key's header
+  dropped: the same six failed tries. The installation's key now goes in the address as well as
+  the header, the maintenance file looks for it in the header, in the headers as the web server
+  holds them and in the address, and the screen goes on asking for as long as WordPress's
+  maintenance can last, saying that it is waiting. An installation's record says where its key
+  was found (`key_from`).
+- **An installation that stopped as its release was being put in place, before any folder moved,
+  can be given up from CoreX → Releases** (FR-022a; DECISIONS #370). Perego's screen offered only
+  "Go on with it" there. Giving it up lets visitors in and removes its recovery plugin and the
+  unpacked release; once a folder has moved it is refused, as before.
+- **CoreX → Releases names what an installation left when none is in progress, and removes it
+  when asked** (FR-022b): an unpacked release, a recovery plugin no installation holds the key
+  of, a kept release with no journal. Perego's screen said "No installation is in progress"
+  beside them, and the owner removed them in the host's file manager. New route:
+  `POST corex/v1/releases/leftovers/remove`.
+
+### Client impact
+
+- **The installation that brings this release is run by the one it replaces**, and so deletes
+  the kept release while visitors are held off. Before installing it on a shared host, delete
+  the contents of `wp-content/corex-releases/previous/` in the host's file manager (keep the
+  folder): it is only the way back to the release before the running one. If it still ends with
+  "The site did not answer", wait ten minutes and open **CoreX → Releases**.
+- `wp-content/corex-releases/discarded/` is new. It holds the release before the kept one until
+  Releases has been opened a few times, and is closed to the web server like the rest of
+  `corex-releases/`. Nothing to do.
+- **A package that carries third-party plugins (`--with-plugin`) may now ask for one more
+  confirmation.** Where a plugin was updated in the site's admin after the package was built,
+  Releases lists it with both versions and asks for a box to be ticked before it installs. To
+  keep the site's newer copy, build the package again from the plugin folder the site runs now.
+  The screen and the site's check come with the release that brings them, so the installation
+  of this release itself is not yet asked.
+
 ## [0.46.0] — 2026-10-14
 
 Everything merged since v0.45.2: two days of fixes found by using CoreX on the first client
