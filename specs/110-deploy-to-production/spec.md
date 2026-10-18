@@ -282,6 +282,17 @@ external file. Remove the site's logo and confirm the page still renders with th
    CoreX, **When** an installation runs, **Then** that file is left as it is and used.
 6. **Given** the installation ended, or went back, **When** a visitor asks for a page, **Then**
    the site answers normally. The page is shown only while WordPress is in maintenance.
+7. **Given** the site is put in Maintenance mode from CoreX → Operations (spec 065), **When** a
+   visitor asks for a page, **Then** they get the same page as during an installation: the
+   site's name, logo, colours and languages, not CoreX's palette and mark.
+
+Today the two pages differ, and neither is the site's. WordPress's page during an installation
+has no design at all. Operations → Maintenance draws a CoreX page (`MaintenanceGuard::page()`
+through `StandalonePage::fromCore()`): the site's name in CoreX's dark and gold, with CoreX's
+mark, in English only. The Perego session showed it to the owner on Perego's v0.46.1 copy on
+2026-10-18. Perego's tokens are purple with its own logo, and the site is in English and Arabic.
+The owner had asked to see the page that appears when plugins update, and expected the site's
+design.
 
 ---
 
@@ -414,7 +425,7 @@ external file. Remove the site's logo and confirm the page still renders with th
 - **FR-052**: Every string MUST be translatable; the screen MUST meet the admin's accessibility and
   right-to-left standards, and show loading states as the rest of the admin does (spec 108).
 
-**The maintenance page** (story 6; every installation, not only a deploy)
+**The maintenance page** (story 6; every installation, not only a deploy, and Operations → Maintenance)
 
 - **FR-070**: While WordPress holds a site in maintenance for an installation, a visitor MUST get the
   site's own maintenance page: its name, its logo when it has one, its colours and fonts, and its
@@ -429,6 +440,10 @@ external file. Remove the site's logo and confirm the page still renders with th
   The one CoreX writes MUST say in it that CoreX wrote it, and MUST be replaced whole each time.
 - **FR-074**: The page MUST meet WCAG 2.2 AA (contrast, language and direction marked, readable at
   phone width), and its words MUST be translatable where the site's other words are.
+- **FR-075**: The page Operations → Maintenance shows (spec 065) and the page during an
+  installation MUST be drawn by one renderer, from the same live tokens, logo and languages, so
+  the two cannot look different. The CoreX mark and palette appear on neither when the site has
+  its own.
 
 **What it must not become**
 
@@ -472,7 +487,8 @@ external file. Remove the site's logo and confirm the page still renders with th
 - **SC-008**: No deploy, and no installation started on production's own screen, ends with production
   in maintenance and the owner told to wait. Measured on Perego's host, page open and page closed.
 - **SC-009**: A visitor during an installation on a client site sees that site's name, colours and
-  languages on every request, and is never shown WordPress's own maintenance page.
+  languages on every request, and is never shown WordPress's own maintenance page. A visitor
+  to a site in Operations → Maintenance sees the same page.
 
 ## Decided for the owner
 
