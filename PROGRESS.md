@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.46.0** — tag `v0.46.0`, reachable from `main`.
+- **Latest published release: v0.46.1** — tag `v0.46.1`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,40 +40,21 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**2026-10-18: branch `fix/107-release-key-through-maintenance`** (DECISIONS #369, spec 107
-amended: FR-024a, FR-024b, FR-025), PR #418. Perego's second installation from CoreX →
-Releases on its shared host stopped with "The site did not answer after 6 tries", ten minutes
-of maintenance and the release not in place; its first that day, with nothing kept in
-`previous/`, had finished. Fixed: the kept release is set aside by one rename instead of
-deleted while visitors are held off (the cause that fits), and, for a host that drops the
-key's header (reproduced locally), the key goes in the address too, the gate looks in three
-places and the screen asks through WordPress's ten minutes. Not merged, not released. Owed:
-the Releases record's entries of 2026-10-18 from Perego (something cleared the installation's
-state before the owner pressed the button again), and the next real installation's record
-(`key_from`). Spec 110 (draft PR #417) waits on this one.
-
-**2026-10-18: branch `fix/107-give-up-a-swap-that-moved-nothing`**, stacked on the branch
-above (DECISIONS #370, spec 107 amended: FR-022a, FR-022b). An installation stopped at the swap
-before its first folder moved can be given up from the screen; what an installation left with
-none in progress (an unpacked release, a recovery plugin no installation holds the key of, a
-kept release with no journal) is named and removed on **Remove them**. Not merged, not
-released; to be retargeted at `main` once PR #418 merges.
-
-**2026-10-18: branch `feat/107-refuse-third-party-downgrade`** (DECISIONS #371, spec 107
-amended: FR-029), stacked on PR #418's branch because it changes the same Releases files.
-The second follow-up the Perego session asked for in #369: a package that would put a plugin or
-theme back to an older version than the site has (by its header's `Version:`) says so in the
-statement, before the version is typed, and the installation is refused unless that is
-confirmed in its own checkbox. Pest, Jest and the Releases browser spec cover it. Not merged,
-not released. The first follow-up of #369 (giving up an installation stranded at the swap from
-the screen) is PR #419 (DECISIONS #370), stacked on #418 as well.
-
-**Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
-is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull
-requests still open on 2026-10-14 were landed together (pull request #415) and the release
-cut on the owner's word, so the client sites take one release. What each change is, is
-under "Recently landed" and in the changelog. This section says where each unfinished
-spec stops, so work resumes from here and not from a transcript.
+**Nothing is in flight but spec 110** (2026-10-18). v0.46.1 holds everything on `main`; the
+only open pull request is #417, the draft of spec 110, which waits on the owner's three
+questions. v0.46.1 is v0.46.0 and three changes to CoreX → Releases, made after Perego's second
+installation from it on its shared host (LiteSpeed) held the site in maintenance for ten
+minutes with the release not in place, and landed on the owner's word: #418 (DECISIONS #369;
+spec 107 FR-024a, FR-024b, FR-025: the kept release is set aside by one rename instead of
+deleted while visitors are held off, and the installation's key goes in the address too, the
+gate looks in three places and the screen asks through WordPress's ten minutes), #419 (#370;
+FR-022a, FR-022b: an installation stopped before any folder moved can be given up, and what one
+left is named and removed) and #420 (#371; FR-029: a package that would put a third-party
+plugin or theme back to an older version says so and installs only when that is confirmed).
+Owed: the Releases record's entries of 2026-10-18 from Perego (something cleared the
+installation's state before the owner pressed **Finish the installation**), and the next real
+installation's record (`key_from`), watched. This section says where each unfinished spec
+stops, so work resumes from here and not from a transcript.
 
 **Begun and not finished, 2026-10-13:** the integration test case fails a test that leaves a
 post (DECISIONS #364) and checks nothing else. Measured: one run leaves 19 notifications, 5
@@ -82,11 +63,13 @@ hidden". Every CoreX table has an auto-increment `id` and every insert into them
 so this process's own inserts can be heard through the `query` filter and `$wpdb->insert_id`.
 Nothing of it is on `main`.
 
-**Spec 107 is built and released, and has not run on the host it is for.** The Releases screen
-installs and goes back, and the operator's guide and the first-installation runbook are written
+**Spec 107 has run on the host it is for, once well and once not.** Perego's first
+installation from CoreX → Releases on its shared host, on 2026-10-18, finished; its second,
+with a release kept, held the site in maintenance and did not put the release in place. v0.46.1
+is the fix. The operator's guide and the first-installation runbook are written
 (`docs/en/05-deployment/releases-from-the-admin.md`, `first-installation-by-hand.md`). What is
-owed is not code: the first installation on a shared host, of a release that changes nothing
-important, by somebody who can watch it; then `last_verified` on those two pages.
+owed is not code: the next installation on a shared host, on v0.46.1, watched; then
+`last_verified` on those two pages.
 
 | Spec | In v0.45.0 | Where it stops | Resume with |
 |---|---|---|---|
@@ -137,6 +120,11 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**In v0.46.1, 2026-10-18.** CoreX → Releases on a shared host: #418, #419 and #420, described
+under "In flight" above and in the changelog. The installation that brings v0.46.1 is run by
+v0.46.0's code, so on a shared host the contents of `wp-content/corex-releases/previous/` are
+deleted by hand before it is installed (the changelog's Client impact).
 
 **In v0.46.0, 2026-10-13.** A careers application is accepted on a Windows
 host. `CareersServiceProvider::apply()` passed `$_FILES['cv']` through `wp_unslash()`, which

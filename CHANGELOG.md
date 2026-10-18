@@ -6,6 +6,26 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.46.1] — 2026-10-18
+
+CoreX → Releases on a shared host, after Perego's second installation from it on 2026-10-18
+ended with the site held in maintenance for ten minutes and the release not in place.
+
+**A site that installs from CoreX → Releases should take this release, and read Client impact
+first.** The installation that brings it is still run by v0.46.0's code, so on a shared host
+the contents of `wp-content/corex-releases/previous/` are deleted in the host's file manager
+before it is installed.
+
+**What changed.** The request that puts a release in place no longer deletes the release kept
+from the installation before while visitors are held off. An installation's key also travels
+in the address, so it gets through WordPress's maintenance answer on a host that drops request
+headers, and the screen keeps asking for as long as that answer can last. An installation that
+stopped before any folder moved can be given up from the screen, and what an installation left
+behind is named and removed when asked. A package that would put a third-party plugin or theme
+back to an older version than the site has says so, and installs only when that is confirmed.
+
+Rebuild `plugins/corex-config` after merging: the admin bundle changed.
+
 ### Added
 
 - **CoreX → Releases says when a package would put a plugin or theme back to an older version
