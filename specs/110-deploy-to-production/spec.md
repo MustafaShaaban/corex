@@ -42,18 +42,21 @@ Releases. Every step before it still needs an agent and a terminal on the owner'
   of a signed-in browser session (`ReleaseRestGateway::answer()`). A request from another install,
   signed with an Application Password, has no such nonce and is refused as `not_signed`. Nothing on
   production can be driven from elsewhere today, and that is a property spec 107 relied on.
-- **The installation's last step does not get through maintenance, even with the page open.** The
-  installation is stepped by the browser that started it. In Muva's rehearsal of 2026-10-14, on
-  PHP's built-in server, the screen gave up while the site was in maintenance. On 2026-10-18
-  Perego's first real installation through CoreX → Releases, on the UltaHost host with the owner
-  watching and the page open, stopped at the finishing step. The screen said "The installation
-  did not finish — The site did not answer after 6 tries", and the public site still answered
-  503 "Briefly unavailable for scheduled maintenance" at 14:22 and 14:24. The finishing request
-  carries the installation's key (`X-Corex-Release-Key`), and the maintenance file lets a request
-  with that key through, so why it did not get through on that host is not yet known. It is a
-  defect of the released spec 107 and is fixed on its own, before this spec is planned (see
-  Assumptions). Either way, the owner is left to wait out WordPress's ten minutes and press
-  **Finish the installation**.
+- **An installation does not get through maintenance, even with the page open.** The installation
+  is stepped by the browser that started it. In Muva's rehearsal of 2026-10-14, on PHP's built-in
+  server, the screen gave up while the site was in maintenance. On 2026-10-18 Perego's first real
+  installation through CoreX → Releases, on the UltaHost host with the owner watching and the page
+  open, did the same. The screen said "The installation did not finish — The site did not answer
+  after 6 tries". The public site answered WordPress's own 503 from 11:22:38 to about 11:31 GMT,
+  when WordPress's ten-minute limit ended it. After that a file only the new release holds still
+  answered 404: the site was serving the release before, so the installation stopped at or
+  before the swap, not after it. Maintenance begins in the same request as the swap
+  (`ReleaseSteps::putInPlace()`); every request after it gets through only with the
+  installation's key. The screen sends the key only as the header `X-Corex-Release-Key`, and this
+  host is known to drop the `Authorization` header before PHP. That fits what was seen, and is not
+  yet proven. It is a defect of the released spec 107 and is fixed on its own, before this spec
+  is planned (see Assumptions). Today the owner is left to wait out WordPress's ten minutes and
+  press **Finish the installation**.
 - **The maintenance page does not look like the site.** WordPress serves it before any plugin or
   theme has loaded, so nothing of CoreX or the site's theme styles it. WordPress offers one way to
   change it: when `wp-content/maintenance.php` exists, WordPress includes that file instead of its
@@ -574,7 +577,7 @@ Written without asking; each is the owner's to overrule.
 - **The host's behaviour is measured, not assumed.** Whether UltaHost's bot protection lets a
   non-browser client through, whether WordPress's scheduled events run there, and how long a backup
   of Perego takes are measured on the host before the plan is final.
-- **The finishing step's failure on UltaHost is fixed before this spec is planned, on its own.**
+- **The installation's failure on UltaHost is fixed before this spec is planned, on its own.**
   It is a defect of v0.46.0 that strands any installation, not only a deploy. Its cause on that host
   (a header the host drops, or something else; the 503 seen on 2026-10-18 was WordPress's own
   answer from PHP, with no cache header, so a cache is ruled out) is found and fixed as a
