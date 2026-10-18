@@ -41,15 +41,16 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 ## In flight
 
 **2026-10-18: branch `fix/107-release-key-through-maintenance`** (DECISIONS #369, spec 107
-amended: FR-024a, FR-024b, FR-025). Perego's first installation from CoreX → Releases on its
-shared host stopped with "The site did not answer after 6 tries" and ten minutes of
-maintenance. Reproduced on a copy of a site with the key's header dropped; fixed by the key in
-the address as well, a gate that looks in three places, a screen that asks through WordPress's
-ten minutes, and the kept release set aside instead of deleted while visitors are held off.
-Not merged, not released. Owed: the next real installation's record (`key_from` in
-`corex-releases/log.json`), and Perego's answer on whether its `previous/` held a release that
-day (the 404 is explained by the deletion only if it did). Spec 110 (draft PR #417) waits on
-this one.
+amended: FR-024a, FR-024b, FR-025), PR #418. Perego's second installation from CoreX →
+Releases on its shared host stopped with "The site did not answer after 6 tries", ten minutes
+of maintenance and the release not in place; its first that day, with nothing kept in
+`previous/`, had finished. Fixed: the kept release is set aside by one rename instead of
+deleted while visitors are held off (the cause that fits), and, for a host that drops the
+key's header (reproduced locally), the key goes in the address too, the gate looks in three
+places and the screen asks through WordPress's ten minutes. Not merged, not released. Owed:
+the Releases record's entries of 2026-10-18 from Perego (something cleared the installation's
+state before the owner pressed the button again), and the next real installation's record
+(`key_from`). Spec 110 (draft PR #417) waits on this one.
 
 **Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
 is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull

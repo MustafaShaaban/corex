@@ -202,12 +202,16 @@ six tries; WordPress lets requests in again only after ten minutes.
   folders are 9,983 files and took 11.8 seconds to delete on a development machine's disk.
   A host that ends a request after its time limit would leave visitors held off and nothing
   moved, which is what Perego's site showed. The kept release is now set aside by one rename
-  and deleted when the screen next opens, a few seconds at a time (FR-024b). Whether this is
-  what stopped Perego's installation was not measured on the host.
+  and deleted when the screen next opens, a few seconds at a time (FR-024b). It is the cause
+  that fits Perego best: an installation earlier the same day, from the same screen, with
+  nothing kept yet, finished without trouble, so on that host the key's header did reach PHP;
+  this one, with a release kept, did not finish. It was not measured on the host.
 - Q: What about the installation that brings this change? → A: It is run by the release it
-  replaces. On a host that drops the header it can still wait out WordPress's ten minutes;
-  then **CoreX → Releases** offers **Finish the installation**, which ends it in one request
-  (measured on the copy). Every installation after it gets through at once.
+  replaces, which still deletes the kept release while visitors are held off: on a shared host
+  its contents are deleted by hand first. On a host that drops the header it can still wait
+  out WordPress's ten minutes; then **CoreX → Releases** offers **Finish the installation**,
+  which ends it in one request (measured on the copy). Every installation after it gets
+  through at once.
 
 ## User Scenarios & Testing *(mandatory)*
 

@@ -51,16 +51,24 @@ jobs:
           set -euo pipefail
           mkdir gate
           php tests/release-gate/write-gate.php "$PWD/gate" the-installation-key
-          # The image's own site: the default virtual host's document root.
-          root=$(docker exec ols sh -c 'for d in /var/www/vhosts/localhost/html /usr/local/lsws/Example/html; do [ -d "$d" ] && echo "$d" && break; done')
-          echo "document root: $root"
-          docker cp gate/. "ols:$root/"
-          docker exec ols chmod -R a+rX "$root"
+          # The image has more than one document root; the one its listener serves is found by
+          # asking, not assumed.
+          for root in /usr/local/lsws/Example/html /var/www/vhosts/localhost/html; do
+            docker exec ols test -d "$root" || continue
+            docker cp gate/. "ols:$root/"
+            docker exec ols chmod -R a+rX "$root"
+          done
+          status=$(curl -s -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8088/probe.php?corex_release_key=the-installation-key')
+          echo "probe answered $status"
+          if [ "$status" != 200 ]; then
+            docker exec ols sh -c 'grep -rn "docRoot\|vhRoot\|listener\|address" /usr/local/lsws/conf/httpd_config.conf /usr/local/lsws/conf/vhosts/*/vhconf.conf | head -40; tail -20 /usr/local/lsws/logs/error.log'
+            exit 1
+          fi
 
       - name: Ask it as the Releases screen does
         run: |
           set -euo pipefail
-          ask() { curl -s --fail-with-body "$@"; }
+          ask() { curl -s "$@"; }
           probe=http://127.0.0.1:8088/probe.php
 
           echo '--- the key in its header, with an Authorization header beside it'

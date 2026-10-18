@@ -16918,17 +16918,26 @@ and the client's tries (1 + 2 + 4 + 8 + 16 s) ended nine and a half minutes befo
 WordPress's maintenance did. On a host that does not hand PHP the header, every installation
 stops there.
 
-**What it does not explain.** In run 2 the new release was in place; on Perego's host it was
-not (the 404). Something stopped the swap request there. The request that puts a release in
-place deleted the previous kept release file by file, after raising maintenance and before
-the first rename, with no time limit (`ReleaseStore::empty('previous')` in
-`ReleaseSwap::swap()`). Measured: Perego's release folders, unzipped from its 100818 package,
-are 9,983 files and 11,596 entries, and that loop removed them in 11.82 s on this machine's
-SSD. On a shared host with I/O limits it can pass a request's time limit, leaving visitors
-held off and no folder moved; the retries of that step were then turned away like the
-finishing ones. This is a cause that fits the 404, not one measured on the host: whether the
-host's `previous/` held a release that day was asked of the Perego session and not answered
-when this was written.
+**What it does not explain: Perego.** In run 2 the new release was in place; on Perego's
+host it was not (the 404). And the Perego session reported afterwards that 100818 had been
+installed from the same screen earlier that day without trouble. That installation's
+finishing request got through the gate, so on that host the key's header does reach PHP: the
+dropped header is a failure that was reproduced, not the one Perego had. What differed
+between the two: for 100818 `previous/` was empty; for 110130 it held the release 100818
+replaced. The request that puts a release in place deleted that kept release file by file,
+after raising maintenance and before the first rename, with no time limit
+(`ReleaseStore::empty('previous')` in `ReleaseSwap::swap()`). Measured: Perego's release
+folders, unzipped from its 100818 package, are 9,983 files and 11,596 entries, and that loop
+removed them in 11.82 s on this machine's SSD. On a shared host with I/O limits it can pass a
+request's time limit, leaving visitors held off and no folder moved; each retry raised
+maintenance again and went on deleting. This is the cause that fits; it was not measured on
+the host, whose error log was not read.
+
+**Not explained yet.** When the owner pressed the screen's button afterwards (12:02 GMT), the
+answer was "No installation is in progress on this site": CoreX's state for 110130 had been
+cleared, and the screen offered no way forward. In v0.46.0 only a finished installation, a
+cancel, a refused step or a return clears it, and each writes the record. The record's
+entries for that day were asked of the Perego session; they decide which it was.
 
 **Decided.**
 
@@ -16971,18 +16980,22 @@ when this was written.
   admin itself answers 503 unless the key is in its address, and a reopened page has no key.
   That is spec 110's (FR-045 there); here the screen keeps asking until WordPress lets it in.
 
-**The installation that brings this.** It is run by the release it replaces: its swap writes
-v0.46.0's gate and its page is v0.46.0's client. On a host that drops the header it can
-still wait out the ten minutes. Then **CoreX → Releases** offers **Finish the installation**,
-which ends it (run 2, ten minutes later). Every installation after it gets through at once.
+**The installation that brings this.** It is run by the release it replaces: its swap deletes
+the kept release, writes v0.46.0's gate, and its page is v0.46.0's client. So on a shared host
+the kept release is deleted by hand first (the contents of `corex-releases/previous/`, which
+is only the way back to the release before the running one). On a host that drops the header
+it can still wait out the ten minutes; then **CoreX → Releases** offers **Finish the
+installation**, which ends it (run 2, ten minutes later). Every installation after it gets
+through at once.
 
 **Found, and not changed.** `build:dist` copies nothing when the checkout's own path holds
 a `.claude` folder (`FORBIDDEN_SEGMENTS` is matched against the absolute source path), so it
 cannot build from a session worktree. The package for the runs above was built from a copy
 of the tree outside it.
 
-**Client impact.** A site that takes this release gets through an installation on a host
-that does not hand PHP the key's header. The installation that brings it may still need
+**Client impact.** A site that takes this release does not delete its kept release while
+visitors are held off, and gets through an installation on a host that does not hand PHP the
+key's header. The installation that brings it may still need
 **Finish the installation** after ten minutes on such a host. An installation's record now
 carries `key_from`. A folder `wp-content/corex-releases/discarded/` appears, holding the
 release before the kept one until the screen has been opened a few times; it is closed to
