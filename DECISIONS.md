@@ -16965,6 +16965,17 @@ entries for that day were asked of the Perego session; they decide which it was.
 5. **A CI workflow serves the gate from OpenLiteSpeed** (`release-gate.yml`): the key in the
    header, in the address, in neither, and a wrong key, with what LiteSpeed handed PHP printed.
    Docker was not running on this machine, so this is where LiteSpeed's behaviour is read.
+   Its first green run (OpenLiteSpeed 1.9.3, `sapi: litespeed`): the key's header reached
+   `$_SERVER` (`key_from: header`), and so did `Authorization`; the address and no-key cases
+   answered as expected. So a stock LiteSpeed hands the header over, as Perego's host did for
+   100818; dropping it is a host's own configuration, as `Authorization` is there.
+
+**Follow-ups the Perego session asked for, not built here.** (a) An installation stranded at
+the swap with nothing moved must be abandonable from the screen: today the screen offers only
+"Go on with it" there, and after the state was cleared it offered nothing, so the owner removed
+the leftovers by hand. (b) A package must be refused, or flagged before the version is typed,
+when it would put an older copy of a plugin over a newer one on the site: Perego's staged
+110130 carried six plugins older than the ones the owner had since updated in the admin.
 
 **Not chosen.**
 
