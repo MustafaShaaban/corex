@@ -18,7 +18,7 @@ guide says so where an operator reads it.
 WordPress's maintenance answer until its ten minutes ran out. FR-024a, FR-024b and the last
 sentence of FR-025 are what was added; the clarification of that date says why.
 
-**Amended 2026-10-18, again** (DECISIONS #370): a package from the same installation held six
+**Amended 2026-10-18, again** (DECISIONS #371): a package from the same installation held six
 third-party plugins older than the ones updated in the site's admin since it was built, and
 installing it would have put all six back without a word. FR-029 is what was added; the
 clarification of that date says how it was decided.

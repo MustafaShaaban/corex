@@ -10,7 +10,7 @@ All notable changes to Corex are documented here. The format follows
 
 - **CoreX → Releases says when a package would put a plugin or theme back to an older version
   than the site has, and installs it only when that is confirmed** (spec 107, FR-029;
-  DECISIONS #370). Perego's package of 2026-10-18 held six third-party plugins older than the
+  DECISIONS #371). Perego's package of 2026-10-18 held six third-party plugins older than the
   copies updated in the site's admin since it was built; installing it would have put all six
   back without a word. The statement names each with the site's version and the package's,
   before the version is typed, and the confirmation asks for a box to be ticked, which the site

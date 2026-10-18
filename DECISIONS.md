@@ -17012,7 +17012,7 @@ carries `key_from`. A folder `wp-content/corex-releases/discarded/` appears, hol
 release before the kept one until the screen has been opened a few times; it is closed to
 the web server like the rest of `corex-releases/`.
 
-## #370 — A package that would put a plugin or theme back to an older version than the site has says so before the version is typed, and is installed only when that is confirmed
+## #371 — A package that would put a plugin or theme back to an older version than the site has says so before the version is typed, and is installed only when that is confirmed
 
 **Date:** 2026-10-18. **Branch:** `feat/107-refuse-third-party-downgrade`, stacked on
 `fix/107-release-key-through-maintenance` (PR #418, DECISIONS #369), which changes the same

@@ -52,14 +52,14 @@ the Releases record's entries of 2026-10-18 from Perego (something cleared the i
 state before the owner pressed the button again), and the next real installation's record
 (`key_from`). Spec 110 (draft PR #417) waits on this one.
 
-**2026-10-18: branch `feat/107-refuse-third-party-downgrade`** (DECISIONS #370, spec 107
+**2026-10-18: branch `feat/107-refuse-third-party-downgrade`** (DECISIONS #371, spec 107
 amended: FR-029), stacked on PR #418's branch because it changes the same Releases files.
 The second follow-up the Perego session asked for in #369: a package that would put a plugin or
 theme back to an older version than the site has (by its header's `Version:`) says so in the
 statement, before the version is typed, and the installation is refused unless that is
 confirmed in its own checkbox. Pest, Jest and the Releases browser spec cover it. Not merged,
-not released. The first follow-up of #369 (abandoning an installation stranded at the swap from
-the screen) is not built.
+not released. The first follow-up of #369 (giving up an installation stranded at the swap from
+the screen) is PR #419 (DECISIONS #370), stacked on #418 as well.
 
 **Nothing is in flight** (2026-10-14). v0.46.0 holds everything on `main`, and no pull request
 is open. It is v0.45.2 and everything merged in the two days after it; the fourteen pull

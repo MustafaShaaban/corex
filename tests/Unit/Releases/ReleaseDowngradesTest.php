@@ -2,7 +2,7 @@
 
 /**
  * Unit test: the plugins and themes a package would put back to an older version than the site
- * has (spec 107, FR-029; DECISIONS #370).
+ * has (spec 107, FR-029; DECISIONS #371).
  *
  * Perego's package of 2026-10-18 held six third-party plugins older than the copies updated in
  * the site's admin since it was built. Installing it would have put all six back without a word.
