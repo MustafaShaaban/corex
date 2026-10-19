@@ -17181,3 +17181,61 @@ pixels and passed on the next run; that test was not changed).
 **Client impact.** A package built with `--with-plugin` from plugin copies older than the
 site's asks for one more box to be ticked, and names them. The installation that brings this
 release is run by the release it replaces, so it is not yet asked.
+
+## #372 — A CoreX site says it runs CoreX: a generator tag naming CoreX, with no version, in every front-end page head
+
+**Date:** 2026-10-19. **Branch:** `spec/111-generator-tag`. **Spec:** 111. **Mode:** CoreX
+Framework.
+
+**Why.** The owner asked whether CoreX could appear in Wappalyzer, which listed WordPress, MySQL,
+Rank Math and React on a CoreX site and not CoreX. A scanner recognises a platform by a mark the
+platform leaves in its pages, and CoreX left none: no generator tag, no header. The only thing a
+rule could match was the path of CoreX's assets, which a page without a CoreX block does not load
+and a bundled or CDN-served site hides.
+
+**Decided.**
+
+1. **Name only, no version** (the owner's answer, 2026-10-19). A version tells anyone looking for
+   a vulnerable site which release to try; that is why spec 101's Coming soon page already hides
+   WordPress's tag. The name alone says what the asset paths already say.
+2. **The standard generator meta tag**, in the form WordPress prints its own
+   (`<meta name="generator" content="CoreX" />`), because every scanner reads it. WordPress,
+   WooCommerce and Elementor each print one.
+3. **A `wp_head` callback of its own, not a filter on WordPress's tag.** WooCommerce appends its
+   tag to `get_the_generator_*`, so removing WordPress's removes WooCommerce's. Security plugins
+   remove WordPress's tag to hide its version; CoreX's has none, so it stays.
+4. **Printed from `corex-core`'s `ThemeServiceProvider`**, whose job widens from brand overrides to
+   what the framework puts into the theme layer. A provider of its own would add an entry to
+   `Boot::CORE_PROVIDERS` and the add-on resolver for one hook. The theme gains nothing
+   (Principle I).
+5. **Turned off by a filter, `corex_generator_tag`**, read when the head is printed so a theme's
+   callback counts. No admin setting until a client asks for one.
+6. **The Coming soon page a visitor sees carries none.** `ComingSoonHead::quiet()` answers the
+   filter false at `PHP_INT_MAX`, through the same public filter, so a site callback at an
+   ordinary priority cannot bring it back onto that page. The real site served through the mode
+   carries it.
+7. **The detection rule is prepared, not sent.** `specs/111-generator-tag/contracts/detection-rule.md`
+   holds it in the format of `enthec/webappanalyzer`, the open continuation of Wappalyzer's list
+   (Wappalyzer's went private in August 2023). Sending it is the owner's: that list asks for ten
+   or more public sites using the technology, and Wappalyzer takes suggestions through its site.
+
+**Not chosen.**
+
+- *The version, with a setting to hide it.* Declined by the owner.
+- *An `X-Powered-By` header.* A second mark scanners would need a second rule for, and page caches
+  and CDNs often drop or rewrite headers.
+- *Relying on asset paths.* Kept in the rule as a second signal for older releases only.
+
+**Verified.** Pest unit `GeneratorTagTest` (four cases: the markup, no digit, escaped, off) and the
+whole unit suite. Pest integration `GeneratorTagTest` on a real WordPress (once beside WordPress's
+tag; still once with WordPress's removed; gone with the filter off and back without it; hooked on
+`wp_head` and on no other hook) and `ComingSoonHeadTest`, which failed with the `quiet()` change
+taken out ("the page still prints the generator tag") and passes with it. The whole integration
+suite, 1285 passing: run whole, it first failed the new test, because `ComingSoonModeTest` left
+`quiet()`'s changes (WordPress's head callbacks and now the generator filter) to every later file.
+Its `afterEach` now puts both back. Playwright on a scratch WordPress served by `php -S`: `generator-tag.spec.js` (one
+mark naming exactly CoreX on the front page and the not-found page, signed out) and all 11 tests of
+`coming-soon.spec.js`, whose administrator test now also asserts the mark on the real site.
+
+**Client impact.** None to act on. Every page of a client site gains one line in its head after the
+update. A client that wants none adds the one-line filter.

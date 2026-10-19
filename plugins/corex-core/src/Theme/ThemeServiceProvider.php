@@ -17,10 +17,13 @@ use WP_Theme_JSON_Data;
 defined('ABSPATH') || exit;
 
 /**
- * Wires per-site brand.json overrides onto the theme.json token defaults at the
- * one WordPress moment that owns theme data — the `wp_theme_json_data_theme`
- * filter. All merge/read logic lives in the headless {@see BrandResolver}; the
- * theme itself stays a logic-free skin (constitution Principle I, FR-010).
+ * What the framework puts into the front end's theme layer, so the theme itself
+ * stays a logic-free skin (constitution Principle I, FR-010):
+ *
+ * - per-site brand.json overrides onto the theme.json token defaults, at the one
+ *   WordPress moment that owns theme data, the `wp_theme_json_data_theme` filter.
+ *   All merge/read logic lives in the headless {@see BrandResolver}.
+ * - the {@see GeneratorTag} in every page head (spec 111).
  */
 final class ThemeServiceProvider extends ServiceProvider
 {
@@ -35,10 +38,17 @@ final class ThemeServiceProvider extends ServiceProvider
             BrandOverrideValidator::class,
             static fn (ContainerInterface $c): BrandOverrideValidator => new BrandOverrideValidator(),
         );
+
+        $this->container->singleton(
+            GeneratorTag::class,
+            static fn (ContainerInterface $c): GeneratorTag => new GeneratorTag(),
+        );
     }
 
     public function boot(): void
     {
+        add_action('wp_head', [$this->container->make(GeneratorTag::class), 'print']);
+
         $config = $this->container->make(ConfigInterface::class);
         $configured = (string) $config->get('theme.brand_path', '');
 

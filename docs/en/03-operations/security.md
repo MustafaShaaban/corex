@@ -58,6 +58,30 @@ It does not change users, roles, passwords, content, or unrelated CoreX settings
 
 For emergency request-level bypasses, define `COREX_LOGIN_UNGUARD` only long enough to regain access, then remove it.
 
+## What every page says the site runs
+
+Every front-end page's head carries one line naming CoreX, printed beside WordPress's own:
+
+```html
+<meta name="generator" content="CoreX" />
+```
+
+Technology scanners such as Wappalyzer recognise a platform by this line. It names CoreX and
+carries no version, because a version tells anyone looking for a vulnerable site which release
+to try. Removing WordPress's generator tag, as some security plugins do, leaves CoreX's in place.
+
+The line is not printed on admin screens, the login page, feeds, REST responses or the Coming soon
+page a visitor sees, which names no platform at all. The real site served to an administrator or a
+preview link while Coming soon is on still carries it.
+
+To leave it out of every page of one site, add this to the site's own plugin or theme:
+
+```php
+add_filter('corex_generator_tag', '__return_false');
+```
+
+A page cache keeps the line it was cached with: clear it after adding the filter.
+
 ## Behind a proxy, a load balancer or a CDN
 
 A request that passes through a proxy reaches WordPress from the proxy's address. Until CoreX is told

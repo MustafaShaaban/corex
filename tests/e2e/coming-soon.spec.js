@@ -286,7 +286,8 @@ test( 'a signed-out visitor gets the coming-soon page at home and a redirect eve
 
 	// The page says the site is not ready. It does not also say which WordPress it runs, where
 	// its remote-editing endpoint is, or offer feeds that only redirect back here. Reported from
-	// the first site that used the mode in public.
+	// the first site that used the mode in public. The pattern covers CoreX's own generator tag
+	// too (spec 111 FR-006).
 	expect( html ).not.toMatch( /<meta[^>]+name=["']generator["']/ );
 	expect( html ).not.toMatch( /rel=["']EditURI["']/ );
 	expect( html ).not.toMatch( /type=["']application\/rss\+xml["']/ );
@@ -338,6 +339,11 @@ test( 'an administrator reaches the real site everywhere, and is told visitors d
 		);
 		await expect( bar, address ).toBeVisible();
 		await expect( bar, address ).toContainText( 'Coming soon is on' );
+		// The real site says it runs CoreX, as it does outside the mode (spec 111 FR-006).
+		await expect(
+			page.locator( 'meta[name="generator"][content="CoreX"]' ),
+			address
+		).toHaveCount( 1 );
 		// SC-003: the way to the screen that changes it, for somebody who can change it.
 		await expect(
 			bar.getByRole( 'link', { name: 'Open Operations & Security' } ),

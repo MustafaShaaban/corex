@@ -6,6 +6,22 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Every front-end page says the site runs CoreX** (spec 111). The page head carries
+  `<meta name="generator" content="CoreX" />` beside WordPress's own, so technology scanners
+  such as Wappalyzer can recognise a CoreX site. It names no version. It is left off the
+  Coming soon page a visitor sees, and `add_filter('corex_generator_tag', '__return_false')`
+  leaves it off every page of a site. The detection rule for the scanners' lists is in
+  `specs/111-generator-tag/contracts/detection-rule.md`.
+
+### Client impact
+
+- **Every page of a client site gains one line in its head**, `<meta name="generator"
+  content="CoreX" />`. Nothing to do. A client that does not want its pages to name CoreX adds
+  `add_filter('corex_generator_tag', '__return_false');` to its own plugin or theme, and clears
+  its page cache.
+
 ## [0.46.1] — 2026-10-18
 
 CoreX → Releases on a shared host, after Perego's second installation from it on 2026-10-18
