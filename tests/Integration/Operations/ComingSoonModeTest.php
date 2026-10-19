@@ -22,6 +22,7 @@ use Corex\Config\Operations\ComingSoonGuard;
 use Corex\Config\Operations\ComingSoonTemplate;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Tests\Support\AdminScreen;
+use Corex\Theme\GeneratorTag;
 
 const COREX_COMING_SOON_MODE_OPTION = 'corex_operations_mode';
 
@@ -80,6 +81,8 @@ beforeEach(function () {
     $this->previousPublic    = get_option('blog_public');
     $this->previousScreen    = $GLOBALS['current_screen'] ?? null;
     $this->createdUsers      = [];
+    // A served page runs ComingSoonHead::quiet(), which takes callbacks off wp_head.
+    $this->previousHead      = isset($GLOBALS['wp_filter']['wp_head']) ? clone $GLOBALS['wp_filter']['wp_head'] : null;
 
     update_option(COREX_COMING_SOON_MODE_OPTION, OperationsMode::COMING_SOON);
     update_option('blog_public', '1');
@@ -89,6 +92,10 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    // Every later file in this process shares WordPress's head: put back what quiet() took off it,
+    // and the answer it gave the generator-tag filter (spec 111).
+    $GLOBALS['wp_filter']['wp_head'] = $this->previousHead;
+    remove_filter(GeneratorTag::FILTER, '__return_false', PHP_INT_MAX);
     remove_all_filters(ComingSoonGuard::BYPASS_FILTER);
     remove_all_filters(ComingSoonGuard::HOME_FILTER);
     remove_all_filters('template_include');

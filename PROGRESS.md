@@ -40,6 +40,14 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 111, a CoreX site says it runs CoreX** (2026-10-19, branch `spec/111-generator-tag`,
+DECISIONS #372): every front-end page head carries `<meta name="generator" content="CoreX" />`,
+name only on the owner's word, off on the Coming soon page a visitor sees and with
+`add_filter('corex_generator_tag', '__return_false')`. Built, tested and in a pull request.
+Owed after it merges and ships: the owner sends the detection rule in
+`specs/111-generator-tag/contracts/detection-rule.md` to `enthec/webappanalyzer` (it asks for ten
+public CoreX sites) or to Wappalyzer's suggestion form.
+
 **Nothing is in flight but spec 110** (2026-10-18). v0.46.1 holds everything on `main`; the
 only open pull request is #417, the draft of spec 110, which waits on the owner's three
 questions. v0.46.1 is v0.46.0 and three changes to CoreX → Releases, made after Perego's second
