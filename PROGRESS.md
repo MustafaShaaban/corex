@@ -40,6 +40,13 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 112, access and logs** (2026-10-20, branch `spec/112-access-and-logs`): the first release (R0.1) of the
+CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
+locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,
+Maintenance closes public submissions, the Recovery panel gives a route without a command line, Blog Pro follows
+WordPress permissions, security records on the Data screen need their owning ability, and an inbox resend goes to
+the email's own recipients. Spec written; next `/speckit-plan`. Nothing built.
+
 **Spec 111, a CoreX site says it runs CoreX** (2026-10-19, branch `spec/111-generator-tag`,
 DECISIONS #372): every front-end page head carries `<meta name="generator" content="CoreX" />`,
 name only on the owner's word, off on the Coming soon page a visitor sees and with
