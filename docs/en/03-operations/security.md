@@ -47,7 +47,21 @@ Only a rule in the web server can change what they answer.
 Hiding is obscurity, not access control. It cuts automated probing; the rate limiting above is what actually
 defends credentials.
 
-If an owner is locked out or the protected route is misconfigured, run:
+If an owner has lost the login address, is locked out, or the protected route is misconfigured, there are two ways
+back in. The Recovery panel in **Operations & Security → Login Protection** gives both, with the code ready to copy.
+
+**Without a command line** (most shared hosts): open `wp-config.php` with the host's file manager, add this line above
+the line that says "That's all, stop editing", sign in at `/wp-login.php`, then remove the line:
+
+```php
+define( 'COREX_LOGIN_UNGUARD', true );
+```
+
+While the line is there, `wp-login.php` is open to everyone and the custom login address keeps working. It does not
+end a lockout; a lockout ends when its lockout length has passed. The Login Protection section and the "Default login
+endpoints" row on the overview say that recovery is on until the line is removed.
+
+**With a command line:**
 
 ```bash
 wp corex security reset-login
@@ -55,8 +69,6 @@ wp corex security reset-login
 
 The command disables the protected login gates, releases active lockouts, and prints the restored `wp-login.php` URL.
 It does not change users, roles, passwords, content, or unrelated CoreX settings.
-
-For emergency request-level bypasses, define `COREX_LOGIN_UNGUARD` only long enough to regain access, then remove it.
 
 ## What every page says the site runs
 

@@ -62,9 +62,15 @@ confirmation ready — one extra step, and the right question either way.
 
 - Visitors who are not signed in get a maintenance page with a **503** status and a `Retry-After`
   header, so search engines treat it as temporary.
-- Signed-in administrators keep using the site normally.
-- The REST API, AJAX, cron and `wp-admin` are **never** intercepted, so scheduled work and
-  integrations keep running.
+- Public form submissions are closed: CoreX forms, flows, newsletter sign-ups, booking requests,
+  job applications and account registration answer **503** with a `site_in_maintenance` message,
+  before anything is stored or mailed. Sign-in and password reset through the account block stay
+  open. WordPress's own comment form is not closed; it follows the site's discussion settings.
+- Signed-in administrators keep using the site normally, and can still submit a form to test it.
+- Apart from those submissions, the REST API, AJAX, cron and `wp-admin` are **never** intercepted,
+  so scheduled work and integrations keep running.
+- A REST route of your own that takes public submissions closes with them when it declares
+  `Corex\Http\PublicSubmission::MARKER => true` in its `register_rest_route()` arguments.
 - To come back: change the mode here. If you cannot reach this screen, the recovery command in the
   Login Protection section works from the command line.
 

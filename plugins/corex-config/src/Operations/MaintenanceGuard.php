@@ -16,12 +16,12 @@ use Corex\Admin\StandalonePage;
  * The safe public behaviour of Maintenance mode (spec 065): when the operations mode is
  * `maintenance`, anonymous front-end visitors receive an accessible 503 maintenance notice — but any
  * signed-in administrator (or admin/login/cron/AJAX/REST context) passes straight through, so the
- * operator can never lock themselves out. It renames no WordPress core files and changes nothing but
- * the anonymous front-end response while the mode is active.
+ * operator can never lock themselves out. It renames no WordPress core files. Public form
+ * submissions, which arrive over REST, are closed by {@see MaintenanceSubmissionGuard} (spec 112).
  */
 final class MaintenanceGuard
 {
-    public function __construct(private readonly OperationsModeStore $store)
+    public function __construct(private readonly MaintenanceDecision $decision)
     {
     }
 
@@ -81,30 +81,18 @@ final class MaintenanceGuard
     }
 
     /**
-     * Whether an anonymous front-end visitor should see the maintenance notice. Blocks only when the
-     * mode is maintenance AND the request is a normal front-end request AND the visitor is not a
-     * signed-in administrator — the lockout-prevention contract. Pure of output, so it is testable.
+     * Whether this request should be answered with the maintenance notice: Maintenance closes the
+     * site to the visitor ({@see MaintenanceDecision}) and the request is a normal front-end one.
+     * Pure of output, so it is testable.
      */
     public function shouldBlock(): bool
     {
-        if ($this->store->current() !== OperationsMode::MAINTENANCE) {
-            return false;
-        }
-
-        if (function_exists('apply_filters') && apply_filters('corex_maintenance_bypass', false) === true) {
-            return false;
-        }
-
-        // Never intercept admin, cron, AJAX, or REST contexts.
+        // Never intercept admin, cron, AJAX, or REST contexts. Public submissions over REST are
+        // closed by MaintenanceSubmissionGuard instead, which answers them as an API should.
         if (is_admin() || wp_doing_cron() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) {
             return false;
         }
 
-        // Never block a signed-in administrator — the operator cannot lock themselves out.
-        if (is_user_logged_in() && current_user_can('manage_options')) {
-            return false;
-        }
-
-        return true;
+        return $this->decision->closedToCurrentVisitor();
     }
 }

@@ -15,6 +15,7 @@ use Corex\Activity\ActivityService;
 use Corex\Captcha\Captcha;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Http\PublicSubmission;
 use Corex\Profile\Account\AccountResult;
 use Corex\Profile\Block\AccountRenderer;
 use Corex\Profile\Account\AccountService;
@@ -184,7 +185,12 @@ final class ProfileServiceProvider extends ServiceProvider
         $public = ['methods' => 'POST', 'permission_callback' => '__return_true'];
         $authed = ['permission_callback' => static fn (): bool => is_user_logged_in()];
 
-        register_rest_route('corex/v1', '/account/register', $public + ['callback' => [$this, 'register_account']]);
+        // Registration is closed while the site is in Maintenance (spec 112); sign-in and password
+        // reset stay open, so an administrator can still sign in through the account block.
+        register_rest_route('corex/v1', '/account/register', $public + [
+            'callback'               => [$this, 'register_account'],
+            PublicSubmission::MARKER => true,
+        ]);
         register_rest_route('corex/v1', '/account/login', $public + ['callback' => [$this, 'login']]);
         register_rest_route('corex/v1', '/account/reset-request', $public + ['callback' => [$this, 'requestReset']]);
         register_rest_route('corex/v1', '/account/reset', $public + ['callback' => [$this, 'resetPassword']]);

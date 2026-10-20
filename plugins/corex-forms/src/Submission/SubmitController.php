@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Forms\Schema\FieldSchema;
 use Corex\Http\ClientAddress;
+use Corex\Http\PublicSubmission;
 use Corex\Http\ResponseEnvelope;
 use Corex\Http\Middleware\Middleware;
 use Corex\Http\Middleware\MiddlewareResolver;
@@ -51,6 +52,8 @@ final class SubmitController
             'args'                => [
                 'slug' => ['sanitize_callback' => 'sanitize_key'],
             ],
+            // Closed while the site is in Maintenance (spec 112).
+            PublicSubmission::MARKER => true,
         ]);
     }
 

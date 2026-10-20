@@ -466,14 +466,21 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Http\ClientAddress::class,
             \Corex\Config\Security\LoginProtection\TrustedProxyClientAddress::class,
         );
+        // The wp-config break-glass. Fixed before WordPress loads, so reading it once here is safe;
+        // the guard acts on it and the Security Center says it is on (spec 112).
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginRecovery::class,
+            static fn (): \Corex\Config\Security\LoginProtection\LoginRecovery =>
+                new \Corex\Config\Security\LoginProtection\LoginRecovery(
+                    defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
+                ),
+        );
         $this->container->singleton(
             \Corex\Config\Security\LoginProtection\LoginRouteGuard::class,
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\LoginRouteGuard =>
                 new \Corex\Config\Security\LoginProtection\LoginRouteGuard(
                     $c->make(\Corex\Config\Security\LoginProtection\LoginProtectionSettings::class),
-                    // The wp-config break-glass. Fixed before WordPress loads, so reading it once here
-                    // is safe, and injecting it keeps the recovery path testable.
-                    defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
+                    $c->make(\Corex\Config\Security\LoginProtection\LoginRecovery::class)->active(),
                 ),
         );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class);
@@ -1206,6 +1213,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
+        $this->container->make(\Corex\Config\Operations\MaintenanceSubmissionGuard::class)->register();
         // The default page is registered in every mode, so it can be designed in the Site Editor
         // before the site is put into Coming soon. The guard acts only while it is.
         $this->container->make(\Corex\Config\Operations\ComingSoonTemplate::class)->register();

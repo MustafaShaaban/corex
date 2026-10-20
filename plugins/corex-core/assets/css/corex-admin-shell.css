@@ -3023,3 +3023,68 @@ body.corex-admin-screen .corex-admin__shell {
 	margin: 0;
 	color: var(--corex-admin-error);
 }
+
+/*
+ * A value somebody has to copy, with a button that copies it (spec 112,
+ * FR-023; React CorexCopyField, the admin form of the standalone page's copy
+ * field). The answer is on the label's line, at its other end, so the field
+ * does not move when it comes. The button's words are never cut: where the
+ * field and the button do not fit on one line, the button goes under the
+ * field and the field keeps the full width, so a line of code breaks between
+ * words.
+ */
+.corex-admin .corex-copy-field {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	inline-size: 100%;
+}
+
+.corex-admin .corex-copy-field__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	column-gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-copy-field__label {
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+.corex-admin .corex-copy-field__status {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-copy-field__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-copy-field__value {
+	flex: 1 1 16rem;
+	min-inline-size: 0;
+	min-block-size: var(--corex-admin-control-height);
+	margin: 0;
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-sm);
+	line-height: 1.5;
+	overflow-wrap: break-word;
+	resize: none;
+	field-sizing: content;
+}
+
+.corex-admin .corex-copy-field__row .button {
+	flex-shrink: 0;
+	min-block-size: var(--corex-admin-control-height);
+}

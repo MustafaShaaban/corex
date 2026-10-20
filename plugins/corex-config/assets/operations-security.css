@@ -618,3 +618,30 @@
 .corex-admin .corex-cache__no-action {
 	font-style: italic;
 }
+
+/* Recovery's two ways back (spec 112): a heading each, and numbered steps
+   the owner follows in order, not the bordered rows the other panels list. */
+.corex-admin .corex-security__recovery h3 {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-security__recovery ol {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-security__recovery ol li {
+	display: list-item;
+	padding: 0;
+	border: 0;
+}
+
+.corex-admin .corex-security__recovery ol .corex-copy-field {
+	margin-block-start: var(--corex-admin-space-xs);
+}

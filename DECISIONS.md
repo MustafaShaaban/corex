@@ -17239,3 +17239,95 @@ mark naming exactly CoreX on the front page and the not-found page, signed out) 
 
 **Client impact.** None to act on. Every page of a client site gains one line in its head after the
 update. A client that wants none adds the one-line filter.
+
+## #373 — Maintenance closes public submissions: a route that takes them declares it, and one REST filter answers 503 before any handler runs
+
+**Date:** 2026-10-20. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 3. **Mode:**
+CoreX Framework.
+
+**Why.** An owner puts the site into Maintenance so that no visitor data arrives until it is back.
+The maintenance page answered page requests only; CoreX's public forms post to REST routes, which
+the page guard never intercepts by design.
+
+**Decided.**
+
+1. **A route declares that it takes a public submission**, with `Corex\Http\PublicSubmission::MARKER
+   => true` in its own `register_rest_route()` arguments. WordPress keeps the key in the matched
+   handler. Six routes declare it: `forms/{slug}`, `flows/{id}/submit`, `newsletter/subscribe`,
+   `bookings/request`, `careers/apply` and `account/register`. Sign-in, password reset and every
+   read leave it out, so an administrator can still sign in through the account block.
+2. **One filter on `rest_request_before_callbacks`** (`MaintenanceSubmissionGuard`, corex-config)
+   answers `site_in_maintenance` with HTTP 503 before the permission callback and the handler run,
+   so nothing is stored, mailed or counted against a throttle. A second filter on
+   `rest_request_after_callbacks` turns that one error into a response carrying `Retry-After: 3600`,
+   as the maintenance page has; an error cannot carry a header.
+3. **One decision for both guards.** `MaintenanceDecision::closedToCurrentVisitor()` holds the mode,
+   the `corex_maintenance_bypass` filter (#123) and the signed-in administrator rule.
+   `MaintenanceGuard` adds its own "never the admin, cron, AJAX or REST" rule on top and calls it,
+   so the page guard and the submission guard cannot disagree about who passes.
+4. **Coming soon is untouched** (spec 101 FR-006): the guard acts only on Maintenance.
+5. **The panel says it.** `ModeDisclosure`'s always-shown Maintenance lines name what is closed and
+   what stays open, and that WordPress's own comment form follows the discussion settings. The
+   reference line that said the REST API is never intercepted now says "apart from public
+   submissions".
+
+**Not chosen.**
+
+- *A middleware alias.* The add-ons depend only on corex-core and do not run the middleware
+  pipeline, so it would reach two of the six routes.
+- *A list of route patterns kept in corex-config.* A new public route would stay open silently; a
+  declaration travels with the route.
+- *Closing `account/login`.* It stores no visitor data and mails nothing, and closing it could stop
+  an administrator signing in through the account block.
+
+**Verified.** Pest unit `MaintenanceDecisionTest` (9) and the updated `MaintenanceGuardTest` and
+`ModeDisclosureTest`; the whole unit suite, 3228 passing. Pest integration
+`MaintenanceClosesSubmissionsTest` through the real REST server, with a `rest_dispatch_request`
+stand-in for every handler and the mode answered by a `pre_option_` filter, so no run writes
+anything to the install: each marked route answers 503 with `Retry-After` and no database write or
+mail; sign-in and both password reset routes, a signed-in administrator, the bypass filter, Coming
+soon and Production pass; exactly the six routes carry the marker. The refusal test fails with the
+guard unregistered and passes with it. `MaintenanceModeTest` and the route suites of forms,
+newsletter, bookings, careers and profile (238 passing). Playwright: the Maintenance panel shows
+its lines without opening anything.
+
+**Client impact.** Muva and Perego: while a site is in Maintenance, its CoreX forms and sign-ups
+answer 503 and store nothing; Coming soon, which Muva uses, is unchanged. A client route of its own
+that takes public submissions can declare the marker to close with them.
+
+## #374 — Login recovery without a command line: one LoginRecovery value, both ways back as code to copy, and the Security Center says while recovery is on
+
+**Date:** 2026-10-20. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 4. **Mode:**
+CoreX Framework.
+
+**Why.** The Recovery panel gave only `wp corex security reset-login`, and both client sites run on
+hosts with no command line. The `COREX_LOGIN_UNGUARD` constant (#125) works from a host's file
+manager, but the panel did not say how, and nothing said while it was on.
+
+**Decided.**
+
+1. **`LoginRecovery`** (corex-config, `Security/LoginProtection`) holds whether the constant is on,
+   read once in the container where it was read before. `LoginRouteGuard` keeps its boolean argument,
+   now taken from it; `OperationsSecurityScreen` takes it and passes `recoveryActive` to the Security
+   Center. Nothing else reads the constant.
+2. **The Recovery panel gives both ways**, in order: without a command line (file manager, the line
+   to add above WordPress's "That's all, stop editing" line, sign in at `/wp-login.php`, remove the
+   line), then with one; each says what it does and does not do. The bookmark warning names both.
+3. **"Recovery is on"** shows in the Login protection section while the constant is set, whether or
+   not protection is on, and the overview's "Default login endpoints" row reads "Reachable (recovery
+   is on)" when the settings would hide them.
+4. **`CorexCopyField`**, a React copy field in `admin/components`, the admin form of
+   `StandalonePage::copyField()`: the same fallback (Clipboard API, then selecting and copying, then
+   saying to copy from the keyboard). It is a read-only text area set left to right that wraps, so
+   the whole line can be read before it is copied: a single-line field cut the constant's line off
+   at the panel's width. Where field and button do not fit on one line, the button goes under it.
+   Its styles are in `corex-admin-shell.css` with the other shared components.
+
+**Verified.** Jest `corexCopyField.test.js` (4) and `securityCenterRecovery.test.js` (6); the whole
+Jest suite. Pest integration `RecoveryOnTest` (the screen built with a chosen `LoginRecovery`, the
+login settings answered by a filter) and the Security integration suite, 85 passing. Playwright: the
+panel's two headings and two values, and at 1280px and 375px each value whole in its field with
+nothing scrolled out of view.
+
+**Client impact.** None to act on. Both clients' owners get a recovery route that works on their
+hosts.

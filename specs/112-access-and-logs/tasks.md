@@ -16,11 +16,11 @@ the `X-Corex-E2E-Mail: capture` header in Playwright): corex.local delivers real
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm the owner's go-ahead to implement (Pre-Implementation Confirmation Rule) and whether spec 112 is
+- [x] T001 Confirm the owner's go-ahead to implement (Pre-Implementation Confirmation Rule) and whether spec 112 is
   pushed for review first; until then the branch `spec/112-access-and-logs` stays local
-- [ ] T002 Read `origin/main` and every open pull request for the next free DECISIONS number and record it in the first
+- [x] T002 Read `origin/main` and every open pull request for the next free DECISIONS number and record it in the first
   implementation commit's DECISIONS.md entry (the last on this branch is #372)
-- [ ] T003 Run the suites the stories touch and record the baseline: `vendor/bin/pest -d memory_limit=512M
+- [x] T003 Run the suites the stories touch and record the baseline: `vendor/bin/pest -d memory_limit=512M
   tests/Unit/Access tests/Integration/Access tests/Unit/Operations tests/Integration/Operations tests/Integration/Blog
   tests/Unit/Data tests/Integration/Data tests/Integration/Submissions tests/Integration/Forms`, then `npx jest
   plugins/corex-config/src/Access plugins/corex-config/src/Security plugins/corex-config/src/Blog
@@ -144,32 +144,32 @@ open; the panel says so.
 
 ### Tests for User Story 3
 
-- [ ] T037 [P] [US3] Unit tests for the shared decision (mode, bypass filter, signed-in `manage_options`) in
+- [x] T037 [P] [US3] Unit tests for the shared decision (mode, bypass filter, signed-in `manage_options`) in
   `tests/Unit/Operations/MaintenanceDecisionTest.php`, and keep `tests/Unit/Operations/MaintenanceGuardTest.php`
   passing on it
-- [ ] T038 [P] [US3] Data-provider integration test over the six marked routes through `rest_do_request()`: 503 with
+- [x] T038 [P] [US3] Data-provider integration test over the six marked routes through `rest_do_request()`: 503 with
   `Retry-After: 3600` and `site_in_maintenance`, nothing stored, mail spy empty; accepted for a signed-in administrator,
   in Coming soon and in Production; `account/login`, `account/reset-request` and `account/reset` accepted; read routes
   untouched; in `tests/Integration/Operations/MaintenanceClosesSubmissionsTest.php`
-- [ ] T039 [P] [US3] Update `tests/Unit/Config/Operations/ModeDisclosureTest.php` for the new Maintenance lines
-- [ ] T040 [P] [US3] Playwright: the Maintenance panel shows what is closed and what stays open without expanding
-  anything, in `tests/e2e/operations-security.spec.js`; Coming soon forms still submit in `tests/e2e/coming-soon.spec.js`
+- [x] T039 [P] [US3] Update `tests/Unit/Config/Operations/ModeDisclosureTest.php` for the new Maintenance lines
+- [x] T040 [P] [US3] Playwright: the Maintenance panel shows what is closed and what stays open without expanding
+  anything, in `tests/e2e/operations-security.spec.js`; Coming soon accepting every submission is proved in T038
 
 ### Implementation for User Story 3
 
-- [ ] T041 [P] [US3] Create `CORE/Http/PublicSubmission.php` with the marker key constant
-- [ ] T042 [P] [US3] Create `CFG/Operations/MaintenanceDecision.php` from `MaintenanceGuard::shouldBlock()` without the
+- [x] T041 [P] [US3] Create `CORE/Http/PublicSubmission.php` with the marker key constant
+- [x] T042 [P] [US3] Create `CFG/Operations/MaintenanceDecision.php` from `MaintenanceGuard::shouldBlock()` without the
   request-context early return, and make `CFG/Operations/MaintenanceGuard.php` call it
-- [ ] T043 [US3] Create `CFG/Operations/MaintenanceSubmissionGuard.php` on `rest_request_before_callbacks` (503,
+- [x] T043 [US3] Create `CFG/Operations/MaintenanceSubmissionGuard.php` on `rest_request_before_callbacks` (503,
   `Retry-After: 3600`, translated message) and register it in `CFG/ConfigServiceProvider.php`
-- [ ] T044 [P] [US3] Declare the marker on `forms/{slug}` in `plugins/corex-forms/src/Submission/SubmitController.php`
+- [x] T044 [P] [US3] Declare the marker on `forms/{slug}` in `plugins/corex-forms/src/Submission/SubmitController.php`
   and on `flows/{id}/submit` in `plugins/corex-forms/src/Submission/FlowSubmissionController.php`
-- [ ] T045 [P] [US3] Declare the marker on `newsletter/subscribe` in
+- [x] T045 [P] [US3] Declare the marker on `newsletter/subscribe` in
   `addons/corex-newsletter/src/NewsletterServiceProvider.php`, `bookings/request` in
   `addons/corex-bookings/src/BookingsServiceProvider.php` and `careers/apply` in
   `addons/corex-careers/src/CareersServiceProvider.php`
-- [ ] T046 [P] [US3] Declare the marker on `account/register` only in `addons/corex-profile/src/ProfileServiceProvider.php`
-- [ ] T047 [US3] Rewrite the Maintenance lines of `consequences()` and the REST line of `reference()` in
+- [x] T046 [P] [US3] Declare the marker on `account/register` only in `addons/corex-profile/src/ProfileServiceProvider.php`
+- [x] T047 [US3] Rewrite the Maintenance lines of `consequences()` and the REST line of `reference()` in
   `CFG/Operations/ModeDisclosure.php`, and the class docblock of `CFG/Operations/MaintenanceGuard.php`
 
 **Checkpoint**: quickstart section 3 passes.
@@ -182,26 +182,28 @@ open; the panel says so.
 
 ### Tests for User Story 4
 
-- [ ] T048 [P] [US4] Jest tests for the Recovery panel (both routes, what each does, code left to right and copyable),
-  the bookmark warning and the "Recovery is on" notice in `plugins/corex-config/src/Security/__tests__/securityCenter.test.js`
-- [ ] T049 [P] [US4] Jest tests for the copy field (copies, falls back to selected text, `dir="ltr"`) in
+- [x] T048 [P] [US4] Jest tests for the Recovery panel (both routes, what each does, code left to right and copyable),
+  the bookmark warning and the "Recovery is on" notice in
+  `plugins/corex-config/src/Security/__tests__/securityCenterRecovery.test.js`
+- [x] T049 [P] [US4] Jest tests for the copy field (copies, falls back to selected text, `dir="ltr"`) in
   `plugins/corex-config/src/admin/components/__tests__/corexCopyField.test.js`
-- [ ] T050 [P] [US4] Extend `tests/Integration/Security/LoginRecoveryTest.php`: `recoveryActive` in the screen config
+- [x] T050 [P] [US4] In `tests/Integration/Security/RecoveryOnTest.php`: `recoveryActive` in the screen config
   and the overview row's wording with the constant set and unset
-- [ ] T051 [P] [US4] Update `tests/Unit/Security/LoginRouteGuardTest.php` for the injected `LoginRecovery`
+- [x] T051 [P] [US4] Keep `tests/Unit/Security/LoginRouteGuardTest.php` passing (the guard keeps its boolean argument,
+  now taken from `LoginRecovery` in the container; DECISIONS #374)
 
 ### Implementation for User Story 4
 
-- [ ] T052 [P] [US4] Create `CFG/Security/LoginRecovery.php` (`active(): bool`), bind it in
+- [x] T052 [P] [US4] Create `CFG/Security/LoginProtection/LoginRecovery.php` (`active(): bool`), bind it in
   `CFG/ConfigServiceProvider.php` where `COREX_LOGIN_UNGUARD` is read, and inject it into
   `CFG/Security/LoginProtection/LoginRouteGuard.php`
-- [ ] T053 [US4] Inject `LoginRecovery` into `CFG/Security/OperationsSecurityScreen.php`; pass `recoveryActive` in
+- [x] T053 [US4] Inject `LoginRecovery` into `CFG/Security/OperationsSecurityScreen.php`; pass `recoveryActive` in
   `securityConfig()` and make the "Default login endpoints" row in `overviewCard()` read "Reachable (recovery on)"
-- [ ] T054 [P] [US4] Create `CFG/admin/components/CorexCopyField.js` with the markup and behaviour of
+- [x] T054 [P] [US4] Create `CFG/admin/components/CorexCopyField.js` with the markup and behaviour of
   `StandalonePage::copyField()`
-- [ ] T055 [US4] Rewrite `Recovery`, the bookmark warning and the Login protection notice in
+- [x] T055 [US4] Rewrite `Recovery`, the bookmark warning and the Login protection notice in
   `CFG/Security/SecurityCenter.js`, with the code lines in `CorexCopyField` and the words around them translatable
-- [ ] T056 [P] [US4] Update the recovery steps in `docs/en/03-operations/security.md`
+- [x] T056 [P] [US4] Update the recovery steps in `docs/en/03-operations/security.md`
 
 **Checkpoint**: quickstart section 4 passes; the owner's manual check (SC-005) is asked for in the pull request.
 
