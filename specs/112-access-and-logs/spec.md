@@ -22,6 +22,33 @@ abilities can be granted, listed and revoked deliberately.
 
 This spec describes what each change does. It does not describe how the current behaviour could be misused.
 
+## Clarifications
+
+### Session 2026-10-20
+
+Planning found four approved criteria that the code cannot meet as written. The owner answered each:
+
+- Q: Resend needs each email's recipients, and CoreX has never recorded them in full (the email log keeps a masked
+  address and a hash). How does Resend find the right people? → A: **New emails record their resolved recipients on
+  the submission. For an older email, Resend works out the flow's recipients again and sends only if every one matches
+  what that email was sent to; otherwise it is not offered, and the drawer says why.**
+- Q: Counting refusals with one database write per hour needs a store outside the database, and shared hosts usually
+  have no object cache. → A: **Use the object cache when the host has one (one write per person, section and hour).
+  Without one, each refusal updates that person's single entry; it never adds an entry or removes another person's.**
+- Q: WordPress lets an Author approve, spam or trash comments on their own posts; the approved story asks for comment
+  moderation rights. Which wins? → A: **The stricter rule: approving, marking as spam, trashing and replying need
+  comment moderation rights.** Blog Pro never allows more than WordPress does.
+- Q: The role matrix has no typed phrase to reuse, and five admin pages need abilities that can no longer be
+  requested. → A: **Approving a dangerous ability means typing its name, checked by the server. On those pages the
+  access-denied page says an administrator must grant access, with no request form.**
+
+Settled with them, consistent with the stories' intent: in Maintenance, account registration closes and sign-in and
+password reset stay open; WordPress's own comment form follows the site's discussion settings and is not closed here;
+request states keep the names CoreX already uses (pending, approved, denied, cancelled, expired), and a request closed
+by the upgrade is cancelled with its reason; delete is not offered for the three security models on the Data screen;
+Blog Pro opens for anyone who can edit posts (stage 3 replaces this with its own ability); the interface a site uses
+to send a resend keeps its current form.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - High-risk abilities are granted only through the role matrix (Priority: P1)
@@ -45,7 +72,7 @@ note and a 7-day expiry; the grant appears in the grants list and disappears aft
    administrator must grant it through the role matrix, and nothing is stored.
 2. **Given** a pending request for a sensitive ability, **When** an administrator approves it, **Then** they see the
    ability's name, risk level and the requester's reason, must write a note, choose an expiry (7, 30 or 90 days, 30
-   preselected) and confirm; for a "dangerous" ability they also type the role matrix's confirmation.
+   preselected) and confirm; for a "dangerous" ability they also type the ability's name, which the server checks.
 3. **Given** a request that a role change would refuse, **When** an administrator approves it, **Then** approval is
    refused for the same reason.
 4. **Given** an area request, **When** an administrator opens the requests panel, **Then** the area's name and the
@@ -58,7 +85,10 @@ note and a 7-day expiry; the grant appears in the grants list and disappears aft
    screen, **Then** those grants are listed as "no expiry (granted before expiries existed)", stay in effect, and can be
    revoked.
 8. **Given** a pending request for an ability that is no longer requestable, **When** the site is upgraded, **Then**
-   the request is closed and the requester sees why.
+   the request is cancelled and the requester sees why.
+9. **Given** a person refused on an admin page whose ability cannot be requested (Overview, Add-ons, Access, Operations
+   & Security, Releases), **When** the access-denied page is shown, **Then** it says an administrator must grant access
+   through the role matrix and shows no request form.
 
 ---
 
@@ -76,18 +106,21 @@ audit tab shows the first user's entry and one entry for the second with a count
 
 1. **Given** one person refused repeatedly for the same section within an hour, **When** the audit tab is opened,
    **Then** one entry shows the count and the first and last time.
-2. **Given** a repeated refusal within that hour, **When** it happens, **Then** no database write follows the first.
+2. **Given** a host with a persistent object cache and a repeated refusal within that hour, **When** it happens,
+   **Then** no database write follows the first; **given** a host without one, **Then** the refusal updates that
+   person's single entry and adds no new entry.
 3. **Given** entries from other people, **When** one person is refused 1,000 times, **Then** every other entry is still
    listed.
-4. **Given** any refused page, **When** it is shown, **Then** the refusal page and its request form look and behave as
-   before (spec 079).
+4. **Given** any refused page whose ability can be requested, **When** it is shown, **Then** the refusal page and its
+   request form look and behave as before (spec 079).
 
 ---
 
 ### User Story 3 - Maintenance mode closes public submissions (Priority: P1)
 
 A site owner who puts the site into Maintenance expects nothing to be stored or mailed from the public site until it
-is back. Forms, sign-ups, booking and job applications and account registration stop accepting submissions; signed-in
+is back. Forms, sign-ups, booking and job applications and account registration stop accepting submissions; sign-in
+and password reset stay open; signed-in
 administrators can still test. The Maintenance panel says so in plain words. Coming soon is unchanged: its forms stay
 open, as spec 101 requires.
 
@@ -98,14 +131,15 @@ mails nothing; in Coming soon, the same POSTs succeed.
 
 **Acceptance Scenarios**:
 
-1. **Given** Maintenance, **When** an anonymous visitor submits to any CoreX form, flow, newsletter, booking, careers or
-   account endpoint, **Then** the answer is HTTP 503 with a message that the site is in maintenance, and nothing is
-   stored or mailed.
+1. **Given** Maintenance, **When** an anonymous visitor submits to any CoreX form, flow, newsletter, booking or careers
+   endpoint, or registers an account, **Then** the answer is HTTP 503 with a message that the site is in maintenance,
+   and nothing is stored or mailed. Sign-in and password reset keep working.
 2. **Given** Maintenance, **When** a signed-in administrator submits a form, **Then** it is accepted.
 3. **Given** Maintenance, **When** the admin, the login, cron or a read-only REST request is used, **Then** it works.
 4. **Given** Coming soon, **When** the same submissions are made, **Then** each succeeds as spec 101 requires.
 5. **Given** Maintenance is selected, **When** the owner reads the Maintenance panel, **Then** it says in plain words,
-   without opening anything, that pages and form submissions are closed and that the admin and login stay open.
+   without opening anything, that pages and form submissions are closed, that the admin, sign-in and password reset
+   stay open, and that WordPress's own comment form follows the site's discussion settings.
 6. **Given** Maintenance, **When** the owner switches back to Production, **Then** submissions are accepted at once.
 
 ---
@@ -141,20 +175,21 @@ tab and the Operations & Security overview both show that recovery is on.
 
 ### User Story 5 - Blog Pro follows each person's WordPress permissions (Priority: P1)
 
-A site owner with editors and writers expects Blog Pro's screen and its actions to allow each person exactly what
-WordPress allows them for the post or comment in question.
+A site owner with editors and writers expects Blog Pro's screen and its actions never to allow a person more than
+WordPress allows them for the post or comment in question, and comment moderation to need comment moderation
+rights.
 
 **Why this priority**: Blog Pro is in a core plugin that every client site runs.
 
 **Independent Test**: as Contributor, Author, Editor and Administrator, try each Blog Pro action on posts and comments
-the role may and may not change; the server allows exactly what WordPress allows.
+the role may and may not change; the server allows exactly what this spec's rules allow.
 
 **Acceptance Scenarios**:
 
 1. **Given** any person, **When** they open Blog Pro or use one of its actions, **Then** both require the same base
    permission, and a person refused by one is refused by the other with the standard access-denied state.
-2. **Given** a person WordPress lets edit posts, **When** they open Blog Pro, **Then** they see only what they may act
-   on; administrators see what they see today.
+2. **Given** a person WordPress lets edit posts (the base permission), **When** they open Blog Pro, **Then** they see
+   only what they may act on; administrators see what they see today.
 3. **Given** a post, **When** someone changes its editorial state, **Then** they need permission to edit that post, and
    moving it to Published or Scheduled needs permission to publish it.
 4. **Given** a comment, **When** someone approves, marks as spam or trashes it, **Then** they need permission to
@@ -201,15 +236,18 @@ addressed to.
 **Why this priority**: a team notification must reach the team.
 
 **Independent Test**: on a capture site with delivery failing, resend a failed team notification from a submission's
-drawer; the captured resend is addressed to the team address only.
+drawer, for a submission made after the release and one made before it; each captured resend is addressed to the team
+address only.
 
 **Acceptance Scenarios**:
 
-1. **Given** a submission's email, **When** it is resent from the drawer, **Then** it goes to the recipients that email
-   was first addressed to, as recorded when it was sent.
+1. **Given** a submission's email sent after this release, **When** it is resent from the drawer, **Then** it goes to
+   the recipients recorded on the submission when it was sent.
+1a. **Given** an email sent before this release, **When** it is resent, **Then** the flow's recipients are worked out
+   again and the email is sent only if every one matches what that email was sent to.
 2. **Given** a team notification or a failure notice, **When** it is resent, **Then** it never goes to the submitter.
-3. **Given** an email whose recipients were not recorded, **When** the drawer is opened, **Then** resend is not offered
-   for it and the drawer says why.
+3. **Given** an email whose recipients are neither recorded nor confirmed by working them out again, **When** the
+   drawer is opened, **Then** resend is not offered for it and the drawer says why.
 4. **Given** a resend, **When** it is sent, **Then** the drawer says who it went to and the submission's history
    records it.
 5. **Given** a confirmation that was addressed to the submitter, **When** it is resent, **Then** it goes to the
@@ -241,7 +279,7 @@ drawer; the captured resend is addressed to the team address only.
   area containing one, through every entry point, storing nothing and naming the role matrix as the way to grant it.
 - **FR-002**: Approving a request MUST show the ability's name, risk level and the requester's reason, and MUST require
   a written note, an expiry of 7, 30 or 90 days (30 preselected) and a confirmation; a "dangerous" ability MUST also
-  require the role matrix's typed confirmation.
+  require the approver to type the ability's name, verified by the server.
 - **FR-003**: Approval MUST run the same policy checks as a role change and refuse whatever a role change refuses.
 - **FR-004**: The requests panel MUST name an area request's area and list the abilities it would grant.
 - **FR-005**: The Access screen MUST list every grant made by approval, with its approver, date, note and expiry, and
@@ -250,22 +288,27 @@ drawer; the captured resend is addressed to the team address only.
   notified in the CoreX notification center.
 - **FR-007**: Grants approved before this release MUST be listed as "no expiry (granted before expiries existed)",
   stay in effect, and be revocable; they MUST NOT be removed automatically.
-- **FR-008**: Pending requests for abilities that are no longer requestable MUST be closed on upgrade, with the reason
-  shown to the requester.
+- **FR-008**: Pending requests for abilities that are no longer requestable MUST be cancelled on upgrade, with the
+  reason shown to the requester.
+- **FR-008a**: On an admin page whose ability cannot be requested, the access-denied page MUST say that an administrator
+  grants access through the role matrix and MUST NOT show a request form.
 
 **Access-denied log (Story 2)**
 
 - **FR-009**: Repeated refusals of the same person for the same section within one hour MUST be stored as one entry
   with a count and the first and last time.
-- **FR-010**: Within that hour, a repeated refusal MUST NOT cause a database write after the first.
+- **FR-010**: Where the host has a persistent object cache, a repeated refusal within that hour MUST NOT cause a
+  database write after the first; without one, it MUST update only that person's entry.
 - **FR-011**: One person's repeats MUST NOT remove other people's entries.
 - **FR-012**: The audit tab MUST show the count and the time range.
-- **FR-013**: The refusal page and its request form MUST be unchanged (spec 079).
+- **FR-013**: The refusal page and its request form MUST be unchanged (spec 079) wherever the ability can be
+  requested.
 
 **Maintenance (Story 3)**
 
-- **FR-014**: In Maintenance, public submissions to every CoreX form, flow, newsletter, booking, careers and account
-  endpoint MUST be refused with HTTP 503 and a maintenance message, storing and mailing nothing.
+- **FR-014**: In Maintenance, public submissions to every CoreX form, flow, newsletter, booking and careers endpoint,
+  and account registration, MUST be refused with HTTP 503 and a maintenance message, storing and mailing nothing.
+  Sign-in and password reset MUST stay open.
 - **FR-015**: Signed-in administrators MUST still be able to submit in Maintenance.
 - **FR-016**: The admin, the login, cron and read-only REST requests MUST keep working in Maintenance.
 - **FR-017**: Coming soon MUST keep accepting every submission (spec 101 FR-006, US3.3).
@@ -285,9 +328,12 @@ drawer; the captured resend is addressed to the team address only.
 
 **Blog Pro (Story 5)**
 
-- **FR-024**: Opening Blog Pro and using its actions MUST require the same base permission.
-- **FR-025**: Each Blog Pro action MUST be allowed by the server only when WordPress allows that person that action on
-  that post or comment (edit, publish, moderate, edit comment), whatever the screen shows.
+- **FR-024**: Opening Blog Pro and using its actions MUST require the same base permission: WordPress's permission to
+  edit posts.
+- **FR-025**: Each Blog Pro action MUST be allowed by the server only under these rules, whatever the screen shows:
+  changing a post's editorial state needs permission to edit that post; publishing or scheduling needs permission to
+  publish it; approving, marking as spam, trashing and replying to a comment need comment moderation rights; editing a
+  comment needs permission to edit that comment. No rule allows more than WordPress allows.
 - **FR-026**: A post's figures and held comments MUST be shown only to people who may edit that post.
 - **FR-027**: The public share-click address MUST count nothing until reading data is collected.
 - **FR-028**: Contributor, Author, Editor and Administrator MUST each be tested against every action.
@@ -295,15 +341,19 @@ drawer; the captured resend is addressed to the team address only.
 **Data screen (Story 6)**
 
 - **FR-029**: The role grants, access requests and sign-in attempts models MUST require, in addition to "Manage data",
-  the ability of the screen that owns them, for listing, reading, querying and exporting.
+  the ability of the screen that owns them, for listing, reading, querying and exporting. Delete MUST NOT be offered
+  for these models.
 - **FR-030**: An export set MUST skip a model its runner may not read and say which and why.
 - **FR-031**: Every such refusal MUST be recorded in the access audit.
 
 **Inbox resend (Story 7)**
 
-- **FR-032**: A resend from the inbox MUST go to the recipients the email was first addressed to, as recorded when it
-  was sent.
-- **FR-033**: An email without recorded recipients MUST NOT be offered for resend, and the drawer MUST say why.
+- **FR-032**: Every email a flow sends MUST record its resolved recipients on the submission; they follow the
+  submission's retention, trash, permanent delete and personal-data export.
+- **FR-032a**: A resend from the inbox MUST go to the recorded recipients; for an email sent before this release, to the
+  flow's recipients worked out again, only if every one matches what that email was sent to.
+- **FR-033**: An email whose recipients are neither recorded nor confirmed MUST NOT be offered for resend, and the
+  drawer MUST say why.
 - **FR-034**: The drawer MUST show who a resend went to, and the submission's history MUST record it.
 
 **All stories**
@@ -311,17 +361,19 @@ drawer; the captured resend is addressed to the team address only.
 - **FR-035**: Every new message MUST be translatable and read correctly right to left.
 - **FR-036**: Every new screen element MUST meet WCAG 2.2 AA in dark and light.
 - **FR-037**: The release notes MUST state what changes for site owners, including that past grants can now be
-  reviewed and revoked and that Maintenance now closes public submissions.
+  reviewed and revoked (and will matter more once screens check their own abilities), that Maintenance now closes
+  public submissions, and that a site implementing its own submission email gateway keeps working unchanged.
 
 ### Key Entities
 
 - **Ability grant**: an ability given to one person by approving a request; holds the ability, the person, the
   approver, the date, the note and the expiry (or "no expiry" for grants made before this release).
-- **Access request**: a person's request for an ability or an area; holds its state (pending, approved, refused,
-  closed) and the reason it was closed.
+- **Access request**: a person's request for an ability or an area; holds its state (pending, approved, denied,
+  cancelled, expired) and, when cancelled by the upgrade, the reason.
 - **Access-denied entry**: one person's refusals for one section within a window; holds the count and the first and
   last time.
-- **Email attempt**: one sending of an email; holds the recipients it was addressed to, which a resend reuses.
+- **Email recipients record**: for each email a flow sends, the resolved recipients, kept on the submission; a
+  resend reuses them.
 
 ## Success Criteria *(mandatory)*
 
@@ -330,12 +382,13 @@ drawer; the captured resend is addressed to the team address only.
 - **SC-001**: 0 locked or critical abilities can be obtained by any non-administrator through an access request, on
   every entry point (test cases TC-SAFE-04-01 to 03).
 - **SC-002**: 100% of grants made by approval are visible on the Access screen and revocable in one action.
-- **SC-003**: After 1,000 refusals of one person in an hour, 100% of other people's entries are still listed, and the
-  database is written once for that hour.
+- **SC-003**: After 1,000 refusals of one person in an hour, 100% of other people's entries are still listed and the
+  log holds one entry for that person; on a host with a persistent object cache, the database is written once for
+  that hour.
 - **SC-004**: In Maintenance, 0 public submissions are stored or mailed; in Coming soon, 100% are accepted.
 - **SC-005**: An owner with no command line can follow the Recovery panel's steps to the admin without outside help
   (checked by the owner on a scratch site).
-- **SC-006**: For each of four roles, Blog Pro's server allows exactly the actions WordPress allows, with 0 exceptions
+- **SC-006**: For each of four roles, Blog Pro's server allows exactly the actions FR-025 allows, with 0 exceptions
   across the test matrix.
 - **SC-007**: A "Manage data" holder without the owning abilities reads 0 security records through any route.
 - **SC-008**: 100% of resent team notifications reach the team address and 0 reach the submitter.
@@ -357,8 +410,8 @@ drawer; the captured resend is addressed to the team address only.
 - The expiry check runs once a day, as the submission retention clean-up already does; a grant may outlive its expiry
   by up to a day.
 - The one-hour window for counting refusals is fixed in this release.
-- Recorded recipients exist for emails sent by the current Email Studio paths; older attempts without them fall under
-  FR-033.
+- Emails sent before this release have no recorded recipients; FR-032a recovers them where the flow's recipients
+  still match, and FR-033 covers the rest.
 - Read-only REST requests remain open in Maintenance; only submission endpoints close.
 - Every story, its test cases and its verification are in the owner's private planning workspace; this spec repeats
   the criteria and nothing else.
