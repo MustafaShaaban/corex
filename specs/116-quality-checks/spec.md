@@ -321,7 +321,7 @@ Somebody reviewing CoreX on its development site sees what a person made.
 **Test residue (US-NFR-09)**
 
 - **FR-028**: The browser suite's setup MUST print the site it will write to. It MUST refuse a site whose CoreX
-  operations mode is declared `production`, or, with no mode declared, whose `WP_ENVIRONMENT_TYPE` is set to
+  operations mode is declared `production` and that is not served from a local development host (localhost, a loopback address, `.localhost`, `.test`, `.local`: the suite's own specs switch the mode there), or, with no mode declared, whose `WP_ENVIRONMENT_TYPE` is set to
   `production`. WordPress answers `production` for a site that sets nothing, which is every fresh install and CI's, so
   the default alone is not a refusal. There is no override.
 - **FR-029**: The suite's setup and teardown MUST remove the records earlier and current runs made, recognised by

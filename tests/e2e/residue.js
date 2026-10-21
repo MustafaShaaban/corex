@@ -100,12 +100,31 @@ async function operationsMode( page ) {
 }
 
 /**
+ * Whether an address is a local development host: localhost, a loopback address, or a name
+ * under `.localhost`, `.test` or `.local`.
+ *
+ * @param {string} baseUrl The site under test.
+ * @return {boolean} Whether it is.
+ */
+function isDevelopmentHost( baseUrl ) {
+	const { hostname } = new URL( baseUrl );
+
+	return (
+		[ 'localhost', '127.0.0.1', '[::1]' ].includes( hostname ) ||
+		/\.(localhost|test|local)$/.test( hostname )
+	);
+}
+
+/**
  * Says where the suite will write, and refuses a production site. Run once, before any test.
  *
  * @param {import('@playwright/test').Page} page    A page signed in as an administrator.
  * @param {string}                          baseUrl The site under test.
  */
 async function refuseProduction( page, baseUrl ) {
+	// A site served from this machine or a development name is a copy, whatever mode it is in:
+	// the suite's own specs switch the mode, and CI's site ends a run in Production. A production
+	// site someone could lose is served from a real host name.
 	const { mode, declared } = await operationsMode( page );
 
 	process.stdout.write(
@@ -116,7 +135,7 @@ async function refuseProduction( page, baseUrl ) {
 		}).\n`
 	);
 
-	if ( declared && mode === 'production' ) {
+	if ( declared && mode === 'production' && ! isDevelopmentHost( baseUrl ) ) {
 		throw new Error(
 			`${ baseUrl } is a production site (its CoreX operations mode is Production). The browser tests submit forms and change settings, so they do not run there. Point COREX_BASE_URL at a scratch site.`
 		);
