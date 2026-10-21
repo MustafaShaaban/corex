@@ -17246,8 +17246,8 @@ update. A client that wants none adds the one-line filter.
 CoreX Framework.
 
 **Why.** An owner puts the site into Maintenance so that no visitor data arrives until it is back.
-The maintenance page answered page requests only; CoreX's public forms post to REST routes, which
-the page guard never intercepts by design.
+CoreX's public forms post to REST routes, which the maintenance page guard leaves alone by design,
+so closing submissions needs a guard of its own on those routes.
 
 **Decided.**
 
@@ -17338,8 +17338,9 @@ hosts.
 CoreX Framework. (#375 is held by open PR #428.)
 
 **Why.** Every CoreX screen will check its own ability (stage 3), so who holds an ability has to be
-deliberate first: approving a request granted at once with nothing written down, nothing ended it,
-nothing listed it, and some abilities a request could ask for control the whole site.
+deliberate first: an administrator should see what an approval grants, say why, choose when it ends,
+find it again and take it back, and the abilities that control the whole site should be granted
+through the role matrix alone.
 
 **Decided.**
 
@@ -17404,9 +17405,9 @@ release (its fakes implement the widened `AccessRequestStore` and `AccessUserDir
 **Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 2. **Mode:**
 CoreX Framework.
 
-**Why.** Every refused page view was one more entry in a log capped at 100, written to the database
-each time, so one person reloading a refused page pushed everybody else's history out (corex.local
-held 80 entries, the last two from one person eight seconds apart).
+**Why.** The audit log keeps a bounded history of who was refused what. Counting repeated refusals
+of one screen by one person as one line keeps that history readable and keeps every person's lines
+in it, and spares the database a write for each repeat where the host can.
 
 **Decided.**
 
@@ -17447,9 +17448,9 @@ suite.
 **Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 6. **Mode:**
 CoreX Framework.
 
-**Why.** "Manage data" opened every model on the Data screen, including the role ability grants,
-the access requests and the sign-in attempts, which belong to Access & Abilities and Operations &
-Security. Delegating data work delegated those records with it.
+**Why.** The role ability grants, the access requests and the sign-in attempts belong to Access &
+Abilities and Operations & Security. An owner who delegates data work with "Manage data" should not
+be delegating those records with it.
 
 **Decided.**
 
@@ -17491,10 +17492,10 @@ longer sees the three security models. A site's own `ManagedTable` keeps working
 **Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 5. **Mode:**
 CoreX Framework.
 
-**Why.** The Blog Pro screen opened only for `manage_options`, while every one of its routes asked
-only for `edit_posts`: a person who could write posts could, through the routes, move, publish and
-moderate anybody's. The screen hid controls by per-post checks the routes did not make (#159 says
-the control must follow the capability the route enforces).
+**Why.** Blog Pro is for the people who write and edit a site's posts, so it should open for them and
+let each do exactly what WordPress lets them do with the post or comment in front of them. The
+screen and its routes should answer that from one place (#159: a control follows the capability the
+route enforces).
 
 **Decided.**
 
@@ -17538,9 +17539,9 @@ comments through its routes.
 **Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 7. **Mode:**
 CoreX Framework.
 
-**Why.** Resending one of a submission's emails from the inbox always addressed the submitter,
-whichever email it was: a team notification sent again went to the visitor, not the team. CoreX had
-never kept who an email went to; the attempt store keeps a masked address and a keyed hash of it.
+**Why.** Sending one of a submission's emails again from the inbox should reach the people that email
+was for: the team for a team notification, the sender for a confirmation. CoreX had not kept who an
+email went to; the attempt store keeps a masked address and a keyed hash of it.
 
 **Decided** (the owner's answer of 2026-10-20, spec 112 clarifications).
 
