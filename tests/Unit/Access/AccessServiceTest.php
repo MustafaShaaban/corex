@@ -14,6 +14,7 @@ use Corex\Access\AccessRequestStore;
 use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
+use Corex\Access\RequestableAbilities;
 use Corex\Access\RoleAbilityStore;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityRepository;
@@ -102,6 +103,44 @@ beforeEach(function () {
 
             return null;
         }
+
+        public function approve(int $id, int $reviewerId, string $note, DateTimeImmutable $reviewedAt, DateTimeImmutable $grantExpiresAt): bool
+        {
+            if (! $this->transition($id, 'approved', $reviewerId, $note, $reviewedAt)) {
+                return false;
+            }
+
+            $this->rows[$id] += ['reviewNote' => $note, 'grantExpiresAt' => $grantExpiresAt, 'endedAt' => null];
+
+            return true;
+        }
+
+        public function grants(): array
+        {
+            return array_values(array_filter($this->rows, static fn (array $row): bool => $row['state'] === 'approved' && ($row['endedAt'] ?? null) === null));
+        }
+
+        public function endGrant(int $id, string $reason, ?int $endedBy, DateTimeImmutable $endedAt): bool
+        {
+            return false;
+        }
+
+        public function expiredGrants(DateTimeImmutable $now): array
+        {
+            return [];
+        }
+
+        public function cancel(int $id, string $reason, DateTimeImmutable $cancelledAt): bool
+        {
+            if (($this->rows[$id]['state'] ?? null) !== 'pending') {
+                return false;
+            }
+
+            $this->rows[$id]['state']        = 'cancelled';
+            $this->rows[$id]['cancelReason'] = $reason;
+
+            return true;
+        }
     };
 
     $this->users = new class implements AccessUserDirectory {
@@ -127,6 +166,16 @@ beforeEach(function () {
             $this->granted[$userId][] = $abilityKey;
         }
 
+        public function revokeUserAbility(int $userId, string $abilityKey): void
+        {
+            $this->granted[$userId] = array_values(array_diff($this->granted[$userId] ?? [], [$abilityKey]));
+        }
+
+        public function holdsOwnAbility(int $userId, string $abilityKey): bool
+        {
+            return in_array($abilityKey, $this->granted[$userId] ?? [], true);
+        }
+
         public function displayName(int $userId): string
         {
             return 'User ' . $userId;
@@ -135,6 +184,11 @@ beforeEach(function () {
         public function emailAddress(int $userId): string
         {
             return sprintf('user-%d@example.com', $userId);
+        }
+
+        public function exists(int $userId): bool
+        {
+            return true;
         }
     };
 
@@ -185,6 +239,7 @@ beforeEach(function () {
         requests: $this->requests,
         users: $this->users,
         activity: new ActivityService($this->activityRepository),
+        requestable: new RequestableAbilities($catalog),
         notifications: $this->notifications,
     );
 });
@@ -234,8 +289,8 @@ it('creates and approves an ability request exactly once', function () {
         now: $now,
         expiresAt: $now->modify('+7 days'),
     );
-    $approved = $this->service->decideRequest(7, 1, true, 'Approved for form ownership.', $now->modify('+1 minute'));
-    $replayed = $this->service->decideRequest(7, 1, false, 'Changed mind.', $now->modify('+2 minutes'));
+    $approved = $this->service->approveRequest(7, 1, 'Approved for form ownership.', 30, approvalConfirmation($this->service, 1, $now), $now->modify('+1 minute'));
+    $replayed = $this->service->denyRequest(7, 1, 'Changed mind.', $now->modify('+2 minutes'));
 
     expect($created->state)->toBe(OperationResult::STATE_COMPLETED)
         ->and($approved->state)->toBe(OperationResult::STATE_COMPLETED)
@@ -252,7 +307,7 @@ it('denies a request without granting an ability', function () {
     $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
     $this->service->requestAccess(12, CorexAbility::MANAGE_DATA, null, 'Need exports.', $now, $now->modify('+7 days'));
 
-    $result = $this->service->decideRequest(7, 1, false, 'Exports remain restricted.', $now->modify('+1 minute'));
+    $result = $this->service->denyRequest(7, 1, 'Exports remain restricted.', $now->modify('+1 minute'));
 
     expect($result->state)->toBe(OperationResult::STATE_COMPLETED)
         ->and($this->users->granted)->toBe([])
@@ -273,4 +328,110 @@ it('refuses a second request for what the person is already waiting on, and tell
         // written to a second time.
         ->and($this->activityRepository->events)->toHaveCount(1)
         ->and($this->notifications->calls)->toHaveCount(1);
+});
+
+
+/**
+ * The confirmation the approval dialog builds from a preview: for this approver, bound to the
+ * request and what it grants, carrying what was typed.
+ */
+function approvalConfirmation(AccessService $service, int $requestId, DateTimeImmutable $now, ?string $typed = null): Confirmation
+{
+    $preview = $service->previewApproval(7, $requestId);
+
+    return new Confirmation(
+        operationKind: AccessService::APPROVAL_OPERATION,
+        targetHash: $preview->targetHash,
+        actorId: 7,
+        expiresAt: $now->modify('+10 minutes'),
+        requiredPhrase: $typed,
+    );
+}
+
+it('shows what an approval grants: each ability with its risk, and whether its name must be typed', function () {
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+    $this->service->requestAccess(12, null, CorexAbility::GROUP_DATA, 'I run the exports.', $now, $now->modify('+7 days'));
+
+    $preview = $this->service->previewApproval(7, 1);
+
+    expect($preview->requesterId)->toBe(12)
+        ->and($preview->reason)->toBe('I run the exports.')
+        ->and(array_map(static fn (CorexAbility $ability): array => [$ability->key, $ability->risk], $preview->abilities))->toBe([
+            [CorexAbility::MANAGE_DATA, CorexAbility::RISK_DANGEROUS],
+            [CorexAbility::EXPORT_PERSONAL_DATA, CorexAbility::RISK_SENSITIVE],
+        ])
+        ->and($preview->blockers)->toBe([])
+        ->and($preview->typedName)->toBe(CorexAbility::MANAGE_DATA);
+});
+
+it('asks no typed name when nothing granted is dangerous', function () {
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+    $this->service->requestAccess(12, CorexAbility::MANAGE_FORMS, null, 'Forms.', $now, $now->modify('+7 days'));
+
+    expect($this->service->previewApproval(7, 1)->typedName)->toBeNull();
+});
+
+it('refuses an approval without a note or with an expiry it does not offer, and grants nothing', function (string $note, int $days, string $code) {
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+    $this->service->requestAccess(12, CorexAbility::MANAGE_FORMS, null, 'Forms.', $now, $now->modify('+7 days'));
+
+    $result = $this->service->approveRequest(7, 1, $note, $days, approvalConfirmation($this->service, 1, $now), $now);
+
+    expect($result->state)->toBe(OperationResult::STATE_BLOCKED)
+        ->and(array_column($result->errors, 'code'))->toBe([$code])
+        ->and($this->users->granted)->toBe([])
+        ->and($this->requests->rows[1]['state'])->toBe('pending');
+})->with([
+    'no note'            => ['  ', 30, 'note_required'],
+    'a 14-day expiry'    => ['Covering forms.', 14, 'expiry_invalid'],
+]);
+
+it('approves with each expiry it offers, and keeps when the grant ends', function (int $days) {
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+    $this->service->requestAccess(12, CorexAbility::MANAGE_FORMS, null, 'Forms.', $now, $now->modify('+7 days'));
+
+    $result = $this->service->approveRequest(7, 1, 'Covering forms.', $days, approvalConfirmation($this->service, 1, $now), $now);
+
+    expect($result->state)->toBe(OperationResult::STATE_COMPLETED)
+        ->and($this->requests->rows[1]['grantExpiresAt'])->toEqual($now->modify(sprintf('+%d days', $days)));
+})->with(AccessService::GRANT_EXPIRY_DAYS);
+
+it('approves a dangerous ability only when its name is typed, as the server checks it', function (?string $typed, string $state) {
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+    $this->service->requestAccess(12, CorexAbility::MANAGE_DATA, null, 'Exports.', $now, $now->modify('+7 days'));
+
+    $result = $this->service->approveRequest(7, 1, 'Exports this month.', 7, approvalConfirmation($this->service, 1, $now, $typed), $now);
+
+    expect($result->state)->toBe($state)
+        ->and($this->users->granted !== [])->toBe($state === OperationResult::STATE_COMPLETED);
+})->with([
+    'nothing typed'   => [null, OperationResult::STATE_BLOCKED],
+    'the wrong name'  => [CorexAbility::MANAGE_FORMS, OperationResult::STATE_BLOCKED],
+    'its name'        => [CorexAbility::MANAGE_DATA, OperationResult::STATE_COMPLETED],
+]);
+
+it('refuses an approval confirmed for another request', function () {
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+    $this->service->requestAccess(12, CorexAbility::MANAGE_FORMS, null, 'Forms.', $now, $now->modify('+7 days'));
+    $this->service->requestAccess(14, CorexAbility::MANAGE_EMAIL, null, 'Email.', $now, $now->modify('+7 days'));
+
+    $result = $this->service->approveRequest(7, 1, 'Covering forms.', 30, approvalConfirmation($this->service, 2, $now), $now);
+
+    expect(array_column($result->errors, 'code'))->toBe(['confirmation_invalid'])
+        ->and($this->users->granted)->toBe([]);
+});
+
+it('cancels instead of approving a request for an ability a request can no longer ask for', function () {
+    // Filed before spec 112, when a critical ability could still be asked for.
+    $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
+    $this->requests->rows[1] = [
+        'id' => 1, 'requesterId' => 12, 'abilityKey' => CorexAbility::MANAGE_ACCESS, 'areaKey' => null,
+        'reason' => 'Old request.', 'state' => 'pending', 'createdAt' => $now, 'expiresAt' => $now->modify('+7 days'),
+    ];
+
+    $result = $this->service->approveRequest(7, 1, 'Yes.', 30, approvalConfirmation($this->service, 1, $now), $now);
+
+    expect(array_column($result->errors, 'code'))->toBe(['request_not_requestable'])
+        ->and($this->requests->rows[1]['state'])->toBe('cancelled')
+        ->and($this->users->granted)->toBe([]);
 });

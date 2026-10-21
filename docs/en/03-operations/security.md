@@ -149,6 +149,12 @@ is stored through the Access workflow with:
 - a required reason;
 - a seven-day expiry.
 
+Abilities that control the whole site cannot be requested: those the catalogue marks locked or critical (CoreX admin,
+access, operations and security, releases, dangerous actions), any ability that implies one, and an area that holds
+one. An administrator grants those through the role matrix. On the screens that need one of them (Overview, Add-ons,
+Access, Operations & Security, Releases) the denied page says so and shows no form, and a request for one through REST
+is answered `400` with the refusal code `ability_not_requestable` or `area_not_requestable`, storing nothing.
+
 ### What the requester sees
 
 The form submits to a CoreX admin endpoint, which validates it, calls the Access service and redirects back to the
@@ -175,9 +181,20 @@ or one made after the first was decided or expired, is a new request.
 
 ### What the administrator sees
 
-Pending requests appear in **CoreX Access & Abilities → Role matrix**, each naming who asked, which ability they asked
-for, when, and why, with **Approve** and **Deny**. Approval grants the requested CoreX-owned ability immediately;
-denial records the decision without granting access. Both write an audit entry.
+Pending requests appear in **CoreX Access & Abilities → Role matrix**, each naming who asked, which ability or area
+they asked for, when, and why, with **Approve** and **Deny**. Denial records the decision without granting access.
+
+**Approve** first shows what would be granted: each ability with its risk, the area it came from and the requester's
+reason. The administrator writes a note, chooses when access ends (7, 30 or 90 days; 30 is selected), and, for an
+ability marked dangerous, types its key (for example `corex_manage_data`); the server checks all of it again, with the
+same safety policy as a role change. Both decisions write an audit entry.
+
+Beside the requests, **Access granted by approval** lists every grant that stands: who has it, who approved it and when,
+the note, and when it ends. **Revoke** takes the ability back, unless another standing grant still gives it to the same
+person. Once a day CoreX ends the grants whose time has passed and tells the person and the approver in the
+Notification Center. A grant approved before expiries existed says "No expiry (granted before expiries existed)", stays
+in effect and can be revoked. A grant whose ability was taken away elsewhere (a role editor, the command line) is
+listed as no longer in effect.
 
 Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
 When nobody is waiting, it says nothing at all.

@@ -40,67 +40,73 @@ expiry and a confirmation; grants are listed, revocable and end on time.
 
 ### Tests for User Story 1
 
-- [ ] T004 [P] [US1] Unit tests for `requestable()` over every catalogue ability, including an area that contains a
+- [x] T004 [P] [US1] Unit tests for `requestable()` over every catalogue ability, including an area that contains a
   critical ability, in `tests/Unit/Access/RequestableAbilitiesTest.php`
-- [ ] T005 [P] [US1] Extend `tests/Integration/Access/AccessRouteRefusalTest.php`: a request for a locked or critical
+- [x] T005 [P] [US1] Extend `tests/Integration/Access/AccessRouteRefusalTest.php`: a request for a locked or critical
   ability answers 400 with `details.code` `ability_not_requestable` and stores no row
-- [ ] T006 [P] [US1] Extend `tests/Integration/Access/AccessRequestFormTest.php` and
+- [x] T006 [P] [US1] Extend `tests/Integration/Access/AccessRequestFormTest.php` and
   `tests/Integration/Access/AccessDeniedGateTest.php`: the denied page of `corex-settings` (Overview), `corex-addons`,
   `corex-access`, `corex-operations-security` and `corex-releases` shows the role-matrix sentence and no form, and a
   direct POST of the form for those sections is refused
-- [ ] T007 [P] [US1] Integration tests through `rest_do_request()` for the preview, decision, grants and revoke routes
+- [x] T007 [P] [US1] Integration tests through `rest_do_request()` for the preview, decision, grants and revoke routes
   of [contracts/rest.md](contracts/rest.md#access-requests) (note required, expiry in 7/30/90, typed name for a
   dangerous ability, stale hash, policy blocker, `manage_options` only) in `tests/Integration/Access/AccessGrantsTest.php`
-- [ ] T008 [P] [US1] Update `tests/Unit/Access/AccessServiceTest.php` and
+- [x] T008 [P] [US1] Update `tests/Unit/Access/AccessServiceTest.php` and
   `tests/Integration/Access/AccessControllerTest.php` so existing approvals send a note, an expiry and a confirmation
-- [ ] T009 [P] [US1] Schema test: foundation schema 4 adds `grant_expires_at`, `revoked_at`, `revoked_by`,
+- [x] T009 [P] [US1] Schema test: foundation schema 4 adds `grant_expires_at`, `ended_at`, `ended_by`,
   `ended_reason` and `cancel_reason` to an existing access requests table and keeps its rows, in
   `tests/Integration/Schema/AccessRequestsSchemaV4Test.php`
-- [ ] T010 [P] [US1] Scheduler tests: an expired grant is ended, its ability removed unless another live grant gives
+- [x] T010 [P] [US1] Scheduler tests: an expired grant is ended, its ability removed unless another live grant gives
   it, the activity recorded and both people notified (the approver skipped when deleted); a pending request that is no
   longer requestable is cancelled with `not_requestable`; in `tests/Integration/Access/AccessGrantSchedulerTest.php`
-- [ ] T011 [P] [US1] Unit test for the grant-ended producer in
+- [x] T011 [P] [US1] Unit test for the grant-ended producer in
   `tests/Unit/Notifications/AccessGrantEndedNotificationProducerTest.php`
-- [ ] T012 [P] [US1] Jest tests for the approval dialog (ability, risk, reason, note, expiry preselected at 30, typed
+- [x] T012 [P] [US1] Jest tests for the approval dialog (ability, risk, reason, note, expiry preselected at 30, typed
   name) and the grants list (rows, "no expiry (granted before expiries existed)", state notes, Revoke) in
   `plugins/corex-config/src/Access/__tests__/accessGrantsPanel.test.js`
-- [ ] T013 [US1] Change `tests/e2e/access-request.spec.js` so its `corex-access` steps request a requestable ability,
+- [x] T013 [US1] Change `tests/e2e/access-request.spec.js` so its `corex-access` steps request a requestable ability,
   and add a scenario that approves with a note and 7 days, sees the grant listed and revokes it
 
 ### Implementation for User Story 1
 
-- [ ] T014 [P] [US1] Create `CORE/Access/RequestableAbilities.php` (not locked and not critical, over
+- [x] T014 [P] [US1] Create `CORE/Access/RequestableAbilities.php` (not locked and not critical, over
   `CorexAbilityCatalog::expanded()`)
-- [ ] T015 [P] [US1] Add the `ability_not_requestable` code to `CORE/Access/InvalidAccessInput.php`
-- [ ] T016 [US1] Call `RequestableAbilities` from `AccessService::assertTarget()` in `CFG/Access/AccessService.php`
+- [x] T015 [P] [US1] Add the `ability_not_requestable` code to `CORE/Access/InvalidAccessInput.php`
+- [x] T016 [US1] Call `RequestableAbilities` from `AccessService::assertTarget()` in `CFG/Access/AccessService.php`
   and bind it in `CFG/ConfigServiceProvider.php`
-- [ ] T017 [US1] Add the no-form state to `AdminPage::requestState()` and the denied body in `CORE/Admin/AdminPage.php`,
+- [x] T017 [US1] Add the no-form state to `AdminPage::requestState()` and the denied body in `CORE/Admin/AdminPage.php`,
   and the matching problem code to the form controller in `CFG/Access/AccessRequestFormController.php`
-- [ ] T018 [US1] Raise `FOUNDATION_SCHEMA_VERSION` to `'4'` and add the five nullable columns in the access requests
+- [x] T018 [US1] Raise `FOUNDATION_SCHEMA_VERSION` to `'4'` and add the five nullable columns in the access requests
   table definition in `CFG/Access/AccessTables.php` and `CFG/ConfigServiceProvider.php`
-- [ ] T019 [P] [US1] Add `approvedGrants()`, `endGrant()`, `expiredGrants()` and `cancelNotRequestable()` to
+- [x] T019 [P] [US1] Add `approvedGrants()`, `endGrant()`, `expiredGrants()` and `cancelNotRequestable()` to
   `CORE/Access/AccessRequestStore.php` and implement them in `CFG/Access/AccessRequestRepository.php`
-- [ ] T020 [P] [US1] Add `revokeUserAbility()` and `holdsOwnAbility()` to `CORE/Access/AccessUserDirectory.php` and
+- [x] T020 [P] [US1] Add `revokeUserAbility()` and `holdsOwnAbility()` to `CORE/Access/AccessUserDirectory.php` and
   implement them in `CFG/Access/WpAccessUserDirectory.php`
-- [ ] T021 [US1] Add `previewDecision()` (abilities, risk, reason, `AccessPolicy::preview()` blockers, typed name,
+- [x] T021 [US1] Add `previewDecision()` (abilities, risk, reason, `AccessPolicy::preview()` blockers, typed name,
   target hash) and the new approval rules (note, expiry, `Confirmation::verify()` with operation kind
   `access.request.approve` and the ability's name as phrase for a dangerous ability) to `CFG/Access/AccessService.php`
-- [ ] T022 [US1] Add `listGrants()` and `revokeGrant()` to `CFG/Access/AccessService.php`, recording
+- [x] T022 [US1] Add `listGrants()` and `revokeGrant()` to `CFG/Access/AccessService.php`, recording
   `access.grant.revoked`
-- [ ] T023 [US1] Register `POST access/requests/{id}/preview`, `GET access/grants` and `POST access/grants/{id}/revoke`
+- [x] T023 [US1] Register `POST access/requests/{id}/preview`, `GET access/grants` and `POST access/grants/{id}/revoke`
   with the `allowed()` check, and the new decision body, in `CFG/Access/AccessController.php`
-- [ ] T024 [P] [US1] Create `CORE/Access/AccessGrantEndedEvent.php`
-- [ ] T025 [US1] Create `CFG/Access/AccessGrantScheduler.php` on the pattern of `CFG/Retention/RetentionScheduler.php`
+- [x] T024 [P] [US1] Create `CORE/Access/AccessGrantEndedEvent.php`
+- [x] T025 [US1] Create `CFG/Access/AccessGrantScheduler.php` on the pattern of `CFG/Retention/RetentionScheduler.php`
   (daily hook `corex_access_grants_daily`), recording `access.grant.expired` and `access.request.cancelled`, and
   register it in `CFG/ConfigServiceProvider.php`
-- [ ] T026 [US1] Create `CFG/Notifications/Producers/AccessGrantEndedNotificationProducer.php` and register it in
+- [x] T026 [US1] Create `CFG/Notifications/Producers/AccessGrantEndedNotificationProducer.php` and register it in
   `ConfigServiceProvider::registerNotificationProducers()`
-- [ ] T027 [US1] Show the approval dialog (with `CorexDialog`) in `CFG/Access/AccessRequestsPanel.js`, and an area
+- [x] T027 [US1] Show the approval dialog (with `CorexDialog`) in `CFG/Access/AccessRequestsPanel.js`, and an area
   request's area name and abilities (FR-004); move the decision call into `CFG/Access/accessClient.js`
-- [ ] T028 [US1] Create `CFG/Access/AccessGrantsPanel.js`, mount it beside the requests panel in
+- [x] T028 [US1] Create `CFG/Access/AccessGrantsPanel.js`, mount it beside the requests panel in
   `CFG/Access/AccessWorkspace.js`, and pass `grants` in the localised config in `CFG/Access/AccessScreen.php`
-- [ ] T029 [US1] Make the Access screen's copy true for what is recorded (the waiting card and the audit tab's empty
+- [x] T029 [US1] Make the Access screen's copy true for what is recorded (the waiting card and the audit tab's empty
   state) in `CFG/Access/AccessScreen.php`
+
+**Built as** (2026-10-21, DECISIONS #376): the schema test is in `tests/Integration/Access/AccessGrantStoreTest.php`, the
+scheduler test in `AccessGrantsTest.php`; listing, revoking, expiry and cancelling are a separate `AccessGrantService`
+(with `AccessGrantPresenter`); approval and refusal are `approveRequest()` and `denyRequest()`; the typed name is the
+ability key; a grant to a deleted account is not listed; "overridden by a role" is not shown (FR-005 does not ask
+for it).
 
 **Checkpoint**: quickstart section 1 passes; T004 to T013 pass.
 

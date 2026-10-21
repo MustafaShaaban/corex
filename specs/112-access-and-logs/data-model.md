@@ -12,13 +12,13 @@ New nullable columns:
 | Column | Type | Meaning |
 |---|---|---|
 | `grant_expires_at` | datetime | When an approved request's grant ends. `NULL` on rows approved before this release: "no expiry (granted before expiries existed)" (FR-007) |
-| `revoked_at` | datetime | When an administrator revoked the grant |
-| `revoked_by` | bigint unsigned | Who revoked it |
+| `ended_at` | datetime | When the grant ended, revoked or expired |
+| `ended_by` | bigint unsigned | Who revoked it; `NULL` when its expiry ended it |
 | `ended_reason` | varchar(20) | `revoked` or `expired` |
 | `cancel_reason` | varchar(64) | Why a pending request was cancelled (`not_requestable` for FR-008) |
 
 States (unchanged names): `pending` → `approved` | `denied` | `expired` (the request's own life) | `cancelled`.
-An approved row is a **grant** while `revoked_at` is null and (`grant_expires_at` is null or in the future).
+An approved row is a **grant** while `ended_at` is null. The daily check ends it once `grant_expires_at` has passed.
 
 Validation:
 

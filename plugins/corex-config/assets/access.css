@@ -530,3 +530,53 @@
 	margin: 0;
 	font-size: var(--corex-admin-font-md);
 }
+
+/* Spec 112: approving a request. Each ability carries its risk in
+   words as well as colour; the fields follow in the order they are
+   filled. */
+.corex-admin .corex-access__risk {
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__risk.is-dangerous {
+	color: var(--corex-admin-warning);
+	font-weight: 600;
+}
+
+.corex-admin .corex-access__approval-reason {
+	margin: var(--corex-admin-space-sm) 0 0;
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-access__approval-reason span {
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin .corex-access__approval-field {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	margin: var(--corex-admin-space-md) 0 0;
+	padding: 0;
+	border: 0;
+}
+
+.corex-admin .corex-access__approval-field label,
+.corex-admin .corex-access__approval-field legend {
+	padding: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-access__approval-field textarea,
+.corex-admin .corex-access__approval-field input[type="text"] {
+	inline-size: 100%;
+}
+
+.corex-admin .corex-access__approval-field .corex-access__expiry {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-2xs);
+	margin-inline-end: var(--corex-admin-space-md);
+	font-weight: 400;
+}

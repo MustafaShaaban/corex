@@ -8,49 +8,63 @@ Unchanged routes are not repeated.
 ### `POST /access/requests` (changed)
 
 A request whose expanded abilities include a locked or critical ability, or an area that contains one, is refused
-before anything is stored:
+before anything is stored, in the route's existing 400 shape:
 
 ```json
 { "code": "rest_invalid_param", "message": "<translated>", "data": { "status": 400,
-  "details": { "code": "ability_not_requestable", "message": "An administrator grants this through the role matrix." } } }
+  "params": { "ability": "<translated>" },
+  "details": { "ability": { "code": "ability_not_requestable", "message": "<translated>", "data": null } } } }
 ```
+
+For an area the parameter is `area` and the code `area_not_requestable`.
 
 ### `POST /access/requests/{id}/preview` (new) · `manage_options`
 
-Answer:
+Answer (`preview` is `null` when the request is no longer pending):
 
 ```json
-{ "request_id": 41, "requester": { "id": 7, "name": "Sara Ahmed" }, "reason": "<the requester's words>",
-  "abilities": [ { "key": "corex_manage_data", "label": "Manage data", "risk": "dangerous" } ],
-  "area": null, "blockers": [], "requires_typed_name": true, "typed_name": "Manage data",
-  "expiry_choices": [7, 30, 90], "expiry_default": 30, "target_hash": "<sha256>" }
+{ "data": { "preview": { "request_id": 41, "requester": { "id": 7, "name": "Sara Ahmed" },
+  "reason": "<the requester's words>", "area": "data",
+  "abilities": [ { "key": "corex_manage_data", "label": "Manage data", "risk": "dangerous" },
+                 { "key": "corex_export_personal_data", "label": "Export personal data", "risk": "sensitive" } ],
+  "blockers": [], "requires_typed_name": true, "typed_name": "corex_manage_data",
+  "expiry_choices": [7, 30, 90], "expiry_default": 30, "target_hash": "<sha256 of the request id and its abilities>" } } }
 ```
+
+The typed name is the ability's key: the same in every language, and what the denied page names.
 
 ### `POST /access/requests/{id}/decision` (changed) · `manage_options`
 
-Body on approval: `{ "approved": true, "note": "<non-empty>", "expiry_days": 30, "confirmation": { ... } }`, where
-`confirmation` has operation kind `access.request.approve`, the preview's `target_hash`, and `phrase` equal to
-`typed_name` when `requires_typed_name` is true. Refusals: 400 `note_required`, 400 `expiry_invalid`, 409
-`confirmation_mismatch` (wrong phrase or stale hash), 409 `policy_blocked` (any `AccessPolicy` blocker). Body on
-refusal of the request: `{ "approved": false, "note": "<optional>" }`.
+Body on approval: `{ "approved": true, "note": "<non-empty>", "expiry_days": 30, "confirmation": { "operation_kind":
+"access.request.approve", "target_hash": "<from the preview>", "actor_id": 1, "expires_at": "<ISO 8601>",
+"required_phrase": "<typed_name, only when requires_typed_name>" } }`. Body on refusal of the request:
+`{ "approved": false, "note": "<optional>" }`.
+
+The answer is `200` with `data.result`; a refusal has `state` `blocked` and one of these error codes, and grants
+nothing: `note_required`, `expiry_invalid`, `confirmation_invalid` (wrong or missing typed name, another request, or
+expired), `access_change_blocked` (an `AccessPolicy` blocker), `request_not_requestable` (the request is cancelled),
+`request_not_pending`, `request_expired`. A confirmation that cannot be read is `400` `confirmation_malformed`.
 
 ## Grants (new) · `manage_options`
 
 ### `GET /access/grants`
 
 ```json
-{ "grants": [ { "id": 41, "person": { "id": 7, "name": "Sara Ahmed" }, "abilities": ["corex_manage_forms"],
-  "approver": { "id": 1, "name": "Admin" }, "approved_at": "2026-10-20T10:00:00Z", "note": "Covering forms this month",
-  "expires_at": "2026-11-19T10:00:00Z", "in_effect": true, "state_note": null } ] }
+{ "data": { "grants": [ { "id": 41, "person": { "id": 7, "name": "Sara Ahmed" }, "area": null,
+  "abilities": [ { "key": "corex_manage_forms", "label": "Manage forms and flows", "risk": "sensitive" } ],
+  "approver": { "id": 1, "name": "Admin" }, "approved_at": "2026-10-20T10:00:00+00:00",
+  "note": "Covering forms this month", "expires_at": "2026-11-19T10:00:00+00:00",
+  "in_effect": true, "state_note": null } ] } }
 ```
 
-`expires_at` is `null` for grants approved before this release (shown as "no expiry (granted before expiries
-existed)"). `state_note` is `removed_outside_corex` or `overridden_by_role` when `in_effect` is false.
+`expires_at` is `null` for grants approved before this release ("no expiry (granted before expiries existed)").
+`state_note` is `removed_outside_corex` when `in_effect` is false. A grant to an account that no longer exists is not
+listed.
 
 ### `POST /access/grants/{id}/revoke`
 
-Body `{}`. Answer `{ "revoked": true, "removed_abilities": ["corex_manage_forms"], "kept_abilities": [] }`;
-`kept_abilities` lists any ability still given by another live grant.
+Body `{}`. Answer `200` with `data.result`: `state` `completed`, or `blocked` with `grant_not_standing` when it had
+already ended. An ability another standing grant still gives the same person is kept.
 
 ## Public submissions in Maintenance (changed behaviour, no new route)
 

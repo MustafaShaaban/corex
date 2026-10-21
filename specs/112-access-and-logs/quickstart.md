@@ -9,17 +9,18 @@ become `tasks.md` entries.
 
 - WordPress 7.0 or later, CoreX on this branch, the newsletter, bookings, careers and profile (account) add-ons active.
 - Users: an administrator, an editor, an author, a contributor and a subscriber.
-- One admin page load after updating, which lets the migration runner add the grant columns (foundation schema 4).
+- `wp corex migrate`, or one admin page load after updating: the migration runner adds the grant columns (foundation
+  schema 4).
 
 ## 1. Requests and grants ([contracts/rest.md](contracts/rest.md#access-requests))
 
 1. As the subscriber, `POST /wp-json/corex/v1/access/requests` with `{"ability":"corex_manage_releases","reason":"x"}`:
-   400, `details.code` `ability_not_requestable`; no row in the requests table.
+   400, `data.details.ability.code` `ability_not_requestable`; no row in the requests table.
 2. As the subscriber, open `wp-admin/admin.php?page=corex-releases`: the access-denied page says an administrator grants
    access through the role matrix, with no form.
 3. As the subscriber, request `corex_manage_data`; as the administrator, approve it: the dialog shows the ability, its
    risk and the reason; approval is refused without a note, refused with a wrong typed name, and accepted with the note,
-   30 days and the ability's name typed.
+   30 days and the ability's key, `corex_manage_data`, typed.
 4. Open the Access screen: the grant is listed with approver, date, note and expiry. Revoke it: the person no longer has
    the ability.
 5. Approve another grant for 7 days, move the clock 8 days, run the daily event (`wp cron event run corex_access_grants_daily`):

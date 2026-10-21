@@ -37,6 +37,7 @@ final class AccessScreen
         private readonly RoleAbilityStore $roleAbilities,
         private readonly PendingAccessRequests $pending,
         private readonly PluginActivationInspector $pluginActivationInspector,
+        private readonly AccessGrantPresenter $grants,
     ) {
     }
 
@@ -89,6 +90,8 @@ final class AccessScreen
             'actorId' => get_current_user_id(),
             'matrix' => $this->matrix->editableCorexMatrix($this->editableRoles(), $this->roleEffects(), $this->activePlugins()),
             'requests' => $this->pending->all(),
+            // The grants made by approval that stand (spec 112, FR-005).
+            'grants' => $this->grants->grants(),
             'audit' => $this->audit->entries(),
         ]);
         wp_set_script_translations('corex-access', 'corex');
@@ -190,7 +193,7 @@ final class AccessScreen
                 (int) $waiting,
             )
             . '</h2><p class="corex-access__muted">'
-            . esc_html__('Each request names who asked, what they asked for and why. Approving one grants the ability immediately.', 'corex')
+            . esc_html__('Each request names who asked, what they asked for and why. Approving one asks for a note and an expiry, then grants the ability until it ends.', 'corex')
             . '</p><a class="button button-primary" href="'
             . esc_url(admin_url('admin.php?page=corex-access&tab=matrix')) . '">'
             . esc_html__('Review requests', 'corex') . '</a></section>';
@@ -226,7 +229,7 @@ final class AccessScreen
         if ($entries === []) {
             return '<section class="corex-surface corex-access__card">' . $head
                 . '<p class="corex-access__muted">'
-                . esc_html__('No access events in the last 30 days. CoreX records permission-denied attempts, access requests, and access decisions here.', 'corex')
+                . esc_html__('No access was refused in the last 30 days. CoreX lists here each time someone was refused a CoreX screen. Requests and decisions are in the activity log.', 'corex')
                 . '</p></section>';
         }
 

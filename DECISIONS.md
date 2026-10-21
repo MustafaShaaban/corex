@@ -17331,3 +17331,70 @@ nothing scrolled out of view.
 
 **Client impact.** None to act on. Both clients' owners get a recovery route that works on their
 hosts.
+
+## #376 — Access requests ask only for what a request may give; approval shows what it grants and needs a note, an expiry and, for a dangerous ability, its key typed; grants are listed, revoked and ended on time
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 1. **Mode:**
+CoreX Framework. (#375 is held by open PR #428.)
+
+**Why.** Every CoreX screen will check its own ability (stage 3), so who holds an ability has to be
+deliberate first: approving a request granted at once with nothing written down, nothing ended it,
+nothing listed it, and some abilities a request could ask for control the whole site.
+
+**Decided.**
+
+1. **`RequestableAbilities`** (corex-core): a request may ask for an ability when neither it nor
+   anything it implies is locked or critical, and for an area when every ability in it can be asked
+   for. `AccessService::assertTarget()` refuses the rest (`ability_not_requestable`,
+   `area_not_requestable`, in the route's 400 shape), so the REST route and the denied page's form
+   answer the same. `AdminPage` takes it as an optional second argument: on Overview, Add-ons,
+   Access, Operations & Security and Releases the denied page says an administrator grants access
+   through the role matrix and offers no form; a post from one of them stores nothing.
+2. **Approval in two steps.** `POST access/requests/{id}/preview` answers what would be granted
+   (each ability with its risk, the area, the reason, any `AccessPolicy::preview()` blocker), the
+   name to type and a hash over the request id and its abilities. `approveRequest()` needs a
+   non-empty note, an expiry of 7, 30 or 90 days, and a `Confirmation` of kind
+   `access.request.approve` bound to that hash; for a dangerous ability its phrase is the ability's
+   key, checked on the server. The key, not the label: it is the same in every language, it is what
+   the denied page shows, and it survives `sanitize_key()`. `denyRequest()` keeps the old refusal.
+   A request for something no longer requestable is cancelled instead of approved.
+3. **The approved row is the grant.** Foundation schema 4 adds five nullable columns to the access
+   requests table (`grant_expires_at`, `ended_at`, `ended_by`, `ended_reason`, `cancel_reason`); the
+   migration runner adds them and nothing is backfilled. A row approved before them has no expiry and
+   is listed as "No expiry (granted before expiries existed)".
+4. **`AccessGrantService`** lists the standing grants (not those of deleted accounts), revokes one
+   (`POST access/grants/{id}/revoke`), ends expired ones and cancels pending requests for what can no
+   longer be asked for. An ability is taken back only when no other standing grant gives it to the
+   same person. `AccessGrantScheduler` runs it daily, on the retention sweep's pattern
+   (`corex_access_grants_daily`), so a grant can outlive its expiry by up to a day. `GET
+   access/grants` and revoking keep the request list's check, `manage_options` (#346).
+5. **`AccessGrantEndedEvent`** on every end; `AccessGrantEndedNotificationProducer` tells the person
+   and the approver when an expiry ends one (the approver is skipped when the account is gone).
+   Activity kinds `access.grant.revoked`, `access.grant.expired`, `access.request.cancelled`.
+6. **The Access screen**: Approve opens `AccessApprovalDialog` from the preview; the panel reads the
+   result's `state`, because a refused decision is answered 200 with `blocked`; `AccessGrantsPanel`
+   lists the grants beside the requests and is read again after an approval.
+
+**Not chosen.**
+
+- *A separate grants table, one row per ability.* It needs a backfill the migration runner cannot
+  run; revoking an area grant as a whole is enough for FR-005.
+- *Showing a grant "overridden by a role".* FR-005 does not ask for it, and it needs the effective
+  capabilities of every listed person.
+
+**Verified.** Pest unit: `RequestableAbilitiesTest` (every ability and area, and an ability that
+implies a critical one), `AccessServiceTest` (preview, note, each expiry, typed key, another
+request's confirmation, a request no longer requestable), `AccessGrantEndedNotificationProducerTest`;
+the whole unit suite, 3264 passing. Pest integration: `AccessGrantStoreTest` (columns, approve, list,
+end once, expired, cancel), `AccessGrantsTest` through the REST server with accounts of its own
+(preview, four refusals, approve and revoke, no expiry, removed outside CoreX, a deleted account, two
+grants for one ability, the daily end with both people told, the daily cancel, administrators only),
+the refusal and denied-page tests; the whole integration suite: 1295 passing, and the 16 failures
+that fail the same way without these changes (being fixed by open PRs #428 and #429). Jest
+`accessGrantsPanel.test.js` (4) and the whole Jest suite. Playwright `access-request.spec.js` (6),
+including approving with a note and 7 days through the dialog, the grant listed, and revoking it.
+
+**Client impact.** Muva and Perego: administrators approve with a note and an expiry; grants made
+before this release are listed with no expiry and can be revoked. A client repository carrying
+copies of CoreX's own tests takes the updated `tests/Unit/Access/AccessServiceTest.php` with this
+release (its fakes implement the widened `AccessRequestStore` and `AccessUserDirectory`).

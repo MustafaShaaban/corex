@@ -280,6 +280,66 @@ test.describe( 'Access request', () => {
 		await requester.context().close();
 	} );
 
+	// Spec 112, FR-002 and FR-005: approval asks for a note and an expiry, the grant is listed, and
+	// revoking it takes the ability back. The grant is revoked in the test itself, so the fixture
+	// account does not keep the ability on the install it runs against.
+	test( 'an administrator approves with a note and an expiry, sees the grant, and revokes it', async ( {
+		browser,
+		baseURL,
+		page,
+	} ) => {
+		const requester = await signInAs(
+			browser,
+			baseURL,
+			REQUESTER,
+			REQUESTER_PASS
+		);
+		await requester.goto( DENIED_SCREEN );
+		await requester.fill(
+			'#corex-denied-request-reason',
+			'I publish the contact form this week.'
+		);
+		await Promise.all( [
+			requester.waitForNavigation(),
+			requester.click(
+				'form.corex-denied__request button[type="submit"]'
+			),
+		] );
+
+		await page.goto( '/wp-admin/admin.php?page=corex-access&tab=matrix' );
+		const request = page
+			.locator( '.corex-access__request' )
+			.filter( { hasText: 'I publish the contact form this week.' } );
+		await request.getByRole( 'button', { name: 'Approve' } ).click();
+
+		const dialog = page.getByRole( 'dialog' );
+		await expect( dialog ).toContainText( 'Manage forms and flows' );
+		await expect( dialog ).toContainText( 'Sensitive' );
+		const approve = dialog.getByRole( 'button', {
+			name: 'Approve access',
+		} );
+		await expect( approve ).toBeDisabled();
+		await dialog
+			.getByLabel( 'Note (required)' )
+			.fill( 'Covering the contact form this week.' );
+		await dialog.getByLabel( '7 days' ).check();
+		await approve.click();
+		await expect( dialog ).toHaveCount( 0 );
+
+		const grant = page
+			.locator( '.corex-access__grants .corex-access__request' )
+			.filter( { hasText: 'Covering the contact form this week.' } );
+		await expect( grant ).toBeVisible();
+		await expect( grant ).toContainText( 'Ends' );
+
+		await grant.getByRole( 'button', { name: 'Revoke' } ).click();
+		await expect( grant ).toHaveCount( 0 );
+
+		await requester.goto( DENIED_SCREEN );
+		await expect( requester.locator( '.corex-denied' ) ).toBeVisible();
+		await requester.context().close();
+	} );
+
 	test( 'a CoreX address with no screen behind it is a 404, not a denial', async ( {
 		page,
 	} ) => {

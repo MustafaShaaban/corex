@@ -26,6 +26,11 @@ final class AccessRequestRepository implements AccessRequestStore
     /** How many open requests one read returns. See {@see pending()}. */
     private const PENDING_LIMIT = 100;
 
+    /** How many standing grants one read returns. See {@see grants()}. */
+    private const GRANTS_LIMIT = 200;
+
+    private const ENDINGS = [self::ENDED_REVOKED, self::ENDED_EXPIRED];
+
     /**
      * How long a second ask waits for the first to finish before it gives up.
      *
@@ -190,6 +195,97 @@ final class AccessRequestRepository implements AccessRequestStore
         return is_array($row) ? $this->hydrate($row) : null;
     }
 
+    public function approve(
+        int $id,
+        int $reviewerId,
+        string $note,
+        DateTimeImmutable $reviewedAt,
+        DateTimeImmutable $grantExpiresAt,
+    ): bool {
+        global $wpdb;
+
+        return $wpdb->query($wpdb->prepare(
+            'UPDATE ' . $this->table()
+            . ' SET state = %s, reviewer_id = %d, review_note = %s, reviewed_at = %s, grant_expires_at = %s'
+            . ' WHERE id = %d AND state = %s',
+            'approved',
+            $reviewerId,
+            $note,
+            $this->date($reviewedAt),
+            $this->date($grantExpiresAt),
+            $id,
+            'pending',
+        )) === 1;
+    }
+
+    public function grants(): array
+    {
+        global $wpdb;
+
+        // Capped like {@see pending()}: the list is drawn on the Access screen, and a grant is one
+        // approved request.
+        $rows = $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . $this->table()
+            . ' WHERE state = %s AND ended_at IS NULL ORDER BY reviewed_at DESC, id DESC LIMIT %d',
+            'approved',
+            self::GRANTS_LIMIT,
+        ), ARRAY_A);
+
+        return array_map($this->hydrate(...), is_array($rows) ? $rows : []);
+    }
+
+    public function endGrant(int $id, string $reason, ?int $endedBy, DateTimeImmutable $endedAt): bool
+    {
+        global $wpdb;
+
+        if (! in_array($reason, self::ENDINGS, true)) {
+            return false;
+        }
+
+        // `ended_by` stays NULL when an expiry ends the grant; prepare() cannot bind a NULL, so the
+        // column is set only when somebody ended it.
+        $sql  = 'UPDATE ' . $this->table() . ' SET ended_at = %s, ended_reason = %s';
+        $args = [$this->date($endedAt), $reason];
+        if ($endedBy !== null) {
+            $sql   .= ', ended_by = %d';
+            $args[] = $endedBy;
+        }
+        $sql .= ' WHERE id = %d AND state = %s AND ended_at IS NULL';
+        array_push($args, $id, 'approved');
+
+        return $wpdb->query($wpdb->prepare($sql, $args)) === 1;
+    }
+
+    public function expiredGrants(DateTimeImmutable $now): array
+    {
+        global $wpdb;
+
+        $rows = $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . $this->table()
+            . ' WHERE state = %s AND ended_at IS NULL AND grant_expires_at IS NOT NULL AND grant_expires_at <= %s'
+            . ' ORDER BY grant_expires_at ASC, id ASC',
+            'approved',
+            $this->date($now),
+        ), ARRAY_A);
+
+        return array_map($this->hydrate(...), is_array($rows) ? $rows : []);
+    }
+
+    public function cancel(int $id, string $reason, DateTimeImmutable $cancelledAt): bool
+    {
+        global $wpdb;
+
+        return $wpdb->query($wpdb->prepare(
+            'UPDATE ' . $this->table()
+            . ' SET state = %s, cancel_reason = %s, reviewed_at = %s WHERE id = %d AND state = %s',
+            'cancelled',
+            $reason,
+            $this->date($cancelledAt),
+            $id,
+            'pending',
+        )) === 1;
+    }
+
     /** @param array<string,mixed> $row @return array<string,mixed> */
     private function hydrate(array $row): array
     {
@@ -206,6 +302,11 @@ final class AccessRequestRepository implements AccessRequestStore
             'notificationAttemptId' => $row['notification_attempt_id'] !== null ? (int) $row['notification_attempt_id'] : null,
             'createdAt'             => $this->storedDate((string) $row['created_at']),
             'expiresAt'             => $this->storedDate((string) $row['expires_at']),
+            'grantExpiresAt'        => $this->nullableDate($row['grant_expires_at'] ?? null),
+            'endedAt'               => $this->nullableDate($row['ended_at'] ?? null),
+            'endedBy'               => isset($row['ended_by']) ? (int) $row['ended_by'] : null,
+            'endedReason'           => isset($row['ended_reason']) ? (string) $row['ended_reason'] : null,
+            'cancelReason'          => isset($row['cancel_reason']) ? (string) $row['cancel_reason'] : null,
         ];
     }
 

@@ -50,6 +50,13 @@ final class AccessTables
                 ->integer('notification_attempt_id', nullable: true)
                 ->datetime('created_at')
                 ->datetime('expires_at')
+                // An approved request is the grant (spec 112). A row approved before these columns
+                // has no grant expiry: "no expiry (granted before expiries existed)".
+                ->datetime('grant_expires_at', nullable: true)
+                ->datetime('ended_at', nullable: true)
+                ->integer('ended_by', nullable: true)
+                ->string('ended_reason', 20, nullable: true)
+                ->string('cancel_reason', 64, nullable: true)
                 ->index('access_request_state', ['state'])
                 ->index('access_request_requester', ['requester_id'])
                 ->index('access_request_expiry', ['expires_at']),

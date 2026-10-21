@@ -194,7 +194,8 @@ use Corex\Mail\UnavailableSubmissionEmailGateway;
 final class ConfigServiceProvider extends ServiceProvider
 {
     private const FOUNDATION_SCHEMA_OPTION  = 'corex_product_foundation_schema_version';
-    private const FOUNDATION_SCHEMA_VERSION = '3';
+    // 4: the access requests table keeps a grant's expiry and how it ended (spec 112).
+    private const FOUNDATION_SCHEMA_VERSION = '4';
 
     public function register(): void
     {
@@ -301,6 +302,12 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(CorexAbilityCatalog::class),
             ),
         );
+        $this->container->singleton(
+            \Corex\Access\RequestableAbilities::class,
+            static fn (ContainerInterface $c): \Corex\Access\RequestableAbilities => new \Corex\Access\RequestableAbilities(
+                $c->make(CorexAbilityCatalog::class),
+            ),
+        );
         $this->container->singleton(AccessTables::class);
         $this->container->singleton(RoleAbilityRepository::class);
         $this->container->singleton(
@@ -326,6 +333,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(AccessRequestStore::class),
                 $c->make(AccessUserDirectory::class),
                 $c->make(ActivityService::class),
+                $c->make(\Corex\Access\RequestableAbilities::class),
                 $c->has(\Corex\Mail\RoutedMailer::class) ? $c->make(\Corex\Mail\RoutedMailer::class) : null,
                 $c->make(\Corex\Events\EventDispatcher::class),
             ),
@@ -333,6 +341,19 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(AbilityCompatibility::class);
         $this->container->singleton(RolePluginCompatibility::class);
         $this->container->singleton(\Corex\Config\Access\PendingAccessRequests::class);
+        $this->container->singleton(
+            \Corex\Config\Access\AccessGrantService::class,
+            static fn (ContainerInterface $c): \Corex\Config\Access\AccessGrantService => new \Corex\Config\Access\AccessGrantService(
+                $c->make(AccessRequestStore::class),
+                $c->make(AccessUserDirectory::class),
+                $c->make(AccessService::class),
+                $c->make(\Corex\Access\RequestableAbilities::class),
+                $c->make(ActivityService::class),
+                $c->make(\Corex\Events\EventDispatcher::class),
+            ),
+        );
+        $this->container->singleton(\Corex\Config\Access\AccessGrantPresenter::class);
+        $this->container->singleton(\Corex\Config\Access\AccessGrantScheduler::class);
         $this->container->singleton(AccessController::class);
 
         // Spec 079: the denied surface renders its own state — already requested, or the form,
@@ -352,6 +373,7 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Admin\AdminPage::class,
             static fn (ContainerInterface $c): \Corex\Admin\AdminPage => new \Corex\Admin\AdminPage(
                 $c->make(\Corex\Access\AccessRequestSurfaceState::class),
+                $c->make(\Corex\Access\RequestableAbilities::class),
             ),
         );
         $this->container->singleton(\Corex\Config\Access\AccessRequestFormController::class);
@@ -1131,6 +1153,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
         $this->container->make(\Corex\Config\Notifications\NotificationToolbar::class)->register();
         $this->container->make(\Corex\Config\Retention\RetentionScheduler::class)->register();
+        $this->container->make(\Corex\Config\Access\AccessGrantScheduler::class)->register();
         // On every request, cron and command line included: that is where a submission is deleted
         // by something other than the inbox.
         $this->container->make(\Corex\Config\Submissions\SubmissionDeletionGuard::class)->register();
@@ -1254,6 +1277,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $registry = $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class);
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\SubmissionNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\AccessRequestNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\AccessGrantEndedNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\JobFailureNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ExportReadyNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\LoginLockoutNotificationProducer::class));

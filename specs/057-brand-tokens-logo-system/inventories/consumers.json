@@ -3263,7 +3263,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 85, 144, 193, 279, 376, 505, 518: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 85, 144, 193, 279, 376, 505, 518, 539: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3343,7 +3343,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 32, 67, 83, 161, 272, 295, 367, 380, 422, 470, 481, 511, 512, 524: padding-block: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | gap: var(--corex-admin-space-2xs);",
+      "selector_or_context": "lines 32, 67, 83, 161, 272, 295, 367, 380, 422, 470, 481, 511, 512, 524, 558, 579: padding-block: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | gap: var(--corex-admin-space-2xs);",
       "property": "--corex-admin-space-2xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3363,7 +3363,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 9, 18, 46, 92, 190, 191, 390, 401, 422, 452, 456, 525, 526: margin: 0 0 var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md);",
+      "selector_or_context": "lines 9, 18, 46, 92, 190, 191, 390, 401, 422, 452, 456, 525, 526, 559, 580: margin: 0 0 var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3373,7 +3373,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 17, 28, 119, 120, 251, 252, 303, 339, 411, 430, 446, 482: gap: var(--corex-admin-space-sm); | padding-block: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 17, 28, 119, 120, 251, 252, 303, 339, 411, 430, 446, 482, 548: gap: var(--corex-admin-space-sm); | padding-block: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3453,7 +3453,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 96, 143, 278, 381, 492: color: var(--corex-admin-text);",
+      "selector_or_context": "lines 96, 143, 278, 381, 492, 549, 567: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3473,7 +3473,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 36, 71, 84, 103, 133, 220, 283, 498, 504: color: var(--corex-admin-text-subtle); | background: var(--corex-admin-text-subtle);",
+      "selector_or_context": "lines 36, 71, 84, 103, 133, 220, 283, 498, 504, 538, 553: color: var(--corex-admin-text-subtle); | background: var(--corex-admin-text-subtle);",
       "property": "--corex-admin-text-subtle",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3483,7 +3483,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 178, 183, 225, 231, 266, 517: color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning); | background: var(--corex-admin-warning);",
+      "selector_or_context": "lines 178, 183, 225, 231, 266, 517, 543: color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning); | background: var(--corex-admin-warning);",
       "property": "--corex-admin-warning",
       "owner": "config-plugin",
       "surface": "admin",
@@ -10963,7 +10963,7 @@
     },
     {
       "path": "plugins/corex-core/src/Admin/AdminPage.php",
-      "selector_or_context": "lines 277: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'",
+      "selector_or_context": "lines 285: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'",
       "property": "--corex-admin-action",
       "owner": "core-plugin",
       "surface": "front-end",

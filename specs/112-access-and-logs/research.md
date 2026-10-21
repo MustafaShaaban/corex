@@ -41,7 +41,7 @@ Each decision names what was chosen, why, and what else was considered. Paths ar
 
 ## R4. Where a grant's note, expiry and revocation are kept
 
-- **Decision**: new nullable columns on the `access_requests` table: `grant_expires_at`, `revoked_at`, `revoked_by`,
+- **Decision**: new nullable columns on the `access_requests` table: `grant_expires_at`, `ended_at`, `ended_by`,
   `ended_reason` (`revoked` | `expired`) and `cancel_reason`; the foundation schema version goes from 3 to 4, which makes
   the migration runner add them (DECISIONS #299). An approved request is the grant. Rows approved before this release
   have no `grant_expires_at`, which is exactly FR-007's "no expiry".

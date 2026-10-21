@@ -47,9 +47,10 @@ Maintenance closes public submissions, the Recovery panel gives a route without 
 WordPress permissions, security records on the Data screen need their owning ability, and an inbox resend goes to
 the email's own recipients. Spec, plan and 89 tasks written. Built, on the local branch only (not pushed): story 3,
 Maintenance closes public submissions (DECISIONS #373), and story 4, recovery without a command line (DECISIONS
-#374). Next: story 1 (requests, grants, expiry; foundation schema 4), then 2, 6, 5 and 7. The whole integration suite
-has 16 failures in `FlowLifecycleTest`, `SubmissionKeepsBackslashesTest` and `EmailStudioLifecycleTest` that fail the
-same way with these changes stashed; not caused by spec 112, not yet looked into.
+#374), and story 1, access requests and grants (DECISIONS #376; #375 is open PR #428's). Next: story 2, then 6, 5
+and 7. The DECISIONS numbers are re-read before anything is pushed. The whole integration suite has 16 failures in
+`FlowLifecycleTest`, `SubmissionKeepsBackslashesTest` and `EmailStudioLifecycleTest` that fail the same way without
+spec 112; open PRs #428 and #429 address them.
 
 **Spec 111, a CoreX site says it runs CoreX** (2026-10-19, branch `spec/111-generator-tag`,
 DECISIONS #372): every front-end page head carries `<meta name="generator" content="CoreX" />`,

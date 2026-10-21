@@ -1,6 +1,7 @@
-import { useReducer } from '@wordpress/element';
+import { useReducer, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import AccessChangeDialog from './AccessChangeDialog.js';
+import AccessGrantsPanel from './AccessGrantsPanel.js';
 import AccessRequestsPanel from './AccessRequestsPanel.js';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
@@ -35,6 +36,8 @@ const effectLabel = ( effect ) =>
 	effect;
 
 export default function AccessWorkspace( { config } ) {
+	// How many times the grants were changed here; the grants panel reads them again each time.
+	const [ grantsRead, setGrantsRead ] = useState( 0 );
 	const [ state, dispatch ] = useReducer(
 		accessReducer,
 		initialAccessState(),
@@ -208,7 +211,14 @@ export default function AccessWorkspace( { config } ) {
 				</table>
 			</div>
 			<div className="corex-access__panels">
-				<AccessRequestsPanel config={ config } />
+				<AccessRequestsPanel
+					config={ config }
+					onApproved={ () => setGrantsRead( ( read ) => read + 1 ) }
+				/>
+				<AccessGrantsPanel
+					config={ config }
+					refreshKey={ grantsRead }
+				/>
 				<section>
 					<h3>{ __( 'Audit', 'corex' ) }</h3>
 					<p className="corex-access__muted">
