@@ -35,8 +35,8 @@
 
 ## Phase 5: User Story 3 — Failed PageSpeed runs (US-SAFE-12, P1)
 
-- [ ] T011 [US3] `InsightResult::failed()`, `InsightFailure` (kinds, recognition of old rows), `InsightStore`
-  reading through it and `scoredHistory()`
+- [ ] T011 [US3] `InsightResult::failed()`, `InsightFailure` (recognition of old rows), `InsightStore` reading
+  through it
 - [ ] T012 [US3] `PerformanceProvider` and `PsiNormalizer` return failures; local reason text in `PsiDiagnostic`
 - [ ] T013 [US3] `insights.js` / `insights.css`: "Could not run", reason, Retry; `InsightWidgets` state for a failure
 - [ ] T014 [US3] Tests: unit for result, recognition (English, translated, HTTP number), store, provider; Jest for the

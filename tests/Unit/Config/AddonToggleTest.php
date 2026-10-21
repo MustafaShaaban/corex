@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Admin\AdminPage;
-use Corex\Config\Addons\AddonActivator;
+use Corex\Config\Addons\AddonToggleService;
 use Corex\Config\Addons\AddonManager;
 use Corex\Config\Addons\AddonRegistry;
 use Corex\Config\Addons\AddonsScreen;
@@ -23,6 +23,7 @@ use Corex\Config\Addons\AddonState;
 use Corex\Config\Addons\AddonView;
 use Corex\Config\Addons\PendingKits;
 use Corex\Config\Docs\DocsUrl;
+use Corex\Multisite\ActivationScope;
 use Corex\Multisite\SingleSiteMultisiteContext;
 use Corex\Multisite\WpPluginActivationInspector;
 use Corex\Provisioning\KitProvisioner;
@@ -45,7 +46,7 @@ function toggleMarkup(AddonView $view, AddonState $state): string
     $screen = new AddonsScreen(
         $registry,
         new AddonManager($registry, new WpPluginActivationInspector(new SingleSiteMultisiteContext())),
-        $bare(AddonActivator::class),
+        $bare(AddonToggleService::class),
         $bare(AdminGuard::class),
         Mockery::mock(KitProvisioner::class),
         $bare(PendingKits::class),
@@ -111,3 +112,41 @@ it('renders a non-actionable disabled switch when a dependent blocks disabling',
         ->toContain('aria-disabled="true"')
         ->not->toContain('type="submit"');
 });
+
+/*
+ * Spec 114, US-SAFE-08: an add-on this site does not control has a switch that cannot be used,
+ * with the reason beside it. Switching a network-active one off from a sub-site switched it off
+ * for every site in the network; a must-use one could not be switched off at all, yet the screen
+ * said it was and deleted its feature flag.
+ */
+it('locks the switch of an add-on this site does not control, and says why', function (ActivationScope $scope, string $reason) {
+    $state = new AddonState(activeSlugs: ['corex-kit-company'], scopes: ['corex-ui' => ActivationScope::Site, 'corex-kit-company' => $scope]);
+    $view  = viewFor('corex-kit-company', true);
+
+    expect(toggleMarkup($view, $state))
+        ->toContain('aria-checked="true"')
+        ->toContain('aria-disabled="true"')
+        ->not->toContain('type="submit"')
+        ->and(reasonFor($view, $state))->toBe($reason);
+})->with([
+    'active for the network' => [ActivationScope::Network, 'Managed by the network administrator'],
+    'must-use' => [ActivationScope::MustUse, 'Must-use: always on'],
+]);
+
+function reasonFor(AddonView $view, AddonState $state): string
+{
+    $registry = new AddonRegistry();
+    $bare     = static fn (string $class): object => (new ReflectionClass($class))->newInstanceWithoutConstructor();
+    $screen   = new AddonsScreen(
+        $registry,
+        new AddonManager($registry, new WpPluginActivationInspector(new SingleSiteMultisiteContext())),
+        $bare(AddonToggleService::class),
+        $bare(AdminGuard::class),
+        Mockery::mock(KitProvisioner::class),
+        $bare(PendingKits::class),
+        new AdminPage(),
+        $bare(DocsUrl::class),
+    );
+
+    return (string) (new ReflectionMethod($screen, 'unavailableReason'))->invoke($screen, $view, $state);
+}

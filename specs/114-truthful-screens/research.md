@@ -37,9 +37,9 @@ row with score 50, no metrics and a summary that is one of the failure messages 
 in the site's language; the HTTP message matched with any number) is returned as a failed row with that message. The
 option is never rewritten, so the number of stored rows is unchanged.
 
-**Trends.** Insights draws no trend or average today. Failed rows carry `status: failed` and no score, so anything that
-summarises scores from history skips them by construction; `InsightStore::scoredHistory()` is the one reader that does,
-used by the widgets' performance state.
+**Trends.** Insights draws no trend or average today. Failed rows carry `status: failed` and `score: null`, so anything
+that later summarises scores from history skips them by construction; no helper is added for a reader that does not
+exist yet. The Insights widget for performance reads "Could not run" for a failed latest run.
 
 **Card.** A failed result draws "Could not run" where the grade was, the reason as the summary, and a "Retry" button.
 

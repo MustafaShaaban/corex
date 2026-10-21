@@ -48,6 +48,21 @@
 	border-inline-start-color: var(--corex-admin-error);
 }
 
+/* A run that could not complete (spec 114): said in words where a grade
+   would be, never as a score. */
+.corex-admin .corex-insight-card.is-failed {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-insight-card__failed {
+	margin: 0;
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+	font-weight: 600;
+}
+
 /* A card's score and its "last checked" are as wide as their text, and a
    placeholder has none: each is given a width, so its bar has one. */
 .corex-admin .corex-insight-card__score .corex-admin-skeleton {

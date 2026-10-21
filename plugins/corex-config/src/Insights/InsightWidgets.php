@@ -26,6 +26,7 @@ final class InsightWidgets
     public const STATE_CONNECTED    = 'connected';
     public const STATE_DISCONNECTED = 'disconnected';
     public const STATE_EMPTY        = 'empty';
+    public const STATE_FAILED       = 'failed';
 
     /**
      * @param array{
@@ -370,7 +371,8 @@ final class InsightWidgets
             return self::STATE_EMPTY;
         }
 
-        return self::STATE_CONNECTED;
+        // The last run could not complete: not a connection that works (spec 114, US-SAFE-12).
+        return ($latest['status'] ?? '') === InsightResult::STATUS_FAILED ? self::STATE_FAILED : self::STATE_CONNECTED;
     }
 
     /**
@@ -400,6 +402,7 @@ final class InsightWidgets
             self::STATE_CONNECTED    => __('Connected', 'corex'),
             self::STATE_DISCONNECTED => __('Not connected', 'corex'),
             self::STATE_EMPTY        => __('No data yet', 'corex'),
+            self::STATE_FAILED       => __('Could not run', 'corex'),
             default                  => $state,
         };
     }
@@ -408,6 +411,7 @@ final class InsightWidgets
     {
         return match ($state) {
             self::STATE_LIVE, self::STATE_CONNECTED => 'success',
+            self::STATE_FAILED                      => 'warning',
             default                                 => 'subtle',
         };
     }

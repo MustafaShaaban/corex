@@ -205,13 +205,14 @@ it('keeps secret key fields write-only even with reference links', function () {
         ->and($html)->toContain('autocomplete="new-password"');
 });
 
-it('offers the appearance setting (System/Light/Dark) and the SSO-slot setting on the Brand tab', function () {
+it('offers the appearance setting (System/Light/Dark) on the Brand tab, and no single sign-on switch', function () {
     $html = settingsForm()->render(static fn (string $key): string => '', '<nonce>');
 
     expect($html)
         ->toContain('CoreX admin appearance')
         ->toContain('brand_admin_appearance')
         ->toContain('>System<')->toContain('>Light<')->toContain('>Dark<')
-        ->toContain('Enable SSO login section')
-        ->toContain('brand_login_sso_enabled');
+        // No provider exists, so there is nothing to switch on (spec 114, US-SET-10).
+        ->not->toContain('SSO')
+        ->not->toContain('brand_login_sso_enabled');
 });

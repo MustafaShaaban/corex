@@ -549,9 +549,10 @@ final class LoginRouteGuard
         return strtolower(basename($path));
     }
 
+    /** The one rule the Security Center and the Overview print (spec 114, US-SAFE-11). */
     private function hidesDefaults(): bool
     {
-        return $this->settings->enabled && $this->settings->blockDefaultEndpoints && ! $this->unguarded;
+        return LoginAddressState::of($this->settings, $this->unguarded) === LoginAddressState::HIDDEN;
     }
 
     public function customLoginPath(): string
