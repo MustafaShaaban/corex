@@ -6,6 +6,17 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.47.0] — 2026-10-21
+
+Access and logs (spec 112, the first release of the CoreX revamp), the generator tag (spec 111)
+and backslashes kept in submissions on a site with ACF active.
+
+**Read Client impact before updating.** Access granted by approval before this release stays in
+effect with no expiry; review it in CoreX → Access & Abilities. In Maintenance, a site's CoreX
+forms now answer 503 and store nothing. The foundation schema goes from 3 to 4: five nullable
+columns on the access requests table, added by `wp corex migrate` or by the first admin page or
+WP-Cron run after the update.
+
 ### Changed
 
 - **Access requests and grants** (spec 112). Abilities that control the whole site (CoreX admin,

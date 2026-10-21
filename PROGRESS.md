@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.46.1** — tag `v0.46.1`, reachable from `main`.
+- **Latest published release: v0.47.0** — tag `v0.47.0`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,7 +40,7 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Spec 112, access and logs** (2026-10-20, branch `spec/112-access-and-logs`): the first release (R0.1) of the
+**Spec 112, access and logs** (2026-10-20, #430, in v0.47.0): the first release (R0.1) of the
 CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
 locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,
 Maintenance closes public submissions, the Recovery panel gives a route without a command line, Blog Pro follows
@@ -50,22 +50,22 @@ Maintenance closes public submissions (DECISIONS #373), and story 4, recovery wi
 #374), and story 1, access requests and grants (DECISIONS #376; #375 is open PR #428's), and story 2, the counted
 access-denied log (DECISIONS #377), and story 6, security records on the Data screen (DECISIONS #378), and story 5,
 Blog Pro follows WordPress permissions (DECISIONS #379), and story 7, an inbox resend reaches the email's own
-recipients (DECISIONS #380). All seven stories are built, with release notes in CHANGELOG.md; nothing pushed.
-Next: the owner's review, then push the branch and open the pull request. The DECISIONS numbers are re-read before anything is pushed. The whole integration suite has 16 failures in
-`FlowLifecycleTest`, `SubmissionKeepsBackslashesTest` and `EmailStudioLifecycleTest` that fail the same way without
-spec 112; open PRs #428 and #429 address them.
+recipients (DECISIONS #380). All seven stories are merged (#430) and released in v0.47.0. Owed, not code: the
+recovery check of SC-005 done by hand on a scratch site, and a review of the grants already approved on client sites.
+Not built (noted in `tasks.md`): browser runs as a "Manage data" holder and as an Author, and a separate automated
+WCAG audit of the new dialog and panels.
 
 **Spec 111, a CoreX site says it runs CoreX** (2026-10-19, branch `spec/111-generator-tag`,
 DECISIONS #372): every front-end page head carries `<meta name="generator" content="CoreX" />`,
 name only on the owner's word, off on the Coming soon page a visitor sees and with
-`add_filter('corex_generator_tag', '__return_false')`. Built, tested and in a pull request.
-Owed after it merges and ships: the owner sends the detection rule in
+`add_filter('corex_generator_tag', '__return_false')`. Merged (#427) and released in v0.47.0.
+Owed: the owner sends the detection rule in
 `specs/111-generator-tag/contracts/detection-rule.md` to `enthec/webappanalyzer` (it asks for ten
 public CoreX sites) or to Wappalyzer's suggestion form.
 
-**Nothing is in flight but spec 110** (2026-10-18). v0.46.1 holds everything on `main`; the
-only open pull request is #417, the draft of spec 110, which waits on the owner's three
-questions. v0.46.1 is v0.46.0 and three changes to CoreX → Releases, made after Perego's second
+**Nothing else is in flight but spec 110** (2026-10-21). v0.47.0 holds everything on `main`;
+the only open pull requests are #417, the draft of spec 110, which waits on the owner's three
+questions, and Dependabot's. v0.46.1 was v0.46.0 and three changes to CoreX → Releases, made after Perego's second
 installation from it on its shared host (LiteSpeed) held the site in maintenance for ten
 minutes with the release not in place, and landed on the owner's word: #418 (DECISIONS #369;
 spec 107 FR-024a, FR-024b, FR-025: the kept release is set aside by one rename instead of
@@ -144,7 +144,9 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
-**Unreleased, 2026-10-21.** A site with ACF active keeps backslashes in what is submitted
+**In v0.47.0, 2026-10-21.** Spec 112, access and logs (#430, DECISIONS #373, #374 and #376 to
+#380), spec 111, the generator tag (#427, #372), the advisories of 2026-10-20 (#431), two
+lifecycle tests that count only their own captured email (#429), and a site with ACF active keeps backslashes in what is submitted
 (DECISIONS #375). #370 slashed `MetaFieldDriver::set()` only; `FieldResolver` picks
 `AcfFieldDriver` whenever ACF is active, and ACF hands a post's value to `update_metadata()`,
 which unslashes, so `C:\offers\new` was stored as `C:offersnew`. Found as 14 failures of
