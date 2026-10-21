@@ -14,6 +14,11 @@ use Corex\Email\Driver\MailDriver;
 use Corex\Email\Log\EmailLogStore;
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Security\HeaderGuard;
+use Corex\Mail\Capture\CapturedMessage;
+use Corex\Mail\Capture\MailDecision;
+use Corex\Mail\Capture\MailGate;
+use Corex\Mail\Capture\MailPath;
+use Corex\Mail\MailResult;
 use Corex\Support\BootLogger;
 use Throwable;
 
@@ -31,6 +36,9 @@ final class MailService
         private readonly EmailLogStore $log,
         private readonly HeaderGuard $guard,
         private readonly BootLogger $logger,
+        /** Spec 113: development and staging sites keep mail instead of sending it. */
+        private readonly ?MailGate $gate = null,
+        private readonly ?MailPath $paths = null,
     ) {
     }
 
@@ -71,14 +79,54 @@ final class MailService
             return $this->result('failed', 'No valid recipient.', $clean);
         }
 
+        $decision = $this->gate?->decide(true) ?? MailDecision::Deliver;
+        $name = $this->gate === null ? '' : ($this->paths?->current() ?? __('CoreX mail', 'corex'));
+        if ($decision !== MailDecision::Deliver) {
+            return $this->keep($clean, $name, $decision);
+        }
+
         try {
-            $accepted = $this->driver->send($clean);
+            // Sent under its name, so the wp_mail() gate knows the email is CoreX's own.
+            $accepted = $this->paths === null || $name === ''
+                ? $this->driver->send($clean)
+                : $this->paths->during($name, fn (): bool => $this->driver->send($clean));
         } catch (Throwable $e) {
             $this->logger->error(sprintf('Mail delivery failed: %s', $e->getMessage()));
             $accepted = false;
         }
 
         return $this->result($accepted ? 'sent' : 'failed', $accepted ? 'Sent.' : 'Delivery failed.', $clean);
+    }
+
+    /**
+     * Keep an email the gate did not let go: captured (a terminal success, so no retry sends
+     * it), or rejected when it could be kept nowhere.
+     */
+    private function keep(EmailMessage $email, string $name, MailDecision $decision): EmailResult
+    {
+        $message = new CapturedMessage(
+            to: $email->to,
+            subject: $email->subject,
+            body: $email->body,
+            path: $name,
+            cc: $email->cc,
+            bcc: $email->bcc,
+            replyTo: $email->replyTo,
+            headers: $email->headers,
+            attachments: array_values(array_filter($email->attachments, 'is_string')),
+            plainText: $email->plainText,
+        );
+
+        if ($decision === MailDecision::Refuse) {
+            $this->gate?->refuse($message);
+        }
+
+        // keep() records the refusal itself when the email cannot be kept after all.
+        if ($decision === MailDecision::Refuse || $this->gate?->keep($message, $decision) === null) {
+            return $this->result('rejected', 'Not sent: this site keeps its mail, and there is nowhere to keep it.', $email);
+        }
+
+        return $this->result(MailResult::STATE_CAPTURED, 'Captured: kept in Email Studio, not sent.', $email);
     }
 
     private function result(string $status, string $message, EmailMessage $email): EmailResult

@@ -1,4 +1,4 @@
-import { useContext, useState } from '@wordpress/element';
+import { useContext, useEffect, useState } from '@wordpress/element';
 import {
 	PendingControl,
 	workingProps,
@@ -148,18 +148,58 @@ function AttemptsTable( { attempts, busy, onRetry } ) {
 	);
 }
 
+/**
+ * What kept a captured email, in words: a marked test holds, a development or staging site
+ * captures (spec 113).
+ *
+ * @param {string} state The capture's state.
+ * @return {string} The state's label.
+ */
+export function captureStateLabel( state ) {
+	return state === 'held_for_test'
+		? __( 'Held for test', 'corex' )
+		: __( 'Captured', 'corex' );
+}
+
 function CapturesList( { captures } ) {
+	// A link to one email (`#corex-capture-…`, from a flow test's result) is followed once the
+	// list is drawn: the browser looked for the email before it was there.
+	useEffect( () => {
+		const hash = window.location.hash.slice( 1 );
+		if ( hash.startsWith( 'corex-capture-' ) ) {
+			document.getElementById( hash )?.scrollIntoView( { block: 'center' } );
+		}
+	}, [ captures ] );
+
 	return (
 		<section className="corex-surface corex-email-app__table-card">
-			<h2>{ __( 'Development captures', 'corex' ) }</h2>
+			<h2>{ __( 'Captured and held mail', 'corex' ) }</h2>
+			<p className="corex-email-app__captures-note">
+				{ __(
+					'Kept here instead of sent, newest first. Each is removed 30 days after it was kept.',
+					'corex'
+				) }
+			</p>
 			{ captures.length === 0 ? (
 				<p>{ __( 'No captured messages yet.', 'corex' ) }</p>
 			) : (
 				<ul className="corex-email-app__captures">
 					{ captures.map( ( capture ) => (
-						<li key={ capture.capture_id }>
-							<strong>{ capture.subject }</strong>
+						<li
+							key={ capture.capture_id }
+							id={ `corex-capture-${ capture.capture_id }` }
+						>
+							<span className="corex-email-app__capture-what">
+								<strong>{ capture.subject }</strong>
+								<span>
+									{ capture.path ||
+										__( 'Email Studio', 'corex' ) }
+								</span>
+							</span>
 							<span>{ capture.to.join( ', ' ) }</span>
+							<span className="corex-email-app__capture-state">
+								{ captureStateLabel( capture.state ) }
+							</span>
 							<CorexTime value={ capture.captured_at } />
 						</li>
 					) ) }

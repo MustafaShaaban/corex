@@ -107,7 +107,9 @@ final readonly class EmailStage implements SubmissionStage
         $this->persist($next);
 
         return $failed === null
-            ? SubmissionStageResult::success($this->key(), $next, __('Flow email bindings completed.', 'corex'))
+            ? SubmissionStageResult::success($this->key(), $next, $context->isTest
+                ? __('The emails were held for the test and not sent. They are in the Email Studio log.', 'corex')
+                : __('Flow email bindings completed.', 'corex'))
             : SubmissionStageResult::failure($this->key(), $next, $failed, $retryable);
     }
 
@@ -119,6 +121,25 @@ final readonly class EmailStage implements SubmissionStage
      */
     private function deliverViaFallback(SubmissionPipelineContext $context, array $primary): SubmissionStageResult
     {
+        // A marked test sends nothing, and without CoreX Mail there is nowhere to hold the email
+        // (spec 113, US3): it is not written at all.
+        if ($context->isTest) {
+            $next = $context->withMetadata([
+                'email' => ['state' => 'held', 'bindings' => []],
+                'notification_delivery' => NotificationDelivery::notAttempted(
+                    'test_not_sent',
+                    __('A marked test sends no email.', 'corex'),
+                )->toArray(),
+            ]);
+            $this->persist($next);
+
+            return SubmissionStageResult::success(
+                $this->key(),
+                $next,
+                __('Not sent: a marked test sends no email, and CoreX Mail is not active to keep a copy.', 'corex'),
+            );
+        }
+
         $mailContext = $this->mailContext($context);
         $recipients = $this->addresses->recipients((string) ($primary[0]['recipient'] ?? ''), $mailContext);
         if ($recipients === []) {

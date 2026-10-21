@@ -179,7 +179,16 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(EmailLogStore::class),
                 $c->make(HeaderGuard::class),
                 $c->make(BootLogger::class),
+                $c->make(\Corex\Mail\Capture\MailGate::class),
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
+        );
+
+        // What the mail gate captures or holds is kept in Email Studio's capture log (spec 113).
+        $this->container->singleton(
+            \Corex\Mail\Capture\MailCaptureStore::class,
+            static fn (ContainerInterface $c): \Corex\Mail\Capture\MailCaptureStore =>
+                new \Corex\Email\Capture\CaptureStoreAdapter($c->make(CapturedEmailRepository::class)),
         );
 
         // The immediate engine (sends inline). The queue worker also uses this.
@@ -191,6 +200,7 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(RecipientResolver::class),
                 $c->make(MailService::class),
                 \Corex\Mail\MessageId::hostOf((string) home_url('/')),
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
         );
 
@@ -229,6 +239,8 @@ final class MailServiceProvider extends ServiceProvider
                     'wp-mail',
                     $c->make(\Corex\Events\EventDispatcher::class),
                     \Corex\Mail\MessageId::hostOf((string) home_url('/')),
+                    $c->make(\Corex\Mail\Capture\MailPath::class),
+                    $c->make(\Corex\Mail\Capture\MailHold::class),
                 );
             },
         );

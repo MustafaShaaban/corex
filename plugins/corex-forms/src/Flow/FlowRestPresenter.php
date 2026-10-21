@@ -77,6 +77,7 @@ final class FlowRestPresenter
             'submission_id' => $pipeline->context->submissionId,
             'is_test' => $pipeline->context->isTest,
             'stages' => array_map($this->stage(...), $pipeline->stages),
+            'held_emails' => $pipeline->heldEmails,
         ];
     }
 

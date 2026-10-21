@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Closure;
 use Corex\Mail\AttemptingMailer;
+use Corex\Mail\Capture\MailPath;
 use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
@@ -43,6 +44,8 @@ final readonly class NotificationDispatcher
         private EmailLanguage $language,
         private ?RoutedMailer $routed = null,
         private ?Mailer $mailer = null,
+        /** Names the notification for the Email Studio log (spec 113). */
+        private ?MailPath $paths = null,
     ) {
     }
 
@@ -53,6 +56,17 @@ final readonly class NotificationDispatcher
      *                                       in the email's language.
      */
     public function dispatch(string $trigger, array $context, Closure $write): NotificationDelivery
+    {
+        $send = fn (): NotificationDelivery => $this->send($trigger, $context, $write);
+
+        return $this->paths === null ? $send() : $this->paths->during(__('Form notification', 'corex'), $send);
+    }
+
+    /**
+     * @param array<string,mixed>   $context
+     * @param Closure():MailRequest $write
+     */
+    private function send(string $trigger, array $context, Closure $write): NotificationDelivery
     {
         // Rung 1 — CoreX Mail's trigger router. A null return means "no route matched"; fall through.
         if ($this->routed !== null) {

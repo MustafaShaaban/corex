@@ -361,6 +361,28 @@
 	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
 }
 
+.corex-admin .corex-email-app__captures li {
+	grid-template-columns: minmax(0, 1fr) auto auto auto;
+	align-items: center;
+}
+
+.corex-admin .corex-email-app__captures li:target {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: calc(var(--corex-admin-border-width) * -1);
+}
+
+.corex-admin .corex-email-app__capture-what {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-email-app__captures-note {
+	margin-block: 0 var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin .corex-email-app__captures span,
 .corex-admin .corex-email-app__captures time,
 .corex-admin .corex-email-app__health span {

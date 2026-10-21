@@ -566,6 +566,7 @@ final class EmailStudioController
             'html_body' => $capture->body, 'plain_text' => $capture->plainText, 'headers' => $capture->headers,
             'captured_at' => $capture->capturedAt->format(DATE_ATOM),
             'retention_until' => $capture->retentionUntil?->format(DATE_ATOM),
+            'path' => $capture->path, 'state' => $capture->state,
         ];
     }
 
