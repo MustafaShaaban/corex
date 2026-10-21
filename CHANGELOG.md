@@ -15,7 +15,17 @@ All notable changes to Corex are documented here. The format follows
   leaves it off every page of a site. The detection rule for the scanners' lists is in
   `specs/111-generator-tag/contracts/detection-rule.md`.
 
+### Fixed
+
+- **A site with ACF active keeps backslashes in what is submitted** (DECISIONS #375). The ACF
+  field driver handed ACF the value as it was, and ACF stores a post's value through
+  `update_metadata()`, which takes one level of slashes off. A visitor who wrote `C:\offers\new`
+  was read in the inbox as `C:offersnew`. The same was fixed for sites without ACF in v0.46.0.
+
 ### Client impact
+
+- **A site with ACF active keeps backslashes in submissions from the update on.** Nothing to do.
+  Submissions stored before it are not repaired: what was dropped is not in the database.
 
 - **Every page of a client site gains one line in its head**, `<meta name="generator"
   content="CoreX" />`. Nothing to do. A client that does not want its pages to name CoreX adds
