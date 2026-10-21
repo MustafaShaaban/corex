@@ -19,6 +19,7 @@ use Corex\Mail\Capture\MailDecision;
 use Corex\Mail\Capture\MailGate;
 use Corex\Mail\Capture\MailHold;
 use Corex\Mail\Capture\MailPath;
+use Corex\Mail\Capture\MailProviderCheck;
 use Corex\Mail\Capture\WpMailInterceptor;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\Source;
@@ -37,7 +38,7 @@ final class RecordingCaptureStore implements MailCaptureStore
 }
 
 /** @param array<string,mixed> $settings `app.env`, `mail.provider`, `mail.live_delivery`, `mail.capture_scope` */
-function mailGate(array $settings, ?RecordingCaptureStore $store, ?MailHold $hold = null): MailGate
+function mailGate(array $settings, ?RecordingCaptureStore $store, ?MailHold $hold = null, ?MailProviderCheck $provider = null): MailGate
 {
     $config = new class ($settings) implements ConfigInterface, Source {
         public function __construct(private readonly array $settings)
@@ -57,6 +58,9 @@ function mailGate(array $settings, ?RecordingCaptureStore $store, ?MailHold $hol
     $container = new Container();
     if ($store !== null) {
         $container->instance(MailCaptureStore::class, $store);
+    }
+    if ($provider !== null) {
+        $container->instance(MailProviderCheck::class, $provider);
     }
 
     return new MailGate(
@@ -82,6 +86,25 @@ it('decides by the environment, live delivery and the switch', function (array $
     'development, capture only CoreX, CoreX mail' => [['app.env' => 'development', 'mail.capture_scope' => 'corex'], true, MailDecision::Capture],
     'staging, live delivery off' => [['app.env' => 'staging', 'mail.provider' => 'wp-mail'], true, MailDecision::Capture],
     'staging, provider and live delivery' => [['app.env' => 'staging', 'mail.provider' => 'wp-mail', 'mail.live_delivery' => '1'], false, MailDecision::Deliver],
+]);
+
+it('asks CoreX Mail whether the provider is one it sends through, on staging', function (bool $supported, MailDecision $expected) {
+    $provider = new class ($supported) implements MailProviderCheck {
+        public function __construct(private readonly bool $supported)
+        {
+        }
+
+        public function providerConfigured(): bool
+        {
+            return $this->supported;
+        }
+    };
+    $gate = mailGate(['app.env' => 'staging', 'mail.provider' => 'smtp', 'mail.live_delivery' => true], new RecordingCaptureStore(), null, $provider);
+
+    expect($gate->decide(true))->toBe($expected);
+})->with([
+    'a provider Email Studio sends through' => [true, MailDecision::Deliver],
+    'a provider Email Studio does not know' => [false, MailDecision::Capture],
 ]);
 
 it('refuses on a development site where there is nowhere to keep mail, and delivers in production', function () {

@@ -28,9 +28,9 @@ use Corex\Support\Options\LoadedOptions;
  * here ("who opened the site to the client, and when"), and they never hold the link itself.
  *
  * Since spec 113 a value set in `.env` (`APP_ENV`), locked by the network or held by the
- * `corex_app_env` option decides the mode first ({@see SiteEnvironment}): a lock to development or
- * staging is the mode; a lock to production leaves the owner Production, Coming soon and
- * Maintenance, which change only what visitors see.
+ * `corex_app_env` option decides the environment first ({@see SiteEnvironment}): it fixes the
+ * mode to its own environment, except that Coming soon and Maintenance, which change only what
+ * visitors see, stay available and in force under any lock.
  */
 final class OperationsModeStore
 {
@@ -63,14 +63,17 @@ final class OperationsModeStore
         $stored = (string) get_option(self::OPTION, '');
         $declared = $stored !== '' && $this->modes->isValid($stored) ? $stored : null;
 
+        // Coming soon and Maintenance close the site to visitors, and a lock never reopens it.
+        if (in_array($declared, SiteEnvironment::VISITOR_MODES, true)) {
+            return $declared;
+        }
+
         $lock = $this->lock();
         if ($lock !== null) {
             return match ($lock->environment) {
                 SiteEnvironment::DEVELOPMENT => OperationsMode::DEVELOPMENT,
                 SiteEnvironment::STAGING     => OperationsMode::STAGING,
-                default                      => in_array($declared, SiteEnvironment::PRODUCTION_MODES, true)
-                    ? $declared
-                    : OperationsMode::PRODUCTION,
+                default                      => OperationsMode::PRODUCTION,
             };
         }
 
@@ -91,7 +94,7 @@ final class OperationsModeStore
         return $answer !== null && $answer->isLocked() ? $answer : null;
     }
 
-    /** Whether the mode may be chosen: a lock allows only the modes of its own environment. */
+    /** Whether the mode may be chosen: a lock allows its own environment's mode, Coming soon and Maintenance. */
     public function allows(string $mode): bool
     {
         return $this->environment === null || $this->environment->allowsMode($mode);

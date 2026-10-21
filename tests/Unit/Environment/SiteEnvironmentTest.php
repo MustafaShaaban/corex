@@ -89,8 +89,22 @@ it('allows only the modes of a locked environment', function () {
         ->and($production->allowsMode(OperationsMode::STAGING))->toBeFalse()
         ->and($development->allowsMode(OperationsMode::DEVELOPMENT))->toBeTrue()
         ->and($development->allowsMode(OperationsMode::PRODUCTION))->toBeFalse()
+        ->and($development->allowsMode(OperationsMode::STAGING))->toBeFalse()
+        ->and($development->allowsMode(OperationsMode::COMING_SOON))->toBeTrue()
+        ->and($development->allowsMode(OperationsMode::MAINTENANCE))->toBeTrue()
         ->and(siteEnvironment()->allowsMode(OperationsMode::STAGING))->toBeTrue();
 });
+
+it('keeps a declared Coming soon or Maintenance under any lock, closed to visitors', function (string $lock, string $mode) {
+    $GLOBALS['corex_test_options'][OperationsModeStore::OPTION] = $mode;
+
+    expect((new OperationsModeStore(new OperationsMode(), siteEnvironment(['dotenv' => $lock])))->current())->toBe($mode);
+})->with([
+    'local, coming soon' => ['local', OperationsMode::COMING_SOON],
+    'development, maintenance' => ['development', OperationsMode::MAINTENANCE],
+    'staging, coming soon' => ['staging', OperationsMode::COMING_SOON],
+    'production, maintenance' => ['production', OperationsMode::MAINTENANCE],
+]);
 
 it('gives the mode a lock fixes, and keeps Coming soon under a production lock', function () {
     $GLOBALS['corex_test_options'][OperationsModeStore::OPTION] = OperationsMode::COMING_SOON;

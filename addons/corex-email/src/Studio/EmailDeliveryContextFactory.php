@@ -11,6 +11,7 @@ namespace Corex\Email\Studio;
 defined('ABSPATH') || exit;
 
 use Corex\Environment\SiteEnvironment;
+use Corex\Mail\Capture\MailProviderCheck;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Uuid;
 
@@ -21,7 +22,7 @@ use Corex\Support\Uuid;
  * Three classes built this for themselves from `app.env`, which the defaults layer answers with
  * "production" on every site, so none of them followed the operations mode (spec 113, R5).
  */
-final readonly class EmailDeliveryContextFactory
+final readonly class EmailDeliveryContextFactory implements MailProviderCheck
 {
     public function __construct(
         private SiteEnvironment $environment,

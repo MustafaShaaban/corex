@@ -48,18 +48,34 @@ final class CoreServiceProvider extends ServiceProvider
         // One list for every provider: each names the options of its own that every request reads.
         $this->container->singleton(LoadedOptions::class);
 
+        // The three layers that can lock a value, one instance each: the config repository and
+        // the site environment (spec 113) read the same ones, and `.env` is read once.
+        $this->container->singleton(
+            DotenvSource::class,
+            fn (ContainerInterface $container): DotenvSource => new DotenvSource($this->projectRoot(), $container->make(BootLogger::class)),
+        );
+        $this->container->singleton(
+            NetworkLockSource::class,
+            static fn (ContainerInterface $container): NetworkLockSource => new NetworkLockSource(
+                $container->make(SettingRegistry::class),
+                $container->make(MultisiteContext::class),
+                $container->make(NetworkContext::class),
+            ),
+        );
+        $this->container->singleton(OptionsSource::class);
+
         $this->container->singleton(ConfigInterface::class, function (ContainerInterface $container): Repository {
             $registry = $container->make(SettingRegistry::class);
             $multisite = $container->make(MultisiteContext::class);
             $network = $container->make(NetworkContext::class);
 
             return new Repository([
-                new DotenvSource($this->projectRoot(), $container->make(BootLogger::class)),
+                $container->make(DotenvSource::class),
                 // Deployment-owned .env stays highest: allowing a network-admin database row to
                 // override it would invert privilege. A lock must beat a site option, while a
                 // network default must lose to one, fixing the sources on opposite sides of it.
-                new NetworkLockSource($registry, $multisite, $network),
-                new OptionsSource(),
+                $container->make(NetworkLockSource::class),
+                $container->make(OptionsSource::class),
                 new NetworkDefaultsSource($registry, $multisite, $network),
                 new DefaultsSource($this->defaults()),
             ]);
@@ -74,19 +90,11 @@ final class CoreServiceProvider extends ServiceProvider
 
         // The lock layers of `app.env`, read one by one: the repository's defaults layer would
         // answer "production" for every site (spec 113, research R1).
-        $this->container->singleton(SiteEnvironment::class, function (ContainerInterface $container): SiteEnvironment {
-            $registry = $container->make(SettingRegistry::class);
-
-            return new SiteEnvironment([
-                [SiteEnvironment::BY_DOTENV, new DotenvSource($this->projectRoot(), $container->make(BootLogger::class))],
-                [SiteEnvironment::BY_NETWORK, new NetworkLockSource(
-                    $registry,
-                    $container->make(MultisiteContext::class),
-                    $container->make(NetworkContext::class),
-                )],
-                [SiteEnvironment::BY_OPTION, new OptionsSource()],
-            ]);
-        });
+        $this->container->singleton(SiteEnvironment::class, static fn (ContainerInterface $container): SiteEnvironment => new SiteEnvironment([
+            [SiteEnvironment::BY_DOTENV, $container->make(DotenvSource::class)],
+            [SiteEnvironment::BY_NETWORK, $container->make(NetworkLockSource::class)],
+            [SiteEnvironment::BY_OPTION, $container->make(OptionsSource::class)],
+        ]));
 
         $this->container->singleton(
             FeatureFlags::class,

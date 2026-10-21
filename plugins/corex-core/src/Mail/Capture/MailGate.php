@@ -132,11 +132,20 @@ final class MailGate
         }
     }
 
-    /** Staging delivers, as Email Studio does there, only with a provider set and live delivery on. */
+    /**
+     * Staging delivers only with a provider set and live delivery on, asked as Email Studio asks it
+     * when CoreX Mail is there. Without CoreX Mail there is no Email Studio to disagree with, and
+     * any provider set counts.
+     */
     private function liveOnStaging(): bool
     {
-        return trim((string) $this->config->get('mail.provider', '')) !== ''
-            && filter_var($this->config->get('mail.live_delivery', false), FILTER_VALIDATE_BOOLEAN);
+        if (! filter_var($this->config->get('mail.live_delivery', false), FILTER_VALIDATE_BOOLEAN)) {
+            return false;
+        }
+
+        return $this->container->has(MailProviderCheck::class)
+            ? $this->container->make(MailProviderCheck::class)->providerConfigured()
+            : trim((string) $this->config->get('mail.provider', '')) !== '';
     }
 
     private function store(): ?MailCaptureStore

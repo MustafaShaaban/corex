@@ -45,6 +45,13 @@ final class SiteEnvironment
     /** The operations modes that are production for mail. */
     public const PRODUCTION_MODES = ['production', 'coming-soon', 'maintenance'];
 
+    /**
+     * The operations modes that change only what visitors see. A lock never takes them away: a
+     * site put in Coming soon or Maintenance stays closed to visitors whatever `APP_ENV` says,
+     * while its mail follows the lock.
+     */
+    public const VISITOR_MODES = ['coming-soon', 'maintenance'];
+
     private const KEY = 'app.env';
 
     /**
@@ -75,10 +82,15 @@ final class SiteEnvironment
     }
 
     /**
-     * Whether an operations mode may be chosen while a lock decides. Without a lock every mode may.
+     * Whether an operations mode may be chosen while a lock decides: the lock's own environment,
+     * and Coming soon and Maintenance under any lock. Without a lock every mode may.
      */
     public function allowsMode(string $mode): bool
     {
+        if (in_array($mode, self::VISITOR_MODES, true)) {
+            return true;
+        }
+
         $answer = $this->current();
         if (! $answer->isLocked()) {
             return true;

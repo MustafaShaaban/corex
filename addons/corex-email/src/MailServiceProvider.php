@@ -190,6 +190,13 @@ final class MailServiceProvider extends ServiceProvider
                 new \Corex\Email\Capture\CaptureRetention($c->make(WpEmailStudioStore::class)),
         );
 
+        // The gate asks the provider question as Email Studio asks it (spec 113, FR-011).
+        $this->container->singleton(
+            \Corex\Mail\Capture\MailProviderCheck::class,
+            static fn (ContainerInterface $c): \Corex\Mail\Capture\MailProviderCheck =>
+                $c->make(\Corex\Email\Studio\EmailDeliveryContextFactory::class),
+        );
+
         // What the mail gate captures or holds is kept in Email Studio's capture log (spec 113).
         $this->container->singleton(
             \Corex\Mail\Capture\MailCaptureStore::class,

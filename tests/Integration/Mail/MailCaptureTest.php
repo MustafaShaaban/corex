@@ -115,7 +115,7 @@ it('keeps only CoreX mail when the owner switches capture to CoreX mail', functi
         ->and(count($this->transport))->toBe(2);
 });
 
-it('sends as before on a production site with no provider and live delivery off', function () {
+it('sends as before on a production site with live delivery off', function () {
     $this->settings = MailDelivery::answerAs(MailDelivery::REFUSE);
     $tag = wp_generate_password(6, false);
 

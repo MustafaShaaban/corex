@@ -14,6 +14,9 @@ defined('ABSPATH') || exit;
  * Names the emails WordPress builds itself, for the Email Studio log: each is made by a filter
  * WordPress runs just before it calls `wp_mail()`, so the filter leaves the name for that email
  * (spec 113, research R4). The filters' values pass through unchanged.
+ *
+ * The comment emails are not named: WordPress builds their text once and then mails each
+ * recipient, so a name left for the first would be wrong for the rest. They are "Other: wp_mail".
  */
 final class WordPressMailNames
 {
@@ -44,8 +47,6 @@ final class WordPressMailNames
             'email_change_email'                    => static fn (): string => __('WordPress: account change', 'corex'),
             'new_admin_email_content'               => static fn (): string => __('WordPress: site address change', 'corex'),
             'auto_core_update_email'                => static fn (): string => __('WordPress: update notice', 'corex'),
-            'comment_notification_text'             => static fn (): string => __('WordPress: new comment', 'corex'),
-            'comment_moderation_text'               => static fn (): string => __('WordPress: comment to moderate', 'corex'),
         ];
     }
 }
