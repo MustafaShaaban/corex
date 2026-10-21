@@ -78,6 +78,9 @@ const COMING_SOON_SPEC = /coming-soon\.spec\.js$/;
 /** The one spec that installs a release, which holds the whole site in maintenance while it does. */
 const RELEASE_INSTALL_SPEC = /releases-install\.spec\.js$/;
 
+/** The quality checks (spec 116), which have a config, a site and a CI job of their own. */
+const QUALITY_CHECKS = /[\\/]quality[\\/]/;
+
 const freshInstallExclusions = () => {
 	if (
 		! process.env.COREX_E2E_FRESH_INSTALL ||
@@ -104,6 +107,8 @@ module.exports = defineConfig( {
 	reporter: 'list',
 	// Authenticate once (global-setup) and reuse the session — no per-test login race.
 	globalSetup: require.resolve( './global-setup.js' ),
+	// Removes what the run made and fails on what it left (spec 116, US-NFR-09; residue.js).
+	globalTeardown: require.resolve( './global-teardown.js' ),
 	use: {
 		baseURL: process.env.COREX_BASE_URL || 'http://corex.local',
 		storageState: STORAGE_STATE,
@@ -127,7 +132,11 @@ module.exports = defineConfig( {
 		{
 			name: 'chromium',
 			use: { ...devices[ 'Desktop Chrome' ] },
-			testIgnore: [ COMING_SOON_SPEC, RELEASE_INSTALL_SPEC ],
+			testIgnore: [
+				COMING_SOON_SPEC,
+				RELEASE_INSTALL_SPEC,
+				QUALITY_CHECKS,
+			],
 		},
 		// Coming soon mode (spec 101), after everything else and alone.
 		//

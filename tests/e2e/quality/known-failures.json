@@ -1,0 +1,4 @@
+{
+	"description": "Failures the quality checks found on main when they were written (spec 116). Each entry names the story that fixes it. A finding not listed here fails its check. The list only shrinks: the pull request that fixes a screen removes its entries. Print it for the release notes with: node scripts/quality-known-failures.mjs",
+	"entries": []
+}

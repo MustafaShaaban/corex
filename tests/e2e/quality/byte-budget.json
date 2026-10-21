@@ -1,0 +1,4 @@
+{
+	"description": "Bytes of CoreX scripts and styles (files and inline) each front-end page loads, measured on CI's quality site (spec 116, US-NFR-07). A page more than 10% over its budget fails front-end-budget.spec.js. Raising a budget is a recorded decision in DECISIONS.md.",
+	"pages": {}
+}

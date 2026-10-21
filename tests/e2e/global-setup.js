@@ -11,6 +11,9 @@ const { chromium, expect } = require( '@playwright/test' );
 const fs = require( 'fs' );
 const path = require( 'path' );
 
+const { wpEval } = require( './helpers' );
+const { refuseProduction, startRun } = require( './residue' );
+
 const BASE_URL = process.env.COREX_BASE_URL || 'http://corex.local';
 const ADMIN_USER = process.env.COREX_ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.COREX_ADMIN_PASS || 'password';
@@ -72,7 +75,7 @@ module.exports = async () => {
 				.catch( () => false )
 		) {
 			await context.storageState( { path: STORAGE_STATE } );
-			await browser.close();
+			await beforeTheRun( page, browser );
 			return;
 		}
 		await context.close();
@@ -111,7 +114,23 @@ module.exports = async () => {
 	).toBe( true );
 
 	await context.storageState( { path: STORAGE_STATE } );
-	await browser.close();
+	await beforeTheRun( page, browser );
 };
+
+/**
+ * Before any test (spec 116, US-NFR-09): say which site the run writes to, refuse a production
+ * site, and remove what earlier runs left there (residue.js).
+ *
+ * @param {import('@playwright/test').Page}    page    A page signed in as the administrator.
+ * @param {import('@playwright/test').Browser} browser The browser to close afterwards.
+ */
+async function beforeTheRun( page, browser ) {
+	try {
+		await refuseProduction( page, BASE_URL );
+		startRun( wpEval, BASE_URL );
+	} finally {
+		await browser.close();
+	}
+}
 
 module.exports.STORAGE_STATE = STORAGE_STATE;
