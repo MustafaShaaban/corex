@@ -198,12 +198,17 @@ it('captures a routed Development notification and persists its exact active tem
     ]);
     $attempt = $this->attempts->latest()[0];
     $route = $this->routes->findByTrigger('access.request.approved.integration');
+    // A development site keeps what it captures: only this dispatch's capture is this test's.
+    $newCaptures = array_values(array_filter(
+        $this->captures->latest(),
+        fn ($capture): bool => ! in_array($capture->id, $this->baselineAssetIds, true),
+    ));
 
     expect($result?->state)->toBe(MailResult::STATE_CAPTURED)
         ->and($this->driver->calls)->toBe(0)
-        ->and($this->captures->latest())->toHaveCount(1)
-        ->and($this->captures->latest()[0]->subject)->toBe('Access approved for Sam')
-        ->and($this->captures->latest()[0]->attemptId)->toBe($attempt->attemptId)
+        ->and($newCaptures)->toHaveCount(1)
+        ->and($newCaptures[0]->subject)->toBe('Access approved for Sam')
+        ->and($newCaptures[0]->attemptId)->toBe($attempt->attemptId)
         ->and($attempt->templateSlug)->toBe('access-approved-integration')
         ->and($attempt->templateId)->not->toBeNull()
         ->and($attempt->templateVersion)->toBe(1)
