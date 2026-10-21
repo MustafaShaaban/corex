@@ -117,11 +117,16 @@ message naming them (CoreX makes no file for an export that would give nothing).
 
 ### `POST /submissions/{id}/resend` (changed)
 
-Body `{ "attempt_id": "..." }` (unchanged). Answer adds `recipients` (full addresses, shown to the inbox user) and
-`basis`: `recorded` or `rechecked`. Refusal 409 `recipients_unknown` when the email's recipients are neither recorded
-nor confirmed by re-checking.
+Body `{ "attempt_id": "..." }` (unchanged). Answer `{ "result": { ...the mail result }, "recipients": [...],
+"basis": "recorded" | "rechecked" }`; `recipients` are the full addresses, shown to the person handling the
+submission. When the email's recipients are neither recorded nor confirmed, nothing is sent and the route refuses
+with the inbox gateway's error answer (422) and a message saying who it was sent to is not known.
+
+`rechecked` is only possible for one recipient: the flow's recipients for that email, worked out again from the
+version the submission was made with, must be one address that the email's own attempt was sent to.
 
 ### Submission payload (changed)
 
-Each related email binding gains `kind` (`confirmation`, `team_notification`, `failure_notice`), `resendable`
-(boolean) and `not_resendable_reason` (`not_retryable`, `recipients_unknown`, or null).
+On the detail route (`GET /submissions/{id}`), each related email binding gains `kind` (`confirmation`,
+`team_notification`, `failure_notice`), `resendable` (boolean) and `not_resendable_reason` (`not_retryable`,
+`recipients_unknown`, or null). A flow email's binding also holds `recipients`, the addresses it was sent to.

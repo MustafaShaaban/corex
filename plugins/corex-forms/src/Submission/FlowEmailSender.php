@@ -45,7 +45,7 @@ final readonly class FlowEmailSender
         }
         $event = (string) ($binding['event'] ?? 'submitted');
         if ($this->mailer instanceof TemplateMailer && (int) ($binding['template_id'] ?? 0) > 0) {
-            $recipients = $this->addresses->recipients((string) ($binding['recipient'] ?? ''), $context);
+            $recipients = $this->recipientsFor($binding, $context);
             if ($recipients === []) {
                 return null;
             }
@@ -59,5 +59,24 @@ final readonly class FlowEmailSender
         }
 
         return $this->mailer->dispatch('forms.' . $flowSlug . '.' . $event, $context);
+    }
+
+    /**
+     * Who a binding's email is addressed to: its template's recipients, resolved from the flow's
+     * mapping and the submission (spec 112, FR-032). Empty for an email routed by its trigger,
+     * whose recipients the route decides.
+     *
+     * @param array<string,mixed> $binding
+     * @param array<string,mixed> $context
+     *
+     * @return list<string>
+     */
+    public function recipientsFor(array $binding, array $context): array
+    {
+        if (! $this->mailer instanceof TemplateMailer || (int) ($binding['template_id'] ?? 0) < 1) {
+            return [];
+        }
+
+        return $this->addresses->recipients((string) ($binding['recipient'] ?? ''), $context);
     }
 }

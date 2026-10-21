@@ -189,6 +189,12 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(ProtectionStage::class);
         $this->container->singleton(StorageStage::class);
         $this->container->singleton(RoutingStage::class);
+        // Works out a flow email's recipients again for the inbox's resend (spec 112, FR-032a).
+        $this->container->singleton(
+            \Corex\Mail\SubmissionEmailRecipients::class,
+            static fn (ContainerInterface $c): \Corex\Forms\Submission\FlowSubmissionEmailRecipients =>
+                $c->make(\Corex\Forms\Submission\FlowSubmissionEmailRecipients::class),
+        );
         $this->container->singleton(
             FlowEmailSender::class,
             static fn (ContainerInterface $c): FlowEmailSender => new FlowEmailSender(

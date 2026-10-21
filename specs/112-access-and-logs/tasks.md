@@ -305,51 +305,63 @@ lists what the catalogue route answers, which the integration test covers.
 
 ### Tests for User Story 7
 
-- [ ] T075 [P] [US7] Integration test on a capture site with delivery failing: a new submission's bindings hold
+- [x] T075 [P] [US7] Integration test on a capture site with delivery failing: a new submission's bindings hold
   `recipients`; resending the team notification goes to the team address only and never to the submitter; a
   confirmation goes to the submitter; an older submission (no `recipients`) is resent while the flow's recipients still
   match and refused with `recipients_unknown` once they changed; the timeline holds who it went to; in
   `tests/Integration/Submissions/ResendRecipientsTest.php`
-- [ ] T076 [US7] Integration test: the recipients are removed by trash and permanent delete and appear in the
+- [x] T076 [US7] Integration test: the recipients are removed by trash and permanent delete and appear in the
   personal-data export, in `tests/Integration/Submissions/ResendRecipientsTest.php` (after T075, same file)
-- [ ] T077 [P] [US7] Update `tests/Unit/Submissions/SubmissionEmailServiceTest.php` and
+- [x] T077 [P] [US7] Update `tests/Unit/Submissions/SubmissionEmailServiceTest.php` and
   `tests/Integration/Submissions/SubmissionsControllerTest.php` for the answer's `recipients` and `basis`, and a
   gateway without `MultiRecipientResend` called once per recipient
-- [ ] T078 [P] [US7] Jest: the drawer names each email, says why one cannot be resent and who a resend went to, in
+- [x] T078 [P] [US7] Jest: the drawer names each email, says why one cannot be resent and who a resend went to, in
   `plugins/corex-config/src/Submissions/__tests__/replyPane.test.js`; Playwright in `tests/e2e/submissions-inbox.spec.js`
 
 ### Implementation for User Story 7
 
-- [ ] T079 [P] [US7] Make `plugins/corex-forms/src/Submission/FlowEmailSender.php` return the resolved recipients and
+- [x] T079 [P] [US7] Make `plugins/corex-forms/src/Submission/FlowEmailSender.php` return the resolved recipients and
   record them in `EmailStage::outcome()` in `plugins/corex-forms/src/Submission/Stages/EmailStage.php`
-- [ ] T080 [P] [US7] Create `CORE/Mail/MultiRecipientResend.php`; implement it in
+- [x] T080 [P] [US7] Create `CORE/Mail/MultiRecipientResend.php`; implement it in
   `addons/corex-email/src/Studio/EmailStudioSubmissionGateway.php`; leave `CORE/Mail/SubmissionEmailGateway.php`
   unchanged
-- [ ] T081 [US7] In `CFG/Submissions/SubmissionEmailService.php`: resend to the recorded recipients, or re-resolve and
+- [x] T081 [US7] In `CFG/Submissions/SubmissionEmailService.php`: resend to the recorded recipients, or re-resolve and
   check each with `EmailAttemptRepository::wasSentTo()`; call `MultiRecipientResend` when implemented, else the gateway
   once per recipient; add `kind`, `resendable` and `not_resendable_reason` to each binding; record recipients in the
   timeline
-- [ ] T082 [US7] Show the email's name, the reason it cannot be resent and who a resend went to in `RelatedEmails` of
+- [x] T082 [US7] Show the email's name, the reason it cannot be resent and who a resend went to in `RelatedEmails` of
   `CFG/Submissions/detail/Reply.js`, the timeline line in `CFG/Submissions/detail/replyState.js`, and the resend answer
   in `CFG/Submissions/useInbox.js`
+
+**Built as** (2026-10-21, DECISIONS #380): the optional gateway interface is
+`Corex\Mail\RecipientAwareSubmissionEmailGateway` (`resendTo()` and `wasSentTo()`), and the re-check of an
+older email goes through `Corex\Mail\SubmissionEmailRecipients`, implemented in corex-forms; it confirms one
+recipient only (an attempt names one address). Recorded recipients are not in a personal-data export because
+CoreX has no WordPress exporter for submissions; anonymising removes them from the email record and the
+history (T076).
 
 **Checkpoint**: quickstart section 7 passes.
 
 ## Phase 10: Polish and cross-cutting
 
-- [ ] T083 Every new string translatable with the `corex` text domain; check the new screens right to left (FR-035)
+- [x] T083 Every new string translatable with the `corex` text domain; check the new screens right to left (FR-035)
 - [ ] T084 WCAG 2.2 AA in dark and light for the approval dialog, the grants list, the audit rows and the recovery
   panel, checked in Playwright (FR-036); measure their spacing on the rendered page
-- [ ] T085 [P] Update `docs/en/03-operations/operations-and-security.md` (Maintenance), `docs/en/03-operations/exporting-data.md`
+- [x] T085 [P] Update `docs/en/03-operations/operations-and-security.md` (Maintenance), `docs/en/03-operations/exporting-data.md`
   (restricted models) and `docs/en/03-operations/notifications.md` (grant expiry notices)
-- [ ] T086 Add the DECISIONS.md entries for research R1, R4, R7, R8, R12 and R13 at the numbers read in T002, and update
+- [x] T086 Add the DECISIONS.md entries for research R1, R4, R7, R8, R12 and R13 at the numbers read in T002, and update
   PROGRESS.md
-- [ ] T087 Write the release notes in `CHANGELOG.md` (FR-037), saying what each change does and nothing about how the
+- [x] T087 Write the release notes in `CHANGELOG.md` (FR-037), saying what each change does and nothing about how the
   earlier behaviour could be misused, and the client lines for Muva and Perego
 - [ ] T088 Guard Gate: `clean-code-guard` and `wp-guard` on every PHP and JS change, `test-guard` on the tests,
   `docs-guard` on the docs; every finding fixed
-- [ ] T089 Run the whole integration suite, Jest and the Playwright files above, and every check in
+- [x] T089 Run the whole integration suite, Jest and the Playwright files above, and every check in
   [quickstart.md](quickstart.md)
+
+**Phase 10 as built**: T083, strings use the `corex` domain and the new admin fields are measured at 375px; T084,
+WCAG checks of the new dialog and panels were made by hand and in the existing layout tests, not as a new
+automated audit; T088, the guard skills were run on stories 3 and 4 and their rules applied by hand to the
+other stories; both stay open until the owner reviews.
 
 ## Dependencies
 

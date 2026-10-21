@@ -81,6 +81,28 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
         return $id;
     }
 
+    /**
+     * What a flow email of this submission was addressed from: the flow and version it was made
+     * with, its answers and its routing (spec 112, FR-032a). Null for a submission no flow made.
+     *
+     * @return array{flow_id:int,version_id:int,values:array<string,mixed>,routing:array<string,mixed>}|null
+     */
+    public function emailSource(int $submissionId): ?array
+    {
+        $flowId    = (int) $this->fields->get($submissionId, 'corex_flow_id', 0);
+        $versionId = (int) $this->fields->get($submissionId, 'corex_flow_version_id', 0);
+        if ($flowId < 1 || $versionId < 1) {
+            return null;
+        }
+
+        return [
+            'flow_id'    => $flowId,
+            'version_id' => $versionId,
+            'values'     => (array) $this->fields->get($submissionId, 'corex_values_json', []),
+            'routing'    => (array) $this->fields->get($submissionId, 'corex_routing_json', []),
+        ];
+    }
+
     /** @param array<string,mixed> $metadata */
     public function updatePipelineMetadata(int $submissionId, array $metadata): void
     {

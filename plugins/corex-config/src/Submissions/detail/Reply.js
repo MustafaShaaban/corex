@@ -22,7 +22,13 @@ import ReplyPreview from './ReplyPreview.js';
 import Section from './Section.js';
 import { contactOf } from './detailState.js';
 import { cleanReplyHtml, hasWords } from '../../admin/components/replyHtml.js';
-import { canSendReply, readinessNotice, replyStateOf } from './replyState.js';
+import {
+	canSendReply,
+	readinessNotice,
+	relatedEmailName,
+	replyStateOf,
+	whyNotResent,
+} from './replyState.js';
 import { draftOf, untouchedReply, useReplyDraft } from './useReplyDraft.js';
 
 /**
@@ -727,7 +733,14 @@ function RelatedEmails( { record, inbox, work } ) {
 			<ul className="corex-pane__emails">
 				{ emails.map( ( email ) => (
 					<li key={ email.attempt_id }>
-						<span>{ email.state }</span>
+						<span>
+							{ relatedEmailName( email ) }: { email.state }
+							{ whyNotResent( email ) !== '' && (
+								<small className="corex-pane__email-why">
+									{ whyNotResent( email ) }
+								</small>
+							) }
+						</span>
 						<span className="corex-pane__actions">
 							<Button
 								variant="link"
@@ -742,7 +755,8 @@ function RelatedEmails( { record, inbox, work } ) {
 									)
 								}
 								disabled={
-									! email.retryable || work.pending !== ''
+									! ( email.resendable ?? email.retryable ) ||
+									work.pending !== ''
 								}
 								{ ...workingProps(
 									work.pending ===

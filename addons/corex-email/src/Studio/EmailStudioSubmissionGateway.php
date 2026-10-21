@@ -19,8 +19,8 @@ use Corex\Email\Message\SenderName;
 use Corex\Mail\MessageId;
 use Corex\Mail\MailResult;
 use Corex\Mail\ReplyConversation;
+use Corex\Mail\RecipientAwareSubmissionEmailGateway;
 use Corex\Mail\ReplyReadiness;
-use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Uuid;
 use DomainException;
@@ -28,7 +28,7 @@ use DomainException;
 /**
  * Email Studio adapter for permission-scoped submission reply, resend, and log actions.
  */
-final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGateway
+final readonly class EmailStudioSubmissionGateway implements RecipientAwareSubmissionEmailGateway
 {
     private const AN_ATTEMPT_ID = '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i';
 
@@ -202,6 +202,12 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
 
     public function resend(string $attemptId, string $recipient, array $context): MailResult
     {
+        return $this->resendTo($attemptId, [$recipient], $context);
+    }
+
+    /** One email to all of them, rendered from the template version the attempt was sent with. */
+    public function resendTo(string $attemptId, array $recipients, array $context): MailResult
+    {
         $attempt = $this->repositories->attempts->findByAttemptId($attemptId);
         if ($attempt === null || $attempt->templateId === null || $attempt->templateVersion === null) {
             throw new DomainException(__('The related email cannot be safely reconstructed.', 'corex'));
@@ -215,9 +221,16 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
 
         return $this->studio->resend(
             $attemptId,
-            new EmailMessage([$recipient], [], [], null, $rendered['subject'], $rendered['html']),
+            new EmailMessage($recipients, [], [], null, $rendered['subject'], $rendered['html']),
             $this->deliveryContext(),
         );
+    }
+
+    public function wasSentTo(string $attemptId, string $address): bool
+    {
+        $attempt = $this->repositories->attempts->findByAttemptId($attemptId);
+
+        return $attempt !== null && $this->repositories->attempts->wasSentTo($attempt, $address);
     }
 
     public function log(string $attemptId): ?array

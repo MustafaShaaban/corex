@@ -81,9 +81,10 @@ final readonly class EmailStage implements SubmissionStage
         $retryable = false;
         $headline = null;
         foreach ($primary as $binding) {
-            $result = $this->sender->send($binding, $context->flow->slug, $this->mailContext($context));
+            $mailContext = $this->mailContext($context);
+            $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
             $event = (string) ($binding['event'] ?? 'submitted');
-            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0));
+            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext));
             $headline = $this->promoteHeadline($headline, $this->deliveryFor($result));
             if ($result === null || ! $result->successful()) {
                 $failed ??= $result?->message ?? __('The enabled flow email binding could not be resolved.', 'corex');
@@ -152,6 +153,7 @@ final readonly class EmailStage implements SubmissionStage
                     'attempt_id' => $delivery->attemptId,
                     'provider' => $delivery->provider,
                     'retryable' => $delivery->retryable,
+                    'recipients' => $recipients,
                 ]],
             ],
             'notification_delivery' => $delivery->toArray(),
@@ -196,8 +198,16 @@ final readonly class EmailStage implements SubmissionStage
         ];
     }
 
-    /** @return array<string,mixed> */
-    private function outcome(?MailResult $result, int $templateId): array
+    /**
+     * What is kept of one email of the flow. Its recipients are kept with the submission, so they
+     * follow its retention, trash, delete and personal-data export, and a resend reaches them
+     * (spec 112, FR-032).
+     *
+     * @param list<string> $recipients
+     *
+     * @return array<string,mixed>
+     */
+    private function outcome(?MailResult $result, int $templateId, array $recipients): array
     {
         return [
             'template_id' => $templateId,
@@ -205,6 +215,7 @@ final readonly class EmailStage implements SubmissionStage
             'attempt_id' => $result?->attemptId,
             'provider' => $result?->provider,
             'retryable' => $result?->retryable ?? false,
+            'recipients' => $result === null ? [] : $recipients,
         ];
     }
 
@@ -222,7 +233,7 @@ final readonly class EmailStage implements SubmissionStage
             $mailContext = $this->mailContext($context);
             $mailContext['failure'] = ['message' => $message];
             $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
-            $outcomes['admin_failure'] = $this->outcome($result, (int) ($binding['template_id'] ?? 0));
+            $outcomes['admin_failure'] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext));
         }
 
         return $outcomes;

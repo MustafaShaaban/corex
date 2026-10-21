@@ -17532,3 +17532,48 @@ suite; Jest Blog (27); Playwright `blog-pro.spec.js` (6).
 **Client impact.** Muva and Perego: editors and writers can now open Blog Pro and act on what
 WordPress lets them; nothing changes for administrators. Writers no longer reach others' posts or
 comments through its routes.
+
+## #380 — A flow email keeps who it was sent to; an inbox resend goes to them, or to the one recipient its attempt confirms
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 7. **Mode:**
+CoreX Framework.
+
+**Why.** Resending one of a submission's emails from the inbox always addressed the submitter,
+whichever email it was: a team notification sent again went to the visitor, not the team. CoreX had
+never kept who an email went to; the attempt store keeps a masked address and a keyed hash of it.
+
+**Decided** (the owner's answer of 2026-10-20, spec 112 clarifications).
+
+1. **The email stage records each email's resolved recipients** in the submission's email record
+   (`recipients` on the binding, from `FlowEmailSender::recipientsFor()`), so they live and die with
+   the submission. Anonymising takes them out of the email record and of the resend history.
+2. **A resend goes to the recorded recipients** (`basis: recorded`). For an email sent before they
+   were recorded, the flow's recipients are worked out again from the version the submission was
+   made with (`Corex\Mail\SubmissionEmailRecipients`, implemented by corex-forms) and the email is
+   sent only if they are **one** address that the email's own attempt was sent to
+   (`basis: rechecked`): an attempt names one address, and the other recipients of the same email are
+   attempts of their own that it does not name. Otherwise nothing is sent and the drawer says why.
+3. **`SubmissionEmailGateway` is unchanged**, because a client site implements it (Perego). An
+   optional `Corex\Mail\RecipientAwareSubmissionEmailGateway` adds `resendTo()` (one email to all the
+   recipients) and `wasSentTo()`; Email Studio's gateway implements it. Through a gateway that does
+   not, CoreX sends once per recipient and confirms nobody.
+4. **The detail route describes each email**: `kind` (confirmation, team notification, failure
+   notice), `resendable` and `not_resendable_reason`. The resend answer and the history carry who it
+   went to; the drawer says so.
+
+**Not chosen.** *Storing the full address on the attempt*: it reverses the attempt store's
+redaction, a privacy decision of its own.
+
+**Verified.** Pest unit `ResendRecipientsTest` (12: the team and never the submitter, the
+submitter for a confirmation, one email or one each by gateway, an older email confirmed, four
+refusals that send nothing, the description of four emails) and the updated
+`SubmissionEmailServiceTest`; the whole unit suite, 3288 passing. Pest integration
+`ResendRecipientsTest` end to end on a real Email Studio template and published flow, mail captured
+and `wp_mail()` stopped: the binding records `team@example.com`, the resend reaches only the team,
+an older email is resent after its attempt confirms, one that cannot be worked out again is refused
+and described as such, anonymising removes the recipients; the whole integration suite, 1329
+passing. Jest `replyState.test.js` and the whole Jest suite (1428). Playwright
+`submissions-inbox.spec.js` (15).
+
+**Client impact.** Muva and Perego send no flow emails from code-defined forms, so the change is not
+visible to them. Perego's own `SubmissionEmailGateway` keeps working unchanged.

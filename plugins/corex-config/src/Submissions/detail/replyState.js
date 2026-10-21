@@ -185,6 +185,14 @@ export function emailHistoryLine( event ) {
 	const succeeded = event.outcome === 'success';
 
 	if ( summary.action === 'resend' ) {
+		const to = ( summary.recipients || [] ).join( ', ' );
+		if ( succeeded && to !== '' ) {
+			return sprintf(
+				/* translators: %s: the addresses an email was sent again to, comma-separated. */
+				__( 'Email sent again to %s', 'corex' ),
+				to
+			);
+		}
 		return succeeded
 			? __( 'Email sent again', 'corex' )
 			: __( 'Email could not be sent again', 'corex' );
@@ -201,4 +209,41 @@ export function emailHistoryLine( event ) {
 	return succeeded
 		? __( 'Reply sent', 'corex' )
 		: __( 'Reply could not be sent', 'corex' );
+}
+
+/**
+ * What one of the emails a flow sent for a submission is (spec 112, FR-033).
+ *
+ * @param {Object} email A related email, as the submission's detail describes it.
+ * @return {string} Its name.
+ */
+export function relatedEmailName( email ) {
+	if ( email.kind === 'confirmation' ) {
+		return __( 'Confirmation to the sender', 'corex' );
+	}
+	if ( email.kind === 'failure_notice' ) {
+		return __( 'Failure notice', 'corex' );
+	}
+
+	return __( 'Team notification', 'corex' );
+}
+
+/**
+ * Why a related email is not offered to be sent again, or nothing when it is.
+ *
+ * @param {Object} email A related email, as the submission's detail describes it.
+ * @return {string} The reason, or an empty string.
+ */
+export function whyNotResent( email ) {
+	if ( email.not_resendable_reason === 'recipients_unknown' ) {
+		return __(
+			'Who it was sent to is not known, so it is not sent again.',
+			'corex'
+		);
+	}
+	if ( email.not_resendable_reason === 'not_retryable' ) {
+		return __( 'This email cannot be sent again.', 'corex' );
+	}
+
+	return '';
 }

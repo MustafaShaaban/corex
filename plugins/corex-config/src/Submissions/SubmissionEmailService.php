@@ -11,7 +11,9 @@ namespace Corex\Config\Submissions;
 defined('ABSPATH') || exit;
 
 use Corex\Mail\MailResult;
+use Corex\Mail\RecipientAwareSubmissionEmailGateway;
 use Corex\Mail\SubmissionEmailGateway;
+use Corex\Mail\SubmissionEmailRecipients;
 use DateTimeImmutable;
 use DomainException;
 
@@ -20,6 +22,20 @@ use DomainException;
  */
 final readonly class SubmissionEmailService
 {
+    /** A resend went to the recipients recorded when the email was sent (spec 112, FR-032a). */
+    public const BASIS_RECORDED = 'recorded';
+
+    /** A resend of an older email went to its one recipient, worked out again and confirmed. */
+    public const BASIS_RECHECKED = 'rechecked';
+
+    /** What each email of a flow is, by its binding (spec 112, FR-033). */
+    private const KINDS = [
+        'submitter_confirmation' => 'confirmation',
+        'team_notification'      => 'team_notification',
+        'admin_failure'          => 'failure_notice',
+        'submitted'              => 'team_notification',
+    ];
+
     /**
      * The states in which a reply has gone, is on its way, or is kept as sent: what was being
      * written is then no longer a draft. The ones the pane empties its box for (`replyState.js`).
@@ -36,6 +52,7 @@ final readonly class SubmissionEmailService
         private SubmissionReplyStore $replies,
         private ?SubmissionReplyDraftStore $drafts = null,
         private ?SubmissionConversation $conversation = null,
+        private ?SubmissionEmailRecipients $recipients = null,
     ) {
     }
 
@@ -231,17 +248,56 @@ final readonly class SubmissionEmailService
         }
     }
 
-    public function resend(SubmissionAccessScope $scope, int $submissionId, string $attemptId): MailResult
+    /**
+     * Sends one of the submission's emails again, to the people it was sent to (spec 112, FR-032a):
+     * the recipients recorded when it was sent, or, for an email sent before they were recorded,
+     * its one recipient worked out again from the flow and confirmed by the email's attempt.
+     * Nothing is sent when they cannot be known: never a guessed recipient.
+     */
+    public function resend(SubmissionAccessScope $scope, int $submissionId, string $attemptId): ResentEmail
     {
         $record = $this->accessible($scope, $submissionId);
-        $this->assertRelated($record, $attemptId);
-        $result = $this->email->resend($attemptId, $this->recipient($record), [
+        [$event, $binding] = $this->related($record, $attemptId);
+        [$recipients, $basis] = $this->recipientsOf($submissionId, $event, $binding)
+            ?? throw new DomainException(__('Who this email was sent to is not known, so it is not sent again: the recipients were not recorded and cannot be confirmed.', 'corex'));
+        $result = $this->send($attemptId, $recipients, [
             'submission' => (array) ($record['values'] ?? []),
             'flow' => ['id' => (int) ($record['flow_id'] ?? 0), 'name' => (string) ($record['flow'] ?? '')],
         ]);
-        $this->recordOutcome($scope, $submissionId, 'resend', $result);
+        $this->recordOutcome($scope, $submissionId, 'resend', $result, null, $recipients);
 
-        return $result;
+        return new ResentEmail($result, $recipients, $basis);
+    }
+
+    /**
+     * The submission's emails as the drawer lists them: each named by what it is, and whether it
+     * can be sent again or why not (spec 112, FR-033).
+     *
+     * @param array<string,mixed> $record The submission, as read for this person.
+     *
+     * @return array<string,array<string,mixed>> By binding.
+     */
+    public function describe(array $record): array
+    {
+        $described = [];
+        $bindings = $record['related_emails']['bindings'] ?? [];
+        foreach (is_array($bindings) ? $bindings : [] as $event => $binding) {
+            if (! is_array($binding)) {
+                continue;
+            }
+            $reason = match (true) {
+                ! ($binding['retryable'] ?? false) => 'not_retryable',
+                $this->recipientsOf((int) ($record['id'] ?? 0), (string) $event, $binding) === null => 'recipients_unknown',
+                default => null,
+            };
+            $described[$event] = $binding + [
+                'kind' => self::KINDS[$event] ?? 'team_notification',
+                'resendable' => $reason === null,
+                'not_resendable_reason' => $reason,
+            ];
+        }
+
+        return $described;
     }
 
     /** @return array<string,mixed>|null */
@@ -278,24 +334,90 @@ final readonly class SubmissionEmailService
     /** @param array<string,mixed> $record */
     private function assertRelated(array $record, string $attemptId): void
     {
-        $bindings = $record['related_emails']['bindings'] ?? [];
-        $related = [];
-        foreach (is_array($bindings) ? $bindings : [] as $binding) {
-            if (is_array($binding) && is_string($binding['attempt_id'] ?? null)) {
-                $related[] = $binding['attempt_id'];
-            }
-        }
-        if (! in_array($attemptId, $related, true)) {
-            throw new DomainException('The email attempt is not related to this submission.');
-        }
+        $this->related($record, $attemptId);
     }
 
+    /**
+     * The binding this attempt is the email of.
+     *
+     * @param array<string,mixed> $record
+     *
+     * @return array{0:string,1:array<string,mixed>} Its event and what was recorded of it.
+     */
+    private function related(array $record, string $attemptId): array
+    {
+        $bindings = $record['related_emails']['bindings'] ?? [];
+        foreach (is_array($bindings) ? $bindings : [] as $event => $binding) {
+            if (is_array($binding) && ($binding['attempt_id'] ?? null) === $attemptId) {
+                return [(string) $event, $binding];
+            }
+        }
+
+        throw new DomainException('The email attempt is not related to this submission.');
+    }
+
+    /**
+     * Who this email went to, and how CoreX knows: recorded when it was sent, or, for an older
+     * email, its one recipient worked out again and confirmed by its attempt. Null when neither.
+     *
+     * Only one, for an older email: the attempt confirms the address it was made for, and the
+     * other recipients of the same email are attempts of their own that it does not name.
+     *
+     * @param array<string,mixed> $binding
+     *
+     * @return array{0:list<string>,1:string}|null
+     */
+    private function recipientsOf(int $submissionId, string $event, array $binding): ?array
+    {
+        $recorded = array_values(array_filter(
+            (array) ($binding['recipients'] ?? []),
+            static fn (mixed $address): bool => is_string($address) && filter_var($address, FILTER_VALIDATE_EMAIL) !== false,
+        ));
+        if ($recorded !== []) {
+            return [$recorded, self::BASIS_RECORDED];
+        }
+
+        $attemptId = (string) ($binding['attempt_id'] ?? '');
+        $resolved  = $this->recipients?->resolve($submissionId, $event) ?? [];
+        $confirmed = count($resolved) === 1
+            && $this->email instanceof RecipientAwareSubmissionEmailGateway
+            && $this->email->wasSentTo($attemptId, $resolved[0]);
+
+        return $confirmed ? [$resolved, self::BASIS_RECHECKED] : null;
+    }
+
+    /**
+     * One email to all of them where the gateway can; otherwise one each, answering with the
+     * first that failed, or the last.
+     *
+     * @param list<string>        $recipients
+     * @param array<string,mixed> $context
+     */
+    private function send(string $attemptId, array $recipients, array $context): MailResult
+    {
+        if ($this->email instanceof RecipientAwareSubmissionEmailGateway) {
+            return $this->email->resendTo($attemptId, $recipients, $context);
+        }
+
+        $answer = null;
+        foreach ($recipients as $recipient) {
+            $result = $this->email->resend($attemptId, $recipient, $context);
+            if ($answer === null || $answer->successful()) {
+                $answer = $result;
+            }
+        }
+
+        return $answer;
+    }
+
+    /** @param list<string> $recipients Who a resend went to (spec 112, FR-034). */
     private function recordOutcome(
         SubmissionAccessScope $scope,
         int $submissionId,
         string $action,
         MailResult $result,
         ?string $replyId = null,
+        array $recipients = [],
     ): void {
         // The history says that a reply was sent and which one. What it said is with the reply.
         $this->timeline->append($submissionId, 'email', $result->successful() ? 'success' : 'failure', [
@@ -303,6 +425,7 @@ final readonly class SubmissionEmailService
             'attempt_id' => $result->attemptId,
             'state' => $result->state,
             'actor_id' => $scope->actorId,
-        ] + ($replyId === null ? [] : ['reply_id' => $replyId]));
+        ] + ($replyId === null ? [] : ['reply_id' => $replyId])
+          + ($recipients === [] ? [] : ['recipients' => $recipients]));
     }
 }

@@ -861,7 +861,22 @@ final class ConfigServiceProvider extends ServiceProvider
             SubmissionEmailGateway::class,
             static fn (): UnavailableSubmissionEmailGateway => new UnavailableSubmissionEmailGateway(),
         );
-        $this->container->singleton(SubmissionEmailService::class);
+        $this->container->singleton(
+            SubmissionEmailService::class,
+            static fn (ContainerInterface $c): SubmissionEmailService => new SubmissionEmailService(
+                $c->make(SubmissionWorkflowStore::class),
+                $c->make(SubmissionEmailGateway::class),
+                $c->make(SubmissionTimelineStore::class),
+                $c->make(\Corex\Config\Submissions\SubmissionReplyStore::class),
+                $c->make(\Corex\Config\Submissions\SubmissionReplyDraftStore::class),
+                $c->make(\Corex\Config\Submissions\SubmissionConversation::class),
+                // The forms plugin works out a flow email's recipients again, for an email sent
+                // before they were recorded (spec 112). Without it such an email is not resent.
+                $c->has(\Corex\Mail\SubmissionEmailRecipients::class)
+                    ? $c->make(\Corex\Mail\SubmissionEmailRecipients::class)
+                    : null,
+            ),
+        );
         $this->container->singleton(WpSubmissionBulkPreviewStore::class);
         $this->container->singleton(
             SubmissionBulkPreviewStore::class,

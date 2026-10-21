@@ -6,6 +6,39 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Access requests and grants** (spec 112). Abilities that control the whole site (CoreX admin,
+  access, operations and security, releases, dangerous actions) are granted through the role
+  matrix only: a request for one is refused, and their screens' access-denied page says how access
+  is given instead of offering a form. Approving a request now shows each ability it grants with
+  its risk and the requester's reason, and needs a note, an expiry of 7, 30 or 90 days and, for a
+  dangerous ability, its key typed. Access & Abilities lists the access granted by approval, with
+  Revoke; once a day CoreX ends the grants whose expiry has passed and tells the person and the
+  approver. **Grants approved before this release are listed as having no expiry, stay in effect,
+  and can now be reviewed and revoked**: worth a look, because CoreX screens will check their own
+  abilities in a later release.
+- **The access audit log counts refusals**: one line per person, screen and hour, with how many
+  times and from when to when.
+- **Maintenance closes public submissions** (spec 112). In Maintenance, CoreX forms, flows,
+  newsletter sign-ups, booking requests, job applications and account registration answer 503 and
+  store and mail nothing; sign-in and password reset stay open, a signed-in administrator can still
+  submit, and Coming soon is unchanged. A REST route of a site's own closes with them when it
+  declares `Corex\Http\PublicSubmission::MARKER => true`.
+- **Login recovery without a command line.** The Recovery panel gives the `COREX_LOGIN_UNGUARD`
+  line to add to `wp-config.php` through a host's file manager, as well as the command, both
+  ready to copy; the Security Center says while recovery is on.
+- **Blog Pro follows WordPress's permissions** for each post and comment: it opens for anyone who
+  can edit posts, a post's figures and moves need permission to edit it (and to publish it, to
+  publish or schedule), approving, spamming, trashing and replying to comments need comment
+  moderation rights, and a refusal says what is not allowed.
+- **Security records on the Data screen** (role ability grants, access requests, sign-in
+  attempts) need the ability of the screen they belong to as well as "Manage data"; an export of
+  several models leaves such a model out and says why.
+- **An email resent from the inbox goes to the people it was sent to.** Flow emails record who
+  they were sent to; a resend goes to them, and the drawer names each email, says who a resend
+  went to, and says why an email cannot be resent.
+
 ### Added
 
 - **Every front-end page says the site runs CoreX** (spec 111). The page head carries
@@ -17,6 +50,18 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Review the access granted by approval** (spec 112) in CoreX → Access & Abilities: grants
+  approved before this release are listed with no expiry and stay in effect until revoked.
+- **In Maintenance, a client site's CoreX forms answer 503** and store nothing; Coming soon is
+  unchanged.
+- **Editors and writers can open Blog Pro** and act on what WordPress lets them; administrators
+  see no change.
+- **A person given "Manage data" who is not an administrator** no longer sees the three security
+  models on the Data screen.
+- **A site that implements its own `SubmissionEmailGateway` keeps working unchanged**; a resend
+  through it goes to each recipient in turn. A site that builds its own `ManagedTable` keeps
+  working; it can add `ownerAbility:`. A client repository that carries copies of CoreX's own tests
+  takes the updated `tests/Unit/Access/AccessServiceTest.php` with this release.
 - **Every page of a client site gains one line in its head**, `<meta name="generator"
   content="CoreX" />`. Nothing to do. A client that does not want its pages to name CoreX adds
   `add_filter('corex_generator_tag', '__return_false');` to its own plugin or theme, and clears

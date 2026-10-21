@@ -70,6 +70,10 @@ final readonly class SubmissionsController
             if ($record === null) {
                 throw new DomainException(__('Submission was not found.', 'corex'));
             }
+            // Each email named by what it is, and whether it can be sent again (spec 112, FR-033).
+            if (isset($record['related_emails']['bindings'])) {
+                $record['related_emails']['bindings'] = $this->services->email->describe($record);
+            }
 
             return Response::ok(['submission' => $record]);
         });
@@ -246,12 +250,20 @@ final readonly class SubmissionsController
 
     public function resend(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->mutate($request, ['attempt_id' => 'sanitize_text_field'], fn (Request $safe): Response =>
-            Response::ok(['result' => $this->services->email->resend(
+        return $this->gateway->mutate($request, ['attempt_id' => 'sanitize_text_field'], function (Request $safe) use ($request): Response {
+            $resent = $this->services->email->resend(
                 $this->scope(),
                 $this->changeable($request),
                 (string) ($safe->input['attempt_id'] ?? ''),
-            )->toArray()]));
+            );
+
+            // Who it went to, in full, for the person handling the submission (spec 112, FR-034).
+            return Response::ok([
+                'result' => $resent->result->toArray(),
+                'recipients' => $resent->recipients,
+                'basis' => $resent->basis,
+            ]);
+        });
     }
 
     public function emailLog(WP_REST_Request $request): WP_REST_Response
