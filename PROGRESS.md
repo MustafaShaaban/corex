@@ -129,6 +129,13 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**Unreleased, 2026-10-21.** A site with ACF active keeps backslashes in what is submitted
+(DECISIONS #375). #370 slashed `MetaFieldDriver::set()` only; `FieldResolver` picks
+`AcfFieldDriver` whenever ACF is active, and ACF hands a post's value to `update_metadata()`,
+which unslashes, so `C:\offers\new` was stored as `C:offersnew`. Found as 14 failures of
+`SubmissionKeepsBackslashesTest` on corex.local, which runs ACF 6.8.10. CI has no ACF, so only
+the unit test guards this there.
+
 **In v0.46.1, 2026-10-18.** CoreX → Releases on a shared host: #418, #419 and #420, described
 under "In flight" above and in the changelog. The installation that brings v0.46.1 is run by
 v0.46.0's code, so on a shared host the contents of `wp-content/corex-releases/previous/` are

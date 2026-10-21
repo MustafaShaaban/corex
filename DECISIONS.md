@@ -17239,3 +17239,35 @@ mark naming exactly CoreX on the front page and the not-found page, signed out) 
 
 **Client impact.** None to act on. Every page of a client site gains one line in its head after the
 update. A client that wants none adds the one-line filter.
+
+## #375 — The ACF field driver slashes what it hands to ACF, as the native one does
+
+**Date:** 2026-10-21. **Branch:** `fix/acf-field-driver-keeps-backslashes`. **Mode:** CoreX
+Framework. **Found by:** 14 failures of `SubmissionKeepsBackslashesTest` on corex.local, where
+ACF 6.8.10 is active.
+
+**Why.** #331 gave `MetaFieldDriver::set()` a `wp_slash()` and left `AcfFieldDriver` alone, because
+ACF was not on the install to measure. It is now. `FieldResolver` picks the ACF driver whenever
+`get_field()` and `update_field()` exist, and ACF's `update_field()` reaches
+`acf_update_metadata()`, which hands a post's value to `update_metadata()`; that takes one level of
+slashes off, as it does for WordPress's own forms. On a site with ACF active, every submission
+answer, the sender's name, the hidden fields, the UTM values, the consent snapshot and the
+pipeline's timeline lost their backslashes: `C:\offers\new` was read in the inbox as
+`C:offersnew`, and a timeline event, written again whole with each new event, lost a level more
+each time (`\\server\share`, then `\servershare`, then `servershare`).
+
+**Decided.** `AcfFieldDriver::set()` hands `update_field()` `wp_slash($value)`. Every caller of a
+field driver hands it the value as given, so the two drivers now store the same thing. ACF's
+options path also unslashes before `update_option()`, so it is right there too. What is not text
+is not changed.
+
+**Not chosen.** *Writing submissions through `update_post_meta()` whatever the driver.* The data
+layer chooses the driver on purpose (spec FR-009), so ACF field types and return formats are
+honoured.
+
+**Verified.** Pest unit `FieldDriverTest` fails with the change taken out and passes with it. Pest
+integration on corex.local with ACF active: `SubmissionKeepsBackslashesTest` went from 14 failed to
+19 passing with only this class swapped in, and the whole integration suite was run with it: 1251 passed; the only 4 failures were `MaintenanceModeTest`, main's copy run against the shared root checkout's unpushed spec 112 `MaintenanceGuard`, unrelated.
+
+**Client impact.** A site with ACF active keeps backslashes in what is submitted from the update
+on. Records stored before it are not repaired: what was dropped is not in the database.
