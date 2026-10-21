@@ -12,7 +12,6 @@
 let requests;
 
 const ok = ( data ) => ( { envelope: { ok: true, data } } );
-const refused = { envelope: { ok: false } };
 
 async function answer( path, body ) {
 	const request = requests.find(
@@ -26,9 +25,6 @@ async function answer( path, body ) {
 
 const root = () => document.getElementById( 'corex-insights-app' );
 const cards = () => [ ...root().querySelectorAll( '.corex-insight-card' ) ];
-const placeholders = () => [
-	...root().querySelectorAll( '.corex-insight-widget.corex-admin-skeleton' ),
-];
 
 beforeEach( () => {
 	requests = [];
@@ -82,8 +78,12 @@ it( 'says a failed run could not run, why, and offers Retry, with no score or gr
 	const [ performance ] = cards();
 	expect( performance.classList.contains( 'is-failed' ) ).toBe( true );
 	expect( performance.textContent ).toContain( 'Could not run' );
-	expect( performance.textContent ).toContain( 'PageSpeed cannot reach a local site' );
-	expect( performance.querySelector( '.corex-insight-card__score' ) ).toBeNull();
+	expect( performance.textContent ).toContain(
+		'PageSpeed cannot reach a local site'
+	);
+	expect(
+		performance.querySelector( '.corex-insight-card__score' )
+	).toBeNull();
 	expect( performance.textContent ).not.toMatch( /50|D/ );
 	expect( performance.querySelector( 'button' ).textContent ).toBe( 'Retry' );
 } );
@@ -109,5 +109,7 @@ it( 'draws a completed run with its grade and score, and Run check', async () =>
 		performance.querySelector( '.corex-insight-card__grade' ).textContent
 	).toBe( 'A' );
 	expect( performance.textContent ).not.toContain( 'Could not run' );
-	expect( performance.querySelector( 'button' ).textContent ).toBe( 'Run check' );
+	expect( performance.querySelector( 'button' ).textContent ).toBe(
+		'Run check'
+	);
 } );

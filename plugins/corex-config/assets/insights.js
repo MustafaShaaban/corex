@@ -146,7 +146,9 @@
 				: '<div class="corex-insight-card__score" role="img" aria-label="' +
 					scoreLabel( waiting, score, grade ) +
 					'"><span class="corex-insight-card__grade">' +
-					( waiting ? placeholder( bar( 'full' ) ) : escape( grade ) ) +
+					( waiting
+						? placeholder( bar( 'full' ) )
+						: escape( grade ) ) +
 					'</span>' +
 					'<span class="corex-insight-card__num">' +
 					( waiting

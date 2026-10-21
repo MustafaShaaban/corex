@@ -1246,6 +1246,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\DataModels\DataModelsImportController::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(\Corex\Config\Access\AccessAuditLog::class)->register();
+        // Spec 114: mode changes, counted refusals and lockouts reach the activity log.
+        $this->container->make(\Corex\Config\Activity\SecurityActivityRecorder::class)->register();
         $this->container->make(\Corex\Config\Access\AccessDeniedGate::class)->register();
         // Registered after the gate so that, on a CoreX page, the gate's richer surface — which has
         // the access-request form in it — is the one that answers. Everywhere else this catches the

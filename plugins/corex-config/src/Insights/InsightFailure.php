@@ -39,19 +39,22 @@ final class InsightFailure
     ];
 
     /**
-     * @param list<string> $translated the same sentences in the site's language, when it has one
+     * @param list<string>|\Closure():list<string> $translated the same sentences in the site's
+     *                                                      language, or what gives them when first needed
      */
-    public function __construct(private readonly array $translated = [])
+    public function __construct(private array|\Closure $translated = [])
     {
     }
 
     /**
      * The recogniser for this site: the English sentences and their translation in its language.
-     * Each is written out so that a translation tool finds it.
+     * Each is written out so that a translation tool finds it, and translated only when a stored
+     * row is first read: the store can be built while plugins load, before WordPress has loaded
+     * any translation.
      */
     public static function inSiteLanguage(): self
     {
-        return new self([
+        return new self(static fn (): array => [
             __('PageSpeed cannot crawl a local or private URL. Test a public URL instead.', 'corex'),
             __('PageSpeed quota was exceeded. Add an API key, or wait and try again.', 'corex'),
             __('The PageSpeed API key was rejected. Check the key in Settings.', 'corex'),
@@ -60,6 +63,16 @@ final class InsightFailure
             __('PageSpeed returned HTTP %d. Try again shortly.', 'corex'),
             __('The performance result could not be read.', 'corex'),
         ]);
+    }
+
+    /** @return list<string> */
+    private function translated(): array
+    {
+        if ($this->translated instanceof \Closure) {
+            $this->translated = ($this->translated)();
+        }
+
+        return $this->translated;
     }
 
     /**
@@ -94,7 +107,7 @@ final class InsightFailure
             return false;
         }
 
-        foreach ([...self::LEGACY_MESSAGES, ...$this->translated] as $message) {
+        foreach ([...self::LEGACY_MESSAGES, ...$this->translated()] as $message) {
             if ($this->matches($message, $row['summary'])) {
                 return true;
             }

@@ -79,10 +79,15 @@ final class CaptchaServiceProvider extends ServiceProvider
     /**
      * Enqueue the captcha Test-verification button on the Corex settings screen only
      * (Principle VI). Vanilla, depends on the spec-043 runtime; the secret never reaches it.
+     *
+     * Matched by the end of the hook: WordPress names a submenu's hook from its parent menu's
+     * title, and the CoreX menu is titled "COREX FRAMEWORK", so the hook is
+     * `corex-framework_page_corex-settings-config`. It was compared with `corex_page_…`, which
+     * no site has, so the script never loaded (spec 114, US-SAFE-16).
      */
     public function enqueueTestButton(string $hook): void
     {
-        if ($hook !== 'corex_page_corex-settings-config') {
+        if (! str_ends_with($hook, '_page_corex-settings-config')) {
             return;
         }
 
@@ -108,6 +113,21 @@ final class CaptchaServiceProvider extends ServiceProvider
         wp_localize_script('corex-captcha-admin', 'corexCaptcha', [
             'restUrl' => esc_url_raw(rest_url('corex/v1')),
             'nonce'   => wp_create_nonce('wp_rest'),
+            // Whether there is something to test: the button is offered only then (spec 114).
+            'ready'   => $this->keysSaved(),
         ]);
+    }
+
+    /**
+     * A provider that needs keys, with both keys saved. Asked of Config, as the test route asks,
+     * so keys set in the environment count.
+     */
+    private function keysSaved(): bool
+    {
+        $config = $this->container->make(ConfigInterface::class);
+
+        return CaptchaResolver::endpoint((string) $config->get('captcha.driver', 'none')) !== null
+            && trim((string) $config->get('captcha.site_key', '')) !== ''
+            && trim((string) $config->get('captcha.secret', '')) !== '';
     }
 }

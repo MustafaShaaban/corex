@@ -97,7 +97,7 @@ final class BlogProScreen
         echo $this->page->open(
             'blog-pro',
             __('CoreX Blog Pro', 'corex'),
-            __('Native publishing, analytics, comments, authors, and sharing in one real workflow.', 'corex'),
+            __('Native publishing, comments and authors in one workflow.', 'corex'),
         );
         echo '<div id="corex-blog-pro-app" aria-live="polite"></div>';
         echo $this->page->close();
@@ -125,7 +125,6 @@ final class BlogProScreen
             'editorial' => $selectedPostId > 0 ? $this->editorial($selectedPostId) : null,
             'comments' => $selectedPostId > 0 ? array_map($this->comment(...), $this->services->comments->queue($selectedPostId)) : [],
             'authors' => $this->authors(),
-            'shareControls' => $selectedPostId > 0 ? $this->shareControls($selectedPostId) : [],
         ];
     }
 
@@ -230,18 +229,6 @@ final class BlogProScreen
         return $this->permissions->seesEveryAuthor()
             ? $this->services->authors->authors(...$this->range())
             : $this->services->authors->authorsAmong([get_current_user_id()], ...$this->range());
-    }
-
-    /**
-     * @return list<array{target:string,label:string,url:string}>
-     */
-    private function shareControls(int $postId): array
-    {
-        return $this->services->sharing->controls(
-            $postId,
-            get_permalink($postId) ?: '',
-            get_the_title($postId),
-        );
     }
 
     /**

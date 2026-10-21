@@ -10,6 +10,7 @@ namespace Corex\Config\Addons;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AccessUserDirectory;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Multisite\ActivationScope;
@@ -30,6 +31,7 @@ final class AddonToggleService
     public function __construct(
         private readonly AddonActivator $activator,
         private readonly ActivityService $activity,
+        private readonly AccessUserDirectory $users,
     ) {
     }
 
@@ -62,15 +64,27 @@ final class AddonToggleService
         return $result;
     }
 
+    /**
+     * The record of a toggle that has already happened: one that cannot be kept is let go, so the
+     * screen still says what WordPress did.
+     */
     private function record(string $kind, Addon $addon, int $actorId, AddonToggleResult $result): void
     {
-        $now  = new DateTimeImmutable('now');
-        $user = get_userdata($actorId);
+        try {
+            $this->write($kind, $addon, $actorId, $result);
+        } catch (\Throwable) {
+            // Let go: see above.
+        }
+    }
+
+    private function write(string $kind, Addon $addon, int $actorId, AddonToggleResult $result): void
+    {
+        $now = new DateTimeImmutable('now');
 
         $this->activity->record(
             actorId: $actorId,
             actorKind: ActivityEvent::ACTOR_USER,
-            actorLabel: $user instanceof \WP_User ? $user->display_name : '',
+            actorLabel: $this->users->displayName($actorId),
             area: ActivityEvent::AREA_ADDONS,
             kind: $kind,
             targetType: 'addon',
