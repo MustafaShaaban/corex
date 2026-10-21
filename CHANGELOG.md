@@ -22,11 +22,22 @@ All notable changes to Corex are documented here. The format follows
   `update_metadata()`, which takes one level of slashes off. A visitor who wrote `C:\offers\new`
   was read in the inbox as `C:offersnew`. The same was fixed for sites without ACF in v0.46.0.
 
+### Security
+
+- **Dependency advisories of 2026-10-20.** Five advisories published that evening failed the
+  advisory check on every pull request. All five are closed by patched releases in the ranges
+  the packages that use them already accept, so no exception is added: `launch-editor` 2.14.2
+  (three advisories; used by the webpack dev server behind `npm start`), `markdown-it` 14.3.3
+  (two; installed for `markdownlint-cli`, with the root override's floor raised from 14.3.2) and
+  `vite` 8.1.6 in `docs-app` (the same three `launch-editor` advisories, which vite bundles). All
+  three are build and local development tooling. The built plugin assets (169 files) and the
+  docs site built without the generated class reference (146 files) are byte-identical before
+  and after.
+
 ### Client impact
 
 - **A site with ACF active keeps backslashes in submissions from the update on.** Nothing to do.
   Submissions stored before it are not repaired: what was dropped is not in the database.
-
 - **Every page of a client site gains one line in its head**, `<meta name="generator"
   content="CoreX" />`. Nothing to do. A client that does not want its pages to name CoreX adds
   `add_filter('corex_generator_tag', '__return_false');` to its own plugin or theme, and clears
