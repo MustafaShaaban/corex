@@ -44,7 +44,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          tools: composer:v2
+          tools: composer:v2, wp-cli
           coverage: none
 
       - name: Validate composer.json
@@ -56,8 +56,30 @@ jobs:
       - name: Lint PHP source
         run: find plugins packages addons -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
 
+      # Words a PHP file prints without a translation, and translation calls outside the `corex`
+      # text domain (spec 116, US-NFR-06). JavaScript has had the same rule through ESLint for
+      # long; PHP had nothing. What was found when the lint was written is in
+      # tests/Fixtures/i18n-lint-baseline.json, and that list only shrinks.
+      - name: PHP translation lint
+        run: php scripts/i18n-lint.php
+
       - name: Headless unit tests (Pest)
         run: composer test
+
+      # The translation template, generated from the source on every pull request so that a
+      # translator always has the current strings (spec 116, US-NFR-06). `make-pot` reads files
+      # and needs no WordPress. A published release gets the same file attached by
+      # .github/workflows/release-assets.yml.
+      - name: Generate the translation template
+        run: composer i18n:pot
+
+      - name: Upload the translation template
+        uses: actions/upload-artifact@v7
+        with:
+          name: corex-pot
+          path: plugins/corex-core/languages/corex.pot
+          retention-days: 30
+          if-no-files-found: error
 
   js:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
@@ -89,6 +111,11 @@ jobs:
 
       - name: Lint JavaScript
         run: npm run lint:js
+
+      # No "planned", "coming soon", "sample data" or "reference only" in shipped source (spec 116,
+      # US-NFR-06; spec 068 wrote the audit and nothing ran it).
+      - name: Product completion audit
+        run: npm run audit:completion
 
       # The docs site is built here so `tests/docs-links.test.js` has something to check. That test
       # skips itself when `docs-app/dist` is absent — right for a developer who has never built the
@@ -155,6 +182,11 @@ jobs:
 
       - name: Integration tests (Pest, real WordPress)
         run: composer test:integration
+
+      # The admin read and form acceptance budgets (spec 068 T230). They need a booted WordPress
+      # and sit outside tests/Integration, so no job ran them until spec 116 (US-NFR-07).
+      - name: Performance budgets (Pest, real WordPress)
+        run: composer test:performance
 
   integration-multisite:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'

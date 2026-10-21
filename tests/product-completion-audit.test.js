@@ -17,6 +17,8 @@ describe( 'CoreX product completion audit', () => {
 			'Test send is disabled because no result is returned.',
 		],
 		[ 'planned-state', "__('Planned', 'corex')" ],
+		[ 'coming-soon', 'Two-factor sign-in (coming soon)' ],
+		[ 'coming-soon', 'Exports to Excel are coming soon.' ],
 	] )( 'reports %s copy', ( expectedRule, source ) => {
 		const findings = scanText( 'Screen.php', source );
 
@@ -34,6 +36,14 @@ describe( 'CoreX product completion audit', () => {
 			'WooCommerce is required for this layout. Install and activate WooCommerce to enable it.';
 
 		expect( scanText( 'WooLayout.php', source ) ).toEqual( [] );
+	} );
+
+	test.each( [
+		'A preview link exists only while the site is in Coming soon.',
+		'It reads the link only while the mode is Coming soon.',
+		"__('Coming soon is on.', 'corex')",
+	] )( 'allows the name of the Coming soon mode: %s', ( source ) => {
+		expect( scanText( 'Mode.php', source ) ).toEqual( [] );
 	} );
 
 	test( 'ignores historical and generated paths', () => {
