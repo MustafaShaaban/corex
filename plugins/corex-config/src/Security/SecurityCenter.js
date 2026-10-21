@@ -406,7 +406,10 @@ function Recovery( { config } ) {
 				<li>
 					{ sprintf(
 						/* translators: %s: a line of wp-config.php, quoted as written in the file. */
-						__( 'Add this line above the line that says “%s”:', 'corex' ),
+						__(
+							'Add this line above the line that says “%s”:',
+							'corex'
+						),
 						WP_CONFIG_STOP_LINE
 					) }
 					<CorexCopyField

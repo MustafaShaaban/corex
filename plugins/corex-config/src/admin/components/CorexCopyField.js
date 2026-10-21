@@ -83,7 +83,7 @@ export default function CorexCopyField( { label, value } ) {
 				: __(
 						'It could not be copied for you. It is selected: copy it from the keyboard.',
 						'corex'
-				  )
+					)
 		);
 	};
 

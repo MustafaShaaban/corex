@@ -94,7 +94,9 @@ it( 'says what each way does and does not do', () => {
 
 it( 'names both ways in the bookmark warning', () => {
 	render();
-	const warning = container.querySelector( '.corex-security__warning' ).textContent;
+	const warning = container.querySelector(
+		'.corex-security__warning'
+	).textContent;
 
 	expect( warning ).toContain( 'COREX_LOGIN_UNGUARD' );
 	expect( warning ).toContain( COMMAND );

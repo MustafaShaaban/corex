@@ -200,7 +200,9 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 			'sign-in and password reset stay open',
 			'discussion settings',
 		] ) {
-			await expect( block.getByText( words, { exact: false } ) ).toBeVisible();
+			await expect(
+				block.getByText( words, { exact: false } )
+			).toBeVisible();
 		}
 	} );
 
