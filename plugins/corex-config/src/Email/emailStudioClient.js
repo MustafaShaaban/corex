@@ -125,6 +125,7 @@ const ENDPOINTS = {
 	routes: () => 'routes',
 	test: () => 'test',
 	resend: ( id ) => `attempts/${ id }/resend`,
+	captureScope: () => 'capture-scope',
 };
 
 export function buildEndpoint( base, kind, id = '' ) {

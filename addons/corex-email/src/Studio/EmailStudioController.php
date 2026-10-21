@@ -14,12 +14,15 @@ use Corex\Email\Capture\CapturedEmail;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Delivery\EmailAttemptRepository;
+use Corex\Email\Delivery\MailOutcome;
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Routing\EmailRoute;
 use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Http\ResponseEnvelope;
 use Corex\Http\RouteParam;
+use Corex\Mail\Capture\MailGate;
 use Corex\Mail\SubjectLine;
+use Corex\Support\Options\LoadedOptions;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
@@ -31,6 +34,9 @@ use WP_REST_Response;
  */
 final class EmailStudioController
 {
+    /** Where the capture-only switch is kept: config key `mail.capture_scope`. */
+    public const CAPTURE_SCOPE_OPTION = 'corex_mail_capture_scope';
+
     /** How many of the newest attempts and captures the screen reads. */
     private const RECENT = 100;
 
@@ -51,6 +57,8 @@ final class EmailStudioController
         private readonly EmailStudioService $studio,
         private readonly EmailTemplateService $editor,
         private readonly EmailDeliveryContextFactory $delivery,
+        /** What happens to mail on this site, said on every tab (spec 113). */
+        private readonly ?MailOutcome $outcome = null,
     ) {
         $this->templates = $repositories->templates;
         $this->layouts   = $repositories->layouts;
@@ -73,6 +81,22 @@ final class EmailStudioController
         $this->route('/email-studio/routes', 'POST', 'saveRoute', 'canMutate');
         $this->route('/email-studio/test', 'POST', 'testSend', 'canMutate');
         $this->route('/email-studio/attempts/(?P<attempt>[0-9a-f-]+)/resend', 'POST', 'resend', 'canMutate');
+        $this->route('/email-studio/capture-scope', 'POST', 'saveCaptureScope', 'canMutate');
+    }
+
+    /**
+     * The "Capture only CoreX mail" switch (spec 113, FR-007): `all`, the default, or `corex`.
+     */
+    public function saveCaptureScope(WP_REST_Request $request): WP_REST_Response
+    {
+        $scope = $request->get_param('scope');
+        if (! in_array($scope, [MailGate::SCOPE_ALL, MailGate::SCOPE_COREX], true)) {
+            return $this->error('invalid_capture_scope', __('Capture covers all mail or only CoreX mail.', 'corex'), 400);
+        }
+
+        LoadedOptions::store(self::CAPTURE_SCOPE_OPTION, $scope);
+
+        return $this->success(['scope' => $scope, 'outcome' => $this->outcome?->describe()]);
     }
 
     private function route(string $path, string $methods, string $callback, string $permission): void
@@ -110,6 +134,7 @@ final class EmailStudioController
         ));
 
         return $this->success([
+            'outcome' => $this->outcome?->describe(),
             'delivery' => [
                 'environment'         => $this->delivery->make()->environment,
                 'provider'            => $this->delivery->providerName(),

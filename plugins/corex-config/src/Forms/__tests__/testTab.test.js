@@ -17,7 +17,9 @@ function mount( props ) {
 	document.body.appendChild( container );
 	const root = createRoot( container );
 	act( () => {
-		root.render( <TestTab busy={ false } onRun={ () => {} } { ...props } /> );
+		root.render(
+			<TestTab busy={ false } onRun={ () => {} } { ...props } />
+		);
 	} );
 	return {
 		container,
@@ -40,7 +42,14 @@ it( 'says before a run that emails are held, not sent', () => {
 it( 'lists each held email with a link to it in the log', () => {
 	const { container, cleanup } = mount( {
 		result: {
-			stages: [ { key: 'email', label: 'email', state: 'success', message: 'Held.' } ],
+			stages: [
+				{
+					key: 'email',
+					label: 'email',
+					state: 'success',
+					message: 'Held.',
+				},
+			],
 			held_emails: [
 				{
 					to: [ 'team@example.com' ],
@@ -53,7 +62,9 @@ it( 'lists each held email with a link to it in the log', () => {
 	} );
 	const link = container.querySelector( '.corex-flow-test-held a' );
 
-	expect( container.textContent ).toContain( 'New lead, to team@example.com' );
+	expect( container.textContent ).toContain(
+		'New lead, to team@example.com'
+	);
 	expect( link.getAttribute( 'href' ) ).toBe(
 		'admin.php?page=corex-email-studio&tab=logs#corex-capture-0b6f1c1e-1a2b-4c3d-8e9f-0a1b2c3d4e5f'
 	);
@@ -65,7 +76,9 @@ it( 'says so when a run had no email to send', () => {
 		result: { stages: [], held_emails: [] },
 	} );
 
-	expect( container.textContent ).toContain( 'This run had no email to send.' );
+	expect( container.textContent ).toContain(
+		'This run had no email to send.'
+	);
 	cleanup();
 } );
 

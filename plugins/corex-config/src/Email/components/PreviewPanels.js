@@ -85,22 +85,43 @@ function resultTone( state ) {
 	return state === 'failed' || state === 'rejected' ? 'error' : 'success';
 }
 
-export function TestSendPanel( { delivery, draft, busy, lastResult, onSend } ) {
+/**
+ * What a test send will meet, from what happens to mail on this site (spec 113).
+ *
+ * @param {Object|null} outcome What happens to mail on this site.
+ * @return {string} One sentence.
+ */
+export function testSendNote( outcome ) {
+	switch ( outcome?.state ) {
+		case 'captured':
+			return __(
+				'This test will be captured: it is kept in the log and nobody receives it.',
+				'corex'
+			);
+		case 'delivered':
+			return __(
+				'This test is sent for real, to the address you enter.',
+				'corex'
+			);
+		case 'blocked':
+			return __(
+				'This test will be refused until a provider is set and live delivery is on.',
+				'corex'
+			);
+		default:
+			return __(
+				'This test follows the configured provider and live-delivery gate.',
+				'corex'
+			);
+	}
+}
+
+export function TestSendPanel( { outcome, draft, busy, lastResult, onSend } ) {
 	const pending = useContext( PendingControl );
-	const local =
-		delivery.environment === 'development' ||
-		delivery.environment === 'local';
 	return (
 		<section className="corex-surface corex-email-app__editor">
 			<h2>{ __( 'Test send', 'corex' ) }</h2>
-			<p>
-				{ local
-					? __( 'This test will be captured locally.', 'corex' )
-					: __(
-							'This test follows the configured provider and live-delivery gate.',
-							'corex'
-						) }
-			</p>
+			<p>{ testSendNote( outcome ) }</p>
 			<form
 				key={ `${ draft.subject }-${ draft.html_body }` }
 				className="corex-email-app__form-grid"

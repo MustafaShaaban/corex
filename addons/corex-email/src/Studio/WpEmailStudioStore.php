@@ -17,7 +17,7 @@ defined('ABSPATH') || exit;
  * so each is handed over with one put on: a record is read back as the text it was given, a
  * path or a CSS escape in it included.
  */
-final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
+final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval, EmailRecordPruning
 {
     /** The kinds of record that are about one attempt to send an email. */
     private const ATTEMPT_RECORDS = ['email_attempt', 'captured_email'];
@@ -130,6 +130,39 @@ final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
             $payload = (array) get_post_meta($post->ID, self::META_PAYLOAD, true);
             $named = array_intersect_key($payload, array_flip(self::ATTEMPT_KEYS));
             if (in_array($attemptId, $named, true) && wp_delete_post($post->ID, true) instanceof \WP_Post) {
+                $removed++;
+            }
+        }
+
+        return $removed;
+    }
+
+    public function pruneOlderThan(string $type, \DateTimeImmutable $cutoff, int $limit): int
+    {
+        $this->assertKey($type, 'type');
+        $old = new \WP_Query([
+            'post_type'              => self::POST_TYPE,
+            'post_status'            => 'private',
+            'posts_per_page'         => max(1, $limit),
+            'fields'                 => 'ids',
+            'orderby'                => 'ID',
+            'order'                  => 'ASC',
+            'no_found_rows'          => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
+            'meta_query'             => [['key' => self::META_TYPE, 'value' => $type, 'compare' => '=']],
+            // By the date the record was made, which is when the email was kept: an unreadable
+            // payload is removed as surely as a readable one.
+            'date_query'             => [[
+                'column'    => 'post_date_gmt',
+                'before'    => $cutoff->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+                'inclusive' => false,
+            ]],
+        ]);
+
+        $removed = 0;
+        foreach ($old->posts as $id) {
+            if (wp_delete_post((int) $id, true) instanceof \WP_Post) {
                 $removed++;
             }
         }

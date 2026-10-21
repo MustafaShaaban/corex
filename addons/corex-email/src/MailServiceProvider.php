@@ -184,6 +184,12 @@ final class MailServiceProvider extends ServiceProvider
             ),
         );
 
+        $this->container->singleton(
+            \Corex\Email\Capture\CaptureRetention::class,
+            static fn (ContainerInterface $c): \Corex\Email\Capture\CaptureRetention =>
+                new \Corex\Email\Capture\CaptureRetention($c->make(WpEmailStudioStore::class)),
+        );
+
         // What the mail gate captures or holds is kept in Email Studio's capture log (spec 113).
         $this->container->singleton(
             \Corex\Mail\Capture\MailCaptureStore::class,
@@ -295,6 +301,9 @@ final class MailServiceProvider extends ServiceProvider
         // "translation triggered too early" notice. The handler resolves the dispatcher
         // only when a queued send actually fires (during queue processing, after init).
         add_action(MailQueueDispatcher::HOOK, [$this, 'runQueuedSend'], 10, 1);
+
+        // Captured and held emails are deleted after their 30 days (spec 113, FR-020).
+        $this->container->make(\Corex\Email\Capture\CaptureRetention::class)->register();
     }
 
     /**

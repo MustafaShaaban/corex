@@ -6,6 +6,7 @@ import CorexSkeleton, {
 } from '../admin/components/CorexSkeleton.js';
 import { TABS, studioStatus } from './emailStudioClient.js';
 import { Notice, StudioTabs } from './components/index.js';
+import { MailOutcomeBanner } from './components/MailOutcomeBanner.js';
 import { StudioPanel } from './StudioPanel.js';
 import { useEmailStudio } from './useEmailStudio.js';
 
@@ -93,6 +94,7 @@ function App() {
 					{ studio.state.message }
 				</Notice>
 			) }
+			<MailOutcomeBanner outcome={ studio.state.data?.outcome } />
 			<StudioContent tab={ tab } studio={ studio } />
 		</div>
 	);

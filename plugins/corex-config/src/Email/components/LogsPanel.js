@@ -167,7 +167,9 @@ function CapturesList( { captures } ) {
 	useEffect( () => {
 		const hash = window.location.hash.slice( 1 );
 		if ( hash.startsWith( 'corex-capture-' ) ) {
-			document.getElementById( hash )?.scrollIntoView( { block: 'center' } );
+			document
+				.getElementById( hash )
+				?.scrollIntoView( { block: 'center' } );
 		}
 	}, [ captures ] );
 
