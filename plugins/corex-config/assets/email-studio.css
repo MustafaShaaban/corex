@@ -58,6 +58,17 @@
 	text-transform: uppercase;
 }
 
+.corex-admin .corex-email-app__metrics-block {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-email-app__metrics-window {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin .corex-email-app__metrics {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));

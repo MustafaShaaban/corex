@@ -31,6 +31,9 @@ use WP_REST_Response;
  */
 final class EmailStudioController
 {
+    /** How many of the newest attempts and captures the screen reads. */
+    private const RECENT = 100;
+
     private readonly EmailTemplateRepository $templates;
 
     private readonly EmailLayoutRepository $layouts;
@@ -98,8 +101,8 @@ final class EmailStudioController
         $layouts   = array_map($this->layoutArray(...), $this->layouts->all());
         $partials  = array_map($this->partialArray(...), $this->partials->all());
         $routes    = array_map($this->routeArray(...), $this->routes->all());
-        $captures  = $this->captures->latest(100);
-        $attempts  = $this->attempts->latest(100);
+        $captures  = $this->captures->latest(self::RECENT);
+        $attempts  = $this->attempts->latest(self::RECENT);
         $states    = array_count_values(array_map(static fn (EmailAttempt $attempt): string => $attempt->state, $attempts));
         $recentTests = array_values(array_filter(
             $attempts,
@@ -123,6 +126,8 @@ final class EmailStudioController
                 'captured'  => (int) ($states[EmailAttempt::STATE_CAPTURED] ?? 0),
                 'delivered' => (int) (($states[EmailAttempt::STATE_SENT] ?? 0) + ($states[EmailAttempt::STATE_OPENED] ?? 0)),
                 'failed'    => (int) (($states[EmailAttempt::STATE_FAILED] ?? 0) + ($states[EmailAttempt::STATE_REJECTED] ?? 0) + ($states[EmailAttempt::STATE_BOUNCED] ?? 0)),
+                // What the captured, delivered and failed counts are counted from (spec 113, FR-022).
+                'window'    => self::RECENT,
             ],
             'templates' => $templates,
             'layouts'   => $layouts,

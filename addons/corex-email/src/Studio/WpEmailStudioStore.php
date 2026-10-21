@@ -149,8 +149,17 @@ final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
         return $this->query($type, $parentId, null, self::MAX_RECORDS);
     }
 
+    /**
+     * Read newest first. `all()` reads the first 500 a kind ever had, which is every record on
+     * most sites and, on a busy one, none of the recent ones.
+     */
+    public function latest(string $type, int $limit): array
+    {
+        return $this->query($type, null, null, max(1, min(self::MAX_RECORDS, $limit)), 'DESC');
+    }
+
     /** @return list<array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>}> */
-    private function query(string $type, ?int $parentId, ?string $slug, int $limit): array
+    private function query(string $type, ?int $parentId, ?string $slug, int $limit, string $order = 'ASC'): array
     {
         $this->assertKey($type, 'type');
         $metaQuery = [[
@@ -172,7 +181,7 @@ final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
             'post_status'            => 'private',
             'posts_per_page'         => $limit,
             'orderby'                => 'ID',
-            'order'                  => 'ASC',
+            'order'                  => $order,
             'no_found_rows'          => true,
             'update_post_term_cache' => false,
             'meta_query'             => $metaQuery,

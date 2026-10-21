@@ -24,6 +24,9 @@ final class CapturedEmailRepository
 {
     private const TYPE = 'captured_email';
 
+    /** Records read beyond the limit, to stand in for any that cannot be read. */
+    private const SPARE = 10;
+
     public function __construct(private readonly EmailStudioStore $store)
     {
     }
@@ -63,7 +66,9 @@ final class CapturedEmailRepository
     {
         $limit    = max(1, min(100, $limit));
         $captures = [];
-        foreach (array_reverse($this->store->all(self::TYPE)) as $record) {
+        // A few more than asked for, so that an unreadable record skipped below still leaves the
+        // list as long as asked.
+        foreach ($this->store->latest(self::TYPE, $limit + self::SPARE) as $record) {
             if (count($captures) === $limit) {
                 break;
             }

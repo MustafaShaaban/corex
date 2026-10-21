@@ -44,6 +44,7 @@ function DeliveryHero( { delivery, settingsUrl } ) {
 }
 
 function DeliveryMetrics( { counts } ) {
+	const countWindow = counts.window || 100;
 	const metrics = [
 		[ 'templates', __( 'Templates', 'corex' ) ],
 		[ 'captures', __( 'Captured', 'corex' ) ],
@@ -52,8 +53,25 @@ function DeliveryMetrics( { counts } ) {
 	];
 
 	return (
-		<div className="corex-email-app__metrics">
-			{ metrics.map( ( [ key, label ] ) => (
+		<section
+			className="corex-email-app__metrics-block"
+			aria-labelledby="corex-email-metrics-title"
+		>
+			<p
+				id="corex-email-metrics-title"
+				className="corex-email-app__metrics-window"
+			>
+				{ sprintf(
+					/* translators: %d: how many of the newest emails are counted. */
+					__(
+						'Templates in total; the other counts are of the last %d emails.',
+						'corex'
+					),
+					countWindow
+				) }
+			</p>
+			<div className="corex-email-app__metrics">
+				{ metrics.map( ( [ key, label ] ) => (
 				<div
 					key={ key }
 					className="corex-email-app__metric corex-surface"
@@ -62,7 +80,8 @@ function DeliveryMetrics( { counts } ) {
 					<strong>{ counts[ key ] || 0 }</strong>
 				</div>
 			) ) }
-		</div>
+			</div>
+		</section>
 	);
 }
 
