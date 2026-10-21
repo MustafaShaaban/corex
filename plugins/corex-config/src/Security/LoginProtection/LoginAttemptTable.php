@@ -10,6 +10,7 @@ namespace Corex\Config\Security\LoginProtection;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
@@ -54,6 +55,8 @@ final class LoginAttemptTable
             'user_id'         => DataField::PERSONAL_SECURITY,
             'retention_until' => DataField::PERSONAL_NONE,
         ],
+            // Sign-in history: the Operations & Security screen's records (spec 112).
+            ownerAbility: CorexAbility::MANAGE_OPERATIONS,
         );
     }
 }

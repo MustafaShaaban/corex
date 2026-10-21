@@ -23,6 +23,27 @@ it('exposes its name, label and columns', function () {
         ->and($table->columnIds())->toBe(['number', 'total']);
 });
 
+it('is owned by no other screen unless it says so, as a table a site builds itself is', function () {
+    $siteTable = new ManagedTable('invoices', 'Invoices', [['id' => 'number', 'label' => 'Number']], 'site');
+    $owned     = new ManagedTable('audit', 'Audit', [['id' => 'event', 'label' => 'Event']], 'corex', ownerAbility: 'corex_manage_access');
+
+    expect($siteTable->ownerAbility)->toBeNull()
+        ->and($owned->ownerAbility)->toBe('corex_manage_access');
+});
+
+it('says which screen owns each of the three security tables CoreX ships (spec 112)', function () {
+    $owners = [];
+    foreach ([...(new Corex\Config\Access\AccessTables())->managed(), (new Corex\Config\Security\LoginProtection\LoginAttemptTable())->managed()] as $table) {
+        $owners[$table->name] = $table->ownerAbility;
+    }
+
+    expect($owners)->toBe([
+        'role_ability_grants' => 'corex_manage_access',
+        'access_requests'     => 'corex_manage_access',
+        'login_attempts'      => 'corex_manage_operations',
+    ]);
+});
+
 it('registers and lists managed tables, keyed by name (last wins)', function () {
     $registry = new ManagedTables();
     $registry->register(new ManagedTable('invoices', 'Invoices', []));

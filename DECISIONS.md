@@ -17441,3 +17441,47 @@ people's entries, the audit tab saying "3 times, from … to …" in one row; `A
 suite.
 
 **Client impact.** None to act on. Both admins' audit tabs read as counted lines from the update on.
+
+## #378 — Security records on the Data screen need the ability of the screen they belong to
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 6. **Mode:**
+CoreX Framework.
+
+**Why.** "Manage data" opened every model on the Data screen, including the role ability grants,
+the access requests and the sign-in attempts, which belong to Access & Abilities and Operations &
+Security. Delegating data work delegated those records with it.
+
+**Decided.**
+
+1. **A table says which screen owns it.** `ManagedTable` takes an optional last argument,
+   `ownerAbility` (last and defaulted, because a site builds tables of its own; Perego does).
+   `corex_manage_access` for the two access tables, `corex_manage_operations` for sign-in attempts.
+   `TableDataSource` exposes it through `RestrictedDataSource`.
+2. **`DataSourceService` is where it is enforced**, being where every read is decided:
+   `withheldFrom()` names the ability a person lacks; `catalog()` leaves such a source out
+   entirely (not listed as denied); `describe()` and `authorize()` refuse it with
+   `DataAccessRestricted`, which the gateway answers `403` `data_forbidden` by its type, as it does
+   `PersonalDataNotAllowed`, not by reading the words of a translated message. Administrators pass,
+   as `WpDataAccessPolicy` passes `manage_options` for every ability.
+3. **Each refusal is recorded** in the access audit as kind `data` with the model's key, through
+   `Corex\Access\AccessRefusalRecorder` (implemented by `AccessAuditLog`, bound in the container), so
+   the Data layer does not depend on the Access screen's classes; it is counted by #377's rule.
+4. **Exports.** An export of several keeps a restricted model as a part left out
+   (`left_out_because: restricted`, with its label) and never reads it; its summary says why. An
+   export of nothing but restricted models is refused with their names, since CoreX makes no file
+   for an export that would give nothing. Downloading an earlier export that holds a model the
+   person may no longer read is refused.
+5. **Delete stays unavailable** for these three: they are read-only table sources with no writable
+   adapter, so the service's adapter check refuses it before any ability is asked.
+
+**Verified.** Pest unit `ManagedTableTest` (no owner by default; the three shipped owners) and the
+whole unit suite, 3274 passing. Pest integration `RestrictedDataSourcesTest` through the REST server
+as a person holding only "Manage data", with two models of its own and the three shipped tables:
+not listed; list, record and export preview answer 403 `data_forbidden`; two refusals are one
+counted audit entry of kind `data`; an export of a restricted and an open model leaves the first out
+with its reason and label; an export of only the restricted model is refused naming it; a holder of
+both abilities and an administrator read them. The Data, export and Access integration suites (225
+passing) and the whole suite.
+
+**Client impact.** Muva and Perego: a person given "Manage data" who is not an administrator no
+longer sees the three security models. A site's own `ManagedTable` keeps working unchanged.

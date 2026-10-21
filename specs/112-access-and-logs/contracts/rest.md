@@ -105,11 +105,13 @@ Sources declared with an owner ability (role ability grants, access requests, si
 catalogue for an actor without that ability, and every list, detail, query, export and download of them answers:
 
 ```json
-{ "code": "data_forbidden", "message": "<translated>", "data": { "status": 403 } }
+{ "ok": false, "code": "data_forbidden", "message": "<translated>" }
 ```
 
-An export set run by such an actor leaves the model out and its result says, for each one, its label and
-"left out because it needs <ability label>".
+An export set run by such an actor keeps the model as a part with `left_out: true`, `left_out_because: "restricted"`
+and the model's `label`, and never reads it; the file's summary says "Left out, because it belongs to a screen you do
+not have access to" with the labels. An export set made only of such models is refused `403` `data_forbidden` with a
+message naming them (CoreX makes no file for an export that would give nothing).
 
 ## Inbox resend
 

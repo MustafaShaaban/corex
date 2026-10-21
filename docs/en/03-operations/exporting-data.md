@@ -56,6 +56,20 @@ for all of them. Every record of each model is exported.
 If a model can no longer be read while the export is being written (its add-on was switched
 off, for example), the others are still exported. The history marks that model as left out.
 
+## Records that belong to another screen
+
+Three models hold security records: **Role ability grants** and **Access requests** belong to
+Access & Abilities, and **Login attempts** to Operations & Security. "Manage data" alone does not
+open them: a person also needs the ability of the screen they belong to (administrators have
+both). Without it, the Data screen does not list them, every route that reads them answers `403`
+(`data_forbidden`), and each refusal is recorded in the Access & Abilities audit log.
+
+An export of several models that includes one of them is made without it, and says which model
+was left out and why. An export of nothing but such models is refused, naming them. An earlier
+export that holds one of them is not downloaded by a person who no longer has the ability.
+
+A table a site declares itself can say the same with `ownerAbility:` in its `ManagedTable`.
+
 Columns that hold personal data need a right of their own and a confirmation: see
 [Personal data in exports](personal-data-in-exports.md).
 

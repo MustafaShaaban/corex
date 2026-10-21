@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AccessRefusalRecorder;
 use Corex\Admin\AdminPage;
 
 /**
@@ -28,7 +29,7 @@ use Corex\Admin\AdminPage;
  * it closes it or {@see settle()} runs. Without one, a repeat updates that person's entry in place.
  * Entries live in an autoload-off option, pruned to 30 days by their last refusal (DECISIONS #114).
  */
-final class AccessAuditLog
+final class AccessAuditLog implements AccessRefusalRecorder
 {
     public const MAX_PER_PERSON = 20;
 
@@ -56,6 +57,12 @@ final class AccessAuditLog
             AdminPage::pageSlugForSection($section) ?? $section,
             function_exists('get_current_user_id') ? get_current_user_id() : 0,
         );
+    }
+
+    /** A refusal outside the CoreX screens: a Data screen model (spec 112, FR-031). */
+    public function refused(int $userId, string $kind, string $section): void
+    {
+        $this->record($kind, $section, $userId);
     }
 
     /**

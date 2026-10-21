@@ -592,7 +592,19 @@ final class ConfigServiceProvider extends ServiceProvider
             return $registry;
         });
         $this->container->singleton(DataAccessPolicy::class, static fn (): WpDataAccessPolicy => new WpDataAccessPolicy());
-        $this->container->singleton(DataSourceService::class);
+        // The Data screen records a refused security model in the access audit (spec 112, FR-031).
+        $this->container->singleton(
+            \Corex\Access\AccessRefusalRecorder::class,
+            static fn (ContainerInterface $c): \Corex\Config\Access\AccessAuditLog => $c->make(\Corex\Config\Access\AccessAuditLog::class),
+        );
+        $this->container->singleton(
+            DataSourceService::class,
+            static fn (ContainerInterface $c): DataSourceService => new DataSourceService(
+                $c->make(DataRegistry::class),
+                $c->make(DataAccessPolicy::class),
+                $c->make(\Corex\Access\AccessRefusalRecorder::class),
+            ),
+        );
         $this->container->singleton(DataQueryService::class);
         $this->container->singleton(WpDataMutationPreviewStore::class);
         $this->container->singleton(

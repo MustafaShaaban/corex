@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
@@ -80,6 +81,8 @@ final class AccessTables
                 'source'      => DataField::PERSONAL_NONE,
                 'updated_at'  => DataField::PERSONAL_NONE,
             ],
+                // Who may do what on this site: the Access screen's records (spec 112).
+                ownerAbility: CorexAbility::MANAGE_ACCESS,
             ),
             new ManagedTable(self::REQUESTS, 'Access requests', [
                 ['id' => 'requester_id', 'label' => 'Requester'],
@@ -96,6 +99,7 @@ final class AccessTables
                 'created_at'   => DataField::PERSONAL_NONE,
                 'expires_at'   => DataField::PERSONAL_NONE,
             ],
+                ownerAbility: CorexAbility::MANAGE_ACCESS,
             ),
         ];
     }

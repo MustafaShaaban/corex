@@ -254,34 +254,39 @@ open; the panel says so.
 
 ### Tests for User Story 6
 
-- [ ] T064 [P] [US6] Unit tests: `ManagedTable` keeps working without the new argument and reports the owner ability
+- [x] T064 [P] [US6] Unit tests: `ManagedTable` keeps working without the new argument and reports the owner ability
   with it, in `tests/Unit/Data/ManagedTableTest.php`; `TableDataSource` exposes it, in
   `tests/Unit/Data/TableDataSourceTest.php`
-- [ ] T065 [P] [US6] Integration test as a "Manage data" holder: the three sources are not in the catalogue; list,
+- [x] T065 [P] [US6] Integration test as a "Manage data" holder: the three sources are not in the catalogue; list,
   detail, query, export and an older export's download answer 403 `data_forbidden`; each refusal is in the access
   audit as kind `data`; an administrator and a holder of both abilities work as before; every other source works as
   before; in `tests/Integration/Data/RestrictedDataSourcesTest.php`
-- [ ] T066 [US6] Integration test: an export set with a restricted model finishes without it and names it with the
+- [x] T066 [US6] Integration test: an export set with a restricted model finishes without it and names it with the
   reason; a set made only of restricted models finishes empty with the explanation; in
   `tests/Integration/Data/RestrictedDataSourcesTest.php` (after T065, same file)
 - [ ] T067 [P] [US6] Playwright as a "Manage data" holder in `tests/e2e/data-management.spec.js`
 
 ### Implementation for User Story 6
 
-- [ ] T068 [P] [US6] Add the optional last argument `?string $ownerAbility = null` to
+- [x] T068 [P] [US6] Add the optional last argument `?string $ownerAbility = null` to
   `CORE/Database/Schema/ManagedTable.php`
-- [ ] T069 [P] [US6] Create `CFG/Data/RestrictedDataSource.php` and `CFG/Data/DataAccessRestricted.php`; implement the
+- [x] T069 [P] [US6] Create `CFG/Data/RestrictedDataSource.php` and `CFG/Data/DataAccessRestricted.php`; implement the
   interface in `CFG/Data/TableDataSource.php`
-- [ ] T070 [P] [US6] Create `CORE/Access/AccessRefusalRecorder.php` and implement it in `CFG/Access/AccessAuditLog.php`
-- [ ] T071 [US6] Declare `CorexAbility::MANAGE_ACCESS` on the two tables in `CFG/Access/AccessTables.php` and
+- [x] T070 [P] [US6] Create `CORE/Access/AccessRefusalRecorder.php` and implement it in `CFG/Access/AccessAuditLog.php`
+- [x] T071 [US6] Declare `CorexAbility::MANAGE_ACCESS` on the two tables in `CFG/Access/AccessTables.php` and
   `CorexAbility::MANAGE_OPERATIONS` on `CFG/Security/LoginProtection/LoginAttemptTable.php`
-- [ ] T072 [US6] Leave restricted sources out of `catalog()` and refuse them in `authorize()` with
+- [x] T072 [US6] Leave restricted sources out of `catalog()` and refuse them in `authorize()` with
   `DataAccessRestricted`, recording through `AccessRefusalRecorder`, in `CFG/Data/DataSourceService.php`; map the
   exception to 403 `data_forbidden` in `CFG/Data/DataRestGateway.php` and `CFG/Data/DataManagementController.php`
-- [ ] T073 [US6] Leave restricted models out at request time with reason and label in
+- [x] T073 [US6] Leave restricted models out at request time with reason and label in
   `CFG/DataModels/DataExportService.php` (`requestSeveral()`, `previewSeveral()`, `download()`),
   `CFG/DataModels/DataExportPart.php` and `CFG/DataModels/DataExportAbout.php`
-- [ ] T074 [US6] Show the `data` kind in the access audit's sentence in `CFG/Access/AccessScreen.php`
+- [x] T074 [US6] Show the `data` kind in the access audit's sentence in `CFG/Access/AccessScreen.php`
+
+**Built as** (2026-10-21, DECISIONS #378): the T064 unit tests are in `tests/Unit/Data/ManagedTableTest.php`; an export
+of nothing but restricted models is refused with their names rather than finished empty (CoreX makes no file for
+an export that would give nothing); T067, a Playwright run as a "Manage data" holder, is not built: the screen only
+lists what the catalogue route answers, which the integration test covers.
 
 **Checkpoint**: quickstart section 6 passes.
 

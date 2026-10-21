@@ -482,6 +482,15 @@ final class AccessScreen
     /** @param array{user:int,kind:string,section:string} $entry */
     private function auditText(array $entry): string
     {
+        if ($entry['kind'] === 'data') {
+            return sprintf(
+                /* translators: 1: user name, 2: the key of a data model, e.g. "table-access-requests". */
+                __('Access denied: %1$s tried to read %2$s on the Data screen', 'corex'),
+                $this->userLabel($entry['user']),
+                $entry['section'],
+            );
+        }
+
         return sprintf(
             /* translators: 1: user name, 2: CoreX screen name. */
             __('Access denied: %1$s tried to open %2$s', 'corex'),
