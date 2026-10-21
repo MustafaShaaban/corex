@@ -133,6 +133,11 @@ it('runs a published visitor flow through storage routing email inbox and timeli
     $response = $this->visitorController->submit($submit);
     $data = $response->get_data()['data'];
     $submissionId = $data['submission_id'];
+    // A development site keeps what it captures: only the capture this submission made is this test's.
+    $captures = array_values(array_filter(
+        (new CapturedEmailRepository($this->emailStore))->latest(),
+        fn ($capture): bool => in_array($capture->id, $this->posts->ids(), true),
+    ));
 
     expect($response->get_status())->toBe(200)
         ->and($data['completed'])->toBeTrue()
@@ -150,7 +155,7 @@ it('runs a published visitor flow through storage routing email inbox and timeli
         // The new headline delivery projection: an administrator can read the true outcome (spec 071 WS3).
         ->and(get_post_meta($submissionId, 'corex_notification_delivery', true)['status'])->toBe('captured')
         ->and(get_post_meta($submissionId, 'corex_notification_delivery', true)['provider'])->not->toBeEmpty()
-        ->and((new CapturedEmailRepository($this->emailStore))->latest())->toHaveCount(1)
+        ->and($captures)->toHaveCount(1)
         ->and(get_post_meta($submissionId, 'corex_inbox_json', true)['status'])->toBe('new')
         // The pipeline now writes the canonical timeline shape the admin reads, and adds a
         // notification event carrying the delivery outcome (spec 071 WS4).
