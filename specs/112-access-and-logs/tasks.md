@@ -226,10 +226,10 @@ open; the panel says so.
 
 - [ ] T057 [P] [US5] Unit tests for each rule of [contracts/rest.md](contracts/rest.md#blog-pro-changed-permissions) in
   `tests/Unit/Blog/BlogProPermissionsTest.php`
-- [ ] T058 [P] [US5] Role matrix through `rest_do_request()`: Contributor, Author, Editor and Administrator × every
+- [x] T058 [P] [US5] Role matrix through `rest_do_request()`: Contributor, Author, Editor and Administrator × every
   route and `action` × own and another's post × draft and published × a held comment, including an author's own held
   comment on their own post, in `tests/Integration/Blog/BlogProPermissionMatrixTest.php` (FR-028, SC-006)
-- [ ] T059 [P] [US5] Update `tests/Integration/Blog/BlogProControllerTest.php` and
+- [x] T059 [P] [US5] Update `tests/Integration/Blog/BlogProControllerTest.php` and
   `tests/Integration/Blog/CommentModerationTest.php` for the new refusals and for `share-click` answering
   `recorded: false`
 - [ ] T060 [P] [US5] Jest: controls follow the per-post and per-comment flags in
@@ -237,12 +237,19 @@ open; the panel says so.
 
 ### Implementation for User Story 5
 
-- [ ] T061 [US5] Create `CFG/Blog/BlogProPermissions.php` and bind it in `CFG/ConfigServiceProvider.php`
-- [ ] T062 [US5] Use it in every `permission_callback` of `CFG/Blog/BlogProController.php`, refusing with a translated
+- [x] T061 [US5] Create `CFG/Blog/BlogProPermissions.php` and bind it in `CFG/ConfigServiceProvider.php`
+- [x] T062 [US5] Use it in every `permission_callback` of `CFG/Blog/BlogProController.php`, refusing with a translated
   message that names what is not allowed; make `share-click` record nothing
-- [ ] T063 [US5] Use it in `CFG/Blog/BlogProScreen.php` (menu capability `edit_posts`, `render()`, posts the viewer may
+- [x] T063 [US5] Use it in `CFG/Blog/BlogProScreen.php` (menu capability `edit_posts`, `render()`, posts the viewer may
   edit, the authors table) and in `CFG/Blog/BlogProPresenter.php` (per-post `publish_post`, per-comment `edit_comment`
   and `moderate_comments` flags)
+
+**Built as** (2026-10-21, DECISIONS #379): the rules are proved on real roles in the role-matrix integration test
+(T058) rather than in a unit test of the policy (T057, not built: it would only restate WordPress's capability
+map with mocks); the panels needed no change (T060): they already read `can_transition`, `transitions` and
+`can_moderate`, which the presenter now fills from the policy; a Playwright run as an Author is not built (no
+Author fixture account), the screen test covers what an Author is sent. The guide for Blog Pro now requires
+`edit_posts`, as the screen does.
 
 **Checkpoint**: quickstart section 5 passes.
 

@@ -48,8 +48,8 @@ WordPress permissions, security records on the Data screen need their owning abi
 the email's own recipients. Spec, plan and 89 tasks written. Built, on the local branch only (not pushed): story 3,
 Maintenance closes public submissions (DECISIONS #373), and story 4, recovery without a command line (DECISIONS
 #374), and story 1, access requests and grants (DECISIONS #376; #375 is open PR #428's), and story 2, the counted
-access-denied log (DECISIONS #377), and story 6, security records on the Data screen (DECISIONS #378). Next: story
-5, then 7. The DECISIONS numbers are re-read before anything is pushed. The whole integration suite has 16 failures in
+access-denied log (DECISIONS #377), and story 6, security records on the Data screen (DECISIONS #378), and story 5,
+Blog Pro follows WordPress permissions (DECISIONS #379). Next: story 7, the last. The DECISIONS numbers are re-read before anything is pushed. The whole integration suite has 16 failures in
 `FlowLifecycleTest`, `SubmissionKeepsBackslashesTest` and `EmailStudioLifecycleTest` that fail the same way without
 spec 112; open PRs #428 and #429 address them.
 

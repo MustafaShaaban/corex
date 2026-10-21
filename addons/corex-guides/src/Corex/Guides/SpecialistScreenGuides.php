@@ -292,7 +292,8 @@ final class SpecialistScreenGuides
             ->withSummary(__('Move posts through review, moderate the comments waiting on them, and see what people actually read.', 'corex'))
             ->inSection('content')
             ->onScreen('admin.php?page=corex-blog-pro')
-            ->requiring('corex_manage_blog')
+            // What the screen enforces since spec 112: anyone WordPress lets edit posts.
+            ->requiring('edit_posts')
             ->ordered(20)
             ->withTopic(GuideTopic::for(
                 'review',

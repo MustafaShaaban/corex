@@ -17485,3 +17485,50 @@ passing) and the whole suite.
 
 **Client impact.** Muva and Perego: a person given "Manage data" who is not an administrator no
 longer sees the three security models. A site's own `ManagedTable` keeps working unchanged.
+
+## #379 — Blog Pro asks one policy, WordPress's own permission for the post or comment in question, and never allows more
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 5. **Mode:**
+CoreX Framework.
+
+**Why.** The Blog Pro screen opened only for `manage_options`, while every one of its routes asked
+only for `edit_posts`: a person who could write posts could, through the routes, move, publish and
+moderate anybody's. The screen hid controls by per-post checks the routes did not make (#159 says
+the control must follow the capability the route enforces).
+
+**Decided.**
+
+1. **`BlogProPermissions`** (corex-config) is the one policy the screen, the presenter and every
+   route's `permission_callback` ask. Base: `edit_posts` (stage 3 replaces it with
+   `corex_manage_blog`, CX-ACC-01). A post's figures, share controls and held comments, and moving
+   it, need `edit_post` on it; moving it to Published or Scheduled also needs `publish_post`.
+   Approving, marking as spam, trashing and replying need `moderate_comments`, stricter than
+   WordPress for an Author's own posts, as the owner chose (spec 112 clarifications); editing a
+   comment needs `edit_comment`. The authors table lists every author for `edit_others_posts` and
+   only the person's own line otherwise (`AuthorAnalyticsService::authorsAmong()`).
+2. **A refusal names what is not allowed:** the callbacks answer a `WP_Error` (`rest_forbidden`,
+   403) with a translated sentence; a missing nonce is refused as before.
+3. **The routes read the post or comment from the path** (`RouteParam`), so the id the check is made
+   on is the id acted on; `post_id` is read only where the path has none.
+4. **The screen opens for `edit_posts`**, lists only posts the person may work on (their own for
+   anybody who may not edit others'), offers only the moves the policy allows, and shows
+   moderation buttons only where it allows them. The unused `can` flags are gone. The Blog Pro guide
+   now requires `edit_posts`, as the screen does.
+5. **`POST blog/share-click` records nothing** and answers `recorded: false` (FR-027): nothing calls
+   it, and an open address that writes a row per call is a cost with no reader.
+
+**Known and left.** The denied page of Blog Pro offers to request `corex_manage_blog`, which does not
+open the screen until stage 3 makes the screen check it.
+
+**Verified.** Pest integration `BlogProPermissionMatrixTest` through the REST server, with a
+stand-in for every handler so nothing is changed: Contributor, Author, Editor and Administrator ×
+own and others' drafts and published posts × analytics, share controls and comments; moves to
+review, Published, Scheduled and Draft; approve, spam, trash and reply on a held comment of another's
+post and of the Author's own post; edit on both; the authors route; a subscriber refused; post id 0
+refused; share-click recording nothing; and the screen as an Author (own posts, own line) and a
+Contributor (no Published or Scheduled offered). The other Blog integration tests (46) and the whole
+suite; Jest Blog (27); Playwright `blog-pro.spec.js` (6).
+
+**Client impact.** Muva and Perego: editors and writers can now open Blog Pro and act on what
+WordPress lets them; nothing changes for administrators. Writers no longer reach others' posts or
+comments through its routes.
