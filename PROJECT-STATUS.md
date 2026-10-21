@@ -90,7 +90,13 @@ Repository state is correct; this is only about installs that predate the fix:
 wp user list --field=user_login | grep '^corex-079-requester-' | xargs -r -n1 wp user delete --yes
 ```
 
-*Source: `specs/091-rtl-overflow-and-fixture-leak/`.*
+The browser suite also left submissions: every inbox seed and contact-form test added rows that the
+inbox, Data, Insights and Settings counts then showed. From spec 116 a run removes the submissions it
+made and fails if it leaves one without a test's marker. What earlier runs left is removed with
+`wp eval-file scripts/clean-test-residue.php`, which lists first and asks, and refuses a production
+site.
+
+*Source: `specs/091-rtl-overflow-and-fixture-leak/` and `specs/116-quality-checks/`.*
 
 ## Closed, and worth knowing were closed
 

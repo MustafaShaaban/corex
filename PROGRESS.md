@@ -40,6 +40,21 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 116, quality checks on every release** (2026-10-21, PR #434, branch
+`claude/spec-116-quality-checks-a779c0`, DECISIONS #410 to #419). This is release R1.1 of the CoreX revamp: eight
+stories (US-NFR-01, 03 to 09) and no product change. It adds the checks every later release is measured by. A
+`quality` CI job opens every admin screen and tab (read from WordPress's menu) and every theme template in eight
+cells. It checks layout, WCAG 2.2 AA (axe-core), phone width, the keyboard, motion, the four states, raw keys and
+untranslated words, and a front-end budget. The static checks join the existing jobs: admin token contrast, a PHP
+translation lint, the completion audit, `corex.pot` and the performance budgets. A client merge check runs on a
+generated client site. The browser suite now removes what it made, fails on what it left, and refuses a production
+site. What `main` showed is in `tests/e2e/quality/known-failures.json`, each entry with the story that fixes it.
+Owed: the steps a person does before a tag (CONTRIBUTING, "Before a tag": the merge check against Muva's and
+Perego's repositories, the NVDA pass, the screenshot review). Also owed: removing the Releases history entry of the
+refused test package, which lives in the installer's log and the activity log, not in submissions. And the private
+workspace's story builder should check the Client impact line (TC-NFR-08-05), a change in that workspace and not
+here.
+
 **Spec 112, access and logs** (2026-10-20, #430, in v0.47.0): the first release (R0.1) of the
 CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
 locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,
