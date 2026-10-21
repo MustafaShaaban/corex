@@ -11,6 +11,7 @@ namespace Corex\Blocks;
 defined('ABSPATH') || exit;
 
 use Corex\Multisite\PluginActivationInspector;
+use Corex\Security\FormChallenge;
 
 /**
  * Server render for the Newsletter Signup block (spec 063, Phase 7). It renders a REAL double opt-in
@@ -20,13 +21,21 @@ use Corex\Multisite\PluginActivationInspector;
  * corex-newsletter add-on (Principle IX) — when the add-on is inactive it renders an honest
  * "unavailable" note, never a form that silently fails. No fabricated success: the visitor sees the
  * real endpoint's outcome (a confirmation email is sent for new/pending subscribers).
+ *
+ * With a captcha provider on, the form carries the provider's check before its button, and the view
+ * script sends its token (spec 115, US-VIS-11).
  */
 final class NewsletterSignupRenderer implements BlockRenderer
 {
     private const NEWSLETTER_PLUGIN = 'corex-newsletter/corex-newsletter.php';
 
-    public function __construct(private readonly PluginActivationInspector $pluginActivationInspector)
-    {
+    /** The action the signup's captcha token is asked for; the newsletter route judges it against the same. */
+    public const CAPTCHA_ACTION = 'corex_newsletter';
+
+    public function __construct(
+        private readonly PluginActivationInspector $pluginActivationInspector,
+        private readonly FormChallenge $challenge,
+    ) {
     }
 
     /**
@@ -47,12 +56,14 @@ final class NewsletterSignupRenderer implements BlockRenderer
             __('I agree to receive emails and can unsubscribe at any time.', 'corex'),
         );
 
-        $endpoint = esc_url(rest_url('corex/v1/newsletter/subscribe'));
-        $nonce    = esc_attr(wp_create_nonce('wp_rest'));
+        $endpoint  = esc_url(rest_url('corex/v1/newsletter/subscribe'));
+        $nonce     = esc_attr(wp_create_nonce('wp_rest'));
+        $attribute = $this->challenge->formAttribute();
 
         return '<div class="corex-newsletter-signup">'
             . '<form class="corex-newsletter-signup__form" data-corex-newsletter="' . $endpoint . '"'
-            . ' data-corex-newsletter-nonce="' . $nonce . '" novalidate>'
+            . ' data-corex-newsletter-nonce="' . $nonce . '"'
+            . ($attribute !== '' ? ' ' . esc_attr($attribute) : '') . ' novalidate>'
             . ( $heading !== '' ? '<h2 class="corex-newsletter-signup__heading">' . esc_html($heading) . '</h2>' : '' )
             . '<div class="corex-newsletter-signup__row">'
             . '<label class="screen-reader-text" for="corex-newsletter-email">'
@@ -65,11 +76,13 @@ final class NewsletterSignupRenderer implements BlockRenderer
             . '<label class="corex-newsletter-signup__consent">'
             . '<input type="checkbox" name="consent" value="1" required /> '
             . '<span>' . esc_html($consent) . '</span></label>'
+            // Markup the challenge built and escaped: the token field and the widget's place.
+            . $this->challenge->fields(self::CAPTCHA_ACTION)
             // Honeypot: visually hidden, must stay empty. Bots that fill it are rejected server-side.
             . '<div class="corex-newsletter-signup__hp" aria-hidden="true">'
             . '<label>' . esc_html__('Leave this field empty', 'corex') . '<input type="text" name="corex_hp"'
             . ' tabindex="-1" autocomplete="off" /></label></div>'
-            . '<p class="corex-newsletter-signup__status" role="status" aria-live="polite"></p>'
+            . '<p class="corex-newsletter-signup__status" role="status" aria-live="polite" data-corex-captcha-message></p>'
             . '</form></div>';
     }
 

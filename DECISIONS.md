@@ -17610,3 +17610,272 @@ passing. Jest `replyState.test.js` and the whole Jest suite (1428). Playwright
 
 **Client impact.** Muva and Perego send no flow emails from code-defined forms, so the change is not
 visible to them. Perego's own `SubmissionEmailGateway` keeps working unchanged.
+
+## #400 — A kit records what it replaces or adopts, and a reset puts it back instead of deleting it
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-115-kit-safety-88dd45`. **Spec:** 115, User Story 1
+(US-SAFE-07). **Mode:** CoreX Framework.
+
+**Why.** Choosing Replace for a page when applying a kit changed the owner's page in place, and a
+later `wp corex reset` deleted that page with all its revisions. It also left the front page on the
+latest posts whatever the site had shown before. DECISIONS #75 says a reset never deletes a page the
+owner had.
+
+**Decided** (the owner's answer WIZ-D2 of 2026-10-19: a page-level record of every touched page).
+
+1. **Apply records before it changes anything, once.** For each page it replaces or adopts, the
+   page's title, content, template and status go into the page's own meta
+   (`Corex\Provisioning\PageRecord::META`, `_corex_kit_before`). The site's `show_on_front`,
+   `page_on_front` and `page_for_posts` go into `corex_kit_reading_before` before the kit sets its
+   front page. A second apply keeps the first record, so a reset returns what the owner had before
+   any kit.
+2. **Reset reads the records** (`Corex\Cli\Reset\KitPageReader`) and plans one action per page:
+   - a page the kit created is removed, as before;
+   - a replaced or adopted page with a record is restored with the same ID and address;
+   - an adopted page without a record is emptied, as before;
+   - a replaced page without a record (applied before this release) is kept as it is and listed as
+     "kept: no earlier version recorded".
+   The front-page settings are then put back. A recorded front page that no longer exists falls back
+   to the latest posts.
+3. **The executor never deletes a page the owner had**, even when asked to remove it. This is a
+   second guard behind the planner.
+4. **The dry run lists each page** as created (will be removed), replaced (will be restored) or
+   adopted (will be emptied).
+
+**Not chosen.** *Restoring from WordPress revisions.* A site can switch revisions off, a page made
+by code may have none, and the record is what the owner chose to trust.
+
+**Verified.**
+- Pest unit `ResetPlannerPagesTest`, the extended `ResetDispositionTest` and
+  `BlueprintActivatorApplyTest`.
+- Pest integration `KitResetRestoresTest`, apply then reset on a real install: the replaced page
+  comes back with ID, title, content and template, the adopted draft stays a draft and empty, the
+  created page is removed, the front page is the owner's again, a second apply keeps the first
+  record, and an older replace is kept and named.
+
+**Client impact.** None. Neither client runs the Company kit or can run reset (no shell). This must
+land before any later story puts reset or undo in the admin.
+
+## #401 — The setup wizard says what it records and takes no backup
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 2 (US-SAFE-09).
+
+**Why.** The wizard said it "applies it safely with a backup" and that a backup was required. No
+backup was taken or checked.
+
+**Decided.**
+- The welcome and the Backup step say: "Before applying, CoreX records the pages this plan replaces
+  or adopts and your front-page settings, so a reset can put them back. It does not back up anything
+  else."
+- The Backup step lists, by their present titles, the owner's pages the plan will adopt and the
+  conflicts the person chose to replace. The plan preview gains `adopted`, and each conflict gains
+  `pageTitle`.
+- The step recommends a full backup with the host or a backup plugin. Apply stays disabled until the
+  person ticks "I have a full backup of this site."
+- The server's refusal says the same.
+- The code comment that claimed a backup was taken is gone.
+
+**Not chosen.** *Taking a backup.* A full site backup is the host's or a backup plugin's job, and
+CoreX must not depend on one (Principle IX).
+
+**Verified.** Jest `setup-wizard.test.js`: the sentence, the list, a kept conflict left out, Apply
+disabled until confirmed. Pest integration `SetupWizardControllerTest`: the refusal's wording, and
+an owner's empty page listed by its own title.
+
+## #402 — Sample content in shipped patterns is hidden from visitors until someone changes it
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 3 (US-SAFE-14).
+
+**Why.** The stats and testimonial patterns printed "98% Client satisfaction" and a quote from "A
+happy client" on sites that had written neither. The theme's logo cloud said "Trusted by teams
+everywhere". Kit pages hold these patterns as live references, so every such page showed them.
+
+**Decided** (the owner's answer KIT-D6 of 2026-10-19: mark as sample and hide until edited).
+
+1. **A sample is a block whose class list holds `is-corex-sample`.** `Corex\Blocks\SampleBlocks`, in
+   corex-blocks, which every site loads, renders it as nothing for a visitor. For someone who can edit
+   posts it renders with a "Sample: replace before publishing" label, so the owner sees what to
+   replace. A block without the class returns at once.
+2. **The block editor removes the marker on the first change to the block's content**
+   (`assets/sample-editor.js`): the attributes of the block and of every block inside it, leaving out
+   the class list, metadata and lock. The editor shows a marked block outlined, with the label.
+3. **Marked:** the corex-ui stats and testimonial patterns, and the theme's logo cloud.
+
+**Decided under the owner's 2026-10-21 mandate.** The approved story says hidden "until an editor
+changes its content". The first change in the editor is that moment. A page that was opened and
+saved in the editor before this release no longer holds the marker, so it is not changed by this
+release.
+
+**Not chosen.**
+- *Comparing the content with the shipped sample on every render.* It depends on the language the
+  page was saved in.
+- *Bracketed placeholders.* Visitors would still see them.
+
+**Verified.**
+- Pest unit `SampleBlocksTest`.
+- Jest `sample-editor.test.js`: the label, the marker removed on a changed figure and on a changed
+  word, and kept on a class or metadata change.
+- Pest integration `PatternsClaimNothingTest`: a visitor sees neither sample on a page that
+  references them, an editor sees both labelled, an edited stats section shows.
+- Playwright `front-page-hero.spec.js`: the front page as a visitor shows no sample.
+
+**Client impact.**
+- Sites whose kit pages still reference the stats or testimonial patterns stop showing those
+  sections to visitors until someone edits them.
+- Perego sees the marked patterns in its inserter.
+- Neither client renders these patterns.
+
+## #403 — Theme patterns link to real pages and take contact details from Brand settings
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 3 (US-SAFE-14).
+
+**Why.** Fifteen theme patterns held 46 links to `#`, and four showed `hello@example.com`, a 555
+number or three invented offices.
+
+**Decided.**
+- **`theme/inc/pattern-links.php`** is a presentational helper the pattern files include. A link
+  points to a published page of the site by its path, the blog page or the home page, or is shown as
+  text when the page does not exist. A button with nowhere to go is left out.
+- **Contact details come from the Brand settings** (`brand.email`, `brand.phone`, `brand.address`,
+  `brand.social_links`), and a detail with no setting is left out.
+- **The locations footer** shows the one address the site has, in place of three invented offices.
+- **The corporate header** loses the language link, which pointed nowhere.
+- **A Pest check** (`ShippedPatternsClaimNothingTest`) fails, naming the pattern, on `href="#"`, an
+  example address, a 555 number, a percentage, a "100+" figure or invented social proof outside a
+  sample.
+
+**Not chosen.** *A `functions.php` in the theme.* The helper is included only by the pattern files
+that need it, and the theme stays without bootstrap code (SkinDisciplineTest).
+
+**Client impact.** None: both clients run their own themes.
+
+## #404 — The front-page hero and call to action can be read and their buttons used
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 4 (US-SAFE-15).
+
+**Why.** The hero's H1 took the theme's heading colour, navy on the navy section (1:1). Its button had
+the section's own background and no address, so a keyboard could not reach it. The call-to-action
+button had no address either.
+
+**Decided.**
+1. **Colours set in the patterns, not in `theme.json`**, so headings elsewhere are unchanged:
+   - the hero heading is `surface` on `primary`;
+   - the call-to-action section and heading are `surface` on `accent`;
+   - each button has its own background and text: `surface` and `primary` in the hero, `surface` and
+     `accent-dark` in the call to action.
+   Measured in both palettes: heading at least 4.5:1, button against its section at least 3:1, label
+   against its button at least 4.5:1.
+2. **The buttons carry `corex-action-link` and no address.** `Corex\Ui\Patterns\ActionLinks` fills it
+   when the button is drawn: the brand's primary action link, else the published contact page. With
+   neither, the button is not drawn. An address given in the editor is kept. The lookup runs only
+   when such a button is drawn.
+
+**Verified.**
+- Pest unit `HeroContrastTest`: four pairs, light and dark palettes.
+- Pest integration `PatternsClaimNothingTest`: brand link, contact page, neither, an editor's own
+  address.
+- Playwright `front-page-hero.spec.js` on the front page: heading contrast, button contrast and
+  address, each button reached by Tab with a visible focus ring.
+
+**Client impact.** None: neither client uses the CoreX theme or the hero.
+
+## #405 — The flow editor asks before anything throws edits away
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 5 (US-FLW-02).
+
+**Why.** Back to flows dropped the edits on screen without a word. Publish, Move to draft, Close and
+Run marked test acted on the saved draft, so what was published or tested was not what was on screen.
+Leaving the page lost the edits too.
+
+**Decided.**
+- **Dirty state.** The reducer keeps the saved configuration, and `isDirty()` compares by content, so
+  an edit typed back reads as saved. The header says "Unsaved changes" or "All changes saved".
+- **One question for every action.** Back, Publish, Move to draft, Close and Run marked test ask
+  "Save your changes before leaving?" in a `CorexDialog`:
+  - Back offers Save, Discard and Cancel;
+  - the others offer Save and Cancel, and after a successful save act on the new version;
+  - a failed save stops the action and keeps the edits.
+- **Leave warning.** The browser's own warning is on while there are unsaved changes.
+- **Test tab.** It says which version it tests.
+
+**Verified.**
+- Jest `unsavedChanges.test.js` (16) and `flowEditor.test.js`.
+- Playwright `flow-unsaved-changes.spec.js` in Chromium: focus in the question, Escape keeps the edit
+  and returns focus to Back, Discard, the browser's warning on reload only with edits, the Test tab's
+  version.
+
+**Client impact.** None: neither client edits builder flows.
+
+## #406 — Every public CoreX form carries the captcha provider's check, through one core interface
+
+**Date:** 2026-10-21. **Spec:** 115, User Stories 6 and 7 (US-AUT-02, US-VIS-11, change request
+CR-004).
+
+**Why.** With Turnstile, hCaptcha or reCAPTCHA v3 set up, account registration, the newsletter
+sign-up, the call request and the job application routes refused every visitor, for a check no form
+showed. The check needed a token and nothing produced one. The provider's script loaded only for
+corex-forms' own forms. A reCAPTCHA v3 token judged without the site's hostname would have been
+refused anyway.
+
+**Decided.**
+1. **`Corex\Security\FormChallenge`** (core) is what a form asks for: `fields($action)`,
+   `formAttribute()` and `refusal($token, $action)`. Core binds `NoFormChallenge` (no check, every
+   request passes); corex-captcha replaces it with `Corex\Captcha\CaptchaChallenge`.
+2. **One markup and one set of settings** are shared with corex-forms and moved to core:
+   - `Corex\Security\ChallengeFields` prints the token field and the widget's place, byte for byte as
+     before;
+   - `Corex\Security\ChallengeSettings` holds the provider, the score threshold and the allowed
+     hostnames.
+   A reCAPTCHA v3 token on these routes is judged like a flow's: this site's hostname, the form's
+   action, the configured score.
+3. **Printing the check declares the page needs the provider's script.** The loader runs whether or
+   not corex-forms is active, and binds only to `.corex-form` forms and forms with
+   `data-corex-captcha`. A form of a site's own that is neither is not touched.
+4. **The four routes answer a missing token** with "Please complete the check before sending." and a
+   refused one with "The check failed. Please try again." (`422`, `error: captcha`), and store and
+   send nothing.
+5. **Account and newsletter forms** print the check above their button. Their scripts send the token,
+   and dispatch `corex:form:success` / `corex:form:error` so the check resets. The provider's script
+   writes its messages to the element marked `data-corex-captcha-message`.
+
+**Decided under the owner's 2026-10-21 mandate.** CoreX ships no visitor form for call requests or
+job applications: those add-ons are routes a site's form posts to. The approved story is met by the
+routes refusing and answering like the others, and by their READMEs showing the markup a site's form
+uses. New visitor blocks for them are not part of a patch release.
+
+**Verified.**
+- Pest unit `CaptchaChallengeTest` (12), the newsletter renderer and account renderer tests.
+- Jest: the widget and v3 scripts on a declared form and an undeclared one, the account and
+  newsletter scripts' token and events.
+- Pest integration `ProtectedRoutesTest` (13, all four routes: missing, refused, passed; an account
+  created once passed).
+- By hand on a scratch site with Turnstile's published test keys:
+  - the widget is drawn above "Create account", the server checks the token with Cloudflare, and the
+    account is created;
+  - with the always-failing test secret, "The check failed. Please try again." is shown and no
+    account is made;
+  - the home page loads no provider script.
+
+**Client impact.**
+- Muva runs corex-captcha with reCAPTCHA v3 and draws its own forms. They are neither `.corex-form`
+  nor declared, so its pages load nothing new and its forms keep their own token handling.
+- Perego does not run corex-captcha.
+- Neither runs the account, newsletter, bookings or careers add-ons.
+
+## #407 — The captcha provider's script is queued before WordPress prints the footer
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 6 (US-AUT-02, FR-029).
+
+**Why.** The loader decided on `wp_footer` at priority 20. WordPress prints the footer's scripts on
+`wp_footer` at 20 too, and was hooked first. So a script queued by the loader was never printed, for
+corex-forms' own protected forms as well. Found while measuring the registration check in a browser.
+
+**Decided.** The loader runs at priority 5 (`CaptchaAssetController::PRIORITY`). Every block on a
+block-theme page has rendered by then, and a classic theme's content and footer template have too.
+
+**Verified.** Pest integration `CaptchaScriptPrintedTest`: the loader runs before
+`wp_print_footer_scripts`, and the widget and provider scripts are in what it prints only when a form
+printed the check. The Turnstile run of #406.
+
+**Client impact.** None for Muva, whose pages declare no CoreX form. On a site that uses a protected
+corex-forms form, the provider's check now appears where it never did.

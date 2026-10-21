@@ -6,6 +6,79 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Kit and public page safety (spec 115, the fourth release of the CoreX revamp's stage 0).
+
+**Read Client impact before updating.** On sites whose kit pages still reference the stats or
+testimonial patterns, those two sections disappear for visitors until someone edits them.
+
+### Changed
+
+- **A reset gives back the pages the owner had** (DECISIONS #400).
+  - Applying a kit now records each page it replaces or adopts (title, content, template, status)
+    and the site's front-page settings before it changes them.
+  - `wp corex reset` restores those pages with the same ID and address instead of deleting them,
+    and puts the front page back.
+  - A page replaced before this release, with nothing recorded, is kept as it is and listed as
+    "kept: no earlier version recorded".
+  - `--dry-run` lists each page as created (will be removed), replaced (will be restored) or
+    adopted (will be emptied).
+- **The setup wizard says what it records** (DECISIONS #401). It no longer says it backs the site
+  up. The Backup step lists the pages the plan will record, recommends a full backup with the host
+  or a backup plugin, and keeps Apply off until the person confirms they have one.
+- **Shipped patterns make no claims for the site** (DECISIONS #402, #403).
+  - The stats, testimonial and logo-cloud patterns are marked as samples. A visitor sees nothing of
+    them until someone changes them in the editor; an editor sees them labelled "Sample: replace
+    before publishing".
+  - The theme's header, footer and mega-menu patterns link to the site's real pages or show the
+    label as text, and take contact details from Brand settings or leave them out. No shipped
+    pattern links to `#` any more.
+  - A build check fails when a pattern gains an invented figure, an example address, a 555 number
+    or a link to `#`.
+- **The front-page hero can be read and its buttons used** (DECISIONS #404). The hero heading is
+  readable against the hero in the light and dark palettes. The hero and call-to-action buttons
+  stand apart from their section and link to the brand's primary action link or, without one, the
+  site's contact page; with neither, they are not shown. Heading colours elsewhere are unchanged.
+- **The flow editor never loses edits without asking** (DECISIONS #405).
+  - The header says "Unsaved changes" or "All changes saved".
+  - Back to flows, Publish, Move to draft, Close and Run marked test ask to save first, so what is
+    published or tested is what is on screen.
+  - Leaving the page with unsaved changes raises the browser's warning.
+  - The Test tab says which version it tests.
+
+### Fixed
+
+- **Visitors can register, subscribe, request a call and apply for a job when a captcha provider is
+  on** (DECISIONS #406).
+  - With Turnstile, hCaptcha or reCAPTCHA v3 set up, these four routes refused every visitor for a
+    check no form showed.
+  - The account registration form and the newsletter signup block now carry the provider's check
+    and send its token.
+  - The routes answer "Please complete the check before sending." or "The check failed. Please try
+    again.", and store and send nothing without a passed check.
+  - A site's own call request or job application form carries the check through
+    `Corex\Security\FormChallenge`; the bookings and careers READMEs show how.
+- **The captcha provider's script is printed on the page** (DECISIONS #407). It was queued after
+  WordPress had printed the footer's scripts, so it never reached the page. This affected
+  corex-forms' protected forms too.
+
+### Client impact
+
+- **Muva** runs corex-captcha (reCAPTCHA v3) with its own forms. They are not declared to CoreX,
+  so its pages load nothing new and its forms keep their own token handling. Nothing to do.
+- **Perego** does not run corex-captcha. It sees the corex-ui stats and testimonial patterns marked
+  as samples in its inserter, and the newsletter signup block's status line gains a
+  `data-corex-captcha-message` attribute. Nothing to do.
+- **Sites that applied the Company kit** stop showing the sample stats and quote to visitors on
+  pages that still reference those patterns, until someone edits them. Pages saved in the editor
+  before this release keep what they hold.
+- **A site with corex-ui active** gets hero and call-to-action buttons that link to its Brand
+  "Primary action link" or its `contact` page, and are hidden when it has neither. Set the link
+  under CoreX → Settings → Brand.
+- **Code that constructs `NewsletterSignupRenderer` or `CaptchaAssetController` by hand** passes
+  the new `FormChallenge` / `CaptchaChallenge` argument. The container does this for you.
+- Neither client runs the CoreX theme, the Company kit, reset, the account add-on or builder
+  flows. Mizzey is not on this release.
+
 ## [0.47.0] — 2026-10-21
 
 Access and logs (spec 112, the first release of the CoreX revamp), the generator tag (spec 111)

@@ -1,11 +1,11 @@
 import { useContext } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	PendingControl,
 	workingProps,
 } from '../../admin/components/working.js';
 
-export function TestTab( { busy, result, onRun } ) {
+export function TestTab( { busy, result, version, onRun } ) {
 	const pending = useContext( PendingControl );
 	return (
 		<section className="corex-flow-editor__panel">
@@ -14,6 +14,13 @@ export function TestTab( { busy, result, onRun } ) {
 				{ __(
 					'Runs validation, protection, storage, routing, email, inbox, and timeline stages without entering ordinary metrics.',
 					'corex'
+				) }
+			</p>
+			<p>
+				{ sprintf(
+					/* translators: %d: the number of the saved draft version the test runs on. */
+					__( 'Tests the saved draft, version %d', 'corex' ),
+					version
 				) }
 			</p>
 			<button

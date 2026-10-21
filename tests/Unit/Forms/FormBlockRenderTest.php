@@ -11,6 +11,7 @@
 
 declare(strict_types=1);
 
+use Corex\Security\ChallengeSettings;
 use Brain\Monkey\Functions;
 use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FormBlockRenderer;
@@ -113,7 +114,7 @@ function renderRegisteredForm(
         new SchemaResolver(new RuleRegistry()),
         new SchemaExporter(),
         new FieldRenderer(),
-        challenge: new FormChallengeContextFactory(siteSettings($settings), new RemoteAddress()),
+        challenge: new FormChallengeContextFactory(new ChallengeSettings(siteSettings($settings)), new RemoteAddress()),
         protectedForms: $declared ?? new ProtectedFormRegistry(),
     );
 

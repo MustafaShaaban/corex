@@ -17,6 +17,7 @@ use Corex\Foundation\ServiceProvider;
 use Corex\Ui\Blocks\BlockStyles;
 use Corex\Ui\Blocks\PostsProvider;
 use Corex\Ui\Blocks\WpPostsProvider;
+use Corex\Ui\Patterns\ActionLinks;
 use Corex\Ui\Patterns\PatternLibrary;
 use Corex\Ui\Patterns\PatternRegistrar;
 
@@ -52,6 +53,9 @@ final class UiServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerBlocks']);
         add_action('init', [$this, 'registerPatterns']);
         add_action('init', [$this, 'registerBlockStyles']);
+
+        // The hero and call-to-action buttons get a real address when drawn, or are not drawn (spec 115).
+        $this->container->make(ActionLinks::class)->register();
     }
 
     /**

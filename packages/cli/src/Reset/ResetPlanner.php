@@ -10,12 +10,15 @@ namespace Corex\Cli\Reset;
 
 defined('ABSPATH') || exit;
 
+use Corex\Provisioning\PageDisposition;
+
 /**
  * Turns a request + the gathered Corex footprint into an ordered plan of actions — purely,
  * with no WordPress or database access, so the plan (and the safety property) is
  * unit-testable. A full reset collapses to a single DB-wipe action; a soft reset enumerates
- * the granular steps in a safe order (deactivate add-ons, then remove seeded demo content,
- * then delete options — so flag/marker reads during the earlier steps stay valid).
+ * the granular steps in a safe order (deactivate add-ons, then put back or remove the pages a kit
+ * touched and the reading settings it changed, then delete options — so the records and markers read
+ * during the earlier steps stay valid).
  */
 final class ResetPlanner
 {
@@ -33,7 +36,7 @@ final class ResetPlanner
 
         return new ResetPlan([
             ...$this->deactivations($inventory),
-            ...$this->demoRemoval($inventory),
+            ...$this->pageActions($inventory),
             ...$this->optionDeletions($inventory),
         ]);
     }
@@ -54,23 +57,66 @@ final class ResetPlanner
     }
 
     /**
+     * One action per page a kit touched, then the legacy demo page when it is not one of them, then the
+     * reading settings. A page the owner had is restored, emptied or kept, never removed (spec 115).
+     *
      * @return list<ResetAction>
      */
-    private function demoRemoval(ResetInventory $inventory): array
+    private function pageActions(ResetInventory $inventory): array
     {
-        $ids = $inventory->pageIds;
-        if ($inventory->demoPageId !== null) {
-            $ids[] = $inventory->demoPageId;
+        $actions = [];
+        $seen    = [];
+
+        foreach ($inventory->pages as $page) {
+            if (isset($seen[$page->id])) {
+                continue;
+            }
+            $seen[$page->id] = true;
+            $actions[]       = $this->pageAction($page);
         }
 
-        return array_map(
-            static fn (int $id): ResetAction => new ResetAction(
+        if ($inventory->demoPageId !== null && ! isset($seen[$inventory->demoPageId])) {
+            $actions[] = new ResetAction(
                 ResetAction::REMOVE_DEMO,
-                (string) $id,
-                sprintf('Remove the seeded kit page (#%d) and revert the front-page settings if needed.', $id),
-            ),
-            array_values(array_unique($ids)),
-        );
+                (string) $inventory->demoPageId,
+                sprintf('Page #%d: created by the setup demo, will be removed.', $inventory->demoPageId),
+            );
+        }
+
+        if ($inventory->hasReadingRecord) {
+            $actions[] = new ResetAction(
+                ResetAction::RESTORE_READING,
+                'reading',
+                'Front-page settings: will be put back as they were before the kit.',
+            );
+        }
+
+        return $actions;
+    }
+
+    private function pageAction(ResetPage $page): ResetAction
+    {
+        $name = sprintf('Page "%s" (#%d)', $page->title, $page->id);
+
+        if (! $page->wasTheOwners()) {
+            return new ResetAction(ResetAction::REMOVE_DEMO, (string) $page->id, $name . ': created, will be removed.');
+        }
+
+        $replaced = $page->persistedAs === PageDisposition::PERSISTED_REPLACED;
+
+        if ($page->hasRecord) {
+            return new ResetAction(
+                ResetAction::RESTORE_PAGE,
+                (string) $page->id,
+                $name . ($replaced
+                    ? ': replaced, will be restored to the version recorded before the kit.'
+                    : ': adopted, will be emptied and restored as it was recorded before the kit.'),
+            );
+        }
+
+        return $replaced
+            ? new ResetAction(ResetAction::KEEP_PAGE, (string) $page->id, $name . ': replaced, kept: no earlier version recorded.')
+            : new ResetAction(ResetAction::EMPTY_PAGE, (string) $page->id, $name . ': adopted, will be emptied.');
     }
 
     /**

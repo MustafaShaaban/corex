@@ -28,8 +28,15 @@
 		hcaptcha: () => window.hcaptcha,
 	};
 
-	// Read the safe recoverable-error channel corex-runtime exposes, degrading if it is absent.
+	// A form that is not corex-runtime's names its own message line (spec 115); otherwise read the
+	// safe recoverable-error channel corex-runtime exposes, degrading if it is absent.
 	function announce( form, message ) {
+		const own = form.querySelector( '[data-corex-captcha-message]' );
+		if ( own ) {
+			own.textContent = message;
+			own.setAttribute( 'data-state', 'error' );
+			return;
+		}
 		if (
 			window.Corex &&
 			window.Corex.notices &&
@@ -105,7 +112,7 @@
 	function placeAll() {
 		Array.prototype.forEach.call(
 			document.querySelectorAll(
-				'.corex-form .corex-form__challenge[data-corex-challenge]'
+				'.corex-form .corex-form__challenge[data-corex-challenge], form[data-corex-captcha] .corex-form__challenge[data-corex-challenge]'
 			),
 			place
 		);

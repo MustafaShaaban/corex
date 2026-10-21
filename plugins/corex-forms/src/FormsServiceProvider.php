@@ -72,6 +72,7 @@ use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 use Corex\Mail\RoutedMailer;
 use Corex\Mail\MailTemplateCatalog;
+use Corex\Security\ChallengeSettings;
 use Corex\Security\ChallengeVerifier;
 use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\AttachmentStore;
@@ -173,7 +174,7 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(
             FormChallengeContextFactory::class,
             static fn (ContainerInterface $c): FormChallengeContextFactory => new FormChallengeContextFactory(
-                $c->make(ConfigInterface::class),
+                new ChallengeSettings($c->make(ConfigInterface::class)),
                 $c->make(ClientAddress::class),
             ),
         );

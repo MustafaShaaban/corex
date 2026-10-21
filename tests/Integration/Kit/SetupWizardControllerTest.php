@@ -64,5 +64,32 @@ it('refuses apply without an explicit confirmation (FR-140)', function () {
 
     expect($response->get_status())->toBe(422)
         ->and($body['ok'] ?? true)->toBeFalse()
-        ->and($body['code'] ?? '')->toBe('confirmation_required');
+        ->and($body['code'] ?? '')->toBe('confirmation_required')
+        // The refusal says what the Backup step says (spec 115, FR-011), and promises no backup.
+        ->and($body['message'] ?? '')->toContain('records the pages this plan replaces or adopts and your front-page settings')
+        ->and($body['message'] ?? '')->toContain('It does not back up anything else.');
+});
+
+it('lists, by their present titles, the empty pages of the owner that a plan would adopt (spec 115)', function () {
+    $controller = setupController();
+    $slug       = $controller->planPreview('company', 'minimal')['plan']['pages'][0]['slug'];
+    if (get_page_by_path($slug) instanceof WP_Post) {
+        $this->markTestSkipped("The install already has a page at /{$slug}/.");
+    }
+
+    $created = wp_insert_post([
+        'post_title'  => 'Our own empty page',
+        'post_name'   => $slug,
+        'post_status' => 'publish',
+        'post_type'   => 'page',
+    ]);
+
+    try {
+        $adopted = $controller->planPreview('company', 'minimal')['adopted'];
+        $titles  = array_column($adopted, 'pageTitle', 'slug');
+
+        expect($titles[$slug] ?? null)->toBe('Our own empty page');
+    } finally {
+        wp_delete_post($created, true);
+    }
 });

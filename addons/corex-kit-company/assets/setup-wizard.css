@@ -146,3 +146,10 @@
 	gap: var(--corex-admin-space-sm);
 	margin-block-start: var(--corex-admin-space-md);
 }
+
+/* The owner's pages a plan will record before applying (spec 115). */
+.corex-admin .corex-setup__recorded {
+	margin-block: 0 var(--corex-admin-space-sm);
+	padding-inline-start: var(--corex-admin-space-lg);
+	list-style: disc;
+}

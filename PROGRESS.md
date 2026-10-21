@@ -40,6 +40,28 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
+DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by the owner on
+2026-10-20 (US-SAFE-07, 09, 14, 15, US-FLW-02, US-AUT-02, US-VIS-11), built under the owner's
+2026-10-21 mandate.
+- A kit records the pages it replaces or adopts, and `wp corex reset` puts them and the front page
+  back.
+- The setup wizard says what it records and promises no backup.
+- Sample figures, the quote and the logo cloud in shipped patterns are hidden from visitors until
+  edited.
+- Theme patterns no longer link to `#` or show invented contacts.
+- The front-page hero and call to action are readable, and their buttons go somewhere.
+- The flow editor asks before anything throws edits away.
+- Registration, the newsletter signup, call requests and job applications work with a captcha
+  provider on, and the provider's script now reaches the page (it was queued too late to be printed).
+
+Spec, plan and tasks are written and every task is built. Open: one pull request against `main`,
+not merged by this session and not tagged. Not built, by decision: visitor blocks for call requests
+and job applications (#406). Owed:
+- the flow editor's question looked at in dark mode and right to left by hand;
+- the older `forms-flow.spec.js`, which fails on a fresh local install because the field-type option
+  reads `email`, not `Email`. Read it off CI.
+
 **Spec 112, access and logs** (2026-10-20, #430, in v0.47.0): the first release (R0.1) of the
 CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
 locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,
