@@ -15,6 +15,18 @@ All notable changes to Corex are documented here. The format follows
   leaves it off every page of a site. The detection rule for the scanners' lists is in
   `specs/111-generator-tag/contracts/detection-rule.md`.
 
+### Security
+
+- **Dependency advisories of 2026-10-20.** Five advisories published that evening failed the
+  advisory check on every pull request. All five are closed by patched releases in the ranges
+  the packages that use them already accept, so no exception is added: `launch-editor` 2.14.2
+  (three advisories; used by the webpack dev server behind `npm start`), `markdown-it` 14.3.3
+  (two; installed for `markdownlint-cli`, with the root override's floor raised from 14.3.2) and
+  `vite` 8.1.6 in `docs-app` (the same three `launch-editor` advisories, which vite bundles). All
+  three are build and local development tooling. The built plugin assets (169 files) and the
+  docs site built without the generated class reference (146 files) are byte-identical before
+  and after.
+
 ### Client impact
 
 - **Every page of a client site gains one line in its head**, `<meta name="generator"
