@@ -22,7 +22,6 @@ use Corex\Mail\ReplyConversation;
 use Corex\Mail\RecipientAwareSubmissionEmailGateway;
 use Corex\Mail\ReplyReadiness;
 use Corex\Support\Config\ConfigInterface;
-use Corex\Support\Uuid;
 use DomainException;
 
 /**
@@ -38,12 +37,13 @@ final readonly class EmailStudioSubmissionGateway implements RecipientAwareSubmi
         private EmailTemplateService $templates,
         private ConfigInterface $config,
         private ReplyComposer $composer,
+        private EmailDeliveryContextFactory $delivery,
     ) {
     }
 
     public function readiness(): ReplyReadiness
     {
-        $decision = $this->studio->decide($this->deliveryContext());
+        $decision = $this->studio->decide($this->delivery->make());
         $mode = match ($decision->action) {
             DeliveryDecision::ACTION_DELIVER => ReplyReadiness::DELIVER,
             DeliveryDecision::ACTION_CAPTURE => ReplyReadiness::CAPTURE,
@@ -118,7 +118,7 @@ final readonly class EmailStudioSubmissionGateway implements RecipientAwareSubmi
                 plainText: $email->text,
                 fromName: $this->replySenderName(),
             ),
-            $this->deliveryContext(),
+            $this->delivery->make(),
         );
     }
 
@@ -222,7 +222,7 @@ final readonly class EmailStudioSubmissionGateway implements RecipientAwareSubmi
         return $this->studio->resend(
             $attemptId,
             new EmailMessage($recipients, [], [], null, $rendered['subject'], $rendered['html']),
-            $this->deliveryContext(),
+            $this->delivery->make(),
         );
     }
 
@@ -253,18 +253,5 @@ final readonly class EmailStudioSubmissionGateway implements RecipientAwareSubmi
             'template_id' => $attempt->templateId,
             'template_version' => $attempt->templateVersion,
         ];
-    }
-
-    private function deliveryContext(): EmailDeliveryContext
-    {
-        $environment = trim((string) $this->config->get('app.env', ''));
-        $provider = sanitize_key((string) $this->config->get('mail.provider', ''));
-
-        return new EmailDeliveryContext(
-            $environment !== '' ? $environment : wp_get_environment_type(),
-            $this->studio->supportsProvider($provider),
-            filter_var($this->config->get('mail.live_delivery', false), FILTER_VALIDATE_BOOL),
-            Uuid::v4(),
-        );
     }
 }

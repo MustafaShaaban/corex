@@ -407,7 +407,10 @@ final class OperationsSecurityScreen
         $environment = $this->environmentType();
         $mode        = $this->store->current();
 
-        if (! $this->store->isDeclared() || $environment === '' || $environment === $mode) {
+        // WordPress's `local` is CoreX's development (spec 113): the two are the same answer.
+        $comparable = $environment === 'local' ? OperationsMode::DEVELOPMENT : $environment;
+
+        if (! $this->store->isDeclared() || $environment === '' || $comparable === $mode) {
             return '';
         }
 
@@ -421,6 +424,20 @@ final class OperationsSecurityScreen
                 $mode,
             ),
         );
+    }
+
+    /** The refusal of a mode a lock does not allow, naming the lock. */
+    private function lockedNotice(): string
+    {
+        $lock = $this->store->lock();
+
+        return $lock === null
+            ? __('That mode cannot be chosen on this site.', 'corex')
+            : sprintf(
+                /* translators: %s: where the environment is set. */
+                __('That mode cannot be chosen: %s sets this site\'s environment. Nothing was changed.', 'corex'),
+                $lock->source(),
+            );
     }
 
     /** A PRG success/error notice after a mode change (read-only query args; no state change here). */
@@ -446,6 +463,7 @@ final class OperationsSecurityScreen
             'production_confirm' => ['warning', __('Production mode needs typed confirmation. Type PRODUCTION and try again.', 'corex')],
             'confirm' => ['warning', __('That mode needs confirmation — tick the confirmation box and try again.', 'corex')],
             'invalid' => ['error', __('That is not a valid operations mode.', 'corex')],
+            'locked'  => ['error', $this->lockedNotice()],
             default   => ['', ''],
         };
 
@@ -553,15 +571,26 @@ final class OperationsSecurityScreen
         foreach ($this->modes->all() as $mode) {
             $meta = $this->modes->describe($mode);
             $options .= sprintf(
-                '<option value="%1$s"%2$s>%3$s</option>',
+                '<option value="%1$s"%2$s%3$s>%4$s</option>',
                 esc_attr($mode),
                 selected($mode, $proposed, false),
+                disabled(! $this->store->allows($mode), true, false),
                 esc_html($meta['label']),
             );
         }
 
-        $inherited = $declared ? '' :
-            '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>';
+        $lock = $this->store->lock();
+        $inherited = match (true) {
+            $lock !== null => '<p class="corex-opsec__detail corex-opsec__mode-lock" data-corex-mode-lock>'
+                . esc_html(sprintf(
+                    /* translators: 1: where the environment is set, 2: environment name. */
+                    __('Locked: %1$s sets this site\'s environment to %2$s. Only the modes of that environment can be chosen here; change it where it is set.', 'corex'),
+                    $lock->source(),
+                    $lock->label(),
+                )) . '</p>',
+            ! $declared => '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>',
+            default => '',
+        };
 
         // Nothing is being proposed while the selection is the mode the site has declared. The
         // panel says so in one line and asks for nothing: it used to draw that mode's consequences

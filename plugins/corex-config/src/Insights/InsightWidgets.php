@@ -294,7 +294,7 @@ final class InsightWidgets
                     . ($facts['modeDeclared'] ? '' : ' ' . __('(inherited from environment)', 'corex')),
                 'tone'  => 'info',
             ],
-            ['label' => __('Environment type', 'corex'), 'value' => $facts['environment'], 'tone' => 'info'],
+            ['label' => __('Environment', 'corex'), 'value' => $facts['environment'], 'tone' => 'info'],
             $cron,
             ['label' => __('PHP version', 'corex'), 'value' => $facts['phpVersion'], 'tone' => 'info'],
             ['label' => __('WordPress version', 'corex'), 'value' => $facts['wpVersion'], 'tone' => 'info'],

@@ -431,7 +431,10 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(
             \Corex\Config\Operations\OperationsModeStore::class,
             static fn (ContainerInterface $c): \Corex\Config\Operations\OperationsModeStore =>
-                new \Corex\Config\Operations\OperationsModeStore($c->make(\Corex\Config\Operations\OperationsMode::class)),
+                new \Corex\Config\Operations\OperationsModeStore(
+                    $c->make(\Corex\Config\Operations\OperationsMode::class),
+                    $c->make(\Corex\Environment\SiteEnvironment::class),
+                ),
         );
         $this->container->singleton(\Corex\Config\Security\HardeningChecks::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionReadinessSnapshotFactory::class);
@@ -762,6 +765,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(OperationsModeStore::class),
                 $c->make(SubmissionsReader::class),
                 $c,
+                environment: $c->make(\Corex\Environment\SiteEnvironment::class),
             ));
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>
             new InsightsController(

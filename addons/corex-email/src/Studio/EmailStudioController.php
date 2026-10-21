@@ -20,8 +20,6 @@ use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Http\ResponseEnvelope;
 use Corex\Http\RouteParam;
 use Corex\Mail\SubjectLine;
-use Corex\Support\Config\ConfigInterface;
-use Corex\Support\Uuid;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
@@ -49,7 +47,7 @@ final class EmailStudioController
         EmailStudioRepositories $repositories,
         private readonly EmailStudioService $studio,
         private readonly EmailTemplateService $editor,
-        private readonly ConfigInterface $config,
+        private readonly EmailDeliveryContextFactory $delivery,
     ) {
         $this->templates = $repositories->templates;
         $this->layouts   = $repositories->layouts;
@@ -110,10 +108,10 @@ final class EmailStudioController
 
         return $this->success([
             'delivery' => [
-                'environment'         => $this->environment(),
-                'provider'            => $this->providerName(),
-                'provider_configured' => $this->providerConfigured(),
-                'live_enabled'        => $this->liveDeliveryEnabled(),
+                'environment'         => $this->delivery->make()->environment,
+                'provider'            => $this->delivery->providerName(),
+                'provider_configured' => $this->delivery->providerConfigured(),
+                'live_enabled'        => $this->delivery->liveDelivery(),
             ],
             'counts' => [
                 'templates' => count($templates),
@@ -337,7 +335,7 @@ final class EmailStudioController
         $layout = $this->layouts->findVersion($version->layoutId, $version->layoutVersion);
 
         return $this->success(['health' => $this->studio->health($version, new EmailHealthContext(
-            providerConfigured: $this->providerConfigured(),
+            providerConfigured: $this->delivery->providerConfigured(),
             requiresSubscriptionLinks: rest_sanitize_boolean($request->get_param('subscription'))
                 || $layout?->slug === 'newsletter',
             replyTo: $this->nullableEmail($request->get_param('reply_to')),
@@ -350,7 +348,7 @@ final class EmailStudioController
         try {
             $result = $this->studio->testSend(
                 $this->message($request),
-                $this->deliveryContext(Uuid::v4()),
+                $this->delivery->make(),
                 $this->templateReference($request->get_param('template_slug')),
             );
 
@@ -366,7 +364,7 @@ final class EmailStudioController
             $result = $this->studio->resend(
                 RouteParam::string($request, 'attempt'),
                 $this->message($request),
-                $this->deliveryContext(Uuid::v4()),
+                $this->delivery->make(),
             );
 
             return $this->success(['result' => $result->toArray()]);
@@ -409,38 +407,6 @@ final class EmailStudioController
             SubjectLine::of($request->get_param('subject')),
             wp_kses_post((string) $request->get_param('body')),
             ['Content-Type' => 'text/html; charset=UTF-8'],
-        );
-    }
-
-    private function environment(): string
-    {
-        $environment = trim((string) $this->config->get('app.env', ''));
-
-        return $environment !== '' ? $environment : wp_get_environment_type();
-    }
-
-    private function providerName(): string
-    {
-        return sanitize_key((string) $this->config->get('mail.provider', ''));
-    }
-
-    private function providerConfigured(): bool
-    {
-        return $this->studio->supportsProvider($this->providerName());
-    }
-
-    private function liveDeliveryEnabled(): bool
-    {
-        return filter_var($this->config->get('mail.live_delivery', false), FILTER_VALIDATE_BOOLEAN);
-    }
-
-    private function deliveryContext(string $requestId): EmailDeliveryContext
-    {
-        return new EmailDeliveryContext(
-            $this->environment(),
-            $this->providerConfigured(),
-            $this->liveDeliveryEnabled(),
-            $requestId,
         );
     }
 
@@ -645,7 +611,7 @@ final class EmailStudioController
             }
             $layout = $this->layouts->findVersion($version->layoutId, $version->layoutVersion);
             $errors = $this->studio->health($version, new EmailHealthContext(
-                providerConfigured: $this->providerConfigured(),
+                providerConfigured: $this->delivery->providerConfigured(),
                 requiresSubscriptionLinks: $layout?->slug === 'newsletter',
                 layout: $layout,
             ));

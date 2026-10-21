@@ -243,7 +243,7 @@ final class MailServiceProvider extends ServiceProvider
                         $c->make(EmailLayoutRepository::class),
                     ),
                     $c->make(EmailStudioService::class),
-                    $c->make(ConfigInterface::class),
+                    $c->make(\Corex\Email\Studio\EmailDeliveryContextFactory::class),
                 ),
             ),
         );

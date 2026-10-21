@@ -10,6 +10,8 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
+use Corex\Environment\SiteEnvironment;
+use Corex\Environment\SiteEnvironmentAnswer;
 use Corex\Support\Options\LoadedOptions;
 
 /**
@@ -24,6 +26,11 @@ use Corex\Support\Options\LoadedOptions;
  * Since spec 101 the log also holds the preview link's events — created, regenerated, revoked — as
  * rows of their own kind: {time, user, event}. They are part of the same story an operator reads
  * here ("who opened the site to the client, and when"), and they never hold the link itself.
+ *
+ * Since spec 113 a value set in `.env` (`APP_ENV`), locked by the network or held by the
+ * `corex_app_env` option decides the mode first ({@see SiteEnvironment}): a lock to development or
+ * staging is the mode; a lock to production leaves the owner Production, Coming soon and
+ * Maintenance, which change only what visitors see.
  */
 final class OperationsModeStore
 {
@@ -41,21 +48,53 @@ final class OperationsModeStore
         self::EVENT_PREVIEW_REVOKED,
     ];
 
-    public function __construct(private readonly OperationsMode $modes)
-    {
+    public function __construct(
+        private readonly OperationsMode $modes,
+        private readonly ?SiteEnvironment $environment = null,
+    ) {
     }
 
-    /** The current declared mode, defaulting to the real WordPress environment type when unset. */
+    /**
+     * The mode in force: what a lock fixes, else the declared mode, else WordPress's environment
+     * type, where `local` is development.
+     */
     public function current(): string
     {
         $stored = (string) get_option(self::OPTION, '');
-        if ($stored !== '' && $this->modes->isValid($stored)) {
-            return $stored;
+        $declared = $stored !== '' && $this->modes->isValid($stored) ? $stored : null;
+
+        $lock = $this->lock();
+        if ($lock !== null) {
+            return match ($lock->environment) {
+                SiteEnvironment::DEVELOPMENT => OperationsMode::DEVELOPMENT,
+                SiteEnvironment::STAGING     => OperationsMode::STAGING,
+                default                      => in_array($declared, SiteEnvironment::PRODUCTION_MODES, true)
+                    ? $declared
+                    : OperationsMode::PRODUCTION,
+            };
+        }
+
+        if ($declared !== null) {
+            return $declared;
         }
 
         $env = function_exists('wp_get_environment_type') ? (string) wp_get_environment_type() : '';
 
-        return $this->modes->normalize($env);
+        return $this->modes->normalize($env === 'local' ? OperationsMode::DEVELOPMENT : $env);
+    }
+
+    /** The setting that fixes the environment, when one does; null when the owner's choice decides. */
+    public function lock(): ?SiteEnvironmentAnswer
+    {
+        $answer = $this->environment?->current();
+
+        return $answer !== null && $answer->isLocked() ? $answer : null;
+    }
+
+    /** Whether the mode may be chosen: a lock allows only the modes of its own environment. */
+    public function allows(string $mode): bool
+    {
+        return $this->environment === null || $this->environment->allowsMode($mode);
     }
 
     /** Whether the operator has explicitly declared a mode (vs. inheriting the environment default). */

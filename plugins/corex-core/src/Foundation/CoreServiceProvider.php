@@ -11,6 +11,7 @@ namespace Corex\Foundation;
 defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
+use Corex\Environment\SiteEnvironment;
 use Corex\Health\HealthModule;
 use Corex\Multisite\MultisiteContext;
 use Corex\Multisite\NetworkContext;
@@ -56,6 +57,22 @@ final class CoreServiceProvider extends ServiceProvider
                 new OptionsSource(),
                 new NetworkDefaultsSource($registry, $multisite, $network),
                 new DefaultsSource($this->defaults()),
+            ]);
+        });
+
+        // The lock layers of `app.env`, read one by one: the repository's defaults layer would
+        // answer "production" for every site (spec 113, research R1).
+        $this->container->singleton(SiteEnvironment::class, function (ContainerInterface $container): SiteEnvironment {
+            $registry = $container->make(SettingRegistry::class);
+
+            return new SiteEnvironment([
+                [SiteEnvironment::BY_DOTENV, new DotenvSource($this->projectRoot(), $container->make(BootLogger::class))],
+                [SiteEnvironment::BY_NETWORK, new NetworkLockSource(
+                    $registry,
+                    $container->make(MultisiteContext::class),
+                    $container->make(NetworkContext::class),
+                )],
+                [SiteEnvironment::BY_OPTION, new OptionsSource()],
             ]);
         });
 
