@@ -199,6 +199,12 @@ listed as no longer in effect.
 Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
 When nobody is waiting, it says nothing at all.
 
+The **Audit log** tab lists refused visits to CoreX screens from the last 30 days. One person's refusals of one screen
+are one line for an hour from the first of them, with how many times and from when to when, so somebody reloading a
+refused page cannot push anybody else's line out; each person keeps at most 20 lines. On a host with a persistent
+object cache the repeats within the hour are counted there and stored once; without one, each repeat updates that
+person's line. Requests and decisions are in the activity log, not here.
+
 `GET /corex/v1/access/requests` answers the same list as JSON, to the same people: it needs a REST nonce and
 `manage_options`, as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person
 who filed a request included, and a visitor who is not signed in `401`. A person sees their own open request on the

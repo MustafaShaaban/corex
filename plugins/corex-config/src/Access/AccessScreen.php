@@ -13,6 +13,7 @@ use Corex\Access\RoleAbilityStore;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
+use Corex\Support\Facades\AdminDate;
 
 defined('ABSPATH') || exit;
 
@@ -92,7 +93,7 @@ final class AccessScreen
             'requests' => $this->pending->all(),
             // The grants made by approval that stand (spec 112, FR-005).
             'grants' => $this->grants->grants(),
-            'audit' => $this->audit->entries(),
+            'audit' => array_map($this->auditForScript(...), $this->audit->entries()),
         ]);
         wp_set_script_translations('corex-access', 'corex');
     }
@@ -451,32 +452,60 @@ final class AccessScreen
     /**
      * @param array{time:int,user:int,kind:string,section:string} $entry
      */
+    /**
+     * One person's refusals of one screen within an hour: once at a time, or counted between the
+     * first and the last (spec 112, FR-012).
+     *
+     * @param array{user:int,kind:string,section:string,first:int,last:int,count:int} $entry
+     */
     private function auditRow(array $entry): string
     {
-        $who  = $this->userLabel($entry['user']);
-        $what = $this->sectionLabel($entry['section']);
-
-        $text = sprintf(
-            /* translators: 1: user name, 2: CoreX screen name. */
-            __('Access denied: %1$s tried to open %2$s', 'corex'),
-            $who,
-            $what,
-        );
-
-        $when = $entry['time'] > 0
-            ? sprintf(
-                /* translators: %s: human-readable time difference, e.g. "2 hours". */
-                __('%s ago', 'corex'),
-                human_time_diff($entry['time'], time()),
-            )
-            : __('Unknown time', 'corex');
+        $last = AdminDate::full($entry['last'])->toHtml('corex-access__event-when');
+        $when = $entry['count'] === 1
+            ? $last
+            : sprintf(
+                /* translators: 1: how many times, 2: the first time, 3: the last time. */
+                esc_html(_n('%1$s time, from %2$s to %3$s', '%1$s times, from %2$s to %3$s', $entry['count'], 'corex')),
+                esc_html(number_format_i18n($entry['count'])),
+                AdminDate::full($entry['first'])->toHtml('corex-access__event-when'),
+                $last,
+            );
 
         return '<li class="corex-access__event">'
             . '<span class="corex-access__event-dot" aria-hidden="true"></span>'
             . '<span class="corex-access__event-body"><span class="corex-access__event-text">'
-            . esc_html($text) . '</span>'
-            . '<span class="corex-access__event-meta">' . esc_html($who . ' · ' . $when) . '</span></span>'
+            . esc_html($this->auditText($entry)) . '</span>'
+            . '<span class="corex-access__event-meta">' . $when . '</span></span>'
             . '<span class="corex-access__chip is-warning">' . esc_html__('DENIED', 'corex') . '</span></li>';
+    }
+
+    /** @param array{user:int,kind:string,section:string} $entry */
+    private function auditText(array $entry): string
+    {
+        return sprintf(
+            /* translators: 1: user name, 2: CoreX screen name. */
+            __('Access denied: %1$s tried to open %2$s', 'corex'),
+            $this->userLabel($entry['user']),
+            $this->sectionLabel($entry['section']),
+        );
+    }
+
+    /**
+     * An entry as the Access workspace lists it: in words, with its count and canonical UTC times
+     * for the spec 076 date contract.
+     *
+     * @param array{user:int,kind:string,section:string,first:int,last:int,count:int} $entry
+     *
+     * @return array{text:string,count:int,first:string,last:string}
+     */
+    private function auditForScript(array $entry): array
+    {
+        return [
+            'text'  => $this->auditText($entry),
+            'count' => $entry['count'],
+            'first' => gmdate(DATE_ATOM, $entry['first']),
+            'last'  => gmdate(DATE_ATOM, $entry['last']),
+        ];
     }
 
     private function userLabel(int $userId): string

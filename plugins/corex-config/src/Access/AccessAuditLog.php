@@ -10,18 +10,32 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Admin\AdminPage;
+
 /**
  * The access audit log (spec 067, design: "Corex Access & Abilities" → Audit log). Records REAL
- * access events only — currently permission-denied attempts on CoreX screens, published through the
+ * access refusals only: permission-denied attempts on CoreX screens, published through the
  * `corex_admin_access_denied` action by {@see \Corex\Admin\AdminPage::permissionDenied()} and
- * {@see AccessDeniedGate}. Access request and decision events are recorded through the shared activity
- * stream; this legacy local log remains the denied-attempt fallback. Entries live in a bounded,
- * autoload-off option and are pruned to the designed 30-day window on every read and write.
+ * {@see AccessDeniedGate}. Access requests and decisions are in the shared activity stream.
+ *
+ * One person's refusals of one section are one entry for an hour from the first of them, with a
+ * count and the first and last time (spec 112, FR-009 to FR-012), so a page reloaded a thousand
+ * times is one line and does not push anybody else's out. Each person keeps at most
+ * {@see MAX_PER_PERSON} entries before the log's own cap applies.
+ *
+ * Where the host has a persistent object cache, a repeat within the hour is counted there and the
+ * database is written once for the window: when it starts, and again when the next refusal after
+ * it closes it or {@see settle()} runs. Without one, a repeat updates that person's entry in place.
+ * Entries live in an autoload-off option, pruned to 30 days by their last refusal (DECISIONS #114).
  */
 final class AccessAuditLog
 {
+    public const MAX_PER_PERSON = 20;
+
     private const OPTION         = 'corex_access_audit_log';
+    private const CACHE_GROUP    = 'corex_access_audit';
     private const MAX_ENTRIES    = 100;
+    private const WINDOW_SECONDS = 3600;
     private const RETENTION_DAYS = 30;
     private const DAY_SECONDS    = 86400;
 
@@ -31,43 +45,189 @@ final class AccessAuditLog
     }
 
     /**
-     * Action callback: a CoreX screen refused the current user. `$section` is the screen's section
-     * key (from AdminPage) or its page slug (from the menu-level gate).
+     * Action callback: a CoreX screen refused the current user. The screen's section key (from
+     * AdminPage) and its page slug (from the menu-level gate) name the same screen, so both are
+     * recorded under the page slug and counted together.
      */
     public function recordDenied(string $section): void
     {
-        $this->record('denied', $section, function_exists('get_current_user_id') ? get_current_user_id() : 0);
+        $this->record(
+            'denied',
+            AdminPage::pageSlugForSection($section) ?? $section,
+            function_exists('get_current_user_id') ? get_current_user_id() : 0,
+        );
     }
 
-    public function record(string $kind, string $section, int $userId): void
+    /**
+     * @param int|null $at When the refusal happened, as a Unix time; now when omitted.
+     */
+    public function record(string $kind, string $section, int $userId, ?int $at = null): void
     {
-        $entries   = $this->prune($this->raw());
-        $entries[] = [
-            'time'    => time(),
-            'user'    => $userId,
-            'kind'    => sanitize_key($kind),
-            'section' => sanitize_key($section),
-        ];
+        $at      = $at ?? time();
+        $kind    = sanitize_key($kind);
+        $section = sanitize_key($section);
+        $entries = $this->raw();
+        $open    = $this->openEntry($entries, $userId, $kind, $section, $at);
 
-        if (count($entries) > self::MAX_ENTRIES) {
-            $entries = array_slice($entries, -self::MAX_ENTRIES);
+        if ($open !== null && wp_using_ext_object_cache()) {
+            $this->countInCache($entries[$open], $at);
+
+            return;
         }
 
-        update_option(self::OPTION, $entries, false);
+        if ($open !== null) {
+            $entries[$open]['count']++;
+            $entries[$open]['last'] = $at;
+        } else {
+            $entries   = $this->settled($entries);
+            $entries[] = ['user' => $userId, 'kind' => $kind, 'section' => $section, 'first' => $at, 'last' => $at, 'count' => 1];
+        }
+
+        $this->store($entries, $at);
     }
 
     /**
-     * The retained entries, newest first, pruned to the 30-day window.
+     * The retained entries, newest first by their last refusal, with any count still held in the
+     * object cache added in.
      *
-     * @return list<array{time:int,user:int,kind:string,section:string}>
+     * @param int|null $now Now, as a Unix time, when omitted.
+     *
+     * @return list<array{user:int,kind:string,section:string,first:int,last:int,count:int}>
      */
-    public function entries(): array
+    public function entries(?int $now = null): array
     {
-        return array_reverse($this->prune($this->raw()));
+        $entries = $this->prune(array_map($this->withCached(...), $this->raw()), $now ?? time());
+        usort($entries, static fn (array $a, array $b): int => $b['last'] <=> $a['last']);
+
+        return $entries;
     }
 
     /**
-     * @return list<array{time:int,user:int,kind:string,section:string}>
+     * Stores the counts the object cache holds, so a window that nobody closes is not lost when
+     * the cache is emptied. Run daily; does nothing without a persistent object cache.
+     *
+     * @param int|null $now Now, as a Unix time, when omitted.
+     */
+    public function settle(?int $now = null): void
+    {
+        if (! wp_using_ext_object_cache()) {
+            return;
+        }
+
+        $entries = $this->raw();
+        $settled = $this->settled($entries);
+        if ($settled !== $entries) {
+            $this->store($settled, $now ?? time());
+        }
+    }
+
+    /**
+     * The index of this person's entry for this section whose hour has not run out, if any.
+     *
+     * @param list<array{user:int,kind:string,section:string,first:int,last:int,count:int}> $entries
+     */
+    private function openEntry(array $entries, int $userId, string $kind, string $section, int $at): ?int
+    {
+        foreach ($entries as $index => $entry) {
+            if ($entry['user'] === $userId && $entry['kind'] === $kind && $entry['section'] === $section
+                && $at < $entry['first'] + self::WINDOW_SECONDS) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
+    /** @param array{user:int,kind:string,section:string,first:int,last:int,count:int} $entry */
+    private function countInCache(array $entry, int $at): void
+    {
+        $cached = $this->cached($entry) ?? ['count' => $entry['count'], 'last' => $entry['last']];
+
+        wp_cache_set($this->cacheKey($entry), ['count' => $cached['count'] + 1, 'last' => $at], self::CACHE_GROUP);
+    }
+
+    /**
+     * The entries with every count held in the object cache written into them, and those cache
+     * entries let go.
+     *
+     * @param list<array{user:int,kind:string,section:string,first:int,last:int,count:int}> $entries
+     *
+     * @return list<array{user:int,kind:string,section:string,first:int,last:int,count:int}>
+     */
+    private function settled(array $entries): array
+    {
+        return array_map(function (array $entry): array {
+            $merged = $this->withCached($entry);
+            if ($merged !== $entry) {
+                wp_cache_delete($this->cacheKey($entry), self::CACHE_GROUP);
+            }
+
+            return $merged;
+        }, $entries);
+    }
+
+    /**
+     * @param array{user:int,kind:string,section:string,first:int,last:int,count:int} $entry
+     *
+     * @return array{user:int,kind:string,section:string,first:int,last:int,count:int}
+     */
+    private function withCached(array $entry): array
+    {
+        $cached = $this->cached($entry);
+
+        return $cached === null ? $entry : ['count' => $cached['count'], 'last' => $cached['last']] + $entry;
+    }
+
+    /**
+     * @param array{user:int,kind:string,section:string,first:int,last:int,count:int} $entry
+     *
+     * @return array{count:int,last:int}|null
+     */
+    private function cached(array $entry): ?array
+    {
+        $cached = wp_cache_get($this->cacheKey($entry), self::CACHE_GROUP);
+
+        return is_array($cached) && isset($cached['count'], $cached['last'])
+            ? ['count' => (int) $cached['count'], 'last' => (int) $cached['last']]
+            : null;
+    }
+
+    /** @param array{user:int,kind:string,section:string,first:int} $entry */
+    private function cacheKey(array $entry): string
+    {
+        return md5($entry['user'] . '|' . $entry['kind'] . '|' . $entry['section'] . '|' . $entry['first']);
+    }
+
+    /**
+     * Pruned to 30 days, then each person's oldest beyond {@see MAX_PER_PERSON}, then the log's
+     * oldest beyond {@see MAX_ENTRIES}.
+     *
+     * @param list<array{user:int,kind:string,section:string,first:int,last:int,count:int}> $entries
+     */
+    private function store(array $entries, int $now): void
+    {
+        $entries = $this->prune($entries, $now);
+        usort($entries, static fn (array $a, array $b): int => $a['last'] <=> $b['last']);
+
+        $perPerson = [];
+        foreach (array_reverse($entries) as $entry) {
+            $perPerson[$entry['user']][] = $entry;
+        }
+        $kept = array_merge(...array_map(
+            static fn (array $own): array => array_slice($own, 0, self::MAX_PER_PERSON),
+            array_values($perPerson) ?: [[]],
+        ));
+        usort($kept, static fn (array $a, array $b): int => $a['last'] <=> $b['last']);
+
+        update_option(self::OPTION, array_slice($kept, -self::MAX_ENTRIES), false);
+    }
+
+    /**
+     * The stored entries. One stored before spec 112 (`time` instead of a range) reads as one
+     * refusal at that time, and such refusals are folded into one entry by the same hour rule, so
+     * the history kept before spec 112 reads as counted too. Anything malformed is skipped.
+     *
+     * @return list<array{user:int,kind:string,section:string,first:int,last:int,count:int}>
      */
     private function raw(): array
     {
@@ -81,29 +241,62 @@ final class AccessAuditLog
             if (! is_array($entry) || ! isset($entry['kind'])) {
                 continue;
             }
-            $out[] = [
-                'time'    => (int) ($entry['time'] ?? 0),
+            $first   = (int) ($entry['first'] ?? $entry['time'] ?? 0);
+            $kind    = (string) $entry['kind'];
+            $section = (string) ($entry['section'] ?? '');
+            $out[]   = [
                 'user'    => (int) ($entry['user'] ?? 0),
-                'kind'    => (string) $entry['kind'],
-                'section' => (string) ($entry['section'] ?? ''),
+                'kind'    => $kind,
+                // Before spec 112 a screen was recorded under its section key or its page slug.
+                'section' => $kind === 'denied' ? (AdminPage::pageSlugForSection($section) ?? $section) : $section,
+                'first'   => $first,
+                'last'    => (int) ($entry['last'] ?? $first),
+                'count'   => max(1, (int) ($entry['count'] ?? 1)),
             ];
+        }
+
+        return $this->folded($out);
+    }
+
+    /**
+     * Entries for the same person, kind and section that fall within an hour of the first of
+     * them, as one.
+     *
+     * @param list<array{user:int,kind:string,section:string,first:int,last:int,count:int}> $entries
+     *
+     * @return list<array{user:int,kind:string,section:string,first:int,last:int,count:int}>
+     */
+    private function folded(array $entries): array
+    {
+        usort($entries, static fn (array $a, array $b): int => $a['first'] <=> $b['first']);
+
+        $out = [];
+        foreach ($entries as $entry) {
+            $open = $this->openEntry($out, $entry['user'], $entry['kind'], $entry['section'], $entry['first']);
+            if ($open === null) {
+                $out[] = $entry;
+                continue;
+            }
+
+            $out[$open]['count'] += $entry['count'];
+            $out[$open]['last']   = max($out[$open]['last'], $entry['last']);
         }
 
         return $out;
     }
 
     /**
-     * @param list<array{time:int,user:int,kind:string,section:string}> $entries
+     * @param list<array{user:int,kind:string,section:string,first:int,last:int,count:int}> $entries
      *
-     * @return list<array{time:int,user:int,kind:string,section:string}>
+     * @return list<array{user:int,kind:string,section:string,first:int,last:int,count:int}>
      */
-    private function prune(array $entries): array
+    private function prune(array $entries, int $now): array
     {
-        $cutoff = time() - (self::RETENTION_DAYS * self::DAY_SECONDS);
+        $cutoff = $now - (self::RETENTION_DAYS * self::DAY_SECONDS);
 
         return array_values(array_filter(
             $entries,
-            static fn (array $entry): bool => $entry['time'] >= $cutoff,
+            static fn (array $entry): bool => $entry['last'] >= $cutoff,
         ));
     }
 }

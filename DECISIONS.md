@@ -17398,3 +17398,46 @@ including approving with a note and 7 days through the dialog, the grant listed,
 before this release are listed with no expiry and can be revoked. A client repository carrying
 copies of CoreX's own tests takes the updated `tests/Unit/Access/AccessServiceTest.php` with this
 release (its fakes implement the widened `AccessRequestStore` and `AccessUserDirectory`).
+
+## #377 — The access audit log counts refusals: one entry per person, section and hour, a per-person cap, and the object cache where the host has one
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 2. **Mode:**
+CoreX Framework.
+
+**Why.** Every refused page view was one more entry in a log capped at 100, written to the database
+each time, so one person reloading a refused page pushed everybody else's history out (corex.local
+held 80 entries, the last two from one person eight seconds apart).
+
+**Decided.**
+
+1. **Entries are `{user, kind, section, first, last, count}`**, merged while user, kind and section
+   match and the refusal is within an hour of `first`: a window anchored at the first refusal, not a
+   clock hour, so one across midnight stays one entry.
+2. **A screen is one section.** `recordDenied()` records under `AdminPage::pageSlugForSection()`, so
+   the section key from `AdminPage::permissionDenied()` and the page slug from `AccessDeniedGate` are
+   counted together. Entries stored before spec 112 (`time` instead of a range, either key) are read
+   as one refusal each and folded by the same rule, so existing history reads counted at once.
+3. **Each person keeps at most 20 entries** before the log's own cap of 100 applies; the 30-day
+   prune (by the last refusal) stays (#114).
+4. **With a persistent object cache** (`wp_using_ext_object_cache()`), a repeat within the window is
+   counted in the cache (`corex_access_audit` group) and the database is written once for the
+   window: when it starts, and when the next refusal after it closes it or `settle()` runs from the
+   daily access event (`AccessGrantScheduler`). Reads add the cached count in. **Without one**, a
+   repeat updates that person's entry in place (the owner's answer of 2026-10-20, spec 112
+   clarifications).
+5. **The audit tab and the Access workspace say it in words**: who, which screen, how many times,
+   from when to when, with dates through `AdminDate` (spec 076), not raw keys or "2 hours ago".
+
+**Not chosen.** *A counter file under uploads* to meet "one write per hour" on hosts without an
+object cache: more moving parts on shared hosts than a single in-place update is worth.
+
+**Verified.** Pest unit `AccessAuditLogTest` (16: once, fifty in an hour, the window's end, across
+midnight, apart by person/section/kind, a thousand sections for one person, writes without and with
+a cache, the closing window, `settle()`, prune, order, the old shape, folding, both keys of a
+screen) and the whole unit suite. Pest integration `AccessAuditLogWritesTest` on a real WordPress
+counting the option's writes (10 without a cache, 1 with), a thousand refusals keeping two other
+people's entries, the audit tab saying "3 times, from … to …" in one row; `AccessDeniedGateTest` and
+`EveryRequestOptionQueriesTest` unchanged and passing; the whole integration suite. Jest, whole
+suite.
+
+**Client impact.** None to act on. Both admins' audit tabs read as counted lines from the update on.

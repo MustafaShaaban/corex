@@ -13,16 +13,19 @@ defined('ABSPATH') || exit;
 use DateTimeImmutable;
 
 /**
- * Once a day (spec 112, FR-006 and FR-008): ends the grants whose expiry has passed, and cancels
- * the pending requests for what a request may no longer ask for. A grant can therefore outlive its
- * expiry by up to a day, as the spec's assumption allows. Scheduled the way the retention sweep is.
+ * Once a day (spec 112, FR-006, FR-008, FR-010): ends the grants whose expiry has passed, cancels
+ * the pending requests for what a request may no longer ask for, and stores the refusal counts the
+ * object cache holds. A grant can therefore outlive its expiry by up to a day, as the spec's
+ * assumption allows. Scheduled the way the retention sweep is.
  */
 final class AccessGrantScheduler
 {
     public const HOOK = 'corex_access_grants_daily';
 
-    public function __construct(private readonly AccessGrantService $grants)
-    {
+    public function __construct(
+        private readonly AccessGrantService $grants,
+        private readonly AccessAuditLog $audit,
+    ) {
     }
 
     public function register(): void
@@ -44,5 +47,6 @@ final class AccessGrantScheduler
 
         $this->grants->endExpired($now);
         $this->grants->cancelNotRequestable($now);
+        $this->audit->settle();
     }
 }

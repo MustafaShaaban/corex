@@ -118,25 +118,28 @@ for it).
 
 ### Tests for User Story 2
 
-- [ ] T030 [P] [US2] Rewrite `tests/Unit/Access/AccessAuditLogTest.php`: merging within 3,600 seconds of `first`, a new
+- [x] T030 [P] [US2] Rewrite `tests/Unit/Access/AccessAuditLogTest.php`: merging within 3,600 seconds of `first`, a new
   entry after it, a window across midnight, 20 entries per person before the global cap, 30-day prune, old-shape
   entries read as count 1, page-slug and section keys counted as one
-- [ ] T031 [P] [US2] Integration test counting database writes for 10 refusals with and without a persistent object
+- [x] T031 [P] [US2] Integration test counting database writes for 10 refusals with and without a persistent object
   cache (an in-memory cache drop-in for the test), in `tests/Integration/Access/AccessAuditLogWritesTest.php`
-- [ ] T032 [US2] Integration test: 1,000 refusals of one person leave every other entry listed, in
+- [x] T032 [US2] Integration test: 1,000 refusals of one person leave every other entry listed, in
   `tests/Integration/Access/AccessAuditLogWritesTest.php` (after T031, same file)
 
 ### Implementation for User Story 2
 
-- [ ] T033 [US2] Change `CFG/Access/AccessAuditLog.php` to the merged entry of [data-model.md](data-model.md), with
+- [x] T033 [US2] Change `CFG/Access/AccessAuditLog.php` to the merged entry of [data-model.md](data-model.md), with
   `wp_cache_incr()` while `wp_using_ext_object_cache()` and one write when the window closes, and an in-place update
   otherwise
-- [ ] T034 [US2] Normalise the section to the page slug with `AdminPage::pageSlugForSection()` where refusals are
+- [x] T034 [US2] Normalise the section to the page slug with `AdminPage::pageSlugForSection()` where refusals are
   recorded (`CFG/Access/AccessDeniedGate.php`, `CORE/Admin/AdminPage.php`)
-- [ ] T035 [US2] Show the count and the first and last time in `AccessScreen::auditRow()` in
+- [x] T035 [US2] Show the count and the first and last time in `AccessScreen::auditRow()` in
   `CFG/Access/AccessScreen.php` and in the audit list of `CFG/Access/AccessWorkspace.js`, in plain words instead of
   raw keys
-- [ ] T036 [US2] Flush closed windows in the daily sweep of `CFG/Access/AccessGrantScheduler.php`
+- [x] T036 [US2] Flush closed windows in the daily sweep of `CFG/Access/AccessGrantScheduler.php`
+
+**Built as** (2026-10-21, DECISIONS #377): T034 is done in `AccessAuditLog::recordDenied()`, which both refusal paths
+reach; entries stored before spec 112 are folded on read; the daily `settle()` runs from `AccessGrantScheduler`.
 
 **Checkpoint**: quickstart section 2 passes; `tests/Integration/Foundation/EveryRequestOptionQueriesTest.php` still
 passes.
