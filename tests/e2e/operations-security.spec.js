@@ -183,6 +183,29 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 		}
 	} );
 
+	test( 'maintenance says what it closes and what stays open, without opening anything', async ( {
+		page,
+	} ) => {
+		// Spec 112 FR-018: the lines an owner reads before choosing, not the collapsed reference.
+		await page.goto( `${ SCREEN }&tab=environment&mode=maintenance` );
+
+		const block = page.locator( '[data-mode="maintenance"]' );
+		test.skip(
+			await block.isHidden(),
+			'the site has declared Maintenance, so choosing it again proposes nothing to read'
+		);
+
+		for ( const words of [
+			'Public form submissions are closed',
+			'sign-in and password reset stay open',
+			'discussion settings',
+		] ) {
+			await expect(
+				block.getByText( words, { exact: false } )
+			).toBeVisible();
+		}
+	} );
+
 	test( 'development and staging ask for no confirmation at all', async ( {
 		page,
 	} ) => {
@@ -234,6 +257,59 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 		const other = site.current === 'staging' ? 'development' : 'staging';
 		await choose( label( other ) );
 		await expect( page.locator( '[data-corex-mode-apply]' ) ).toBeEnabled();
+	} );
+} );
+
+test.describe( 'recovery works without a command line', () => {
+	// Spec 112, User Story 4.
+	test( 'the panel gives both ways back, as code that can be copied', async ( {
+		page,
+	} ) => {
+		await page.goto( `${ SCREEN }&tab=login` );
+
+		const panel = page.locator( '.corex-security__recovery' );
+		await expect(
+			panel.getByRole( 'heading', { name: 'Without a command line' } )
+		).toBeVisible();
+		await expect(
+			panel.getByRole( 'heading', { name: 'With a command line' } )
+		).toBeVisible();
+
+		const values = panel.locator( 'textarea[readonly]' );
+		await expect( values ).toHaveCount( 2 );
+		await expect( values.nth( 0 ) ).toHaveValue(
+			"define( 'COREX_LOGIN_UNGUARD', true );"
+		);
+		await expect( values.nth( 1 ) ).toHaveValue(
+			'wp corex security reset-login'
+		);
+
+		// The whole value is in view at any width: an owner reads the line before copying it.
+		const rows = panel.locator( '.corex-copy-field__row' );
+		for ( const width of [ 1280, 375 ] ) {
+			await page.setViewportSize( { width, height: 900 } );
+
+			for ( let index = 0; index < 2; index++ ) {
+				const textarea = rows.nth( index ).locator( 'textarea' );
+				const field = await textarea.boundingBox();
+				const button = await rows
+					.nth( index )
+					.getByRole( 'button', { name: 'Copy' } )
+					.boundingBox();
+				const hidden = await textarea.evaluate( ( element ) => ( {
+					across: element.scrollWidth - element.clientWidth,
+					down: element.scrollHeight - element.clientHeight,
+				} ) );
+
+				// The button is beside the field, or under it where they do not fit on one line.
+				expect(
+					Math.abs( field.y - button.y ) <= 1 ||
+						button.y >= field.y + field.height
+				).toBe( true );
+				expect( hidden ).toEqual( { across: 0, down: 0 } );
+				await expect( textarea ).toHaveAttribute( 'dir', 'ltr' );
+			}
+		}
 	} );
 } );
 

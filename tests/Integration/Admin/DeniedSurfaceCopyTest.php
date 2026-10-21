@@ -68,3 +68,22 @@ it('names the same ability the submission handler resolves', function () {
             ->toContain(AdminPage::requestAbilityFor($section));
     }
 });
+
+/**
+ * Spec 112 FR-008a: on a screen whose ability cannot be requested, nobody is offered a form whose
+ * request would be refused. The page says how access is given instead.
+ */
+it('offers no request form where the ability is granted only through the role matrix', function (string $section) {
+    $surface = Boot::app()->container()->make(AdminPage::class)->deniedSurface($section);
+
+    expect($surface)->not->toContain('corex-denied__request')
+        ->and($surface)->toContain('An administrator grants access to this area through the role matrix.');
+})->with(['corex-settings', 'corex-addons', 'corex-access', 'corex-operations-security', 'corex-releases']);
+
+it('still offers the form where the ability can be requested', function (string $section) {
+    $surface = Boot::app()->container()->make(AdminPage::class)->deniedSurface($section);
+
+    expect($surface)->toContain('corex-denied__request')
+        ->and($surface)->not->toContain('through the role matrix');
+})->with(['corex-forms', 'corex-submissions', 'corex-data-models', 'corex-notifications', 'corex-email-studio']);
+

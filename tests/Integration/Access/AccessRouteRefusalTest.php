@@ -166,6 +166,10 @@ it('answers 400 for an access request it cannot read, names the parameter, and s
     'an ability and an area'         => [['ability' => CorexAbility::MANAGE_FORMS, 'area' => 'forms-flows', 'reason' => 'I maintain the forms.'], 'area', InvalidAccessInput::TARGET_AMBIGUOUS],
     'neither an ability nor an area' => [['reason' => 'I maintain the forms.'], 'ability', InvalidAccessInput::TARGET_REQUIRED],
     'nothing at all'                 => [[], 'reason', InvalidAccessInput::REASON_REQUIRED],
+    // Spec 112 FR-001: an administrator grants these through the role matrix, or not at all.
+    'an ability only an administrator grants' => [['ability' => CorexAbility::MANAGE_RELEASES, 'reason' => 'I ship releases.'], 'ability', InvalidAccessInput::ABILITY_NOT_REQUESTABLE],
+    'a locked ability'               => [['ability' => CorexAbility::MANAGE_ADMIN, 'reason' => 'I run the site.'], 'ability', InvalidAccessInput::ABILITY_NOT_REQUESTABLE],
+    'an area holding one'            => [['area' => CorexAbility::GROUP_OPERATIONS, 'reason' => 'I run the site.'], 'area', InvalidAccessInput::AREA_NOT_REQUESTABLE],
 ]);
 
 it('takes a reason of exactly the longest length', function () {

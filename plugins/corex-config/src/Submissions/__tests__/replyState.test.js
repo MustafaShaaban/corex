@@ -8,6 +8,8 @@ import {
 	replyOutcome,
 	replyStateOf,
 	emailHistoryLine,
+	relatedEmailName,
+	whyNotResent,
 } from '../detail/replyState.js';
 import { historyLine } from '../detail/detailState.js';
 
@@ -375,5 +377,47 @@ describe( 'a reply sent again', () => {
 		expect( again.detail ).not.toContain( 'not listed' );
 		expect( again.detail ).toContain( 'Do not send it again.' );
 		expect( again.text ).toBe( 'Reply sent to salma@example.com.' );
+	} );
+} );
+
+describe( 'the emails a flow sent, in the drawer (spec 112)', () => {
+	it( 'names each by what it is', () => {
+		expect( relatedEmailName( { kind: 'confirmation' } ) ).toBe(
+			'Confirmation to the sender'
+		);
+		expect( relatedEmailName( { kind: 'team_notification' } ) ).toBe(
+			'Team notification'
+		);
+		expect( relatedEmailName( { kind: 'failure_notice' } ) ).toBe(
+			'Failure notice'
+		);
+	} );
+
+	it( 'says why one cannot be sent again, and nothing when it can', () => {
+		expect( whyNotResent( { not_resendable_reason: null } ) ).toBe( '' );
+		expect(
+			whyNotResent( { not_resendable_reason: 'recipients_unknown' } )
+		).toContain( 'not known' );
+		expect(
+			whyNotResent( { not_resendable_reason: 'not_retryable' } )
+		).toContain( 'cannot be sent again' );
+	} );
+
+	it( 'says in the history who an email sent again went to', () => {
+		expect(
+			emailHistoryLine( {
+				outcome: 'success',
+				summary: {
+					action: 'resend',
+					recipients: [ 'team@example.com', 'ops@example.com' ],
+				},
+			} )
+		).toBe( 'Email sent again to team@example.com, ops@example.com' );
+		expect(
+			emailHistoryLine( {
+				outcome: 'success',
+				summary: { action: 'resend' },
+			} )
+		).toBe( 'Email sent again' );
 	} );
 } );

@@ -47,7 +47,21 @@ Only a rule in the web server can change what they answer.
 Hiding is obscurity, not access control. It cuts automated probing; the rate limiting above is what actually
 defends credentials.
 
-If an owner is locked out or the protected route is misconfigured, run:
+If an owner has lost the login address, is locked out, or the protected route is misconfigured, there are two ways
+back in. The Recovery panel in **Operations & Security → Login Protection** gives both, with the code ready to copy.
+
+**Without a command line** (most shared hosts): open `wp-config.php` with the host's file manager, add this line above
+the line that says "That's all, stop editing", sign in at `/wp-login.php`, then remove the line:
+
+```php
+define( 'COREX_LOGIN_UNGUARD', true );
+```
+
+While the line is there, `wp-login.php` is open to everyone and the custom login address keeps working. It does not
+end a lockout; a lockout ends when its lockout length has passed. The Login Protection section and the "Default login
+endpoints" row on the overview say that recovery is on until the line is removed.
+
+**With a command line:**
 
 ```bash
 wp corex security reset-login
@@ -55,8 +69,6 @@ wp corex security reset-login
 
 The command disables the protected login gates, releases active lockouts, and prints the restored `wp-login.php` URL.
 It does not change users, roles, passwords, content, or unrelated CoreX settings.
-
-For emergency request-level bypasses, define `COREX_LOGIN_UNGUARD` only long enough to regain access, then remove it.
 
 ## What every page says the site runs
 
@@ -137,6 +149,12 @@ is stored through the Access workflow with:
 - a required reason;
 - a seven-day expiry.
 
+Abilities that control the whole site cannot be requested: those the catalogue marks locked or critical (CoreX admin,
+access, operations and security, releases, dangerous actions), any ability that implies one, and an area that holds
+one. An administrator grants those through the role matrix. On the screens that need one of them (Overview, Add-ons,
+Access, Operations & Security, Releases) the denied page says so and shows no form, and a request for one through REST
+is answered `400` with the refusal code `ability_not_requestable` or `area_not_requestable`, storing nothing.
+
 ### What the requester sees
 
 The form submits to a CoreX admin endpoint, which validates it, calls the Access service and redirects back to the
@@ -163,12 +181,29 @@ or one made after the first was decided or expired, is a new request.
 
 ### What the administrator sees
 
-Pending requests appear in **CoreX Access & Abilities → Role matrix**, each naming who asked, which ability they asked
-for, when, and why, with **Approve** and **Deny**. Approval grants the requested CoreX-owned ability immediately;
-denial records the decision without granting access. Both write an audit entry.
+Pending requests appear in **CoreX Access & Abilities → Role matrix**, each naming who asked, which ability or area
+they asked for, when, and why, with **Approve** and **Deny**. Denial records the decision without granting access.
+
+**Approve** first shows what would be granted: each ability with its risk, the area it came from and the requester's
+reason. The administrator writes a note, chooses when access ends (7, 30 or 90 days; 30 is selected), and, for an
+ability marked dangerous, types its key (for example `corex_manage_data`); the server checks all of it again, with the
+same safety policy as a role change. Both decisions write an audit entry.
+
+Beside the requests, **Access granted by approval** lists every grant that stands: who has it, who approved it and when,
+the note, and when it ends. **Revoke** takes the ability back, unless another standing grant still gives it to the same
+person. Once a day CoreX ends the grants whose time has passed and tells the person and the approver in the
+Notification Center. A grant approved before expiries existed says "No expiry (granted before expiries existed)", stays
+in effect and can be revoked. A grant whose ability was taken away elsewhere (a role editor, the command line) is
+listed as no longer in effect.
 
 Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
 When nobody is waiting, it says nothing at all.
+
+The **Audit log** tab lists refused visits to CoreX screens from the last 30 days. One person's refusals of one screen
+are one line for an hour from the first of them, with how many times and from when to when, so somebody reloading a
+refused page cannot push anybody else's line out; each person keeps at most 20 lines. On a host with a persistent
+object cache the repeats within the hour are counted there and stored once; without one, each repeat updates that
+person's line. Requests and decisions are in the activity log, not here.
 
 `GET /corex/v1/access/requests` answers the same list as JSON, to the same people: it needs a REST nonce and
 `manage_options`, as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person

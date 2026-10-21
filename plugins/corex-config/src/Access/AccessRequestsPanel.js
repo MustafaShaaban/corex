@@ -4,69 +4,60 @@
  * The panel this replaces mapped `config.requests` to a bare list of reasons and explained that the
  * "pending request workflow is backed by the Access REST routes". Both the route and the screen
  * handed it a hardcoded empty array, so it never rendered a row — and there was nothing to press.
- * A person asking for access was told an administrator would review it, and no administrator could
- * see it.
  *
- * `AccessService::decideRequest()` was already complete: it transitions the row, grants the ability
- * on approval, records an audit event and notifies. Only the surface was missing.
+ * Approving opens the request's preview first (spec 112, FR-002): what it grants, with a note, an
+ * expiry and, for a dangerous ability, its name typed. A decision is taken from the server's answer,
+ * not from the request having been sent: a refused one is answered 200 with the state `blocked`.
  */
 import { useState } from '@wordpress/element';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexTime from '../admin/components/CorexTime.js';
 import { usePending, workingProps } from '../admin/components/working.js';
+import AccessApprovalDialog from './AccessApprovalDialog.js';
+import { denyRequest, previewApproval, refusalOf } from './accessClient.js';
 
-/**
- * Approve or deny a request through the CoreX access API.
- *
- * @param {Object}  config   The localized screen config.
- * @param {number}  id       The request ID.
- * @param {boolean} approved Whether to approve.
- * @return {Promise<void>} Resolves when the decision is recorded; rejects with a readable message.
- */
-async function decide( config, id, approved ) {
-	const response = await window.fetch(
-		`${ config.restUrl }/requests/${ id }/decision`,
-		{
-			method: 'POST',
-			credentials: 'same-origin',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-WP-Nonce': config.nonce,
-			},
-			body: JSON.stringify( { approved, note: '' } ),
-		}
-	);
-
-	if ( ! response.ok ) {
-		// Deliberately not the response body: it may carry a WordPress error payload, and this
-		// message is rendered on the page.
-		throw new Error(
-			__(
-				'CoreX could not record that decision. Nothing changed — please try again.',
-				'corex'
-			)
-		);
-	}
-}
-
-export default function AccessRequestsPanel( { config } ) {
+export default function AccessRequestsPanel( {
+	config,
+	onApproved = () => {},
+} ) {
 	const [ requests, setRequests ] = useState( config?.requests || [] );
 	// One decision at a time. It was one id: deciding a second request while the first was
 	// out handed the first one's buttons back before its answer.
 	const [ pending, during ] = usePending();
 	const [ error, setError ] = useState( '' );
+	const [ approving, setApproving ] = useState( null );
 
-	const onDecide = async ( id, approved ) => {
+	// Removed only after the server confirmed it. Removing first would show the administrator a
+	// decision that may not have been recorded.
+	const settled = ( id ) =>
+		setRequests( ( current ) =>
+			current.filter( ( request ) => request.id !== id )
+		);
+
+	const onApprove = async ( id ) => {
 		setError( '' );
-
 		try {
-			await decide( config, id, approved );
-			// Removed only after the server confirmed it. Removing first would show the
-			// administrator a decision that may not have been recorded.
-			setRequests( ( current ) =>
-				current.filter( ( request ) => request.id !== id )
-			);
+			const preview = await previewApproval( config, id );
+			if ( preview === null ) {
+				settled( id );
+				return;
+			}
+			setApproving( preview );
+		} catch ( failure ) {
+			setError( failure.message );
+		}
+	};
+
+	const onDeny = async ( id ) => {
+		setError( '' );
+		try {
+			const result = await denyRequest( config, id );
+			if ( result.state === 'completed' ) {
+				settled( id );
+				return;
+			}
+			setError( refusalOf( result ) );
 		} catch ( failure ) {
 			setError( failure.message );
 		}
@@ -93,12 +84,25 @@ export default function AccessRequestsPanel( { config } ) {
 							key={ request.id }
 						>
 							<p className="corex-access__request-who">
-								{ sprintf(
-									/* translators: 1: person's name, 2: the ability they asked for. */
-									__( '%1$s asked for %2$s', 'corex' ),
-									request.requester,
-									request.ability
-								) }
+								{ request.ability
+									? sprintf(
+											/* translators: 1: person's name, 2: the ability they asked for. */
+											__(
+												'%1$s asked for %2$s',
+												'corex'
+											),
+											request.requester,
+											request.ability
+										)
+									: sprintf(
+											/* translators: 1: person's name, 2: a CoreX area's key, e.g. "data". */
+											__(
+												'%1$s asked for the %2$s area',
+												'corex'
+											),
+											request.requester,
+											request.area
+										) }
 							</p>
 							<p className="corex-access__request-when">
 								<CorexTime
@@ -117,7 +121,7 @@ export default function AccessRequestsPanel( { config } ) {
 									disabled={ pending !== '' }
 									onClick={ () =>
 										during( `approve:${ request.id }`, () =>
-											onDecide( request.id, true )
+											onApprove( request.id )
 										)
 									}
 									{ ...workingProps(
@@ -132,7 +136,7 @@ export default function AccessRequestsPanel( { config } ) {
 									disabled={ pending !== '' }
 									onClick={ () =>
 										during( `deny:${ request.id }`, () =>
-											onDecide( request.id, false )
+											onDeny( request.id )
 										)
 									}
 									{ ...workingProps(
@@ -145,6 +149,19 @@ export default function AccessRequestsPanel( { config } ) {
 						</li>
 					) ) }
 				</ul>
+			) }
+
+			{ approving && (
+				<AccessApprovalDialog
+					config={ config }
+					preview={ approving }
+					onClose={ () => setApproving( null ) }
+					onApproved={ () => {
+						settled( approving.request_id );
+						setApproving( null );
+						onApproved();
+					} }
+				/>
 			) }
 		</section>
 	);

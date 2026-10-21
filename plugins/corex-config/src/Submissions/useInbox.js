@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	buildEmailLogUrl,
 	buildInboxUrl,
@@ -243,9 +243,20 @@ export function useInbox( config, filters ) {
 				attempt_id: attemptId,
 			} );
 			if ( result ) {
+				// Who it went to (spec 112, FR-034): the person handling it sees the addresses.
+				const to = ( result.recipients || [] ).join( ', ' );
 				await refreshRecord(
 					id,
-					__( 'Related email resent.', 'corex' )
+					to === ''
+						? __( 'Related email resent.', 'corex' )
+						: sprintf(
+								/* translators: %s: the addresses an email was sent again to, comma-separated. */
+								__(
+									'Related email sent again to %s.',
+									'corex'
+								),
+								to
+							)
 				);
 			}
 			return result;

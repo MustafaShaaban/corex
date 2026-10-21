@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\AccessRequestSurfaceState;
 use Corex\Access\CorexAbility;
+use Corex\Access\RequestableAbilities;
 use Corex\Support\Facades\AdminDate;
 
 /**
@@ -32,8 +33,15 @@ final class AdminPage
      * Null on a CoreX install without the config plugin, and in unit tests. The surface then
      * renders exactly what it rendered before spec 079 — the plain form — rather than failing.
      */
-    public function __construct(private readonly ?AccessRequestSurfaceState $requestState = null)
-    {
+    /**
+     * @param RequestableAbilities|null $requestable Which abilities a request may ask for (spec 112).
+     *                                               Without it every screen offers the form, as
+     *                                               before spec 112.
+     */
+    public function __construct(
+        private readonly ?AccessRequestSurfaceState $requestState = null,
+        private readonly ?RequestableAbilities $requestable = null,
+    ) {
     }
 
     public function open(string $section, string $title, string $description = '', string $crumbSuffix = ''): string
@@ -395,12 +403,7 @@ final class AdminPage
             . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
             . '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>'
             . '<h2 class="corex-denied__title">' . esc_html__('You don’t have access to this area', 'corex') . '</h2>'
-            . '<p class="corex-denied__text">'
-            . sprintf(
-                /* translators: %s: the CoreX ability an access request from this screen asks for. */
-                esc_html__('Your role doesn’t include the access this screen requires. A request from here asks a site administrator for %s.', 'corex'),
-                '<code>' . esc_html(self::requestAbilityFor($section)) . '</code>',
-            )
+            . '<p class="corex-denied__text">' . $this->deniedExplanation($section)
             . '</p><div class="corex-denied__actions">'
             . '<a class="button button-primary" href="' . esc_url(admin_url()) . '">'
             . esc_html__('Back to Dashboard', 'corex') . '</a>'
@@ -412,14 +415,52 @@ final class AdminPage
     }
 
     /**
-     * One of four: the request already sent, or the form — plain, with a validation error, or with
-     * a failure notice.
+     * What the screen requires, named as the ability a request from here asks for, or, where it
+     * cannot be requested, as the ability an administrator grants (spec 112, FR-008a).
+     */
+    private function deniedExplanation(string $section): string
+    {
+        $ability = '<code>' . esc_html(self::requestAbilityFor($section)) . '</code>';
+
+        if (! $this->canBeRequested($section)) {
+            return sprintf(
+                /* translators: %s: the CoreX ability this screen requires. */
+                esc_html__('Your role doesn’t include the access this screen requires, %s.', 'corex'),
+                $ability,
+            );
+        }
+
+        return sprintf(
+            /* translators: %s: the CoreX ability an access request from this screen asks for. */
+            esc_html__('Your role doesn’t include the access this screen requires. A request from here asks a site administrator for %s.', 'corex'),
+            $ability,
+        );
+    }
+
+    private function canBeRequested(string $section): bool
+    {
+        return $this->requestable?->isRequestable(self::requestAbilityFor($section)) ?? true;
+    }
+
+    /**
+     * One of five: no form, where the screen's ability is granted only through the role matrix
+     * (spec 112, FR-008a); the request already sent; or the form — plain, with a validation error,
+     * or with a failure notice.
+     *
+     * The first comes before "already sent": a request made before spec 112 for an ability that can
+     * no longer be requested is cancelled, so it is not shown as waiting.
      *
      * "Already sent" is read from stored state rather than from a redirect flag, so it survives a
      * refresh, a bookmark and tomorrow, and cannot be conjured by editing the URL.
      */
     private function requestState(string $section): string
     {
+        if (! $this->canBeRequested($section)) {
+            return '<p class="corex-denied__reason">'
+                . esc_html__('An administrator grants access to this area through the role matrix.', 'corex')
+                . '</p>';
+        }
+
         $pending = $this->requestState?->pendingForCurrentUser(self::requestAbilityFor($section));
 
         if ($pending !== null) {

@@ -17,6 +17,7 @@ use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaRegistry;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
+use Corex\Http\PublicSubmission;
 use Corex\Mail\Mailer;
 use Corex\Newsletter\Subscriber\SubscriberRepository;
 use Corex\Newsletter\Subscriber\SubscriberTable;
@@ -151,6 +152,8 @@ final class NewsletterServiceProvider extends ServiceProvider
             'methods'             => 'POST',
             'permission_callback' => '__return_true', // public; honeypot + captcha + throttle gate it
             'callback'            => [$this, 'subscribe'],
+            // Closed while the site is in Maintenance (spec 112).
+            PublicSubmission::MARKER => true,
         ]);
     }
 

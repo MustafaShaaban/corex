@@ -109,7 +109,7 @@ it('transitions editorial state and moderates native comments through REST metho
         'assignee_id' => $this->actorId,
         'note' => 'Ready for editorial review.',
     ]);
-    $transition->set_param('id', (int) $this->postId);
+    $transition->set_url_params(['id' => (int) $this->postId]);
     $transitionResponse = $this->controller->transition($transition);
 
     $commentId = wp_insert_comment([
@@ -122,7 +122,7 @@ it('transitions editorial state and moderates native comments through REST metho
     $moderate = blogRestRequest('POST', '/corex/v1/blog/comments/' . (int) $commentId . '/moderate', [
         'action' => 'approve',
     ]);
-    $moderate->set_param('id', (int) $commentId);
+    $moderate->set_url_params(['id' => (int) $commentId]);
     $moderateResponse = $this->controller->moderateComment($moderate);
 
     expect($transitionResponse->get_status())->toBe(200)

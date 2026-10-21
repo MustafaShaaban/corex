@@ -39,6 +39,22 @@ final class WpAccessUserDirectory implements AccessUserDirectory
         $user->add_cap($abilityKey, true);
     }
 
+    public function revokeUserAbility(int $userId, string $abilityKey): void
+    {
+        $user = new WP_User($userId);
+
+        if ($user->exists()) {
+            $user->remove_cap($abilityKey);
+        }
+    }
+
+    public function holdsOwnAbility(int $userId, string $abilityKey): bool
+    {
+        $user = new WP_User($userId);
+
+        return $user->exists() && ($user->caps[$abilityKey] ?? false) === true;
+    }
+
     public function displayName(int $userId): string
     {
         $user = get_userdata($userId);
@@ -50,6 +66,11 @@ final class WpAccessUserDirectory implements AccessUserDirectory
                 __('User %d', 'corex'),
                 $userId,
             );
+    }
+
+    public function exists(int $userId): bool
+    {
+        return get_userdata($userId) instanceof WP_User;
     }
 
     public function emailAddress(int $userId): string

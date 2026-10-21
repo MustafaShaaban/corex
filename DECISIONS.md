@@ -17240,6 +17240,98 @@ mark naming exactly CoreX on the front page and the not-found page, signed out) 
 **Client impact.** None to act on. Every page of a client site gains one line in its head after the
 update. A client that wants none adds the one-line filter.
 
+## #373 — Maintenance closes public submissions: a route that takes them declares it, and one REST filter answers 503 before any handler runs
+
+**Date:** 2026-10-20. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 3. **Mode:**
+CoreX Framework.
+
+**Why.** An owner puts the site into Maintenance so that no visitor data arrives until it is back.
+CoreX's public forms post to REST routes, which the maintenance page guard leaves alone by design,
+so closing submissions needs a guard of its own on those routes.
+
+**Decided.**
+
+1. **A route declares that it takes a public submission**, with `Corex\Http\PublicSubmission::MARKER
+   => true` in its own `register_rest_route()` arguments. WordPress keeps the key in the matched
+   handler. Six routes declare it: `forms/{slug}`, `flows/{id}/submit`, `newsletter/subscribe`,
+   `bookings/request`, `careers/apply` and `account/register`. Sign-in, password reset and every
+   read leave it out, so an administrator can still sign in through the account block.
+2. **One filter on `rest_request_before_callbacks`** (`MaintenanceSubmissionGuard`, corex-config)
+   answers `site_in_maintenance` with HTTP 503 before the permission callback and the handler run,
+   so nothing is stored, mailed or counted against a throttle. A second filter on
+   `rest_request_after_callbacks` turns that one error into a response carrying `Retry-After: 3600`,
+   as the maintenance page has; an error cannot carry a header.
+3. **One decision for both guards.** `MaintenanceDecision::closedToCurrentVisitor()` holds the mode,
+   the `corex_maintenance_bypass` filter (#123) and the signed-in administrator rule.
+   `MaintenanceGuard` adds its own "never the admin, cron, AJAX or REST" rule on top and calls it,
+   so the page guard and the submission guard cannot disagree about who passes.
+4. **Coming soon is untouched** (spec 101 FR-006): the guard acts only on Maintenance.
+5. **The panel says it.** `ModeDisclosure`'s always-shown Maintenance lines name what is closed and
+   what stays open, and that WordPress's own comment form follows the discussion settings. The
+   reference line that said the REST API is never intercepted now says "apart from public
+   submissions".
+
+**Not chosen.**
+
+- *A middleware alias.* The add-ons depend only on corex-core and do not run the middleware
+  pipeline, so it would reach two of the six routes.
+- *A list of route patterns kept in corex-config.* A new public route would stay open silently; a
+  declaration travels with the route.
+- *Closing `account/login`.* It stores no visitor data and mails nothing, and closing it could stop
+  an administrator signing in through the account block.
+
+**Verified.** Pest unit `MaintenanceDecisionTest` (9) and the updated `MaintenanceGuardTest` and
+`ModeDisclosureTest`; the whole unit suite, 3228 passing. Pest integration
+`MaintenanceClosesSubmissionsTest` through the real REST server, with a `rest_dispatch_request`
+stand-in for every handler and the mode answered by a `pre_option_` filter, so no run writes
+anything to the install: each marked route answers 503 with `Retry-After` and no database write or
+mail; sign-in and both password reset routes, a signed-in administrator, the bypass filter, Coming
+soon and Production pass; exactly the six routes carry the marker. The refusal test fails with the
+guard unregistered and passes with it. `MaintenanceModeTest` and the route suites of forms,
+newsletter, bookings, careers and profile (238 passing). Playwright: the Maintenance panel shows
+its lines without opening anything.
+
+**Client impact.** Muva and Perego: while a site is in Maintenance, its CoreX forms and sign-ups
+answer 503 and store nothing; Coming soon, which Muva uses, is unchanged. A client route of its own
+that takes public submissions can declare the marker to close with them.
+
+## #374 — Login recovery without a command line: one LoginRecovery value, both ways back as code to copy, and the Security Center says while recovery is on
+
+**Date:** 2026-10-20. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 4. **Mode:**
+CoreX Framework.
+
+**Why.** The Recovery panel gave only `wp corex security reset-login`, and both client sites run on
+hosts with no command line. The `COREX_LOGIN_UNGUARD` constant (#125) works from a host's file
+manager, but the panel did not say how, and nothing said while it was on.
+
+**Decided.**
+
+1. **`LoginRecovery`** (corex-config, `Security/LoginProtection`) holds whether the constant is on,
+   read once in the container where it was read before. `LoginRouteGuard` keeps its boolean argument,
+   now taken from it; `OperationsSecurityScreen` takes it and passes `recoveryActive` to the Security
+   Center. Nothing else reads the constant.
+2. **The Recovery panel gives both ways**, in order: without a command line (file manager, the line
+   to add above WordPress's "That's all, stop editing" line, sign in at `/wp-login.php`, remove the
+   line), then with one; each says what it does and does not do. The bookmark warning names both.
+3. **"Recovery is on"** shows in the Login protection section while the constant is set, whether or
+   not protection is on, and the overview's "Default login endpoints" row reads "Reachable (recovery
+   is on)" when the settings would hide them.
+4. **`CorexCopyField`**, a React copy field in `admin/components`, the admin form of
+   `StandalonePage::copyField()`: the same fallback (Clipboard API, then selecting and copying, then
+   saying to copy from the keyboard). It is a read-only text area set left to right that wraps, so
+   the whole line can be read before it is copied: a single-line field cut the constant's line off
+   at the panel's width. Where field and button do not fit on one line, the button goes under it.
+   Its styles are in `corex-admin-shell.css` with the other shared components.
+
+**Verified.** Jest `corexCopyField.test.js` (4) and `securityCenterRecovery.test.js` (6); the whole
+Jest suite. Pest integration `RecoveryOnTest` (the screen built with a chosen `LoginRecovery`, the
+login settings answered by a filter) and the Security integration suite, 85 passing. Playwright: the
+panel's two headings and two values, and at 1280px and 375px each value whole in its field with
+nothing scrolled out of view.
+
+**Client impact.** None to act on. Both clients' owners get a recovery route that works on their
+hosts.
+
 ## #375 — The ACF field driver slashes what it hands to ACF, as the native one does
 
 **Date:** 2026-10-21. **Branch:** `fix/acf-field-driver-keeps-backslashes`. **Mode:** CoreX
@@ -17271,3 +17363,250 @@ integration on corex.local with ACF active: `SubmissionKeepsBackslashesTest` wen
 
 **Client impact.** A site with ACF active keeps backslashes in what is submitted from the update
 on. Records stored before it are not repaired: what was dropped is not in the database.
+
+## #376 — Access requests ask only for what a request may give; approval shows what it grants and needs a note, an expiry and, for a dangerous ability, its key typed; grants are listed, revoked and ended on time
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 1. **Mode:**
+CoreX Framework. (#375 is held by open PR #428.)
+
+**Why.** Every CoreX screen will check its own ability (stage 3), so who holds an ability has to be
+deliberate first: an administrator should see what an approval grants, say why, choose when it ends,
+find it again and take it back, and the abilities that control the whole site should be granted
+through the role matrix alone.
+
+**Decided.**
+
+1. **`RequestableAbilities`** (corex-core): a request may ask for an ability when neither it nor
+   anything it implies is locked or critical, and for an area when every ability in it can be asked
+   for. `AccessService::assertTarget()` refuses the rest (`ability_not_requestable`,
+   `area_not_requestable`, in the route's 400 shape), so the REST route and the denied page's form
+   answer the same. `AdminPage` takes it as an optional second argument: on Overview, Add-ons,
+   Access, Operations & Security and Releases the denied page says an administrator grants access
+   through the role matrix and offers no form; a post from one of them stores nothing.
+2. **Approval in two steps.** `POST access/requests/{id}/preview` answers what would be granted
+   (each ability with its risk, the area, the reason, any `AccessPolicy::preview()` blocker), the
+   name to type and a hash over the request id and its abilities. `approveRequest()` needs a
+   non-empty note, an expiry of 7, 30 or 90 days, and a `Confirmation` of kind
+   `access.request.approve` bound to that hash; for a dangerous ability its phrase is the ability's
+   key, checked on the server. The key, not the label: it is the same in every language, it is what
+   the denied page shows, and it survives `sanitize_key()`. `denyRequest()` keeps the old refusal.
+   A request for something no longer requestable is cancelled instead of approved.
+3. **The approved row is the grant.** Foundation schema 4 adds five nullable columns to the access
+   requests table (`grant_expires_at`, `ended_at`, `ended_by`, `ended_reason`, `cancel_reason`); the
+   migration runner adds them and nothing is backfilled. A row approved before them has no expiry and
+   is listed as "No expiry (granted before expiries existed)".
+4. **`AccessGrantService`** lists the standing grants (not those of deleted accounts), revokes one
+   (`POST access/grants/{id}/revoke`), ends expired ones and cancels pending requests for what can no
+   longer be asked for. An ability is taken back only when no other standing grant gives it to the
+   same person. `AccessGrantScheduler` runs it daily, on the retention sweep's pattern
+   (`corex_access_grants_daily`), so a grant can outlive its expiry by up to a day. `GET
+   access/grants` and revoking keep the request list's check, `manage_options` (#346).
+5. **`AccessGrantEndedEvent`** on every end; `AccessGrantEndedNotificationProducer` tells the person
+   and the approver when an expiry ends one (the approver is skipped when the account is gone).
+   Activity kinds `access.grant.revoked`, `access.grant.expired`, `access.request.cancelled`.
+6. **The Access screen**: Approve opens `AccessApprovalDialog` from the preview; the panel reads the
+   result's `state`, because a refused decision is answered 200 with `blocked`; `AccessGrantsPanel`
+   lists the grants beside the requests and is read again after an approval.
+
+**Not chosen.**
+
+- *A separate grants table, one row per ability.* It needs a backfill the migration runner cannot
+  run; revoking an area grant as a whole is enough for FR-005.
+- *Showing a grant "overridden by a role".* FR-005 does not ask for it, and it needs the effective
+  capabilities of every listed person.
+
+**Verified.** Pest unit: `RequestableAbilitiesTest` (every ability and area, and an ability that
+implies a critical one), `AccessServiceTest` (preview, note, each expiry, typed key, another
+request's confirmation, a request no longer requestable), `AccessGrantEndedNotificationProducerTest`;
+the whole unit suite, 3264 passing. Pest integration: `AccessGrantStoreTest` (columns, approve, list,
+end once, expired, cancel), `AccessGrantsTest` through the REST server with accounts of its own
+(preview, four refusals, approve and revoke, no expiry, removed outside CoreX, a deleted account, two
+grants for one ability, the daily end with both people told, the daily cancel, administrators only),
+the refusal and denied-page tests; the whole integration suite: 1295 passing, and the 16 failures
+that fail the same way without these changes (being fixed by open PRs #428 and #429). Jest
+`accessGrantsPanel.test.js` (4) and the whole Jest suite. Playwright `access-request.spec.js` (6),
+including approving with a note and 7 days through the dialog, the grant listed, and revoking it.
+
+**Client impact.** Muva and Perego: administrators approve with a note and an expiry; grants made
+before this release are listed with no expiry and can be revoked. A client repository carrying
+copies of CoreX's own tests takes the updated `tests/Unit/Access/AccessServiceTest.php` with this
+release (its fakes implement the widened `AccessRequestStore` and `AccessUserDirectory`).
+
+## #377 — The access audit log counts refusals: one entry per person, section and hour, a per-person cap, and the object cache where the host has one
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 2. **Mode:**
+CoreX Framework.
+
+**Why.** The audit log keeps a bounded history of who was refused what. Counting repeated refusals
+of one screen by one person as one line keeps that history readable and keeps every person's lines
+in it, and spares the database a write for each repeat where the host can.
+
+**Decided.**
+
+1. **Entries are `{user, kind, section, first, last, count}`**, merged while user, kind and section
+   match and the refusal is within an hour of `first`: a window anchored at the first refusal, not a
+   clock hour, so one across midnight stays one entry.
+2. **A screen is one section.** `recordDenied()` records under `AdminPage::pageSlugForSection()`, so
+   the section key from `AdminPage::permissionDenied()` and the page slug from `AccessDeniedGate` are
+   counted together. Entries stored before spec 112 (`time` instead of a range, either key) are read
+   as one refusal each and folded by the same rule, so existing history reads counted at once.
+3. **Each person keeps at most 20 entries** before the log's own cap of 100 applies; the 30-day
+   prune (by the last refusal) stays (#114).
+4. **With a persistent object cache** (`wp_using_ext_object_cache()`), a repeat within the window is
+   counted in the cache (`corex_access_audit` group) and the database is written once for the
+   window: when it starts, and when the next refusal after it closes it or `settle()` runs from the
+   daily access event (`AccessGrantScheduler`). Reads add the cached count in. **Without one**, a
+   repeat updates that person's entry in place (the owner's answer of 2026-10-20, spec 112
+   clarifications).
+5. **The audit tab and the Access workspace say it in words**: who, which screen, how many times,
+   from when to when, with dates through `AdminDate` (spec 076), not raw keys or "2 hours ago".
+
+**Not chosen.** *A counter file under uploads* to meet "one write per hour" on hosts without an
+object cache: more moving parts on shared hosts than a single in-place update is worth.
+
+**Verified.** Pest unit `AccessAuditLogTest` (16: once, fifty in an hour, the window's end, across
+midnight, apart by person/section/kind, a thousand sections for one person, writes without and with
+a cache, the closing window, `settle()`, prune, order, the old shape, folding, both keys of a
+screen) and the whole unit suite. Pest integration `AccessAuditLogWritesTest` on a real WordPress
+counting the option's writes (10 without a cache, 1 with), a thousand refusals keeping two other
+people's entries, the audit tab saying "3 times, from … to …" in one row; `AccessDeniedGateTest` and
+`EveryRequestOptionQueriesTest` unchanged and passing; the whole integration suite. Jest, whole
+suite.
+
+**Client impact.** None to act on. Both admins' audit tabs read as counted lines from the update on.
+
+## #378 — Security records on the Data screen need the ability of the screen they belong to
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 6. **Mode:**
+CoreX Framework.
+
+**Why.** The role ability grants, the access requests and the sign-in attempts belong to Access &
+Abilities and Operations & Security. An owner who delegates data work with "Manage data" should not
+be delegating those records with it.
+
+**Decided.**
+
+1. **A table says which screen owns it.** `ManagedTable` takes an optional last argument,
+   `ownerAbility` (last and defaulted, because a site builds tables of its own; Perego does).
+   `corex_manage_access` for the two access tables, `corex_manage_operations` for sign-in attempts.
+   `TableDataSource` exposes it through `RestrictedDataSource`.
+2. **`DataSourceService` is where it is enforced**, being where every read is decided:
+   `withheldFrom()` names the ability a person lacks; `catalog()` leaves such a source out
+   entirely (not listed as denied); `describe()` and `authorize()` refuse it with
+   `DataAccessRestricted`, which the gateway answers `403` `data_forbidden` by its type, as it does
+   `PersonalDataNotAllowed`, not by reading the words of a translated message. Administrators pass,
+   as `WpDataAccessPolicy` passes `manage_options` for every ability.
+3. **Each refusal is recorded** in the access audit as kind `data` with the model's key, through
+   `Corex\Access\AccessRefusalRecorder` (implemented by `AccessAuditLog`, bound in the container), so
+   the Data layer does not depend on the Access screen's classes; it is counted by #377's rule.
+4. **Exports.** An export of several keeps a restricted model as a part left out
+   (`left_out_because: restricted`, with its label) and never reads it; its summary says why. An
+   export of nothing but restricted models is refused with their names, since CoreX makes no file
+   for an export that would give nothing. Downloading an earlier export that holds a model the
+   person may no longer read is refused.
+5. **Delete stays unavailable** for these three: they are read-only table sources with no writable
+   adapter, so the service's adapter check refuses it before any ability is asked.
+
+**Verified.** Pest unit `ManagedTableTest` (no owner by default; the three shipped owners) and the
+whole unit suite, 3274 passing. Pest integration `RestrictedDataSourcesTest` through the REST server
+as a person holding only "Manage data", with two models of its own and the three shipped tables:
+not listed; list, record and export preview answer 403 `data_forbidden`; two refusals are one
+counted audit entry of kind `data`; an export of a restricted and an open model leaves the first out
+with its reason and label; an export of only the restricted model is refused naming it; a holder of
+both abilities and an administrator read them. The Data, export and Access integration suites (225
+passing) and the whole suite.
+
+**Client impact.** Muva and Perego: a person given "Manage data" who is not an administrator no
+longer sees the three security models. A site's own `ManagedTable` keeps working unchanged.
+
+## #379 — Blog Pro asks one policy, WordPress's own permission for the post or comment in question, and never allows more
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 5. **Mode:**
+CoreX Framework.
+
+**Why.** Blog Pro is for the people who write and edit a site's posts, so it should open for them and
+let each do exactly what WordPress lets them do with the post or comment in front of them. The
+screen and its routes should answer that from one place (#159: a control follows the capability the
+route enforces).
+
+**Decided.**
+
+1. **`BlogProPermissions`** (corex-config) is the one policy the screen, the presenter and every
+   route's `permission_callback` ask. Base: `edit_posts` (stage 3 replaces it with
+   `corex_manage_blog`, CX-ACC-01). A post's figures, share controls and held comments, and moving
+   it, need `edit_post` on it; moving it to Published or Scheduled also needs `publish_post`.
+   Approving, marking as spam, trashing and replying need `moderate_comments`, stricter than
+   WordPress for an Author's own posts, as the owner chose (spec 112 clarifications); editing a
+   comment needs `edit_comment`. The authors table lists every author for `edit_others_posts` and
+   only the person's own line otherwise (`AuthorAnalyticsService::authorsAmong()`).
+2. **A refusal names what is not allowed:** the callbacks answer a `WP_Error` (`rest_forbidden`,
+   403) with a translated sentence; a missing nonce is refused as before.
+3. **The routes read the post or comment from the path** (`RouteParam`), so the id the check is made
+   on is the id acted on; `post_id` is read only where the path has none.
+4. **The screen opens for `edit_posts`**, lists only posts the person may work on (their own for
+   anybody who may not edit others'), offers only the moves the policy allows, and shows
+   moderation buttons only where it allows them. The unused `can` flags are gone. The Blog Pro guide
+   now requires `edit_posts`, as the screen does.
+5. **`POST blog/share-click` records nothing** and answers `recorded: false` (FR-027): nothing calls
+   it, and an open address that writes a row per call is a cost with no reader.
+
+**Known and left.** The denied page of Blog Pro offers to request `corex_manage_blog`, which does not
+open the screen until stage 3 makes the screen check it.
+
+**Verified.** Pest integration `BlogProPermissionMatrixTest` through the REST server, with a
+stand-in for every handler so nothing is changed: Contributor, Author, Editor and Administrator ×
+own and others' drafts and published posts × analytics, share controls and comments; moves to
+review, Published, Scheduled and Draft; approve, spam, trash and reply on a held comment of another's
+post and of the Author's own post; edit on both; the authors route; a subscriber refused; post id 0
+refused; share-click recording nothing; and the screen as an Author (own posts, own line) and a
+Contributor (no Published or Scheduled offered). The other Blog integration tests (46) and the whole
+suite; Jest Blog (27); Playwright `blog-pro.spec.js` (6).
+
+**Client impact.** Muva and Perego: editors and writers can now open Blog Pro and act on what
+WordPress lets them; nothing changes for administrators. Writers no longer reach others' posts or
+comments through its routes.
+
+## #380 — A flow email keeps who it was sent to; an inbox resend goes to them, or to the one recipient its attempt confirms
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 7. **Mode:**
+CoreX Framework.
+
+**Why.** Sending one of a submission's emails again from the inbox should reach the people that email
+was for: the team for a team notification, the sender for a confirmation. CoreX had not kept who an
+email went to; the attempt store keeps a masked address and a keyed hash of it.
+
+**Decided** (the owner's answer of 2026-10-20, spec 112 clarifications).
+
+1. **The email stage records each email's resolved recipients** in the submission's email record
+   (`recipients` on the binding, from `FlowEmailSender::recipientsFor()`), so they live and die with
+   the submission. Anonymising takes them out of the email record and of the resend history.
+2. **A resend goes to the recorded recipients** (`basis: recorded`). For an email sent before they
+   were recorded, the flow's recipients are worked out again from the version the submission was
+   made with (`Corex\Mail\SubmissionEmailRecipients`, implemented by corex-forms) and the email is
+   sent only if they are **one** address that the email's own attempt was sent to
+   (`basis: rechecked`): an attempt names one address, and the other recipients of the same email are
+   attempts of their own that it does not name. Otherwise nothing is sent and the drawer says why.
+3. **`SubmissionEmailGateway` is unchanged**, because a client site implements it (Perego). An
+   optional `Corex\Mail\RecipientAwareSubmissionEmailGateway` adds `resendTo()` (one email to all the
+   recipients) and `wasSentTo()`; Email Studio's gateway implements it. Through a gateway that does
+   not, CoreX sends once per recipient and confirms nobody.
+4. **The detail route describes each email**: `kind` (confirmation, team notification, failure
+   notice), `resendable` and `not_resendable_reason`. The resend answer and the history carry who it
+   went to; the drawer says so.
+
+**Not chosen.** *Storing the full address on the attempt*: it reverses the attempt store's
+redaction, a privacy decision of its own.
+
+**Verified.** Pest unit `ResendRecipientsTest` (12: the team and never the submitter, the
+submitter for a confirmation, one email or one each by gateway, an older email confirmed, four
+refusals that send nothing, the description of four emails) and the updated
+`SubmissionEmailServiceTest`; the whole unit suite, 3288 passing. Pest integration
+`ResendRecipientsTest` end to end on a real Email Studio template and published flow, mail captured
+and `wp_mail()` stopped: the binding records `team@example.com`, the resend reaches only the team,
+an older email is resent after its attempt confirms, one that cannot be worked out again is refused
+and described as such, anonymising removes the recipients; the whole integration suite, 1329
+passing. Jest `replyState.test.js` and the whole Jest suite (1428). Playwright
+`submissions-inbox.spec.js` (15).
+
+**Client impact.** Muva and Perego send no flow emails from code-defined forms, so the change is not
+visible to them. Perego's own `SubmissionEmailGateway` keeps working unchanged.

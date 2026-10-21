@@ -97,6 +97,33 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         return true;
     }
 
+    /**
+     * Who the submission's emails went to, recorded with each email and each resend (spec 112,
+     * FR-032), taken out of the email record and the history: the rest of both stays.
+     */
+    private function forgetRecipients(int $id): void
+    {
+        $emails = get_post_meta($id, 'corex_email_json', true);
+        if (is_array($emails) && is_array($emails['bindings'] ?? null)) {
+            foreach ($emails['bindings'] as $event => $binding) {
+                if (is_array($binding)) {
+                    unset($emails['bindings'][$event]['recipients']);
+                }
+            }
+            update_post_meta($id, 'corex_email_json', $emails);
+        }
+
+        $history = get_post_meta($id, 'corex_submission_timeline', true);
+        if (is_array($history)) {
+            foreach ($history as $at => $entry) {
+                if (is_array($entry) && is_array($entry['summary'] ?? null)) {
+                    unset($history[$at]['summary']['recipients']);
+                }
+            }
+            update_post_meta($id, 'corex_submission_timeline', $history);
+        }
+    }
+
     public function anonymizeForRetention(int $id): bool
     {
         if (get_post_type($id) !== 'corex_submission') {
@@ -118,6 +145,7 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
                 delete_post_meta($id, (string) $key);
             }
         }
+        $this->forgetRecipients($id);
         update_post_meta($id, 'corex_values_json', ['anonymized' => true]);
         update_post_meta($id, 'corex_retention_state', 'anonymized');
         update_post_meta($id, 'corex_submission_updated_at', gmdate(DATE_ATOM));

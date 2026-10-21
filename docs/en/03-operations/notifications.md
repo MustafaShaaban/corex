@@ -90,6 +90,7 @@ present simply produces nothing. The shipped producers are:
 | Submission notification email failed | `submission.email_failed` | Submissions managers |
 | Submission assigned to a person | `submission.assigned` | The assignee |
 | Access request filed | `access.request` | Access managers |
+| Access granted by approval ended at its expiry | `access.grant.expired` | The person, and the administrator who approved it |
 | Background job failed | `job.failed` | Operations managers |
 | Export finished | `export.ready` | The person who ran it |
 | Sign-in lockout triggered | `security.lockout` (merged per identity) | Operations managers |

@@ -30,6 +30,8 @@ final class InvalidAccessInput extends InvalidArgumentException
     public const TARGET_AMBIGUOUS       = 'target_ambiguous';
     public const ABILITY_UNKNOWN        = 'ability_unknown';
     public const AREA_UNKNOWN           = 'area_unknown';
+    public const ABILITY_NOT_REQUESTABLE = 'ability_not_requestable';
+    public const AREA_NOT_REQUESTABLE   = 'area_not_requestable';
     public const ROLE_INVALID           = 'role_invalid';
     public const EFFECT_UNSUPPORTED     = 'effect_unsupported';
     public const CONFIRMATION_MALFORMED = 'confirmation_malformed';

@@ -40,6 +40,21 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 112, access and logs** (2026-10-20, branch `spec/112-access-and-logs`): the first release (R0.1) of the
+CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
+locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,
+Maintenance closes public submissions, the Recovery panel gives a route without a command line, Blog Pro follows
+WordPress permissions, security records on the Data screen need their owning ability, and an inbox resend goes to
+the email's own recipients. Spec, plan and 89 tasks written. Built, on the local branch only (not pushed): story 3,
+Maintenance closes public submissions (DECISIONS #373), and story 4, recovery without a command line (DECISIONS
+#374), and story 1, access requests and grants (DECISIONS #376; #375 is open PR #428's), and story 2, the counted
+access-denied log (DECISIONS #377), and story 6, security records on the Data screen (DECISIONS #378), and story 5,
+Blog Pro follows WordPress permissions (DECISIONS #379), and story 7, an inbox resend reaches the email's own
+recipients (DECISIONS #380). All seven stories are built, with release notes in CHANGELOG.md; nothing pushed.
+Next: the owner's review, then push the branch and open the pull request. The DECISIONS numbers are re-read before anything is pushed. The whole integration suite has 16 failures in
+`FlowLifecycleTest`, `SubmissionKeepsBackslashesTest` and `EmailStudioLifecycleTest` that fail the same way without
+spec 112; open PRs #428 and #429 address them.
+
 **Spec 111, a CoreX site says it runs CoreX** (2026-10-19, branch `spec/111-generator-tag`,
 DECISIONS #372): every front-end page head carries `<meta name="generator" content="CoreX" />`,
 name only on the owner's word, off on the Coming soon page a visitor sees and with

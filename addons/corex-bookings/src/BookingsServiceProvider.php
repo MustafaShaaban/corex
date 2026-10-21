@@ -18,6 +18,7 @@ use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaRegistry;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
+use Corex\Http\PublicSubmission;
 use Corex\Mail\Mailer;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\EmailAnswer;
@@ -90,6 +91,8 @@ final class BookingsServiceProvider extends ServiceProvider
             'methods'             => 'POST',
             'permission_callback' => '__return_true', // public; honeypot + captcha gate it
             'callback'            => [$this, 'request'],
+            // Closed while the site is in Maintenance (spec 112).
+            PublicSubmission::MARKER => true,
         ]);
     }
 

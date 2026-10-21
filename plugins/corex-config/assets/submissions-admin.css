@@ -594,6 +594,14 @@
 	margin: 0;
 }
 
+/* Why an email of the flow is not offered to be sent again (spec 112),
+   under its name. */
+.corex-admin .corex-pane__email-why {
+	display: block;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
 .corex-admin .corex-pane__log {
 	margin: 0;
 	padding: var(--corex-admin-space-sm);

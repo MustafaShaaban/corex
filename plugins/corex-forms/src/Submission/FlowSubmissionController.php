@@ -18,6 +18,7 @@ use Corex\Http\Middleware\Pipeline;
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
 use Corex\Http\Middleware\SanitizeMiddleware;
+use Corex\Http\PublicSubmission;
 use Corex\Http\ResponseEnvelope;
 use Corex\Support\EmailAnswer;
 use DomainException;
@@ -44,6 +45,8 @@ final readonly class FlowSubmissionController
             'callback' => [$this, 'submit'],
             'permission_callback' => '__return_true',
             'args' => ['id' => ['sanitize_callback' => 'absint']],
+            // Closed while the site is in Maintenance (spec 112).
+            PublicSubmission::MARKER => true,
         ]);
     }
 

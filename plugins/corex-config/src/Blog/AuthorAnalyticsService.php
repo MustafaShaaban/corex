@@ -47,6 +47,26 @@ final class AuthorAnalyticsService
     }
 
     /**
+     * The lines of these people only, each one who may write posts (spec 112: somebody who may not
+     * edit others' posts sees their own line).
+     *
+     * @param list<int> $userIds
+     *
+     * @return list<array{name:string,role:string,post_count:int,views:int,reads:int,engagement:float}>
+     */
+    public function authorsAmong(array $userIds, DateTimeImmutable $since, DateTimeImmutable $until): array
+    {
+        $users = get_users([
+            'include'    => $userIds === [] ? [0] : $userIds,
+            'capability' => ['edit_posts'],
+            'orderby'    => 'display_name',
+            'order'      => 'ASC',
+        ]);
+
+        return array_map(fn ($user): array => $this->author((object) $user, $since, $until), is_array($users) ? $users : []);
+    }
+
+    /**
      * @return array{name:string,role:string,post_count:int,views:int,reads:int,engagement:float}
      */
     private function author(object $user, DateTimeImmutable $since, DateTimeImmutable $until): array

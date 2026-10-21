@@ -10,7 +10,9 @@ namespace Corex\Config\Blog;
 
 defined('ABSPATH') || exit;
 
+use Corex\Http\RouteParam;
 use DateTimeImmutable;
+use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -21,8 +23,10 @@ final class BlogProController
 {
     private const NAMESPACE = 'corex/v1';
 
-    public function __construct(private readonly BlogProServices $services)
-    {
+    public function __construct(
+        private readonly BlogProServices $services,
+        private readonly BlogProPermissions $permissions,
+    ) {
     }
 
     public function register(): void
@@ -30,12 +34,12 @@ final class BlogProController
         register_rest_route(self::NAMESPACE, '/blog/analytics', [
             'methods' => 'GET',
             'callback' => [$this, 'analytics'],
-            'permission_callback' => [$this, 'allowed'],
+            'permission_callback' => [$this, 'mayWorkOnPost'],
         ]);
         register_rest_route(self::NAMESPACE, '/blog/share-controls', [
             'methods' => 'GET',
             'callback' => [$this, 'shareControls'],
-            'permission_callback' => [$this, 'allowed'],
+            'permission_callback' => [$this, 'mayWorkOnPost'],
         ]);
         register_rest_route(self::NAMESPACE, '/blog/share-click', [
             'methods' => 'POST',
@@ -45,17 +49,17 @@ final class BlogProController
         register_rest_route(self::NAMESPACE, '/blog/editorial/(?P<id>\d+)/transition', [
             'methods' => 'POST',
             'callback' => [$this, 'transition'],
-            'permission_callback' => [$this, 'allowed'],
+            'permission_callback' => [$this, 'mayMovePost'],
         ]);
         register_rest_route(self::NAMESPACE, '/blog/comments', [
             'methods' => 'GET',
             'callback' => [$this, 'commentQueue'],
-            'permission_callback' => [$this, 'allowed'],
+            'permission_callback' => [$this, 'mayWorkOnPost'],
         ]);
         register_rest_route(self::NAMESPACE, '/blog/comments/(?P<id>\d+)/moderate', [
             'methods' => 'POST',
             'callback' => [$this, 'moderateComment'],
-            'permission_callback' => [$this, 'allowed'],
+            'permission_callback' => [$this, 'mayActOnComment'],
         ]);
         register_rest_route(self::NAMESPACE, '/blog/authors', [
             'methods' => 'GET',
@@ -64,9 +68,47 @@ final class BlogProController
         ]);
     }
 
-    public function allowed(WP_REST_Request $request): bool
+    /** The base permission, for the routes about no one post: the authors table. */
+    public function allowed(WP_REST_Request $request): bool|WP_Error
     {
-        return $this->hasNonce($request) && current_user_can('edit_posts');
+        return $this->answer($request, $this->permissions->canOpen(), __('You do not have permission to use Blog Pro.', 'corex'));
+    }
+
+    public function mayWorkOnPost(WP_REST_Request $request): bool|WP_Error
+    {
+        return $this->answer(
+            $request,
+            $this->permissions->mayWorkOnPost($this->postId($request)),
+            __('You do not have permission to work on this post.', 'corex'),
+        );
+    }
+
+    public function mayMovePost(WP_REST_Request $request): bool|WP_Error
+    {
+        return $this->answer(
+            $request,
+            $this->permissions->mayMovePost($this->postId($request), sanitize_key((string) $request->get_param('state'))),
+            __('You do not have permission to move this post to that state.', 'corex'),
+        );
+    }
+
+    public function mayActOnComment(WP_REST_Request $request): bool|WP_Error
+    {
+        return $this->answer(
+            $request,
+            $this->permissions->mayActOnComment(RouteParam::int($request), sanitize_key((string) $request->get_param('action'))),
+            __('You do not have permission to do that to this comment.', 'corex'),
+        );
+    }
+
+    /** A refusal names what is not allowed (spec 112, FR-025); a missing nonce is refused as before. */
+    private function answer(WP_REST_Request $request, bool $allowed, string $refusal): bool|WP_Error
+    {
+        if (! $this->hasNonce($request)) {
+            return false;
+        }
+
+        return $allowed ? true : new WP_Error('rest_forbidden', $refusal, ['status' => 403]);
     }
 
     public function hasNonce(WP_REST_Request $request): bool
@@ -107,28 +149,22 @@ final class BlogProController
         ]);
     }
 
+    /**
+     * Counts nothing until reading data is collected (spec 112, FR-027): nothing calls it, and an
+     * open address that writes a row per call is a cost with no reader.
+     */
     public function shareClick(WP_REST_Request $request): WP_REST_Response
     {
-        $event = $this->services->sharing->recordShareClick(
-            $this->postId($request),
-            sanitize_key((string) $request->get_param('target')),
-            sanitize_text_field((string) $request->get_param('visitor_key')),
-            $this->serverValue('REMOTE_ADDR'),
-            $this->serverValue('HTTP_USER_AGENT'),
-            (bool) $request->get_param('consented'),
-            new DateTimeImmutable('now'),
-        );
-
         return $this->ok([
-            'recorded' => $event !== null,
-            'target' => $event?->shareTarget,
+            'recorded' => false,
+            'target' => null,
         ]);
     }
 
     public function transition(WP_REST_Request $request): WP_REST_Response
     {
         $item = $this->services->editorial->transition(new EditorialTransitionRequest(
-            postId: (int) $request->get_param('id'),
+            postId: RouteParam::int($request),
             state: sanitize_key((string) $request->get_param('state')),
             actorId: get_current_user_id(),
             note: sanitize_textarea_field((string) $request->get_param('note')),
@@ -151,7 +187,7 @@ final class BlogProController
     public function moderateComment(WP_REST_Request $request): WP_REST_Response
     {
         $result = $this->services->comments->moderate(new CommentModerationRequest(
-            commentId: (int) $request->get_param('id'),
+            commentId: RouteParam::int($request),
             action: sanitize_key((string) $request->get_param('action')),
             actorId: get_current_user_id(),
             body: sanitize_textarea_field((string) $request->get_param('body')),
@@ -168,8 +204,20 @@ final class BlogProController
     public function authorAnalytics(WP_REST_Request $request): WP_REST_Response
     {
         return $this->ok([
-            'authors' => $this->services->authors->authors(...$this->range($request)),
+            'authors' => $this->authors(...$this->range($request)),
         ]);
+    }
+
+    /**
+     * Every author for people who may edit others' posts; otherwise only the person's own line.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function authors(DateTimeImmutable $since, DateTimeImmutable $until): array
+    {
+        return $this->permissions->seesEveryAuthor()
+            ? $this->services->authors->authors($since, $until)
+            : $this->services->authors->authorsAmong([get_current_user_id()], $since, $until);
     }
 
     /**
@@ -183,9 +231,10 @@ final class BlogProController
         return [$until->modify(sprintf('-%d days', $days)), $until];
     }
 
+    /** The post a route is about: the one in its path, else the one named as `post_id`. */
     private function postId(WP_REST_Request $request): int
     {
-        return absint($request->get_param('post_id') ?: $request->get_param('id'));
+        return RouteParam::int($request) ?: absint($request->get_param('post_id'));
     }
 
     private function optionalInt(mixed $value): ?int
@@ -212,7 +261,7 @@ final class BlogProController
      */
     private function editorialItem(EditorialItem $item): array
     {
-        return BlogProPresenter::editorialItem($item);
+        return BlogProPresenter::editorialItem($item, $this->permissions);
     }
 
     /**
@@ -220,7 +269,7 @@ final class BlogProController
      */
     private function commentItem(CommentModerationItem $comment): array
     {
-        return BlogProPresenter::commentItem($comment);
+        return BlogProPresenter::commentItem($comment, $this->permissions);
     }
 
     /**

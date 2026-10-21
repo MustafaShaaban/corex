@@ -23,6 +23,7 @@ use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\LoginRecovery;
 use Corex\Config\Security\LoginProtection\LoginUrl;
 use Corex\Security\Admin\AdminGuard;
 use Corex\Cache\Status\CacheStatusReport;
@@ -53,6 +54,7 @@ final class OperationsSecurityScreen
         private readonly ModeDisclosure $disclosure,
         private readonly CacheStatusReport $cacheStatus,
         private readonly PreviewAccess $preview,
+        private readonly LoginRecovery $recovery,
     ) {
     }
 
@@ -326,9 +328,7 @@ final class OperationsSecurityScreen
             ],
             [
                 __('Default login endpoints', 'corex'),
-                $policy->blockDefaultEndpoints
-                    ? __('Hidden', 'corex')
-                    : __('Reachable', 'corex'),
+                $this->defaultEndpointsState($policy->blockDefaultEndpoints),
                 'login',
             ],
             [
@@ -861,7 +861,23 @@ final class OperationsSecurityScreen
             'lockouts' => $this->lockoutsPayload(),
             'activity' => $this->activityPayload(),
             'recoveryCommand' => 'wp corex security reset-login',
+            'recoveryActive' => $this->recovery->active(),
         ];
+    }
+
+    /**
+     * What the overview says about wp-login.php and wp-admin. While recovery is on they answer
+     * whatever the protection settings say (spec 112, FR-022).
+     */
+    private function defaultEndpointsState(bool $hiddenBySettings): string
+    {
+        if (! $hiddenBySettings) {
+            return __('Reachable', 'corex');
+        }
+
+        return $this->recovery->active()
+            ? __('Reachable (recovery is on)', 'corex')
+            : __('Hidden', 'corex');
     }
 
     /**

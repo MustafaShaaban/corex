@@ -3263,7 +3263,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 85, 144, 193, 279, 376, 505, 518: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 85, 144, 193, 279, 376, 505, 518, 539: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3343,7 +3343,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 32, 67, 83, 161, 272, 295, 367, 380, 422, 470, 481, 511, 512, 524: padding-block: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | gap: var(--corex-admin-space-2xs);",
+      "selector_or_context": "lines 32, 67, 83, 161, 272, 295, 367, 380, 422, 470, 481, 511, 512, 524, 558, 579: padding-block: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | gap: var(--corex-admin-space-2xs);",
       "property": "--corex-admin-space-2xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3363,7 +3363,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 9, 18, 46, 92, 190, 191, 390, 401, 422, 452, 456, 525, 526: margin: 0 0 var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md);",
+      "selector_or_context": "lines 9, 18, 46, 92, 190, 191, 390, 401, 422, 452, 456, 525, 526, 559, 580: margin: 0 0 var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3373,7 +3373,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 17, 28, 119, 120, 251, 252, 303, 339, 411, 430, 446, 482: gap: var(--corex-admin-space-sm); | padding-block: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 17, 28, 119, 120, 251, 252, 303, 339, 411, 430, 446, 482, 548: gap: var(--corex-admin-space-sm); | padding-block: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3453,7 +3453,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 96, 143, 278, 381, 492: color: var(--corex-admin-text);",
+      "selector_or_context": "lines 96, 143, 278, 381, 492, 549, 567: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3473,7 +3473,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 36, 71, 84, 103, 133, 220, 283, 498, 504: color: var(--corex-admin-text-subtle); | background: var(--corex-admin-text-subtle);",
+      "selector_or_context": "lines 36, 71, 84, 103, 133, 220, 283, 498, 504, 538, 553: color: var(--corex-admin-text-subtle); | background: var(--corex-admin-text-subtle);",
       "property": "--corex-admin-text-subtle",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3483,7 +3483,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 178, 183, 225, 231, 266, 517: color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning); | background: var(--corex-admin-warning);",
+      "selector_or_context": "lines 178, 183, 225, 231, 266, 517, 543: color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning); | background: var(--corex-admin-warning);",
       "property": "--corex-admin-warning",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7823,7 +7823,7 @@
     },
     {
       "path": "plugins/corex-config/assets/operations-security.css",
-      "selector_or_context": "lines 140: font-size: var(--corex-admin-font-md);",
+      "selector_or_context": "lines 140, 627: font-size: var(--corex-admin-font-md);",
       "property": "--corex-admin-font-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7843,7 +7843,7 @@
     },
     {
       "path": "plugins/corex-config/assets/operations-security.css",
-      "selector_or_context": "lines 52, 63, 110, 152, 167, 194, 218, 223, 268, 313, 362, 451, 514, 531, 599: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 52, 63, 110, 152, 167, 194, 218, 223, 268, 313, 362, 451, 514, 531, 599, 636: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7923,7 +7923,7 @@
     },
     {
       "path": "plugins/corex-config/assets/operations-security.css",
-      "selector_or_context": "lines 17, 150, 368: gap: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);",
+      "selector_or_context": "lines 17, 150, 368, 634: gap: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);",
       "property": "--corex-admin-space-lg",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7943,7 +7943,7 @@
     },
     {
       "path": "plugins/corex-config/assets/operations-security.css",
-      "selector_or_context": "lines 39, 72, 80, 106, 108, 127, 208, 231, 237, 238, 328, 346, 387, 433, 458, 487, 497, 509, 526, 546, 553, 579, 606, 607: gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-sm); | gap: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 39, 72, 80, 106, 108, 127, 208, 231, 237, 238, 328, 346, 387, 433, 458, 487, 497, 509, 526, 546, 553, 579, 606, 607, 632: gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-sm); | gap: var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7953,7 +7953,7 @@
     },
     {
       "path": "plugins/corex-config/assets/operations-security.css",
-      "selector_or_context": "lines 30, 39, 41, 72, 96, 148, 172, 310, 311, 347, 399, 423, 480, 525: gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm); | padding-block: var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 30, 39, 41, 72, 96, 148, 172, 310, 311, 347, 399, 423, 480, 525, 646: gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm); | padding-block: var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8013,7 +8013,7 @@
     },
     {
       "path": "plugins/corex-config/assets/operations-security.css",
-      "selector_or_context": "lines 56, 109, 138, 151, 273, 312, 472, 513, 583: color: var(--corex-admin-text);",
+      "selector_or_context": "lines 56, 109, 138, 151, 273, 312, 472, 513, 583, 626, 635: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8443,7 +8443,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 54, 268, 272, 850, 944: color: var(--corex-admin-action); | background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface)); | border-inline-start-color: var(--corex-admin-action);",
+      "selector_or_context": "lines 54, 268, 272, 858, 952: color: var(--corex-admin-action); | background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface)); | border-inline-start-color: var(--corex-admin-action);",
       "property": "--corex-admin-action",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8453,7 +8453,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 943: background: var(--corex-admin-action-subtle);",
+      "selector_or_context": "lines 951: background: var(--corex-admin-action-subtle);",
       "property": "--corex-admin-action-subtle",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8463,7 +8463,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 69, 92, 165, 212, 227, 450, 468, 480, 581, 661, 684, 751, 827, 952, 983, 1034: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) dashed var(--corex-admin-border);",
+      "selector_or_context": "lines 69, 92, 165, 212, 227, 450, 468, 480, 581, 669, 692, 759, 835, 960, 991, 1042: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) dashed var(--corex-admin-border);",
       "property": "--corex-admin-border",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8473,7 +8473,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 69, 92, 165, 212, 227, 450, 468, 480, 661, 684, 751, 827, 952, 983, 1034: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) dashed var(--corex-admin-border);",
+      "selector_or_context": "lines 69, 92, 165, 212, 227, 450, 468, 480, 669, 692, 759, 835, 960, 991, 1042: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) dashed var(--corex-admin-border);",
       "property": "--corex-admin-border-width",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8483,7 +8483,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 162, 176, 182, 690: min-block-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 2);",
+      "selector_or_context": "lines 162, 176, 182, 698: min-block-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 2);",
       "property": "--corex-admin-control-height",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8513,7 +8513,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 331, 613, 709: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
+      "selector_or_context": "lines 331, 621, 717: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
       "property": "--corex-admin-focus",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8523,7 +8523,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 614, 710: outline-offset: var(--corex-admin-focus-offset);",
+      "selector_or_context": "lines 622, 718: outline-offset: var(--corex-admin-focus-offset);",
       "property": "--corex-admin-focus-offset",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8533,7 +8533,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 331, 332, 613, 709: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus); | outline-offset: calc(-1 * var(--corex-admin-focus-width));",
+      "selector_or_context": "lines 331, 332, 621, 717: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus); | outline-offset: calc(-1 * var(--corex-admin-focus-width));",
       "property": "--corex-admin-focus-width",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8543,7 +8543,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 522, 548, 607, 764, 784: font-size: var(--corex-admin-font-md);",
+      "selector_or_context": "lines 522, 548, 615, 772, 792: font-size: var(--corex-admin-font-md);",
       "property": "--corex-admin-font-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8553,7 +8553,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 63, 141, 512, 540, 698, 775, 832, 971, 1026, 1053: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 63, 141, 512, 540, 706, 783, 840, 979, 1034, 1061: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8573,7 +8573,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 55, 236, 351, 375, 403, 632, 642, 729: font-size: var(--corex-admin-font-xs);",
+      "selector_or_context": "lines 55, 236, 351, 375, 403, 602, 640, 650, 737: font-size: var(--corex-admin-font-xs);",
       "property": "--corex-admin-font-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8583,7 +8583,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 258, 361, 381, 422, 828: background: color-mix(in srgb, var(--corex-admin-info) 6%, var(--corex-admin-surface)); | background: var(--corex-admin-info); | color: var(--corex-admin-info);",
+      "selector_or_context": "lines 258, 361, 381, 422, 836: background: color-mix(in srgb, var(--corex-admin-info) 6%, var(--corex-admin-surface)); | background: var(--corex-admin-info); | color: var(--corex-admin-info);",
       "property": "--corex-admin-info",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8603,7 +8603,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 57, 633: letter-spacing: var(--corex-admin-letter-wide);",
+      "selector_or_context": "lines 57, 641: letter-spacing: var(--corex-admin-letter-wide);",
       "property": "--corex-admin-letter-wide",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8613,7 +8613,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 549, 785, 833, 972: line-height: var(--corex-admin-line-normal);",
+      "selector_or_context": "lines 549, 793, 841, 980: line-height: var(--corex-admin-line-normal);",
       "property": "--corex-admin-line-normal",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8633,7 +8633,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 93, 194, 213, 451, 685: border-radius: var(--corex-admin-radius-md);",
+      "selector_or_context": "lines 93, 194, 213, 451, 693: border-radius: var(--corex-admin-radius-md);",
       "property": "--corex-admin-radius-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8653,7 +8653,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 71, 166, 602, 694, 752, 829, 953, 985, 1036: border-radius: var(--corex-admin-radius-sm);",
+      "selector_or_context": "lines 71, 166, 610, 702, 760, 837, 961, 993, 1044: border-radius: var(--corex-admin-radius-sm);",
       "property": "--corex-admin-radius-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8683,7 +8683,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 33, 139, 254, 306, 371, 401, 495, 535, 578, 640, 682, 683, 748, 762, 772, 1021: margin-block: var(--corex-admin-space-2xs) 0; | gap: var(--corex-admin-space-2xs); | border-inline-start: var(--corex-admin-space-2xs) solid transparent;",
+      "selector_or_context": "lines 33, 139, 254, 306, 371, 401, 495, 535, 578, 648, 690, 691, 756, 770, 780, 1029: margin-block: var(--corex-admin-space-2xs) 0; | gap: var(--corex-admin-space-2xs); | border-inline-start: var(--corex-admin-space-2xs) solid transparent;",
       "property": "--corex-admin-space-2xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8693,7 +8693,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 11, 467, 475, 479, 505, 649, 799, 894, 923, 1016: gap: var(--corex-admin-space-lg); | padding-block-start: var(--corex-admin-space-lg); | min-block-size: var(--corex-admin-space-lg);",
+      "selector_or_context": "lines 11, 467, 475, 479, 505, 657, 807, 902, 931, 1024: gap: var(--corex-admin-space-lg); | padding-block-start: var(--corex-admin-space-lg); | min-block-size: var(--corex-admin-space-lg);",
       "property": "--corex-admin-space-lg",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8703,7 +8703,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 21, 68, 91, 191, 226, 305, 495, 580, 627, 640, 647, 660, 692, 719, 750, 826, 931, 982, 1007, 1033: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);",
+      "selector_or_context": "lines 21, 68, 91, 191, 226, 305, 495, 580, 635, 648, 655, 668, 700, 727, 758, 834, 939, 990, 1015, 1041: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8713,7 +8713,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 100, 111, 178, 190, 191, 226, 435, 446, 517, 529, 557, 564, 570, 593, 599, 618, 656, 719, 740, 762, 772, 915, 950, 969, 981, 997, 1032: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);",
+      "selector_or_context": "lines 100, 111, 178, 190, 191, 226, 435, 446, 517, 529, 557, 564, 570, 593, 607, 626, 664, 727, 748, 770, 780, 923, 958, 977, 989, 1005, 1040: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8723,7 +8723,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 448, 648: padding: var(--corex-admin-space-xl); | margin-block-start: var(--corex-admin-space-xl);",
+      "selector_or_context": "lines 448, 656: padding: var(--corex-admin-space-xl); | margin-block-start: var(--corex-admin-space-xl);",
       "property": "--corex-admin-space-xl",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8733,7 +8733,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 43, 148, 347, 359, 360, 371, 485, 623, 781, 782, 804, 817, 825, 876, 884, 893, 915, 937: gap: var(--corex-admin-space-xs); | padding-inline: var(--corex-admin-space-xs); | inline-size: var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 43, 148, 347, 359, 360, 371, 485, 631, 789, 790, 812, 825, 833, 884, 892, 901, 923, 945: gap: var(--corex-admin-space-xs); | padding-inline: var(--corex-admin-space-xs); | inline-size: var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8743,7 +8743,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 70, 581, 828, 984, 1035: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-success); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);",
+      "selector_or_context": "lines 70, 581, 836, 992, 1043: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-success); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);",
       "property": "--corex-admin-state-border",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8753,7 +8753,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 70, 387, 414, 841: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-success); | color: var(--corex-admin-success); | border-inline-start-color: var(--corex-admin-success);",
+      "selector_or_context": "lines 70, 387, 414, 849: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-success); | color: var(--corex-admin-success); | border-inline-start-color: var(--corex-admin-success);",
       "property": "--corex-admin-success",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8773,7 +8773,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 72, 94, 164, 214, 258, 268, 686, 753, 830, 986, 1037: background: var(--corex-admin-surface); | background: color-mix(in srgb, var(--corex-admin-info) 6%, var(--corex-admin-surface)); | background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface));",
+      "selector_or_context": "lines 72, 94, 164, 214, 258, 268, 694, 761, 838, 994, 1045: background: var(--corex-admin-surface); | background: color-mix(in srgb, var(--corex-admin-info) 6%, var(--corex-admin-surface)); | background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface));",
       "property": "--corex-admin-surface",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8783,7 +8783,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 235, 263, 601, 951: background: var(--corex-admin-surface-alt);",
+      "selector_or_context": "lines 235, 263, 609, 959: background: var(--corex-admin-surface-alt);",
       "property": "--corex-admin-surface-alt",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8793,7 +8793,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 193, 373, 704: background: var(--corex-admin-surface-raised);",
+      "selector_or_context": "lines 193, 373, 712: background: var(--corex-admin-surface-raised);",
       "property": "--corex-admin-surface-raised",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8803,7 +8803,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 27, 140, 163, 192, 221, 311, 372, 402, 521, 547, 606, 703, 763, 783, 831, 886, 895, 942, 970: color: var(--corex-admin-text);",
+      "selector_or_context": "lines 27, 140, 163, 192, 221, 311, 372, 402, 521, 547, 614, 711, 771, 791, 839, 894, 903, 950, 978: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8813,7 +8813,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 34, 234, 342, 426, 440, 511, 539, 585, 631, 641, 695, 728, 774, 1025, 1052: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 34, 234, 342, 426, 440, 511, 539, 585, 601, 639, 649, 703, 736, 782, 1033, 1060: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "config-plugin",
       "surface": "admin",
@@ -8823,7 +8823,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 348, 418, 837, 984, 1035: color: var(--corex-admin-warning); | border-inline-start-color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);",
+      "selector_or_context": "lines 348, 418, 845, 992, 1043: color: var(--corex-admin-warning); | border-inline-start-color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);",
       "property": "--corex-admin-warning",
       "owner": "config-plugin",
       "surface": "admin",
@@ -9713,7 +9713,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 705, 841, 856, 993, 1095, 1195, 1723: border-color: var(--corex-admin-border-strong); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);",
+      "selector_or_context": "lines 705, 841, 856, 993, 1095, 1195, 1723, 3077: border-color: var(--corex-admin-border-strong); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);",
       "property": "--corex-admin-border-strong",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -9723,7 +9723,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 69, 90, 132, 238, 289, 351, 413, 450, 510, 603, 689, 724, 826, 967, 1042, 1088, 1180, 1231, 1270, 1282, 1661, 1673, 1723, 1820, 1862, 1913, 1976, 2018, 2041, 2080, 2081, 2191, 2228, 2274, 2334, 2430, 2500, 2640, 2800, 2894, 2909, 2920, 3004: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent;",
+      "selector_or_context": "lines 69, 90, 132, 238, 289, 351, 413, 450, 510, 603, 689, 724, 826, 967, 1042, 1088, 1180, 1231, 1270, 1282, 1661, 1673, 1723, 1820, 1862, 1913, 1976, 2018, 2041, 2080, 2081, 2191, 2228, 2274, 2334, 2430, 2500, 2640, 2800, 2894, 2909, 2920, 3004, 3077: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent;",
       "property": "--corex-admin-border-width",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -9743,7 +9743,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 684, 821, 1037, 1085, 1172, 1720, 1721, 2293, 2294, 2938: min-block-size: var(--corex-admin-control-height); | inline-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height);",
+      "selector_or_context": "lines 684, 821, 1037, 1085, 1172, 1720, 1721, 2293, 2294, 2938, 3072, 3089: min-block-size: var(--corex-admin-control-height); | inline-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height);",
       "property": "--corex-admin-control-height",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -9883,7 +9883,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 113, 244, 1608, 1713, 1921, 1959, 2005: font-family: var(--corex-admin-font-mono);",
+      "selector_or_context": "lines 113, 244, 1608, 1713, 1921, 1959, 2005, 3079: font-family: var(--corex-admin-font-mono);",
       "property": "--corex-admin-font-mono",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -9893,7 +9893,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 134, 399, 426, 434, 459, 481, 489, 588, 643, 661, 673, 692, 737, 1134, 1247, 1636, 1649, 1954, 2034, 2046, 2053, 2384, 2471, 2542, 2639, 2719, 2741, 2804, 2859, 3005: font-size: var(--corex-admin-font-sm); | inset-block-start: calc(var(--corex-admin-space-sm) + (var(--corex-admin-font-sm) * var(--corex-admin-line-normal) - var(--corex-admin-notice-dismiss-size)) / 2);",
+      "selector_or_context": "lines 134, 399, 426, 434, 459, 481, 489, 588, 643, 661, 673, 692, 737, 1134, 1247, 1636, 1649, 1954, 2034, 2046, 2053, 2384, 2471, 2542, 2639, 2719, 2741, 2804, 2859, 3005, 3052, 3059, 3080: font-size: var(--corex-admin-font-sm); | inset-block-start: calc(var(--corex-admin-space-sm) + (var(--corex-admin-font-sm) * var(--corex-admin-line-normal) - var(--corex-admin-notice-dismiss-size)) / 2);",
       "property": "--corex-admin-font-sm",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10093,7 +10093,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 133, 386, 529, 530, 690, 827, 1043, 1089, 1181, 1246, 1380, 1400, 1712, 2176, 2192, 2299, 2431, 2501, 2584, 2593, 2865, 2895, 2921: border-radius: var(--corex-admin-radius-sm); | border-start-start-radius: var(--corex-admin-radius-sm); | border-end-start-radius: var(--corex-admin-radius-sm);",
+      "selector_or_context": "lines 133, 386, 529, 530, 690, 827, 1043, 1089, 1181, 1246, 1380, 1400, 1712, 2176, 2192, 2299, 2431, 2501, 2584, 2593, 2865, 2895, 2921, 3078: border-radius: var(--corex-admin-radius-sm); | border-start-start-radius: var(--corex-admin-radius-sm); | border-end-start-radius: var(--corex-admin-radius-sm);",
       "property": "--corex-admin-radius-sm",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10173,7 +10173,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 111, 543, 558, 596, 1132, 1223, 1227, 1629, 1635, 1860, 2015, 2109, 2181, 2187, 2426, 2518, 2583, 2655, 2907, 2908: margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs); | margin-block-start: var(--corex-admin-space-2xs); | gap: var(--corex-admin-space-2xs);",
+      "selector_or_context": "lines 111, 543, 558, 596, 1132, 1223, 1227, 1629, 1635, 1860, 2015, 2109, 2181, 2187, 2426, 2518, 2583, 2655, 2907, 2908, 3038: margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs); | margin-block-start: var(--corex-admin-space-2xs); | gap: var(--corex-admin-space-2xs);",
       "property": "--corex-admin-space-2xs",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10203,7 +10203,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 50, 88, 98, 111, 128, 129, 130, 265, 275, 405, 424, 454, 501, 520, 711, 731, 763, 767, 771, 822, 1038, 1058, 1063, 1174, 1244, 1648, 1699, 1709, 1747, 1763, 1779, 1866, 1968, 1973, 2040, 2072, 2076, 2141, 2188, 2331, 2364, 2372, 2400, 2426, 2428, 2481, 2505, 2518, 2548, 2576, 2581, 2591, 2637, 2681, 2713, 2735, 2750, 2780, 2797, 2855, 2859, 2860, 2940, 3002: margin: var(--corex-admin-space-sm) var(--corex-admin-space-lg) 0; | padding-inline: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 50, 88, 98, 111, 128, 129, 130, 265, 275, 405, 424, 454, 501, 520, 711, 731, 763, 767, 771, 822, 1038, 1058, 1063, 1174, 1244, 1648, 1699, 1709, 1747, 1763, 1779, 1866, 1968, 1973, 2040, 2072, 2076, 2141, 2188, 2331, 2364, 2372, 2400, 2426, 2428, 2481, 2505, 2518, 2548, 2576, 2581, 2591, 2637, 2681, 2713, 2735, 2750, 2780, 2797, 2855, 2859, 2860, 2940, 3002, 3047, 3074: margin: var(--corex-admin-space-sm) var(--corex-admin-space-lg) 0; | padding-inline: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-sm",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10223,7 +10223,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 96, 97, 111, 242, 418, 448, 479, 595, 602, 635, 685, 820, 1170, 1243, 1309, 1591, 1628, 1708, 2264, 2394, 2491, 2540, 2560, 2564, 2589, 2614, 2635, 2695, 2717, 2831, 2957, 3001, 3019: gap: var(--corex-admin-space-xs); | padding-block: var(--corex-admin-space-xs) var(--corex-admin-space-md); | margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 96, 97, 111, 242, 418, 448, 479, 595, 602, 635, 685, 820, 1170, 1243, 1309, 1591, 1628, 1708, 2264, 2394, 2491, 2540, 2560, 2564, 2589, 2614, 2635, 2695, 2717, 2831, 2957, 3001, 3019, 3066, 3074: gap: var(--corex-admin-space-xs); | padding-block: var(--corex-admin-space-xs) var(--corex-admin-space-md); | margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-xs",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10263,7 +10263,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 412, 1041, 1076, 1087, 1978, 2021, 2044, 2333, 2429, 2436, 2499, 2592, 2893: background: var(--corex-admin-surface); | background-color: var(--corex-admin-surface); | background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface));",
+      "selector_or_context": "lines 412, 1041, 1076, 1087, 1978, 2021, 2044, 2333, 2429, 2436, 2499, 2592, 2893, 3076: background: var(--corex-admin-surface); | background-color: var(--corex-admin-surface); | background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface));",
       "property": "--corex-admin-surface",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10293,7 +10293,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 14, 99, 139, 256, 296, 367, 383, 393, 419, 480, 564, 575, 687, 732, 780, 824, 839, 855, 920, 942, 965, 971, 1040, 1075, 1086, 1133, 1175, 1252, 1280, 1506, 1592, 1722, 1728, 1788, 1880, 1983, 2045, 2078, 2189, 2226, 2284, 2304, 2374, 2524, 2667, 2798, 2874, 2892, 2926, 2932: color: var(--corex-admin-text); | color: var(--corex-admin-text) !important;",
+      "selector_or_context": "lines 14, 99, 139, 256, 296, 367, 383, 393, 419, 480, 564, 575, 687, 732, 780, 824, 839, 855, 920, 942, 965, 971, 1040, 1075, 1086, 1133, 1175, 1252, 1280, 1506, 1592, 1722, 1728, 1788, 1880, 1983, 2045, 2078, 2189, 2226, 2284, 2304, 2374, 2524, 2667, 2798, 2874, 2892, 2926, 2932, 3051, 3075: color: var(--corex-admin-text); | color: var(--corex-admin-text) !important;",
       "property": "--corex-admin-text",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10303,7 +10303,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-shell.css",
-      "selector_or_context": "lines 131, 266, 287, 398, 425, 456, 495, 544, 587, 597, 672, 736, 1245, 1310, 1604, 1710, 1773, 1868, 1953, 2296, 2441, 2456, 2470, 2541, 2615, 2638, 2673, 2740, 2864, 2918: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 131, 266, 287, 398, 425, 456, 495, 544, 587, 597, 672, 736, 1245, 1310, 1604, 1710, 1773, 1868, 1953, 2296, 2441, 2456, 2470, 2541, 2615, 2638, 2673, 2740, 2864, 2918, 3058: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10963,7 +10963,7 @@
     },
     {
       "path": "plugins/corex-core/src/Admin/AdminPage.php",
-      "selector_or_context": "lines 277: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'",
+      "selector_or_context": "lines 285: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'",
       "property": "--corex-admin-action",
       "owner": "core-plugin",
       "surface": "front-end",

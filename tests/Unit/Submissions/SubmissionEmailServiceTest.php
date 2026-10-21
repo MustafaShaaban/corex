@@ -37,7 +37,7 @@ function emailWorkflowRecord(): array
         'submitter_email' => 'sam@example.com',
         'values' => ['name' => 'Sam', 'email' => 'sam@example.com'],
         'related_emails' => ['bindings' => [
-            'team_notification' => ['attempt_id' => '11111111-1111-4111-8111-111111111111'],
+            'team_notification' => ['attempt_id' => '11111111-1111-4111-8111-111111111111', 'recipients' => ['sales@example.com']],
         ]],
     ];
 }
@@ -217,11 +217,13 @@ it('resends only an attempt already related to the accessible submission', funct
     $scope = new SubmissionAccessScope(7, false, ['sales']);
     $attemptId = '11111111-1111-4111-8111-111111111111';
 
-    $result = $service->resend($scope, 31, $attemptId);
+    $resent = $service->resend($scope, 31, $attemptId);
 
-    expect($result->parentAttemptId)->toBeNull()
+    expect($resent->result->parentAttemptId)->toBeNull()
         ->and($gateway->calls[0][0])->toBe('resend')
         ->and($gateway->calls[0][1])->toBe($attemptId)
+        // The team notification goes to the team it was sent to, not to the submitter (spec 112).
+        ->and($gateway->calls[0][2])->toBe('sales@example.com')
         ->and($gateway->calls[0][3]['submission']['name'])->toBe('Sam');
 
     expect(fn () => $service->resend($scope, 31, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'))

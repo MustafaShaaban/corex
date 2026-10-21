@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
@@ -50,6 +51,13 @@ final class AccessTables
                 ->integer('notification_attempt_id', nullable: true)
                 ->datetime('created_at')
                 ->datetime('expires_at')
+                // An approved request is the grant (spec 112). A row approved before these columns
+                // has no grant expiry: "no expiry (granted before expiries existed)".
+                ->datetime('grant_expires_at', nullable: true)
+                ->datetime('ended_at', nullable: true)
+                ->integer('ended_by', nullable: true)
+                ->string('ended_reason', 20, nullable: true)
+                ->string('cancel_reason', 64, nullable: true)
                 ->index('access_request_state', ['state'])
                 ->index('access_request_requester', ['requester_id'])
                 ->index('access_request_expiry', ['expires_at']),
@@ -73,6 +81,8 @@ final class AccessTables
                 'source'      => DataField::PERSONAL_NONE,
                 'updated_at'  => DataField::PERSONAL_NONE,
             ],
+                // Who may do what on this site: the Access screen's records (spec 112).
+                ownerAbility: CorexAbility::MANAGE_ACCESS,
             ),
             new ManagedTable(self::REQUESTS, 'Access requests', [
                 ['id' => 'requester_id', 'label' => 'Requester'],
@@ -89,6 +99,7 @@ final class AccessTables
                 'created_at'   => DataField::PERSONAL_NONE,
                 'expires_at'   => DataField::PERSONAL_NONE,
             ],
+                ownerAbility: CorexAbility::MANAGE_ACCESS,
             ),
         ];
     }
