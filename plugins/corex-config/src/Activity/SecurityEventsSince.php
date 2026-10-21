@@ -15,18 +15,21 @@ defined('ABSPATH') || exit;
  *
  * Mode changes, refusals and sign-in lockouts reach the activity log from this release on.
  * Earlier ones stay in their own logs and are not copied, so the Security events card says from
- * when it has records instead of implying there were none before. Written once: `add_option`
- * leaves an existing value alone.
+ * when it has records instead of implying there were none before.
  */
 final class SecurityEventsSince
 {
     public const OPTION = 'corex_security_events_since';
 
-    /** Stamps now as the start, unless a start is already stored, and answers the start. */
-    public function mark(?int $now = null): int
+    /** Stores the start, unless one is stored already: `add_option` leaves an existing value alone. */
+    public function mark(int $at): void
     {
-        add_option(self::OPTION, (string) ($now ?? time()), '', true);
+        add_option(self::OPTION, (string) $at, '', true);
+    }
 
-        return (int) get_option(self::OPTION, (string) ($now ?? time()));
+    /** The stored start as a Unix time, or now when nothing has been marked yet. */
+    public function since(): int
+    {
+        return (int) get_option(self::OPTION, (string) time());
     }
 }

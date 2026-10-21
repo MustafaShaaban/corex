@@ -30,8 +30,9 @@
 - [x] T008 [US6] `AddonToggleService`: refuse Network and MustUse, call the activator, record `addon.enabled` /
   `addon.disabled` in the activity log
 - [x] T009 [US6] `AddonsScreen`: locked switch with its reason, notices from the result, kit prompt only on success
-- [x] T010 [US6] Tests: unit `AddonToggleServiceTest`, integration `AddonToggleTest` (missing file, real toggle,
-  must-use scope), multisite check that a sub-site cannot deactivate a network-active add-on
+- [x] T010 [US6] Tests: unit `AddonToggleTest` (locked switches), integration `AddonActivatorTest` (missing file,
+  printed output, real toggle and its log, network and must-use refused), multisite `NetworkAddonToggleTest` (a
+  sub-site cannot deactivate a network-active add-on)
 
 ## Phase 5: User Story 3 — Failed PageSpeed runs (US-SAFE-12, P1)
 
@@ -53,8 +54,8 @@
 
 - [x] T017 [US1] `OverviewFacts` (brand, insights, captcha, login, each guarded); `OverviewModel` rows; renderer links;
   remove `ControlPanelStatus` / `DomainStatus` and their test
-- [x] T018 [US1] Tests: unit `OverviewModelTest` for every row state including "Could not check"; integration on a
-  fresh site; update `AdminScreenVisualContractTest` / `BootContextsTest` where they name the renderer
+- [x] T018 [US1] Tests: unit `OverviewModelTest` for every row state including "Could not check"; integration
+  `OverviewTruthTest`; `BootContextsTest` still boots every provider without an error
 
 ## Phase 8: User Story 4 — Security events (US-SAFE-13, P2)
 
@@ -63,8 +64,8 @@
   and `SecurityEventsSince` registered in the service provider; lockout listener
 - [x] T021 [US4] `InsightWidgetFacts::securityEvents()` asks the three areas; labels in words; `InsightWidgets` copy and
   "Recorded since"
-- [x] T022 [US4] Tests: integration — the four events after 30 trashed submissions; one event per counted entry; the
-  empty message; unit for the area list query
+- [x] T022 [US4] Tests: integration `SecurityEventsTest` — the four events after 30 unrelated ones, read through the
+  area list; one event per counted entry; the start written once
 
 ## Phase 9: User Story 5 — Captcha test button (US-SAFE-16, P2)
 
@@ -82,7 +83,7 @@
 ## Phase 11: Polish
 
 - [x] T027 DECISIONS #390–#398; CHANGELOG `[Unreleased]` with Client impact and the WebP check; PROGRESS "In flight"
-- [ ] T028 Guards: clean-code-guard, wp-guard, test-guard, docs-guard on the diff
+- [x] T028 Guards: clean-code-guard, wp-guard, test-guard, docs-guard on the diff
 - [ ] T029 Full Pest unit + integration, Jest, lint, and the touched Playwright specs on the scratch site; RTL check in
   the Arabic admin
 - [ ] T030 Push, open the PR, CI green

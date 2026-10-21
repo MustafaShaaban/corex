@@ -97,7 +97,7 @@ plugins/corex-config/src/
 ├── Addons/              AddonActivator, AddonToggleService (new), AddonToggleResult (new), AddonsScreen
 ├── Branding/            AdminBranding, BrandingService
 ├── Settings/            AdminDashboard, SettingsRegistry
-└── Blog/                BlogProApp.js, BlogProScreen, blogState
+└── Blog/                BlogProApp.js, BlogProScreen, blogProState.js, blogProClient.js
 plugins/corex-config/assets/insights.js, insights.css
 plugins/corex-core/assets/css/corex-admin-login.css
 addons/corex-captcha/assets/captcha-admin.js, src/CaptchaServiceProvider.php, src/CaptchaDiagnostic.php

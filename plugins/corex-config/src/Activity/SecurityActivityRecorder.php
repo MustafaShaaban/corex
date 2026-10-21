@@ -43,6 +43,13 @@ final class SecurityActivityRecorder
     public const ACCESS_DENIED = 'access.denied';
     public const LOGIN_LOCKED  = 'security.login.locked';
 
+    /** Each kind's area and outcome. */
+    private const KINDS = [
+        self::MODE_CHANGED  => [ActivityEvent::AREA_OPERATIONS, ActivityEvent::OUTCOME_SUCCESS],
+        self::ACCESS_DENIED => [ActivityEvent::AREA_ACCESS, ActivityEvent::OUTCOME_DENIED],
+        self::LOGIN_LOCKED  => [ActivityEvent::AREA_SECURITY, ActivityEvent::OUTCOME_DENIED],
+    ];
+
     private const RETENTION = '+180 days';
 
     public function __construct(
@@ -57,7 +64,7 @@ final class SecurityActivityRecorder
     public function register(): void
     {
         add_action('corex_operations_mode_changed', [$this, 'modeChanged'], 10, 3);
-        add_action('corex_access_refusal_counted', [$this, 'refused'], 10, 4);
+        add_action('corex_access_refusal_counted', [$this, 'refused'], 10, 3);
         $this->listeners->listen(LoginLockoutEvent::class, function (object $event): void {
             if ($event instanceof LoginLockoutEvent) {
                 $this->lockedOut($event);
@@ -67,38 +74,22 @@ final class SecurityActivityRecorder
 
     public function modeChanged(string $from, string $to, int $userId): void
     {
-        $this->write(
-            actorId: $userId,
-            area: ActivityEvent::AREA_OPERATIONS,
-            kind: self::MODE_CHANGED,
-            target: ['mode', $to, $this->modeLabel($to)],
-            outcome: ActivityEvent::OUTCOME_SUCCESS,
-            context: ['from' => $from, 'to' => $to],
-        );
+        $this->write($userId, self::MODE_CHANGED, ['mode', $to, $this->modeLabel($to)], ['from' => $from, 'to' => $to]);
     }
 
-    public function refused(int $userId, string $kind, string $section, int $at): void
+    /** The access log's new entry: recorded as it is opened, in the request that was refused. */
+    public function refused(int $userId, string $kind, string $section): void
     {
-        $this->write(
-            actorId: $userId,
-            area: ActivityEvent::AREA_ACCESS,
-            kind: self::ACCESS_DENIED,
-            target: ['screen', $section, $section],
-            outcome: ActivityEvent::OUTCOME_DENIED,
-            context: ['refusal' => $kind],
-            at: (new DateTimeImmutable())->setTimestamp($at),
-        );
+        $this->write($userId, self::ACCESS_DENIED, ['screen', $section, $section], ['refusal' => $kind]);
     }
 
     public function lockedOut(LoginLockoutEvent $event): void
     {
         $this->write(
-            actorId: 0,
-            area: ActivityEvent::AREA_SECURITY,
-            kind: self::LOGIN_LOCKED,
-            target: ['login', 'sign-in', __('Sign-in', 'corex')],
-            outcome: ActivityEvent::OUTCOME_DENIED,
-            context: ['locked_until' => $event->lockedUntil->format(DATE_ATOM)],
+            0,
+            self::LOGIN_LOCKED,
+            ['login', 'sign-in', __('Sign-in', 'corex')],
+            ['locked_until' => $event->lockedUntil->format(DATE_ATOM)],
         );
     }
 
@@ -106,20 +97,10 @@ final class SecurityActivityRecorder
      * @param array{0:string,1:string,2:string} $target type, id and label
      * @param array<string,mixed>               $context
      */
-    private function write(
-        int $actorId,
-        string $area,
-        string $kind,
-        array $target,
-        string $outcome,
-        array $context,
-        ?DateTimeImmutable $at = null,
-    ): void {
-        $at = $at ?? new DateTimeImmutable('now');
-
+    private function write(int $actorId, string $kind, array $target, array $context): void
+    {
         try {
-            $this->since->mark($at->getTimestamp());
-            $this->record($actorId, $area, $kind, $target, $outcome, $context, $at);
+            $this->record($actorId, $kind, $target, $context);
         } catch (\Throwable) {
             // Let go: see the class comment.
         }
@@ -129,8 +110,12 @@ final class SecurityActivityRecorder
      * @param array{0:string,1:string,2:string} $target
      * @param array<string,mixed>               $context
      */
-    private function record(int $actorId, string $area, string $kind, array $target, string $outcome, array $context, DateTimeImmutable $at): void
+    private function record(int $actorId, string $kind, array $target, array $context): void
     {
+        $now = new DateTimeImmutable('now');
+        [$area, $outcome] = self::KINDS[$kind];
+        $this->since->mark($now->getTimestamp());
+
         $this->activity->record(
             actorId: $actorId,
             actorKind: $actorId > 0 ? ActivityEvent::ACTOR_USER : ActivityEvent::ACTOR_SYSTEM,
@@ -144,8 +129,8 @@ final class SecurityActivityRecorder
             summary: ['key' => $kind, 'args' => $context],
             context: $context,
             sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
-            retentionUntil: $at->modify(self::RETENTION),
-            occurredAt: $at,
+            retentionUntil: $now->modify(self::RETENTION),
+            occurredAt: $now,
         );
     }
 

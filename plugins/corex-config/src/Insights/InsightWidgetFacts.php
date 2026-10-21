@@ -130,10 +130,11 @@ final class InsightWidgetFacts
     /** From when the activity log holds security events, as a date in the site's format. */
     private function securityEventsSince(): string
     {
-        return (string) wp_date(
-            (string) get_option('date_format', 'Y-m-d'),
-            $this->container->make(SecurityEventsSince::class)->mark(),
-        );
+        // Read first means records start now: the card never says "since" a time before it.
+        $since = $this->container->make(SecurityEventsSince::class);
+        $since->mark(time());
+
+        return (string) wp_date((string) get_option('date_format', 'Y-m-d'), $since->since());
     }
 
     private function cronOverdue(): int

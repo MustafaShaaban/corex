@@ -101,10 +101,13 @@ it('adds one event for a counted refusal, not one per repeat inside its hour', f
     expect($refusals())->toBe($before + 1);
 });
 
-it('says from when it has records', function () {
-    $since = Boot::app()->container()->make(SecurityEventsSince::class)->mark();
+it('says from when it has records, written once', function () {
+    $since = Boot::app()->container()->make(SecurityEventsSince::class);
+    $since->mark(time());
+    $first = $since->since();
 
-    expect($since)->toBeGreaterThan(0)->toBeLessThanOrEqual(time())
-        // Written once: a later mark keeps the first.
-        ->and(Boot::app()->container()->make(SecurityEventsSince::class)->mark(time() + 3600))->toBe($since);
+    $since->mark(time() + 3600);
+
+    expect($first)->toBeGreaterThan(0)->toBeLessThanOrEqual(time())
+        ->and($since->since())->toBe($first);
 });

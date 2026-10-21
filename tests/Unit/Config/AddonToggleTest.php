@@ -37,13 +37,16 @@ beforeEach(function () {
     Functions\when('wp_nonce_field')->justReturn('');
 });
 
-function toggleMarkup(AddonView $view, AddonState $state): string
+/**
+ * The screen with the real AddonManager. The other collaborators are final and unused on the
+ * paths under test, so they are built without invoking their constructors.
+ */
+function addonsScreen(): AddonsScreen
 {
     $registry = new AddonRegistry();
-    // toggleControl() only consults the (real) AddonManager; the remaining collaborators are
-    // final and unused on this path, so build them without invoking their constructors.
     $bare = static fn (string $class): object => (new ReflectionClass($class))->newInstanceWithoutConstructor();
-    $screen = new AddonsScreen(
+
+    return new AddonsScreen(
         $registry,
         new AddonManager($registry, new WpPluginActivationInspector(new SingleSiteMultisiteContext())),
         $bare(AddonToggleService::class),
@@ -53,11 +56,13 @@ function toggleMarkup(AddonView $view, AddonState $state): string
         new AdminPage(),
         $bare(DocsUrl::class),
     );
+}
 
-    $method = new ReflectionMethod($screen, 'toggleControl');
-    $method->setAccessible(true);
+function toggleMarkup(AddonView $view, AddonState $state): string
+{
+    $screen = addonsScreen();
 
-    return (string) $method->invoke($screen, $view, $state);
+    return (string) (new ReflectionMethod($screen, 'toggleControl'))->invoke($screen, $view, $state);
 }
 
 function viewFor(string $slug, bool $active): AddonView
@@ -135,18 +140,7 @@ it('locks the switch of an add-on this site does not control, and says why', fun
 
 function reasonFor(AddonView $view, AddonState $state): string
 {
-    $registry = new AddonRegistry();
-    $bare     = static fn (string $class): object => (new ReflectionClass($class))->newInstanceWithoutConstructor();
-    $screen   = new AddonsScreen(
-        $registry,
-        new AddonManager($registry, new WpPluginActivationInspector(new SingleSiteMultisiteContext())),
-        $bare(AddonToggleService::class),
-        $bare(AdminGuard::class),
-        Mockery::mock(KitProvisioner::class),
-        $bare(PendingKits::class),
-        new AdminPage(),
-        $bare(DocsUrl::class),
-    );
+    $screen = addonsScreen();
 
     return (string) (new ReflectionMethod($screen, 'unavailableReason'))->invoke($screen, $view, $state);
 }

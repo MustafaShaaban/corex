@@ -141,7 +141,7 @@
 			'</h2>' +
 			( failed
 				? '<p class="corex-insight-card__failed">' +
-					t( 'Could not run' ) +
+					escape( t( 'Could not run' ) ) +
 					'</p>'
 				: '<div class="corex-insight-card__score" role="img" aria-label="' +
 					scoreLabel( waiting, score, grade ) +
@@ -185,7 +185,7 @@
 			// its width, and the styles draw the loader over it from these attributes.
 			runAttributes( loading, waiting ) +
 			'>' +
-			( failed ? t( 'Retry' ) : t( 'Run check' ) ) +
+			escape( failed ? t( 'Retry' ) : t( 'Run check' ) ) +
 			'</button>' +
 			'<span class="corex-insight-card__time">' +
 			( waiting ? placeholder( bar( 'full' ) ) : escape( checkedAt ) ) +
