@@ -6,10 +6,10 @@ captured. Never run these checks on corex.local, which sends real mail.
 ## Automated
 
 ```bash
-php -d memory_limit=512M vendor/bin/pest --testsuite=Unit
-php -d memory_limit=512M vendor/bin/pest --testsuite=Integration
+php -d memory_limit=512M vendor/bin/pest
+php -d memory_limit=512M vendor/bin/pest --configuration=phpunit-integration.xml.dist
 npx jest
-COREX_BASE_URL=http://127.0.0.1:8914 npx playwright test tests/e2e/truthful-screens.spec.js
+COREX_BASE_URL=http://127.0.0.1:8914 npx playwright test -c tests/e2e/playwright.config.js tests/e2e/truthful-screens.spec.js
 ```
 
 ## By hand
@@ -23,8 +23,8 @@ COREX_BASE_URL=http://127.0.0.1:8914 npx playwright test tests/e2e/truthful-scre
 4. **Security events**: change the mode, open a CoreX screen as an Editor; the card lists both, with "Recorded since".
 5. **Captcha**: choose reCAPTCHA and save both keys; "Test verification" is under the secret field.
 6. **Add-ons**: rename an add-on's main file, press Enable: an error with WordPress's reason, the card stays off.
-7. **Login**: `wp option patch insert corex_brand login_sso_enabled 1` is not needed; set the stored setting on and open
-   `/wp-login.php`: no SSO button, no "or".
+7. **Login**: `wp option update corex_brand_login_sso_enabled 1 --path=wp`, then open `/wp-login.php` signed out:
+   no SSO button and no "or"; `wp option get corex_brand_login_sso_enabled --path=wp` still answers `1`.
 8. **Blog Pro**: one line says reading data is not collected yet; no Sharing card.
-9. **Settings**: with Corex Media inactive and WebP stored on, save Brand; `wp option get` of the media settings is
-   unchanged.
+9. **Settings**: with Corex Media inactive and `corex_media_webp_enabled` stored as `1`, save Brand;
+   `wp option get corex_media_webp_enabled --path=wp` still answers `1`.
