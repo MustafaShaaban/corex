@@ -55,7 +55,7 @@
         "uuid": "^14.0.1",
         "webpack-dev-server": "^6.0.0",
         "@opentelemetry/core": "^2.10.0",
-        "markdown-it": "^14.3.2",
+        "markdown-it": "^14.3.3",
         "linkify-it": "^6.1.0",
         "adm-zip": "^0.6.1",
         "basic-ftp": "^6.2.2",
