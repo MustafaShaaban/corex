@@ -40,6 +40,15 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 113, mail stays where it should** (2026-10-21, branch `spec/113-mail-capture`, DECISIONS #381 to
+#385): revamp release R0.2, five stories (US-SAFE-02, 01, 03, 17, US-EML-18), built under the owner's
+2026-10-21 mandate to finish the revamp. One resolver (`Corex\Environment\SiteEnvironment`) decides
+development, staging or production; a mail gate in corex-core, asked by CoreX Mail's service and by
+`pre_wp_mail`, captures every email on development and staging, holds a flow test's emails everywhere,
+and leaves production alone; Email Studio states the outcome on every tab, offers a capture-only switch,
+lists the newest mail first and deletes captures after 30 days. R0.3 (spec 114), R0.4 (spec 115) and
+R1.1 (spec 116) are built in parallel sessions with DECISIONS #390-#399, #400-#409 and #410-#419.
+
 **Spec 112, access and logs** (2026-10-20, #430, in v0.47.0): the first release (R0.1) of the
 CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
 locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,

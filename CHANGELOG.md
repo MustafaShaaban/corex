@@ -6,6 +6,48 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **One setting decides whether a site is a development site** (spec 113). `APP_ENV` in `.env`, a
+  value the network locks or the `corex_app_env` option decides first, and locks the operations
+  mode (the Operations screen says what locks it and offers only that environment's modes); then
+  the operations mode; then WordPress's environment type, where `local` now counts as Development.
+  Email Studio, Insights and the Settings diagnostics show the same answer and where it comes from.
+- **Mail stays on a development or staging site** (spec 113). Every email, from every CoreX path,
+  from WordPress and from other plugins, is captured into `Email Studio → Delivery logs`, named by
+  what sent it ("Form notification", "Newsletter: new post", "WordPress: password reset",
+  "Other: wp_mail"), and nobody receives it. Staging sends for real once a provider is set and
+  live delivery is on. A switch on the Email Studio overview, **Capture only CoreX mail**, lets
+  WordPress's and other plugins' mail through. Without CoreX Mail active, such an email is not
+  sent and is recorded in the activity log. **Production, Coming soon and Maintenance send exactly
+  as before.**
+- **A flow's "Run marked test" holds its emails on every site** (spec 113), production included:
+  the result lists each with a link to it in Email Studio, and the Test tab says so before the
+  button is pressed.
+- **Email Studio says on every tab what happens to mail on this site**: delivered for real,
+  captured, or blocked, with live delivery, the provider, what decided, and any kind of email that
+  does not follow it.
+- **Email Studio's log shows the newest mail first** however many emails are stored, the overview
+  counts say they are of the last 100 emails, and captured and held emails are deleted after 30
+  days (they were kept forever).
+
+### Fixed
+
+- **Email Studio's tabs fit the screen.** A wide delivery log made every tab wider than the page,
+  cut off at its edge.
+
+### Client impact
+
+- **Production mail is unchanged.** A client site whose code sends through the `Mailer` seam, with
+  no provider and live delivery off, keeps sending.
+- **Local and staging copies start capturing mail**: a copy whose operations mode is Development or
+  Staging, or whose WordPress environment is `local`, `development` or `staging`, keeps its mail in
+  Email Studio instead of sending it. Check a copy's mail there after updating.
+- **A test that spies on `wp_mail()` on a development install** now sees mail kept before
+  `wp_mail()`: CoreX's own test helper `tests/Support/MailDelivery.php` gains a `DELIVER` mode for
+  tests that exercise production sending. A client repository that carries copies of CoreX's tests
+  takes the updated helper.
+
 ## [0.47.0] — 2026-10-21
 
 Access and logs (spec 112, the first release of the CoreX revamp), the generator tag (spec 111)
