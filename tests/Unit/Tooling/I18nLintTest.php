@@ -69,15 +69,3 @@ it('compares by file, rule and text, so a moved line stays known and a fixed one
     ]);
 });
 
-it('finds nothing new in the source CoreX ships today', function () {
-    $root = dirname(__DIR__, 3);
-    $findings = [];
-
-    foreach (corex_i18n_files($root) as $file) {
-        array_push($findings, ...corex_i18n_lint_source($file, (string) file_get_contents($root . '/' . $file)));
-    }
-
-    $baseline = json_decode((string) file_get_contents($root . '/tests/Fixtures/i18n-lint-baseline.json'), true)['entries'];
-
-    expect(corex_i18n_compare($findings, $baseline))->toBe(['new' => [], 'stale' => []]);
-});

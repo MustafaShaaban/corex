@@ -88,65 +88,92 @@ function corex_i18n_lint_source(string $file, string $source): array
         static fn ($token): bool => ! is_array($token) || ! in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true),
     ));
     $findings = [];
-    $add = static function (int $line, string $rule, string $text) use (&$findings, $file): void {
-        $findings[] = ['file' => $file, 'line' => $line, 'rule' => $rule, 'text' => trim(mb_substr($text, 0, 160))];
-    };
-    $count = count($tokens);
 
-    for ($i = 0; $i < $count; $i++) {
-        $token = $tokens[$i];
-
-        if (is_array($token) && $token[0] === T_INLINE_HTML && corex_i18n_is_words($token[1])) {
-            $add($token[2], 'untranslated-html', $token[1]);
-            continue;
-        }
-
-        if (is_array($token) && in_array($token[0], [T_ECHO, T_PRINT], true)) {
-            foreach (corex_i18n_direct_literals($tokens, $i + 1) as [$line, $text]) {
-                $add($line, 'untranslated-output', $text);
-            }
-            continue;
-        }
-
-        if (! is_array($token) || $token[0] !== T_STRING || ($tokens[$i + 1] ?? null) !== '(') {
-            continue;
-        }
-
-        $previous = $tokens[$i - 1] ?? null;
-        $isMethod = is_array($previous) && in_array($previous[0], [T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_FUNCTION, T_NULLSAFE_OBJECT_OPERATOR], true);
-
-        if ($isMethod) {
-            continue;
-        }
-
-        $name = strtolower($token[1]);
-        $arguments = corex_i18n_arguments($tokens, $i + 1);
-
-        if (isset(COREX_I18N_DOMAIN_POSITION[$name])) {
-            $domain = $arguments[COREX_I18N_DOMAIN_POSITION[$name]] ?? null;
-            $text = corex_i18n_argument_text($arguments[0] ?? []);
-
-            if ($domain === null) {
-                $add($token[2], 'missing-domain', $name . '(): ' . $text);
-            } elseif (count($domain) !== 1 || ! is_array($domain[0]) || $domain[0][0] !== T_CONSTANT_ENCAPSED_STRING) {
-                $add($token[2], 'domain-not-literal', $name . '(): ' . $text);
-            } elseif (corex_i18n_literal($domain[0][1]) !== COREX_I18N_DOMAIN) {
-                $add($token[2], 'wrong-domain', $name . '(' . corex_i18n_literal($domain[0][1]) . '): ' . $text);
-            }
-            continue;
-        }
-
-        if (in_array($name, COREX_I18N_OUTPUT_FUNCTIONS, true)) {
-            $first = $arguments[0] ?? [];
-            $first[] = ';';
-
-            foreach (corex_i18n_direct_literals($first, 0) as [$line, $text]) {
-                $add($line, 'untranslated-output', $text);
-            }
+    foreach (array_keys($tokens) as $index) {
+        foreach (corex_i18n_token_findings($tokens, $index) as [$line, $rule, $text]) {
+            $findings[] = ['file' => $file, 'line' => $line, 'rule' => $rule, 'text' => trim(mb_substr($text, 0, 160))];
         }
     }
 
     return $findings;
+}
+
+/**
+ * What one token starts: HTML outside the PHP tags, an echo or print, or a function call.
+ *
+ * @param list<array|string> $tokens
+ * @return list<array{int, string, string}> Line, rule and text of each finding.
+ */
+function corex_i18n_token_findings(array $tokens, int $index): array
+{
+    $token = $tokens[$index];
+
+    if (! is_array($token)) {
+        return [];
+    }
+
+    if ($token[0] === T_INLINE_HTML) {
+        return corex_i18n_is_words($token[1]) ? [[$token[2], 'untranslated-html', $token[1]]] : [];
+    }
+
+    if (in_array($token[0], [T_ECHO, T_PRINT], true)) {
+        return corex_i18n_output_findings(corex_i18n_direct_literals($tokens, $index + 1));
+    }
+
+    $previous = $tokens[$index - 1] ?? null;
+    $isMethod = is_array($previous) && in_array($previous[0], [T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_FUNCTION, T_NULLSAFE_OBJECT_OPERATOR], true);
+
+    if ($token[0] !== T_STRING || ($tokens[$index + 1] ?? null) !== '(' || $isMethod) {
+        return [];
+    }
+
+    $name = strtolower($token[1]);
+    $arguments = corex_i18n_arguments($tokens, $index + 1);
+
+    if (isset(COREX_I18N_DOMAIN_POSITION[$name])) {
+        $problem = corex_i18n_domain_problem($name, $arguments);
+
+        return $problem === null ? [] : [[$token[2], ...$problem]];
+    }
+
+    if (in_array($name, COREX_I18N_OUTPUT_FUNCTIONS, true)) {
+        return corex_i18n_output_findings(corex_i18n_direct_literals([...($arguments[0] ?? []), ';'], 0));
+    }
+
+    return [];
+}
+
+/**
+ * @param list<array{int, string}> $literals
+ * @return list<array{int, string, string}>
+ */
+function corex_i18n_output_findings(array $literals): array
+{
+    return array_map(static fn (array $literal): array => [$literal[0], 'untranslated-output', $literal[1]], $literals);
+}
+
+/**
+ * What is wrong with a translation call's text domain, or null when it is the literal `corex`.
+ *
+ * @param list<list<array|string>> $arguments
+ * @return array{string, string}|null Rule and text.
+ */
+function corex_i18n_domain_problem(string $name, array $arguments): ?array
+{
+    $domain = $arguments[COREX_I18N_DOMAIN_POSITION[$name]] ?? null;
+    $text = corex_i18n_argument_text($arguments[0] ?? []);
+
+    if ($domain === null) {
+        return ['missing-domain', $name . '(): ' . $text];
+    }
+
+    if (count($domain) !== 1 || ! is_array($domain[0]) || $domain[0][0] !== T_CONSTANT_ENCAPSED_STRING) {
+        return ['domain-not-literal', $name . '(): ' . $text];
+    }
+
+    $literal = corex_i18n_literal($domain[0][1]);
+
+    return $literal === COREX_I18N_DOMAIN ? null : ['wrong-domain', $name . '(' . $literal . '): ' . $text];
 }
 
 /**

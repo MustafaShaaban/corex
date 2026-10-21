@@ -115,6 +115,56 @@ function baselines( root ) {
 }
 
 /**
+ * The conflicts a merge left, each marked when it is in a file a baseline records as a local edit.
+ *
+ * @param {string}   clone         The merged clone.
+ * @param {Object[]} baselinesRead What `baselines()` read before the merge.
+ * @return {{file: string, localEdit: (Object|null)}[]} One entry per conflicted file.
+ */
+function conflictsIn( clone, baselinesRead ) {
+	const localEdits = new Map(
+		baselinesRead.flatMap( ( { file, record } ) =>
+			( record.exceptions || [] ).map( ( exception ) => [
+				exception.path,
+				{ ...exception, record: file },
+			] )
+		)
+	);
+
+	return git( clone, 'diff', '--name-only', '--diff-filter=U' )
+		.split( '\n' )
+		.filter( Boolean )
+		.map( ( file ) => ( {
+			file,
+			localEdit: localEdits.get( file ) || null,
+		} ) );
+}
+
+/**
+ * Runs `verify-framework` and then each suite from the clone's root. A suite is a command line, as
+ * a client's CI writes it, so the system's shell runs it.
+ *
+ * @param {string}   clone  The merged clone.
+ * @param {string[]} suites The client's commands.
+ * @return {{command: string, status: number, seconds: number, output: string}[]} One per command.
+ */
+function runSuites( clone, suites ) {
+	return [ VERIFY, ...suites.filter( ( suite ) => suite !== VERIFY ) ].map(
+		( command ) => {
+			const started = Date.now();
+			const outcome = run( command, null, clone );
+
+			return {
+				command,
+				status: outcome.status,
+				seconds: Math.round( ( Date.now() - started ) / 1000 ),
+				output: outcome.output,
+			};
+		}
+	);
+}
+
+/**
  * The check itself, with no output of its own.
  *
  * @param {Object}   options
@@ -123,7 +173,7 @@ function baselines( root ) {
  * @param {string}   [options.framework] The framework repository (the current folder by default).
  * @param {string[]} [options.suites]    Commands to run from the merged clone's root.
  * @param {string}   [options.workdir]   Where to make the clone (a new temporary folder by default).
- * @return {Object} What happened: baseline, candidate, conflicts, suites, passed, clone.
+ * @return {Object} What happened: baselines, candidate, conflicts, suites, passed, clone.
  */
 export function checkClientMerge( {
 	client,
@@ -154,27 +204,21 @@ export function checkClientMerge( {
 		],
 		clone
 	);
+	const merged = merge.status === 0;
 
-	const localEdits = new Map(
-		before.flatMap( ( { file, record } ) =>
-			( record.exceptions || [] ).map( ( exception ) => [
-				exception.path,
-				{ ...exception, record: file },
-			] )
-		)
-	);
-	const conflicts =
-		merge.status === 0
-			? []
-			: git( clone, 'diff', '--name-only', '--diff-filter=U' )
-					.split( '\n' )
-					.filter( Boolean )
-					.map( ( file ) => ( {
-						file,
-						localEdit: localEdits.get( file ) || null,
-					} ) );
+	if ( merged ) {
+		for ( const { file } of baselines( clone ) ) {
+			recordBaseline(
+				path.join( clone, file ),
+				`candidate ${ candidate }`,
+				candidateCommit
+			);
+		}
+	}
 
-	const result = {
+	const ran = merged ? runSuites( clone, suites ) : [];
+
+	return {
 		client,
 		candidate,
 		candidateCommit,
@@ -183,42 +227,13 @@ export function checkClientMerge( {
 			release: record.release,
 			commit: record.commit,
 		} ) ),
-		merged: merge.status === 0,
-		mergeOutput: merge.status === 0 ? '' : merge.output.trim(),
-		conflicts,
-		suites: [],
+		merged,
+		mergeOutput: merged ? '' : merge.output.trim(),
+		conflicts: merged ? [] : conflictsIn( clone, before ),
+		suites: ran,
+		passed: merged && ran.every( ( suite ) => suite.status === 0 ),
 		clone,
 	};
-
-	if ( result.merged ) {
-		for ( const { file } of baselines( clone ) ) {
-			recordBaseline(
-				path.join( clone, file ),
-				`candidate ${ candidate }`,
-				candidateCommit
-			);
-		}
-
-		for ( const command of [
-			VERIFY,
-			...suites.filter( ( suite ) => suite !== VERIFY ),
-		] ) {
-			const started = Date.now();
-			// A suite is a command line, as a client's CI writes it, so the system's shell runs it.
-			const outcome = run( command, null, clone );
-			result.suites.push( {
-				command,
-				status: outcome.status,
-				seconds: Math.round( ( Date.now() - started ) / 1000 ),
-				output: outcome.output,
-			} );
-		}
-	}
-
-	result.passed =
-		result.merged && result.suites.every( ( suite ) => suite.status === 0 );
-
-	return result;
 }
 
 /**
@@ -236,6 +251,10 @@ export function report( result ) {
 		),
 		`- Merge: ${ result.merged ? 'clean' : `**${ result.conflicts.length } conflict(s)**` }`,
 	];
+
+	if ( ! result.merged && result.conflicts.length === 0 ) {
+		lines.push( '', '```text', result.mergeOutput, '```', '' );
+	}
 
 	for ( const conflict of result.conflicts ) {
 		lines.push(
