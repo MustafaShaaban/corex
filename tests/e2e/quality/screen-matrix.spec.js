@@ -290,6 +290,7 @@ async function checkWidth( page, target, viewport ) {
 
 		for ( const direction of DIRECTIONS ) {
 			await setDirection( page, direction );
+			await page.evaluate( () => window.__corexQuality.settle( 2000 ) );
 			const cell = `${ viewport.width }-${ appearance }-${ direction }`;
 			const finding = at( cell );
 

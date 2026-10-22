@@ -538,6 +538,12 @@ function installQualityHelpers() {
 	 */
 	const focusWalk = ( limit ) => {
 		const found = [];
+		// Styles are read the moment focus moves. With transitions on, that is part-way to the
+		// focus ring, a different reading on every run; off, it is the ring itself.
+		const still = document.createElement( 'style' );
+		still.textContent =
+			'*, *::before, *::after { transition: none !important; }';
+		document.head.append( still );
 		const stops = [ ...root().querySelectorAll( TABBABLE ) ]
 			.filter(
 				( element ) => ! element.disabled && element.tabIndex >= 0
@@ -609,10 +615,37 @@ function installQualityHelpers() {
 			element.blur();
 		}
 
+		still.remove();
+
 		return { stops: stops.length, found };
 	};
 
+	/**
+	 * Resolves once the colour and layout transitions a switch of appearance or direction started
+	 * have ended. Measured mid-transition, a button between its light and dark colours fails a
+	 * contrast rule it passes at rest, on one run and not the next.
+	 *
+	 * @param {number} limit Milliseconds to wait at most.
+	 * @return {Promise<void>} Settled.
+	 */
+	const settle = async ( limit ) => {
+		await new Promise( ( resolve ) =>
+			requestAnimationFrame( () => requestAnimationFrame( resolve ) )
+		);
+		const transitions = document
+			.getAnimations()
+			.filter(
+				( animation ) => animation instanceof window.CSSTransition
+			);
+
+		await Promise.race( [
+			Promise.allSettled( transitions.map( ( item ) => item.finished ) ),
+			new Promise( ( resolve ) => setTimeout( resolve, limit ) ),
+		] );
+	};
+
 	window.__corexQuality = {
+		settle,
 		signature,
 		textSignature,
 		isRendered,
