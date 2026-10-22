@@ -17639,6 +17639,11 @@ owner had.
    to the latest posts.
 3. **The executor never deletes a page the owner had**, even when asked to remove it. This is a
    second guard behind the planner.
+   - A page an earlier apply created stays the kit's when a later apply replaces it: nothing is
+     recorded, and a reset still removes it.
+   - A restore writes the recorded markup unfiltered, and puts WordPress's filters back as it found
+     them. Without this, a reset run by somebody without unfiltered HTML would strip an embed or a
+     form from the owner's page.
 4. **The dry run lists each page** as created (will be removed), replaced (will be restored) or
    adopted (will be emptied).
 
@@ -17649,9 +17654,10 @@ by code may have none, and the record is what the owner chose to trust.
 - Pest unit `ResetPlannerPagesTest`, the extended `ResetDispositionTest` and
   `BlueprintActivatorApplyTest`.
 - Pest integration `KitResetRestoresTest`, apply then reset on a real install: the replaced page
-  comes back with ID, title, content and template, the adopted draft stays a draft and empty, the
-  created page is removed, the front page is the owner's again, a second apply keeps the first
-  record, and an older replace is kept and named.
+  comes back with ID, title, content (an iframe included, with WordPress's filters on) and template,
+  the adopted draft stays a draft and empty, the created page is removed, the front page is the
+  owner's again, a second apply keeps both first records, a replaced kit page stays the kit's, and an
+  older replace is kept and named.
 
 **Client impact.** None. Neither client runs the Company kit or can run reset (no shell). This must
 land before any later story puts reset or undo in the admin.
@@ -17803,6 +17809,7 @@ Leaving the page lost the edits too.
 - Playwright `flow-unsaved-changes.spec.js` in Chromium: focus in the question, Escape keeps the edit
   and returns focus to Back, Discard, the browser's warning on reload only with edits, the Test tab's
   version.
+- Measured once in dark and right to left: light text on the dark dialog, and the buttons mirrored.
 
 **Client impact.** None: neither client edits builder flows.
 
@@ -17844,7 +17851,7 @@ routes refusing and answering like the others, and by their READMEs showing the 
 uses. New visitor blocks for them are not part of a patch release.
 
 **Verified.**
-- Pest unit `CaptchaChallengeTest` (12), the newsletter renderer and account renderer tests.
+- Pest unit `CaptchaChallengeTest` (10), the newsletter renderer and account renderer tests.
 - Jest: the widget and v3 scripts on a declared form and an undeclared one, the account and
   newsletter scripts' token and events.
 - Pest integration `ProtectedRoutesTest` (13, all four routes: missing, refused, passed; an account

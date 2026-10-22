@@ -58,7 +58,6 @@ DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by
 Spec, plan and tasks are written and every task is built. Open: one pull request against `main`,
 not merged by this session and not tagged. Not built, by decision: visitor blocks for call requests
 and job applications (#406). Owed:
-- the flow editor's question looked at in dark mode and right to left by hand;
 - the older `forms-flow.spec.js`, which fails on a fresh local install because the field-type option
   reads `email`, not `Email`. Read it off CI.
 

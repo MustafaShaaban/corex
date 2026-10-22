@@ -74,8 +74,12 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 - **A site with corex-ui active** gets hero and call-to-action buttons that link to its Brand
   "Primary action link" or its `contact` page, and are hidden when it has neither. Set the link
   under CoreX → Settings → Brand.
-- **Code that constructs `NewsletterSignupRenderer` or `CaptchaAssetController` by hand** passes
-  the new `FormChallenge` / `CaptchaChallenge` argument. The container does this for you.
+- **Code that constructs these classes by hand** passes their new arguments; the container does
+  this for you:
+  - `NewsletterSignupRenderer`: a `Corex\Security\FormChallenge`;
+  - `CaptchaAssetController`: a `CaptchaChallenge`, and its forms registry may be null;
+  - `FormChallengeContextFactory`: a `Corex\Security\ChallengeSettings` in place of the config;
+  - `ResetCommand`: a `KitPageReader`.
 - Neither client runs the CoreX theme, the Company kit, reset, the account add-on or builder
   flows. Mizzey is not on this release.
 
