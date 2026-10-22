@@ -49,6 +49,18 @@ and leaves production alone; Email Studio states the outcome on every tab, offer
 lists the newest mail first and deletes captures after 30 days. R0.3 (spec 114), R0.4 (spec 115) and
 R1.1 (spec 116) are built in parallel sessions with DECISIONS #390-#399, #400-#409 and #410-#419.
 
+**Spec 114, screens that tell the truth** (2026-10-21, branch `claude/spec-114-truthful-screens-43137f`,
+DECISIONS #390 to #398): the third release (R0.3) of the revamp's stage 0, nine stories approved by the owner on
+2026-10-20, open choices decided under the owner's 2026-10-21 mandate. The Overview reads each fact it names and
+says "Could not check" for one it cannot read; one rule decides whether the default login is hidden; a PageSpeed run
+that could not run is a failure with no score, and old 50/D rows are read as failures; mode changes, counted
+refusals and lockouts reach the activity log and the Insights card asks for those areas only; the captcha test
+button loads and appears under the secret field; the Add-ons screen says what WordPress did and locks network and
+must-use add-ons; the login screen has no SSO slot; Blog Pro says it collects no reading data yet and lost its
+Sharing card; a Settings save writes only changed fields of sections whose add-on is on. Spec, plan and 30 tasks
+written; all built, one pull request, not merged by its session, not tagged. Not built (left for later stories):
+reading events themselves (US-BLG-04), per-section save bars (US-SET-01), a check of the site key itself.
+
 **Spec 112, access and logs** (2026-10-20, #430, in v0.47.0): the first release (R0.1) of the
 CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
 locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,

@@ -116,8 +116,11 @@
 		// Until the last results have arrived a card does not know whether it has ever been
 		// run. It drew "Not run yet" and a dash at once, which read as a result.
 		const waiting = ! answered.results;
-		const score = result ? result.score : null;
-		const grade = result ? result.grade : '—';
+		// A run that could not complete has no score and no grade (spec 114, US-SAFE-12): it
+		// was drawn as a D and 50 for a site that was never measured.
+		const failed = Boolean( result && result.status === 'failed' );
+		const score = result && ! failed ? result.score : null;
+		const grade = result && ! failed ? result.grade : '—';
 		const metrics = result && result.metrics ? result.metrics : [];
 		const recs =
 			result && result.recommendations ? result.recommendations : [];
@@ -136,14 +139,22 @@
 			'">' +
 			escape( provider.label ) +
 			'</h2>' +
-			'<div class="corex-insight-card__score" role="img" aria-label="' +
-			scoreLabel( waiting, score, grade ) +
-			'"><span class="corex-insight-card__grade">' +
-			( waiting ? placeholder( bar( 'full' ) ) : escape( grade ) ) +
-			'</span>' +
-			'<span class="corex-insight-card__num">' +
-			( waiting ? placeholder( bar( 'full' ) ) : scoreText( score ) ) +
-			'</span></div>' +
+			( failed
+				? '<p class="corex-insight-card__failed">' +
+					escape( t( 'Could not run' ) ) +
+					'</p>'
+				: '<div class="corex-insight-card__score" role="img" aria-label="' +
+					scoreLabel( waiting, score, grade ) +
+					'"><span class="corex-insight-card__grade">' +
+					( waiting
+						? placeholder( bar( 'full' ) )
+						: escape( grade ) ) +
+					'</span>' +
+					'<span class="corex-insight-card__num">' +
+					( waiting
+						? placeholder( bar( 'full' ) )
+						: scoreText( score ) ) +
+					'</span></div>' ) +
 			'</header>' +
 			( error
 				? '<p class="corex-insight-card__error" role="alert">' +
@@ -174,7 +185,7 @@
 			// its width, and the styles draw the loader over it from these attributes.
 			runAttributes( loading, waiting ) +
 			'>' +
-			t( 'Run check' ) +
+			escape( failed ? t( 'Retry' ) : t( 'Run check' ) ) +
 			'</button>' +
 			'<span class="corex-insight-card__time">' +
 			( waiting ? placeholder( bar( 'full' ) ) : escape( checkedAt ) ) +

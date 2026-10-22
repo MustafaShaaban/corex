@@ -123,8 +123,8 @@ describe( 'an admin client’s address, with and without pretty permalinks', () 
 		expect( asked ).toEqual( [
 			`${ root }/blog/analytics${ sign }post_id=12`,
 			`${ root }/blog/comments${ sign }post_id=12`,
+			// No share controls: the screen no longer shows them (spec 114, US-BLG-05).
 			`${ root }/blog/authors`,
-			`${ root }/blog/share-controls${ sign }post_id=12`,
 		] );
 	} );
 } );

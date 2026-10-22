@@ -1,22 +1,21 @@
 ---
 title: Blog Pro
-description: Manage native WordPress posts with first-party analytics, an editorial workflow, comment moderation, author insights, and sharing — plus a complete native front end.
+description: Manage native WordPress posts with an editorial workflow, comment moderation and author counts, plus a complete native front end. Reading figures appear once CoreX collects them.
 ---
 
 Blog Pro is a functional workspace over **native WordPress posts** — it does not replace the post model. Open
 **CoreX → Blog Pro**. The native front-end blocks (sharing, newsletter) require **CoreX Email** and **CoreX
 Newsletter** to be active.
 
-## Analytics — first-party reading signals
+## Reading figures
 
-Blog Pro collects reading signals **on your own site**, with privacy built in:
+**CoreX does not collect reading data yet.** Nothing on the front end records a view or a read today, so Blog Pro
+shows one line saying so where its figures will go, with no panel and no period. When a later release records
+reading events and a post has some, the panel appears with its aggregates (**views**, **reads**, **share
+clicks**, **unique visitors**, **average read time**, **read rate**) and the period they cover.
 
-- Collection is **consent-aware**; without consent, events are dropped.
-- Visitor identity is **hashed** — no raw IP address or user agent is stored.
-- Events are retained for **180 days**, then pruned.
-
-The Analytics panel surfaces four aggregates: **views**, **reads**, **share clicks**, and **average read
-seconds**. Counts start at zero on a fresh install and grow from real first-party events — no sample data.
+The store those events will use is already in place, with privacy built in: collection is **consent-aware**,
+visitor identity is **hashed** (no raw IP address or user agent), and events are kept for **180 days**.
 
 ## Editorial workflow
 
@@ -39,27 +38,25 @@ is an editorial decision, not a framework one. The screen therefore offers every
 is already in. The single constraint is that **Scheduled requires a date** — the workspace asks for it before
 it will submit, rather than letting the request fail server-side.
 
-## Comments, authors, and sharing
+## Comments and authors
 
 - **Moderation queue** — comments held for review, each showing its text, author, arrival time, and whether
   it is a first comment or looks like spam. The workspace offers **approve, mark as spam, and move to trash**;
   the service also supports `reply` and `edit`, which the admin screen leaves to the native Comments screen.
   Everything runs through the native WordPress comment APIs. Actions are hidden — not disabled — from anyone
   without `moderate_comments`.
-- **Authors** — real author users with true published-post counts and first-party views/reads/engagement.
-- **Sharing** — option-backed X, Facebook, LinkedIn, and copy-link controls over native post URLs and titles.
-  Share clicks are logged through the consent-aware analytics service when enabled. The admin workspace lists
-  the configured targets **read-only**: a share click records that a *visitor* shared the post, so only the
-  front end can honestly report one.
+- **Authors** — real author users with true published-post counts.
+
+The workspace has no Sharing card: it listed networks from a setting no screen changes, which the front-end
+share row does not read. The share row on a post shows its own networks.
 
 ## The admin workspace
 
 `CoreX → Blog Pro` works on **one post at a time**, and says which. Choose it from the selector; the choice is
 the URL (`?post=<id>`), so a view can be linked, bookmarked, and reloaded.
 
-Every panel is scoped to that post and states the period it covers — a count without a window means nothing.
-Analytics distinguishes **"no reading data yet"** from a genuine zero: a post nobody has opened and a post
-CoreX has never recorded a visit to are different problems, and a bare `0` cannot tell you which you have.
+Every panel is scoped to that post. Reading figures, once there are any, state the period they cover — a
+count without a window means nothing — and a genuine zero is shown as one.
 
 Opening the screen needs `edit_posts`. Moving a post needs `edit_post` on it, and moderating needs
 `moderate_comments` — where you lack one, the control is not rendered rather than shown and refused.

@@ -89,7 +89,16 @@ final class WpActivityRepository implements ActivityRepository
         ];
 
         foreach ($allowed as $key => $placeholder) {
-            if (! array_key_exists($key, $filters) || $filters[$key] === '') {
+            if (! array_key_exists($key, $filters) || $filters[$key] === '' || $filters[$key] === []) {
+                continue;
+            }
+
+            // A list asks for any of its values, one placeholder each (spec 114).
+            if (is_array($filters[$key])) {
+                $list      = array_values($filters[$key]);
+                $clauses[] = sprintf('%s IN (%s)', $key, implode(', ', array_fill(0, count($list), $placeholder)));
+                array_push($values, ...$list);
+
                 continue;
             }
 

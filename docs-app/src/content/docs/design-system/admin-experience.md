@@ -10,8 +10,9 @@ state contract. It never styles the public frontend.
 PR #58 delivered the truthful-state foundation: add-on state resolution, state-aware settings, captcha gating,
 write-only secrets, and initial Add-ons badge CSS. The Spec 060 admin-design implementation then applied the approved
 visual design across the complete current admin journey — and has **landed (merged via PR #59)**, render-verified in
-dark and light. The real `wp-login.php` carries the CoreX login design (branded mark, ambient grid + glow, a separate
-disabled SSO slot with an "or" divider, leading user/lock field icons, brass button, reduced-motion-aware motion;
+dark and light. The real `wp-login.php` carries the CoreX login design (branded mark, ambient grid + glow, leading
+user/lock field icons, brass button, reduced-motion-aware motion; no single sign-on slot, since CoreX has no provider
+(spec 114);
 dark-first, with the saved CoreX appearance controlling it for logged-out users), and every CoreX admin screen uses
 the full-bleed CoreX shell scoped to CoreX screens only.
 
@@ -25,7 +26,7 @@ the full-bleed CoreX shell scoped to CoreX screens only.
   nonce-confirmed bulk delete, an accessible record drawer (focus trap, Escape, focus return), pagination, and
   explicit loading/empty/filtered-empty/error states.
 - Settings as real tabs (Brand → Mail → Forms → Captcha → Insights) over state-aware sections, with a live admin
-  appearance setting (System/Light/Dark), an admin-logo preview, an SSO-slot toggle, and write-only secret indicators.
+  appearance setting (System/Light/Dark), an admin-logo preview, and write-only secret indicators.
 - Setup Wizard with guided progress, kit cards, empty state, and apply success notice.
 - Readiness & Insights with performance/readiness cards, loading/error/result states, and honest environment gating.
 - Declarative CoreX option pages registered by applications.

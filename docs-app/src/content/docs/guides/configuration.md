@@ -88,11 +88,14 @@ when nothing remains). Status is derived from your existing settings — nothing
 Pick a driver (none / honeypot / reCAPTCHA v3 / Turnstile / hCaptcha). Key-based drivers show a
 **site key** and a write-only **secret**, plus a score threshold and action for reCAPTCHA v3.
 reCAPTCHA v3 shows a visitor nothing; Turnstile and hCaptcha show their widget above a protected
-form's button. A
-**Test verification** button (added by the Corex Captcha add-on, next to the secret field) probes
-the configured provider and shows a specific, actionable result inline — `ok`, `missing_keys`
-(naming what to add), `invalid_keys`, or `network_error` — through the standard response envelope.
-The secret is used only in the outbound probe and **never** appears in a response or on screen.
+form's button. Once a
+provider and both of its keys are saved, a **Test verification** button (added by the Corex Captcha
+add-on, under the secret field) asks the provider about the secret key and says the answer in words,
+in a region a screen reader announces: it works, the key is wrong, a key is missing, or the provider
+cannot be reached. The site key is checked when the widget loads for a visitor. Until both keys are
+saved the button is not offered, and the field says what is needed. The secret is used only in the
+outbound probe and **never** appears in a response or on screen.
 
-Insights similarly has a per-provider **Run check** button; a failed run now surfaces the error
-message inline (it no longer silently keeps the previous result).
+Insights similarly has a per-provider **Run check** button. A PageSpeed run that could not complete
+(a local address, a quota, a refused key, no answer) says **Could not run** with the reason and a
+**Retry** button, and has no score or grade.

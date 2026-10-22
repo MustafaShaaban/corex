@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Admin\AdminPage;
-use Corex\Config\Addons\AddonActivator;
+use Corex\Config\Addons\AddonToggleService;
 use Corex\Config\Addons\AddonManager;
 use Corex\Config\Addons\AddonRegistry;
 use Corex\Config\Addons\AddonsScreen;
@@ -60,7 +60,7 @@ function addonsScreenWithDocsBase(string $base): AddonsScreen
     return new AddonsScreen(
         $registry,
         new AddonManager($registry, new WpPluginActivationInspector(new SingleSiteMultisiteContext())),
-        $bare(AddonActivator::class),
+        $bare(AddonToggleService::class),
         $bare(AdminGuard::class),
         Mockery::mock(KitProvisioner::class),
         $bare(PendingKits::class),

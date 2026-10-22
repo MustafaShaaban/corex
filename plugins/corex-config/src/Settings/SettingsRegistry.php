@@ -76,11 +76,6 @@ final class SettingsRegistry implements FieldSections
                         'options' => ['system' => 'System', 'light' => 'Light', 'dark' => 'Dark'],
                         'help'    => 'System follows your operating-system colour scheme.',
                     ],
-                    'brand.login_sso_enabled' => [
-                        'label' => 'Enable SSO login section',
-                        'type'  => 'checkbox',
-                        'help'  => 'Reserves a single sign-on slot on the login screen. No provider is configured yet.',
-                    ],
                 ],
             ],
             'mail' => [

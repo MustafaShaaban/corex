@@ -21,6 +21,7 @@ use Corex\Config\Operations\PreviewLinkService;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
 use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
+use Corex\Config\Security\LoginProtection\LoginAddressState;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginRecovery;
@@ -328,8 +329,7 @@ final class OperationsSecurityScreen
             ],
             [
                 __('Default login endpoints', 'corex'),
-                $this->defaultEndpointsState($policy->blockDefaultEndpoints),
-                'login',
+                ...$this->defaultEndpointsState($policy),
             ],
             [
                 __('Active lockouts', 'corex'),
@@ -344,10 +344,14 @@ final class OperationsSecurityScreen
         ];
 
         $items = '';
-        foreach ($rows as [$label, $value, $section]) {
+        foreach ($rows as $row) {
+            [$label, $value, $section] = $row;
+            $note   = (string) ($row[3] ?? '');
             $items .= '<li class="corex-opsec__summary-item">'
                 . '<span class="corex-opsec__summary-label">' . esc_html($label) . '</span>'
-                . '<span class="corex-opsec__summary-value">' . esc_html($value) . '</span>'
+                . '<span class="corex-opsec__summary-value">' . esc_html($value)
+                . ($note === '' ? '' : '<span class="corex-opsec__summary-note">' . esc_html($note) . '</span>')
+                . '</span>'
                 . '<a class="corex-opsec__summary-link" href="' . esc_url($this->sectionUrl($section)) . '">'
                 . esc_html__('Open', 'corex') . '</a></li>';
         }
@@ -895,18 +899,24 @@ final class OperationsSecurityScreen
     }
 
     /**
-     * What the overview says about wp-login.php and wp-admin. While recovery is on they answer
-     * whatever the protection settings say (spec 112, FR-022).
+     * What the overview says about wp-login.php and wp-admin: "Hidden" only when the login guard
+     * hides them (spec 114, US-SAFE-11), which needs protection on as well as hiding. It read the
+     * hiding setting alone, so a fresh install said "Hidden" while the login form was served.
+     * While recovery is on they answer whatever the settings say (spec 112, FR-022).
+     *
+     * @return array{0:string,1:string,2:string} the value, the section it links to, and a note
      */
-    private function defaultEndpointsState(bool $hiddenBySettings): string
+    private function defaultEndpointsState(LoginProtectionSettings $policy): array
     {
-        if (! $hiddenBySettings) {
-            return __('Reachable', 'corex');
-        }
-
-        return $this->recovery->active()
-            ? __('Reachable (recovery is on)', 'corex')
-            : __('Hidden', 'corex');
+        return match (LoginAddressState::of($policy, $this->recovery->active())) {
+            LoginAddressState::HIDDEN   => [__('Hidden', 'corex'), 'login', ''],
+            LoginAddressState::RECOVERY => [
+                __('Recovery active: the default login is reachable', 'corex'),
+                'login',
+                __('Recovery ends when the COREX_LOGIN_UNGUARD line is removed from wp-config.php.', 'corex'),
+            ],
+            default => [__('Reachable', 'corex'), 'login', ''],
+        };
     }
 
     /**

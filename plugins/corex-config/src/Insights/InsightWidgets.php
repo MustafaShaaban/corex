@@ -26,6 +26,7 @@ final class InsightWidgets
     public const STATE_CONNECTED    = 'connected';
     public const STATE_DISCONNECTED = 'disconnected';
     public const STATE_EMPTY        = 'empty';
+    public const STATE_FAILED       = 'failed';
 
     /**
      * @param array{
@@ -36,6 +37,7 @@ final class InsightWidgets
      *   searchVisible:bool,
      *   prettyPermalinks:bool,
      *   securityEvents:list<array{text:string,meta:string,tone:string}>,
+     *   securityEventsSince?:string,
      *   cronDisabledByConstant:bool,
      *   cronOverdue:int,
      *   phpVersion:string,
@@ -185,17 +187,19 @@ final class InsightWidgets
     private function security(array $facts): array
     {
         $events = array_slice($facts['securityEvents'], 0, 5);
+        // From when there are records (spec 114, FR-016): events before it are in their own logs.
+        $since = sprintf(
+            /* translators: %s: the date from which security events are recorded */
+            __('Recorded since %s', 'corex'),
+            (string) ($facts['securityEventsSince'] ?? ''),
+        );
 
         if ($events === []) {
-            $widget = $this->base(
-                'security',
-                __('Security events', 'corex'),
-                __('Mode changes · denied access', 'corex'),
-                self::STATE_EMPTY,
-            );
+            $widget = $this->base('security', __('Security events', 'corex'), $since, self::STATE_EMPTY);
             $widget['alt'] = [
                 'title'    => __('No security events recorded', 'corex'),
-                'message'  => __('CoreX records operations-mode changes and denied CoreX admin access attempts here. Login-protection events arrive with the Security Center.', 'corex'),
+                // Only what is in fact recorded here; it named events that were not.
+                'message'  => __('CoreX records here operations-mode changes, refused visits to CoreX screens, sign-in lockouts and access-request decisions. None has happened since the date above.', 'corex'),
                 'ctaLabel' => __('Open Operations & Security', 'corex'),
                 'ctaHref'  => 'operations',
             ];
@@ -203,12 +207,7 @@ final class InsightWidgets
             return $widget;
         }
 
-        $widget = $this->base(
-            'security',
-            __('Security events', 'corex'),
-            __('Mode changes · denied access', 'corex'),
-            self::STATE_LIVE,
-        );
+        $widget = $this->base('security', __('Security events', 'corex'), $since, self::STATE_LIVE);
         $widget['events'] = $events;
 
         return $widget;
@@ -370,7 +369,8 @@ final class InsightWidgets
             return self::STATE_EMPTY;
         }
 
-        return self::STATE_CONNECTED;
+        // The last run could not complete: not a connection that works (spec 114, US-SAFE-12).
+        return ($latest['status'] ?? '') === InsightResult::STATUS_FAILED ? self::STATE_FAILED : self::STATE_CONNECTED;
     }
 
     /**
@@ -400,6 +400,7 @@ final class InsightWidgets
             self::STATE_CONNECTED    => __('Connected', 'corex'),
             self::STATE_DISCONNECTED => __('Not connected', 'corex'),
             self::STATE_EMPTY        => __('No data yet', 'corex'),
+            self::STATE_FAILED       => __('Could not run', 'corex'),
             default                  => $state,
         };
     }
@@ -408,6 +409,7 @@ final class InsightWidgets
     {
         return match ($state) {
             self::STATE_LIVE, self::STATE_CONNECTED => 'success',
+            self::STATE_FAILED                      => 'warning',
             default                                 => 'subtle',
         };
     }
