@@ -20,8 +20,9 @@ defined('ABSPATH') || exit;
  * that another spec submits while this one runs. A request carrying the header
  * `X-Corex-E2E-Captcha: keys` is answered as a site with reCAPTCHA chosen and two placeholder
  * keys, and `provider` as one with reCAPTCHA chosen and no keys. Nothing is sent to the provider
- * by this file, and nothing is stored: each setting is answered through its `pre_option_` filter. Without the header this file does nothing, and it
- * does nothing for a request that is not signed in as somebody who manages the site.
+ * by this file, and nothing is stored: each setting is answered through its `pre_option_` filter.
+ * Without the header this file does nothing, and it does nothing for a request that is not signed
+ * in as somebody who manages the site.
  *
  * An mu-plugin so it is active with no activation step. How the fixtures reach an install is in
  * `corex-e2e-core-notices.php`.

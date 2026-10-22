@@ -535,44 +535,10 @@ final class AccessScreen
         return __('Signed-out visitor', 'corex');
     }
 
-    /**
-     * A readable name for a recorded section — accepts both the AdminPage section keys and the
-     * `corex-*` page slugs recorded by the menu-level gate.
-     */
+    /** A readable name for a recorded section: its section key or its page slug. */
     private function sectionLabel(string $section): string
     {
-        $labels = [
-            'overview'                  => __('Overview', 'corex'),
-            'corex-settings'            => __('Overview', 'corex'),
-            'addons'                    => __('Add-ons', 'corex'),
-            'corex-addons'              => __('Add-ons', 'corex'),
-            'forms'                     => __('Forms & Flows', 'corex'),
-            'corex-forms'               => __('Forms & Flows', 'corex'),
-            'submissions'               => __('Submissions', 'corex'),
-            'corex-submissions'         => __('Submissions', 'corex'),
-            'email'                     => __('Email Studio', 'corex'),
-            'corex-email-studio'        => __('Email Studio', 'corex'),
-            'data'                      => __('Data', 'corex'),
-            'corex-data'                => __('Data', 'corex'),
-            'data-models'               => __('Data Models', 'corex'),
-            'corex-data-models'         => __('Data Models', 'corex'),
-            'operations-security'       => __('Operations & Security', 'corex'),
-            'corex-operations-security' => __('Operations & Security', 'corex'),
-            'access'                    => __('Access & Abilities', 'corex'),
-            'corex-access'              => __('Access & Abilities', 'corex'),
-            'blog-pro'                  => __('Blog Pro', 'corex'),
-            'corex-blog-pro'            => __('Blog Pro', 'corex'),
-            'settings'                  => __('Settings', 'corex'),
-            'corex-settings-config'     => __('Settings', 'corex'),
-            'insights'                  => __('Insights', 'corex'),
-            'corex-insights'            => __('Insights', 'corex'),
-            'setup'                     => __('Setup Wizard', 'corex'),
-            'corex-setup'               => __('Setup Wizard', 'corex'),
-            'releases'                  => __('Releases', 'corex'),
-            'corex-releases'            => __('Releases', 'corex'),
-        ];
-
-        return $labels[$section] ?? $section;
+        return ScreenNames::of($section);
     }
 
     /**

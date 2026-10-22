@@ -84,9 +84,25 @@ it('records a mode change, a refusal, a lockout and an access decision, and keep
         ->and(wp_json_encode($lockout))->not->toContain('someone')
         ->and(wp_json_encode($lockout))->not->toContain('203.0.113.9');
 
-    $card = Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'];
+    $card  = Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'];
+    $lines = array_column($card, 'text');
     expect($card)->toHaveCount(5)
-        ->and($card[0]['text'])->toBe('admin approved an access request');
+        ->and($lines[0])->toBe('admin approved an access request')
+        // The refused screen by its name, not its page slug.
+        ->and($lines)->toContain('User ' . ($this->admin + 1000) . ' was refused access to Data');
+});
+
+// Each line is one sentence, so a language that puts the person last can say it that way.
+it('says each event as one sentence a translation can reorder', function () {
+    $reordered = static fn (string $translation, string $text, string $domain): string =>
+        $domain === 'corex' && $text === '%1$s was refused access to %2$s' ? '%2$s ← %1$s' : $translation;
+    add_filter('gettext', $reordered, 10, 3);
+    Boot::app()->container()->make(AccessAuditLog::class)->record('denied', 'corex-insights', $this->admin + 3000);
+
+    $lines = array_column(Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'], 'text');
+    remove_filter('gettext', $reordered, 10);
+
+    expect($lines)->toContain('Insights ← User ' . ($this->admin + 3000));
 });
 
 it('adds one event for a counted refusal, not one per repeat inside its hour', function () {

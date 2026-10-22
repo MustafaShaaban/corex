@@ -765,6 +765,8 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(OperationsModeStore::class),
                 $c->make(SubmissionsReader::class),
                 $c,
+                $c->make(\Corex\Config\Operations\OperationsMode::class),
+                $c->make(\Corex\Config\Activity\SecurityEventsSince::class),
             ));
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>
             new InsightsController(

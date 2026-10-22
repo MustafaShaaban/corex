@@ -17718,12 +17718,16 @@ recorded" on a site that had them.
    nor the visitor's address). Access-request decisions were already written. A write that fails is let go: a
    mode change or a refusal never fails because its record could not be kept.
 2. **`ActivityRepository::query()`** takes a list for `area` (`area IN (…)`, one placeholder each); the card asks
-   for the five newest in security, access and operations, and says each in words.
+   for the five newest in security, access and operations, and says each as one translatable sentence with
+   the person as a placeholder, so a translation can order it as its language needs. A refused screen is named
+   by `ScreenNames` (the map the access audit tab already used, moved out of `AccessScreen` and shared), never
+   by its page slug.
 3. **`SecurityEventsSince`** stamps `corex_security_events_since` once (`add_option`) at the first write or the
    first read of the card; the card says "Recorded since <date>", and its empty message names only what is
    recorded. Earlier events stay in their own logs and are not copied.
 
-**Verified.** Pest integration `SecurityEventsTest` (the four kinds on the card after thirty unrelated events;
+**Verified.** Pest integration `SecurityEventsTest` (the four kinds on the card after thirty unrelated events,
+the refused screen by its name; a translation that puts the person last is drawn that way;
 the lockout keeps neither the username nor the address; five repeats in an hour make one event; the start is
 written once); the Insights unit tests; `BootTranslationsTest` (nothing translated before `init`).
 

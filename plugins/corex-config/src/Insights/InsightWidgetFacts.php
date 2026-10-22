@@ -10,6 +10,7 @@ namespace Corex\Config\Insights;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Config\Access\ScreenNames;
 use Corex\Config\Activity\SecurityActivityRecorder;
 use Corex\Config\Activity\SecurityEventsSince;
 use Corex\Config\Data\SubmissionsReader;
@@ -45,6 +46,8 @@ final class InsightWidgetFacts
         private readonly OperationsModeStore $modeStore,
         private readonly SubmissionsReader $submissions,
         private readonly ContainerInterface $container,
+        private readonly OperationsMode $modes,
+        private readonly SecurityEventsSince $since,
         private readonly string $option = 'corex_insights',
     ) {
     }
@@ -103,38 +106,57 @@ final class InsightWidgetFacts
         return $events;
     }
 
-    /** One event in words: who, and what happened. */
+    /**
+     * One event as a whole sentence, so a translation can put the person and the rest in the
+     * order its language needs (spec 114). The person's name is the event's own label, which is
+     * never empty.
+     */
     private function eventText(ActivityEvent $event): string
     {
-        $what = match ($event->kind) {
-            SecurityActivityRecorder::MODE_CHANGED => sprintf(
-                /* translators: %s: the operations mode the site moved to, e.g. Production */
-                __('changed the mode to %s', 'corex'),
-                $this->container->make(OperationsMode::class)->describe((string) ($event->context['to'] ?? $event->targetId))['label'],
-            ),
-            /* translators: %s: the CoreX screen that was refused */
-            SecurityActivityRecorder::ACCESS_DENIED => sprintf(__('was refused %s', 'corex'), $event->targetLabel),
-            SecurityActivityRecorder::LOGIN_LOCKED => __('A sign-in was locked out after too many failed attempts', 'corex'),
-            'access.request.created'  => __('asked for access', 'corex'),
-            'access.request.approved' => __('approved an access request', 'corex'),
-            'access.request.denied'   => __('denied an access request', 'corex'),
-            'access.role.changed'     => __('changed the abilities of a role', 'corex'),
-            'access.grant.revoked'    => __('revoked an access grant', 'corex'),
-            'access.grant.expired'    => __('An access grant ended', 'corex'),
-            default                   => trim($event->kind . ' ' . $event->targetLabel),
-        };
+        $who = $event->actorLabel;
 
-        return $event->actorLabel === '' ? $what : $event->actorLabel . ' ' . $what;
+        return match ($event->kind) {
+            SecurityActivityRecorder::MODE_CHANGED => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
+                __('%1$s changed the mode to %2$s', 'corex'),
+                $who,
+                $this->modes->describe((string) ($event->context['to'] ?? $event->targetId))['label'],
+            ),
+            SecurityActivityRecorder::ACCESS_DENIED => sprintf(
+                /* translators: 1: who was refused. 2: the CoreX screen, e.g. Settings. */
+                __('%1$s was refused access to %2$s', 'corex'),
+                $who,
+                ScreenNames::of($event->targetId),
+            ),
+            SecurityActivityRecorder::LOGIN_LOCKED => __('A sign-in was locked out after too many failed attempts', 'corex'),
+            /* translators: %s: who asked. */
+            'access.request.created' => sprintf(__('%s asked for access', 'corex'), $who),
+            /* translators: %s: who approved. */
+            'access.request.approved' => sprintf(__('%s approved an access request', 'corex'), $who),
+            /* translators: %s: who denied. */
+            'access.request.denied' => sprintf(__('%s denied an access request', 'corex'), $who),
+            /* translators: %s: who changed them. */
+            'access.role.changed' => sprintf(__('%s changed the abilities of a role', 'corex'), $who),
+            /* translators: %s: who revoked it. */
+            'access.grant.revoked' => sprintf(__('%s revoked an access grant', 'corex'), $who),
+            'access.grant.expired' => __('An access grant ended', 'corex'),
+            default => sprintf(
+                /* translators: 1: who. 2: what happened, as recorded. 3: what it happened to. */
+                __('%1$s · %2$s %3$s', 'corex'),
+                $who,
+                $event->kind,
+                $event->targetLabel,
+            ),
+        };
     }
 
     /** From when the activity log holds security events, as a date in the site's format. */
     private function securityEventsSince(): string
     {
         // Read first means records start now: the card never says "since" a time before it.
-        $since = $this->container->make(SecurityEventsSince::class);
-        $since->mark(time());
+        $this->since->mark(time());
 
-        return (string) wp_date((string) get_option('date_format', 'Y-m-d'), $since->since());
+        return (string) wp_date((string) get_option('date_format', 'Y-m-d'), $this->since->since());
     }
 
     private function cronOverdue(): int

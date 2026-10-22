@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Access\AccessUserDirectory;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Config\Access\ScreenNames;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Events\ListenerProvider;
 use Corex\Security\LoginLockoutEvent;
@@ -80,7 +81,7 @@ final class SecurityActivityRecorder
     /** The access log's new entry: recorded as it is opened, in the request that was refused. */
     public function refused(int $userId, string $kind, string $section): void
     {
-        $this->write($userId, self::ACCESS_DENIED, ['screen', $section, $section], ['refusal' => $kind]);
+        $this->write($userId, self::ACCESS_DENIED, ['screen', $section, ScreenNames::of($section)], ['refusal' => $kind]);
     }
 
     public function lockedOut(LoginLockoutEvent $event): void
