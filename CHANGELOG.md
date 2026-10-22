@@ -63,6 +63,7 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   `tests/Unit/Config/LoginSsoTest.php`, `AdminAppearanceTest.php` and `SettingsTabsTest.php`.
 - **Code that used `BrandingService::loginSsoEnabled()`, `ControlPanelStatus` or `DomainStatus`**
   must stop: they are removed. No client site uses them.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 
 ## [0.47.0] — 2026-10-21
 
