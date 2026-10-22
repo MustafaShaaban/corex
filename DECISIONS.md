@@ -17689,8 +17689,11 @@ cannot run on every pull request; a check that reports only fails nobody.
    a stale entry fails**: admin contrast and the PHP lint read one file, which only the pull request changing it
    can make stale.
 
-**Recorded.** 402 entries from CI's first run, owned by 14 stories: the most are untranslated text on Add-ons
-(US-ADD-08, 129) and Settings (US-SET-08, 72), and low-contrast muted text (US-BRD-02, 73).
+**Recorded.** 371 entries from CI's first two runs, owned by 13 stories: the most are untranslated text on
+Add-ons (US-ADD-08, 126) and Settings (US-SET-08, 65), and low-contrast muted text (US-BRD-02, 73). The second
+run found one unstable source, Hello Dolly, which WordPress bundles and CI's install activates: it prints a
+random lyric among the admin notices. The quality site deactivates the bundled plug-ins, and the 31 lyric
+entries were removed.
 
 **Not chosen.** *Counts per screen*: the number of rows differs run to run. *Selectors from axe*: they carry
 `nth-child` positions.
