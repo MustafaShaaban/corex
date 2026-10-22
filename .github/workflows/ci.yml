@@ -56,6 +56,9 @@ jobs:
       - name: Lint PHP source
         run: find plugins packages addons -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
 
+      # The steps after this one run even when it fails (spec 116), so a translation finding does
+      # not hide a failing unit test.
+      #
       # Words a PHP file prints without a translation, and translation calls outside the `corex`
       # text domain (spec 116, US-NFR-06). JavaScript has had the same rule through ESLint for
       # long; PHP had nothing. What was found when the lint was written is in
@@ -64,6 +67,7 @@ jobs:
         run: php scripts/i18n-lint.php
 
       - name: Headless unit tests (Pest)
+        if: ${{ !cancelled() }}
         run: composer test
 
       # The translation template, generated from the source on every pull request so that a
@@ -71,9 +75,11 @@ jobs:
       # and needs no WordPress. A published release gets the same file attached by
       # .github/workflows/release-assets.yml.
       - name: Generate the translation template
+        if: ${{ !cancelled() }}
         run: composer i18n:pot
 
       - name: Upload the translation template
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: corex-pot
@@ -106,15 +112,19 @@ jobs:
       # to be found by hand, and how `lint:js` accumulated 2589 problems: `wp-scripts lint-js` with
       # no project config walked `wp/` and `dist/` — tens of thousands of files that are not ours —
       # and never finished, so it could not be gated at all until eslint.config.js scoped it.
+      # From here, each step runs even when one before it failed (spec 116): a linter's failure
+      # used to stop the audit and Jest, so a pull request learned of one problem per push.
       - name: Lint styles
         run: npm run lint:css
 
       - name: Lint JavaScript
+        if: ${{ !cancelled() }}
         run: npm run lint:js
 
       # No "planned", "coming soon", "sample data" or "reference only" in shipped source (spec 116,
       # US-NFR-06; spec 068 wrote the audit and nothing ran it).
       - name: Product completion audit
+        if: ${{ !cancelled() }}
         run: npm run audit:completion
 
       # The docs site is built here so `tests/docs-links.test.js` has something to check. That test
@@ -129,6 +139,7 @@ jobs:
       # check sampling only the half that works. It needs PHP, which this job otherwise does not
       # have, and that is the whole reason it was missing.
       - name: Set up PHP for the reference generator
+        if: ${{ !cancelled() }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -138,12 +149,15 @@ jobs:
       # `scripts/generate-docs.php` requires `vendor/autoload.php` — it reflects over the real
       # classes rather than parsing the files as text, which is what makes the reference accurate.
       - name: Install PHP dependencies
+        if: ${{ !cancelled() }}
         run: composer install --prefer-dist --no-progress
 
       - name: Generate the class reference
+        if: ${{ !cancelled() }}
         run: composer docs:generate
 
       - name: Build the docs site
+        if: ${{ !cancelled() }}
         working-directory: docs-app
         run: |
           npm ci
@@ -154,6 +168,7 @@ jobs:
       # this suite before, which is how a stale inventory survived spec 072's CSS additions
       # unnoticed while the gate reported every suite green.
       - name: JS unit tests (Jest)
+        if: ${{ !cancelled() }}
         run: npm run test:js
 
   # The integration suite boots the framework inside a real WordPress (tests/bootstrap-integration
