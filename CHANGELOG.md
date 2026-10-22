@@ -60,6 +60,9 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 - **The captcha provider's script is printed on the page** (DECISIONS #407). It was queued after
   WordPress had printed the footer's scripts, so it never reached the page. This affected
   corex-forms' protected forms too.
+- **The slug fields of a new flow and of an Email Studio template check what is typed again.** Their
+  pattern was invalid under the rules browsers now compile a `pattern` with, so the browser ignored it
+  and logged a console error. An unescaped `-` in a character class is now escaped.
 
 ### Security
 
