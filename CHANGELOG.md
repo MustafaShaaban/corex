@@ -49,6 +49,8 @@ All notable changes to Corex are documented here. The format follows
 - **Local and staging copies start capturing mail**: a copy whose operations mode is Development or
   Staging, or whose WordPress environment is `local`, `development` or `staging`, keeps its mail in
   Email Studio instead of sending it. Check a copy's mail there after updating.
+- **Muva and Perego**: their production sites send as before if the two checks above hold; their
+  local copies keep their mail. **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 - **A test that spies on `wp_mail()` on a development install** now sees mail kept before
   `wp_mail()`: CoreX's own test helper `tests/Support/MailDelivery.php` gains a `DELIVER` mode for
   tests that exercise production sending. A client repository that carries copies of CoreX's tests
