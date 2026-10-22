@@ -24,7 +24,10 @@ add_action('admin_menu', static function (): void {
 // label), in the shell header of every CoreX screen.
 add_filter('corex_admin_header_actions', static function (string $html): string {
     return $html
-        . '<button type="button" aria-label="Planted" class="corex-planted-tiny" style="inline-size:16px;block-size:16px;padding:0;min-inline-size:0;min-block-size:0;border:0;">x</button>'
+        . '<span class="corex-planted-pair" style="display:inline-flex;gap:0;">'
+        . '<button type="button" aria-label="Planted one" class="corex-planted-tiny" style="inline-size:16px;block-size:16px;padding:0;margin:0;min-inline-size:0;min-block-size:0;border:0;">x</button>'
+        . '<button type="button" aria-label="Planted two" class="corex-planted-tiny" style="inline-size:16px;block-size:16px;padding:0;margin:0;min-inline-size:0;min-block-size:0;border:0;">y</button>'
+        . '</span>'
         . '<span class="corex-planted-key">corex_owner_key</span>'
         . '<span class="corex-planted-label">Planted untranslated label</span>';
 });
@@ -34,8 +37,8 @@ add_filter('corex_admin_header_actions', static function (string $html): string 
 // TC-NFR-07-04).
 add_action('admin_head', static function (): void {
     echo '<style id="corex-planted-defects">'
-        . '[dir="rtl"] .corex-framework_page_corex-access .corex-admin__header { margin-inline-end: -2px; }'
-        . '.corex-inbox table { min-inline-size: 947px; }'
+        . '[dir="rtl"] body.corex-framework_page_corex-access::after { content: ""; position: absolute; inset-block-start: 0; left: -2px; inline-size: 1px; block-size: 1px; }'
+        . '.corex-admin .corex-inbox__table { min-inline-size: 947px !important; }'
         . '.corex-admin__nav-item:focus, .corex-admin__nav-item:focus-visible { outline: none !important; box-shadow: none !important; }'
         . '@keyframes corex-planted { from { transform: translateX(0); } to { transform: translateX(4px); } }'
         . '.corex-admin__heading { animation: corex-planted 1s infinite alternate; }'
