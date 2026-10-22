@@ -44,16 +44,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
-No client site is affected at runtime: this release changes tests, scripts and CI only.
+Nothing changes at runtime.
 
-- **Muva** and **Perego**: nothing changes on the site. After the next framework merge, the
+- Nothing changes on the sites. After the next framework merge, the
   client repository's CI runs the new **Quality checks** job against its CI's own WordPress. That
   WordPress holds the framework's plug-ins and add-ons, not the client's site, so the job checks
   the framework's screens with the same known failures. The browser suite's new teardown fails a
   client's own spec that leaves an unmarked submission behind. The suite refuses to run against a
   site in Production mode served from a real host name, such as a live site. Before a tag, the release is now
   merged into a copy of each client's repository and that client's suites are run.
-- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+- Nothing changes elsewhere.
 
 ## [0.47.0] — 2026-10-21
 

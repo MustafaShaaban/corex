@@ -431,8 +431,7 @@ function Filters( { filters, update, flows } ) {
 		>
 			{ /* The panel measures itself and this grid follows: see the stylesheet. */ }
 			<div className="corex-inbox__filter-grid">
-				<label className="is-wide" htmlFor={ `${ fieldId }-search` }>
-					<span>{ __( 'Search', 'corex' ) }</span>
+				<div className="is-wide">
 					<input
 						id={ `${ fieldId }-search` }
 						type="search"
@@ -440,9 +439,8 @@ function Filters( { filters, update, flows } ) {
 						onChange={ ( event ) =>
 							update( 'search', event.target.value )
 						}
-						placeholder={ __( 'Name, email, or flow', 'corex' ) }
 					/>
-				</label>
+				</div>
 				<FormFilter
 					flows={ flows }
 					value={ filters.flow }

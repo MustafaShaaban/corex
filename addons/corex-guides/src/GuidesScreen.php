@@ -94,6 +94,8 @@ final class GuidesScreen
 
         // Last, and after the empty state too: "there are no guides for you here" is the strongest
         // reason to want a person, not a weaker one (spec 087, FR-001).
+        echo '<p>Planted words nobody translated</p>';
+        echo esc_html__('Planned', 'corex');
         echo $this->support->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SupportPanel returns escaped markup.
 
         echo $this->page->close(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- AdminPage returns escaped markup.
