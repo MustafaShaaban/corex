@@ -12,20 +12,30 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Config\Overview\OverviewModel;
+use Corex\Config\Security\LoginProtection\LoginAddressState;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
     Functions\when('_n')->alias(static fn (string $single, string $plural, int $number): string => $number === 1 ? $single : $plural);
 });
 
-/**
- * @return array{counts:array{posts:int,pages:int,submissions:int|null,addonsActive:int,addonsTotal:int},domains:array<string,bool>,frontPageSet:bool,kitApplied:bool,hardeningWarnings:int,dataSources:list<array{label:string,key:string,total:int}>,formsCount:int}
- */
+/** A site with every state fact set, overridden per test. */
+function stateFacts(array $overrides = []): array
+{
+    return array_merge([
+        'brand'    => ['name' => true, 'logo' => true],
+        'mailFrom' => true,
+        'insights' => ['key' => true, 'latest' => ['status' => 'good', 'score' => 95, 'summary' => 'Fast.']],
+        'captcha'  => ['active' => true, 'driver' => 'turnstile', 'keys' => true],
+        'login'    => LoginAddressState::HIDDEN,
+    ], $overrides);
+}
+
 function overviewFacts(array $overrides = []): array
 {
     return array_merge([
         'counts'            => ['posts' => 4, 'pages' => 6, 'submissions' => 12, 'addonsActive' => 3, 'addonsTotal' => 9],
-        'domains'           => ['brand' => true, 'mail' => true, 'captcha' => false, 'insights' => false, 'forms' => true],
+        'facts'             => stateFacts(),
         'frontPageSet'      => true,
         'kitApplied'        => true,
         'hardeningWarnings' => 0,
@@ -68,30 +78,115 @@ it('reports submissions as an em dash when the forms source is unavailable — n
 
 it('counts readiness from real signals and never overstates it', function () {
     $done = (new OverviewModel())->build(overviewFacts())['readiness'];
-    // brand + kit + frontPage + mail done; captcha off; hardening ok -> 5 of 6.
     expect($done['total'])->toBe(6)
-        ->and($done['done'])->toBe(5);
+        ->and($done['done'])->toBe(6);
 
     $blank = (new OverviewModel())->build(overviewFacts([
-        'domains' => ['brand' => false, 'mail' => false, 'captcha' => false, 'insights' => false],
+        'facts' => stateFacts(['brand' => ['name' => false, 'logo' => false], 'mailFrom' => false]),
         'frontPageSet' => false,
         'kitApplied' => false,
         'hardeningWarnings' => 2,
     ]))['readiness'];
-    expect($blank['done'])->toBe(0);
+    // Spam protection stays done: every CoreX form carries a honeypot.
+    expect($blank['done'])->toBe(1);
 });
 
-it('shows honest connected / not-connected integration states, never a score', function () {
-    $data = (new OverviewModel())->build(overviewFacts(['domains' => ['insights' => false, 'captcha' => true, 'mail' => false], 'hardeningWarnings' => 1]));
-    $byLabel = [];
-    foreach ($data['integrations'] as $row) {
-        $byLabel[$row['label']] = $row;
-    }
+/** The rows of one region, by label. */
+function rowsOf(array $facts, string $region): array
+{
+    $rows = (new OverviewModel())->build(overviewFacts($facts))[$region];
+    $rows = $region === 'readiness' ? $rows['rows'] : $rows;
 
-    expect($byLabel['Insights / PageSpeed']['note'])->toBe('Not connected')
-        ->and($byLabel['Insights / PageSpeed']['tone'])->toBe(OverviewModel::TONE_NEUTRAL)
-        ->and($byLabel['Captcha']['tone'])->toBe(OverviewModel::TONE_SUCCESS)
-        ->and($byLabel['Login protection']['tone'])->toBe(OverviewModel::TONE_WARNING);
+    return array_column($rows, null, 'label');
+}
+
+/*
+ * Spec 114, US-SAFE-10: every "Done", "Configured" and "Connected" is true. A fresh install read
+ * "Brand configured: Done", "Insights / PageSpeed: Provider connected" and "Captcha: Configured",
+ * and its Login protection row counted hardening warnings.
+ */
+it('says a fresh install has set nothing, row by row', function () {
+    $fresh = ['facts' => stateFacts([
+        'brand'    => ['name' => false, 'logo' => false],
+        'insights' => ['key' => false, 'latest' => null],
+        'captcha'  => ['active' => true, 'driver' => 'none', 'keys' => false],
+        'login'    => LoginAddressState::OFF,
+    ]), 'hardeningWarnings' => 3];
+    $readiness    = rowsOf($fresh, 'readiness');
+    $integrations = rowsOf($fresh, 'integrations');
+
+    expect($readiness['Brand configured']['note'])->toBe('Not set')
+        ->and($readiness['Brand configured']['done'])->toBeFalse()
+        ->and($readiness['Brand configured']['href'])->toBe(OverviewModel::BRAND_SETTINGS)
+        ->and($readiness['Spam protection']['note'])->toBe('Honeypot only')
+        ->and($readiness['Hardening checks']['note'])->toBe('3 checks to review')
+        ->and($integrations['Insights / PageSpeed']['note'])->toBe('Keyless (shared quota)')
+        ->and($integrations['Captcha']['note'])->toBe('Not configured')
+        ->and($integrations['Login protection']['note'])->toBe('Off');
+});
+
+it('calls the brand done only with a company name and a logo', function (bool $name, bool $logo, bool $done) {
+    $row = rowsOf(['facts' => stateFacts(['brand' => ['name' => $name, 'logo' => $logo]])], 'readiness')['Brand configured'];
+
+    expect($row['done'])->toBe($done)
+        ->and($row['note'])->toBe($done ? 'Done' : 'Not set');
+})->with([
+    'both' => [true, true, true],
+    'a name, no logo' => [true, false, false],
+    'a logo, no name' => [false, true, false],
+]);
+
+it('says what the PageSpeed row is, in the words of what is so', function (bool $key, ?array $latest, string $note, string $tone) {
+    $row = rowsOf(['facts' => stateFacts(['insights' => ['key' => $key, 'latest' => $latest]])], 'integrations')['Insights / PageSpeed'];
+
+    expect($row['note'])->toBe($note)
+        ->and($row['tone'])->toBe($tone);
+})->with([
+    'a key and a completed run' => [true, ['status' => 'good', 'score' => 95], 'Connected', OverviewModel::TONE_SUCCESS],
+    'a key, nothing run yet' => [true, null, 'Key saved, not checked yet', OverviewModel::TONE_NEUTRAL],
+    'no key' => [false, ['status' => 'good', 'score' => 95], 'Keyless (shared quota)', OverviewModel::TONE_NEUTRAL],
+    'a failed run' => [false, ['status' => 'failed', 'summary' => 'PageSpeed quota was exceeded.'], 'Error: PageSpeed quota was exceeded.', OverviewModel::TONE_WARNING],
+    'a key, then a failed run' => [true, ['status' => 'failed', 'summary' => 'The key was rejected.'], 'Error: The key was rejected.', OverviewModel::TONE_WARNING],
+]);
+
+it('says the captcha is configured only with its add-on on, a provider and both keys', function (array $captcha, string $integration, string $spam) {
+    $facts = ['facts' => stateFacts(['captcha' => $captcha])];
+
+    expect(rowsOf($facts, 'integrations')['Captcha']['note'])->toBe($integration)
+        ->and(rowsOf($facts, 'readiness')['Spam protection']['note'])->toBe($spam);
+})->with([
+    'a provider with its keys' => [['active' => true, 'driver' => 'hcaptcha', 'keys' => true], 'hCaptcha configured', 'Honeypot and hCaptcha'],
+    'keys saved, add-on off' => [['active' => false, 'driver' => 'recaptcha', 'keys' => true], 'Not configured (add-on inactive)', 'Honeypot only'],
+    'driver None' => [['active' => true, 'driver' => 'none', 'keys' => false], 'Not configured', 'Honeypot only'],
+    'driver Honeypot' => [['active' => true, 'driver' => 'honeypot', 'keys' => false], 'Not configured', 'Honeypot only'],
+    'a provider with a key missing' => [['active' => true, 'driver' => 'recaptcha', 'keys' => false], 'Keys missing', 'Honeypot only'],
+]);
+
+it('reads the login protection row from the Security Center, and hardening in its own row', function (string $state, string $note) {
+    $facts = ['facts' => stateFacts(['login' => $state]), 'hardeningWarnings' => 0];
+
+    expect(rowsOf($facts, 'integrations')['Login protection']['note'])->toBe($note)
+        ->and(rowsOf($facts, 'readiness')['Hardening checks']['note'])->toBe('Done');
+})->with([
+    'protection off' => [LoginAddressState::OFF, 'Off'],
+    'on, hidden' => [LoginAddressState::HIDDEN, 'On, login address hidden'],
+    'on, not hidden' => [LoginAddressState::REACHABLE, 'On, login address reachable'],
+    'on, recovery' => [LoginAddressState::RECOVERY, 'On, recovery active: login address reachable'],
+]);
+
+it('says "Could not check" for a fact that could not be read, never a success', function () {
+    $facts = ['facts' => stateFacts(['insights' => null, 'captcha' => null, 'login' => null]), 'hardeningWarnings' => null];
+    $readiness    = rowsOf($facts, 'readiness');
+    $integrations = rowsOf($facts, 'integrations');
+
+    foreach ([$readiness['Spam protection'], $readiness['Hardening checks']] as $row) {
+        expect($row['note'])->toBe('Could not check')
+            ->and($row['done'])->toBeFalse();
+    }
+    foreach (['Insights / PageSpeed', 'Captcha', 'Login protection'] as $label) {
+        expect($integrations[$label]['note'])->toBe('Could not check')
+            ->and($integrations[$label]['tone'])->toBe(OverviewModel::TONE_WARNING);
+    }
 });
 
 it('clamps negative counts and never renders a negative data-source total', function () {

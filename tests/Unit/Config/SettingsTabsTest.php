@@ -205,13 +205,26 @@ it('keeps secret key fields write-only even with reference links', function () {
         ->and($html)->toContain('autocomplete="new-password"');
 });
 
-it('offers the appearance setting (System/Light/Dark) and the SSO-slot setting on the Brand tab', function () {
+it('offers the appearance setting (System/Light/Dark) on the Brand tab, and no single sign-on switch', function () {
     $html = settingsForm()->render(static fn (string $key): string => '', '<nonce>');
 
     expect($html)
         ->toContain('CoreX admin appearance')
         ->toContain('brand_admin_appearance')
         ->toContain('>System<')->toContain('>Light<')->toContain('>Dark<')
-        ->toContain('Enable SSO login section')
-        ->toContain('brand_login_sso_enabled');
+        // No provider exists, so there is nothing to switch on (spec 114, US-SET-10).
+        ->not->toContain('SSO')
+        ->not->toContain('brand_login_sso_enabled');
+});
+
+// Spec 114, US-SAFE-16: the captcha test button finds the secret key field by its id. It looked
+// for one no page had, and its test drew that id itself. This holds the script to the form.
+it('gives the captcha secret key field the id the test button looks for', function () {
+    $html   = settingsForm()->render(static fn (string $key): string => $key === 'captcha.driver' ? 'recaptcha' : '', '<nonce>');
+    $script = (string) file_get_contents(dirname(__DIR__, 3) . '/addons/corex-captcha/assets/captcha-admin.js');
+
+    preg_match("/const SECRET_FIELD_ID = '([^']+)';/", $script, $id);
+
+    expect($id[1] ?? '')->toBe('captcha_secret')
+        ->and($html)->toContain('<input id="' . $id[1] . '" name="' . $id[1] . '" type="password"');
 });

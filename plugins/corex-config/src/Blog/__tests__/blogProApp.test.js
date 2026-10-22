@@ -71,9 +71,6 @@ function config( overrides = {} ) {
 		},
 		comments: [],
 		authors: [ { name: 'Ada', post_count: 3 } ],
-		shareControls: [
-			{ target: 'facebook', label: 'Facebook', url: 'https://x.test' },
-		],
 		can: { moderate: true, publish: true },
 		...overrides,
 	};
@@ -148,7 +145,6 @@ describe( 'BlogProApp', () => {
 					selectedPost: null,
 					analytics: null,
 					editorial: null,
-					shareControls: [],
 				} ),
 			} );
 
@@ -210,8 +206,13 @@ describe( 'BlogProApp', () => {
 		} );
 	} );
 
+	/*
+	 * Spec 114, US-BLG-05: CoreX records no reading views yet. Without figures there is no
+	 * "Reading signals" panel, no period line and nothing that says a visit was looked for;
+	 * one line says plainly that the figures are not collected.
+	 */
 	describe( 'analytics admit what they do not know', () => {
-		it( 'distinguishes a post nobody has opened from one never seen', () => {
+		it( 'says reading data is not collected yet, and implies no recorder', () => {
 			mount( {
 				config: config( {
 					analytics: {
@@ -225,7 +226,51 @@ describe( 'BlogProApp', () => {
 				} ),
 			} );
 
-			expect( text() ).toContain( 'No reading data yet' );
+			expect( text() ).toContain(
+				'CoreX does not collect reading data yet. Figures appear here once it does.'
+			);
+			expect( text() ).not.toContain( 'Reading signals' );
+			expect( text() ).not.toContain( 'Figures cover the last' );
+			expect( text() ).not.toMatch(
+				/record(ed|s)? a visit|visits? (are|is) recorded/i
+			);
+			expect(
+				container.querySelector( '.corex-blog-pro__stats' )
+			).toBeNull();
+		} );
+
+		it( 'has no Sharing card, and keeps the editorial, comments and authors panels', () => {
+			mount();
+
+			const titles = [
+				...container.querySelectorAll( '.corex-blog-pro__card h3' ),
+			].map( ( heading ) => heading.textContent );
+
+			expect( titles ).not.toContain( 'Sharing' );
+			expect( titles ).toContain( 'Editorial workflow' );
+			expect( titles ).toContain( 'Authors' );
+			expect(
+				titles.some( ( title ) => title.includes( 'awaiting review' ) )
+			).toBe( true );
+		} );
+
+		it( 'draws the figures and their period once a post has them', () => {
+			mount( {
+				config: config( {
+					analytics: {
+						views: 4,
+						reads: 2,
+						share_clicks: 1,
+						unique_visitors: 3,
+						average_read_seconds: 70,
+						has_data: true,
+					},
+				} ),
+			} );
+
+			expect( text() ).toContain( 'Reading signals for' );
+			expect( text() ).toContain( 'Figures cover the last' );
+			expect( text() ).not.toContain( 'does not collect reading data' );
 		} );
 
 		it( 'shows a real zero when analytics has seen the post', () => {
@@ -242,7 +287,7 @@ describe( 'BlogProApp', () => {
 				} ),
 			} );
 
-			expect( text() ).not.toContain( 'No reading data yet' );
+			expect( text() ).not.toContain( 'does not collect reading data' );
 		} );
 	} );
 } );

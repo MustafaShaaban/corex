@@ -6,6 +6,8 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398).
+
 Kit and public page safety (spec 115, the fourth release of the CoreX revamp's stage 0).
 
 **Read Client impact before updating.** On sites whose kit pages still reference the stats or
@@ -13,6 +15,32 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 ### Changed
 
+- **The Overview shows only true states** (#390). Brand reads "Done" only with a company name and a
+  logo, otherwise "Not set" with a link to Brand settings. Insights / PageSpeed reads "Connected"
+  only with a saved key whose last run completed, "Key saved, not checked yet", "Keyless (shared
+  quota)", or "Error" with the reason after a failed run. Captcha reads "Not configured" for None
+  or Honeypot and when the captcha add-on is off. Spam protection says "Honeypot only" or
+  "Honeypot and <provider>". Login protection reads the Security Center, and hardening has a row
+  of its own. A fact that cannot be read says "Could not check".
+- **"Default login endpoints: Hidden" only when they are** (#391). The Security Center row reads
+  "Reachable" while login protection or hiding is off, and "Recovery active: the default login is
+  reachable" while `COREX_LOGIN_UNGUARD` is set, with how to end recovery. The login guard, the
+  Security Center and the Overview ask one rule.
+- **A PageSpeed run that could not run shows an error, never a grade** (#392): "Could not run",
+  the reason and Retry, with no score. Failed runs stored by earlier releases as 50/D are shown as
+  failures with their message; none is deleted.
+- **Insights security events are complete** (#393). Operations-mode changes, refused visits to
+  CoreX screens (one event per counted entry), sign-in lockouts and access-request decisions are
+  in the activity log, and the card shows the newest five of them whatever else happened, and from
+  when it has records. Events from before the update stay in their own logs.
+- **The Add-ons screen reports what really happened** (#395). A failed activation shows WordPress's
+  reason, leaves the add-on off, writes no feature flag and shows no kit prompt. An add-on active
+  for the network ("Managed by the network administrator") or installed as must-use ("Must-use:
+  always on") has a switch that cannot be used. Each enable and disable is in the activity log.
+- **The login screen shows no single sign-on option** (#396), whatever the stored setting says, and
+  Settings → Brand no longer offers "Enable SSO login section". The stored value is left in place.
+- **Blog Pro says plainly that it does not count readers yet** (#397). Without reading data it shows
+  one line instead of the reading-signals panel and the period line, and the Sharing card is gone.
 - **A reset gives back the pages the owner had** (DECISIONS #400).
   - Applying a kit now records each page it replaces or adopts (title, content, template, status)
     and the site's front-page settings before it changes them.
@@ -47,6 +75,15 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 ### Fixed
 
+- **Saving Settings changes only what was changed** (#398). A save wrote every field of every
+  section, and saved the switches of an add-on that was off as off: saving Brand with Corex Media
+  off switched WebP conversion off. Now a section whose add-on is off or not installed is not
+  written, and a field is written only when its value was changed.
+- **The captcha "Test verification" button appears** (#394). It looked for a field id the Settings
+  form does not use and was loaded on a screen name WordPress does not give the Settings screen.
+  It now sits under the secret key field once a provider and both keys are saved, and says the
+  provider's answer in words (works, wrong key, a key missing, cannot reach the provider) in a
+  region a screen reader announces; until then the field says what is needed.
 - **Visitors can register, subscribe, request a call and apply for a job when a captcha provider is
   on** (DECISIONS #406).
   - With Turnstile, hCaptcha or reCAPTCHA v3 set up, these four routes refused every visitor for a
@@ -72,6 +109,19 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 ### Client impact
 
+- **Nothing to do for the screens.** Owners of both client sites read different, accurate rows on
+  Overview, Operations & Security, Insights and Blog Pro. Muva's captcha test button appears. Muva
+  has no PageSpeed key, so its Insights shows "Could not run" with the reason instead of a D.
+- **Check the image conversion switches if Corex Media was ever off on a site.** Values already
+  switched off by the old save are not repaired. Open CoreX → Settings → Media and read "Convert
+  uploads to WebP", "Convert JPEG uploads" and "Convert PNG uploads"; turn back on any the owner
+  wants and save. Muva and Perego both have Corex Media on, so their values were not hit.
+- **A login screen where an owner had ticked the single sign-on box loses a button that did
+  nothing.** A client repository that carries copies of CoreX's own tests takes the updated
+  `tests/Unit/Config/LoginSsoTest.php`, `AdminAppearanceTest.php` and `SettingsTabsTest.php`.
+- **Code that used `BrandingService::loginSsoEnabled()`, `ControlPanelStatus` or `DomainStatus`**
+  must stop: they are removed. No client site uses them.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 - **Muva** runs corex-captcha (reCAPTCHA v3) with its own forms. They are not declared to CoreX,
   so its pages load nothing new and its forms keep their own token handling. Nothing to do.
 - **Perego** runs corex-ui and the Company kit, and does not run corex-captcha. **Check its pages**

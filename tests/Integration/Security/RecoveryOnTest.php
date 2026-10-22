@@ -58,7 +58,9 @@ it('tells the Security Center whether recovery is on', function (bool $active) {
 it('says on the overview that the default login endpoints are reachable while recovery is on', function () {
     $html = callScreen(securityScreenWithRecovery(true), 'overviewCard', [], 0);
 
-    expect($html)->toContain('Reachable (recovery is on)')
+    // Spec 114, US-SAFE-11: with how recovery ends.
+    expect($html)->toContain('Recovery active: the default login is reachable')
+        ->and($html)->toContain('Recovery ends when the COREX_LOGIN_UNGUARD line is removed from wp-config.php.')
         ->and($html)->not->toContain('Hidden');
 });
 
@@ -66,5 +68,18 @@ it('says they are hidden while recovery is off and protection hides them', funct
     $html = callScreen(securityScreenWithRecovery(false), 'overviewCard', [], 0);
 
     expect($html)->toContain('Hidden')
-        ->and($html)->not->toContain('recovery is on');
+        ->and($html)->not->toContain('Recovery active');
+});
+
+// Spec 114, US-SAFE-11: the row read the hiding setting alone, so a fresh install, with
+// protection off and hiding on by default, said "Hidden" while the login form was served.
+it('says they are reachable while protection is off, whatever the hiding setting says', function () {
+    $off = static fn (): array => ['enabled' => false, 'block_default_endpoints' => true];
+    add_filter('pre_option_' . LoginProtectionSettingsStore::OPTION, $off, 20);
+
+    $html = callScreen(securityScreenWithRecovery(false), 'overviewCard', [], 0);
+    remove_filter('pre_option_' . LoginProtectionSettingsStore::OPTION, $off, 20);
+
+    expect($html)->toMatch('/Default login endpoints<\/span><span class="corex-opsec__summary-value">Reachable</')
+        ->and($html)->not->toContain('>Hidden<');
 });
