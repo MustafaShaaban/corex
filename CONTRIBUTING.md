@@ -228,8 +228,9 @@ A local run is a check before you push. CI is the authority, for the reason give
 [Running the tests](#running-the-tests).
 
 **What a run leaves behind** (spec 116, US-NFR-09). Before the first test, the suite prints the site it will
-write to, and refuses one whose CoreX operations mode is declared Production. It then removes the submissions
-earlier runs left that carry a test's marker: a flow whose slug contains `e2e`, a `utm_source` of `playwright`,
+write to, and refuses one whose CoreX operations mode is declared Production unless it is served from a local
+development host (localhost, a loopback address, `.localhost`, `.test`, `.local`), where the specs themselves
+switch the mode. It then removes the submissions earlier runs left that carry a test's marker: a flow whose slug contains `e2e`, a `utm_source` of `playwright`,
 or a sender at `example.com` or `example.test`, for a submission the run made itself. After the last test it
 removes the run's own marked submissions, and fails if the run made any submission that is still there,
 naming each. A spec that makes a submission marks it or removes it. All of this needs WP-CLI on the install

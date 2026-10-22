@@ -6,7 +6,8 @@
  * and the Settings counts showed test rows instead of the product. Now:
  *
  * - **Before the run**, the suite says which site it will write to, and refuses one whose CoreX
- *   operations mode is declared `production`. It removes the submissions earlier runs left that
+ *   operations mode is declared `production` and that is not a local development host. It
+ *   removes the submissions earlier runs left that
  *   carry a run's marker, and notes the highest submission id, the mark this run starts from.
  * - **After the run**, it removes the submissions this run made that carry a marker, and fails if
  *   any submission this run made is still there, naming each one.

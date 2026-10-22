@@ -17642,7 +17642,7 @@ specs leave rows behind that would change what is measured. *Loading each cell*:
 cells whose only differences are a media query and an attribute.
 
 **Verified.** On CI (run 39637260114), three workers on nginx and php-fpm: the 299 quality tests ran in 7.3
-minutes and the job in 9.6, beside the browser job's 9.0, so the pull request waits no longer than before. The
+minutes and the job in 9.6, beside the browser job's 9.0, so a pull request waits about half a minute longer. The
 first run recorded 3,612 findings, the known-failures list (#412). On a scratch site with one worker and PHP's
 built-in server, the matrix alone took 6.2 minutes.
 

@@ -261,8 +261,8 @@ Somebody reviewing CoreX on its development site sees what a person made.
   which include colour contrast and target size.
 - **FR-007**: A keyboard walk on every screen (1280px, left to right, light and dark) MUST tab through up to 200 stops.
   Each stop MUST be visible and MUST show a focus indicator (outline or box shadow) with at least 3:1 contrast against
-  the background behind the control. For each control with `aria-expanded="false"`, the walk MUST open it, press
-  Escape and require that it closed and focus returned to it.
+  the background behind the control. For each control with `aria-expanded="false"` (the first eight on a screen),
+  the walk MUST open it, press Escape and require that it closed and focus returned to it.
 - **FR-008**: The public contact form MUST give every field a programmatic label and, on a failed submit, MUST move
   focus to an error summary that links to each field in error.
 - **FR-009**: With reduced motion requested, no animation other than one of `opacity` MAY run on any screen.
@@ -274,7 +274,7 @@ Somebody reviewing CoreX on its development site sees what a person made.
 
 - **FR-011**: `tests/e2e/quality/screen-states.json` MUST hold, for every screen, its panels and what each shows when
   empty, loading, failed and refused. A screen the menu lists without an entry MUST fail.
-- **FR-012**: For each screen, every `GET` to `/wp-json/corex/` that the screen makes on load MUST in turn be held
+- **FR-012**: For each screen, each `GET` to `/wp-json/corex/` that the screen makes on load (the first four routes) MUST in turn be held
   back, answered 500 and answered with an empty list. The checks of US-NFR-05 scenarios 2 to 4 MUST hold.
 - **FR-013**: A subscriber opening each screen's address MUST get the CoreX access-denied page.
 - **FR-014**: The Settings screen's save, answered 500, MUST keep the typed value and say the save failed.
@@ -343,7 +343,8 @@ Somebody reviewing CoreX on its development site sees what a person made.
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: Every CoreX admin screen and theme template is opened in eight cells on every pull request, and the new
-  job ends within the time the existing browser job takes (about 8 minutes).
+  job runs beside the existing browser job, adding at most a minute to a pull request's wait (measured on the first
+  CI run: 9.6 minutes against the browser job's 9.0).
 - **SC-002**: Each check fails on its planted defect, and the run is shown in the pull request.
 - **SC-003**: The known-failures lists record every failure found on `main` on 2026-10-21, each with a date and a
   story, and the release notes can print them with one command.

@@ -35,7 +35,7 @@ All notable changes to Corex are documented here. The format follows
 ### Changed
 
 - **A browser test run cleans up after itself.** It prints the site it will write to, refuses one
-  whose operations mode is Production, removes the submissions it made and fails if it left any
+  in Production mode served from a real host name, removes the submissions it made and fails if it left any
   without a test's marker. The test fixture plug-ins say "Test fixture" where a person sees them.
 - **A Client impact section names each running client site**, Muva, Perego and Mizzey, or says
   that no client site is affected. The changelog test enforces it from this release on.
@@ -51,7 +51,7 @@ No client site is affected at runtime: this release changes tests, scripts and C
   WordPress holds the framework's plug-ins and add-ons, not the client's site, so the job checks
   the framework's screens with the same known failures. The browser suite's new teardown fails a
   client's own spec that leaves an unmarked submission behind. The suite refuses to run against a
-  site in Production mode, which protects a production checkout. Before a tag, the release is now
+  site in Production mode served from a real host name, such as a live site. Before a tag, the release is now
   merged into a copy of each client's repository and that client's suites are run.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 
