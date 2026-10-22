@@ -6,7 +6,7 @@
  *   node scripts/quality-known-failures.mjs --record <dir>   # add a run's new findings to the list
  *   node scripts/quality-known-failures.mjs --budget <dir>   # take a run's bytes as the budget
  *
- * `<dir>` holds a run's `findings.jsonl` and `byte-budget.json`: `test-results/quality` after a
+ * `<dir>` holds a run's `findings.jsonl` and `bytes.jsonl`: `test-results/quality` after a
  * local run, or the `quality-findings` artifact of a CI run. Record from a run of the whole suite
  * recorded with `COREX_QUALITY_RECORD=1`, on CI's site: that is the reference.
  *
@@ -148,9 +148,18 @@ function record( dir ) {
 
 function budget( dir ) {
 	const file = JSON.parse( fs.readFileSync( BUDGET, 'utf8' ) );
-	file.pages = JSON.parse(
-		fs.readFileSync( path.join( dir, 'byte-budget.json' ), 'utf8' )
-	);
+	const pages = {};
+
+	// The largest a page measured, at either width.
+	for ( const line of fs
+		.readFileSync( path.join( dir, 'bytes.jsonl' ), 'utf8' )
+		.split( '\n' )
+		.filter( Boolean ) ) {
+		const { page, bytes } = JSON.parse( line );
+		pages[ page ] = Math.max( pages[ page ] || 0, bytes );
+	}
+
+	file.pages = Object.fromEntries( Object.entries( pages ).sort() );
 	fs.writeFileSync( BUDGET, JSON.stringify( file, null, '\t' ) + '\n' );
 	process.stdout.write(
 		`Byte budget set for ${ Object.keys( file.pages ).length } page(s).\n`

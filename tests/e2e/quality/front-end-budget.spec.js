@@ -12,8 +12,8 @@
  *   budget in `byte-budget.json` (raising a budget is a recorded decision);
  * - a CoreX block's script or style loads only on a page that shows that block (principle VI).
  *
- * `COREX_QUALITY_RECORD=1` writes the measured bytes to test-results/quality/byte-budget.json, to
- * become the budget.
+ * Every run writes the bytes it measured to test-results/quality/bytes.jsonl;
+ * `node scripts/quality-known-failures.mjs --budget <dir>` makes them the budget.
  */
 const fs = require( 'fs' );
 const path = require( 'path' );
@@ -149,24 +149,21 @@ function corexAssets() {
 	};
 }
 
-const measured = {};
+/**
+ * Every page's measured bytes, one JSON line per test, for `quality-known-failures.mjs --budget`.
+ * @param address
+ * @param bytes
+ */
+function noteBytes( address, bytes ) {
+	fs.mkdirSync( OUTPUT, { recursive: true } );
+	fs.appendFileSync(
+		path.join( OUTPUT, 'bytes.jsonl' ),
+		JSON.stringify( { page: address, bytes } ) + '\n'
+	);
+}
 
 test.describe( 'front-end pages, as a visitor sees them', () => {
 	test.use( { storageState: { cookies: [], origins: [] } } );
-
-	test.afterAll( () => {
-		if ( RECORDING ) {
-			fs.mkdirSync( OUTPUT, { recursive: true } );
-			const file = path.join( OUTPUT, 'byte-budget.json' );
-			const earlier = fs.existsSync( file )
-				? JSON.parse( fs.readFileSync( file, 'utf8' ) )
-				: {};
-			fs.writeFileSync(
-				file,
-				JSON.stringify( { ...earlier, ...measured }, null, '\t' ) + '\n'
-			);
-		}
-	} );
 
 	for ( const address of ADDRESSES ) {
 		for ( const viewport of [ PHONE, DESKTOP ] ) {
@@ -270,21 +267,26 @@ test.describe( 'front-end pages, as a visitor sees them', () => {
 					);
 				}
 
-				measured[ address ] = Math.max(
-					measured[ address ] || 0,
-					assets.bytes
-				);
+				noteBytes( address, assets.bytes );
 				const budget = BUDGET[ address ];
 
-				if ( ! RECORDING ) {
-					expect(
-						budget,
-						`${ address } has no byte budget in tests/e2e/quality/byte-budget.json (it loads ${ assets.bytes } bytes of CoreX assets)`
-					).toBeDefined();
-					expect(
-						assets.bytes,
-						`${ address } loads ${ assets.bytes } bytes of CoreX scripts and styles, over its budget of ${ budget } by more than 10%: ${ assets.assets.map( ( asset ) => `${ asset.name } ${ asset.bytes }` ).join( ', ' ) }`
-					).toBeLessThanOrEqual( Math.round( budget * OVER_BUDGET ) );
+				// Soft, so that a page over its budget still reports its other findings in the same run.
+				if ( ! RECORDING && budget === undefined ) {
+					expect
+						.soft(
+							budget,
+							`${ address } has no byte budget in tests/e2e/quality/byte-budget.json (it loads ${ assets.bytes } bytes of CoreX assets)`
+						)
+						.toBeDefined();
+				} else if ( ! RECORDING ) {
+					expect
+						.soft(
+							assets.bytes,
+							`${ address } loads ${ assets.bytes } bytes of CoreX scripts and styles, over its budget of ${ budget } by more than 10%: ${ assets.assets.map( ( asset ) => `${ asset.name } ${ asset.bytes }` ).join( ', ' ) }`
+						)
+						.toBeLessThanOrEqual(
+							Math.round( budget * OVER_BUDGET )
+						);
 				}
 
 				assertNoNewFindings( expect, findings );
