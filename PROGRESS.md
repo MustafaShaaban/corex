@@ -40,6 +40,18 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 114, screens that tell the truth** (2026-10-21, branch `claude/spec-114-truthful-screens-43137f`,
+DECISIONS #390 to #398): the third release (R0.3) of the revamp's stage 0, nine stories approved by the owner on
+2026-10-20, open choices decided under the owner's 2026-10-21 mandate. The Overview reads each fact it names and
+says "Could not check" for one it cannot read; one rule decides whether the default login is hidden; a PageSpeed run
+that could not run is a failure with no score, and old 50/D rows are read as failures; mode changes, counted
+refusals and lockouts reach the activity log and the Insights card asks for those areas only; the captcha test
+button loads and appears under the secret field; the Add-ons screen says what WordPress did and locks network and
+must-use add-ons; the login screen has no SSO slot; Blog Pro says it collects no reading data yet and lost its
+Sharing card; a Settings save writes only changed fields of sections whose add-on is on. Spec, plan and 30 tasks
+written; all built, one pull request, not merged by its session, not tagged. Not built (left for later stories):
+reading events themselves (US-BLG-04), per-section save bars (US-SET-01), a check of the site key itself.
+
 **Spec 116, quality checks on every release** (2026-10-21, PR #434, branch
 `claude/spec-116-quality-checks-a779c0`, DECISIONS #410 to #419). This is release R1.1 of the CoreX revamp: eight
 stories (US-NFR-01, 03 to 09) and no product change. It adds the checks every later release is measured by. A

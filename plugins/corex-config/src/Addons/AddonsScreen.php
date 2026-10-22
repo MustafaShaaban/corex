@@ -29,7 +29,7 @@ final class AddonsScreen
     public function __construct(
         private readonly AddonRegistry $registry,
         private readonly AddonManager $manager,
-        private readonly AddonActivator $activator,
+        private readonly AddonToggleService $toggles,
         private readonly AdminGuard $guard,
         private readonly KitProvisioner $provisioner,
         private readonly PendingKits $pending,
@@ -357,7 +357,9 @@ final class AddonsScreen
     private function toggleControl(AddonView $view, AddonState $state): string
     {
         $slug = $view->addon->slug;
-        $canDisable = $view->installed && $view->active && $this->manager->canDisable($slug, $state);
+        // A network or must-use add-on is not this site's to switch off (spec 114, FR-021).
+        $locked     = AddonToggleService::lockedReason($state->scopeOf($slug)) !== '';
+        $canDisable = $view->installed && $view->active && ! $locked && $this->manager->canDisable($slug, $state);
         $canEnable  = $view->installed && ! $view->active && $this->manager->canEnable($slug, $state);
 
         if (! $canDisable && ! $canEnable) {
@@ -407,6 +409,11 @@ final class AddonsScreen
     {
         if (! $view->installed) {
             return __('Not installed — add the plugin package to enable it.', 'corex');
+        }
+
+        $locked = AddonToggleService::lockedReason($state->scopeOf($view->addon->slug));
+        if ($view->active && $locked !== '') {
+            return $locked;
         }
 
         if ($view->isBlocked()) {
@@ -459,11 +466,22 @@ final class AddonsScreen
             return;
         }
 
-        $this->activator->enable($addon);
+        $result = $this->toggles->enable($addon, get_current_user_id());
+        if (! $result->succeeded) {
+            $this->failureNotice(
+                /* translators: 1: add-on label, 2: WordPress's reason, in its own words */
+                __('%1$s was not enabled: %2$s', 'corex'),
+                $addon,
+                $result,
+            );
+
+            return;
+        }
+
         $this->notice(sprintf(/* translators: %s: add-on label */ __('Enabled %s.', 'corex'), $addon->label), 'success');
 
         // If the enabled add-on is a kit, queue its activation prompt (spec 042) — content is never applied
-        // automatically; the prompt lets the admin choose to apply the starter content.
+        // automatically; the prompt lets the admin choose to apply the starter content. Only once it is on.
         $kit = $this->provisioner->kitForModule($addon->slug);
 
         if ($kit !== null) {
@@ -482,8 +500,24 @@ final class AddonsScreen
             return;
         }
 
-        $this->activator->disable($addon);
+        $result = $this->toggles->disable($addon, $state->scopeOf($addon->slug), get_current_user_id());
+        if (! $result->succeeded) {
+            $this->failureNotice(
+                /* translators: 1: add-on label, 2: why it is still on */
+                __('%1$s was not disabled: %2$s', 'corex'),
+                $addon,
+                $result,
+            );
+
+            return;
+        }
+
         $this->notice(sprintf(/* translators: %s: add-on label */ __('Disabled %s.', 'corex'), $addon->label), 'success');
+    }
+
+    private function failureNotice(string $format, Addon $addon, AddonToggleResult $result): void
+    {
+        $this->notice(sprintf($format, $addon->label, $result->reason), 'error');
     }
 
     /**

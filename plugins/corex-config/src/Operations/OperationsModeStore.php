@@ -94,6 +94,8 @@ final class OperationsModeStore
 
         LoadedOptions::store(self::OPTION, $to);
         $this->appendLog($from, $to, $userId);
+        // For the activity log, which the Insights security card reads (spec 114, US-SAFE-13).
+        do_action('corex_operations_mode_changed', $from, $to, $userId);
 
         return $to;
     }

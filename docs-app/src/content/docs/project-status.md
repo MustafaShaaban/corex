@@ -112,14 +112,14 @@ Two entries stood under *Known open items* in v0.39.0 and no longer do. They are
 because "was this ever a problem, and how was it dealt with" is a fair question to ask of a project
 you are evaluating.
 
-### Dependency advisories — six bounded exceptions
+### Dependency advisories — five bounded exceptions
 
 `npm run verify:dependencies` reports **PASS** across Composer, the root npm workspace and the
 docs-site npm workspace as of 2026-10-23: zero findings in Composer and the docs site, and in the
 root, **five findings covered by five exceptions**. The sixth, `sprintf-js` (GHSA-hp3w-g68c-fv3c),
-left the list on 2026-10-22, when GitHub withdrew the advisory. That date matters. An advisory is published by
-somebody else against a tree that did not move, so this is a measurement, not a property — the
-day before, with nothing changed here, the gate failed on thirteen advisories, eleven of them
+left the list on 2026-10-22, when GitHub withdrew the advisory. That date matters. An advisory is
+published by somebody else against a tree that did not move, so this is a measurement, not a
+property — on 2026-10-06, with nothing changed here, the gate failed on thirteen advisories, eleven of them
 published on 2026-10-05 or 2026-10-06.
 
 None of the five is a fix that was skipped. Each is an advisory with no release this tree can take:
@@ -151,6 +151,7 @@ rests on a judgement that the exposure is build tooling with repository-authored
 judgement spec 056 made for `minimatch` and `brace-expansion`. The exception says what would
 overturn it.
 
+The `sprintf-js` exception is gone: GitHub withdrew GHSA-hp3w-g68c-fv3c on 2026-10-22.
 The two `extract-zip` exceptions are gone, with the package. `lighthouse` is overridden to 13,
 which brings `puppeteer-core` 25 and `@puppeteer/browsers` 3.x, and that unpacks without
 `extract-zip`. Nothing here runs that chain — the browser suite drives `@playwright/test`

@@ -32,10 +32,13 @@ final class AdminBranding
     }
 
     /**
-     * Adds the CoreX sign-in subheading and — when the SSO slot setting is on — a designed
-     * single-sign-on slot above the native login form (design: Login capture). No SSO provider
-     * is implemented, so the slot is an honest, disabled "not configured yet" control; it never
-     * fakes an OAuth flow. Only on the sign-in action — lost-password/reset stay untouched.
+     * Adds the CoreX sign-in subheading above the native login form (design: Login capture).
+     * Only on the sign-in action: lost-password and reset stay untouched.
+     *
+     * The login screen offers only ways of signing in that work (spec 114, US-SET-10). CoreX
+     * has no single sign-on provider, so the "SSO is not configured yet" button and its "or"
+     * divider are gone, whatever `brand.login_sso_enabled` holds. The stored value is left in
+     * place for a later provider story to decide on.
      */
     public function loginMessage(string $message): string
     {
@@ -46,17 +49,8 @@ final class AdminBranding
             return $message;
         }
 
-        $html = '<p class="corex-login__subtitle">' . esc_html__('Sign in to your workspace', 'corex') . '</p>';
-
-        if ($this->branding->loginSsoEnabled()) {
-            $html .= '<div class="corex-login__sso">'
-                . '<button type="button" class="corex-login__sso-btn" disabled aria-disabled="true">'
-                . $this->keyIcon()
-                . '<span>' . esc_html__('SSO is not configured yet.', 'corex') . '</span></button>'
-                . '<div class="corex-login__divider"><span>' . esc_html__('or', 'corex') . '</span></div></div>';
-        }
-
-        return $html . $message;
+        return '<p class="corex-login__subtitle">' . esc_html__('Sign in to your workspace', 'corex') . '</p>'
+            . $message;
     }
 
     /**
@@ -105,18 +99,6 @@ final class AdminBranding
     public function loginUrl(string $url): string
     {
         return $this->branding->configuredLoginUrl() ?: home_url('/');
-    }
-
-    /**
-     * The inline SSO key glyph (CoreX icon system), brass-stroked and aria-hidden. Inline so it
-     * inherits the brass action token in dark and light; matches the approved login capture.
-     */
-    private function keyIcon(): string
-    {
-        return '<svg class="corex-login__sso-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"'
-            . ' stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"'
-            . ' aria-hidden="true" focusable="false"><circle cx="8" cy="12" r="4"/>'
-            . '<path d="M11.5 12H21M17 12v3.5M20 12v2.5"/></svg>';
     }
 
     public function footerText(string $text): string
