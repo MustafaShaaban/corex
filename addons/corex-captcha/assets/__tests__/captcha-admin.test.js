@@ -1,8 +1,8 @@
 /**
  * Unit tests for the captcha "Test verification" admin module (spec 053 US3). The module is
- * a no-build vanilla IIFE that also exports its two pure helpers for test. Requiring it in
- * jsdom is side-effect-free (no #captcha.secret anchor + no window.corexCaptcha → it returns
- * early), so we test the helpers that decide the request URL and the *displayable* result.
+ * a no-build vanilla IIFE that also exports its pure helpers for test. Requiring it in jsdom
+ * with no secret field and no window.corexCaptcha is side-effect-free (it returns early), so the
+ * helpers that decide the request URL and the *displayable* result are tested alone.
  *
  * The critical assertion is FR-014: the result the UI renders is built from the envelope's
  * ok + message only — never any other field — so a secret can never reach the screen.
@@ -68,10 +68,13 @@ describe( 'the "Test verification" button while its request is out', () => {
 
 	beforeEach( () => {
 		sent = 0;
-		document.body.innerHTML = '<input id="captcha.secret" />';
+		// The field as the Settings form draws it (spec 114: the id it really has).
+		document.body.innerHTML =
+			'<table><tr><td><input id="captcha_secret" name="captcha_secret" type="password" /></td></tr></table>';
 		window.corexCaptcha = {
 			restUrl: 'https://x.test/wp-json/corex/v1',
 			nonce: 'n',
+			ready: true,
 		};
 		window.Corex = {
 			api: {
@@ -113,5 +116,69 @@ describe( 'the "Test verification" button while its request is out', () => {
 		expect(
 			document.querySelector( '.corex-captcha-test__result' ).textContent
 		).toBe( 'Captcha verified.' );
+	} );
+} );
+
+/*
+ * Spec 114, US-SAFE-16: the button looked for a field id no page has, so it never appeared, and
+ * the test passed because it drew that id itself. It now finds the field the form renders, sits
+ * under it, and is offered only when there are keys to test.
+ */
+describe( 'where the "Test verification" button is offered', () => {
+	function load( ready ) {
+		document.body.innerHTML =
+			'<table><tr><td><input id="captcha_secret" name="captcha_secret" type="password" /></td></tr></table>';
+		window.corexCaptcha = {
+			restUrl: 'https://x.test/wp-json/corex/v1',
+			nonce: 'n',
+			ready,
+		};
+		window.Corex = { api: { post: () => new Promise( () => {} ) } };
+		jest.isolateModules( () => {
+			require( '../captcha-admin.js' );
+		} );
+	}
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		delete window.corexCaptcha;
+		delete window.Corex;
+	} );
+
+	it( 'finds the secret key field by the id the Settings form gives it', () => {
+		expect( require( '../captcha-admin.js' ).SECRET_FIELD_ID ).toBe(
+			'captcha_secret'
+		);
+	} );
+
+	it( 'sits under the secret key field, with a live region for the answer, when keys are saved', () => {
+		load( true );
+
+		const cell = document
+			.getElementById( 'captcha_secret' )
+			.closest( 'td' );
+		const button = cell.querySelector( '.corex-captcha-test__button' );
+		const result = cell.querySelector( '.corex-captcha-test__result' );
+
+		expect( button.textContent ).toBe( 'Test verification' );
+		expect( button.type ).toBe( 'button' );
+		expect( result.getAttribute( 'role' ) ).toBe( 'status' );
+		expect( result.getAttribute( 'aria-live' ) ).toBe( 'polite' );
+	} );
+
+	it( 'is not offered without saved keys, and the field says what is needed', () => {
+		load( false );
+
+		const cell = document
+			.getElementById( 'captcha_secret' )
+			.closest( 'td' );
+		expect(
+			cell.querySelector( '.corex-captcha-test__button' )
+		).toBeNull();
+		expect(
+			cell.querySelector( '.corex-captcha-test__needed' ).textContent
+		).toBe(
+			'Save a site key and a secret key for this provider, then test them here.'
+		);
 	} );
 } );

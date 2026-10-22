@@ -57,6 +57,15 @@
 	font-weight: 600;
 }
 
+/* What to do about a value, under it (spec 114: how recovery ends). */
+.corex-admin .corex-opsec__summary-note {
+	display: block;
+	margin-block-start: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 400;
+}
+
 .corex-admin .corex-opsec__summary-link {
 	margin-inline-start: auto;
 	color: var(--corex-admin-action);

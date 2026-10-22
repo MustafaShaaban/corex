@@ -95,27 +95,26 @@ export function moderateComment( config, commentId, action ) {
  * moderation the editorial item comes back in the mutation's own response, so this can fill in the
  * rest without one.
  *
- * These four calls are what finally give `/blog/analytics`, `/blog/comments`, `/blog/authors`, and
- * `/blog/share-controls` a caller in the product.
+ * These three calls give `/blog/analytics`, `/blog/comments` and `/blog/authors` a caller in the
+ * product. The screen no longer shows the share controls (spec 114, US-BLG-05), so it no longer
+ * asks for them.
  *
  * @param {{restUrl: string, nonce: string}} config The localized REST base and nonce.
  * @param {number}                           postId The selected post.
- * @return {Promise<Object>} Analytics, comments, authors and share controls for that post.
+ * @return {Promise<Object>} Analytics, comments and authors for that post.
  */
 export async function loadBlogData( config, postId ) {
 	const query = `post_id=${ encodeURIComponent( postId ) }`;
 
-	const [ analytics, comments, authors, shareControls ] = await Promise.all( [
+	const [ analytics, comments, authors ] = await Promise.all( [
 		blogRequest( config, 'blog/analytics', { query } ),
 		blogRequest( config, 'blog/comments', { query } ),
 		blogRequest( config, 'blog/authors' ),
-		blogRequest( config, 'blog/share-controls', { query } ),
 	] );
 
 	return {
 		analytics,
 		comments: comments?.comments ?? [],
 		authors: authors?.authors ?? [],
-		shareControls: shareControls?.controls ?? [],
 	};
 }

@@ -70,13 +70,6 @@ describe( 'Blog Pro client state', () => {
 				},
 				comments: [ { comment_id: 9, state: 'pending' } ],
 				authors: [ { name: 'Mina Author', post_count: 2 } ],
-				shareControls: [
-					{
-						target: 'copy_link',
-						label: 'Copy link',
-						url: 'https://example.test/post',
-					},
-				],
 			},
 		} );
 

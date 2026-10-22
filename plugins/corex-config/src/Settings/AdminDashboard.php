@@ -15,6 +15,7 @@ use Corex\Multisite\MultisiteContext;
 use Corex\Multisite\NetworkContext;
 use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
+use Corex\Support\Config\Truthy;
 
 defined('ABSPATH') || exit;
 
@@ -314,13 +315,32 @@ final class AdminDashboard
 
         // What an earlier save in this process refused is not this one's to report.
         $this->refused = [];
-        foreach ($this->registry->sections() as $section) {
+        foreach ($this->registry->sections() as $sectionKey => $section) {
+            if (! $this->isEditable((string) $sectionKey)) {
+                continue;
+            }
+
             foreach ($section['fields'] as $key => $field) {
                 $this->saveField((string) $key, $field);
             }
         }
 
         $this->justSaved = true;
+    }
+
+    /**
+     * Whether the form drew this section's fields as something to edit (spec 114, FR-028).
+     *
+     * A section whose add-on is not installed draws no fields, and one whose add-on is off draws
+     * them disabled, so a browser sends none of them. Saving such a section read every checkbox as
+     * unticked and switched it off: saving Brand with Corex Media off turned WebP conversion off.
+     * Asked again here rather than read from the post.
+     */
+    private function isEditable(string $sectionKey): bool
+    {
+        $state = $this->sectionState($sectionKey);
+
+        return $state !== SettingsSectionState::Hidden && $state !== SettingsSectionState::Disabled;
     }
 
     /**
@@ -409,18 +429,27 @@ final class AdminDashboard
     }
 
     /**
-     * Persists one field by type. A checkbox absent from the post is an explicit "off" (so a
-     * toggle can be turned off); an empty write-only secret is left untouched (never cleared
-     * by re-saving the form); everything else is sanitized text.
+     * Persists one field by type, and only when its value is not the one the form showed
+     * (spec 114, FR-028): a save changes what was changed and nothing else. So a Media switch
+     * drawn as on while nothing is stored stays unstored, and its default keeps applying.
+     *
+     * A checkbox absent from the post is an explicit "off" (so a toggle can be turned off); an
+     * empty write-only secret is left untouched (never cleared by re-saving the form);
+     * everything else is sanitized text.
+     *
+     * @param array{type?:string,label?:string,options?:array<string,string>} $field
      */
-    /** @param array{type?:string,label?:string,options?:array<string,string>} $field */
     private function saveField(string $key, array $field): void
     {
-        $name = str_replace('.', '_', $key);
-        $type = (string) ($field['type'] ?? 'text');
+        $name  = str_replace('.', '_', $key);
+        $type  = (string) ($field['type'] ?? 'text');
+        $shown = $this->settingDisplay($key);
 
         if ($type === 'checkbox') {
-            $this->store->save($key, isset($_POST[$name]) ? '1' : '0');
+            $posted = isset($_POST[$name]) ? '1' : '0';
+            if ($posted !== (Truthy::of($shown) ? '1' : '0')) {
+                $this->store->save($key, $posted);
+            }
 
             return;
         }
@@ -430,7 +459,7 @@ final class AdminDashboard
         }
 
         $raw = wp_unslash($_POST[$name]);
-        if (! is_string($raw)) {
+        if (! is_string($raw) || $raw === $shown) {
             return;
         }
 

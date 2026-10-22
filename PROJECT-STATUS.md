@@ -98,22 +98,21 @@ Two entries stood under *Known open items* in v0.39.0 and no longer do. They are
 because "was this ever a problem, and how was it dealt with" is a fair question to ask of a project
 you are evaluating.
 
-### Dependency advisories — six bounded exceptions
+### Dependency advisories — five bounded exceptions
 
 `npm run verify:dependencies` reports **PASS** across Composer, the root npm workspace and the
-docs-site npm workspace as of 2026-10-07: zero findings in Composer and the docs site, and in the
-root, **six findings covered by six exceptions**. That date matters. An advisory is published by
-somebody else against a tree that did not move, so this is a measurement, not a property — the
-day before, with nothing changed here, the gate failed on thirteen advisories, eleven of them
+docs-site npm workspace as of 2026-10-23: zero findings in Composer and the docs site, and in the
+root, **five findings covered by five exceptions**. That date matters. An advisory is published by
+somebody else against a tree that did not move, so this is a measurement, not a property — on
+2026-10-06, with nothing changed here, the gate failed on thirteen advisories, eleven of them
 published on 2026-10-05 or 2026-10-06.
 
-None of the six is a fix that was skipped. Each is an advisory with no release this tree can take:
+None of the five is a fix that was skipped. Each is an advisory with no release this tree can take:
 
 | Package | Advisory | Why it cannot be closed |
 |---|---|---|
 | `simple-git` 3.36.0 | GHSA-x6jw-m9v5-85vh (critical), GHSA-g4wm-2vf7-vfgr, GHSA-858h-whjf-mvg5 | Fixed in 4.x only. It is installed for `@wordpress/env`, whose latest release requires `^3.32.3` and calls the package as a function; 4.x exports an object, so an override breaks `wp-env start` instead of fixing it. Tried, and it failed. |
 | `@simple-git/argv-parser` 1.1.1 | GHSA-v5rq-49vh-5v5c (critical) | The parser `simple-git` 3 depends on; the fixed 2.0.1 belongs to `simple-git` 4. |
-| `sprintf-js` 1.0.3 | GHSA-hp3w-g68c-fv3c | Every published version is in range. Installed for `argparse`, which only `js-yaml`'s command-line entry point loads, and nothing here runs that command. |
 | `braces` 3.0.3 | GHSA-vfj7-8cjw-p6xm | 3.0.3 is the latest release and the advisory covers `<=3.0.3`. It arrives through `micromatch`, which the latest `fast-glob`, `stylelint` and `http-proxy-middleware` all still require. |
 
 **The `simple-git` four are the ones to read carefully: two are rated critical, and the code
@@ -137,6 +136,7 @@ rests on a judgement that the exposure is build tooling with repository-authored
 judgement spec 056 made for `minimatch` and `brace-expansion`. The exception says what would
 overturn it.
 
+The `sprintf-js` exception is gone: GitHub withdrew GHSA-hp3w-g68c-fv3c on 2026-10-22.
 The two `extract-zip` exceptions are gone, with the package. `lighthouse` is overridden to 13,
 which brings `puppeteer-core` 25 and `@puppeteer/browsers` 3.x, and that unpacks without
 `extract-zip`. Nothing here runs that chain — the browser suite drives `@playwright/test`
