@@ -32,15 +32,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-access",
-			"signature": "Dolly, never go away again",
-			"since": "2026-10-22",
-			"story": "US-ACC-05",
-			"note": "\"Dolly, never go away again\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-access",
 			"signature": "Editor",
 			"since": "2026-10-22",
 			"story": "US-ACC-05",
@@ -66,30 +57,12 @@
 		},
 		{
 			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-access&tab=audit",
-			"signature": "Dolly, never go away",
-			"since": "2026-10-22",
-			"story": "US-ACC-05",
-			"note": "\"Dolly, never go away\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
 			"rule": "snake-case-key",
 			"screen": "corex-access&tab=denied",
 			"signature": "manage_options",
 			"since": "2026-10-22",
 			"story": "US-ACC-05",
 			"note": "\"manage_options\" in p.corex-access__muted: \"CoreX admin and every dangerous action require the WordPress manage_options capability (typically Administrators).\""
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-access&tab=denied",
-			"signature": "You’re lookin’ swell, Dolly",
-			"since": "2026-10-22",
-			"story": "US-ACC-05",
-			"note": "\"You’re lookin’ swell, Dolly\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -144,15 +117,6 @@
 			"since": "2026-10-22",
 			"story": "US-ACC-05",
 			"note": "\"Export personal data\" in table.corex-access__matrix > tbody > tr > th"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-access&tab=matrix",
-			"signature": "Hello, Dolly",
-			"since": "2026-10-22",
-			"story": "US-ACC-05",
-			"note": "\"Hello, Dolly\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -1211,15 +1175,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-addons&tab=active",
-			"signature": "I can tell, Dolly",
-			"since": "2026-10-22",
-			"story": "US-ADD-08",
-			"note": "\"I can tell, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-addons&tab=active",
 			"signature": "Image optimization - WebP on upload plus an optimized picture helper.",
 			"since": "2026-10-22",
 			"story": "US-ADD-08",
@@ -1427,28 +1382,10 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-addons&tab=inactive",
-			"signature": "Well, hello, Dolly",
-			"since": "2026-10-22",
-			"story": "US-ADD-08",
-			"note": "\"Well, hello, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-addons&tab=inactive",
 			"signature": "WooCommerce Kit",
 			"since": "2026-10-22",
 			"story": "US-ADD-08",
 			"note": "\"WooCommerce Kit\" in div.corex-addon-card__title-row > h2"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-addons&tab=not-installed",
-			"signature": "You’re still glowin’, you’re still crowin’",
-			"since": "2026-10-22",
-			"story": "US-ADD-08",
-			"note": "\"You’re still glowin’, you’re still crowin’\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "accessibility",
@@ -2126,15 +2063,6 @@
 			"note": "\"Corex E2e File Form\" in span.corex-flow-list__identity > strong"
 		},
 		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-forms",
-			"signature": "I can tell, Dolly",
-			"since": "2026-10-22",
-			"story": "US-FLW-14",
-			"note": "\"I can tell, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
 			"check": "accessibility",
 			"rule": "list",
 			"screen": "*",
@@ -2515,15 +2443,6 @@
 		{
 			"check": "words",
 			"rule": "not-translated",
-			"screen": "corex-blog-pro",
-			"signature": "Well, hello, Dolly",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Well, hello, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
 			"screen": "corex-data-models",
 			"signature": "Company Kit",
 			"since": "2026-10-22",
@@ -2687,15 +2606,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-data-models",
-			"signature": "One of our old favorite songs from way back when",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"One of our old favorite songs from way back when\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-data-models",
 			"signature": "Portfolio Kit",
 			"since": "2026-10-22",
 			"story": "US-NFR-06",
@@ -2732,15 +2642,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-email-studio",
-			"signature": "Hello, Dolly",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Hello, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-email-studio",
 			"signature": "production",
 			"since": "2026-10-22",
 			"story": "US-NFR-06",
@@ -2754,15 +2655,6 @@
 			"since": "2026-10-22",
 			"story": "US-NFR-06",
 			"note": "\"wp_mail\" in li.corex-transport-advisory__note: \"CoreX composes each message and hands it to WordPress via wp_mail(). An SMTP plugin such as FluentSMTP, when installed, transports it. SMTP credentials stay own\""
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-guides",
-			"signature": "Hello, Dolly",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Hello, Dolly\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -2795,28 +2687,10 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-insights",
-			"signature": "Dolly’ll never go away again",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Dolly’ll never go away again\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-insights",
 			"signature": "production",
 			"since": "2026-10-22",
 			"story": "US-NFR-06",
 			"note": "\"production\" in p[role=status].corex-field-info"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-notifications",
-			"signature": "It’s so nice to have you back where you belong",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"It’s so nice to have you back where you belong\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -2831,73 +2705,10 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-operations-security",
-			"signature": "Dolly, never go away again",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Dolly, never go away again\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-operations-security",
 			"signature": "production",
 			"since": "2026-10-22",
 			"story": "US-NFR-06",
 			"note": "\"production\" in p[role=status].corex-field-info"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-operations-security&tab=activity",
-			"signature": "Well, hello, Dolly",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Well, hello, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-operations-security&tab=cache",
-			"signature": "Dolly’ll never go away again",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Dolly’ll never go away again\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-operations-security&tab=environment",
-			"signature": "You’re lookin’ swell, Dolly",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"You’re lookin’ swell, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-operations-security&tab=login",
-			"signature": "You’re still glowin’, you’re still crowin’",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"You’re still glowin’, you’re still crowin’\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-releases",
-			"signature": "Dolly’ll never go away again",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"Dolly’ll never go away again\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-setup",
-			"signature": "So, golly, gee, fellas",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"So, golly, gee, fellas\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -2916,33 +2727,6 @@
 			"since": "2026-10-22",
 			"story": "US-NFR-06",
 			"note": "\"Fixture 3\" in button[type=button].corex-inbox__row-button > strong"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-submissions",
-			"signature": "You’re lookin’ swell, Dolly",
-			"since": "2026-10-22",
-			"story": "US-NFR-06",
-			"note": "\"You’re lookin’ swell, Dolly\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "*",
-			"signature": "Quote from Hello Dolly song, by Jerry Herman:",
-			"since": "2026-10-22",
-			"story": "US-OVR-07",
-			"note": "On 34 screens, e.g. \"Quote from Hello Dolly song, by Jerry Herman:\" in span.screen-reader-text"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "*",
-			"signature": "You’re still goin’ strong",
-			"since": "2026-10-22",
-			"story": "US-OVR-07",
-			"note": "On 5 screens, e.g. \"You’re still goin’ strong\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "states",
@@ -3114,15 +2898,6 @@
 			"since": "2026-10-22",
 			"story": "US-SET-08",
 			"note": "\"Enable SSO login section\" in table.form-table > tbody > tr > th > label"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config",
-			"signature": "Hello, Dolly",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"Hello, Dolly\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -3308,15 +3083,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-settings-config&corex_tab=captcha",
-			"signature": "I feel the room swayin’",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"I feel the room swayin’\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config&corex_tab=captcha",
 			"signature": "None",
 			"since": "2026-10-22",
 			"story": "US-SET-08",
@@ -3344,15 +3110,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-settings-config&corex_tab=dashboard",
-			"signature": "It’s so nice to have you back where you belong",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"It’s so nice to have you back where you belong\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config&corex_tab=dashboard",
 			"signature": "Lists your unread CoreX notifications on the WordPress dashboard. Hidden automatically when you have none.",
 			"since": "2026-10-22",
 			"story": "US-SET-08",
@@ -3375,15 +3132,6 @@
 			"since": "2026-10-22",
 			"story": "US-SET-08",
 			"note": "\"Form notification recipient\" in table.form-table > tbody > tr > th > label"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config&corex_tab=forms",
-			"signature": "It’s so nice to have you back where you belong",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"It’s so nice to have you back where you belong\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -3443,15 +3191,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-settings-config&corex_tab=insights",
-			"signature": "It’s so nice to have you back where you belong",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"It’s so nice to have you back where you belong\" in div.corex-admin__notices > p > span"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config&corex_tab=insights",
 			"signature": "PageSpeed Insights API key",
 			"since": "2026-10-22",
 			"story": "US-SET-08",
@@ -3492,15 +3231,6 @@
 			"since": "2026-10-22",
 			"story": "US-SET-08",
 			"note": "\"From name\" in table.form-table > tbody > tr > th > label"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config&corex_tab=mail",
-			"signature": "One of our old favorite songs from way back when",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"One of our old favorite songs from way back when\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",
@@ -3546,15 +3276,6 @@
 			"since": "2026-10-22",
 			"story": "US-SET-08",
 			"note": "\"Convert uploads to WebP\" in table.form-table > tbody > tr > th > label"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config&corex_tab=media",
-			"signature": "I feel the room swayin’",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"I feel the room swayin’\" in div.corex-admin__notices > p > span"
 		},
 		{
 			"check": "words",

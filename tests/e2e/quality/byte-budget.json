@@ -1,4 +1,30 @@
 {
 	"description": "Bytes of CoreX scripts and styles (files and inline) each front-end page loads, measured on CI's quality site (spec 116, US-NFR-07). A page more than 10% over its budget fails front-end-budget.spec.js. Raising a budget is a recorded decision in DECISIONS.md.",
-	"pages": {}
+	"pages": {
+		"/": 50424,
+		"/?s=corex": 47249,
+		"/about/": 18004,
+		"/account/": 37150,
+		"/blog/": 17435,
+		"/case-study/": 17435,
+		"/category/uncategorized/": 17435,
+		"/contact/": 50424,
+		"/cookie-policy/": 17435,
+		"/faq/": 17435,
+		"/form/": 50424,
+		"/hello-world/": 23088,
+		"/industries/": 17435,
+		"/landing/": 18004,
+		"/locations/": 50424,
+		"/maintenance/": 17435,
+		"/projects/": 17435,
+		"/projects/quality-project/": 19974,
+		"/sample-page/": 17435,
+		"/services/": 17435,
+		"/single-service/": 17435,
+		"/team/": 17435,
+		"/terms/": 17435,
+		"/testimonials/": 17435,
+		"/work/": 18056
+	}
 }

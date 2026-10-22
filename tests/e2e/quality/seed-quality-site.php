@@ -23,6 +23,12 @@ if (get_option('corex_operations_mode') === 'production') {
     exit(1);
 }
 
+// The plug-ins WordPress ships with are not CoreX, and Hello Dolly prints a random lyric among the
+// admin notices, which CoreX's shell shows: a different line on every request would be a new
+// finding on every run.
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
+deactivate_plugins(['hello.php', 'akismet/akismet.php'], true);
+
 $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
 wp_set_current_user((int) ($administrators[0] ?? 0));
 
