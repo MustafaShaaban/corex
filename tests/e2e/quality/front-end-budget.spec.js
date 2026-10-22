@@ -151,8 +151,9 @@ function corexAssets() {
 
 /**
  * Every page's measured bytes, one JSON line per test, for `quality-known-failures.mjs --budget`.
- * @param address
- * @param bytes
+ *
+ * @param {string} address The page's address.
+ * @param {number} bytes   CoreX's script and style bytes on it.
  */
 function noteBytes( address, bytes ) {
 	fs.mkdirSync( OUTPUT, { recursive: true } );
