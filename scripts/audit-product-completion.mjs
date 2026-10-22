@@ -1,17 +1,9 @@
 import path from 'node:path';
 import { auditPaths, summarizeFindings } from './product-completion-audit.mjs';
 
-const defaultRoots = [
-	'plugins/corex-config/src',
-	'plugins/corex-config/assets',
-	'plugins/corex-core/src/Admin',
-	'plugins/corex-forms/src',
-	'addons/corex-email/src',
-	'addons/corex-kit-company/src',
-	'addons/corex-ui/src',
-	'theme',
-	'docs-app/src',
-];
+// Everything CoreX ships, and the docs site (spec 116). A list of folders meant a screen in a
+// folder nobody listed, Guides among them, could say "Planned" unseen.
+const defaultRoots = [ 'plugins', 'addons', 'packages', 'theme', 'docs-app/src' ];
 const repositoryRoot = path.resolve( process.cwd() );
 const findings = auditPaths( repositoryRoot, defaultRoots );
 const summary = summarizeFindings( findings );
