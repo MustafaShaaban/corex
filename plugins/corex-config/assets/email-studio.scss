@@ -2,9 +2,10 @@
 .corex-admin .corex-email-app {
 	display: grid;
 
-	/* One column that may shrink: an implicit `auto` column takes the min-content of its widest
-	   item, so the delivery log's table made every tab, the statement above them included,
-	   wider than the screen, cut off at its edge. */
+	/* One column that may shrink: an implicit `auto` column takes the
+	   min-content of its widest item, so the delivery log's table made
+	   every tab, the statement above them included, wider than the
+	   screen, cut off at its edge. */
 	grid-template-columns: minmax(0, 1fr);
 	gap: var(--corex-admin-space-lg);
 }
