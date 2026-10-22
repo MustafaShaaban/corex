@@ -630,7 +630,9 @@ function installQualityHelpers() {
 	 */
 	const settle = async ( limit ) => {
 		await new Promise( ( resolve ) =>
-			requestAnimationFrame( () => requestAnimationFrame( resolve ) )
+			window.requestAnimationFrame( () =>
+				window.requestAnimationFrame( resolve )
+			)
 		);
 		const transitions = document
 			.getAnimations()
