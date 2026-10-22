@@ -19,11 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-<<<<<<< HEAD
-  "count": 1192,
-=======
-  "count": 1185,
->>>>>>> origin/main
+  "count": 1189,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
