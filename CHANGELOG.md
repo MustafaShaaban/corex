@@ -34,6 +34,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **Dependency advisories of 2026-10-22**: the docs site takes astro 7.3.3 (GHSA-mpr7-6m5w-76rw,
+  low), and the `sprintf-js` exception is removed because GitHub withdrew its advisory
+  (GHSA-hp3w-g68c-fv3c). Development dependencies only; no package ships them.
 - **A browser test run cleans up after itself.** It prints the site it will write to, refuses one
   in Production mode served from a real host name, removes the submissions it made and fails if it left any
   without a test's marker. The test fixture plug-ins say "Test fixture" where a person sees them.
