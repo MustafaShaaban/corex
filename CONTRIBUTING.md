@@ -191,7 +191,7 @@ The suite reads where the site is, and who signs in, from the environment:
 
 | Variable | Default | Set it when |
 |---|---|---|
-| `COREX_BASE_URL` | `http://corex.local` | the install is served at another address |
+| `COREX_BASE_URL` | none | always: the suite refuses to start without it (spec 116), because it writes to the site it is given. On the WAMP setup that is `http://corex.local`, or a scratch site's address |
 | `COREX_ADMIN_USER`, `COREX_ADMIN_PASS` | `admin`, `password` | the install's administrator is not that pair. `scripts/setup-wordpress.ps1` has a different default for `-AdminPassword`, so set `COREX_ADMIN_PASS` for an install it made |
 | `COREX_LOGIN_PATH` | `/wp-login.php`, then `/corex-login/` | login protection moved the login to another address |
 | `COREX_WP_PATH` | `./wp` | `COREX_BASE_URL` serves an install somewhere else. A few specs reach the install through WP-CLI, and skip those steps where WP-CLI is not available |

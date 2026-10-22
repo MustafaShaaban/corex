@@ -594,8 +594,10 @@ jobs:
   #
   # Confined to the framework's repository, as the generated-site job below is: in a client
   # repository it would generate a second site beside the real one.
+  # Not on the nightly run either: it has no base to merge into (no pull request, no push before
+  # it), and the job would go red every night on an empty commit.
   client-merge:
-    if: github.repository == 'MustafaShaaban/corex'
+    if: github.repository == 'MustafaShaaban/corex' && github.event_name != 'schedule'
     name: A release candidate merges into a client repository
     runs-on: ubuntu-latest
     services:

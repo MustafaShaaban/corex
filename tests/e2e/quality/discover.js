@@ -21,10 +21,7 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 
-const BASE_URL = ( process.env.COREX_BASE_URL || 'http://corex.local' ).replace(
-	/\/$/,
-	''
-);
+const BASE_URL = ( process.env.COREX_BASE_URL || '' ).replace( /\/$/, '' );
 const ADMIN_USER = process.env.COREX_ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.COREX_ADMIN_PASS || 'password';
 const LOGIN_PATHS = [
@@ -196,6 +193,13 @@ async function pages() {
 }
 
 async function discover() {
+	// No default site, as the browser suite's setup has none (spec 116).
+	if ( ! BASE_URL ) {
+		throw new Error(
+			'COREX_BASE_URL is not set. The browser tests sign in, submit forms and remove the test-marked submissions they find, so they run only against a site named on purpose: a scratch site or the one CI makes, for example COREX_BASE_URL=http://127.0.0.1:8916.'
+		);
+	}
+
 	const dashboard = await signIn();
 	const screens = [];
 

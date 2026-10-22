@@ -1,15 +1,16 @@
 /**
  * Playwright config for the CoreX browser suite: every spec under tests/e2e/.
  *
- * ENVIRONMENT-GATED: the suite starts no site. It requires one already served at COREX_BASE_URL
- * (default http://corex.local) and an administrator's credentials in COREX_ADMIN_USER /
- * COREX_ADMIN_PASS (the defaults, and COREX_LOGIN_PATH, are in global-setup.js). To run locally:
+ * ENVIRONMENT-GATED: the suite starts no site. It requires one already served at COREX_BASE_URL,
+ * which has no default and must be set (global-setup.js refuses to start without it, spec 116), and
+ * an administrator's credentials in COREX_ADMIN_USER / COREX_ADMIN_PASS (their defaults, and
+ * COREX_LOGIN_PATH, are in global-setup.js). To run locally:
  *   1. Serve the install (on the WAMP setup: start WAMP, so http://corex.local serves) with the
  *      bundles built: npm run build.
  *   2. Have every tests/e2e/fixtures/corex-e2e-*.php in its wp-content/mu-plugins/.
  *      scripts/setup-wordpress.ps1 copies them into ./wp; copy them into any other install.
  *   3. npx playwright install chromium
- *   4. npm run test:e2e
+ *   4. COREX_BASE_URL=<the site> npm run test:e2e
  *
  * A few specs also reach the install through WP-CLI (`wpEval` in helpers.js), to set up what has
  * no route and to remove the rows they leave. That acts on `./wp`; set COREX_WP_PATH when

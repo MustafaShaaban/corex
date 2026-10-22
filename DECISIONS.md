@@ -17810,6 +17810,10 @@ with its output in the report; the source repository left as it was.
 
 **Decided.**
 
+0. **There is no default site.** `COREX_BASE_URL` used to fall back to `http://corex.local`, the
+   developer's working site. A run that writes, and removes test-marked submissions, only starts against a
+   site named on purpose: the global setup and the quality checks' discovery refuse to start without it
+   (the orchestrator's review of PR #434).
 1. **The global setup prints the site the run writes to** and refuses one whose CoreX operations mode is
    **declared** Production, read over HTTP from the Operations screen's mode form (`data-current-mode`,
    `data-mode-declared`) of the site under test. A mode nobody declared reads as the environment type, and

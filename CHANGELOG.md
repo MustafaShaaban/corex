@@ -37,6 +37,8 @@ All notable changes to Corex are documented here. The format follows
 - **A browser test run cleans up after itself.** It prints the site it will write to, refuses one
   in Production mode served from a real host name, removes the submissions it made and fails if it left any
   without a test's marker. The test fixture plug-ins say "Test fixture" where a person sees them.
+  **`COREX_BASE_URL` has no default any more**: `npm run test:e2e` and `npm run test:quality` refuse
+  to start until it names the site to test (it used to fall back to `http://corex.local`).
 - **A Client impact section names each running client site**, Muva, Perego and Mizzey, or says
   that no client site is affected. The changelog test enforces it from this release on.
 - **The completion audit's "coming soon" rule** no longer matches the name of the Coming soon
