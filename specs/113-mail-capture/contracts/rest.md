@@ -2,12 +2,15 @@
 
 ## `GET corex/v1/email-studio` (changed)
 
-The response gains:
+The response is CoreX's envelope (`{"ok": true, "data": {...}}`); `data` gains:
 
 ```json
 {
   "outcome": {
     "state": "captured",
+    "title": "Captured: nothing leaves this site",
+    "detail": "Each email is kept under Delivery logs instead of being sent, and nobody receives it.",
+    "facts": ["Environment: Development (set by the operations mode)", "Live delivery: on", "Provider: wp-mail", "Captures: all mail from this site"],
     "environment": "development",
     "decided_by": "mode",
     "locked": false,

@@ -39,13 +39,17 @@ so. That is not a conflict, and it is not warned about. WordPress's `local` coun
 
 ## The mode decides where mail goes
 
-Since v0.48.0 one answer says whether this is a development, staging or production site, and every
+Since spec 113 one answer says whether this is a development, staging or production site, and every
 screen and every email follows it. In this order:
 
 1. `APP_ENV` in the site's `.env` file, a value the network locks, or the `corex_app_env` option.
-   Each of these **locks** the mode: the mode card says what locks it, and only the modes of that
-   environment can be chosen (a production lock still offers Production, Coming soon and
-   Maintenance). Change it where it is set.
+   Each of these **locks** the mode: the mode card says what locks it, and only that environment's
+   mode, Coming soon and Maintenance can be chosen. Change it where it is set. Coming soon and
+   Maintenance stay in force under any lock: they change only what visitors see.
+
+> **Before updating a live site**, check that its `.env`, if it has one, does not say
+> `APP_ENV=local`, `development` or `staging` (`.env.example` ships `APP_ENV=local`): a site set so
+> keeps its mail.
 2. The mode you choose here.
 3. WordPress's environment type: `local` and `development` are Development, `staging` is Staging,
    anything else is Production.
@@ -53,7 +57,7 @@ screen and every email follows it. In this order:
 | Mode | What happens to mail |
 |---|---|
 | **Development** | Every email is captured: kept in `CoreX → Email Studio → Delivery logs`, named by what sent it, and nobody receives it. |
-| **Staging** | Captured, unless a provider is set and live delivery is on; then sent for real. |
+| **Staging** | Captured, unless live delivery is on with a provider CoreX Mail sends through; then sent for real. |
 | **Production, Coming soon, Maintenance** | Sent exactly as before. |
 
 Captured mail includes WordPress's own emails (a password reset, a new user) and other plugins'

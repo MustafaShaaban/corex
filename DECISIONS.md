@@ -17631,10 +17631,11 @@ environment type. Three inputs, three answers.
 2. **The `corex_app_env` option is a lock.** The story names `.env` and the network; no screen or
    command writes the option, but site code and CoreX's own test helper do, and whatever set it
    keeps deciding, named on the screen.
-3. **A production lock still offers Production, Coming soon and Maintenance**; a development or
-   staging lock fixes the mode. `OperationsModeStore::set()` is reached only for a mode the lock
-   allows: `ModeChangeService` answers `ModeChangeResult::LOCKED` otherwise, on the screen and from
-   `wp corex mode set`.
+3. **A lock fixes the mode to its own environment, except Coming soon and Maintenance**, which only
+   change what visitors see: they stay available, and in force, under any lock, so a site put in
+   Coming soon stays closed to visitors whatever `APP_ENV` says (its mail follows the lock).
+   `OperationsModeStore::set()` is reached only for a mode the lock allows: `ModeChangeService`
+   answers `ModeChangeResult::LOCKED` otherwise, on the screen and from `wp corex mode set`.
 4. Email Studio's three private `environment()` copies became one `EmailDeliveryContextFactory`. An
    `APP_ENV` value the delivery policy did not know (it blocked) is now Production and follows the
    production rule.
@@ -17643,8 +17644,9 @@ environment type. Three inputs, three answers.
 `Environment/SiteEnvironmentTest` (the mode reaches Email Studio, Insights and the store; a lock
 refuses a mode and writes nothing; the Operations screen shows the lock).
 
-**Client impact.** Muva and Perego set no `APP_ENV`; their production sites keep their mode, and
-nothing changes there.
+**Client impact.** Their local checkouts set no `APP_ENV`; the production hosts' `.env` files were
+not read. A live site whose `.env` says `local`, `development` or `staging` (`.env.example` ships
+`local`) starts keeping its mail: the release notes say to check it before updating.
 
 ## #382 — A mail gate where mail meets the transport keeps a development or staging site's mail
 
@@ -17657,9 +17659,10 @@ straight to `wp_mail()`.
 
 **Decided** (the owner's SAFE-D2 and EML-D6).
 
-1. `Corex\Mail\Capture\MailGate` (corex-core) decides deliver, capture, hold or refuse. Production,
-   Coming soon and Maintenance answer "deliver" before anything else is read (SAFE-D2). Staging
-   delivers with a provider set and live delivery on, as Email Studio does.
+1. `Corex\Mail\Capture\MailGate` (corex-core) decides deliver, capture, hold or refuse. A production
+   site answers "deliver" before anything else is read (SAFE-D2). Staging delivers with live
+   delivery on and a provider CoreX Mail sends through, asked through the `MailProviderCheck`
+   contract CoreX Mail binds, so Email Studio and every other path answer the same.
 2. It is asked at two points: CoreX Mail's `MailService::deliver()` before its driver (every path on
    the `Mailer` seam and the queue worker; a capture returns `captured`, a terminal success, so no
    retry sends it), and WordPress's `pre_wp_mail` at priority 999 (the floors, WordPress core, other

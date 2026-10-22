@@ -10,8 +10,10 @@ All notable changes to Corex are documented here. The format follows
 
 - **One setting decides whether a site is a development site** (spec 113). `APP_ENV` in `.env`, a
   value the network locks or the `corex_app_env` option decides first, and locks the operations
-  mode (the Operations screen says what locks it and offers only that environment's modes); then
-  the operations mode; then WordPress's environment type, where `local` now counts as Development.
+  mode (the Operations screen says what locks it and offers that environment's mode, Coming soon
+  and Maintenance); then the operations mode; then WordPress's environment type, where `local` now
+  counts as Development. A site in Coming soon or Maintenance stays closed to visitors whatever
+  `APP_ENV` says.
   Email Studio, Insights and the Settings diagnostics show the same answer and where it comes from.
 - **Mail stays on a development or staging site** (spec 113). Every email, from every CoreX path,
   from WordPress and from other plugins, is captured into `Email Studio → Delivery logs`, named by
@@ -19,8 +21,8 @@ All notable changes to Corex are documented here. The format follows
   "Other: wp_mail"), and nobody receives it. Staging sends for real once a provider is set and
   live delivery is on. A switch on the Email Studio overview, **Capture only CoreX mail**, lets
   WordPress's and other plugins' mail through. Without CoreX Mail active, such an email is not
-  sent and is recorded in the activity log. **Production, Coming soon and Maintenance send exactly
-  as before.**
+  sent and is recorded in the activity log. **A production site, and a site in Coming soon or
+  Maintenance with no development or staging `APP_ENV`, sends exactly as before.**
 - **A flow's "Run marked test" holds its emails on every site** (spec 113), production included:
   the result lists each with a link to it in Email Studio, and the Test tab says so before the
   button is pressed.
@@ -38,8 +40,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
-- **Production mail is unchanged.** A client site whose code sends through the `Mailer` seam, with
-  no provider and live delivery off, keeps sending.
+- **Before updating a live site, check two things**: its operations mode (CoreX → Operations &
+  Security) is Production, Coming soon or Maintenance, and its `.env`, if it has one, does not say
+  `APP_ENV=local`, `development` or `staging` (`.env.example` ships `APP_ENV=local`). Either one
+  makes the site keep its mail in Email Studio instead of sending it.
+- **Production mail is otherwise unchanged.** A client site whose code sends through the `Mailer`
+  seam, with no provider and live delivery off, keeps sending.
 - **Local and staging copies start capturing mail**: a copy whose operations mode is Development or
   Staging, or whose WordPress environment is `local`, `development` or `staging`, keeps its mail in
   Email Studio instead of sending it. Check a copy's mail there after updating.
