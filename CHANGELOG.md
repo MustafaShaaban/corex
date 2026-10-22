@@ -61,6 +61,12 @@ testimonial patterns, those two sections disappear for visitors until someone ed
   WordPress had printed the footer's scripts, so it never reached the page. This affected
   corex-forms' protected forms too.
 
+### Security
+
+- **Dependency advisories of 2026-10-22.** The docs site takes `astro` 7.3.3 for GHSA-mpr7-6m5w-76rw
+  (low; build tooling of the documentation site, not shipped to WordPress). The exception for
+  `sprintf-js` is removed because GitHub withdrew GHSA-hp3w-g68c-fv3c the same day.
+
 ### Client impact
 
 - **Muva** runs corex-captcha (reCAPTCHA v3) with its own forms. They are not declared to CoreX,
