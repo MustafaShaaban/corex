@@ -3,7 +3,13 @@ import { auditPaths, summarizeFindings } from './product-completion-audit.mjs';
 
 // Everything CoreX ships, and the docs site (spec 116). A list of folders meant a screen in a
 // folder nobody listed, Guides among them, could say "Planned" unseen.
-const defaultRoots = [ 'plugins', 'addons', 'packages', 'theme', 'docs-app/src' ];
+const defaultRoots = [
+	'plugins',
+	'addons',
+	'packages',
+	'theme',
+	'docs-app/src',
+];
 const repositoryRoot = path.resolve( process.cwd() );
 const findings = auditPaths( repositoryRoot, defaultRoots );
 const summary = summarizeFindings( findings );
