@@ -17751,7 +17751,11 @@ known failure with its story.
    one the name of the Coming soon mode (spec 101), a shipped feature. The `coming-soon` rule now matches the
    phrase as a promise ("(coming soon)", "is coming soon", "features coming soon"), not as the mode's name ("in
    Coming soon", "the mode is Coming soon"), and test files are left out. It reports nothing now, so it
-   fails on any new hit; Jest holds both sides of the rule.
+   fails on any new hit; Jest holds both sides of the rule. Its runner read a list of folders that left
+   most add-ons out, which the planted run found ("Planned" on the Guides screen passed); it reads
+   `plugins/`, `addons/`, `packages/`, `theme/` and `docs-app/src/` now. In the `test` and `js` jobs the steps
+   after a linter run even when it fails (`if: !cancelled()`), which the same run found: one failure per
+   job hid the next.
 4. **The pseudo-locale run** marks every `corex` string `⟦…⟧`, through the gettext filters and the filters
    `@wordpress/i18n` runs for the domain, for a request with the cookie `corex_pseudo_locale=1` only
    (`tests/e2e/fixtures/corex-e2e-pseudo-locale.php`). Visible text in the CoreX shell without a mark fails,

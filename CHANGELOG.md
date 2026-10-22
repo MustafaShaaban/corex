@@ -40,7 +40,10 @@ All notable changes to Corex are documented here. The format follows
 - **A Client impact section names each running client site**, Muva, Perego and Mizzey, or says
   that no client site is affected. The changelog test enforces it from this release on.
 - **The completion audit's "coming soon" rule** no longer matches the name of the Coming soon
-  mode, only a promise ("(coming soon)", "is coming soon").
+  mode, only a promise ("(coming soon)", "is coming soon"), and the audit reads every folder
+  CoreX ships instead of a list that left most add-ons out.
+- **In CI, a failing linter no longer stops the audit, the unit tests and Jest** in the same job,
+  so one run reports every failure.
 
 ### Client impact
 
