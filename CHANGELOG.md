@@ -71,9 +71,15 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 - **Muva** runs corex-captcha (reCAPTCHA v3) with its own forms. They are not declared to CoreX,
   so its pages load nothing new and its forms keep their own token handling. Nothing to do.
-- **Perego** does not run corex-captcha. It sees the corex-ui stats and testimonial patterns marked
-  as samples in its inserter, and the newsletter signup block's status line gains a
-  `data-corex-captcha-message` attribute. Nothing to do.
+- **Perego** runs corex-ui and the Company kit, and does not run corex-captcha. **Check its pages**
+  for references to the corex/stats, corex/testimonial, corex/hero and corex/cta patterns
+  (`<!-- wp:pattern {"slug":"corex/stats"} /-->` and the like): such a page changes without being
+  edited.
+  - The stats and testimonial sections are hidden from visitors until someone edits them.
+  - The hero and call-to-action buttons are hidden unless the site has a Brand "Primary action
+    link" (CoreX → Settings → Brand) or a published page at `/contact/`. Set one of the two.
+  - The newsletter signup block's status line gains a `data-corex-captcha-message` attribute.
+    Perego's theme is its own, so its theme patterns are unchanged.
 - **Sites that applied the Company kit** stop showing the sample stats and quote to visitors on
   pages that still reference those patterns, until someone edits them. Pages saved in the editor
   before this release keep what they hold.
@@ -86,8 +92,12 @@ testimonial patterns, those two sections disappear for visitors until someone ed
   - `CaptchaAssetController`: a `CaptchaChallenge`, and its forms registry may be null;
   - `FormChallengeContextFactory`: a `Corex\Security\ChallengeSettings` in place of the config;
   - `ResetCommand`: a `KitPageReader`.
-- Neither client runs the CoreX theme, the Company kit, reset, the account add-on or builder
-  flows. Mizzey is not on this release.
+- **A site's own call request, job application or newsletter form** that posts to these routes
+  with reCAPTCHA v3: the reCAPTCHA v3 token is now judged like a flow's: it must have been requested under the route's action (`corex_register`, `corex_newsletter`, `corex_call_request`, `corex_job_application`), come from the site's own hostname (or `captcha.allowed_hostnames`) and reach the configured score. Request the token with `grecaptcha.execute(siteKey, { action:
+  'corex_call_request' })` (or the route's own action), or print the field through
+  `Corex\Security\FormChallenge`, which does it for you.
+- Neither client runs the CoreX theme, reset, the account add-on or builder flows. Mizzey is not on
+  this release.
 
 ## [0.47.0] — 2026-10-21
 

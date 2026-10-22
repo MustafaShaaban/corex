@@ -37,8 +37,9 @@ require_once get_template_directory() . '/inc/pattern-links.php';
 			[ __('Design', 'corex'), __('Accessible, on-brand interfaces that work in light, dark, and RTL.', 'corex') ],
 			[ __('Delivery', 'corex'), __('Build and ship with tested, maintainable, standards-based code.', 'corex') ],
 		];
-		// Each card links to the published Services page; with none, the link is left out.
-		$corex_services_url = corex_pattern_page_url('services');
+		// Each card links to the published Services page; with none, or on that page itself, the link is
+		// left out.
+		$corex_services_url = is_page('services') ? '' : corex_pattern_page_url('services');
 		foreach ($cards as $card) :
 			?>
 		<!-- wp:column {"className":"corex-service-card","style":{"spacing":{"padding":{"top":"var:preset|spacing|40","bottom":"var:preset|spacing|40","left":"var:preset|spacing|40","right":"var:preset|spacing|40"}},"border":{"radius":"var:custom|radius|md","width":"var:custom|border|width|thin"}},"borderColor":"border","backgroundColor":"surface-alt"} -->

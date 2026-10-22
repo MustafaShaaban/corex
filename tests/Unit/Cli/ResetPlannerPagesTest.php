@@ -39,6 +39,12 @@ it('gives each page the action its history calls for', function (string $persist
     'adopted, not recorded'      => ['adopted', false, ResetAction::EMPTY_PAGE, 'adopted, will be emptied'],
 ]);
 
+it('says a restored page keeps the edits made since in its revisions', function (string $persistedAs) {
+    $actions = planPages(new ResetInventory(pages: [new ResetPage(5, 'About', $persistedAs, true)]));
+
+    expect($actions[0]->label)->toEndWith('(edits made since stay in its revisions).');
+})->with(['replaced', 'adopted']);
+
 it('never plans the removal of a page the owner had', function () {
     $actions = planPages(new ResetInventory(pages: [
         new ResetPage(1, 'Home', 'created', false),

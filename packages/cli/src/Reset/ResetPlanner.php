@@ -109,8 +109,9 @@ final class ResetPlanner
                 ResetAction::RESTORE_PAGE,
                 (string) $page->id,
                 $name . ($replaced
-                    ? ': replaced, will be restored to the version recorded before the kit.'
-                    : ': adopted, will be emptied and restored as it was recorded before the kit.'),
+                    ? ': replaced, will be restored to the version recorded before the kit'
+                    : ': adopted, will be emptied and restored as it was recorded before the kit')
+                . ' (edits made since stay in its revisions).',
             );
         }
 

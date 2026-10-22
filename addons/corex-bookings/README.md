@@ -40,6 +40,7 @@ echo '</form>';
 - `fields()` prints nothing, and `formAttribute()` returns `''`, when no provider is on. Printing the
   check also loads the provider's script on that page, and on no other.
 - Send the form's `captcha_token` field with the others.
+- With reCAPTCHA v3, the route judges the token against the action `corex_call_request`, the site's own hostname (or `captcha.allowed_hostnames`) and the configured score. `fields()` asks for a token under that action; a form that asks the provider itself must use the same action.
 - After the answer, dispatch `corex:form:success` or `corex:form:error` on the form, with
   `{ detail: { envelope } }`. The provider's check then resets for the next attempt, since a token is
   spent by one request.

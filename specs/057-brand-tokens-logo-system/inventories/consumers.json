@@ -11843,7 +11843,7 @@
     },
     {
       "path": "theme/patterns/section-services-grid.php",
-      "selector_or_context": "lines 45: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 46: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--custom--border--width--thin",
       "owner": "theme",
       "surface": "front-end",
@@ -11853,7 +11853,7 @@
     },
     {
       "path": "theme/patterns/section-services-grid.php",
-      "selector_or_context": "lines 45: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 46: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--custom--radius--md",
       "owner": "theme",
       "surface": "front-end",
@@ -11863,7 +11863,7 @@
     },
     {
       "path": "theme/patterns/section-services-grid.php",
-      "selector_or_context": "lines 45, 45, 45, 45: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 46, 46, 46, 46: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--preset--spacing--40",
       "owner": "theme",
       "surface": "front-end",

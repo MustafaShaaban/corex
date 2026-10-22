@@ -104,9 +104,9 @@ final class SetupWizardController
      * A read-only plan preview for a kit at a demo level: the modules/flags/pages, the real conflicting
      * pages the operator must choose about, and the existing pages the kit would adopt — no writes. Each
      * conflict and adopted page carries `pageTitle`, the title the owner's page has now, which is what the
-     * Backup step lists as recorded.
+     * Backup step lists as recorded, and `recorded`, false for a page an earlier apply made.
      *
-     * @return array{plan:array<string,mixed>,conflicts:list<array{slug:string,title:string,pageTitle:string}>,adopted:list<array{slug:string,title:string,pageTitle:string}>}
+     * @return array{plan:array<string,mixed>,conflicts:list<array{slug:string,title:string,pageTitle:string,recorded:bool}>,adopted:list<array{slug:string,title:string,pageTitle:string,recorded:bool}>}
      */
     public function planPreview(string $kit, string $level): array
     {
@@ -141,17 +141,24 @@ final class SetupWizardController
     }
 
     /**
+     * Each row with the title its page has now, and whether the page is the owner's: a page an earlier
+     * apply created stays the kit's when it is replaced, so nothing of it is recorded (spec 115).
+     *
      * @param list<array{slug:string,title:string}> $rows
      *
-     * @return list<array{slug:string,title:string,pageTitle:string}>
+     * @return list<array{slug:string,title:string,pageTitle:string,recorded:bool}>
      */
     private function withPageTitles(array $rows): array
     {
-        return array_map(static function (array $row): array {
+        $kitsOwn = [PageDisposition::PERSISTED_CREATED, PageDisposition::PERSISTED_SUFFIXED];
+
+        return array_map(static function (array $row) use ($kitsOwn): array {
             $page  = get_page_by_path($row['slug']);
             $title = $page instanceof \WP_Post ? (string) $page->post_title : '';
+            $made  = $page instanceof \WP_Post
+                && in_array((string) get_post_meta($page->ID, PageDisposition::META, true), $kitsOwn, true);
 
-            return $row + ['pageTitle' => $title !== '' ? $title : $row['title']];
+            return $row + ['pageTitle' => $title !== '' ? $title : $row['title'], 'recorded' => ! $made];
         }, $rows);
     }
 

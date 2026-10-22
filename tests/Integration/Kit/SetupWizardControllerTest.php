@@ -93,3 +93,29 @@ it('lists, by their present titles, the empty pages of the owner that a plan wou
         wp_delete_post($created, true);
     }
 });
+
+it('marks a conflicting page an earlier apply made as not recorded, since it is the kit’s (spec 115)', function () {
+    $controller = setupController();
+    $slug       = $controller->planPreview('company', 'minimal')['plan']['pages'][0]['slug'];
+    if (get_page_by_path($slug) instanceof WP_Post) {
+        $this->markTestSkipped("The install already has a page at /{$slug}/.");
+    }
+
+    $made = wp_insert_post([
+        'post_title'   => 'Kit page edited since',
+        'post_name'    => $slug,
+        'post_status'  => 'publish',
+        'post_type'    => 'page',
+        'post_content' => 'Edited since the kit made it.',
+    ]);
+    update_post_meta($made, '_corex_kit_page', 'created');
+
+    try {
+        $conflicts = array_column($controller->planPreview('company', 'minimal')['conflicts'], 'recorded', 'slug');
+
+        expect($conflicts)->toHaveKey($slug)
+            ->and($conflicts[$slug])->toBeFalse();
+    } finally {
+        wp_delete_post($made, true);
+    }
+});

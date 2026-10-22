@@ -230,6 +230,33 @@ describe( 'the wizard says what CoreX records, and takes no backup (spec 115)', 
 		expect( listed ).toEqual( [ 'Contact' ] );
 	} );
 
+	it( 'does not list a page an earlier apply made, which is the kit’s own', async () => {
+		answers.plan = ok( {
+			plan: { pages: [ {}, {} ] },
+			conflicts: [
+				{
+					slug: 'about',
+					title: 'About',
+					pageTitle: 'About',
+					recorded: false,
+				},
+			],
+			adopted: [],
+		} );
+		await goToThePlan();
+		document
+			.querySelector( 'input[name="conflict-about"][value="replace"]' )
+			.click();
+		await press( 'corex-setup-next' );
+
+		expect(
+			document.querySelectorAll( '.corex-setup__recorded li' )
+		).toHaveLength( 0 );
+		expect( document.body.textContent ).toContain(
+			'This plan changes none of your existing pages.'
+		);
+	} );
+
 	it( 'keeps Apply off until the person confirms a backup of their own', async () => {
 		await goToThePlan();
 		await press( 'corex-setup-next' );

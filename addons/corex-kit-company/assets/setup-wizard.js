@@ -174,11 +174,15 @@
 	 */
 	function recordedTitles() {
 		const plan = state.plan || {};
-		const adopted = ( plan.adopted || [] ).map(
-			( page ) => page.pageTitle
-		);
+		// A page an earlier apply made is the kit's, and nothing of it is recorded.
+		const owners = ( page ) => page.recorded !== false;
+		const adopted = ( plan.adopted || [] )
+			.filter( owners )
+			.map( ( page ) => page.pageTitle );
 		const replaced = ( plan.conflicts || [] )
-			.filter( ( c ) => state.choices[ c.slug ] === 'replace' )
+			.filter(
+				( c ) => owners( c ) && state.choices[ c.slug ] === 'replace'
+			)
 			.map( ( c ) => c.pageTitle || c.title );
 		return [ ...adopted, ...replaced ];
 	}

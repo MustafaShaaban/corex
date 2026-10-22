@@ -17659,8 +17659,9 @@ by code may have none, and the record is what the owner chose to trust.
   owner's again, a second apply keeps both first records, a replaced kit page stays the kit's, and an
   older replace is kept and named.
 
-**Client impact.** None. Neither client runs the Company kit or can run reset (no shell). This must
-land before any later story puts reset or undo in the admin.
+**Client impact.** Neither client can run reset (no shell). Perego runs the Company kit, so a
+later apply there records what it replaces. This must land before any later story puts reset or undo
+in the admin.
 
 ## #401 — The setup wizard says what it records and takes no backup
 
@@ -17728,8 +17729,9 @@ release.
 **Client impact.**
 - Sites whose kit pages still reference the stats or testimonial patterns stop showing those
   sections to visitors until someone edits them.
-- Perego sees the marked patterns in its inserter.
-- Neither client renders these patterns.
+- Perego runs corex-ui and the Company kit: a page of its that still references these patterns
+  stops showing those sections to visitors until edited. Its own theme is unchanged.
+- Muva does not run corex-ui.
 
 ## #403 — Theme patterns link to real pages and take contact details from Brand settings
 
@@ -17783,7 +17785,9 @@ button had no address either.
 - Playwright `front-page-hero.spec.js` on the front page: heading contrast, button contrast and
   address, each button reached by Tab with a visible focus ring.
 
-**Client impact.** None: neither client uses the CoreX theme or the hero.
+**Client impact.** Neither client uses the CoreX theme. Perego runs corex-ui: a page of its that
+references the hero or call-to-action pattern gets readable colours, and its buttons are hidden
+unless Perego sets a Brand primary action link or has a published `/contact/` page.
 
 ## #405 — The flow editor asks before anything throws edits away
 
@@ -17840,7 +17844,8 @@ refused anyway.
    `data-corex-captcha`. A form of a site's own that is neither is not touched.
 4. **The four routes answer a missing token** with "Please complete the check before sending." and a
    refused one with "The check failed. Please try again." (`422`, `error: captcha`), and store and
-   send nothing.
+   send nothing. A reCAPTCHA v3 token is now judged like a flow's: it must have been requested under the route's action (`corex_register`, `corex_newsletter`, `corex_call_request`, `corex_job_application`), come from the site's own hostname (or `captcha.allowed_hostnames`) and reach the configured score. A site's own form posting to one of them requests its token under
+   that action.
 5. **Account and newsletter forms** print the check above their button. Their scripts send the token,
    and dispatch `corex:form:success` / `corex:form:error` so the check resets. The provider's script
    writes its messages to the element marked `data-corex-captcha-message`.
