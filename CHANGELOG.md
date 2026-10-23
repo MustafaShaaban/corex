@@ -6,9 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398), quality checks on every release
-(spec 116, R1.1, DECISIONS #410 to #419) and Settings that save what you changed (spec 119, R3.4, DECISIONS #440 to
-#447).
+Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447).
 
 ### Added
 
@@ -39,6 +37,53 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
 - **Brand has "Login logo link"** (#447), where the login screen's logo takes people; blank keeps
   the home page.
 
+### Fixed
+
+- **A Settings page whose add-on is off says so** (spec 119, #444): "Corex Media is off. These
+  settings apply when it is on." with **Open Add-ons** to its card, and the fields read-only. Guides
+  now follows Corex Guides. A page whose add-on is not installed is not listed, and its address says
+  it is not available.
+- **Every word on Settings can be translated** (#445): titles, labels, help, choices, notices and
+  the environment name on Advanced. A unit test fails on a Settings label added without translation.
+- **On/off settings are switches** (#445) that say On or Off, as on the Add-ons screen; they still
+  save "1" or "0".
+- **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
+
+### Client impact
+
+- **Muva** and **Perego**: owners find Settings as pages under Settings in the CoreX rail, with a
+  save bar, instead of nine tabs; links to `&corex_tab=` still open the right page. No stored value
+  is changed or written by the update. Both have Guides off, so their Guides page becomes read-only
+  with a link to Add-ons. Both have Corex Media on and gain "Convert existing library"; nothing runs
+  until an owner starts it. A saved secret gains Remove; nothing is removed until an owner presses
+  it and saves. A value their host's `.env` sets shows as locked (their `.env.example` files hold
+  only `APP_NAME` and `APP_ENV`, neither a Settings field). A client repository that carries copies
+  of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
+  `tests/Unit/Media/MediaRegenerationJobTest.php`.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+## [0.48.0] — 2026-10-23
+
+The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
+(spec 113, R0.2, DECISIONS #381 to #385), screens that tell the truth (spec 114, R0.3, #390 to
+#398), kit and public page safety (spec 115, R0.4, #400 to #407), and quality checks on every
+release (spec 116, R1.1, #410 to #419).
+
+**Read Client impact before updating.** Four things can change on a live site:
+
+- A site whose `.env` says `APP_ENV=local`, `development` or `staging`, or whose operations mode is
+  Development or Staging, now keeps its mail in Email Studio instead of sending it. Check both
+  before updating.
+- Kit pages that still reference the stats or testimonial patterns lose those two sections for
+  visitors until someone edits them, and pattern buttons with no Brand action link or contact
+  page are hidden. Perego runs the Company kit: check its pages.
+- The bookings, careers and newsletter routes now judge a reCAPTCHA v3 token by its action,
+  hostname and score: a site's own form must request its token under the route's action.
+- The Overview, Security Center and Insights now say what is true, so some rows that read "Done"
+  or "Hidden" may now read "Not set", "Off" or "Not configured".
+
+### Added
+
 - **Quality checks on every release** (spec 116, R1.1 of the CoreX revamp). A new CI job,
   **Quality checks**, opens every CoreX admin screen and tab and every theme template in eight
   cells (375 and 1280px, light and dark, left to right and right to left) on a WordPress with the
@@ -62,11 +107,6 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   a generated client site.
 - **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
   submissions test runs left on a development site. It refuses a production site.
-
-Kit and public page safety (spec 115, the fourth release of the CoreX revamp's stage 0).
-
-**Read Client impact before updating.** On sites whose kit pages still reference the stats or
-testimonial patterns, those two sections disappear for visitors until someone edits them.
 
 ### Changed
 
@@ -169,16 +209,6 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 ### Fixed
 
-- **A Settings page whose add-on is off says so** (spec 119, #444): "Corex Media is off. These
-  settings apply when it is on." with **Open Add-ons** to its card, and the fields read-only. Guides
-  now follows Corex Guides. A page whose add-on is not installed is not listed, and its address says
-  it is not available.
-- **Every word on Settings can be translated** (#445): titles, labels, help, choices, notices and
-  the environment name on Advanced. A unit test fails on a Settings label added without translation.
-- **On/off settings are switches** (#445) that say On or Off, as on the Add-ons screen; they still
-  save "1" or "0".
-- **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
-
 - **Email Studio's tabs fit the screen.** A wide delivery log made every tab wider than the page,
   cut off at its edge.
 - **Saving Settings changes only what was changed** (#398). A save wrote every field of every
@@ -279,18 +309,6 @@ No client site is affected at runtime: this release changes tests, scripts and C
 - Neither client runs the CoreX theme, reset, the account add-on or builder flows. Mizzey is not on
   this release.
 
-**Spec 119, Settings that save what you changed:**
-
-- **Muva** and **Perego**: owners find Settings as pages under Settings in the CoreX rail, with a
-  save bar, instead of nine tabs; links to `&corex_tab=` still open the right page. No stored value
-  is changed or written by the update. Both have Guides off, so their Guides page becomes read-only
-  with a link to Add-ons. Both have Corex Media on and gain "Convert existing library"; nothing runs
-  until an owner starts it. A saved secret gains Remove; nothing is removed until an owner presses
-  it and saves. A value their host's `.env` sets shows as locked (their `.env.example` files hold
-  only `APP_NAME` and `APP_ENV`, neither a Settings field). A client repository that carries copies
-  of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
-  `tests/Unit/Media/MediaRegenerationJobTest.php`.
-- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 
 ## [0.47.0] — 2026-10-21
 
