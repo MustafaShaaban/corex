@@ -13,6 +13,36 @@ mean something (spec 117, revamp release R3.1, DECISIONS #420 to #427).
 access granted earlier, by approving a request or by an Allow in the role matrix, starts to work. Review
 CoreX → Access & Abilities first.
 
+Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398) and quality checks on every release
+(spec 116, R1.1, DECISIONS #410 to #419).
+
+### Added
+
+- **Quality checks on every release** (spec 116, R1.1 of the CoreX revamp). A new CI job,
+  **Quality checks**, opens every CoreX admin screen and tab and every theme template in eight
+  cells (375 and 1280px, light and dark, left to right and right to left) on a WordPress with the
+  Company kit applied. It checks for sideways scroll, WCAG 2.2 AA (axe-core, contrast and target
+  size included) and raw developer keys. At phone width it checks tables, 44px controls, the rail
+  and text at 200%. It also checks focus and Escape, reduced motion, the empty, loading, failed and
+  refused states of every screen, untranslated words (a pseudo-locale run) and a front-end budget:
+  layout shift, image sizes, lazy images, CoreX bytes per page, and block assets only where the
+  block is. What `main` showed when the checks were written is in
+  `tests/e2e/quality/known-failures.json`, each entry with the story that fixes it. A new defect
+  fails the job. `node scripts/quality-known-failures.mjs` prints the list.
+- **The admin's colour tokens are checked for contrast**, dark and light, before any browser opens
+  (`ContrastMatrixTest`).
+- **A PHP translation lint** (`php scripts/i18n-lint.php`), the **product completion audit**
+  (`npm run audit:completion`) and the **admin read and form budgets**
+  (`composer test:performance`) run in CI. The translation template `corex.pot` is generated on
+  every pull request and attached to every published release.
+- **A client merge check** (`scripts/client-merge-check.mjs`) merges a release candidate into a
+  throwaway clone of a client repository. It names a conflict in a file the client records as a
+  local edit, runs the client's suites and writes a report for the release record. CI proves it on
+  a generated client site.
+- **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
+  submissions test runs left on a development site. It refuses a production site.
+
+
 ### Changed
 
 - **Every CoreX screen opens for the people given its ability** (spec 117, #420). Each screen, its routes
@@ -68,6 +98,21 @@ CoreX → Access & Abilities first.
   Settings → Brand no longer offers "Enable SSO login section". The stored value is left in place.
 - **Blog Pro says plainly that it does not count readers yet** (#397). Without reading data it shows
   one line instead of the reading-signals panel and the period line, and the Sharing card is gone.
+- **Dependency advisories of 2026-10-22**: the docs site takes astro 7.3.3 (GHSA-mpr7-6m5w-76rw,
+  low), and the `sprintf-js` exception is removed because GitHub withdrew its advisory
+  (GHSA-hp3w-g68c-fv3c). Development dependencies only; no package ships them.
+- **A browser test run cleans up after itself.** It prints the site it will write to, refuses one
+  in Production mode served from a real host name, removes the submissions it made and fails if it left any
+  without a test's marker. The test fixture plug-ins say "Test fixture" where a person sees them.
+  **`COREX_BASE_URL` has no default any more**: `npm run test:e2e` and `npm run test:quality` refuse
+  to start until it names the site to test (it used to fall back to `http://corex.local`).
+- **A Client impact section names each running client site**, Muva, Perego and Mizzey, or says
+  that no client site is affected. The changelog test enforces it from this release on.
+- **The completion audit's "coming soon" rule** no longer matches the name of the Coming soon
+  mode, only a promise ("(coming soon)", "is coming soon"), and the audit reads every folder
+  CoreX ships instead of a list that left most add-ons out.
+- **In CI, a failing linter no longer stops the audit, the unit tests and Jest** in the same job,
+  so one run reports every failure.
 
 ### Fixed
 
@@ -116,6 +161,18 @@ CoreX → Access & Abilities first.
   `tests/Unit/Config/LoginSsoTest.php`, `AdminAppearanceTest.php` and `SettingsTabsTest.php`.
 - **Code that used `BrandingService::loginSsoEnabled()`, `ControlPanelStatus` or `DomainStatus`**
   must stop: they are removed. No client site uses them.
+
+**Spec 116, the quality checks** (tests, scripts and CI only):
+
+No client site is affected at runtime: this release changes tests, scripts and CI only.
+
+- **Muva** and **Perego**: nothing changes on the site. After the next framework merge, the
+  client repository's CI runs the new **Quality checks** job against its CI's own WordPress. That
+  WordPress holds the framework's plug-ins and add-ons, not the client's site, so the job checks
+  the framework's screens with the same known failures. The browser suite's new teardown fails a
+  client's own spec that leaves an unmarked submission behind. The suite refuses to run against a
+  site in Production mode served from a real host name, such as a live site. Before a tag, the release is now
+  merged into a copy of each client's repository and that client's suites are run.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 
 ## [0.47.0] — 2026-10-21

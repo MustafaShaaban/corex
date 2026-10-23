@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: CoreX E2E reset mail
+ * Plugin Name: CoreX E2E reset mail (test fixture)
  * Description: Lets the browser suite read the email a password reset would have sent, and sends nothing.
  * Version: 1.0.0
  *

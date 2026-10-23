@@ -1,0 +1,19 @@
+{
+    "description": "PHP strings found untranslated or outside the corex text domain when the lint was written (spec 116). Only shrinks: fix a string and remove its entry.",
+    "since": "2026-10-21",
+    "story": "US-NFR-06",
+    "entries": [
+        {
+            "file": "plugins/corex-core/src/Database/Schema/ManagedTable.php",
+            "rule": "domain-not-literal",
+            "text": "__(): $this->label",
+            "note": "On purpose: a managed table translates its own label in the text domain the model declares."
+        },
+        {
+            "file": "plugins/corex-core/src/Database/Schema/ManagedTable.php",
+            "rule": "domain-not-literal",
+            "text": "__(): label",
+            "note": "On purpose: a managed table translates its own label in the text domain the model declares."
+        }
+    ]
+}
