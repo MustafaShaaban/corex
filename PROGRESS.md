@@ -47,7 +47,10 @@ the owner's 2026-10-21 mandate. Every CoreX screen, route and save asks for its 
 changing them" opens Overview, Settings, Operations & Security and Insights read-only; the role matrix is a grid of
 resolved states; the overview counts CoreX abilities; the Audit log tab is one access history; ability names are
 translated; Email Studio opens for "Manage Email Studio" while mail delivery stays with site administration. Spec,
-plan and 30 tasks written; all built, one pull request, not merged by its session, not tagged. Left: the Data,
+plan and 33 tasks written; all built, PR #438, not merged by its session, not tagged. Review fixes of 2026-10-23:
+only a site administrator may allow a Critical ability, change a role they hold or decide their own request
+(DECISIONS #428); the matrix and audit tabs pass the quality checks; three more routes record refusals, the old CSV
+export is gone, the capture switch stays with site administration (#429); `main` (spec 113) merged in. Left: the Data,
 Submissions and widget checks that also accept site administration (the same answer now), and a screen-reader pass
 of the grid by a person.
 

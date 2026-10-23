@@ -81,8 +81,18 @@ Tests are written with each story (constitution: mandatory). `[P]` = can run in 
 - [x] T027 Docs: the Access & Abilities guide and the Operations & Security guide's mail section say what each
   screen needs.
 - [x] T028 CHANGELOG `[Unreleased]` with Client impact; PROGRESS "In flight"; DECISIONS #420–#427.
-- [ ] T029 Token inventory regenerated; Jest, Pest unit and integration, the touched Playwright specs green.
-- [ ] T030 Guards: clean-code, wp, test, docs on the diff.
+- [x] T029 Token inventory regenerated; Jest, Pest unit and integration, the touched Playwright specs green.
+- [x] T030 Guards: clean-code, wp, test, docs on the diff.
+
+## Phase 11: Review of PR #438 (2026-10-23)
+
+- [x] T031 FR-011a: what only a site administrator may change (`AccessPolicy`, `AccessService`,
+  `SiteAdministration::userAdministersSite()`), refusals in the access history, reasons in both dialogs. Unit and
+  integration tests. DECISIONS #428.
+- [x] T032 The matrix and audit tabs pass the quality checks: muted text token, the grid folded at a phone's width,
+  44px buttons there, history rows that wrap. Jest and Playwright updated. DECISIONS #424 amended.
+- [x] T033 Refusals of the flow gateway, the activity routes and Blog Pro recorded; the old CSV export removed; the
+  capture switch kept for site administrators; the guide on Manage setup and Manage Email Studio. DECISIONS #429.
 
 ## Dependencies
 

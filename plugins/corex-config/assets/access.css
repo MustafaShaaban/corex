@@ -273,7 +273,7 @@
 	gap: var(--corex-admin-space-2xs);
 
 	/* The kind chip moves under the entry when both do not fit. */
-	flex: 1 1 12rem;
+	flex: 1 1 auto;
 	min-inline-size: 0;
 }
 
@@ -739,7 +739,7 @@
 }
 
 /* At a phone's width the grid folds into one list per ability
-   (DECISIONS #424): the roles and their Edit buttons first, then each
+   (spec 117, US-ACC-02): the roles and their Edit buttons first, then each
    ability with every role's state named by its role. Nothing is wider
    than the screen. */
 @media (max-width: 600px) { /* corex-token-allow: responsive breakpoint */
