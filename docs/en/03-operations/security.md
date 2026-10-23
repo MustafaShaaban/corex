@@ -164,7 +164,29 @@ applied, and listed on the Access screen's Overview.
 | Guides | Anyone signed in; each guide follows its screen |
 
 Switching the operating mode to Production or Maintenance also needs **Run dangerous actions**. In Settings → Mail,
-the delivery provider and live delivery stay with site administration: anyone else sees them read-only.
+the delivery provider and live delivery stay with site administration: anyone else sees them read-only. So does
+Email Studio's **Capture only CoreX mail** switch.
+
+Two abilities reach further than their screen's name says. Weigh them before allowing them for a role:
+
+- **Manage setup** runs the Setup Wizard, whose kit activates CoreX plugins and add-ons and can set the site's front
+  page.
+- **Manage Email Studio** reads the captured emails, which can hold what people typed into the site's forms, and
+  sends test mail from the site's address.
+
+### What only a site administrator may change
+
+A holder of **Manage access** who is not a site administrator can allow and deny abilities for roles they do not
+hold, and decide other people's access requests. Four changes need site administration:
+
+- allowing a Critical ability for a role, or setting one back to Inherit;
+- approving a request for a Critical ability;
+- any change to a role the person making it holds;
+- deciding (approving or denying) one's own access request.
+
+The Critical abilities are Access CoreX admin, Manage access, Manage operations and security, Install releases and
+Run dangerous actions. Anyone else is refused with a sentence saying a site administrator does it, and the refusal is
+listed on the Audit log tab.
 
 **See CoreX screens without changing them** opens Overview, Settings, Operations & Security and Insights read-only for
 someone who lacks their own ability: a "Read only" chip in the header, a sentence naming the ability that makes

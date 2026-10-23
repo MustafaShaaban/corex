@@ -325,3 +325,20 @@ it('lets a site administrator allow a Critical ability for a role', function () 
     expect($response->get_data()['data']['result']['state'])->toBe('completed')
         ->and($this->roles->effectsForRole('editor'))->toBe([CorexAbility::MANAGE_OPERATIONS => AccessPolicy::EFFECT_ALLOW]);
 });
+
+it('counts refused flow, activity and Blog Pro routes in the access audit under their screens', function () {
+    wp_set_current_user($this->people['subscriber']);
+
+    $statuses = [
+        screenRoute('GET', 'flows')->get_status(),
+        screenRoute('GET', 'activity')->get_status(),
+        screenRoute('GET', 'blog/authors')->get_status(),
+    ];
+    $sections = array_column(array_values(array_filter(
+        Boot::app()->container()->make(AccessAuditLog::class)->entries(),
+        fn (array $entry): bool => $entry['user'] === $this->people['subscriber'],
+    )), 'section');
+
+    expect($statuses)->toBe([403, 403, 403])
+        ->and($sections)->toEqualCanonicalizing(['corex-forms', 'corex-settings', 'corex-blog-pro']);
+});

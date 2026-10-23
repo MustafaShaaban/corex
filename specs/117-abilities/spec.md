@@ -111,8 +111,9 @@ A site owner reads one grid of CoreX abilities by role, with where each answer c
 5. **When** a Locked cell is focused or hovered, **Then** it says why.
 6. **Then** the WordPress capability grid is no longer on this tab.
 7. **Given** a role plugin is active, **Then** the grid says CoreX manages only its own abilities.
-8. **Given** a 400px wide window, **Then** the grid scrolls inside its own frame with the ability names kept in
-   view, and the page does not scroll sideways.
+8. **Given** a 400px wide window, **Then** the grid folds into one list per ability, each role's state named with
+   the role, and neither the page nor the grid is wider than the window (amended 2026-10-23: the quality checks of
+   spec 116 count any table wider than a phone's screen, so the frame that scrolled on its own became a list).
 
 ### User Story 3 - The Access overview counts CoreX abilities (Priority: P2)
 
@@ -226,6 +227,10 @@ A site owner reads one grid of CoreX abilities by role, with where each answer c
   ability and saying that site administrators always hold every CoreX ability.
 - **FR-011**: The Access screen MUST list, once, each Deny stored for such a role, with a sentence saying it is
   kept and not applied.
+- **FR-011a** (added 2026-10-23, DECISIONS #428): Allowing a Critical ability for a role or setting one to Inherit,
+  approving a request for a Critical ability, changing a role the person making the change holds, and deciding
+  one's own access request MUST need site administration. Anyone else holding "Manage access" MUST be refused with a
+  sentence saying a site administrator does it, and the refusal MUST be recorded in the access history.
 
 **The view ability (US-SHL-06)**
 
@@ -245,7 +250,7 @@ A site owner reads one grid of CoreX abilities by role, with where each answer c
   send that state, the role's administers-the-site flag and why a cell is locked.
 - **FR-017**: The Role matrix tab MUST show the grid, grouped by area, with a legend, a per-role Edit that opens the
   existing editor, cells announced in words, locked cells explained on focus and hover, and a frame that scrolls
-  on its own with the ability column kept in view.
+  on its own with the ability column kept in view; at a phone's width the grid folds into one list per ability.
 - **FR-018**: The WordPress capability grid, the matrix tab's own audit list, the "tracked capability groups" card
   and every sentence saying CoreX screens require `manage_options` or that CoreX invents no abilities MUST be gone.
 - **FR-019**: The overview's role cards, groups card and "Your permissions" MUST count and list CoreX abilities as
@@ -284,7 +289,7 @@ A site owner reads one grid of CoreX abilities by role, with where each answer c
 - **SC-002**: A site administrator opens all fifteen CoreX screens and uses one action on each, with a Deny stored
   on the Administrator role, with no difference from the previous release.
 - **SC-003**: The Role matrix tab shows every ability and role in one grid, every cell in one of five states, and at
-  400px the page has no horizontal scroll.
+  400px neither the page nor the grid is wider than the window.
 - **SC-004**: The audit tab shows at most 25 entries a page and every recorded access event kind of FR-021.
 - **SC-005**: No `corex_` key appears as the main text of a sentence on the Access screen or the denied page.
 - **SC-006**: A holder of only the view ability opens the four read-only screens, sees no secret, and every attempt
@@ -297,7 +302,9 @@ earlier, by approving a request or by an Allow in the role matrix, start opening
 reviews CoreX → Access & Abilities first (its grants list) and checks whether a Deny is stored on the Administrator
 role (it is listed on the Overview tab and ignored). Blog Pro now opens for holders of "Manage Blog Pro" and site
 administrators; editors and writers who used it since v0.47.0 need "Manage Blog Pro" allowed for their role. Email
-Studio opens for holders of "Manage Email Studio". Mizzey: not on this release.
+Studio opens for holders of "Manage Email Studio". Critical abilities Allowed for a role before this release stay
+Allowed and start opening their screens; owners review them, since only a site administrator can allow them again.
+Mizzey: pinned to v0.42.0, not affected until it moves.
 
 ## Assumptions
 

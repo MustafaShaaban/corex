@@ -18349,6 +18349,13 @@ screen readers) and its words; a cell that cannot be set is focusable and descri
 editor for that role; an applied change updates the grid. The WordPress capability grid and the tab's own audit list
 are gone.
 
+**Amended 2026-10-23 (quality checks).** At 600px and narrower the grid folds into one list per ability: the roles and
+their Edit buttons first, then each ability with every role's state, each cell carrying its role's name
+(`.corex-access__cell-role`, hidden at wider widths, where the column header names it). Spec 116's checks count any
+table wider than a 375px screen, and a frame that scrolled on its own was one. The grid's secondary text, the
+history's times and the matrix headers use `--corex-admin-text-muted`, which meets AA in both themes;
+`--corex-admin-text-subtle` does not. US-ACC-02 scenario 8, FR-017 and SC-003 are amended to match.
+
 ## #425 — The overview counts CoreX abilities as the matrix resolves them
 
 **Date:** 2026-10-23. **Spec:** 117, User Story 3 (US-ACC-03).
@@ -18380,3 +18387,62 @@ risk at the moment it is shown, with literal strings; an ability registered by s
 matrix, overview, grants, requests, approval dialog, denied page and refusal messages use it; a key appears only as a
 `title`. A refused role change says why in words (`AccessService::refusalReason()`). The approval phrase stays the key
 (#376).
+
+## #428 — What only a site administrator may change in Access & Abilities
+
+**Date:** 2026-10-23. **Branch:** `spec/117-abilities`. **Spec:** 117, FR-011a (added with this decision). **Mode:**
+CoreX Framework. Decided under the owner's 2026-10-21 mandate, on review of PR #438.
+
+**Why.** Spec 117 opened the Access screen to holders of "Manage access". Some changes there decide who controls the
+site, and they stay with the people who already control it.
+
+**Decided.**
+
+1. **Four changes need site administration** (`manage_options`; on a network a super administrator holds it):
+   allowing a Critical ability for a role or setting one to Inherit (blocker `critical_needs_site_administrator`);
+   approving a request for a Critical ability (the same blocker, in the approval's preview); any change to a role the
+   person making it holds (`own_access_needs_site_administrator`); and deciding, approving or denying, one's own
+   access request (`own_request_needs_site_administrator`). Denying a Critical ability for a role one does not hold
+   stays open to a holder of "Manage access": it narrows. Locked abilities stay refused to everyone (#421).
+2. **`AccessPolicy::preview()`** takes `actorAdministersSite`, false unless said, so a caller that does not ask gets
+   the narrower answer. `AccessService` asks `SiteAdministration::userAdministersSite()` (new;
+   `WpSiteAdministration` answers with `user_can($id, 'manage_options')`) and, with no `SiteAdministration` given,
+   treats nobody as a site administrator.
+3. **A refused decision is recorded** in the activity stream's access area as `access.request.refused`, with the
+   reasons, and the Audit log tab lists it as "Decision refused". A refused role change was recorded already
+   (`access.role.refused`, #426). The rules are checked before the note and the confirmation, so the refusal says what
+   the rules say whatever was typed.
+4. **The dialogs say why** in words: the role editor's preview and the approval dialog list each blocker's reason.
+
+**Stored Allows.** Critical abilities Allowed for a role before this release stay Allowed and are applied, as before
+(`AbilityCompatibility`). Only a site administrator could store them (the Access routes asked for `manage_options`
+until spec 117), and they are now the only way such a role holds one. The release notes ask owners to review them.
+
+**Not chosen.** *Ignoring stored Critical Allows until a site administrator confirms them again*: it would take away
+access owners chose on purpose, with no screen yet to confirm it from.
+
+**Verified.** Pest unit `AccessPolicyTest` (Critical Allow and Inherit refused, Critical Deny allowed, own role
+refused, administrator allowed) and `AccessServiceTest` (each refusal recorded; own request refused for approve and
+deny; someone else's request decided; administrator decides their own; no `SiteAdministration` means no); Pest
+integration `ScreenAbilitiesAccessTest` (the same through the routes, as a holder of "Manage access" who is not a
+site administrator, and as an administrator) and `AccessHistoryTest` (the history's sentence).
+
+## #429 — Three loose ends of spec 117: the old CSV export, refusals of three more routes, and the capture switch
+
+**Date:** 2026-10-23. **Spec:** 117, FR-005, US-EML-20. Decided under the owner's 2026-10-21 mandate, on review of PR
+#438.
+
+**Decided.**
+
+1. **The `admin_post_corex_data_export` handler is removed** with `DataExportController` and `CsvWriter`. Nothing
+   linked to it since the Data screen's exports became runs (spec 109), and it read a source without the checks those
+   runs make for withheld models and personal data. The Data screen's export is the only one.
+2. **The flow gateway, the activity routes and Blog Pro record their refusals** through `AbilityCheck`, under Forms &
+   Flows, Overview and Blog Pro. Blog Pro records only a refusal for want of "Manage Blog Pro"; one WordPress's own
+   permission for a post or comment decides is not an access refusal.
+3. **Email Studio's "Capture only CoreX mail" switch** (spec 113, merged into this branch) stays with site
+   administration like live delivery (#423): its route asks for "Manage Email Studio" and `manage_options`, and the
+   overview shows the switch unavailable, with the sentence, to anyone else. It decides whether other plugins' mail
+   leaves a development or staging site.
+4. **The guide names what two abilities reach**: "Manage setup" runs a kit that activates plugins and can set the
+   front page; "Manage Email Studio" reads captured emails and sends test mail from the site's address.

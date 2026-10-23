@@ -10,6 +10,7 @@ namespace Corex\Forms\Flow;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
 use Corex\Http\Middleware\Middleware;
 use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
@@ -34,16 +35,18 @@ final readonly class FlowRestGateway
     public function __construct(
         private Pipeline $pipeline,
         private MiddlewareResolver $middleware,
+        private AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
     /**
      * What every flow route asks before a handler runs. The handlers ask again through the
      * middleware, and a change needs a nonce as well. This is here so the route says it is guarded.
+     * A refusal is recorded in the access audit under Forms & Flows (spec 117, FR-005).
      */
     public function permits(): true|WP_Error
     {
-        return current_user_can(self::CAPABILITY)
+        return $this->abilities->allows(self::CAPABILITY, 'corex-forms')
             ? true
             : new WP_Error(
                 'forbidden',

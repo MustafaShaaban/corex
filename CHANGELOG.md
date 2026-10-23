@@ -78,8 +78,12 @@ or staging site keeps its mail instead of sending it (spec 113).
   holder of "Manage access" who is not a site administrator can still allow and deny the other
   abilities for other roles and decide other people's requests; for these four they are refused with
   a sentence saying a site administrator does it, and the refusal is in the access history.
-- **"Capture only CoreX mail" stays with site administration** (#423), like live delivery: a holder of
+- **"Capture only CoreX mail" stays with site administration** (#423, #429), like live delivery: a holder of
   "Manage Email Studio" sees the switch unavailable, with a sentence.
+- **Refused calls to the flow, activity and Blog Pro routes are counted in the access audit** (#429), under
+  Forms & Flows, Overview and Blog Pro, like every other CoreX route since spec 117.
+- **At a phone's width the role matrix folds into one list per ability** (#424), each state named with its role,
+  and its text meets WCAG 2.2 AA contrast in both themes.
 - **One setting decides whether a site is a development site** (spec 113). `APP_ENV` in `.env`, a
   value the network locks or the `corex_app_env` option decides first, and locks the operations
   mode (the Operations screen says what locks it and offers that environment's mode, Coming soon
@@ -146,7 +150,10 @@ or staging site keeps its mail instead of sending it (spec 113).
 - **In CI, a failing linter no longer stops the audit, the unit tests and Jest** in the same job,
   so one run reports every failure.
 
-### Fixed
+### Removed
+
+- **The old Data CSV download** (`admin-post.php?action=corex_data_export`, #429). Nothing in CoreX linked to it;
+  exports are made on the Data screen, which applies the export checks for withheld models and personal data.
 
 ### Fixed
 
@@ -174,16 +181,22 @@ or staging site keeps its mail instead of sending it (spec 113).
 - **Review every Critical ability Allowed for a role that does not administer the site.** "Manage
   access", "Manage operations and security", "Install releases" and "Run dangerous actions" Allowed
   for a role earlier stay Allowed and now open their screens. Only a site administrator could store
-  them, and only a site administrator can now allow them again; set to Inherit any that should not
+  them, and only a site administrator can now allow them again; set to Deny any that should not
   stand.
 - **Check for a Deny stored on the Administrator role.** It is kept, ignored, and listed on the Access
   Overview under "Stored but not applied".
 - **Blog Pro opens for "Manage Blog Pro"** and site administrators. Editors and writers who used it since
   v0.47.0 need "Manage Blog Pro" allowed for their role.
 - **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it.
+- **Only a site administrator can allow a Critical ability, change a role they hold, or decide their own access
+  request.** A holder of "Manage access" who is not a site administrator is refused these with a sentence.
+- **A bookmark or script that downloaded `admin-post.php?action=corex_data_export`** stops working; export from
+  CoreX → Data instead. Search a client repository for `corex_data_export` before updating.
 - A client repository carrying copies of CoreX's tests takes the updated
-  `tests/Unit/Access/AccessMatrixTest.php`, `tests/Integration/Access/AccessAuditLogWritesTest.php` and
-  `tests/Integration/Blog/BlogProPermissionMatrixTest.php`.
+  `tests/Unit/Access/AccessMatrixTest.php`, `AccessPolicyTest.php`, `AccessServiceTest.php`,
+  `tests/Integration/Access/AccessAuditLogWritesTest.php`, `ScreenAbilitiesAccessTest.php` and
+  `tests/Integration/Blog/BlogProPermissionMatrixTest.php`, and drops `tests/Unit/Data/DataExportControllerTest.php`
+  and `CsvWriterTest.php`.
   Client-guide screenshots of the Access screen go stale.
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 
