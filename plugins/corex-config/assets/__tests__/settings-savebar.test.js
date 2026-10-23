@@ -104,6 +104,58 @@ describe( 'the save bar', () => {
 		expect( words.textContent ).toBe( 'Unsaved changes' );
 	} );
 
+	it( 'puts a logo removed from the field back on Discard, preview included', () => {
+		const { form } = page(
+			'<div class="corex-media"><div class="corex-media__frame">' +
+				'<img class="corex-media-preview" src="https://site.test/logo.png" alt="" />' +
+				'<span class="corex-media__placeholder" hidden>No logo set</span></div>' +
+				'<button type="button" class="corex-media-remove" data-target="brand_logo_url">Remove</button>' +
+				'<input id="brand_logo_url" class="corex-media__url" value="https://site.test/logo.png"' +
+				' data-corex-saved="https://site.test/logo.png" /></div>'
+		);
+		document.querySelector( '.corex-media-remove' ).click();
+		expect( document.querySelector( '.corex-media-preview' ).hidden ).toBe(
+			true
+		);
+
+		form.dispatchEvent( new Event( 'reset', { cancelable: true } ) );
+
+		const preview = document.querySelector( '.corex-media-preview' );
+		expect( document.getElementById( 'brand_logo_url' ).value ).toBe(
+			'https://site.test/logo.png'
+		);
+		expect( preview.hidden ).toBe( false );
+		expect( preview.getAttribute( 'src' ) ).toBe(
+			'https://site.test/logo.png'
+		);
+		expect(
+			document.querySelector( '.corex-media__placeholder' ).hidden
+		).toBe( true );
+	} );
+
+	it( 'puts a stored value with markup back as text, never as markup', () => {
+		const markup = '"><img src=x onerror="window.__corexXss=1">';
+		const { form } = page(
+			'<div class="corex-media"><div class="corex-media__frame">' +
+				'<img class="corex-media-preview" src="" alt="" hidden />' +
+				'<span class="corex-media__placeholder">No logo set</span></div>' +
+				'<input id="brand_logo_url" class="corex-media__url" value="" data-corex-saved="" /></div>'
+		);
+		const field = document.getElementById( 'brand_logo_url' );
+		field.setAttribute( 'data-corex-saved', markup );
+
+		form.dispatchEvent( new Event( 'reset', { cancelable: true } ) );
+
+		expect( field.value ).toBe( markup );
+		expect( document.querySelectorAll( 'img' ) ).toHaveLength( 1 );
+		expect(
+			document
+				.querySelector( '.corex-media-preview' )
+				.getAttribute( 'src' )
+		).toBe( '' );
+		expect( window.__corexXss ).toBeUndefined();
+	} );
+
 	it( 'ignores what cannot be edited: a field locked or of an add-on that is off', () => {
 		const { words } = page(
 			'<input id="brand_company_name" value="Acme" data-corex-saved="Old" readonly />'

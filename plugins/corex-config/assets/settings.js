@@ -67,22 +67,6 @@
 		return el ? el.closest( '.corex-media' ) : null;
 	}
 
-	/**
-	 * An image address the preview may show: http or https only, so a value read back from the
-	 * page (Discard puts the stored one back) is never handed to the image as another kind of URL.
-	 *
-	 * @param {string} url what the field holds
-	 * @return {string} the address, or '' when it is not one an image is drawn from
-	 */
-	function imageUrl( url ) {
-		const address = String( url || '' );
-
-		return address.startsWith( 'https://' ) ||
-			address.startsWith( 'http://' )
-			? address
-			: '';
-	}
-
 	function setPreview( input, url ) {
 		const box = mediaContainer( input );
 		if ( ! box ) {
@@ -90,13 +74,40 @@
 		}
 		const preview = box.querySelector( '.corex-media-preview' );
 		const placeholder = box.querySelector( '.corex-media__placeholder' );
-		const hasUrl = !! url && imageUrl( url ) !== '';
+		const hasUrl = !! url;
 		if ( preview ) {
-			preview.src = hasUrl ? imageUrl( url ) : '';
+			preview.src = url || '';
 			preview.hidden = ! hasUrl;
 		}
 		if ( placeholder ) {
 			placeholder.hidden = hasUrl;
+		}
+	}
+
+	/**
+	 * How each logo preview was drawn when the page arrived, so that Discard can put it back as it
+	 * was, without reading an address out of the page to draw.
+	 */
+	const drawnPreviews = new Map();
+	document.querySelectorAll( '.corex-media' ).forEach( function ( box ) {
+		const preview = box.querySelector( '.corex-media-preview' );
+		if ( preview ) {
+			drawnPreviews.set( box, preview.cloneNode( false ) );
+		}
+	} );
+
+	function restorePreview( input ) {
+		const box = mediaContainer( input );
+		const drawn = box && drawnPreviews.get( box );
+		const preview = box && box.querySelector( '.corex-media-preview' );
+		if ( ! drawn || ! preview ) {
+			return;
+		}
+		const again = drawn.cloneNode( false );
+		preview.replaceWith( again );
+		const placeholder = box.querySelector( '.corex-media__placeholder' );
+		if ( placeholder ) {
+			placeholder.hidden = ! again.hidden;
 		}
 	}
 
@@ -265,7 +276,7 @@
 					control.value = saved;
 				}
 				if ( control.classList.contains( 'corex-media__url' ) ) {
-					setPreview( control, saved );
+					restorePreview( control );
 				}
 				changed( control );
 			} );
