@@ -17,9 +17,12 @@ use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Delivery\EmailAttemptRepository;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Message\EmailMessage;
-use Corex\Mail\MessageId;
 use Corex\Events\EventDispatcher;
+use Corex\Mail\Capture\CapturedMessage;
+use Corex\Mail\Capture\MailHold;
+use Corex\Mail\Capture\MailPath;
 use Corex\Mail\MailResult;
+use Corex\Mail\MessageId;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
 use DomainException;
@@ -30,6 +33,9 @@ use Throwable;
  */
 final class EmailStudioService
 {
+    /** The decision code of a send held by a flow's marked test. */
+    public const HELD_FOR_TEST = 'held_for_test';
+
     // Explicit PSR-11 boundaries stay visible here; a dependency bag would hide replaceable collaborators.
     public function __construct(
         private readonly DeliveryPolicy $policy,
@@ -44,6 +50,10 @@ final class EmailStudioService
          * id WordPress's mailer makes, which nothing can read back.
          */
         private readonly string $messageHost = '',
+        /** Names a captured email for the log (spec 113). */
+        private readonly ?MailPath $paths = null,
+        /** Holds every email of a flow's marked test, on any site (spec 113, US3). */
+        private readonly ?MailHold $hold = null,
     ) {
     }
 
@@ -79,6 +89,15 @@ final class EmailStudioService
      */
     public function decide(EmailDeliveryContext $delivery): DeliveryDecision
     {
+        if ($this->hold?->active() === true) {
+            return new DeliveryDecision(
+                action: DeliveryDecision::ACTION_CAPTURE,
+                reason: __('A marked test holds its emails: they are kept here and never sent.', 'corex'),
+                providerRequired: false,
+                code: self::HELD_FOR_TEST,
+            );
+        }
+
         return $this->policy->evaluate(
             $delivery->environment,
             $delivery->providerConfigured,
@@ -164,7 +183,7 @@ final class EmailStudioService
         if ($messageId !== '') {
             $message = $message->withHeaders(['Message-ID' => $messageId]);
         }
-        $outcome    = $this->execute($decision, $message, $attemptIds[0]);
+        $outcome    = $this->execute($decision, $message, $attemptIds[0], $this->pathName($metadata));
         $attempt    = $this->recordAttempts(
             $recipients,
             $attemptIds,
@@ -298,6 +317,16 @@ final class EmailStudioService
             : 'production';
     }
 
+    /** What the log calls a captured Email Studio send: what sent it, else the kind of send. */
+    private function pathName(EmailDispatchMetadata $metadata): string
+    {
+        return $this->paths?->current() ?? match ($metadata->source) {
+            'test'   => __('Email Studio: test send', 'corex'),
+            'resend' => __('Email Studio: sent again', 'corex'),
+            default  => __('Email Studio: routed email', 'corex'),
+        };
+    }
+
     private function mailResult(EmailAttempt $attempt, EmailDeliveryOutcome $outcome): MailResult
     {
         return new MailResult(
@@ -317,6 +346,7 @@ final class EmailStudioService
         DeliveryDecision $decision,
         EmailMessage $message,
         string $attemptId,
+        string $path,
     ): EmailDeliveryOutcome
     {
         if ($decision->action === DeliveryDecision::ACTION_BLOCK) {
@@ -326,7 +356,14 @@ final class EmailStudioService
         if ($decision->action === DeliveryDecision::ACTION_CAPTURE) {
             // Persistence crosses WordPress drivers; converting failures to retryable attempts is the recovery contract.
             try {
-                $this->captures->capture($message, $attemptId);
+                $held = $decision->code === self::HELD_FOR_TEST;
+                $capture = $this->captures->capture(
+                    $message,
+                    $attemptId,
+                    path: $path,
+                    state: $held ? CapturedMessage::STATE_HELD_FOR_TEST : CapturedMessage::STATE_CAPTURED,
+                );
+                $this->hold?->note($message->to, $message->subject, $capture->captureId, $path);
 
                 return new EmailDeliveryOutcome(EmailAttempt::STATE_CAPTURED, 'corex-capture', $decision->reason, false);
             } catch (Throwable) {

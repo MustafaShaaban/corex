@@ -97,7 +97,7 @@ function plain( studio ) {
 function test( studio, busy ) {
 	return (
 		<TestSendPanel
-			delivery={ studio.state.data.delivery }
+			outcome={ studio.state.data.outcome }
 			draft={ studio.selection.draft }
 			busy={ busy }
 			lastResult={ studio.delivery.lastResult }
@@ -134,6 +134,8 @@ function overview( studio, busy, config ) {
 			data={ studio.state.data }
 			settingsUrl={ config.settingsUrl }
 			canConfigureDelivery={ config.canConfigureDelivery !== false }
+			busy={ busy }
+			onScope={ studio.delivery.saveScope }
 		/>
 	);
 }

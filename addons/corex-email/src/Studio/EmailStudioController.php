@@ -16,14 +16,15 @@ use Corex\Email\Capture\CapturedEmail;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Delivery\EmailAttemptRepository;
+use Corex\Email\Delivery\MailOutcome;
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Routing\EmailRoute;
 use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Http\ResponseEnvelope;
 use Corex\Http\RouteParam;
+use Corex\Mail\Capture\MailGate;
 use Corex\Mail\SubjectLine;
-use Corex\Support\Config\ConfigInterface;
-use Corex\Support\Uuid;
+use Corex\Support\Options\LoadedOptions;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
@@ -35,6 +36,12 @@ use WP_REST_Response;
  */
 final class EmailStudioController
 {
+    /** Where the capture-only switch is kept: config key `mail.capture_scope`. */
+    public const CAPTURE_SCOPE_OPTION = 'corex_mail_capture_scope';
+
+    /** How many of the newest attempts and captures the screen reads. */
+    private const RECENT = 100;
+
     private readonly EmailTemplateRepository $templates;
 
     private readonly EmailLayoutRepository $layouts;
@@ -51,7 +58,9 @@ final class EmailStudioController
         EmailStudioRepositories $repositories,
         private readonly EmailStudioService $studio,
         private readonly EmailTemplateService $editor,
-        private readonly ConfigInterface $config,
+        private readonly EmailDeliveryContextFactory $delivery,
+        /** What happens to mail on this site, said on every tab (spec 113). */
+        private readonly ?MailOutcome $outcome = null,
         private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
         $this->templates = $repositories->templates;
@@ -75,6 +84,24 @@ final class EmailStudioController
         $this->route('/email-studio/routes', 'POST', 'saveRoute', 'canMutate');
         $this->route('/email-studio/test', 'POST', 'testSend', 'canMutate');
         $this->route('/email-studio/attempts/(?P<attempt>[0-9a-f-]+)/resend', 'POST', 'resend', 'canMutate');
+        // Which mail is captured decides whether other plugins' mail leaves a development or staging
+        // site, so it stays with site administration like live delivery (spec 117, US-EML-20).
+        $this->route('/email-studio/capture-scope', 'POST', 'saveCaptureScope', 'canConfigureDelivery');
+    }
+
+    /**
+     * The "Capture only CoreX mail" switch (spec 113, FR-007): `all`, the default, or `corex`.
+     */
+    public function saveCaptureScope(WP_REST_Request $request): WP_REST_Response
+    {
+        $scope = $request->get_param('scope');
+        if (! in_array($scope, [MailGate::SCOPE_ALL, MailGate::SCOPE_COREX], true)) {
+            return $this->error('invalid_capture_scope', __('Capture covers all mail or only CoreX mail.', 'corex'), 400);
+        }
+
+        LoadedOptions::store(self::CAPTURE_SCOPE_OPTION, $scope);
+
+        return $this->success(['scope' => $scope, 'outcome' => $this->outcome?->describe()]);
     }
 
     private function route(string $path, string $methods, string $callback, string $permission): void
@@ -98,14 +125,21 @@ final class EmailStudioController
             && wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false;
     }
 
+    /** How the whole site delivers mail is chosen by a site administrator (spec 117, FR-007). */
+    public function canConfigureDelivery(WP_REST_Request $request): bool
+    {
+        return $this->canMutate($request)
+            && $this->abilities->allows('manage_options', 'corex-email-studio');
+    }
+
     public function index(WP_REST_Request $request): WP_REST_Response
     {
         $templates = array_map($this->templateSummary(...), $this->templates->all());
         $layouts   = array_map($this->layoutArray(...), $this->layouts->all());
         $partials  = array_map($this->partialArray(...), $this->partials->all());
         $routes    = array_map($this->routeArray(...), $this->routes->all());
-        $captures  = $this->captures->latest(100);
-        $attempts  = $this->attempts->latest(100);
+        $captures  = $this->captures->latest(self::RECENT);
+        $attempts  = $this->attempts->latest(self::RECENT);
         $states    = array_count_values(array_map(static fn (EmailAttempt $attempt): string => $attempt->state, $attempts));
         $recentTests = array_values(array_filter(
             $attempts,
@@ -113,11 +147,12 @@ final class EmailStudioController
         ));
 
         return $this->success([
+            'outcome' => $this->outcome?->describe(),
             'delivery' => [
-                'environment'         => $this->environment(),
-                'provider'            => $this->providerName(),
-                'provider_configured' => $this->providerConfigured(),
-                'live_enabled'        => $this->liveDeliveryEnabled(),
+                'environment'         => $this->delivery->make()->environment,
+                'provider'            => $this->delivery->providerName(),
+                'provider_configured' => $this->delivery->providerConfigured(),
+                'live_enabled'        => $this->delivery->liveDelivery(),
             ],
             'counts' => [
                 'templates' => count($templates),
@@ -129,6 +164,8 @@ final class EmailStudioController
                 'captured'  => (int) ($states[EmailAttempt::STATE_CAPTURED] ?? 0),
                 'delivered' => (int) (($states[EmailAttempt::STATE_SENT] ?? 0) + ($states[EmailAttempt::STATE_OPENED] ?? 0)),
                 'failed'    => (int) (($states[EmailAttempt::STATE_FAILED] ?? 0) + ($states[EmailAttempt::STATE_REJECTED] ?? 0) + ($states[EmailAttempt::STATE_BOUNCED] ?? 0)),
+                // What the captured, delivered and failed counts are counted from (spec 113, FR-022).
+                'window'    => self::RECENT,
             ],
             'templates' => $templates,
             'layouts'   => $layouts,
@@ -341,7 +378,7 @@ final class EmailStudioController
         $layout = $this->layouts->findVersion($version->layoutId, $version->layoutVersion);
 
         return $this->success(['health' => $this->studio->health($version, new EmailHealthContext(
-            providerConfigured: $this->providerConfigured(),
+            providerConfigured: $this->delivery->providerConfigured(),
             requiresSubscriptionLinks: rest_sanitize_boolean($request->get_param('subscription'))
                 || $layout?->slug === 'newsletter',
             replyTo: $this->nullableEmail($request->get_param('reply_to')),
@@ -354,7 +391,7 @@ final class EmailStudioController
         try {
             $result = $this->studio->testSend(
                 $this->message($request),
-                $this->deliveryContext(Uuid::v4()),
+                $this->delivery->make(),
                 $this->templateReference($request->get_param('template_slug')),
             );
 
@@ -370,7 +407,7 @@ final class EmailStudioController
             $result = $this->studio->resend(
                 RouteParam::string($request, 'attempt'),
                 $this->message($request),
-                $this->deliveryContext(Uuid::v4()),
+                $this->delivery->make(),
             );
 
             return $this->success(['result' => $result->toArray()]);
@@ -413,38 +450,6 @@ final class EmailStudioController
             SubjectLine::of($request->get_param('subject')),
             wp_kses_post((string) $request->get_param('body')),
             ['Content-Type' => 'text/html; charset=UTF-8'],
-        );
-    }
-
-    private function environment(): string
-    {
-        $environment = trim((string) $this->config->get('app.env', ''));
-
-        return $environment !== '' ? $environment : wp_get_environment_type();
-    }
-
-    private function providerName(): string
-    {
-        return sanitize_key((string) $this->config->get('mail.provider', ''));
-    }
-
-    private function providerConfigured(): bool
-    {
-        return $this->studio->supportsProvider($this->providerName());
-    }
-
-    private function liveDeliveryEnabled(): bool
-    {
-        return filter_var($this->config->get('mail.live_delivery', false), FILTER_VALIDATE_BOOLEAN);
-    }
-
-    private function deliveryContext(string $requestId): EmailDeliveryContext
-    {
-        return new EmailDeliveryContext(
-            $this->environment(),
-            $this->providerConfigured(),
-            $this->liveDeliveryEnabled(),
-            $requestId,
         );
     }
 
@@ -599,6 +604,7 @@ final class EmailStudioController
             'html_body' => $capture->body, 'plain_text' => $capture->plainText, 'headers' => $capture->headers,
             'captured_at' => $capture->capturedAt->format(DATE_ATOM),
             'retention_until' => $capture->retentionUntil?->format(DATE_ATOM),
+            'path' => $capture->path, 'state' => $capture->state,
         ];
     }
 
@@ -649,7 +655,7 @@ final class EmailStudioController
             }
             $layout = $this->layouts->findVersion($version->layoutId, $version->layoutVersion);
             $errors = $this->studio->health($version, new EmailHealthContext(
-                providerConfigured: $this->providerConfigured(),
+                providerConfigured: $this->delivery->providerConfigured(),
                 requiresSubscriptionLinks: $layout?->slug === 'newsletter',
                 layout: $layout,
             ));

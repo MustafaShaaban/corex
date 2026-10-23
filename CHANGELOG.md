@@ -6,15 +6,14 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398) and abilities that
-mean something (spec 117, revamp release R3.1, DECISIONS #420 to #427).
+Mail stays where it should (spec 113, revamp release R0.2, DECISIONS #381 to #385), screens that tell the
+truth (spec 114, R0.3, DECISIONS #390 to #398), quality checks on every release (spec 116, R1.1, DECISIONS
+#410 to #419) and abilities that mean something (spec 117, R3.1, DECISIONS #420 to #429).
 
-**Read Client impact before updating (spec 117).** Every CoreX screen starts checking its own ability, so
-access granted earlier, by approving a request or by an Allow in the role matrix, starts to work. Review
-CoreX → Access & Abilities first.
-
-Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398) and quality checks on every release
-(spec 116, R1.1, DECISIONS #410 to #419).
+**Read Client impact before updating.** Every CoreX screen starts checking its own ability, so access
+granted earlier, by approving a request or by an Allow in the role matrix, starts to work: review CoreX →
+Access & Abilities first (spec 117). A live site whose operations mode or `.env` says it is a development
+or staging site keeps its mail instead of sending it (spec 113).
 
 ### Added
 
@@ -41,7 +40,9 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   a generated client site.
 - **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
   submissions test runs left on a development site. It refuses a production site.
-
+- **"See CoreX screens without changing them"** (spec 117, #422), held by no role until an owner allows
+  it: Overview, Settings, Operations & Security and Insights open read-only, with a "Read only" chip, a
+  sentence naming the ability that makes changes, and every control marked unavailable and saying why.
 
 ### Changed
 
@@ -71,7 +72,38 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   ability, not its key.
 - **Email Studio opens for "Manage Email Studio"** (#423). Choosing the delivery provider and turning live
   delivery on or off stay with site administration; anyone else sees them read-only, with a sentence.
-
+- **Only a site administrator may widen access to the parts of CoreX that control the site** (#428).
+  Allowing a Critical ability for a role, approving a request for one, changing a role the person
+  making the change holds, and deciding their own access request each need site administration. A
+  holder of "Manage access" who is not a site administrator can still allow and deny the other
+  abilities for other roles and decide other people's requests; for these four they are refused with
+  a sentence saying a site administrator does it, and the refusal is in the access history.
+- **"Capture only CoreX mail" stays with site administration** (#423), like live delivery: a holder of
+  "Manage Email Studio" sees the switch unavailable, with a sentence.
+- **One setting decides whether a site is a development site** (spec 113). `APP_ENV` in `.env`, a
+  value the network locks or the `corex_app_env` option decides first, and locks the operations
+  mode (the Operations screen says what locks it and offers that environment's mode, Coming soon
+  and Maintenance); then the operations mode; then WordPress's environment type, where `local` now
+  counts as Development. A site in Coming soon or Maintenance stays closed to visitors whatever
+  `APP_ENV` says.
+  Email Studio, Insights and the Settings diagnostics show the same answer and where it comes from.
+- **Mail stays on a development or staging site** (spec 113). Every email, from every CoreX path,
+  from WordPress and from other plugins, is captured into `Email Studio → Delivery logs`, named by
+  what sent it ("Form notification", "Newsletter: new post", "WordPress: password reset",
+  "Other: wp_mail"), and nobody receives it. Staging sends for real once a provider is set and
+  live delivery is on. A switch on the Email Studio overview, **Capture only CoreX mail**, lets
+  WordPress's and other plugins' mail through. Without CoreX Mail active, such an email is not
+  sent and is recorded in the activity log. **A production site, and a site in Coming soon or
+  Maintenance with no development or staging `APP_ENV`, sends exactly as before.**
+- **A flow's "Run marked test" holds its emails on every site** (spec 113), production included:
+  the result lists each with a link to it in Email Studio, and the Test tab says so before the
+  button is pressed.
+- **Email Studio says on every tab what happens to mail on this site**: delivered for real,
+  captured, or blocked, with live delivery, the provider, what decided, and any kind of email that
+  does not follow it.
+- **Email Studio's log shows the newest mail first** however many emails are stored, the overview
+  counts say they are of the last 100 emails, and captured and held emails are deleted after 30
+  days (they were kept forever).
 - **The Overview shows only true states** (#390). Brand reads "Done" only with a company name and a
   logo, otherwise "Not set" with a link to Brand settings. Insights / PageSpeed reads "Connected"
   only with a saved key whose last run completed, "Key saved, not checked yet", "Keyless (shared
@@ -116,6 +148,10 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
 
 ### Fixed
 
+### Fixed
+
+- **Email Studio's tabs fit the screen.** A wide delivery log made every tab wider than the page,
+  cut off at its edge.
 - **Saving Settings changes only what was changed** (#398). A save wrote every field of every
   section, and saved the switches of an add-on that was off as off: saving Brand with Corex Media
   off switched WebP conversion off. Now a section whose add-on is off or not installed is not
@@ -126,19 +162,20 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   provider's answer in words (works, wrong key, a key missing, cannot reach the provider) in a
   region a screen reader announces; until then the field says what is needed.
 
-### Added
-
-- **"See CoreX screens without changing them"** (spec 117, #422), held by no role until an owner allows
-  it: Overview, Settings, Operations & Security and Insights open read-only, with a "Read only" chip, a
-  sentence naming the ability that makes changes, and every control marked unavailable and saying why.
-
 ### Client impact
 
-- **No administrator loses access (spec 117).** Anyone who can administer the site holds every CoreX
-  ability.
+**Spec 117, abilities that mean something:**
+
+- **Muva and Perego: no administrator loses access.** Anyone who can administer the site holds every
+  CoreX ability, and the screens look as before to them.
 - **Grants made earlier start to work.** Every request approved in the past and every Allow in the role
   matrix now opens its screen. Before updating, open **CoreX → Access & Abilities**: on the Role matrix
   tab, read the grants list and Revoke what should not stand, and read the grid.
+- **Review every Critical ability Allowed for a role that does not administer the site.** "Manage
+  access", "Manage operations and security", "Install releases" and "Run dangerous actions" Allowed
+  for a role earlier stay Allowed and now open their screens. Only a site administrator could store
+  them, and only a site administrator can now allow them again; set to Inherit any that should not
+  stand.
 - **Check for a Deny stored on the Administrator role.** It is kept, ignored, and listed on the Access
   Overview under "Stored but not applied".
 - **Blog Pro opens for "Manage Blog Pro"** and site administrators. Editors and writers who used it since
@@ -148,6 +185,27 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   `tests/Unit/Access/AccessMatrixTest.php`, `tests/Integration/Access/AccessAuditLogWritesTest.php` and
   `tests/Integration/Blog/BlogProPermissionMatrixTest.php`.
   Client-guide screenshots of the Access screen go stale.
+- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+
+**Spec 113, mail stays where it should:**
+
+- **Before updating a live site, check two things**: its operations mode (CoreX → Operations &
+  Security) is Production, Coming soon or Maintenance, and its `.env`, if it has one, does not say
+  `APP_ENV=local`, `development` or `staging` (`.env.example` ships `APP_ENV=local`). Either one
+  makes the site keep its mail in Email Studio instead of sending it.
+- **Production mail is otherwise unchanged.** A client site whose code sends through the `Mailer`
+  seam, with no provider and live delivery off, keeps sending.
+- **Local and staging copies start capturing mail**: a copy whose operations mode is Development or
+  Staging, or whose WordPress environment is `local`, `development` or `staging`, keeps its mail in
+  Email Studio instead of sending it. Check a copy's mail there after updating.
+- **Muva and Perego**: their production sites send as before if the two checks above hold; their
+  local copies keep their mail. **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+- **A test that spies on `wp_mail()` on a development install** now sees mail kept before
+  `wp_mail()`: CoreX's own test helper `tests/Support/MailDelivery.php` gains a `DELIVER` mode for
+  tests that exercise production sending. A client repository that carries copies of CoreX's tests
+  takes the updated helper.
+
+**Spec 114, screens that tell the truth:**
 
 - **Nothing to do for the screens.** Owners of both client sites read different, accurate rows on
   Overview, Operations & Security, Insights and Blog Pro. Muva's captcha test button appears. Muva
@@ -174,6 +232,7 @@ No client site is affected at runtime: this release changes tests, scripts and C
   site in Production mode served from a real host name, such as a live site. Before a tag, the release is now
   merged into a copy of each client's repository and that client's suites are run.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
 
 ## [0.47.0] — 2026-10-21
 

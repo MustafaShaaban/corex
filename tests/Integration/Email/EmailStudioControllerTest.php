@@ -88,7 +88,7 @@ beforeEach(function () {
         ),
         $this->studio,
         $this->editor,
-        $this->config,
+        \Corex\Tests\Support\StudioDelivery::factory($this->config, $this->studio),
     );
 
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);

@@ -51,6 +51,15 @@ plan and 30 tasks written; all built, one pull request, not merged by its sessio
 Submissions and widget checks that also accept site administration (the same answer now), and a screen-reader pass
 of the grid by a person.
 
+**Spec 113, mail stays where it should** (2026-10-21, branch `spec/113-mail-capture`, DECISIONS #381 to
+#385): revamp release R0.2, five stories (US-SAFE-02, 01, 03, 17, US-EML-18), built under the owner's
+2026-10-21 mandate to finish the revamp. One resolver (`Corex\Environment\SiteEnvironment`) decides
+development, staging or production; a mail gate in corex-core, asked by CoreX Mail's service and by
+`pre_wp_mail`, captures every email on development and staging, holds a flow test's emails everywhere,
+and leaves production alone; Email Studio states the outcome on every tab, offers a capture-only switch,
+lists the newest mail first and deletes captures after 30 days. Merged to `main` as 180a40a6 (PR #437), not tagged. R0.3 (spec 114), R0.4 (spec 115) and
+R1.1 (spec 116) are built in parallel sessions with DECISIONS #390-#399, #400-#409 and #410-#419.
+
 **Spec 114, screens that tell the truth** (2026-10-21, branch `claude/spec-114-truthful-screens-43137f`,
 DECISIONS #390 to #398): the third release (R0.3) of the revamp's stage 0, nine stories approved by the owner on
 2026-10-20, open choices decided under the owner's 2026-10-21 mandate. The Overview reads each fact it names and

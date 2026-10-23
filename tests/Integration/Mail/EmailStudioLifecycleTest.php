@@ -72,7 +72,7 @@ function emailLifecycleRouter(
         new EmailRouteDispatcher(
             new EmailRouteMessageFactory($templates, $editor),
             $studio,
-            $config,
+            \Corex\Tests\Support\StudioDelivery::factory($config, $studio),
         ),
     );
 }
@@ -349,6 +349,7 @@ it('sends a template\'s email again under the subject as written', function () {
         $this->editor,
         emailLifecycleConfig('development', 'postmark', true),
         Corex\Boot::app()->container()->make(ReplyComposer::class),
+        \Corex\Tests\Support\StudioDelivery::factory(emailLifecycleConfig('development', 'postmark', true), $this->studio),
     );
 
     $again = $gateway->resend($failed->attemptId, 'sam@example.com', ['user' => ['name' => 'Tom & "Jerry"']]);
