@@ -35,6 +35,11 @@ export function normalizeOverview( payload ) {
 	const source = payload && typeof payload === 'object' ? payload : {};
 	return {
 		delivery: source.delivery || {},
+		// What happens to mail on this site, said on every tab (spec 113).
+		outcome:
+			source.outcome && typeof source.outcome === 'object'
+				? source.outcome
+				: null,
 		counts: source.counts || {},
 		templates: Array.isArray( source.templates ) ? source.templates : [],
 		layouts: Array.isArray( source.layouts ) ? source.layouts : [],
@@ -120,6 +125,7 @@ const ENDPOINTS = {
 	routes: () => 'routes',
 	test: () => 'test',
 	resend: ( id ) => `attempts/${ id }/resend`,
+	captureScope: () => 'capture-scope',
 };
 
 export function buildEndpoint( base, kind, id = '' ) {

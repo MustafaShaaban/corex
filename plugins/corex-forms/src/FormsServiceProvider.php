@@ -210,6 +210,7 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(EmailLanguage::class),
                 $c->has(RoutedMailer::class) ? $c->make(RoutedMailer::class) : null,
                 $c->has(Mailer::class) ? $c->make(Mailer::class) : null,
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
         );
         $this->container->singleton(EmailStage::class);

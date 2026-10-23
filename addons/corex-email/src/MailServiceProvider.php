@@ -179,7 +179,29 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(EmailLogStore::class),
                 $c->make(HeaderGuard::class),
                 $c->make(BootLogger::class),
+                $c->make(\Corex\Mail\Capture\MailGate::class),
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
+        );
+
+        $this->container->singleton(
+            \Corex\Email\Capture\CaptureRetention::class,
+            static fn (ContainerInterface $c): \Corex\Email\Capture\CaptureRetention =>
+                new \Corex\Email\Capture\CaptureRetention($c->make(WpEmailStudioStore::class)),
+        );
+
+        // The gate asks the provider question as Email Studio asks it (spec 113, FR-011).
+        $this->container->singleton(
+            \Corex\Mail\Capture\MailProviderCheck::class,
+            static fn (ContainerInterface $c): \Corex\Mail\Capture\MailProviderCheck =>
+                $c->make(\Corex\Email\Studio\EmailDeliveryContextFactory::class),
+        );
+
+        // What the mail gate captures or holds is kept in Email Studio's capture log (spec 113).
+        $this->container->singleton(
+            \Corex\Mail\Capture\MailCaptureStore::class,
+            static fn (ContainerInterface $c): \Corex\Mail\Capture\MailCaptureStore =>
+                new \Corex\Email\Capture\CaptureStoreAdapter($c->make(CapturedEmailRepository::class)),
         );
 
         // The immediate engine (sends inline). The queue worker also uses this.
@@ -191,6 +213,7 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(RecipientResolver::class),
                 $c->make(MailService::class),
                 \Corex\Mail\MessageId::hostOf((string) home_url('/')),
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
         );
 
@@ -229,6 +252,8 @@ final class MailServiceProvider extends ServiceProvider
                     'wp-mail',
                     $c->make(\Corex\Events\EventDispatcher::class),
                     \Corex\Mail\MessageId::hostOf((string) home_url('/')),
+                    $c->make(\Corex\Mail\Capture\MailPath::class),
+                    $c->make(\Corex\Mail\Capture\MailHold::class),
                 );
             },
         );
@@ -243,7 +268,7 @@ final class MailServiceProvider extends ServiceProvider
                         $c->make(EmailLayoutRepository::class),
                     ),
                     $c->make(EmailStudioService::class),
-                    $c->make(ConfigInterface::class),
+                    $c->make(\Corex\Email\Studio\EmailDeliveryContextFactory::class),
                 ),
             ),
         );
@@ -283,6 +308,9 @@ final class MailServiceProvider extends ServiceProvider
         // "translation triggered too early" notice. The handler resolves the dispatcher
         // only when a queued send actually fires (during queue processing, after init).
         add_action(MailQueueDispatcher::HOOK, [$this, 'runQueuedSend'], 10, 1);
+
+        // Captured and held emails are deleted after their 30 days (spec 113, FR-020).
+        $this->container->make(\Corex\Email\Capture\CaptureRetention::class)->register();
     }
 
     /**

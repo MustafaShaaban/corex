@@ -16,15 +16,20 @@ use Corex\Email\Mail;
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\MailDelivery;
 
 // Every send here is logged as a post, which is what these tests assert — and a send returns its
 // result, not the log's id. The logs are caught as they are inserted and deleted afterwards; each
 // run used to leave three on the install.
 beforeEach(function () {
+    // Spec 113: these emails are sent the way a production site sends them. MailDelivery stops
+    // each one before the transport.
+    $this->productionMail = MailDelivery::answerAs(MailDelivery::DELIVER);
     $this->emailLogs = CreatedPosts::watch('corex_email_log');
 });
 
 afterEach(function () {
+    MailDelivery::stop($this->productionMail);
     $this->emailLogs->delete();
 });
 

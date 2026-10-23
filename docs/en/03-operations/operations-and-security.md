@@ -35,7 +35,44 @@ so plainly — because reading one and assuming the other is how someone ends up
 > this screen can alter `WP_ENVIRONMENT_TYPE`.
 
 If you have never declared a mode, CoreX follows the WordPress environment type and says it is doing
-so. That is not a conflict, and it is not warned about.
+so. That is not a conflict, and it is not warned about. WordPress's `local` counts as Development.
+
+## The mode decides where mail goes
+
+Since spec 113 one answer says whether this is a development, staging or production site, and every
+screen and every email follows it. In this order:
+
+1. `APP_ENV` in the site's `.env` file, a value the network locks, or the `corex_app_env` option.
+   Each of these **locks** the mode: the mode card says what locks it, and only that environment's
+   mode, Coming soon and Maintenance can be chosen. Change it where it is set. Coming soon and
+   Maintenance stay in force under any lock: they change only what visitors see.
+
+> **Before updating a live site**, check that its `.env`, if it has one, does not say
+> `APP_ENV=local`, `development` or `staging` (`.env.example` ships `APP_ENV=local`): a site set so
+> keeps its mail.
+2. The mode you choose here.
+3. WordPress's environment type: `local` and `development` are Development, `staging` is Staging,
+   anything else is Production.
+
+| Mode | What happens to mail |
+|---|---|
+| **Development** | Every email is captured: kept in `CoreX → Email Studio → Delivery logs`, named by what sent it, and nobody receives it. |
+| **Staging** | Captured, unless live delivery is on with a provider CoreX Mail sends through; then sent for real. |
+| **Production, Coming soon, Maintenance** | Sent exactly as before. |
+
+Captured mail includes WordPress's own emails (a password reset, a new user) and other plugins'
+mail. Email Studio's Overview has a switch, **Capture only CoreX mail**, that lets those through
+while CoreX's own mail stays captured. Without CoreX Mail active there is nowhere to keep a
+captured email, so on a development or staging site it is not sent either: each one is recorded in
+the activity log with its recipients, subject and what sent it.
+
+A form's **Run marked test** holds every email it would send, on every site, production included:
+the test's result lists each one with a link to it in Email Studio. Captured and held emails are
+deleted 30 days after they were kept, and with their test submission when it is deleted for good.
+
+Every Email Studio tab says, at the top, what happens to mail on this site, and names any kind of
+email that does not follow it: on a production site with no provider, Email Studio's own sends are
+refused while form notifications and the rest are still sent.
 
 ## Changing the mode
 
@@ -44,7 +81,7 @@ mode needs — and no other.
 
 | Mode | What it asks for |
 |---|---|
-| **Development** | Nothing. It tells you the site is still publicly reachable. |
+| **Development** | Nothing. It tells you the site is still publicly reachable, and its mail is captured (above). |
 | **Staging** | Nothing. It reminds you about search indexing and external services. |
 | **Production** | The word `PRODUCTION`, typed. It shows the readiness result and any blockers first. |
 | **Maintenance** | A ticked acknowledgement that visitors are affected. |

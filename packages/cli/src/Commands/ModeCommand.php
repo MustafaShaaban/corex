@@ -142,6 +142,11 @@ final class ModeCommand
             ModeChangeResult::BLOCKED => $this->failure(
                 __('The production launch was blocked by readiness checks. Nothing was changed.', 'corex'),
             ),
+            ModeChangeResult::LOCKED => $this->failure(sprintf(
+                /* translators: %s: operations mode. */
+                __('%s cannot be chosen: APP_ENV, the network or the corex_app_env option sets this site\'s environment. Nothing was changed.', 'corex'),
+                $mode,
+            )),
             default => $this->failure(sprintf(
                 /* translators: 1: the value given, 2: the list of valid modes. */
                 __('"%1$s" is not an operations mode. Available: %2$s.', 'corex'),

@@ -1,6 +1,12 @@
 /* CoreX Email Studio (spec 068). Token-only, responsive, RTL-safe. */
 .corex-admin .corex-email-app {
 	display: grid;
+
+	/* One column that may shrink: an implicit `auto` column takes the
+	   min-content of its widest item, so the delivery log's table made
+	   every tab, the statement above them included, wider than the
+	   screen, cut off at its edge. */
+	grid-template-columns: minmax(0, 1fr);
 	gap: var(--corex-admin-space-lg);
 }
 
@@ -29,12 +35,66 @@
 
 .corex-admin .corex-email-app__stack {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	gap: var(--corex-admin-space-lg);
 }
 
 .corex-admin .corex-email-app__hero {
 	padding: var(--corex-admin-space-xl);
 	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+}
+
+.corex-admin .corex-email-app__outcome {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin-block-end: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-lg);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	background: var(--corex-admin-info-soft);
+}
+
+.corex-admin .corex-email-app__outcome.is-success {
+	border-inline-start-color: var(--corex-admin-success);
+	background: var(--corex-admin-success-soft);
+}
+
+.corex-admin .corex-email-app__outcome.is-warning {
+	border-inline-start-color: var(--corex-admin-warning);
+	background: var(--corex-admin-warning-soft);
+}
+
+.corex-admin .corex-email-app__outcome h2,
+.corex-admin .corex-email-app__outcome p {
+	margin: 0;
+}
+
+.corex-admin .corex-email-app__outcome-facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-email-app__scope {
+	display: flex;
+	gap: var(--corex-admin-space-sm);
+	align-items: start;
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-email-app__scope label {
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-admin .corex-email-app__scope p {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
 }
 
 .corex-admin .corex-email-app__hero h2,
@@ -56,6 +116,17 @@
 	font-size: var(--corex-admin-font-xs);
 	letter-spacing: var(--corex-admin-letter-wide);
 	text-transform: uppercase;
+}
+
+.corex-admin .corex-email-app__metrics-block {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-email-app__metrics-window {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
 }
 
 .corex-admin .corex-email-app__metrics {
@@ -348,6 +419,28 @@
 	gap: var(--corex-admin-space-md);
 	padding: var(--corex-admin-space-sm);
 	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-email-app__captures li {
+	grid-template-columns: minmax(0, 1fr) auto auto auto;
+	align-items: center;
+}
+
+.corex-admin .corex-email-app__captures li:target {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: calc(var(--corex-admin-border-width) * -1);
+}
+
+.corex-admin .corex-email-app__capture-what {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-email-app__captures-note {
+	margin-block: 0 var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
 }
 
 .corex-admin .corex-email-app__captures span,
