@@ -6,9 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398), quality checks on every release
-(spec 116, R1.1, DECISIONS #410 to #419), and one launch checklist and an honest Overview (spec 118, R3.2,
-DECISIONS #430 to #439).
+One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439).
 
 ### Added
 
@@ -36,35 +34,6 @@ DECISIONS #430 to #439).
   notifications of one kind of job are one item ("3 exports finished") with each member listed; the
   bell and the Overview count it once. Nothing stored changes.
 
-- **Quality checks on every release** (spec 116, R1.1 of the CoreX revamp). A new CI job,
-  **Quality checks**, opens every CoreX admin screen and tab and every theme template in eight
-  cells (375 and 1280px, light and dark, left to right and right to left) on a WordPress with the
-  Company kit applied. It checks for sideways scroll, WCAG 2.2 AA (axe-core, contrast and target
-  size included) and raw developer keys. At phone width it checks tables, 44px controls, the rail
-  and text at 200%. It also checks focus and Escape, reduced motion, the empty, loading, failed and
-  refused states of every screen, untranslated words (a pseudo-locale run) and a front-end budget:
-  layout shift, image sizes, lazy images, CoreX bytes per page, and block assets only where the
-  block is. What `main` showed when the checks were written is in
-  `tests/e2e/quality/known-failures.json`, each entry with the story that fixes it. A new defect
-  fails the job. `node scripts/quality-known-failures.mjs` prints the list.
-- **The admin's colour tokens are checked for contrast**, dark and light, before any browser opens
-  (`ContrastMatrixTest`).
-- **A PHP translation lint** (`php scripts/i18n-lint.php`), the **product completion audit**
-  (`npm run audit:completion`) and the **admin read and form budgets**
-  (`composer test:performance`) run in CI. The translation template `corex.pot` is generated on
-  every pull request and attached to every published release.
-- **A client merge check** (`scripts/client-merge-check.mjs`) merges a release candidate into a
-  throwaway clone of a client repository. It names a conflict in a file the client records as a
-  local edit, runs the client's suites and writes a report for the release record. CI proves it on
-  a generated client site.
-- **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
-  submissions test runs left on a development site. It refuses a production site.
-
-Kit and public page safety (spec 115, the fourth release of the CoreX revamp's stage 0).
-
-**Read Client impact before updating.** On sites whose kit pages still reference the stats or
-testimonial patterns, those two sections disappear for visitors until someone edits them.
-
 ### Changed
 
 - **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
@@ -89,6 +58,72 @@ testimonial patterns, those two sections disappear for visitors until someone ed
   yet, Not connected, Needs attention, Could not load) and each widget an icon for its subject; the
   screen is titled "Insights" and the agent card "AI and agent readiness". A forms count that cannot
   be read says "Could not load".
+
+### Client impact
+
+- **Muva**: the owner sees a new Overview (four state tiles, a two-group checklist, activity as
+  sentences, its own data only) and the same checklist on Operations & Security and the Dashboard
+  widget. Muva runs without a kit, so no kit row counts against it. Nothing new blocks going live:
+  only the six hardening checks can, as before. Its open readiness notices get one more occurrence on
+  the first page opened after the update, then stop growing. Client-guide screenshots of the Overview,
+  Operations and Insights go stale.
+- **Perego**: the same new screens. It has no Corex Mail, so "Test email sent" reads "Needs Corex
+  Mail" and is not counted. The kit row reads Done if its wizard applied the Company kit (recognised
+  from the kit's pages, nothing applied again).
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+- **A client repository that carries copies of CoreX's tests** takes the updated
+  `OverviewModelTest.php`, `SetupWizardCompletionTest.php` (the kit's unused `LaunchChecklist` class is
+  removed) and the specs that name "Readiness & Insights" (now "Insights"). Code that implements
+  `Corex\Notifications\NotificationService` or `NotificationRepository` adds `reword()` /
+  `rewordByDedupKey()`; no client site implements either.
+
+## [0.48.0] — 2026-10-23
+
+The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
+(spec 113, R0.2, DECISIONS #381 to #385), screens that tell the truth (spec 114, R0.3, #390 to
+#398), kit and public page safety (spec 115, R0.4, #400 to #407), and quality checks on every
+release (spec 116, R1.1, #410 to #419).
+
+**Read Client impact before updating.** Four things can change on a live site:
+
+- A site whose `.env` says `APP_ENV=local`, `development` or `staging`, or whose operations mode is
+  Development or Staging, now keeps its mail in Email Studio instead of sending it. Check both
+  before updating.
+- Kit pages that still reference the stats or testimonial patterns lose those two sections for
+  visitors until someone edits them, and pattern buttons with no Brand action link or contact
+  page are hidden. Perego runs the Company kit: check its pages.
+- The bookings, careers and newsletter routes now judge a reCAPTCHA v3 token by its action,
+  hostname and score: a site's own form must request its token under the route's action.
+- The Overview, Security Center and Insights now say what is true, so some rows that read "Done"
+  or "Hidden" may now read "Not set", "Off" or "Not configured".
+
+### Added
+
+- **Quality checks on every release** (spec 116, R1.1 of the CoreX revamp). A new CI job,
+  **Quality checks**, opens every CoreX admin screen and tab and every theme template in eight
+  cells (375 and 1280px, light and dark, left to right and right to left) on a WordPress with the
+  Company kit applied. It checks for sideways scroll, WCAG 2.2 AA (axe-core, contrast and target
+  size included) and raw developer keys. At phone width it checks tables, 44px controls, the rail
+  and text at 200%. It also checks focus and Escape, reduced motion, the empty, loading, failed and
+  refused states of every screen, untranslated words (a pseudo-locale run) and a front-end budget:
+  layout shift, image sizes, lazy images, CoreX bytes per page, and block assets only where the
+  block is. What `main` showed when the checks were written is in
+  `tests/e2e/quality/known-failures.json`, each entry with the story that fixes it. A new defect
+  fails the job. `node scripts/quality-known-failures.mjs` prints the list.
+- **The admin's colour tokens are checked for contrast**, dark and light, before any browser opens
+  (`ContrastMatrixTest`).
+- **A PHP translation lint** (`php scripts/i18n-lint.php`), the **product completion audit**
+  (`npm run audit:completion`) and the **admin read and form budgets**
+  (`composer test:performance`) run in CI. The translation template `corex.pot` is generated on
+  every pull request and attached to every published release.
+- **A client merge check** (`scripts/client-merge-check.mjs`) merges a release candidate into a
+  throwaway clone of a client repository. It names a conflict in a file the client records as a
+  local edit, runs the client's suites and writes a report for the release record. CI proves it on
+  a generated client site.
+- **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
+  submissions test runs left on a development site. It refuses a production site.
+
+### Changed
 
 - **One setting decides whether a site is a development site** (spec 113). `APP_ENV` in `.env`, a
   value the network locks or the `corex_app_env` option decides first, and locks the operations
@@ -246,24 +281,6 @@ testimonial patterns, those two sections disappear for visitors until someone ed
   `tests/Unit/Config/LoginSsoTest.php`, `AdminAppearanceTest.php` and `SettingsTabsTest.php`.
 - **Code that used `BrandingService::loginSsoEnabled()`, `ControlPanelStatus` or `DomainStatus`**
   must stop: they are removed. No client site uses them.
-
-**Spec 118, one launch checklist and an honest Overview**:
-
-- **Muva**: the owner sees a new Overview (four state tiles, a two-group checklist, activity as
-  sentences, its own data only) and the same checklist on Operations & Security and the Dashboard
-  widget. Muva runs without a kit, so no kit row counts against it. Nothing new blocks going live:
-  only the six hardening checks can, as before. Its open readiness notices get one more occurrence on
-  the first page opened after the update, then stop growing. Client-guide screenshots of the Overview,
-  Operations and Insights go stale.
-- **Perego**: the same new screens. It has no Corex Mail, so "Test email sent" reads "Needs Corex
-  Mail" and is not counted. The kit row reads Done if its wizard applied the Company kit (recognised
-  from the kit's pages, nothing applied again).
-- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
-- **A client repository that carries copies of CoreX's tests** takes the updated
-  `OverviewModelTest.php`, `SetupWizardCompletionTest.php` (the kit's unused `LaunchChecklist` class is
-  removed) and the specs that name "Readiness & Insights" (now "Insights"). Code that implements
-  `Corex\Notifications\NotificationService` or `NotificationRepository` adds `reword()` /
-  `rewordByDedupKey()`; no client site implements either.
 
 **Spec 116, the quality checks** (tests, scripts and CI only):
 
