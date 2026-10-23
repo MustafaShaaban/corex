@@ -21,6 +21,8 @@ final readonly class FlowService
     public function __construct(
         private FlowRepository $flows,
         private FlowConfigurationValidator $validator,
+        /** The emails a new flow starts with (spec 120). */
+        private ?DefaultFlowEmails $defaultEmails = null,
     ) {
     }
 
@@ -49,12 +51,30 @@ final readonly class FlowService
             id: 0,
             flowId: $flow->id,
             versionNumber: 1,
-            configuration: $draft->configuration,
+            configuration: $this->withDefaultEmails($draft->configuration),
             createdBy: $draft->actorId,
             createdAt: $draft->occurredAt,
         ));
 
         return ['flow' => $flow, 'version' => $version];
+    }
+
+    /**
+     * A new flow's configuration with the emails it starts with, when it names none of its own.
+     */
+    private function withDefaultEmails(FlowConfiguration $configuration): FlowConfiguration
+    {
+        $bindings = $configuration->emailRoutes === [] ? ($this->defaultEmails?->bindings() ?? []) : [];
+
+        return $bindings === [] ? $configuration : new FlowConfiguration(
+            schema: $configuration->schema,
+            validation: $configuration->validation,
+            routing: $configuration->routing,
+            emailRoutes: $bindings,
+            success: $configuration->success,
+            placementSnapshot: $configuration->placementSnapshot,
+            protection: $configuration->protection,
+        );
     }
 
     /** @return list<Flow> */

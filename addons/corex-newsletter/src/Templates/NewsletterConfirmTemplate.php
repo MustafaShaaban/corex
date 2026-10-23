@@ -31,10 +31,7 @@ final class NewsletterConfirmTemplate extends EmailTemplate
 
     public function body(MailContext $context): string
     {
-        $url = esc_url(add_query_arg(
-            ['corex_newsletter' => 'confirm', 'token' => $context->get('confirm_token')],
-            home_url('/')
-        ));
+        $url = esc_url(NewsletterLinks::confirm($context->get('confirm_token')));
 
         return '<p>' . esc_html__('Thanks for subscribing. Please confirm your email to start receiving updates:', 'corex') . '</p>'
             . '<p><a href="' . $url . '">' . esc_html__('Confirm subscription', 'corex') . '</a></p>'

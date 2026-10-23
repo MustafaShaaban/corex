@@ -212,10 +212,12 @@ it('exposes only active Email Studio templates to cross-module binding controls'
     $repository->activate($active->id, $draft->versionNumber, 7, $now);
     $repository->create('draft-template', 'Draft template', 7, $now);
 
-    expect((new EmailTemplateCatalog($repository))->templates())->toBe([[
+    // With the variables its active version uses, for a flow to say which it lacks (spec 120).
+    expect((new EmailTemplateCatalog($repository, new EmailTemplateService([])))->templates())->toBe([[
         'id' => $active->id,
         'slug' => 'active-template',
         'name' => 'Active template',
+        'variables' => ['user.name'],
     ]]);
 });
 

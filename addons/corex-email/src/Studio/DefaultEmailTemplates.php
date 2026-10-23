@@ -192,8 +192,8 @@ final class DefaultEmailTemplates
                 'transactional',
                 __('Thanks, we have your message', 'corex'),
                 '<h1>' . esc_html__('Thanks, we have your message.', 'corex') . '</h1>'
-                /* translators: %s: the visitor's name, filled in when the email is sent. */
-                . '<p>' . sprintf(esc_html__('Hi %s, thanks for reaching out. A member of the team will reply soon. Here is a copy of what you sent:', 'corex'), '{{ submission.name }}') . '</p>'
+                // No name in it: a form need not ask for one, and the email is for every form.
+                . '<p>' . esc_html__('Thanks for reaching out. A member of the team will reply soon. Here is a copy of what you sent:', 'corex') . '</p>'
                 . '{{ form.answers }}'
                 /* translators: %s: the site's name, filled in when the email is sent. */
                 . '<p>' . esc_html__('Warm regards,', 'corex') . '<br />' . sprintf(esc_html__('The %s team', 'corex'), '{{ site.name }}') . '</p>',

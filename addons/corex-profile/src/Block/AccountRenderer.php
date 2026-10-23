@@ -150,7 +150,7 @@ final class AccountRenderer
     private function guest(array $ctx, string $block): string
     {
         $registration = (bool) ($ctx['registrationOpen'] ?? false)
-            ? $this->registerForm($block)
+            ? $this->registerForm($block, (string) ($ctx['pageMark'] ?? ''))
             : '<p class="corex-account__note">' . esc_html__('Registration is currently closed.', 'corex') . '</p>';
 
         return '<div class="corex-account__grid">'
@@ -174,13 +174,18 @@ final class AccountRenderer
             . '</form>';
     }
 
-    private function registerForm(string $block): string
+    /**
+     * @param string $pageMark The page the block is on, signed: the welcome email links back to
+     *                         it (spec 120). Empty where the block is on no page.
+     */
+    private function registerForm(string $block, string $pageMark = ''): string
     {
         $field = $this->fieldsOf($block, 'register');
 
         return '<form class="corex-account__form" data-corex-account-form="register" method="post" novalidate>'
             . '<h2 class="corex-account__title">' . esc_html__('Create an account', 'corex') . '</h2>'
             . $this->honeypot()
+            . ($pageMark !== '' ? $this->hidden('page', $pageMark) : '')
             . $field('email', __('Email', 'corex'), 'email', true)
             . $field('username', __('Username', 'corex'), 'text', false)
             . $field('password', __('Password', 'corex'), 'password', true)

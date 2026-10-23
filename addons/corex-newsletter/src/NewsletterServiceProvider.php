@@ -67,6 +67,7 @@ final class NewsletterServiceProvider extends ServiceProvider
                 $c->make(SubscriberStore::class),
                 $c->make(TokenSigner::class),
                 $c->make(Mailer::class),
+                $c->has(\Corex\Mail\DesignedEmails::class) ? $c->make(\Corex\Mail\DesignedEmails::class) : null,
             ),
         );
 

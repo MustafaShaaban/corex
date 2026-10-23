@@ -13,7 +13,9 @@ defined('ABSPATH') || exit;
 use Corex\Forms\Routing\RoutingCondition;
 use Corex\Forms\Routing\RoutingTarget;
 use Corex\Forms\Schema\FieldTypeRegistry;
+use Corex\Forms\Submission\FlowEmailVariables;
 use Corex\Forms\Success\SuccessStateRegistry;
+use Corex\Mail\MailTemplateCatalog;
 use Corex\Forms\Validation\RuleRegistry;
 use DomainException;
 use InvalidArgumentException;
@@ -27,6 +29,8 @@ final readonly class FlowConfigurationValidator
         private FieldTypeRegistry $fieldTypes,
         private RuleRegistry $rules,
         private SuccessStateRegistry $successStates,
+        /** What each Email Studio template uses, where CoreX Mail is active (spec 120). */
+        private ?MailTemplateCatalog $templates = null,
     ) {
     }
 
@@ -135,6 +139,38 @@ final readonly class FlowConfigurationValidator
                 || trim((string) ($binding['recipient'] ?? '')) === ''
             ) {
                 throw new DomainException(__('An enabled flow email binding is incomplete.', 'corex'));
+            }
+            $this->refuseUnsuppliedVariables($binding, $configuration);
+        }
+    }
+
+    /**
+     * A template bound to a flow's email may use only what that email supplies, unless whoever
+     * bound it confirmed sending it without the rest (spec 120, story 5).
+     *
+     * @param array<string,mixed> $binding
+     */
+    private function refuseUnsuppliedVariables(array $binding, FlowConfiguration $configuration): void
+    {
+        if ($this->templates === null || ($binding['accept_missing'] ?? false) === true) {
+            return;
+        }
+        foreach ($this->templates->templates() as $template) {
+            if ((int) ($template['id'] ?? 0) !== (int) $binding['template_id']) {
+                continue;
+            }
+            $missing = FlowEmailVariables::missing(
+                array_values(array_filter((array) ($template['variables'] ?? []), 'is_string')),
+                $configuration,
+                (string) $binding['event'],
+            );
+            if ($missing !== []) {
+                throw new DomainException(sprintf(
+                    /* translators: 1: an Email Studio template's name. 2: variable keys, comma separated. */
+                    __('The template %1$s uses %2$s, which this form does not supply. Remove it from the template, or confirm sending the email without it in the Emails tab.', 'corex'),
+                    (string) ($template['name'] ?? ''),
+                    implode(', ', $missing),
+                ));
             }
         }
     }

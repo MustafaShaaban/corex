@@ -23,6 +23,15 @@ final class NewsletterLinks
 {
     public const PREFERENCES_FILTER = 'corex_newsletter_preferences_url';
 
+    /** The signed address that confirms the subscription this token was made for. */
+    public static function confirm(string $token): string
+    {
+        return (string) add_query_arg(
+            ['corex_newsletter' => 'confirm', 'token' => $token],
+            home_url('/'),
+        );
+    }
+
     /** The signed address that unsubscribes the person this token was made for. */
     public static function unsubscribe(string $token): string
     {

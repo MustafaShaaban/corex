@@ -11,6 +11,7 @@ namespace Corex\Forms\Submission\Stages;
 defined('ABSPATH') || exit;
 
 use Corex\Forms\Submission\FlowEmailAddressResolver;
+use Corex\Forms\Submission\FlowEmailVariables;
 use Corex\Forms\Submission\FlowEmailSender;
 use Corex\Forms\Submission\NotificationDelivery;
 use Corex\Forms\Submission\NotificationDispatcher;
@@ -20,6 +21,7 @@ use Corex\Forms\Submission\SubmissionStage;
 use Corex\Forms\Submission\SubmissionStageResult;
 use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
+use Corex\Mail\SubmissionAddress;
 
 /**
  * Delivers the submission notification and records a truthful outcome.
@@ -38,6 +40,8 @@ final readonly class EmailStage implements SubmissionStage
         private SubmissionRepository $submissions,
         private NotificationDispatcher $dispatcher,
         private FlowEmailAddressResolver $addresses,
+        /** Where a stored submission is read, for the link a template gives (spec 120). */
+        private ?SubmissionAddress $submissionAddresses = null,
     ) {
     }
 
@@ -81,10 +85,22 @@ final readonly class EmailStage implements SubmissionStage
         $retryable = false;
         $headline = null;
         foreach ($primary as $binding) {
-            $mailContext = $this->mailContext($context);
-            $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
             $event = (string) ($binding['event'] ?? 'submitted');
-            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext));
+            $mailContext = $this->mailContext($context, $event);
+            $recipients = $this->sender->recipientsFor($binding, $mailContext);
+            // A confirmation for a submitter who left no address has nobody to go to: that is not
+            // an email that failed (spec 120).
+            if ($event === 'submitter_confirmation' && $recipients === [] && (int) ($binding['template_id'] ?? 0) > 0) {
+                $outcomes[$event] = ['template_id' => (int) $binding['template_id'], 'state' => 'no_recipient', 'attempt_id' => null, 'provider' => null, 'retryable' => false, 'recipients' => []];
+                continue;
+            }
+            $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
+            // The team is told of a submission even when its template cannot send it: the PHP
+            // notification goes in its place (spec 120, story 4).
+            if ($result === null && $event === 'team_notification') {
+                $result = $this->teamFallback($context, $binding, $mailContext);
+            }
+            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $recipients);
             $headline = $this->promoteHeadline($headline, $this->deliveryFor($result));
             if ($result === null || ! $result->successful()) {
                 $failed ??= $result?->message ?? __('The enabled flow email binding could not be resolved.', 'corex');
@@ -204,9 +220,18 @@ final readonly class EmailStage implements SubmissionStage
         return (! $candidate->successful() && $current->successful()) ? $candidate : $current;
     }
 
-    /** @return array<string,mixed> */
-    private function mailContext(SubmissionPipelineContext $context): array
+    /**
+     * What a flow's email is drawn from: the answers, the flow, and (spec 120) the form's title,
+     * every answer with its label, a link to the stored submission, and what kind of email it is.
+     *
+     * @return array<string,mixed>
+     */
+    private function mailContext(SubmissionPipelineContext $context, string $event = 'team_notification'): array
     {
+        $address = $context->submissionId !== null && $this->submissionAddresses !== null
+            ? $this->submissionAddresses->of($context->submissionId)
+            : '';
+
         return [
             'submission' => $context->values,
             'flow' => [
@@ -214,9 +239,60 @@ final readonly class EmailStage implements SubmissionStage
                 'slug' => $context->flow->slug,
                 'owner_id' => $context->flow->ownerId,
             ],
+            'form' => [
+                'slug' => $context->flow->slug,
+                'title' => $context->flow->name,
+                'answers' => FlowEmailVariables::answers($context->version->configuration, $context->values, $address),
+            ],
+            'links' => ['submission' => $address],
+            'submission_url' => $address,
+            'answers' => FlowEmailVariables::answers($context->version->configuration, $context->values, $address),
+            'email' => ['kind' => FlowEmailVariables::kindOf($event)],
             'routing' => $context->metadata['routing'] ?? [],
             'is_test' => $context->isTest,
         ];
+    }
+
+    /**
+     * The PHP notification to the team, for a flow whose team email had nothing to send: its
+     * template has no active version, or none of its recipients is an address.
+     *
+     * @param array<string,mixed> $binding
+     * @param array<string,mixed> $mailContext
+     */
+    private function teamFallback(SubmissionPipelineContext $context, array $binding, array $mailContext): ?MailResult
+    {
+        $recipients = $this->addresses->recipients((string) ($binding['recipient'] ?? ''), $mailContext);
+        if ($recipients === []) {
+            $admin = (string) get_option('admin_email');
+            $recipients = $admin !== '' ? [$admin] : [];
+        }
+        $delivery = $this->dispatcher->dispatch(
+            'forms.' . $context->flow->slug . '.submitted',
+            $mailContext,
+            fn (): MailRequest => new MailRequest(
+                to: $recipients,
+                templateName: 'form-notification',
+                context: $mailContext,
+                subject: sprintf(
+                    /* translators: %s: form slug */
+                    __('New "%s" form submission', 'corex'),
+                    $context->flow->slug,
+                ),
+                body: NotificationDispatcher::plainTextBody($context->values),
+                replyTo: $this->addresses->replyTo((string) ($binding['reply_to'] ?? ''), $mailContext),
+            ),
+        );
+
+        return $delivery->attemptId === null ? null : new MailResult(
+            attemptId: $delivery->attemptId,
+            requestId: \Corex\Support\Uuid::v4(),
+            state: $delivery->status,
+            provider: (string) ($delivery->provider ?? 'mailer'),
+            message: $delivery->safeReason,
+            occurredAt: new \DateTimeImmutable('now'),
+            retryable: $delivery->retryable,
+        );
     }
 
     /**
