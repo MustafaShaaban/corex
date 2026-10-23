@@ -6,8 +6,25 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398) and quality checks on every release
-(spec 116, R1.1, DECISIONS #410 to #419).
+## [0.48.0] — 2026-10-23
+
+The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
+(spec 113, R0.2, DECISIONS #381 to #385), screens that tell the truth (spec 114, R0.3, #390 to
+#398), kit and public page safety (spec 115, R0.4, #400 to #407), and quality checks on every
+release (spec 116, R1.1, #410 to #419).
+
+**Read Client impact before updating.** Four things can change on a live site:
+
+- A site whose `.env` says `APP_ENV=local`, `development` or `staging`, or whose operations mode is
+  Development or Staging, now keeps its mail in Email Studio instead of sending it. Check both
+  before updating.
+- Kit pages that still reference the stats or testimonial patterns lose those two sections for
+  visitors until someone edits them, and pattern buttons with no Brand action link or contact
+  page are hidden. Perego runs the Company kit: check its pages.
+- The bookings, careers and newsletter routes now judge a reCAPTCHA v3 token by its action,
+  hostname and score: a site's own form must request its token under the route's action.
+- The Overview, Security Center and Insights now say what is true, so some rows that read "Done"
+  or "Hidden" may now read "Not set", "Off" or "Not configured".
 
 ### Added
 
@@ -34,11 +51,6 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   a generated client site.
 - **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
   submissions test runs left on a development site. It refuses a production site.
-
-Kit and public page safety (spec 115, the fourth release of the CoreX revamp's stage 0).
-
-**Read Client impact before updating.** On sites whose kit pages still reference the stats or
-testimonial patterns, those two sections disappear for visitors until someone edits them.
 
 ### Changed
 
