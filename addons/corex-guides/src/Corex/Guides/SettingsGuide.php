@@ -63,14 +63,18 @@ final class SettingsGuide
             __('Three behaviours that are not obvious from looking at the screen.', 'corex'),
             [
                 new GuideStep(
-                    __('Notice the tabs across the top: Brand, Mail, Forms, Captcha, Media, Insights, Dashboard, Guides, Advanced.', 'corex'),
-                    __('Each is a separate section. Saving applies to the whole screen, not only the tab you are looking at.', 'corex'),
-                    screenshot: new GuideScreenshot('settings', __('The CoreX Settings screen, showing its section tabs.', 'corex')),
+                    __('Choose a page under Settings in the CoreX menu: General and appearance, Email, Captcha, Media, Insights, Guides, Advanced.', 'corex'),
+                    __('Each page saves on its own. The bar at the bottom says "Unsaved changes" once you edit something; Discard puts the page back as it was, and leaving the page with unsaved changes asks first.', 'corex'),
+                    screenshot: new GuideScreenshot('settings', __('A CoreX Settings page, with the pages listed under Settings and the save bar at the bottom.', 'corex')),
                 ),
                 new GuideStep(
                     __('Leave a password field blank unless you are changing it.', 'corex'),
-                    __('Secrets are never shown back to you, so an empty-looking box usually means it is already set. Saving it blank keeps what is stored rather than clearing it.', 'corex'),
-                    warning: __('This means you cannot tell by looking whether a key is set. If you are unsure, paste it again — that is harmless.', 'corex'),
+                    __('Secrets are never shown back to you; the field says whether a value is saved. Saving it blank keeps what is stored. To take a saved key off the site, use Remove beside it and save.', 'corex'),
+                    warning: __('Remove asks first and says what stops working. The key is deleted when you save the page, and the removal is kept in the activity log without the key.', 'corex'),
+                ),
+                new GuideStep(
+                    __('A field you cannot edit says where its value is set.', 'corex'),
+                    __('"Set in the site\'s .env file" means the value comes from that file on the server, and wins over anything typed here; "Locked by the network administrator" means a multisite network decides it. Change it there.', 'corex'),
                 ),
                 new GuideStep(
                     __('Expect some fields to appear only when they are relevant.', 'corex'),
@@ -124,8 +128,8 @@ final class SettingsGuide
                     __('System follows whatever your computer is set to. This is your own preference and does not change what visitors see.', 'corex'),
                 ),
                 new GuideStep(
-                    __('Enable SSO login section — leave this off.', 'corex'),
-                    __('It reserves space on the login screen for single sign-on. No provider is configured yet, so turning it on adds an empty section and nothing else.', 'corex'),
+                    __('Login logo link — where the logo on the login screen takes people.', 'corex'),
+                    __('Leave it blank for this site\'s home page, or give a web address such as your company\'s main site. It is the logo\'s link, not the address people sign in at.', 'corex'),
                 ),
             ],
         );
@@ -210,7 +214,7 @@ final class SettingsGuide
         return GuideTopic::for(
             'media',
             __('Media — smaller images, automatically', 'corex'),
-            __('This section only appears when the Media add-on is active.', 'corex'),
+            __('These settings belong to the Corex Media add-on. While it is off they are shown read-only, with a link to it on the Add-ons screen.', 'corex'),
             [
                 new GuideStep(
                     __('Server support — read this line first.', 'corex'),
@@ -232,6 +236,10 @@ final class SettingsGuide
                     __('Convert JPEG uploads and Convert PNG uploads — which formats to convert.', 'corex'),
                     __('Both on by default. Turn off PNG if you upload images with transparency and see problems.', 'corex'),
                 ),
+                new GuideStep(
+                    __('Convert existing library — make WebP copies of images uploaded before conversion was on.', 'corex'),
+                    __('It runs in the background and shows how many images were converted, skipped and failed, even if you leave and come back. Originals are kept, and images that already have a WebP copy are skipped. You can cancel it.', 'corex'),
+                ),
             ],
         );
     }
@@ -245,7 +253,7 @@ final class SettingsGuide
             [
                 new GuideStep(
                     __('PageSpeed Insights API key — for the performance check.', 'corex'),
-                    __('Free from Google. Without it, performance checks are skipped rather than reported as failing.', 'corex'),
+                    __('Free from Google. Without it, performance checks share Google\'s keyless quota and are refused when it runs out. Test connection asks Google whether it accepts the key, and the page remembers the answer.', 'corex'),
                 ),
                 new GuideStep(
                     __('Cloudflare API token and Cloudflare account ID — for the security scan.', 'corex'),

@@ -3088,3 +3088,196 @@ body.corex-admin-screen .corex-admin__shell {
 	flex-shrink: 0;
 	min-block-size: var(--corex-admin-control-height);
 }
+
+/* A screen's own pages under its rail entry (spec 119: the Settings pages, as
+   the design nests them). On a narrow screen, where the rail is a row of
+   links, the pages are a row of their own under it. */
+.corex-admin .corex-admin__subnav {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	margin-block: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);
+	margin-inline: var(--corex-admin-space-md) 0;
+	padding: 0;
+	padding-inline-start: var(--corex-admin-space-xs);
+	border-inline-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	list-style: none;
+}
+
+.corex-admin .corex-admin__subnav li {
+	margin: 0;
+}
+
+.corex-admin .corex-admin__subnav-item {
+	display: block;
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+	text-decoration: none;
+}
+
+.corex-admin .corex-admin__subnav-item:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+}
+
+.corex-admin .corex-admin__subnav-item.is-active {
+	color: var(--corex-admin-action);
+	background: var(--corex-admin-action-subtle);
+	font-weight: 600;
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin .corex-admin__subnav {
+		flex-direction: row;
+		flex-wrap: wrap;
+		flex-basis: 100%;
+		margin-inline: 0;
+		padding-inline-start: 0;
+		padding-block-start: var(--corex-admin-space-xs);
+		border-inline-start: 0;
+		border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	}
+}
+
+/* Accessible on/off switch (design: Add-ons capture), shared by the Add-ons
+   cards and the Settings pages (spec 119). State shows by knob position AND an
+   On/Off word — never colour alone. On an Add-ons card it is a submit button
+   (server toggle, no JS), or a span when it cannot be used. */
+.corex-admin .corex-addon-card__toggle-form {
+	margin: 0;
+}
+
+.corex-admin .corex-toggle,
+.corex-admin .corex-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	min-block-size: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	color: var(--corex-admin-text-muted);
+	cursor: pointer;
+}
+
+.corex-admin .corex-toggle__track {
+	position: relative;
+	flex: none;
+	inline-size: 2.625rem;
+	block-size: 1.5rem;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+	transition: background var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-toggle__knob {
+	position: absolute;
+	inset-block-start: 50%;
+	inset-inline-start: 0.1875rem;
+	inline-size: 1.125rem;
+	block-size: 1.125rem;
+	background: var(--corex-admin-text-muted);
+	border-radius: var(--corex-admin-radius-pill);
+	transform: translateY(-50%);
+	transition: inset-inline-start var(--corex-admin-motion-fast) ease, background var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-toggle__state,
+.corex-admin .corex-switch__state {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__track {
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__knob {
+	inset-inline-start: calc(100% - 1.3125rem);
+	background: var(--corex-admin-action-ink);
+}
+
+.corex-admin .corex-toggle[aria-checked="true"] {
+	color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-toggle--disabled,
+.corex-admin .corex-switch:has(.corex-switch__input:disabled) {
+	cursor: not-allowed;
+	opacity: var(--corex-admin-disabled-opacity);
+}
+
+/* The Settings switch is a real checkbox drawn as the track, with the knob laid
+   over it: Space, the label, the focus ring and the posted value stay the
+   browser's. Held as a row in a form table, where wp-admin makes a label a
+   block on a phone. */
+.corex-admin .form-table td label.corex-switch {
+	display: inline-flex;
+}
+
+.corex-admin .corex-switch__control {
+	position: relative;
+	display: inline-flex;
+	flex: none;
+}
+
+.corex-admin .corex-switch input.corex-switch__input {
+	-webkit-appearance: none;
+	appearance: none;
+	inline-size: 2.625rem;
+	block-size: 1.5rem;
+	min-block-size: 0;
+	margin: 0;
+	padding: 0;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+	box-shadow: none;
+	cursor: inherit;
+	transition: background var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-switch input.corex-switch__input::before {
+	content: none;
+}
+
+.corex-admin .corex-switch input.corex-switch__input:checked {
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-switch__control .corex-toggle__knob {
+	pointer-events: none;
+}
+
+.corex-admin .corex-switch__input:checked + .corex-toggle__knob {
+	inset-inline-start: calc(100% - 1.3125rem);
+	background: var(--corex-admin-action-ink);
+}
+
+.corex-admin .corex-switch__on,
+.corex-admin .corex-switch:has(.corex-switch__input:checked) .corex-switch__off {
+	display: none;
+}
+
+.corex-admin .corex-switch:has(.corex-switch__input:checked) .corex-switch__on {
+	display: inline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin .corex-toggle__track,
+	.corex-admin .corex-toggle__knob,
+	.corex-admin .corex-switch input.corex-switch__input {
+		transition: none;
+	}
+}

@@ -528,6 +528,15 @@ final class ConfigServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(AdminDashboard::class);
+        // The Settings pages and what they read and write (spec 119): one of each per request, so
+        // a page, its save and the provider states all read the same answers.
+        $this->container->singleton(\Corex\Config\Settings\SettingsPages::class);
+        $this->container->singleton(\Corex\Config\Settings\SettingsSectionStates::class);
+        $this->container->singleton(\Corex\Config\Settings\SettingsFieldValues::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderSetup::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestLog::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestService::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestController::class);
         $this->container->singleton(AddonsScreen::class);
 
         // Forms & Flows client mount; runtime activation remains dependency-gated.
@@ -1244,6 +1253,8 @@ final class ConfigServiceProvider extends ServiceProvider
         // first among them. They are printed under the page header instead.
         $this->container->make(ScreenNotices::class)->register();
         $this->container->make(AdminDashboard::class)->register();
+        $this->container->make(\Corex\Config\Settings\ProviderTestController::class)->register();
+        $this->container->make(\Corex\Config\Settings\ProviderTestService::class)->listen();
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();
         $this->container->make(SubmissionsInboxScreen::class)->register();

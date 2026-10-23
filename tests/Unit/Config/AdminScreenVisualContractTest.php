@@ -31,8 +31,11 @@ it('applies the shared page shell to every current CoreX admin renderer', functi
 ]);
 
 it('exposes Overview and Settings as distinct CoreX menu destinations', function () {
+    // The Settings screen's slug is declared with its pages (spec 119).
     $source = (string) file_get_contents(
         ThemeContract::root() . '/plugins/corex-config/src/Settings/AdminDashboard.php',
+    ) . (string) file_get_contents(
+        ThemeContract::root() . '/plugins/corex-config/src/Settings/SettingsPages.php',
     );
 
     expect($source)->toContain("'COREX FRAMEWORK'")

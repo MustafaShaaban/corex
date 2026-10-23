@@ -31,6 +31,7 @@ describe( 'resultFromEnvelope', () => {
 		expect( view ).toEqual( {
 			ok: false,
 			message: 'Add your captcha secret key.',
+			status: '',
 		} );
 		expect( JSON.stringify( view ) ).not.toContain( 'SHOULD-NEVER-LEAK' );
 		expect( JSON.stringify( view ) ).not.toContain( 'ALSO-NOT' );
@@ -42,17 +43,36 @@ describe( 'resultFromEnvelope', () => {
 		).toEqual( {
 			ok: true,
 			message: 'Captcha verified.',
+			status: '',
 		} );
+	} );
+
+	it( 'carries the line Settings keeps for the latest test, and nothing else', () => {
+		// Spec 119, US-SET-03: the answer and the "Last tested" line, never a key.
+		const view = resultFromEnvelope( {
+			ok: false,
+			message: 'Wrong key.',
+			details: {
+				status: 'Last test failed on 23 October 2026: the provider refused the secret key',
+				secret: 'SHOULD-NEVER-LEAK',
+			},
+		} );
+		expect( view.status ).toBe(
+			'Last test failed on 23 October 2026: the provider refused the secret key'
+		);
+		expect( JSON.stringify( view ) ).not.toContain( 'SHOULD-NEVER-LEAK' );
 	} );
 
 	it( 'falls back to an empty message on a malformed/absent envelope', () => {
 		expect( resultFromEnvelope( null ) ).toEqual( {
 			ok: false,
 			message: '',
+			status: '',
 		} );
 		expect( resultFromEnvelope( {} ) ).toEqual( {
 			ok: false,
 			message: '',
+			status: '',
 		} );
 	} );
 } );

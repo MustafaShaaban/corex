@@ -14,9 +14,14 @@ defined('ABSPATH') || exit;
 
 /**
  * The WordPress-backed batch source for {@see MediaRegenerationJob}: it counts image attachments
- * and converts one offset-bounded batch through the pure {@see WebpRegenerator} plan + the
- * {@see WebpConverter}. It mirrors the proven {@see MediaCommand} backfill — it never overwrites an
- * existing WebP sibling or the original, and missing files are skipped safely.
+ * and converts one offset-bounded batch through the pure {@see WebpRegenerator} plan and the
+ * {@see WebpConverter}. It mirrors the {@see MediaCommand} backfill: it never overwrites an existing
+ * WebP sibling or the original, and it measures and tracks each WebP it writes, so delivery may
+ * serve it and `reset-webp` knows CoreX made it.
+ *
+ * Spec 119 (US-SET-06): an upload whose file is missing or cannot be read, or that the image
+ * library refuses to convert, is a failure with its file name and the reason, so the Settings
+ * page can list it. It used to be skipped without a word.
  */
 final class WpMediaRegenerationSource implements MediaRegenerationSource
 {
@@ -44,37 +49,80 @@ final class WpMediaRegenerationSource implements MediaRegenerationSource
     }
 
     /**
-     * @return array{succeeded:int,failed:int}
+     * @return array{succeeded:int,failed:int,failures:list<array{file:string,reason:string}>}
      */
     public function convertBatch(int $offset, int $limit): array
     {
-        $plan      = $this->regenerator->plan($this->items(max(0, $offset), max(1, $limit)));
-        $succeeded = 0;
-        $failed    = 0;
+        $failures = [];
+        $items    = [];
 
-        foreach ($plan['actions'] as $action) {
+        foreach ($this->ids(max(0, $offset), max(1, $limit)) as $id) {
+            $path = (string) get_attached_file($id);
+            $file = $path !== '' ? wp_basename($path) : sprintf('#%d', $id);
+
+            if ($path === '' || ! is_file($path)) {
+                $failures[] = ['file' => $file, 'reason' => __('the file is missing', 'corex')];
+
+                continue;
+            }
+
+            if (! is_readable($path)) {
+                $failures[] = ['file' => $file, 'reason' => __('the file cannot be read', 'corex')];
+
+                continue;
+            }
+
+            $webp    = (string) preg_replace('/\.(jpe?g|png)$/i', '.webp', $path);
+            $items[] = [
+                'id'          => $id,
+                'path'        => $path,
+                'mime'        => (string) get_post_mime_type($id),
+                'webp_exists' => $webp !== $path && is_file($webp),
+            ];
+        }
+
+        $succeeded = 0;
+        foreach ($this->regenerator->plan($items)['actions'] as $action) {
             if ($action['action'] !== 'convert') {
                 continue;
             }
 
-            try {
-                $ok = $this->converter->convert(
-                    ConversionPlan::for($action['path'], $action['mime'], $this->capability, $this->settings),
-                    $action['mime'],
-                );
-                $ok ? $succeeded++ : $failed++;
-            } catch (\Throwable) {
-                $failed++;
+            if ($this->convert($action)) {
+                $succeeded++;
+
+                continue;
             }
+
+            $failures[] = ['file' => wp_basename($action['path']), 'reason' => __('the image could not be converted to WebP', 'corex')];
         }
 
-        return ['succeeded' => $succeeded, 'failed' => $failed];
+        return ['succeeded' => $succeeded, 'failed' => count($failures), 'failures' => $failures];
     }
 
     /**
-     * @return list<array{id:int,path:string,mime:string,webp_exists:bool}>
+     * @param array{id:int,path:string,mime:string} $action
      */
-    private function items(int $offset, int $limit): array
+    private function convert(array $action): bool
+    {
+        $plan = ConversionPlan::for($action['path'], $action['mime'], $this->capability, $this->settings);
+
+        try {
+            if (! $this->converter->convert($plan, $action['mime'])) {
+                return false;
+            }
+        } catch (\Throwable) {
+            return false;
+        }
+
+        // Measured and tracked as an upload's WebP is, so delivery's gate applies to it (spec 062).
+        $meta = WebpMeta::measure($action['path'], $plan->outputPath, $this->settings->quality, $this->settings->minSaving);
+        update_post_meta($action['id'], WebpMeta::META_KEY, wp_slash($meta->toArray()));
+
+        return true;
+    }
+
+    /** @return list<int> */
+    private function ids(int $offset, int $limit): array
     {
         $ids = (new WP_Query([
             'post_type'      => 'attachment',
@@ -88,25 +136,6 @@ final class WpMediaRegenerationSource implements MediaRegenerationSource
             'no_found_rows'  => true,
         ]))->posts;
 
-        $items = [];
-
-        foreach ($ids as $id) {
-            $id   = (int) $id;
-            $path = (string) get_attached_file($id);
-            if ($path === '' || ! is_file($path)) {
-                continue;
-            }
-
-            $webp = (string) preg_replace('/\.(jpe?g|png)$/i', '.webp', $path);
-
-            $items[] = [
-                'id'          => $id,
-                'path'        => $path,
-                'mime'        => (string) get_post_mime_type($id),
-                'webp_exists' => $webp !== $path && is_file($webp),
-            ];
-        }
-
-        return $items;
+        return array_map('intval', $ids);
     }
 }

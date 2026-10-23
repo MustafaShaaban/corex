@@ -6,6 +6,62 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447).
+
+### Added
+
+- **Settings are pages, each saved on its own** (spec 119, #440). Settings is seven pages listed under
+  Settings in the CoreX rail: General and appearance, Email, Captcha, Media, Insights, Guides and
+  Advanced, each with its own address. A bar at the bottom says "No changes", "Unsaved changes" or
+  "All changes saved"; Discard puts the page back without a reload; leaving with unsaved changes
+  asks first. A save writes only that page, lands back on it, and a reload does not send it again.
+  A refused value stays in its field, named, and a save that does not go through says so and keeps
+  the edits. Without scripts each page still saves with its own button.
+- **A value set in the site's `.env` or by the network shows as locked** (#441): the value in
+  force, read-only, with "Set in the site's .env file" or "Locked by the network administrator". A
+  save never writes it, and Captcha and Insights count keys set in `.env` as set.
+- **Provider settings say what is missing and remember their last test** (#442). Captcha names the
+  missing key and what it means for forms; Insights says what happens without a PageSpeed key and
+  names the missing half of the Cloudflare pair. PageSpeed and Cloudflare gain **Test connection**,
+  and each provider, captcha included, shows "Last test failed on <date>: <reason>", "Last tested on
+  <date>: working" or "Not tested yet" until a key changes. No key is ever sent to the browser or
+  kept with a result.
+- **The Media library can be converted to WebP from the admin** (#443). Settings > Media has
+  **Convert existing library**: it runs in the background, shows converted, skipped and failed of the
+  total (also after the page is reopened), can be cancelled, runs once at a time, lists files that
+  failed with the reason, and is recorded in the activity log. Images it converts are tracked for
+  delivery as uploads are.
+- **A saved provider secret can be removed** (#446): Remove asks first, naming what stops working,
+  and the save deletes it; the removal is in the activity log without the value. A secret set in
+  `.env` has no Remove. The Add-ons captcha card says when a key is missing.
+- **Brand has "Login logo link"** (#447), where the login screen's logo takes people; blank keeps
+  the home page.
+
+### Fixed
+
+- **A Settings page whose add-on is off says so** (spec 119, #444): "Corex Media is off. These
+  settings apply when it is on." with **Open Add-ons** to its card, and the fields read-only. Guides
+  now follows Corex Guides. A page whose add-on is not installed is not listed, and its address says
+  it is not available.
+- **Every word on Settings can be translated** (#445): titles, labels, help, choices, notices and
+  the environment name on Advanced. A unit test fails on a Settings label added without translation.
+- **On/off settings are switches** (#445) that say On or Off, as on the Add-ons screen; they still
+  save "1" or "0".
+- **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
+
+### Client impact
+
+- **Muva** and **Perego**: owners find Settings as pages under Settings in the CoreX rail, with a
+  save bar, instead of nine tabs; links to `&corex_tab=` still open the right page. No stored value
+  is changed or written by the update. Both have Guides off, so their Guides page becomes read-only
+  with a link to Add-ons. Both have Corex Media on and gain "Convert existing library"; nothing runs
+  until an owner starts it. A saved secret gains Remove; nothing is removed until an owner presses
+  it and saves. A value their host's `.env` sets shows as locked (their `.env.example` files hold
+  only `APP_NAME` and `APP_ENV`, neither a Settings field). A client repository that carries copies
+  of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
+  `tests/Unit/Media/MediaRegenerationJobTest.php`.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
 ## [0.48.0] — 2026-10-23
 
 The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
