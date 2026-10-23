@@ -6,6 +6,118 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398) and abilities that
+mean something (spec 117, revamp release R3.1, DECISIONS #420 to #427).
+
+**Read Client impact before updating (spec 117).** Every CoreX screen starts checking its own ability, so
+access granted earlier, by approving a request or by an Allow in the role matrix, starts to work. Review
+CoreX → Access & Abilities first.
+
+### Changed
+
+- **Every CoreX screen opens for the people given its ability** (spec 117, #420). Each screen, its routes
+  and its save actions ask for the CoreX ability that names it: Forms & Flows "Manage forms and flows",
+  Email Studio "Manage Email Studio", Settings and the captcha test "Manage settings", Operations &
+  Security and the login protection settings "Manage operations and security", Access & Abilities
+  "Manage access", Blog Pro "Manage Blog Pro", Setup Wizard "Manage setup", and Overview, Add-ons and
+  Insights "Access CoreX admin". Switching to Production or Maintenance also needs "Run dangerous
+  actions", and the inbox's retention forms appear only to people who may use them. A refused route or
+  save answers 403 and is counted in the access audit. The CoreX menu of someone who holds a few
+  abilities lists only their screens.
+- **Site administrators hold every CoreX ability** (#421), and the role matrix can no longer deny one to a
+  role that administers the site. A Deny stored there before is kept, not applied, and listed on the
+  Access Overview.
+- **The role matrix is a grid** (#424): CoreX abilities by area down the side, roles across the top, each
+  cell in words: Allowed (set here), Denied (set here), Allowed through site administration, Not granted,
+  or Locked, with why on focus. "Edit" on a role opens its editor. The WordPress capability grid is gone
+  from the tab.
+- **The Access overview counts CoreX abilities** (#425): each role's count out of all of them, every
+  ability by area with its risk, each screen with the ability it needs, and how you hold yours (site
+  administration, your role, or a grant until a date).
+- **One access history** (#426) on the Audit log tab: role changes, refused role changes with the reason,
+  requests and their decisions, grants revoked or ended, and refused visits and actions, by day, 25 a
+  page, filtered by kind and by person.
+- **Ability and area names are translated** (#427); the access-denied page and a refused change name the
+  ability, not its key.
+- **Email Studio opens for "Manage Email Studio"** (#423). Choosing the delivery provider and turning live
+  delivery on or off stay with site administration; anyone else sees them read-only, with a sentence.
+
+- **The Overview shows only true states** (#390). Brand reads "Done" only with a company name and a
+  logo, otherwise "Not set" with a link to Brand settings. Insights / PageSpeed reads "Connected"
+  only with a saved key whose last run completed, "Key saved, not checked yet", "Keyless (shared
+  quota)", or "Error" with the reason after a failed run. Captcha reads "Not configured" for None
+  or Honeypot and when the captcha add-on is off. Spam protection says "Honeypot only" or
+  "Honeypot and <provider>". Login protection reads the Security Center, and hardening has a row
+  of its own. A fact that cannot be read says "Could not check".
+- **"Default login endpoints: Hidden" only when they are** (#391). The Security Center row reads
+  "Reachable" while login protection or hiding is off, and "Recovery active: the default login is
+  reachable" while `COREX_LOGIN_UNGUARD` is set, with how to end recovery. The login guard, the
+  Security Center and the Overview ask one rule.
+- **A PageSpeed run that could not run shows an error, never a grade** (#392): "Could not run",
+  the reason and Retry, with no score. Failed runs stored by earlier releases as 50/D are shown as
+  failures with their message; none is deleted.
+- **Insights security events are complete** (#393). Operations-mode changes, refused visits to
+  CoreX screens (one event per counted entry), sign-in lockouts and access-request decisions are
+  in the activity log, and the card shows the newest five of them whatever else happened, and from
+  when it has records. Events from before the update stay in their own logs.
+- **The Add-ons screen reports what really happened** (#395). A failed activation shows WordPress's
+  reason, leaves the add-on off, writes no feature flag and shows no kit prompt. An add-on active
+  for the network ("Managed by the network administrator") or installed as must-use ("Must-use:
+  always on") has a switch that cannot be used. Each enable and disable is in the activity log.
+- **The login screen shows no single sign-on option** (#396), whatever the stored setting says, and
+  Settings → Brand no longer offers "Enable SSO login section". The stored value is left in place.
+- **Blog Pro says plainly that it does not count readers yet** (#397). Without reading data it shows
+  one line instead of the reading-signals panel and the period line, and the Sharing card is gone.
+
+### Fixed
+
+- **Saving Settings changes only what was changed** (#398). A save wrote every field of every
+  section, and saved the switches of an add-on that was off as off: saving Brand with Corex Media
+  off switched WebP conversion off. Now a section whose add-on is off or not installed is not
+  written, and a field is written only when its value was changed.
+- **The captcha "Test verification" button appears** (#394). It looked for a field id the Settings
+  form does not use and was loaded on a screen name WordPress does not give the Settings screen.
+  It now sits under the secret key field once a provider and both keys are saved, and says the
+  provider's answer in words (works, wrong key, a key missing, cannot reach the provider) in a
+  region a screen reader announces; until then the field says what is needed.
+
+### Added
+
+- **"See CoreX screens without changing them"** (spec 117, #422), held by no role until an owner allows
+  it: Overview, Settings, Operations & Security and Insights open read-only, with a "Read only" chip, a
+  sentence naming the ability that makes changes, and every control marked unavailable and saying why.
+
+### Client impact
+
+- **No administrator loses access (spec 117).** Anyone who can administer the site holds every CoreX
+  ability.
+- **Grants made earlier start to work.** Every request approved in the past and every Allow in the role
+  matrix now opens its screen. Before updating, open **CoreX → Access & Abilities**: on the Role matrix
+  tab, read the grants list and Revoke what should not stand, and read the grid.
+- **Check for a Deny stored on the Administrator role.** It is kept, ignored, and listed on the Access
+  Overview under "Stored but not applied".
+- **Blog Pro opens for "Manage Blog Pro"** and site administrators. Editors and writers who used it since
+  v0.47.0 need "Manage Blog Pro" allowed for their role.
+- **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it.
+- A client repository carrying copies of CoreX's tests takes the updated
+  `tests/Unit/Access/AccessMatrixTest.php`, `tests/Integration/Access/AccessAuditLogWritesTest.php` and
+  `tests/Integration/Blog/BlogProPermissionMatrixTest.php`.
+  Client-guide screenshots of the Access screen go stale.
+
+- **Nothing to do for the screens.** Owners of both client sites read different, accurate rows on
+  Overview, Operations & Security, Insights and Blog Pro. Muva's captcha test button appears. Muva
+  has no PageSpeed key, so its Insights shows "Could not run" with the reason instead of a D.
+- **Check the image conversion switches if Corex Media was ever off on a site.** Values already
+  switched off by the old save are not repaired. Open CoreX → Settings → Media and read "Convert
+  uploads to WebP", "Convert JPEG uploads" and "Convert PNG uploads"; turn back on any the owner
+  wants and save. Muva and Perego both have Corex Media on, so their values were not hit.
+- **A login screen where an owner had ticked the single sign-on box loses a button that did
+  nothing.** A client repository that carries copies of CoreX's own tests takes the updated
+  `tests/Unit/Config/LoginSsoTest.php`, `AdminAppearanceTest.php` and `SettingsTabsTest.php`.
+- **Code that used `BrandingService::loginSsoEnabled()`, `ControlPanelStatus` or `DomainStatus`**
+  must stop: they are removed. No client site uses them.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
 ## [0.47.0] — 2026-10-21
 
 Access and logs (spec 112, the first release of the CoreX revamp), the generator tag (spec 111)

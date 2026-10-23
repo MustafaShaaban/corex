@@ -17610,3 +17610,395 @@ passing. Jest `replyState.test.js` and the whole Jest suite (1428). Playwright
 
 **Client impact.** Muva and Perego send no flow emails from code-defined forms, so the change is not
 visible to them. Perego's own `SubmissionEmailGateway` keeps working unchanged.
+
+## #390 — The Overview reads each fact it names, and says "Could not check" for one it cannot read
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 1
+(US-SAFE-10). **Mode:** CoreX Framework. Open choices were decided under the owner's 2026-10-21 mandate.
+
+**Why.** The Overview's rows came from `ControlPanelStatus`, which called branding, forms and PageSpeed configured
+by default and a captcha driver of None configured, and its Login protection row counted WordPress hardening
+warnings. A fresh install read "Brand configured: Done", "Provider connected" and "Captcha: Configured".
+
+**Decided.**
+
+1. **`OverviewFacts`** reads each fact where it lives: the brand from the saved Company name and Admin logo, the
+   PageSpeed key through Config (so a key in the environment counts) and the latest performance run from the
+   Insights store, the captcha add-on's activation and its driver and keys, and the login address from
+   `LoginAddressState` (#391). A fact from another part of CoreX that throws comes back as `null`, and its row
+   reads **"Could not check"**, never a success.
+2. **Rows.** Brand is done only with a name **and** a logo, otherwise "Not set" linked to the Brand tab. PageSpeed
+   reads "Error: <reason>" after a failed run, "Connected" with a saved key whose last run completed, "Key saved,
+   not checked yet", or "Keyless (shared quota)". Captcha reads "Not configured" for None and Honeypot, "Not
+   configured (add-on inactive)", "Keys missing", or "<provider> configured". Spam protection is always done,
+   since every CoreX form carries a honeypot, and says "Honeypot only" or "Honeypot and <provider>". Login
+   protection reads the Security Center; hardening has its own row, "Hardening checks".
+3. **`ControlPanelStatus` and `DomainStatus` are removed.** The Overview was their only reader; their rule
+   ("optional means configured") was the defect. "Site name" means the Company name in Brand settings: WordPress
+   always has a site title, so it cannot tell whether the brand was set.
+
+**Verified.** Pest unit `OverviewModelTest` (29: every row's states, "Could not check" for each unreadable fact);
+integration `OverviewTruthTest` (login state from stored settings, an old failed PageSpeed row read as failed,
+the rendered Brand link); Playwright `truthful-screens.spec.js` (the Overview's login row agrees with the
+Security Center; no "Provider connected").
+
+**Client impact.** Owners of both client sites read different, accurate rows. No behaviour change.
+
+## #391 — One rule decides whether the default login is hidden, and the guard, the Security Center and the Overview all ask it
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 2
+(US-SAFE-11). **Mode:** CoreX Framework.
+
+**Why.** The Security Center's "Default login endpoints" row printed the hiding setting alone, which is on by
+default, while the login guard hides only with protection on, hiding on and recovery off. A fresh install read
+"Hidden" while `/wp-login.php` served its form.
+
+**Decided.**
+
+1. **`LoginAddressState::of(settings, recoveryActive)`** answers `off`, `reachable`, `hidden` or `recovery`.
+   `LoginRouteGuard::hidesDefaults()` is that answer being `hidden`, so the screen cannot say what the guard does
+   not do.
+2. **The row** reads "Hidden" only for `hidden`; "Reachable" with protection or hiding off; and, with
+   `COREX_LOGIN_UNGUARD` set while the settings would hide, "Recovery active: the default login is reachable",
+   with a line under it saying recovery ends when that line is removed from `wp-config.php`. This replaces #374's
+   "Reachable (recovery is on)".
+
+**Verified.** Pest unit `LoginAddressStateTest` (every combination); integration `RecoveryOnTest` (5, one new:
+protection off reads "Reachable"); Playwright: whatever the site's settings, the row says "Hidden" exactly when
+an anonymous request to `/wp-login.php` gets no login form.
+
+**Client impact.** Both owners read the true state. No behaviour change.
+
+## #392 — A PageSpeed run that could not complete is a failure with its reason and no score, and old 50/D failures are read as failures
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 3
+(US-SAFE-12). **Mode:** CoreX Framework.
+
+**Why.** A run that never reached the service (a local address, a quota, a refused key, a transport error, an
+answer with no result) was stored with a score of 50 and drawn as a D.
+
+**Decided.**
+
+1. **`InsightResult::failed()`**: no score, no grade, status `failed`, the failure's kind, the reason as the
+   summary and no recommendations, so the recommendations list skips it. `PerformanceProvider` returns one for
+   every non-OK classification (a local address is still caught before any request; its reason now reads
+   "PageSpeed cannot reach a local site: …"), plus a new `transport` kind; `PsiNormalizer` returns one for an
+   answer without a performance result.
+2. **Old rows are recognised when read, never rewritten.** `InsightFailure` reads a stored row with score 50, no
+   measures and a summary that is one of the old failure sentences (in English, or in the site's language,
+   translated only when first needed; the HTTP sentence with any number) as `failed` with that message.
+   `InsightStore::latest()` and `history()` read through it; the option keeps every row.
+3. **The card** says "Could not run" where the grade was, the reason, and **Retry**. The Insights widget's chip
+   reads "Could not run". No trend or average exists yet; failed rows carry no score, so one built later skips
+   them by construction. Decided under the owner's mandate: recognise old rows by their shape and message.
+
+**Verified.** Pest unit `FailedRunTest` (12: the shape, a local address making no request, each old sentence,
+the translated one, a real 50 kept, history read and the stored row untouched), `PsiNormalizerTest`; Jest
+`insights-failed-run.test.js`; Playwright: Run performance on the suite's local site.
+
+**Client impact.** Muva has no PageSpeed key and often meets the shared quota: its Insights shows "Could not run"
+with the reason instead of a D. Its stored runs are not deleted.
+
+## #393 — Mode changes, counted refusals and sign-in lockouts reach the activity log, and the Security events card asks for those areas only
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 4
+(US-SAFE-13). **Mode:** CoreX Framework.
+
+**Why.** The card read the twenty newest activity events of every area and kept the security ones, and mode
+changes, refusals and lockouts were never written to the activity log at all: it said "No security events
+recorded" on a site that had them.
+
+**Decided.**
+
+1. **`SecurityActivityRecorder`** writes `operations.mode.changed` (on `corex_operations_mode_changed`, fired by
+   `OperationsModeStore::set()` after a real change, from any route), `access.denied` (on
+   `corex_access_refusal_counted`, fired by `AccessAuditLog::record()` only when it opens a new counted entry, so
+   spec 112's one-entry-per-person-screen-and-hour holds here too) and `security.login.locked` (on the
+   `LoginLockoutEvent` login protection already dispatches; it keeps when the lock ends, not the typed username
+   nor the visitor's address). Access-request decisions were already written. A write that fails is let go: a
+   mode change or a refusal never fails because its record could not be kept.
+2. **`ActivityRepository::query()`** takes a list for `area` (`area IN (…)`, one placeholder each); the card asks
+   for the five newest in security, access and operations, and says each as one translatable sentence with
+   the person as a placeholder, so a translation can order it as its language needs. A refused screen is named
+   by `ScreenNames` (the map the access audit tab already used, moved out of `AccessScreen` and shared), never
+   by its page slug.
+3. **`SecurityEventsSince`** stamps `corex_security_events_since` once (`add_option`) at the first write or the
+   first read of the card; the card says "Recorded since <date>", and its empty message names only what is
+   recorded. Earlier events stay in their own logs and are not copied.
+
+**Verified.** Pest integration `SecurityEventsTest` (the four kinds on the card after thirty unrelated events,
+the refused screen by its name; a translation that puts the person last is drawn that way;
+the lockout keeps neither the username nor the address; five repeats in an hour make one event; the start is
+written once); the Insights unit tests; `BootTranslationsTest` (nothing translated before `init`).
+
+**Client impact.** Both owners start seeing security events, from the day they take the release.
+
+## #394 — The captcha test button loads on the Settings screen, finds the secret field by its real id, and is offered only with keys to test
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 5
+(US-SAFE-16). **Mode:** CoreX Framework.
+
+**Why.** The button never appeared, for two reasons. The script looked for `captcha.secret`, while the form gives
+the field `captcha_secret` (its Jest test drew the wrong id itself), and the script was enqueued only on a
+`corex_page_corex-settings-config` hook, while WordPress names the hook from the menu title,
+`corex-framework_page_corex-settings-config`.
+
+**Decided.**
+
+1. **The enqueue matches the hook's end**, `_page_corex-settings-config`. **The id is one constant**,
+   `SECRET_FIELD_ID = 'captcha_secret'`, and a PHP test holds the form's id and the script's to each other.
+2. **`ready`** (a provider that needs keys, with both keys present through Config) decides whether the button is
+   offered; without it the field says "Save a site key and a secret key for this provider, then test them here."
+3. **The answers start with the outcome**: "Works: …" (adding that the site key is checked when the widget loads
+   for a visitor, since only the secret can be probed from the server), "Wrong key: …", "A key is missing: …",
+   "Cannot reach the provider: …", in the existing polite live region. Decided under the owner's mandate: the
+   four answers the server can give, rather than a separate "widget missing" answer it cannot know.
+4. **A test fixture**, `tests/e2e/fixtures/corex-e2e-captcha-keys.php`, answers the captcha settings for one
+   signed-in request carrying `X-Corex-E2E-Captcha`, so the browser test never saves keys on the suite's site.
+
+**Verified.** Jest `captcha-admin.test.js` (8, with the real id); Pest `SettingsTabsTest` (the id); Playwright:
+the button under the secret field, reached and pressed from the keyboard, its answer in the live region; with a
+provider and no keys, the hint and no button.
+
+**Client impact.** Muva (reCAPTCHA v3 with saved keys) gains a working button.
+
+## #395 — The Add-ons screen says what WordPress did, locks network and must-use add-ons, and logs every toggle
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 6
+(US-SAFE-08, spec 068 FR-022). **Mode:** CoreX Framework.
+
+**Why.** The screen reported "Enabled" whatever activation answered, wrote the feature flag and queued the kit
+prompt anyway, and offered a usable switch for add-ons whose activation this site does not control.
+
+**Decided.**
+
+1. **`AddonActivator`** returns an `AddonToggleResult`. Enabling takes `activate_plugins()`'s answer and its
+   inner reason ("Plugin file does not exist.", "The plugin generated unexpected output."); a plugin WordPress
+   refused for printing output, which it has already added to the active list, is switched off again. The flag
+   is written only on success. Disabling is for this site only (`$network_wide = false`) and fails if the plugin
+   is still active; the flag is deleted only on success.
+2. **`AddonToggleService`** refuses to disable an add-on whose scope is Network ("Managed by the network
+   administrator") or MustUse ("Must-use: always on"), and records `addon.enabled` / `addon.disabled` in the
+   addons area with the person and the result (a failed record is let go).
+3. **The screen** draws those switches locked with the reason, shows WordPress's reason on failure, and queues
+   the kit prompt only after a successful enable.
+
+**Verified.** Pest integration `AddonActivatorTest` (5, with two throwaway plugins: a real toggle and its flag
+and log; a missing file; printed output; network and must-use refused); unit `AddonToggleTest` (locked
+switches); multisite `NetworkAddonToggleTest` (a sub-site's request leaves corex-ui network-active; runs in CI).
+
+**Client impact.** Both clients are single sites with no CoreX add-on as must-use: they see a correct message if
+an activation fails.
+
+## #396 — The login screen draws no single sign-on control, and Settings no longer offers the switch
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 7
+(US-SET-10; decision SET-D4, "hide until a provider is chosen"). **Mode:** CoreX Framework.
+
+**Why.** CoreX has no single sign-on provider; with a Brand box ticked, the login screen drew a disabled "SSO is
+not configured yet." button and an "or" divider.
+
+**Decided.** `AdminBranding::loginMessage()` keeps the subtitle only. The SSO glyph,
+`BrandingService::loginSsoEnabled()`, the Brand field and the slot's login styles are removed. The stored
+`corex_brand_login_sso_enabled` option is neither read nor deleted, and with its field gone no save touches it,
+so a later provider story can decide what to do with it.
+
+**Verified.** Pest unit `LoginSsoTest` (no control besides the form for a stored "1", "" or "0"),
+`SettingsTabsTest`, `AdminAppearanceTest`; Playwright: the signed-out login page has no SSO control and no
+button outside a form.
+
+**Client impact.** Both login screens. The setting is off by default; where an owner ticked it, a dead button
+disappears. Both client repositories carry `tests/Unit/Config/LoginSsoTest.php`, which arrives changed.
+
+## #397 — Blog Pro says it does not collect reading data yet, and the Sharing card is gone
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 8
+(US-BLG-05; decision BLG-D9, "hide the analytics cards now; build events later"). **Mode:** CoreX Framework.
+
+**Why.** No CoreX code records a reading view, yet Blog Pro drew a "Reading signals" panel, a "Figures cover the
+last 30 days" line and "CoreX has not recorded a visit to this post", which implied a recorder that saw nobody;
+its Sharing card listed networks from a setting no screen changes and the share block does not read.
+
+**Decided.** Without reading data the panel and the period line are not drawn; one line says "CoreX does not
+collect reading data yet. Figures appear here once it does." With data, the panel is as spec 075 drew it. The
+Sharing card is removed (decided under the owner's mandate: remove rather than relist), and the screen no longer
+requests `blog/share-controls`; the route stays. The screen's subtitle no longer names analytics or sharing.
+
+**Verified.** Jest `blogProApp.test.js` (the line, no panel, no period, no Sharing card, the other panels kept,
+the figures with data), `blogPro.test.js`, `restAddress.test.js`; Playwright `blog-pro.spec.js`.
+
+**Client impact.** Blog Pro is in both admins, for administrators: untrue text disappears; nothing public changes.
+
+## #398 — Saving Settings writes only the fields whose value changed, and never a section whose add-on is off
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 9
+(US-SET-14, change request CR-024). **Mode:** CoreX Framework.
+
+**Why.** One save walked every field of every section and read a checkbox missing from the post as off. A section
+whose add-on is inactive draws its fields disabled (a browser sends none), and a not-installed one draws none, so
+saving Brand with Corex Media off switched WebP conversion off.
+
+**Decided.**
+
+1. **A section whose state is Hidden or Disabled is skipped**, asked again on the server, never read from the post.
+2. **A field is written only when the posted value differs from the value the form drew** (`settingDisplay()`): a
+   checkbox compares on and off, a text the string as typed. So a Media switch drawn as on while nothing is
+   stored stays unstored and its default keeps applying; a switch turned off is saved as off; the saved toast and
+   the refused-field alert are unchanged.
+3. **Not chosen:** saving only the tab whose button was pressed. The form is one form with one button, so an edit
+   on another tab would be lost silently; per-section save bars are US-SET-01 (stage 3).
+4. **Not repaired:** values already switched off by the old behaviour are left as they are; the release notes say
+   how an owner checks the image conversion switches.
+
+**Verified.** Pest integration `SettingsSaveChangedOnlyTest` (5, the screen built with chosen add-on activation:
+Media off keeps the conversion switches and draws them on again; Captcha off keeps its settings; a save as drawn
+writes nothing; a switch turned off is saved; a refused value changes nothing else); three of them fail on the old
+save. `SettingsSaveRefusalTest` unchanged and passing.
+
+**Client impact.** Muva and Perego both have Corex Media on, so their values were not hit; nothing they see changes.
+
+## #420 — Every CoreX screen, route and save action asks for the CoreX ability that names it, read from one map
+
+**Date:** 2026-10-23. **Branch:** `spec/117-abilities`. **Spec:** 117, User Story 1 (US-ACC-01). **Mode:** CoreX
+Framework. Decided under the owner's 2026-10-21 mandate (ACC-D7: move them).
+
+**Why.** An Allow in the role matrix or an approved request should open the screen it names. Ten CoreX screens asked
+for site administration instead, so the matrix promised what it did not do.
+
+**Decided.**
+
+1. **`Corex\Access\ScreenAbilities`** (corex-core) maps each CoreX page slug to its section, its ability and whether
+   it opens read-only (#422). The menus, the render checks, `AdminPage::requestAbilityFor()` and the Access screen's
+   requirements card read it. Overview, Add-ons and Insights: `corex_manage_admin`; Settings and the captcha test:
+   `corex_manage_settings`; Forms & Flows (screen, the flow gateway and its middleware): `corex_manage_forms`; Email
+   Studio: `corex_manage_email` (#423); Operations & Security, its login protection route, the mode and preview link
+   handlers and the Coming soon toolbar link: `corex_manage_operations`; Access & Abilities and every access route:
+   `corex_manage_access`; Blog Pro: `corex_manage_blog` (`BlogProPermissions::BASE`, as #379 said stage 3 would);
+   Setup Wizard, its routes and its apply: `corex_manage_setup`; the activity routes and the kit notice:
+   `corex_manage_admin`. The two Data handlers nothing posts to ask for the Data abilities. Guides for Overview,
+   Add-ons, Performance and Insights require `corex_manage_admin`; Blog Pro's guide `corex_manage_blog`.
+2. **Production and Maintenance also need `corex_run_dangerous_actions`**, checked in `OperationsModeController`
+   before the service runs; the command line has no person and keeps its rules.
+3. **The inbox's retention forms** appear only to people their handler accepts: saving needs
+   `corex_manage_settings`, applying `corex_run_dangerous_actions`.
+4. **Refusals are recorded.** `Corex\Access\AbilityCheck::allows()` (routes) and `AdminGuard::verifiedPost()` given
+   a section (forms) publish `corex_access_refused` with kind `action` and the screen; `AccessAuditLog` counts it
+   under the screen's slug by #377's rule. An action keeps the add-ons and corex-forms free of the Access classes.
+5. **The rail** reads the CoreX submenu under its real parent (`$_wp_real_parent_file`), so a person without
+   "Access CoreX admin", whose CoreX menu WordPress points at their first screen, sees only their screens.
+6. **The denied page** names the ability by its translated name and no longer says the screen needs site
+   administration.
+
+**Not chosen.** *Removing the `ability || manage_options` checks of Data, Submissions and the widgets*: with #421 the
+ability alone answers the same, and the change would touch screens this release does not otherwise change.
+
+**Verified (for #420 to #427).** Pest unit: `ScreenAbilitiesTest`, `AbilityNamesTest`, `AccessMatrixTest`
+(rewritten), `AccessPolicyTest` and `AccessServiceTest` additions; the whole unit suite, 3357 passing. Pest
+integration on a WordPress of the branch's own: `ScreenAbilitiesAccessTest` (an editor allowed one ability reaches
+its routes and is refused the others with 403, the refusal counted under the screen, a granted person opens Email
+Studio, an administrator with a stored Deny keeps all sixteen, the view ability reads and is refused a change, Blog
+Pro needs its ability, a Settings save by a non-administrator leaves the delivery fields), `AccessHistoryTest`, the
+updated `BlogProPermissionMatrixTest` and `AccessAuditLogWritesTest`; the whole suite, all passing but
+`LoginSlugAvailabilityTest`'s rewrite-route case, which fails on a fresh install without these changes too. Jest
+`accessMatrixGrid.test.js`, `emailStudioDelivery.test.js`, the updated `accessChanges.test.js`, and the whole suite
+(1440). Playwright `abilities.spec.js` (5: the one-ability menu and 403, read-only Settings, the Maintenance refusal,
+the grid at 400px with Edit, the history filter) and the touched specs.
+
+**Client impact.** Administrators see no change. Past grants and matrix Allows start opening their screens. Editors
+and writers who used Blog Pro since v0.47.0 need "Manage Blog Pro" allowed for their role.
+
+## #421 — Site administrators hold every CoreX ability, and the matrix cannot deny a role that administers the site
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 1. Decided under the owner's 2026-10-21 mandate (ACC-D11).
+
+**Why.** Once screens ask for abilities, a Deny on the Administrator role would hide screens from every
+administrator. Owners must keep everything they have.
+
+**Decided.**
+
+1. `AbilityCompatibility` gives anyone holding `manage_options` every ability and returns before applying any role
+   effect. A super administrator passes every check before the filter, as WordPress decides.
+2. `AccessPolicy::preview()` takes `administersSite`; a Deny on such a role is refused with blocker
+   `site_administrator_role`. `AccessService` asks the new `Corex\Access\SiteAdministration` (implemented by
+   `WpSiteAdministration`: the role has `manage_options`), an optional last constructor argument.
+3. A Deny stored before is kept in the table, not applied, and listed once on the Access screen's Overview
+   (`AccessMatrix::ignoredDenies()`); the grid shows such a cell as "Allowed through site administration".
+
+**Not chosen.** *Deleting stored Denies on upgrade*: nobody chose that.
+
+## #422 — "See CoreX screens without changing them" opens four screens read-only
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 6 (US-SHL-06). Decided under the owner's 2026-10-21 mandate (SHL-D3).
+
+**Decided.**
+
+1. **`corex_view_screens`**, group CoreX admin, sensitive, implied by `corex_manage_admin`, requestable, held by no
+   role. `ScreenAccess::mode()` answers manage, view or none; `menuCapability()` registers the menu entry with the
+   ability this person holds, because WordPress takes one capability per entry and checks it again on opening.
+2. **Overview, Settings, Operations & Security and Insights** render for it with `AdminPage::open(..., readOnly:
+   true)`: a "Read only" chip in the title, a sentence (`#corex-readonly-note`) naming the ability that makes changes,
+   and the request form in a disclosure, or the matrix sentence where the ability cannot be requested.
+3. **`corex-read-only.js`** (corex-core, enqueued on CoreX screens, inert elsewhere) marks every input, select,
+   textarea and button of the content `aria-disabled`, `readonly` where it applies and described by the sentence,
+   and stops presses, value-changing keys and submits; it watches the content, so the React islands are covered.
+   Links and tabs keep working. Controls stay focusable, so their reason is announced.
+4. **Read routes accept it, writes do not**: `AbilityCheck::allowsReading()` for `GET insights*` and
+   `GET security/login-protection`; runs, saves and the Settings form refuse and are recorded. A read-only Settings
+   page carries no nonce, and a save posted anyway is refused with the standard refusal (`wp_die`, 403).
+
+**Not chosen.** *`disabled` on every control*: not focusable, so nothing could say why.
+
+## #423 — Email Studio opens for "Manage Email Studio"; how the whole site delivers mail stays with site administration
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 7 (US-EML-20, CR-014). Reverses #116 (5) under the owner's
+2026-10-21 mandate.
+
+**Decided.** The screen and its twelve routes ask for `corex_manage_email`. The delivery provider and live delivery
+(Settings → Mail) carry `site_admin: true`: `SettingsForm` draws them disabled with a sentence for anyone without
+`manage_options`, and `AdminDashboard::maybeSave()` leaves them as they were for such a person. Email Studio's
+"Configure delivery" is replaced for them by a sentence (`canConfigureDelivery`). The failure notification's link
+already carries `corex_manage_email` and is withheld from anyone without it. CoreX stores no mail provider secret.
+
+## #424 — The role matrix is a grid of resolved states, with today's editor behind "Edit"
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 2 (US-ACC-02).
+
+**Decided.** `AccessMatrix::editableCorexMatrix()` sends each role's `administers`, and per cell its `state`
+(`allowed_set`, `denied_set`, `allowed_admin`, `not_granted`, `locked`), `reason` (`site_administrator`,
+`locked_definition`) and `ignoredDeny`, with translated row, area and risk names. `AccessMatrixGrid.js` draws the grid
+by area with the ability column sticky inside a frame that scrolls on its own; each cell is a mark (hidden from
+screen readers) and its words; a cell that cannot be set is focusable and described by a tooltip. "Edit" opens the
+editor for that role; an applied change updates the grid. The WordPress capability grid and the tab's own audit list
+are gone.
+
+## #425 — The overview counts CoreX abilities as the matrix resolves them
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 3 (US-ACC-03).
+
+**Decided.** Role cards count the abilities in an allowed state out of all sixteen, with `number_format_i18n` and
+plural forms; roles WordPress does not ship read "Added by a plugin or the site". The groups card lists every ability
+by area with its risk in words and Locked. "Your permissions" lists what you hold and how: site administration, your
+role (the first whose matrix Allow gives it), granted to you until a date (a standing grant), or your account. The
+requirements card is built from `ScreenAbilities`. The capability groups of #114 point 4 are gone.
+
+## #426 — One access history on the Audit log tab
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 4 (US-ACC-04).
+
+**Decided.** `AccessHistory` reads the activity stream's access area (the newest thousand events) and the counted
+refusals, turns each into who, whom or what, when, a kind label and a sentence, sorts newest first, filters by kind
+and person, and pages by 25. The tab is drawn on the server with a GET filter form and day headings. Two new activity
+kinds: `access.role.refused` (with the blockers) and `access.request.expired` (when somebody tries to decide a request
+that ran out). The empty state names what is recorded and how long (180 and 30 days).
+
+**Not chosen.** *A new history table*: both sources already exist and are pruned on their own terms.
+
+## #427 — Ability, area and risk names are given in the site's language by one lookup
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 5 (US-ACC-05).
+
+**Decided.** `Corex\Access\AbilityNames` translates each shipped ability's name and description, each area and each
+risk at the moment it is shown, with literal strings; an ability registered by someone else keeps its own text. The
+matrix, overview, grants, requests, approval dialog, denied page and refusal messages use it; a key appears only as a
+`title`. A refused role change says why in words (`AccessService::refusalReason()`). The approval phrase stays the key
+(#376).

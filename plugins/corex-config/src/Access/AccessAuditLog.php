@@ -99,12 +99,18 @@ final class AccessAuditLog implements AccessRefusalRecorder
         if ($open !== null) {
             $entries[$open]['count']++;
             $entries[$open]['last'] = $at;
-        } else {
-            $entries   = $this->settled($entries);
-            $entries[] = ['user' => $userId, 'kind' => $kind, 'section' => $section, 'first' => $at, 'last' => $at, 'count' => 1];
+            $this->store($entries, $at);
+
+            return;
         }
 
+        $entries   = $this->settled($entries);
+        $entries[] = ['user' => $userId, 'kind' => $kind, 'section' => $section, 'first' => $at, 'last' => $at, 'count' => 1];
         $this->store($entries, $at);
+
+        // A new counted entry, not a repeat inside its hour: one activity event for it, so the
+        // Insights security card sees refusals without a write for each (spec 114, US-SAFE-13).
+        do_action('corex_access_refusal_counted', $userId, $kind, $section, $at);
     }
 
     /**

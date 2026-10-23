@@ -77,17 +77,6 @@ final class BrandingService implements SiteScoped
         return in_array($mode, ['system', 'light', 'dark'], true) ? $mode : 'system';
     }
 
-    /**
-     * Whether the login screen reserves its single-sign-on slot. No SSO provider is
-     * implemented — the slot only renders an honest "not configured" control when on.
-     */
-    public function loginSsoEnabled(): bool
-    {
-        $value = (string) $this->config->get('brand.login_sso_enabled', '');
-
-        return $value !== '' && $value !== '0';
-    }
-
     private function defaultLogoUrl(): string
     {
         if ($this->defaultLogoUrl === null) {

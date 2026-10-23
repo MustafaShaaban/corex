@@ -23,7 +23,7 @@ defined('ABSPATH') || exit;
  * REST for the nine-step setup wizard (spec 068 US8, T195). It exposes the wizard configuration
  * (kits, brand fields, demo levels, conflict choices), the live nine-step progress, a plan preview
  * with real conflicts, and a guarded apply that honours operator conflict choices. Reads require
- * `manage_options`; the apply additionally requires a valid REST nonce (Principle VII) and an
+ * "Manage setup" (spec 117); the apply additionally requires a valid REST nonce (Principle VII) and an
  * explicit confirmation, and never overwrites existing content without an explicit Replace choice
  * (FR-140/143). The pure seams (`config`, `progressState`, `planPreview`) are unit-tested.
  */

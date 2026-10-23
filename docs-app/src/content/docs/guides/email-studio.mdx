@@ -61,8 +61,9 @@ failed, or rejected. **Delivery logs** show the redacted recipient, subject/temp
 provider, time, and retry relationship. Retryable attempts create a new linked attempt; the prior record is never
 mutated.
 
-All Email Studio REST reads require `manage_options`. Writes require both that capability and a valid WordPress REST
-nonce. Private templates, captures, routes, and attempts are stored as non-public WordPress records and are not
+All Email Studio REST reads require the CoreX ability "Manage Email Studio" (`corex_manage_email`), which every site
+administrator holds. Writes require both that ability and a valid WordPress REST nonce. Choosing the delivery
+provider and turning live delivery on or off (Settings → Mail) stay with site administration. Private templates, captures, routes, and attempts are stored as non-public WordPress records and are not
 exposed on the front end.
 
 ## Sending and transport

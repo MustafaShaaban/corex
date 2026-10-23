@@ -57,9 +57,15 @@ it('surfaces the highest-impact opportunities as recommendations, worst first', 
         ->and($result->recommendations[0])->toContain('unused JavaScript'); // 800ms savings > 400ms
 });
 
-it('degrades to a graceful recommended result on a malformed payload', function () {
+// Spec 114, US-SAFE-12: an answer with no performance result is not a measurement, so it has no
+// score. It was a 50, graded D.
+it('answers a malformed payload with a failed result, with its reason and no score', function () {
     $result = (new PsiNormalizer())->normalize(['unexpected' => true]);
 
-    expect($result->status->value)->toBe('recommended')
-        ->and($result->recommendations)->not->toBe([]);
+    expect($result->isFailed())->toBeTrue()
+        ->and($result->failure)->toBe('invalid_response')
+        ->and($result->score)->toBeNull()
+        ->and($result->grade)->toBeNull()
+        ->and($result->toArray()['status'])->toBe('failed')
+        ->and($result->summary)->toBe('PageSpeed answered without a performance result. Run the check again.');
 });

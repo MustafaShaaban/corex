@@ -18,8 +18,8 @@ use WP_REST_Response;
 
 /**
  * REST for the Corex → Insights screen: `GET corex/v1/insights` returns the cached results
- * (`manage_options`); `POST corex/v1/insights/run` runs one provider and stores it
- * (`manage_options` **and** a valid REST nonce — Principle VII). Results never contain a secret
+ * ("Access CoreX admin", or the view ability; spec 117); `POST corex/v1/insights/run` runs one
+ * provider and stores it ("Access CoreX admin" **and** a valid REST nonce — Principle VII). Results never contain a secret
  * (the `InsightResult` value carries only scores/metrics/recommendations). The pure seams
  * (`canManage`, `verifiedNonce`, `result`) are unit-tested; the WP_REST_* callbacks are thin.
  */

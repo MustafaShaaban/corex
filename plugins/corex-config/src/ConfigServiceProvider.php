@@ -421,7 +421,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 new \Corex\Config\Overview\OverviewModel(),
                 $c->make(\Corex\Config\Operations\OperationsMode::class),
                 $c->make(\Corex\Config\Operations\OperationsModeStore::class),
-                $c->make(\Corex\Config\ControlPanel\ControlPanelStatus::class),
+                $c->make(\Corex\Config\Overview\OverviewFacts::class),
                 $c->make(\Corex\Config\Security\HardeningChecks::class),
                 $c->make(\Corex\Config\Data\SubmissionsReader::class),
                 $c->make(\Corex\Config\Data\DataRegistry::class),
@@ -741,7 +741,10 @@ final class ConfigServiceProvider extends ServiceProvider
         // Insights: the provider registry (Performance over PSI + Readiness over native signals
         // and an optional Cloudflare scan), the cache, the REST controller, and the screen (spec
         // 037). Secrets come from config (settings/.env) and are never returned in a response.
-        $this->container->singleton(InsightStore::class);
+        $this->container->singleton(
+            InsightStore::class,
+            static fn (): InsightStore => new InsightStore(\Corex\Config\Insights\InsightFailure::inSiteLanguage()),
+        );
         $this->container->singleton(InsightRegistry::class, function (ContainerInterface $c): InsightRegistry {
             $config   = $c->make(ConfigInterface::class);
             $registry = new InsightRegistry();
@@ -768,6 +771,8 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(OperationsModeStore::class),
                 $c->make(SubmissionsReader::class),
                 $c,
+                $c->make(\Corex\Config\Operations\OperationsMode::class),
+                $c->make(\Corex\Config\Activity\SecurityEventsSince::class),
             ));
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>
             new InsightsController(
@@ -1249,6 +1254,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\DataModels\DataModelsImportController::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(\Corex\Config\Access\AccessAuditLog::class)->register();
+        // Spec 114: mode changes, counted refusals and lockouts reach the activity log.
+        $this->container->make(\Corex\Config\Activity\SecurityActivityRecorder::class)->register();
         $this->container->make(\Corex\Config\Access\AccessDeniedGate::class)->register();
         // Registered after the gate so that, on a CoreX page, the gate's richer surface — which has
         // the access-request form in it — is the one that answers. Everywhere else this catches the

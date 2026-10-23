@@ -20,7 +20,7 @@ use WP_REST_Response;
 /**
  * The "Test verification" REST action for the captcha card (spec 044, US2). Runs a probe
  * against the configured provider and answers with the spec-043 envelope classified by
- * {@see CaptchaDiagnostic}. `manage_options` + a REST nonce gate it (Principle VII); the
+ * {@see CaptchaDiagnostic}. "Manage settings" + a REST nonce gate it (Principle VII); the
  * secret is used only in the outbound probe and **never** appears in the response (FR-008).
  */
 final class CaptchaTestController

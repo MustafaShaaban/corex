@@ -79,7 +79,9 @@ dependency) — so a toggle can never leave the site broken.
 
 The decisions are the pure, unit-tested `Corex\Config\Addons\AddonRegistry` + `AddonManager` (the kit add-ons
 require `corex-ui`, mirroring the blueprints); the `AddonsScreen` only renders + gates (via the shared
-`Corex\Security\Admin\AdminGuard`, cap + nonce) and delegates the plugin/flag writes to `AddonActivator`.
+`Corex\Security\Admin\AdminGuard`, cap + nonce) and hands each toggle to `AddonToggleService`, which refuses to
+switch off an add-on active for the network or installed as must-use, has `AddonActivator` make the plugin/flag
+writes, and reports WordPress's answer (spec 114).
 Companion to the setup wizard (which composes a whole kit at once).
 
 The truthful summary bar (active / installed / site-kit counts) is projected by the pure

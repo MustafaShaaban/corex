@@ -100,10 +100,11 @@ final class CaptchaDiagnostic
     private static function messageFor(string $kind): string
     {
         return match ($kind) {
-            self::OK             => __('The captcha keys were accepted.', 'corex'),
-            self::MISSING_KEYS   => __('Add the site key and secret key for this driver.', 'corex'),
-            self::INVALID_KEYS   => __('The captcha provider rejected the keys — double-check them.', 'corex'),
-            self::NETWORK_ERROR  => __('Could not reach the captcha provider — check connectivity and try again.', 'corex'),
+            // Each starts with the outcome, in words (spec 114, US-SAFE-16).
+            self::OK             => __('Works: the provider accepted the secret key. The site key is checked when the widget loads for a visitor.', 'corex'),
+            self::MISSING_KEYS   => __('A key is missing: save the site key and the secret key for this provider.', 'corex'),
+            self::INVALID_KEYS   => __('Wrong key: the provider refused the secret key. Copy both keys again from the provider.', 'corex'),
+            self::NETWORK_ERROR  => __('Cannot reach the provider: check the connection of this server and try again.', 'corex'),
             default              => __('This driver needs no keys to test.', 'corex'),
         };
     }

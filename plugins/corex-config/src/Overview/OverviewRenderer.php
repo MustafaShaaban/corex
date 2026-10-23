@@ -9,7 +9,6 @@ declare(strict_types=1);
 namespace Corex\Config\Overview;
 
 use Corex\Config\Addons\AddonRegistry;
-use Corex\Config\ControlPanel\ControlPanelStatus;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\SubmissionsReader;
 use Corex\Config\Operations\OperationsMode;
@@ -43,7 +42,7 @@ final class OverviewRenderer
         private readonly OverviewModel $model,
         private readonly OperationsMode $mode,
         private readonly OperationsModeStore $modeStore,
-        private readonly ControlPanelStatus $control,
+        private readonly OverviewFacts $overviewFacts,
         private readonly HardeningChecks $hardening,
         private readonly SubmissionsReader $submissions,
         private readonly DataRegistry $data,
@@ -150,17 +149,21 @@ final class OverviewRenderer
     }
 
     /**
-     * @param array{rows:list<array{label:string,note:string,done:bool,tone:string}>,done:int,total:int} $readiness
+     * @param array{rows:list<array{label:string,note:string,done:bool,tone:string,href?:string}>,done:int,total:int} $readiness
      */
     private function readinessCard(array $readiness): string
     {
         $rows = '';
         foreach ($readiness['rows'] as $row) {
             $mark = $row['done'] ? '&#10003;' : '&#8226;';
+            // A row that is not done and says where to fix it links there (spec 114, FR-001).
+            $note  = isset($row['href'])
+                ? '<a href="' . esc_url(admin_url($row['href'])) . '">' . esc_html($row['note']) . '</a>'
+                : esc_html($row['note']);
             $rows .= '<li class="corex-overview__check is-' . esc_attr($row['tone']) . '">'
                 . '<span class="corex-overview__check-mark" aria-hidden="true">' . $mark . '</span>'
                 . '<span class="corex-overview__check-label">' . esc_html($row['label']) . '</span>'
-                . '<span class="corex-overview__check-note">' . esc_html($row['note']) . '</span></li>';
+                . '<span class="corex-overview__check-note">' . $note . '</span></li>';
         }
 
         $badge = sprintf(
@@ -295,21 +298,17 @@ final class OverviewRenderer
      *
      * @return array{
      *   counts: array{posts:int,pages:int,submissions:int|null,addonsActive:int,addonsTotal:int},
-     *   domains: array<string,bool>,
+     *   facts: array<string,mixed>,
      *   frontPageSet: bool,
      *   kitApplied: bool,
-     *   hardeningWarnings: int,
+     *   hardeningWarnings: int|null,
      *   dataSources: list<array{label:string,key:string,total:int}>,
-     *   formsCount: int
+     *   formsCount: int,
+     *   flowsCount: int
      * }
      */
     private function facts(array $settingValues): array
     {
-        $domains = [];
-        foreach ($this->control->domains($settingValues) as $domain) {
-            $domains[$domain->domain] = $domain->isConfigured();
-        }
-
         [$active, $total] = $this->addonCounts();
 
         return [
@@ -320,14 +319,24 @@ final class OverviewRenderer
                 'addonsActive' => $active,
                 'addonsTotal'  => $total,
             ],
-            'domains'           => $domains,
+            'facts'             => $this->overviewFacts->gather($settingValues),
             'frontPageSet'      => get_option('show_on_front') === 'page',
             'kitApplied'        => $this->kitApplied(),
-            'hardeningWarnings' => $this->hardening->warnings($this->hardening->checks(HardeningFacts::gather())),
+            'hardeningWarnings' => $this->hardeningWarnings(),
             'dataSources'       => $this->dataSources(),
             'formsCount'        => $this->formsCount(),
             'flowsCount'        => $this->flowsCount(),
         ];
+    }
+
+    /** How many hardening checks need attention, or null when they could not be run. */
+    private function hardeningWarnings(): ?int
+    {
+        try {
+            return $this->hardening->warnings($this->hardening->checks(HardeningFacts::gather()));
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function publishedCount(string $type): int

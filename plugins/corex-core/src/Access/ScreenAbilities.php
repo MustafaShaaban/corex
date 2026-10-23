@@ -65,41 +65,6 @@ final class ScreenAbilities
         return self::SCREENS;
     }
 
-    /** A screen's name in the site's language, by its page slug or section; the slug when it is none of CoreX's. */
-    public static function name(string $slugOrSection): string
-    {
-        $slug = isset(self::SCREENS[$slugOrSection]) ? $slugOrSection : self::slugOf($slugOrSection);
-
-        return match ($slug) {
-            'corex-settings'            => __('Overview', 'corex'),
-            'corex-addons'              => __('Add-ons', 'corex'),
-            'corex-forms'               => __('Forms & Flows', 'corex'),
-            'corex-submissions'         => __('Submissions', 'corex'),
-            'corex-email-studio'        => __('Email Studio', 'corex'),
-            'corex-data-models'         => __('Data', 'corex'),
-            'corex-operations-security' => __('Operations & Security', 'corex'),
-            'corex-notifications'       => __('Notifications', 'corex'),
-            'corex-releases'            => __('Releases', 'corex'),
-            'corex-access'              => __('Access & Abilities', 'corex'),
-            'corex-blog-pro'            => __('Blog Pro', 'corex'),
-            'corex-insights'            => __('Insights', 'corex'),
-            'corex-setup'               => __('Setup Wizard', 'corex'),
-            'corex-settings-config'     => __('Settings', 'corex'),
-            default                     => $slugOrSection,
-        };
-    }
-
-    private static function slugOf(string $section): ?string
-    {
-        foreach (self::SCREENS as $slug => $screen) {
-            if ($screen['section'] === $section) {
-                return $slug;
-            }
-        }
-
-        return null;
-    }
-
     /** @return array{section:string,ability:string,readOnly:bool}|null */
     private static function find(string $slugOrSection): ?array
     {

@@ -10,7 +10,11 @@ namespace Corex\Config\Insights;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Config\Access\ScreenNames;
+use Corex\Config\Activity\SecurityActivityRecorder;
+use Corex\Config\Activity\SecurityEventsSince;
 use Corex\Config\Data\SubmissionsReader;
+use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Container\ContainerInterface;
 use Corex\Forms\Flow\Flow;
@@ -42,6 +46,8 @@ final class InsightWidgetFacts
         private readonly OperationsModeStore $modeStore,
         private readonly SubmissionsReader $submissions,
         private readonly ContainerInterface $container,
+        private readonly OperationsMode $modes,
+        private readonly SecurityEventsSince $since,
         private readonly string $option = 'corex_insights',
     ) {
     }
@@ -62,6 +68,7 @@ final class InsightWidgetFacts
             'searchVisible'          => (string) get_option('blog_public', '1') !== '0',
             'prettyPermalinks'       => (string) get_option('permalink_structure', '') !== '',
             'securityEvents'         => $this->securityEvents(),
+            'securityEventsSince'    => $this->securityEventsSince(),
             'cronDisabledByConstant' => defined('DISABLE_WP_CRON') && DISABLE_WP_CRON === true,
             'cronOverdue'            => $this->cronOverdue(),
             'phpVersion'             => PHP_VERSION,
@@ -76,8 +83,9 @@ final class InsightWidgetFacts
     }
 
     /**
-     * The five most recent real security-relevant events (mode changes, denied CoreX admin access),
-     * shaped for the widget. Honest empty list when none are recorded.
+     * The five newest events of the security, access and operations areas, asked of those areas
+     * only (spec 114, US-SAFE-13). It read the twenty newest events of every area and kept the
+     * security ones among them, so twenty trashed submissions hid every security event.
      *
      * @return list<array{text:string,meta:string,tone:string}>
      */
@@ -85,26 +93,70 @@ final class InsightWidgetFacts
     {
         $events = [];
 
-        foreach ($this->activity->query([], 1, 20) as $event) {
-            if (! in_array($event->area, self::SECURITY_AREAS, true)) {
-                continue;
-            }
-
+        foreach ($this->activity->query(['area' => self::SECURITY_AREAS], 1, 5) as $event) {
             $events[] = [
-                /* translators: 1: actor, 2: activity kind, 3: target */
-                'text' => trim(sprintf('%1$s · %2$s %3$s', $event->actorLabel, $event->kind, $event->targetLabel)),
+                'text' => $this->eventText($event),
                 'meta' => $event->occurredAt->format('Y-m-d H:i'),
                 'tone' => in_array($event->outcome, [ActivityEvent::OUTCOME_FAILURE, ActivityEvent::OUTCOME_DENIED], true)
                     ? 'warning'
                     : 'info',
             ];
-
-            if (count($events) >= 5) {
-                break;
-            }
         }
 
         return $events;
+    }
+
+    /**
+     * One event as a whole sentence, so a translation can put the person and the rest in the
+     * order its language needs (spec 114). The person's name is the event's own label, which is
+     * never empty.
+     */
+    private function eventText(ActivityEvent $event): string
+    {
+        $who = $event->actorLabel;
+
+        return match ($event->kind) {
+            SecurityActivityRecorder::MODE_CHANGED => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
+                __('%1$s changed the mode to %2$s', 'corex'),
+                $who,
+                $this->modes->describe((string) ($event->context['to'] ?? $event->targetId))['label'],
+            ),
+            SecurityActivityRecorder::ACCESS_DENIED => sprintf(
+                /* translators: 1: who was refused. 2: the CoreX screen, e.g. Settings. */
+                __('%1$s was refused access to %2$s', 'corex'),
+                $who,
+                ScreenNames::of($event->targetId),
+            ),
+            SecurityActivityRecorder::LOGIN_LOCKED => __('A sign-in was locked out after too many failed attempts', 'corex'),
+            /* translators: %s: who asked. */
+            'access.request.created' => sprintf(__('%s asked for access', 'corex'), $who),
+            /* translators: %s: who approved. */
+            'access.request.approved' => sprintf(__('%s approved an access request', 'corex'), $who),
+            /* translators: %s: who denied. */
+            'access.request.denied' => sprintf(__('%s denied an access request', 'corex'), $who),
+            /* translators: %s: who changed them. */
+            'access.role.changed' => sprintf(__('%s changed the abilities of a role', 'corex'), $who),
+            /* translators: %s: who revoked it. */
+            'access.grant.revoked' => sprintf(__('%s revoked an access grant', 'corex'), $who),
+            'access.grant.expired' => __('An access grant ended', 'corex'),
+            default => sprintf(
+                /* translators: 1: who. 2: what happened, as recorded. 3: what it happened to. */
+                __('%1$s · %2$s %3$s', 'corex'),
+                $who,
+                $event->kind,
+                $event->targetLabel,
+            ),
+        };
+    }
+
+    /** From when the activity log holds security events, as a date in the site's format. */
+    private function securityEventsSince(): string
+    {
+        // Read first means records start now: the card never says "since" a time before it.
+        $this->since->mark(time());
+
+        return (string) wp_date((string) get_option('date_format', 'Y-m-d'), $this->since->since());
     }
 
     private function cronOverdue(): int

@@ -624,7 +624,7 @@ final class AccessScreen
                 );
             }
 
-            $rows .= '<li><span>' . esc_html(ScreenAbilities::name($slug)) . '</span><span title="' . esc_attr($screen['ability']) . '">'
+            $rows .= '<li><span>' . esc_html(ScreenNames::of($slug)) . '</span><span title="' . esc_attr($screen['ability']) . '">'
                 . esc_html($needs) . '</span></li>';
         }
         $rows .= '<li><span>' . esc_html__('Switching to Production or Maintenance', 'corex') . '</span><span>'

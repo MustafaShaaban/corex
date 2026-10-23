@@ -14,7 +14,6 @@ use Corex\Access\AbilityNames;
 use Corex\Access\AccessPolicy;
 use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbilityCatalog;
-use Corex\Access\ScreenAbilities;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 
@@ -265,9 +264,9 @@ final class AccessHistory
                 /* translators: %s: the key of a data model, e.g. "table-access-requests". */
                 'data'   => sprintf(__('Refused records of %s on the Data screen', 'corex'), $entry['section']),
                 /* translators: %s: a CoreX screen's name. */
-                'action' => sprintf(__('Refused an action on %s', 'corex'), ScreenAbilities::name($entry['section'])),
+                'action' => sprintf(__('Refused an action on %s', 'corex'), ScreenNames::of($entry['section'])),
                 /* translators: %s: a CoreX screen's name. */
-                default  => sprintf(__('Refused %s', 'corex'), ScreenAbilities::name($entry['section'])),
+                default  => sprintf(__('Refused %s', 'corex'), ScreenNames::of($entry['section'])),
             },
         ];
     }

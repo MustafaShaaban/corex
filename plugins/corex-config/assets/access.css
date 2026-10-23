@@ -619,9 +619,14 @@
 	white-space: nowrap;
 }
 
-.corex-admin .corex-access__grid thead th .button {
+.corex-admin .corex-access__grid thead th .button,
+.corex-admin .corex-access__grid thead th .corex-access__muted {
 	display: block;
 	margin-block-start: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-access__grid thead th .corex-access__muted {
+	font-weight: 400;
 }
 
 .corex-admin .corex-access__grid th[scope="row"],

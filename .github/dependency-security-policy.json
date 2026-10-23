@@ -85,23 +85,6 @@
       "upstreamTrigger": "Remove together with the three simple-git exceptions: it leaves the tree with simple-git 3. Remove when @wordpress/env publishes a release that depends on simple-git 4.0.1 or later; a lockfile update then takes it with no override. Re-argue instead of renewing if wp-env.json gains a source whose URL or ref is not written in this repository, or if a CI workflow starts using wp-env: either would end the reasoning above.",
       "range": "<2.0.1",
       "url": "https://github.com/advisories/GHSA-v5rq-49vh-5v5c"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-hp3w-g68c-fv3c",
-      "package": "sprintf-js",
-      "paths": [
-        "node_modules/sprintf-js"
-      ],
-      "severityCeiling": "moderate",
-      "exposure": "unreachable",
-      "reason": "Published 2026-09-24 against sprintf-js <=1.1.3, and 1.1.3 is the latest release, so there is no upgrade to take. sprintf-js 1.0.3 is installed for argparse 1.0.10, which js-yaml 3.15.2 lists as a dependency. Two packages here use js-yaml 3: @wordpress/env, which calls `yaml.dump`, and @istanbuljs/load-nyc-config beneath Jest. Both use it as a library, and js-yaml's library code does not load argparse: the only file in js-yaml that requires it is bin/js-yaml.js, the command-line entry point, which no script, workflow or file in this repository invokes. So sprintf-js is installed and its code is not reached. Moving js-yaml to 4.x, which uses argparse 2 and no sprintf-js, was not done: it is a major version under two consumers that declare ^3, for a finding nothing here can trigger.",
-      "control": "The defect is a denial of service from an attacker-chosen precision in a format string. The only format strings on this path are argparse's own help and usage templates, printed when somebody runs the js-yaml command by hand. devDependency only: scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, so it reaches no WordPress site.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-12-31",
-      "upstreamTrigger": "Remove when sprintf-js publishes a release above 1.1.3 that the advisory does not cover and argparse 1 accepts it (it requires ~1.0.2, so that needs an override), or when both @wordpress/env and @istanbuljs/load-nyc-config depend on js-yaml 4 or later, which carries no sprintf-js. Re-argue if any script here starts calling the js-yaml command.",
-      "range": "<=1.1.3",
-      "url": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c"
     }
   ]
 }
