@@ -17939,7 +17939,8 @@ cannot run on every pull request; a check that reports only fails nobody.
 Add-ons (US-ADD-08, 126) and Settings (US-SET-08, 65), and low-contrast muted text (US-BRD-02, 73). The second
 run found one unstable source, Hello Dolly, which WordPress bundles and CI's install activates: it prints a
 random lyric among the admin notices. The quality site deactivates the bundled plug-ins, and the 31 lyric
-entries were removed.
+entries were removed. Spec 114 (#433) then fixed three (the SSO setting's two strings and an Overview note's
+contrast); with main merged in, the list holds 368, removed the way any fixing change removes its own.
 
 **Not chosen.** *Counts per screen*: the number of rows differs run to run. *Selectors from axe*: they carry
 `nth-child` positions.

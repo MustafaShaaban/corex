@@ -1984,15 +1984,6 @@
 		{
 			"check": "accessibility",
 			"rule": "color-contrast",
-			"screen": "corex-settings",
-			"signature": "span.corex-overview__integration-note",
-			"since": "2026-10-22",
-			"story": "US-BRD-02",
-			"note": "Elements must meet minimum color contrast ratio thresholds: .corex-overview__integration.is-success:nth-child(1) > .corex-overview__integration-note"
-		},
-		{
-			"check": "accessibility",
-			"rule": "color-contrast",
 			"screen": "corex-settings-config",
 			"signature": "span.corex-media__placeholder",
 			"since": "2026-10-22",
@@ -2894,15 +2885,6 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-settings-config",
-			"signature": "Enable SSO login section",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"Enable SSO login section\" in table.form-table > tbody > tr > th > label"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config",
 			"signature": "Primary action label",
 			"since": "2026-10-22",
 			"story": "US-SET-08",
@@ -2925,15 +2907,6 @@
 			"since": "2026-10-22",
 			"story": "US-SET-08",
 			"note": "\"Replaces the wp-admin footer text. Leave blank for \"Powered by Corex\".\" in p.corex-field-help"
-		},
-		{
-			"check": "words",
-			"rule": "not-translated",
-			"screen": "corex-settings-config",
-			"signature": "Reserves a single sign-on slot on the login screen. No provider is configured yet.",
-			"since": "2026-10-22",
-			"story": "US-SET-08",
-			"note": "\"Reserves a single sign-on slot on the login screen. No provider is configured yet.\" in p.corex-field-help"
 		},
 		{
 			"check": "words",
