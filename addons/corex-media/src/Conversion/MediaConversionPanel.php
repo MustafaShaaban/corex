@@ -47,6 +47,13 @@ final class MediaConversionPanel
         }
 
         $script = dirname(COREX_MEDIA_FILE) . '/assets/media-conversion.js';
+        $style  = dirname(COREX_MEDIA_FILE) . '/assets/media-conversion.css';
+        wp_enqueue_style(
+            'corex-media-conversion',
+            plugins_url('assets/media-conversion.css', COREX_MEDIA_FILE),
+            ['corex-admin-shell'],
+            (string) filemtime($style),
+        );
         wp_enqueue_script(
             'corex-media-conversion',
             plugins_url('assets/media-conversion.js', COREX_MEDIA_FILE),

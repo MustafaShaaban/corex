@@ -3220,7 +3220,8 @@ body.corex-admin-screen .corex-admin__shell {
 }
 
 /* The Settings switch is a real checkbox laid over its track: Space, the label
-   and the posted value stay the browser's. Its focus ring is drawn on the track. */
+   and the posted value stay the browser's. Its focus ring is drawn on the
+   track. */
 .corex-admin .corex-switch {
 	position: relative;
 }

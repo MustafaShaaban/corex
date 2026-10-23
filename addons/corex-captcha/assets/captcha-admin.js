@@ -34,7 +34,8 @@
 	 */
 	function resultFromEnvelope( envelope ) {
 		const extra =
-			( envelope && ( envelope.ok ? envelope.data : envelope.details ) ) ||
+			( envelope &&
+				( envelope.ok ? envelope.data : envelope.details ) ) ||
 			{};
 
 		return {

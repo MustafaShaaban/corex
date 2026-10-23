@@ -27,9 +27,15 @@
 	function show( panel, run ) {
 		const start = panel.querySelector( '[data-corex-conversion-start]' );
 		const cancel = panel.querySelector( '[data-corex-conversion-cancel]' );
-		const progress = panel.querySelector( '[data-corex-conversion-progress]' );
-		const summary = panel.querySelector( '[data-corex-conversion-summary]' );
-		const failures = panel.querySelector( '[data-corex-conversion-failures]' );
+		const progress = panel.querySelector(
+			'[data-corex-conversion-progress]'
+		);
+		const summary = panel.querySelector(
+			'[data-corex-conversion-summary]'
+		);
+		const failures = panel.querySelector(
+			'[data-corex-conversion-failures]'
+		);
 		const active = isActive( run );
 		const available = panel.getAttribute( 'data-available' ) === '1';
 
@@ -69,7 +75,9 @@
 		}
 
 		const api = window.Corex.api;
-		const summary = panel.querySelector( '[data-corex-conversion-summary]' );
+		const summary = panel.querySelector(
+			'[data-corex-conversion-summary]'
+		);
 		let timer = null;
 
 		function answer( res ) {
@@ -93,7 +101,11 @@
 				return;
 			}
 			timer = window.setTimeout( function () {
-				api.post( config.restUrl + '/advance', {}, { nonce: config.nonce } )
+				api.post(
+					config.restUrl + '/advance',
+					{},
+					{ nonce: config.nonce }
+				)
 					.then( answer )
 					.then( follow );
 			}, STEP_EVERY_MS );
@@ -111,9 +123,11 @@
 			.querySelector( '[data-corex-conversion-cancel]' )
 			.addEventListener( 'click', function () {
 				window.clearTimeout( timer );
-				api.post( config.restUrl + '/cancel', {}, { nonce: config.nonce } ).then(
-					answer
-				);
+				api.post(
+					config.restUrl + '/cancel',
+					{},
+					{ nonce: config.nonce }
+				).then( answer );
 			} );
 
 		api.get( config.restUrl, { nonce: config.nonce } )

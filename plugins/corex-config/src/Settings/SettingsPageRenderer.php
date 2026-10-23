@@ -185,9 +185,10 @@ final class SettingsPageRenderer
     {
         return sprintf(
             '<div class="corex-savebar" data-corex-savebar data-state="%1$s" data-text-clean="%2$s"'
-            . ' data-text-dirty="%3$s" data-text-saved="%4$s" data-text-leave="%5$s">'
+            . ' data-text-dirty="%3$s" data-text-saved="%4$s" data-text-leave="%5$s" data-text-failed="%9$s">'
             . '<p class="corex-savebar__status"><span class="corex-savebar__dot" aria-hidden="true"></span>'
             . '<span data-corex-savebar-text>%6$s</span></p>'
+            . '<p class="corex-savebar__error" role="alert" data-corex-savebar-error hidden></p>'
             . '<div class="corex-savebar__actions">'
             . '<button type="reset" class="button" data-corex-discard>%7$s</button>'
             . '<button type="submit" class="button button-primary" data-corex-save>%8$s</button></div></div>',
@@ -199,6 +200,7 @@ final class SettingsPageRenderer
             $justSaved ? esc_html__('All changes saved', 'corex') : esc_html__('No changes', 'corex'),
             esc_html__('Discard', 'corex'),
             esc_html__('Save changes', 'corex'),
+            esc_attr__('The save did not go through, so nothing was changed. Your edits are still here: try again.', 'corex'),
         );
     }
 

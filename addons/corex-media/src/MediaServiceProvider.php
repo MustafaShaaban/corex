@@ -14,6 +14,7 @@ use Corex\Activity\ActivityRepository;
 use Corex\Activity\ActivityService;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Jobs\JobRepository;
 use Corex\Jobs\JobService;
 use Corex\Media\Conversion\MediaConversionController;
 use Corex\Media\Conversion\MediaConversionPanel;
@@ -113,10 +114,14 @@ final class MediaServiceProvider extends ServiceProvider
         );
 
         // "Convert existing library" on Settings > Media (spec 119, US-SET-06). Offered whether or
-        // not conversion is on, so the page can say why it cannot run. The jobs service is
-        // corex-config's; without it there is nothing to run the conversion with.
-        if ($this->container->has(JobService::class)) {
-            $conversion = new MediaConversionService($this->container->make(JobService::class), $runs, $source, $capability, $settings);
+        // not conversion is on, so the page can say why it cannot run. The jobs store is bound by
+        // corex-config; without it there is nothing to run the conversion with. (`has()` answers
+        // true for any class, so the interface is what is asked about.)
+        if ($this->container->has(JobRepository::class)) {
+            $conversion = $this->container->instance(
+                MediaConversionService::class,
+                new MediaConversionService($this->container->make(JobService::class), $runs, $source, $capability, $settings),
+            );
             (new MediaConversionController($conversion))->register();
             (new MediaConversionPanel($conversion))->register();
         }

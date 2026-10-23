@@ -762,6 +762,23 @@
 	margin-inline-start: auto;
 }
 
+/* A save that did not go through: said in the bar, edits kept. */
+.corex-admin .corex-savebar__error {
+	flex-basis: 100%;
+	order: -1;
+	margin: 0;
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-error-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-error);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-savebar__error[hidden] {
+	display: none;
+}
+
 /* The toast sits above the save bar, not over it. */
 .corex-admin--settings .corex-toast {
 	inset-block-end: calc(var(--corex-admin-space-2xl) * 2);
@@ -796,7 +813,8 @@
 	margin: 0;
 }
 
-/* A saved secret's Remove: the box to tick without scripts, a button with them. */
+/* A saved secret's Remove: the box to tick without scripts, a button
+   with them. */
 .corex-admin .corex-secret-remove {
 	display: inline-flex;
 	flex-wrap: wrap;

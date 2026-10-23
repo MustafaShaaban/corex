@@ -30,10 +30,21 @@ final class SettingsDiagnostics
         return match ($key) {
             'advanced.php_version'  => PHP_VERSION,
             'advanced.wp_version'   => (string) get_bloginfo('version'),
-            'advanced.environment'  => (string) wp_get_environment_type(),
+            'advanced.environment'  => $this->environment((string) wp_get_environment_type()),
             'advanced.memory_limit' => (string) ini_get('memory_limit'),
             'advanced.multisite'    => $this->multisite(),
             default                 => '',
+        };
+    }
+
+    /** WordPress's environment type in words (spec 119, US-SET-08: it was printed as its key). */
+    private function environment(string $type): string
+    {
+        return match ($type) {
+            'local'       => __('Local', 'corex'),
+            'development' => __('Development', 'corex'),
+            'staging'     => __('Staging', 'corex'),
+            default       => __('Production', 'corex'),
         };
     }
 

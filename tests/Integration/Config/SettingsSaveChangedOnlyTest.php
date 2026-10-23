@@ -1,13 +1,14 @@
 <?php
 
 /**
- * Saving Settings changes only what was changed (spec 114, US-SET-14, FR-028 to FR-030).
+ * Saving Settings changes only what was changed (spec 114, US-SET-14, FR-028 to FR-030; spec 119,
+ * US-SET-01 and US-SET-07: a page saves only itself).
  *
  * The save walked every field of every section and read a checkbox missing from the post as
  * "off". A section whose add-on is off draws its fields disabled, and a browser sends none of
  * them, so saving Brand with Corex Media off switched WebP conversion off.
  *
- * On real WordPress, through the screen's own save, with the add-ons' activation chosen per test.
+ * On real WordPress, through the screen's own saver, with the add-ons' activation chosen per test.
  *
  * @package Corex\Tests\Integration\Config
  */
@@ -15,11 +16,9 @@
 declare(strict_types=1);
 
 use Corex\Boot;
-use Corex\Config\Settings\AdminDashboard;
 use Corex\Config\Settings\SettingsRegistry;
 use Corex\Config\Settings\SettingsStore;
-use Corex\Multisite\ActivationScope;
-use Corex\Multisite\PluginActivationInspector;
+use Corex\Tests\Support\SettingsScreen;
 
 beforeEach(function () {
     $this->signedInAs = get_current_user_id();
@@ -30,11 +29,9 @@ beforeEach(function () {
     foreach (Boot::app()->container()->make(SettingsRegistry::class)->keys() as $key) {
         $this->asItWas[$key] = get_option($this->settings->optionName($key), null);
     }
-    $this->posted = $_POST;
 });
 
 afterEach(function () {
-    $_POST = $this->posted;
     foreach ($this->asItWas as $key => $value) {
         $value === null
             ? delete_option($this->settings->optionName($key))
@@ -43,110 +40,27 @@ afterEach(function () {
     wp_set_current_user($this->signedInAs);
 });
 
-/**
- * The settings screen as it is built, with only the named add-on plugins active.
- *
- * @param list<string> $active plugin files
- */
-function settingsScreenWith(array $active): AdminDashboard
+/** @return array<string,mixed> every stored setting, by key */
+function storedSettings(): array
 {
-    $container = Boot::app()->container();
-    $inspector = new class ($active) implements PluginActivationInspector {
-        /** @param list<string> $active */
-        public function __construct(private readonly array $active)
-        {
-        }
+    $store = Boot::app()->container()->make(SettingsStore::class);
 
-        public function scopeOf(string $pluginFile): ActivationScope
-        {
-            return in_array($pluginFile, $this->active, true) ? ActivationScope::Site : ActivationScope::None;
-        }
-
-        public function isActive(string $pluginFile): bool
-        {
-            return $this->scopeOf($pluginFile)->isActive();
-        }
-
-        public function activePluginFiles(): array
-        {
-            return $this->active;
-        }
-
-        public function scopes(): array
-        {
-            return array_fill_keys($this->active, ActivationScope::Site);
-        }
-    };
-
-    return new AdminDashboard(
-        $container->make(SettingsRegistry::class),
-        $container->make(\Corex\Config\Settings\SettingsForm::class),
-        $container->make(SettingsStore::class),
-        $container->make(\Corex\Security\Admin\AdminGuard::class),
-        $container->make(\Corex\Admin\AdminPage::class),
-        $container->make(\Corex\Config\Overview\OverviewRenderer::class),
-        $inspector,
-        $container->make(\Corex\Multisite\MultisiteContext::class),
-        $container->make(\Corex\Multisite\NetworkContext::class),
+    return array_combine(
+        Boot::app()->container()->make(SettingsRegistry::class)->keys(),
+        array_map(
+            static fn (string $key) => get_option($store->optionName($key), null),
+            Boot::app()->container()->make(SettingsRegistry::class)->keys(),
+        ),
     );
 }
 
-/**
- * What a browser posts for the form as drawn: every enabled field with the value it shows,
- * and the changes on top. Fields drawn disabled or not drawn are not posted.
- *
- * @param array<string,string> $changes field name => typed value; '' unticks a checkbox
- */
-function postedForm(AdminDashboard $screen, array $changes): array
-{
-    ob_start();
-    $screen->renderSettings();
-    $html = (string) ob_get_clean();
-
-    $posted = [];
-    preg_match_all('/<input id="([a-z0-9_]+)" name="\1" type="(\w+)" value="([^"]*)"([^>]*)\/>/', $html, $inputs, PREG_SET_ORDER);
-    foreach ($inputs as [, $name, $type, $value, $rest]) {
-        if (str_contains($rest, 'disabled')) {
-            continue;
-        }
-        if ($type === 'checkbox' && ! str_contains($rest, 'checked')) {
-            continue;
-        }
-        $posted[$name] = html_entity_decode($value);
-    }
-    preg_match_all('/<select id="([a-z0-9_]+)" name="\1"[^>]*?(disabled)?>(.*?)<\/select>/s', $html, $selects, PREG_SET_ORDER);
-    foreach ($selects as $select) {
-        if (($select[2] ?? '') !== '') {
-            continue;
-        }
-        preg_match('/<option value="([^"]*)" selected/', $select[3], $selected);
-        $posted[$select[1]] = html_entity_decode($selected[1] ?? '');
-    }
-
-    foreach ($changes as $name => $value) {
-        if ($value === '') {
-            unset($posted[$name]);
-        } else {
-            $posted[$name] = $value;
-        }
-    }
-
-    return $posted + ['corex_settings_nonce' => wp_create_nonce('corex_settings')];
-}
-
-function saveAs(AdminDashboard $screen, array $posted): void
-{
-    $_POST = wp_slash($posted);
-    $screen->maybeSave();
-}
-
-it('keeps the WebP switches as stored when Brand is saved while Corex Media is off', function () {
+it('keeps the WebP switches as stored when General is saved while Corex Media is off', function () {
     $this->settings->save('media.webp.enabled', '1');
     $this->settings->save('media.webp.convert_jpeg', '1');
     $this->settings->save('media.webp.convert_png', '1');
-    $screen = settingsScreenWith(['corex-captcha/corex-captcha.php']);
+    $mediaOff = ['corex-captcha/corex-captcha.php', 'corex-guides/corex-guides.php'];
 
-    saveAs($screen, postedForm($screen, ['brand_company_name' => 'Acme Trading']));
+    SettingsScreen::save('general', ['brand_company_name' => 'Acme Trading'], $mediaOff);
 
     expect($this->settings->get('brand.company_name'))->toBe('Acme Trading')
         ->and($this->settings->get('media.webp.enabled'))->toBe('1')
@@ -154,19 +68,26 @@ it('keeps the WebP switches as stored when Brand is saved while Corex Media is o
         ->and($this->settings->get('media.webp.convert_png'))->toBe('1');
 
     // And Corex Media turned back on draws them as they were.
-    ob_start();
-    settingsScreenWith(['corex-media/corex-media.php', 'corex-captcha/corex-captcha.php'])->renderSettings();
-    $html = (string) ob_get_clean();
-    expect($html)->toMatch('/id="media_webp_enabled" name="media_webp_enabled" type="checkbox" value="1" checked/');
+    expect(SettingsScreen::draw('media', null, SettingsScreen::ALL_ADDONS))
+        ->toMatch('/id="media_webp_enabled" name="media_webp_enabled" type="checkbox" value="1" checked/');
 });
 
-it('keeps the captcha settings as stored when Mail is saved while Corex Captcha is off', function () {
+it('writes nothing to the Media page when it is posted while Corex Media is off', function () {
+    $this->settings->save('media.webp.enabled', '1');
+    $before = storedSettings();
+
+    $result = SettingsScreen::save('media', ['media_webp_enabled' => '', 'media_webp_quality' => '40'], ['corex-captcha/corex-captcha.php']);
+
+    expect($result?->page)->toBe('media')
+        ->and(storedSettings())->toBe($before);
+});
+
+it('keeps the captcha settings as stored when Email is saved while Corex Captcha is off', function () {
     $this->settings->save('captcha.driver', 'recaptcha');
     $this->settings->save('captcha.site_key', 'site-key-kept');
     $this->settings->save('captcha.score_threshold', '0.5');
-    $screen = settingsScreenWith(['corex-media/corex-media.php']);
 
-    saveAs($screen, postedForm($screen, ['mail_from_name' => 'Acme Sales']));
+    SettingsScreen::save('email', ['mail_from_name' => 'Acme Sales'], ['corex-media/corex-media.php']);
 
     expect($this->settings->get('mail.from.name'))->toBe('Acme Sales')
         ->and($this->settings->get('captcha.driver'))->toBe('recaptcha')
@@ -174,41 +95,59 @@ it('keeps the captcha settings as stored when Mail is saved while Corex Captcha 
         ->and($this->settings->get('captcha.score_threshold'))->toBe('0.5');
 });
 
-it('writes nothing when the form is saved as it was drawn', function () {
-    $screen  = settingsScreenWith(['corex-media/corex-media.php', 'corex-captcha/corex-captcha.php']);
-    $options = static fn (): array => array_map(
-        static fn (string $key) => get_option(Boot::app()->container()->make(SettingsStore::class)->optionName($key), null),
-        Boot::app()->container()->make(SettingsRegistry::class)->keys(),
-    );
-    delete_option($this->settings->optionName('media.webp.enabled'));
-    $before = $options();
+it('saves only the page that was posted, whatever else the post carries', function () {
+    $this->settings->save('mail.from.name', 'Kept Sender');
 
-    saveAs($screen, postedForm($screen, []));
+    SettingsScreen::save('general', ['brand_tagline' => 'Built to last', 'mail_from_name' => 'Smuggled In'], SettingsScreen::ALL_ADDONS);
 
-    // The Media switch drawn as on while nothing was stored stays unstored, so its default applies.
-    expect($options())->toBe($before);
+    expect($this->settings->get('brand.tagline'))->toBe('Built to last')
+        ->and($this->settings->get('mail.from.name'))->toBe('Kept Sender');
 });
 
-it('saves a switch turned off on the tab being saved as off', function () {
-    $this->settings->save('media.webp.enabled', '1');
-    $screen = settingsScreenWith(['corex-media/corex-media.php', 'corex-captcha/corex-captcha.php']);
+it('writes nothing when a page is saved as it was drawn', function (string $page) {
+    delete_option($this->settings->optionName('media.webp.enabled'));
+    $before = storedSettings();
 
-    saveAs($screen, postedForm($screen, ['media_webp_enabled' => '']));
+    SettingsScreen::save($page, [], SettingsScreen::ALL_ADDONS);
+
+    // A Media switch drawn as on while nothing was stored stays unstored, so its default applies;
+    // a select drawn at its first choice with nothing stored is not written either.
+    expect(storedSettings())->toBe($before);
+})->with(['general', 'email', 'captcha', 'media', 'insights', 'guides']);
+
+it('saves a switch turned off on the page being saved as off', function () {
+    $this->settings->save('media.webp.enabled', '1');
+
+    SettingsScreen::save('media', ['media_webp_enabled' => ''], SettingsScreen::ALL_ADDONS);
 
     expect($this->settings->get('media.webp.enabled'))->toBe('0');
+});
+
+it('saves a switch turned on as "1", as the checkbox did', function () {
+    delete_option($this->settings->optionName('dashboard.widgets.attention'));
+
+    SettingsScreen::save('general', ['dashboard_widgets_attention' => '1'], SettingsScreen::ALL_ADDONS);
+
+    expect(get_option($this->settings->optionName('dashboard.widgets.attention')))->toBe('1');
 });
 
 it('refuses a value its field does not take and changes nothing else', function () {
     $this->settings->save('mail.reply.from_address', 'before@example.com');
     $this->settings->save('media.webp.convert_png', '1');
-    $screen = settingsScreenWith(['corex-captcha/corex-captcha.php']);
 
-    saveAs($screen, postedForm($screen, ['mail_reply_from_address' => 'answers@']));
-    ob_start();
-    $screen->renderSettings();
-    $page = (string) ob_get_clean();
+    $result = SettingsScreen::save('email', ['mail_reply_from_address' => 'answers@'], ['corex-captcha/corex-captcha.php']);
 
     expect($this->settings->get('mail.reply.from_address'))->toBe('before@example.com')
         ->and($this->settings->get('media.webp.convert_png'))->toBe('1')
-        ->and($page)->toContain('Reply sender address was not changed: ');
+        ->and($result?->refused[0]['name'] ?? '')->toBe('mail_reply_from_address');
+});
+
+it('refuses a page that does not exist', function () {
+    $before = storedSettings();
+
+    $saved = Boot::app()->container()->make(\Corex\Config\Settings\SettingsSaver::class)
+        ->save('nowhere', ['brand_tagline' => 'x'], get_current_user_id());
+
+    expect($saved)->toBeNull()
+        ->and(storedSettings())->toBe($before);
 });

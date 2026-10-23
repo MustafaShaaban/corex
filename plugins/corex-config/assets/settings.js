@@ -84,7 +84,11 @@
 		}
 	}
 
-	/** A value set by this script is announced to the save bar as a person's edit would be. */
+	/**
+	 * A value set by this script is announced to the save bar as a person's edit would be.
+	 *
+	 * @param {HTMLElement} control the control whose value was set
+	 */
 	function changed( control ) {
 		control.dispatchEvent( new Event( 'change', { bubbles: true } ) );
 	}
@@ -174,10 +178,7 @@
 						const question = text(
 							'confirm',
 							'Remove the saved value? %s'
-						).replace(
-							'%s',
-							effect ? effect.textContent : ''
-						);
+						).replace( '%s', effect ? effect.textContent : '' );
 						// eslint-disable-next-line no-alert -- the browser's own dialog is read by every screen reader.
 						if ( ! window.confirm( question ) ) {
 							return;
@@ -209,6 +210,7 @@
 		const words = bar.querySelector( '[data-corex-savebar-text]' );
 		const save = bar.querySelector( '[data-corex-save]' );
 		const discard = bar.querySelector( '[data-corex-discard]' );
+		const error = bar.querySelector( '[data-corex-savebar-error]' );
 		let justSaved = bar.getAttribute( 'data-state' ) === 'saved';
 		let submitting = false;
 
@@ -254,12 +256,51 @@
 			update();
 		} );
 
-		form.addEventListener( 'submit', function () {
-			submitting = true;
+		// The save is sent from the page, so a save that does not go through (a server error, a
+		// lost connection) says so and leaves every edit where it was. One that goes through is
+		// answered with a redirect to the page, which is then opened as the browser would.
+		form.addEventListener( 'submit', function ( event ) {
+			if ( ! window.fetch || ! window.FormData ) {
+				submitting = true;
+				return;
+			}
+			event.preventDefault();
+			if ( error ) {
+				error.hidden = true;
+			}
+			save.disabled = true;
+			save.setAttribute( 'data-corex-working', 'true' );
+
+			window
+				.fetch( form.action, {
+					method: 'POST',
+					body: new window.FormData( form ),
+					credentials: 'same-origin',
+					redirect: 'manual',
+				} )
+				.then( function ( response ) {
+					if (
+						response.type !== 'opaqueredirect' &&
+						( response.status < 300 || response.status >= 400 )
+					) {
+						throw new Error( 'not saved' );
+					}
+					submitting = true;
+					window.location.assign( form.action );
+				} )
+				.catch( function () {
+					save.removeAttribute( 'data-corex-working' );
+					if ( error ) {
+						error.textContent =
+							bar.getAttribute( 'data-text-failed' );
+						error.hidden = false;
+					}
+					update();
+				} );
 		} );
 
 		window.addEventListener( 'beforeunload', function ( event ) {
-			if ( submitting || ! hasChanges( form ) ) {
+			if ( submitting || ! form.isConnected || ! hasChanges( form ) ) {
 				return undefined;
 			}
 			event.preventDefault();
@@ -280,9 +321,14 @@
 	function initProviderTests( form ) {
 		form.querySelectorAll( '[data-corex-provider-test]' ).forEach(
 			function ( panel ) {
-				const provider = panel.getAttribute( 'data-corex-provider-test' );
 				const button = panel.querySelector(
 					'[data-corex-provider-test-button]'
+				);
+				if ( ! button || ! window.Corex || ! window.Corex.api ) {
+					return;
+				}
+				const provider = panel.getAttribute(
+					'data-corex-provider-test'
 				);
 				const result = panel.querySelector(
 					'.corex-provider-test__result'
@@ -290,9 +336,6 @@
 				const status = panel.querySelector(
 					'[data-corex-provider-status]'
 				);
-				if ( ! button || ! window.Corex || ! window.Corex.api ) {
-					return;
-				}
 
 				button.addEventListener( 'click', function () {
 					button.disabled = true;
