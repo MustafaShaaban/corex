@@ -17,6 +17,7 @@ use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Delivery\EmailAttemptRepository;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Message\EmailMessage;
+use Corex\Email\Security\HeaderGuard;
 use Corex\Events\EventDispatcher;
 use Corex\Mail\Capture\CapturedMessage;
 use Corex\Mail\Capture\MailHold;
@@ -54,6 +55,8 @@ final class EmailStudioService
         private readonly ?MailPath $paths = null,
         /** Holds every email of a flow's marked test, on any site (spec 113, US3). */
         private readonly ?MailHold $hold = null,
+        /** The header checks every other CoreX email passes (spec 120). */
+        private readonly ?HeaderGuard $guard = null,
     ) {
     }
 
@@ -174,6 +177,15 @@ final class EmailStudioService
         if ($recipients === []) {
             return $this->announce($this->missingRecipientResult($delivery, $metadata), $metadata);
         }
+        $unsafe = $this->guard?->inspect([
+            'subject'   => $message->subject,
+            'from'      => $message->from ?? '',
+            'from name' => $message->fromName ?? '',
+            'reply-to'  => $message->replyTo ?? '',
+        ]);
+        if ($unsafe !== null) {
+            return $this->announce($this->refusedResult($delivery, $metadata, $unsafe), $metadata);
+        }
 
         $decision = $this->decide($delivery);
         $attemptIds = array_map(static fn (): string => Uuid::v4(), $recipients);
@@ -238,6 +250,20 @@ final class EmailStudioService
         );
     }
 
+    private function refusedResult(EmailDeliveryContext $delivery, EmailDispatchMetadata $metadata, string $why): MailResult
+    {
+        return new MailResult(
+            attemptId: Uuid::v4(),
+            requestId: $delivery->requestId,
+            state: MailResult::STATE_REJECTED,
+            provider: 'delivery-policy',
+            message: $why,
+            occurredAt: new DateTimeImmutable('now'),
+            retryable: false,
+            parentAttemptId: $metadata->parentAttemptId,
+        );
+    }
+
     /**
      * @param list<string> $recipients
      * @param list<string> $attemptIds
@@ -287,6 +313,7 @@ final class EmailStudioService
                 ? $context->message->headers['Message-ID']
                 : null,
             errorCode: $this->errorCode($outcome),
+            missingVariables: $metadata->template === null ? [] : $metadata->template->missingVariables,
         ));
     }
 

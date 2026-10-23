@@ -11,10 +11,12 @@ namespace Corex\Newsletter\Templates;
 defined('ABSPATH') || exit;
 
 use Corex\Email\Template\EmailTemplate;
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Template\MailContext;
 
 /**
- * The on-publish notification email: the new article + a one-click unsubscribe link.
+ * The on-publish notification email: the new article, with a one-click unsubscribe link in its
+ * footer.
  */
 final class NewsletterNotifyTemplate extends EmailTemplate
 {
@@ -34,14 +36,21 @@ final class NewsletterNotifyTemplate extends EmailTemplate
 
     public function body(MailContext $context): string
     {
-        $article     = esc_url($context->get('url'));
-        $unsubscribe = esc_url(add_query_arg(
-            ['corex_newsletter' => 'unsubscribe', 'token' => $context->get('unsubscribe_token')],
-            home_url('/')
-        ));
+        $article = esc_url($context->get('url'));
 
+        // The unsubscribe link is in the frame's footer, with the others (spec 120).
         return '<p>' . esc_html__('A new article was published:', 'corex') . '</p>'
-            . '<p><a href="' . $article . '">{{ title }}</a></p>'
-            . '<p style="font-size:smaller"><a href="' . $unsubscribe . '">' . esc_html__('Unsubscribe', 'corex') . '</a></p>';
+            . '<p><a href="' . $article . '">{{ title }}</a></p>';
+    }
+
+    public function links(MailContext $context): array
+    {
+        return NewsletterLinks::footer($context->get('unsubscribe_token'), $context->get('email'));
+    }
+
+    /** What the frame's footer says about why the person receives it (spec 120). */
+    public function kind(): string
+    {
+        return EmailKind::NEWSLETTER;
     }
 }

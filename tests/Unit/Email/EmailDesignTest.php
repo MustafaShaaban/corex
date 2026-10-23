@@ -15,6 +15,7 @@ use Corex\Email\Design\EmailContent;
 use Corex\Email\Design\EmailPalette;
 use Corex\Email\Design\PlainText;
 use Corex\Email\Design\EmailBrandSource;
+use Corex\Email\Design\EmailFrame;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\StandardEmailDesign;
 use Corex\Tests\Support\LanguageOfTheRequest;
@@ -401,7 +402,7 @@ it('composes a reply as the designed document and the same words in plain text',
         }
     };
 
-    $email = (new ReplyComposer(new StandardEmailDesign(), $site, new LanguageOfTheRequest()))->compose(
+    $email = (new ReplyComposer(new EmailFrame(new StandardEmailDesign(), $site), new LanguageOfTheRequest()))->compose(
         'sam@example.com',
         'Re: your message',
         '<p>Thanks, Sam.</p><p>See <a href="https://example.com/offer">the offer</a>.</p>',
@@ -412,6 +413,8 @@ it('composes a reply as the designed document and the same words in plain text',
         ->and($email->html)->toContain('Thanks, Sam.')
         ->and($email->text)->toBe(
             "Thanks, Sam.\n\nSee the offer (https://example.com/offer).\n\n-- \n"
-            . 'This message was sent by Acme & Sons (https://acme.test/).',
+            . "This message was sent by Acme & Sons (https://acme.test/).\n"
+            // Why the person receives it, as the frame's footer says (spec 120).
+            . 'You receive this email because you wrote to Acme & Sons.',
         );
 });

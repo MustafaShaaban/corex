@@ -52,6 +52,7 @@ final class EmailAttemptRepository
             'provider_event'    => $attempt->providerEvent,
             'provider_message_id' => $attempt->providerMessageId,
             'error_code'        => $attempt->errorCode,
+            'missing_variables' => $attempt->missingVariables,
             'retryable'         => $attempt->retryable,
             'occurred_at'       => $attempt->occurredAt->format(DATE_ATOM),
             'created_at'        => $attempt->occurredAt->format(DATE_ATOM),
@@ -104,6 +105,7 @@ final class EmailAttemptRepository
             routeId: is_int($payload['route_id'] ?? null) ? $payload['route_id'] : null,
             providerMessageId: is_string($payload['provider_message_id'] ?? null) ? $payload['provider_message_id'] : null,
             errorCode: is_string($payload['error_code'] ?? null) ? $payload['error_code'] : null,
+            missingVariables: array_values(array_filter((array) ($payload['missing_variables'] ?? []), 'is_string')),
         );
     }
 

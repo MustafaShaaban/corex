@@ -74,6 +74,12 @@ final class SiteEmailDesign implements EmailDesign
                 return $this->standardAfter($content, $brand, get_debug_type($given), EmailDesignFailedEvent::NOT_A_DESIGN);
             }
             $design = $this->named($given);
+            // A design draws the kinds it says it draws, and one that says nothing draws replies
+            // (spec 120): a design made for replies is never put on a newsletter. Not drawing
+            // another kind is what such a design is for, not a failure, so nothing is reported.
+            if (! $this->drawsKind($given, $content->kind)) {
+                return $this->standard->render($content, $brand);
+            }
             $html = $given->render($content, $brand);
         } catch (Throwable $error) {
             return $this->standardAfter($content, $brand, $design, EmailDesignFailedEvent::THREW, $this->said($error));
@@ -93,6 +99,13 @@ final class SiteEmailDesign implements EmailDesign
         }
 
         return $html;
+    }
+
+    private function drawsKind(EmailDesign $design, string $kind): bool
+    {
+        return $design instanceof KindAwareEmailDesign
+            ? $design->accepts($kind)
+            : $kind === EmailKind::REPLY;
     }
 
     /** The design's class, to find it by. An anonymous class is named up to where PHP's own name stops being text. */

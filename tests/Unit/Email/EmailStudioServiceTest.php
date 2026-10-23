@@ -29,6 +29,7 @@ use Corex\Email\Studio\EmailStudioSubmissionGateway;
 use Corex\Email\Studio\EmailTemplateRepository;
 use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailBrandSource;
+use Corex\Email\Design\EmailFrame;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\StandardEmailDesign;
 use Corex\Tests\Support\LanguageOfTheRequest;
@@ -439,12 +440,12 @@ function replyGateway(array $settings, ?array $studio = null): EmailStudioSubmis
         $service,
         new EmailTemplateService([]),
         $config,
-        new ReplyComposer(new StandardEmailDesign(), new class() implements EmailBrandSource {
+        new ReplyComposer(new EmailFrame(new StandardEmailDesign(), new class() implements EmailBrandSource {
             public function brand(): EmailBrand
             {
                 return EmailBrand::standard('Acme', 'https://acme.test/');
             }
-        }, new LanguageOfTheRequest()),
+        }), new LanguageOfTheRequest()),
         StudioDelivery::factory($config, $service),
     );
 }

@@ -144,6 +144,24 @@ final readonly class SiteEmailBrand implements EmailBrandSource
             : [0, 0];
     }
 
+    /**
+     * The `primary` colour of the theme's palette, as `#rrggbb`, or '' where the theme has none
+     * a mail client can be given (a custom property or a function is not one).
+     */
+    private static function primaryColour(): string
+    {
+        $palette = (array) wp_get_global_settings(['color', 'palette']);
+        foreach ((array) ($palette['theme'] ?? $palette['default'] ?? []) as $entry) {
+            if (is_array($entry) && ($entry['slug'] ?? '') === 'primary') {
+                $colour = strtolower(trim((string) ($entry['color'] ?? '')));
+
+                return preg_match('/^#[0-9a-f]{6}\z/', $colour) === 1 ? $colour : '';
+            }
+        }
+
+        return '';
+    }
+
     /** The site as WordPress knows it, with what its Mail settings say about its emails. */
     private function fromSettings(): EmailBrand
     {
@@ -169,8 +187,13 @@ final readonly class SiteEmailBrand implements EmailBrandSource
         // The edge of the card, in both schemes: it is never text, so it has no contrast to keep.
         // The setting is not saved unless it is #rrggbb; a value that reached the store some
         // other way is passed over here, not thrown at somebody sending a reply.
+        // With none set, the brand's own primary colour, so that every CoreX email carries the
+        // site's colour and not CoreX's (spec 120, story 3).
         $accent = strtolower(trim((string) $this->config->get('mail.brand.accent', '')));
         if (preg_match('/^#[0-9a-f]{6}\z/', $accent) !== 1) {
+            $accent = self::primaryColour();
+        }
+        if ($accent === '') {
             return $brand;
         }
 

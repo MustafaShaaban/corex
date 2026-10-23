@@ -10,14 +10,17 @@ namespace Corex\Email\Routing;
 
 defined('ABSPATH') || exit;
 
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Studio\EmailLayoutRepository;
 use Corex\Email\Studio\EmailTemplateReference;
 use Corex\Email\Studio\EmailTemplateRepository;
 use Corex\Email\Studio\EmailTemplateService;
+use Corex\Email\Studio\EmailTemplateVersion;
 
 /**
- * Prepares the active immutable template revision selected by a route.
+ * Prepares the active immutable template revision selected by a route: drawn in the frame, from
+ * the template's own sender, with its plain text (spec 120, story 2).
  */
 final readonly class EmailRouteMessageFactory
 {
@@ -41,43 +44,70 @@ final readonly class EmailRouteMessageFactory
             return null;
         }
 
-        $context  = $this->withSiteContext($context);
+        $context  = self::withSiteContext($context, $route->recipients);
         $layout   = $this->layouts?->findVersion($version->layoutId, $version->layoutVersion);
-        $rendered = $this->renderer->render($version, $context, $layout);
+        $rendered = $this->renderer->render($version, $context, $layout, EmailKind::of($context['email']['kind'] ?? null));
 
         return new PreparedEmail(
-            new EmailMessage(
-                $route->recipients,
-                [],
-                [],
-                $route->replyTo,
-                $rendered['subject'],
-                $rendered['html'],
-                ['Content-Type' => 'text/html; charset=UTF-8'],
-            ),
+            self::message($version, $route->recipients, $route->replyTo, $rendered),
             new EmailTemplateReference(
                 $template->slug,
                 $template->id,
                 $version->versionNumber,
                 $route->routeId,
+                $rendered['missing'],
             ),
         );
     }
 
     /**
+     * The email a drawn template version is sent as: from the template's own sender where it
+     * names one, Settings → Mail's otherwise, with its plain text as the text/plain part.
+     *
+     * @param list<string>                                                          $to
+     * @param array{subject:string,html:string,plain:string,missing:list<string>} $rendered
+     */
+    public static function message(EmailTemplateVersion $version, array $to, ?string $replyTo, array $rendered): EmailMessage
+    {
+        return new EmailMessage(
+            $to,
+            [],
+            [],
+            $replyTo,
+            $rendered['subject'],
+            $rendered['html'],
+            ['Content-Type' => 'text/html; charset=UTF-8'],
+            from: $version->fromAddress !== '' ? $version->fromAddress : null,
+            plainText: $rendered['plain'] !== '' ? $rendered['plain'] : null,
+            fromName: trim($version->fromName) !== '' ? $version->fromName : null,
+        );
+    }
+
+    /**
+     * What every email is given to draw from: the site, its privacy page, and who it is for.
+     *
      * @param array<string,mixed> $context
+     * @param list<string>        $recipients
+     *
      * @return array<string,mixed>
      */
-    private function withSiteContext(array $context): array
+    public static function withSiteContext(array $context, array $recipients = []): array
     {
-        if (isset($context['site']) || ! function_exists('get_bloginfo')) {
+        if (! function_exists('get_bloginfo')) {
             return $context;
         }
 
-        $context['site'] = [
-            'name' => get_bloginfo('name'),
-            'url'  => function_exists('home_url') ? home_url('/') : '',
+        // WordPress keeps the name with its entities encoded; a value is escaped where it lands.
+        $context['site'] = (is_array($context['site'] ?? null) ? $context['site'] : []) + [
+            'name' => html_entity_decode((string) get_bloginfo('name'), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'url'  => function_exists('home_url') ? (string) home_url('/') : '',
         ];
+        if (is_array($context['links'] ?? []) && function_exists('get_privacy_policy_url')) {
+            $context['links'] = ($context['links'] ?? []) + ['privacy' => (string) get_privacy_policy_url()];
+        }
+        if (is_array($context['recipient'] ?? []) && $recipients !== []) {
+            $context['recipient'] = ($context['recipient'] ?? []) + ['email' => $recipients[0]];
+        }
 
         return $context;
     }
