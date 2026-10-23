@@ -459,6 +459,90 @@
 	gap: var(--corex-admin-space-2xs);
 }
 
+/* The email the server draws, beside its sample values (spec 120). */
+.corex-admin .corex-email-app__preview-body {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+	gap: var(--corex-admin-space-lg);
+	align-items: start;
+}
+
+.corex-admin .corex-email-app__preview-subject {
+	margin-block: 0 var(--corex-admin-space-sm);
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-email-app__preview-subject span,
+.corex-admin .corex-email-app__variable-sample,
+.corex-admin .corex-email-app__field-note,
+.corex-admin .corex-email-app__variables-note,
+.corex-admin .corex-email-app__samples > p {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-email-app__samples {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-email-app__samples h3,
+.corex-admin .corex-email-app__capture-body h3 {
+	margin: 0;
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-email-app__samples label {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-email-app__variable-sample {
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-email-app__field-note {
+	margin: 0;
+}
+
+.corex-admin .corex-email-app__drawing-errors {
+	margin-block: var(--corex-admin-space-xs) 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-email-app__missing {
+	display: block;
+	color: var(--corex-admin-warning);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-email-app tr:target {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: calc(var(--corex-admin-border-width) * -1);
+}
+
+.corex-admin .corex-email-app__capture-body {
+	grid-column: 1 / -1;
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-email-app__capture-body summary {
+	min-block-size: var(--corex-admin-control-height);
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+}
+
+.corex-admin .corex-email-app__capture-body iframe {
+	inline-size: 100%;
+	block-size: calc(var(--corex-admin-control-height) * 10);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
 /* stylelint-disable no-descending-specificity --
  * Disjoint tab/list button states share the button terminal. */
 .corex-admin .corex-email-app__tabs button:hover,
@@ -507,6 +591,10 @@
 
 	.corex-admin .corex-email-app__preview-panel > header {
 		display: grid;
+	}
+
+	.corex-admin .corex-email-app__preview-body {
+		grid-template-columns: 1fr;
 	}
 
 	.corex-admin .corex-email-app__captures li,

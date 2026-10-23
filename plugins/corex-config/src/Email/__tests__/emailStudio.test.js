@@ -5,11 +5,13 @@
 import {
 	TABS,
 	buildEndpoint,
-	composePreviewHtml,
+	drawingErrors,
 	emailStudioReducer,
 	initialEmailStudioState,
+	isEmailAddress,
 	normalizeOverview,
-	previewDocument,
+	previewRequest,
+	testSendRequest,
 	validateDraftForm,
 } from '../emailStudioClient.js';
 
@@ -72,7 +74,7 @@ describe( 'Email Studio client state', () => {
 				attempts: [],
 				recentTestSends: [],
 				health: [],
-				variables: {},
+				variables: [],
 				counts: {},
 			} )
 		);
@@ -88,24 +90,29 @@ describe( 'Email Studio client state', () => {
 		expect(
 			buildEndpoint( '/corex/v1/email-studio', 'resend', 'abc-123' )
 		).toBe( '/corex/v1/email-studio/attempts/abc-123/resend' );
+		expect(
+			buildEndpoint( '/corex/v1/email-studio', 'preview', 12 )
+		).toBe( '/corex/v1/email-studio/templates/12/preview' );
+		expect( buildEndpoint( '/corex/v1/email-studio', 'reset', 12 ) ).toBe(
+			'/corex/v1/email-studio/templates/12/reset'
+		);
 		expect( () => buildEndpoint( '/email-studio', 'invented' ) ).toThrow();
 	} );
 } );
 
 describe( 'Email Studio editing helpers', () => {
-	it( 'validates required draft fields before a mutation', () => {
+	it( 'validates required draft fields before a mutation, the From address optional', () => {
 		expect( validateDraftForm( {} ) ).toEqual(
 			expect.objectContaining( {
 				subject: expect.any( String ),
-				from_address: expect.any( String ),
 				html_body: expect.any( String ),
 				layout_id: expect.any( String ),
 			} )
 		);
+		expect( validateDraftForm( {} ) ).not.toHaveProperty( 'from_address' );
 		expect(
 			validateDraftForm( {
 				subject: 'Welcome',
-				from_address: 'hello@example.com',
 				html_body: '<p>Hello</p>',
 				plain_text_mode: 'auto',
 				layout_id: 1,
@@ -114,55 +121,85 @@ describe( 'Email Studio editing helpers', () => {
 		).toEqual( {} );
 	} );
 
-	it( 'builds sandbox preview markup with sample values and explicit direction', () => {
-		const preview = previewDocument(
-			'<p>Hello {{ user.name }}</p>',
-			{ 'user.name': '<Sam>' },
-			'rtl'
-		);
+	it( 'refuses a From address that is not one and a From name with a line break', () => {
+		const errors = validateDraftForm( {
+			from_address: 'not-an-address',
+			from_name: 'Sales\nBcc: x@example.com',
+		} );
 
-		expect( preview ).toContain( 'dir="rtl"' );
-		expect( preview ).toContain( 'Hello &lt;Sam&gt;' );
-		expect( preview ).not.toContain( '<Sam>' );
+		expect( errors.from_address ).toBe(
+			'The From address is not a valid email address.'
+		);
+		expect( errors.from_name ).toBe(
+			'The From name cannot contain a line break.'
+		);
+		expect( isEmailAddress( ' jane@example.com ' ) ).toBe( true );
+		expect( isEmailAddress( 'not-an-address' ) ).toBe( false );
 	} );
 
-	it( 'composes the selected layout revision and active partials around draft content', () => {
-		const html = composePreviewHtml(
-			{
-				html_body: '<p>Hello</p>{{> signature }}',
-				layout_id: 4,
-				layout_version: 2,
-			},
-			[
-				{
-					id: 4,
-					version: 2,
-					regions: {
-						header: '{{> masthead }}',
-						accent: '#abcdef',
-						body: '<main>{{ content }}</main>',
-						button: '<a>Continue</a>',
-						footer: '<footer>Bye</footer>',
-					},
-				},
-			],
-			[
-				{
-					slug: 'masthead',
-					status: 'active',
-					html_body: '<header>CoreX</header>',
-				},
-				{
-					slug: 'signature',
-					status: 'active',
-					html_body: '<p>Team</p>',
-				},
-			]
+	it( 'asks the server to draw the draft with the samples typed and the direction chosen', () => {
+		const draft = {
+			subject: 'Hi',
+			html_body: '<p>Hi</p>',
+			plain_text_mode: 'auto',
+			layout_id: 4,
+			layout_version: 2,
+			// Server-owned fields never travel back.
+			id: 99,
+			checksum: 'x',
+		};
+
+		const asked = previewRequest( draft, { 'site.name': 'Acme' }, 'rtl' );
+
+		expect( asked ).toEqual( {
+			subject: 'Hi',
+			from_name: '',
+			from_address: '',
+			html_body: '<p>Hi</p>',
+			plain_text: '',
+			plain_text_mode: 'auto',
+			layout_id: 4,
+			layout_version: 2,
+			samples: { 'site.name': 'Acme' },
+			direction: 'rtl',
+		} );
+		expect( previewRequest( draft ).direction ).toBe( '' );
+	} );
+
+	it( 'sends the previewed email to one address, with the same samples', () => {
+		const sent = testSendRequest(
+			7,
+			{ subject: 'Hi', html_body: '<p>Hi</p>' },
+			{ 'form.title': 'Quote' },
+			' me@example.test '
 		);
 
-		expect( html ).toContain( 'border-block-start:4px solid #abcdef' );
-		expect( html ).toContain( '<header>CoreX</header>' );
-		expect( html ).toContain( '<main><p>Hello</p><p>Team</p></main>' );
-		expect( html ).toContain( '<footer>Bye</footer>' );
+		expect( sent ).toEqual(
+			expect.objectContaining( {
+				template_id: 7,
+				to: [ 'me@example.test' ],
+				samples: { 'form.title': 'Quote' },
+				subject: 'Hi',
+			} )
+		);
+		expect( sent ).not.toHaveProperty( 'direction' );
+	} );
+
+	it( 'says why a template cannot be drawn in the words the server gave, naming what is missing', () => {
+		expect(
+			drawingErrors( {
+				message: 'This template cannot be drawn yet.',
+				details: {
+					fields: {
+						variables: 'Unknown variable: nonsense.key.',
+						partials: 'The partial "promo" is not available.',
+					},
+				},
+			} )
+		).toEqual( [
+			'Unknown variable: nonsense.key.',
+			'The partial "promo" is not available.',
+		] );
+		expect( drawingErrors( { message: 'Nope' } ) ).toEqual( [ 'Nope' ] );
 	} );
 } );

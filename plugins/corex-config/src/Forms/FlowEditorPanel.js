@@ -146,6 +146,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 					<EmailsTab
 						routes={ draft.configuration.email_routes || [] }
 						templates={ extensions.email_templates || [] }
+						schema={ draft.configuration.schema || [] }
 						onChange={ ( value ) =>
 							changeConfiguration( 'email_routes', value )
 						}

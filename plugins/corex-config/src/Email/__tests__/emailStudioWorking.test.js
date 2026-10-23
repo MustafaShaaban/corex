@@ -85,7 +85,6 @@ describe( 'the template editor while a request is out', () => {
 							plain_text: '',
 							plain_text_mode: 'auto',
 							layout_slug: '',
-							variable_keys: [],
 						} }
 						errors={ {} }
 						busy
