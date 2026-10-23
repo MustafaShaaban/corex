@@ -645,6 +645,20 @@ body.corex-admin-screen .corex-admin__shell {
 	cursor: pointer;
 }
 
+/* A notification's way to its fix (spec 118: every readiness notice carries
+   "Fix this check"). Drawn in the action's deeper shade, which its ink reads
+   on at 4.5:1 in both themes; the brass itself does not hold white text in
+   the light theme. */
+.corex-admin .corex-notification__actions .button-primary,
+.corex-admin .corex-notification__actions .button-primary:hover {
+	background: var(--corex-admin-action-hover);
+	border-color: var(--corex-admin-action-hover);
+}
+
+.corex-admin .corex-notification__actions .button-primary:hover {
+	text-decoration: underline;
+}
+
 .corex-notification__actions button.is-destructive {
 	color: var(--corex-admin-error);
 }

@@ -1913,15 +1913,6 @@
 			"check": "accessibility",
 			"rule": "color-contrast",
 			"screen": "corex-notifications",
-			"signature": "a.button.button-primary",
-			"since": "2026-10-23",
-			"story": "US-BRD-02",
-			"note": "Elements must meet minimum color contrast ratio thresholds: .corex-notification__actions > .button.button-primary. The primary button's light-mode contrast already listed for corex-access&tab=denied and corex-email-studio; seen here since a readiness notice carries Fix this check (spec 118)"
-		},
-		{
-			"check": "accessibility",
-			"rule": "color-contrast",
-			"screen": "corex-notifications",
 			"signature": "button[type=button].corex-notifications-screen__view",
 			"since": "2026-10-22",
 			"story": "US-BRD-02",
