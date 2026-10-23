@@ -103,8 +103,8 @@ final class SettingsControls
     /**
      * An on/off setting as the switch the Add-ons screen draws (spec 119, US-SET-09).
      *
-     * A real checkbox with the switch role, so Space, its label and the saved "1"/"0" are the
-     * browser's. On and Off are both written; the stylesheet shows the one that matches, so it
+     * A real checkbox with the switch role, drawn as the switch's track, so Space, its label, its
+     * focus ring and the saved "1"/"0" are the browser's. On and Off are both written; the stylesheet shows the one that matches, so it
      * reads right without scripts. Both are hidden from assistive technology, which announces
      * the switch's own state.
      */
@@ -113,9 +113,10 @@ final class SettingsControls
         $on = Truthy::of($state->shown);
 
         return sprintf(
-            '<label class="corex-switch"><input id="%1$s" name="%1$s" type="checkbox" value="1"%2$s role="switch"'
+            '<label class="corex-switch"><span class="corex-switch__control">'
+            . '<input id="%1$s" name="%1$s" type="checkbox" value="1"%2$s role="switch"'
             . ' class="corex-switch__input" data-corex-saved="%3$s"%4$s />'
-            . '<span class="corex-toggle__track" aria-hidden="true"><span class="corex-toggle__knob"></span></span>'
+            . '<span class="corex-toggle__knob" aria-hidden="true"></span></span>'
             . '<span class="corex-switch__state" aria-hidden="true"><span class="corex-switch__on">%5$s</span>'
             . '<span class="corex-switch__off">%6$s</span></span></label>',
             esc_attr($name),

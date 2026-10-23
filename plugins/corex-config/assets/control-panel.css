@@ -881,7 +881,10 @@
 
 @media (max-width: 782px) {
 
+	/* On a phone the bar takes its place after the last section: held to the
+	   bottom of a small window it covers the field being typed into. */
 	.corex-admin .corex-savebar {
+		position: static;
 		padding-inline: var(--corex-admin-space-md);
 	}
 

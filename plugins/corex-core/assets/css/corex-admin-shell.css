@@ -3196,20 +3196,17 @@ body.corex-admin-screen .corex-admin__shell {
 	text-transform: uppercase;
 }
 
-.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__track,
-.corex-admin .corex-switch__input:checked + .corex-toggle__track {
+.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__track {
 	background: var(--corex-admin-action);
 	border-color: var(--corex-admin-action);
 }
 
-.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__knob,
-.corex-admin .corex-switch__input:checked + .corex-toggle__track .corex-toggle__knob {
+.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__knob {
 	inset-inline-start: calc(100% - 1.3125rem);
 	background: var(--corex-admin-action-ink);
 }
 
-.corex-admin .corex-toggle[aria-checked="true"],
-.corex-admin .corex-switch:has(.corex-switch__input:checked) {
+.corex-admin .corex-toggle[aria-checked="true"] {
 	color: var(--corex-admin-action);
 }
 
@@ -3219,41 +3216,68 @@ body.corex-admin-screen .corex-admin__shell {
 	opacity: var(--corex-admin-disabled-opacity);
 }
 
-/* The Settings switch is a real checkbox laid over its track: Space, the label
-   and the posted value stay the browser's. Its focus ring is drawn on the
-   track. */
-.corex-admin .corex-switch {
+/* The Settings switch is a real checkbox drawn as the track, with the knob laid
+   over it: Space, the label, the focus ring and the posted value stay the
+   browser's. Held as a row in a form table, where wp-admin makes a label a
+   block on a phone. */
+.corex-admin .form-table td label.corex-switch {
+	display: inline-flex;
+}
+
+.corex-admin .corex-switch__control {
 	position: relative;
+	display: inline-flex;
+	flex: none;
 }
 
-.corex-admin .corex-switch__input {
-	position: absolute;
-	inset: 0;
-	inline-size: 100%;
-	block-size: 100%;
+.corex-admin .corex-switch input.corex-switch__input {
+	-webkit-appearance: none;
+	appearance: none;
+	inline-size: 2.625rem;
+	block-size: 1.5rem;
+	min-block-size: 0;
 	margin: 0;
-	opacity: 0;
+	padding: 0;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+	box-shadow: none;
 	cursor: inherit;
+	transition: background var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease;
 }
 
-.corex-admin .corex-switch__input:focus-visible + .corex-toggle__track {
-	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
-	outline-offset: var(--corex-admin-focus-offset);
+.corex-admin .corex-switch input.corex-switch__input::before {
+	content: none;
+}
+
+.corex-admin .corex-switch input.corex-switch__input:checked {
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-switch__control .corex-toggle__knob {
+	pointer-events: none;
+}
+
+.corex-admin .corex-switch__input:checked + .corex-toggle__knob {
+	inset-inline-start: calc(100% - 1.3125rem);
+	background: var(--corex-admin-action-ink);
 }
 
 .corex-admin .corex-switch__on,
-.corex-admin .corex-switch__input:checked ~ .corex-switch__state .corex-switch__off {
+.corex-admin .corex-switch:has(.corex-switch__input:checked) .corex-switch__off {
 	display: none;
 }
 
-.corex-admin .corex-switch__input:checked ~ .corex-switch__state .corex-switch__on {
+.corex-admin .corex-switch:has(.corex-switch__input:checked) .corex-switch__on {
 	display: inline;
 }
 
 @media (prefers-reduced-motion: reduce) {
 
 	.corex-admin .corex-toggle__track,
-	.corex-admin .corex-toggle__knob {
+	.corex-admin .corex-toggle__knob,
+	.corex-admin .corex-switch input.corex-switch__input {
 		transition: none;
 	}
 }
