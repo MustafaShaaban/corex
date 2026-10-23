@@ -10,11 +10,12 @@ namespace Corex\Config\Data;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\StandalonePage;
 
 /**
  * Exports the current (filtered) result of a Corex data source to a CSV download (spec 045,
- * US2). `manage_options` + a nonce gate the `admin_post` handler; the CSV assembly is the
+ * US2). "Manage data" + a nonce gate the `admin_post` handler; the CSV assembly is the
  * pure {@see csvFor} (registry + {@see CsvWriter}) so it is unit-testable, while the
  * boundary (`handle`) sets the download headers and streams it. Bounded to a row cap so a
  * large data set never exhausts memory; only the source's declared columns are written, so
@@ -38,7 +39,7 @@ final class DataExportController
 
     public function handle(): void
     {
-        if (! current_user_can('manage_options')) {
+        if (! current_user_can(CorexAbility::MANAGE_DATA)) {
             $this->fail(403, __('Access denied', 'corex'), __('You are not allowed to export this data.', 'corex'));
         }
 

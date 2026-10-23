@@ -10,6 +10,8 @@ namespace Corex\Email\Studio;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Email\Capture\CapturedEmail;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\EmailAttempt;
@@ -50,6 +52,7 @@ final class EmailStudioController
         private readonly EmailStudioService $studio,
         private readonly EmailTemplateService $editor,
         private readonly ConfigInterface $config,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
         $this->templates = $repositories->templates;
         $this->layouts   = $repositories->layouts;
@@ -83,9 +86,10 @@ final class EmailStudioController
         ]);
     }
 
+    /** Email Studio opens for the holders of "Manage Email Studio" (spec 117, US-EML-20). */
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allows(CorexAbility::MANAGE_EMAIL, 'corex-email-studio');
     }
 
     public function canMutate(WP_REST_Request $request): bool

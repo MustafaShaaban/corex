@@ -29,16 +29,19 @@ final class SettingsForm
     }
 
     /**
-     * @param callable(string):string                       $value        current value for a field key
-     * @param (callable(string):?SettingsSectionState)|null $sectionState per-section runtime state by section key
+     * @param callable(string):string                       $value             current value for a field key
+     * @param (callable(string):?SettingsSectionState)|null $sectionState      per-section runtime state by section key
+     * @param string                                        $activeKey         the section to show first (a tab key)
+     * @param bool                                          $siteAdministrator whether the person may change the fields
+     *                                                                         marked `site_admin` (spec 117, FR-008)
      */
-    /**
-     * @param callable(string):string                       $value        current value for a field key
-     * @param (callable(string):?SettingsSectionState)|null $sectionState per-section runtime state by section key
-     * @param string                                        $activeKey    the section to show first (a tab key)
-     */
-    public function render(callable $value, string $nonceField, ?callable $sectionState = null, string $activeKey = ''): string
-    {
+    public function render(
+        callable $value,
+        string $nonceField,
+        ?callable $sectionState = null,
+        string $activeKey = '',
+        bool $siteAdministrator = true,
+    ): string {
         $sections = $this->registry->sections();
         $keys     = array_keys($sections);
 
@@ -52,7 +55,7 @@ final class SettingsForm
         $html .= $this->tablist($sections, $activeKey);
 
         foreach ($sections as $sectionKey => $section) {
-            $html .= $this->panel((string) $sectionKey, $section, $value, $sectionState, $activeKey);
+            $html .= $this->panel((string) $sectionKey, $section, $value, $sectionState, $activeKey, $siteAdministrator);
         }
 
         return $html . sprintf(
@@ -97,8 +100,14 @@ final class SettingsForm
      * @param callable(string):string                       $value
      * @param (callable(string):?SettingsSectionState)|null $sectionState
      */
-    private function panel(string $sectionKey, array $section, callable $value, ?callable $sectionState, string $activeKey): string
-    {
+    private function panel(
+        string $sectionKey,
+        array $section,
+        callable $value,
+        ?callable $sectionState,
+        string $activeKey,
+        bool $siteAdministrator = true,
+    ): string {
         $state      = $sectionState !== null ? $sectionState($sectionKey) : null;
         $stateClass = $state === null ? 'normal' : str_replace('_', '-', $state->value);
         $isActive   = $sectionKey === $activeKey;
@@ -123,15 +132,17 @@ final class SettingsForm
         $html    .= $this->driverNotice($sectionKey, $section, $value);
 
         foreach ($section['fields'] as $key => $field) {
-            $name = str_replace('.', '_', $key);
+            $name   = str_replace('.', '_', $key);
+            $locked = ! $siteAdministrator && ! empty($field['site_admin']);
 
             $html .= sprintf(
-                '<tr%5$s><th><label for="%1$s">%2$s</label></th><td>%3$s%4$s</td></tr>',
+                '<tr%5$s><th><label for="%1$s">%2$s</label></th><td>%3$s%4$s%6$s</td></tr>',
                 esc_attr($name),
                 esc_html($field['label']),
-                $this->control($name, $field, (string) $value($key), $disabled),
+                $this->control($name, $field, (string) $value($key), $disabled || $locked),
                 $this->help($name, $field, $value),
                 $this->showForAttrs($field, $value),
+                $locked ? $this->siteAdministrationNote() : '',
             );
         }
 
@@ -320,6 +331,14 @@ final class SettingsForm
      * A read-only informational control — no input, never submitted (so it is skipped on save).
      * Used for live status read-outs such as the Media add-on's server-support summary.
      */
+    /** Why a field is read-only for someone who cannot administer the site (spec 117, FR-008). */
+    private function siteAdministrationNote(): string
+    {
+        return '<p class="description corex-settings__locked">'
+            . esc_html__('Only a site administrator can change how the whole site delivers mail.', 'corex')
+            . '</p>';
+    }
+
     private function info(string $value): string
     {
         return '<p class="corex-field-info" role="status">' . esc_html($value) . '</p>';

@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Insights;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\Access\ScreenAccess;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Security\Admin\AdminGuard;
 
@@ -28,6 +29,7 @@ final class InsightsScreen
         private readonly InsightRegistry $registry,
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
+        private readonly ScreenAccess $access = new ScreenAccess(),
     ) {
     }
 
@@ -43,7 +45,7 @@ final class InsightsScreen
             'corex-settings',
             __('CoreX Insights', 'corex'),
             __('Insights', 'corex'),
-            'manage_options',
+            $this->access->menuCapability('corex-insights'),
             'corex-insights',
             [$this, 'render'],
             60,
@@ -52,7 +54,7 @@ final class InsightsScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens('corex-insights')) {
             echo $this->page->permissionDenied('insights');
 
             return;
@@ -62,6 +64,8 @@ final class InsightsScreen
             'insights',
             __('Readiness & Insights', 'corex'),
             __('Run performance and release-readiness checks. Environment-gated results remain explicitly gated.', 'corex'),
+            '',
+            $this->access->readOnly('corex-insights'),
         ) . '<div id="corex-insights-app" class="corex-insights"></div>' . $this->page->close();
     }
 

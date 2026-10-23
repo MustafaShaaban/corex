@@ -10,6 +10,8 @@ namespace Corex\Config\Insights;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -32,6 +34,7 @@ final class InsightsController
         ?InsightRunService $runService = null,
         private readonly ?InsightWidgets $widgets = null,
         private readonly ?InsightWidgetFacts $widgetFacts = null,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
         $this->runService = $runService ?? new InsightRunService($registry, $store);
     }
@@ -63,14 +66,17 @@ final class InsightsController
         ]);
     }
 
+    /** Reading results: the screen's ability, or the view ability (spec 117, FR-014). */
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allowsReading(CorexAbility::MANAGE_ADMIN, 'corex-insights');
     }
 
+    /** Running a check changes what is stored, so it needs the screen's own ability. */
     public function canRun(WP_REST_Request $request): bool
     {
-        return $this->canManage() && $this->verifiedNonce((string) $request->get_header('X-WP-Nonce'));
+        return $this->abilities->allows(CorexAbility::MANAGE_ADMIN, 'corex-insights')
+            && $this->verifiedNonce((string) $request->get_header('X-WP-Nonce'));
     }
 
     /**

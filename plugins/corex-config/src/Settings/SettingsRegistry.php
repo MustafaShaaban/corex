@@ -108,9 +108,11 @@ final class SettingsRegistry implements FieldSections
                         'type'  => 'email',
                         'help'  => __('Where the person\'s answer to a reply goes. Leave blank for the default reply-to address above.', 'corex'),
                     ],
+                    // How the whole site delivers mail: site administration only (spec 117, FR-008).
                     'mail.provider'     => [
                         'label'   => __('Delivery provider', 'corex'),
                         'type'    => 'select',
+                        'site_admin' => true,
                         'options' => [
                             ''        => __('Disabled', 'corex'),
                             'wp-mail' => __('WordPress wp_mail', 'corex'),
@@ -120,6 +122,7 @@ final class SettingsRegistry implements FieldSections
                     'mail.live_delivery' => [
                         'label' => __('Enable live delivery', 'corex'),
                         'type'  => 'checkbox',
+                        'site_admin' => true,
                         'help'  => __('Production mail remains blocked unless a matching provider is also selected.', 'corex'),
                     ],
                     // What a designed email is drawn from (spec 106). Left blank, CoreX's own.

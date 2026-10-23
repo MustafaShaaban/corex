@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityNames;
 use Corex\Access\AccessChangePreview;
 use Corex\Access\AccessPolicy;
 use Corex\Access\AccessRequestedEvent;
@@ -20,6 +21,7 @@ use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\InvalidAccessInput;
 use Corex\Access\RequestableAbilities;
 use Corex\Access\RoleAbilityStore;
+use Corex\Access\SiteAdministration;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Events\EventDispatcher;
@@ -57,6 +59,7 @@ final class AccessService
         private readonly RequestableAbilities $requestable,
         private readonly ?RoutedMailer $notifications = null,
         private readonly ?EventDispatcher $events = null,
+        private readonly ?SiteAdministration $siteAdministration = null,
     ) {
     }
 
@@ -70,6 +73,7 @@ final class AccessService
             changes: $changes,
             affectedUserIds: $this->users->userIdsForRole($roleKey),
             fullAccessAdminIds: $this->users->fullAccessAdministratorIds(),
+            administersSite: $this->siteAdministration?->roleAdministersSite($roleKey) ?? false,
         );
     }
 
@@ -96,6 +100,8 @@ final class AccessService
         $preview = $this->previewRoleChanges($actorId, $roleKey, $changes);
 
         if (! $preview->allowed) {
+            $this->recordRefusedChange($actorId, $roleKey, $changes, $preview->blockers, $now);
+
             return $this->blocked(
                 'access_change_blocked',
                 __('The role ability change was blocked by the access safety policy.', 'corex'),
@@ -340,12 +346,76 @@ final class AccessService
         }
 
         if (($request['expiresAt'] ?? null) instanceof DateTimeImmutable && $request['expiresAt'] <= $now) {
-            $this->requests->transition($requestId, 'expired', $actorId, '', $now);
+            if ($this->requests->transition($requestId, 'expired', $actorId, '', $now)) {
+                $this->recordExpiredRequest($actorId, $request, $now);
+            }
 
             return $this->blocked('request_expired', __('The access request has expired.', 'corex'), $now);
         }
 
         return null;
+    }
+
+    /**
+     * A role change the safety rules refused, for the access history (spec 117, FR-020): who tried,
+     * on which role, what they asked for and why it was refused.
+     *
+     * @param array<string,string>                    $changes
+     * @param list<array{code:string,ability:string}> $blockers
+     */
+    private function recordRefusedChange(int $actorId, string $roleKey, array $changes, array $blockers, DateTimeImmutable $now): void
+    {
+        $this->activity->record(
+            actorId: $actorId,
+            actorKind: ActivityEvent::ACTOR_USER,
+            actorLabel: $this->users->displayName($actorId),
+            area: ActivityEvent::AREA_ACCESS,
+            kind: 'access.role.refused',
+            targetType: 'role',
+            targetId: $roleKey,
+            targetLabel: $roleKey,
+            outcome: ActivityEvent::OUTCOME_DENIED,
+            summary: ['key' => 'access.role.refused', 'args' => ['role' => $roleKey]],
+            context: ['changes' => $changes, 'blockers' => $blockers],
+            sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
+            retentionUntil: $now->modify('+180 days'),
+            occurredAt: $now,
+        );
+    }
+
+    /**
+     * A request that ran out before anybody decided it, found when somebody tried to (spec 117, FR-020).
+     *
+     * @param array<string,mixed> $request
+     */
+    private function recordExpiredRequest(int $actorId, array $request, DateTimeImmutable $now): void
+    {
+        $requestId = (int) ($request['id'] ?? 0);
+
+        $this->activity->record(
+            actorId: $actorId,
+            actorKind: ActivityEvent::ACTOR_USER,
+            actorLabel: $this->users->displayName($actorId),
+            area: ActivityEvent::AREA_ACCESS,
+            kind: 'access.request.expired',
+            targetType: 'access_request',
+            targetId: (string) $requestId,
+            targetLabel: sprintf(
+                /* translators: %d: access request ID. */
+                __('Access request %d', 'corex'),
+                $requestId,
+            ),
+            outcome: ActivityEvent::OUTCOME_WARNING,
+            summary: ['key' => 'access.request.expired', 'args' => ['request' => $requestId]],
+            context: [
+                'request_id'   => $requestId,
+                'requester_id' => (int) ($request['requesterId'] ?? 0),
+                'abilities'    => $this->requestedAbilities($request),
+            ],
+            sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
+            retentionUntil: $now->modify('+180 days'),
+            occurredAt: $now,
+        );
     }
 
     private function approvalRefusal(
@@ -488,13 +558,9 @@ final class AccessService
         $errors = $blockers === []
             ? [['code' => $code, 'message' => $message]]
             : array_map(
-                static fn (array $blocker): array => [
+                fn (array $blocker): array => [
                     'code'    => $blocker['code'],
-                    'message' => sprintf(
-                        /* translators: %s: CoreX ability key. */
-                        __('Ability %s cannot be changed.', 'corex'),
-                        $blocker['ability'],
-                    ),
+                    'message' => $this->refusalReason($blocker),
                 ],
                 $blockers,
             );
@@ -507,6 +573,34 @@ final class AccessService
             affectedIds: [],
             startedAt: $now,
             finishedAt: $now,
+        );
+    }
+
+    /**
+     * Why a change was refused, naming the ability as people know it and the reason in words
+     * (spec 117, US-ACC-05).
+     *
+     * @param array{code:string,ability:string} $blocker
+     */
+    public function refusalReason(array $blocker): string
+    {
+        $ability = $this->catalog->find($blocker['ability']);
+        $name    = $ability !== null ? AbilityNames::labelOf($ability) : $blocker['ability'];
+
+        return sprintf(
+            match ($blocker['code']) {
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'ability_locked'          => __('“%s” cannot be changed: it comes only with site administration.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'self_lockout'            => __('“%s” cannot be denied here: you would lose it yourself.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'last_full_access_admin'  => __('“%s” cannot be denied here: no administrator with full access would keep it.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'site_administrator_role' => __('“%s” cannot be denied to this role: site administrators always hold every CoreX ability.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                default                   => __('“%s” cannot be changed.', 'corex'),
+            },
+            $name,
         );
     }
 

@@ -16,6 +16,7 @@ use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\RequestableAbilities;
 use Corex\Access\RoleAbilityStore;
+use Corex\Access\SiteAdministration;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityRepository;
 use Corex\Activity\ActivityService;
@@ -434,4 +435,59 @@ it('cancels instead of approving a request for an ability a request can no longe
     expect(array_column($result->errors, 'code'))->toBe(['request_not_requestable'])
         ->and($this->requests->rows[1]['state'])->toBe('cancelled')
         ->and($this->users->granted)->toBe([]);
+});
+
+it('refuses a Deny on a role that administers the site, names the ability and records the refusal', function () {
+    $catalog = CorexAbilityCatalog::defaults();
+    $service = new AccessService(
+        catalog: $catalog,
+        policy: new AccessPolicy($catalog),
+        roleAbilities: $this->roles,
+        requests: $this->requests,
+        users: $this->users,
+        activity: new ActivityService($this->activityRepository),
+        requestable: new RequestableAbilities($catalog),
+        siteAdministration: new class implements SiteAdministration {
+            public function roleAdministersSite(string $roleKey): bool
+            {
+                return $roleKey === 'administrator';
+            }
+        },
+    );
+    $now     = new DateTimeImmutable('2026-10-23T10:00:00+00:00');
+    $changes = [CorexAbility::MANAGE_EMAIL => AccessPolicy::EFFECT_DENY];
+    $confirm = new Confirmation(
+        operationKind: AccessService::ROLE_CHANGE_OPERATION,
+        targetHash: $service->roleChangeHash('administrator', $changes),
+        actorId: 7,
+        expiresAt: $now->modify('+5 minutes'),
+    );
+
+    $result = $service->changeRoleAbilities(7, 'administrator', $changes, $confirm, $now);
+    $event  = $this->activityRepository->events[0] ?? null;
+
+    expect($result->state)->toBe(OperationResult::STATE_BLOCKED)
+        ->and($result->errors[0]['code'])->toBe('site_administrator_role')
+        ->and($result->errors[0]['message'])->toContain('“Manage Email Studio”')
+        ->and($result->errors[0]['message'])->not->toContain('corex_')
+        ->and($this->roles->effects)->toBe([])
+        ->and($event?->kind)->toBe('access.role.refused')
+        ->and($event?->context['blockers'])->toBe([['code' => 'site_administrator_role', 'ability' => CorexAbility::MANAGE_EMAIL]]);
+});
+
+it('says why a locked ability cannot be changed in words', function () {
+    expect($this->service->refusalReason(['code' => 'ability_locked', 'ability' => CorexAbility::MANAGE_ADMIN]))
+        ->toBe('“Access CoreX admin” cannot be changed: it comes only with site administration.');
+});
+
+it('records a request that ran out when somebody tried to decide it', function () {
+    $now = new DateTimeImmutable('2026-10-23T10:00:00+00:00');
+    $this->service->requestAccess(12, CorexAbility::MANAGE_FORMS, null, 'Need it.', $now->modify('-8 days'), $now->modify('-1 day'));
+
+    $result = $this->service->denyRequest(7, 1, 'Too late', $now);
+    $kinds  = array_map(static fn (ActivityEvent $event): string => $event->kind, $this->activityRepository->events);
+
+    expect($result->errors[0]['code'])->toBe('request_expired')
+        ->and($kinds)->toBe(['access.request.created', 'access.request.expired'])
+        ->and($this->activityRepository->events[1]->context['requester_id'])->toBe(12);
 });

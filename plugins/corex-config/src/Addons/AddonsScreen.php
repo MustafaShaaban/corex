@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Addons;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Docs\DocsUrl;
@@ -54,7 +55,7 @@ final class AddonsScreen
             'corex-settings',
             __('Corex Add-ons', 'corex'),
             __('Add-ons', 'corex'),
-            'manage_options',
+            CorexAbility::MANAGE_ADMIN,
             'corex-addons',
             [$this, 'render'],
             20,
@@ -82,7 +83,7 @@ final class AddonsScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->guard->authorized(CorexAbility::MANAGE_ADMIN)) {
             echo $this->page->permissionDenied('addons');
 
             return;
@@ -429,7 +430,7 @@ final class AddonsScreen
             return;
         }
 
-        if (! $this->guard->verifiedPost('corex_addons_nonce', 'corex_addons')) {
+        if (! $this->guard->verifiedPost('corex_addons_nonce', 'corex_addons', CorexAbility::MANAGE_ADMIN, 'corex-addons')) {
             return;
         }
 

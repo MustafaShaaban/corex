@@ -100,12 +100,12 @@ export default function AccessApprovalDialog( {
 			{ preview.area && (
 				<p>
 					{ sprintf(
-						/* translators: %s: a CoreX area's key, e.g. "data". */
+						/* translators: %s: the name of a CoreX area, e.g. "Forms & Flows". */
 						__(
 							'They asked for the %s area, which grants:',
 							'corex'
 						),
-						preview.area
+						preview.area_label || preview.area
 					) }
 				</p>
 			) }

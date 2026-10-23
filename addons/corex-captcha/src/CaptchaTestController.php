@@ -10,6 +10,8 @@ namespace Corex\Captcha;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use Corex\Support\Config\ConfigInterface;
 use WP_REST_Request;
@@ -25,8 +27,10 @@ final class CaptchaTestController
 {
     private const PROBE_TOKEN = 'corex-captcha-test-token';
 
-    public function __construct(private readonly ConfigInterface $config)
-    {
+    public function __construct(
+        private readonly ConfigInterface $config,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
+    ) {
     }
 
     public function register(): void
@@ -45,7 +49,8 @@ final class CaptchaTestController
 
     public function canRun(WP_REST_Request $request): bool
     {
-        return current_user_can('manage_options')
+        // The test belongs to Settings, so it asks for Settings' ability (spec 117, FR-002).
+        return $this->abilities->allows(CorexAbility::MANAGE_SETTINGS, 'corex-settings-config')
             && wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false;
     }
 

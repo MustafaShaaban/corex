@@ -3088,3 +3088,46 @@ body.corex-admin-screen .corex-admin__shell {
 	flex-shrink: 0;
 	min-block-size: var(--corex-admin-control-height);
 }
+
+/* A screen opened read-only for "See CoreX screens without changing them"
+   (spec 117, US-SHL-06): a chip beside the title, a sentence under the
+   header, and every control in the content shown as unavailable. */
+.corex-admin__chip {
+	display: inline-block;
+	margin-inline-start: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-xs);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	vertical-align: middle;
+}
+
+.corex-readonly-note {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-xs);
+	margin-block-start: var(--corex-admin-space-xl);
+	margin-inline: var(--corex-admin-space-xl);
+	padding: var(--corex-admin-space-md);
+	border-inline-start: var(--corex-admin-space-2xs) solid var(--corex-admin-info);
+}
+
+.corex-readonly-note__text {
+	margin: 0;
+	color: var(--corex-admin-text);
+}
+
+.corex-readonly-note__request summary {
+	cursor: pointer;
+	color: var(--corex-admin-link);
+}
+
+[data-corex-readonly] [aria-disabled="true"] {
+	cursor: not-allowed;
+	opacity: var(--corex-admin-disabled-opacity);
+}

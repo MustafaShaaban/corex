@@ -11,6 +11,7 @@ namespace Corex\Config\Addons;
 use Corex\Provisioning\ApplyOutcome;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Provisioning\PageDisposition;
+use Corex\Access\CorexAbility;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -48,7 +49,7 @@ final class KitActivationNotice
             return;
         }
 
-        if (! $this->guard->verifiedPost('corex_kit_nonce', 'corex_kit_activation')) {
+        if (! $this->guard->verifiedPost('corex_kit_nonce', 'corex_kit_activation', CorexAbility::MANAGE_ADMIN, 'corex-addons')) {
             return;
         }
 
@@ -70,7 +71,7 @@ final class KitActivationNotice
 
     public function notices(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->guard->authorized(CorexAbility::MANAGE_ADMIN)) {
             return;
         }
 

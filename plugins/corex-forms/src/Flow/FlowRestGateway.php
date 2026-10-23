@@ -28,8 +28,8 @@ use WP_REST_Response;
  */
 final readonly class FlowRestGateway
 {
-    /** What it takes to read or change a flow, asked at the route and again in the middleware. */
-    private const CAPABILITY = 'manage_options';
+    /** What it takes to read or change a flow, asked at the route and again in the middleware (spec 117). */
+    private const CAPABILITY = 'corex_manage_forms';
 
     public function __construct(
         private Pipeline $pipeline,

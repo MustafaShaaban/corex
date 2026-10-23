@@ -24,7 +24,18 @@ function deliveryDescription( delivery ) {
 	);
 }
 
-function DeliveryHero( { delivery, settingsUrl } ) {
+/**
+ * How mail leaves the site, and where it is changed. Choosing the provider and turning live
+ * delivery on or off stay with site administration (spec 117, US-EML-20), so anyone else is told
+ * that instead of being sent to a field they cannot change.
+ *
+ * @param {Object}  props
+ * @param {Object}  props.delivery             The delivery facts.
+ * @param {string}  props.settingsUrl          Settings → Mail.
+ * @param {boolean} props.canConfigureDelivery Whether this person may change them.
+ * @return {Element} The hero.
+ */
+function DeliveryHero( { delivery, settingsUrl, canConfigureDelivery } ) {
 	return (
 		<section className="corex-email-app__hero corex-surface">
 			<p className="corex-email-app__eyebrow">
@@ -32,7 +43,15 @@ function DeliveryHero( { delivery, settingsUrl } ) {
 			</p>
 			<h2>{ delivery.environment || __( 'Unknown', 'corex' ) }</h2>
 			<p>{ deliveryDescription( delivery ) }</p>
-			{ ! delivery.provider_configured && (
+			{ ! canConfigureDelivery && (
+				<p className="corex-email-app__note">
+					{ __(
+						'Turning delivery on or off and choosing its provider change how the whole site sends mail, so a site administrator does them in Settings.',
+						'corex'
+					) }
+				</p>
+			) }
+			{ canConfigureDelivery && ! delivery.provider_configured && (
 				<p>
 					<a className="button button-primary" href={ settingsUrl }>
 						{ __( 'Configure delivery', 'corex' ) }
@@ -118,12 +137,17 @@ function HealthSummary( { checks } ) {
 	);
 }
 
-export function OverviewPanel( { data, settingsUrl } ) {
+export function OverviewPanel( {
+	data,
+	settingsUrl,
+	canConfigureDelivery = true,
+} ) {
 	return (
 		<div className="corex-email-app__stack">
 			<DeliveryHero
 				delivery={ data.delivery || {} }
 				settingsUrl={ settingsUrl }
+				canConfigureDelivery={ canConfigureDelivery }
 			/>
 			<DeliveryMetrics counts={ data.counts || {} } />
 			<RecentTestSends attempts={ data.recentTestSends } />

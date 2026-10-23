@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Corex\Kit\Setup;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use Corex\Kit\BlueprintActivator;
 use Corex\Kit\SetupWizard;
@@ -34,6 +36,7 @@ final class SetupWizardController
         private readonly SetupProgress $progress,
         private readonly BlueprintActivator $activator,
         private readonly ConflictResolver $conflicts = new ConflictResolver(),
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -60,7 +63,7 @@ final class SetupWizardController
 
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allows(CorexAbility::MANAGE_SETUP, 'corex-setup');
     }
 
     public function canApply(WP_REST_Request $request): bool

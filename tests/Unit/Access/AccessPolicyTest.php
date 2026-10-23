@@ -99,3 +99,35 @@ it('refuses a change with nobody behind it as a mistake in the code that called 
         expect($thrown)->not->toBeInstanceOf(InvalidAccessInput::class);
     });
 });
+
+it('refuses a Deny on a role that administers the site, and allows anything else there', function () {
+    $deny = $this->policy->preview(
+        actorId: 7,
+        changes: [CorexAbility::MANAGE_EMAIL => AccessPolicy::EFFECT_DENY],
+        affectedUserIds: [7, 9],
+        fullAccessAdminIds: [7, 9],
+        administersSite: true,
+    );
+    $inherit = $this->policy->preview(
+        actorId: 7,
+        changes: [CorexAbility::MANAGE_EMAIL => AccessPolicy::EFFECT_INHERIT],
+        affectedUserIds: [7, 9],
+        fullAccessAdminIds: [7, 9],
+        administersSite: true,
+    );
+
+    expect($deny->allowed)->toBeFalse()
+        ->and($deny->blockers)->toBe([['code' => 'site_administrator_role', 'ability' => CorexAbility::MANAGE_EMAIL]])
+        ->and($inherit->allowed)->toBeTrue();
+});
+
+it('lets a Deny on an ordinary role through', function () {
+    $preview = $this->policy->preview(
+        actorId: 7,
+        changes: [CorexAbility::MANAGE_EMAIL => AccessPolicy::EFFECT_DENY],
+        affectedUserIds: [12],
+        fullAccessAdminIds: [7],
+    );
+
+    expect($preview->allowed)->toBeTrue();
+});

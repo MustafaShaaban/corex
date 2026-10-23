@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Retention;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\StandalonePage;
 use Corex\Config\Submissions\SubmissionAccessPolicy;
 use Corex\Config\Submissions\SubmissionTrashRetention;
@@ -46,7 +47,7 @@ final class RetentionController
 
     public function save(): void
     {
-        $this->assertAllowed(self::SAVE_ACTION);
+        $this->assertAllowed(self::SAVE_ACTION, CorexAbility::MANAGE_SETTINGS);
 
         $days = isset($_POST['corex_retention_days']) ? (int) $_POST['corex_retention_days'] : 0;
         $this->retention->setDays($days);
@@ -60,7 +61,7 @@ final class RetentionController
 
     public function prune(): void
     {
-        $this->assertAllowed(self::PRUNE_ACTION);
+        $this->assertAllowed(self::PRUNE_ACTION, CorexAbility::RUN_DANGEROUS_ACTIONS);
 
         $confirmed = isset($_POST['corex_confirm']) && $_POST['corex_confirm'] === '1';
         if (! $confirmed) {
@@ -89,9 +90,10 @@ final class RetentionController
         $this->redirect('retention-pruned', ['corex_count' => $removed, 'corex_action' => $action]);
     }
 
-    private function assertAllowed(string $action): void
+    /** Saving the policy needs "Manage settings"; applying it "Run dangerous actions" (spec 117, FR-004). */
+    private function assertAllowed(string $action, string $ability): void
     {
-        if (! $this->guard->verifiedPost(self::NONCE, $action)) {
+        if (! $this->guard->verifiedPost(self::NONCE, $action, $ability, 'corex-submissions')) {
             $this->refuse();
         }
     }

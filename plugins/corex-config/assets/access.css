@@ -580,3 +580,169 @@
 	margin-inline-end: var(--corex-admin-space-md);
 	font-weight: 400;
 }
+
+/* The role matrix grid (spec 117, US-ACC-02): abilities down the side by area,
+   roles across the top. The frame scrolls on its own and the ability column
+   stays in view, so the page never scrolls sideways. */
+.corex-admin .corex-access__grid-frame {
+	max-inline-size: 100%;
+	overflow-x: auto;
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-access__grid-frame:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-access__grid {
+	inline-size: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__grid th,
+.corex-admin .corex-access__grid td {
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	text-align: start;
+	vertical-align: top;
+}
+
+.corex-admin .corex-access__grid thead th {
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+	white-space: nowrap;
+}
+
+.corex-admin .corex-access__grid thead th .button {
+	display: block;
+	margin-block-start: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-access__grid th[scope="row"],
+.corex-admin .corex-access__grid thead th:first-child {
+	position: sticky;
+	inset-inline-start: 0;
+	z-index: 1;
+	min-inline-size: 11rem;
+	max-inline-size: 16rem;
+	background: var(--corex-admin-surface);
+	border-inline-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-access__grid th[scope="row"] .corex-access__ability {
+	display: block;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-access__grid th[scope="row"] .corex-access__muted {
+	display: block;
+	font-weight: 400;
+}
+
+.corex-admin .corex-access__grid-area th {
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-access__cell {
+	position: relative;
+	min-inline-size: 8rem;
+}
+
+.corex-admin .corex-access__why {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-2xs);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-access__why:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-access__state {
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-access__cell.is-not_granted .corex-access__state,
+.corex-admin .corex-access__cell.is-locked .corex-access__state {
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin .corex-access__mark.is-allowed_set,
+.corex-admin .corex-access__mark.is-allowed_admin {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-access__mark.is-denied_set {
+	color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-access__mark.is-not_granted,
+.corex-admin .corex-access__mark.is-locked {
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin .corex-access__tip {
+	position: absolute;
+	inset-block-start: 100%;
+	inset-inline-start: var(--corex-admin-space-sm);
+	z-index: 2;
+	display: none;
+	max-inline-size: 16rem;
+	padding: var(--corex-admin-space-xs);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface-raised);
+	box-shadow: var(--corex-admin-shadow-md);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-xs);
+	white-space: normal;
+}
+
+.corex-admin .corex-access__cell:hover .corex-access__tip,
+.corex-admin .corex-access__cell:focus-within .corex-access__tip {
+	display: block;
+}
+
+.corex-admin .corex-access__head-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+}
+
+/* Overview (spec 117, US-ACC-03) and the audit (US-ACC-04) */
+.corex-admin .corex-access__area,
+.corex-admin .corex-access__day {
+	margin-block: var(--corex-admin-space-md) var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-access__pager {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-md);
+}

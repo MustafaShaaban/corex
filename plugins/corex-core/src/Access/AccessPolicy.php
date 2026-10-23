@@ -13,7 +13,8 @@ defined('ABSPATH') || exit;
 use InvalidArgumentException;
 
 /**
- * Pure guard against locked definitions, self-lockout, and last-administrator removal.
+ * Pure guard against locked definitions, self-lockout, last-administrator removal, and a Deny on a
+ * role whose members administer the site, who always hold every CoreX ability (spec 117, ACC-D11).
  */
 final class AccessPolicy
 {
@@ -31,12 +32,14 @@ final class AccessPolicy
      * @param array<string,string> $changes
      * @param list<int>            $affectedUserIds
      * @param list<int>            $fullAccessAdminIds
+     * @param bool                 $administersSite    Whether the role changed is one that administers the site.
      */
     public function preview(
         int $actorId,
         array $changes,
         array $affectedUserIds,
         array $fullAccessAdminIds,
+        bool $administersSite = false,
     ): AccessChangePreview {
         if ($actorId < 1) {
             throw new InvalidArgumentException('Access changes require an authenticated actor.');
@@ -60,6 +63,11 @@ final class AccessPolicy
 
             if ($ability->locked) {
                 $blockers[] = ['code' => 'ability_locked', 'ability' => $abilityKey];
+                continue;
+            }
+
+            if ($effect === self::EFFECT_DENY && $administersSite) {
+                $blockers[] = ['code' => 'site_administrator_role', 'ability' => $abilityKey];
                 continue;
             }
 

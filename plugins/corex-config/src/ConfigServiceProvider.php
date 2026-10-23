@@ -336,7 +336,13 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Access\RequestableAbilities::class),
                 $c->has(\Corex\Mail\RoutedMailer::class) ? $c->make(\Corex\Mail\RoutedMailer::class) : null,
                 $c->make(\Corex\Events\EventDispatcher::class),
+                $c->make(\Corex\Access\SiteAdministration::class),
             ),
+        );
+        // Which roles administer the site: their members hold every CoreX ability (spec 117, ACC-D11).
+        $this->container->singleton(
+            \Corex\Access\SiteAdministration::class,
+            static fn (): \Corex\Access\SiteAdministration => new \Corex\Config\Access\WpSiteAdministration(),
         );
         $this->container->singleton(AbilityCompatibility::class);
         $this->container->singleton(RolePluginCompatibility::class);

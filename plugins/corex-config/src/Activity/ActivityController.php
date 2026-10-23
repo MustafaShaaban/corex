@@ -10,6 +10,7 @@ namespace Corex\Config\Activity;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Http\ResponseEnvelope;
@@ -44,7 +45,7 @@ final class ActivityController
 
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return current_user_can(CorexAbility::MANAGE_ADMIN);
     }
 
     public function index(WP_REST_Request $request): WP_REST_Response

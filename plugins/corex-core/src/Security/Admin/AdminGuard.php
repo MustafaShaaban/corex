@@ -34,13 +34,22 @@ final class AdminGuard
      * True only when the current user is authorized AND the POST carries a valid nonce
      * for $action in the $field key. The gate an admin screen calls before acting on a
      * submission — so the unslash + sanitize + verify dance lives in exactly one place.
+     *
+     * Given the screen it belongs to, a submission refused for want of the capability is published
+     * on `corex_access_refused` for the access audit, as a refused route is (spec 117, FR-005).
      */
     public function verifiedPost(
         string $field,
         string $action,
-        string $capability = 'manage_options'
+        string $capability = 'manage_options',
+        ?string $section = null,
     ): bool {
         if (! $this->authorized($capability)) {
+            if ($section !== null && isset($_POST[$field]) && is_user_logged_in()) {
+                /** This action is documented in {@see \Corex\Access\AbilityCheck::allows()}. */
+                do_action('corex_access_refused', 'action', $section, $capability);
+            }
+
             return false;
         }
 
