@@ -400,7 +400,18 @@ function useDeliveryCommands( { post, selection } ) {
 			__( 'Retry attempt created.', 'corex' )
 		);
 
-	return { lastResult, testSend, resend };
+	// The "Capture only CoreX mail" switch (spec 113).
+	const saveScope = ( scope ) =>
+		post(
+			'captureScope',
+			{ scope },
+			'',
+			scope === 'corex'
+				? __( 'Only CoreX mail is captured now.', 'corex' )
+				: __( 'All mail from this site is captured now.', 'corex' )
+		);
+
+	return { lastResult, testSend, resend, saveScope };
 }
 
 function useHealth( { config, dispatch, selection } ) {

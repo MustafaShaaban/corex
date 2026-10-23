@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Studio\EmailStudioStore;
+use Corex\Mail\Capture\CapturedMessage;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
 use DomainException;
@@ -24,6 +25,12 @@ final class CapturedEmailRepository
 {
     private const TYPE = 'captured_email';
 
+    /** How long a captured or held email is kept (spec 113, FR-020). */
+    public const RETENTION_DAYS = 30;
+
+    /** Records read beyond the limit, to stand in for any that cannot be read. */
+    private const SPARE = 10;
+
     public function __construct(private readonly EmailStudioStore $store)
     {
     }
@@ -32,6 +39,8 @@ final class CapturedEmailRepository
         EmailMessage $message,
         ?string $attemptId = null,
         ?DateTimeImmutable $capturedAt = null,
+        string $path = '',
+        string $state = CapturedMessage::STATE_CAPTURED,
     ): CapturedEmail
     {
         $captureId = Uuid::v4();
@@ -51,7 +60,9 @@ final class CapturedEmailRepository
             'plain_text'  => $message->plainText ?? $this->plainText($message->body),
             'headers'     => $message->headers,
             'captured_at' => $capturedAt->format(DATE_ATOM),
-            'retention_until' => $capturedAt->modify('+30 days')->format(DATE_ATOM),
+            'retention_until' => $capturedAt->modify('+' . self::RETENTION_DAYS . ' days')->format(DATE_ATOM),
+            'path'        => mb_substr($path, 0, 191),
+            'state'       => $state === CapturedMessage::STATE_HELD_FOR_TEST ? $state : CapturedMessage::STATE_CAPTURED,
         ]);
         $record = $this->store->find($id);
 
@@ -63,7 +74,9 @@ final class CapturedEmailRepository
     {
         $limit    = max(1, min(100, $limit));
         $captures = [];
-        foreach (array_reverse($this->store->all(self::TYPE)) as $record) {
+        // A few more than asked for, so that an unreadable record skipped below still leaves the
+        // list as long as asked.
+        foreach ($this->store->latest(self::TYPE, $limit + self::SPARE) as $record) {
             if (count($captures) === $limit) {
                 break;
             }
@@ -99,6 +112,8 @@ final class CapturedEmailRepository
             retentionUntil: new DateTimeImmutable((string) ($payload['retention_until'] ?? '')),
             attemptId: is_string($payload['attempt_id'] ?? null) ? $payload['attempt_id'] : null,
             plainText: (string) ($payload['plain_text'] ?? ''),
+            path: (string) ($payload['path'] ?? ''),
+            state: (string) ($payload['state'] ?? CapturedMessage::STATE_CAPTURED),
         );
     }
 

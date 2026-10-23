@@ -109,10 +109,10 @@ function notifiedProbeReader(string $login, ?string $ability): int
 }
 
 beforeEach(function () {
-    // One form here writes an email, and a development install may deliver for real. A form
-    // defined in code sends through wp_mail() whatever the site decides for an email, so the
-    // email is answered here, before WordPress hands it to anything: nothing leaves this file.
-    $this->mailSettings = MailDelivery::answerAs(MailDelivery::CAPTURE);
+    // One form here writes an email, and a development install may deliver for real. The email
+    // is sent as a production site sends it (spec 113 keeps every other site's mail on the site)
+    // and answered here, before WordPress hands it to anything: nothing leaves this file.
+    $this->mailSettings = MailDelivery::answerAs(MailDelivery::DELIVER);
     $this->mailAccepted = true;
     $this->answersMail  = fn (): bool => $this->mailAccepted;
     add_filter('pre_wp_mail', $this->answersMail);

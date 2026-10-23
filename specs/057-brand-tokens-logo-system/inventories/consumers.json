@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 1203,
+  "count": 1207,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -6323,7 +6323,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 227, 379, 381: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);",
+      "selector_or_context": "lines 298, 472, 474: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);",
       "property": "--corex-admin-action",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6333,7 +6333,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 190: color: var(--corex-admin-action-hover);",
+      "selector_or_context": "lines 261: color: var(--corex-admin-action-hover);",
       "property": "--corex-admin-action-hover",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6343,7 +6343,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 380: background: var(--corex-admin-action-subtle);",
+      "selector_or_context": "lines 473: background: var(--corex-admin-action-subtle);",
       "property": "--corex-admin-action-subtle",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6353,7 +6353,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 12, 304, 314, 448: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
+      "selector_or_context": "lines 18, 375, 385, 541: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
       "property": "--corex-admin-border",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6363,7 +6363,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 125, 216, 332, 350: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "selector_or_context": "lines 196, 287, 403, 421: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
       "property": "--corex-admin-border-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6373,7 +6373,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 149: border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);",
+      "selector_or_context": "lines 220: border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);",
       "property": "--corex-admin-border-strong",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6383,7 +6383,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 12, 21, 125, 149, 216, 304, 314, 332, 350: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "selector_or_context": "lines 18, 27, 196, 220, 287, 375, 385, 403, 421, 431: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
       "property": "--corex-admin-border-width",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6393,7 +6393,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 17, 144, 156, 172, 296, 302, 309: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);",
+      "selector_or_context": "lines 23, 215, 227, 243, 367, 373, 380: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);",
       "property": "--corex-admin-control-height",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6403,7 +6403,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 97, 163, 269: border-color: var(--corex-admin-error); | color: var(--corex-admin-error);",
+      "selector_or_context": "lines 168, 234, 340: border-color: var(--corex-admin-error); | color: var(--corex-admin-error);",
       "property": "--corex-admin-error",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6413,7 +6413,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 96, 270: background: var(--corex-admin-error-soft);",
+      "selector_or_context": "lines 167, 341: background: var(--corex-admin-error-soft);",
       "property": "--corex-admin-error-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6423,7 +6423,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 387: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
+      "selector_or_context": "lines 430, 480: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
       "property": "--corex-admin-focus",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6433,7 +6433,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 388: outline-offset: var(--corex-admin-focus-offset);",
+      "selector_or_context": "lines 481: outline-offset: var(--corex-admin-focus-offset);",
       "property": "--corex-admin-focus-offset",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6443,7 +6443,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 387: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
+      "selector_or_context": "lines 430, 480: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
       "property": "--corex-admin-focus-width",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6453,7 +6453,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 80: font-size: var(--corex-admin-font-2xl);",
+      "selector_or_context": "lines 151: font-size: var(--corex-admin-font-2xl);",
       "property": "--corex-admin-font-2xl",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6463,7 +6463,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 79: font-family: var(--corex-admin-font-display);",
+      "selector_or_context": "lines 150: font-family: var(--corex-admin-font-display);",
       "property": "--corex-admin-font-display",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6473,7 +6473,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 55, 158, 191, 256, 316: font-family: var(--corex-admin-font-mono);",
+      "selector_or_context": "lines 115, 229, 262, 327, 387: font-family: var(--corex-admin-font-mono);",
       "property": "--corex-admin-font-mono",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6483,7 +6483,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 24, 75, 132, 159, 357: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 30, 79, 97, 129, 146, 203, 230, 443, 450: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6493,7 +6493,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 56, 164, 192, 247, 257, 339: font-size: var(--corex-admin-font-xs);",
+      "selector_or_context": "lines 116, 235, 263, 318, 328, 410: font-size: var(--corex-admin-font-xs);",
       "property": "--corex-admin-font-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6503,7 +6503,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 37, 86, 253, 457: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);",
+      "selector_or_context": "lines 44, 52, 157, 324, 550: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);",
       "property": "--corex-admin-info",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6513,7 +6513,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 85, 254: background: var(--corex-admin-info-soft);",
+      "selector_or_context": "lines 53, 156, 325: background: var(--corex-admin-info-soft);",
       "property": "--corex-admin-info-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6523,7 +6523,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 57: letter-spacing: var(--corex-admin-letter-wide);",
+      "selector_or_context": "lines 117: letter-spacing: var(--corex-admin-letter-wide);",
       "property": "--corex-admin-letter-wide",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6533,7 +6533,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 292: transition: inline-size var(--corex-admin-motion-fast) ease;",
+      "selector_or_context": "lines 363: transition: inline-size var(--corex-admin-motion-fast) ease;",
       "property": "--corex-admin-motion-fast",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6543,7 +6543,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 305, 315: border-radius: var(--corex-admin-radius-md);",
+      "selector_or_context": "lines 376, 386: border-radius: var(--corex-admin-radius-md);",
       "property": "--corex-admin-radius-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6553,7 +6553,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 255: border-radius: var(--corex-admin-radius-pill);",
+      "selector_or_context": "lines 326: border-radius: var(--corex-admin-radius-pill);",
       "property": "--corex-admin-radius-pill",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6563,7 +6563,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 22, 87, 150, 217: border-radius: var(--corex-admin-radius-sm);",
+      "selector_or_context": "lines 28, 158, 221, 288: border-radius: var(--corex-admin-radius-sm);",
       "property": "--corex-admin-radius-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6573,7 +6573,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 10, 232, 252, 286, 366: gap: var(--corex-admin-space-2xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 16, 95, 303, 323, 357, 436, 459: gap: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-2xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6583,7 +6583,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 4, 32, 70, 103, 111, 123, 124, 179, 186, 276, 277, 310, 434: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);",
+      "selector_or_context": "lines 10, 39, 51, 141, 174, 182, 194, 195, 250, 257, 347, 348, 381, 527: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);",
       "property": "--corex-admin-space-lg",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6593,7 +6593,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 18, 64, 84, 118, 185, 348, 435: padding-inline: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md);",
+      "selector_or_context": "lines 24, 50, 74, 86, 135, 155, 189, 256, 419, 528: padding-inline: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6603,7 +6603,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 69, 146, 178, 212, 331, 349, 447: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | padding-inline-start: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 84, 123, 140, 217, 249, 283, 402, 420, 441, 540: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin-block: 0 var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6613,7 +6613,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 36: padding: var(--corex-admin-space-xl);",
+      "selector_or_context": "lines 43: padding: var(--corex-admin-space-xl);",
       "property": "--corex-admin-space-xl",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6623,7 +6623,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 11, 130, 200, 210, 241, 252, 443: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 17, 49, 74, 201, 271, 281, 312, 323, 536: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);",
       "property": "--corex-admin-space-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6633,7 +6633,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 37, 86, 448: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
+      "selector_or_context": "lines 44, 52, 157, 541: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
       "property": "--corex-admin-state-border",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6643,17 +6643,17 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 92, 263: border-color: var(--corex-admin-success); | color: var(--corex-admin-success);",
+      "selector_or_context": "lines 57, 163, 334: border-inline-start-color: var(--corex-admin-success); | border-color: var(--corex-admin-success); | color: var(--corex-admin-success);",
       "property": "--corex-admin-success",
       "owner": "config-plugin",
       "surface": "admin",
-      "direction_context": "not-applicable",
+      "direction_context": "logical",
       "resolution": "raw-allowance",
       "target_definition": "scoped --corex-admin-* adapter"
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 91, 264: background: var(--corex-admin-success-soft);",
+      "selector_or_context": "lines 58, 162, 335: background: var(--corex-admin-success-soft);",
       "property": "--corex-admin-success-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6663,7 +6663,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 148, 226, 303, 313, 374: background: var(--corex-admin-surface-raised);",
+      "selector_or_context": "lines 219, 297, 374, 384, 467: background: var(--corex-admin-surface-raised);",
       "property": "--corex-admin-surface-raised",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6673,7 +6673,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 147, 213, 312, 373, 449: color: var(--corex-admin-text);",
+      "selector_or_context": "lines 218, 284, 383, 466, 542: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6683,7 +6683,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 19, 50, 74, 131, 246, 281, 338, 356: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 25, 78, 96, 110, 128, 145, 202, 317, 352, 409, 442, 449: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6693,7 +6693,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 54: color: var(--corex-admin-text-subtle);",
+      "selector_or_context": "lines 114: color: var(--corex-admin-text-subtle);",
       "property": "--corex-admin-text-subtle",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6703,7 +6703,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.css",
-      "selector_or_context": "lines 453: border-inline-start-color: var(--corex-admin-warning);",
+      "selector_or_context": "lines 62, 546: border-inline-start-color: var(--corex-admin-warning);",
       "property": "--corex-admin-warning",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6712,8 +6712,18 @@
       "target_definition": "scoped --corex-admin-* adapter"
     },
     {
+      "path": "plugins/corex-config/assets/email-studio.css",
+      "selector_or_context": "lines 63: background: var(--corex-admin-warning-soft);",
+      "property": "--corex-admin-warning-soft",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 227, 379, 381: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);",
+      "selector_or_context": "lines 298, 472, 474: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);",
       "property": "--corex-admin-action",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6723,7 +6733,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 190: color: var(--corex-admin-action-hover);",
+      "selector_or_context": "lines 261: color: var(--corex-admin-action-hover);",
       "property": "--corex-admin-action-hover",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6733,7 +6743,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 380: background: var(--corex-admin-action-subtle);",
+      "selector_or_context": "lines 473: background: var(--corex-admin-action-subtle);",
       "property": "--corex-admin-action-subtle",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6743,7 +6753,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 12, 304, 314, 448: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
+      "selector_or_context": "lines 18, 375, 385, 541: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
       "property": "--corex-admin-border",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6753,7 +6763,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 125, 216, 332, 350: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "selector_or_context": "lines 196, 287, 403, 421: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
       "property": "--corex-admin-border-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6763,7 +6773,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 149: border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);",
+      "selector_or_context": "lines 220: border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);",
       "property": "--corex-admin-border-strong",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6773,7 +6783,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 12, 21, 125, 149, 216, 304, 314, 332, 350: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "selector_or_context": "lines 18, 27, 196, 220, 287, 375, 385, 403, 421, 431: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
       "property": "--corex-admin-border-width",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6783,7 +6793,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 17, 144, 156, 172, 296, 302, 309: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);",
+      "selector_or_context": "lines 23, 215, 227, 243, 367, 373, 380: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);",
       "property": "--corex-admin-control-height",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6793,7 +6803,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 97, 163, 269: border-color: var(--corex-admin-error); | color: var(--corex-admin-error);",
+      "selector_or_context": "lines 168, 234, 340: border-color: var(--corex-admin-error); | color: var(--corex-admin-error);",
       "property": "--corex-admin-error",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6803,7 +6813,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 96, 270: background: var(--corex-admin-error-soft);",
+      "selector_or_context": "lines 167, 341: background: var(--corex-admin-error-soft);",
       "property": "--corex-admin-error-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6813,7 +6823,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 387: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
+      "selector_or_context": "lines 430, 480: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
       "property": "--corex-admin-focus",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6823,7 +6833,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 388: outline-offset: var(--corex-admin-focus-offset);",
+      "selector_or_context": "lines 481: outline-offset: var(--corex-admin-focus-offset);",
       "property": "--corex-admin-focus-offset",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6833,7 +6843,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 387: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
+      "selector_or_context": "lines 430, 480: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);",
       "property": "--corex-admin-focus-width",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6843,7 +6853,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 80: font-size: var(--corex-admin-font-2xl);",
+      "selector_or_context": "lines 151: font-size: var(--corex-admin-font-2xl);",
       "property": "--corex-admin-font-2xl",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6853,7 +6863,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 79: font-family: var(--corex-admin-font-display);",
+      "selector_or_context": "lines 150: font-family: var(--corex-admin-font-display);",
       "property": "--corex-admin-font-display",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6863,7 +6873,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 55, 158, 191, 256, 316: font-family: var(--corex-admin-font-mono);",
+      "selector_or_context": "lines 115, 229, 262, 327, 387: font-family: var(--corex-admin-font-mono);",
       "property": "--corex-admin-font-mono",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6873,7 +6883,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 24, 75, 132, 159, 357: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 30, 79, 97, 129, 146, 203, 230, 443, 450: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6883,7 +6893,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 56, 164, 192, 247, 257, 339: font-size: var(--corex-admin-font-xs);",
+      "selector_or_context": "lines 116, 235, 263, 318, 328, 410: font-size: var(--corex-admin-font-xs);",
       "property": "--corex-admin-font-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6893,7 +6903,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 37, 86, 253, 457: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);",
+      "selector_or_context": "lines 44, 52, 157, 324, 550: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);",
       "property": "--corex-admin-info",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6903,7 +6913,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 85, 254: background: var(--corex-admin-info-soft);",
+      "selector_or_context": "lines 53, 156, 325: background: var(--corex-admin-info-soft);",
       "property": "--corex-admin-info-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6913,7 +6923,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 57: letter-spacing: var(--corex-admin-letter-wide);",
+      "selector_or_context": "lines 117: letter-spacing: var(--corex-admin-letter-wide);",
       "property": "--corex-admin-letter-wide",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6923,7 +6933,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 292: transition: inline-size var(--corex-admin-motion-fast) ease;",
+      "selector_or_context": "lines 363: transition: inline-size var(--corex-admin-motion-fast) ease;",
       "property": "--corex-admin-motion-fast",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6933,7 +6943,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 305, 315: border-radius: var(--corex-admin-radius-md);",
+      "selector_or_context": "lines 376, 386: border-radius: var(--corex-admin-radius-md);",
       "property": "--corex-admin-radius-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6943,7 +6953,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 255: border-radius: var(--corex-admin-radius-pill);",
+      "selector_or_context": "lines 326: border-radius: var(--corex-admin-radius-pill);",
       "property": "--corex-admin-radius-pill",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6953,7 +6963,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 22, 87, 150, 217: border-radius: var(--corex-admin-radius-sm);",
+      "selector_or_context": "lines 28, 158, 221, 288: border-radius: var(--corex-admin-radius-sm);",
       "property": "--corex-admin-radius-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6963,7 +6973,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 10, 232, 252, 286, 366: gap: var(--corex-admin-space-2xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 16, 95, 303, 323, 357, 436, 459: gap: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-2xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6973,7 +6983,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 4, 32, 70, 103, 111, 123, 124, 179, 186, 276, 277, 310, 434: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);",
+      "selector_or_context": "lines 10, 39, 51, 141, 174, 182, 194, 195, 250, 257, 347, 348, 381, 527: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);",
       "property": "--corex-admin-space-lg",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6983,7 +6993,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 18, 64, 84, 118, 185, 348, 435: padding-inline: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md);",
+      "selector_or_context": "lines 24, 50, 74, 86, 135, 155, 189, 256, 419, 528: padding-inline: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -6993,7 +7003,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 69, 146, 178, 212, 331, 349, 447: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | padding-inline-start: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 84, 123, 140, 217, 249, 283, 402, 420, 441, 540: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin-block: 0 var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7003,7 +7013,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 36: padding: var(--corex-admin-space-xl);",
+      "selector_or_context": "lines 43: padding: var(--corex-admin-space-xl);",
       "property": "--corex-admin-space-xl",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7013,7 +7023,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 11, 130, 200, 210, 241, 252, 443: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 17, 49, 74, 201, 271, 281, 312, 323, 536: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);",
       "property": "--corex-admin-space-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7023,7 +7033,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 37, 86, 448: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
+      "selector_or_context": "lines 44, 52, 157, 541: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);",
       "property": "--corex-admin-state-border",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7033,17 +7043,17 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 92, 263: border-color: var(--corex-admin-success); | color: var(--corex-admin-success);",
+      "selector_or_context": "lines 57, 163, 334: border-inline-start-color: var(--corex-admin-success); | border-color: var(--corex-admin-success); | color: var(--corex-admin-success);",
       "property": "--corex-admin-success",
       "owner": "config-plugin",
       "surface": "admin",
-      "direction_context": "not-applicable",
+      "direction_context": "logical",
       "resolution": "raw-allowance",
       "target_definition": "scoped --corex-admin-* adapter"
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 91, 264: background: var(--corex-admin-success-soft);",
+      "selector_or_context": "lines 58, 162, 335: background: var(--corex-admin-success-soft);",
       "property": "--corex-admin-success-soft",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7053,7 +7063,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 148, 226, 303, 313, 374: background: var(--corex-admin-surface-raised);",
+      "selector_or_context": "lines 219, 297, 374, 384, 467: background: var(--corex-admin-surface-raised);",
       "property": "--corex-admin-surface-raised",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7063,7 +7073,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 147, 213, 312, 373, 449: color: var(--corex-admin-text);",
+      "selector_or_context": "lines 218, 284, 383, 466, 542: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7073,7 +7083,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 19, 50, 74, 131, 246, 281, 338, 356: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 25, 78, 96, 110, 128, 145, 202, 317, 352, 409, 442, 449: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7083,7 +7093,7 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 54: color: var(--corex-admin-text-subtle);",
+      "selector_or_context": "lines 114: color: var(--corex-admin-text-subtle);",
       "property": "--corex-admin-text-subtle",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7093,11 +7103,21 @@
     },
     {
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "selector_or_context": "lines 453: border-inline-start-color: var(--corex-admin-warning);",
+      "selector_or_context": "lines 62, 546: border-inline-start-color: var(--corex-admin-warning);",
       "property": "--corex-admin-warning",
       "owner": "config-plugin",
       "surface": "admin",
       "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/email-studio.scss",
+      "selector_or_context": "lines 63: background: var(--corex-admin-warning-soft);",
+      "property": "--corex-admin-warning-soft",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
       "resolution": "raw-allowance",
       "target_definition": "scoped --corex-admin-* adapter"
     },
@@ -7193,6 +7213,16 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.css",
+      "selector_or_context": "lines 471: font-size: var(--corex-admin-font-md);",
+      "property": "--corex-admin-font-md",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/forms-admin.css",
       "selector_or_context": "lines 169: font-family: var(--corex-admin-font-mono);",
       "property": "--corex-admin-font-mono",
       "owner": "config-plugin",
@@ -7203,7 +7233,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "selector_or_context": "lines 51, 255: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 51, 255, 460: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7273,7 +7303,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "selector_or_context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;",
+      "selector_or_context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443, 458, 466: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7283,7 +7313,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "selector_or_context": "lines 89, 139, 141, 215, 277, 368, 391: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 89, 139, 141, 215, 277, 368, 391, 458: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-sm) 0 var(--corex-admin-space-md);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7293,7 +7323,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "selector_or_context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383, 465, 476: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7353,7 +7383,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "selector_or_context": "lines 168, 189, 224, 254, 453: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 168, 189, 224, 254, 453, 459: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7463,6 +7493,16 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.scss",
+      "selector_or_context": "lines 471: font-size: var(--corex-admin-font-md);",
+      "property": "--corex-admin-font-md",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/forms-admin.scss",
       "selector_or_context": "lines 169: font-family: var(--corex-admin-font-mono);",
       "property": "--corex-admin-font-mono",
       "owner": "config-plugin",
@@ -7473,7 +7513,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "selector_or_context": "lines 51, 255: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 51, 255, 460: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7543,7 +7583,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "selector_or_context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;",
+      "selector_or_context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443, 458, 466: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7553,7 +7593,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "selector_or_context": "lines 89, 139, 141, 215, 277, 368, 391: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 89, 139, 141, 215, 277, 368, 391, 458: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-sm) 0 var(--corex-admin-space-md);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7563,7 +7603,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "selector_or_context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383, 465, 476: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -7623,7 +7663,7 @@
     },
     {
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "selector_or_context": "lines 168, 189, 224, 254, 453: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 168, 189, 224, 254, 453, 459: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "config-plugin",
       "surface": "admin",

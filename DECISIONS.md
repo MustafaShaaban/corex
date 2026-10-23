@@ -17611,6 +17611,135 @@ passing. Jest `replyState.test.js` and the whole Jest suite (1428). Playwright
 **Client impact.** Muva and Perego send no flow emails from code-defined forms, so the change is not
 visible to them. Perego's own `SubmissionEmailGateway` keeps working unchanged.
 
+## #381 — One answer to "is this a development site": a lock, then the operations mode, then WordPress
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 1. **Mode:** CoreX
+Framework.
+
+**Why.** Mail capture has to follow what the owner chose in the admin (shared hosts have no command
+line), and every screen has to give the same answer. Email Studio read `app.env`, which the defaults
+layer answers with "production" on every site; the screens read the operations mode or WordPress's
+environment type. Three inputs, three answers.
+
+**Decided** (the owner's SAFE-D1, 2026-10-19; the two gaps below under the owner's 2026-10-21 mandate).
+
+1. `Corex\Environment\SiteEnvironment` (corex-core) answers Development, Staging or Production, with
+   what decided it: `APP_ENV` in `.env`, then the network lock, then the `corex_app_env` option (each
+   a **lock**), then the operations mode, then WordPress's type (`local`/`development` →
+   Development, `staging` → Staging, anything else → Production). It reads the three lock layers one
+   by one, as `Boot` does, because the repository's defaults layer would answer every site.
+2. **The `corex_app_env` option is a lock.** The story names `.env` and the network; no screen or
+   command writes the option, but site code and CoreX's own test helper do, and whatever set it
+   keeps deciding, named on the screen.
+3. **A lock fixes the mode to its own environment, except Coming soon and Maintenance**, which only
+   change what visitors see: they stay available, and in force, under any lock, so a site put in
+   Coming soon stays closed to visitors whatever `APP_ENV` says (its mail follows the lock).
+   `OperationsModeStore::set()` is reached only for a mode the lock allows: `ModeChangeService`
+   answers `ModeChangeResult::LOCKED` otherwise, on the screen and from `wp corex mode set`.
+4. Email Studio's three private `environment()` copies became one `EmailDeliveryContextFactory`. An
+   `APP_ENV` value the delivery policy did not know (it blocked) is now Production and follows the
+   production rule.
+
+**Verified.** Pest unit `SiteEnvironmentTest` (12-row precedence matrix, locks, `local`); integration
+`Environment/SiteEnvironmentTest` (the mode reaches Email Studio, Insights and the store; a lock
+refuses a mode and writes nothing; the Operations screen shows the lock).
+
+**Client impact.** Their local checkouts set no `APP_ENV`; the production hosts' `.env` files were
+not read. A live site whose `.env` says `local`, `development` or `staging` (`.env.example` ships
+`local`) starts keeping its mail: the release notes say to check it before updating.
+
+## #382 — A mail gate where mail meets the transport keeps a development or staging site's mail
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 2. **Mode:** CoreX
+Framework.
+
+**Why.** A developer testing a client site must not mail its customers, subscribers or applicants.
+Only Email Studio's own sends asked whether a site was a development site; every other path went
+straight to `wp_mail()`.
+
+**Decided** (the owner's SAFE-D2 and EML-D6).
+
+1. `Corex\Mail\Capture\MailGate` (corex-core) decides deliver, capture, hold or refuse. A production
+   site answers "deliver" before anything else is read (SAFE-D2). Staging delivers with live
+   delivery on and a provider CoreX Mail sends through, asked through the `MailProviderCheck`
+   contract CoreX Mail binds, so Email Studio and every other path answer the same.
+2. It is asked at two points: CoreX Mail's `MailService::deliver()` before its driver (every path on
+   the `Mailer` seam and the queue worker; a capture returns `captured`, a terminal success, so no
+   retry sends it), and WordPress's `pre_wp_mail` at priority 999 (the floors, WordPress core, other
+   plugins). An earlier `pre_wp_mail` answer is left alone.
+3. Captures go to Email Studio through the `MailCaptureStore` contract, with a path name from a
+   `MailPath` scope set by what sends (form notifications, guides support, `RequestMailer` by
+   template) or left by the WordPress filter that built the email; anything else is
+   "Other: wp_mail".
+4. All mail is captured by default; config `mail.capture_scope = corex` captures only mail sent
+   inside a CoreX path (EML-D6).
+5. Without CoreX Mail there is no store: the email is refused (`wp_mail()` returns false) and an
+   activity event `mail.refused` records recipients, subject and path.
+6. Tests that exercise production sending say so: `MailDelivery::DELIVER` pins production with a
+   provider and live delivery, and stops every email before the transport.
+
+**Verified.** Pest unit `MailGateTest` (decision table, hold, interceptor, names); integration
+`Mail/MailCaptureTest` (Mailer, WordPress password reset and a plugin's mail captured with their
+names; the switch; production sends; refusal recorded); the whole integration suite.
+
+**Client impact.** Production unchanged. Local and staging copies keep their mail in Email Studio.
+
+## #383 — A flow's marked test holds its emails on every site
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 3. **Mode:** CoreX
+Framework.
+
+**Why.** Testing a form on a live site must never mail the client's team or a stranger (SAFE-D3).
+
+**Decided.** `FlowTestService` runs the pipeline inside `MailHold::during()`. While a hold is active
+the gate answers "hold" and `EmailStudioService::decide()` captures with state `held_for_test`; the
+run's result lists what was held (`held_emails`). With CoreX Mail inactive, a test writes no email at
+all and says so. CoreX has no "clear test entries" action: a held email goes with its test
+submission's permanent delete (its attempt id is recorded like any flow email's) or after 30 days
+(decided under the owner's 2026-10-21 mandate: no new bulk action in a patch).
+
+**Verified.** Integration `Forms/FlowTestHoldsMailTest` (production with live delivery: nothing
+reaches the transport, one held email listed, the next real submission sends, the delete removes it);
+Jest `testTab.test.js`.
+
+## #384 — Email Studio states what happens to mail, from the decisions the sends take
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 4. **Mode:** CoreX
+Framework.
+
+**Why.** An owner must never be surprised that mail went out, or that it did not. The overview
+printed the raw environment and a sentence that was false on most sites.
+
+**Decided.** `MailOutcome` (corex-email) reads Email Studio's own decision for its sends and the mail
+gate's for every other path, so the statement cannot be more reassuring than the site: on a
+production site with no provider it says Email Studio's sends are blocked and names what still goes
+out. The banner shows on every tab. The capture-only switch is saved by
+`POST corex/v1/email-studio/capture-scope`. A daily event, `corex_email_capture_retention`, deletes
+captured and held emails older than 30 days by date, 200 at a time for at most 20 seconds a run, so
+every record is reached. Email Studio's column now shrinks (`minmax(0, 1fr)`), so the delivery log
+no longer widens every tab past the page.
+
+**Verified.** Pest unit `MailOutcomeTest`; integration `Email/CaptureRetentionTest` (550 of 600
+deleted, newer kept, other records untouched; the route); Jest `mailOutcomeBanner.test.js`;
+Playwright `email-studio-outcome.spec.js` (the same statement on all eleven tabs, the switch saved
+and restored, 375px) and `email-studio.spec.js`.
+
+## #385 — Email Studio reads its records newest first
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 5 (CR-012).
+**Mode:** CoreX Framework.
+
+**Why.** The store read the first 500 records of a kind ever made, so past 500 emails the log and the
+overview counts stopped changing.
+
+**Decided.** `EmailStudioStore::latest($type, $limit)` reads by id descending in one query (meta
+primed with it); attempts and captures use it; `all()` keeps its order for templates, layouts,
+partials and routes. The only other implementation is the test suite's in-memory store. The overview
+counts say they are of the last 100 emails.
+
+**Verified.** Integration `Email/StudioNewestFirstTest` (600 attempts: the newest first, a new one at
+the top; the same query count for 10 rows or 100).
+
 ## #390 — The Overview reads each fact it names, and says "Could not check" for one it cannot read
 
 **Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 1

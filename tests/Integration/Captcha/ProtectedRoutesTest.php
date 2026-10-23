@@ -35,7 +35,7 @@ beforeEach(function () {
     // A passed check sends the add-on's email: CoreX's is captured, and WordPress's own (a new
     // account's) is stopped before it leaves, so nothing reaches anybody.
     $this->mail      = MailDelivery::answerAs(MailDelivery::CAPTURE);
-    $this->emailLogs = CreatedPosts::watch('corex_email_log');
+    $this->emailLogs = CreatedPosts::watch('corex_email_log', 'corex_email_asset');
     add_filter('pre_wp_mail', '__return_true');
 
     $container       = Boot::app()->container();

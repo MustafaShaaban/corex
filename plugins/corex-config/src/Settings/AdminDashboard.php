@@ -11,6 +11,7 @@ namespace Corex\Config\Settings;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Overview\OverviewRenderer;
+use Corex\Environment\SiteEnvironment;
 use Corex\Multisite\MultisiteContext;
 use Corex\Multisite\NetworkContext;
 use Corex\Multisite\PluginActivationInspector;
@@ -52,6 +53,7 @@ final class AdminDashboard
         private readonly MultisiteContext $multisite,
         private readonly NetworkContext $network,
         private readonly SettingsSanitizer $sanitizer = new SettingsSanitizer(),
+        private readonly ?SiteEnvironment $environment = null,
     ) {
     }
 
@@ -217,11 +219,17 @@ final class AdminDashboard
         return match ($key) {
             'advanced.php_version'  => PHP_VERSION,
             'advanced.wp_version'   => (string) get_bloginfo('version'),
-            'advanced.environment'  => (string) wp_get_environment_type(),
+            'advanced.environment'  => $this->environmentDiagnostic(),
             'advanced.memory_limit' => (string) ini_get('memory_limit'),
             'advanced.multisite'    => $this->multisiteDiagnostic(),
             default                 => '',
         };
+    }
+
+    /** The site's environment as mail and every screen read it, and where it is set (spec 113). */
+    private function environmentDiagnostic(): string
+    {
+        return $this->environment?->current()->summary() ?? (string) wp_get_environment_type();
     }
 
     private function sectionState(string $sectionKey): ?SettingsSectionState

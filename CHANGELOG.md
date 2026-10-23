@@ -42,6 +42,30 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 ### Changed
 
+- **One setting decides whether a site is a development site** (spec 113). `APP_ENV` in `.env`, a
+  value the network locks or the `corex_app_env` option decides first, and locks the operations
+  mode (the Operations screen says what locks it and offers that environment's mode, Coming soon
+  and Maintenance); then the operations mode; then WordPress's environment type, where `local` now
+  counts as Development. A site in Coming soon or Maintenance stays closed to visitors whatever
+  `APP_ENV` says.
+  Email Studio, Insights and the Settings diagnostics show the same answer and where it comes from.
+- **Mail stays on a development or staging site** (spec 113). Every email, from every CoreX path,
+  from WordPress and from other plugins, is captured into `Email Studio → Delivery logs`, named by
+  what sent it ("Form notification", "Newsletter: new post", "WordPress: password reset",
+  "Other: wp_mail"), and nobody receives it. Staging sends for real once a provider is set and
+  live delivery is on. A switch on the Email Studio overview, **Capture only CoreX mail**, lets
+  WordPress's and other plugins' mail through. Without CoreX Mail active, such an email is not
+  sent and is recorded in the activity log. **A production site, and a site in Coming soon or
+  Maintenance with no development or staging `APP_ENV`, sends exactly as before.**
+- **A flow's "Run marked test" holds its emails on every site** (spec 113), production included:
+  the result lists each with a link to it in Email Studio, and the Test tab says so before the
+  button is pressed.
+- **Email Studio says on every tab what happens to mail on this site**: delivered for real,
+  captured, or blocked, with live delivery, the provider, what decided, and any kind of email that
+  does not follow it.
+- **Email Studio's log shows the newest mail first** however many emails are stored, the overview
+  counts say they are of the last 100 emails, and captured and held emails are deleted after 30
+  days (they were kept forever).
 - **The Overview shows only true states** (#390). Brand reads "Done" only with a company name and a
   logo, otherwise "Not set" with a link to Brand settings. Insights / PageSpeed reads "Connected"
   only with a saved key whose last run completed, "Key saved, not checked yet", "Keyless (shared
@@ -117,6 +141,8 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 ### Fixed
 
+- **Email Studio's tabs fit the screen.** A wide delivery log made every tab wider than the page,
+  cut off at its edge.
 - **Saving Settings changes only what was changed** (#398). A save wrote every field of every
   section, and saved the switches of an add-on that was off as off: saving Brand with Corex Media
   off switched WebP conversion off. Now a section whose add-on is off or not installed is not
@@ -145,6 +171,21 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 
 ### Client impact
 
+- **Before updating a live site, check two things**: its operations mode (CoreX → Operations &
+  Security) is Production, Coming soon or Maintenance, and its `.env`, if it has one, does not say
+  `APP_ENV=local`, `development` or `staging` (`.env.example` ships `APP_ENV=local`). Either one
+  makes the site keep its mail in Email Studio instead of sending it.
+- **Production mail is otherwise unchanged.** A client site whose code sends through the `Mailer`
+  seam, with no provider and live delivery off, keeps sending.
+- **Local and staging copies start capturing mail**: a copy whose operations mode is Development or
+  Staging, or whose WordPress environment is `local`, `development` or `staging`, keeps its mail in
+  Email Studio instead of sending it. Check a copy's mail there after updating.
+- **Muva and Perego**: their production sites send as before if the two checks above hold; their
+  local copies keep their mail. **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+- **A test that spies on `wp_mail()` on a development install** now sees mail kept before
+  `wp_mail()`: CoreX's own test helper `tests/Support/MailDelivery.php` gains a `DELIVER` mode for
+  tests that exercise production sending. A client repository that carries copies of CoreX's tests
+  takes the updated helper.
 - **Nothing to do for the screens.** Owners of both client sites read different, accurate rows on
   Overview, Operations & Security, Insights and Blog Pro. Muva's captcha test button appears. Muva
   has no PageSpeed key, so its Insights shows "Could not run" with the reason instead of a D.
@@ -199,6 +240,7 @@ No client site is affected at runtime: this release changes tests, scripts and C
   `Corex\Security\FormChallenge`, which does it for you.
 - Neither client runs the CoreX theme, reset, the account add-on or builder flows. Mizzey is not on
   this release.
+
 
 ## [0.47.0] — 2026-10-21
 

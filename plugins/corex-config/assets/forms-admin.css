@@ -452,3 +452,33 @@
 .corex-admin .corex-flow-editor__protection .corex-field small {
 	color: var(--corex-admin-text-muted);
 }
+
+/* Spec 113: a marked test holds its emails. */
+.corex-admin .corex-flow-editor__note {
+	margin: var(--corex-admin-space-sm) 0 var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-flow-test-held {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-flow-test-held h3 {
+	margin: 0;
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-flow-test-held ul {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-flow-test-held li {
+	overflow-wrap: anywhere;
+}
