@@ -4,12 +4,14 @@
  * Title: Maintenance notice
  * Slug: corex/maintenance
  * Categories: corex
- * Description: A centered maintenance notice — heading, message, and a contact line. Mirrors the live Operations maintenance surface (Corex\Admin\StandalonePage) for editor use. Built on core blocks and CoreX brand tokens.
+ * Description: A centered maintenance notice — heading, message, and a contact line to the brand settings' email (left out when none is set). Mirrors the live Operations maintenance surface (Corex\Admin\StandalonePage) for editor use. Built on core blocks and CoreX brand tokens.
  *
  * @package Corex
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"section","className":"corex-maintenance","align":"full","layout":{"type":"constrained","contentSize":"560px"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"},"blockGap":"var:preset|spacing|30"},"dimensions":{"minHeight":"70vh"}}} -->
 <section class="wp-block-group alignfull corex-maintenance" style="min-height:70vh;padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">
@@ -25,8 +27,11 @@ defined('ABSPATH') || exit;
 	<p class="has-text-align-center has-ink-soft-color has-text-color has-lg-font-size"><?php echo esc_html__('The site is briefly offline for planned maintenance. Please check back shortly — thank you for your patience.', 'corex'); ?></p>
 	<!-- /wp:paragraph -->
 
+	<?php $corex_mailto = corex_pattern_mailto_url(corex_pattern_brand('email')); ?>
+	<?php if ($corex_mailto !== '') : ?>
 	<!-- wp:paragraph {"align":"center","fontSize":"sm"} -->
-	<p class="has-text-align-center has-sm-font-size"><a href="mailto:<?php echo esc_attr__('hello@example.com', 'corex'); ?>"><?php echo esc_html__('Contact us', 'corex'); ?></a></p>
+	<p class="has-text-align-center has-sm-font-size"><?php echo corex_pattern_anchor($corex_mailto, __('Contact us', 'corex')); ?></p>
 	<!-- /wp:paragraph -->
+	<?php endif; ?>
 </section>
 <!-- /wp:group -->

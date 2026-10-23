@@ -5,12 +5,14 @@
  * Slug: corex/footer-newsletter
  * Categories: corex, footer
  * Block Types: core/template-part/footer
- * Description: A newsletter footer — a sign-up prompt and call-to-action, then a legal/utility row. The form action is a placeholder; wire it to your provider or the CoreX forms add-on.
+ * Description: A newsletter footer — a sign-up prompt and call-to-action, then a legal/utility row. The Subscribe button links to the site's published Newsletter page (slug `newsletter`) and is left out when there is none.
  *
  * @package Corex
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"footer","className":"corex-footer corex-footer--newsletter","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|50"},"blockGap":"var:preset|spacing|40"}}} -->
 <footer class="wp-block-group corex-footer corex-footer--newsletter" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)">
@@ -22,11 +24,12 @@ defined('ABSPATH') || exit;
 		<!-- wp:paragraph {"align":"center"} -->
 		<p class="has-text-align-center"><?php echo esc_html__('Occasional updates on releases and guides. No spam.', 'corex'); ?></p>
 		<!-- /wp:paragraph -->
+		<?php $corex_subscribe_url = corex_pattern_page_url('newsletter'); ?>
+		<?php if ($corex_subscribe_url !== '') : ?>
 		<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
-		<div class="wp-block-buttons"><!-- wp:button -->
-		<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="#"><?php echo esc_html__('Subscribe', 'corex'); ?></a></div>
-		<!-- /wp:button --></div>
+		<div class="wp-block-buttons"><?php echo corex_pattern_button($corex_subscribe_url, __('Subscribe', 'corex')); ?></div>
 		<!-- /wp:buttons -->
+		<?php endif; ?>
 	</div>
 	<!-- /wp:group -->
 

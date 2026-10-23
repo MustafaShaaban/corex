@@ -5,6 +5,7 @@ import {
 	flowEndpoint,
 	flowReducer,
 	initialFlowState,
+	isDirty,
 	moveField,
 	normalizeFlowPayload,
 	removeField,
@@ -174,5 +175,65 @@ describe( 'flow editor contracts', () => {
 				],
 			} ).configuration.schema
 		).toEqual( [ { uuid: 'current' } ] );
+	} );
+} );
+
+describe( 'unsaved changes', () => {
+	const opened = () =>
+		flowReducer( initialFlowState, {
+			type: 'selected',
+			payload: draftFixture(),
+		} );
+	const relabel = ( state, label ) =>
+		flowReducer( state, {
+			type: 'draft_changed',
+			payload: updateField( state.draft, 'field-name', { label } ),
+		} );
+
+	it( 'reads clean as loaded and dirty once the flow on screen differs', () => {
+		const state = opened();
+
+		expect( isDirty( state ) ).toBe( false );
+		expect( isDirty( relabel( state, 'Full name' ) ) ).toBe( true );
+	} );
+
+	it( 'reads clean again when the old value is typed back', () => {
+		const edited = relabel( opened(), 'Full name' );
+
+		expect( isDirty( relabel( edited, 'Name' ) ) ).toBe( false );
+	} );
+
+	it( 'does not count the order of keys as a change', () => {
+		const state = opened();
+		const { schema, ...rest } = state.draft.configuration;
+		const reordered = flowReducer( state, {
+			type: 'draft_changed',
+			payload: { ...state.draft, configuration: { ...rest, schema } },
+		} );
+
+		expect( isDirty( reordered ) ).toBe( false );
+	} );
+
+	it( 'takes the configuration it is given on a new load as the saved one', () => {
+		const edited = relabel( opened(), 'Full name' );
+		const saved = flowReducer( edited, {
+			type: 'selected',
+			payload: edited.draft,
+		} );
+
+		expect( isDirty( saved ) ).toBe( false );
+	} );
+
+	it( 'stays dirty through a failed request and has nothing to save once cleared', () => {
+		const edited = relabel( opened(), 'Full name' );
+		const failed = flowReducer( edited, {
+			type: 'failed',
+			message: 'Conflict',
+		} );
+
+		expect( isDirty( failed ) ).toBe( true );
+		expect( isDirty( flowReducer( failed, { type: 'cleared' } ) ) ).toBe(
+			false
+		);
 	} );
 } );

@@ -33,7 +33,7 @@ function TemplateRail( {
 						id="corex-email-template-slug"
 						name="slug"
 						required
-						pattern="[a-z][a-z0-9-]*"
+						pattern="[a-z][a-z0-9\-]*"
 					/>
 				</label>
 				<label htmlFor="corex-email-template-name">

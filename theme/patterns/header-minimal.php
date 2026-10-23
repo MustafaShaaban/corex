@@ -11,6 +11,8 @@
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"header","className":"corex-header corex-header--minimal","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|30","bottom":"var:preset|spacing|30"}}}} -->
 <header class="wp-block-group corex-header corex-header--minimal" style="padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)">
@@ -18,11 +20,12 @@ defined('ABSPATH') || exit;
 	<div class="wp-block-group corex-header__inner">
 		<!-- wp:site-logo {"width":150} /-->
 
+		<?php $corex_cta_url = corex_pattern_action_url(); ?>
+		<?php if ($corex_cta_url !== '') : ?>
 		<!-- wp:buttons {"className":"corex-header__cta"} -->
-		<div class="wp-block-buttons corex-header__cta"><!-- wp:button -->
-		<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="#"><?php echo esc_html__('Get the app', 'corex'); ?></a></div>
-		<!-- /wp:button --></div>
+		<div class="wp-block-buttons corex-header__cta"><?php echo corex_pattern_button($corex_cta_url, __('Get the app', 'corex')); ?></div>
 		<!-- /wp:buttons -->
+		<?php endif; ?>
 	</div>
 	<!-- /wp:group -->
 </header>

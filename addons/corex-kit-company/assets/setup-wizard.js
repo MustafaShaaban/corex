@@ -1,8 +1,9 @@
 /**
  * CoreX Setup Wizard — the nine-step guided flow (spec 068 T196). Vanilla JS over window.Corex.api:
  * it loads the real config + progress from /setup/state, walks the nine steps, previews a kit plan
- * with real conflicts, and applies with the operator's conflict choices only after an explicit
- * backup confirmation (FR-140/143). Progressive enhancement — the server-rendered flow is the
+ * with real conflicts, and applies with the operator's conflict choices only after the person confirms
+ * they have a full backup of their own (FR-143). CoreX takes no backup: it records the pages a plan
+ * replaces or adopts and the front-page settings, so a reset can put them back (spec 115). Progressive enhancement — the server-rendered flow is the
  * no-JS fallback. No build step; accessible, keyboard-operable.
  *
  * @param {Object} wp   The global `window.wp` (apiFetch + i18n).
@@ -153,14 +154,75 @@
 			.join( '' );
 	}
 
+	/**
+	 * What CoreX records before applying, said on the welcome and on the Backup step, and by the
+	 * server when an apply arrives without the confirmation.
+	 *
+	 * @return {string} The sentence, translated.
+	 */
+	function recordedSentence() {
+		return t(
+			'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.'
+		);
+	}
+
+	/**
+	 * The owner's pages this plan will record: the ones it adopts, and the conflicts the person
+	 * chose to replace. Each by the title the page has now.
+	 *
+	 * @return {string[]} The titles.
+	 */
+	function recordedTitles() {
+		const plan = state.plan || {};
+		// A page an earlier apply made is the kit's, and nothing of it is recorded.
+		const owners = ( page ) => page.recorded !== false;
+		const adopted = ( plan.adopted || [] )
+			.filter( owners )
+			.map( ( page ) => page.pageTitle );
+		const replaced = ( plan.conflicts || [] )
+			.filter(
+				( c ) => owners( c ) && state.choices[ c.slug ] === 'replace'
+			)
+			.map( ( c ) => c.pageTitle || c.title );
+		return [ ...adopted, ...replaced ];
+	}
+
+	function backupStep() {
+		const titles = recordedTitles();
+		const list =
+			titles.length > 0
+				? `<p>${ escape(
+						t( 'The pages that will be recorded:' )
+					) }</p><ul class="corex-setup__recorded">${ titles
+						.map( ( title ) => `<li>${ escape( title ) }</li>` )
+						.join( '' ) }</ul>`
+				: `<p class="corex-setup__muted">${ escape(
+						t( 'This plan changes none of your existing pages.' )
+					) }</p>`;
+		return (
+			`<p>${ escape( recordedSentence() ) }</p>` +
+			list +
+			`<p>${ escape(
+				t(
+					'Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one.'
+				)
+			) }</p>` +
+			`<label class="corex-setup__confirm"><input type="checkbox" id="corex-setup-backup"${
+				state.backupConfirmed ? ' checked' : ''
+			} /> ${ escape( t( 'I have a full backup of this site.' ) ) }</label>`
+		);
+	}
+
 	function stepBody() {
 		const key = STEPS[ state.index ];
 		if ( key === 'welcome' ) {
-			return `<p>${ escape(
-				t(
-					'This wizard configures your brand, chooses a starter kit and demo level, previews the plan, and applies it safely with a backup.'
-				)
-			) }</p>`;
+			return (
+				`<p>${ escape(
+					t(
+						'This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it.'
+					)
+				) }</p>` + `<p>${ escape( recordedSentence() ) }</p>`
+			);
 		}
 		if ( key === 'brand' ) {
 			const rows = ( state.config.brandFields || [] )
@@ -206,20 +268,7 @@
 			);
 		}
 		if ( key === 'backup' ) {
-			return (
-				`<p>${ escape(
-					t(
-						'Back up your site before applying. Apply is blocked until you confirm.'
-					)
-				) }</p>` +
-				`<label class="corex-setup__confirm"><input type="checkbox" id="corex-setup-backup"${
-					state.backupConfirmed ? ' checked' : ''
-				} /> ${ escape(
-					t(
-						'I have a current backup and understand content may change.'
-					)
-				) }</label>`
-			);
+			return backupStep();
 		}
 		if ( key === 'apply' ) {
 			if ( state.applied ) {

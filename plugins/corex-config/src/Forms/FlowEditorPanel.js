@@ -1,8 +1,9 @@
-import { useContext, useState } from '@wordpress/element';
+import { useContext, useEffect, useRef, useState } from '@wordpress/element';
 import { PendingControl, workingProps } from '../admin/components/working.js';
 import { __ } from '@wordpress/i18n';
 import {
 	addField,
+	isDirty,
 	moveField,
 	removeField,
 	stageStatus,
@@ -18,6 +19,88 @@ import { ProtectionTab } from './tabs/ProtectionTab.js';
 import { SuccessTab } from './tabs/SuccessTab.js';
 import { PreviewTab } from './tabs/PreviewTab.js';
 import { TestTab } from './tabs/TestTab.js';
+import { UnsavedChangesDialog } from './components/UnsavedChangesDialog.js';
+
+/**
+ * The browser's own "Leave site?" warning, while there is something to lose (FR-024).
+ *
+ * @param {boolean} dirty Whether the flow on screen has unsaved changes.
+ */
+function useLeaveWarning( dirty ) {
+	useEffect( () => {
+		if ( ! dirty ) {
+			return undefined;
+		}
+		const warn = ( event ) => {
+			event.preventDefault();
+			// For browsers that show the warning only when this is set.
+			event.returnValue = true;
+		};
+		window.addEventListener( 'beforeunload', warn );
+		return () => window.removeEventListener( 'beforeunload', warn );
+	}, [ dirty ] );
+}
+
+/**
+ * Commands that would lose the unsaved changes, or act on a version without them, asked about
+ * first (FR-023, FR-025).
+ *
+ * `guard( run, allowDiscard )` gives the click handler for a control: with nothing unsaved it
+ * runs `run` at once, and otherwise it asks. Save saves and runs `run` only when the save
+ * succeeded; a failed save leaves the edits on screen, and the screen's notice says why.
+ *
+ * @param {boolean}                    dirty     Whether the flow on screen has unsaved changes.
+ * @param {() => Promise<Object|null>} saveDraft Saves the draft; resolves to the saved draft, or null.
+ * @return {Object} `{ guard, dialog }`: the handler maker, and the question when one is open.
+ */
+function useUnsavedGuard( dirty, saveDraft ) {
+	const [ question, setQuestion ] = useState( null );
+	// The control that asked, for the focus to go back to when the question closes.
+	const opener = useRef( null );
+	const pending = useContext( PendingControl );
+
+	useEffect( () => {
+		if ( question || ! opener.current ) {
+			return;
+		}
+		if ( opener.current.isConnected ) {
+			opener.current.focus();
+		}
+		opener.current = null;
+	}, [ question ] );
+
+	const guard =
+		( run, allowDiscard = false ) =>
+		( event ) => {
+			if ( ! dirty ) {
+				run();
+				return;
+			}
+			opener.current = event?.currentTarget || null;
+			setQuestion( { run, allowDiscard } );
+		};
+
+	const answer = ( save ) => async () => {
+		const { run } = question;
+		const saved = save ? await saveDraft() : true;
+		setQuestion( null );
+		if ( saved ) {
+			run();
+		}
+	};
+
+	const dialog = question ? (
+		<UnsavedChangesDialog
+			allowDiscard={ question.allowDiscard }
+			saving={ pending === 'saveDraft' }
+			onSave={ answer( true ) }
+			onDiscard={ answer( false ) }
+			onCancel={ () => setQuestion( null ) }
+		/>
+	) : null;
+
+	return { guard, dialog };
+}
 
 export function FlowEditorPanel( { studio, onBack } ) {
 	const [ stage, setStage ] = useState( 'form' );
@@ -25,6 +108,9 @@ export function FlowEditorPanel( { studio, onBack } ) {
 	const { draft, extensions } = state;
 	const busy = state.status === 'loading' || state.status === 'mutating';
 	const pending = useContext( PendingControl );
+	const dirty = isDirty( state );
+	const { guard, dialog } = useUnsavedGuard( dirty, studio.saveDraft );
+	useLeaveWarning( dirty );
 	const changeDraft = ( next ) =>
 		studio.dispatch( { type: 'draft_changed', payload: next } );
 	const changeConfiguration = ( key, value ) =>
@@ -42,12 +128,17 @@ export function FlowEditorPanel( { studio, onBack } ) {
 					<button
 						type="button"
 						className="button-link"
-						onClick={ onBack }
+						onClick={ guard( onBack, true ) }
 					>
 						{ __( 'Back to flows', 'corex' ) }
 					</button>
 					<h2>{ draft.flow.name }</h2>
 					<code>{ draft.flow.slug }</code>
+					<p className="description" role="status">
+						{ dirty
+							? __( 'Unsaved changes', 'corex' )
+							: __( 'All changes saved', 'corex' ) }
+					</p>
 				</div>
 				<div className="corex-flow-editor__actions">
 					<button
@@ -64,7 +155,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 							type="button"
 							className="button"
 							disabled={ busy }
-							onClick={ studio.publish }
+							onClick={ guard( studio.publish ) }
 							{ ...workingProps( pending === 'publish' ) }
 						>
 							{ __( 'Publish', 'corex' ) }
@@ -75,7 +166,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 							type="button"
 							className="button"
 							disabled={ busy }
-							onClick={ studio.unpublish }
+							onClick={ guard( studio.unpublish ) }
 							{ ...workingProps( pending === 'unpublish' ) }
 						>
 							{ __( 'Move to draft', 'corex' ) }
@@ -86,7 +177,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 							type="button"
 							className="button"
 							disabled={ busy }
-							onClick={ studio.close }
+							onClick={ guard( studio.close ) }
 							{ ...workingProps( pending === 'close' ) }
 						>
 							{ __( 'Close', 'corex' ) }
@@ -173,10 +264,12 @@ export function FlowEditorPanel( { studio, onBack } ) {
 					<TestTab
 						busy={ busy }
 						result={ state.testResult }
-						onRun={ studio.test }
+						version={ draft.version.version_number }
+						onRun={ guard( studio.test ) }
 					/>
 				) : null }
 			</div>
+			{ dialog }
 		</div>
 	);
 }
