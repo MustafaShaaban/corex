@@ -21,6 +21,9 @@ final class EmailAttemptRepository
 {
     private const TYPE = 'email_attempt';
 
+    /** How many of the newest attempts the launch checklist reads for a test email (spec 118). */
+    public const TEST_LOOKBACK = 500;
+
     public function __construct(private readonly EmailStudioStore $store)
     {
     }
@@ -82,11 +85,14 @@ final class EmailAttemptRepository
      * The newest test from Email Studio that the mail transport accepted since a moment, or null.
      *
      * Accepted means sent or opened: a captured test never left the site, and a failed one was
-     * refused. The launch checklist's "Test email sent" asks this (spec 118, US-OVR-03).
+     * refused. The launch checklist's "Test email sent" asks this (spec 118, US-OVR-03). It reads
+     * the newest attempts first and stops at the first older than `$since`; it looks no further
+     * back than the newest {@see self::TEST_LOOKBACK}, so a site that sent more email than that
+     * since its test is told to send another.
      */
     public function latestAcceptedTest(DateTimeImmutable $since): ?EmailAttempt
     {
-        foreach (array_reverse($this->store->all(self::TYPE)) as $record) {
+        foreach ($this->store->latest(self::TYPE, self::TEST_LOOKBACK) as $record) {
             $attempt = $this->attempt($record);
             if ($attempt->occurredAt < $since) {
                 return null;

@@ -128,13 +128,18 @@ it('apply delegates to the activator and records the kit as applied', function (
  * Spec 118, US-OVR-09: one rule for "applied", whichever way the kit was applied.
  */
 
-it('reads a kit as applied from a page that still carries the kit\'s record', function () {
-    $page = new WP_Post(['ID' => 12]);
-    Functions\when('get_page_by_path')->justReturn($page);
+it('reads a kit as applied from its pages only on a site that never kept the record', function (mixed $kept, bool $applied) {
+    Functions\when('get_option')->alias(
+        static fn (string $key, $default = false) => $key === BlueprintKitProvisioner::APPLIED_OPTION ? $kept : [],
+    );
+    Functions\when('get_page_by_path')->justReturn(new WP_Post(['ID' => 12]));
     Functions\when('get_post_meta')->justReturn('created');
 
-    expect(provisioner()->applicableKits()[0]->applied)->toBeTrue();
-});
+    expect(provisioner()->applicableKits()[0]->applied)->toBe($applied);
+})->with([
+    'a site from before the record' => [null, true],
+    'a site that keeps the record, kit not in it' => [[], false],
+]);
 
 it('does not record an apply that failed to write a page', function () {
     Functions\when('get_page_by_path')->justReturn(null);

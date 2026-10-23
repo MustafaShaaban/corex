@@ -50,7 +50,10 @@ final class BlocksServiceProvider extends ServiceProvider
 
         $this->container->singleton(
             SampleBlocks::class,
-            static fn (): SampleBlocks => new SampleBlocks(dirname(__DIR__) . '/corex-blocks.php', COREX_BLOCKS_VERSION),
+            static fn (): SampleBlocks => new SampleBlocks(
+                dirname(__DIR__) . '/corex-blocks.php',
+                defined('COREX_BLOCKS_VERSION') ? (string) COREX_BLOCKS_VERSION : '0.0.0',
+            ),
         );
     }
 

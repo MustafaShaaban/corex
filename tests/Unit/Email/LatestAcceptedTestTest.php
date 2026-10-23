@@ -41,6 +41,60 @@ function recordedAttempt(EmailAttemptRepository $attempts, string $state, string
     ));
 }
 
+/** A store that answers `all()` as WordPress's does: the first 500 ever stored, oldest first. */
+function cappedAttemptStore(): Corex\Email\Studio\EmailStudioStore
+{
+    return new class implements Corex\Email\Studio\EmailStudioStore {
+        private InMemoryEmailStudioStore $inner;
+
+        public function __construct()
+        {
+            $this->inner = new InMemoryEmailStudioStore();
+        }
+
+        public function create(string $type, string $slug, string $name, int $parentId, array $payload): int
+        {
+            return $this->inner->create($type, $slug, $name, $parentId, $payload);
+        }
+
+        public function update(int $id, string $name, array $payload): bool
+        {
+            return $this->inner->update($id, $name, $payload);
+        }
+
+        public function find(int $id): ?array
+        {
+            return $this->inner->find($id);
+        }
+
+        public function findBySlug(string $type, string $slug): ?array
+        {
+            return $this->inner->findBySlug($type, $slug);
+        }
+
+        public function all(string $type, ?int $parentId = null): array
+        {
+            return array_slice($this->inner->all($type, $parentId), 0, 500);
+        }
+
+        public function latest(string $type, int $limit): array
+        {
+            return $this->inner->latest($type, $limit);
+        }
+    };
+}
+
+it('finds a recent test on a site with more than 500 attempts', function () {
+    $attempts = new EmailAttemptRepository(cappedAttemptStore());
+    for ($i = 0; $i < 550; $i++) {
+        recordedAttempt($attempts, EmailAttempt::STATE_SENT, 'route', '2026-10-01T00:00:00+00:00');
+    }
+    recordedAttempt($attempts, EmailAttempt::STATE_SENT, 'test', '2026-10-20T00:00:00+00:00');
+    recordedAttempt($attempts, EmailAttempt::STATE_SENT, 'route', '2026-10-21T00:00:00+00:00');
+
+    expect($attempts->latestAcceptedTest(new DateTimeImmutable('2026-07-25T00:00:00+00:00')))->not->toBeNull();
+});
+
 it('counts only a test the transport accepted inside the window', function (string $state, string $source, string $when, bool $counts) {
     $attempts = new EmailAttemptRepository(new InMemoryEmailStudioStore());
     recordedAttempt($attempts, $state, $source, $when);

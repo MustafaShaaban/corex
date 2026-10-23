@@ -55,7 +55,8 @@
 	function escape( s ) {
 		const d = document.createElement( 'div' );
 		d.textContent = s === null || s === undefined ? '' : String( s );
-		return d.innerHTML;
+		// It writes attribute values too, where a quote would end the attribute.
+		return d.innerHTML.replace( /"/g, '&quot;' ).replace( /'/g, '&#39;' );
 	}
 
 	/**

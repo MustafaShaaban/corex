@@ -169,7 +169,7 @@ export default function NotificationsApp() {
 			const id = ids[ 0 ];
 			setError( '' );
 			setWorking( ( current ) => ( { ...current, [ id ]: control } ) );
-			Promise.all(
+			Promise.allSettled(
 				ids.map( ( member ) =>
 					apiFetch( {
 						path: `/corex/v1/notifications/${ member }/${ action }`,
@@ -178,13 +178,22 @@ export default function NotificationsApp() {
 					} )
 				)
 			)
-				.then( load )
-				.catch( ( failure ) =>
-					setError(
-						failure?.message ||
-							__( 'That action could not be completed.', 'corex' )
-					)
-				)
+				.then( ( results ) => {
+					// What did happen is shown; what did not is said.
+					load();
+					const failed = results.find(
+						( result ) => result.status === 'rejected'
+					);
+					if ( failed ) {
+						setError(
+							failed.reason?.message ||
+								__(
+									'That action could not be completed.',
+									'corex'
+								)
+						);
+					}
+				} )
 				.finally( () =>
 					setWorking( ( current ) =>
 						Object.fromEntries(

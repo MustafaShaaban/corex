@@ -18597,8 +18597,10 @@ read, and adding one to a contract other modules implement was not needed.
    draft can be chosen and published later). Unchosen reads "Choose a terms page" and links there. The Company kit
    creates no terms page, so no apply sets it.
 6. **Test email sent:** `EmailAttemptRepository::latestAcceptedTest()`: an attempt with source `test` in state
-   `sent` or `opened` in the last 90 days. A captured or failed test does not count. With Corex Mail inactive:
-   "Needs Corex Mail", not counted.
+   `sent` or `opened` in the last 90 days, read from the newest 500 attempts (`EmailStudioStore::latest()`) and
+   stopping at the first older than 90 days. A captured or failed test does not count. A site that sent more
+   than 500 emails since its test is told to send another, which is true enough to act on. With Corex Mail
+   inactive: "Needs Corex Mail", not counted.
 7. **Login protection on:** the Security Center's saved setting.
 
 ## #434 — Four state tiles, and PHP fatal errors recorded by corex-core
@@ -18683,9 +18685,11 @@ use it. The card's "Audit log" link is gone: it led to refusals only, and there 
    to `corex-data-models&tab=records&source=<key>`; the Data explorer opens on that source. The card's own link
    goes straight to the Data Models screen, with no redirect.
 2. **`KitAppliedRecord`** is the one rule: `record()` writes `corex_kit_applied` only when
-   `ApplyOutcome::isComplete()` (every page to create or fill has an id); `isApplied()` is true for a recorded kit or
-   for one whose page still carries `_corex_kit_page`, so a site whose wizard applied the kit before is recognised
-   without applying anything. The Add-ons prompt (`BlueprintKitProvisioner`), the wizard's REST apply and its form
+   `ApplyOutcome::isComplete()` (every page to create or fill has an id); `isApplied()` is true for a recorded kit,
+   or, only on a site that has never recorded an apply, for a kit whose **every** declared page carries
+   `_corex_kit_page`, so a site whose wizard applied the kit before is recognised without applying anything. The
+   activator records each page it writes, so an apply that failed on a page leaves one without the record and is
+   never read as applied. The Add-ons prompt (`BlueprintKitProvisioner`), the wizard's REST apply and its form
    apply all record through it. A reset removes the option and the page records, so it reads as not applied.
 
 ## #439 — Repeated notices are grouped when read, and states share one chip
