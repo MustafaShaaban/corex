@@ -75,10 +75,11 @@
 	 * @return {string} the address, or '' when it is not one an image is drawn from
 	 */
 	function imageUrl( url ) {
-		const text = String( url || '' );
+		const address = String( url || '' );
 
-		return text.startsWith( 'https://' ) || text.startsWith( 'http://' )
-			? text
+		return address.startsWith( 'https://' ) ||
+			address.startsWith( 'http://' )
+			? address
 			: '';
 	}
 
