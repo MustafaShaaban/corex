@@ -29,6 +29,14 @@ afterEach(function () {
     update_option('corex_operations_mode', $this->savedMode, false);
 });
 
+/** The one readiness evaluation every section of the screen reads (spec 118). */
+function launchSnapshot(): \Corex\Config\Operations\ReadinessSnapshot
+{
+    return \Corex\Boot::app()->container()
+        ->make(\Corex\Config\Operations\ProductionReadinessSnapshotFactory::class)
+        ->fromCurrentSite(new DateTimeImmutable('now'));
+}
+
 /** Reach a private renderer without widening the production API to suit a test. */
 function invokeScreen(object $screen, string $method, mixed ...$args): string
 {
@@ -108,7 +116,7 @@ it('says nothing when the mode was only inherited', function () {
 // Spec 101 — Coming soon on the mode form (T025, FR-001 to FR-003).
 
 it('offers Coming soon on the mode form, after Maintenance', function () {
-    $form = invokeScreen($this->screen, 'modeCard');
+    $form = invokeScreen($this->screen, 'modeCard', launchSnapshot());
 
     preg_match_all('/<option value="([a-z-]+)"/', $form, $options);
 
@@ -118,7 +126,7 @@ it('offers Coming soon on the mode form, after Maintenance', function () {
 
 it('draws a block for Coming soon that says what the mode does and asks for its own acknowledgement', function () {
     $_GET['mode'] = 'coming-soon';
-    $form         = invokeScreen($this->screen, 'modeCard');
+    $form         = invokeScreen($this->screen, 'modeCard', launchSnapshot());
     unset($_GET['mode']);
 
     preg_match('/<div class="corex-opsec__mode-block" data-mode="coming-soon"(.*?)<\/div>/s', $form, $block);
@@ -138,7 +146,7 @@ it('draws a block for Coming soon that says what the mode does and asks for its 
 
 it('keeps Maintenance asking for the acknowledgement it always asked for', function () {
     $_GET['mode'] = 'maintenance';
-    $form         = invokeScreen($this->screen, 'modeCard');
+    $form         = invokeScreen($this->screen, 'modeCard', launchSnapshot());
     unset($_GET['mode']);
 
     preg_match('/<div class="corex-opsec__mode-block" data-mode="maintenance"(.*?)<\/div>/s', $form, $block);
@@ -149,7 +157,7 @@ it('keeps Maintenance asking for the acknowledgement it always asked for', funct
 it('says on the overview what visitors are getting while the site is in Coming soon', function () {
     update_option('corex_operations_mode', 'coming-soon', false);
 
-    $overview = invokeScreen($this->screen, 'overviewCard', [], 0);
+    $overview = invokeScreen($this->screen, 'overviewCard', launchSnapshot());
 
     expect($overview)->toContain('Coming soon')
         ->and($overview)->toContain('Visitors see the coming-soon page');
@@ -162,7 +170,7 @@ it('selects the proposed mode in the form itself, so what is submitted is what i
     // with no script at all, the path the screen documents as working — it applied the wrong mode.
     update_option('corex_operations_mode', 'development', false);
     $_GET['mode'] = 'coming-soon';
-    $form         = invokeScreen($this->screen, 'modeCard');
+    $form         = invokeScreen($this->screen, 'modeCard', launchSnapshot());
     unset($_GET['mode']);
 
     preg_match_all('/<option value="([a-z-]+)"([^>]*)>/', $form, $options, PREG_SET_ORDER);
@@ -176,7 +184,7 @@ it('selects the proposed mode in the form itself, so what is submitted is what i
 
 it('selects the current mode when nothing is proposed', function () {
     update_option('corex_operations_mode', 'staging', false);
-    $form = invokeScreen($this->screen, 'modeCard');
+    $form = invokeScreen($this->screen, 'modeCard', launchSnapshot());
 
     preg_match('/<option value="([a-z-]+)"[^>]*selected/', $form, $selected);
 
@@ -192,7 +200,7 @@ it('selects the current mode when nothing is proposed', function () {
 it('says what the current mode does once, and under it only what that does not already say', function () {
     update_option('corex_operations_mode', 'coming-soon', false);
 
-    $card = invokeScreen($this->screen, 'modeCard');
+    $card = invokeScreen($this->screen, 'modeCard', launchSnapshot());
 
     expect(substr_count($card, 'Visitors see the coming-soon page; anyone signed in who can edit posts sees the real site.'))->toBe(1)
         // The warning that restated it is not drawn here.
@@ -204,7 +212,7 @@ it('says what the current mode does once, and under it only what that does not a
 it('asks for nothing while the mode selected is the one the site is in', function () {
     update_option('corex_operations_mode', 'coming-soon', false);
 
-    $card = invokeScreen($this->screen, 'modeCard');
+    $card = invokeScreen($this->screen, 'modeCard', launchSnapshot());
 
     preg_match('/<div class="corex-opsec__mode-block" data-mode="coming-soon"(.*?)<\/div>/s', $card, $block);
 
@@ -219,7 +227,7 @@ it('draws a proposed change as a heading, what it changes, and the rest behind a
     update_option('corex_operations_mode', 'development', false);
 
     $_GET['mode'] = 'coming-soon';
-    $card         = invokeScreen($this->screen, 'modeCard');
+    $card         = invokeScreen($this->screen, 'modeCard', launchSnapshot());
     unset($_GET['mode']);
 
     preg_match('/<div class="corex-opsec__mode-block" data-mode="coming-soon"(.*?)<\/div>/s', $card, $block);
@@ -242,7 +250,7 @@ it('offers a mode the site only inherits as a declaration, because declaring it 
     // records it — so that block is a proposal like any other, with its own heading.
     delete_option('corex_operations_mode');
 
-    $card = invokeScreen($this->screen, 'modeCard');
+    $card = invokeScreen($this->screen, 'modeCard', launchSnapshot());
 
     preg_match('/data-current-mode="([a-z-]+)" data-mode-declared="0"/', $card, $current);
     preg_match('/<div class="corex-opsec__mode-block" data-mode="' . $current[1] . '"(.*?)<\/div>/s', $card, $block);

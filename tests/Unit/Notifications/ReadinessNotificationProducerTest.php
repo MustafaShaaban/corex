@@ -3,8 +3,9 @@
 /**
  * Unit tests for the readiness notification producer (spec 072 US4: FR-013, FR-010).
  *
- * Readiness is a condition, not an event: a blocking check raises a notification keyed by the check,
- * and a check that now passes resolves it. Reconciliation is idempotent across evaluations.
+ * Readiness is a condition, not an event: a check that becomes blocking raises a notification keyed by
+ * the check, and a raised check that passes resolves it. Only a change of state is acted on, so the
+ * same blocker evaluated again by every screen is not published again (spec 118, US-OVR-01).
  *
  * @package Corex\Tests\Unit\Notifications
  */
@@ -26,6 +27,17 @@ beforeEach(function () {
     Functions\stubTranslationFunctions();
     // Producers name a destination now, and building it calls WordPress (spec 087, FR-014).
     AdminUrlStubs::install();
+
+    // Which checks are raised is remembered between evaluations (spec 118).
+    $GLOBALS['corex_test_options'] = [];
+    Functions\when('get_option')->alias(
+        static fn (string $key, $default = false) => $GLOBALS['corex_test_options'][$key] ?? $default,
+    );
+    Functions\when('update_option')->alias(static function (string $key, $value): bool {
+        $GLOBALS['corex_test_options'][$key] = $value;
+
+        return true;
+    });
 });
 
 /** @param array<string,string> $states key => state */
@@ -116,4 +128,48 @@ it('is keyed and available like the other producers', function () {
 
     expect($producer->key())->toBe('operations.readiness')
         ->and($producer->isAvailable())->toBe(class_exists(ReadinessEvaluatedEvent::class));
+});
+
+it('publishes a blocker once however many times readiness is evaluated', function () {
+    $service = new RecordingNotificationService();
+
+    for ($i = 0; $i < 10; $i++) {
+        reconcileReadiness($service, readinessSnapshot(['debug_display' => 'blocking']));
+    }
+
+    expect($service->published)->toHaveCount(1);
+});
+
+it('resolves a raised check that passes and raises it again only when it fails again', function () {
+    $service = new RecordingNotificationService();
+
+    reconcileReadiness($service, readinessSnapshot(['debug_display' => 'blocking']));
+    reconcileReadiness($service, readinessSnapshot(['debug_display' => 'pass']));
+    reconcileReadiness($service, readinessSnapshot(['debug_display' => 'pass']));
+    reconcileReadiness($service, readinessSnapshot(['debug_display' => 'blocking']));
+
+    expect($service->published)->toHaveCount(2)
+        ->and($service->resolved)->toBe(['readiness.blocker:debug_display']);
+});
+
+it('leaves a raised check as it is while it cannot be read', function () {
+    $service = new RecordingNotificationService();
+
+    reconcileReadiness($service, readinessSnapshot(['ssl' => 'blocking']));
+    reconcileReadiness($service, readinessSnapshot(['ssl' => 'unavailable']));
+    reconcileReadiness($service, readinessSnapshot(['ssl' => 'blocking']));
+
+    expect($service->published)->toHaveCount(1)
+        ->and($service->resolved)->toBe([]);
+});
+
+it('rewords a raised blocker in the words of the request that evaluates it, without another occurrence', function () {
+    $service = new RecordingNotificationService();
+
+    reconcileReadiness($service, readinessSnapshot(['ssl' => 'blocking']));
+    reconcileReadiness($service, readinessSnapshot(['ssl' => 'blocking']));
+
+    expect($service->published)->toHaveCount(1)
+        ->and($service->reworded)->toHaveCount(1)
+        ->and($service->reworded[0]->dedupKey)->toBe('readiness.blocker:ssl');
 });

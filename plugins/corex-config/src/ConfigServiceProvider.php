@@ -407,21 +407,24 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(JobRunner::class);
         $this->container->singleton(JobController::class);
 
-        // The Overview dashboard renderer (spec 064): the single cohesive readiness grid built from real
-        // state. Optional forms/provisioning deps resolve lazily via the container (Principle IX).
+        // The Overview (spec 064, cards since spec 118): each card reads its own facts and is drawn on
+        // its own. Optional forms/provisioning deps resolve lazily inside the cards (Principle IX).
+        // Built when the Overview is drawn, so a card that cannot even be built fails as its card.
         $this->container->singleton(
             \Corex\Config\Overview\OverviewRenderer::class,
             static fn (ContainerInterface $c): \Corex\Config\Overview\OverviewRenderer => new \Corex\Config\Overview\OverviewRenderer(
-                new \Corex\Config\Overview\OverviewModel(),
                 $c->make(\Corex\Config\Operations\OperationsMode::class),
                 $c->make(\Corex\Config\Operations\OperationsModeStore::class),
-                $c->make(\Corex\Config\Overview\OverviewFacts::class),
-                $c->make(\Corex\Config\Security\HardeningChecks::class),
-                $c->make(\Corex\Config\Data\SubmissionsReader::class),
-                $c->make(\Corex\Config\Data\DataRegistry::class),
-                $c->make(\Corex\Config\Addons\AddonRegistry::class),
-                $c,
-                $c->make(\Corex\Multisite\PluginActivationInspector::class),
+                $c->make(\Corex\Config\Overview\OverviewCardFailure::class),
+                [
+                    'tiles'        => $c->make(\Corex\Config\Overview\Cards\TilesCard::class),
+                    'readiness'    => $c->make(\Corex\Config\Overview\Cards\ReadinessCard::class),
+                    'forms'        => $c->make(\Corex\Config\Overview\Cards\FormsCard::class),
+                    'data'         => $c->make(\Corex\Config\Overview\Cards\DataSourcesCard::class),
+                    'attention'    => $c->make(\Corex\Config\Overview\Cards\AttentionCard::class),
+                    'integrations' => $c->make(\Corex\Config\Overview\Cards\IntegrationsCard::class),
+                    'activity'     => $c->make(\Corex\Config\Overview\Cards\ActivityCard::class),
+                ],
             ),
         );
 
@@ -770,6 +773,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c,
                 $c->make(\Corex\Config\Operations\OperationsMode::class),
                 $c->make(\Corex\Config\Activity\SecurityEventsSince::class),
+                $c->make(\Corex\Config\Activity\ActivitySentences::class),
                 environment: $c->make(\Corex\Environment\SiteEnvironment::class),
             ));
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>
@@ -1302,6 +1306,8 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
             $this->container->make(\Corex\Config\Notifications\NotificationController::class)->register();
+            // The one launch checklist, for the Setup Wizard's launch step (spec 118).
+            $this->container->make(\Corex\Config\Readiness\ReadinessController::class)->register();
         });
     }
 

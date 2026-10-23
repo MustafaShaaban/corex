@@ -7,9 +7,12 @@ lockouts, recovery, and security activity.
 
 Production mode is guarded by the same readiness snapshot shown on screen. Before switching to Production:
 
-1. Review every launch checklist item.
+1. Review every launch checklist item: the "Security and hosting" checks can block going live, the
+   "Site and content" checks advise.
 2. Resolve blocking checks when possible.
 3. If you intentionally override blockers, type `PRODUCTION` exactly in the confirmation field.
+
+The Setup Wizard's launch step shows the same checklist and offers the same Go live.
 
 CoreX records the mode transition in the operations-mode history. Maintenance mode remains separately confirmed because
 it affects real visitors.

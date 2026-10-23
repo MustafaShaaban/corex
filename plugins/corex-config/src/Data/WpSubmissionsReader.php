@@ -469,7 +469,16 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             $clauses[] = ['key' => 'corex_form_slug', 'value' => $query->formSlug, 'compare' => '='];
         }
         if ($query->status !== '') {
-            $clauses[] = $this->statusClause($query->status);
+            $clauses[] = $query->status === SubmissionInboxQuery::OPEN
+                ? ['relation' => 'OR', ...array_map($this->statusClause(...), SubmissionInboxQuery::OPEN_STATUSES)]
+                : $this->statusClause($query->status);
+        }
+        if ($query->unread) {
+            // Marking a submission unread empties the field; one never opened has none.
+            $clauses[] = ['relation' => 'OR',
+                ['key' => 'corex_read_at', 'compare' => 'NOT EXISTS'],
+                ['key' => 'corex_read_at', 'value' => '', 'compare' => '='],
+            ];
         }
         if ($query->owner !== '') {
             [$ownerType, $ownerKey] = explode(':', $query->owner, 2);
