@@ -1,0 +1,113 @@
+name: Serve WordPress
+description: >-
+  Serve the provisioned WordPress with nginx and php-fpm, the way the browser jobs need it: a real
+  server, PHP's errors in one known file, and no JIT. Proves both before any spec depends on them.
+
+inputs:
+  port:
+    description: The port nginx listens on. Must match the site URL WordPress was installed with.
+    required: false
+    default: '8080'
+
+runs:
+  using: composite
+  steps:
+    # nginx + php-fpm rather than `php -S`. The built-in server could not bring the block editor
+    # up at all — the editor element never appeared, with no console error and nothing 404ing, so
+    # it was not a missing asset or a starved worker pool. A real server also gives proper rewrite
+    # routing instead of the built-in server's blanket index.php fallback.
+    - name: Serve WordPress
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        # PHP-FPM is asked of apt only where it is not already here. Once setup-php has set up
+        # PHP 8.3 the runner has one: /usr/sbin/php-fpm8.3, /etc/php/8.3/fpm and a php8.3-fpm
+        # service that is running, on Ubuntu 24.04 and on 26.04 alike. Ubuntu 26.04's
+        # archive has php8.5-fpm and no php8.3-fpm, so asking for the package there
+        # stopped this job on "Unable to locate package php8.3-fpm" before a spec had run
+        # (pull request #406). `ubuntu-latest` is 24.04 on one run and 26.04 on the next
+        # while GitHub moves the label, and is followed on purpose (DECISIONS #367).
+        if command -v php-fpm8.3 > /dev/null; then
+          echo "php-fpm8.3 is here: $(command -v php-fpm8.3)"
+          sudo apt-get install -y -qq nginx
+        else
+          sudo apt-get install -y -qq nginx php8.3-fpm
+        fi
+        sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
+        server {
+          listen ${{ inputs.port }} default_server;
+          root ${GITHUB_WORKSPACE}/wp;
+          index index.php;
+          location / { try_files \$uri \$uri/ /index.php?\$args; }
+          location ~ \.php\$ {
+            include snippets/fastcgi-php.conf;
+            fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+            fastcgi_read_timeout 120;
+          }
+        }
+        NGINX
+        # nginx runs as www-data and has to traverse the runner's home to reach the workspace.
+        chmod o+x /home/runner /home/runner/work "${GITHUB_WORKSPACE}" || true
+        # Tell PHP where its error log is, rather than leave it to the image. The first run that
+        # collected the server logs found nginx's error log empty, which proves nothing either
+        # way about where a message would have gone.
+        sudo touch /var/log/corex-php-error.log
+        sudo chown www-data:www-data /var/log/corex-php-error.log
+        echo 'php_admin_flag[log_errors] = on' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
+        echo 'php_admin_value[error_log] = /var/log/corex-php-error.log' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
+        # No JIT. The runner's php-fpm came with the tracing JIT on and a 256 MB buffer, which
+        # this job never asked for and PHP does not do by default. On 2026-10-08 a method that
+        # had answered twenty-eight times began refusing a correct argument, for every worker,
+        # until the run ended (see the step that prints the opcode cache's state, below). A JIT
+        # is the part of PHP that rewrites a method once it has run often enough, and it is
+        # the one thing in that state a default PHP does not have. That it was the cause is
+        # not proved. Off, the job serves what a site serves, and the fault has one place fewer
+        # to come from.
+        #
+        # Named to be read last. PHP reads a directory of settings in name order and the last
+        # file to set a value wins. The runner's `99-pecl.ini` is where the JIT is switched on:
+        # the first attempt, `99-corex-no-jit.ini`, is read just before it and was overruled,
+        # which the step below is there to catch.
+        echo 'opcache.jit=disable' | sudo tee /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
+        echo 'opcache.jit_buffer_size=0' | sudo tee -a /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
+        # restart, not start: it is already running, with the old pool.
+        sudo systemctl restart php8.3-fpm
+        sudo nginx -t
+        sudo systemctl restart nginx
+        for _ in $(seq 1 30); do
+          if curl -sf -o /dev/null http://127.0.0.1:${{ inputs.port }}/; then echo "site up"; exit 0; fi
+          sleep 1
+        done
+        echo "site never came up"
+        sudo tail -50 /var/log/nginx/error.log || true
+        exit 1
+
+    # A log nobody has seen written to is a guess. One request through php-fpm writes a known
+    # line, and the job stops here if it is not in the file the failure artifact will carry —
+    # better to learn that on a green run than on the next 500.
+    - name: Prove where PHP's error log goes
+      shell: bash
+      run: |
+        echo "<?php error_log( 'corex-ci-log-probe' );" > wp/corex-log-probe.php
+        curl -sf -o /dev/null http://127.0.0.1:${{ inputs.port }}/corex-log-probe.php
+        rm wp/corex-log-probe.php
+        if ! sudo grep -q 'corex-ci-log-probe' /var/log/corex-php-error.log; then
+          echo "PHP's error log is not reaching /var/log/corex-php-error.log"
+          exit 1
+        fi
+
+    # The same rule for the JIT: asked of php-fpm itself, on every run, before a spec depends
+    # on the answer. A file in a directory the next runner image does not read would otherwise
+    # be a setting nobody has.
+    - name: Prove the JIT is off
+      shell: bash
+      run: |
+        echo '<?php echo json_encode( array( "jit_on" => opcache_get_status( false )["jit"]["on"] ?? null, "opcache.jit" => ini_get( "opcache.jit" ), "opcache.jit_buffer_size" => ini_get( "opcache.jit_buffer_size" ), "settings_file" => php_ini_loaded_file(), "settings_read_after_it" => php_ini_scanned_files() ) );' > wp/corex-jit-probe.php
+        answer=$(curl -sf http://127.0.0.1:${{ inputs.port }}/corex-jit-probe.php)
+        rm wp/corex-jit-probe.php
+        # Printed whatever the answer, so that where php-fpm reads its settings from is on record.
+        echo "$answer" | jq . || echo "$answer"
+        if [ "$(echo "$answer" | jq '.jit_on')" != "false" ]; then
+          echo "php-fpm says the JIT is not off."
+          exit 1
+        fi
