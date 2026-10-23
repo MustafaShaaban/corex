@@ -23,7 +23,7 @@ final class SettingsDiagnostics
     public function __construct(
         private readonly MultisiteContext $multisite,
         private readonly NetworkContext $network,
-        private readonly ?SiteEnvironment $environment = null,
+        private readonly SiteEnvironment $environment,
     ) {
     }
 
@@ -40,21 +40,12 @@ final class SettingsDiagnostics
     }
 
     /**
-     * The site's environment as mail and every screen read it, and where it is set (spec 113); in
-     * words where only WordPress's type is known (spec 119, US-SET-08: it was printed as its key).
+     * The site's environment as mail and every screen read it, and where it is set, in words
+     * (spec 113; spec 119, US-SET-08: it was printed as WordPress's key).
      */
     private function environment(): string
     {
-        if ($this->environment !== null) {
-            return $this->environment->current()->summary();
-        }
-
-        return match ((string) wp_get_environment_type()) {
-            'local'       => __('Local', 'corex'),
-            'development' => __('Development', 'corex'),
-            'staging'     => __('Staging', 'corex'),
-            default       => __('Production', 'corex'),
-        };
+        return $this->environment->current()->summary();
     }
 
     private function multisite(): string

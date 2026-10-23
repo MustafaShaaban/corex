@@ -131,7 +131,7 @@ final class SettingsControls
     /**
      * A write-only secret (spec 060 M6): the stored value is never drawn back, the input is always
      * empty, and it says whether a value is saved. Left empty, the saved value is kept. One with a
-     * stored value can be removed (spec 119, US-SET-15, DECISIONS #448): a box to tick, which the
+     * stored value can be removed (spec 119, US-SET-15, DECISIONS #446): a box to tick, which the
      * page's script turns into a confirmed "Remove" button. One set in `.env` is a line saying so.
      *
      * @param array{label:string,remove_effect?:string} $field
@@ -154,13 +154,15 @@ final class SettingsControls
             $state->secretSaved ? esc_html__('A value is saved', 'corex') : esc_html__('No value saved', 'corex'),
         );
 
-        if (! $state->secretSaved || $readOnly) {
-            return $html;
-        }
+        return $state->secretSaved && ! $readOnly ? $html . $this->removal($key, (string) ($field['remove_effect'] ?? '')) : $html;
+    }
 
-        $effect = (string) ($field['remove_effect'] ?? '');
+    /** The box to tick that removes a saved secret when the page is saved, with what stops working. */
+    private function removal(string $key, string $effect): string
+    {
+        $name = self::nameOf($key);
 
-        return $html . sprintf(
+        return sprintf(
             '<span class="corex-secret-remove" data-corex-secret-remove="%1$s">'
             . '<input type="checkbox" id="%1$s-remove" name="%2$s[]" value="%3$s" data-corex-saved="0"'
             . ' aria-describedby="%1$s-remove-effect" />'

@@ -49,10 +49,36 @@ final class SettingsSaver
             return null;
         }
 
-        $sections = $this->registry->sections();
+        $toRemove = array_map('strval', array_filter((array) ($posted[self::REMOVE] ?? []), 'is_scalar'));
         $refused  = [];
         $removed  = [];
-        $toRemove = array_map('strval', array_filter((array) ($posted[self::REMOVE] ?? []), 'is_scalar'));
+
+        foreach ($this->editableFields($page) as $key => $field) {
+            if (($field['type'] ?? '') === 'password' && in_array($key, $toRemove, true)) {
+                $removed = [...$removed, ...$this->remove($key, $field, $actorId)];
+
+                continue;
+            }
+
+            $refusal = $this->saveField($key, $field, $posted);
+            if ($refusal !== null) {
+                $refused[] = $refusal;
+            }
+        }
+
+        return new SettingsSaveResult($page->key, $refused, $removed);
+    }
+
+    /**
+     * The fields of the page a save may write: in a section whose add-on is there and on, not a
+     * read-out, and not locked by the site's `.env` or the network.
+     *
+     * @return array<string,array<string,mixed>> key => field
+     */
+    private function editableFields(SettingsPage $page): array
+    {
+        $sections = $this->registry->sections();
+        $fields   = [];
 
         foreach ($page->sections as $sectionKey) {
             if (! isset($sections[$sectionKey]) || ! $this->states->editable($sectionKey)) {
@@ -60,26 +86,14 @@ final class SettingsSaver
             }
 
             foreach ($sections[$sectionKey]['fields'] as $key => $field) {
-                $type  = (string) ($field['type'] ?? 'text');
-                $state = $this->values->state((string) $key, $type);
-                if ($type === 'info' || $state->locked()) {
-                    continue;
-                }
-
-                if ($type === 'password' && in_array($key, $toRemove, true)) {
-                    $removed = [...$removed, ...$this->remove((string) $key, $field, $actorId)];
-
-                    continue;
-                }
-
-                $refusal = $this->saveField((string) $key, $field, $posted);
-                if ($refusal !== null) {
-                    $refused[] = $refusal;
+                $type = (string) ($field['type'] ?? 'text');
+                if ($type !== 'info' && ! $this->values->state((string) $key, $type)->locked()) {
+                    $fields[(string) $key] = $field;
                 }
             }
         }
 
-        return new SettingsSaveResult($page->key, $refused, $removed);
+        return $fields;
     }
 
     /**

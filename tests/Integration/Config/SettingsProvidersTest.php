@@ -203,19 +203,16 @@ it('says on the captcha card that a key is missing, as Settings says it', functi
     $this->store->save('captcha.site_key', 'site');
     $this->store->delete('captcha.secret');
 
-    $setup = Boot::app()->container()->make(ProviderSetup::class);
-    $line  = (new ReflectionMethod(AddonsScreen::class, 'setupNeed'))->invoke(
-        Boot::app()->container()->make(AddonsScreen::class),
-        new \Corex\Config\Addons\AddonView(
-            Boot::app()->container()->make(\Corex\Config\Addons\AddonRegistry::class)->find('corex-captcha'),
-            true,
-            true,
-            true,
-        ),
-    );
+    if (! is_plugin_active('corex-captcha/corex-captcha.php')) {
+        $this->markTestSkipped('Corex Captcha is not active on this site.');
+    }
+    ob_start();
+    Boot::app()->container()->make(AddonsScreen::class)->render();
+    $screen = (string) ob_get_clean();
+    preg_match('/<section class="corex-addon-card[^"]*" id="corex-addon-corex-captcha">.*?<\/section>/s', $screen, $card);
 
-    expect($line)->toBe($setup->captchaNeed())
-        ->and($line)->toContain('secret key is missing');
+    expect($card[0] ?? '')->toContain(esc_html(Boot::app()->container()->make(ProviderSetup::class)->captchaNeed()))
+        ->and($card[0] ?? '')->toContain('section=captcha');
 });
 
 it('links the login screen\'s logo where Brand says, and refuses what is not a web address', function () {

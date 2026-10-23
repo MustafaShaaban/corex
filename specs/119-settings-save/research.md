@@ -95,9 +95,9 @@ available"; installed and off draws "<Name> is off. These settings apply when it
 **Decision.** Every string in `SettingsRegistry`, `SettingsPages` and the new classes goes through `__()` in the
 `corex` domain; brand names (reCAPTCHA, Cloudflare Turnstile, hCaptcha) stay literal. A unit test stubs `__` to mark
 its argument and fails on any title, label, help, help link, choice or page name that is not marked, apart from a
-named list of brand names. A header-gated e2e fixture marks every `corex` string through `gettext` and switches the
-admin to right-to-left for one request; a browser test reads every Settings page and finds no unmarked words except
-brand names and values.
+named list of brand names. The quality checks of spec 116 already mark every `corex` string through a cookie-gated
+fixture and read each screen in both directions; their discovery now follows the Settings pages' `&section=` links,
+so every page is read, and the Settings entries in `known-failures.json` that this release fixes are removed.
 
 ## R9. Switches share the Add-ons control (US-SET-09)
 

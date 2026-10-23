@@ -40,6 +40,18 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
+#447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
+owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar
+(unsaved state, Discard, a question before leaving, a redirect after a save, a refused value kept in its field, a
+failed save said with the edits kept); values set in `.env` or by the network show as locked and are never written;
+provider sections say which key is missing and remember their last test (PageSpeed and Cloudflare gain Test
+connection); a saved secret can be removed with a confirmation; Media, Captcha and Guides follow their add-on;
+every string is translated and on/off settings are switches; Brand gains the login logo link; Corex Media gains
+"Convert existing library". One pull request, not merged by its session, not tagged. Not built: Guides' shipped
+defaults are still drawn as empty and Off while the add-on reads its own config (a lead, not a story here); Data
+retention (R3.5), the Advanced reset (R4.x) and option pages (US-SET-11) are later releases.
+
 **Spec 113, mail stays where it should** (2026-10-21, branch `spec/113-mail-capture`, DECISIONS #381 to
 #385): revamp release R0.2, five stories (US-SAFE-02, 01, 03, 17, US-EML-18), built under the owner's
 2026-10-21 mandate to finish the revamp. One resolver (`Corex\Environment\SiteEnvironment`) decides

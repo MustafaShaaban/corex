@@ -35,39 +35,8 @@ final class SettingsPageRenderer
 
     public function render(SettingsPage $page, string $action, string $nonceField, ?SettingsSaveResult $result): string
     {
-        $pageState = $this->states->forPage($page);
-        $readOnly  = $pageState === SettingsSectionState::Disabled;
-        $sections  = $this->registry->sections();
-        $editable  = false;
-
-        $state = function (string $key, string $type = 'text') use ($result): FieldState {
-            $fieldState = $this->values->state($key, $type);
-            $typed      = $result?->typedInto(SettingsControls::nameOf($key));
-
-            return $typed === null ? $fieldState : $fieldState->asTyped($typed);
-        };
-
-        $body = '';
-        foreach ($page->sections as $sectionKey) {
-            if (! isset($sections[$sectionKey])) {
-                continue;
-            }
-
-            $section   = $sections[$sectionKey];
-            $editable  = $editable || $this->hasEditableField($section);
-            $heading   = count($page->sections) > 1
-                ? sprintf('<h2 id="corex-settings-heading-%1$s">%2$s</h2>', esc_attr($sectionKey), esc_html($section['title']))
-                : '';
-
-            $body .= sprintf(
-                '<section id="corex-settings-section-%1$s" class="corex-settings-section">%2$s%3$s%4$s%5$s</section>',
-                esc_attr($sectionKey),
-                $heading,
-                $readOnly ? '' : $this->providerNotices($sectionKey),
-                $this->form->rows($sectionKey, $section, $state, $readOnly),
-                $readOnly ? '' : $this->extras($sectionKey),
-            );
-        }
+        $readOnly = $this->states->forPage($page) === SettingsSectionState::Disabled;
+        $sections = array_intersect_key($this->registry->sections(), array_flip($page->sections));
 
         $html = sprintf(
             '<form method="post" action="%1$s" class="corex-settings-form corex-settings-page" novalidate'
@@ -77,19 +46,65 @@ final class SettingsPageRenderer
             $nonceField,
         );
         $html .= $readOnly && $page->addon !== null ? $this->addonOff($page->addon) : '';
-        $html .= $body;
-        $html .= $editable && ! $readOnly ? $this->saveBar($result !== null) : '';
+
+        $state = $this->fieldStates($result);
+        foreach ($sections as $sectionKey => $section) {
+            $html .= sprintf(
+                '<section id="corex-settings-section-%1$s" class="corex-settings-section">%2$s%3$s</section>',
+                esc_attr((string) $sectionKey),
+                count($sections) > 1
+                    ? sprintf('<h2 id="corex-settings-heading-%1$s">%2$s</h2>', esc_attr((string) $sectionKey), esc_html($section['title']))
+                    : '',
+                $this->sectionBody((string) $sectionKey, $section, $state, $readOnly),
+            );
+        }
+
+        $html .= ! $readOnly && $this->hasEditableField($sections) ? $this->saveBar($result !== null) : '';
         $html .= '</form>';
 
         return $html . ($result === null ? '' : $this->toast($result));
     }
 
-    /** @param array{fields:array<string,array<string,mixed>>} $section */
-    private function hasEditableField(array $section): bool
+    /**
+     * The state each field is drawn with: a refused value as it was typed, so it can be put right.
+     *
+     * @return callable(string, string=):FieldState
+     */
+    private function fieldStates(?SettingsSaveResult $result): callable
     {
-        foreach ($section['fields'] as $field) {
-            if (($field['type'] ?? '') !== 'info') {
-                return true;
+        return function (string $key, string $type = 'text') use ($result): FieldState {
+            $fieldState = $this->values->state($key, $type);
+            $typed      = $result?->typedInto(SettingsControls::nameOf($key));
+
+            return $typed === null ? $fieldState : $fieldState->asTyped($typed);
+        };
+    }
+
+    /**
+     * What a section holds: what its providers need, its fields, and any panel an add-on draws
+     * under it. While its add-on is off, only its fields, read-only.
+     *
+     * @param array{title:string,fields:array<string,array<string,mixed>>} $section
+     */
+    private function sectionBody(string $sectionKey, array $section, callable $state, bool $readOnly): string
+    {
+        $fields = $this->form->rows($sectionKey, $section, $state, $readOnly);
+
+        return $readOnly ? $fields : $this->providerNotices($sectionKey) . $fields . $this->extras($sectionKey);
+    }
+
+    /**
+     * Whether the page has a field to save; Advanced is read-outs only, and has no save bar.
+     *
+     * @param array<string,array{fields:array<string,array<string,mixed>>}> $sections
+     */
+    private function hasEditableField(array $sections): bool
+    {
+        foreach ($sections as $section) {
+            foreach ($section['fields'] as $field) {
+                if (($field['type'] ?? '') !== 'info') {
+                    return true;
+                }
             }
         }
 

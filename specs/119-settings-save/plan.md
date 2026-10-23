@@ -31,7 +31,7 @@ autoloaded) and `corex_media_conversion` (the latest library run's job id and fa
 per-user transient holds a save's result across the redirect for two minutes.
 
 **Testing**: Pest unit and integration (512M), Jest for `settings.js` and the conversion panel script, Playwright for
-the Settings pages (save bar, switches, removal, conversion, and a pseudo-translation through a header-gated fixture);
+the Settings pages (save bar, switches, removal, conversion, and the quality checks of spec 116, pseudo-locale included, on every page);
 locks are proven in Pest integration with a `.env` of the test's own
 
 **Target Platform**: WordPress 7.0+, single site and multisite, shared hosts without a command line
@@ -69,7 +69,7 @@ and corex-media (library conversion).
   corex-media reaches the jobs runner through its action hook.
 - [x] **X. Spec is source of truth**: PASS. Each design choice traces to an FR.
 - [x] **Guard Gate + Definition of Done** acknowledged: `clean-code-guard` and `wp-guard` on PHP and JS, `test-guard`
-  on tests, `docs-guard` on docs; DECISIONS #440 to #448, PROGRESS and the release notes updated.
+  on tests, `docs-guard` on docs; DECISIONS #440 to #447, PROGRESS and the release notes updated.
 
 ## Project Structure
 
@@ -107,7 +107,7 @@ addons/corex-captcha/src/CaptchaTestController.php, CaptchaDiagnostic.php    (re
 addons/corex-media/src/Conversion/                                            (new: library conversion)
 addons/corex-media/assets/media-conversion.js
 tests/Unit/Config/, tests/Integration/Config/, tests/Integration/Media/, tests/e2e/settings-pages.spec.js
-tests/e2e/fixtures/corex-e2e-pseudo-locale.php                               (header-gated pseudo-translation)
+tests/e2e/quality/discover.js, known-failures.json                            (the quality checks reach every page)
 ```
 
 **Structure Decision**: the Settings screen keeps its class (`AdminDashboard`) for the menu and the Overview; the
