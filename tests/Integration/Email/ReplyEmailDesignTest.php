@@ -15,6 +15,7 @@ use Corex\Boot;
 use Corex\Config\Submissions\SubmissionsController;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Design\EmailPalette;
+use Corex\Tests\Support\BrandAccent;
 use Corex\Tests\Support\MailDelivery;
 
 beforeEach(function () {
@@ -69,7 +70,7 @@ it('sends the reply in the standard design, named for the site, with its words a
         ->and($email->body)->toStartWith('<!DOCTYPE html>')
         ->and($email->body)->toContain('dir="' . (is_rtl() ? 'rtl' : 'ltr') . '"')
         ->and($email->body)->toContain(htmlspecialchars($site, ENT_QUOTES))
-        ->and($email->body)->toContain('border-top:4px solid ' . EmailPalette::light()->accent)
+        ->and($email->body)->toContain('border-top:4px solid ' . BrandAccent::primary())
         ->and(substr_count($email->body, 'Hello Salma,'))->toBe(1)
         ->and($email->body)->toContain('href="https://example.com/offer">the offer</a>')
         ->and($email->plainText)->toStartWith("Hello Salma,\n\nSee the offer (https://example.com/offer).\n\n-- \n")
@@ -143,7 +144,7 @@ it('sends the reply in the standard design when the site design leaves the messa
 
     expect($email->body)->toContain('<p dir="auto"')
         ->and($email->body)->toContain('We will call you tomorrow.')
-        ->and($email->body)->toContain('border-top:4px solid ' . EmailPalette::light()->accent)
+        ->and($email->body)->toContain('border-top:4px solid ' . BrandAccent::primary())
         ->and($email->body)->not->toContain('class="acme"')
         ->and($announced)->toBe([['AcmeSiteEmailDesign', 'without_message']])
         ->and(Boot::app()->container()->make(\Corex\Notifications\NotificationProducerRegistry::class)->registeredKeys())

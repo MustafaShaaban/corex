@@ -159,16 +159,21 @@ function requestKeepingMailer(): AttemptingMailer
  * name, an email and a message, so a form with any other field sent an email without it, under
  * the subject "New contact form submission". Reported on 2026-10-06 from a client site.
  */
-it('sends a form other than the contact form its own fields, not the contact template', function () {
+// Spec 120: drawn in the one frame through the form notification template, with a plain-text
+// body for the wp_mail() floor.
+it('sends a form other than the contact form its own fields, through the form notification template', function () {
     $mailer = requestKeepingMailer();
 
     (new SendEmailListener(new NotificationDispatcher(new LanguageOfTheRequest(), null, $mailer), emailListenerConfig()))
         ->dispatch(new FormSubmittedEvent('callback', ['phone' => '01016999700', 'company' => 'Acme']));
 
-    expect($mailer->request->templateName)->toBeNull()
+    expect($mailer->request->templateName)->toBe('form-notification')
         ->and($mailer->request->subject)->toBe('New "callback" form submission')
-        ->and($mailer->request->body)->toContain('01016999700')
-        ->and($mailer->request->body)->toContain('Acme');
+        ->and($mailer->request->body)->toBe("phone: 01016999700\ncompany: Acme")
+        ->and($mailer->request->context['answers'])->toBe([
+            ['label' => 'Phone', 'value' => '01016999700'],
+            ['label' => 'Company', 'value' => 'Acme'],
+        ]);
 });
 
 it('still sends the contact form through the contact template', function () {
@@ -204,5 +209,5 @@ it('has its own words written in the language of the email', function () {
         ->dispatch(new FormSubmittedEvent('callback', []));
 
     expect($mailer->request->subject)->toBe('[email] New "callback" form submission')
-        ->and($mailer->request->body)->toBe('<p>[email] The submission contained no fields.</p>');
+        ->and($mailer->request->body)->toBe('[email] The submission contained no fields.');
 });

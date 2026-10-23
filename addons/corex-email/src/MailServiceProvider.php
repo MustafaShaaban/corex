@@ -149,6 +149,7 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(EmailDesign::class),
                 $c->make(EmailBrandSource::class),
                 static fn (): string => (string) get_privacy_policy_url(),
+                $c->make(EmailLanguage::class),
             ),
         );
 
@@ -332,6 +333,9 @@ final class MailServiceProvider extends ServiceProvider
 
         $this->container->make(TemplateRegistry::class)->register(
             $this->container->make(ContactNotificationTemplate::class),
+        );
+        $this->container->make(TemplateRegistry::class)->register(
+            $this->container->make(\Corex\Email\Templates\FormNotificationTemplate::class),
         );
 
         // Hook the queue worker LAZILY. Resolving the dispatcher here (plugins_loaded)

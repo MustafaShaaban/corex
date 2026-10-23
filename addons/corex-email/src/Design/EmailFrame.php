@@ -11,6 +11,7 @@ namespace Corex\Email\Design;
 defined('ABSPATH') || exit;
 
 use Closure;
+use Corex\Mail\EmailLanguage;
 
 /**
  * The one frame every email CoreX draws is in (spec 120, story 3): a reply, a form notification,
@@ -31,6 +32,8 @@ final readonly class EmailFrame
         private EmailDesign $design,
         private EmailBrandSource $brands,
         private ?Closure $privacyPage = null,
+        /** Draws in the email's language: the site's, whoever's request it is. */
+        private ?EmailLanguage $language = null,
     ) {
     }
 
@@ -44,7 +47,10 @@ final readonly class EmailFrame
      */
     public function draw(EmailContent $content, string $accent = '', ?string $direction = null): string
     {
-        return $this->design->render($this->withSiteLinks($content), $this->brand($accent, $direction));
+        return $this->inEmailLanguage(fn (): string => $this->design->render(
+            $this->withSiteLinks($content),
+            $this->brand($accent, $direction),
+        ));
     }
 
     /**
@@ -52,6 +58,11 @@ final readonly class EmailFrame
      * why the person receives the email, under the signature separator.
      */
     public function plainFooter(string $kind): string
+    {
+        return $this->inEmailLanguage(fn (): string => $this->footerLines($kind));
+    }
+
+    private function footerLines(string $kind): string
     {
         $brand = $this->brands->brand();
         $line = $brand->footer !== ''
@@ -67,6 +78,18 @@ final readonly class EmailFrame
     public function siteName(): string
     {
         return $this->brands->brand()->name;
+    }
+
+    /**
+     * @template T
+     *
+     * @param Closure():T $draw
+     *
+     * @return T
+     */
+    private function inEmailLanguage(Closure $draw): mixed
+    {
+        return $this->language === null ? $draw() : $this->language->during($draw);
     }
 
     private function brand(string $accent, ?string $direction): EmailBrand

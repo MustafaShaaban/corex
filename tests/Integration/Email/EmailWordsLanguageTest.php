@@ -101,10 +101,10 @@ it('writes the notification of a form defined in code in the language of the sit
             ->toContain('>' . $inTheSitesLanguage('Open the submission') . '</a>')
         ->and($withNothing['subject'])->toBe($inTheSitesLanguage('New "corex-words-probe" form submission'))
         ->and($withNothing['message'])->toContain($inTheSitesLanguage('The submission contained no fields.'))
-        // Those five strings are all of CoreX's there is in the two emails: on the Arabic site
-        // there is no sixth, and on the English one not one of them is in Arabic.
+        // Drawn in the one frame (spec 120), the emails carry its footer's words too: every one in
+        // the site's language, so on the English site not one of them is in Arabic.
         ->and(substr_count(implode('', [...array_values($withAFile), ...array_values($withNothing)]), '[ar] '))
-            ->toBe($siteLanguage === 'ar' ? 5 : 0)
+            ->toBe($siteLanguage === 'ar' ? 13 : 0)
         ->and($request['afterwards'])->toBe($theRequest);
 })->with(sitesAndTheirAdministrators());
 
