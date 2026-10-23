@@ -22,6 +22,38 @@ Job postings + a secure application flow with a pipeline. Optional add-on; build
 - Applications move through a **pipeline** — `new → reviewing → interviewed → offer → hired / rejected`
   — and only valid transitions are allowed (`StatusFlow`).
 
+## A form that passes the captcha check
+
+CoreX ships no visitor form for job applications: a site posts its own form to the route. With a captcha provider
+on (Turnstile, hCaptcha or reCAPTCHA v3, with its keys), the route refuses a request without the
+provider's check, answering `422` with `error: "captcha"` and a `message` to show the visitor. Nothing is
+stored and no email is sent.
+
+A form carries the check through `Corex\Security\FormChallenge`, which corex-captcha provides:
+
+```php
+use Corex\Security\FormChallenge;
+
+$challenge = \Corex\Boot::app()->container()->make(FormChallenge::class);
+
+echo '<form ' . esc_attr($challenge->formAttribute()) . ' novalidate>';
+// … the form's fields …
+echo $challenge->fields(\Corex\Careers\CareersServiceProvider::APPLY_ACTION); // already escaped: the token field, and the place for a widget
+echo '<button type="submit">' . esc_html__('Send', 'corex') . '</button>';
+echo '<p role="status" aria-live="polite" data-corex-captcha-message></p>';
+echo '</form>';
+```
+
+- `fields()` prints nothing, and `formAttribute()` returns `''`, when no provider is on. Printing the
+  check also loads the provider's script on that page, and on no other.
+- Send the form's `captcha_token` field with the others.
+- With reCAPTCHA v3, the route judges the token against the action `corex_job_application`, the site's own hostname (or `captcha.allowed_hostnames`) and the configured score. `fields()` asks for a token under that action; a form that asks the provider itself must use the same action.
+- After the answer, dispatch `corex:form:success` or `corex:form:error` on the form, with
+  `{ detail: { envelope } }`. The provider's check then resets for the next attempt, since a token is
+  spent by one request.
+- The provider's script writes its own messages (check not passed, provider unreachable) into the
+  element marked `data-corex-captcha-message`.
+
 ## Tests
 
 ```bash

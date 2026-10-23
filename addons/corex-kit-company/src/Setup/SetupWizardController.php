@@ -20,10 +20,12 @@ defined('ABSPATH') || exit;
 /**
  * REST for the nine-step setup wizard (spec 068 US8, T195). It exposes the wizard configuration
  * (kits, brand fields, demo levels, conflict choices), the live nine-step progress, a plan preview
- * with real conflicts, and a guarded apply that honours operator conflict choices. Reads require
- * `manage_options`; the apply additionally requires a valid REST nonce (Principle VII) and an
- * explicit confirmation, and never overwrites existing content without an explicit Replace choice
- * (FR-140/143). The pure seams (`config`, `progressState`, `planPreview`) are unit-tested.
+ * with real conflicts and the existing pages the kit would adopt, and a guarded apply that honours
+ * operator conflict choices. Reads require `manage_options`; the apply additionally requires a valid
+ * REST nonce (Principle VII) and the person's confirmation that they have a full backup of their own,
+ * and never overwrites existing content without an explicit Replace choice (FR-143). CoreX takes no
+ * backup: an apply records the pages it replaces or adopts and the front-page settings, so a reset can
+ * put them back (spec 115). The pure seams (`config`, `progressState`, `planPreview`) are unit-tested.
  */
 final class SetupWizardController
 {
@@ -99,20 +101,65 @@ final class SetupWizardController
     }
 
     /**
-     * A read-only plan preview for a kit at a demo level: the modules/flags/pages plus the real
-     * conflicting pages the operator must choose about — no writes.
+     * A read-only plan preview for a kit at a demo level: the modules/flags/pages, the real conflicting
+     * pages the operator must choose about, and the existing pages the kit would adopt — no writes. Each
+     * conflict and adopted page carries `pageTitle`, the title the owner's page has now, which is what the
+     * Backup step lists as recorded, and `recorded`, false for a page an earlier apply made.
      *
-     * @return array{plan:array<string,mixed>,conflicts:list<array{slug:string,title:string}>}
+     * @return array{plan:array<string,mixed>,conflicts:list<array{slug:string,title:string,pageTitle:string,recorded:bool}>,adopted:list<array{slug:string,title:string,pageTitle:string,recorded:bool}>}
      */
     public function planPreview(string $kit, string $level): array
     {
-        $plan  = $this->wizard->plan($kit, $level);
-        $pages = $plan['pages'];
+        $plan         = $this->wizard->plan($kit, $level);
+        $dispositions = $this->activator->classify($plan['pages']);
 
         return [
             'plan'      => $plan,
-            'conflicts' => $this->conflicts->conflicts($this->activator->classify($pages)),
+            'conflicts' => $this->withPageTitles($this->conflicts->conflicts($dispositions)),
+            'adopted'   => $this->withPageTitles($this->adopted($dispositions)),
         ];
+    }
+
+    /**
+     * The owner's existing pages the plan fills in place (an empty page they made, not a kit placeholder).
+     *
+     * @param list<PageDisposition> $dispositions
+     *
+     * @return list<array{slug:string,title:string}>
+     */
+    private function adopted(array $dispositions): array
+    {
+        $adopted = [];
+
+        foreach ($dispositions as $disposition) {
+            if ($disposition->action === PageDisposition::ADOPT && $disposition->reason !== 'kit_placeholder') {
+                $adopted[] = ['slug' => $disposition->slug, 'title' => $disposition->title];
+            }
+        }
+
+        return $adopted;
+    }
+
+    /**
+     * Each row with the title its page has now, and whether the page is the owner's: a page an earlier
+     * apply created stays the kit's when it is replaced, so nothing of it is recorded (spec 115).
+     *
+     * @param list<array{slug:string,title:string}> $rows
+     *
+     * @return list<array{slug:string,title:string,pageTitle:string,recorded:bool}>
+     */
+    private function withPageTitles(array $rows): array
+    {
+        $kitsOwn = [PageDisposition::PERSISTED_CREATED, PageDisposition::PERSISTED_SUFFIXED];
+
+        return array_map(static function (array $row) use ($kitsOwn): array {
+            $page  = get_page_by_path($row['slug']);
+            $title = $page instanceof \WP_Post ? (string) $page->post_title : '';
+            $made  = $page instanceof \WP_Post
+                && in_array((string) get_post_meta($page->ID, PageDisposition::META, true), $kitsOwn, true);
+
+            return $row + ['pageTitle' => $title !== '' ? $title : $row['title'], 'recorded' => ! $made];
+        }, $rows);
     }
 
     public function state(WP_REST_Request $request): WP_REST_Response
@@ -135,7 +182,7 @@ final class SetupWizardController
     {
         if ((bool) $request->get_param('confirm') !== true) {
             return new WP_REST_Response(
-                ResponseEnvelope::error('confirmation_required', __('A backup and explicit confirmation are required before apply.', 'corex'))->toArray(),
+                ResponseEnvelope::error('confirmation_required', __('Confirm you have a full backup of this site before applying. CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.', 'corex'))->toArray(),
                 422,
             );
         }

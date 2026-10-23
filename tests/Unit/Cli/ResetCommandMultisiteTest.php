@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Cli\Commands\ResetCommand;
+use Corex\Cli\Reset\KitPageReader;
 use Corex\Cli\Reset\ResetAction;
 use Corex\Cli\Reset\ResetExecutor;
 use Corex\Cli\Reset\ResetGate;
@@ -70,6 +71,7 @@ it('refuses a network-activated add-on without the network flag', function () {
         new ResetExecutor(),
         $inspector,
         $multisite,
+        new KitPageReader(),
     );
     $method = new ReflectionMethod($command, 'networkGuardMessage');
     $method->setAccessible(true);

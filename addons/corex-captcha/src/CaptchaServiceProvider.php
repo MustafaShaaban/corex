@@ -13,6 +13,9 @@ defined('ABSPATH') || exit;
 use Corex\Container\ContainerInterface;
 use Corex\Forms\Block\ProtectedFormRegistry;
 use Corex\Foundation\ServiceProvider;
+use Corex\Http\ClientAddress;
+use Corex\Security\ChallengeSettings;
+use Corex\Security\FormChallenge;
 use Corex\Security\ChallengeVerifier;
 use Corex\Support\Config\ConfigInterface;
 
@@ -52,9 +55,27 @@ final class CaptchaServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(
+            CaptchaChallenge::class,
+            static fn (ContainerInterface $c): CaptchaChallenge => new CaptchaChallenge(
+                $c->make(Captcha::class),
+                new ChallengeSettings($c->make(ConfigInterface::class)),
+                $c->make(ClientAddress::class),
+            ),
+        );
+
+        // The add-ons' public forms carry this provider's check (spec 115).
+        $this->container->singleton(
+            FormChallenge::class,
+            static fn (ContainerInterface $c): FormChallenge => $c->make(CaptchaChallenge::class),
+        );
+
+        $this->container->singleton(
             CaptchaAssetController::class,
             static fn (ContainerInterface $c): CaptchaAssetController => new CaptchaAssetController(
-                $c->make(ProtectedFormRegistry::class),
+                // The forms plugin is optional: without it, only the forms that print through
+                // CaptchaChallenge (account, newsletter, a site's own) can ask for the script.
+                class_exists(ProtectedFormRegistry::class) ? $c->make(ProtectedFormRegistry::class) : null,
+                $c->make(CaptchaChallenge::class),
                 $c->make(ConfigInterface::class),
             ),
         );
@@ -68,12 +89,9 @@ final class CaptchaServiceProvider extends ServiceProvider
         // Its admin-side button (spec 053 US3) — enqueued only on the Corex settings screen.
         add_action('admin_enqueue_scripts', [$this, 'enqueueTestButton']);
 
-        // The v3 client, loaded only on pages carrying a protected form (spec 071 US1). Guarded on
-        // the Forms plugin being present — captcha protecting forms is meaningless without it, and
-        // this keeps the add-on from fataling on a site that runs captcha but not forms.
-        if (class_exists(ProtectedFormRegistry::class)) {
-            $this->container->make(CaptchaAssetController::class)->register();
-        }
+        // The provider's client, loaded only on pages carrying a protected form (spec 071 US1), with
+        // or without the forms plugin (spec 115).
+        $this->container->make(CaptchaAssetController::class)->register();
     }
 
     /**

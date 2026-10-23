@@ -10,6 +10,7 @@ namespace Corex\Forms\Submission;
 
 defined('ABSPATH') || exit;
 
+use Corex\Security\ChallengeFields;
 use Corex\Security\ChallengeVerifier;
 use Corex\Security\VerifyingChallenge;
 
@@ -23,7 +24,7 @@ use Corex\Security\VerifyingChallenge;
 final readonly class SubmissionChallenge
 {
     /** The field a form sends its token in. */
-    public const TOKEN_KEY = 'captcha_token';
+    public const TOKEN_KEY = ChallengeFields::TOKEN_KEY;
 
     public function __construct(
         private ?ChallengeVerifier $captcha = null,

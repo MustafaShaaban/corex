@@ -162,3 +162,115 @@ it.each( [
 		expect( document.body.textContent ).toContain( 'pages will be' );
 	}
 );
+
+describe( 'the wizard says what CoreX records, and takes no backup (spec 115)', () => {
+	const RECORDED =
+		'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.';
+
+	beforeEach( () => {
+		answers.state = ok( {
+			config: {
+				kits: [ { name: 'company' } ],
+				demoLevels: [],
+				conflictChoices: [
+					{ id: 'keep', label: 'Keep mine' },
+					{ id: 'replace', label: 'Replace' },
+				],
+			},
+			progress: { steps },
+		} );
+		answers.plan = ok( {
+			plan: { pages: [ {}, {}, {} ] },
+			conflicts: [
+				{ slug: 'about', title: 'About', pageTitle: 'About us' },
+			],
+			adopted: [
+				{ slug: 'contact', title: 'Contact', pageTitle: 'Contact' },
+			],
+		} );
+	} );
+
+	it( 'states what is recorded on the welcome, and never promises a backup', async () => {
+		await openTheWizard();
+
+		const text = document.getElementById( 'corex-setup-app' ).textContent;
+		expect( text ).toContain( RECORDED );
+		expect( text ).not.toMatch( /with a backup|backs? up your site/i );
+	} );
+
+	it( 'lists the replaced and adopted pages on the Backup step, by their titles', async () => {
+		await goToThePlan();
+		document
+			.querySelector( 'input[name="conflict-about"][value="replace"]' )
+			.click();
+		await press( 'corex-setup-next' );
+
+		const panel = document.querySelector( '.corex-setup__panel' );
+		const listed = [
+			...panel.querySelectorAll( '.corex-setup__recorded li' ),
+		].map( ( item ) => item.textContent );
+		expect( panel.textContent ).toContain( RECORDED );
+		expect( listed ).toEqual( [ 'Contact', 'About us' ] );
+		expect( panel.textContent ).toContain( 'backup plugin' );
+		expect( panel.textContent ).not.toMatch(
+			/(takes|took|made|making|with) a backup|backs? up (your|the) site/i
+		);
+	} );
+
+	it( 'does not list a conflict the person keeps', async () => {
+		await goToThePlan();
+		document
+			.querySelector( 'input[name="conflict-about"][value="keep"]' )
+			.click();
+		await press( 'corex-setup-next' );
+
+		const listed = [
+			...document.querySelectorAll( '.corex-setup__recorded li' ),
+		].map( ( item ) => item.textContent );
+		expect( listed ).toEqual( [ 'Contact' ] );
+	} );
+
+	it( 'does not list a page an earlier apply made, which is the kit’s own', async () => {
+		answers.plan = ok( {
+			plan: { pages: [ {}, {} ] },
+			conflicts: [
+				{
+					slug: 'about',
+					title: 'About',
+					pageTitle: 'About',
+					recorded: false,
+				},
+			],
+			adopted: [],
+		} );
+		await goToThePlan();
+		document
+			.querySelector( 'input[name="conflict-about"][value="replace"]' )
+			.click();
+		await press( 'corex-setup-next' );
+
+		expect(
+			document.querySelectorAll( '.corex-setup__recorded li' )
+		).toHaveLength( 0 );
+		expect( document.body.textContent ).toContain(
+			'This plan changes none of your existing pages.'
+		);
+	} );
+
+	it( 'keeps Apply off until the person confirms a backup of their own', async () => {
+		await goToThePlan();
+		await press( 'corex-setup-next' );
+		await press( 'corex-setup-next' );
+		expect( document.getElementById( 'corex-setup-apply' ).disabled ).toBe(
+			true
+		);
+
+		await press( 'corex-setup-back' );
+		document.getElementById( 'corex-setup-backup' ).click();
+		await press( 'corex-setup-next' );
+
+		expect( document.getElementById( 'corex-setup-apply' ).disabled ).toBe(
+			false
+		);
+	} );
+} );

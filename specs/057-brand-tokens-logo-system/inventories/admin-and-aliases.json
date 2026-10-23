@@ -685,7 +685,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
-      "context": "lines 6: gap: var(--corex-admin-space-lg);"
+      "context": "lines 6, 153: gap: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);"
     },
     {
       "legacy_property": "--corex-admin-space-md",
@@ -699,7 +699,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
-      "context": "lines 12, 23, 84, 90, 92, 112, 136, 146: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);"
+      "context": "lines 12, 23, 84, 90, 92, 112, 136, 146, 152: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);"
     },
     {
       "legacy_property": "--corex-admin-space-xs",

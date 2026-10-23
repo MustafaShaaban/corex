@@ -21,11 +21,11 @@
 declare(strict_types=1);
 
 use Corex\Boot;
-use Corex\Captcha\Captcha;
-use Corex\Captcha\NullCaptcha;
 use Corex\Careers\Application\ApplicationService;
 use Corex\Careers\Application\ApplicationStore;
 use Corex\Mail\Mailer;
+use Corex\Security\FormChallenge;
+use Corex\Security\NoFormChallenge;
 use Corex\Security\Upload\AttachmentResult;
 use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\UploadValidator;
@@ -52,7 +52,7 @@ beforeEach(function () {
     };
 
     $this->service = $container->make(ApplicationService::class);
-    $this->captcha = $container->make(Captcha::class);
+    $this->challenge = $container->make(FormChallenge::class);
     $this->files   = $_FILES;
 
     $container->instance(ApplicationService::class, new ApplicationService(
@@ -63,13 +63,13 @@ beforeEach(function () {
         $container->make(ConfigInterface::class),
     ));
     // Whatever challenge the install is set to, this file is not about it.
-    $container->instance(Captcha::class, new NullCaptcha());
+    $container->instance(FormChallenge::class, new NoFormChallenge());
 });
 
 afterEach(function () {
     $container = Boot::app()->container();
     $container->instance(ApplicationService::class, $this->service);
-    $container->instance(Captcha::class, $this->captcha);
+    $container->instance(FormChallenge::class, $this->challenge);
 
     $_FILES = $this->files;
 });

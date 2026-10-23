@@ -93,7 +93,7 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 					<input
 						id="corex-flow-slug"
 						name="slug"
-						pattern="[a-z][a-z0-9-]*"
+						pattern="[a-z][a-z0-9\-]*"
 						required
 					/>
 				</label>

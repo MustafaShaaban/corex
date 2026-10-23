@@ -14,9 +14,11 @@ use Corex\Blocks\BlockMap;
 use Corex\Blocks\DynamicBlockRegistrar;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Support\Config\ConfigInterface;
 use Corex\Ui\Blocks\BlockStyles;
 use Corex\Ui\Blocks\PostsProvider;
 use Corex\Ui\Blocks\WpPostsProvider;
+use Corex\Ui\Patterns\ActionLinks;
 use Corex\Ui\Patterns\PatternLibrary;
 use Corex\Ui\Patterns\PatternRegistrar;
 
@@ -40,6 +42,14 @@ final class UiServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(
+            ActionLinks::class,
+            static fn (ContainerInterface $c): ActionLinks => new ActionLinks(
+                $c->make(ConfigInterface::class),
+                dirname(__DIR__) . '/assets/action-link.css',
+            ),
+        );
+
+        $this->container->singleton(
             BlockStyles::class,
             static fn (): BlockStyles => new BlockStyles(
                 plugins_url('assets/block-styles.css', dirname(__DIR__) . '/corex-ui.php'),
@@ -52,6 +62,9 @@ final class UiServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerBlocks']);
         add_action('init', [$this, 'registerPatterns']);
         add_action('init', [$this, 'registerBlockStyles']);
+
+        // The hero and call-to-action buttons get a real address when drawn, or are not drawn (spec 115).
+        $this->container->make(ActionLinks::class)->register();
     }
 
     /**
