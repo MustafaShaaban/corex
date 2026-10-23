@@ -16,6 +16,7 @@ use Corex\Config\Data\SubmissionsReader;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Container\ContainerInterface;
+use Corex\Environment\SiteEnvironment;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowRepository;
 use Corex\Support\Config\ConfigInterface;
@@ -49,6 +50,7 @@ final class InsightWidgetFacts
         private readonly SecurityEventsSince $since,
         private readonly ActivitySentences $sentences,
         private readonly string $option = 'corex_insights',
+        private readonly ?SiteEnvironment $environment = null,
     ) {
     }
 
@@ -73,13 +75,19 @@ final class InsightWidgetFacts
             'cronOverdue'            => $this->cronOverdue(),
             'phpVersion'             => PHP_VERSION,
             'wpVersion'              => (string) get_bloginfo('version'),
-            'environment'            => (string) wp_get_environment_type(),
+            'environment'            => $this->environmentFact(),
             'operationsMode'         => $this->modeStore->current(),
             'modeDeclared'           => $this->modeStore->isDeclared(),
             'formsSubmissions'       => $this->submissionsTotal(),
             'formsPublishedFlows'    => $this->flowCount(Flow::STATE_PUBLISHED),
             'formsTotalFlows'        => $this->flowCount(null),
         ];
+    }
+
+    /** The site's environment as mail and every screen read it, and where it is set (spec 113). */
+    private function environmentFact(): string
+    {
+        return $this->environment?->current()->summary() ?? (string) wp_get_environment_type();
     }
 
     /**

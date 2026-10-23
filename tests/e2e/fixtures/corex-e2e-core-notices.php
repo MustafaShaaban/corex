@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: CoreX E2E core notices
+ * Plugin Name: CoreX E2E core notices (test fixture)
  * Description: Lets the browser suite ask for an admin page with a core update pending, or with none, whatever version of WordPress the install runs.
  * Version: 1.0.0
  *
@@ -59,14 +59,14 @@ add_action('admin_init', static function (): void {
     }
 
     add_action('admin_notices', static function (): void {
-        wp_admin_notice('A notice printed on admin_notices.', [
+        wp_admin_notice('Test fixture: a notice printed on admin_notices.', [
             'type' => 'info',
             'id' => 'corex-e2e-notice-info',
         ]);
     });
 
     add_action('all_admin_notices', static function (): void {
-        wp_admin_notice('A dismissible notice printed on all_admin_notices.', [
+        wp_admin_notice('Test fixture: a dismissible notice printed on all_admin_notices.', [
             'type' => 'error',
             'id' => 'corex-e2e-notice-error',
             'dismissible' => true,

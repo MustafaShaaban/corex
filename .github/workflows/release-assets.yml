@@ -1,0 +1,39 @@
+name: Release assets
+
+# Attaches the translation template to every published release (spec 116, US-NFR-06), so a
+# translator always has the strings of the release a site runs. CI generates the same file on
+# every pull request; this is the copy that stays with the tag.
+#
+# Confined to the framework's repository: a client repository inherits this file, and its releases
+# (if it makes any) are its own.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  translation-template:
+    if: github.repository == 'MustafaShaaban/corex'
+    name: Attach corex.pot to the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Generate the translation template
+        run: composer i18n:pot
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" plugins/corex-core/languages/corex.pot --clobber

@@ -74,9 +74,8 @@ final class EmailAttemptRepository
     public function latest(int $limit = 50): array
     {
         $limit   = max(1, min(100, $limit));
-        $records = array_slice(array_reverse($this->store->all(self::TYPE)), 0, $limit);
 
-        return array_map($this->attempt(...), $records);
+        return array_map($this->attempt(...), $this->store->latest(self::TYPE, $limit));
     }
 
     /**

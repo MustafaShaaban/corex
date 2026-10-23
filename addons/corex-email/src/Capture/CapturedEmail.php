@@ -38,6 +38,10 @@ final class CapturedEmail
         public readonly ?DateTimeImmutable $retentionUntil = null,
         public readonly ?string $attemptId = null,
         public readonly string $plainText = '',
+        /** What sent it ("Form notification"); empty for a record kept before spec 113. */
+        public readonly string $path = '',
+        /** `captured`, or `held_for_test` for a flow's marked test. */
+        public readonly string $state = 'captured',
     ) {
         if ($this->id < 1 || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $this->captureId) !== 1) {
             throw new InvalidArgumentException(__('Captured email identity is invalid.', 'corex'));

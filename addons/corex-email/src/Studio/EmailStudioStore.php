@@ -29,4 +29,11 @@ interface EmailStudioStore
 
     /** @return list<array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>}> */
     public function all(string $type, ?int $parentId = null): array;
+
+    /**
+     * The most recent records of a kind, newest first, however many are stored (spec 113, US5).
+     *
+     * @return list<array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>}>
+     */
+    public function latest(string $type, int $limit): array;
 }

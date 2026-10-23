@@ -34,6 +34,9 @@ final readonly class ModeChangeResult
     /** The production launch was refused by the launch service. */
     public const BLOCKED = 'blocked';
 
+    /** A lock (`.env`, the network or the `corex_app_env` option) does not allow the mode. Nothing was written. */
+    public const LOCKED = 'locked';
+
     /** The mode is not one the framework knows. Nothing was written. */
     public const INVALID = 'invalid';
 
@@ -67,6 +70,11 @@ final readonly class ModeChangeResult
     public static function blocked(string $mode): self
     {
         return new self(self::BLOCKED, applied: $mode);
+    }
+
+    public static function locked(string $mode): self
+    {
+        return new self(self::LOCKED, proposed: $mode);
     }
 
     public static function invalid(): self

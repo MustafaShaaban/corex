@@ -11,7 +11,13 @@ namespace Corex\Foundation;
 defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
+use Corex\Environment\SiteEnvironment;
 use Corex\Health\HealthModule;
+use Corex\Mail\Capture\MailGate;
+use Corex\Mail\Capture\MailHold;
+use Corex\Mail\Capture\MailPath;
+use Corex\Mail\Capture\WordPressMailNames;
+use Corex\Mail\Capture\WpMailInterceptor;
 use Corex\Multisite\MultisiteContext;
 use Corex\Multisite\NetworkContext;
 use Corex\Support\BootLogger;
@@ -42,22 +48,53 @@ final class CoreServiceProvider extends ServiceProvider
         // One list for every provider: each names the options of its own that every request reads.
         $this->container->singleton(LoadedOptions::class);
 
+        // The three layers that can lock a value, one instance each: the config repository and
+        // the site environment (spec 113) read the same ones, and `.env` is read once.
+        $this->container->singleton(
+            DotenvSource::class,
+            fn (ContainerInterface $container): DotenvSource => new DotenvSource($this->projectRoot(), $container->make(BootLogger::class)),
+        );
+        $this->container->singleton(
+            NetworkLockSource::class,
+            static fn (ContainerInterface $container): NetworkLockSource => new NetworkLockSource(
+                $container->make(SettingRegistry::class),
+                $container->make(MultisiteContext::class),
+                $container->make(NetworkContext::class),
+            ),
+        );
+        $this->container->singleton(OptionsSource::class);
+
         $this->container->singleton(ConfigInterface::class, function (ContainerInterface $container): Repository {
             $registry = $container->make(SettingRegistry::class);
             $multisite = $container->make(MultisiteContext::class);
             $network = $container->make(NetworkContext::class);
 
             return new Repository([
-                new DotenvSource($this->projectRoot(), $container->make(BootLogger::class)),
+                $container->make(DotenvSource::class),
                 // Deployment-owned .env stays highest: allowing a network-admin database row to
                 // override it would invert privilege. A lock must beat a site option, while a
                 // network default must lose to one, fixing the sources on opposite sides of it.
-                new NetworkLockSource($registry, $multisite, $network),
-                new OptionsSource(),
+                $container->make(NetworkLockSource::class),
+                $container->make(OptionsSource::class),
                 new NetworkDefaultsSource($registry, $multisite, $network),
                 new DefaultsSource($this->defaults()),
             ]);
         });
+
+        // One name and one hold for the whole request: whoever sends, the gate reads the same ones.
+        $this->container->singleton(MailPath::class);
+        $this->container->singleton(MailHold::class);
+        $this->container->singleton(MailGate::class);
+        $this->container->singleton(WpMailInterceptor::class);
+        $this->container->singleton(WordPressMailNames::class);
+
+        // The lock layers of `app.env`, read one by one: the repository's defaults layer would
+        // answer "production" for every site (spec 113, research R1).
+        $this->container->singleton(SiteEnvironment::class, static fn (ContainerInterface $container): SiteEnvironment => new SiteEnvironment([
+            [SiteEnvironment::BY_DOTENV, $container->make(DotenvSource::class)],
+            [SiteEnvironment::BY_NETWORK, $container->make(NetworkLockSource::class)],
+            [SiteEnvironment::BY_OPTION, $container->make(OptionsSource::class)],
+        ]));
 
         $this->container->singleton(
             FeatureFlags::class,
@@ -136,6 +173,10 @@ final class CoreServiceProvider extends ServiceProvider
         $this->container->make(HealthModule::class)->register();
         // A request that ends in a PHP fatal error is recorded for the Overview (spec 118).
         $this->container->make(\Corex\Health\FatalErrorRecorder::class)->register();
+        // Every wp_mail() meets the mail gate (spec 113): captured on a development or staging
+        // site, held during a flow test, untouched in production.
+        $this->container->make(WpMailInterceptor::class)->register();
+        $this->container->make(WordPressMailNames::class)->register();
 
         // Load the shared `corex` text domain so bundled translations apply (spec 036). All Corex
         // plugins/add-ons use this one literal domain; the .pot lives under corex-core/languages.

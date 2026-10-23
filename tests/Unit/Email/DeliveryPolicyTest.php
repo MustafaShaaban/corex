@@ -69,6 +69,11 @@ function deliveryPolicyStore(): EmailStudioStore
             return null;
         }
 
+        public function latest(string $type, int $limit): array
+        {
+            return array_slice(array_reverse($this->all($type)), 0, max(1, $limit));
+        }
+
         public function all(string $type, ?int $parentId = null): array
         {
             return array_values(array_filter(
