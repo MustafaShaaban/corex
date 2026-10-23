@@ -551,3 +551,59 @@ describe( 'NotificationItem', () => {
 		} );
 	} );
 } );
+
+describe( 'a group of repeated notices (spec 118, US-SHL-09)', () => {
+	const member = ( id, url ) =>
+		notification( {
+			id,
+			action: serverAction( { label: 'Download the export', url } ),
+			rendered: { title: 'Your export is ready to download' },
+		} );
+
+	it( 'lists every member with its own link', () => {
+		mount( {
+			item: notification( {
+				id: 3,
+				rendered: { title: '3 exports finished' },
+				group: {
+					count: 3,
+					members: [
+						member( 3, 'https://acme.test/a' ),
+						member( 2, 'https://acme.test/b' ),
+						member( 1, 'https://acme.test/c' ),
+					],
+				},
+			} ),
+		} );
+
+		expect( textOf( '.corex-notification__title' ) ).toBe(
+			'3 exports finished'
+		);
+		const links = [
+			...container.querySelectorAll( '.corex-notification__members a' ),
+		].map( ( link ) => link.getAttribute( 'href' ) );
+		expect( links ).toEqual( [
+			'https://acme.test/a',
+			'https://acme.test/b',
+			'https://acme.test/c',
+		] );
+	} );
+
+	it( 'marks every member read when the group is marked read', () => {
+		const markRead = jest.fn();
+		mount( {
+			actions: { markRead },
+			item: notification( {
+				id: 3,
+				group: {
+					count: 2,
+					members: [ member( 3, '/a' ), member( 2, '/b' ) ],
+				},
+			} ),
+		} );
+
+		click( buttonNamed( 'Mark read' ) );
+
+		expect( markRead ).toHaveBeenCalledWith( [ 3, 2 ] );
+	} );
+} );

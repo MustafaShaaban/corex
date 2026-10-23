@@ -120,6 +120,10 @@ final class SettingsGuide
                     __('Leave it blank for "Powered by Corex".', 'corex'),
                 ),
                 new GuideStep(
+                    __('Terms page — the page with your terms and conditions.', 'corex'),
+                    __('The launch checklist on the Overview checks that this page is published. Leave it on "None chosen" until the page exists.', 'corex'),
+                ),
+                new GuideStep(
                     __('CoreX admin appearance — System, Light, or Dark.', 'corex'),
                     __('System follows whatever your computer is set to. This is your own preference and does not change what visitors see.', 'corex'),
                 ),

@@ -55,6 +55,7 @@ async function openTheWizard( restUrl = '/corex/v1/setup' ) {
 	window.wp = {};
 	window.corexSetup = {
 		restUrl,
+		readinessUrl: '/corex/v1/readiness',
 		nonce: 'n',
 		adminUrl: '/wp-admin/',
 	};
@@ -129,7 +130,7 @@ it( 'says nothing went wrong once a second press applies the plan', async () => 
 	await press( 'corex-setup-next' );
 	await press( 'corex-setup-apply' );
 
-	answers.apply = ok( { pages: 2 } );
+	answers.apply = ok( { applied: true, pages: 2 } );
 	await press( 'corex-setup-apply' );
 
 	expect( alert() ).toBeNull();
@@ -162,3 +163,149 @@ it.each( [
 		expect( document.body.textContent ).toContain( 'pages will be' );
 	}
 );
+
+/*
+ * Spec 118, US-WIZ-06: the launch step is the one launch checklist, and Go live is the Operations
+ * screen's own mode form.
+ */
+
+const readiness = ( overrides = {} ) => ( {
+	checklist: {
+		count: '4 of 6 ready',
+		blocking: 2,
+		blockingText: '2 checks still block going live',
+		groups: [
+			{
+				key: 'security',
+				title: 'Security and hosting',
+				count: '4 of 6 ready',
+				rows: [
+					{
+						key: 'ssl',
+						label: 'HTTPS',
+						chip: 'blocked',
+						word: 'Blocks going live',
+						note: 'Serve the site over HTTPS.',
+						href: '/wp-admin/options-general.php',
+					},
+					{
+						key: 'debug_display',
+						label: 'Debug output hidden',
+						chip: 'done',
+						word: 'Ready',
+						note: 'PHP errors are not displayed.',
+						href: '',
+					},
+				],
+			},
+		],
+	},
+	mode: { key: 'staging', label: 'Staging', production: false },
+	goLive: {
+		url: '/wp-admin/admin-post.php',
+		action: 'corex_ops_mode',
+		nonceField: 'corex_ops_mode_nonce',
+		nonce: 'mode-nonce',
+		mode: 'production',
+		phrase: 'PRODUCTION',
+		return: 'setup',
+	},
+	...overrides,
+} );
+
+async function goToTheLaunchStep() {
+	await openTheWizard();
+	for ( let step = 0; step < 7; step++ ) {
+		await press( 'corex-setup-next' );
+	}
+	await settle();
+}
+
+it( 'shows the launch checklist in its groups, each check in words, open ones linked', async () => {
+	answers.readiness = ok( readiness() );
+
+	await goToTheLaunchStep();
+
+	const rows = document.querySelectorAll( '.corex-checklist__row' );
+	expect( rows ).toHaveLength( 2 );
+	expect( rows[ 0 ].textContent ).toContain( 'Blocks going live' );
+	expect( rows[ 0 ].querySelector( 'a' ).getAttribute( 'href' ) ).toBe(
+		'/wp-admin/options-general.php'
+	);
+	expect( rows[ 1 ].querySelector( 'a' ) ).toBeNull();
+	expect( document.body.textContent ).toContain(
+		'2 checks still block going live'
+	);
+} );
+
+it( 'goes live through the Operations mode form, returning to the wizard', async () => {
+	answers.readiness = ok( readiness() );
+
+	await goToTheLaunchStep();
+
+	const form = document.querySelector( '.corex-setup__golive' );
+	expect( form.getAttribute( 'action' ) ).toBe( '/wp-admin/admin-post.php' );
+	const field = ( name ) =>
+		form.querySelector( `[name="${ name }"]` ).getAttribute( 'value' );
+	expect( field( 'action' ) ).toBe( 'corex_ops_mode' );
+	expect( field( 'corex_ops_mode_nonce' ) ).toBe( 'mode-nonce' );
+	expect( field( 'corex_mode' ) ).toBe( 'production' );
+	expect( field( 'corex_return' ) ).toBe( 'setup' );
+	expect(
+		form.querySelector( '[name="corex_confirm_phrase"]' )
+	).not.toBeNull();
+} );
+
+it( 'offers no Go live once the site is in Production', async () => {
+	answers.readiness = ok(
+		readiness( {
+			mode: { key: 'production', label: 'Production', production: true },
+		} )
+	);
+
+	await goToTheLaunchStep();
+
+	expect( document.querySelector( '.corex-setup__golive' ) ).toBeNull();
+	expect( document.body.textContent ).toContain( 'The site is live.' );
+} );
+
+it( 'says the checklist could not be read, offers Retry and no Go live', async () => {
+	answers.readiness = failed( 'Nope.' );
+
+	await goToTheLaunchStep();
+
+	expect( alert().textContent ).toBe(
+		'The launch checklist could not be read.'
+	);
+	expect( document.querySelector( '.corex-setup__golive' ) ).toBeNull();
+
+	answers.readiness = ok( readiness() );
+	await press( 'corex-setup-readiness-retry' );
+
+	expect( document.querySelector( '.corex-setup__golive' ) ).not.toBeNull();
+} );
+
+it( 'never calls the site ready on the Done step while a check blocks going live', async () => {
+	answers.readiness = ok( readiness() );
+
+	await goToTheLaunchStep();
+	await press( 'corex-setup-next' );
+	await settle();
+
+	expect( document.body.textContent ).toContain(
+		'2 checks still block going live'
+	);
+	expect( document.body.textContent ).not.toContain( 'ready to review' );
+} );
+
+it( 'says an apply that did not write every page did not complete', async () => {
+	answers.apply = ok( { applied: false, pages: 3 } );
+	await goToThePlan();
+	await press( 'corex-setup-next' );
+	document.getElementById( 'corex-setup-backup' ).click();
+	await press( 'corex-setup-next' );
+
+	await press( 'corex-setup-apply' );
+
+	expect( alert().textContent ).toContain( 'not marked applied' );
+} );

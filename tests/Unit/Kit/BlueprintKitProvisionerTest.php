@@ -70,6 +70,8 @@ beforeEach(function () {
 });
 
 it('lists only kits that declare pages as applicable', function () {
+    Functions\when('get_page_by_path')->justReturn(null);
+
     $kits = provisioner()->applicableKits();
 
     expect($kits)->toHaveCount(1)
@@ -120,4 +122,37 @@ it('apply delegates to the activator and records the kit as applied', function (
 
     expect($outcome->created())->toHaveCount(1)
         ->and($applied)->toBe(['company']);
+});
+
+/*
+ * Spec 118, US-OVR-09: one rule for "applied", whichever way the kit was applied.
+ */
+
+it('reads a kit as applied from a page that still carries the kit\'s record', function () {
+    $page = new WP_Post(['ID' => 12]);
+    Functions\when('get_page_by_path')->justReturn($page);
+    Functions\when('get_post_meta')->justReturn('created');
+
+    expect(provisioner()->applicableKits()[0]->applied)->toBeTrue();
+});
+
+it('does not record an apply that failed to write a page', function () {
+    Functions\when('get_page_by_path')->justReturn(null);
+    Functions\when('get_post_field')->justReturn('');
+    Functions\when('wp_insert_post')->justReturn(0); // WordPress refused the page
+    Functions\when('update_post_meta')->justReturn(true);
+    Functions\when('is_plugin_active')->justReturn(true);
+    Functions\when('activate_plugin')->justReturn(null);
+
+    $written = [];
+    Functions\when('update_option')->alias(function (string $key, $value) use (&$written): bool {
+        $written[$key] = $value;
+
+        return true;
+    });
+
+    $outcome = provisioner()->apply('company');
+
+    expect($outcome->isComplete())->toBeFalse()
+        ->and($written)->not->toHaveKey(BlueprintKitProvisioner::APPLIED_OPTION);
 });

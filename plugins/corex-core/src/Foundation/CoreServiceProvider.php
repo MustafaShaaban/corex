@@ -84,6 +84,8 @@ final class CoreServiceProvider extends ServiceProvider
             ),
         );
 
+        $this->container->singleton(\Corex\Health\FatalErrorLog::class);
+
         // The cache contract (spec 078). The registry is a singleton because it is the authority on
         // what may be cleared, and two of those in one request could disagree.
         $this->container->singleton(\Corex\Cache\CacheRegistry::class);
@@ -132,6 +134,8 @@ final class CoreServiceProvider extends ServiceProvider
     {
         $this->container->make(UpdateService::class)->register();
         $this->container->make(HealthModule::class)->register();
+        // A request that ends in a PHP fatal error is recorded for the Overview (spec 118).
+        $this->container->make(\Corex\Health\FatalErrorRecorder::class)->register();
 
         // Load the shared `corex` text domain so bundled translations apply (spec 036). All Corex
         // plugins/add-ons use this one literal domain; the .pot lives under corex-core/languages.

@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
 use Corex\Config\Operations\ReadinessEvaluatedEvent;
+use Corex\Config\Operations\ReadinessSnapshot;
 use Corex\Events\ListenerProvider;
 use Corex\Notifications\Notification;
 use Corex\Notifications\NotificationAction;
@@ -24,9 +25,14 @@ use DateTimeImmutable;
 
 /**
  * Reconciles readiness notifications against an evaluation. Readiness is a condition, not an event:
- * each blocking check raises one notification keyed by the check (so recurrence merges and reopens),
- * and a check that now passes resolves its notification (FR-010). Reconciliation is idempotent — it
- * runs the full snapshot every time, so appear and clear both fall out of one pass.
+ * a check that becomes blocking raises one notification keyed by the check, and a raised check that
+ * passes again resolves it (FR-010).
+ *
+ * Only a change of state is acted on (spec 118, US-OVR-01). Every screen that shows the launch
+ * checklist evaluates it, and publishing on each evaluation added an occurrence to the same notice
+ * each time a page was opened. {@see RaisedReadinessChecks} remembers which checks are raised; a
+ * check that cannot be read keeps whatever it had. On the first evaluation after the upgrade nothing
+ * is remembered yet, so blockers are raised once and every other check is resolved, as before.
  *
  * Dependency-aware via class_exists (FR-014). Notifications go to the operations managers.
  */
@@ -35,6 +41,7 @@ final class ReadinessNotificationProducer implements NotificationProducer
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly ListenerProvider $listeners,
+        private readonly RaisedReadinessChecks $raised = new RaisedReadinessChecks(),
     ) {
     }
 
@@ -59,19 +66,36 @@ final class ReadinessNotificationProducer implements NotificationProducer
 
     private function reconcile(ReadinessEvaluatedEvent $event): void
     {
+        $known  = $this->raised->known();
+        $before = $this->raised->keys();
+        $raised = $before;
+
         foreach ($event->snapshot->checks() as $check) {
             $dedupKey = 'readiness.blocker:' . $check['key'];
+            $wasRaised = in_array($check['key'], $before, true);
 
-            if ($check['state'] === 'blocking') {
-                $this->notifications->publish($this->blocker($check, $dedupKey));
-            } else {
-                $this->notifications->resolve($dedupKey, __('This readiness check now passes.', 'corex'));
+            if ($check['state'] === ReadinessSnapshot::BLOCKING) {
+                if (! $wasRaised) {
+                    $this->notifications->publish($this->blocker($check, $dedupKey));
+                    $raised[] = $check['key'];
+                }
+
+                continue;
             }
+
+            if ($check['state'] !== ReadinessSnapshot::UNAVAILABLE && ($wasRaised || ! $known)) {
+                $this->notifications->resolve($dedupKey, __('This readiness check now passes.', 'corex'));
+                $raised = array_values(array_diff($raised, [$check['key']]));
+            }
+        }
+
+        if (! $known || $raised !== $before) {
+            $this->raised->remember($raised);
         }
     }
 
     /**
-     * @param array{key:string,label:string,state:string,summary:string,resolution_url:string,checked_at:string,evidence_hash:string} $check
+     * @param array{key:string,group:string,label:string,state:string,summary:string,resolution_url:string,checked_at:string,evidence_hash:string} $check
      */
     private function blocker(array $check, string $dedupKey): Notification
     {

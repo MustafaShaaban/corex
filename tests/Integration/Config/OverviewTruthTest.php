@@ -59,15 +59,15 @@ it('reads the latest PageSpeed run, a failed one stored by an earlier release in
         ->and($latest['score'])->toBeNull();
 });
 
-it('draws a brand with no logo as not set, linked to the Brand settings', function () {
-    $html = Boot::app()->container()->make(OverviewRenderer::class)->render([
-        'brand.company_name' => 'Acme Trading',
-        'brand.logo_url'     => '',
-    ]);
+it('draws a brand with no logo as pending, linked to the Brand settings', function () {
+    // Since spec 118 the brand is a check of the one launch checklist, read where it is saved.
+    ($this->answer)('corex_brand_company_name', 'Acme Trading');
+    ($this->answer)('corex_brand_logo_url', '');
 
-    expect($html)->toContain('Brand configured')
-        ->and($html)->toContain('page=corex-settings-config&#038;corex_tab=brand')
-        ->and($html)->toContain('>Not set</a>')
-        ->and($html)->toContain('Hardening checks')
+    $html = Boot::app()->container()->make(OverviewRenderer::class)->render([]);
+
+    expect($html)->toContain('<a href="' . esc_url(admin_url('admin.php?page=corex-settings-config&corex_tab=brand')) . '">Brand set</a>')
+        ->and($html)->toContain('No admin logo')
+        ->and($html)->toContain('Security and hosting')
         ->and($html)->not->toContain('Provider connected');
 });

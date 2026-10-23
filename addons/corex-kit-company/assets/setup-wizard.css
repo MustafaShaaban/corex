@@ -146,3 +146,25 @@
 	gap: var(--corex-admin-space-sm);
 	margin-block-start: var(--corex-admin-space-md);
 }
+
+/* The launch step: the one launch checklist and Go live (spec 118). */
+.corex-admin .corex-setup__summary {
+	margin: 0 0 var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-setup__warn {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-setup__golive {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	max-inline-size: 28rem;
+	margin-block-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-setup__golive input[type="text"] {
+	min-block-size: var(--corex-admin-control-height);
+}
+

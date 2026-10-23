@@ -162,14 +162,22 @@ export default function NotificationsApp() {
 	 * been registered on the REST controller since v0.35.0 with nothing calling them.
 	 */
 	const act = useCallback(
-		( id, control, action, body ) => {
+		( target, control, action, body ) => {
+			// A group is acted on through each of its members (spec 118): grouping is a way of
+			// showing, and every notification keeps its own state.
+			const ids = Array.isArray( target ) ? target : [ target ];
+			const id = ids[ 0 ];
 			setError( '' );
 			setWorking( ( current ) => ( { ...current, [ id ]: control } ) );
-			apiFetch( {
-				path: `/corex/v1/notifications/${ id }/${ action }`,
-				method: 'POST',
-				...( body ? { data: body } : {} ),
-			} )
+			Promise.all(
+				ids.map( ( member ) =>
+					apiFetch( {
+						path: `/corex/v1/notifications/${ member }/${ action }`,
+						method: 'POST',
+						...( body ? { data: body } : {} ),
+					} )
+				)
+			)
 				.then( load )
 				.catch( ( failure ) =>
 					setError(

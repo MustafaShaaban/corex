@@ -79,6 +79,28 @@ final class EmailAttemptRepository
         return array_map($this->attempt(...), $records);
     }
 
+    /**
+     * The newest test from Email Studio that the mail transport accepted since a moment, or null.
+     *
+     * Accepted means sent or opened: a captured test never left the site, and a failed one was
+     * refused. The launch checklist's "Test email sent" asks this (spec 118, US-OVR-03).
+     */
+    public function latestAcceptedTest(DateTimeImmutable $since): ?EmailAttempt
+    {
+        foreach (array_reverse($this->store->all(self::TYPE)) as $record) {
+            $attempt = $this->attempt($record);
+            if ($attempt->occurredAt < $since) {
+                return null;
+            }
+
+            if ($attempt->source === 'test' && in_array($attempt->state, [EmailAttempt::STATE_SENT, EmailAttempt::STATE_OPENED], true)) {
+                return $attempt;
+            }
+        }
+
+        return null;
+    }
+
     /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */
     private function attempt(array $record): EmailAttempt
     {

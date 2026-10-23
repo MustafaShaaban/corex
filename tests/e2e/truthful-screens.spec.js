@@ -46,9 +46,11 @@ test.describe( 'the Overview and the Security Center say what is so', () => {
 
 		await page.goto( '/wp-admin/admin.php?page=corex-settings' );
 		const overview = page.locator( '.corex-overview' );
+		// Since spec 118 the hardening checks are the "Security and hosting" group of the one
+		// launch checklist, each by its own name.
 		await expect(
-			overview.locator( '.corex-overview__check-label', {
-				hasText: 'Hardening checks',
+			overview.locator( '.corex-checklist__group-head', {
+				hasText: 'Security and hosting',
 			} )
 		).toHaveCount( 1 );
 

@@ -3088,3 +3088,213 @@ body.corex-admin-screen .corex-admin__shell {
 	flex-shrink: 0;
 	min-block-size: var(--corex-admin-control-height);
 }
+
+/* ---------------------------------------------------------------------------
+   State chip (spec 118, US-INS-02): one look for a state wherever it is shown.
+   An icon and a word, in the state's tone. The word is the text colour, so it
+   holds 4.5:1 in both themes; the tone is the icon and the edge (3:1). No state
+   is told by colour alone: each has its own icon.
+   ------------------------------------------------------------------------- */
+.corex-admin .corex-state-chip {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: var(--corex-admin-space-2xs);
+	min-block-size: 1.5rem;
+	padding: 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-text-muted);
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
+.corex-admin .corex-state-chip__icon {
+	flex: none;
+	inline-size: 0.875rem;
+	block-size: 0.875rem;
+	background: var(--corex-admin-text-muted);
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+}
+
+.corex-admin .corex-state-chip.is-done,
+.corex-admin .corex-state-chip.is-live,
+.corex-admin .corex-state-chip.is-connected {
+	border-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-state-chip.is-done .corex-state-chip__icon,
+.corex-admin .corex-state-chip.is-live .corex-state-chip__icon,
+.corex-admin .corex-state-chip.is-connected .corex-state-chip__icon {
+	background: var(--corex-admin-success);
+}
+
+.corex-admin .corex-state-chip.is-pending,
+.corex-admin .corex-state-chip.is-attention,
+.corex-admin .corex-state-chip.is-unchecked,
+.corex-admin .corex-state-chip.is-unavailable,
+.corex-admin .corex-state-chip.is-failed {
+	border-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-state-chip.is-pending .corex-state-chip__icon,
+.corex-admin .corex-state-chip.is-attention .corex-state-chip__icon,
+.corex-admin .corex-state-chip.is-unchecked .corex-state-chip__icon,
+.corex-admin .corex-state-chip.is-unavailable .corex-state-chip__icon,
+.corex-admin .corex-state-chip.is-failed .corex-state-chip__icon {
+	background: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-state-chip.is-blocked {
+	border-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-state-chip.is-blocked .corex-state-chip__icon {
+	background: var(--corex-admin-error);
+}
+
+.corex-admin .corex-state-chip.is-empty {
+	border-color: var(--corex-admin-info);
+}
+
+.corex-admin .corex-state-chip.is-empty .corex-state-chip__icon {
+	background: var(--corex-admin-info);
+}
+
+.corex-admin .corex-state-chip.is-done .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-done.svg);
+	mask-image: url(../icons/state-done.svg);
+}
+
+.corex-admin .corex-state-chip.is-pending .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-pending.svg);
+	mask-image: url(../icons/state-pending.svg);
+}
+
+.corex-admin .corex-state-chip.is-blocked .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-blocked.svg);
+	mask-image: url(../icons/state-blocked.svg);
+}
+
+.corex-admin .corex-state-chip.is-unchecked .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-unchecked.svg);
+	mask-image: url(../icons/state-unchecked.svg);
+}
+
+.corex-admin .corex-state-chip.is-inapplicable .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-inapplicable.svg);
+	mask-image: url(../icons/state-inapplicable.svg);
+}
+
+.corex-admin .corex-state-chip.is-live .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-live.svg);
+	mask-image: url(../icons/state-live.svg);
+}
+
+.corex-admin .corex-state-chip.is-connected .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-connected.svg);
+	mask-image: url(../icons/state-connected.svg);
+}
+
+.corex-admin .corex-state-chip.is-empty .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-empty.svg);
+	mask-image: url(../icons/state-empty.svg);
+}
+
+.corex-admin .corex-state-chip.is-disconnected .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-disconnected.svg);
+	mask-image: url(../icons/state-disconnected.svg);
+}
+
+.corex-admin .corex-state-chip.is-attention .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-attention.svg);
+	mask-image: url(../icons/state-attention.svg);
+}
+
+.corex-admin .corex-state-chip.is-failed .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-failed.svg);
+	mask-image: url(../icons/state-failed.svg);
+}
+
+.corex-admin .corex-state-chip.is-unavailable .corex-state-chip__icon {
+	-webkit-mask-image: url(../icons/state-failed.svg);
+	mask-image: url(../icons/state-failed.svg);
+}
+
+/* ---------------------------------------------------------------------------
+   The launch checklist (spec 118): the same rows on the Overview, Operations
+   and the Setup Wizard. Name and chip on one line, what is missing under it.
+   ------------------------------------------------------------------------- */
+.corex-admin .corex-checklist {
+	display: grid;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-checklist__row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	margin: 0;
+	padding: var(--corex-admin-space-sm) 0;
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-checklist__row:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-checklist__label {
+	min-inline-size: 0;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-checklist__note {
+	grid-column: 1 / -1;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-checklist__group-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	margin: var(--corex-admin-space-md) 0 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+.corex-admin .corex-checklist__group-count {
+	color: var(--corex-admin-text-muted);
+	font-weight: 400;
+	white-space: nowrap;
+}
+
+.corex-admin .corex-checklist__progress {
+	overflow: hidden;
+	block-size: 0.375rem;
+	margin-block: var(--corex-admin-space-sm) 0;
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+.corex-admin .corex-checklist__progress > span {
+	display: block;
+	block-size: 100%;
+	background: var(--corex-admin-success);
+	border-radius: inherit;
+}
