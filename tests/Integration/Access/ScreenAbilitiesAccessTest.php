@@ -18,9 +18,12 @@ use Corex\Access\AccessPolicy;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\RoleAbilityStore;
+use Corex\Activity\ActivityEvent;
+use Corex\Activity\ActivityRepository;
 use Corex\Boot;
 use Corex\Config\Access\AbilityCompatibility;
 use Corex\Config\Access\AccessAuditLog;
+use Corex\Config\Access\AccessService;
 use Corex\Config\Access\AccessTables;
 use Corex\Config\Settings\AdminDashboard;
 use Corex\Config\Settings\SettingsRegistry;
@@ -216,4 +219,109 @@ it('leaves how the whole site delivers mail as it was when someone who is not a 
             $value === null ? delete_option($store->optionName($key)) : update_option($store->optionName($key), $value);
         }
     }
+});
+
+/*
+ * DECISIONS #428: what only a site administrator may change, asked through the Access routes as a
+ * person holding "Manage access" who is not one.
+ */
+
+/** A role change through its route, confirmed as the dialog confirms it. */
+function applyRoleRoute(string $role, array $changes): WP_REST_Response
+{
+    $service = Boot::app()->container()->make(AccessService::class);
+
+    return screenRoute('POST', 'access/roles/' . $role . '/apply', [
+        'changes'      => $changes,
+        'confirmation' => [
+            'operation_kind' => AccessService::ROLE_CHANGE_OPERATION,
+            'target_hash'    => $service->roleChangeHash($role, $changes),
+            'actor_id'       => (string) get_current_user_id(),
+            'expires_at'     => (new DateTimeImmutable('+5 minutes'))->format(DATE_ATOM),
+        ],
+    ]);
+}
+
+/** @return list<string> The codes a route's blocked result gives. */
+function refusalCodes(WP_REST_Response $response): array
+{
+    return array_column((array) ($response->get_data()['data']['result']['errors'] ?? []), 'code');
+}
+
+/** The newest access event of this kind by this person, or null. */
+function accessEventBy(string $kind, int $actorId): ?ActivityEvent
+{
+    $events = Boot::app()->container()->make(ActivityRepository::class)->query(['area' => ActivityEvent::AREA_ACCESS], 1, 100);
+    foreach ($events as $event) {
+        if ($event->kind === $kind && $event->actorId === $actorId) {
+            return $event;
+        }
+    }
+
+    return null;
+}
+
+it('refuses a manager who is not a site administrator a Critical Allow, and records it', function () {
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::MANAGE_ACCESS);
+    freshAbilities();
+    wp_set_current_user($this->people['subscriber']);
+
+    $response = applyRoleRoute('editor', [CorexAbility::MANAGE_OPERATIONS => AccessPolicy::EFFECT_ALLOW]);
+
+    expect($response->get_status())->toBe(200)
+        ->and($response->get_data()['data']['result']['state'])->toBe('blocked')
+        ->and(refusalCodes($response))->toBe([AccessPolicy::CRITICAL_ALLOW])
+        ->and($this->roles->effectsForRole('editor'))->toBe([])
+        ->and(accessEventBy('access.role.refused', $this->people['subscriber']))->not->toBeNull();
+});
+
+it('refuses a manager who is not a site administrator any change to a role they hold', function () {
+    (new WP_User($this->people['editor']))->add_cap(CorexAbility::MANAGE_ACCESS);
+    freshAbilities();
+    wp_set_current_user($this->people['editor']);
+
+    $response = applyRoleRoute('editor', [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW]);
+
+    expect(refusalCodes($response))->toBe([AccessPolicy::OWN_ACCESS])
+        ->and($this->roles->effectsForRole('editor'))->toBe([]);
+});
+
+it('lets a manager who is not a site administrator allow an ability that is not Critical for a role they do not hold', function () {
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::MANAGE_ACCESS);
+    freshAbilities();
+    wp_set_current_user($this->people['subscriber']);
+
+    $response = applyRoleRoute('editor', [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW]);
+
+    expect($response->get_data()['data']['result']['state'])->toBe('completed')
+        ->and($this->roles->effectsForRole('editor'))->toBe([CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW]);
+});
+
+it('refuses a manager who is not a site administrator to decide their own request, and records it', function () {
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::MANAGE_ACCESS);
+    freshAbilities();
+    wp_set_current_user($this->people['subscriber']);
+    $created = screenRoute('POST', 'access/requests', ['ability' => CorexAbility::MANAGE_FORMS, 'reason' => 'I build the forms.']);
+    $id      = (int) ($created->get_data()['data']['result']['affected_ids'][0] ?? 0);
+
+    $denied = screenRoute('POST', 'access/requests/' . $id . '/decision', ['approved' => false, 'note' => 'Mine.']);
+
+    try {
+        expect($id)->toBeGreaterThan(0)
+            ->and(refusalCodes($denied))->toBe([AccessService::OWN_REQUEST])
+            ->and(current_user_can(CorexAbility::MANAGE_FORMS))->toBeFalse()
+            ->and(accessEventBy('access.request.refused', $this->people['subscriber']))->not->toBeNull();
+    } finally {
+        global $wpdb;
+        $wpdb->delete($this->migrator->fullName(AccessTables::REQUESTS), ['id' => $id]);
+    }
+});
+
+it('lets a site administrator allow a Critical ability for a role', function () {
+    wp_set_current_user($this->adminId);
+
+    $response = applyRoleRoute('editor', [CorexAbility::MANAGE_OPERATIONS => AccessPolicy::EFFECT_ALLOW]);
+
+    expect($response->get_data()['data']['result']['state'])->toBe('completed')
+        ->and($this->roles->effectsForRole('editor'))->toBe([CorexAbility::MANAGE_OPERATIONS => AccessPolicy::EFFECT_ALLOW]);
 });

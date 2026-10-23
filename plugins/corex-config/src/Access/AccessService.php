@@ -49,6 +49,9 @@ final class AccessService
     /** The longest reason a request is stored with, in characters. */
     public const MAX_REASON_LENGTH = 2000;
 
+    /** Refusal: a request decided by the person who made it, who does not administer the site (DECISIONS #428). */
+    public const OWN_REQUEST = 'own_request_needs_site_administrator';
+
     public function __construct(
         private readonly CorexAbilityCatalog $catalog,
         private readonly AccessPolicy $policy,
@@ -74,7 +77,17 @@ final class AccessService
             affectedUserIds: $this->users->userIdsForRole($roleKey),
             fullAccessAdminIds: $this->users->fullAccessAdministratorIds(),
             administersSite: $this->siteAdministration?->roleAdministersSite($roleKey) ?? false,
+            actorAdministersSite: $this->administersSite($actorId),
         );
+    }
+
+    /**
+     * Whether this person administers the site. Without the answer to ask, the narrower one: no
+     * (DECISIONS #428).
+     */
+    private function administersSite(int $userId): bool
+    {
+        return $this->siteAdministration?->userAdministersSite($userId) ?? false;
     }
 
     /** @param array<string,string> $changes */
@@ -263,6 +276,7 @@ final class AccessService
             changes: array_fill_keys($keys, AccessPolicy::EFFECT_ALLOW),
             affectedUserIds: [(int) $request['requesterId']],
             fullAccessAdminIds: $this->users->fullAccessAdministratorIds(),
+            actorAdministersSite: $this->administersSite($actorId),
         );
 
         return new AccessApprovalPreview(
@@ -293,7 +307,7 @@ final class AccessService
         Confirmation $confirmation,
         DateTimeImmutable $now,
     ): OperationResult {
-        $refusal = $this->notPending($requestId, $actorId, $now);
+        $refusal = $this->notPending($requestId, $actorId, $now) ?? $this->ownRequest($requestId, $actorId, $now);
         $preview = $refusal === null ? $this->previewApproval($actorId, $requestId) : null;
         $refusal ??= $this->approvalRefusal($preview, $actorId, $note, $expiryDays, $confirmation, $now);
         if ($refusal !== null) {
@@ -313,7 +327,7 @@ final class AccessService
 
     public function denyRequest(int $actorId, int $requestId, string $note, DateTimeImmutable $now): OperationResult
     {
-        $refusal = $this->notPending($requestId, $actorId, $now);
+        $refusal = $this->notPending($requestId, $actorId, $now) ?? $this->ownRequest($requestId, $actorId, $now);
         if ($refusal !== null) {
             return $refusal;
         }
@@ -354,6 +368,64 @@ final class AccessService
         }
 
         return null;
+    }
+
+    /**
+     * A refusal when the person deciding a request is the one who made it and does not administer
+     * the site (DECISIONS #428), recorded in the access history; null otherwise.
+     */
+    private function ownRequest(int $requestId, int $actorId, DateTimeImmutable $now): ?OperationResult
+    {
+        $request = (array) $this->requests->find($requestId);
+        if ((int) ($request['requesterId'] ?? 0) !== $actorId || $this->administersSite($actorId)) {
+            return null;
+        }
+
+        $this->recordRefusedDecision($actorId, $request, [], $now);
+
+        return $this->blocked(
+            self::OWN_REQUEST,
+            __('Only a site administrator can decide their own access request. Another person who manages access, or a site administrator, decides it.', 'corex'),
+            $now,
+        );
+    }
+
+    /**
+     * A decision on a request that the safety rules refused, for the access history: who tried, on
+     * which request, and why.
+     *
+     * @param array<string,mixed>                     $request
+     * @param list<array{code:string,ability:string}> $blockers None when the request is the decider's own.
+     */
+    private function recordRefusedDecision(int $actorId, array $request, array $blockers, DateTimeImmutable $now): void
+    {
+        $requestId = (int) ($request['id'] ?? 0);
+
+        $this->activity->record(
+            actorId: $actorId,
+            actorKind: ActivityEvent::ACTOR_USER,
+            actorLabel: $this->users->displayName($actorId),
+            area: ActivityEvent::AREA_ACCESS,
+            kind: 'access.request.refused',
+            targetType: 'access_request',
+            targetId: (string) $requestId,
+            targetLabel: sprintf(
+                /* translators: %d: access request ID. */
+                __('Access request %d', 'corex'),
+                $requestId,
+            ),
+            outcome: ActivityEvent::OUTCOME_DENIED,
+            summary: ['key' => 'access.request.refused', 'args' => ['request' => $requestId]],
+            context: [
+                'request_id'   => $requestId,
+                'requester_id' => (int) ($request['requesterId'] ?? 0),
+                'abilities'    => $this->requestedAbilities($request),
+                'blockers'     => $blockers,
+            ],
+            sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
+            retentionUntil: $now->modify('+180 days'),
+            occurredAt: $now,
+        );
     }
 
     /**
@@ -432,6 +504,13 @@ final class AccessService
             return $this->blocked('request_not_requestable', __('An administrator grants this through the role matrix, so the request was cancelled.', 'corex'), $now);
         }
 
+        // Before the note and the confirmation: what the rules refuse is refused whatever is typed.
+        if ($preview->blockers !== []) {
+            $this->recordRefusedDecision($actorId, (array) $this->requests->find($preview->requestId), $preview->blockers, $now);
+
+            return $this->blocked('access_change_blocked', __('The approval was blocked by the access safety policy.', 'corex'), $now, $preview->blockers);
+        }
+
         if (trim($note) === '') {
             return $this->blocked('note_required', __('Write a note saying why access is approved.', 'corex'), $now);
         }
@@ -442,10 +521,6 @@ final class AccessService
 
         if (! $confirmation->verify(self::APPROVAL_OPERATION, $preview->targetHash, $actorId, $preview->typedName, $now)) {
             return $this->blocked('confirmation_invalid', __('The approval confirmation is invalid or expired.', 'corex'), $now);
-        }
-
-        if ($preview->blockers !== []) {
-            return $this->blocked('access_change_blocked', __('The approval was blocked by the access safety policy.', 'corex'), $now, $preview->blockers);
         }
 
         return null;
@@ -590,15 +665,19 @@ final class AccessService
         return sprintf(
             match ($blocker['code']) {
                 /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
-                'ability_locked'          => __('“%s” cannot be changed: it comes only with site administration.', 'corex'),
+                'ability_locked'             => __('“%s” cannot be changed: it comes only with site administration.', 'corex'),
                 /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
-                'self_lockout'            => __('“%s” cannot be denied here: you would lose it yourself.', 'corex'),
+                'self_lockout'               => __('“%s” cannot be denied here: you would lose it yourself.', 'corex'),
                 /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
-                'last_full_access_admin'  => __('“%s” cannot be denied here: no administrator with full access would keep it.', 'corex'),
+                'last_full_access_admin'     => __('“%s” cannot be denied here: no administrator with full access would keep it.', 'corex'),
                 /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
-                'site_administrator_role' => __('“%s” cannot be denied to this role: site administrators always hold every CoreX ability.', 'corex'),
+                'site_administrator_role'    => __('“%s” cannot be denied to this role: site administrators always hold every CoreX ability.', 'corex'),
                 /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
-                default                   => __('“%s” cannot be changed.', 'corex'),
+                AccessPolicy::OWN_ACCESS     => __('“%s” cannot be changed here: it applies to you, and only a site administrator can change their own access.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                AccessPolicy::CRITICAL_ALLOW => __('“%s” is a Critical ability: only a site administrator can allow it or set it to inherit.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                default                      => __('“%s” cannot be changed.', 'corex'),
             },
             $name,
         );

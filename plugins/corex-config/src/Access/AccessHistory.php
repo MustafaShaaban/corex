@@ -45,6 +45,7 @@ final class AccessHistory
         'access.request.denied'    => 'denied',
         'access.request.cancelled' => 'cancelled',
         'access.request.expired'   => 'request_expired',
+        'access.request.refused'   => 'decision_refused',
         'access.grant.revoked'     => 'grant_revoked',
         'access.grant.expired'     => 'grant_expired',
     ];
@@ -66,16 +67,17 @@ final class AccessHistory
     public function kinds(): array
     {
         return [
-            'role_changed'    => __('Role changed', 'corex'),
-            'role_refused'    => __('Role change refused', 'corex'),
-            'requested'       => __('Access requested', 'corex'),
-            'approved'        => __('Request approved', 'corex'),
-            'denied'          => __('Request denied', 'corex'),
-            'cancelled'       => __('Request cancelled', 'corex'),
-            'request_expired' => __('Request expired', 'corex'),
-            'grant_revoked'   => __('Grant revoked', 'corex'),
-            'grant_expired'   => __('Grant expired', 'corex'),
-            'refused'         => __('Refused', 'corex'),
+            'role_changed'     => __('Role changed', 'corex'),
+            'role_refused'     => __('Role change refused', 'corex'),
+            'requested'        => __('Access requested', 'corex'),
+            'approved'         => __('Request approved', 'corex'),
+            'denied'           => __('Request denied', 'corex'),
+            'cancelled'        => __('Request cancelled', 'corex'),
+            'request_expired'  => __('Request expired', 'corex'),
+            'decision_refused' => __('Decision refused', 'corex'),
+            'grant_revoked'    => __('Grant revoked', 'corex'),
+            'grant_expired'    => __('Grant expired', 'corex'),
+            'refused'          => __('Refused', 'corex'),
         ];
     }
 
@@ -227,6 +229,13 @@ final class AccessHistory
                 $person,
                 $abilities,
             ),
+            'decision_refused' => sprintf(
+                /* translators: 1: a person's name, 2: the abilities asked for, 3: why the decision was refused. */
+                __('%1$s’s request for %2$s, not decided. %3$s', 'corex'),
+                $person,
+                $abilities,
+                $this->decisionRefusal((array) ($context['blockers'] ?? [])),
+            ),
             'grant_revoked' => sprintf(
                 /* translators: 1: a person's name, 2: the abilities taken back. */
                 __('Took back %2$s from %1$s', 'corex'),
@@ -314,6 +323,22 @@ final class AccessHistory
 
             return '“' . ($ability !== null ? AbilityNames::labelOf($ability) : (string) $key) . '”';
         }, $keys));
+    }
+
+    /**
+     * Why a decision was refused: the rules' reasons, or, with none, that the request was the
+     * decider's own (DECISIONS #428).
+     *
+     * @param array<array-key,mixed> $blockers
+     */
+    private function decisionRefusal(array $blockers): string
+    {
+        $blockers = array_values(array_filter($blockers, 'is_array'));
+        if ($blockers === []) {
+            return __('Only a site administrator can decide their own access request.', 'corex');
+        }
+
+        return implode(' ', array_map($this->access->refusalReason(...), $blockers));
     }
 
     private function roleName(string $roleKey): string

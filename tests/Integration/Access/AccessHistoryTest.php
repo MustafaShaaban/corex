@@ -109,3 +109,20 @@ it('pages by 25, newest first', function () {
         ->and($second['entries'])->toHaveCount(5)
         ->and($first['entries'][0]['at'])->toBeGreaterThan($second['entries'][0]['at']);
 });
+
+it('says why a decision on a request was refused (DECISIONS #428)', function () {
+    $now = new DateTimeImmutable('now');
+    $own = ['requester_id' => $this->person, 'abilities' => [CorexAbility::MANAGE_FORMS], 'blockers' => []];
+    historyEvent($this->person, 'access.request.refused', $own, $now->modify('-2 hours'), '1');
+    historyEvent($this->person, 'access.request.refused', [
+        'requester_id' => $this->person,
+        'abilities'    => [CorexAbility::MANAGE_ACCESS],
+        'blockers'     => [['code' => 'critical_needs_site_administrator', 'ability' => CorexAbility::MANAGE_ACCESS]],
+    ], $now->modify('-1 hour'), '2');
+
+    $entries = $this->history->page('decision_refused', $this->person)['entries'];
+
+    expect(array_column($entries, 'kindLabel'))->toBe(['Decision refused', 'Decision refused'])
+        ->and($entries[0]['text'])->toContain('only a site administrator can allow it')
+        ->and($entries[1]['text'])->toContain('Only a site administrator can decide their own access request.');
+});
