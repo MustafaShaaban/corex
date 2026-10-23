@@ -52,6 +52,10 @@ way before this rule existed (spec 102).
 A release with nothing to list says so in one line under the heading. An absent heading reads exactly
 like "nobody checked", which is why it is not allowed to be absent.
 
+From the release after 0.47.0, the section also names each running client site, **Muva**, **Perego** and
+**Mizzey**, with "nothing changes", what changes, or the upgrade step; or it says in one sentence that no
+client site is affected. The same test fails a section that does neither (spec 116, US-NFR-08).
+
 ## Definition of Done
 
 A change ships only when all hold (constitution "Definition of Done"):
@@ -87,7 +91,16 @@ composer test:integration   # boots the real ./wp install (local; needs WordPres
 
 CI (`.github/workflows/ci.yml`) gates **four suites plus CodeQL** on every pull request: the headless
 PHP unit suite, the JavaScript suite, an integration suite against a WordPress it provisions itself,
-and Playwright in a real browser.
+and Playwright in a real browser. Beside them run the quality checks every release is measured by
+([Quality checks](#quality-checks-spec-116)): the screen matrix and the other browser checks, the PHP
+translation lint, the completion audit, the performance budgets and the client merge check.
+
+```bash
+composer test:performance   # the admin read and form acceptance budgets (local; needs WordPress)
+php scripts/i18n-lint.php   # the PHP translation lint
+npm run audit:completion    # the product completion audit
+npm run test:quality        # the browser quality checks (a scratch site; see Quality checks)
+```
 
 **CI is the authority for the integration and browser runs.** A long-lived development install
 accumulates state a freshly provisioned one does not, which is why a handful of integration specs
@@ -178,7 +191,7 @@ The suite reads where the site is, and who signs in, from the environment:
 
 | Variable | Default | Set it when |
 |---|---|---|
-| `COREX_BASE_URL` | `http://corex.local` | the install is served at another address |
+| `COREX_BASE_URL` | none | always: the suite refuses to start without it (spec 116), because it writes to the site it is given. On the WAMP setup that is `http://corex.local`, or a scratch site's address |
 | `COREX_ADMIN_USER`, `COREX_ADMIN_PASS` | `admin`, `password` | the install's administrator is not that pair. `scripts/setup-wordpress.ps1` has a different default for `-AdminPassword`, so set `COREX_ADMIN_PASS` for an install it made |
 | `COREX_LOGIN_PATH` | `/wp-login.php`, then `/corex-login/` | login protection moved the login to another address |
 | `COREX_WP_PATH` | `./wp` | `COREX_BASE_URL` serves an install somewhere else. A few specs reach the install through WP-CLI, and skip those steps where WP-CLI is not available |
@@ -213,3 +226,92 @@ add-ons whose screens the specs open, so `npm run env:start` is not a way to run
 
 A local run is a check before you push. CI is the authority, for the reason given under
 [Running the tests](#running-the-tests).
+
+**What a run leaves behind** (spec 116, US-NFR-09). Before the first test, the suite prints the site it will
+write to, and refuses one whose CoreX operations mode is declared Production unless it is served from a local
+development host (localhost, a loopback address, `.localhost`, `.test`, `.local`), where the specs themselves
+switch the mode. It then removes the submissions earlier runs left that carry a test's marker: a flow whose slug contains `e2e`, a `utm_source` of `playwright`,
+or a sender at `example.com` or `example.test`, for a submission the run made itself. After the last test it
+removes the run's own marked submissions, and fails if the run made any submission that is still there,
+naming each. A spec that makes a submission marks it or removes it. All of this needs WP-CLI on the install
+`COREX_BASE_URL` serves; where WP-CLI answers for another install, the suite says so and touches nothing.
+
+What earlier runs left on a development site is removed with:
+
+```bash
+wp eval-file scripts/clean-test-residue.php
+```
+
+It lists the submissions by form and asks before removing them (`yes` as the script's argument skips the
+question). It refuses a site whose operations mode is Production or that sets `WP_ENVIRONMENT_TYPE` to
+`production`. The fixture plug-ins say "Test fixture" in what a person sees.
+
+## Quality checks (spec 116)
+
+Every release is measured by the same checks: the ones the definition of done names. Each runs on every pull
+request and fails on what it finds, except what is recorded as a known failure.
+
+| Check | Where | What fails it |
+|---|---|---|
+| Screen matrix | `tests/e2e/quality/screen-matrix.spec.js` | Every CoreX admin screen and tab in WordPress's menu, and every theme template, at 375 and 1280px, light and dark, left to right and right to left: a page that does not answer as expected, sideways scroll, any WCAG 2.0 to 2.2 A or AA rule axe detects (contrast and target size included), raw developer keys in visible text, an animation repeating at rest; at 375px a table wider than the screen, a primary control under 44px, more than one rail control above the heading, and text at 200% cut off or overlapping |
+| Keyboard | `keyboard.spec.js` | A stop that is invisible when focused or whose focus indicator is under 3:1; an expanding control that Escape does not close, or that does not get focus back |
+| Motion | `motion.spec.js` | With reduced motion requested, anything but opacity moving |
+| States | `states.spec.js` | A screen with no state table in `screen-states.json`; a screen that says "nothing" before its answer, shows no loading, shows a raw error code, never stops loading, does not say it failed, or shows a blank area for empty lists; a refusal that is not CoreX's access-denied page; a failed Settings save that loses what was typed |
+| Words | `pseudo-locale.spec.js`, `scripts/i18n-lint.php` | A CoreX word on screen that skipped translation (every `corex` string is marked by the pseudo-locale fixture); PHP output that is not translated, or a translation call outside the `corex` domain |
+| Public form | `public-form.spec.js` | A field without a label; a failed submit that does not move focus to an error summary linking to each field |
+| Front-end budget | `front-end-budget.spec.js` | Layout shift over 0.05, an image without dimensions, an image below the first screen loaded at once or the first screen's main image loaded lazily, CoreX bytes more than 10% over `byte-budget.json`, a block's asset on a page without the block |
+| Admin contrast | `tests/Unit/Theme/ContrastMatrixTest.php` | An admin token pair below its threshold, dark or light (`admin-contrast-matrix.json`) |
+| Completion audit | `npm run audit:completion` | "Planned", "coming soon" as a promise, "sample data", "reference only" and similar in shipped source |
+| Client impact | `tests/repo-hygiene.test.js` | A Client impact section that names no client site |
+| Client merge | `client-merge` job, `scripts/client-merge-check.mjs` | A candidate that does not merge into a client repository, or whose client suites fail |
+| Performance budgets | `composer test:performance` | An admin read over its budget at 10,000 records, or a form acceptance over two seconds |
+
+The browser checks are the `quality` job, on a WordPress of their own prepared by
+`tests/e2e/quality/seed-quality-site.php` (the Company kit at Full, a page for each template, a subscriber). CI's
+run is the reference. To run them locally, against a scratch site prepared the same way and never against a site
+that matters:
+
+```bash
+wp eval-file tests/e2e/quality/seed-quality-site.php
+COREX_BASE_URL=http://127.0.0.1:8916 COREX_ADMIN_PASS=changeme npm run test:quality
+```
+
+The screens and templates come from the site, so a screen added later is checked without an edit. A new theme
+template needs its address in `tests/e2e/quality/templates.json`; a new admin screen needs its state table in
+`screen-states.json`. Both checks fail until they are there.
+
+**Known failures.** `tests/e2e/quality/known-failures.json` holds what the checks found on `main` when they were
+written: each entry has the check, the screen, the rule, a signature of the element, the date and the story that
+fixes it. The list only shrinks. A pull request that fixes a screen removes its entries; the job's output lists
+the entries no finding matched (`stale-known-failures.json` in the `quality-findings` artifact). A defect a pull
+request adds is fixed in it, not added to the list. One that a later story owns may be added, with that story's
+id, in the same pull request, and the description says why. To record from a CI run's artifact:
+
+```bash
+node scripts/quality-known-failures.mjs --record <the unpacked quality-findings folder>
+node scripts/quality-known-failures.mjs --budget <the same folder>   # only to set the byte budget
+```
+
+The static checks keep their own lists: `knownFailures` in `admin-contrast-matrix.json` and
+`tests/Fixtures/i18n-lint-baseline.json`. Both fail on an entry that no longer matches, since only the file they
+read can make it stale.
+
+### Before a tag
+
+1. **Each client's code.** Run the merge check against each running client's repository, at its recorded
+   baseline, with that client's suites, and put the report in the release record:
+
+   ```bash
+   node scripts/client-merge-check.mjs --client <the client repository's URL> --candidate <the release branch> --suite "<the client's test command>" --report client-merge-muva.md
+   ```
+
+   It works on a throwaway clone and never writes to the repository it is given. A conflict in a file the client
+   records as a local edit, or a failing suite, stops the tag until that client's session has agreed.
+2. **The known failures.** Print the list into the release notes, under Client impact:
+   `node scripts/quality-known-failures.mjs`.
+3. **What a person checks.** Look through the `quality-findings` artifact's screenshots (four per screen) of the
+   release candidate's run. Use the screens the release changed with a screen reader (NVDA with Chrome) and
+   record what was heard in the release record. A screen with no recorded pass is not called accessible in the
+   release notes.
+4. **The translation template.** A published release gets `corex.pot` attached by
+   `.github/workflows/release-assets.yml`; check that it is there.

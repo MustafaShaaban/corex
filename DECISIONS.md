@@ -17985,3 +17985,252 @@ writes nothing; a switch turned off is saved; a refused value changes nothing el
 save. `SettingsSaveRefusalTest` unchanged and passing.
 
 **Client impact.** Muva and Perego both have Corex Media on, so their values were not hit; nothing they see changes.
+
+## #410 — The quality checks run in a CI job of their own, on a WordPress prepared for them
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-116-quality-checks-a779c0`. **Spec:** 116 (R1.1), US-NFR-01 to
+US-NFR-07. **Mode:** CoreX Framework. Decided under the owner's 2026-10-21 mandate (the workspace's
+recommendation, NFR-D1).
+
+**Why.** The definition of done asks every release for dark and light, both directions, phone width, WCAG 2.2
+AA, four states, translatable words and a performance budget. Before this, the right-to-left check opened 6 of
+16 screens in light at 375px, and nothing else was checked on a rendered screen.
+
+**Decided.**
+
+1. **One `quality` job in `ci.yml`, beside the browser job.** It provisions its own WordPress, gets the browser
+   job's three seeded submissions, and is prepared by `tests/e2e/quality/seed-quality-site.php`: the Company kit
+   at Full through the wizard's own route, a page for each theme template the kit does not reach, the posts
+   page, and a subscriber. Its specs have their own config (`playwright.quality.config.js`); the main browser
+   config ignores `tests/e2e/quality/`. On its own site, what it measures does not depend on what the other
+   specs left or the order they ran.
+2. **A screen is loaded once per width.** The four cells of a width are switched in the page: the appearance
+   through the browser's colour scheme (the admin's `system` appearance follows it), the direction through `dir`
+   on the document, as `rtl-overflow.spec.js` did. That is 98 loads for the matrix instead of 392.
+3. **The nginx and php-fpm steps moved into `.github/actions/serve-wordpress`**, used by both browser jobs,
+   unchanged.
+4. **It runs in a client repository's CI too.** The provisioning action links only `plugins/` and `addons/`,
+   so a client's CI checks the framework's screens against the same known failures.
+
+**Not chosen.** *A step at the end of the browser job*: the job is the longest in CI (about 8 minutes), and its
+specs leave rows behind that would change what is measured. *Loading each cell*: four times the time, for
+cells whose only differences are a media query and an attribute.
+
+**Verified.** On CI (run 39637260114), three workers on nginx and php-fpm: the 299 quality tests ran in 7.3
+minutes and the job in 9.6, beside the browser job's 9.0, so a pull request waits about half a minute longer. The
+first run recorded 3,612 findings, the known-failures list (#412). On a scratch site with one worker and PHP's
+built-in server, the matrix alone took 6.2 minutes.
+
+## #411 — The accessibility scan is axe-core, a development dependency only (NFR-D2)
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-03. Decided under the owner's 2026-10-21 mandate (the workspace's
+recommendation, NFR-D2).
+
+**Decided.** `@axe-core/playwright` 4.13.0, pinned exactly, in the root `devDependencies`. The `axe-core` it
+needs (4.13.0) was already in the lockfile. The scan runs the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`
+and `wcag22aa` over CoreX's markup: inside `.corex-admin` on an admin screen, the whole document on a page.
+axe's `target-size` rule is WCAG 2.2's 2.5.8 with its spacing exception, so CoreX writes no target check of its
+own at 24px. CoreX adds what axe does not do: the 44px primary controls at 375px, the keyboard walk, Escape,
+reduced motion and the public form's error summary.
+
+**Not chosen.** *CoreX's own rule checks*: contrast over real backgrounds, names and roles are what axe is
+maintained for. *4.14.0*: published six days before; pinned so that a new axe does not change the findings
+under the known-failures list. Moving it is a decision that re-records the list.
+
+**Verified.** `npm run verify:dependencies` passes; the shared-host package ships no root `node_modules`.
+
+## #412 — Known failures are a dated list that only shrinks, keyed by what an element is
+
+**Date:** 2026-10-21. **Spec:** 116, all stories. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** Every check finds defects on `main` today, owned by stories in other epics. A check that fails on them
+cannot run on every pull request; a check that reports only fails nobody.
+
+**Decided.**
+
+1. **`tests/e2e/quality/known-failures.json`**: check, screen (or `*`), rule, signature, `since`, story, note.
+   A finding no entry covers fails its test, with screen, cell, check, rule and element.
+2. **A signature is what the element is, never where it sits**: tag, type, role and up to three class names
+   without digits (an element without classes takes its parent's). Text checks sign with the text, digits
+   replaced by `#`. Twenty row checkboxes are one entry, and a list that grows by a row does not grow the list.
+3. **A defect on five screens or more is recorded once, for every screen (`*`)**: it is in the shared shell.
+4. **The story** is the screen's own where one exists (contrast US-BRD-02, rail US-SHL-04, wording on Access,
+   Add-ons, Forms and Settings US-ACC-05, US-ADD-08, US-FLW-14, US-SET-08, a failed Settings save US-SET-01, the
+   form's error summary US-VIS-05, images US-BLK-14), else the check's own NFR story.
+   `scripts/quality-known-failures.mjs` chooses it when recording and prints the list for the release notes.
+5. **A stale entry is reported, not a failure, in the browser checks.** A screen can stop showing a defect
+   because of code a pull request did not touch, and a partial run matches part of the list. The job writes
+   `stale-known-failures.json`; the pull request that fixes a screen removes its entries. **In the static checks
+   a stale entry fails**: admin contrast and the PHP lint read one file, which only the pull request changing it
+   can make stale.
+
+**Recorded.** 371 entries from CI's first two runs, owned by 13 stories: the most are untranslated text on
+Add-ons (US-ADD-08, 126) and Settings (US-SET-08, 65), and low-contrast muted text (US-BRD-02, 73). The second
+run found one unstable source, Hello Dolly, which WordPress bundles and CI's install activates: it prints a
+random lyric among the admin notices. The quality site deactivates the bundled plug-ins, and the 31 lyric
+entries were removed. Spec 114 (#433) then fixed three (the SSO setting's two strings and an Overview note's
+contrast); with main merged in, the list holds 368, removed the way any fixing change removes its own.
+
+**Not chosen.** *Counts per screen*: the number of rows differs run to run. *Selectors from axe*: they carry
+`nth-child` positions.
+
+## #413 — The screens are read from WordPress's menu; the templates from the theme, with a committed map
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-01, FR-001. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** `tests/e2e/quality/discover.js` signs in over HTTP before any test is listed. It reads every
+`admin.php?page=corex…` link in `#adminmenu`, and each screen's tabs: the `&tab=` links of its tab bar (the one
+marked `aria-current` is the screen's own address) and the in-page tabs of Settings, which take `&corex_tab=`.
+The theme's templates are the files in `theme/templates/`, each with its address in `templates.json`. A
+template the map does not name fails with "no address", so a new template cannot go unchecked. Published pages
+are read too, for the front-end budget. On main: 15 screens and 19 tabs, 34 addresses, and 15 templates.
+
+**Not chosen.** *Discovery inside a test*: Playwright lists tests before any runs, so a list read at run time
+cannot be a test per screen. *Template addresses guessed from the hierarchy*: `page-account` is chosen by a
+page's slug that the kit does not create, and the seed creates it.
+
+## #414 — The state table of every screen is one file, and a missing entry fails
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-05, FR-011. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** `tests/e2e/quality/screen-states.json` holds, for each screen, its panels and what each shows when
+empty, loading, failed and refused. `states.spec.js` fails a screen in the menu that has no entry, then forces
+each state. It learns which CoreX `GET` requests a screen makes on load, up to four, and in turn holds each back,
+answers it 500 with a code it then looks for on screen, and answers it with its lists emptied. It signs in as a
+subscriber for the refusal (a screen a subscriber may open, Guides, passes by opening). It answers the Settings
+save with a 500 and looks for the typed value. A screen's own spec may point at its entry.
+
+**Not chosen.** *A state table in each screen's spec*: fifteen specs predate the rule, and a check cannot read a
+table out of Markdown reliably. *Empty answers written by hand per route*: emptying the arrays of the real
+answer keeps every other field the screen reads.
+
+**Found when written.** Email Studio shows `corex_quality_failure`, the raw code, when its request fails; an
+empty Notifications list says nothing; a failed Settings save loses what was typed (a full-page POST). Each is a
+known failure with its story.
+
+## #415 — PHP strings are linted with PHP's own tokenizer; the product completion audit runs in CI
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-06, FR-017 to FR-019. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **`scripts/i18n-lint.php`**, run in the `test` job. With `token_get_all`, it fails on a translation call with
+   no `corex` domain (missing, a variable, or another literal), and on a literal with words that is echoed,
+   printed, given first to `printf`, `esc_html`, `esc_attr` or `wp_kses_post`, or written as HTML outside the PHP
+   tags. Only at the statement's own level, so a literal inside `__()` inside `esc_html()` is translated.
+   Markup, placeholders and one lowercase word (`checked`, a class) are not words a person reads. It found two
+   things on `main`, both on purpose (a managed table translates its own label in the domain its model
+   declares); they are the baseline, which fails when stale.
+2. **The translation template** is generated in the `test` job (`composer i18n:pot`) and uploaded as
+   `corex-pot`; `.github/workflows/release-assets.yml` attaches it to a published release.
+3. **`npm run audit:completion`** runs the existing audit in the `js` job. On `main` it reported 45 lines, every
+   one the name of the Coming soon mode (spec 101), a shipped feature. The `coming-soon` rule now matches the
+   phrase as a promise ("(coming soon)", "is coming soon", "features coming soon"), not as the mode's name ("in
+   Coming soon", "the mode is Coming soon"), and test files are left out. It reports nothing now, so it
+   fails on any new hit; Jest holds both sides of the rule. Its runner read a list of folders that left
+   most add-ons out, which the planted run found ("Planned" on the Guides screen passed); it reads
+   `plugins/`, `addons/`, `packages/`, `theme/` and `docs-app/src/` now. In the `test` and `js` jobs the steps
+   after a linter run even when it fails (`if: !cancelled()`), which the same run found: one failure per
+   job hid the next.
+4. **The pseudo-locale run** marks every `corex` string `⟦…⟧`, through the gettext filters and the filters
+   `@wordpress/i18n` runs for the domain, for a request with the cookie `corex_pseudo_locale=1` only
+   (`tests/e2e/fixtures/corex-e2e-pseudo-locale.php`). Visible text in the CoreX shell without a mark fails,
+   except numbers, dates, addresses, the site's name and the user's name. The front end is left out: what a
+   visitor reads there is the owner's content.
+
+**Not chosen.** *WPCS's I18n sniff*: a Composer dependency for half the rule; it checks domains and
+placeholders and not untranslated output.
+
+## #416 — The front-end budget: still, sized, lazy below the fold, and bytes per page
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-07, FR-020 to FR-024. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** `front-end-budget.spec.js` opens every published page and template address signed out, at 375 and
+1280px. It adds up layout shifts from the first frame to the end of a scroll to the bottom, and fails over 0.05.
+It reads each image before anything scrolls: no width and height and no aspect ratio fails; below the first
+screen and not lazy fails; the first screen's largest image lazy fails. It counts CoreX's scripts and styles,
+files (decoded size) and inline `corex*` elements, against `byte-budget.json`, and fails more than 10% over;
+raising a budget is a decision recorded here. A block's built script or inline style (`build/blocks/<name>/`,
+`#corex-<name>-style-inline-css`) on a page with no element of that block fails. `tests/Performance/` (the admin
+read and form budgets of spec 068) ran in no CI job; `composer test:performance` now runs it in the
+integration job.
+
+## #417 — The client merge check merges a candidate into a throwaway clone and runs the client's suites
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-08, FR-025 to FR-027. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **`scripts/client-merge-check.mjs`** clones the client repository with `--no-local` into a new temporary
+   folder, fetches the candidate from the framework repository and merges it. It lists every conflict and marks
+   a conflict in a file a `corex-baseline.json` records as a local edit (`exceptions`). On a clean merge it
+   moves each baseline to the candidate, as a client does once it has taken a release. It then runs
+   `verify-framework` and each `--suite`, and writes a Markdown report. It exits 1 on a conflict or a failing
+   suite and never writes to the repository it was given.
+2. **CI's `client-merge` job proves it on every pull request**: a client repository made from the base branch
+   with a site generated by `make:site` and committed, the pull request's merge commit as the candidate, and the
+   client plugin's Pest suite. The report is in the job's summary.
+3. **The real clients are checked before a tag**, by the person cutting it, with each client's own suites
+   (CONTRIBUTING, "Before a tag"). Muva's and Perego's repositories are private and CoreX's CI has no access to
+   them; a token-backed job in `release-assets.yml` can come later.
+4. **Each Client impact section names Muva, Perego and Mizzey**, or says that no client site is affected, from
+   the release after 0.47.0 (`tests/repo-hygiene.test.js`). Earlier sections stand as written.
+
+**Verified.** Jest `client-merge-check.test.js` on throwaway repositories: a clean merge with the baseline
+moved and the suites run; a conflict in a recorded local edit, named, with no suite run; a failing client suite
+with its output in the report; the source repository left as it was.
+
+## #418 — A browser run removes what it made, fails on what it left, and refuses a production site
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-09, FR-028 to FR-032. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+0. **There is no default site.** `COREX_BASE_URL` used to fall back to `http://corex.local`, the
+   developer's working site. A run that writes, and removes test-marked submissions, only starts against a
+   site named on purpose: the global setup and the quality checks' discovery refuse to start without it
+   (the orchestrator's review of PR #434).
+1. **The global setup prints the site the run writes to** and refuses one whose CoreX operations mode is
+   **declared** Production, read over HTTP from the Operations screen's mode form (`data-current-mode`,
+   `data-mode-declared`) of the site under test. A mode nobody declared reads as the environment type, and
+   WordPress answers `production` for every install that sets none, CI's and every fresh scratch site
+   included, so an undeclared mode is not refused. **Nor is a site on a local development host**
+   (localhost, a loopback address, a name under `.localhost`, `.test` or `.local`): the suite's own specs
+   switch the mode, and the first CI run of this rule refused its own site at the release-install step,
+   which runs after them. A production site someone could lose is served from a real host name. There is no
+   override.
+2. **A marker** is what only a test puts on a submission: a flow whose slug contains `e2e`, a `utm_source` of
+   `playwright`, or a sender at `example.com` or `example.test`. The last one counts only for a submission the
+   run made, because CI seeds the inbox with such rows before the run. The setup removes earlier runs' marked
+   submissions and notes the highest post id. The teardown removes this run's marked submissions and fails,
+   naming each, on any submission above that id still on the site (`tests/e2e/residue.js`,
+   `global-teardown.js`). It needs WP-CLI on the install `COREX_BASE_URL` serves, and does nothing where WP-CLI
+   answers for another one.
+3. **`scripts/clean-test-residue.php`** (`wp eval-file`) removes the residue already on a development site with
+   the same markers. It lists by form, asks (or takes `yes`), and refuses a declared Production mode or
+   `WP_ENVIRONMENT_TYPE=production`.
+4. **The fixture plug-ins say "Test fixture"**: the Guides entry, its summary, the notices, the plug-in names.
+5. **Submissions only, in this release.** They are what the inbox, Data, Insights, Overview and Settings counts
+   read. The Releases history entry for the refused test package is in the installer's log file and the
+   activity log, which no test helper should edit; it is left, and listed as owed in PROGRESS.
+
+**Verified.** On a scratch site: the smoke spec's contact submission is removed at the end; a planted spec that
+inserts an unmarked submission fails the run with "This run left 1 submission(s) … #41 Left by a planted test";
+the clean-up lists 2, removes nothing on "n", removes the 2 and keeps a person's row on `yes`, and refuses once
+the mode is Production.
+
+## #419 — What a person does before a tag stays a written release step
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-03, US-NFR-01, US-NFR-08. Decided under the owner's 2026-10-21
+mandate.
+
+**Decided.** Four things the stories ask for need a person or access CI does not have, and are steps of
+"Before a tag" in CONTRIBUTING: the client merge check against Muva's and Perego's repositories with their
+suites (#417); printing the known failures into the release notes (`node scripts/quality-known-failures.mjs`);
+looking through the matrix's four screenshots per screen (the `quality-findings` artifact) and a screen-reader
+pass with NVDA and Chrome on each screen the release changed, recorded in the release record; and checking that
+the published release carries `corex.pot`. The machine half of each is built here. A screen with no recorded
+screen-reader pass is not called accessible in the release notes.
+
+**Not chosen.** *A CI check that a release record exists*: there is no release record file to check yet, and
+inventing one belongs to the release that first needs it.
