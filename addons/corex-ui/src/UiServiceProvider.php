@@ -14,6 +14,7 @@ use Corex\Blocks\BlockMap;
 use Corex\Blocks\DynamicBlockRegistrar;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Support\Config\ConfigInterface;
 use Corex\Ui\Blocks\BlockStyles;
 use Corex\Ui\Blocks\PostsProvider;
 use Corex\Ui\Blocks\WpPostsProvider;
@@ -38,6 +39,14 @@ final class UiServiceProvider extends ServiceProvider
             // BlockMap scans only */block.json, so the .php classes are ignored. The exact case
             // matters on case-sensitive filesystems (Linux/CI).
             static fn (ContainerInterface $c): UiManifest => new UiManifest($c->make(PatternLibrary::class), __DIR__ . '/Blocks'),
+        );
+
+        $this->container->singleton(
+            ActionLinks::class,
+            static fn (ContainerInterface $c): ActionLinks => new ActionLinks(
+                $c->make(ConfigInterface::class),
+                dirname(__DIR__) . '/assets/action-link.css',
+            ),
         );
 
         $this->container->singleton(

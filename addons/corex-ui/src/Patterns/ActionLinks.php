@@ -26,13 +26,32 @@ final class ActionLinks
 {
     public const CONTACT_SLUG = 'contact';
 
-    public function __construct(private readonly ConfigInterface $config)
+    public const STYLE_HANDLE = 'corex-action-link';
+
+    /**
+     * @param string $stylesheet The focus ring's stylesheet, as a file path; its address is derived from it.
+     */
+    public function __construct(private readonly ConfigInterface $config, private readonly string $stylesheet)
     {
     }
 
     public function register(): void
     {
         add_filter('render_block_core/button', [$this, 'render'], 10, 2);
+        add_action('init', [$this, 'registerStyle']);
+    }
+
+    /**
+     * The buttons' focus ring, loaded only on a page that draws a button block (Principle VI).
+     */
+    public function registerStyle(): void
+    {
+        wp_enqueue_block_style('core/button', [
+            'handle' => self::STYLE_HANDLE,
+            'src'    => plugins_url(basename($this->stylesheet), $this->stylesheet),
+            'path'   => $this->stylesheet,
+            'ver'    => (string) filemtime($this->stylesheet),
+        ]);
     }
 
     /**

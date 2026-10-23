@@ -15,6 +15,8 @@ use Corex\Support\Config\ConfigInterface;
 use Corex\Ui\Patterns\ActionLinks;
 use Corex\Ui\Patterns\PatternLibrary;
 
+const ACTION_LINK_CSS = __DIR__ . '/../../../addons/corex-ui/assets/action-link.css';
+
 function brandConfig(string $primaryActionLink): ConfigInterface
 {
     return new class ($primaryActionLink) implements ConfigInterface {
@@ -91,16 +93,16 @@ it('links the hero button to the brand primary action, or the contact page, or l
     $block = heroButton();
     $html  = $block['innerHTML'];
 
-    $branded = (new ActionLinks(brandConfig('https://acme.test/quote')))->render($html, $block);
+    $branded = (new ActionLinks(brandConfig('https://acme.test/quote'), ACTION_LINK_CSS))->render($html, $block);
     expect($branded)->toContain('href="https://acme.test/quote"');
 
-    $nothing = (new ActionLinks(brandConfig('')))->render($html, $block);
+    $nothing = (new ActionLinks(brandConfig(''), ACTION_LINK_CSS))->render($html, $block);
     expect($nothing)->toBe('');
 
     $contact = wp_insert_post(['post_title' => 'Contact', 'post_name' => 'contact', 'post_status' => 'publish', 'post_type' => 'page']);
 
     try {
-        $fallback = (new ActionLinks(brandConfig('')))->render($html, $block);
+        $fallback = (new ActionLinks(brandConfig(''), ACTION_LINK_CSS))->render($html, $block);
         expect($fallback)->toContain('href="' . get_permalink($contact) . '"');
     } finally {
         wp_delete_post($contact, true);
@@ -111,5 +113,5 @@ it('keeps an address someone gave the button in the editor', function () {
     $block = heroButton();
     $html  = str_replace('<a class="wp-block-button__link', '<a href="https://acme.test/own" class="wp-block-button__link', $block['innerHTML']);
 
-    expect((new ActionLinks(brandConfig('https://acme.test/quote')))->render($html, $block))->toContain('href="https://acme.test/own"');
+    expect((new ActionLinks(brandConfig('https://acme.test/quote'), ACTION_LINK_CSS))->render($html, $block))->toContain('href="https://acme.test/own"');
 });

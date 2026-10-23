@@ -18023,6 +18023,10 @@ button had no address either.
    when the button is drawn: the brand's primary action link, else the published contact page. With
    neither, the button is not drawn. An address given in the editor is kept. The lookup runs only
    when such a button is drawn.
+3. **The buttons' focus ring is the section's text colour** (`surface`, `addons/corex-ui/assets/action-link.css`,
+   loaded only where a button block is drawn). The ring sits on the section, where the browser's own
+   ring measured 1.15:1 against the hero; `surface` is at least 4.9:1 against both sections in both
+   palettes. Found by spec 116's keyboard check once the button could take focus.
 
 **Verified.**
 - Pest unit `HeroContrastTest`: four pairs, light and dark palettes.
