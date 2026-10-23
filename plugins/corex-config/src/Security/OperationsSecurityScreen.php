@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Security;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\Access\ScreenAccess;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Operations\ModeDisclosure;
 use Corex\Config\Operations\OperationsMode;
@@ -40,6 +41,8 @@ defined('ABSPATH') || exit;
  */
 final class OperationsSecurityScreen
 {
+    private const SLUG = 'corex-operations-security';
+
     private string $hook = '';
 
     public function __construct(
@@ -56,6 +59,7 @@ final class OperationsSecurityScreen
         private readonly CacheStatusReport $cacheStatus,
         private readonly PreviewAccess $preview,
         private readonly LoginRecovery $recovery,
+        private readonly ScreenAccess $access = new ScreenAccess(),
     ) {
     }
 
@@ -71,7 +75,7 @@ final class OperationsSecurityScreen
             'corex-settings',
             __('CoreX Operations & Security', 'corex'),
             __('Operations & Security', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::SLUG),
             'corex-operations-security',
             [$this, 'render'],
             30,
@@ -152,7 +156,7 @@ final class OperationsSecurityScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens(self::SLUG)) {
             echo $this->page->permissionDenied('operations-security');
 
             return;
@@ -166,6 +170,8 @@ final class OperationsSecurityScreen
             'operations-security',
             __('CoreX Operations & Security', 'corex'),
             __('The operating mode, WordPress hardening status, and security posture for this site.', 'corex'),
+            '',
+            $this->access->readOnly(self::SLUG),
         );
 
         // Links, not an ARIA tablist. `AdminPage::tabs()` renders `?tab=` anchors with

@@ -10,6 +10,8 @@ namespace Corex\Email\Studio;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Email\Capture\CapturedEmail;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\EmailAttempt;
@@ -59,6 +61,7 @@ final class EmailStudioController
         private readonly EmailDeliveryContextFactory $delivery,
         /** What happens to mail on this site, said on every tab (spec 113). */
         private readonly ?MailOutcome $outcome = null,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
         $this->templates = $repositories->templates;
         $this->layouts   = $repositories->layouts;
@@ -81,7 +84,9 @@ final class EmailStudioController
         $this->route('/email-studio/routes', 'POST', 'saveRoute', 'canMutate');
         $this->route('/email-studio/test', 'POST', 'testSend', 'canMutate');
         $this->route('/email-studio/attempts/(?P<attempt>[0-9a-f-]+)/resend', 'POST', 'resend', 'canMutate');
-        $this->route('/email-studio/capture-scope', 'POST', 'saveCaptureScope', 'canMutate');
+        // Which mail is captured decides whether other plugins' mail leaves a development or staging
+        // site, so it stays with site administration like live delivery (spec 117, US-EML-20).
+        $this->route('/email-studio/capture-scope', 'POST', 'saveCaptureScope', 'canConfigureDelivery');
     }
 
     /**
@@ -108,15 +113,23 @@ final class EmailStudioController
         ]);
     }
 
+    /** Email Studio opens for the holders of "Manage Email Studio" (spec 117, US-EML-20). */
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allows(CorexAbility::MANAGE_EMAIL, 'corex-email-studio');
     }
 
     public function canMutate(WP_REST_Request $request): bool
     {
         return $this->canManage()
             && wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false;
+    }
+
+    /** How the whole site delivers mail is chosen by a site administrator (spec 117, FR-007). */
+    public function canConfigureDelivery(WP_REST_Request $request): bool
+    {
+        return $this->canMutate($request)
+            && $this->abilities->allows('manage_options', 'corex-email-studio');
     }
 
     public function index(WP_REST_Request $request): WP_REST_Response

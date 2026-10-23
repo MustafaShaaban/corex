@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityNames;
 use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
@@ -36,6 +37,7 @@ final class AccessGrantPresenter
             'requester'           => $this->person($preview->requesterId),
             'reason'              => $preview->reason,
             'area'                => $preview->areaKey,
+            'area_label'          => $preview->areaKey !== null ? AbilityNames::area($preview->areaKey) : null,
             'abilities'           => array_map($this->ability(...), $preview->abilities),
             'blockers'            => $preview->blockers,
             'requires_typed_name' => $preview->typedName !== null,
@@ -56,6 +58,7 @@ final class AccessGrantPresenter
                 'id'          => (int) $grant['id'],
                 'person'      => $this->person((int) $grant['requesterId']),
                 'area'        => $grant['areaKey'],
+                'area_label'  => $grant['areaKey'] !== null ? AbilityNames::area((string) $grant['areaKey']) : null,
                 'abilities'   => array_map(
                     fn (string $key): array => $this->ability($this->catalog->find($key)),
                     $standing['abilities'],
@@ -77,9 +80,14 @@ final class AccessGrantPresenter
         return ['id' => $userId, 'name' => $this->users->displayName($userId)];
     }
 
-    /** @return array{key:string,label:string,risk:string} */
+    /** @return array{key:string,label:string,risk:string,risk_label:string} */
     private function ability(CorexAbility $ability): array
     {
-        return ['key' => $ability->key, 'label' => $ability->label, 'risk' => $ability->risk];
+        return [
+            'key'        => $ability->key,
+            'label'      => AbilityNames::labelOf($ability),
+            'risk'       => $ability->risk,
+            'risk_label' => AbilityNames::risk($ability->risk),
+        ];
     }
 }

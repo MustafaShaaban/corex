@@ -17,7 +17,6 @@ const config = {
 	nonce: 'nonce',
 	actorId: 7,
 	requests: [],
-	audit: [],
 	matrix: {
 		roles: [ { key: 'editor', name: 'Editor' } ],
 		rows: [
@@ -52,8 +51,12 @@ async function press( name ) {
 	} );
 }
 
-// The select takes a choice on mouse-down, before the press can blur its button.
+// The grid opens first; "Edit" on a role opens its editor (spec 117). The select takes a choice on
+// mouse-down, before the press can blur its button.
 async function stageAllow() {
+	if ( button( 'Edit' ) ) {
+		await press( 'Edit' );
+	}
 	await act( async () => {
 		container
 			.querySelector( '.corex-access__matrix .corex-select__button' )

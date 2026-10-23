@@ -106,12 +106,18 @@ it('says each event as one sentence a translation can reorder', function () {
 });
 
 it('adds one event for a counted refusal, not one per repeat inside its hour', function () {
-    $refusals = static fn (): int => count(Boot::app()->container()->make(ActivityService::class)->query(['kind' => SecurityActivityRecorder::ACCESS_DENIED], 1, 100));
+    // This person's only: a page of the whole log stops at 100, which a long-lived site passes.
+    $person   = $this->admin + 2000;
+    $refusals = static fn (): int => count(Boot::app()->container()->make(ActivityService::class)->query(
+        ['kind' => SecurityActivityRecorder::ACCESS_DENIED, 'actor_id' => $person],
+        1,
+        100,
+    ));
     $before   = $refusals();
     $log      = Boot::app()->container()->make(AccessAuditLog::class);
 
     for ($i = 0; $i < 5; $i++) {
-        $log->record('denied', 'corex-insights', $this->admin + 2000);
+        $log->record('denied', 'corex-insights', $person);
     }
 
     expect($refusals())->toBe($before + 1);

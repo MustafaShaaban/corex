@@ -40,6 +40,20 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 117, abilities that mean something** (2026-10-23, branch `spec/117-abilities`, DECISIONS #420 to
+#427): revamp release R3.1, seven stories (US-ACC-01 to 05, US-SHL-06, US-EML-20), open choices decided under
+the owner's 2026-10-21 mandate. Every CoreX screen, route and save asks for its own ability from one map
+(`ScreenAbilities`); site administrators hold every ability and cannot be denied one; "See CoreX screens without
+changing them" opens Overview, Settings, Operations & Security and Insights read-only; the role matrix is a grid of
+resolved states; the overview counts CoreX abilities; the Audit log tab is one access history; ability names are
+translated; Email Studio opens for "Manage Email Studio" while mail delivery stays with site administration. Spec,
+plan and 33 tasks written; all built, PR #438, not merged by its session, not tagged. Review fixes of 2026-10-23:
+only a site administrator may allow a Critical ability, change a role they hold or decide their own request
+(DECISIONS #428); the matrix and audit tabs pass the quality checks; three more routes record refusals, the old CSV
+export is gone, the capture switch stays with site administration (#429); `main` (v0.48.0) merged in. Left: the Data,
+Submissions and widget checks that also accept site administration (the same answer now), and a screen-reader pass
+of the grid by a person.
+
 **Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
 DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by the owner on
 2026-10-20 (US-SAFE-07, 09, 14, 15, US-FLW-02, US-AUT-02, US-VIS-11), built under the owner's
@@ -55,8 +69,7 @@ DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by
 - Registration, the newsletter signup, call requests and job applications work with a captcha
   provider on, and the provider's script now reaches the page (it was queued too late to be printed).
 
-Spec, plan and tasks are written and every task is built. Open: one pull request against `main`,
-not merged by this session and not tagged. Not built, by decision: visitor blocks for call requests
+Spec, plan and tasks are written and every task is built. Merged to `main` as 09a72e8c (PR #436), not tagged. Not built, by decision: visitor blocks for call requests
 and job applications (#406). Owed:
 - the older `forms-flow.spec.js`, which fails on a fresh local install because the field-type option
   reads `email`, not `Email`. Read it off CI.
@@ -67,7 +80,7 @@ and job applications (#406). Owed:
 development, staging or production; a mail gate in corex-core, asked by CoreX Mail's service and by
 `pre_wp_mail`, captures every email on development and staging, holds a flow test's emails everywhere,
 and leaves production alone; Email Studio states the outcome on every tab, offers a capture-only switch,
-lists the newest mail first and deletes captures after 30 days. R0.3 (spec 114), R0.4 (spec 115) and
+lists the newest mail first and deletes captures after 30 days. Merged to `main` as 180a40a6 (PR #437), not tagged. R0.3 (spec 114), R0.4 (spec 115) and
 R1.1 (spec 116) are built in parallel sessions with DECISIONS #390-#399, #400-#409 and #410-#419.
 
 **Spec 114, screens that tell the truth** (2026-10-21, branch `claude/spec-114-truthful-screens-43137f`,

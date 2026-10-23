@@ -8,7 +8,10 @@ declare(strict_types=1);
 
 namespace Corex\Config\Settings;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
+use Corex\Config\Access\ScreenAccess;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Overview\OverviewRenderer;
 use Corex\Environment\SiteEnvironment;
@@ -27,6 +30,12 @@ final class AdminDashboard
 {
     /** How much of what was typed a refusal quotes. */
     private const QUOTED_AT_MOST = 80;
+
+    private const OVERVIEW = 'corex-settings';
+    private const SETTINGS = 'corex-settings-config';
+
+    /** What changing how the whole site delivers mail needs (spec 117, FR-008). */
+    private const SITE_ADMINISTRATION = 'manage_options';
 
     private string $hook = '';
     private string $settingsHook = '';
@@ -54,6 +63,8 @@ final class AdminDashboard
         private readonly NetworkContext $network,
         private readonly SettingsSanitizer $sanitizer = new SettingsSanitizer(),
         private readonly ?SiteEnvironment $environment = null,
+        private readonly ScreenAccess $access = new ScreenAccess(),
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -69,7 +80,7 @@ final class AdminDashboard
         $this->hook = (string) add_menu_page(
             __('CoreX Framework', 'corex'),
             __('COREX FRAMEWORK', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::OVERVIEW),
             'corex-settings',
             [$this, 'render'],
             'dashicons-layout',
@@ -80,7 +91,7 @@ final class AdminDashboard
             'corex-settings',
             __('CoreX Overview', 'corex'),
             __('Overview', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::OVERVIEW),
             'corex-settings',
             [$this, 'render'],
             0,
@@ -90,7 +101,7 @@ final class AdminDashboard
             'corex-settings',
             __('CoreX Settings', 'corex'),
             __('Settings', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::SETTINGS),
             'corex-settings-config',
             [$this, 'renderSettings'],
             40,
@@ -129,7 +140,7 @@ final class AdminDashboard
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens(self::OVERVIEW)) {
             echo $this->page->permissionDenied('overview');
 
             return;
@@ -139,6 +150,8 @@ final class AdminDashboard
             'overview',
             __('CoreX Overview', 'corex'),
             __('Framework health, onboarding progress, and the current operational state.', 'corex'),
+            '',
+            $this->access->readOnly(self::OVERVIEW),
         );
 
         // The Overview is one cohesive readiness dashboard (spec 064) — a single OverviewRenderer
@@ -150,24 +163,29 @@ final class AdminDashboard
 
     public function renderSettings(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens(self::SETTINGS)) {
             echo $this->page->permissionDenied('settings');
 
             return;
         }
 
-        $nonce = wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false);
+        $readOnly = $this->access->readOnly(self::SETTINGS);
+        // A read-only screen has nothing to send, so it carries no nonce to send it with.
+        $nonce = $readOnly ? '' : wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false);
 
         echo $this->page->open(
             'settings',
             __('CoreX Settings', 'corex'),
             __('Configure framework services. Secret values remain write-only.', 'corex'),
+            '',
+            $readOnly,
         );
         echo $this->form->render(
             fn (string $key): string => $this->settingDisplay($key),
             $nonce,
             fn (string $sectionKey): ?SettingsSectionState => $this->sectionState($sectionKey),
             $this->activeTab(),
+            $this->guard->authorized(self::SITE_ADMINISTRATION),
         );
 
         if ($this->justSaved) {
@@ -317,18 +335,40 @@ final class AdminDashboard
 
     public function maybeSave(): void
     {
-        if (! $this->guard->verifiedPost('corex_settings_nonce', 'corex_settings')) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- only whether a save was sent; verified below.
+        if (! isset($_POST['corex_settings_nonce'])) {
+            return;
+        }
+
+        // A save from someone without "Manage settings", the holder of the view ability among them, is
+        // refused with the standard refusal and recorded (spec 117, FR-005, FR-014).
+        if (! $this->abilities->allows(CorexAbility::MANAGE_SETTINGS, self::SETTINGS)) {
+            wp_die(
+                esc_html__('You can read these settings but not change them.', 'corex'),
+                esc_html__('Access denied', 'corex'),
+                ['response' => 403],
+            );
+        }
+
+        if (! $this->guard->verifiedPost('corex_settings_nonce', 'corex_settings', CorexAbility::MANAGE_SETTINGS)) {
             return;
         }
 
         // What an earlier save in this process refused is not this one's to report.
         $this->refused = [];
+        // How the whole site delivers mail stays with site administration (spec 117, FR-008): those
+        // fields are left as they are when anyone else saves.
+        $siteAdministrator = $this->guard->authorized(self::SITE_ADMINISTRATION);
         foreach ($this->registry->sections() as $sectionKey => $section) {
             if (! $this->isEditable((string) $sectionKey)) {
                 continue;
             }
 
             foreach ($section['fields'] as $key => $field) {
+                if (! $siteAdministrator && ! empty($field['site_admin'])) {
+                    continue;
+                }
+
                 $this->saveField((string) $key, $field);
             }
         }

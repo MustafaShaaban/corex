@@ -8,8 +8,12 @@ declare(strict_types=1);
 
 namespace Corex\Config\Access;
 
-use Corex\Admin\AdminPage;
+use Corex\Access\AbilityNames;
+use Corex\Access\CorexAbility;
+use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\RoleAbilityStore;
+use Corex\Access\ScreenAbilities;
+use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
@@ -18,27 +22,32 @@ use Corex\Support\Facades\AdminDate;
 defined('ABSPATH') || exit;
 
 /**
- * The Access & Abilities screen (spec 065 baseline → spec 067 tabs; design: "Corex Access &
- * Abilities"): tabs Overview · Role matrix · Audit log · Access denied. Everything shown is REAL —
- * roles/capabilities read from WordPress, user counts from count_users(), permissions-plugin conflicts
- * from the active plugins, audit entries from recorded denied attempts ({@see AccessAuditLog}), and
- * the denied tab previews the exact surface a refused user gets. CoreX-owned ability states are editable
- * through the guarded REST workflow; native WordPress/platform capabilities remain compatibility inputs.
- * Access is AdminGuard-gated.
+ * The Access & Abilities screen (spec 065 baseline, spec 067 tabs, spec 117): Overview · Role matrix ·
+ * Audit log · Access denied.
+ *
+ * Every CoreX screen asks for its own CoreX ability (spec 117), so this screen describes that model:
+ * the overview counts CoreX abilities per role as the matrix resolves them, lists them by area, says how
+ * the signed-in person holds theirs and which screen needs which; the matrix tab is a grid of resolved
+ * states with a per-role editor ({@see AccessWorkspace.js}); the audit tab is one history of access
+ * events ({@see AccessHistory}); the denied tab previews the page a refused person gets. It opens for
+ * "Manage access".
  */
 final class AccessScreen
 {
+    private const SLUG = 'corex-access';
+
     private string $hook = '';
 
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly AccessMatrix $matrix,
-        private readonly AccessAuditLog $audit,
+        private readonly AccessHistory $history,
         private readonly RoleAbilityStore $roleAbilities,
         private readonly PendingAccessRequests $pending,
         private readonly PluginActivationInspector $pluginActivationInspector,
         private readonly AccessGrantPresenter $grants,
+        private readonly CorexAbilityCatalog $catalog,
     ) {
     }
 
@@ -54,8 +63,8 @@ final class AccessScreen
             'corex-settings',
             __('CoreX Access & Abilities', 'corex'),
             __('Access & Abilities', 'corex'),
-            'manage_options',
-            'corex-access',
+            CorexAbility::MANAGE_ACCESS,
+            self::SLUG,
             [$this, 'render'],
             32,
         );
@@ -89,18 +98,17 @@ final class AccessScreen
             'nonce' => wp_create_nonce('wp_rest'),
             // Who is confirming a role change: the server checks the confirmation against it.
             'actorId' => get_current_user_id(),
-            'matrix' => $this->matrix->editableCorexMatrix($this->editableRoles(), $this->roleEffects(), $this->activePlugins()),
+            'matrix' => $this->matrix->editableCorexMatrix($this->roles(), $this->roleEffects(), $this->activePlugins()),
             'requests' => $this->pending->all(),
             // The grants made by approval that stand (spec 112, FR-005).
             'grants' => $this->grants->grants(),
-            'audit' => array_map($this->auditForScript(...), $this->audit->entries()),
         ]);
         wp_set_script_translations('corex-access', 'corex');
     }
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->guard->authorized(CorexAbility::MANAGE_ACCESS)) {
             echo $this->page->permissionDenied('access');
 
             return;
@@ -111,11 +119,11 @@ final class AccessScreen
         echo $this->page->open(
             'access',
             __('CoreX Access & Abilities', 'corex'),
-            __('Who can access CoreX and manage content on this site — read from the real WordPress roles.', 'corex'),
+            __('Who can use each CoreX screen: the CoreX abilities each role holds, the grants made to people, and every access event.', 'corex'),
             $this->tabsList()[$active],
         );
 
-        echo $this->page->tabs('corex-access', $this->tabsList(), $active, __('Access sections', 'corex'));
+        echo $this->page->tabs(self::SLUG, $this->tabsList(), $active, __('Access sections', 'corex'));
 
         echo match ($active) {
             'matrix' => $this->matrixTab(),
@@ -149,20 +157,21 @@ final class AccessScreen
     }
 
     /**
-     * Overview tab (design): real permissions-plugin conflict notice, role summary cards, the
-     * tracked capability groups with risk labels, plus the existing truthful requirement/permission
-     * cards and the CoreX-owned ability editing statement.
+     * Overview tab (US-ACC-03): the role plugin notice, people waiting, any Deny kept but not applied,
+     * the role cards, the abilities by area, the screens and what they need, and your own abilities.
      */
     private function overviewTab(): string
     {
-        $roles = $this->roles();
+        $roles   = $this->roles();
+        $effects = $this->roleEffects();
 
         return $this->conflictNotice()
             . $this->waitingCard()
-            . $this->roleCards($this->matrix->roleSummaries($roles, $this->userCounts()))
+            . $this->ignoredDeniesCard($this->matrix->ignoredDenies($roles, $effects))
+            . $this->roleCards($this->matrix->roleSummaries($roles, $this->userCounts(), $effects))
             . $this->groupsCard()
             . $this->requirementsCard()
-            . $this->currentUserCard()
+            . $this->currentUserCard($effects)
             . $this->deferralNote();
     }
 
@@ -170,9 +179,7 @@ final class AccessScreen
      * People waiting, on the tab an administrator actually lands on (spec 079).
      *
      * The panel that decides requests lives inside Role matrix, so without this a pending request
-     * is two clicks away and nothing says it is there — a workflow that depends on somebody
-     * happening to open the right tab is a workflow that stalls. Renders nothing when nobody is
-     * waiting: an empty state on the landing tab would be furniture.
+     * is two clicks away and nothing says it is there. Renders nothing when nobody is waiting.
      */
     private function waitingCard(): string
     {
@@ -183,16 +190,11 @@ final class AccessScreen
 
         return '<section class="corex-surface corex-access__waiting">'
             . '<h2 class="corex-access__waiting-title">'
-            . sprintf(
-                /* translators: %d: how many people are waiting for access. */
-                esc_html(_n(
-                    '%d person is waiting for access',
-                    '%d people are waiting for access',
-                    $waiting,
-                    'corex',
-                )),
-                (int) $waiting,
-            )
+            . esc_html(sprintf(
+                /* translators: %s: how many people are waiting for access. */
+                _n('%s person is waiting for access', '%s people are waiting for access', $waiting, 'corex'),
+                number_format_i18n($waiting),
+            ))
             . '</h2><p class="corex-access__muted">'
             . esc_html__('Each request names who asked, what they asked for and why. Approving one asks for a note and an expiry, then grants the ability until it ends.', 'corex')
             . '</p><a class="button button-primary" href="'
@@ -201,52 +203,190 @@ final class AccessScreen
     }
 
     /**
-     * Role matrix tab (design): the state legend, the real role × capability matrix, and the
-     * no-lockout guarantee.
+     * Each Deny stored for a role that administers the site, listed once with why it does nothing
+     * (spec 117, FR-011). Renders nothing when there is none.
+     *
+     * @param list<array{role:string,ability:string}> $ignored
+     */
+    private function ignoredDeniesCard(array $ignored): string
+    {
+        if ($ignored === []) {
+            return '';
+        }
+
+        $rows = '';
+        foreach ($ignored as $deny) {
+            $rows .= '<li>' . esc_html(sprintf(
+                /* translators: 1: a role's name, 2: the name of a CoreX ability. */
+                __('%1$s: Deny of “%2$s”', 'corex'),
+                $deny['role'],
+                $deny['ability'],
+            )) . '</li>';
+        }
+
+        return '<section class="corex-surface corex-access__card corex-access__ignored" role="note">'
+            . '<header class="corex-access__head"><h2>' . esc_html__('Stored but not applied', 'corex') . '</h2></header>'
+            . '<p class="corex-access__muted">'
+            . esc_html__('These were set in the role matrix before every CoreX screen checked its ability. Site administrators always hold every CoreX ability, so they are kept and ignored: nobody who administers the site loses anything.', 'corex')
+            . '</p><ul class="corex-access__reqs">' . $rows . '</ul></section>';
+    }
+
+    /**
+     * Role matrix tab (US-ACC-02): the five states, the grid with its per-role editor, the requests
+     * and grants, and why a site administrator cannot be locked out.
      */
     private function matrixTab(): string
     {
         return $this->legend()
             . '<div id="corex-access-app"></div>'
-            . $this->matrixCard($this->matrix->build($this->roles()))
             . $this->lockoutNote();
     }
 
     /**
-     * Audit log tab (design): the recorded access events of the last 30 days, or an honest empty
-     * state naming exactly what gets recorded — CoreX makes no role/capability changes, so no
-     * grant/revoke history can exist.
+     * Audit log tab (US-ACC-04): every access event, newest first, by day, 25 a page, filtered by kind
+     * and by person.
      */
     private function auditTab(): string
     {
-        $entries = $this->audit->entries();
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only filters and paging.
+        $kind   = isset($_GET['kind']) ? sanitize_key(wp_unslash($_GET['kind'])) : '';
+        $person = isset($_GET['person']) ? absint(wp_unslash($_GET['person'])) : 0;
+        $page   = isset($_GET['paged']) ? absint(wp_unslash($_GET['paged'])) : 1;
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+        $kinds = $this->history->kinds();
+        $kind  = array_key_exists($kind, $kinds) ? $kind : '';
+        $found = $this->history->page($kind, $person, $page);
 
         $head = '<header class="corex-access__head corex-access__head--split">'
-            . '<div class="corex-access__head-titles"><h2>' . esc_html__('Access audit log', 'corex') . '</h2>'
-            . '<span class="corex-access__window">' . esc_html__('LAST 30 DAYS', 'corex') . '</span></div>'
-            . '<span class="corex-access__muted">'
-            . esc_html__('Records denied CoreX access attempts', 'corex') . '</span></header>';
+            . '<h2>' . esc_html__('Access audit log', 'corex') . '</h2>'
+            . '<span class="corex-access__muted">' . esc_html(sprintf(
+                /* translators: %s: how many entries match. */
+                _n('%s entry', '%s entries', $found['total'], 'corex'),
+                number_format_i18n($found['total']),
+            )) . '</span></header>';
 
-        if ($entries === []) {
-            return '<section class="corex-surface corex-access__card">' . $head
-                . '<p class="corex-access__muted">'
-                . esc_html__('No access was refused in the last 30 days. CoreX lists here each time someone was refused a CoreX screen. Requests and decisions are in the activity log.', 'corex')
-                . '</p></section>';
-        }
-
-        // Prime the user cache once instead of one lookup per row (the log caps at 100 entries).
-        $userIds = array_values(array_unique(array_filter(array_column($entries, 'user'))));
-        if ($userIds !== [] && function_exists('cache_users')) {
-            cache_users($userIds);
-        }
-
-        $rows = '';
-        foreach ($entries as $entry) {
-            $rows .= $this->auditRow($entry);
+        if ($found['total'] === 0 && $kind === '' && $person < 1) {
+            return '<section class="corex-surface corex-access__card">' . $head . $this->auditEmpty() . '</section>';
         }
 
         return '<section class="corex-surface corex-access__card">' . $head
-            . '<ul class="corex-access__audit">' . $rows . '</ul></section>';
+            . $this->auditFilters($kinds, $found['people'], $kind, $person)
+            . ($found['entries'] === []
+                ? '<p class="corex-access__muted">' . esc_html__('Nothing matches these filters.', 'corex') . '</p>'
+                : $this->auditDays($found['entries']))
+            . $this->auditPager($found['page'], $found['pages'], $kind, $person)
+            . '</section>';
+    }
+
+    /** What the history records and for how long (FR-022). */
+    private function auditEmpty(): string
+    {
+        return '<p class="corex-access__muted">'
+            . esc_html__('Nothing has been recorded yet. CoreX lists here: role changes and refused ones, access requests and their approval, refusal, cancellation or expiry, grants revoked or ended, and refused visits to CoreX screens and actions.', 'corex')
+            . '</p><p class="corex-access__muted">'
+            . esc_html(sprintf(
+                /* translators: 1: days role changes, requests and grants are kept, 2: days refusals are kept. */
+                __('Role changes, requests and grants are kept for %1$s days; refusals for %2$s days.', 'corex'),
+                number_format_i18n(AccessHistory::ACTIVITY_DAYS),
+                number_format_i18n(AccessHistory::REFUSAL_DAYS),
+            ))
+            . '</p>';
+    }
+
+    /**
+     * @param array<string,string> $kinds
+     * @param array<int,string>    $people
+     */
+    private function auditFilters(array $kinds, array $people, string $kind, int $person): string
+    {
+        $kindOptions = '<option value="">' . esc_html__('Every kind', 'corex') . '</option>';
+        foreach ($kinds as $key => $label) {
+            $kindOptions .= '<option value="' . esc_attr($key) . '"' . selected($kind, $key, false) . '>' . esc_html($label) . '</option>';
+        }
+
+        $personOptions = '<option value="0">' . esc_html__('Everyone', 'corex') . '</option>';
+        foreach ($people as $id => $name) {
+            $personOptions .= '<option value="' . esc_attr((string) $id) . '"' . selected($person, $id, false) . '>' . esc_html($name) . '</option>';
+        }
+
+        return '<form class="corex-access__filters" method="get" action="' . esc_url(admin_url('admin.php')) . '">'
+            . '<input type="hidden" name="page" value="' . esc_attr(self::SLUG) . '" />'
+            . '<input type="hidden" name="tab" value="audit" />'
+            . '<label for="corex-audit-kind">' . esc_html__('Kind', 'corex') . '</label>'
+            . '<select id="corex-audit-kind" name="kind" data-corex-select>' . $kindOptions . '</select>'
+            . '<label for="corex-audit-person">' . esc_html__('Person', 'corex') . '</label>'
+            . '<select id="corex-audit-person" name="person" data-corex-select>' . $personOptions . '</select>'
+            . '<button type="submit" class="button">' . esc_html__('Filter', 'corex') . '</button></form>';
+    }
+
+    /**
+     * The entries under a heading for each day.
+     *
+     * @param list<array{at:int,first:int,count:int,kind:string,kindLabel:string,who:string,whoId:int,subjectId:int,text:string}> $entries
+     */
+    private function auditDays(array $entries): string
+    {
+        $html = '';
+        $day  = '';
+        foreach ($entries as $entry) {
+            $date = AdminDate::date($entry['at'])->human;
+            if ($date !== $day) {
+                $html .= ($day === '' ? '' : '</ul>') . '<h3 class="corex-access__day">' . esc_html($date) . '</h3><ul class="corex-access__audit">';
+                $day   = $date;
+            }
+            $html .= $this->auditRow($entry);
+        }
+
+        return $html . '</ul>';
+    }
+
+    /**
+     * @param array{at:int,first:int,count:int,kind:string,kindLabel:string,who:string,whoId:int,subjectId:int,text:string} $entry
+     */
+    private function auditRow(array $entry): string
+    {
+        $last = AdminDate::full($entry['at'])->toHtml('corex-access__event-when');
+        $when = $entry['count'] === 1
+            ? $last
+            : sprintf(
+                /* translators: 1: how many times, 2: the first time, 3: the last time. */
+                esc_html(_n('%1$s time, from %2$s to %3$s', '%1$s times, from %2$s to %3$s', $entry['count'], 'corex')),
+                esc_html(number_format_i18n($entry['count'])),
+                AdminDate::full($entry['first'])->toHtml('corex-access__event-when'),
+                $last,
+            );
+        $tone = in_array($entry['kind'], ['refused', 'role_refused', 'denied'], true) ? ' is-warning' : '';
+
+        return '<li class="corex-access__event">'
+            . '<span class="corex-access__event-dot" aria-hidden="true"></span>'
+            . '<span class="corex-access__event-body"><span class="corex-access__event-text">'
+            . '<strong>' . esc_html($entry['who']) . '</strong> ' . esc_html($entry['text']) . '</span>'
+            . '<span class="corex-access__event-meta">' . $when . '</span></span>'
+            . '<span class="corex-access__chip' . $tone . '">' . esc_html($entry['kindLabel']) . '</span></li>';
+    }
+
+    private function auditPager(int $page, int $pages, string $kind, int $person): string
+    {
+        if ($pages < 2) {
+            return '';
+        }
+
+        $link = static fn (int $to): string => esc_url(add_query_arg(
+            array_filter(['page' => self::SLUG, 'tab' => 'audit', 'kind' => $kind, 'person' => $person ?: null, 'paged' => $to]),
+            admin_url('admin.php'),
+        ));
+
+        return '<nav class="corex-access__pager" aria-label="' . esc_attr__('Audit log pages', 'corex') . '">'
+            . ($page > 1 ? '<a class="button" href="' . $link($page - 1) . '">' . esc_html__('Newer', 'corex') . '</a>' : '')
+            . '<span class="corex-access__muted">' . esc_html(sprintf(
+                /* translators: 1: this page, 2: how many pages. */
+                __('Page %1$s of %2$s', 'corex'),
+                number_format_i18n($page),
+                number_format_i18n($pages),
+            )) . '</span>'
+            . ($page < $pages ? '<a class="button" href="' . $link($page + 1) . '">' . esc_html__('Older', 'corex') . '</a>' : '')
+            . '</nav>';
     }
 
     /**
@@ -258,7 +398,7 @@ final class AccessScreen
         return '<div class="corex-access__preview-note corex-surface">'
             . '<p class="corex-access__note-title">' . esc_html__('How a real refusal behaves', 'corex') . '</p>'
             . '<p class="corex-access__note-text">'
-            . esc_html__('A signed-in user without the manage_options capability who opens any CoreX screen is refused at the WordPress menu gate with a real HTTP 403, sees this state, and the attempt is recorded in the audit log tab.', 'corex')
+            . esc_html__('A signed-in person without the CoreX ability a screen needs who opens it is refused with HTTP 403, sees this page with a way to ask for the ability, and the attempt is counted in the audit log.', 'corex')
             . '</p></div>'
             . $this->page->deniedPreview();
     }
@@ -279,7 +419,7 @@ final class AccessScreen
             . '<p class="corex-access__note-text">'
             . sprintf(
                 /* translators: %s: the detected role/capability plugin name(s). */
-                esc_html__('CoreX detected %s. Native platform capabilities stay read-only; CoreX-owned abilities remain editable here.', 'corex'),
+                esc_html__('CoreX detected %s. CoreX manages only its own abilities here; WordPress capabilities stay with that plugin.', 'corex'),
                 esc_html(implode(', ', $conflicts)),
             )
             . '</p></div>';
@@ -292,7 +432,7 @@ final class AccessScreen
     {
         $cards = '';
         foreach ($summaries as $summary) {
-            $originLabel = $summary['isCore'] ? __('CORE', 'corex') : __('CUSTOM', 'corex');
+            $originLabel = $summary['isCore'] ? __('WordPress', 'corex') : __('Added by a plugin or the site', 'corex');
             $cards .= '<article class="corex-surface corex-access__role">'
                 . '<header class="corex-access__role-head"><h3>' . esc_html($summary['name']) . '</h3>'
                 . '<span class="corex-access__origin' . ($summary['isCore'] ? '' : ' is-custom') . '">'
@@ -302,10 +442,10 @@ final class AccessScreen
                     _n('%s user', '%s users', $summary['users'], 'corex'),
                     number_format_i18n($summary['users']),
                 )) . '</p>'
-                . '<p class="corex-access__role-granted"><strong>' . esc_html((string) $summary['granted'])
+                . '<p class="corex-access__role-granted"><strong>' . esc_html(number_format_i18n($summary['granted']))
                 . '</strong><span>' . esc_html(sprintf(
-                    /* translators: %s: total number of tracked abilities. */
-                    __('/ %s tracked abilities', 'corex'),
+                    /* translators: %s: how many CoreX abilities there are. */
+                    _n('/ %s CoreX ability', '/ %s CoreX abilities', $summary['total'], 'corex'),
                     number_format_i18n($summary['total']),
                 )) . '</span></p></article>';
         }
@@ -314,128 +454,196 @@ final class AccessScreen
     }
 
     /**
-     * The tracked capability groups with their real capability, risk label, and code-lock state.
+     * Every CoreX ability by area, with its risk in words and whether it is locked (US-ACC-03).
      */
     private function groupsCard(): string
     {
-        $groups = $this->matrix->groups();
-
-        $rows = '';
-        foreach ($groups as $group) {
-            $risk = $group['risk'] === 'high'
-                ? '<span class="corex-access__chip is-danger">' . esc_html__('High risk', 'corex') . '</span>'
-                : '<span class="corex-access__chip">' . esc_html__('Standard', 'corex') . '</span>';
-            $locked = $group['locked']
-                ? '<span class="corex-access__chip is-locked">' . esc_html__('Locked by code', 'corex') . '</span>'
-                : '';
-
-            $rows .= '<li class="corex-access__group' . ($group['risk'] === 'high' ? ' is-high' : '') . '">'
-                . '<span class="corex-access__group-dot" aria-hidden="true"></span>'
-                . '<span class="corex-access__group-label"><code>' . esc_html($group['cap']) . '</code> · '
-                . esc_html($group['label']) . '</span>'
-                . '<span class="corex-access__group-chips">' . $locked . $risk . '</span></li>';
+        $count = 0;
+        $areas = '';
+        foreach ($this->matrix->abilityGroups() as $area => $abilities) {
+            $rows = '';
+            foreach ($abilities as $ability) {
+                $count++;
+                $high   = in_array($ability['risk'], [CorexAbility::RISK_CRITICAL, CorexAbility::RISK_DANGEROUS], true);
+                $locked = $ability['locked']
+                    ? '<span class="corex-access__chip is-locked">' . esc_html__('Locked', 'corex') . '</span>'
+                    : '';
+                $rows .= '<li class="corex-access__group' . ($high ? ' is-high' : '') . '">'
+                    . '<span class="corex-access__group-dot" aria-hidden="true"></span>'
+                    . '<span class="corex-access__group-label" title="' . esc_attr($ability['key']) . '"><strong>'
+                    . esc_html($ability['label']) . '</strong> · ' . esc_html($ability['description']) . '</span>'
+                    . '<span class="corex-access__group-chips">' . $locked
+                    . '<span class="corex-access__chip' . ($high ? ' is-danger' : '') . '">' . esc_html($ability['riskLabel']) . '</span>'
+                    . '</span></li>';
+            }
+            $areas .= '<h3 class="corex-access__area">' . esc_html($area) . '</h3><ul class="corex-access__groups">' . $rows . '</ul>';
         }
 
         return '<section class="corex-surface corex-access__card">'
             . '<header class="corex-access__head corex-access__head--split">'
-            . '<h2>' . esc_html__('Tracked capability groups', 'corex') . '</h2>'
+            . '<h2>' . esc_html__('CoreX abilities', 'corex') . '</h2>'
             . '<span class="corex-access__muted">' . esc_html(sprintf(
-                /* translators: %s: number of tracked abilities. */
-                __('%s real WordPress capabilities · CoreX invents none', 'corex'),
-                number_format_i18n(count($groups)),
-            )) . '</span></header>'
-            . '<ul class="corex-access__groups">' . $rows . '</ul></section>';
+                /* translators: %s: how many CoreX abilities there are. */
+                _n('%s ability, by area', '%s abilities, by area', $count, 'corex'),
+                number_format_i18n($count),
+            )) . '</span></header>' . $areas . '</section>';
     }
 
     private function legend(): string
     {
-        return '<div class="corex-access__legend">'
-            . '<span class="corex-access__legend-item"><span class="corex-access__mark is-yes" aria-hidden="true">&#10003;</span>'
-            . esc_html__('Allowed — the role really holds the capability', 'corex') . '</span>'
-            . '<span class="corex-access__legend-item"><span class="corex-access__mark is-no" aria-hidden="true">&#8211;</span>'
-            . esc_html__('Not granted', 'corex') . '</span>'
-            . '<span class="corex-access__legend-item"><span class="corex-access__mark is-locked" aria-hidden="true">&#128274;</span>'
-            . esc_html__('Locked by code — the requirement is hard-coded in CoreX', 'corex') . '</span></div>';
+        $items = '';
+        foreach (self::states() as $state => [$mark, $label]) {
+            $items .= '<span class="corex-access__legend-item"><span class="corex-access__mark is-' . esc_attr($state)
+                . '" aria-hidden="true">' . $mark . '</span>' . esc_html($label) . '</span>';
+        }
+
+        return '<div class="corex-access__legend" role="note" aria-label="' . esc_attr__('What the cells say', 'corex') . '">' . $items . '</div>';
+    }
+
+    /**
+     * The five states a cell can be in, with the mark the grid draws for each.
+     *
+     * @return array<string,array{0:string,1:string}>
+     */
+    private static function states(): array
+    {
+        return [
+            AccessMatrix::STATE_ALLOWED_SET   => ['&#10003;', __('Allowed (set here)', 'corex')],
+            AccessMatrix::STATE_DENIED_SET    => ['&#10005;', __('Denied (set here)', 'corex')],
+            AccessMatrix::STATE_ALLOWED_ADMIN => ['&#9733;', __('Allowed through site administration (inherited)', 'corex')],
+            AccessMatrix::STATE_NOT_GRANTED   => ['&#8211;', __('Not granted (inherited)', 'corex')],
+            AccessMatrix::STATE_LOCKED        => ['&#128274;', __('Locked', 'corex')],
+        ];
     }
 
     private function lockoutNote(): string
     {
         return '<div class="corex-access__note corex-surface">'
-            . '<p class="corex-access__note-title">' . esc_html__('CoreX cannot lock you out.', 'corex') . '</p>'
+            . '<p class="corex-access__note-title">' . esc_html__('Site administrators keep every CoreX ability.', 'corex') . '</p>'
             . '<p class="corex-access__note-text">'
-            . esc_html__('CoreX admin access is hard-gated in code on manage_options, so locked definitions cannot remove an administrator’s access. Editable states apply only to CoreX-owned abilities.', 'corex')
+            . esc_html__('Anyone who can administer the site holds every CoreX ability, and the matrix cannot deny a role that does. A change that would leave no administrator with full access, or take a critical ability from you, is refused.', 'corex')
             . '</p></div>';
     }
 
-    private function currentUserCard(): string
+    /**
+     * The CoreX abilities you hold and how (US-ACC-03).
+     *
+     * @param array<string,array<string,string>> $effects
+     */
+    private function currentUserCard(array $effects): string
     {
+        $user  = wp_get_current_user();
+        $roles = array_values(array_filter(
+            $this->roles(),
+            static fn (array $role): bool => in_array($role['key'], (array) $user->roles, true),
+        ));
+        $held = [];
+        foreach ($this->catalog->all() as $ability) {
+            $held[$ability->key] = current_user_can($ability->key);
+        }
+
         $rows = '';
-        foreach ($this->matrix->forUser($this->currentUserCaps()) as $ability) {
-            $rows .= '<li class="corex-access__you is-' . ($ability['granted'] ? 'yes' : 'no') . '">'
-                . '<span>' . esc_html($ability['label']) . '</span>'
-                . '<span class="corex-access__flag">'
-                . esc_html($ability['granted'] ? __('Yes', 'corex') : __('No', 'corex')) . '</span></li>';
+        foreach ($this->matrix->forUser($held, $roles, $effects, $this->ownGrants((int) $user->ID)) as $ability) {
+            $rows .= '<li class="corex-access__you is-yes"><span title="' . esc_attr($ability['key']) . '">' . esc_html($ability['label']) . '</span>'
+                . '<span class="corex-access__flag">' . $this->howHeld($ability) . '</span></li>';
         }
 
         return '<section class="corex-surface corex-access__card">'
             . '<header class="corex-access__head"><h2>' . esc_html__('Your permissions', 'corex') . '</h2></header>'
-            . '<ul class="corex-access__you-list">' . $rows . '</ul></section>';
+            . ($rows === ''
+                ? '<p class="corex-access__muted">' . esc_html__('You hold no CoreX ability.', 'corex') . '</p>'
+                : '<ul class="corex-access__you-list">' . $rows . '</ul>')
+            . '</section>';
+    }
+
+    /** @param array{key:string,label:string,how:string,role:string|null,until:string|null} $ability */
+    private function howHeld(array $ability): string
+    {
+        return match ($ability['how']) {
+            AccessMatrix::HELD_SITE_ADMINISTRATION => esc_html__('Site administration', 'corex'),
+            AccessMatrix::HELD_ROLE => esc_html(sprintf(
+                /* translators: %s: a role's name. */
+                __('Your role, %s', 'corex'),
+                (string) $ability['role'],
+            )),
+            AccessMatrix::HELD_GRANT => $ability['until'] !== null
+                ? sprintf(
+                    /* translators: %s: when the grant ends. */
+                    esc_html__('Granted to you until %s', 'corex'),
+                    AdminDate::date($ability['until'])->toHtml(),
+                )
+                : esc_html__('Granted to you', 'corex'),
+            default => esc_html__('Your account', 'corex'),
+        };
     }
 
     /**
-     * @param array{roles:list<array{key:string,name:string}>,rows:list<array{key:string,label:string,cap:string,risk:string,locked:bool,cells:array<string,bool>}>} $matrix
+     * The abilities granted to this person by approval, with when each grant ends.
+     *
+     * @return array<string,string|null> ability key => end (ISO 8601) or null
      */
-    private function matrixCard(array $matrix): string
+    private function ownGrants(int $userId): array
     {
-        $head = '<th>' . esc_html__('Capability', 'corex') . '</th>';
-        foreach ($matrix['roles'] as $role) {
-            $head .= '<th>' . esc_html($role['name']) . '</th>';
-        }
-
-        $body = '';
-        foreach ($matrix['rows'] as $row) {
-            $locked = $row['locked']
-                ? ' <span class="corex-access__chip is-locked">' . esc_html__('Locked by code', 'corex') . '</span>'
-                : '';
-            $cells = '<th scope="row">' . esc_html($row['label']) . $locked
-                . '<code class="corex-access__cap">' . esc_html($row['cap']) . '</code></th>';
-            foreach ($matrix['roles'] as $role) {
-                $granted = ! empty($row['cells'][$role['key']]);
-                $cells  .= '<td class="is-' . ($granted ? 'yes' : 'no') . '">'
-                    . '<span class="screen-reader-text">'
-                    . esc_html($granted ? __('Granted', 'corex') : __('Not granted', 'corex')) . '</span>'
-                    . '<span class="corex-access__mark is-' . ($granted ? 'yes' : 'no') . '" aria-hidden="true">'
-                    . ($granted ? '&#10003;' : '&#8211;') . '</span></td>';
+        $own = [];
+        foreach ($this->grants->grants() as $grant) {
+            if ((int) $grant['person']['id'] !== $userId || ! $grant['in_effect']) {
+                continue;
             }
-            $body .= '<tr>' . $cells . '</tr>';
+
+            foreach ($grant['abilities'] as $ability) {
+                $own[$ability['key']] = $grant['expires_at'];
+            }
         }
 
-        return '<section class="corex-surface corex-access__card">'
-            . '<header class="corex-access__head"><h2>' . esc_html__('Role capability matrix', 'corex') . '</h2></header>'
-            . '<div class="corex-access__scroll"><table class="corex-access__matrix"><thead><tr>' . $head
-            . '</tr></thead><tbody>' . $body . '</tbody></table></div></section>';
+        return $own;
     }
 
+    /**
+     * Each CoreX screen and the ability it needs (US-ACC-01), with the screens that also open
+     * read-only for "See CoreX screens without changing them".
+     */
     private function requirementsCard(): string
     {
-        $screens = [
-            __('All CoreX admin screens', 'corex'),
-            __('Change operations mode', 'corex'),
-            __('Prune submission data', 'corex'),
-            __('Export submissions / data', 'corex'),
-        ];
-
         $rows = '';
-        foreach ($screens as $screen) {
-            $rows .= '<li><span>' . esc_html($screen) . '</span><code>manage_options</code></li>';
+        foreach (ScreenAbilities::all() as $slug => $screen) {
+            $needs = AbilityNames::label($screen['ability']);
+            if ($slug === 'corex-data-models') {
+                $needs = sprintf(
+                    /* translators: 1: and 2: the names of two CoreX abilities. */
+                    __('%1$s or %2$s', 'corex'),
+                    $needs,
+                    AbilityNames::label(CorexAbility::MANAGE_DATA_MODELS),
+                );
+            }
+            if ($screen['readOnly']) {
+                $needs = sprintf(
+                    /* translators: 1: the ability that opens the screen, 2: the ability that opens it read-only. */
+                    __('%1$s (read-only with %2$s)', 'corex'),
+                    $needs,
+                    AbilityNames::label(CorexAbility::VIEW_SCREENS),
+                );
+            }
+
+            $rows .= '<li><span>' . esc_html(ScreenNames::of($slug)) . '</span><span title="' . esc_attr($screen['ability']) . '">'
+                . esc_html($needs) . '</span></li>';
         }
+        $rows .= '<li><span>' . esc_html__('Switching to Production or Maintenance', 'corex') . '</span><span>'
+            . esc_html(sprintf(
+                /* translators: 1: and 2: the names of two CoreX abilities. */
+                __('%1$s and %2$s', 'corex'),
+                AbilityNames::label(CorexAbility::MANAGE_OPERATIONS),
+                AbilityNames::label(CorexAbility::RUN_DANGEROUS_ACTIONS),
+            )) . '</span></li>'
+            . '<li><span>' . esc_html__('Guides', 'corex') . '</span><span>'
+            . esc_html__('Anyone signed in; each guide follows its screen', 'corex') . '</span></li>';
 
         return '<section class="corex-surface corex-access__card">'
             . '<header class="corex-access__head"><h2>' . esc_html__('Screen access requirements', 'corex') . '</h2></header>'
             . '<p class="corex-access__muted">'
-            . esc_html__('CoreX admin and every dangerous action require the WordPress manage_options capability (typically Administrators).', 'corex')
+            . esc_html__('Each CoreX screen opens for the people who hold its ability: through their role in the matrix, a grant approved for them, or site administration.', 'corex')
             . '</p><ul class="corex-access__reqs">' . $rows . '</ul></section>';
     }
+
 
     private function deferralNote(): string
     {
@@ -447,98 +655,6 @@ final class AccessScreen
                 'corex',
             )
             . '</p></div>';
-    }
-
-    /**
-     * @param array{time:int,user:int,kind:string,section:string} $entry
-     */
-    /**
-     * One person's refusals of one screen within an hour: once at a time, or counted between the
-     * first and the last (spec 112, FR-012).
-     *
-     * @param array{user:int,kind:string,section:string,first:int,last:int,count:int} $entry
-     */
-    private function auditRow(array $entry): string
-    {
-        $last = AdminDate::full($entry['last'])->toHtml('corex-access__event-when');
-        $when = $entry['count'] === 1
-            ? $last
-            : sprintf(
-                /* translators: 1: how many times, 2: the first time, 3: the last time. */
-                esc_html(_n('%1$s time, from %2$s to %3$s', '%1$s times, from %2$s to %3$s', $entry['count'], 'corex')),
-                esc_html(number_format_i18n($entry['count'])),
-                AdminDate::full($entry['first'])->toHtml('corex-access__event-when'),
-                $last,
-            );
-
-        return '<li class="corex-access__event">'
-            . '<span class="corex-access__event-dot" aria-hidden="true"></span>'
-            . '<span class="corex-access__event-body"><span class="corex-access__event-text">'
-            . esc_html($this->auditText($entry)) . '</span>'
-            . '<span class="corex-access__event-meta">' . $when . '</span></span>'
-            . '<span class="corex-access__chip is-warning">' . esc_html__('DENIED', 'corex') . '</span></li>';
-    }
-
-    /** @param array{user:int,kind:string,section:string} $entry */
-    private function auditText(array $entry): string
-    {
-        if ($entry['kind'] === 'data') {
-            return sprintf(
-                /* translators: 1: user name, 2: the key of a data model, e.g. "table-access-requests". */
-                __('Access denied: %1$s tried to read %2$s on the Data screen', 'corex'),
-                $this->userLabel($entry['user']),
-                $entry['section'],
-            );
-        }
-
-        return sprintf(
-            /* translators: 1: user name, 2: CoreX screen name. */
-            __('Access denied: %1$s tried to open %2$s', 'corex'),
-            $this->userLabel($entry['user']),
-            $this->sectionLabel($entry['section']),
-        );
-    }
-
-    /**
-     * An entry as the Access workspace lists it: in words, with its count and canonical UTC times
-     * for the spec 076 date contract.
-     *
-     * @param array{user:int,kind:string,section:string,first:int,last:int,count:int} $entry
-     *
-     * @return array{text:string,count:int,first:string,last:string}
-     */
-    private function auditForScript(array $entry): array
-    {
-        return [
-            'text'  => $this->auditText($entry),
-            'count' => $entry['count'],
-            'first' => gmdate(DATE_ATOM, $entry['first']),
-            'last'  => gmdate(DATE_ATOM, $entry['last']),
-        ];
-    }
-
-    private function userLabel(int $userId): string
-    {
-        if ($userId > 0) {
-            $user = get_userdata($userId);
-            if ($user !== false && $user->display_name !== '') {
-                return $user->display_name;
-            }
-
-            return sprintf(
-                /* translators: %d: WordPress user ID. */
-                __('User #%d', 'corex'),
-                $userId,
-            );
-        }
-
-        return __('Signed-out visitor', 'corex');
-    }
-
-    /** A readable name for a recorded section: its section key or its page slug. */
-    private function sectionLabel(string $section): string
-    {
-        return ScreenNames::of($section);
     }
 
     /**
@@ -563,17 +679,6 @@ final class AccessScreen
         }
 
         return $out;
-    }
-
-    /**
-     * @return list<array{key:string,name:string}>
-     */
-    private function editableRoles(): array
-    {
-        return array_map(
-            static fn (array $role): array => ['key' => $role['key'], 'name' => $role['name']],
-            $this->roles(),
-        );
     }
 
     /**
@@ -611,15 +716,5 @@ final class AccessScreen
     private function activePlugins(): array
     {
         return $this->pluginActivationInspector->activePluginFiles();
-    }
-
-    /**
-     * @return array<string,bool>
-     */
-    private function currentUserCaps(): array
-    {
-        $user = wp_get_current_user();
-
-        return array_map('boolval', (array) ($user->allcaps ?? []));
     }
 }

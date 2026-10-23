@@ -199,17 +199,12 @@ test.describe( 'the role matrix', () => {
 	} ) => {
 		test.skip( ! before, 'WP-CLI is needed to put the role back.' );
 		const errors = collectConsoleErrors( page );
+		// The tab opens on the grid; "Edit" on a role opens its editor (spec 117).
 		const chooseEditor = async () => {
-			await page
-				.locator( '.corex-access__mode-label .corex-select__button' )
-				.click();
-			await page
-				.locator( '.corex-access__mode-label' )
-				.getByRole( 'option', { name: 'Editor', exact: true } )
-				.click();
+			await page.getByRole( 'button', { name: 'Edit Editor' } ).click();
 		};
 		const row = page.locator( '.corex-access__matrix tbody tr' ).filter( {
-			has: page.locator( 'code', { hasText: /^corex_manage_forms$/ } ),
+			has: page.locator( 'th[title="corex_manage_forms"]' ),
 		} );
 		const choice = row.locator( '.corex-select__button' );
 
