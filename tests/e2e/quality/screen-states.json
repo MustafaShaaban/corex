@@ -1,0 +1,97 @@
+{
+	"description": "The state table of every CoreX admin screen (spec 116, US-NFR-05; Definition of Done item 8): for each list or panel, what it shows when empty, loading, failed and refused. A screen WordPress's menu lists without an entry here fails states.spec.js. Written 2026-10-21 from the screens as they are; where a screen does not do what its row says, states.spec.js reports it and known-failures.json names the story that fixes it. A screen's own spec may point at its entry instead of repeating it.",
+	"refusedForAll": "A person without the screen's ability gets CoreX's access-denied page: what the screen is, that they cannot open it, and who to ask or how to request access (spec 083, spec 112).",
+	"screens": {
+		"corex-settings": {
+			"title": "Overview",
+			"panels": [
+				{ "name": "Readiness and recent activity", "empty": "No activity yet, and the next step to take.", "loading": "Placeholders the size of each card.", "failed": "The card says it could not load, with a retry; the other cards still show.", "refused": "access-denied page" }
+			]
+		},
+		"corex-settings-config": {
+			"title": "Settings",
+			"panels": [
+				{ "name": "Each settings section", "empty": "Every field shows its default and says it is the default.", "loading": "Server-rendered; nothing to wait for.", "failed": "A save that fails says so and keeps what was typed (US-SET-01).", "refused": "access-denied page" }
+			]
+		},
+		"corex-addons": {
+			"title": "Add-ons",
+			"panels": [
+				{ "name": "Add-on cards, per filter tab", "empty": "No add-on in this filter, and a link to all add-ons.", "loading": "Server-rendered; a card being turned on or off shows its own progress.", "failed": "Turning an add-on on or off that fails says what happened on the card (US-SAFE-08).", "refused": "access-denied page" }
+			]
+		},
+		"corex-forms": {
+			"title": "Forms & Flows",
+			"panels": [
+				{ "name": "Flow catalogue", "empty": "No forms yet, and how to make the first one.", "loading": "Placeholder rows, never 'no forms' before the answer (spec 108).", "failed": "The list could not be loaded, with a retry.", "refused": "access-denied page" }
+			]
+		},
+		"corex-submissions": {
+			"title": "Submissions",
+			"panels": [
+				{ "name": "Inbox list", "empty": "No messages have arrived yet, with a link to the forms.", "loading": "Placeholder rows (spec 108).", "failed": "The inbox could not be loaded, with a retry.", "refused": "access-denied page" },
+				{ "name": "Submission drawer", "empty": "Not shown without a submission.", "loading": "Placeholder lines in the drawer.", "failed": "The submission could not be opened, with a retry.", "refused": "access-denied page" }
+			]
+		},
+		"corex-data-models": {
+			"title": "Data",
+			"panels": [
+				{ "name": "Models and records", "empty": "No records in this model yet, and where they come from.", "loading": "Placeholder rows the size of the table, no 'no records' text (spec 108).", "failed": "The records could not be loaded, with a retry.", "refused": "access-denied page; security models only for their owners (spec 112)" }
+			]
+		},
+		"corex-operations-security": {
+			"title": "Operations & Security",
+			"panels": [
+				{ "name": "Mode, readiness and each tab", "empty": "Each list (activity, lockouts) says there is nothing yet.", "loading": "Server-rendered; actions show their own progress.", "failed": "An action that fails says so in words beside it.", "refused": "access-denied page" }
+			]
+		},
+		"corex-access": {
+			"title": "Access & Abilities",
+			"panels": [
+				{ "name": "Overview, role matrix, audit and denied log", "empty": "No requests, grants or refusals yet, each said in words.", "loading": "Server-rendered; actions show their own progress.", "failed": "An approval or revocation that fails says so beside it.", "refused": "access-denied page; locked abilities say an administrator grants them (spec 112)" }
+			]
+		},
+		"corex-blog-pro": {
+			"title": "Blog Pro",
+			"panels": [
+				{ "name": "Posts and comments", "empty": "No posts or comments yet.", "loading": "Placeholder rows.", "failed": "The list could not be loaded, with a retry.", "refused": "access-denied page" }
+			]
+		},
+		"corex-email-studio": {
+			"title": "Email Studio",
+			"panels": [
+				{ "name": "Overview, templates, routes and log", "empty": "No templates, routes or emails yet, and how to add one.", "loading": "Placeholders (spec 108).", "failed": "A plain-words error with a retry, never a raw code or an endless spinner.", "refused": "access-denied page" }
+			]
+		},
+		"corex-insights": {
+			"title": "Insights",
+			"panels": [
+				{ "name": "Widgets", "empty": "A widget with no data source says what it needs.", "loading": "Placeholders per widget (spec 108).", "failed": "The widget says it could not load, and a failed PageSpeed run shows an error, never a grade (US-SAFE-12).", "refused": "access-denied page" }
+			]
+		},
+		"corex-notifications": {
+			"title": "Notifications",
+			"panels": [
+				{ "name": "Notification list", "empty": "No notifications yet.", "loading": "Placeholder rows (spec 108).", "failed": "The list could not be loaded, with a retry.", "refused": "access-denied page" }
+			]
+		},
+		"corex-releases": {
+			"title": "Releases",
+			"panels": [
+				{ "name": "Installed release, upload and history", "empty": "No release history yet, and how to upload one.", "loading": "Placeholders while the history loads.", "failed": "An upload or installation that fails says what stopped it (spec 107).", "refused": "access-denied page" }
+			]
+		},
+		"corex-guides": {
+			"title": "Guides",
+			"panels": [
+				{ "name": "Guide list", "empty": "No guides for this site.", "loading": "Server-rendered; nothing to wait for.", "failed": "Server-rendered; a guide that cannot be read is left out.", "refused": "access-denied page" }
+			]
+		},
+		"corex-setup": {
+			"title": "Setup wizard",
+			"panels": [
+				{ "name": "Wizard steps", "empty": "Starts at the first step.", "loading": "Placeholders while its state loads (spec 108).", "failed": "Gives the form back when its state cannot be loaded (spec 108), and an apply that fails says so.", "refused": "access-denied page" }
+			]
+		}
+	}
+}

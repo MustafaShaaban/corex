@@ -171,8 +171,8 @@ the screen shows a direct Add-ons activation path and does not instantiate add-o
 ## Blog Pro (Corex → Blog Pro)
 
 Blog Pro is a functional workspace over **native WordPress posts**. Its REST-backed React client renders
-**Analytics / Native posts / Editorial workflow / Moderation queue / Authors / Sharing** from live state — no
-sample data. Analytics are **first-party and consent-aware**: visitor identity is hashed (no raw IP or user
+**Analytics / Native posts / Editorial workflow / Moderation queue / Authors / Sharing** from live state, with
+no invented figures. Analytics are **first-party and consent-aware**: visitor identity is hashed (no raw IP or user
 agent stored) and reading events are retained for 180 days. The editorial workflow maps explicit states
 (Draft, Ready for Review, Needs Changes, Approved, Scheduled, Published) onto native post statuses via
 `wp_update_post()`; comment moderation and author analytics use the native WordPress comment and user APIs.

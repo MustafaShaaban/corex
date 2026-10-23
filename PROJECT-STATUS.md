@@ -90,7 +90,13 @@ Repository state is correct; this is only about installs that predate the fix:
 wp user list --field=user_login | grep '^corex-079-requester-' | xargs -r -n1 wp user delete --yes
 ```
 
-*Source: `specs/091-rtl-overflow-and-fixture-leak/`.*
+The browser suite also left submissions: every inbox seed and contact-form test added rows that the
+inbox, Data, Insights and Settings counts then showed. From spec 116 a run removes the submissions it
+made and fails if it leaves one without a test's marker. What earlier runs left is removed with
+`wp eval-file scripts/clean-test-residue.php`, which lists first and asks, and refuses a production
+site.
+
+*Source: `specs/091-rtl-overflow-and-fixture-leak/` and `specs/116-quality-checks/`.*
 
 ## Closed, and worth knowing were closed
 
@@ -102,9 +108,10 @@ you are evaluating.
 
 `npm run verify:dependencies` reports **PASS** across Composer, the root npm workspace and the
 docs-site npm workspace as of 2026-10-23: zero findings in Composer and the docs site, and in the
-root, **five findings covered by five exceptions**. That date matters. An advisory is published by
-somebody else against a tree that did not move, so this is a measurement, not a property — on
-2026-10-06, with nothing changed here, the gate failed on thirteen advisories, eleven of them
+root, **five findings covered by five exceptions**. The sixth, `sprintf-js` (GHSA-hp3w-g68c-fv3c),
+left the list on 2026-10-22, when GitHub withdrew the advisory. That date matters. An advisory is
+published by somebody else against a tree that did not move, so this is a measurement, not a
+property — on 2026-10-06, with nothing changed here, the gate failed on thirteen advisories, eleven of them
 published on 2026-10-05 or 2026-10-06.
 
 None of the five is a fix that was skipped. Each is an advisory with no release this tree can take:

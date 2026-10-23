@@ -5,13 +5,18 @@
  * race that otherwise flakes whichever spec happens to run first against a cold WP/OPcache.
  *
  * The base URL and the credentials come from the environment (COREX_BASE_URL, COREX_ADMIN_USER,
- * COREX_ADMIN_PASS), with the defaults below for an install that sets none of them.
+ * COREX_ADMIN_PASS). The credentials have the defaults below. The base URL has none (spec 116): the
+ * suite writes to the site it is given and removes test-marked submissions there, so a site is
+ * named on purpose, never reached by default.
  */
 const { chromium, expect } = require( '@playwright/test' );
 const fs = require( 'fs' );
 const path = require( 'path' );
 
-const BASE_URL = process.env.COREX_BASE_URL || 'http://corex.local';
+const { wpEval } = require( './helpers' );
+const { refuseProduction, startRun } = require( './residue' );
+
+const BASE_URL = process.env.COREX_BASE_URL;
 const ADMIN_USER = process.env.COREX_ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.COREX_ADMIN_PASS || 'password';
 
@@ -54,6 +59,12 @@ async function openLoginForm( page ) {
 }
 
 module.exports = async () => {
+	if ( ! BASE_URL ) {
+		throw new Error(
+			'COREX_BASE_URL is not set. The browser tests sign in, submit forms and remove the test-marked submissions they find, so they run only against a site named on purpose: a scratch site or the one CI makes, for example COREX_BASE_URL=http://127.0.0.1:8916.'
+		);
+	}
+
 	const browser = await chromium.launch();
 	let context;
 	let page;
@@ -72,7 +83,7 @@ module.exports = async () => {
 				.catch( () => false )
 		) {
 			await context.storageState( { path: STORAGE_STATE } );
-			await browser.close();
+			await beforeTheRun( page, browser );
 			return;
 		}
 		await context.close();
@@ -111,7 +122,23 @@ module.exports = async () => {
 	).toBe( true );
 
 	await context.storageState( { path: STORAGE_STATE } );
-	await browser.close();
+	await beforeTheRun( page, browser );
 };
+
+/**
+ * Before any test (spec 116, US-NFR-09): say which site the run writes to, refuse a production
+ * site, and remove what earlier runs left there (residue.js).
+ *
+ * @param {import('@playwright/test').Page}    page    A page signed in as the administrator.
+ * @param {import('@playwright/test').Browser} browser The browser to close afterwards.
+ */
+async function beforeTheRun( page, browser ) {
+	try {
+		await refuseProduction( page, BASE_URL );
+		startRun( wpEval, BASE_URL );
+	} finally {
+		await browser.close();
+	}
+}
 
 module.exports.STORAGE_STATE = STORAGE_STATE;

@@ -1,0 +1,20 @@
+{
+	"description": "The address that shows each theme template on a site prepared by seed-quality-site.php (spec 116, FR-001). A template in theme/templates/ that is not named here fails the screen matrix: add its address when you add the template.",
+	"templates": {
+		"404": { "path": "/corex-quality-no-such-page/", "status": 404 },
+		"archive": { "path": "/category/uncategorized/" },
+		"archive-corex_project": { "path": "/projects/" },
+		"front-page": { "path": "/" },
+		"index": { "path": "/blog/" },
+		"page": { "path": "/sample-page/" },
+		"page-about": { "path": "/about/" },
+		"page-account": { "path": "/account/" },
+		"page-contact": { "path": "/contact/" },
+		"page-form": { "path": "/form/" },
+		"page-landing": { "path": "/landing/" },
+		"page-services": { "path": "/services/" },
+		"search": { "path": "/?s=corex" },
+		"single": { "path": "/hello-world/" },
+		"single-corex_project": { "path": "/projects/quality-project/" }
+	}
+}
