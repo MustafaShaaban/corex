@@ -67,6 +67,21 @@
 		return el ? el.closest( '.corex-media' ) : null;
 	}
 
+	/**
+	 * An image address the preview may show: http or https only, so a value read back from the
+	 * page (Discard puts the stored one back) is never handed to the image as another kind of URL.
+	 *
+	 * @param {string} url what the field holds
+	 * @return {string} the address, or '' when it is not one an image is drawn from
+	 */
+	function imageUrl( url ) {
+		const text = String( url || '' );
+
+		return text.startsWith( 'https://' ) || text.startsWith( 'http://' )
+			? text
+			: '';
+	}
+
 	function setPreview( input, url ) {
 		const box = mediaContainer( input );
 		if ( ! box ) {
@@ -74,9 +89,9 @@
 		}
 		const preview = box.querySelector( '.corex-media-preview' );
 		const placeholder = box.querySelector( '.corex-media__placeholder' );
-		const hasUrl = !! url;
+		const hasUrl = !! url && imageUrl( url ) !== '';
 		if ( preview ) {
-			preview.src = url || '';
+			preview.src = hasUrl ? imageUrl( url ) : '';
 			preview.hidden = ! hasUrl;
 		}
 		if ( placeholder ) {

@@ -203,6 +203,7 @@ it('says on the captcha card that a key is missing, as Settings says it', functi
     $this->store->save('captcha.site_key', 'site');
     $this->store->delete('captcha.secret');
 
+    require_once ABSPATH . 'wp-admin/includes/plugin.php';
     if (! is_plugin_active('corex-captcha/corex-captcha.php')) {
         $this->markTestSkipped('Corex Captcha is not active on this site.');
     }
