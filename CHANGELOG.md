@@ -6,43 +6,14 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Mail stays where it should (spec 113, revamp release R0.2, DECISIONS #381 to #385), screens that tell the
-truth (spec 114, R0.3, DECISIONS #390 to #398), kit and public page safety (spec 115, R0.4, DECISIONS #400 to
-#407), quality checks on every release (spec 116, R1.1, DECISIONS #410 to #419) and abilities that mean
-something (spec 117, R3.1, DECISIONS #420 to #429).
+Abilities that mean something (spec 117, revamp release R3.1, DECISIONS #420 to #429).
 
 **Read Client impact before updating.** Every CoreX screen starts checking its own ability, so access
-granted earlier, by approving a request or by an Allow in the role matrix, starts to work: review CoreX →
-Access & Abilities first (spec 117). A live site whose operations mode or `.env` says it is a development
-or staging site keeps its mail instead of sending it (spec 113). On sites whose kit pages still reference
-the stats or testimonial patterns, those two sections disappear for visitors until someone edits them
-(spec 115).
+granted earlier, by approving a request or by an Allow in the role matrix, starts to work. Review CoreX →
+Access & Abilities first.
 
 ### Added
 
-- **Quality checks on every release** (spec 116, R1.1 of the CoreX revamp). A new CI job,
-  **Quality checks**, opens every CoreX admin screen and tab and every theme template in eight
-  cells (375 and 1280px, light and dark, left to right and right to left) on a WordPress with the
-  Company kit applied. It checks for sideways scroll, WCAG 2.2 AA (axe-core, contrast and target
-  size included) and raw developer keys. At phone width it checks tables, 44px controls, the rail
-  and text at 200%. It also checks focus and Escape, reduced motion, the empty, loading, failed and
-  refused states of every screen, untranslated words (a pseudo-locale run) and a front-end budget:
-  layout shift, image sizes, lazy images, CoreX bytes per page, and block assets only where the
-  block is. What `main` showed when the checks were written is in
-  `tests/e2e/quality/known-failures.json`, each entry with the story that fixes it. A new defect
-  fails the job. `node scripts/quality-known-failures.mjs` prints the list.
-- **The admin's colour tokens are checked for contrast**, dark and light, before any browser opens
-  (`ContrastMatrixTest`).
-- **A PHP translation lint** (`php scripts/i18n-lint.php`), the **product completion audit**
-  (`npm run audit:completion`) and the **admin read and form budgets**
-  (`composer test:performance`) run in CI. The translation template `corex.pot` is generated on
-  every pull request and attached to every published release.
-- **A client merge check** (`scripts/client-merge-check.mjs`) merges a release candidate into a
-  throwaway clone of a client repository. It names a conflict in a file the client records as a
-  local edit, runs the client's suites and writes a report for the release record. CI proves it on
-  a generated client site.
-- **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
-  submissions test runs left on a development site. It refuses a production site.
 - **"See CoreX screens without changing them"** (spec 117, #422), held by no role until an owner allows
   it: Overview, Settings, Operations & Security and Insights open read-only, with a "Read only" chip, a
   sentence naming the ability that makes changes, and every control marked unavailable and saying why.
@@ -87,6 +58,89 @@ the stats or testimonial patterns, those two sections disappear for visitors unt
   Forms & Flows, Overview and Blog Pro, like every other CoreX route since spec 117.
 - **At a phone's width the role matrix folds into one list per ability** (#424), each state named with its role,
   and its text meets WCAG 2.2 AA contrast in both themes.
+
+### Removed
+
+- **The old Data CSV download** (`admin-post.php?action=corex_data_export`, #429). Nothing in CoreX linked to it;
+  exports are made on the Data screen, which applies the export checks for withheld models and personal data.
+
+### Client impact
+
+- **Muva and Perego: no administrator loses access.** Anyone who can administer the site holds every
+  CoreX ability, and the screens look as before to them.
+- **Grants made earlier start to work.** Every request approved in the past and every Allow in the role
+  matrix now opens its screen. Before updating, open **CoreX → Access & Abilities**: on the Role matrix
+  tab, read the grants list and Revoke what should not stand, and read the grid.
+- **Review every Critical ability Allowed for a role that does not administer the site.** "Manage
+  access", "Manage operations and security", "Install releases" and "Run dangerous actions" Allowed
+  for a role earlier stay Allowed and now open their screens. Only a site administrator could store
+  them, and only a site administrator can now allow them again; set to Deny any that should not
+  stand.
+- **Check for a Deny stored on the Administrator role.** It is kept, ignored, and listed on the Access
+  Overview under "Stored but not applied".
+- **Blog Pro opens for "Manage Blog Pro"** and site administrators. Editors and writers who used it since
+  v0.47.0 need "Manage Blog Pro" allowed for their role.
+- **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it.
+- **Only a site administrator can allow a Critical ability, change a role they hold, or decide their own access
+  request.** A holder of "Manage access" who is not a site administrator is refused these with a sentence.
+- **A bookmark or script that downloaded `admin-post.php?action=corex_data_export`** stops working; export from
+  CoreX → Data instead. Search a client repository for `corex_data_export` before updating.
+- A client repository carrying copies of CoreX's tests takes the updated
+  `tests/Unit/Access/AccessMatrixTest.php`, `AccessPolicyTest.php`, `AccessServiceTest.php`,
+  `tests/Integration/Access/AccessAuditLogWritesTest.php`, `ScreenAbilitiesAccessTest.php` and
+  `tests/Integration/Blog/BlogProPermissionMatrixTest.php`, and drops `tests/Unit/Data/DataExportControllerTest.php`
+  and `CsvWriterTest.php`.
+  Client-guide screenshots of the Access screen go stale.
+- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+
+## [0.48.0] — 2026-10-23
+
+The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
+(spec 113, R0.2, DECISIONS #381 to #385), screens that tell the truth (spec 114, R0.3, #390 to
+#398), kit and public page safety (spec 115, R0.4, #400 to #407), and quality checks on every
+release (spec 116, R1.1, #410 to #419).
+
+**Read Client impact before updating.** Four things can change on a live site:
+
+- A site whose `.env` says `APP_ENV=local`, `development` or `staging`, or whose operations mode is
+  Development or Staging, now keeps its mail in Email Studio instead of sending it. Check both
+  before updating.
+- Kit pages that still reference the stats or testimonial patterns lose those two sections for
+  visitors until someone edits them, and pattern buttons with no Brand action link or contact
+  page are hidden. Perego runs the Company kit: check its pages.
+- The bookings, careers and newsletter routes now judge a reCAPTCHA v3 token by its action,
+  hostname and score: a site's own form must request its token under the route's action.
+- The Overview, Security Center and Insights now say what is true, so some rows that read "Done"
+  or "Hidden" may now read "Not set", "Off" or "Not configured".
+
+### Added
+
+- **Quality checks on every release** (spec 116, R1.1 of the CoreX revamp). A new CI job,
+  **Quality checks**, opens every CoreX admin screen and tab and every theme template in eight
+  cells (375 and 1280px, light and dark, left to right and right to left) on a WordPress with the
+  Company kit applied. It checks for sideways scroll, WCAG 2.2 AA (axe-core, contrast and target
+  size included) and raw developer keys. At phone width it checks tables, 44px controls, the rail
+  and text at 200%. It also checks focus and Escape, reduced motion, the empty, loading, failed and
+  refused states of every screen, untranslated words (a pseudo-locale run) and a front-end budget:
+  layout shift, image sizes, lazy images, CoreX bytes per page, and block assets only where the
+  block is. What `main` showed when the checks were written is in
+  `tests/e2e/quality/known-failures.json`, each entry with the story that fixes it. A new defect
+  fails the job. `node scripts/quality-known-failures.mjs` prints the list.
+- **The admin's colour tokens are checked for contrast**, dark and light, before any browser opens
+  (`ContrastMatrixTest`).
+- **A PHP translation lint** (`php scripts/i18n-lint.php`), the **product completion audit**
+  (`npm run audit:completion`) and the **admin read and form budgets**
+  (`composer test:performance`) run in CI. The translation template `corex.pot` is generated on
+  every pull request and attached to every published release.
+- **A client merge check** (`scripts/client-merge-check.mjs`) merges a release candidate into a
+  throwaway clone of a client repository. It names a conflict in a file the client records as a
+  local edit, runs the client's suites and writes a report for the release record. CI proves it on
+  a generated client site.
+- **`wp eval-file scripts/clean-test-residue.php`** lists and, when told to, removes the
+  submissions test runs left on a development site. It refuses a production site.
+
+### Changed
+
 - **One setting decides whether a site is a development site** (spec 113). `APP_ENV` in `.env`, a
   value the network locks or the `corex_app_env` option decides first, and locks the operations
   mode (the Operations screen says what locks it and offers that environment's mode, Coming soon
@@ -184,11 +238,6 @@ the stats or testimonial patterns, those two sections disappear for visitors unt
   - Leaving the page with unsaved changes raises the browser's warning.
   - The Test tab says which version it tests.
 
-### Removed
-
-- **The old Data CSV download** (`admin-post.php?action=corex_data_export`, #429). Nothing in CoreX linked to it;
-  exports are made on the Data screen, which applies the export checks for withheld models and personal data.
-
 ### Fixed
 
 - **Email Studio's tabs fit the screen.** A wide delivery log made every tab wider than the page,
@@ -221,37 +270,6 @@ the stats or testimonial patterns, those two sections disappear for visitors unt
 
 ### Client impact
 
-**Spec 117, abilities that mean something:**
-
-- **Muva and Perego: no administrator loses access.** Anyone who can administer the site holds every
-  CoreX ability, and the screens look as before to them.
-- **Grants made earlier start to work.** Every request approved in the past and every Allow in the role
-  matrix now opens its screen. Before updating, open **CoreX → Access & Abilities**: on the Role matrix
-  tab, read the grants list and Revoke what should not stand, and read the grid.
-- **Review every Critical ability Allowed for a role that does not administer the site.** "Manage
-  access", "Manage operations and security", "Install releases" and "Run dangerous actions" Allowed
-  for a role earlier stay Allowed and now open their screens. Only a site administrator could store
-  them, and only a site administrator can now allow them again; set to Deny any that should not
-  stand.
-- **Check for a Deny stored on the Administrator role.** It is kept, ignored, and listed on the Access
-  Overview under "Stored but not applied".
-- **Blog Pro opens for "Manage Blog Pro"** and site administrators. Editors and writers who used it since
-  v0.47.0 need "Manage Blog Pro" allowed for their role.
-- **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it.
-- **Only a site administrator can allow a Critical ability, change a role they hold, or decide their own access
-  request.** A holder of "Manage access" who is not a site administrator is refused these with a sentence.
-- **A bookmark or script that downloaded `admin-post.php?action=corex_data_export`** stops working; export from
-  CoreX → Data instead. Search a client repository for `corex_data_export` before updating.
-- A client repository carrying copies of CoreX's tests takes the updated
-  `tests/Unit/Access/AccessMatrixTest.php`, `AccessPolicyTest.php`, `AccessServiceTest.php`,
-  `tests/Integration/Access/AccessAuditLogWritesTest.php`, `ScreenAbilitiesAccessTest.php` and
-  `tests/Integration/Blog/BlogProPermissionMatrixTest.php`, and drops `tests/Unit/Data/DataExportControllerTest.php`
-  and `CsvWriterTest.php`.
-  Client-guide screenshots of the Access screen go stale.
-- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
-
-**Spec 113, mail stays where it should:**
-
 - **Before updating a live site, check two things**: its operations mode (CoreX → Operations &
   Security) is Production, Coming soon or Maintenance, and its `.env`, if it has one, does not say
   `APP_ENV=local`, `development` or `staging` (`.env.example` ships `APP_ENV=local`). Either one
@@ -267,9 +285,6 @@ the stats or testimonial patterns, those two sections disappear for visitors unt
   `wp_mail()`: CoreX's own test helper `tests/Support/MailDelivery.php` gains a `DELIVER` mode for
   tests that exercise production sending. A client repository that carries copies of CoreX's tests
   takes the updated helper.
-
-**Spec 114, screens that tell the truth:**
-
 - **Nothing to do for the screens.** Owners of both client sites read different, accurate rows on
   Overview, Operations & Security, Insights and Blog Pro. Muva's captcha test button appears. Muva
   has no PageSpeed key, so its Insights shows "Could not run" with the reason instead of a D.
@@ -295,9 +310,6 @@ No client site is affected at runtime: this release changes tests, scripts and C
   site in Production mode served from a real host name, such as a live site. Before a tag, the release is now
   merged into a copy of each client's repository and that client's suites are run.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
-
-**Spec 115, kit and public page safety:**
-
 - **Muva** runs corex-captcha (reCAPTCHA v3) with its own forms. They are not declared to CoreX,
   so its pages load nothing new and its forms keep their own token handling. Nothing to do.
 - **Perego** runs corex-ui and the Company kit, and does not run corex-captcha. **Check its pages**

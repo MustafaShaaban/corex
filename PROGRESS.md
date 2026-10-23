@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.47.0** — tag `v0.47.0`, reachable from `main`.
+- **Latest published release: v0.48.0** — tag `v0.48.0`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -50,7 +50,7 @@ translated; Email Studio opens for "Manage Email Studio" while mail delivery sta
 plan and 33 tasks written; all built, PR #438, not merged by its session, not tagged. Review fixes of 2026-10-23:
 only a site administrator may allow a Critical ability, change a role they hold or decide their own request
 (DECISIONS #428); the matrix and audit tabs pass the quality checks; three more routes record refusals, the old CSV
-export is gone, the capture switch stays with site administration (#429); `main` (specs 113 and 115) merged in. Left: the Data,
+export is gone, the capture switch stays with site administration (#429); `main` (v0.48.0) merged in. Left: the Data,
 Submissions and widget checks that also accept site administration (the same answer now), and a screen-reader pass
 of the grid by a person.
 
@@ -213,6 +213,8 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**In v0.48.0, 2026-10-23.** The rest of the revamp's stage 0 and R1.1: spec 113 (R0.2, mail capture, #437), spec 114 (R0.3, truthful screens, #433), spec 115 (R0.4, kit and public page safety, #436) and spec 116 (R1.1, quality checks, #434). Their "In flight" paragraphs above describe each; the release notes are under `[0.48.0]` in `CHANGELOG.md`.
 
 **In v0.47.0, 2026-10-21.** Spec 112, access and logs (#430, DECISIONS #373, #374 and #376 to
 #380), spec 111, the generator tag (#427, #372), the advisories of 2026-10-20 (#431), two
