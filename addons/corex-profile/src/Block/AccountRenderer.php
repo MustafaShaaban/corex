@@ -32,6 +32,11 @@ use Corex\Profile\Reset\ResetState;
  *
  * A field also says what it is for, in the words a browser and a password manager read
  * (spec 068, FR-161c).
+ *
+ * With a captcha provider on, the registration form carries the provider's check above its button:
+ * `challenge` is the markup corex-captcha prints for it (already escaped there), and
+ * `challengeAttribute` the attribute that tells the provider's script the form is one of its own
+ * (spec 115, US-AUT-02).
  */
 final class AccountRenderer
 {
@@ -69,7 +74,7 @@ final class AccountRenderer
      * `instance` is what the ids of this block's fields start with. A page that holds the
      * block more than once hands each one its own; without one they start `corex-account`.
      *
-     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string,instance?:string,pageMark?:string,reset?:ResetState} $ctx
+     * @param array{loggedIn:bool,displayName?:string,firstName?:string,lastName?:string,email?:string,registrationOpen?:bool,logoutUrl?:string,nonce?:string,instance?:string,pageMark?:string,reset?:ResetState,challenge?:string,challengeAttribute?:string} $ctx
      */
     public function render(array $ctx): string
     {
@@ -150,7 +155,12 @@ final class AccountRenderer
     private function guest(array $ctx, string $block): string
     {
         $registration = (bool) ($ctx['registrationOpen'] ?? false)
-            ? $this->registerForm($block, (string) ($ctx['pageMark'] ?? ''))
+            ? $this->registerForm(
+                $block,
+                (string) ($ctx['challenge'] ?? ''),
+                (string) ($ctx['challengeAttribute'] ?? ''),
+                (string) ($ctx['pageMark'] ?? ''),
+            )
             : '<p class="corex-account__note">' . esc_html__('Registration is currently closed.', 'corex') . '</p>';
 
         return '<div class="corex-account__grid">'
@@ -178,11 +188,12 @@ final class AccountRenderer
      * @param string $pageMark The page the block is on, signed: the welcome email links back to
      *                         it (spec 120). Empty where the block is on no page.
      */
-    private function registerForm(string $block, string $pageMark = ''): string
+    private function registerForm(string $block, string $challenge, string $challengeAttribute, string $pageMark = ''): string
     {
         $field = $this->fieldsOf($block, 'register');
 
-        return '<form class="corex-account__form" data-corex-account-form="register" method="post" novalidate>'
+        return '<form class="corex-account__form" data-corex-account-form="register" method="post" novalidate'
+            . ($challengeAttribute !== '' ? ' ' . esc_attr($challengeAttribute) : '') . '>'
             . '<h2 class="corex-account__title">' . esc_html__('Create an account', 'corex') . '</h2>'
             . $this->honeypot()
             . ($pageMark !== '' ? $this->hidden('page', $pageMark) : '')
@@ -192,6 +203,8 @@ final class AccountRenderer
             . $field('password_confirm', __('Confirm password', 'corex'), 'password', true)
             . '<label class="corex-account__check"><input type="checkbox" name="consent" value="1" required /> '
             . esc_html__('I agree to the terms and privacy policy.', 'corex') . '</label>'
+            // Markup corex-captcha built and escaped: the token field and the widget's place.
+            . $challenge
             . $this->submit(__('Create account', 'corex'))
             . '</form>';
     }
@@ -331,6 +344,7 @@ final class AccountRenderer
      */
     private function messageLine(): string
     {
-        return '<p class="corex-account__status" role="status" aria-live="polite"></p>';
+        // The captcha provider's script writes its own messages here too (spec 115).
+        return '<p class="corex-account__status" role="status" aria-live="polite" data-corex-captcha-message></p>';
     }
 }

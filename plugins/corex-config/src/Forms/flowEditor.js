@@ -15,6 +15,8 @@ export const initialFlowState = {
 	flows: [],
 	selected: null,
 	draft: null,
+	// The configuration of the draft as it was loaded, in `stableJson()`, for `isDirty()`.
+	saved: null,
 	extensions: null,
 	testResult: null,
 	message: '',
@@ -49,6 +51,7 @@ export function flowReducer( state, action ) {
 				status: 'ready',
 				selected: action.payload.flow.id,
 				draft: action.payload,
+				saved: stableJson( action.payload.configuration ),
 				message: '',
 			};
 		case 'draft_changed':
@@ -58,6 +61,7 @@ export function flowReducer( state, action ) {
 				...state,
 				selected: null,
 				draft: null,
+				saved: null,
 				testResult: null,
 				message: '',
 			};
@@ -75,6 +79,23 @@ export function flowReducer( state, action ) {
 		default:
 			return state;
 	}
+}
+
+/**
+ * Whether the flow on screen differs from its saved draft (spec 115, FR-022).
+ *
+ * Compared by content, not by identity: an edit undone, an old value typed back, reads as no
+ * change at all.
+ *
+ * @param {Object} state The flow editor's state.
+ * @return {boolean} True while there is something to save.
+ */
+export function isDirty( state ) {
+	return (
+		state.draft !== null &&
+		state.saved !== null &&
+		stableJson( state.draft.configuration ) !== state.saved
+	);
 }
 
 export function addField( draft, type ) {
@@ -183,6 +204,24 @@ export function draftFromDetail( detail ) {
 				configuration: current.configuration,
 			}
 		: null;
+}
+
+/**
+ * JSON with every object's keys in order, so two equal values always give the same text.
+ *
+ * @param {unknown} value A JSON-able value.
+ * @return {string} Its JSON.
+ */
+function stableJson( value ) {
+	return JSON.stringify( value, ( key, item ) =>
+		item && typeof item === 'object' && ! Array.isArray( item )
+			? Object.fromEntries(
+					Object.keys( item )
+						.sort()
+						.map( ( name ) => [ name, item[ name ] ] )
+				)
+			: item
+	);
 }
 
 function withSchema( draft, schema ) {

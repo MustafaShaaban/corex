@@ -1,6 +1,6 @@
 # Corex — what works, what is partial, what is not built
 
-**Version 0.47.0** · updated 2026-10-14
+**Version 0.48.0** · updated 2026-10-14
 
 This page exists so you do not have to read the git history to find out what you are adopting.
 Everything below is traceable to something in this repository — a spec, a policy file, a test
@@ -143,7 +143,6 @@ rests on a judgement that the exposure is build tooling with repository-authored
 judgement spec 056 made for `minimatch` and `brace-expansion`. The exception says what would
 overturn it.
 
-The `sprintf-js` exception is gone: GitHub withdrew GHSA-hp3w-g68c-fv3c on 2026-10-22.
 The two `extract-zip` exceptions are gone, with the package. `lighthouse` is overridden to 13,
 which brings `puppeteer-core` 25 and `@puppeteer/browsers` 3.x, and that unpacks without
 `extract-zip`. Nothing here runs that chain — the browser suite drives `@playwright/test`

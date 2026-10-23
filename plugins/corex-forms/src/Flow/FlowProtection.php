@@ -10,6 +10,8 @@ namespace Corex\Forms\Flow;
 
 defined('ABSPATH') || exit;
 
+use Corex\Security\ChallengeSettings;
+
 use Corex\Forms\Submission\CaptchaAction;
 
 /**
@@ -58,6 +60,6 @@ final class FlowProtection
     /** Constrain a score threshold to the provider-supported range. */
     public static function clampThreshold(float $threshold): float
     {
-        return max(0.0, min(1.0, $threshold));
+        return ChallengeSettings::clamp($threshold);
     }
 }

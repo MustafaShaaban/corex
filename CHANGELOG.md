@@ -6,8 +6,25 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #398) and quality checks on every release
-(spec 116, R1.1, DECISIONS #410 to #419).
+## [0.48.0] — 2026-10-23
+
+The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
+(spec 113, R0.2, DECISIONS #381 to #385), screens that tell the truth (spec 114, R0.3, #390 to
+#398), kit and public page safety (spec 115, R0.4, #400 to #407), and quality checks on every
+release (spec 116, R1.1, #410 to #419).
+
+**Read Client impact before updating.** Four things can change on a live site:
+
+- A site whose `.env` says `APP_ENV=local`, `development` or `staging`, or whose operations mode is
+  Development or Staging, now keeps its mail in Email Studio instead of sending it. Check both
+  before updating.
+- Kit pages that still reference the stats or testimonial patterns lose those two sections for
+  visitors until someone edits them, and pattern buttons with no Brand action link or contact
+  page are hidden. Perego runs the Company kit: check its pages.
+- The bookings, careers and newsletter routes now judge a reCAPTCHA v3 token by its action,
+  hostname and score: a site's own form must request its token under the route's action.
+- The Overview, Security Center and Insights now say what is true, so some rows that read "Done"
+  or "Hidden" may now read "Not set", "Off" or "Not configured".
 
 ### Added
 
@@ -102,6 +119,37 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   CoreX ships instead of a list that left most add-ons out.
 - **In CI, a failing linter no longer stops the audit, the unit tests and Jest** in the same job,
   so one run reports every failure.
+- **A reset gives back the pages the owner had** (DECISIONS #400).
+  - Applying a kit now records each page it replaces or adopts (title, content, template, status)
+    and the site's front-page settings before it changes them.
+  - `wp corex reset` restores those pages with the same ID and address instead of deleting them,
+    and puts the front page back.
+  - A page replaced before this release, with nothing recorded, is kept as it is and listed as
+    "kept: no earlier version recorded".
+  - `--dry-run` lists each page as created (will be removed), replaced (will be restored) or
+    adopted (will be emptied).
+- **The setup wizard says what it records** (DECISIONS #401). It no longer says it backs the site
+  up. The Backup step lists the pages the plan will record, recommends a full backup with the host
+  or a backup plugin, and keeps Apply off until the person confirms they have one.
+- **Shipped patterns make no claims for the site** (DECISIONS #402, #403).
+  - The stats, testimonial and logo-cloud patterns are marked as samples. A visitor sees nothing of
+    them until someone changes them in the editor; an editor sees them labelled "Sample: replace
+    before publishing".
+  - The theme's header, footer and mega-menu patterns link to the site's real pages or show the
+    label as text, and take contact details from Brand settings or leave them out. No shipped
+    pattern links to `#` any more.
+  - A build check fails when a pattern gains an invented figure, an example address, a 555 number
+    or a link to `#`.
+- **The front-page hero can be read and its buttons used** (DECISIONS #404). The hero heading is
+  readable against the hero in the light and dark palettes. The hero and call-to-action buttons
+  stand apart from their section and link to the brand's primary action link or, without one, the
+  site's contact page; with neither, they are not shown. Heading colours elsewhere are unchanged.
+- **The flow editor never loses edits without asking** (DECISIONS #405).
+  - The header says "Unsaved changes" or "All changes saved".
+  - Back to flows, Publish, Move to draft, Close and Run marked test ask to save first, so what is
+    published or tested is what is on screen.
+  - Leaving the page with unsaved changes raises the browser's warning.
+  - The Test tab says which version it tests.
 
 ### Fixed
 
@@ -116,6 +164,22 @@ Screens that tell the truth (spec 114, revamp release R0.3, DECISIONS #390 to #3
   It now sits under the secret key field once a provider and both keys are saved, and says the
   provider's answer in words (works, wrong key, a key missing, cannot reach the provider) in a
   region a screen reader announces; until then the field says what is needed.
+- **Visitors can register, subscribe, request a call and apply for a job when a captcha provider is
+  on** (DECISIONS #406).
+  - With Turnstile, hCaptcha or reCAPTCHA v3 set up, these four routes refused every visitor for a
+    check no form showed.
+  - The account registration form and the newsletter signup block now carry the provider's check
+    and send its token.
+  - The routes answer "Please complete the check before sending." or "The check failed. Please try
+    again.", and store and send nothing without a passed check.
+  - A site's own call request or job application form carries the check through
+    `Corex\Security\FormChallenge`; the bookings and careers READMEs show how.
+- **The captcha provider's script is printed on the page** (DECISIONS #407). It was queued after
+  WordPress had printed the footer's scripts, so it never reached the page. This affected
+  corex-forms' protected forms too.
+- **The slug fields of a new flow and of an Email Studio template check what is typed again.** Their
+  pattern was invalid under the rules browsers now compile a `pattern` with, so the browser ignored it
+  and logged a console error. An unescaped `-` in a character class is now escaped.
 
 ### Client impact
 
@@ -159,6 +223,35 @@ No client site is affected at runtime: this release changes tests, scripts and C
   site in Production mode served from a real host name, such as a live site. Before a tag, the release is now
   merged into a copy of each client's repository and that client's suites are run.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+- **Muva** runs corex-captcha (reCAPTCHA v3) with its own forms. They are not declared to CoreX,
+  so its pages load nothing new and its forms keep their own token handling. Nothing to do.
+- **Perego** runs corex-ui and the Company kit, and does not run corex-captcha. **Check its pages**
+  for references to the corex/stats, corex/testimonial, corex/hero and corex/cta patterns
+  (`<!-- wp:pattern {"slug":"corex/stats"} /-->` and the like): such a page changes without being
+  edited.
+  - The stats and testimonial sections are hidden from visitors until someone edits them.
+  - The hero and call-to-action buttons are hidden unless the site has a Brand "Primary action
+    link" (CoreX → Settings → Brand) or a published page at `/contact/`. Set one of the two.
+  - The newsletter signup block's status line gains a `data-corex-captcha-message` attribute.
+    Perego's theme is its own, so its theme patterns are unchanged.
+- **Sites that applied the Company kit** stop showing the sample stats and quote to visitors on
+  pages that still reference those patterns, until someone edits them. Pages saved in the editor
+  before this release keep what they hold.
+- **A site with corex-ui active** gets hero and call-to-action buttons that link to its Brand
+  "Primary action link" or its `contact` page, and are hidden when it has neither. Set the link
+  under CoreX → Settings → Brand.
+- **Code that constructs these classes by hand** passes their new arguments; the container does
+  this for you:
+  - `NewsletterSignupRenderer`: a `Corex\Security\FormChallenge`;
+  - `CaptchaAssetController`: a `CaptchaChallenge`, and its forms registry may be null;
+  - `FormChallengeContextFactory`: a `Corex\Security\ChallengeSettings` in place of the config;
+  - `ResetCommand`: a `KitPageReader`.
+- **A site's own call request, job application or newsletter form** that posts to these routes
+  with reCAPTCHA v3: the reCAPTCHA v3 token is now judged like a flow's: it must have been requested under the route's action (`corex_register`, `corex_newsletter`, `corex_call_request`, `corex_job_application`), come from the site's own hostname (or `captcha.allowed_hostnames`) and reach the configured score. Request the token with `grecaptcha.execute(siteKey, { action:
+  'corex_call_request' })` (or the route's own action), or print the field through
+  `Corex\Security\FormChallenge`, which does it for you.
+- Neither client runs the CoreX theme, reset, the account add-on or builder flows. Mizzey is not on
+  this release.
 
 
 ## [0.47.0] — 2026-10-21

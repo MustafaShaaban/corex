@@ -14,13 +14,15 @@ use Corex\Forms\Block\ProtectedFormRegistry;
 use Corex\Support\Config\ConfigInterface;
 
 /**
- * Loads the reCAPTCHA v3 client only when the current page actually contains a protected form.
+ * Loads the provider's client only when the current page actually contains a protected form.
  *
  * Flow blocks render during `the_content`, which runs after `wp_enqueue_scripts`, so the decision
- * of whether any protected form exists is only knowable at footer time. This controller reads the
- * registry the renderer populated: empty registry ⇒ nothing enqueued, so a page with no protected
- * form makes zero requests to Google (FR-001). Only the public site key reaches the browser; the
- * secret never leaves the server (FR-005).
+ * of whether any protected form exists is only knowable at footer time. This controller reads what
+ * the page's forms declared: the forms plugin's registry, when that plugin is active, and
+ * {@see CaptchaChallenge}, which the account, newsletter and a site's own forms print through (spec
+ * 115). Nothing declared ⇒ nothing enqueued, so a page with no protected form makes zero requests to
+ * the provider (FR-001). Only the public site key reaches the browser; the secret never leaves the
+ * server (FR-005).
  */
 final class CaptchaAssetController
 {
@@ -33,21 +35,27 @@ final class CaptchaAssetController
         'hcaptcha'  => 'https://js.hcaptcha.com/1/api.js?render=explicit&onload=corexCaptchaWidgetReady',
     ];
 
+    /** Before `wp_print_footer_scripts`, which WordPress runs on `wp_footer` at 20. */
+    public const PRIORITY = 5;
+
     public function __construct(
-        private readonly ProtectedFormRegistry $registry,
+        private readonly ?ProtectedFormRegistry $registry,
+        private readonly CaptchaChallenge $challenge,
         private readonly ConfigInterface $config,
     ) {
     }
 
     public function register(): void
     {
-        // Late on wp_footer so every block on the page has had its chance to declare.
-        add_action('wp_footer', [$this, 'enqueue'], 20);
+        // On wp_footer, once every block on the page has had its chance to declare, and before
+        // WordPress prints the footer's scripts at priority 20: a script queued at 20 or later,
+        // after the printer, was never printed (spec 115).
+        add_action('wp_footer', [$this, 'enqueue'], self::PRIORITY);
     }
 
     public function enqueue(): void
     {
-        if ($this->registry->isEmpty()) {
+        if (! $this->anyFormDeclared()) {
             return; // no protected form on this page — load nothing
         }
 
@@ -126,6 +134,12 @@ final class CaptchaAssetController
             null,
             true,
         );
+    }
+
+    private function anyFormDeclared(): bool
+    {
+        return $this->challenge->declared()
+            || ($this->registry !== null && ! $this->registry->isEmpty());
     }
 
     private function pluginFile(): string

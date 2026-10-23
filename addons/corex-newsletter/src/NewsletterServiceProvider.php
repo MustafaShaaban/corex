@@ -10,7 +10,8 @@ namespace Corex\Newsletter;
 
 defined('ABSPATH') || exit;
 
-use Corex\Captcha\Captcha;
+use Corex\Blocks\NewsletterSignupRenderer;
+use Corex\Security\FormChallenge;
 use Corex\Container\ContainerInterface;
 use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\SchemaComponent;
@@ -164,9 +165,11 @@ final class NewsletterServiceProvider extends ServiceProvider
             return new WP_REST_Response(['ok' => false], 422); // honeypot
         }
 
-        if ($this->container->has(Captcha::class)
-            && ! $this->container->make(Captcha::class)->verify((string) $request['captcha_token'])) {
-            return new WP_REST_Response(['ok' => false, 'error' => 'captcha'], 422);
+        // With a captcha provider on, nothing is stored or sent without its check (spec 115).
+        $refusal = $this->container->make(FormChallenge::class)
+            ->refusal((string) $request['captcha_token'], NewsletterSignupRenderer::CAPTCHA_ACTION);
+        if ($refusal !== null) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'captcha', 'message' => $refusal], 422);
         }
 
         $email   = EmailAnswer::address($request['email']);

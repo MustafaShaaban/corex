@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.47.0** — tag `v0.47.0`, reachable from `main`.
+- **Latest published release: v0.48.0** — tag `v0.48.0`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -39,6 +39,27 @@ against your machine. `composer test`
 additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an unmodified tree too.
 
 ## In flight
+
+**Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
+DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by the owner on
+2026-10-20 (US-SAFE-07, 09, 14, 15, US-FLW-02, US-AUT-02, US-VIS-11), built under the owner's
+2026-10-21 mandate.
+- A kit records the pages it replaces or adopts, and `wp corex reset` puts them and the front page
+  back.
+- The setup wizard says what it records and promises no backup.
+- Sample figures, the quote and the logo cloud in shipped patterns are hidden from visitors until
+  edited.
+- Theme patterns no longer link to `#` or show invented contacts.
+- The front-page hero and call to action are readable, and their buttons go somewhere.
+- The flow editor asks before anything throws edits away.
+- Registration, the newsletter signup, call requests and job applications work with a captcha
+  provider on, and the provider's script now reaches the page (it was queued too late to be printed).
+
+Spec, plan and tasks are written and every task is built. Open: one pull request against `main`,
+not merged by this session and not tagged. Not built, by decision: visitor blocks for call requests
+and job applications (#406). Owed:
+- the older `forms-flow.spec.js`, which fails on a fresh local install because the field-type option
+  reads `email`, not `Email`. Read it off CI.
 
 **Spec 113, mail stays where it should** (2026-10-21, branch `spec/113-mail-capture`, DECISIONS #381 to
 #385): revamp release R0.2, five stories (US-SAFE-02, 01, 03, 17, US-EML-18), built under the owner's
@@ -179,6 +200,8 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**In v0.48.0, 2026-10-23.** The rest of the revamp's stage 0 and R1.1: spec 113 (R0.2, mail capture, #437), spec 114 (R0.3, truthful screens, #433), spec 115 (R0.4, kit and public page safety, #436) and spec 116 (R1.1, quality checks, #434). Their "In flight" paragraphs above describe each; the release notes are under `[0.48.0]` in `CHANGELOG.md`.
 
 **In v0.47.0, 2026-10-21.** Spec 112, access and logs (#430, DECISIONS #373, #374 and #376 to
 #380), spec 111, the generator tag (#427, #372), the advisories of 2026-10-20 (#431), two

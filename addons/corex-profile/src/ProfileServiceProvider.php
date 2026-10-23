@@ -12,7 +12,6 @@ defined('ABSPATH') || exit;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
-use Corex\Captcha\Captcha;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Http\PublicSubmission;
@@ -35,6 +34,7 @@ use Corex\Profile\Reset\ResetLink;
 use Corex\Profile\Reset\ResetTicket;
 use Corex\Profile\Session\SessionService;
 use Corex\Profile\Support\SiteDate;
+use Corex\Security\FormChallenge;
 use Corex\Support\EmailAnswer;
 use DateTimeImmutable;
 use WP_REST_Request;
@@ -49,6 +49,9 @@ use WP_REST_Response;
  */
 final class ProfileServiceProvider extends ServiceProvider
 {
+    /** The action a registration's captcha token is asked for and judged against (spec 115). */
+    public const REGISTER_ACTION = 'corex_register';
+
     public function register(): void
     {
         $this->container->singleton(AuthGateway::class, static fn (): AuthGateway => new WordPressAuthGateway());
@@ -195,6 +198,13 @@ final class ProfileServiceProvider extends ServiceProvider
             'instance'         => wp_unique_prefixed_id('corex-account-'),
         ];
 
+        // With a captcha provider on, registration carries its check (spec 115, US-AUT-02).
+        if ($userId === 0 && $ctx['registrationOpen']) {
+            $challenge                 = $this->container->make(FormChallenge::class);
+            $ctx['challenge']          = $challenge->fields(self::REGISTER_ACTION);
+            $ctx['challengeAttribute'] = $challenge->formAttribute();
+        }
+
         return (new AccountRenderer())->render($ctx);
     }
 
@@ -226,9 +236,10 @@ final class ProfileServiceProvider extends ServiceProvider
             return $this->respond(AccountResult::fail('spam', __('Request rejected.', 'corex')));
         }
 
-        if ($this->container->has(Captcha::class)
-            && ! $this->container->make(Captcha::class)->verify((string) $request['captcha_token'])) {
-            return $this->respond(AccountResult::fail('captcha', __('Please complete the captcha.', 'corex')));
+        $refusal = $this->container->make(FormChallenge::class)
+            ->refusal((string) $request['captcha_token'], self::REGISTER_ACTION);
+        if ($refusal !== null) {
+            return $this->respond(AccountResult::fail('captcha', $refusal));
         }
 
         $registration = new RegistrationRequest(
