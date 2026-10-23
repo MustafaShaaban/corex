@@ -11,47 +11,32 @@ namespace Corex\Config\Settings;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Overview\OverviewRenderer;
-use Corex\Multisite\MultisiteContext;
-use Corex\Multisite\NetworkContext;
-use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
-use Corex\Support\Config\Truthy;
 
 defined('ABSPATH') || exit;
 
 /**
- * CoreX Overview and Settings screens. Writes remain on the shared AdminGuard.
+ * The CoreX Overview and Settings screens. Writes stay on the shared AdminGuard.
+ *
+ * Settings is a set of pages (spec 119): this class finds the page an address asks for, draws it
+ * with its place in the rail, and saves it: verify, save that page, keep the result, redirect.
  */
 final class AdminDashboard
 {
-    /** How much of what was typed a refusal quotes. */
-    private const QUOTED_AT_MOST = 80;
-
     private string $hook = '';
     private string $settingsHook = '';
 
-    /** True once a verified settings POST has been persisted this request, so the save toast shows. */
-    private bool $justSaved = false;
-
-    /**
-     * The fields of that save that were not changed, because what was typed is not what the
-     * field takes: each with its name in the form, its label, its type and what was typed.
-     *
-     * @var list<array{name:string,label:string,type:string,typed:string}>
-     */
-    private array $refused = [];
-
     public function __construct(
         private readonly SettingsRegistry $registry,
-        private readonly SettingsForm $form,
         private readonly SettingsStore $store,
+        private readonly SettingsPages $pages,
+        private readonly SettingsPageRenderer $renderer,
+        private readonly SettingsSaver $saver,
+        private readonly SettingsSaveFlash $flash,
+        private readonly SettingsSectionStates $states,
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly OverviewRenderer $overview,
-        private readonly PluginActivationInspector $pluginActivationInspector,
-        private readonly MultisiteContext $multisite,
-        private readonly NetworkContext $network,
-        private readonly SettingsSanitizer $sanitizer = new SettingsSanitizer(),
     ) {
     }
 
@@ -89,7 +74,7 @@ final class AdminDashboard
             __('CoreX Settings', 'corex'),
             __('Settings', 'corex'),
             'manage_options',
-            'corex-settings-config',
+            SettingsPages::SCREEN,
             [$this, 'renderSettings'],
             40,
         );
@@ -119,10 +104,23 @@ final class AdminDashboard
         wp_enqueue_script(
             'corex-settings',
             plugins_url('assets/settings.js', $base),
-            ['media-views'],
+            ['media-views', 'corex-runtime'],
             ScreenAsset::version($dir . '/assets/settings.js'),
             true,
         );
+        wp_localize_script('corex-settings', 'corexSettings', [
+            'restUrl' => esc_url_raw(rest_url('corex/v1')),
+            'nonce'   => wp_create_nonce('wp_rest'),
+            'i18n'    => [
+                'testing'    => __('Testing…', 'corex'),
+                'testFailed' => __('The test request failed. Check your connection and try again.', 'corex'),
+                'remove'     => __('Remove', 'corex'),
+                'keep'       => __('Keep it', 'corex'),
+                'removing'   => __('Removed when you save.', 'corex'),
+                /* translators: %s: what stops working once the saved value is removed. */
+                'confirm'    => __('Remove the saved value? %s', 'corex'),
+            ],
+        ]);
     }
 
     public function render(): void
@@ -139,9 +137,7 @@ final class AdminDashboard
             __('Framework health, onboarding progress, and the current operational state.', 'corex'),
         );
 
-        // The Overview is one cohesive readiness dashboard (spec 064) — a single OverviewRenderer
-        // produces the whole grid from real state, replacing the previously stacked site-status +
-        // control-panel + activity panels (which duplicated read-outs and left white space).
+        // The Overview is one cohesive readiness dashboard (spec 064) built from real state.
         echo $this->overview->render($this->settingValues());
         echo $this->page->close();
     }
@@ -154,145 +150,82 @@ final class AdminDashboard
             return;
         }
 
-        $nonce = wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false);
+        $page = $this->requestedPage();
 
-        echo $this->page->open(
-            'settings',
-            __('CoreX Settings', 'corex'),
-            __('Configure framework services. Secret values remain write-only.', 'corex'),
-        );
-        echo $this->form->render(
-            fn (string $key): string => $this->settingDisplay($key),
-            $nonce,
-            fn (string $sectionKey): ?SettingsSectionState => $this->sectionState($sectionKey),
-            $this->activeTab(),
-        );
+        // An address for a page that does not exist, or whose add-on is not installed.
+        if ($page === null || $this->states->forPage($page) === SettingsSectionState::Hidden) {
+            echo $this->page->open('settings', __('Settings', 'corex'), '', '', $this->subnav(''));
+            echo $this->page->state(
+                'info',
+                __('This page is not available', 'corex'),
+                __('It belongs to an add-on that is not installed on this site, or it does not exist. Choose another Settings page.', 'corex'),
+            );
+            echo $this->page->close();
 
-        if ($this->justSaved) {
-            echo $this->refused === [] ? $this->savedToast() : $this->refusedToast();
+            return;
         }
 
+        echo $this->page->open('settings', $page->title, $page->description, $page->title, $this->subnav($page->key));
+        echo $this->renderer->render(
+            $page,
+            $this->pages->url($page->key),
+            wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false),
+            $this->flash->take(get_current_user_id(), $page->key),
+        );
         echo $this->page->close();
     }
 
     /**
-     * The value shown for a settings key. Most keys read the store; the Media "Server support" row is a
-     * live read-out provided by the corex-media add-on through a filter (so this screen never hard-depends
-     * on the optional add-on — Principle IX).
+     * Saves the page that was posted, keeps what happened for the person who saved, and sends
+     * the browser to the page, so a reload never sends the form again (spec 119, FR-006).
      */
-    private function settingDisplay(string $key): string
+    public function maybeSave(): void
     {
-        if ($key === 'media.webp.support') {
-            return (string) apply_filters('corex_media_support_summary', '');
+        if (! $this->guard->verifiedPost('corex_settings_nonce', 'corex_settings')) {
+            return;
         }
 
-        // The Advanced section is a live, read-only system-diagnostics read-out — never stored.
-        if (str_starts_with($key, 'advanced.')) {
-            return $this->diagnosticValue($key);
+        $pageKey = isset($_POST['corex_settings_page']) ? sanitize_key(wp_unslash($_POST['corex_settings_page'])) : '';
+        $userId  = get_current_user_id();
+        $result  = $this->saver->save($pageKey, wp_unslash($_POST), $userId);
+
+        if ($result === null) {
+            return;
         }
 
-        $stored = (string) $this->store->get($key);
+        $this->flash->keep($userId, $result);
+        wp_safe_redirect($this->pages->url($result->page), 303);
+        exit;
+    }
 
-        // Reflect the Media defaults (conversion on; quality 82) before the first save, so the form
-        // matches runtime (corex-media defaults these on when the option is unset). After any save the
-        // stored value wins, including an explicit "off". Mirrors MediaSettings::defaults().
-        if ($stored === '') {
-            return match ($key) {
-                'media.webp.enabled', 'media.webp.convert_jpeg', 'media.webp.convert_png' => '1',
-                'media.webp.quality' => '82',
-                'media.webp.min_saving' => '5',
-                default => '',
-            };
-        }
+    /** The page the address asks for. A read-only choice of what to show, so no nonce. */
+    private function requestedPage(): ?SettingsPage
+    {
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- choosing which page to show.
+        $page = isset($_GET['section']) ? sanitize_key(wp_unslash($_GET['section'])) : '';
+        $tab  = isset($_GET['corex_tab']) ? sanitize_key(wp_unslash($_GET['corex_tab'])) : '';
+        // phpcs:enable
 
-        return $stored;
+        return $this->pages->requested($page, $tab);
     }
 
     /**
-     * The live value for one Advanced-section diagnostics row (spec 068 T203) — real runtime facts,
-     * never a stored or fabricated value.
+     * The Settings pages for the rail, without those whose add-on is not installed.
+     *
+     * @return list<array{label:string,url:string,current:bool}>
      */
-    private function diagnosticValue(string $key): string
+    private function subnav(string $current): array
     {
-        return match ($key) {
-            'advanced.php_version'  => PHP_VERSION,
-            'advanced.wp_version'   => (string) get_bloginfo('version'),
-            'advanced.environment'  => (string) wp_get_environment_type(),
-            'advanced.memory_limit' => (string) ini_get('memory_limit'),
-            'advanced.multisite'    => $this->multisiteDiagnostic(),
-            default                 => '',
-        };
-    }
+        $links = [];
+        foreach ($this->pages->all() as $page) {
+            if ($this->states->forPage($page) === SettingsSectionState::Hidden) {
+                continue;
+            }
 
-    private function sectionState(string $sectionKey): ?SettingsSectionState
-    {
-        if ($sectionKey === 'media') {
-            return $this->addonSectionState('corex-media/corex-media.php');
+            $links[] = ['label' => $page->title, 'url' => $this->pages->url($page->key), 'current' => $page->key === $current];
         }
 
-        if ($sectionKey !== 'captcha') {
-            return null;
-        }
-
-        if (! file_exists(WP_PLUGIN_DIR . '/corex-captcha/corex-captcha.php')) {
-            return SettingsSectionState::Hidden;
-        }
-
-        $active = $this->pluginActivationInspector->isActive('corex-captcha/corex-captcha.php');
-
-        if (! $active) {
-            return SettingsSectionState::Disabled;
-        }
-
-        // None/Honeypot (or an unset driver) need no keys, so they are never "configuration
-        // needed" — the section is in its normal, intentionally-off/keyless state.
-        $driver = trim((string) $this->store->get('captcha.driver'));
-        if ($driver === '' || $driver === 'none' || $driver === 'honeypot') {
-            return SettingsSectionState::Normal;
-        }
-
-        $configured = trim((string) $this->store->get('captcha.site_key')) !== ''
-            && trim((string) $this->store->get('captcha.secret')) !== '';
-
-        return $configured ? SettingsSectionState::Normal : SettingsSectionState::ConfigurationNeeded;
-    }
-
-    /**
-     * State for a section backed by an optional add-on: Hidden when its plugin file is absent,
-     * Disabled when installed-but-inactive, otherwise Normal. Keeps an add-on's settings from
-     * appearing usable before it is installed/active (mirrors the captcha pattern).
-     */
-    private function addonSectionState(string $pluginFile): SettingsSectionState
-    {
-        if (! file_exists(WP_PLUGIN_DIR . '/' . $pluginFile)) {
-            return SettingsSectionState::Hidden;
-        }
-
-        $active = $this->pluginActivationInspector->isActive($pluginFile);
-
-        return $active ? SettingsSectionState::Normal : SettingsSectionState::Disabled;
-    }
-
-    private function multisiteDiagnostic(): string
-    {
-        if (! $this->multisite->enabled()) {
-            return __('No', 'corex');
-        }
-
-        $siteCount = $this->network->siteCount();
-        /* translators: 1: WordPress network ID, 2: number of sites in the network. */
-        $format = _n(
-            'Yes — network %1$s, %2$s site',
-            'Yes — network %1$s, %2$s sites',
-            $siteCount,
-            'corex',
-        );
-
-        return sprintf(
-            $format,
-            number_format_i18n($this->network->id()),
-            number_format_i18n($siteCount),
-        );
+        return $links;
     }
 
     /** @return array<string,mixed> */
@@ -305,189 +238,5 @@ final class AdminDashboard
         }
 
         return $values;
-    }
-
-    public function maybeSave(): void
-    {
-        if (! $this->guard->verifiedPost('corex_settings_nonce', 'corex_settings')) {
-            return;
-        }
-
-        // What an earlier save in this process refused is not this one's to report.
-        $this->refused = [];
-        foreach ($this->registry->sections() as $sectionKey => $section) {
-            if (! $this->isEditable((string) $sectionKey)) {
-                continue;
-            }
-
-            foreach ($section['fields'] as $key => $field) {
-                $this->saveField((string) $key, $field);
-            }
-        }
-
-        $this->justSaved = true;
-    }
-
-    /**
-     * Whether the form drew this section's fields as something to edit (spec 114, FR-028).
-     *
-     * A section whose add-on is not installed draws no fields, and one whose add-on is off draws
-     * them disabled, so a browser sends none of them. Saving such a section read every checkbox as
-     * unticked and switched it off: saving Brand with Corex Media off turned WebP conversion off.
-     * Asked again here rather than read from the post.
-     */
-    private function isEditable(string $sectionKey): bool
-    {
-        $state = $this->sectionState($sectionKey);
-
-        return $state !== SettingsSectionState::Hidden && $state !== SettingsSectionState::Disabled;
-    }
-
-    /**
-     * The transient "Settings saved" toast (design: Blocks & Components, C / admin components).
-     * Rendered once after a verified save; role="status" so assistive tech announces it, and it is
-     * dismissible + auto-hides through the enqueued settings script. Token-only markup.
-     */
-    private function savedToast(): string
-    {
-        return sprintf(
-            '<div class="corex-toast corex-toast--success" role="status" data-corex-toast>'
-            . '<p class="corex-toast__message">%1$s</p>'
-            . '<button type="button" class="corex-toast__dismiss" data-corex-toast-dismiss'
-            . ' aria-label="%2$s">&times;</button>'
-            . '</div>',
-            esc_html__('Settings saved.', 'corex'),
-            esc_attr__('Dismiss', 'corex'),
-        );
-    }
-
-    /**
-     * What a save says when a field was not changed (spec 106, story 5): which field, what was
-     * typed, and why it was not taken. The rest was saved, and it says that too.
-     *
-     * It was said as "Settings saved": an address typed wrongly was dropped, and the field
-     * came back as it had been with nothing to say why. An alert and not a status, since
-     * something somebody asked for did not happen; it stays until it is dismissed.
-     */
-    private function refusedToast(): string
-    {
-        $lines = '';
-        foreach ($this->refused as $field) {
-            // The label and what was typed are each escaped where they stand. What was typed
-            // keeps its own direction: in a right-to-left sentence "answers@" would otherwise
-            // be drawn as "@answers".
-            $lines .= sprintf(
-                '<p class="corex-toast__message" id="corex-refused-%1$s" data-corex-refused="%1$s">%2$s</p>',
-                esc_attr($field['name']),
-                sprintf(
-                    esc_html($this->whyRefused($field['type'])),
-                    esc_html($field['label']),
-                    '<bdi>' . esc_html(self::asTyped($field['typed'])) . '</bdi>',
-                ),
-            );
-        }
-
-        // It can be given focus, which the page's script does when it loads: an alert that
-        // is already in a page as it arrives is not reliably read out, and it is the last
-        // thing in the page.
-        return sprintf(
-            '<div class="corex-toast corex-toast--warning" role="alert" tabindex="-1" data-corex-toast data-corex-toast-stays>'
-            . '<div class="corex-toast__messages">%1$s<p class="corex-toast__message">%2$s</p></div>'
-            . '<button type="button" class="corex-toast__dismiss" data-corex-toast-dismiss'
-            . ' aria-label="%3$s">&times;</button>'
-            . '</div>',
-            $lines,
-            esc_html__('Everything else was saved.', 'corex'),
-            esc_attr__('Dismiss', 'corex'),
-        );
-    }
-
-    /**
-     * What was typed, short enough to quote: its beginning, where it is long. A picture
-     * pasted into a web address field as `data:` is thousands of characters.
-     */
-    private static function asTyped(string $typed): string
-    {
-        $text = trim(wp_check_invalid_utf8($typed, true));
-
-        return mb_strlen($text) > self::QUOTED_AT_MOST ? mb_substr($text, 0, self::QUOTED_AT_MOST) . '…' : $text;
-    }
-
-    /** The sentence for a value a field of that type does not take. */
-    private function whyRefused(string $type): string
-    {
-        return match ($type) {
-            /* translators: 1: a setting's label. 2: what was typed into it. */
-            'email' => __('%1$s was not changed: "%2$s" is not an email address.', 'corex'),
-            /* translators: 1: a setting's label. 2: what was typed into it. */
-            'url', 'media' => __('%1$s was not changed: "%2$s" is not a web address.', 'corex'),
-            /* translators: 1: a setting's label. 2: what was typed into it. */
-            'hex-colour' => __('%1$s was not changed: "%2$s" is not a six-digit colour such as #0B1F3B.', 'corex'),
-            /* translators: 1: a setting's label. 2: what was chosen for it. */
-            default => __('%1$s was not changed: "%2$s" is not one of its choices.', 'corex'),
-        };
-    }
-
-    /**
-     * Persists one field by type, and only when its value is not the one the form showed
-     * (spec 114, FR-028): a save changes what was changed and nothing else. So a Media switch
-     * drawn as on while nothing is stored stays unstored, and its default keeps applying.
-     *
-     * A checkbox absent from the post is an explicit "off" (so a toggle can be turned off); an
-     * empty write-only secret is left untouched (never cleared by re-saving the form);
-     * everything else is sanitized text.
-     *
-     * @param array{type?:string,label?:string,options?:array<string,string>} $field
-     */
-    private function saveField(string $key, array $field): void
-    {
-        $name  = str_replace('.', '_', $key);
-        $type  = (string) ($field['type'] ?? 'text');
-        $shown = $this->settingDisplay($key);
-
-        if ($type === 'checkbox') {
-            $posted = isset($_POST[$name]) ? '1' : '0';
-            if ($posted !== (Truthy::of($shown) ? '1' : '0')) {
-                $this->store->save($key, $posted);
-            }
-
-            return;
-        }
-
-        if (! isset($_POST[$name])) {
-            return;
-        }
-
-        $raw = wp_unslash($_POST[$name]);
-        if (! is_string($raw) || $raw === $shown) {
-            return;
-        }
-
-        $value = $this->sanitizer->sanitize($raw, $type, $field['options'] ?? []);
-        if ($value === null) {
-            // Not saved, and said: what was there stays there.
-            $this->refused[] = ['name' => $name, 'label' => (string) ($field['label'] ?? $key), 'type' => $type, 'typed' => $raw];
-
-            return;
-        }
-
-        if ($this->sanitizer->shouldPreserve($value, $type)) {
-            return;
-        }
-
-        $this->store->save($key, $value);
-    }
-
-    /**
-     * The settings tab to show first: the one just saved (so the selection survives a save) or
-     * a requested tab, validated against the real section keys. Read-only display preference,
-     * so a sanitized key is sufficient (no state change).
-     */
-    private function activeTab(): string
-    {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab selection, not a state change.
-        $requested = isset($_REQUEST['corex_tab']) ? sanitize_key(wp_unslash($_REQUEST['corex_tab'])) : '';
-
-        return in_array($requested, array_keys($this->registry->sections()), true) ? $requested : '';
     }
 }

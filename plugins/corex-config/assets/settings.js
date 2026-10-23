@@ -1,15 +1,68 @@
 /**
- * Corex settings screen behaviour (no build step; every feature degrades gracefully when
- * this script is absent):
+ * Corex Settings screen behaviour (no build step; the page works without it):
  *
  *  - Media picker (spec 032): "Select/Change image" opens the WordPress media frame and writes
- *    the chosen URL into the field + framed preview; "Remove" clears it back to the placeholder.
- *    Without JS the field stays an editable URL input.
- *  - Settings tabs (spec 060): progressive-enhancement ARIA tabs over the real settings
- *    sections. With JS one panel shows at a time with arrow-key navigation; without JS every
- *    panel stays visible and usable.
+ *    the chosen address into the field and its preview; "Remove" clears it.
+ *  - Save bar (spec 119, US-SET-01): every control carries its stored value in
+ *    `data-corex-saved`. The bar reads "No changes", "Unsaved changes" or "All changes saved",
+ *    Discard puts every control back without a reload, and leaving with unsaved changes asks
+ *    first. Discard is the form's reset button and Save its submit button, so both work without
+ *    this script.
+ *  - Remove a saved secret (US-SET-15): the box to tick becomes a "Remove" button that asks for
+ *    confirmation, naming what stops working.
+ *  - Test connection (US-SET-03): PageSpeed and Cloudflare keys are tested on the server; the
+ *    answer is said in a live region and the "Last tested" line is brought up to date.
+ *  - Driver-aware rows, the accessible selects and the save toast, as before.
  */
 ( function () {
+	const settings = window.corexSettings || {};
+	const i18n = settings.i18n || {};
+
+	function text( key, fallback ) {
+		return i18n[ key ] || fallback;
+	}
+
+	/**
+	 * What a control holds now, in the form `data-corex-saved` keeps: "1"/"0" for a box to tick.
+	 *
+	 * @param {HTMLElement} control a form control
+	 * @return {string} its value
+	 */
+	function currentValue( control ) {
+		return control.type === 'checkbox'
+			? ( control.checked && '1' ) || '0'
+			: control.value;
+	}
+
+	/**
+	 * The controls whose changes count: drawn with a stored value and editable.
+	 *
+	 * @param {HTMLFormElement} form the page's form
+	 * @return {HTMLElement[]} the controls
+	 */
+	function trackedControls( form ) {
+		return Array.prototype.slice
+			.call( form.querySelectorAll( '[data-corex-saved]' ) )
+			.filter( function ( control ) {
+				return ! control.disabled && ! control.readOnly;
+			} );
+	}
+
+	/**
+	 * Whether anything on the page differs from what is stored.
+	 *
+	 * @param {HTMLFormElement} form the page's form
+	 * @return {boolean} true with unsaved changes
+	 */
+	function hasChanges( form ) {
+		return trackedControls( form ).some( function ( control ) {
+			return (
+				currentValue( control ) !==
+				control.getAttribute( 'data-corex-saved' )
+			);
+		} );
+	}
+
 	function mediaContainer( el ) {
 		return el ? el.closest( '.corex-media' ) : null;
 	}
@@ -29,6 +82,11 @@
 		if ( placeholder ) {
 			placeholder.hidden = hasUrl;
 		}
+	}
+
+	/** A value set by this script is announced to the save bar as a person's edit would be. */
+	function changed( control ) {
+		control.dispatchEvent( new Event( 'change', { bubbles: true } ) );
 	}
 
 	function initMedia() {
@@ -54,6 +112,7 @@
 						.toJSON().url;
 					if ( input ) {
 						input.value = url;
+						changed( input );
 					}
 					setPreview( input, url );
 				} );
@@ -67,97 +126,218 @@
 				);
 				if ( target ) {
 					target.value = '';
+					changed( target );
 				}
 				setPreview( target, '' );
 			}
 		} );
 	}
 
-	function initTabs() {
-		const tablist = document.querySelector( '.corex-settings-tabs' );
-		if ( ! tablist ) {
+	/*
+	 * A saved secret's "Remove": the box to tick is kept, and hidden behind a button that asks
+	 * first. Ticked, it says the value goes when the page is saved, with a way to keep it.
+	 */
+	function initSecretRemoval( form ) {
+		form.querySelectorAll( '[data-corex-secret-remove]' ).forEach(
+			function ( wrap ) {
+				const box = wrap.querySelector( 'input[type="checkbox"]' );
+				const label = wrap.querySelector( 'label' );
+				if ( ! box || ! label ) {
+					return;
+				}
+				const effect = document.getElementById( box.id + '-effect' );
+
+				const button = document.createElement( 'button' );
+				button.type = 'button';
+				button.className = 'button corex-secret-remove__button';
+
+				const note = document.createElement( 'span' );
+				note.className = 'corex-secret-remove__note';
+				note.setAttribute( 'role', 'status' );
+
+				box.hidden = true;
+				label.hidden = true;
+				wrap.appendChild( button );
+				wrap.appendChild( note );
+
+				function show() {
+					button.textContent = box.checked
+						? text( 'keep', 'Keep it' )
+						: text( 'remove', 'Remove' );
+					note.textContent = box.checked
+						? text( 'removing', 'Removed when you save.' )
+						: '';
+				}
+
+				button.addEventListener( 'click', function () {
+					if ( ! box.checked ) {
+						const question = text(
+							'confirm',
+							'Remove the saved value? %s'
+						).replace(
+							'%s',
+							effect ? effect.textContent : ''
+						);
+						// eslint-disable-next-line no-alert -- the browser's own dialog is read by every screen reader.
+						if ( ! window.confirm( question ) ) {
+							return;
+						}
+					}
+					box.checked = ! box.checked;
+					changed( box );
+					show();
+				} );
+
+				// Discard unticks the box; the button follows.
+				box.addEventListener( 'change', show );
+				show();
+			}
+		);
+	}
+
+	/**
+	 * The save bar's state, its buttons, Discard and the question before leaving.
+	 *
+	 * @param {HTMLFormElement} form the page's form
+	 */
+	function initSaveBar( form ) {
+		const bar = form.querySelector( '[data-corex-savebar]' );
+		if ( ! bar ) {
 			return;
 		}
 
-		const tabs = Array.prototype.slice.call(
-			tablist.querySelectorAll( '[role="tab"]' )
-		);
-		const activeInput = document.querySelector(
-			'.corex-settings__active-tab'
-		);
+		const words = bar.querySelector( '[data-corex-savebar-text]' );
+		const save = bar.querySelector( '[data-corex-save]' );
+		const discard = bar.querySelector( '[data-corex-discard]' );
+		let justSaved = bar.getAttribute( 'data-state' ) === 'saved';
+		let submitting = false;
 
-		function panelFor( tab ) {
-			return document.getElementById(
-				tab.getAttribute( 'aria-controls' )
-			);
+		function update() {
+			const dirty = hasChanges( form );
+			let state = justSaved ? 'saved' : 'clean';
+			if ( dirty ) {
+				state = 'dirty';
+			}
+			bar.setAttribute( 'data-state', state );
+			if ( words ) {
+				words.textContent = bar.getAttribute( 'data-text-' + state );
+			}
+			save.disabled = ! dirty;
+			discard.disabled = ! dirty;
 		}
 
-		function activate( tab, moveFocus ) {
-			tabs.forEach( function ( current ) {
-				const selected = current === tab;
-				current.setAttribute(
-					'aria-selected',
-					selected ? 'true' : 'false'
-				);
-				current.setAttribute( 'tabindex', selected ? '0' : '-1' );
-				current.classList.toggle( 'is-active', selected );
-				const panel = panelFor( current );
-				if ( panel ) {
-					panel.hidden = ! selected;
-					panel.classList.toggle( 'is-active', selected );
+		function edited() {
+			justSaved = false;
+			update();
+		}
+
+		form.addEventListener( 'input', edited );
+		form.addEventListener( 'change', edited );
+
+		// Discard: every control back to what is stored, without a reload. The form's own reset
+		// would go back to what the page was drawn with, which for a refused field is what was
+		// typed.
+		form.addEventListener( 'reset', function ( event ) {
+			event.preventDefault();
+			trackedControls( form ).forEach( function ( control ) {
+				const saved = control.getAttribute( 'data-corex-saved' );
+				if ( control.type === 'checkbox' ) {
+					control.checked = saved === '1';
+				} else {
+					control.value = saved;
 				}
+				if ( control.classList.contains( 'corex-media__url' ) ) {
+					setPreview( control, saved );
+				}
+				changed( control );
 			} );
-			if ( activeInput ) {
-				activeInput.value = tab.dataset.corexTab;
-			}
-			if ( moveFocus ) {
-				tab.focus();
-			}
-		}
-
-		// Hide every panel except the server-selected one (JS-on view).
-		tabs.forEach( function ( tab ) {
-			const panel = panelFor( tab );
-			if ( panel ) {
-				panel.hidden = tab.getAttribute( 'aria-selected' ) !== 'true';
-			}
+			update();
 		} );
 
-		tablist.addEventListener( 'click', function ( event ) {
-			const tab = event.target.closest( '[role="tab"]' );
-			if ( tab ) {
-				activate( tab, false );
-			}
+		form.addEventListener( 'submit', function () {
+			submitting = true;
 		} );
 
-		tablist.addEventListener( 'keydown', function ( event ) {
-			// During keydown on a tab, the event target is the focused tab.
-			const index = tabs.indexOf(
-				event.target.closest( '[role="tab"]' )
-			);
-			if ( index < 0 ) {
-				return;
-			}
-			let next;
-			if ( event.key === 'ArrowRight' || event.key === 'ArrowDown' ) {
-				next = ( index + 1 ) % tabs.length;
-			} else if ( event.key === 'ArrowLeft' || event.key === 'ArrowUp' ) {
-				next = ( index - 1 + tabs.length ) % tabs.length;
-			} else if ( event.key === 'Home' ) {
-				next = 0;
-			} else if ( event.key === 'End' ) {
-				next = tabs.length - 1;
-			} else {
-				return;
+		window.addEventListener( 'beforeunload', function ( event ) {
+			if ( submitting || ! hasChanges( form ) ) {
+				return undefined;
 			}
 			event.preventDefault();
-			activate( tabs[ next ], true );
+			event.returnValue = bar.getAttribute( 'data-text-leave' );
+
+			return event.returnValue;
 		} );
+
+		update();
 	}
 
-	// The accessible select lives in corex-core (assets/js/corex-select.js) and is shared with
-	// every other CoreX screen; this used to carry its own copy of the same ~150 lines. The
-	// native <select> is still what submits, so the form keeps working without JavaScript.
+	/**
+	 * "Test connection" for a provider's key: the server tests it and answers the line the page
+	 * keeps for it.
+	 *
+	 * @param {HTMLFormElement} form the page's form
+	 */
+	function initProviderTests( form ) {
+		form.querySelectorAll( '[data-corex-provider-test]' ).forEach(
+			function ( panel ) {
+				const provider = panel.getAttribute( 'data-corex-provider-test' );
+				const button = panel.querySelector(
+					'[data-corex-provider-test-button]'
+				);
+				const result = panel.querySelector(
+					'.corex-provider-test__result'
+				);
+				const status = panel.querySelector(
+					'[data-corex-provider-status]'
+				);
+				if ( ! button || ! window.Corex || ! window.Corex.api ) {
+					return;
+				}
+
+				button.addEventListener( 'click', function () {
+					button.disabled = true;
+					button.setAttribute( 'aria-busy', 'true' );
+					button.setAttribute( 'data-corex-working', 'true' );
+					result.textContent = text( 'testing', 'Testing…' );
+
+					window.Corex.api
+						.post(
+							String( settings.restUrl ).replace( /\/$/, '' ) +
+								'/settings/providers/' +
+								provider +
+								'/test',
+							{},
+							{ nonce: settings.nonce }
+						)
+						.then( function ( res ) {
+							const envelope = ( res && res.envelope ) || {};
+							result.textContent = envelope.message || '';
+							if (
+								status &&
+								envelope.data &&
+								envelope.data.status
+							) {
+								status.textContent = envelope.data.status;
+							}
+						} )
+						.catch( function () {
+							result.textContent = text(
+								'testFailed',
+								'The test request failed.'
+							);
+						} )
+						.then( function () {
+							button.disabled = false;
+							button.removeAttribute( 'aria-busy' );
+							button.removeAttribute( 'data-corex-working' );
+						} );
+				} );
+			}
+		);
+	}
+
+	// The accessible select lives in corex-core (assets/js/corex-select.js), shared with every
+	// CoreX screen. The native <select> is still what submits.
 	function initSelects() {
 		const enhance = window.Corex && window.Corex.enhanceSelect;
 		if ( ! enhance ) {
@@ -169,9 +349,7 @@
 	}
 
 	// Driver-aware fields: a row with data-corex-show-for is visible only when the controlling
-	// field's current value is one of data-corex-show-values. Re-evaluated whenever a control
-	// changes (the enhanced select dispatches a native change event), so the Captcha provider
-	// fields/links appear and disappear immediately — before save — matching the chosen driver.
+	// field's current value is one of data-corex-show-values, re-evaluated on every change.
 	function applyConditionalRows() {
 		document
 			.querySelectorAll( '[data-corex-show-for]' )
@@ -198,15 +376,13 @@
 	}
 
 	// Save toast: dismiss on the close button and auto-hide after a few seconds. Under reduced
-	// motion the toast stays until dismissed (no timed disappearance). Without JS the toast is a
-	// static role="status" banner — announced and readable, just not auto-dismissed.
+	// motion the toast stays until dismissed. Without scripts it is a static banner.
 	function initToast() {
 		const toast = document.querySelector( '[data-corex-toast]' );
 		if ( ! toast ) {
 			return;
 		}
-		// What says a setting was refused names the fields: each is marked as not taken and
-		// described by its line, for whoever reaches the field and not the message.
+		// A refused setting's line names the field: it is marked as not taken and described by it.
 		const refused = Array.prototype.slice
 			.call( toast.querySelectorAll( '[data-corex-refused]' ) )
 			.map( function ( line ) {
@@ -233,13 +409,14 @@
 			}
 			const held = toast.contains( toast.ownerDocument.activeElement );
 			toast.parentNode.removeChild( toast );
-			// The button that was pressed went with it. Focus goes to the first field to
-			// type again where it is on the open tab, and to the way to save otherwise.
+			// The button that was pressed went with it. Focus goes to the first field to type
+			// again, and to the way to save otherwise.
 			if ( held ) {
 				const next =
 					refused.filter( function ( field ) {
 						return field.offsetParent !== null;
 					} )[ 0 ] ||
+					document.querySelector( '[data-corex-save]' ) ||
 					document.querySelector( '.corex-settings__save button' );
 				if ( next ) {
 					next.focus();
@@ -252,8 +429,7 @@
 			dismiss.addEventListener( 'click', remove );
 		}
 
-		// An alert that is in the page as it arrives is not reliably read out, and this one
-		// is the last thing in the page: it is given focus, which reads it.
+		// An alert that is in the page as it arrives is not reliably read out: it is given focus.
 		if ( toast.hasAttribute( 'data-corex-toast-stays' ) ) {
 			toast.focus();
 		}
@@ -261,16 +437,29 @@
 		const reduce =
 			window.matchMedia &&
 			window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
-		// What says a setting was refused stays until it is dismissed: it names what to
-		// type again, and is not read in five seconds.
 		if ( ! reduce && ! toast.hasAttribute( 'data-corex-toast-stays' ) ) {
 			window.setTimeout( remove, 5000 );
 		}
 	}
 
+	function initPage() {
+		const form = document.querySelector( '[data-corex-settings-page]' );
+		if ( ! form ) {
+			return;
+		}
+		initSecretRemoval( form );
+		initProviderTests( form );
+		initSaveBar( form );
+	}
+
 	initMedia();
-	initTabs();
 	initSelects();
 	initConditionalRows();
+	initPage();
 	initToast();
+
+	// Exported for unit tests (no effect in the browser, where there is no CommonJS module).
+	if ( typeof module !== 'undefined' && module.exports ) {
+		module.exports = { currentValue, hasChanges, trackedControls };
+	}
 } )();

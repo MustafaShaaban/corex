@@ -680,3 +680,198 @@
 .corex-admin .corex-overview__env.is-danger {
 	border-inline-start-color: var(--corex-admin-error);
 }
+
+/* ==========================================================================
+   Settings pages (spec 119): one form per page, a save bar fixed to the
+   bottom of the page, locked fields, provider tests, and a removable secret.
+   ========================================================================== */
+.corex-admin .corex-settings-page {
+	gap: var(--corex-admin-space-lg);
+}
+
+/* A page with one section: its heading is the page's, so the form table starts
+   the card. */
+.corex-admin .corex-settings-page .corex-settings-section > .form-table:first-child,
+.corex-admin .corex-settings-page .corex-settings-section > .corex-section-notice:first-child {
+	margin-block-start: 0;
+}
+
+.corex-admin .corex-settings-page .corex-settings-section > .form-table:first-child tr:first-child th,
+.corex-admin .corex-settings-page .corex-settings-section > .form-table:first-child tr:first-child td {
+	border-block-start: 0;
+}
+
+/* The save bar: sticks to the bottom of the window while the page scrolls, and
+   rests under the last section at its end. */
+.corex-admin .corex-savebar {
+	position: sticky;
+	inset-block-end: 0;
+	z-index: 20;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-md);
+}
+
+.corex-admin .corex-savebar__status {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-savebar__dot {
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	background: var(--corex-admin-text-subtle);
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+.corex-admin .corex-savebar[data-state="dirty"] .corex-savebar__status {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-savebar[data-state="dirty"] .corex-savebar__dot {
+	background: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-savebar[data-state="saved"] .corex-savebar__dot {
+	background: var(--corex-admin-success);
+}
+
+/* Without scripts the line cannot follow an edit: it shows only what is true
+   when the page arrives, which is "All changes saved" right after a save. */
+.no-js .corex-admin .corex-savebar[data-state="clean"] .corex-savebar__status {
+	visibility: hidden;
+}
+
+.corex-admin .corex-savebar__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin-inline-start: auto;
+}
+
+/* The toast sits above the save bar, not over it. */
+.corex-admin--settings .corex-toast {
+	inset-block-end: calc(var(--corex-admin-space-2xl) * 2);
+}
+
+/* A value set in the site's .env or by the network: shown, not editable, and
+   where it is set said under it. */
+.corex-admin .corex-field-lock {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin-block: var(--corex-admin-space-2xs) 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+.corex-admin .corex-field-lock .dashicons {
+	flex: none;
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-settings-section input[readonly] {
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-raised);
+	border-style: dashed;
+}
+
+.corex-admin .corex-secret-state--locked {
+	margin: 0;
+}
+
+/* A saved secret's Remove: the box to tick without scripts, a button with them. */
+.corex-admin .corex-secret-remove {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin-inline-start: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-secret-remove__note {
+	color: var(--corex-admin-warning);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+/* An add-on that is off: what it means and the way to its card. */
+.corex-admin .corex-settings-addon-off {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+}
+
+.corex-admin .corex-settings-addon-off p {
+	margin: 0;
+}
+
+/* A provider's latest test, and its "Test connection". */
+.corex-admin .corex-provider-status {
+	margin-block: var(--corex-admin-space-md) 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-provider-test {
+	margin-block-start: var(--corex-admin-space-md);
+	padding-block-start: var(--corex-admin-space-md);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-provider-test__name {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-provider-test .corex-provider-status {
+	margin-block-start: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-provider-test__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	margin-block: var(--corex-admin-space-sm) 0;
+}
+
+.corex-admin .corex-provider-test__result {
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin .corex-savebar {
+		padding-inline: var(--corex-admin-space-md);
+	}
+
+	.corex-admin .corex-savebar__actions {
+		inline-size: 100%;
+	}
+
+	.corex-admin .corex-savebar__actions .button {
+		flex: 1 1 0;
+	}
+}

@@ -30,4 +30,10 @@ final class SettingsStore
     {
         update_option($this->optionName($key), $value);
     }
+
+    /** Takes the stored value away, so the setting falls back to its default (spec 119, US-SET-15). */
+    public function delete(string $key): void
+    {
+        delete_option($this->optionName($key));
+    }
 }

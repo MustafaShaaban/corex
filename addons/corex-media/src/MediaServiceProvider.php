@@ -10,8 +10,15 @@ namespace Corex\Media;
 
 defined('ABSPATH') || exit;
 
+use Corex\Activity\ActivityRepository;
+use Corex\Activity\ActivityService;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Jobs\JobService;
+use Corex\Media\Conversion\MediaConversionController;
+use Corex\Media\Conversion\MediaConversionPanel;
+use Corex\Media\Conversion\MediaConversionRuns;
+use Corex\Media\Conversion\MediaConversionService;
 use Corex\Support\Config\ConfigInterface;
 
 /**
@@ -94,24 +101,33 @@ final class MediaServiceProvider extends ServiceProvider
             (new WebpResetCommand())->forgetAttachment((int) $attachmentId);
         });
 
+        $converter = new WebpConverter($settings->quality);
+        $source    = new WpMediaRegenerationSource(
+            new WebpRegenerator($capability, $settings),
+            $converter,
+            $capability,
+            $settings,
+        );
+        $runs = new MediaConversionRuns(
+            $this->container->has(ActivityRepository::class) ? $this->container->make(ActivityService::class) : null,
+        );
+
+        // "Convert existing library" on Settings > Media (spec 119, US-SET-06). Offered whether or
+        // not conversion is on, so the page can say why it cannot run. The jobs service is
+        // corex-config's; without it there is nothing to run the conversion with.
+        if ($this->container->has(JobService::class)) {
+            $conversion = new MediaConversionService($this->container->make(JobService::class), $runs, $source, $capability, $settings);
+            (new MediaConversionController($conversion))->register();
+            (new MediaConversionPanel($conversion))->register();
+        }
+
         if (! $capability->canWebp() || ! $settings->enabled) {
             return; // graceful: nothing to do when the server can't, or the operator turned it off
         }
 
-        $converter = new WebpConverter($settings->quality);
-
-        // Register the bounded WebP-regeneration job so an admin action / `wp corex media regenerate`
-        // can backfill existing uploads in resumable batches (spec 068 T200).
-        $this->container->make(\Corex\Jobs\JobHandlerRegistry::class)->register(
-            new MediaRegenerationJob(
-                new WpMediaRegenerationSource(
-                    new WebpRegenerator($capability, $settings),
-                    $converter,
-                    $capability,
-                    $settings,
-                ),
-            ),
-        );
+        // Register the bounded WebP-regeneration job so Settings > Media can backfill existing
+        // uploads in resumable batches (spec 068 T200, spec 119).
+        $this->container->make(\Corex\Jobs\JobHandlerRegistry::class)->register(new MediaRegenerationJob($source, $runs));
 
         add_filter('wp_generate_attachment_metadata', static function ($metadata, $attachmentId) use ($converter, $capability, $settings) {
             $id   = (int) $attachmentId;

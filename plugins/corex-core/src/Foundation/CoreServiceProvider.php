@@ -18,6 +18,7 @@ use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
 use Corex\Support\Config\Repository;
+use Corex\Support\Config\SettingLocks;
 use Corex\Support\Config\SettingRegistry;
 use Corex\Support\Config\Sources\DefaultsSource;
 use Corex\Support\Config\Sources\DotenvSource;
@@ -42,22 +43,45 @@ final class CoreServiceProvider extends ServiceProvider
         // One list for every provider: each names the options of its own that every request reads.
         $this->container->singleton(LoadedOptions::class);
 
+        // The three layers that can lock a value, one instance each: the config repository and
+        // the site environment (spec 113) read the same ones, and `.env` is read once.
+        $this->container->singleton(
+            DotenvSource::class,
+            fn (ContainerInterface $container): DotenvSource => new DotenvSource($this->projectRoot(), $container->make(BootLogger::class)),
+        );
+        $this->container->singleton(
+            NetworkLockSource::class,
+            static fn (ContainerInterface $container): NetworkLockSource => new NetworkLockSource(
+                $container->make(SettingRegistry::class),
+                $container->make(MultisiteContext::class),
+                $container->make(NetworkContext::class),
+            ),
+        );
+        $this->container->singleton(OptionsSource::class);
+
         $this->container->singleton(ConfigInterface::class, function (ContainerInterface $container): Repository {
             $registry = $container->make(SettingRegistry::class);
             $multisite = $container->make(MultisiteContext::class);
             $network = $container->make(NetworkContext::class);
 
             return new Repository([
-                new DotenvSource($this->projectRoot(), $container->make(BootLogger::class)),
+                $container->make(DotenvSource::class),
                 // Deployment-owned .env stays highest: allowing a network-admin database row to
                 // override it would invert privilege. A lock must beat a site option, while a
                 // network default must lose to one, fixing the sources on opposite sides of it.
-                new NetworkLockSource($registry, $multisite, $network),
-                new OptionsSource(),
+                $container->make(NetworkLockSource::class),
+                $container->make(OptionsSource::class),
                 new NetworkDefaultsSource($registry, $multisite, $network),
                 new DefaultsSource($this->defaults()),
             ]);
         });
+
+        // Which settings a screen may not edit, read from the two layers above a site's own option
+        // (spec 119, US-SET-02).
+        $this->container->singleton(SettingLocks::class, static fn (ContainerInterface $container): SettingLocks => new SettingLocks(
+            $container->make(DotenvSource::class),
+            $container->make(NetworkLockSource::class),
+        ));
 
         $this->container->singleton(
             FeatureFlags::class,

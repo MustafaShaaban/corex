@@ -10,6 +10,7 @@ namespace Corex\Media;
 
 use Corex\Jobs\BoundedJob;
 use Corex\Jobs\JobHandler;
+use Corex\Media\Conversion\MediaConversionLog;
 use DateTimeImmutable;
 
 defined('ABSPATH') || exit;
@@ -20,13 +21,18 @@ defined('ABSPATH') || exit;
  * one blocking admin request. It owns only the {@see BoundedJob} progression + counters; the actual
  * gather/plan/convert work is the {@see MediaRegenerationSource}. Originals and existing siblings are
  * never overwritten. Pure progression logic, so it is unit-testable with a fake source.
+ *
+ * Spec 119 (US-SET-06): started from Settings > Media, it hands each batch's failures, and the end
+ * of the run, to a {@see MediaConversionLog}, so the page can list them.
  */
 final class MediaRegenerationJob implements JobHandler
 {
     public const KIND = 'media-webp-regeneration';
 
-    public function __construct(private readonly MediaRegenerationSource $source)
-    {
+    public function __construct(
+        private readonly MediaRegenerationSource $source,
+        private readonly ?MediaConversionLog $log = null,
+    ) {
     }
 
     public function kind(): string
@@ -41,12 +47,20 @@ final class MediaRegenerationJob implements JobHandler
 
         // Never advance past the declared total, so a final partial batch still completes exactly.
         $processed = min($job->total, $job->processed + $limit);
+        // Never count more outcomes than items processed: the library can shrink during a run.
+        $succeeded = min($processed, $job->succeeded + max(0, (int) ($counts['succeeded'] ?? 0)));
+        $failed    = min($processed - $succeeded, $job->failed + max(0, (int) ($counts['failed'] ?? 0)));
+
+        $failures = $counts['failures'] ?? [];
+        if ($failures !== []) {
+            $this->log?->failed($job->id, $failures);
+        }
 
         $advanced = $job->advance(
             (string) $processed,
             $processed,
-            $job->succeeded + max(0, (int) ($counts['succeeded'] ?? 0)),
-            $job->failed + max(0, (int) ($counts['failed'] ?? 0)),
+            $succeeded,
+            $failed,
             null,
             new DateTimeImmutable('now'),
         );
@@ -55,6 +69,9 @@ final class MediaRegenerationJob implements JobHandler
             return $advanced;
         }
 
-        return $advanced->complete(self::KIND . ':' . $job->id, new DateTimeImmutable('now'));
+        $done = $advanced->complete(self::KIND . ':' . $job->id, new DateTimeImmutable('now'));
+        $this->log?->finished($done);
+
+        return $done;
     }
 }

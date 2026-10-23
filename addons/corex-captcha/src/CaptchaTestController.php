@@ -53,9 +53,18 @@ final class CaptchaTestController
     {
         $diagnostic = $this->diagnose();
 
+        // Remembered by Settings, which says "Last test failed on <date>: <reason>" until a later
+        // test passes or a key changes (spec 119, US-SET-03). Only whether it worked and why not
+        // are handed over; no key is.
+        $status = '';
+        if ($diagnostic->kind !== CaptchaDiagnostic::NOT_APPLICABLE) {
+            do_action('corex_provider_tested', 'captcha', $diagnostic->worked(), $diagnostic->reason());
+            $status = (string) apply_filters('corex_provider_test_status', '', 'captcha');
+        }
+
         $envelope = $diagnostic->kind === CaptchaDiagnostic::OK || $diagnostic->kind === CaptchaDiagnostic::NOT_APPLICABLE
-            ? ResponseEnvelope::success(['kind' => $diagnostic->kind], $diagnostic->message)
-            : ResponseEnvelope::error($diagnostic->kind, $diagnostic->message);
+            ? ResponseEnvelope::success(['kind' => $diagnostic->kind, 'status' => $status], $diagnostic->message)
+            : ResponseEnvelope::error($diagnostic->kind, $diagnostic->message, ['status' => $status]);
 
         return new WP_REST_Response($envelope->toArray(), $envelope->ok ? 200 : 400);
     }

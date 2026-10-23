@@ -33,10 +33,29 @@
 	 * @return {{ok: boolean, message: string}} what the UI may render
 	 */
 	function resultFromEnvelope( envelope ) {
+		const extra =
+			( envelope && ( envelope.ok ? envelope.data : envelope.details ) ) ||
+			{};
+
 		return {
 			ok: Boolean( envelope && envelope.ok ),
 			message: ( envelope && envelope.message ) || '',
+			// The line Settings keeps for the latest test (spec 119, US-SET-03).
+			status: typeof extra.status === 'string' ? extra.status : '',
 		};
+	}
+
+	/*
+	 * The remembered-test line Settings draws for this provider, brought up to date without a
+	 * reload. Absent on an older Settings screen, where nothing else changes.
+	 */
+	function showStatus( status ) {
+		const line = document.querySelector(
+			'[data-corex-provider-status="captcha"]'
+		);
+		if ( line && status ) {
+			line.textContent = status;
+		}
 	}
 
 	/*
@@ -114,6 +133,7 @@
 					result.className =
 						'corex-captcha-test__result is-' +
 						( view.ok ? 'ok' : 'error' );
+					showStatus( view.status );
 				} )
 				.catch( function () {
 					result.textContent = __(

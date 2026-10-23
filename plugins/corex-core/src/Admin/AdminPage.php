@@ -44,7 +44,12 @@ final class AdminPage
     ) {
     }
 
-    public function open(string $section, string $title, string $description = '', string $crumbSuffix = ''): string
+    /**
+     * @param list<array{label:string,url:string,current:bool}> $subnav the pages of this screen, drawn
+     *                                                                under its entry in the rail
+     *                                                                (spec 119: the Settings pages)
+     */
+    public function open(string $section, string $title, string $description = '', string $crumbSuffix = '', array $subnav = []): string
     {
         $descriptionHtml = $description === ''
             ? ''
@@ -87,7 +92,7 @@ final class AdminPage
             . '<div class="corex-admin__notices">%7$s<hr class="wp-header-end" /></div>'
             . '<div class="corex-admin__content">',
             esc_attr($section),
-            $this->rail($section),
+            $this->rail($section, $subnav),
             esc_html($breadcrumb),
             esc_html($title),
             $descriptionHtml,
@@ -107,19 +112,29 @@ final class AdminPage
      * icon and an explicit active state. It is CoreX-owned chrome inside the framed
      * surface — the generic wp-admin menu outside it is never restyled.
      */
-    private function rail(string $active): string
+    /**
+     * @param list<array{label:string,url:string,current:bool}> $subnav
+     */
+    private function rail(string $active, array $subnav = []): string
     {
         $nav = '';
         foreach ($this->railItems($active) as [$slug, $icon, $label, $isActive]) {
-            $nav .= sprintf(
+            // With pages of its own, the screen's entry is where they are, and the current page
+            // is the one marked as the page.
+            $hasPages = $isActive && $subnav !== [];
+            $nav     .= sprintf(
                 '<a class="corex-admin__nav-item%1$s" href="%2$s"%3$s>'
                 . '<span class="corex-admin__nav-icon corex-admin__nav-icon--%4$s" aria-hidden="true"></span>%5$s</a>',
                 $isActive ? ' is-active' : '',
                 esc_url(admin_url('admin.php?page=' . $slug)),
-                $isActive ? ' aria-current="page"' : '',
+                $isActive && ! $hasPages ? ' aria-current="page"' : '',
                 esc_attr($icon),
                 esc_html($label),
             );
+
+            if ($hasPages) {
+                $nav .= $this->subnav($label, $subnav);
+            }
         }
 
         return '<aside class="corex-admin__rail">'
@@ -127,6 +142,30 @@ final class AdminPage
             . '<p class="corex-admin__rail-group">' . esc_html__('COREX FRAMEWORK', 'corex') . '</p>'
             . '<nav class="corex-admin__nav" aria-label="' . esc_attr__('CoreX framework', 'corex') . '">'
             . $nav . '</nav></aside>';
+    }
+
+    /**
+     * A screen's own pages, nested under its rail entry as the design draws the Settings pages.
+     *
+     * @param list<array{label:string,url:string,current:bool}> $pages
+     */
+    private function subnav(string $screen, array $pages): string
+    {
+        $items = '';
+        foreach ($pages as $page) {
+            $items .= sprintf(
+                '<li><a class="corex-admin__subnav-item%1$s" href="%2$s"%3$s>%4$s</a></li>',
+                $page['current'] ? ' is-active' : '',
+                esc_url($page['url']),
+                $page['current'] ? ' aria-current="page"' : '',
+                esc_html($page['label']),
+            );
+        }
+
+        /* translators: %s: the name of a CoreX screen, such as Settings. */
+        $name = sprintf(__('%s pages', 'corex'), $screen);
+
+        return '<ul class="corex-admin__subnav" aria-label="' . esc_attr($name) . '">' . $items . '</ul>';
     }
 
     /**
