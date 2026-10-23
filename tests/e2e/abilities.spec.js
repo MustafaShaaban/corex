@@ -12,9 +12,9 @@ const PASSWORD = 'CorexE2E!abilities1';
 /**
  * A person with a role of their own, given CoreX abilities by the role matrix or on their account.
  *
- * @param {string}   login        The login name.
- * @param {string[]} roleAllows   Abilities allowed for their role in the matrix.
- * @param {string[]} accountCaps  Abilities given to their account, as an approved request does.
+ * @param {string}   login       The login name.
+ * @param {string[]} roleAllows  Abilities allowed for their role in the matrix.
+ * @param {string[]} accountCaps Abilities given to their account, as an approved request does.
  * @return {boolean} Whether WP-CLI made them.
  */
 function makePerson( login, roleAllows, accountCaps = [] ) {
@@ -63,9 +63,9 @@ test.describe( 'someone allowed one CoreX ability', () => {
 		const page = await signInAs( browser, baseURL, login, PASSWORD );
 
 		await page.goto( '/wp-admin/admin.php?page=corex-forms' );
-		await expect(
-			page.locator( '.corex-admin__header h1' )
-		).toContainText( 'Forms' );
+		await expect( page.locator( '.corex-admin__header h1' ) ).toContainText(
+			'Forms'
+		);
 
 		const menu = await page
 			.locator( '.corex-admin__rail .corex-admin__nav-item' )
@@ -134,9 +134,7 @@ test.describe( 'someone allowed to look but not to change', () => {
 			page.locator( 'input[name="corex_settings_nonce"]' )
 		).toHaveCount( 0 );
 
-		const forms = await page.goto(
-			'/wp-admin/admin.php?page=corex-forms'
-		);
+		const forms = await page.goto( '/wp-admin/admin.php?page=corex-forms' );
 		expect( forms.status() ).toBe( 403 );
 
 		await page.context().close();
