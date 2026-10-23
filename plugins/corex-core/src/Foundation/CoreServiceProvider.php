@@ -11,7 +11,13 @@ namespace Corex\Foundation;
 defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
+use Corex\Environment\SiteEnvironment;
 use Corex\Health\HealthModule;
+use Corex\Mail\Capture\MailGate;
+use Corex\Mail\Capture\MailHold;
+use Corex\Mail\Capture\MailPath;
+use Corex\Mail\Capture\WordPressMailNames;
+use Corex\Mail\Capture\WpMailInterceptor;
 use Corex\Multisite\MultisiteContext;
 use Corex\Multisite\NetworkContext;
 use Corex\Support\BootLogger;
@@ -82,6 +88,21 @@ final class CoreServiceProvider extends ServiceProvider
             $container->make(DotenvSource::class),
             $container->make(NetworkLockSource::class),
         ));
+
+        // One name and one hold for the whole request: whoever sends, the gate reads the same ones.
+        $this->container->singleton(MailPath::class);
+        $this->container->singleton(MailHold::class);
+        $this->container->singleton(MailGate::class);
+        $this->container->singleton(WpMailInterceptor::class);
+        $this->container->singleton(WordPressMailNames::class);
+
+        // The lock layers of `app.env`, read one by one: the repository's defaults layer would
+        // answer "production" for every site (spec 113, research R1).
+        $this->container->singleton(SiteEnvironment::class, static fn (ContainerInterface $container): SiteEnvironment => new SiteEnvironment([
+            [SiteEnvironment::BY_DOTENV, $container->make(DotenvSource::class)],
+            [SiteEnvironment::BY_NETWORK, $container->make(NetworkLockSource::class)],
+            [SiteEnvironment::BY_OPTION, $container->make(OptionsSource::class)],
+        ]));
 
         $this->container->singleton(
             FeatureFlags::class,
@@ -156,6 +177,10 @@ final class CoreServiceProvider extends ServiceProvider
     {
         $this->container->make(UpdateService::class)->register();
         $this->container->make(HealthModule::class)->register();
+        // Every wp_mail() meets the mail gate (spec 113): captured on a development or staging
+        // site, held during a flow test, untouched in production.
+        $this->container->make(WpMailInterceptor::class)->register();
+        $this->container->make(WordPressMailNames::class)->register();
 
         // Load the shared `corex` text domain so bundled translations apply (spec 036). All Corex
         // plugins/add-ons use this one literal domain; the .pot lives under corex-core/languages.

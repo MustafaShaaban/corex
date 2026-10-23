@@ -6,6 +6,7 @@ import CorexSkeleton, {
 } from '../admin/components/CorexSkeleton.js';
 import { TABS, studioStatus } from './emailStudioClient.js';
 import { Notice, StudioTabs } from './components/index.js';
+import { MailOutcomeBanner } from './components/MailOutcomeBanner.js';
 import { StudioPanel } from './StudioPanel.js';
 import { useEmailStudio } from './useEmailStudio.js';
 
@@ -62,8 +63,19 @@ function StudioContent( { tab, studio } ) {
 	);
 }
 
+/**
+ * The tab the address names (`&tab=logs`), so that another screen can link to the log; the
+ * overview otherwise.
+ *
+ * @return {string} A tab key.
+ */
+function initialTab() {
+	const asked = new URLSearchParams( window.location.search ).get( 'tab' );
+	return TABS.some( ( tab ) => tab.key === asked ) ? asked : 'overview';
+}
+
 function App() {
-	const [ tab, setTab ] = useState( 'overview' );
+	const [ tab, setTab ] = useState( initialTab );
 	const studio = useEmailStudio( config, setTab );
 
 	return (
@@ -82,6 +94,7 @@ function App() {
 					{ studio.state.message }
 				</Notice>
 			) }
+			<MailOutcomeBanner outcome={ studio.state.data?.outcome } />
 			<StudioContent tab={ tab } studio={ studio } />
 		</div>
 	);

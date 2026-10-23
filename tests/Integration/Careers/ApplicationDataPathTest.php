@@ -28,15 +28,20 @@ use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\UploadValidator;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\MailDelivery;
 
 // A stored application is announced by email, and Corex Mail logs every send as a post. The
 // service hands back the application's id and not the logs', so they are caught as they are
 // inserted — each run used to leave two on the install.
 beforeEach(function () {
+    // Spec 113: these emails are sent the way a production site sends them. MailDelivery stops
+    // each one before the transport.
+    $this->productionMail = MailDelivery::answerAs(MailDelivery::DELIVER);
     $this->emailLogs = CreatedPosts::watch('corex_email_log');
 });
 
 afterEach(function () {
+    MailDelivery::stop($this->productionMail);
     $this->emailLogs->delete();
 });
 

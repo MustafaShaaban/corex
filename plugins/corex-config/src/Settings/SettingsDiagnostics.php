@@ -10,6 +10,7 @@ namespace Corex\Config\Settings;
 
 defined('ABSPATH') || exit;
 
+use Corex\Environment\SiteEnvironment;
 use Corex\Multisite\MultisiteContext;
 use Corex\Multisite\NetworkContext;
 
@@ -22,6 +23,7 @@ final class SettingsDiagnostics
     public function __construct(
         private readonly MultisiteContext $multisite,
         private readonly NetworkContext $network,
+        private readonly ?SiteEnvironment $environment = null,
     ) {
     }
 
@@ -30,17 +32,24 @@ final class SettingsDiagnostics
         return match ($key) {
             'advanced.php_version'  => PHP_VERSION,
             'advanced.wp_version'   => (string) get_bloginfo('version'),
-            'advanced.environment'  => $this->environment((string) wp_get_environment_type()),
+            'advanced.environment'  => $this->environment(),
             'advanced.memory_limit' => (string) ini_get('memory_limit'),
             'advanced.multisite'    => $this->multisite(),
             default                 => '',
         };
     }
 
-    /** WordPress's environment type in words (spec 119, US-SET-08: it was printed as its key). */
-    private function environment(string $type): string
+    /**
+     * The site's environment as mail and every screen read it, and where it is set (spec 113); in
+     * words where only WordPress's type is known (spec 119, US-SET-08: it was printed as its key).
+     */
+    private function environment(): string
     {
-        return match ($type) {
+        if ($this->environment !== null) {
+            return $this->environment->current()->summary();
+        }
+
+        return match ((string) wp_get_environment_type()) {
             'local'       => __('Local', 'corex'),
             'development' => __('Development', 'corex'),
             'staging'     => __('Staging', 'corex'),

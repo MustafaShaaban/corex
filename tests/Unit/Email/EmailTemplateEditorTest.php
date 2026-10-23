@@ -36,6 +36,11 @@ function emailStudioMemoryStore(): EmailStudioStore
         public function update(int $id, string $name, array $payload): bool { return false; }
         public function find(int $id): ?array { return $this->records[$id] ?? null; }
         public function findBySlug(string $type, string $slug): ?array { return null; }
+        public function latest(string $type, int $limit): array
+        {
+            return array_slice(array_reverse($this->all($type)), 0, max(1, $limit));
+        }
+
         public function all(string $type, ?int $parentId = null): array
         {
             return array_values(array_filter($this->records, static fn (array $record): bool => $record['type'] === $type));
