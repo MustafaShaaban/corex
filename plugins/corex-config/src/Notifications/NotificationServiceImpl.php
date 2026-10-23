@@ -41,7 +41,7 @@ final class NotificationServiceImpl implements NotificationService
 
     public function reword(Notification $notification): int
     {
-        return $this->repository->rewordByDedupKey($notification->dedupKey, $notification->rendered);
+        return $this->repository->rewordByDedupKey($notification);
     }
 
     public function forCurrentActor(NotificationQuery $query): array

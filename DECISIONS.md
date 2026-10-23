@@ -18574,7 +18574,7 @@ resolved; one that cannot be read keeps what it had. A notification resolved by 
 raised again only after the check has passed and failed again. On the first evaluation after the upgrade nothing is
 remembered: blockers are published once more (one more occurrence on an open notice) and every other check is
 resolved, as before. A raised check evaluated again is **reworded**, not published: `NotificationService::reword()`
-(through `NotificationRepository::rewordByDedupKey()`) rewrites an open notice's title and body in the evaluating
+(through `NotificationRepository::rewordByDedupKey()`) rewrites an open notice's title, body and action label in the evaluating
 request's language without adding an occurrence, in one `UPDATE` that changes nothing when the words are the same.
 Without it a notice raised in one language stayed in it for an owner reading another (the pseudo-locale check
 found it).

@@ -337,19 +337,24 @@ final class WpNotificationRepository implements NotificationRepository
         ));
     }
 
-    public function rewordByDedupKey(string $dedupKey, array $rendered): int
+    public function rewordByDedupKey(Notification $notification): int
     {
         global $wpdb;
 
-        $words = $this->json($rendered);
+        $words  = $this->json($notification->rendered);
+        $action = $notification->action !== null ? $this->json($notification->action->toArray()) : '';
 
         // One statement that changes nothing when the words are already these, so an evaluation that
         // finds the same condition in the same language writes nothing.
         return (int) $wpdb->query($wpdb->prepare(
-            'UPDATE ' . $this->table() . ' SET rendered_json = %s WHERE dedup_key = %s AND resolved_at IS NULL AND rendered_json <> %s',
+            'UPDATE ' . $this->table() . ' SET rendered_json = %s, action_json = NULLIF(%s, \'\')'
+            . ' WHERE dedup_key = %s AND resolved_at IS NULL'
+            . ' AND (rendered_json <> %s OR COALESCE(action_json, \'\') <> %s)',
             $words,
-            $dedupKey,
+            $action,
+            $notification->dedupKey,
             $words,
+            $action,
         ));
     }
 
