@@ -119,15 +119,16 @@ final class AdminPage
     {
         $nav = '';
         foreach ($this->railItems($active) as [$slug, $icon, $label, $isActive]) {
-            // With pages of its own, the screen's entry is where they are, and the current page
-            // is the one marked as the page.
+            // With pages of its own, the screen's entry is the current place (`true`) and the open
+            // page under it is the current page: one element in a page says `page`.
             $hasPages = $isActive && $subnav !== [];
+            $current  = $hasPages ? ' aria-current="true"' : ' aria-current="page"';
             $nav     .= sprintf(
                 '<a class="corex-admin__nav-item%1$s" href="%2$s"%3$s>'
                 . '<span class="corex-admin__nav-icon corex-admin__nav-icon--%4$s" aria-hidden="true"></span>%5$s</a>',
                 $isActive ? ' is-active' : '',
                 esc_url(admin_url('admin.php?page=' . $slug)),
-                $isActive && ! $hasPages ? ' aria-current="page"' : '',
+                $isActive ? $current : '',
                 esc_attr($icon),
                 esc_html($label),
             );
