@@ -10,6 +10,8 @@
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:details {"summary":"<?php echo esc_attr__('Company', 'corex'); ?>","className":"corex-mega corex-mega--simple"} -->
 <details class="wp-block-details corex-mega corex-mega--simple"><summary><?php echo esc_html__('Company', 'corex'); ?></summary>
@@ -17,9 +19,9 @@ defined('ABSPATH') || exit;
 	<div class="wp-block-group corex-mega__panel">
 		<!-- wp:list -->
 		<ul class="wp-block-list">
-			<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('About', 'corex'); ?></a></li><!-- /wp:list-item -->
-			<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Careers', 'corex'); ?></a></li><!-- /wp:list-item -->
-			<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Contact', 'corex'); ?></a></li><!-- /wp:list-item -->
+			<!-- wp:list-item --><li><?php echo corex_pattern_link('about', __('About', 'corex')); ?></li><!-- /wp:list-item -->
+			<!-- wp:list-item --><li><?php echo corex_pattern_link('careers', __('Careers', 'corex')); ?></li><!-- /wp:list-item -->
+			<!-- wp:list-item --><li><?php echo corex_pattern_link('contact', __('Contact', 'corex')); ?></li><!-- /wp:list-item -->
 		</ul>
 		<!-- /wp:list -->
 	</div>

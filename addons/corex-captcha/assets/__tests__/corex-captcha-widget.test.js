@@ -200,3 +200,66 @@ it( 'tells the visitor when the provider cannot show its challenge', () => {
 		'We could not verify your submission. Please try again.'
 	);
 } );
+
+describe( 'a form an add-on draws (spec 115)', () => {
+	function mountDeclared( declared ) {
+		document.body.innerHTML = `
+		<form class="corex-account__form" id="register"${ declared ? ' data-corex-captcha' : '' }>
+			<input type="hidden" name="captcha_token" value="" />
+			<div class="corex-form__challenge" data-corex-challenge="turnstile" data-corex-sitekey="a-site-key"></div>
+			<button type="submit">Create account</button>
+			<p class="corex-account__status" data-corex-captcha-message></p>
+		</form>`;
+		return document.getElementById( 'register' );
+	}
+
+	it( 'draws the check in a form that declares itself protected', () => {
+		mountDeclared( true );
+		window.turnstile = standInProvider();
+		loadScript();
+
+		expect( window.turnstile.rendered ).toHaveLength( 1 );
+	} );
+
+	it( 'leaves alone a form that is neither a CoreX form nor declared', () => {
+		mountDeclared( false );
+		window.turnstile = standInProvider();
+		loadScript();
+
+		expect( window.turnstile.rendered ).toHaveLength( 0 );
+	} );
+
+	it( 'holds a form sent before the check, and says so on the form’s own message line', () => {
+		const form = mountDeclared( true );
+		window.turnstile = standInProvider();
+		window.corexCaptchaWidget = {
+			i18n: { incomplete: 'Complete the check first.' },
+		};
+		loadScript();
+
+		const event = submit( form );
+
+		expect( event.defaultPrevented ).toBe( true );
+		const line = form.querySelector( '[data-corex-captcha-message]' );
+		expect( line.textContent ).toBe( 'Complete the check first.' );
+		expect( line.getAttribute( 'data-state' ) ).toBe( 'error' );
+	} );
+
+	it( 'resets the check once the form was answered, as for a CoreX form', () => {
+		const form = mountDeclared( true );
+		window.turnstile = standInProvider();
+		loadScript();
+		window.turnstile.rendered[ 0 ].options.callback( 'tok' );
+
+		form.dispatchEvent(
+			new CustomEvent( 'corex:form:error', {
+				detail: { envelope: { ok: false } },
+			} )
+		);
+
+		expect( window.turnstile.reset ).toHaveBeenCalledWith( 'widget-1' );
+		expect(
+			form.querySelector( 'input[name="captcha_token"]' ).value
+		).toBe( '' );
+	} );
+} );

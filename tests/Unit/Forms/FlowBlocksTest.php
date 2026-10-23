@@ -6,6 +6,7 @@
 
 declare(strict_types=1);
 
+use Corex\Security\ChallengeSettings;
 use Brain\Monkey\Functions;
 use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FlowBlockRenderer;
@@ -114,7 +115,7 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $setting
         new FlowSchemaFactory($resolver),
         new SchemaExporter(),
         new FieldRenderer(),
-        new FormChallengeContextFactory($config, new RemoteAddress()),
+        new FormChallengeContextFactory(new ChallengeSettings($config), new RemoteAddress()),
         new ProtectedFormRegistry(),
     );
 }

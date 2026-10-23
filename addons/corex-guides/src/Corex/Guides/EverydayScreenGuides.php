@@ -205,7 +205,7 @@ final class EverydayScreenGuides
                     new GuideStep(
                         __('Read the Review plan step before applying.', 'corex'),
                         __('It lists exactly what will be created and what will be left alone, so nothing happens that you have not seen.', 'corex'),
-                        warning: __('Take a backup at the Backup step. Applying a kit creates pages and activates add-ons — undoing that by hand is slow.', 'corex'),
+                        warning: __('Take a full backup with your host or a backup plugin before you apply: the Backup step asks you to confirm you have one. CoreX records only the pages a kit replaces or adopts and your front-page settings, so a reset can put them back.', 'corex'),
                     ),
                     new GuideStep(
                         __('Apply, then work through the Launch checklist.', 'corex'),

@@ -14,6 +14,8 @@ use Corex\Container\ContainerInterface;
 use Corex\Http\ClientAddress;
 use Corex\Http\EnvelopeResponder;
 use Corex\Http\RemoteAddress;
+use Corex\Security\FormChallenge;
+use Corex\Security\NoFormChallenge;
 
 /**
  * Registers the shared HTTP contract (spec 043): the {@see EnvelopeResponder} service
@@ -32,6 +34,8 @@ final class HttpServiceProvider extends ServiceProvider
         );
         // The answer until corex-config, which knows the site's trusted proxies, replaces it.
         $this->container->singleton(ClientAddress::class, RemoteAddress::class);
+        // No check on the add-ons' public forms until corex-captcha replaces it (spec 115).
+        $this->container->singleton(FormChallenge::class, NoFormChallenge::class);
     }
 
     public function boot(): void

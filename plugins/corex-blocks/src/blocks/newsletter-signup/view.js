@@ -6,10 +6,33 @@
  * accessible live region: a new/pending subscriber is told to check their email to
  * confirm (double opt-in); the honeypot and consent are enforced. It fabricates no
  * success — the message follows the real response. `fetchImpl` is injected for testing.
+ *
+ * With a captcha provider on, the form carries a `captcha_token` field the provider's script fills,
+ * and it is sent with the rest; the form says when it was answered, in the events every CoreX form
+ * sends, so the provider's check resets for the next attempt (spec 115).
  */
 import { __ } from '@wordpress/i18n';
 
 const STATUS_SELECTOR = '.corex-newsletter-signup__status';
+
+/**
+ * Tell the page the form was answered: the captcha provider's script resets its check on either
+ * event, since a token is spent by one request.
+ *
+ * @param {HTMLFormElement} form     The signup form.
+ * @param {boolean}         ok       Whether the signup was taken.
+ * @param {Object}          envelope What the server answered.
+ */
+function answered( form, ok, envelope ) {
+	form.dispatchEvent(
+		new window.CustomEvent(
+			ok ? 'corex:form:success' : 'corex:form:error',
+			{
+				detail: { envelope },
+			}
+		)
+	);
+}
 
 /**
  * Wire one signup form.
@@ -52,6 +75,9 @@ export function initNewsletterSignup(
 			( form.querySelector( '[name="email"]' ) || {} ).value || '';
 		const honeypot =
 			( form.querySelector( '[name="corex_hp"]' ) || {} ).value || '';
+		const captchaToken =
+			( form.querySelector( '[name="captcha_token"]' ) || {} ).value ||
+			'';
 
 		setStatus( __( 'Subscribing…', 'corex' ), 'loading' );
 
@@ -66,10 +92,12 @@ export function initNewsletterSignup(
 					email,
 					consent,
 					corex_hp: honeypot,
+					captcha_token: captchaToken,
 					topics: [],
 				} ),
 			} );
 			const data = await response.json().catch( () => ( {} ) );
+			answered( form, response.ok && data.ok, data );
 
 			if ( response.ok && data.ok ) {
 				setStatus(
@@ -82,10 +110,8 @@ export function initNewsletterSignup(
 				form.reset();
 			} else if ( data.error === 'captcha' ) {
 				setStatus(
-					__(
-						'Additional verification is required. Please try again.',
-						'corex'
-					),
+					data.message ||
+						__( 'The check failed. Please try again.', 'corex' ),
 					'error'
 				);
 			} else {

@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Cli\Reset\ResetAction;
 use Corex\Cli\Reset\ResetExecutor;
+use Corex\Cli\Reset\KitPageReader;
 use Corex\Cli\Reset\ResetGate;
 use Corex\Cli\Reset\ResetInventory;
 use Corex\Cli\Reset\ResetPlan;
@@ -45,6 +46,7 @@ final class ResetCommand
         private readonly ResetExecutor $executor,
         private readonly PluginActivationInspector $pluginActivationInspector,
         private readonly MultisiteContext $multisite,
+        private readonly KitPageReader $kitPages,
     ) {
     }
 
@@ -119,19 +121,9 @@ final class ResetCommand
             addonPlugins: $this->activeAddons($network),
             optionKeys: $this->corexOptionKeys(),
             demoPageId: $this->demoPageId(),
-            pageIds: $this->kitPageIds(),
+            pages: $this->kitPages->pages(),
+            hasReadingRecord: $this->kitPages->hasReadingRecord(),
         );
-    }
-
-    /**
-     * The pages a kit seeded (tracked in `corex_kit_seeded_pages`) — removed by a soft reset
-     * so exactly the kit content goes, never user content (spec 031).
-     *
-     * @return list<int>
-     */
-    private function kitPageIds(): array
-    {
-        return array_values(array_map('intval', (array) get_option('corex_kit_seeded_pages', [])));
     }
 
     /**

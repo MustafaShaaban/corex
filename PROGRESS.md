@@ -50,9 +50,29 @@ translated; Email Studio opens for "Manage Email Studio" while mail delivery sta
 plan and 33 tasks written; all built, PR #438, not merged by its session, not tagged. Review fixes of 2026-10-23:
 only a site administrator may allow a Critical ability, change a role they hold or decide their own request
 (DECISIONS #428); the matrix and audit tabs pass the quality checks; three more routes record refusals, the old CSV
-export is gone, the capture switch stays with site administration (#429); `main` (spec 113) merged in. Left: the Data,
+export is gone, the capture switch stays with site administration (#429); `main` (specs 113 and 115) merged in. Left: the Data,
 Submissions and widget checks that also accept site administration (the same answer now), and a screen-reader pass
 of the grid by a person.
+
+**Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
+DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by the owner on
+2026-10-20 (US-SAFE-07, 09, 14, 15, US-FLW-02, US-AUT-02, US-VIS-11), built under the owner's
+2026-10-21 mandate.
+- A kit records the pages it replaces or adopts, and `wp corex reset` puts them and the front page
+  back.
+- The setup wizard says what it records and promises no backup.
+- Sample figures, the quote and the logo cloud in shipped patterns are hidden from visitors until
+  edited.
+- Theme patterns no longer link to `#` or show invented contacts.
+- The front-page hero and call to action are readable, and their buttons go somewhere.
+- The flow editor asks before anything throws edits away.
+- Registration, the newsletter signup, call requests and job applications work with a captcha
+  provider on, and the provider's script now reaches the page (it was queued too late to be printed).
+
+Spec, plan and tasks are written and every task is built. Merged to `main` as 09a72e8c (PR #436), not tagged. Not built, by decision: visitor blocks for call requests
+and job applications (#406). Owed:
+- the older `forms-flow.spec.js`, which fails on a fresh local install because the field-type option
+  reads `email`, not `Email`. Read it off CI.
 
 **Spec 113, mail stays where it should** (2026-10-21, branch `spec/113-mail-capture`, DECISIONS #381 to
 #385): revamp release R0.2, five stories (US-SAFE-02, 01, 03, 17, US-EML-18), built under the owner's

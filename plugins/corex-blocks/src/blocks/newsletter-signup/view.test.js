@@ -83,6 +83,55 @@ describe( 'initNewsletterSignup', () => {
 		).toBe( 'error' );
 	} );
 
+	it( 'sends the captcha token, says what the server said, and tells the check to reset (spec 115)', async () => {
+		const form = buildForm();
+		form.insertAdjacentHTML(
+			'beforeend',
+			'<input type="hidden" name="captcha_token" value="tok-1" />'
+		);
+		const fetchImpl = jest.fn().mockResolvedValue( {
+			ok: false,
+			json: async () => ( {
+				ok: false,
+				error: 'captcha',
+				message: 'The check failed. Please try again.',
+			} ),
+		} );
+		const refused = jest.fn();
+		form.addEventListener( 'corex:form:error', refused );
+
+		initNewsletterSignup( form, fetchImpl );
+		submit( form );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect(
+			JSON.parse( fetchImpl.mock.calls[ 0 ][ 1 ].body ).captcha_token
+		).toBe( 'tok-1' );
+		expect(
+			form.querySelector( '.corex-newsletter-signup__status' ).textContent
+		).toBe( 'The check failed. Please try again.' );
+		expect( refused ).toHaveBeenCalledTimes( 1 );
+		expect( refused.mock.calls[ 0 ][ 0 ].detail.envelope.error ).toBe(
+			'captcha'
+		);
+	} );
+
+	it( 'tells the check to reset after a signup is taken', async () => {
+		const form = buildForm();
+		const fetchImpl = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => ( { ok: true } ),
+		} );
+		const taken = jest.fn();
+		form.addEventListener( 'corex:form:success', taken );
+
+		initNewsletterSignup( form, fetchImpl );
+		submit( form );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( taken ).toHaveBeenCalledTimes( 1 );
+	} );
+
 	it( 'is a safe no-op without a form or fetch', () => {
 		expect( () => initNewsletterSignup( null, jest.fn() ) ).not.toThrow();
 		expect( () => initNewsletterSignup( buildForm(), null ) ).not.toThrow();
