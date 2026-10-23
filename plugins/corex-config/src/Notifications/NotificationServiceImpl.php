@@ -39,6 +39,11 @@ final class NotificationServiceImpl implements NotificationService
         return $this->repository->resolveByDedupKey($dedupKey, $reason, new DateTimeImmutable('now'));
     }
 
+    public function reword(Notification $notification): int
+    {
+        return $this->repository->rewordByDedupKey($notification->dedupKey, $notification->rendered);
+    }
+
     public function forCurrentActor(NotificationQuery $query): array
     {
         $actorId = get_current_user_id();

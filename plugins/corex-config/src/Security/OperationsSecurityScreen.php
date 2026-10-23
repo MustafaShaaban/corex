@@ -856,7 +856,7 @@ final class OperationsSecurityScreen
         return '<section class="corex-surface corex-opsec__checks">'
             . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Hardening checks', 'corex') . '</h2>'
             . '<span class="corex-opsec__count">' . esc_html($group['count']) . '</span></header>'
-            . $this->markup->progress($group['done'], $group['total'], $group['count'])
+            . $this->markup->progress(__('Hardening checks', 'corex'), $group['done'], $group['total'], $group['count'])
             . $this->markup->rows($group['rows']) . '</section>';
     }
 

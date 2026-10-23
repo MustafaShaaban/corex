@@ -31,7 +31,8 @@ use DateTimeImmutable;
  * Only a change of state is acted on (spec 118, US-OVR-01). Every screen that shows the launch
  * checklist evaluates it, and publishing on each evaluation added an occurrence to the same notice
  * each time a page was opened. {@see RaisedReadinessChecks} remembers which checks are raised; a
- * check that cannot be read keeps whatever it had. On the first evaluation after the upgrade nothing
+ * check that cannot be read keeps whatever it had. A raised check evaluated again is only reworded
+ * in the evaluating request's language, which writes nothing when the words are already the same. On the first evaluation after the upgrade nothing
  * is remembered yet, so blockers are raised once and every other check is resolved, as before.
  *
  * Dependency-aware via class_exists (FR-014). Notifications go to the operations managers.
@@ -75,10 +76,10 @@ final class ReadinessNotificationProducer implements NotificationProducer
             $wasRaised = in_array($check['key'], $before, true);
 
             if ($check['state'] === ReadinessSnapshot::BLOCKING) {
-                if (! $wasRaised) {
-                    $this->notifications->publish($this->blocker($check, $dedupKey));
-                    $raised[] = $check['key'];
-                }
+                $wasRaised
+                    ? $this->notifications->reword($this->blocker($check, $dedupKey))
+                    : $this->notifications->publish($this->blocker($check, $dedupKey));
+                $raised[] = $check['key'];
 
                 continue;
             }
@@ -89,6 +90,7 @@ final class ReadinessNotificationProducer implements NotificationProducer
             }
         }
 
+        $raised = array_values(array_unique($raised));
         if (! $known || $raised !== $before) {
             $this->raised->remember($raised);
         }

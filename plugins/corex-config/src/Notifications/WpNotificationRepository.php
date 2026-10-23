@@ -337,6 +337,22 @@ final class WpNotificationRepository implements NotificationRepository
         ));
     }
 
+    public function rewordByDedupKey(string $dedupKey, array $rendered): int
+    {
+        global $wpdb;
+
+        $words = $this->json($rendered);
+
+        // One statement that changes nothing when the words are already these, so an evaluation that
+        // finds the same condition in the same language writes nothing.
+        return (int) $wpdb->query($wpdb->prepare(
+            'UPDATE ' . $this->table() . ' SET rendered_json = %s WHERE dedup_key = %s AND resolved_at IS NULL AND rendered_json <> %s',
+            $words,
+            $dedupKey,
+            $words,
+        ));
+    }
+
     public function pruneOlderThan(DateTimeImmutable $cutoff, int $limit = 500): int
     {
         global $wpdb;

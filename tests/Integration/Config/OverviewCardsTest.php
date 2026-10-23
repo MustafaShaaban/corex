@@ -163,6 +163,11 @@ it('says "Could not load" on a card whose source throws, and renders every other
                 failingRead();
             }
 
+            public function reword(\Corex\Notifications\Notification $notification): int
+            {
+                failingRead();
+            }
+
             public function forCurrentActor(\Corex\Notifications\NotificationQuery $query): array
             {
                 failingRead();

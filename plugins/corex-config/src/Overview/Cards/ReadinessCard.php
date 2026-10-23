@@ -64,7 +64,7 @@ final class ReadinessCard implements OverviewCard
             . '<header class="corex-overview__card-head"><h2>' . esc_html($this->title()) . '</h2>'
             . '<span class="corex-overview__count">' . esc_html($launch['count']) . '</span>'
             . $this->wizardLink() . '</header>'
-            . $this->markup->progress($launch['done'], $launch['total'], $launch['count'])
+            . $this->markup->progress($this->title(), $launch['done'], $launch['total'], $launch['count'])
             . $groups . '</section>';
     }
 

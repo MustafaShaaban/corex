@@ -39,13 +39,15 @@ final class ChecklistMarkup
     }
 
     /**
-     * A progress bar for "N of M", its value announced with the same words the header shows.
+     * A progress bar for "N of M", named by what it measures and its value announced with the same
+     * words the header shows.
      */
-    public function progress(int $done, int $total, string $words): string
+    public function progress(string $name, int $done, int $total, string $words): string
     {
         $percent = $total > 0 ? (int) round($done / $total * 100) : 0;
 
-        return '<div class="corex-checklist__progress" role="progressbar" aria-valuemin="0" aria-valuemax="'
+        return '<div class="corex-checklist__progress" role="progressbar" aria-label="' . esc_attr($name)
+            . '" aria-valuemin="0" aria-valuemax="'
             . esc_attr((string) $total) . '" aria-valuenow="' . esc_attr((string) $done) . '" aria-valuetext="'
             . esc_attr($words) . '"><span style="inline-size:' . esc_attr((string) $percent) . '%"></span></div>';
     }
