@@ -68,7 +68,7 @@ export function rowsByArea( rows ) {
 	return areas;
 }
 
-function Cell( { cell, rowKey, roleKey } ) {
+function Cell( { cell, rowKey, roleKey, roleName } ) {
 	const { mark, label } =
 		stateLabels()[ cell.state ] || stateLabels().not_granted;
 	const reason = cellReason( cell );
@@ -76,6 +76,9 @@ function Cell( { cell, rowKey, roleKey } ) {
 
 	return (
 		<td className={ `corex-access__cell is-${ cell.state }` }>
+			{ /* Shown only where the grid folds into one list per ability, at a phone's width,
+			   where the column header is no longer above the cell. */ }
+			<span className="corex-access__cell-role">{ roleName }</span>
 			<span
 				className="corex-access__why"
 				// A cell that cannot be set says why when it is focused or pointed at.
@@ -101,7 +104,9 @@ function Cell( { cell, rowKey, roleKey } ) {
 
 /**
  * Every CoreX ability down the side, by area, and every role across the top, each cell in words.
- * "Edit" on a role opens today's editor for it; a role that administers the site has none.
+ * "Edit" on a role opens today's editor for it; a role that administers the site has none. At a
+ * phone's width the grid folds into one list per ability, each cell named by its role
+ * (DECISIONS #424), so nothing is wider than the screen.
  *
  * @param {Object}   props
  * @param {Array}    props.roles  The roles.
@@ -177,6 +182,7 @@ export default function AccessMatrixGrid( { roles, rows, onEdit } ) {
 										}
 										rowKey={ row.key }
 										roleKey={ role.key }
+										roleName={ role.name }
 									/>
 								) ) }
 							</tr>

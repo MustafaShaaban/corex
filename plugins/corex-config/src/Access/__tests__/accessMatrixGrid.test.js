@@ -169,3 +169,13 @@ it( 'shows an applied change as the state it resolves to', () => {
 		state: 'denied_set',
 	} );
 } );
+
+it( 'names each cell by its role, for the list the grid folds into at a phone width', () => {
+	const roleNames = [
+		...rowOf( 'Manage Email Studio' ).querySelectorAll(
+			'.corex-access__cell-role'
+		),
+	].map( ( name ) => name.textContent );
+
+	expect( roleNames ).toEqual( matrix.roles.map( ( role ) => role.name ) );
+} );

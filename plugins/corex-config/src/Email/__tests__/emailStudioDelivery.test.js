@@ -41,6 +41,7 @@ async function draw( canConfigureDelivery ) {
 				data={ data }
 				settingsUrl="/wp-admin/admin.php?page=corex-settings-config"
 				canConfigureDelivery={ canConfigureDelivery }
+				onScope={ () => {} }
 			/>
 		);
 	} );
@@ -57,6 +58,26 @@ it( 'tells anyone else that a site administrator configures delivery', async () 
 
 	expect( container.textContent ).not.toContain( 'Configure delivery' );
 	expect( container.textContent ).toContain(
-		'a site administrator does them in Settings'
+		'so a site administrator does them'
 	);
+} );
+
+it( 'leaves the capture switch to a site administrator, and says why to anyone else', async () => {
+	data.outcome = { environment: 'development', scope: 'all' };
+	try {
+		await draw( false );
+		const toggle = container.querySelector( '#corex-email-capture-scope' );
+
+		expect( toggle.disabled ).toBe( true );
+		expect( toggle.getAttribute( 'aria-describedby' ) ).toContain(
+			'corex-email-delivery-admin'
+		);
+
+		await draw( true );
+		expect(
+			container.querySelector( '#corex-email-capture-scope' ).disabled
+		).toBe( false );
+	} finally {
+		delete data.outcome;
+	}
 } );

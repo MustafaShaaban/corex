@@ -247,6 +247,7 @@
 
 .corex-admin .corex-access__event {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: flex-start;
 	gap: var(--corex-admin-space-sm);
 	padding-block: var(--corex-admin-space-sm);
@@ -270,18 +271,27 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--corex-admin-space-2xs);
-	flex: 1;
+
+	/* The kind chip moves under the entry when both do not fit. */
+	flex: 1 1 12rem;
 	min-inline-size: 0;
 }
 
 .corex-admin .corex-access__event-text {
 	color: var(--corex-admin-text);
+	overflow-wrap: anywhere;
 	font-size: var(--corex-admin-font-sm);
 }
 
 .corex-admin .corex-access__event-meta {
-	color: var(--corex-admin-text-subtle);
+	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-xs);
+}
+
+/* A time that wraps stays one box, so a repeated entry's two times
+   never share a line box. */
+.corex-admin .corex-access__event-when {
+	display: inline-block;
 }
 
 /* Your permissions + requirements (baseline, kept) */
@@ -614,7 +624,7 @@
 }
 
 .corex-admin .corex-access__grid thead th {
-	color: var(--corex-admin-text-subtle);
+	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-xs);
 	white-space: nowrap;
 }
@@ -683,7 +693,7 @@
 
 .corex-admin .corex-access__cell.is-not_granted .corex-access__state,
 .corex-admin .corex-access__cell.is-locked .corex-access__state {
-	color: var(--corex-admin-text-subtle);
+	color: var(--corex-admin-text-muted);
 }
 
 .corex-admin .corex-access__mark.is-allowed_set,
@@ -697,7 +707,7 @@
 
 .corex-admin .corex-access__mark.is-not_granted,
 .corex-admin .corex-access__mark.is-locked {
-	color: var(--corex-admin-text-subtle);
+	color: var(--corex-admin-text-muted);
 }
 
 .corex-admin .corex-access__tip {
@@ -720,6 +730,84 @@
 .corex-admin .corex-access__cell:hover .corex-access__tip,
 .corex-admin .corex-access__cell:focus-within .corex-access__tip {
 	display: block;
+}
+
+/* Each cell's role, for the folded grid below; above a phone's width
+   the column header names it. */
+.corex-admin .corex-access__cell-role {
+	display: none;
+}
+
+/* At a phone's width the grid folds into one list per ability
+   (DECISIONS #424): the roles and their Edit buttons first, then each
+   ability with every role's state named by its role. Nothing is wider
+   than the screen. */
+@media (max-width: 600px) { /* corex-token-allow: responsive breakpoint */
+	.corex-admin .corex-access__grid,
+	.corex-admin .corex-access__grid thead,
+	.corex-admin .corex-access__grid tbody,
+	.corex-admin .corex-access__grid tr,
+	.corex-admin .corex-access__grid th,
+	.corex-admin .corex-access__grid td {
+		display: block;
+	}
+
+	.corex-admin .corex-access__grid thead tr {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--corex-admin-space-xs);
+		padding: var(--corex-admin-space-sm);
+	}
+
+	.corex-admin .corex-access__grid thead th {
+		padding: 0;
+		border-block-end: 0;
+		white-space: normal;
+	}
+
+	.corex-admin .corex-access__grid thead th .button,
+	.corex-admin .corex-access__filters .button {
+		min-block-size: var(--corex-admin-touch-target);
+	}
+
+	.corex-admin .corex-access__grid th[scope="row"],
+	.corex-admin .corex-access__grid thead th:first-child {
+		position: static;
+		min-inline-size: 0;
+		max-inline-size: none;
+		border-inline-end: 0;
+	}
+
+	.corex-admin .corex-access__grid thead th:first-child {
+		display: none;
+	}
+
+	.corex-admin .corex-access__grid td {
+		border-block-end: 0;
+		padding-block: var(--corex-admin-space-2xs);
+	}
+
+	.corex-admin .corex-access__grid tbody tr:not(.corex-access__grid-area) {
+		padding-block-end: var(--corex-admin-space-xs);
+		border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	}
+
+	.corex-admin .corex-access__grid th[scope="row"] {
+		border-block-end: 0;
+	}
+
+	.corex-admin .corex-access__grid td.corex-access__cell {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--corex-admin-space-xs);
+		min-inline-size: 0;
+	}
+
+	.corex-admin .corex-access__cell-role {
+		display: inline;
+		min-inline-size: 8rem;
+		color: var(--corex-admin-text-muted);
+	}
 }
 
 .corex-admin .corex-access__head-actions {

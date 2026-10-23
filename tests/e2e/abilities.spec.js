@@ -182,25 +182,39 @@ test.describe( 'someone allowed to manage operations only', () => {
 } );
 
 test.describe( 'the role matrix', () => {
-	test( 'is a grid of states by role that scrolls in its own frame at 400px', async ( {
+	test( 'is a grid of states by role, folded into one list per ability at 400px', async ( {
 		page,
 	} ) => {
-		await page.setViewportSize( { width: 400, height: 800 } );
 		await page.goto( '/wp-admin/admin.php?page=corex-access&tab=matrix' );
-
 		const grid = page.locator( '.corex-access__grid' );
-		await expect( grid ).toBeVisible();
 		await expect(
 			grid.getByRole( 'columnheader', { name: /Administrator/ } )
 		).toBeVisible();
+		// Above a phone's width the column header names the role, not the cell.
 		await expect(
-			page.locator( '.corex-access__cell.is-allowed_admin' ).first()
-		).toContainText( 'Allowed through site administration' );
+			grid.locator( '.corex-access__cell-role' ).first()
+		).toBeHidden();
 
-		const sideways = await page.evaluate(
-			() => document.documentElement.scrollWidth > window.innerWidth
+		await page.setViewportSize( { width: 400, height: 800 } );
+		const adminCell = page
+			.locator( '.corex-access__cell.is-allowed_admin' )
+			.first();
+		await expect( adminCell ).toContainText(
+			'Allowed through site administration'
 		);
-		expect( sideways ).toBe( false );
+		await expect(
+			adminCell.locator( '.corex-access__cell-role' )
+		).toHaveText( 'Administrator' );
+
+		const widths = await page.evaluate( () => ( {
+			page: document.documentElement.scrollWidth,
+			grid: document
+				.querySelector( '.corex-access__grid' )
+				.getBoundingClientRect().width,
+			window: window.innerWidth,
+		} ) );
+		expect( widths.page ).toBeLessThanOrEqual( widths.window );
+		expect( widths.grid ).toBeLessThanOrEqual( widths.window );
 
 		await page.getByRole( 'button', { name: 'Edit Editor' } ).click();
 		await expect(
