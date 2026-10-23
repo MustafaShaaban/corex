@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 1192,
+  "count": 1252,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -483,8 +483,68 @@
     },
     {
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 43, 63: color: var(--corex-admin-action); | background: var(--corex-admin-action);",
+      "property": "--corex-admin-action",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 43, 63: color: var(--corex-admin-action); | background: var(--corex-admin-action);",
+      "property": "--corex-admin-action",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
       "selector_or_context": "lines 44, 45: border-color: var(--corex-admin-action-subtle); | background: var(--corex-admin-action-subtle);",
       "property": "--corex-admin-action-subtle",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 44, 45: border-color: var(--corex-admin-action-subtle); | background: var(--corex-admin-action-subtle);",
+      "property": "--corex-admin-action-subtle",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 44, 45: border-color: var(--corex-admin-action-subtle); | background: var(--corex-admin-action-subtle);",
+      "property": "--corex-admin-action-subtle",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 25, 93: border: var(--corex-admin-border-width) solid var(--corex-admin-border);",
+      "property": "--corex-admin-border",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 25, 93: border: var(--corex-admin-border-width) solid var(--corex-admin-border);",
+      "property": "--corex-admin-border",
       "owner": "other-addon",
       "surface": "front-end",
       "direction_context": "not-applicable",
@@ -513,6 +573,46 @@
     },
     {
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 123: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "property": "--corex-admin-border-soft",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 123: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "property": "--corex-admin-border-soft",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 50: border-color: var(--corex-admin-border-strong);",
+      "property": "--corex-admin-border-strong",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 50: border-color: var(--corex-admin-border-strong);",
+      "property": "--corex-admin-border-strong",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
       "selector_or_context": "lines 50: border-color: var(--corex-admin-border-strong);",
       "property": "--corex-admin-border-strong",
       "owner": "other-addon",
@@ -525,6 +625,46 @@
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
       "selector_or_context": "lines 25, 93, 123: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
       "property": "--corex-admin-border-width",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 25, 93, 123: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "property": "--corex-admin-border-width",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 25, 93, 123: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "property": "--corex-admin-border-width",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 168: min-block-size: var(--corex-admin-control-height);",
+      "property": "--corex-admin-control-height",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 168: min-block-size: var(--corex-admin-control-height);",
+      "property": "--corex-admin-control-height",
       "owner": "other-addon",
       "surface": "front-end",
       "direction_context": "logical",
@@ -553,8 +693,68 @@
     },
     {
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 38: font-family: var(--corex-admin-font-mono);",
+      "property": "--corex-admin-font-mono",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 38: font-family: var(--corex-admin-font-mono);",
+      "property": "--corex-admin-font-mono",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
       "selector_or_context": "lines 27, 78, 115, 130: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 27, 78, 115, 130: font-size: var(--corex-admin-font-sm);",
+      "property": "--corex-admin-font-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 27, 78, 115, 130: font-size: var(--corex-admin-font-sm);",
+      "property": "--corex-admin-font-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 39: font-size: var(--corex-admin-font-xs);",
+      "property": "--corex-admin-font-xs",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 39: font-size: var(--corex-admin-font-xs);",
+      "property": "--corex-admin-font-xs",
       "owner": "other-addon",
       "surface": "front-end",
       "direction_context": "not-applicable",
@@ -583,6 +783,46 @@
     },
     {
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 26, 37, 56: border-radius: var(--corex-admin-radius-pill);",
+      "property": "--corex-admin-radius-pill",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 26, 37, 56: border-radius: var(--corex-admin-radius-pill);",
+      "property": "--corex-admin-radius-pill",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 94, 114: border-radius: var(--corex-admin-radius-sm);",
+      "property": "--corex-admin-radius-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 94, 114: border-radius: var(--corex-admin-radius-sm);",
+      "property": "--corex-admin-radius-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
       "selector_or_context": "lines 94, 114: border-radius: var(--corex-admin-radius-sm);",
       "property": "--corex-admin-radius-sm",
       "owner": "other-addon",
@@ -603,7 +843,47 @@
     },
     {
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
-      "selector_or_context": "lines 6, 164: gap: var(--corex-admin-space-lg); | margin-block-start: var(--corex-admin-space-lg);",
+      "selector_or_context": "lines 111, 121: padding-block: var(--corex-admin-space-2xs); | gap: var(--corex-admin-space-2xs);",
+      "property": "--corex-admin-space-2xs",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 111, 121: padding-block: var(--corex-admin-space-2xs); | gap: var(--corex-admin-space-2xs);",
+      "property": "--corex-admin-space-2xs",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 6, 164, 174: gap: var(--corex-admin-space-lg); | margin-block-start: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);",
+      "property": "--corex-admin-space-lg",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 6, 164, 174: gap: var(--corex-admin-space-lg); | margin-block-start: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);",
+      "property": "--corex-admin-space-lg",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 6, 164, 174: gap: var(--corex-admin-space-lg); | margin-block-start: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);",
       "property": "--corex-admin-space-lg",
       "owner": "other-addon",
       "surface": "front-end",
@@ -623,8 +903,68 @@
     },
     {
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
-      "selector_or_context": "lines 12, 23, 84, 90, 92, 112, 136, 146, 152: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 69, 129, 147: gap: var(--corex-admin-space-md); | margin-block-start: var(--corex-admin-space-md);",
+      "property": "--corex-admin-space-md",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 69, 129, 147: gap: var(--corex-admin-space-md); | margin-block-start: var(--corex-admin-space-md);",
+      "property": "--corex-admin-space-md",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 12, 23, 84, 90, 92, 112, 136, 146, 152, 173: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 12, 23, 84, 90, 92, 112, 136, 146, 152, 173: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);",
+      "property": "--corex-admin-space-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 12, 23, 84, 90, 92, 112, 136, 146, 152, 173: gap: var(--corex-admin-space-sm); | padding-inline: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);",
+      "property": "--corex-admin-space-sm",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 21, 22, 90, 104, 122, 162: gap: var(--corex-admin-space-xs); | padding-block: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);",
+      "property": "--corex-admin-space-xs",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 21, 22, 90, 104, 122, 162: gap: var(--corex-admin-space-xs); | padding-block: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);",
+      "property": "--corex-admin-space-xs",
       "owner": "other-addon",
       "surface": "front-end",
       "direction_context": "logical",
@@ -653,6 +993,46 @@
     },
     {
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 49, 140: color: var(--corex-admin-success);",
+      "property": "--corex-admin-success",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 49, 140: color: var(--corex-admin-success);",
+      "property": "--corex-admin-success",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 36, 55, 113: background: var(--corex-admin-surface-alt);",
+      "property": "--corex-admin-surface-alt",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 36, 55, 113: background: var(--corex-admin-surface-alt);",
+      "property": "--corex-admin-surface-alt",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
       "selector_or_context": "lines 36, 55, 113: background: var(--corex-admin-surface-alt);",
       "property": "--corex-admin-surface-alt",
       "owner": "other-addon",
@@ -665,6 +1045,46 @@
       "path": "addons/corex-kit-company/assets/setup-wizard.css",
       "selector_or_context": "lines 156: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 156: color: var(--corex-admin-text);",
+      "property": "--corex-admin-text",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 156: color: var(--corex-admin-text);",
+      "property": "--corex-admin-text",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 24, 77: color: var(--corex-admin-text-muted);",
+      "property": "--corex-admin-text-muted",
+      "owner": "other-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "addons/corex-kit-company/assets/setup-wizard.css",
+      "selector_or_context": "lines 24, 77: color: var(--corex-admin-text-muted);",
+      "property": "--corex-admin-text-muted",
       "owner": "other-addon",
       "surface": "front-end",
       "direction_context": "not-applicable",
@@ -1050,6 +1470,36 @@
       "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.50"
+    },
+    {
+      "path": "addons/corex-ui/assets/action-link.css",
+      "selector_or_context": "lines 11: outline-offset: var(--wp--custom--focus--offset);",
+      "property": "--wp--custom--focus--offset",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.offset"
+    },
+    {
+      "path": "addons/corex-ui/assets/action-link.css",
+      "selector_or_context": "lines 9: var(--wp--custom--focus--width) solid",
+      "property": "--wp--custom--focus--width",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.width"
+    },
+    {
+      "path": "addons/corex-ui/assets/action-link.css",
+      "selector_or_context": "lines 10: var(--wp--preset--color--surface);",
+      "property": "--wp--preset--color--surface",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface"
     },
     {
       "path": "addons/corex-ui/assets/block-styles.css",
@@ -2843,7 +3293,7 @@
     },
     {
       "path": "addons/corex-ui/src/Patterns/PatternLibrary.php",
-      "selector_or_context": "lines 118: . '<header class=\"wp-block-group alignwide\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--40)\">'",
+      "selector_or_context": "lines 153: . '<header class=\"wp-block-group alignwide\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--40)\">'",
       "property": "--wp--preset--spacing--40",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2853,7 +3303,7 @@
     },
     {
       "path": "addons/corex-ui/src/Patterns/PatternLibrary.php",
-      "selector_or_context": "lines 118: . '<header class=\"wp-block-group alignwide\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--40)\">'",
+      "selector_or_context": "lines 153: . '<header class=\"wp-block-group alignwide\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--40)\">'",
       "property": "--wp--preset--spacing--60",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2863,13 +3313,163 @@
     },
     {
       "path": "addons/corex-ui/src/Patterns/PatternLibrary.php",
-      "selector_or_context": "lines 46, 46, 69, 69, 82, 82, 96, 96, 108, 108, 131, 131, 154, 154, 165, 165, 174, 174: . '<section class=\"wp-block-group alignfull has-surface-color has-primary-background-color has-text-color has-background\" style=\"padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">' | . '<section class=\"wp-block-group alignfull\" style=\"padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">' | . '<section class=\"wp-block-group alignfull has-ink-color has-accent-background-color has-text-color has-background\" style=\"padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">'",
+      "selector_or_context": "lines 65, 65, 104, 104, 117, 117, 131, 131, 143, 143, 166, 166, 189, 189, 200, 200, 209, 209: . '<section class=\"wp-block-group alignfull has-surface-color has-primary-background-color has-text-color has-background\" style=\"padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">' | . '<section class=\"wp-block-group alignfull\" style=\"padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">' | . '<section class=\"wp-block-group alignfull has-surface-color has-accent-background-color has-text-color has-background\" style=\"padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">'",
       "property": "--wp--preset--spacing--80",
       "owner": "ui-addon",
       "surface": "front-end",
       "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.80"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample-editor.css",
+      "selector_or_context": "lines 9: var(--wp--custom--border--width--thin, thin) dashed",
+      "property": "--wp--custom--border--width--thin",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "border.width.thin"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample-editor.css",
+      "selector_or_context": "lines 10: var(--wp--preset--color--border, GrayText);",
+      "property": "--wp--preset--color--border",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.border"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample-editor.css",
+      "selector_or_context": "lines 19: color: var(--wp--preset--color--ink, CanvasText);",
+      "property": "--wp--preset--color--ink",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.ink"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample-editor.css",
+      "selector_or_context": "lines 20: background: var(--wp--preset--color--surface-alt, Canvas);",
+      "property": "--wp--preset--color--surface-alt",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface-alt"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample-editor.css",
+      "selector_or_context": "lines 21: font-size: var(--wp--preset--font-size--xs, smaller);",
+      "property": "--wp--preset--font-size--xs",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "font-size.xs"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample-editor.css",
+      "selector_or_context": "lines 17: padding-block: var(--wp--preset--spacing--10);",
+      "property": "--wp--preset--spacing--10",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.10"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample-editor.css",
+      "selector_or_context": "lines 16, 18: margin-block-end: var(--wp--preset--spacing--20); | padding-inline: var(--wp--preset--spacing--20);",
+      "property": "--wp--preset--spacing--20",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.20"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 14: var(--wp--custom--border--width--thin, thin) dashed",
+      "property": "--wp--custom--border--width--thin",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "border.width.thin"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 16: border-radius: var(--wp--custom--radius--md, 0);",
+      "property": "--wp--custom--radius--md",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "radius.md"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 15: var(--wp--preset--color--border, GrayText);",
+      "property": "--wp--preset--color--border",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.border"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 11: color: var(--wp--preset--color--ink, CanvasText);",
+      "property": "--wp--preset--color--ink",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.ink"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 12: background: var(--wp--preset--color--surface-alt, Canvas);",
+      "property": "--wp--preset--color--surface-alt",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface-alt"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 17: font-size: var(--wp--preset--font-size--xs, smaller);",
+      "property": "--wp--preset--font-size--xs",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "font-size.xs"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 9: padding-block: var(--wp--preset--spacing--10);",
+      "property": "--wp--preset--spacing--10",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.10"
+    },
+    {
+      "path": "plugins/corex-blocks/assets/sample.css",
+      "selector_or_context": "lines 8, 10: margin-block: 0 var(--wp--preset--spacing--20); | padding-inline: var(--wp--preset--spacing--20);",
+      "property": "--wp--preset--spacing--20",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.20"
     },
     {
       "path": "plugins/corex-blocks/src/blocks/entity-field/style.scss",
@@ -11463,7 +12063,7 @@
     },
     {
       "path": "theme/patterns/footer-corporate.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--corporate\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 21: <footer class=\"wp-block-group corex-footer corex-footer--corporate\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--50",
       "owner": "theme",
       "surface": "front-end",
@@ -11473,7 +12073,7 @@
     },
     {
       "path": "theme/patterns/footer-corporate.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--corporate\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 21: <footer class=\"wp-block-group corex-footer corex-footer--corporate\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--60",
       "owner": "theme",
       "surface": "front-end",
@@ -11483,7 +12083,7 @@
     },
     {
       "path": "theme/patterns/footer-legal.php",
-      "selector_or_context": "lines 16, 16: <footer class=\"wp-block-group corex-footer corex-footer--legal\" style=\"padding-top:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 18, 18: <footer class=\"wp-block-group corex-footer corex-footer--legal\" style=\"padding-top:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40)\">",
       "property": "--wp--preset--spacing--40",
       "owner": "theme",
       "surface": "front-end",
@@ -11493,7 +12093,7 @@
     },
     {
       "path": "theme/patterns/footer-locations.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--locations\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 23: <footer class=\"wp-block-group corex-footer corex-footer--locations\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--50",
       "owner": "theme",
       "surface": "front-end",
@@ -11503,7 +12103,7 @@
     },
     {
       "path": "theme/patterns/footer-locations.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--locations\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 23: <footer class=\"wp-block-group corex-footer corex-footer--locations\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--60",
       "owner": "theme",
       "surface": "front-end",
@@ -11513,7 +12113,7 @@
     },
     {
       "path": "theme/patterns/footer-newsletter.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--newsletter\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 18: <footer class=\"wp-block-group corex-footer corex-footer--newsletter\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--50",
       "owner": "theme",
       "surface": "front-end",
@@ -11523,7 +12123,7 @@
     },
     {
       "path": "theme/patterns/footer-newsletter.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--newsletter\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 18: <footer class=\"wp-block-group corex-footer corex-footer--newsletter\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--60",
       "owner": "theme",
       "surface": "front-end",
@@ -11533,7 +12133,7 @@
     },
     {
       "path": "theme/patterns/footer-saas.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--saas\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 18: <footer class=\"wp-block-group corex-footer corex-footer--saas\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--50",
       "owner": "theme",
       "surface": "front-end",
@@ -11543,7 +12143,7 @@
     },
     {
       "path": "theme/patterns/footer-saas.php",
-      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--saas\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "selector_or_context": "lines 18: <footer class=\"wp-block-group corex-footer corex-footer--saas\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
       "property": "--wp--preset--spacing--60",
       "owner": "theme",
       "surface": "front-end",
@@ -11563,7 +12163,7 @@
     },
     {
       "path": "theme/patterns/header-corporate.php",
-      "selector_or_context": "lines 33, 33: <div class=\"wp-block-group corex-header__main\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
+      "selector_or_context": "lines 39, 39: <div class=\"wp-block-group corex-header__main\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -11583,7 +12183,7 @@
     },
     {
       "path": "theme/patterns/header-minimal.php",
-      "selector_or_context": "lines 16, 16: <header class=\"wp-block-group corex-header corex-header--minimal\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
+      "selector_or_context": "lines 18, 18: <header class=\"wp-block-group corex-header corex-header--minimal\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -11593,7 +12193,7 @@
     },
     {
       "path": "theme/patterns/header-saas.php",
-      "selector_or_context": "lines 16, 16: <header class=\"wp-block-group corex-header corex-header--saas\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
+      "selector_or_context": "lines 18, 18: <header class=\"wp-block-group corex-header corex-header--saas\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -11603,7 +12203,7 @@
     },
     {
       "path": "theme/patterns/header-simple.php",
-      "selector_or_context": "lines 16, 16: <header class=\"wp-block-group corex-header corex-header--simple\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
+      "selector_or_context": "lines 18, 18: <header class=\"wp-block-group corex-header corex-header--simple\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -11613,7 +12213,7 @@
     },
     {
       "path": "theme/patterns/header-sticky.php",
-      "selector_or_context": "lines 16, 16: <header class=\"wp-block-group corex-header corex-header--sticky\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
+      "selector_or_context": "lines 18, 18: <header class=\"wp-block-group corex-header corex-header--sticky\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -11623,7 +12223,7 @@
     },
     {
       "path": "theme/patterns/header-transparent.php",
-      "selector_or_context": "lines 16, 16: <header class=\"wp-block-group corex-header corex-header--transparent\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
+      "selector_or_context": "lines 18, 18: <header class=\"wp-block-group corex-header corex-header--transparent\" style=\"padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)\">",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -11643,7 +12243,7 @@
     },
     {
       "path": "theme/patterns/maintenance.php",
-      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group alignfull corex-maintenance\" style=\"min-height:70vh;padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">",
+      "selector_or_context": "lines 17, 17: <section class=\"wp-block-group alignfull corex-maintenance\" style=\"min-height:70vh;padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">",
       "property": "--wp--preset--spacing--80",
       "owner": "theme",
       "surface": "front-end",
@@ -11653,7 +12253,7 @@
     },
     {
       "path": "theme/patterns/section-contact-info.php",
-      "selector_or_context": "lines 39: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 44: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--custom--border--width--thin",
       "owner": "theme",
       "surface": "front-end",
@@ -11663,7 +12263,7 @@
     },
     {
       "path": "theme/patterns/section-contact-info.php",
-      "selector_or_context": "lines 39: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 44: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--custom--radius--md",
       "owner": "theme",
       "surface": "front-end",
@@ -11673,7 +12273,7 @@
     },
     {
       "path": "theme/patterns/section-contact-info.php",
-      "selector_or_context": "lines 39, 39, 39, 39: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 44, 44, 44, 44: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--preset--spacing--40",
       "owner": "theme",
       "surface": "front-end",
@@ -11683,7 +12283,7 @@
     },
     {
       "path": "theme/patterns/section-contact-info.php",
-      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group corex-contact\" style=\"padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)\">",
+      "selector_or_context": "lines 27, 27: <section class=\"wp-block-group corex-contact\" style=\"padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)\">",
       "property": "--wp--preset--spacing--70",
       "owner": "theme",
       "surface": "front-end",
@@ -11693,7 +12293,7 @@
     },
     {
       "path": "theme/patterns/section-logo-cloud.php",
-      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group corex-logo-cloud\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)\">",
+      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group corex-logo-cloud is-corex-sample\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)\">",
       "property": "--wp--preset--spacing--60",
       "owner": "theme",
       "surface": "front-end",
@@ -11733,7 +12333,7 @@
     },
     {
       "path": "theme/patterns/section-services-grid.php",
-      "selector_or_context": "lines 41: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 46: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--custom--border--width--thin",
       "owner": "theme",
       "surface": "front-end",
@@ -11743,7 +12343,7 @@
     },
     {
       "path": "theme/patterns/section-services-grid.php",
-      "selector_or_context": "lines 41: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 46: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--custom--radius--md",
       "owner": "theme",
       "surface": "front-end",
@@ -11753,7 +12353,7 @@
     },
     {
       "path": "theme/patterns/section-services-grid.php",
-      "selector_or_context": "lines 41, 41, 41, 41: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "selector_or_context": "lines 46, 46, 46, 46: <div class=\"wp-block-column corex-service-card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--preset--spacing--40",
       "owner": "theme",
       "surface": "front-end",
@@ -11763,7 +12363,7 @@
     },
     {
       "path": "theme/patterns/section-services-grid.php",
-      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group corex-services\" style=\"padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)\">",
+      "selector_or_context": "lines 17, 17: <section class=\"wp-block-group corex-services\" style=\"padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)\">",
       "property": "--wp--preset--spacing--70",
       "owner": "theme",
       "surface": "front-end",

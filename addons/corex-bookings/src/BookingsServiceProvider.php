@@ -12,7 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Bookings\Templates\CallRequestConfirmTemplate;
 use Corex\Bookings\Templates\CallRequestLeaderTemplate;
-use Corex\Captcha\Captcha;
+use Corex\Security\FormChallenge;
 use Corex\Container\ContainerInterface;
 use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaRegistry;
@@ -35,6 +35,9 @@ use WP_REST_Response;
  */
 final class BookingsServiceProvider extends ServiceProvider
 {
+    /** The action the captcha token of a call request is asked for and judged against (spec 115). */
+    public const REQUEST_ACTION = 'corex_call_request';
+
     private const SCHEMA_OPTION = 'corex_bookings_schema_version';
     private const SCHEMA_VERSION = '1';
 
@@ -102,9 +105,11 @@ final class BookingsServiceProvider extends ServiceProvider
             return new WP_REST_Response(['ok' => false], 422);
         }
 
-        if ($this->container->has(Captcha::class)
-            && ! $this->container->make(Captcha::class)->verify((string) $request['captcha_token'])) {
-            return new WP_REST_Response(['ok' => false, 'error' => 'captcha'], 422);
+        // With a captcha provider on, nothing is stored or sent without its check (spec 115).
+        $refusal = $this->container->make(FormChallenge::class)
+            ->refusal((string) $request['captcha_token'], self::REQUEST_ACTION);
+        if ($refusal !== null) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'captcha', 'message' => $refusal], 422);
         }
 
         $data = [

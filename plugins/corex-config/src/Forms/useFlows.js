@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useReducer } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useReducer,
+	useRef,
+} from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
 	buildFlowListUrl,
@@ -20,6 +26,14 @@ export function useFlows( config ) {
 	// write, so the button works until the screen is current again and not only until the
 	// first answer.
 	const [ pending, during ] = usePending();
+	// The draft as it is now, for a command that runs after another in the same handler: Save
+	// and then Publish must publish the version the save made, and the render that handler
+	// was made in still holds the one before it. Set as soon as a draft is loaded, and after
+	// every render for the edits made on screen.
+	const latest = useRef( null );
+	useLayoutEffect( () => {
+		latest.current = state.draft;
+	} );
 
 	const load = useCallback(
 		async ( search = '', lifecycle = '', message = '' ) => {
@@ -77,10 +91,11 @@ export function useFlows( config ) {
 					type: 'failed',
 					message: failureMessage( result ),
 				} );
-				return false;
+				return null;
 			}
+			latest.current = draft;
 			dispatch( { type: 'selected', payload: draft } );
-			return true;
+			return draft;
 		},
 		[ config.nonce, config.restUrl ]
 	);
@@ -101,9 +116,10 @@ export function useFlows( config ) {
 		return true;
 	};
 
+	// The saved draft, as it was read back, or null when it was not saved.
 	const saveDraft = async () => {
 		dispatch( { type: 'mutating' } );
-		const { flow, version, configuration } = state.draft;
+		const { flow, version, configuration } = latest.current;
 		const result = await window.Corex.api.patch(
 			flowEndpoint( config.restUrl, flow.id ),
 			{
@@ -115,14 +131,13 @@ export function useFlows( config ) {
 		);
 		if ( ! result.envelope.ok ) {
 			dispatch( { type: 'failed', message: failureMessage( result ) } );
-			return false;
+			return null;
 		}
-		await select( flow.id );
-		return true;
+		return select( flow.id );
 	};
 
 	const transition = async ( action ) => {
-		const { flow, version } = state.draft;
+		const { flow, version } = latest.current;
 		dispatch( { type: 'mutating' } );
 		const result = await window.Corex.api.post(
 			flowEndpoint( config.restUrl, flow.id, action ),
@@ -138,7 +153,7 @@ export function useFlows( config ) {
 	};
 
 	const test = async () => {
-		const { flow, version } = state.draft;
+		const { flow, version } = latest.current;
 		dispatch( { type: 'mutating' } );
 		const result = await window.Corex.api.post(
 			flowEndpoint( config.restUrl, flow.id, 'test' ),

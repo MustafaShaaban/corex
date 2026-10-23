@@ -6,6 +6,7 @@
 
 declare(strict_types=1);
 
+use Corex\Security\ChallengeSettings;
 use Brain\Monkey\Functions;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowConfiguration;
@@ -67,7 +68,7 @@ function challengeContextFactory(array $config = []): FormChallengeContextFactor
         }
     };
 
-    return new FormChallengeContextFactory($reader, new RemoteAddress());
+    return new FormChallengeContextFactory(new ChallengeSettings($reader), new RemoteAddress());
 }
 
 it('verifies and removes a configured captcha token before storage', function () {

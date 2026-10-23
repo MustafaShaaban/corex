@@ -163,7 +163,7 @@ it('leaves a raised check as it is while it cannot be read', function () {
         ->and($service->resolved)->toBe([]);
 });
 
-it('rewords a raised blocker in the evaluating request's words, without another occurrence', function () {
+it('rewords a raised blocker in the words of the request that evaluates it, without another occurrence', function () {
     $service = new RecordingNotificationService();
 
     reconcileReadiness($service, readinessSnapshot(['ssl' => 'blocking']));

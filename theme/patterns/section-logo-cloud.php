@@ -4,15 +4,15 @@
  * Title: Logo Cloud — Trusted By
  * Slug: corex/section-logo-cloud
  * Categories: corex
- * Description: A restrained "trusted by" row of partner/customer logos with a short lead-in. Built on core blocks and CoreX brand tokens; neutral placeholder logos only.
+ * Description: A restrained "trusted by" row of partner/customer logos with a short lead-in. Built on core blocks and CoreX brand tokens; neutral placeholder logos only. A sample: hidden from visitors and labelled for editors until its content is replaced.
  *
  * @package Corex
  */
 
 defined('ABSPATH') || exit;
 ?>
-<!-- wp:group {"tagName":"section","className":"corex-logo-cloud","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60"},"blockGap":"var:preset|spacing|40"}}} -->
-<section class="wp-block-group corex-logo-cloud" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)">
+<!-- wp:group {"tagName":"section","className":"corex-logo-cloud is-corex-sample","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60"},"blockGap":"var:preset|spacing|40"}}} -->
+<section class="wp-block-group corex-logo-cloud is-corex-sample" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)">
 	<!-- wp:paragraph {"align":"center","className":"corex-eyebrow","fontSize":"sm"} -->
 	<p class="has-text-align-center corex-eyebrow has-sm-font-size"><?php echo esc_html__('TRUSTED BY TEAMS EVERYWHERE', 'corex'); ?></p>
 	<!-- /wp:paragraph -->
