@@ -115,6 +115,41 @@ final class ThemeContract
         return $palette;
     }
 
+    /**
+     * The admin's colour tokens, read from the stylesheet that defines them (spec 116, US-NFR-01).
+     *
+     * Three blocks: the dark default, the light block applied by the system appearance inside
+     * `prefers-color-scheme: light`, and the light block a pinned appearance applies. Only
+     * hex values are kept, keyed by the token's name without `--corex-admin-`.
+     *
+     * @return array{dark: array<string, string>, light: array<string, string>, light-pinned: array<string, string>}
+     */
+    public static function adminPalettes(string $relativePath = 'plugins/corex-core/assets/css/corex-admin-tokens.css'): array
+    {
+        $css = (string) file_get_contents(self::root() . '/' . $relativePath);
+        $blocks = [
+            'dark'         => '/^\.corex-admin,\s*body\.login\.corex-login,\s*body\.corex-admin-screen\s*\{(.*?)\n\}/ms',
+            'light'        => '/@media \(prefers-color-scheme: light\)\s*\{.*?\{(.*?)\n\t\}/ms',
+            'light-pinned' => '/^\.corex-admin\[data-corex-theme="light"\][^{]*\{(.*?)\n\}/ms',
+        ];
+        $palettes = [];
+
+        foreach ($blocks as $mode => $pattern) {
+            if (preg_match($pattern, $css, $match) !== 1) {
+                throw new RuntimeException(sprintf('The %s admin token block was not found in %s', $mode, $relativePath));
+            }
+
+            preg_match_all('/--corex-admin-([a-z0-9-]+):\s*(#[0-9a-fA-F]{3,6})\s*;/', $match[1], $tokens, PREG_SET_ORDER);
+            $palettes[$mode] = [];
+
+            foreach ($tokens as [, $name, $value]) {
+                $palettes[$mode][$name] = strtolower($value);
+            }
+        }
+
+        return $palettes;
+    }
+
     public static function contrastRatio(string $foreground, string $background): float
     {
         $lighter = max(self::luminance($foreground), self::luminance($background));

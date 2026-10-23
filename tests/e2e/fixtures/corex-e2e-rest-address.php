@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: CoreX E2E REST address
+ * Plugin Name: CoreX E2E REST address (test fixture)
  * Description: Lets the browser suite ask for a page as a site without pretty permalinks spells its REST addresses, whatever the install is set to.
  * Version: 1.0.0
  *

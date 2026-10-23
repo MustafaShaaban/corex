@@ -23,7 +23,9 @@
         "lint:css": "wp-scripts lint-style",
         "test:js": "wp-scripts test-unit-jest",
         "test:e2e": "playwright test --config=tests/e2e/playwright.config.js",
+        "test:quality": "playwright test --config=tests/e2e/quality/playwright.quality.config.js",
         "verify:dependencies": "node scripts/verify-dependency-security.mjs",
+        "audit:completion": "node scripts/audit-product-completion.mjs",
         "build:dist": "node scripts/build-shared-host-dist.mjs",
         "verify:dist": "node scripts/verify-shared-host-dist.mjs",
         "verify:framework": "node scripts/verify-framework.mjs",
@@ -32,6 +34,7 @@
         "env:stop": "wp-env stop"
     },
     "devDependencies": {
+        "@axe-core/playwright": "4.13.0",
         "@babel/core": "^7.25.7",
         "@playwright/test": "^1.63.0",
         "@wordpress/babel-preset-default": "9.0.0",
