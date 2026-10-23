@@ -89,6 +89,14 @@ final class FormsCard implements OverviewCard
             );
         }
 
+        return $this->card($this->numbers($actor), 'admin.php?page=corex-submissions', __('Open the inbox', 'corex'), $pill);
+    }
+
+    /**
+     * Open, Assigned to you and Unread, each a link to the inbox with the filter it counted.
+     */
+    private function numbers(int $actor): string
+    {
         $numbers = [
             ['label' => __('Open', 'corex'), 'filter' => ['status' => SubmissionInboxQuery::OPEN]],
             ['label' => __('Assigned to you', 'corex'), 'filter' => ['status' => SubmissionInboxQuery::OPEN, 'owner' => 'user:' . $actor]],
@@ -97,20 +105,13 @@ final class FormsCard implements OverviewCard
 
         $items = '';
         foreach ($numbers as $number) {
-            $count  = $this->count($actor, $number['filter']);
-            $items .= '<li><a class="corex-overview__number" href="' . esc_url(add_query_arg(
-                ['page' => 'corex-submissions'] + $number['filter'],
-                admin_url('admin.php'),
-            )) . '"><span class="corex-overview__number-value">' . esc_html(number_format_i18n($count)) . '</span>'
+            $href   = add_query_arg(['page' => 'corex-submissions'] + $number['filter'], admin_url('admin.php'));
+            $items .= '<li><a class="corex-overview__number" href="' . esc_url($href) . '">'
+                . '<span class="corex-overview__number-value">' . esc_html(number_format_i18n($this->count($actor, $number['filter']))) . '</span>'
                 . '<span class="corex-overview__number-label">' . esc_html($number['label']) . '</span></a></li>';
         }
 
-        return $this->card(
-            '<ul class="corex-overview__numbers">' . $items . '</ul>',
-            'admin.php?page=corex-submissions',
-            __('Open the inbox', 'corex'),
-            $pill,
-        );
+        return '<ul class="corex-overview__numbers">' . $items . '</ul>';
     }
 
     /** @param array<string,string> $filter */

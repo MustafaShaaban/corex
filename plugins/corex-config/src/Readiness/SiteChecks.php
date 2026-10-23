@@ -51,22 +51,18 @@ final class SiteChecks
         return [
             ...$checks,
             $this->frontPage($facts['frontPage']),
-            $this->page(
-                'privacy_page',
-                __('Privacy page published', 'corex'),
-                $facts['privacy'],
-                __('No privacy policy page chosen', 'corex'),
-                'options-privacy.php',
-                __('The privacy policy page is not published', 'corex'),
-            ),
-            $this->page(
-                'terms_page',
-                __('Terms page published', 'corex'),
-                $facts['terms'],
-                __('Choose a terms page', 'corex'),
-                self::BRAND_SETTINGS,
-                __('The terms page is not published', 'corex'),
-            ),
+            $this->page('privacy_page', $facts['privacy'], [
+                'label'    => __('Privacy page published', 'corex'),
+                'unchosen' => __('No privacy policy page chosen', 'corex'),
+                'chooseAt' => 'options-privacy.php',
+                'draft'    => __('The privacy policy page is not published', 'corex'),
+            ]),
+            $this->page('terms_page', $facts['terms'], [
+                'label'    => __('Terms page published', 'corex'),
+                'unchosen' => __('Choose a terms page', 'corex'),
+                'chooseAt' => self::BRAND_SETTINGS,
+                'draft'    => __('The terms page is not published', 'corex'),
+            ]),
             $this->testEmail($facts['testEmail']),
             $this->login($facts['login']),
         ];
@@ -153,26 +149,27 @@ final class SiteChecks
      * A chosen page that must be published: unchosen is fixed where it is chosen, a draft where it is
      * edited.
      *
-     * @param array{page:int,published:bool}|null $page
+     * @param array{page:int,published:bool}|null                          $page
+     * @param array{label:string,unchosen:string,chooseAt:string,draft:string} $words
      *
      * @return array{key:string,label:string,state:string,summary:string,resolution_url:string}
      */
-    private function page(string $key, string $label, ?array $page, string $unchosen, string $chooseAt, string $draft): array
+    private function page(string $key, ?array $page, array $words): array
     {
         if ($page === null) {
-            return $this->unchecked($key, $label, $chooseAt);
+            return $this->unchecked($key, $words['label'], $words['chooseAt']);
         }
 
         if ($page['page'] < 1) {
-            return $this->row($key, $label, $unchosen, '', $chooseAt);
+            return $this->row($key, $words['label'], $words['unchosen'], '', $words['chooseAt']);
         }
 
         return $this->row(
             $key,
-            $label,
-            $page['published'] ? '' : $draft,
+            $words['label'],
+            $page['published'] ? '' : $words['draft'],
             __('Chosen and published', 'corex'),
-            $page['published'] ? $chooseAt : 'post.php?post=' . $page['page'] . '&action=edit',
+            $page['published'] ? $words['chooseAt'] : 'post.php?post=' . $page['page'] . '&action=edit',
         );
     }
 

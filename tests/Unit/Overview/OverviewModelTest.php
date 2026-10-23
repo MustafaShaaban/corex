@@ -22,7 +22,6 @@ beforeEach(function () {
 function stateFacts(array $overrides = []): array
 {
     return array_merge([
-        'brand'    => ['name' => true, 'logo' => true],
         'mailFrom' => true,
         'insights' => ['key' => true, 'latest' => ['status' => 'good', 'score' => 95, 'summary' => 'Fast.']],
         'captcha'  => ['active' => true, 'driver' => 'turnstile', 'keys' => true],
