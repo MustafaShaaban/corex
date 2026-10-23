@@ -18573,7 +18573,11 @@ changes) remembers which checks are raised. A check that becomes blocking is pub
 resolved; one that cannot be read keeps what it had. A notification resolved by hand while its check still fails is
 raised again only after the check has passed and failed again. On the first evaluation after the upgrade nothing is
 remembered: blockers are published once more (one more occurrence on an open notice) and every other check is
-resolved, as before.
+resolved, as before. A raised check evaluated again is **reworded**, not published: `NotificationService::reword()`
+(through `NotificationRepository::rewordByDedupKey()`) rewrites an open notice's title and body in the evaluating
+request's language without adding an occurrence, in one `UPDATE` that changes nothing when the words are the same.
+Without it a notice raised in one language stayed in it for an owner reading another (the pseudo-locale check
+found it).
 
 **Not chosen.** *Asking the notification table whether an open notice exists*: `NotificationService` has no such
 read, and adding one to a contract other modules implement was not needed.
@@ -18616,6 +18620,13 @@ read, and adding one to a contract other modules implement was not needed.
 4. **The plugin or theme name** is resolved when drawn, and only for `manage_options`.
 5. **Environment** shows the mode and, when a declared mode differs, "WordPress environment: <type>", by the same
    rule as the Operations notice. **The mode bar and version** above the tiles stay.
+6. **The mode's sentence says what happens to mail** since spec 113: Development "Not a live site. Email is kept in
+   Email Studio instead of being sent."; Staging "Pre-production. Email is kept in Email Studio unless a mail
+   provider and live delivery are set." It promised analytics were off, which nothing in CoreX does. The unused
+   `Overview\EnvironmentMode` resolver, which carried the old sentence, is deleted.
+7. **A notification's primary action** is drawn in the action's deeper shade (`--corex-admin-action-hover`), which
+   its ink reads on at 4.5:1 in both themes: every readiness notice now carries "Fix this check", and the brass
+   itself does not hold white text in the light theme (US-BRD-02 owns the brass everywhere else).
 
 **Verified.** Integration `FatalErrorRecordTest` (3): a separate PHP process ends in a fatal error in a probe
 plugin; the record has exactly `time`, `type`, `kind`, `slug`; a process without one writes nothing; an

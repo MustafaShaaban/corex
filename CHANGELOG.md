@@ -78,7 +78,11 @@ testimonial patterns, those two sections disappear for visitors until someone ed
   job applications, …) with "Can edit" or "Read only", each a link to it on the Data screen; CoreX's
   logs stay on the Data screen.
 - **A readiness notification is raised once** when a check starts to fail and resolved when it
-  passes; opening pages no longer adds to its count.
+  passes; opening pages no longer adds to its count, and only rewords it in the language of the
+  person who opened them.
+- **The Development and Staging modes say what happens to email**: kept in Email Studio (on
+  Staging, until a mail provider and live delivery are set). They said analytics should be off,
+  which CoreX does not do.
 - **A kit applied from the Setup Wizard is recorded as applied**, and a site whose wizard applied the
   kit before is recognised from its pages. An apply that failed on a page is not recorded.
 - **Insights**: each widget's state has its own chip (an icon and a word: Live, Connected, No data
@@ -257,7 +261,9 @@ testimonial patterns, those two sections disappear for visitors until someone ed
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 - **A client repository that carries copies of CoreX's tests** takes the updated
   `OverviewModelTest.php`, `SetupWizardCompletionTest.php` (the kit's unused `LaunchChecklist` class is
-  removed) and the specs that name "Readiness & Insights" (now "Insights").
+  removed) and the specs that name "Readiness & Insights" (now "Insights"). Code that implements
+  `Corex\Notifications\NotificationService` or `NotificationRepository` adds `reword()` /
+  `rewordByDedupKey()`; no client site implements either.
 
 **Spec 116, the quality checks** (tests, scripts and CI only):
 
