@@ -10,6 +10,7 @@ namespace Corex\Forms\Submission;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Flow\FlowClosedException;
 use Corex\Forms\Schema\FieldSchema;
 use Corex\Http\ClientAddress;
 use Corex\Http\Middleware\Middleware;
@@ -54,6 +55,15 @@ final readonly class FlowSubmissionController
     {
         try {
             return $this->dispatch($request);
+        } catch (FlowClosedException $closed) {
+            // Not a technical error: the form stopped taking answers after the page was loaded.
+            // The visitor's answers stay on screen and the notice says why (spec 122, FR-029).
+            return new WP_REST_Response(
+                ResponseEnvelope::error('flow_closed', $closed->notice->message, [
+                    'notice' => $closed->notice->toArray(),
+                ])->toArray(),
+                409,
+            );
         } catch (DomainException) {
             return new WP_REST_Response(
                 ResponseEnvelope::error(
@@ -78,7 +88,7 @@ final readonly class FlowSubmissionController
         $response = $this->pipeline->run(
             $corexRequest,
             fn (Request $safe): Response => $this->run($flowId, $safe->input),
-            ...$this->middlewareFor($flowId),
+            ...$this->middlewareFor($flowId, absint($this->payload($request)[FlowVisitorSubmissionService::VERSION_FIELD] ?? 0)),
         );
 
         return $this->toRest($response);
@@ -99,11 +109,11 @@ final readonly class FlowSubmissionController
     }
 
     /** @return list<Middleware> */
-    private function middlewareFor(int $flowId): array
+    private function middlewareFor(int $flowId, int $seenVersion): array
     {
         return [
             ...$this->middleware->resolveAll(['nonce']),
-            new SanitizeMiddleware($this->sanitizeShape($this->submissions->schema($flowId))),
+            new SanitizeMiddleware($this->sanitizeShape($this->submissions->schema($flowId, $seenVersion > 0 ? $seenVersion : null))),
             ...$this->middleware->resolveAll(['throttle']),
         ];
     }
@@ -125,6 +135,9 @@ final readonly class FlowSubmissionController
             'page_url' => 'esc_url_raw',
             'referrer' => 'esc_url_raw',
             'locale' => 'sanitize_key',
+            // What the page was printed with: its version and the signed page (spec 122).
+            FlowVisitorSubmissionService::VERSION_FIELD => 'absint',
+            PageReference::FIELD => 'sanitize_text_field',
         ];
         foreach ($schema as $name => $field) {
             $shape[$name] = match ($field->type) {

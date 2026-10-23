@@ -110,6 +110,10 @@ final class MailServiceProvider extends ServiceProvider
                     $defaults['variables'] ?? [],
                 );
 
+                // Another plugin may declare variables of its own: the forms engine declares the
+                // email variables developers register for flow emails (spec 122, FR-023).
+                $schema = apply_filters('corex_email_variable_schema', is_array($schema) ? $schema : []);
+
                 return new EmailTemplateService(
                     is_array($schema) ? $schema : [],
                     $c->make(EmailPartialRepository::class),

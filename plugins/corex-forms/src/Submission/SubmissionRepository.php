@@ -10,6 +10,7 @@ namespace Corex\Forms\Submission;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Flow\FlowResponseCounter;
 use Corex\Models\Model;
 use Corex\Repositories\PostRepository;
 use DateTimeImmutable;
@@ -19,7 +20,7 @@ use DateTimeImmutable;
  * only layer that touches the data source). Stores a private `corex_submission` post
  * plus the form slug and each validated value as `corex_field_*` meta — queryable by slug.
  */
-final class SubmissionRepository extends PostRepository implements SubmissionStore
+final class SubmissionRepository extends PostRepository implements SubmissionStore, FlowResponseCounter
 {
     protected function model(): string
     {
@@ -138,6 +139,125 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
             'created_at' => (new DateTimeImmutable('now'))->format(DATE_ATOM),
         ];
         $this->fields->set($submissionId, 'corex_submission_timeline', $timeline);
+    }
+
+    /**
+     * Stored responses of a flow: kept (not in the trash) and not a marked test (spec 122, FR-030).
+     */
+    public function responses(int $flowId): int
+    {
+        $query = new \WP_Query([
+            'post_type' => 'corex_submission',
+            'post_status' => 'private',
+            'fields' => 'ids',
+            'posts_per_page' => 1,
+            'no_found_rows' => false,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
+            'meta_query' => [
+                ['key' => 'corex_flow_id', 'value' => $flowId, 'compare' => '=', 'type' => 'NUMERIC'],
+                ['key' => 'corex_is_test', 'value' => '1', 'compare' => '!='],
+            ],
+        ]);
+
+        return (int) $query->found_posts;
+    }
+
+    /**
+     * Runs `$work` while no other request runs it for the same flow: a capped flow's count and its
+     * store happen under one MySQL named lock, so two last submissions never both fit (FR-030).
+     * MySQL lets the lock go if the request dies, so nothing is left to clear.
+     *
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    public function oneAtATime(int $flowId, callable $work): mixed
+    {
+        global $wpdb;
+
+        $lock = 'corex_flow_cap_' . $flowId;
+        if ((int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $lock, 10)) !== 1) {
+            throw new \RuntimeException('CoreX could not count the responses of this form.');
+        }
+        try {
+            return $work();
+        } finally {
+            $wpdb->query($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock));
+        }
+    }
+
+    /**
+     * Whether anything is assigned to this person directly or to one of their roles (spec 122,
+     * FR-013): what opens an assigned-only inbox for someone who does not manage submissions.
+     *
+     * @param list<string> $roles
+     */
+    public function hasAssigned(int $userId, array $roles): bool
+    {
+        $owners = ['relation' => 'OR', $this->ownerClause('user', (string) $userId)];
+        foreach ($roles as $role) {
+            $owners[] = $this->ownerClause('role', $role);
+        }
+
+        return get_posts([
+            'post_type' => 'corex_submission',
+            'post_status' => 'private',
+            'fields' => 'ids',
+            'posts_per_page' => 1,
+            'no_found_rows' => true,
+            'meta_query' => [$owners],
+        ]) !== [];
+    }
+
+    /**
+     * Flow submissions whose owner names nobody: stored with a route's type (flow owner, page
+     * owner, field value…) and not a user, a team or a role (spec 122, FR-014).
+     *
+     * @return list<int>
+     */
+    public function withUnresolvedOwner(): array
+    {
+        return array_map('intval', get_posts([
+            'post_type' => 'corex_submission',
+            'post_status' => ['private', 'trash'],
+            'fields' => 'ids',
+            'posts_per_page' => -1,
+            'no_found_rows' => true,
+            'meta_query' => [
+                ['key' => 'corex_flow_id', 'compare' => 'EXISTS'],
+                [
+                    'key' => 'corex_owner_type',
+                    'value' => ['flow_owner', 'page_owner', 'post_author', 'department', 'field_value', 'email', 'extension'],
+                    'compare' => 'IN',
+                ],
+            ],
+        ]));
+    }
+
+    public function flowOf(int $submissionId): int
+    {
+        return (int) $this->fields->get($submissionId, 'corex_flow_id', 0);
+    }
+
+    /** Gives a submission to a user and says why on its timeline. Nothing else of it changes. */
+    public function reassignToUser(int $submissionId, int $userId, string $reason): void
+    {
+        $this->fields->set($submissionId, 'corex_owner_type', 'user');
+        $this->fields->set($submissionId, 'corex_owner_key', (string) $userId);
+        $inbox = (array) $this->fields->get($submissionId, 'corex_inbox_json', []);
+        $this->fields->set($submissionId, 'corex_inbox_json', [...$inbox, 'owner_type' => 'user', 'owner_key' => (string) $userId]);
+        $this->appendTimeline($submissionId, 'routing', 'info', ['message' => $reason]);
+    }
+
+    /** @return array<string|int,mixed> One owner, as a meta query clause. */
+    private function ownerClause(string $type, string $key): array
+    {
+        return [
+            'relation' => 'AND',
+            ['key' => 'corex_owner_type', 'value' => $type, 'compare' => '='],
+            ['key' => 'corex_owner_key', 'value' => $key, 'compare' => '='],
+        ];
     }
 
     /** @param array<string,mixed> $metadata */

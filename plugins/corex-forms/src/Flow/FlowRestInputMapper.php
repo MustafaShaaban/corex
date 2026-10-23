@@ -11,6 +11,8 @@ namespace Corex\Forms\Flow;
 defined('ABSPATH') || exit;
 
 use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
 use WP_REST_Request;
 
 /**
@@ -44,6 +46,45 @@ final class FlowRestInputMapper
     public function transitionShape(): array
     {
         return ['expected_version' => 'absint'];
+    }
+
+    public function copyShape(): array
+    {
+        return ['expected_version' => 'absint', 'expected_checksum' => 'sanitize_text_field'];
+    }
+
+    public function availabilityShape(): array
+    {
+        return ['availability' => $this->structured(...)];
+    }
+
+    public function routingPreviewShape(): array
+    {
+        return ['routing' => $this->structured(...), 'schema' => $this->structured(...)];
+    }
+
+    /**
+     * What the Availability tab sent. Its dates are the site's local date and time, as the
+     * editor's fields show them, and are kept as instants in UTC (spec 122, FR-026).
+     *
+     * @param array<string,mixed> $input
+     */
+    public function availability(array $input): FlowAvailability
+    {
+        $sent = (array) ($input['availability'] ?? []);
+
+        return FlowAvailability::fromArray([
+            'opens_at' => $this->instant($sent['opens_at'] ?? ''),
+            'closes_at' => $this->instant($sent['closes_at'] ?? ''),
+            'max_responses' => $sent['max_responses'] ?? null,
+            'closed_message' => sanitize_textarea_field((string) ($sent['closed_message'] ?? '')),
+            'alternative' => [
+                'type' => sanitize_key((string) ($sent['alternative']['type'] ?? 'none')),
+                'label' => sanitize_text_field((string) ($sent['alternative']['label'] ?? '')),
+                'url' => esc_url_raw((string) ($sent['alternative']['url'] ?? '')),
+                'email' => sanitize_email((string) ($sent['alternative']['email'] ?? '')),
+            ],
+        ]);
     }
 
     public function testShape(): array
@@ -108,7 +149,22 @@ final class FlowRestInputMapper
             success: (array) ($document['success'] ?? []),
             placementSnapshot: (array) ($document['placement_snapshot'] ?? []),
             protection: FlowProtection::normalize($document['protection'] ?? []),
+            actions: FlowConfiguration::actionKeys($document['actions'] ?? []),
         );
+    }
+
+    /** A local `Y-m-d\TH:i` in the site's time zone, as an ATOM instant in UTC; '' when empty or unreadable. */
+    private function instant(mixed $local): string
+    {
+        $local = is_string($local) ? trim($local) : '';
+        if ($local === '') {
+            return '';
+        }
+        try {
+            return (new DateTimeImmutable($local, wp_timezone()))->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM);
+        } catch (Exception) {
+            return '';
+        }
     }
 
     private function nullableId(mixed $candidate): ?int

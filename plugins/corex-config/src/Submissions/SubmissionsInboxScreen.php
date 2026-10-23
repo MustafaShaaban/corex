@@ -32,6 +32,7 @@ final class SubmissionsInboxScreen
         private readonly SubmissionRetention $retention,
         private readonly FlowFilterOptions $flows,
         private readonly SubmissionTrashRetention $trash,
+        private readonly SubmissionAccessPolicy $access,
     ) {
     }
 
@@ -47,7 +48,7 @@ final class SubmissionsInboxScreen
             'corex-settings',
             __('CoreX Submissions', 'corex'),
             __('Submissions', 'corex'),
-            CorexAbility::MANAGE_SUBMISSIONS,
+            $this->capability(),
             'corex-submissions',
             [$this, 'render'],
             26,
@@ -119,14 +120,31 @@ final class SubmissionsInboxScreen
             __('Search, assign, reply, export, and retain every accessible real or marked-test flow response.', 'corex'),
         );
         echo '<div id="corex-submissions-app" aria-live="polite"></div>';
-        echo $this->retentionNotice() . $this->retentionPanel();
+        if ($this->manages()) {
+            echo $this->retentionNotice() . $this->retentionPanel();
+        }
         echo $this->page->close();
+    }
+
+    /**
+     * Managers open the screen by their ability. Someone routing gave work to opens it as anyone
+     * signed in may, and sees only what is theirs (spec 122, FR-013): WordPress asks for this
+     * capability before the screen draws, so it is the one they hold.
+     */
+    private function capability(): string
+    {
+        return ! $this->manages() && $this->authorized() ? 'read' : CorexAbility::MANAGE_SUBMISSIONS;
+    }
+
+    private function manages(): bool
+    {
+        return $this->guard->authorized(CorexAbility::MANAGE_SUBMISSIONS)
+            || $this->guard->authorized('manage_options');
     }
 
     private function authorized(): bool
     {
-        return $this->guard->authorized(CorexAbility::MANAGE_SUBMISSIONS)
-            || $this->guard->authorized('manage_options');
+        return $this->manages() || $this->access->scopeFor(get_current_user_id()) !== null;
     }
 
     private function retentionPanel(): string

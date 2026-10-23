@@ -40,7 +40,27 @@ use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Schema\FieldTypeRegistry;
+use Corex\Forms\Routing\AssignedAccess;
+use Corex\Forms\Routing\AssigneeResolver;
+use Corex\Forms\Routing\FlowOwnerUpgrade;
+use Corex\Forms\Routing\RoutedRecipients;
+use Corex\Forms\Routing\RoutingDirectory;
+use Corex\Forms\Routing\RoutingOwnerLabel;
+use Corex\Forms\Routing\RoutingPreview;
 use Corex\Forms\Routing\RoutingService;
+use Corex\Forms\Routing\RoutingTargetRegistry;
+use Corex\Forms\Routing\Teams\TeamController;
+use Corex\Forms\Routing\Teams\TeamService;
+use Corex\Forms\Routing\Teams\TeamStore;
+use Corex\Forms\Routing\Teams\WpTeamStore;
+use Corex\Forms\Routing\WpRoutingDirectory;
+use Corex\Forms\Flow\EmailVariableValues;
+use Corex\Forms\Flow\FlowExtensionHooks;
+use Corex\Forms\Flow\FlowNoticeText;
+use Corex\Forms\Flow\FlowResponseCounter;
+use Corex\Forms\Flow\FlowStatusResolver;
+use Corex\Forms\Submission\PageReference;
+use Corex\Forms\Submission\Stages\ActionsStage;
 use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\FormSubmissionPipeline;
 use Corex\Forms\Submission\FlowEmailSender;
@@ -116,12 +136,35 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(EmailVariableRegistry::class);
         $this->container->singleton(SuccessStateRegistry::class);
         $this->container->singleton(FlowBehaviorRegistries::class);
+        // Routing to people (spec 122): teams, the site's directory, and who a target assigns.
+        $this->container->singleton(RoutingTargetRegistry::class);
+        $this->container->singleton(WpTeamStore::class);
+        $this->container->singleton(TeamStore::class, static fn (ContainerInterface $c): TeamStore => $c->make(WpTeamStore::class));
+        $this->container->singleton(TeamService::class);
+        $this->container->singleton(WpRoutingDirectory::class);
+        $this->container->singleton(RoutingDirectory::class, static fn (ContainerInterface $c): RoutingDirectory => $c->make(WpRoutingDirectory::class));
+        $this->container->singleton(AssigneeResolver::class);
+        $this->container->singleton(RoutedRecipients::class);
+        $this->container->singleton(RoutingOwnerLabel::class);
+        $this->container->singleton(RoutingPreview::class);
+        $this->container->singleton(TeamController::class);
+        $this->container->singleton(AssignedAccess::class);
+        $this->container->singleton(FlowOwnerUpgrade::class);
+        $this->container->singleton(FlowExtensionHooks::class);
+        $this->container->singleton(EmailVariableValues::class);
+        $this->container->singleton(PageReference::class);
+        $this->container->singleton(FlowNoticeText::class);
+        $this->container->singleton(FlowResponseCounter::class, static fn (ContainerInterface $c): FlowResponseCounter => $c->make(SubmissionRepository::class));
+        $this->container->singleton(FlowStatusResolver::class);
         $this->container->singleton(
             FlowExtensionCatalog::class,
             static fn (ContainerInterface $c): FlowExtensionCatalog => new FlowExtensionCatalog(
                 $c->make(FieldTypeRegistry::class),
                 $c->make(RuleRegistry::class),
                 $c->make(FlowBehaviorRegistries::class),
+                $c->make(RoutingTargetRegistry::class),
+                $c->make(RoutingDirectory::class),
+                $c->make(TeamService::class),
                 $c->has(MailTemplateCatalog::class) ? $c->make(MailTemplateCatalog::class) : null,
             ),
         );
@@ -135,8 +178,23 @@ final class FormsServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): FlowStore => $c->make(WpFlowStore::class),
         );
         $this->container->singleton(FlowRepository::class);
-        $this->container->singleton(FlowConfigurationValidator::class);
-        $this->container->singleton(FlowService::class);
+        $this->container->singleton(
+            FlowConfigurationValidator::class,
+            static fn (ContainerInterface $c): FlowConfigurationValidator => new FlowConfigurationValidator(
+                $c->make(FieldTypeRegistry::class),
+                $c->make(RuleRegistry::class),
+                $c->make(SuccessStateRegistry::class),
+                $c->make(FlowActionRegistry::class),
+            ),
+        );
+        $this->container->singleton(
+            FlowService::class,
+            static fn (ContainerInterface $c): FlowService => new FlowService(
+                $c->make(FlowRepository::class),
+                $c->make(FlowConfigurationValidator::class),
+                $c->make(FlowNoticeText::class),
+            ),
+        );
         $this->container->singleton(FlowControllerServices::class);
         $this->container->singleton(FlowController::class);
 
@@ -217,6 +275,7 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(EmailStage::class);
         $this->container->singleton(InboxStage::class);
         $this->container->singleton(TimelineStage::class);
+        $this->container->singleton(ActionsStage::class);
         $this->container->singleton(
             FormSubmissionPipeline::class,
             static fn (ContainerInterface $c): FormSubmissionPipeline => new FormSubmissionPipeline([
@@ -227,6 +286,8 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(EmailStage::class),
                 $c->make(InboxStage::class),
                 $c->make(TimelineStage::class),
+                // Last: an action sees what was kept and cannot stop any of it (spec 122, FR-022).
+                $c->make(ActionsStage::class),
             ]),
         );
         $this->container->singleton(FlowTestService::class);
@@ -290,13 +351,36 @@ final class FormsServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerSubmissionPostType']);
         add_action('init', [$this, 'registerFlowPostType']);
         add_action('init', [$this, 'registerFormBlock']);
+        // The documented hooks, read once every plugin has had `init` to add to them (spec 122).
+        add_action('init', fn () => $this->container->make(FlowExtensionHooks::class)->register(), 20);
+        add_filter('corex_email_variable_schema', [$this, 'declareEmailVariables']);
+        $this->container->make(AssignedAccess::class)->register();
+        $this->container->make(FlowOwnerUpgrade::class)->register();
 
         add_action('rest_api_init', function (): void {
             $this->container->make(SubmitController::class)->register();
             $this->container->make(FormsListController::class)->register();
             $this->container->make(FlowController::class)->register();
             $this->container->make(FlowSubmissionController::class)->register();
+            $this->container->make(TeamController::class)->register();
         });
+    }
+
+    /**
+     * Registered email variables join Email Studio's variable list, so a template can use them
+     * (spec 122, FR-023). They are filled in when a flow email is sent.
+     *
+     * @param mixed $schema The variables declared so far, key => ['type', 'label'].
+     * @return array<string,array{type:string,label:string}>
+     */
+    public function declareEmailVariables(mixed $schema): array
+    {
+        $schema = is_array($schema) ? $schema : [];
+        foreach ($this->container->make(EmailVariableRegistry::class)->definitions() as $definition) {
+            $schema[$definition['key']] ??= ['type' => 'text', 'label' => $definition['label']];
+        }
+
+        return $schema;
     }
 
     /**

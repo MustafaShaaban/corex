@@ -12,17 +12,28 @@ defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockRenderer;
 use Corex\Forms\Flow\Flow;
+use Corex\Forms\Flow\FlowNotice;
+use Corex\Forms\Flow\FlowNoticeText;
 use Corex\Forms\Flow\FlowProtection;
 use Corex\Forms\Flow\FlowRepository;
+use Corex\Forms\Flow\FlowStatus;
+use Corex\Forms\Flow\FlowStatusResolver;
 use Corex\Forms\Flow\FlowVersion;
 use Corex\Forms\Schema\SchemaExporter;
 use Corex\Forms\Submission\CaptchaAction;
 use Corex\Forms\Submission\FlowSchemaFactory;
 use Corex\Forms\Submission\FormChallengeContextFactory;
+use Corex\Forms\Submission\FlowVisitorSubmissionService;
 use Corex\Forms\Submission\FormSubmissionService;
+use Corex\Forms\Submission\PageReference;
+use DateTimeImmutable;
 
 /**
  * Renders every persisted-flow block presentation from the same published snapshot.
+ *
+ * A flow that is not taking answers is not left out (spec 122, US-VIS-01): a closed, expired or
+ * not-yet-open flow shows its heading and a notice with the owner's alternative, and a draft or
+ * missing flow shows nothing to visitors and a note to signed-in editors.
  */
 final readonly class FlowBlockRenderer implements BlockRenderer
 {
@@ -35,6 +46,9 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         private FieldRenderer $fields,
         private FormChallengeContextFactory $challenge,
         private ProtectedFormRegistry $protectedForms,
+        private FlowStatusResolver $statuses,
+        private FlowNoticeText $notices,
+        private PageReference $pages,
     ) {
     }
 
@@ -42,15 +56,17 @@ final readonly class FlowBlockRenderer implements BlockRenderer
     public function render(array $attributes, string $content, object $block): string
     {
         $flow = $this->resolveFlow($attributes);
-        if ($flow === null || $flow->state !== Flow::STATE_PUBLISHED || $flow->publishedVersion < 1) {
-            return '';
-        }
-        $version = $this->flows->findVersion($flow->id, $flow->publishedVersion);
-        if ($version === null) {
-            return '';
+        $status = $flow === null ? null : $this->statuses->at($flow, new DateTimeImmutable('now'));
+        $version = $flow === null || $flow->publishedVersion < 1 ? null : $this->flows->findVersion($flow->id, $flow->publishedVersion);
+        if ($flow === null || $status === null || $status->state === FlowStatus::DRAFT || $version === null) {
+            return $this->editorNote($flow);
         }
 
         $variant = $this->variant($attributes);
+        $notice = $this->notices->notice($flow, $status);
+        if ($notice instanceof FlowNotice) {
+            return $variant === 'success-message' ? '' : $this->unavailable($flow, $notice, $variant, $attributes);
+        }
         if ($variant === 'success-message') {
             return $this->successMessage($flow, $version);
         }
@@ -58,7 +74,73 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         wp_enqueue_script('corex-runtime');
         wp_enqueue_style('corex-runtime');
 
-        return $this->flowForm($flow, $version, $variant, $attributes);
+        return $this->flowForm($flow, $version, $variant, $attributes, $this->pageId($block));
+    }
+
+    /**
+     * What stands where a closed, expired or not-yet-open flow's form would be: its heading and a
+     * titled notice, with the owner's alternative. Read once by a screen reader: it is no live
+     * region, the page says it as it loads.
+     *
+     * @param array<string,mixed> $attributes
+     */
+    private function unavailable(Flow $flow, FlowNotice $notice, string $variant, array $attributes): string
+    {
+        $heading = trim((string) ($attributes['heading'] ?? ''));
+        $link = $notice->link();
+
+        return sprintf(
+            '<section class="corex-flow corex-flow--%1$s corex-flow--unavailable" data-corex-flow-name="%2$s">%3$s'
+            . '<div class="corex-flow-notice"><p class="corex-flow-notice__title">%4$s</p>'
+            . '<p class="corex-flow-notice__message">%5$s</p>%6$s</div>%7$s</section>',
+            esc_attr($variant),
+            esc_attr($flow->name),
+            $this->heading($heading !== '' ? $heading : $flow->name),
+            esc_html($notice->title),
+            esc_html($notice->message),
+            $link['url'] === '' ? '' : sprintf(
+                '<p class="corex-flow-notice__alternative"><a href="%1$s">%2$s</a></p>',
+                esc_url($link['url'], ['http', 'https', 'mailto']),
+                esc_html($link['label']),
+            ),
+            $this->editorsSee(sprintf(
+                /* translators: %s: the name of a form built in Forms & Flows. */
+                __('Only editors see this: the form "%s" is not taking answers. Reopen it or change its dates in Forms & Flows.', 'corex'),
+                $flow->name,
+            ), $flow),
+        );
+    }
+
+    /** Nothing for a visitor; for a signed-in editor, a note that the block's form is not published. */
+    private function editorNote(?Flow $flow): string
+    {
+        $note = $this->editorsSee(__('Only editors see this: the form in this block is not published.', 'corex'), $flow);
+
+        return $note === '' ? '' : sprintf('<section class="corex-flow corex-flow--unavailable">%s</section>', $note);
+    }
+
+    /** A note only someone who can edit pages reads, with a link to the flow for whoever may open it. */
+    private function editorsSee(string $text, ?Flow $flow): string
+    {
+        if (! is_user_logged_in() || ! current_user_can('edit_posts')) {
+            return '';
+        }
+        $link = '';
+        if (current_user_can('corex_manage_forms') || current_user_can('manage_options')) {
+            $address = admin_url('admin.php?page=corex-forms' . ($flow === null ? '' : '&corex_flow=' . $flow->id));
+            $link = sprintf(' <a href="%1$s">%2$s</a>', esc_url($address), esc_html__('Open it in Forms & Flows', 'corex'));
+        }
+
+        return sprintf('<p class="corex-flow-notice corex-flow-notice--editors">%1$s%2$s</p>', esc_html($text), $link);
+    }
+
+    /** The page the block is printed on, for "Page owner" routing. */
+    private function pageId(object $block): int
+    {
+        $context = property_exists($block, 'context') && is_array($block->context) ? $block->context : [];
+        $pageId = (int) ($context['postId'] ?? 0);
+
+        return $pageId > 0 ? $pageId : (int) get_queried_object_id();
     }
 
     /** @param array<string,mixed> $attributes */
@@ -82,7 +164,7 @@ final readonly class FlowBlockRenderer implements BlockRenderer
     }
 
     /** @param array<string,mixed> $attributes */
-    private function flowForm(Flow $flow, FlowVersion $version, string $variant, array $attributes): string
+    private function flowForm(Flow $flow, FlowVersion $version, string $variant, array $attributes, int $pageId): string
     {
         $schema = $this->schemas->make($version->configuration);
         $fields = '';
@@ -102,6 +184,7 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             . ' data-corex-success="%10$s" data-corex-success-config="%11$s" data-corex-error="%12$s" data-corex-schema="%13$s"'
             . ' data-corex-messages="%18$s">'
             . '%14$s<input type="text" name="%15$s" class="corex-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true" value="" />'
+            . '<input type="hidden" name="%19$s" value="%7$d" />%20$s'
             . '%16$s'
             . '<button type="submit" class="corex-form__submit">%17$s</button>'
             . '<p class="corex-form__status" role="status" aria-live="polite"></p></form></section>',
@@ -123,6 +206,12 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             $this->captchaField($flow, $version),
             esc_html($submitLabel !== '' ? $submitLabel : $this->defaultSubmitLabel($variant)),
             esc_attr(ValidationMessages::toAttribute()),
+            esc_attr(FlowVisitorSubmissionService::VERSION_FIELD),
+            $pageId > 0 ? sprintf(
+                '<input type="hidden" name="%1$s" value="%2$s" />',
+                esc_attr(PageReference::FIELD),
+                esc_attr($this->pages->sign($pageId, $flow->id)),
+            ) : '',
         );
     }
 
