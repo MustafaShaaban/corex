@@ -52,6 +52,8 @@ asked through `createReleaseClient()` from `plugins/corex-config/src/Releases/re
 and the Basic header, so the installer's mark, the waits past a host's own pages and the installation's key
 are the screen's.
 
+0. `GET <site>/?rest_route=/wp/v2/users/me`, once: a 401 or 403 from WordPress (wrong or revoked password)
+   stops at once with its code (exit 2), where the installer's client would ask again for half a minute.
 1. `GET releases`. Refusal: stop (exit 2). An installation standing at a step other than `awaiting`: without
    `--resume`, say where it stands and stop (exit 2); with it, go to step 9. `blockers`: stop (exit 2).
 2. Build with `node scripts/build-shared-host-dist.mjs --client=… [--with-plugin=…] [--pdf-fonts=…] --zip` and
@@ -69,7 +71,9 @@ are the screen's.
    when it names the same package, or, without one, enough tries (50) to outlast WordPress's ten minutes of
    maintenance; then `runInstallation()` from the standing step.
 10. Remove the state file. `GET releases` and `GET <site>/`: exit 0 only when the site runs the version
-    installed and its home page answers below 500; otherwise exit 2 with the way back.
+    installed and its home page answers below 500, or 503 (a site in maintenance mode, reported); otherwise
+    exit 2 with the way back. When the check itself gets no answer, say the installation finished and exit 3.
+    A refused confirm removes the state file the run wrote.
 
 ## Output on failure (FR-015d)
 

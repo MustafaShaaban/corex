@@ -58,6 +58,8 @@ function fakeSite( given = {} ) {
 			downgrades: [],
 			blockers: [],
 		},
+		home: 200,
+		silentAfterInstall: false,
 		answers: {},
 		...given,
 	};
@@ -75,7 +77,7 @@ function fakeSite( given = {} ) {
 		calls.push( { method, route, url, headers: init.headers ?? {}, body } );
 
 		if ( url === `${ SITE }/` ) {
-			return { status: 200, text: async () => '<html>' };
+			return { status: site.home, text: async () => '<html>' };
 		}
 		if (
 			init.headers?.Authorization !==
@@ -99,8 +101,20 @@ function fakeSite( given = {} ) {
 			return typeof answer === 'function' ? answer( init ) : answer;
 		}
 
+		const page = {
+			status: 200,
+			text: async () => '<html>a host page</html>',
+			clone() {
+				return this;
+			},
+		};
 		switch ( `${ method } ${ route.replace( HASH, '<hash>' ) }` ) {
+			case 'GET /wp/v2/users/me':
+				return { ...page, text: async () => '{"id":7}' };
 			case 'GET ':
+				if ( site.silentAfterInstall && site.runs === '0.48.0' ) {
+					return page;
+				}
 				return ok( {
 					installed: {
 						known: true,
@@ -202,6 +216,7 @@ describe( 'release:push', () => {
 
 		expect( code ).toBe( EXIT.DONE );
 		expect( routesOf( site.calls ) ).toEqual( [
+			'GET /wp/v2/users/me',
 			'GET ',
 			'GET /uploads/<hash>',
 			'POST /uploads/<hash>',
@@ -312,7 +327,10 @@ describe( 'release:push', () => {
 		expect( code ).toBe( EXIT.REFUSED );
 		expect( output ).toContain( 'stands on the site' );
 		expect( output ).toContain( '--resume' );
-		expect( routesOf( site.calls ) ).toEqual( [ 'GET ' ] );
+		expect( routesOf( site.calls ) ).toEqual( [
+			'GET /wp/v2/users/me',
+			'GET ',
+		] );
 	} );
 
 	it( 'goes on with a standing installation, carrying the key its first run kept past the maintenance answer', async () => {
@@ -392,7 +410,10 @@ describe( 'release:push', () => {
 		expect( output ).toContain(
 			"define( 'COREX_ALLOW_RELEASE_PUSH', true ); to its wp-config.php. (push_off)"
 		);
-		expect( routesOf( site.calls ) ).toEqual( [ 'GET ' ] );
+		expect( routesOf( site.calls ) ).toEqual( [
+			'GET /wp/v2/users/me',
+			'GET ',
+		] );
 	} );
 
 	it( "names WordPress's refusal of a wrong Application Password", async () => {
@@ -414,6 +435,44 @@ describe( 'release:push', () => {
 		expect( output ).toContain(
 			'WordPress refused the account (401 incorrect_password)'
 		);
+		// Said at once: the installer's client would take the 401 for a host's page and ask again.
+		expect( routesOf( site.calls ) ).toEqual( [ 'GET /wp/v2/users/me' ] );
+	} );
+
+	it( 'says the installation finished when only the check after it gets no answer', async () => {
+		const site = fakeSite( { silentAfterInstall: true } );
+
+		const { code, output } = await push( site );
+
+		expect( code ).toBe( EXIT.UNREACHABLE );
+		expect( output ).toContain( 'Installed: CoreX 0.48.0.' );
+		expect( output ).toContain(
+			'The site finished the installation, then did not answer the check'
+		);
+		expect( output ).not.toContain( 'No folder of the site was moved' );
+	} );
+
+	it( 'reports a home page in maintenance mode without counting it as a failure', async () => {
+		const site = fakeSite( { home: 503 } );
+
+		const { code, output } = await push( site );
+
+		expect( code ).toBe( EXIT.DONE );
+		expect( output ).toContain(
+			'is what a site in maintenance mode shows'
+		);
+	} );
+
+	it( 'keeps no key when the site refuses the confirmation', async () => {
+		const site = fakeSite( {
+			answers: { 'POST /install/confirm': no( 'not_confirmed' ) },
+		} );
+
+		const { code, output, state } = await push( site );
+
+		expect( code ).toBe( EXIT.REFUSED );
+		expect( output ).toContain( 'Nothing on the site changed.' );
+		expect( state ).toBeNull();
 	} );
 } );
 

@@ -134,6 +134,9 @@ Installed: CoreX 1.2.4.
 The site says it runs CoreX 1.2.4; its home page answers 200.
 ```
 
+A home page that answers `503` is reported, not counted as a failure: it is what a site in maintenance
+mode shows. A site that is not in maintenance mode and answers `503` should be looked at at once.
+
 It ends with one of these exit codes, which a client's own script can act on:
 
 | Code | Meaning |
@@ -156,7 +159,8 @@ The command says what happened in the site's own words, and what the way back is
 | `push_off` | Add `COREX_ALLOW_RELEASE_PUSH` to the site's `wp-config.php` (above). |
 | `push_needs_https` | Use the site's `https://` address. |
 | `not_allowed`, or WordPress's `rest_forbidden` | The account may not install releases: see "What it needs". |
-| WordPress's `incorrect_password` or `invalid_username` | The user or the Application Password in your settings is wrong, or was revoked. |
+| WordPress's `incorrect_password`, `invalid_username` or `rest_not_logged_in` | The user or the Application Password in your settings is wrong, or was revoked. |
+| WordPress's `rest_forbidden`, with a password you know is right | WordPress may not see the request as HTTPS (a proxy or CDN ends HTTPS before PHP), and then it turns Application Passwords off. Ask the host to pass HTTPS on to PHP. |
 
 The command then prints `Nothing on the site changed.`
 

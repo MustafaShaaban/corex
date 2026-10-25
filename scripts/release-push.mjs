@@ -63,6 +63,9 @@ const A_PACKAGE_NAME = /^corex-release-[A-Za-z0-9][A-Za-z0-9._-]*\.zip$/;
 const LOCAL_HOST =
 	/^(?:localhost|127\.0\.0\.1|\[::1\]|.+\.localhost|.+\.test|.+\.local)$/i;
 
+/** What a site in maintenance mode answers visitors, on purpose: not a sign the release broke it. */
+const MAINTENANCE_STATUS = 503;
+
 /** The step at which an installation awaits its confirmation and has started nothing. */
 const AWAITING = 'awaiting';
 
@@ -450,13 +453,17 @@ export async function pushRelease( asked, settings, deps ) {
 			wait: deps.wait,
 			...more,
 		} );
-	let client = clientWith();
+	let client;
 	let started = false;
+	let preparedHere = false;
+
+	const wordpressRefused = ( { status, code, message } ) =>
+		`WordPress refused the account (${ status } ${ code }): ${ message } Check the user and its Application Password, and that the account may install releases (corex_manage_releases).`;
 
 	const refusalOf = ( failure ) => {
 		const wordpress = signed.turnedAway();
 		if ( failure.name === 'ReleaseUnreachableError' && wordpress ) {
-			return `WordPress refused the account (${ wordpress.status } ${ wordpress.code }): ${ wordpress.message } Check the user and its Application Password, and that the account may install releases (corex_manage_releases).`;
+			return wordpressRefused( wordpress );
 		}
 		return failure.reason
 			? `${ failure.message } (${ failure.reason })`
@@ -466,6 +473,10 @@ export async function pushRelease( asked, settings, deps ) {
 	const theWayBack = ( failure ) => {
 		if ( ! started ) {
 			out( 'Nothing on the site changed.' );
+			if ( preparedHere ) {
+				// Prepared and never confirmed: the key opens nothing that will run.
+				deps.state.clear();
+			}
 			return;
 		}
 		if ( ! failure.filesInPlace ) {
@@ -499,6 +510,11 @@ export async function pushRelease( asked, settings, deps ) {
 	out(
 		`Site: ${ settings.site }, signed in as ${ settings.user } (settings from ${ settings.from })`
 	);
+	if ( ! ( await signsIn() ) ) {
+		out( 'Nothing on the site changed.' );
+		return EXIT.REFUSED;
+	}
+	client = clientWith();
 	try {
 		const opening = await client.overview();
 		out(
@@ -556,10 +572,10 @@ export async function pushRelease( asked, settings, deps ) {
 	}
 
 	async function installAnew( opening ) {
-		const { path, name } = await sendPackage( opening.part_bytes );
+		const { name, sha256 } = await sendPackage( opening.part_bytes );
 		if ( asked.uploadOnly ) {
 			out(
-				`On the site as ${ name }, SHA-256 ${ await deps.sha256OfFile( path ) }. Not installed (--upload-only).`
+				`On the site as ${ name }, SHA-256 ${ sha256 }. Not installed (--upload-only).`
 			);
 			return EXIT.DONE;
 		}
@@ -597,9 +613,10 @@ export async function pushRelease( asked, settings, deps ) {
 		out( `Package: ${ file.name } (${ megabytes( file.size ) })` );
 
 		let shown = -1;
+		let sha256 = null;
 		const name = await client.upload( file, {
 			partBytes,
-			hash: ( f ) => deps.sha256OfFile( f.path ),
+			hash: async ( f ) => ( sha256 = await deps.sha256OfFile( f.path ) ),
 			onProgress: ( held ) => {
 				const tenth = Math.floor( ( held / file.size ) * 10 );
 				if ( tenth > shown ) {
@@ -609,7 +626,7 @@ export async function pushRelease( asked, settings, deps ) {
 			},
 		} );
 
-		return { path, name };
+		return { name, sha256 };
 	}
 
 	async function prepareAndConfirm( name, version ) {
@@ -621,6 +638,7 @@ export async function pushRelease( asked, settings, deps ) {
 			key: prepared.key,
 			recovery_link: prepared.recovery_link,
 		} );
+		preparedHere = true;
 		( prepared.drops ?? [] ).forEach( ( folder ) =>
 			out( `  goes out with the previous release: ${ folder }` )
 		);
@@ -629,6 +647,27 @@ export async function pushRelease( asked, settings, deps ) {
 			older: asked.acceptOlder,
 			downgrade: asked.acceptDowngrades,
 		} );
+	}
+
+	/**
+	 * Whether WordPress signs the account in with its Application Password. Asked of WordPress's
+	 * own route once: a wrong password is a 401 the installer's client would take for a host's
+	 * page and ask again for half a minute.
+	 */
+	async function signsIn() {
+		const answered = await signed
+			.fetch( `${ settings.site }/?rest_route=/wp/v2/users/me` )
+			.then(
+				( response ) => response.status,
+				() => null
+			);
+		const wordpress = signed.turnedAway();
+		if ( answered !== null && wordpress ) {
+			out( `Stopped: ${ wordpressRefused( wordpress ) }` );
+			return false;
+		}
+		// Anything else, unreachable included, is left to the installer's client, which waits and asks again.
+		return true;
 	}
 
 	async function built() {
@@ -684,27 +723,47 @@ export async function pushRelease( asked, settings, deps ) {
 
 	async function finishAndCheck( installed, version ) {
 		deps.state.clear();
-		const after = await client.overview();
+		out(
+			`Installed: CoreX ${ installed.version }${ installed.changes?.length ? `, ${ installed.changes.length } database change(s)` : '' }.`
+		);
+
+		let runs;
+		try {
+			runs = ( await client.overview() ).installed?.version;
+		} catch ( failure ) {
+			if ( ! EXPLAINED.includes( failure.name ) ) {
+				throw failure;
+			}
+			// The installation is over; only the check is not. The catch below would say nothing moved.
+			out(
+				`The site finished the installation, then did not answer the check: ${ refusalOf( failure ) } CoreX > Releases on the site says which release it runs.`
+			);
+			return EXIT.UNREACHABLE;
+		}
 		const home = await deps
 			.fetch( `${ settings.site }/`, { redirect: 'follow' } )
 			.then(
 				( response ) => response.status,
 				() => null
 			);
-		const runs = after.installed?.version;
-
-		out(
-			`Installed: CoreX ${ installed.version }${ installed.changes?.length ? `, ${ installed.changes.length } database change(s)` : '' }.`
-		);
 		out(
 			`The site says it runs CoreX ${ runs ?? '(cannot say)' }; its home page answers ${ home ?? 'nothing' }.`
 		);
 
-		if ( runs !== version || home === null || home >= 500 ) {
-			out(
-				'That is not the release that was installed, or the site is not answering as it should. Look at it now; CoreX > Releases > "Go back" puts the previous release back.'
-			);
+		const goBack =
+			'Look at it now; CoreX > Releases > "Go back" puts the previous release back.';
+		if ( runs !== version ) {
+			out( `That is not the release that was installed. ${ goBack }` );
 			return EXIT.REFUSED;
+		}
+		if ( home === null || ( home >= 500 && home !== MAINTENANCE_STATUS ) ) {
+			out( `The home page is not answering as it should. ${ goBack }` );
+			return EXIT.REFUSED;
+		}
+		if ( home === MAINTENANCE_STATUS ) {
+			out(
+				`A home page that answers ${ MAINTENANCE_STATUS } is what a site in maintenance mode shows. If this site is not in maintenance mode: ${ goBack }`
+			);
 		}
 		return EXIT.DONE;
 	}
