@@ -312,6 +312,8 @@ nobody against it: the link asks for a key, not a name.
 
 ## See also
 
+- [Releases from your machine, in one command](./releases-from-your-machine.md): the same installation
+  from `npm run release:push`, with no browser.
 - [The first installation, by hand](./first-installation-by-hand.md) — once per site, and how a
   site that has been updated by unpacking zips moves to the screen.
 - [Shared-host dist artifact](./shared-host-dist.md) — the builder, `--zip` and `--with-plugin`.
