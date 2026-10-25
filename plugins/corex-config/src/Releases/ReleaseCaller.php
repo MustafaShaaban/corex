@@ -18,7 +18,7 @@ use WP_Application_Passwords;
  * install a release (spec 123, FR-014 and FR-014a; DECISIONS #512).
  *
  * The Releases routes were the screen's alone: a request needed the nonce of a signed-in admin
- * page. A site whose `wp-config.php` defines `PUSH_ALLOWED_BY` as true also lets a command on the
+ * page. A site whose `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as true also lets a command on the
  * owner's machine use them, signed in with an Application Password over HTTPS. The switch is a
  * constant and not a setting, because a setting could be turned on over REST by the very
  * credential it lets in.

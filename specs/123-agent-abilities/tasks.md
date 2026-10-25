@@ -107,7 +107,7 @@ server (FR-001 exception, FR-002, FR-003; DECISIONS #500, #508).
 
   Unit test `tests/Unit/Abilities/AgentSwitchTest.php`.
 - [ ] T014 `Corex\Abilities\AgentCallJournal` in `plugins/corex-core/src/Abilities/AgentCallJournal.php`:
-  - `call()`, `uploaded()` and `switchChanged()`, each writing one event of `data-model.md` through
+  - `call()` and `switchChanged()`, each writing one event of `data-model.md` through
     `ActivityService::record()`;
   - context holds only the definition's `kept` fields plus the Application Password UUID from
     `rest_get_authenticated_app_password()`;

@@ -44,9 +44,9 @@ called
 | Column | Value |
 |---|---|
 | `area` | `agents` (new `ActivityEvent::AREA_AGENTS`) |
-| `kind` | `agent.call` (calls) or `agent.release.uploaded` (completed upload signed with an Application Password) |
+| `kind` | `agent.call`. (An upload or installation signed with an Application Password is not an agent call: the release record's `signed_in_with` names the password instead, DECISIONS #512, FR-014a.) |
 | `actor_*` | the WordPress user; kind `user` |
-| `target_type` / `target_id` | `ability` / the ability's name (for uploads: `package` / its name) |
+| `target_type` / `target_id` | `ability` / the ability's name |
 | `outcome` | `success`, `denied`, `failure`, or `warning` for a refused answer |
 | `summary` | `{key: 'agent.call', args: {ability, reason?}}` |
 | `context` | `app_password` (UUID) and the definition's `kept` fields; for uploads, size |
