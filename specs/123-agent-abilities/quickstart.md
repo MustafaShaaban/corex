@@ -45,23 +45,25 @@ Repeat steps 1 and 2 against mu-va.com after the patch release. This is the live
 - `corex/submissions-recent` is refused until the role is allowed `corex_manage_submissions`. After that it
   writes an event with sensitivity `personal`.
 
-## Phase 4: push (US4)
+## Phase 4: install with one command (US4, amended)
 
-1. Write the settings file outside the repository, for example `%USERPROFILE%\.corex\local-push.json`, with
-   `site`, `user` and `application_password`.
-2. Run:
+On a local site that runs this branch (a WordPress made from a package built from it works; see the Jest and
+integration tests for the rest):
+1. Add `define( 'COREX_ALLOW_RELEASE_PUSH', true );` and, for an `http://127.0.0.1` site,
+   `define( 'WP_ENVIRONMENT_TYPE', 'local' );` to its `wp-config.php`.
+2. Make an Application Password for an administrator: `wp user application-password create <user> "release push" --porcelain`.
+3. Run, with the password in the variable and not on the line:
 
    ```bash
-   node scripts/release-push.mjs "C:/path/to/corex-release-acme-1.0.0.zip" --settings "C:/Users/<you>/.corex/local-push.json"
+   COREX_PUSH_SITE=http://127.0.0.1:<port> COREX_PUSH_USER=<user> COREX_PUSH_APP_PASSWORD=<password> npm run release:push -- --package=<path to a corex-release-….zip>
    ```
 
-   Expected: exit 0, the package name and its SHA-256 printed, and the package listed by `corex/release-overview`.
-3. Start the same run, stop it with Ctrl+C half-way, and run it again. Expected: the second run sends only the
-   rest.
-4. Run it a third time. Expected: "already on the site", and nothing sent.
-5. Turn the switch off and run it. Expected: exit 2 with `agent_changes_off`. Turn it back on.
-6. `curl` the overview route with the Basic header and no nonce. Expected: `403 not_signed`, because only the
-   three upload routes accept an Application Password.
+   Expected: exit 0; the upload in tenths, each step, then `The site says it runs CoreX <version>; its home page
+   answers 200.`; the password nowhere in the output; `"signed_in_with":"release push"` on the `installed` event of
+   `wp-content/corex-releases/log.json`.
+4. Comment the constant out and `curl -u <user>:<password> "<site>/?rest_route=/corex/v1/releases"`. Expected:
+   `403` with `"reason":"push_off"` and the line to add. Put it back.
+5. `curl` the same address with no password. Expected: WordPress's `rest_forbidden`.
 
 ## Phase 5: release (US5)
 

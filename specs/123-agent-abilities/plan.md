@@ -15,8 +15,9 @@ instance of one CoreX subclass of `WP_Ability`, `AgentAbility`. It:
 - journals every call once (R1, R6).
 
 The release abilities wrap spec 107's services one to one (R10). A package arrives through a Node script that
-uses the existing resumable upload, signed with an Application Password, which the three upload routes now
-accept in place of the nonce (R4, R5, R11).
+uses the existing resumable upload, signed with an Application Password. *Amended 2026-10-25 (DECISIONS #512,
+#513):* every release route accepts one behind `COREX_ALLOW_RELEASE_PUSH`, and the script installs as well
+(`npm run release:push`), so the owner can install without an agent too (R4, R5, R11).
 
 The installation finishes through MCP because the maintenance gate also reads the installation key from a small
 JSON body, which is where an MCP call carries its input (R3).
@@ -85,8 +86,8 @@ template changes, one script is added and one admin panel is added.
 - [x] **V. Runtime tokens**: the panel uses the admin tokens only.
 - [x] **VI. Conditional assets**: the panel adds no script. It is a form.
 - [x] **VII. Declarative security**:
-  - The upload routes keep their permission callback, and the gateway's sign-in rule widens only as DECISIONS
-    #502 states.
+  - The release routes keep their permission callback, and the gateway's sign-in rule widens only as DECISIONS
+    #512 states (it superseded #502).
   - The panel goes through `AdminGuard`.
   - Abilities check capabilities through `AbilityCheck`.
   - Escaping and sanitising stay where they are today.

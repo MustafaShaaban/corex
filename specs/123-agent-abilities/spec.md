@@ -6,7 +6,10 @@
 
 **Status**: Clarified and planned. The owner answered five questions on 2026-10-25 (DECISIONS #500 to #505).
 [plan.md](plan.md) was written the same day (DECISIONS #506 to #511), and it amended FR-001, FR-017, User
-Story 4 and User Story 5 scenario 6 as noted there. [tasks.md](tasks.md) holds 49 tasks. Nothing is built.
+Story 4 and User Story 5 scenario 6 as noted there. [tasks.md](tasks.md) holds 49 tasks. User Story 1 is built.
+**Amended 2026-10-25** on the owner's later answer (DECISIONS #512, #513, superseding #502): every release route
+accepts an Application Password behind a `wp-config.php` constant, and User Story 4 becomes one command that
+builds, uploads and installs (FR-013 to FR-015d). User Story 4 is built.
 
 **Input**: The owner's request of 2026-10-25, worked out with him in a planning session: Claude, or any agent
 that speaks the Model Context Protocol (MCP), should be able to work on a CoreX site, and above all install a
@@ -81,6 +84,15 @@ Asked of the owner in this session; each answer is the option recommended to him
   the user in WordPress's Users screen, gives it that role, grants the role its CoreX abilities in spec 117's
   role matrix, and makes its Application Password himself. CoreX never creates a user or a password (FR-008,
   DECISIONS #504).
+
+### Session 2026-10-25 (later)
+
+Asked of the owner by the Muva session, after he asked why every Muva release is still installed by hand.
+
+- Q: May the whole installation run from one command, with no browser and no MCP client? → A: **Yes. Every
+  release route accepts an Application Password behind a separate `wp-config.php` opt-in, superseding
+  DECISIONS #502; one command builds, uploads and installs** (FR-013 to FR-015d, DECISIONS #512, #513). The
+  second answer above is replaced by this one.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -165,31 +177,50 @@ nothing more.
 
 ---
 
-### User Story 4 - The owner sends a package to the site without the browser (Priority: P1)
+### User Story 4 - The owner installs a release with one command, without the browser (Priority: P1)
 
-The owner, or Claude on his machine, runs one command with the path of a release package. The command sends it
-to the site in parts, resumes where it stopped if the connection breaks, and ends by printing the package's
-name and SHA-256. The agent installs the package by its name, and checks that the SHA-256 the site reports is
-the one the command printed.
+*Amended 2026-10-25 (DECISIONS #512, #513): it was "sends a package"; it is now the whole installation.*
+
+The owner, or Claude on his machine, runs one command for a client site. The command builds the client's
+package (or takes one already built), sends it to the site in parts, resumes where it stopped if the connection
+breaks, installs it exactly as the Releases screen would, checks that the site answers and runs the new version,
+and says so. When something goes wrong it says what happened and what the way back is. An agent can still stop
+after the upload and install through agent abilities (User Story 5).
 
 **Why this priority**: the package must never pass through an MCP call (a 53 MB package would have to go
-through the model). Without this command an agent can read and install, but the owner still uploads by hand.
+through the model), and the owner's sites have no command line of their own. Without this command he still
+uploads, reads, types and waits in the admin for every release.
 
-**Independent Test**: the command sends a 53 MB package to a test site; cutting the connection half-way and
-running it again sends only the rest; the site then lists the package as received, under the same SHA-256 the
-command printed.
+**Independent Test**: on a test site with `COREX_ALLOW_RELEASE_PUSH` defined, the command installs a package
+from start to finish; cutting the connection half-way through the upload and running it again sends only the
+rest; stopping it during the steps and running it again with `--resume` finishes the installation; on a site
+without the constant every route refuses with `push_off`.
 
 **Acceptance Scenarios**:
 
-1. **Given** a release package on the owner's machine and the agent account's Application Password, **When**
-   the command runs, **Then** the package reaches the site through the same resumable upload the admin screen
-   uses, and the command prints its SHA-256 and the site's answer.
+1. **Given** a client's sources, the site's address, an account that may manage releases and its Application
+   Password, and the constant defined on the site, **When** the command runs, **Then** it builds the package,
+   sends it through the same resumable upload the admin screen uses, installs it through the same routes, and
+   ends by printing the version the site now runs.
 2. **Given** an upload cut off part-way, **When** the command runs again with the same package, **Then** it
    asks the site how much it already has and sends only the rest.
-3. **Given** a package the site already holds whole, **When** the command runs, **Then** it sends nothing and
-   says so.
-4. **Given** a request to the upload routes signed with neither a valid nonce nor an accepted Application
-   Password, **When** it arrives, **Then** it is refused as today.
+3. **Given** a package the site already holds whole, **When** the command runs, **Then** it sends nothing,
+   says so, and goes on to install it.
+4. **Given** a package older than the running release, or holding older plugins or themes than the site has,
+   **When** the command runs without saying that is meant, **Then** it stops before anything starts and says
+   which flag says so.
+5. **Given** an installation the command started and did not finish (the connection broke, the machine slept),
+   **When** the command runs again, **Then** it says where that installation stands and stops; **When** it runs
+   with `--resume`, **Then** it goes on with it, carrying the installation's key past the maintenance answer,
+   and finishes it.
+6. **Given** a failure after the release's folders were put in place, **When** the command stops, **Then** it
+   prints the recovery link and the way back from the Releases screen, and nothing claims success.
+7. **Given** a request to any release route signed with neither a valid nonce nor an accepted Application
+   Password, **When** it arrives, **Then** it is refused as today; **Given** an Application Password on a site
+   without the constant, or over plain HTTP on a site that is not local, **Then** it is refused with a reason
+   that says which.
+8. **Given** a finished installation, **When** the owner opens the release history, **Then** it says who
+   installed it and with which Application Password.
 
 ---
 
@@ -260,9 +291,16 @@ refused under the same conditions.
   registers its agent abilities anyway and nothing breaks. No agent can reach them until an adapter is there,
   except the two older abilities, which stay on the Abilities REST routes (FR-001). CoreX does not ship a copy
   of the adapter to fill the gap.
-- **An Application Password reaches a release route other than the three upload routes.** It is refused as
-  today: only the screen's nonce opens those routes, and an agent reaches the same work through agent
-  abilities.
+- **An Application Password reaches a release route on a site without `COREX_ALLOW_RELEASE_PUSH`.** It is
+  refused with `push_off`, every route alike; only the screen's nonce opens them there. *(Amended: it was "a
+  route other than the three upload routes", DECISIONS #512.)*
+- **A cookie and an Application Password on one request.** WordPress signs the request in by the cookie and
+  never looks at the password, so the nonce is required as for the screen.
+- **The first release that carries the push.** The release running on the site decides who may use its routes,
+  and a release before this one accepts only the nonce. That one release is installed from the screen.
+- **The command stops while visitors are held off** (killed, the machine sleeps). The installation's key is in
+  the push state file; `--resume` carries it. Without it, WordPress lets every request in by itself about ten
+  minutes after the swap (DECISIONS #301), and the command keeps asking for that long before it gives up.
 - **The CoreX agent role is given to a person.** It holds nothing beyond what the role matrix allows it, so a
   person with it can do no more than the agent could.
 - **An installation is started from the screen while an agent is mid-way through one**, or the reverse: only
@@ -332,17 +370,36 @@ refused under the same conditions.
 **Moving the package**
 
 - **FR-012**: A package's bytes MUST NOT pass through any MCP call.
-- **FR-013**: CoreX MUST provide a Node script, run on the owner's machine with no WordPress around it, that
-  sends a package to a site through the existing resumable upload (keyed by the package's SHA-256), signed in
-  with an Application Password, and prints the SHA-256 and the site's answer.
-- **FR-014**: The three upload routes (how much of a package is received, append a part, complete) MUST accept
-  a request signed in with an Application Password in place of the nonce, and only when all of these hold:
-  WordPress signed the request in with an Application Password, agent changes are on, and the account passes
-  `ReleaseRestGateway::mayManage()`. Every other release route MUST keep requiring the nonce. A request signed
-  with neither MUST be refused as today.
-- **FR-015**: The script MUST read the site's address, the account's name and its Application Password from a
-  file outside the repository (for Muva, under `C:\Users\pc\.muva\`), and MUST NOT print the password, log it,
-  or take it as a command-line argument where other programs can read it.
+- **FR-013** *(amended, DECISIONS #513)*: CoreX MUST provide a Node script, run on the owner's machine with no
+  WordPress around it, that builds a client's package with `build:dist --zip` (or takes one already built), sends
+  it through the existing resumable upload (keyed by the package's SHA-256), installs it through the Releases
+  routes (inspect, prepare, confirm with the version, the steps, finish), and checks that the site answers and
+  reports the new version. It MUST work for any client site in a fork, not for one client only, and MUST drive
+  the routes with the Releases screen's own client code so the two cannot disagree.
+- **FR-014** *(amended, DECISIONS #512)*: Every release route MUST accept a request signed in with an
+  Application Password in place of the nonce, and only when all of these hold: WordPress signed the request in
+  with an Application Password; the site's `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as `true`; the
+  request came over HTTPS or the site's environment type is `local`; and the account passes
+  `ReleaseRestGateway::mayManage()`. A request signed in by cookie MUST still carry the nonce. A request signed
+  with neither MUST be refused as today. The refusal MUST say which condition failed (`push_off`,
+  `push_needs_https`, `not_signed`). No setting, flag or agent ability can stand in for the constant.
+- **FR-014a**: Each event of the release record, and its activity entry, MUST name the Application Password the
+  request was signed in with, when it was one.
+- **FR-015** *(amended)*: The script MUST read the site's address, the account's name and its Application
+  Password from environment variables or a settings file outside any git checkout, and MUST NOT print the
+  password, log it, or take it as a command-line argument where other programs can read it. It MUST refuse
+  `http://` to a host that is not local before sending anything.
+- **FR-015a**: The script MUST ask, as flags, for what the screen asks a person to accept: an older release, and
+  plugins or themes going back to older versions. Without them it MUST stop before anything starts.
+- **FR-015b**: The script MUST keep the installation's key and recovery link, with owner-only permissions, in a
+  state file outside any git checkout from prepare until the installation finishes, and MUST NOT print either
+  while the installation goes well.
+- **FR-015c**: Run again while an installation it started stands, the script MUST say where it stands and stop;
+  with `--resume` it MUST go on with it, carrying the saved key; without a key it MUST say that WordPress ends
+  the maintenance answer by itself about ten minutes after the swap and keep asking for that long.
+- **FR-015d**: On any failure the script MUST say what happened in the site's own words and what the way back
+  is: before the swap, that nothing changed; after it, the recovery link and the Releases screen's "Go back". It
+  MUST exit with a code that tells a refusal (2) from an unreachable site (3) and from a usage error (1).
 
 **Release**
 
@@ -389,7 +446,10 @@ refused under the same conditions.
 - **Agent account**: the WordPress user an agent signs in as, created by the owner, holding the CoreX agent
   role and one or more Application Passwords.
 - **Push settings file**: the file on the owner's machine, outside any repository, that tells the Node script
-  which site to send to and as whom.
+  which site to send to and as whom; or the three environment variables that stand in for it.
+- **Push opt-in**: the `COREX_ALLOW_RELEASE_PUSH` constant in a site's `wp-config.php`; off unless written.
+- **Push state file**: the file on the owner's machine that holds an installation's key and recovery link
+  while the command's installation stands.
 - **Agent-changes switch**: the feature flag that lets agent abilities change the site; off by default.
 - **Package upload**: spec 107's resumable upload, keyed by SHA-256, now reachable by the command as well as the
   screen.
@@ -401,8 +461,8 @@ refused under the same conditions.
 
 ### Measurable Outcomes
 
-- **SC-001**: The owner installs a release on mu-va.com without opening the admin, by running one command and
-  approving the installation in his conversation with the agent.
+- **SC-001** *(amended)*: The owner installs a release on mu-va.com without opening the admin, by running one
+  command (or by approving the installation in his conversation with the agent).
 - **SC-002**: An agent connected to a CoreX site lists every CoreX agent ability its account may use, and none it
   may not.
 - **SC-003**: Over a cut connection, sending a 53 MB package again transfers only what the site did not have.

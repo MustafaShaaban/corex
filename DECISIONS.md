@@ -18555,6 +18555,8 @@ absent*: two paths to test and keep current.
 
 ## #502 -- An Application Password stands in for the nonce on the three upload routes only
 
+**Superseded by #512** (2026-10-25): every release route accepts an Application Password behind `COREX_ALLOW_RELEASE_PUSH`.
+
 **Date:** 2026-10-25. **Spec:** 123, FR-014. Answered by the owner.
 
 **Decided.** `ReleaseRestGateway::answer()` refuses any request without a valid `X-WP-Nonce`. The routes that
@@ -18730,3 +18732,85 @@ whether or not it is active.
   something is listening.
 - With no provider, the agent hears `nothing_to_clear`.
 - LiteSpeed is detected, never required (Principle IX).
+
+## #512 -- Every release route accepts an Application Password, behind `COREX_ALLOW_RELEASE_PUSH`; supersedes #502
+
+**Date:** 2026-10-25. **Spec:** 123, FR-014 and FR-014a (amended), User Story 4 (amended). Answered by the owner,
+relayed by the Muva session: "A: all release routes accept an Application Password behind a separate wp-config
+opt-in, superseding DECISIONS #502; one command builds, uploads and installs."
+
+**Found.** #502 opened only the three upload routes, so a command could send a package but an installation still
+needed the admin screen or an MCP client driving agent abilities that are not built. Muva's host has no command
+line and GitHub Actions does not run on the owner's account, so every release is installed by hand.
+
+**Decided.**
+- `ReleaseRestGateway::answer()` lets a request through when its nonce is valid, as before, or when **all** of
+  these hold:
+  1. WordPress signed it in with an Application Password (`rest_get_authenticated_app_password()` is not null);
+  2. the site's `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as `true`;
+  3. the request came over HTTPS, or the site's environment type is `local`;
+  4. `mayManage()` holds (the route's permission callback has already asked; asked again for the same reason the
+     nonce is).
+- This holds for every release route. A request signed in by cookie still needs the nonce exactly as before:
+  WordPress signs a request in by Application Password only when no cookie has already signed it in.
+- The refusals say which condition failed: `push_off` (the constant), `push_needs_https`, `not_allowed` (the
+  account may not install releases). With neither a nonce nor
+  an Application Password the answer stays `403 not_signed`.
+- `COREX_ALLOW_RELEASE_INSTALL`, the host facts and every refusal of spec 107 are unchanged.
+- The release record and the activity entry of an event name the Application Password the request was signed in
+  with (`signed_in_with`), so the history says who installed and how.
+- Spec 123's `agent_changes` switch no longer governs these routes. It governs agent abilities only.
+
+**Why a second opt-in, and why a constant.** A nonce ties an installation to a person signed in to the admin at
+that moment. An Application Password is a long-lived secret that may already exist for other tools (the mobile
+app, an MCP client), and once these routes accept one, anyone holding one for an account that may manage releases
+can replace the site's code. So it must be switched on deliberately, per site, by whoever controls the server's
+files, and a credential the routes accept must not be able to switch it on: an option or a setting could be
+changed over REST by the same account, a line in `wp-config.php` cannot. It is off on every site until written.
+
+**Why HTTPS is required here too.** WordPress already refuses Application Passwords over plain HTTP unless the
+environment type is `local`, but a plugin can turn that rule off with the `wp_is_application_passwords_available`
+filter. A release replaces code, so these routes keep the rule whatever a filter says. The script refuses
+`http://` to a public host before it sends anything.
+
+**Cost, said plainly.** With both this constant and spec 123's agent role on, an agent account that may manage
+releases can drive the routes with plain REST calls, outside MCP and its destructive hints, which is what #502
+avoided. The documentation recommends that the release push use its own account and its own Application Password,
+and that a site that does not push leaves the constant out.
+
+**Not chosen.** *Only the upload routes* (#502): no one-command install. *A feature flag or a setting*: could be
+turned on over REST by the credential it governs. *A new set of routes for the command*: more surface for the same
+work; the screen's routes, answers and refusals are already built and tested.
+
+## #513 -- `npm run release:push` builds, uploads, installs and checks, through the screen's own client
+
+**Date:** 2026-10-25. **Spec:** 123, FR-013, FR-015, FR-015a to FR-015d (amended). Extends #503 from "sends a
+package" to the whole installation.
+
+**Decided.**
+- `scripts/release-push.mjs` (`npm run release:push`) builds the package with `build:dist --zip` when given
+  `--client` (and passes `--with-plugin` and `--pdf-fonts` through), or takes one already built with `--package`.
+  Then it reads the Releases overview, uploads, inspects, prepares, confirms with the version, runs the steps and
+  the finish, and checks that the site answers and reports the new version.
+- It drives the site with `createReleaseClient()` and `runInstallation()` from the Releases screen's own code
+  (`plugins/corex-config/src/Releases/`), so the screen and the script cannot disagree about the protocol: the
+  installer's mark, waiting past a host's challenge pages, carrying the installation's key past the maintenance
+  answer, and how long to keep asking. The client gains two options, `key` (an installation's key from an earlier
+  run) and a nonce that may be left out.
+- Settings come from `--settings <file>`, `COREX_PUSH_SETTINGS`, the three `COREX_PUSH_SITE`, `COREX_PUSH_USER`
+  and `COREX_PUSH_APP_PASSWORD` variables, or `~/.corex/release-push/<client>.json`, in that order. A settings file
+  inside a git checkout is refused. The password goes only into the `Authorization` header and is never printed.
+- What the screen asks a person to accept, the script asks for as flags: `--accept-older`,
+  `--accept-downgrades`. A site that cannot say whose it is gets the `--client` given.
+- The installation's key and recovery link are written to `~/.corex/release-push/state/<host>.json` (owner-only
+  permissions) at prepare, and removed when the installation finishes. A run that died can be taken up with
+  `--resume`, which carries the saved key past the maintenance answer; without it the script says WordPress lets
+  requests in again by itself within about ten minutes of the swap, and keeps asking for that long.
+- On a failure after the swap it prints the recovery link and the way back (`Releases`, "Go back"), as the screen
+  does.
+- The first release that contains this must be installed from the screen: the release running on the site
+  decides who may use its routes, and older ones accept only the nonce.
+
+**Not chosen.** *A client written again for Node*: two clients of one protocol drift apart. *Printing the recovery
+link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
+only when it is needed.

@@ -238,49 +238,35 @@ read-only release.
 
 ---
 
-## Phase 6: User Story 4 - The owner sends a package without the browser (Priority: P1)
+## Phase 6: User Story 4 - The owner installs a release with one command (Priority: P1)
 
-**Goal**: the three upload routes accept an Application Password, and `scripts/release-push.mjs` sends a package
-(FR-012 to FR-015; `contracts/upload-and-gate.md` section 1, `contracts/release-push.md`; DECISIONS #502, #503).
+*Amended 2026-10-25 (DECISIONS #512, #513): T027 to T032 are replaced by the tasks below. This phase no longer
+needs Phase 2 or spec 117: the push is gated by a constant, not by the agent switch.*
 
-**Independent test**: quickstart Phase 4, steps 1 to 6.
+**Goal**: every release route accepts an Application Password behind `COREX_ALLOW_RELEASE_PUSH`, and
+`npm run release:push` builds, uploads, installs and checks (FR-012 to FR-015d; `contracts/upload-and-gate.md`
+section 1, `contracts/release-push.md`).
 
-- [ ] T027 [US4] `plugins/corex-config/src/Releases/ReleasesController.php`:
-  - `route()` takes a flag that marks the `received`, `append` and `complete` routes as open to an Application
-    Password;
-  - the `received` answer adds `part_bytes`, computed the way `ReleaseDesk` computes it for the overview. Make
-    `ReleaseDesk`'s calculation public rather than copying it.
-- [ ] T028 [US4] `plugins/corex-config/src/Releases/ReleaseRestGateway.php`: `answer()` accepts a flagged route's
-  request without a nonce only when `rest_get_authenticated_app_password()` is not null, `AgentSwitch::enabled()`
-  is true and `mayManage()` holds. When the switch is the cause, it answers `403 agent_changes_off`. Every other
-  route is unchanged. A successful `complete` signed this way calls `AgentCallJournal::uploaded()`.
-- [ ] T029 [P] [US4] New unit test `tests/Unit/Releases/ReleaseRestGatewayTest.php`, covering the sign-in matrix:
-  - nonce: yes or no;
-  - Application Password: yes or no;
-  - switch: on or off;
-  - route: flagged or not.
-- [ ] T030 [P] [US4] Integration test `tests/Integration/Releases/ReleaseUploadAppPasswordTest.php`. It signs a
-  `corex_agent` user (allowed `corex_manage_releases`) in as if by Application Password, by setting the user and
-  `$GLOBALS['wp_rest_application_password_uuid']`. Then:
-  - `received`, `append` and `complete` accept a fixture package;
-  - the overview route answers `403 not_signed`;
-  - with the switch off, the upload answers `agent_changes_off`;
-  - one `agent.release.uploaded` event exists.
-- [ ] T031 [US4] `scripts/release-push.mjs`, following `contracts/release-push.md`: exported pure functions
-  (settings check, name check, the URL and host rule, the plan of parts from `received` and `part_bytes`, the
-  answer parser) and a thin entry point using Node's `fetch` and streams. Follow the shape of
-  `scripts/release-content-hash.mjs`. Add `"release:push": "node scripts/release-push.mjs"` to `package.json`.
-- [ ] T032 [P] [US4] Jest test `tests/release-push.test.js`, with a fake `fetch`, covering:
-  - a fresh upload;
-  - resuming after a cut;
-  - a 409 answer;
-  - an "already whole" package;
-  - a bad name;
-  - an `http://` public host refused while `http://x.localhost` is allowed;
-  - three retries then exit 3;
-  - the password never appearing in stdout or stderr.
+**Independent test**: quickstart Phase 4.
 
-**Checkpoint**: a package reaches the site from the owner's machine with no browser.
+- [x] T027 [US4] New `plugins/corex-config/src/Releases/ReleaseCaller.php`: `PUSH_ALLOWED_BY`, `ofThisSite()`,
+  `pushAllowed()`, `applicationPassword()` (the password's name from WordPress's record), `overHttps()`. Registered
+  as a singleton in `ConfigServiceProvider`.
+- [x] T028 [US4] `ReleaseRestGateway::answer()`: the nonce, or an Application Password with the constant, HTTPS
+  and `mayManage()`; refusals `push_off`, `push_needs_https`, `not_allowed`. Every route alike.
+- [x] T029 [US4] `ReleaseRecord` takes the caller's `applicationPassword()` and writes `signed_in_with` on the
+  record and the activity entry; `ReleaseHistory.js` shows it beside who installed.
+- [x] T030 [P] [US4] Tests: `tests/Integration/Releases/ReleaseApplicationPasswordTest.php` and
+  `tests/Unit/Releases/ReleaseCallerTest.php` (contract section 1). `tests/Support/ReleaseInstaller.php` gains
+  `pushAllowed` and `$signedByTheScreen`.
+- [x] T031 [US4] `createReleaseClient()` gains `key` and an optional nonce. New `scripts/release-push.mjs`
+  following `contracts/release-push.md`, driving the screen's client and `runInstallation()`;
+  `"release:push"` in `package.json`.
+- [x] T032 [P] [US4] `tests/release-push.test.js` (contract "Tested by").
+- [x] T032a [US4] `docs/en/05-deployment/releases-from-your-machine.md`, linked from the deployment index and from
+  `releases-from-the-admin.md`.
+
+**Checkpoint**: a release goes from the owner's machine to the site, installed, with one command and no browser.
 
 ---
 

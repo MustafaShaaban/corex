@@ -1,31 +1,39 @@
 # Contract: the upload routes' sign-in rule, and the maintenance gate's body source
 
-## 1. Upload routes (R4, R5, DECISIONS #502)
+## 1. Every release route (DECISIONS #512, superseding #502)
 
-These three routes are flagged in `ReleasesController::route()`:
+*Amended 2026-10-25: it was the three upload routes, behind the agent switch.*
 
-| Route | Method | Change |
-|---|---|---|
-| `corex/v1/releases/uploads/<sha256>` | GET | sign-in rule below; the answer gains `part_bytes` |
-| `corex/v1/releases/uploads/<sha256>` | POST | sign-in rule below |
-| `corex/v1/releases/uploads/<sha256>/complete` | POST | sign-in rule below; writes `agent.release.uploaded` when signed with an Application Password |
+`ReleaseRestGateway::answer()` lets a request of **any** Releases route through when its nonce is valid, as
+before, or when **all** of the following hold:
 
-`ReleaseRestGateway::answer()` lets a flagged route's request through when the nonce is valid, as today, or when
-**all** of the following hold:
+1. `ReleaseCaller::applicationPassword()` is not null: `rest_get_authenticated_app_password()` gave a UUID,
+   so WordPress signed the request in with an Application Password;
+2. `ReleaseCaller::pushAllowed()`: the site's `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as `true`
+   (read once, by `ReleaseCaller::ofThisSite()`);
+3. `ReleaseCaller::overHttps()`: `is_ssl()`, or `wp_get_environment_type()` is `local`;
+4. `mayManage()`. The route's permission callback has already asked; asked again for the reason the nonce is.
 
-1. `rest_get_authenticated_app_password()` is not null (WordPress signed the request in with an Application
-   Password);
-2. `features.agent_changes` is on;
-3. `mayManage()` is true. The route's permission callback has already checked this, and it is checked again here
-   for the same reason the nonce is.
+The refusals, all `403` and marked:
 
-Otherwise the request gets `403 not_signed`, as today. When the cause is the switch, the answer is
-`403 agent_changes_off`.
+| Reason | When |
+|---|---|
+| `not_signed` | neither a valid nonce nor an Application Password (unchanged) |
+| `push_off` | an Application Password, and the constant is not true; the message gives the line to add |
+| `push_needs_https` | an Application Password over plain HTTP on a site that is not local |
+| `not_allowed` | an Application Password of an account that may not install releases (only reachable if the permission callback let it through) |
 
-Every other release route is unchanged: nonce only.
+A request WordPress signed in by cookie never carries an Application Password, so it still needs the nonce.
 
-`part_bytes` is computed as `ReleaseDesk` already does for the screen:
-`max(256 KiB, min(4 MiB, wp_max_upload_size() / 2))`.
+The release record and its activity entry gain `signed_in_with`, the password's name (its UUID if WordPress no
+longer has it), for every event written during a request signed that way (`ReleaseRecord`, FR-014a).
+
+`part_bytes` stays where the screen already reads it, in the overview; the `received` answer is unchanged.
+
+Tested in `tests/Integration/Releases/ReleaseApplicationPasswordTest.php` (a whole installation signed this way
+and the record naming the password; an upload in parts; `push_off` on each of the ten routes; no nonce and no
+password; the screen's nonce with the constant off; an editor's password) and
+`tests/Unit/Releases/ReleaseCallerTest.php` (the password's name, none for a cookie, the HTTPS rule).
 
 ## 2. The gate's fourth source (R3, DECISIONS #506)
 

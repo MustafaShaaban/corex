@@ -102,6 +102,8 @@ for that one installation only, and a new installation mints a new one. The jour
 
 ## R4. Application Passwords on the upload routes
 
+*Superseded 2026-10-25 by DECISIONS #512: every release route, behind `COREX_ALLOW_RELEASE_PUSH`; see `contracts/upload-and-gate.md` section 1.*
+
 **Facts.**
 - A request signed with an Application Password needs no nonce in core: `rest_application_password_check_errors`
   returns true and `rest_cookie_check_errors` returns early (`rest-api.php:1131-1142, 1267`).
@@ -226,6 +228,8 @@ and the option `corex_features_<flag>`. Only `AddonActivator` writes a flag toda
 - The spec's US5 scenario 6 and FR-017 are amended to say this, because the screen asks nothing here.
 
 ## R11. The Node script
+
+*Amended 2026-10-25 by DECISIONS #513: the script also builds, installs and checks; see `contracts/release-push.md`.*
 
 **Decision.**
 - `scripts/release-push.mjs` follows `scripts/release-content-hash.mjs`: pure functions are exported for Jest,
