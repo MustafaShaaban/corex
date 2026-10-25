@@ -4,8 +4,9 @@
 
 **Created**: 2026-10-25
 
-**Status**: Clarified. The owner answered five questions on 2026-10-25 (DECISIONS #500 to #505). Ready for
-`/speckit-plan`; nothing is planned or built.
+**Status**: Clarified and planned. The owner answered five questions on 2026-10-25 (DECISIONS #500 to #505).
+[plan.md](plan.md) was written the same day (DECISIONS #506 to #511), and it amended FR-001, FR-017, User
+Story 4 and User Story 5 scenario 6 as noted there. Nothing is built.
 
 **Input**: The owner's request of 2026-10-25, worked out with him in a planning session: Claude, or any agent
 that speaks the Model Context Protocol (MCP), should be able to work on a CoreX site, and above all install a
@@ -52,8 +53,9 @@ the rest of that layer on the same choice.
   itself stops honouring a maintenance file ten minutes after it was written (DECISIONS #301).
 - **CoreX knows no page-cache plugin by name.** Its cache status (spec 078) learns of a page cache only when a
   provider registers itself through the `corex_page_cache_provider` filter, and it clears none.
-- **Release packages are about 53 MB.** The three Muva packages in `C:\Users\pc\.muva\packages` on 2026-10-25
-  are 53,005,701 to 53,009,384 bytes.
+- **Release packages are about 53 MB.** The five newest Muva release packages
+  (`corex-release-muva-0.47.0-*.zip`) in `C:\Users\pc\.muva\packages` on 2026-10-25 are 53,034,875 to
+  53,038,496 bytes. Spec 107 accepts a package only under a name of the form `corex-release-<name>.zip`.
 
 ## Clarifications
 
@@ -167,7 +169,8 @@ nothing more.
 
 The owner, or Claude on his machine, runs one command with the path of a release package. The command sends it
 to the site in parts, resumes where it stopped if the connection breaks, and ends by printing the package's
-SHA-256, which is what the agent then uses to install it.
+name and SHA-256. The agent installs the package by its name, and checks that the SHA-256 the site reports is
+the one the command printed.
 
 **Why this priority**: the package must never pass through an MCP call (a 53 MB package would have to go
 through the model). Without this command an agent can read and install, but the owner still uploads by hand.
@@ -220,7 +223,9 @@ what the admin screen produces for the same package.
 5. **Given** a finished installation, **When** the agent asks to go back, **Then** the release kept before is
    restored through spec 107's return, after a prepare and confirm pair of its own.
 6. **Given** leftovers of an earlier installation, **When** the agent asks to remove them, **Then** they are
-   removed after a prepare and confirm pair, as on the screen.
+   removed after a prepare and confirm pair: preparing lists them, and removing goes ahead only while the
+   leftovers are still the ones that were listed. (The screen removes them in one click; the pair is the
+   agent's extra step.)
 7. **Given** an installation already running, started from the screen or by another agent, **When** an agent
    tries to start one, **Then** it is refused (spec 107, FR-023).
 
@@ -252,8 +257,9 @@ refused under the same conditions.
 ### Edge Cases
 
 - **The MCP Adapter is missing, inactive, or older than the release that reads `meta.mcp.public`.** CoreX
-  registers its agent abilities anyway; they are reachable over the Abilities REST routes where those apply,
-  and nothing breaks. CoreX does not ship a copy of the adapter to fill the gap.
+  registers its agent abilities anyway and nothing breaks. No agent can reach them until an adapter is there,
+  except the two older abilities, which stay on the Abilities REST routes (FR-001). CoreX does not ship a copy
+  of the adapter to fill the gap.
 - **An Application Password reaches a release route other than the three upload routes.** It is refused as
   today: only the screen's nonce opens those routes, and an agent reaches the same work through agent
   abilities.
@@ -288,9 +294,10 @@ refused under the same conditions.
 
 **Exposure**
 
-- **FR-001**: Every CoreX agent ability MUST be explicitly public to MCP, and to MCP only, unless an ability's
-  own requirement says otherwise. Public to MCP means what the MCP Adapter reads as public (see "What is
-  already true").
+- **FR-001**: Every CoreX agent ability MUST be explicitly public to MCP, and to MCP only. Public to MCP means
+  what the MCP Adapter reads as public (see "What is already true"). The one exception: the two abilities
+  registered before this spec, `corex/site-info` and `corex/list-blocks`, MUST stay reachable over the
+  Abilities REST routes as they are today.
 - **FR-002**: Every CoreX agent ability MUST say whether it is read-only, and every one that changes the site
   MUST say whether it is destructive and whether running it twice has the same effect as once.
 - **FR-003**: CoreX MUST register its agent abilities whether or not the MCP Adapter is present, and MUST run
@@ -343,9 +350,12 @@ refused under the same conditions.
   its next step, finish it, give up an installation that has moved nothing, go back to the release kept before,
   and remove leftovers. Each MUST use the spec 107 service the matching route uses, so the screen and an agent
   can never disagree about what an installation did.
-- **FR-017**: Every agent ability that changes what release is installed, or removes anything, MUST keep spec
-  107's prepare and confirm pair: preparing changes nothing, and confirming asks for exactly what the screen's
-  confirmation asks for.
+- **FR-017**: Every agent ability that changes what release is installed, or removes anything, MUST come as a
+  prepare and confirm pair:
+  - preparing changes nothing;
+  - confirming asks for exactly what the screen's confirmation asks for;
+  - where the screen asks nothing (removing leftovers), confirming MUST carry the fingerprint of what preparing
+    listed, and MUST refuse if the leftovers have changed since.
 - **FR-018**: An installation started by an agent MUST be able to finish through agent calls that cannot carry
   the installation's key, and MUST NOT leave visitors held off longer than an installation from the screen can.
 - **FR-019**: One installation at a time, whoever started it (spec 107, FR-023).

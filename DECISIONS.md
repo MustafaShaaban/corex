@@ -18607,3 +18607,123 @@ the Operations screen uses; and read the feature flags. No agent ability changes
 **Not chosen.** *Writable flags*: an agent could reach switches whose effect it cannot see. *Cache clearing
 only*, and *no settings yet*: both leave the owner opening the admin for the two jobs that follow most
 releases.
+
+## #506 -- The maintenance gate also reads the installation key from a small JSON body
+
+**Date:** 2026-10-25. **Spec:** 123, FR-018; amends spec 107 FR-024a. Plan research R3.
+
+**Found.**
+- An installation swaps folders inside the `step` request made at step `swap`, and that request raises
+  maintenance before it moves anything (`ReleaseSteps::putInPlace`).
+- The `finish` request comes next, while `.maintenance` holds visitors off. It gets through only with the
+  installation's key, read from a header, the server's headers or the address (`ReleaseMaintenance::GATE`).
+- An MCP client can add none of those per call. An agent's `finish` would wait out WordPress's ten minutes
+  (#301), and on a network each batch could wait again.
+
+**Decided.**
+- The gate gains a fourth source. On a `POST` with a JSON content type and a body of at most 64 KB, it decodes
+  the body (depth 16), walks at most 64 nodes for `corex_release_key`, and checks it with the same `hash_equals`
+  as the others.
+- `key_from` gains `body`.
+- The step, finish and cancel agent abilities take the key as input, and refuse one that is not their
+  installation's.
+
+**Not chosen.**
+- *Swap and finish in one call*: that is the request length spec 107 split for shared hosts, and it still
+  leaves a network's later batches stuck.
+- *A loopback request carrying the header*: loopbacks are unreliable on shared hosts.
+- *Letting visitors back in before the database step*.
+- *The push script driving the installation*: it would need #502's rule on every release route.
+
+**Cost.** The key passes through the agent's conversation. It opens the gate and the recovery link for that one
+installation, and is never journaled.
+
+## #507 -- Every CoreX agent ability is one `WP_Ability` subclass that checks once, answers in the gateway's shape, and journals once
+
+**Date:** 2026-10-25. **Spec:** 123, FR-002, FR-005, FR-007, FR-021, FR-022. Plan research R1, R6; plan D1 to D7.
+
+**Found.**
+- The MCP Adapter runs a target ability's permission callback about three times per call.
+- It returns a `WP_Error` to the client as text, without its code.
+- WordPress 7.0 has no hook that fires when an ability is refused or fails; 7.1 does.
+- Both accept `ability_class`.
+
+**Decided.**
+- `Corex\Abilities\AgentAbility extends WP_Ability`:
+  - It decides the permission once per request, through spec 117's `AbilityCheck`, so a refusal is counted
+    once.
+  - It refuses agent changes while the switch is off.
+  - It writes one `agent.call` event (new activity area `agents`, 180 days) holding only the input fields the
+    ability names as safe to keep.
+- Every answer is the release gateway's shape: `{ok, data}` or `{ok:false, reason, message}`. A missing CoreX
+  ability is the only `WP_Error`.
+
+**Not chosen.**
+- *Core's 7.1 hooks*: they miss 7.0.
+- *The adapter's observability handler*: it replaces the server's handler and sees only tool names.
+- *The adapter's result filter*: it ties the journal to the adapter.
+
+## #508 -- New agent abilities are MCP only; the two older ones keep REST and ask for `read`
+
+**Date:** 2026-10-25. **Spec:** 123, FR-001 (amended), FR-007. Plan research R2, R7.
+
+**Decided.**
+- New agent abilities set `meta.mcp.public` and `show_in_rest = false`. Otherwise core's
+  `wp-abilities/v1/.../run` route would let plain REST calls drive an installation, which #502 rules out.
+- `corex/site-info` and `corex/list-blocks` keep `show_in_rest` for existing callers.
+- Their permission moves from `edit_posts` to `read`, because nothing in them needs more and the CoreX agent
+  role holds only `read`.
+- Each other agent ability asks for one CoreX ability:
+  - releases: `corex_manage_releases`, plus `mayManage()`'s network rule;
+  - activity log, mode, page cache and flags: `corex_manage_operations`;
+  - submissions: `corex_manage_submissions`.
+- The owner allows the role these in the role matrix. It never needs `corex_manage_admin`.
+
+## #509 -- The agent-changes switch lives in an "Agent access" panel on Operations & Security
+
+**Date:** 2026-10-25. **Spec:** 123, FR-005, FR-006. Plan research R8.
+
+**Found.** Only the add-on activator writes a feature flag today, and no screen toggles one. A shared host has no
+command line for `FEATURES_AGENT_CHANGES`.
+
+**Decided.**
+- Flag `agent_changes`, default off.
+- A panel on Operations & Security shows:
+  - the switch;
+  - whether the MCP Adapter is active;
+  - how many users hold the CoreX agent role;
+  - the last ten agent calls.
+- Only a site administrator can change the switch, through `AdminGuard`.
+- The environment still wins, and the panel says so when it does.
+- Each change writes `agent.switch.changed`.
+
+**Not chosen.** *Environment or option only*: the owner could not turn it on from the admin.
+
+## #510 -- Going back and removing leftovers become prepare and confirm pairs for an agent
+
+**Date:** 2026-10-25. **Spec:** 123, FR-017 and User Story 5 scenario 6 (amended). Plan research R10.
+
+**Found.** The screen goes back with one call that checks the typed version, and removes leftovers with one
+click and no confirmation.
+
+**Decided.**
+- Going back: `corex/release-return-prepare` changes nothing and gives the phrase, and `corex/release-return`
+  calls spec 107's return with it.
+- Leftovers: `corex/release-leftovers-prepare` lists them with a fingerprint (SHA-256 of the sorted `what:where`
+  lines), and `corex/release-leftovers-remove` refuses `leftovers_changed` unless the fingerprint still matches.
+- The screen is unchanged.
+
+## #511 -- A page-cache provider may carry its purge; CoreX ships one for LiteSpeed Cache
+
+**Date:** 2026-10-25. **Spec:** 123, FR-020. Plan research R9.
+
+**Found.** `corex_page_cache_provider` returns only a name and a state, and `CacheManager` answers "unsupported"
+for the page scope. LiteSpeed Cache documents `do_action( 'litespeed_purge_all', $reason )`, safe to call
+whether or not it is active.
+
+**Decided.**
+- A provider's array may carry `purge`, a callable, and `CacheManager` uses it for the page scope.
+- `LiteSpeedPageCache` registers itself only when `has_action( 'litespeed_purge_all' )` is true, that is, when
+  something is listening.
+- With no provider, the agent hears `nothing_to_clear`.
+- LiteSpeed is detected, never required (Principle IX).
