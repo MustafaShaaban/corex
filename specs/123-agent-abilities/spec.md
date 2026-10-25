@@ -6,7 +6,7 @@
 
 **Status**: Clarified and planned. The owner answered five questions on 2026-10-25 (DECISIONS #500 to #505).
 [plan.md](plan.md) was written the same day (DECISIONS #506 to #511), and it amended FR-001, FR-017, User
-Story 4 and User Story 5 scenario 6 as noted there. Nothing is built.
+Story 4 and User Story 5 scenario 6 as noted there. [tasks.md](tasks.md) holds 49 tasks. Nothing is built.
 
 **Input**: The owner's request of 2026-10-25, worked out with him in a planning session: Claude, or any agent
 that speaks the Model Context Protocol (MCP), should be able to work on a CoreX site, and above all install a

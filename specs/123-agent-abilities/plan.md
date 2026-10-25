@@ -163,7 +163,7 @@ tests/Unit/Cache/                             # provider purge
 tests/Integration/Abilities/                  # NEW: registration + execution as corex_agent on real WP
 tests/e2e/operations-security.spec.js         # Agent access panel
 docs/en/03-operations/agents-over-mcp.md      # NEW: the operator's guide
-docs/en/03-operations/releases-from-the-admin.md  # link to the agent route
+docs/en/05-deployment/releases-from-the-admin.md  # link to the agent route
 specs/107-release-from-admin/spec.md          # FR-024a amended (body source)
 ```
 

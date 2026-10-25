@@ -59,8 +59,9 @@ longer uploads the package by hand in the admin.
   - going back and removing leftovers become pairs (#510);
   - a page-cache provider may carry its purge, and LiteSpeed Cache gets one (#511).
 
-Specified, clarified and planned; nothing built. Next: `/speckit-tasks`. Phase 1 (visibility) needs nothing
-else and can ship as a patch. Phases 2 to 6 need spec 117 (`spec/117-abilities`, not merged yet) on `main`
+Specified, clarified, planned and broken into 49 tasks (`tasks.md`, T001 done); nothing built. Next:
+`/speckit-implement`, starting with tasks T003 to T008 (visibility), which need nothing else and can ship as a
+patch. Phases 2 to 6 need spec 117 (`spec/117-abilities`, not merged yet) on `main`
 first, for `AbilityCheck` and the `action` refusal kind.
 
 **Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
