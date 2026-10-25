@@ -31,6 +31,19 @@ final class ReleaseRestGateway
 
     public const NOT_SIGNED = 'not_signed';
 
+    /** An Application Password on a site that does not let one install a release (DECISIONS #512). */
+    public const PUSH_OFF = 'push_off';
+
+    /** An Application Password over plain HTTP on a site that is not a local one. */
+    public const PUSH_NEEDS_HTTPS = 'push_needs_https';
+
+    /** Signed in, but by an account that may not install releases here. */
+    public const NOT_ALLOWED = 'not_allowed';
+
+    public function __construct(private readonly ReleaseCaller $caller)
+    {
+    }
+
     /**
      * Installing a release is its own ability. On a network it is the network's to do, from the
      * main site: a release replaces code every site runs.
@@ -51,11 +64,10 @@ final class ReleaseRestGateway
      */
     public function answer(WP_REST_Request $request, callable $answer): WP_REST_Response
     {
-        // WordPress has already used this nonce to decide who is asking. It is checked again
-        // here because every one of these routes changes or reveals something a forged request
-        // must not, and the rule belongs where the routes are.
-        if (wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') === false) {
-            return $this->refused(403, self::NOT_SIGNED, __('This request was not signed by this screen. Reload the page and try again.', 'corex'));
+        $unsigned = $this->unsigned($request);
+
+        if ($unsigned !== null) {
+            return $unsigned;
         }
 
         try {
@@ -68,6 +80,48 @@ final class ReleaseRestGateway
             // A name that is not only a name: the store will not place a file by it.
             return $this->refused(422, ReleaseUpload::BAD_NAME, __('That is not the name of a package on this site.', 'corex'));
         }
+    }
+
+    /**
+     * Null when the request is signed as these routes need: by the screen's nonce, or by an
+     * Application Password this site lets install a release (spec 123, FR-014). Otherwise the
+     * refusal, saying which condition failed.
+     */
+    private function unsigned(WP_REST_Request $request): ?WP_REST_Response
+    {
+        // WordPress has already used this nonce to decide who is asking. It is checked again
+        // here because every one of these routes changes or reveals something a forged request
+        // must not, and the rule belongs where the routes are.
+        if (wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false) {
+            return null;
+        }
+
+        // A request WordPress signed in by cookie is never also signed in by an Application
+        // Password, so a page that lost its nonce still lands here, refused as it always was.
+        // An Application Password carries no cookie, so nothing on another page can forge it.
+        if ($this->caller->applicationPassword() === null) {
+            return $this->refused(403, self::NOT_SIGNED, __('This request was not signed by this screen. Reload the page and try again.', 'corex'));
+        }
+
+        if (! $this->caller->pushAllowed()) {
+            return $this->refused(403, self::PUSH_OFF, sprintf(
+                /* translators: %s: a line of PHP for the site's wp-config.php. */
+                __('This site does not let a release be installed with an Application Password. To allow it, add %s to its wp-config.php.', 'corex'),
+                "define( '" . ReleaseCaller::PUSH_ALLOWED_BY . "', true );",
+            ));
+        }
+
+        if (! $this->caller->overHttps()) {
+            return $this->refused(403, self::PUSH_NEEDS_HTTPS, __('A release is installed with an Application Password only over HTTPS.', 'corex'));
+        }
+
+        // The route's permission callback has asked this already; asked again for the reason
+        // the nonce is.
+        if (! $this->mayManage()) {
+            return $this->refused(403, self::NOT_ALLOWED, __('This account may not install releases on this site.', 'corex'));
+        }
+
+        return null;
     }
 
     private function refused(int $status, string $reason, string $message): WP_REST_Response

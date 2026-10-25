@@ -132,11 +132,15 @@ async function sha256Of( file ) {
 /**
  * @param {Object}                        options
  * @param {string}                        options.restUrl The Releases routes' base, without a trailing slash.
- * @param {string}                        options.nonce   The REST nonce the screen was given.
+ * @param {string}                        [options.nonce] The REST nonce the screen was given. Left out by a client that
+ *                                                        signs its requests another way: the command that installs a
+ *                                                        release with an Application Password (spec 123, FR-013).
  * @param {typeof window.fetch}           [options.fetch] `fetch`, or what stands in for it.
  * @param {(ms: number) => Promise<void>} [options.wait]  Waits a number of milliseconds.
  * @param {number}                        [options.tries] How many times a request is made before giving up, when no installation is in hand.
  * @param {() => number}                  [options.now]   The time in milliseconds, as `Date.now` gives it.
+ * @param {string|null}                   [options.key]   The key of an installation already in hand: one a command
+ *                                                        kept from an earlier run, to go on with it (FR-015c).
  * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, goBack, cancel, removeLeftovers }`.
  */
 export function createReleaseClient( {
@@ -146,12 +150,13 @@ export function createReleaseClient( {
 	wait = sleep,
 	tries = DEFAULT_TRIES,
 	now = Date.now,
+	key = null,
 } ) {
 	// The key of the installation in hand. The site makes it when an installation is prepared
 	// and keeps only its hash; it is held here for as long as the page is open, and goes with
 	// every request from then on. While a release is being put in place WordPress turns away
 	// every request but the one that carries it.
-	let installationKey = null;
+	let installationKey = key;
 
 	/**
 	 * One try: the marked answer, or null when what came back was not one.
@@ -167,7 +172,7 @@ export function createReleaseClient( {
 				credentials: 'same-origin',
 				...init,
 				headers: {
-					'X-WP-Nonce': nonce,
+					...( nonce && { 'X-WP-Nonce': nonce } ),
 					...( installationKey && {
 						[ KEY_HEADER ]: installationKey,
 					} ),

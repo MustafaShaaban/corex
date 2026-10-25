@@ -40,6 +40,60 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 123, an agent works on a CoreX site through MCP** (2026-10-25, branch `spec/123-agent-abilities`,
+DECISIONS #500 to #513): Claude, or any MCP agent, reads a CoreX site and installs a release, so the owner no
+longer uploads the package by hand in the admin.
+- The cause of "not found" for `corex/site-info` on mu-va.com is found: the MCP Adapter keeps an ability private
+  unless `meta.mcp.public` (or `meta.public`) is true, and CoreX set neither (#500).
+- The owner answered five questions: the adapter stays a separate plugin (#501); an Application Password opens
+  the three upload routes only (#502, superseded by #512, below); a Node script sends the package and the site never fetches it (#503);
+  CoreX ships a "CoreX agent" role and the owner makes the user and its password (#504); the first settings
+  abilities clear the page cache, switch coming-soon and read the flags (#505).
+- Build order: visibility fix, read, release, settings.
+- Planned (plan, research, data model, three contracts, quickstart):
+  - every agent ability is one `WP_Ability` subclass that checks once and journals once (#507);
+  - an agent finishes an installation because the maintenance gate also reads the key from a small JSON
+    body (#506, spec 107 FR-024a amended);
+  - new abilities are MCP only (#508);
+  - the switch sits in an "Agent access" panel on Operations & Security (#509);
+  - going back and removing leftovers become pairs (#510);
+  - a page-cache provider may carry its purge, and LiteSpeed Cache gets one (#511).
+
+Specified, clarified, planned and broken into 49 tasks (`tasks.md`).
+
+**User Story 1 is built** (T001, T003 to T007, 2026-10-25):
+- `corex/site-info` and `corex/list-blocks` set `meta.mcp.public`, and both keep `edit_posts`. wp-guard
+  caught the plan's `read`, which would have shown the CoreX version to every subscriber against spec 111;
+  #508 was corrected.
+- Verified on a throwaway WordPress 7.1.3 in the worktree, with MCP Adapter 0.7.1. A scripted MCP session,
+  signed in with an Application Password, lists both abilities and runs `corex/site-info` as an author. A
+  subscriber gets "Permission denied".
+- Pest: 3 new unit tests, 5 integration tests, and the full unit suite (3,424) green.
+- Owed: T008, the same check on mu-va.com once a release carries it.
+
+**User Story 4 is built, amended** (T027 to T032a, 2026-10-25, on the owner's later answer relayed by the Muva
+session: "A: all release routes accept an Application Password behind a separate wp-config opt-in, superseding
+DECISIONS #502; one command builds, uploads and installs"):
+- Every Releases route accepts an Application Password in place of the nonce when the site's `wp-config.php`
+  defines `COREX_ALLOW_RELEASE_PUSH`, over HTTPS or on a `local` site, for an account that passes `mayManage()`
+  (`ReleaseCaller`, `ReleaseRestGateway`; #512). Refusals `push_off`, `push_needs_https`, `not_allowed`. The
+  release record and activity entry carry `signed_in_with`, shown in the history.
+- `npm run release:push` (`scripts/release-push.mjs`) builds with `build:dist --zip` or takes `--package`,
+  uploads, installs and checks, through the screen's own `createReleaseClient()` and `runInstallation()`
+  (#513). Key and recovery link kept in `~/.corex/release-push/state/` for `--resume`.
+- Verified: Pest 15 integration and 6 unit tests new; Jest 20 new plus one history case; and by hand on a
+  throwaway WordPress built from a package (database `corex_wpush`, `php -S` on 8971, in this session's
+  scratchpad): a whole installation over HTTP, `signed_in_with` on the record, `push_off` with the constant
+  removed. Not run against a shared host.
+- Docs: `docs/en/05-deployment/releases-from-your-machine.md`.
+- Found, not fixed: `build:dist` copies no plugin when run from inside `.claude/worktrees/` (its `.claude`
+  exclude matches the whole path). Builds from the root checkout are unaffected.
+
+Next: the owner's word on merging and releasing. The first release that carries User Story 4 is installed from the
+Releases screen; Muva then adds the constant, an Application Password and its settings file, and wires its own
+one-line command in a client-site session. Phases 3, 5 and 7 to 9 (from T009) still need spec 117
+(`spec/117-abilities`, not merged yet) on `main` first, for `AbilityCheck` and the `action` refusal kind (T002).
+
 **Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
 DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by the owner on
 2026-10-20 (US-SAFE-07, 09, 14, 15, US-FLW-02, US-AUT-02, US-VIS-11), built under the owner's
@@ -908,13 +962,11 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`
   before its own filter runs. Measured in DECISIONS #222.
-- Six bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244).
-  Four are on `simple-git` and its argument parser, two of them rated critical: it runs when a
-  developer starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is
-  given comes from `wp-env.json` in this repository. They are reviewed on 2026-11-30. One is
-  `sprintf-js`, installed and not reached. One is `braces` (GHSA-vfj7-8cjw-p6xm), which runs in the
-  linter and the build on patterns that come only from tool defaults. None has a release this tree
-  can take.
+- Four bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244),
+  all on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
+  starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is given comes
+  from `wp-env.json` in this repository. They are reviewed on 2026-11-30. The `sprintf-js` and
+  `braces` exceptions were removed when GitHub withdrew their advisories (2026-10-22, 2026-10-23).
 - **One override holds a package above what its parents ask for**: `postcss-selector-parser` at
   7.1.6, in the root and in `docs-app`. `@wordpress/scripts` 36 did not retire it as expected:
   `cssnano` 6 still asks for 6.x. Three more hold `js-yaml`, `smol-toml` and `katex` at patched

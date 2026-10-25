@@ -27,6 +27,7 @@
         "verify:dependencies": "node scripts/verify-dependency-security.mjs",
         "audit:completion": "node scripts/audit-product-completion.mjs",
         "build:dist": "node scripts/build-shared-host-dist.mjs",
+        "release:push": "node scripts/release-push.mjs",
         "verify:dist": "node scripts/verify-shared-host-dist.mjs",
         "verify:framework": "node scripts/verify-framework.mjs",
         "format": "wp-scripts format",

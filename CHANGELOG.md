@@ -6,6 +6,71 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A release can be installed from your machine with one command, with no browser** (spec 123, User
+  Story 4; DECISIONS #512, #513). `npm run release:push -- --client=<name>` builds the client's package with
+  `build:dist --zip`, sends it to the site in parts, installs it through the Releases routes with the
+  Releases screen's own client code, then checks that the site runs the new version and its home page
+  answers. `--package=<file>` sends a package already built. On a failure after the release was put in
+  place it prints the recovery link and the way back, and `--resume` goes on with an installation a run
+  did not finish, carrying the installation's key it kept. Guide:
+  `docs/en/05-deployment/releases-from-your-machine.md`.
+  - Every Releases route now accepts a request signed in with an **Application Password** in place of the
+    screen's nonce, only on a site whose `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as `true`,
+    only over HTTPS (or on a `local` site), and only for an account that may install releases. Without
+    the constant every such request is refused with `push_off`. A request signed in by cookie still
+    needs the nonce.
+  - The release history and the activity log name the Application Password a release was installed
+    with.
+  - This supersedes DECISIONS #502 (an Application Password on the three upload routes only).
+
+### Changed
+
+- **CoreX's abilities are visible to MCP agents** (spec 123, User Story 1; DECISIONS #500, #508).
+  `corex/site-info` and `corex/list-blocks` now set `meta.mcp.public`, so the official MCP Adapter's
+  default server lists them. Before this, an agent connected to a CoreX site saw only WordPress's own
+  `core/*` abilities, and asking for `corex/site-info` answered "not found".
+  - Both stay on the Abilities REST routes.
+  - Both are marked read-only and safe to repeat.
+  - Both still need `edit_posts`, because `corex/site-info` carries the CoreX version, which spec 111
+    keeps out of every public page.
+
+### Security
+
+- **Ten dependency advisories published since 2026-10-23 (twelve findings) are closed with patched
+  releases.** They failed "Validate dependency advisories" on every pull request opened since. Each
+  patched release sits inside the range its parent already accepts, and the lockfiles change only those
+  entries:
+  - root: `body-parser` 1.20.6 to 1.20.9 (and 2.3.0 to 2.4.0 under `webpack-dev-server`, with
+    `content-type` 2.1.0), `fast-uri` 3.1.8 to 3.1.9, `serialize-javascript` 7.0.7 to 7.1.4, `zod`
+    4.6.5 to 4.6.7;
+  - docs site: `undici` 8.10.2 to 8.12.3, `zod` 4.5.4 to 4.6.7.
+- The `braces` exception (GHSA-vfj7-8cjw-p6xm) is removed: GitHub withdrew the advisory on
+  2026-10-23, and the policy refuses an exception that matches no advisory. No exception is added.
+
+### Client impact
+
+- **Installing releases with one command (Muva, Perego, any client site).** Nothing changes on a site until
+  its `wp-config.php` says `define( 'COREX_ALLOW_RELEASE_PUSH', true );`; until then the Releases routes
+  refuse every Application Password, and the Releases screen works as before. To use it:
+  1. install **this** release from the Releases screen, as now: the release running on a site decides who
+     may use its routes, and older ones accept only the screen;
+  2. add the line to the site's `wp-config.php` (beside `COREX_ALLOW_RELEASE_INSTALL` on a host that sets
+     `DISALLOW_FILE_MODS`);
+  3. make an Application Password (Users > Profile) for an account that may install releases, ideally one
+     kept for this;
+  4. put `{"site", "user", "application_password"}` in `~/.corex/release-push/<client>.json`, outside the
+     repository;
+  5. run `npm run release:push -- --client=<client> [--with-plugin=<folder>]` from the client repository,
+     after any build step of the client's own (Muva runs `sites/muva/deploy/package.mjs --keep` first, or
+     wires both into one script of its own).
+- **Muva and Perego**: nothing changes until the MCP Adapter plugin is installed on the site. Then
+  any signed-in agent sees `corex/site-info` and `corex/list-blocks` listed (the adapter's discovery
+  checks no permission), and an author or above can run them. The dependency updates are lockfile
+  entries for build, test and docs tooling; no CoreX plugin or theme source imports any of them.
+- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+
 ## [0.48.0] — 2026-10-23
 
 The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
