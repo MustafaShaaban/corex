@@ -42,6 +42,12 @@ beforeEach(function () {
     $this->uuid  = signInWithApplicationPassword($this->admin, 'release push');
     ReleaseInstaller::$signedByTheScreen = false;
 
+    // A push comes over HTTPS (FR-014). Said here, not left to the install: a `local` site would let
+    // plain HTTP through and hide a refusal every other site gives, which is how this passed on a
+    // local install and failed in CI.
+    $this->https     = $_SERVER['HTTPS'] ?? null;
+    $_SERVER['HTTPS'] = 'on';
+
     $this->sites = [];
     $this->site  = function (bool $pushAllowed): ReleaseInstaller {
         $site          = new ReleaseInstaller(ReleaseInstaller::RUNNING_0_44, pushAllowed: $pushAllowed);
@@ -58,6 +64,11 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    if ($this->https === null) {
+        unset($_SERVER['HTTPS']);
+    } else {
+        $_SERVER['HTTPS'] = $this->https;
+    }
     ReleaseInstaller::$signedByTheScreen = true;
     unset($GLOBALS['wp_rest_application_password_uuid']);
     WP_Application_Passwords::delete_application_password($this->admin, $this->uuid);
@@ -163,9 +174,26 @@ it('keeps the screen as it was: its nonce signs a request on a site that does no
         ->and(end($logged))->not->toHaveKey('signed_in_with');
 });
 
+it('refuses an Application Password over plain HTTP on a site that is not a local one', function () {
+    if (wp_get_environment_type() === 'local') {
+        $this->markTestSkipped('A local site lets an Application Password through over plain HTTP.');
+    }
+    ($this->site)(true);
+    unset($_SERVER['HTTPS']);
+
+    $response = ReleaseInstaller::ask('POST', '/releases/install/step');
+
+    expect($response->get_status())->toBe(403)
+        ->and($response->get_data()['reason'])->toBe(ReleaseRestGateway::PUSH_NEEDS_HTTPS);
+});
+
 it('is closed to an account that may not install releases, whatever its Application Password', function () {
     ($this->site)(true);
-    $editor = (int) wp_insert_user(['user_login' => 'release-push-editor-' . wp_rand(), 'user_pass' => wp_generate_password(), 'role' => 'editor']);
+    $inserted = wp_insert_user(['user_login' => 'release-push-editor-' . wp_rand(), 'user_pass' => wp_generate_password(), 'role' => 'editor']);
+    // A failed insert is a WP_Error, which (int) turns into 1: the clean-up below would then delete
+    // the install's first administrator.
+    expect($inserted)->toBeInt();
+    $editor = $inserted;
     signInWithApplicationPassword($editor, 'editor push');
 
     try {
