@@ -40,6 +40,20 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 123, an agent works on a CoreX site through MCP** (2026-10-25, branch `spec/123-agent-abilities`,
+DECISIONS #500 to #505): Claude, or any MCP agent, reads a CoreX site and installs a release, so the owner no
+longer uploads the package by hand in the admin.
+- The cause of "not found" for `corex/site-info` on mu-va.com is found: the MCP Adapter keeps an ability private
+  unless `meta.mcp.public` (or `meta.public`) is true, and CoreX set neither (#500).
+- The owner answered five questions: the adapter stays a separate plugin (#501); an Application Password opens
+  the three upload routes only (#502); a Node script sends the package and the site never fetches it (#503);
+  CoreX ships a "CoreX agent" role and the owner makes the user and its password (#504); the first settings
+  abilities clear the page cache, switch coming-soon and read the flags (#505).
+- Build order: visibility fix, read, release, settings.
+
+Spec and checklist are written and clarified. Not planned, nothing built. Next: `/speckit-plan`. It leans on
+spec 117 (the role matrix, `spec/117-abilities`, not merged yet) for the abilities the agent role is allowed.
+
 **Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
 DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by the owner on
 2026-10-20 (US-SAFE-07, 09, 14, 15, US-FLW-02, US-AUT-02, US-VIS-11), built under the owner's

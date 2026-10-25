@@ -18519,3 +18519,91 @@ screen-reader pass is not called accessible in the release notes.
 
 **Not chosen.** *A CI check that a release record exists*: there is no release record file to check yet, and
 inventing one belongs to the release that first needs it.
+
+## #500 -- CoreX agent abilities are public to MCP, and to MCP only
+
+**Date:** 2026-10-25. **Spec:** 123, FR-001, FR-002.
+
+**Numbering.** Open branches had claimed decisions up to #479 when this was written (spec 122's plan), so spec
+123 starts at #500 to stay clear of them. Renumber at merge only if a later branch took the same numbers.
+
+**Found.** The two abilities DECISIONS #53 registered (`corex/list-blocks`, `corex/site-info`) never reached an
+agent: the MCP Adapter default server on mu-va.com listed only WordPress's three `core/*` abilities. The MCP
+Adapter (v0.7.1) treats an ability as public only when `meta.mcp.public` is true, or `meta.public` is true
+and `meta.mcp.public` is unset (`McpAbilityExposure::is_public`). CoreX set `meta.show_in_rest` and
+`meta.annotations.readonly` and neither key, so both stayed private.
+
+**Decided.** Every CoreX agent ability sets `meta.mcp.public` to true and leaves `meta.public` unset, so it is
+offered to MCP without opting into every other client channel WordPress may add. Every one carries the
+`readonly`, `destructive` and `idempotent` annotations that apply, which the adapter passes to the agent's
+client as MCP hints.
+
+**Not chosen.** *`meta.public`*: from WordPress 7.1 it also opens the ability to REST and future channels, which
+an agent ability that installs releases has no reason to join.
+
+## #501 -- The MCP Adapter stays a separate plugin
+
+**Date:** 2026-10-25. **Spec:** 123, FR-003. Answered by the owner.
+
+**Decided.** CoreX does not bundle, copy or install the MCP Adapter. A site that wants agents installs the
+official plugin. CoreX registers its agent abilities with the Abilities API, which is part of WordPress 7.0,
+whether or not the adapter is there, and runs unchanged without it (Principle IX).
+
+**Not chosen.** *Bundling `wordpress/mcp-adapter` through Composer*: CoreX would own its updates and would have
+to avoid loading twice on a site that also has the plugin. *Bundling a copy loaded only when the plugin is
+absent*: two paths to test and keep current.
+
+## #502 -- An Application Password stands in for the nonce on the three upload routes only
+
+**Date:** 2026-10-25. **Spec:** 123, FR-014. Answered by the owner.
+
+**Decided.** `ReleaseRestGateway::answer()` refuses any request without a valid `X-WP-Nonce`. The routes that
+report how much of a package is received, append a part and complete an upload accept, in place of the nonce,
+a request WordPress signed in with an Application Password, only while agent changes are on and only for an
+account that passes `mayManage()`. Every other release route keeps the nonce: an agent inspects, installs and
+goes back through agent abilities that call spec 107's services directly and never use those routes.
+
+**Not chosen.** *All release routes*: the whole installation could then be driven by plain REST calls, outside
+MCP and its destructive hints. *A new upload route for the command*: more surface to secure for the same
+result.
+
+## #503 -- A package reaches the site through a Node script; the site never fetches it
+
+**Date:** 2026-10-25. **Spec:** 123, FR-012, FR-013, FR-015. Answered by the owner.
+
+**Decided.** A package's bytes never pass through an MCP call. A Node script in CoreX, run on the owner's
+machine with no WordPress around it, sends the package through spec 107's resumable upload (keyed by SHA-256),
+reading the site's address, the account and its Application Password from a file outside the repository. The
+agent then installs it by SHA-256 through agent abilities.
+
+**Not chosen.** *`wp corex release:push`*: a WP-CLI command must run inside a WordPress install, although it only
+talks to the remote site. *The site pulls the package from a URL*: rejected for now, because the packages live
+only on the owner's machine (`C:\Users\pc\.muva\packages` for Muva) and a site that fetches code from an
+address it is handed is a larger risk than one that receives an upload it already checks. *The package through
+MCP, in parts or as base64*: every byte would pass through the model.
+
+## #504 -- CoreX ships a "CoreX agent" role; the owner makes the user and its password
+
+**Date:** 2026-10-25. **Spec:** 123, FR-005 to FR-008. Answered by the owner.
+
+**Decided.** CoreX registers a "CoreX agent" role holding WordPress's `read` capability and no CoreX ability of
+its own; the owner allows it what it needs in spec 117's role matrix (for releases, `corex_manage_releases`).
+The owner creates the user in the Users screen and makes its Application Password; CoreX never creates a user
+or a password. Agent abilities that change the site are off by default behind one feature flag that no agent
+ability can turn on. On a network, installing still needs a super administrator on the main site
+(`mayManage()`), and this spec does not widen that.
+
+**Not chosen.** *No role, only a written guide*: less code, easier to get wrong. *A `wp corex` command that
+creates the role and the user*: shared hosts such as Muva's have no command line.
+
+## #505 -- The first settings agent abilities: clear the page cache, coming-soon on and off, read the flags
+
+**Date:** 2026-10-25. **Spec:** 123, FR-020. Answered by the owner.
+
+**Decided.** Three settings agent abilities and no more: clear the page cache, only through a page-cache plugin
+CoreX detects (LiteSpeed Cache first) and never as a dependency; turn coming-soon on or off through the service
+the Operations screen uses; and read the feature flags. No agent ability changes a flag.
+
+**Not chosen.** *Writable flags*: an agent could reach switches whose effect it cannot see. *Cache clearing
+only*, and *no settings yet*: both leave the owner opening the admin for the two jobs that follow most
+releases.
