@@ -942,13 +942,11 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`
   before its own filter runs. Measured in DECISIONS #222.
-- Six bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244).
-  Four are on `simple-git` and its argument parser, two of them rated critical: it runs when a
-  developer starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is
-  given comes from `wp-env.json` in this repository. They are reviewed on 2026-11-30. One is
-  `sprintf-js`, installed and not reached. One is `braces` (GHSA-vfj7-8cjw-p6xm), which runs in the
-  linter and the build on patterns that come only from tool defaults. None has a release this tree
-  can take.
+- Four bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244),
+  all on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
+  starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is given comes
+  from `wp-env.json` in this repository. They are reviewed on 2026-11-30. The `sprintf-js` and
+  `braces` exceptions were removed when GitHub withdrew their advisories (2026-10-22, 2026-10-23).
 - **One override holds a package above what its parents ask for**: `postcss-selector-parser` at
   7.1.6, in the root and in `docs-app`. `@wordpress/scripts` 36 did not retire it as expected:
   `cssnano` 6 still asks for 6.x. Three more hold `js-yaml`, `smol-toml` and `katex` at patched

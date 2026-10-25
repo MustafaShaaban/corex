@@ -19,6 +19,19 @@ All notable changes to Corex are documented here. The format follows
   - Client impact: none until the MCP Adapter plugin is installed. Then any signed-in agent sees both
     listed (the adapter's discovery checks no permission), and an author or above can run them.
 
+### Security
+
+- **Ten dependency advisories published since 2026-10-23 (twelve findings) are closed with patched
+  releases.** They failed "Validate dependency advisories" on every pull request opened since. Each
+  patched release sits inside the range its parent already accepts, and the lockfiles change only those
+  entries:
+  - root: `body-parser` 1.20.6 to 1.20.9 (and 2.3.0 to 2.4.0 under `webpack-dev-server`, with
+    `content-type` 2.1.0), `fast-uri` 3.1.8 to 3.1.9, `serialize-javascript` 7.0.7 to 7.1.4, `zod`
+    4.6.5 to 4.6.7;
+  - docs site: `undici` 8.10.2 to 8.12.3, `zod` 4.5.4 to 4.6.7.
+- The `braces` exception (GHSA-vfj7-8cjw-p6xm) is removed: GitHub withdrew the advisory on
+  2026-10-23, and the policy refuses an exception that matches no advisory. No exception is added.
+
 ## [0.48.0] — 2026-10-23
 
 The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
