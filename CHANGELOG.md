@@ -16,8 +16,6 @@ All notable changes to Corex are documented here. The format follows
   - Both are marked read-only and safe to repeat.
   - Both still need `edit_posts`, because `corex/site-info` carries the CoreX version, which spec 111
     keeps out of every public page.
-  - Client impact: none until the MCP Adapter plugin is installed. Then any signed-in agent sees both
-    listed (the adapter's discovery checks no permission), and an author or above can run them.
 
 ### Security
 
@@ -31,6 +29,14 @@ All notable changes to Corex are documented here. The format follows
   - docs site: `undici` 8.10.2 to 8.12.3, `zod` 4.5.4 to 4.6.7.
 - The `braces` exception (GHSA-vfj7-8cjw-p6xm) is removed: GitHub withdrew the advisory on
   2026-10-23, and the policy refuses an exception that matches no advisory. No exception is added.
+
+### Client impact
+
+- **Muva and Perego**: nothing changes until the MCP Adapter plugin is installed on the site. Then
+  any signed-in agent sees `corex/site-info` and `corex/list-blocks` listed (the adapter's discovery
+  checks no permission), and an author or above can run them. The dependency updates are lockfile
+  entries for build, test and docs tooling; no CoreX plugin or theme source imports any of them.
+- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 
 ## [0.48.0] — 2026-10-23
 
