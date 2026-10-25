@@ -73,7 +73,7 @@ Asked of the owner in this session; each answer is the option recommended to him
   **On the three upload routes only** (how much is received, append a part, complete), only while agent changes
   are on, and only for an account that may manage releases. Every other release route keeps the nonce, because
   inspecting, installing and going back are agent abilities that call spec 107's services and never pass through
-  those routes (FR-014, DECISIONS #502).
+  those routes (FR-014, DECISIONS #502). *Replaced later the same day: see "Session 2026-10-25 (later)".*
 - Q: Which settings agent abilities are in the first version? → A: **Clearing the page cache** (only through a
   page-cache plugin CoreX detects, such as LiteSpeed Cache), **turning coming-soon on and off**, and **reading
   the feature flags**. No agent ability changes a flag (FR-020, DECISIONS #505).

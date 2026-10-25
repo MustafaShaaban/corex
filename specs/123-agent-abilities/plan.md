@@ -119,7 +119,7 @@ specs/123-agent-abilities/
 ├── contracts/
 │   ├── agent-abilities.md     # every agent ability: name, CoreX ability, switch, hints, input, output
 │   ├── release-push.md        # the script: settings file, arguments, HTTP sequence, exit codes
-│   └── upload-and-gate.md     # upload routes' sign-in rule, part_bytes, the gate's body source
+│   └── upload-and-gate.md     # the release routes' sign-in rule (#512), the gate's body source
 ├── checklists/requirements.md
 └── tasks.md                   # /speckit-tasks
 ```
@@ -152,8 +152,9 @@ plugins/corex-config/src/
 │   └── AgentSwitchController.php             # NEW: admin_post save through AdminGuard
 ├── Security/OperationsSecurityScreen.php     # renders the panel
 └── Releases/
-    ├── ReleaseRestGateway.php                # Application Password on flagged routes
-    ├── ReleasesController.php                # flags the three upload routes; received adds part_bytes
+    ├── ReleaseCaller.php                     # NEW (#512): the push constant, the password's name, HTTPS
+    ├── ReleaseRestGateway.php                # Application Password on every route, behind the constant
+    ├── ReleaseRecord.php                     # signed_in_with
     ├── ReleaseMaintenance.php                # the gate's body source; FROM_BODY
     └── ReleaseOverview.php                   # read() without upkeep, for the read-only ability
 scripts/release-push.mjs                      # NEW
@@ -209,8 +210,9 @@ Each phase ships on its own and leaves `main` green.
    - `AREA_AGENTS`;
    - the Agent access panel.
 3. **Read (US3).** Release overview, installed release, recent activity, recent submissions.
-4. **Push (US4).** The gateway's sign-in rule, `part_bytes`, `scripts/release-push.mjs` and its tests, and the
-   upload event.
+4. **Push (US4, amended by #512 and #513; built).** The gateway's sign-in rule on every route behind
+   `COREX_ALLOW_RELEASE_PUSH`, `signed_in_with` on the record, and `scripts/release-push.mjs` (build, upload,
+   install, check) with its tests. It needs nothing from phases 2 or 3, nor from spec 117.
 5. **Release (US5).**
    - The gate's body source, with spec 107's FR-024a amended.
    - Inspect, prepare, confirm, step, finish, cancel.

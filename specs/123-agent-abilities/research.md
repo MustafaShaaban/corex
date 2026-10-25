@@ -50,7 +50,9 @@ survives the adapter. Only a missing CoreX ability is a permission refusal.
 **Decision.**
 - New agent abilities set `meta.mcp.public = true`, leave `meta.public` unset, and set `show_in_rest = false`.
   The core REST run route (`wp-abilities/v1/abilities/{name}/run`, `run-controller.php:44-72`) would otherwise
-  let plain REST calls drive an installation outside MCP, which DECISIONS #502 rules out.
+  let plain REST calls drive an installation outside MCP, which DECISIONS #502 ruled out. (Since #512 the
+  Releases routes themselves take an Application Password on a site that defines `COREX_ALLOW_RELEASE_PUSH`;
+  agent abilities still stay off REST, so an agent always meets MCP's destructive hints.)
 - The two abilities from DECISIONS #53 keep `show_in_rest = true` so that any REST caller keeps working, and
   gain `meta.mcp.public = true`. Spec FR-001 names that exception.
 
@@ -95,7 +97,8 @@ Spec 107's FR-024a gains the source. The amendment is in this branch.
 - *Lowering maintenance at the end of the swap request*: visitors would see the new code before its database
   step ran.
 - *Letting the Node script finish the installation with the header*: it would need the nonce-free rule on every
-  release route, which DECISIONS #502 refused.
+  release route, which DECISIONS #502 refused. (#512 later allowed that rule behind `COREX_ALLOW_RELEASE_PUSH`,
+  and the script now finishes installations it starts with the header; an agent still uses the body source.)
 
 **Cost, said plainly.** The key passes through the agent's conversation. It opens the gate and the recovery link
 for that one installation only, and a new installation mints a new one. The journal never stores it (FR-022).

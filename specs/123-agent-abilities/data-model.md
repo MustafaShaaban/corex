@@ -88,5 +88,6 @@ Agent account (WP user) --has role--> corex_agent --allowed in role matrix--> Co
 AgentAbility --asks--> CoreX ability --refusal--> access audit log
 AgentAbility --every call--> agent.call event
 release-prepare --mints--> installation key --carried by--> release-step / -finish / -cancel --opens--> maintenance gate
-release-push.mjs --Application Password--> upload routes --complete--> package in incoming/ --inspect/prepare--> installation
+release-push.mjs --Application Password, if COREX_ALLOW_RELEASE_PUSH (#512)--> every Releases route: upload, inspect, prepare, confirm, step, finish
+release-push.mjs --upload-only--> package in incoming/ --agent abilities: inspect/prepare--> installation
 ```
