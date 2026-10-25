@@ -6,6 +6,19 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **CoreX's abilities are visible to MCP agents** (spec 123, User Story 1; DECISIONS #500, #508).
+  `corex/site-info` and `corex/list-blocks` now set `meta.mcp.public`, so the official MCP Adapter's
+  default server lists them. Before this, an agent connected to a CoreX site saw only WordPress's own
+  `core/*` abilities, and asking for `corex/site-info` answered "not found".
+  - Both stay on the Abilities REST routes.
+  - Both are marked read-only and safe to repeat.
+  - Both still need `edit_posts`, because `corex/site-info` carries the CoreX version, which spec 111
+    keeps out of every public page.
+  - Client impact: none until the MCP Adapter plugin is installed. Then any signed-in agent sees both
+    listed (the adapter's discovery checks no permission), and an author or above can run them.
+
 ## [0.48.0] — 2026-10-23
 
 The rest of the CoreX revamp's stage 0 and its first quality release: mail stays where it should
