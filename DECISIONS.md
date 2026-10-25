@@ -18663,7 +18663,7 @@ installation, and is never journaled.
 - *The adapter's observability handler*: it replaces the server's handler and sees only tool names.
 - *The adapter's result filter*: it ties the journal to the adapter.
 
-## #508 -- New agent abilities are MCP only; the two older ones keep REST and ask for `read`
+## #508 -- New agent abilities are MCP only; the two older ones keep REST and `edit_posts`
 
 **Date:** 2026-10-25. **Spec:** 123, FR-001 (amended), FR-007. Plan research R2, R7.
 
@@ -18671,8 +18671,11 @@ installation, and is never journaled.
 - New agent abilities set `meta.mcp.public` and `show_in_rest = false`. Otherwise core's
   `wp-abilities/v1/.../run` route would let plain REST calls drive an installation, which #502 rules out.
 - `corex/site-info` and `corex/list-blocks` keep `show_in_rest` for existing callers.
-- Their permission moves from `edit_posts` to `read`, because nothing in them needs more and the CoreX agent
-  role holds only `read`.
+- Their permission stays `edit_posts`. `corex/site-info` carries the CoreX version, which spec 111 keeps from
+  anyone looking for a vulnerable release, and `read` would show it to every subscriber (on a site with open
+  registration, to anyone). The plan first said `read`; wp-guard caught it while User Story 1 was built, and
+  this entry was corrected then. An agent reads the version through `corex/release-overview` and
+  `corex/release-installed`, which ask for `corex_manage_releases`.
 - Each other agent ability asks for one CoreX ability:
   - releases: `corex_manage_releases`, plus `mayManage()`'s network rule;
   - activity log, mode, page cache and flags: `corex_manage_operations`;

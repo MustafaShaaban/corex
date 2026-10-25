@@ -59,10 +59,20 @@ longer uploads the package by hand in the admin.
   - going back and removing leftovers become pairs (#510);
   - a page-cache provider may carry its purge, and LiteSpeed Cache gets one (#511).
 
-Specified, clarified, planned and broken into 49 tasks (`tasks.md`, T001 done); nothing built. Next:
-`/speckit-implement`, starting with tasks T003 to T008 (visibility), which need nothing else and can ship as a
-patch. Phases 2 to 6 need spec 117 (`spec/117-abilities`, not merged yet) on `main`
-first, for `AbilityCheck` and the `action` refusal kind.
+Specified, clarified, planned and broken into 49 tasks (`tasks.md`).
+
+**User Story 1 is built** (T001, T003 to T007, 2026-10-25):
+- `corex/site-info` and `corex/list-blocks` set `meta.mcp.public`, and both keep `edit_posts`. wp-guard
+  caught the plan's `read`, which would have shown the CoreX version to every subscriber against spec 111;
+  #508 was corrected.
+- Verified on a throwaway WordPress 7.1.3 in the worktree, with MCP Adapter 0.7.1. A scripted MCP session,
+  signed in with an Application Password, lists both abilities and runs `corex/site-info` as an author. A
+  subscriber gets "Permission denied".
+- Pest: 3 new unit tests, 5 integration tests, and the full unit suite (3,424) green.
+- Owed: T008, the same check on mu-va.com once a release carries it.
+
+Next: release User Story 1 as a patch. Phases 3 to 9 (from T009) need spec 117 (`spec/117-abilities`, not
+merged yet) on `main` first, for `AbilityCheck` and the `action` refusal kind (T002).
 
 **Spec 115, kit and public page safety** (2026-10-21, branch `claude/spec-115-kit-safety-88dd45`,
 DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by the owner on

@@ -129,7 +129,7 @@ specs/123-agent-abilities/
 plugins/corex-core/
 ├── config/features.php                       # agent_changes => false
 ├── src/Abilities/
-│   ├── AbilitiesProvider.php                 # mcp.public on the two existing; `read`; collects definitions
+│   ├── AbilitiesProvider.php                 # mcp.public on the two existing (still edit_posts); collects definitions
 │   ├── AgentAbility.php                      # NEW: WP_Ability subclass (permission once, switch, journal)
 │   ├── AgentAbilityDefinition.php            # NEW: value object (name, labels, ability, writes, hints, schemas, handler)
 │   ├── AgentAbilitySource.php                # NEW: interface a module implements to offer definitions
@@ -199,7 +199,8 @@ Each phase ships on its own and leaves `main` green.
 
 1. **Visibility (US1).**
    - `meta.mcp.public` on `corex/site-info` and `corex/list-blocks`.
-   - Their permission moves to `read`.
+   - Their permission stays `edit_posts`: `corex/site-info` carries the CoreX version (spec 111; DECISIONS
+     #508, corrected while this phase was built).
    - An integration test that both register with the adapter's rule satisfied.
    - It needs nothing from spec 117 and can be a patch release on its own. Verified live on mu-va.com.
 2. **Foundation (US2).** These need spec 117 merged first:

@@ -173,7 +173,8 @@ screen ignores it. The script sends parts of that size, so a host's `post_max_si
   | Releases (overview, inspect, install, return, leftovers) | `MANAGE_RELEASES`, with `mayManage()`'s network rule |
   | Activity log, mode, page cache, flags | `MANAGE_OPERATIONS` |
   | Submissions | `MANAGE_SUBMISSIONS` |
-  | `corex/site-info`, `corex/list-blocks`, installed release | `read` (nothing in them needs more) |
+  | `corex/site-info`, `corex/list-blocks` | `edit_posts`, as before: site-info carries the CoreX version, which spec 111 keeps from subscribers |
+  | Installed release | `MANAGE_RELEASES`, for the same reason |
 
   The owner allows the role two or three CoreX abilities, never `MANAGE_ADMIN`.
 

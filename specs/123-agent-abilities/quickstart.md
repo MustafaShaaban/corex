@@ -17,7 +17,8 @@ client's production site. The contracts are in [contracts/](contracts/), and the
 
 1. Ask the client to discover abilities. Expected: `corex/site-info` and `corex/list-blocks` are listed beside
    the `core/*` ones.
-2. Run `corex/site-info`. Expected: `{name, framework: "Corex", version, corex_blocks}`.
+2. Run `corex/site-info` as an author or above. Expected: `{name, framework: "Corex", version, corex_blocks}`.
+   As a subscriber: "Permission denied" (the version stays hidden, spec 111).
 3. Deactivate the MCP Adapter and load the admin. Expected: no warning or notice. Reactivate it.
 
 Repeat steps 1 and 2 against mu-va.com after the patch release. This is the live check SC-002 asks for.

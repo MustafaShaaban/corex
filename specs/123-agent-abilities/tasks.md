@@ -22,13 +22,15 @@ Everything from Phase 3 on waits for spec 117 to be on `main` (T002).
   `main` into this branch. Confirm `Corex\Access\AbilityCheck` exists in `plugins/corex-core/src/Access/`, and
   that `AccessAuditLog` records kind `action`. If 117 is not merged, stop and ask the owner. Do not copy its
   helpers (research R12).
-- [ ] T003 Environment Gate, done on the local install `C:\wamp64\www\corex\wp` (runtime only, nothing
-  committed):
-  - Check `wp plugin list` shows the CoreX plugins active.
-  - Install and activate the MCP Adapter plugin v0.7.1 or later.
-  - Confirm `wp_get_environment_type()` is `local`.
-  - Connect an MCP client to `/wp-json/mcp/mcp-adapter-default-server` with a test user's Application
-    Password, stored outside the repository.
+- [x] T003 Environment Gate, done on a throwaway install inside the branch's worktree (runtime only, nothing
+  committed). `C:\wamp64\www\corex\wp` serves the root checkout's code, so it could not test this branch.
+  - `scripts/setup-wordpress.ps1 -DbName corex_w123 -SiteUrl http://127.0.0.1:8923` in the worktree:
+    WordPress 7.1.3, every CoreX plugin active.
+  - MCP Adapter 0.7.1 installed from wordpress.org and active.
+  - `WP_ENVIRONMENT_TYPE` set to `local`.
+  - In place of an MCP client's settings, a scripted MCP session over HTTP. It signs in with a test user's
+    Application Password (kept outside the repository) and runs initialize, discover, get-ability-info and
+    execute. Done 2026-10-25.
 
 **Checkpoint**: the environment is ready for User Story 1. Phase 3 also waits for T002.
 
@@ -42,25 +44,30 @@ server (FR-001 exception, FR-002, FR-003; DECISIONS #500, #508).
 **Independent test**: quickstart Phase 1. Discover lists both abilities, and running `corex/site-info` returns
 `{name, framework, version, corex_blocks}`. With the adapter deactivated, the admin loads with no notice.
 
-- [ ] T004 [US1] In `plugins/corex-core/src/Abilities/AbilitiesProvider.php`, `registerReadOnlyAbility()`:
+- [x] T004 [US1] In `plugins/corex-core/src/Abilities/AbilitiesProvider.php`, `registerReadOnlyAbility()`:
   - add `'mcp' => ['public' => true]` to `meta`;
   - keep `show_in_rest => true`;
   - set the annotations `readonly => true` and `idempotent => true`;
-  - change `permission_callback` from `current_user_can('edit_posts')` to `current_user_can('read')`.
+  - keep `permission_callback` on `current_user_can('edit_posts')`. The plan said `read`; wp-guard found
+    that it would show the CoreX version to every subscriber, against spec 111 (DECISIONS #508, corrected).
 
   Update the class docblock to say the abilities are public to MCP on purpose (research R2).
-- [ ] T005 [P] [US1] Unit test `tests/Unit/Abilities/AbilitiesProviderTest.php` (Brain Monkey). It captures the
+- [x] T005 [P] [US1] Unit test `tests/Unit/Abilities/AbilitiesProviderTest.php` (Brain Monkey). It captures the
   args passed to `wp_register_ability` for both names and asserts: `meta.mcp.public === true`,
-  `meta.show_in_rest === true`, both annotations, the `read` check, and the category `corex`. The provider must
-  register nothing when `wp_register_ability` does not exist.
-- [ ] T006 [P] [US1] Integration test `tests/Integration/Abilities/AbilitiesRegistrationTest.php` on real
+  `meta.show_in_rest === true`, both annotations, the `edit_posts` check (and a refusal for `read` alone), and
+  the category `corex`. The "Abilities API absent" path is not unit-tested: Brain Monkey cannot undefine a
+  function another test stubbed, and the path is unchanged.
+- [x] T006 [P] [US1] Integration test `tests/Integration/Abilities/AbilitiesRegistrationTest.php` on real
   WordPress. It asserts:
   - `wp_get_ability('corex/site-info')` and `wp_get_ability('corex/list-blocks')` exist, and their `get_meta()`
     carries `mcp.public`;
   - when `WP\MCP\Abilities\McpAbilityExposure` is loaded, `McpAbilityExposure::is_public()` is true for both;
-  - a subscriber can run `corex/site-info`, and a signed-out request cannot.
-- [ ] T007 [US1] `CHANGELOG.md` (Unreleased): "CoreX's abilities are visible to MCP agents". Name the
-  `edit_posts` to `read` change and why. Run clean-code-guard, wp-guard and test-guard on the diff.
+  - an author can run `corex/site-info`, and a subscriber and a signed-out request cannot.
+- [x] T007 [US1] `CHANGELOG.md` (Unreleased): "CoreX's abilities are visible to MCP agents". Name the
+  `edit_posts` check kept and why. Run clean-code-guard, wp-guard and test-guard on the diff. Guards run
+  2026-10-25. wp-guard caught the `read` change (reverted). test-guard merged five unit tests into one and
+  two integration tests into one. clean-code-guard and docs-guard were clean after two CHANGELOG
+  corrections.
 - [ ] T008 [US1] After the patch release reaches mu-va.com, repeat quickstart Phase 1 through the owner's `muva`
   MCP connection, and record the result in `PROGRESS.md` (SC-002).
 
@@ -208,7 +215,7 @@ journaled (FR-005 to FR-008, FR-021, FR-022; DECISIONS #504, #507, #509).
   never touches upkeep.
 - [ ] T024 [US3] `Corex\Config\Agents\ReadAgentAbilities` (an `AgentAbilitySource`) in
   `plugins/corex-config/src/Agents/ReadAgentAbilities.php`. It holds:
-  - `corex/release-installed` (`read`, through `InstalledRelease`);
+  - `corex/release-installed` (`MANAGE_RELEASES`, through `InstalledRelease`; it carries the version);
   - `corex/release-overview` (`MANAGE_RELEASES` plus `ReleaseRestGateway::mayManage()`, through `read()`);
   - `corex/activity-recent` (`MANAGE_OPERATIONS`; areas agents, operations, security and access only; at most
     50; personal-sensitivity events left out);

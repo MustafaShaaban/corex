@@ -11,7 +11,7 @@ The research and plan sections each rule comes from are in [research.md](../rese
 
 ## Common rules
 
-**Permission.** The ability's CoreX ability (or `read`) is checked once per request through spec 117's
+**Permission.** The ability's CoreX ability (or, for the two existing ones, `edit_posts`) is checked once per request through spec 117's
 `AbilityCheck` (R1, R7). A missing ability is a `WP_Error`, recorded once in the access-denied log as kind
 `action`. Release abilities also require `ReleaseRestGateway::mayManage()` (D7).
 
@@ -49,16 +49,17 @@ Hints are written as `readonly / destructive / idempotent`. A dash means the hin
 
 | Name | Asks for | Writes | Hints | Input | `data` |
 |---|---|---|---|---|---|
-| `corex/site-info` | `read` | no | true / - / true | none | `{name, framework, version, corex_blocks}` |
-| `corex/list-blocks` | `read` | no | true / - / true | none | list of CoreX block names |
+| `corex/site-info` | `edit_posts` | no | true / - / true | none | `{name, framework, version, corex_blocks}` |
+| `corex/list-blocks` | `edit_posts` | no | true / - / true | none | list of CoreX block names |
 
-Both keep `show_in_rest = true`, so existing REST callers keep working (R2).
+Both keep `show_in_rest = true`, so existing REST callers keep working (R2), and both keep `edit_posts`,
+because `corex/site-info` carries the CoreX version (spec 111, DECISIONS #508).
 
 ### Read
 
 | Name | Asks for | Writes | Hints | Input (kept) | `data` |
 |---|---|---|---|---|---|
-| `corex/release-installed` | `read` | no | true / - / true | none | `{known, version, client}` (`InstalledRelease`) |
+| `corex/release-installed` | `MANAGE_RELEASES` | no | true / - / true | none | `{known, version, client}` (`InstalledRelease`) |
 | `corex/release-overview` | `MANAGE_RELEASES` | no | true / - / true | none | `ReleaseOverview::read()`: installed, blockers, packages, part_bytes, installation, leftovers, previous, record |
 | `corex/activity-recent` | `MANAGE_OPERATIONS` | no | true / - / true | `area` (agents, operations, security, access), `outcome`, `since` (ISO date), `count` 1-50 (all kept) | list of `{occurred_at, area, kind, outcome, actor_label, target_label, summary}`; personal-sensitivity events left out |
 | `corex/submissions-recent` | `MANAGE_SUBMISSIONS` | no | true / - / true | `status`, `flow`, `count` 1-20 (kept) | `SubmissionQueryService::query()` items, as the inbox shows the same account; the call is journaled with sensitivity `personal` |

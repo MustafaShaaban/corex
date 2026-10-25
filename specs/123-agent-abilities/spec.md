@@ -425,8 +425,9 @@ refused under the same conditions.
   this is planned, the plan names the order.
 - The activity log of spec 114 and the access-denied log of spec 112 are where calls are recorded; this spec
   adds no log of its own.
-- The two existing agent abilities ask for WordPress's `edit_posts` today. The plan moves each to the CoreX
-  ability FR-007 names, so that an account with only the CoreX agent role can read the site.
+- The two existing agent abilities keep WordPress's `edit_posts`: `corex/site-info` carries the CoreX
+  version, which spec 111 keeps from anyone who could not already edit the site. An account with only the
+  CoreX agent role reads the version through the release abilities instead (DECISIONS #508).
 - The owner's machine has Node, as it already does for building packages.
 
 ## Not in this spec

@@ -9,7 +9,7 @@ in an existing store.
 |---|---|---|
 | `name` | string | `corex/<slug>`, matching core's rule `^[a-z0-9-]+/[a-z0-9-]+$` |
 | `label`, `description` | string | translatable; the description says what the call changes |
-| `asks` | string | a `CorexAbility` constant, or `read` |
+| `asks` | string | a `CorexAbility` constant (the two existing abilities use `edit_posts`) |
 | `writes` | bool | true puts the ability behind `agent_changes` |
 | `hints` | `{readonly, destructive, idempotent}` | each bool or null; mapped by the adapter to MCP hints |
 | `inputSchema` | array | JSON Schema object, `additionalProperties: false` |
