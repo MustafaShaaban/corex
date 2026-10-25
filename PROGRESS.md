@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.48.0** — tag `v0.48.0`, reachable from `main`.
+- **Latest published release: v0.48.1**, tag `v0.48.1`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -254,6 +254,8 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**In v0.48.1, 2026-10-25.** Spec 123 User Stories 1 and 4 (#442): CoreX abilities public to MCP, and `npm run release:push`, which installs a release with an Application Password on a site that defines `COREX_ALLOW_RELEASE_PUSH` (DECISIONS #512, #513). Its "In flight" paragraph above describes it; the release notes are under `[0.48.1]` in `CHANGELOG.md`. Filed from its verification: #443 (`build:dist` under a `.claude` folder) and #444 (a fresh site's capability checks before the migration runner).
 
 **In v0.48.0, 2026-10-23.** The rest of the revamp's stage 0 and R1.1: spec 113 (R0.2, mail capture, #437), spec 114 (R0.3, truthful screens, #433), spec 115 (R0.4, kit and public page safety, #436) and spec 116 (R1.1, quality checks, #434). Their "In flight" paragraphs above describe each; the release notes are under `[0.48.0]` in `CHANGELOG.md`.
 

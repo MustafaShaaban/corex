@@ -6,6 +6,15 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.48.1] - 2026-10-25
+
+A release installed from your machine with one command, and CoreX's abilities visible to MCP agents (spec 123,
+User Stories 1 and 4; DECISIONS #500, #508, #512, #513).
+
+**Read Client impact before updating.** Nothing changes on a live site until its `wp-config.php` defines
+`COREX_ALLOW_RELEASE_PUSH`, or until the MCP Adapter plugin is installed. This release itself is installed from
+the Releases screen, as before: it is the first one whose routes accept the command.
+
 ### Added
 
 - **A release can be installed from your machine with one command, with no browser** (spec 123, User
