@@ -55,6 +55,76 @@ Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIO
   no one on either site is in a team and no flow submission is assigned to a role. On the Forms & Flows screen
   they see a Flows/Teams switch and their code forms as before.
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439).
+
+### Added
+
+- **One launch checklist** (spec 118, revamp release R3.2). The Overview, every tab of Operations &
+  Security, the readiness notifications, the CoreX widget on the WordPress Dashboard and the Setup
+  Wizard's launch step show the same checks in the same states, in two groups: **Security and
+  hosting** (the six hardening checks, which can block going live) and **Site and content** (Brand
+  set, Kit applied while a kit add-on is active, Front page, Privacy page published, Terms page
+  published, Test email sent, Login protection on), which advise and never block. Each check says
+  its state in a word beside an icon, and every check that is not ready links to where it is fixed.
+  The Overview's "N of M" and Operations' "N of M ready" are the same numbers.
+- **The Setup Wizard's launch step** shows that checklist and, while the site is not live, **Go live**
+  through the Operations screen's own mode form: the same confirmation, the same history row, and
+  back to the wizard. Its Done step says how many checks still block going live, or that the site is
+  live.
+- **A "Terms page" choice** on Settings → Brand, read by the checklist.
+- **The Overview opens with four state tiles**: Site health (CoreX's health checks and the last PHP
+  fatal error of the last 7 days, with the plugin or theme for administrators), Environment, Login
+  protection and Add-ons. CoreX now records a PHP fatal error's time, type and the plugin or theme it
+  came from, and nothing else, for 30 days.
+- **The Overview's forms card** counts Open, Assigned to you and Unread submissions, each a link to
+  the inbox with that filter. The inbox gains an **Open (new or in progress)** status filter and an
+  **Unread only** box, and opens with the filters in its address.
+- **Repeated notices are grouped**: unread "Export finished" and "Background job failed"
+  notifications of one kind of job are one item ("3 exports finished") with each member listed; the
+  bell and the Overview count it once. Nothing stored changes.
+
+### Changed
+
+- **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
+  not load" with "Try again", never a 0 or another cause, and an administrator reads a reference that
+  is also in the PHP error log. The rest of the page still renders.
+- **Recent activity reads as sentences** ("Mustafa moved 25 submissions to the trash"), with the
+  person's display name and a link to what was changed; the Insights security card and the Access
+  audit log use the same sentences. The card's "Audit log" link is gone until a list of all activity
+  exists.
+- **The Overview's data card lists the site's own data** (form submissions, newsletter subscribers,
+  job applications, …) with "Can edit" or "Read only", each a link to it on the Data screen; CoreX's
+  logs stay on the Data screen.
+- **A readiness notification is raised once** when a check starts to fail and resolved when it
+  passes; opening pages no longer adds to its count, and only rewords it in the language of the
+  person who opened them.
+- **The Development and Staging modes say what happens to email**: kept in Email Studio (on
+  Staging, until a mail provider and live delivery are set). They said analytics should be off,
+  which CoreX does not do.
+- **A kit applied from the Setup Wizard is recorded as applied**, and a site whose wizard applied the
+  kit before is recognised from its pages. An apply that failed on a page is not recorded.
+- **Insights**: each widget's state has its own chip (an icon and a word: Live, Connected, No data
+  yet, Not connected, Needs attention, Could not load) and each widget an icon for its subject; the
+  screen is titled "Insights" and the agent card "AI and agent readiness". A forms count that cannot
+  be read says "Could not load".
+
+### Client impact
+
+- **Muva**: the owner sees a new Overview (four state tiles, a two-group checklist, activity as
+  sentences, its own data only) and the same checklist on Operations & Security and the Dashboard
+  widget. Muva runs without a kit, so no kit row counts against it. Nothing new blocks going live:
+  only the six hardening checks can, as before. Its open readiness notices get one more occurrence on
+  the first page opened after the update, then stop growing. Client-guide screenshots of the Overview,
+  Operations and Insights go stale.
+- **Perego**: the same new screens. It has no Corex Mail, so "Test email sent" reads "Needs Corex
+  Mail" and is not counted. The kit row reads Done if its wizard applied the Company kit (recognised
+  from the kit's pages, nothing applied again).
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+- **A client repository that carries copies of CoreX's tests** takes the updated
+  `OverviewModelTest.php`, `SetupWizardCompletionTest.php` (the kit's unused `LaunchChecklist` class is
+  removed) and the specs that name "Readiness & Insights" (now "Insights"). Code that implements
+  `Corex\Notifications\NotificationService` or `NotificationRepository` adds `reword()` /
+  `rewordByDedupKey()`; no client site implements either.
 
 ## [0.48.1] - 2026-10-25
 

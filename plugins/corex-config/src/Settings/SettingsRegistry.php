@@ -11,8 +11,9 @@ namespace Corex\Config\Settings;
 defined('ABSPATH') || exit;
 
 /**
- * Declares the configurable Corex settings — sections and fields. Pure. Each field
- * key is a Config dot-key, so saving it persists to the option the Config engine reads.
+ * Declares the configurable Corex settings — sections and fields. Pure, apart from reading the
+ * site's pages for the terms page choice. Each field key is a Config dot-key, so saving it
+ * persists to the option the Config engine reads.
  */
 final class SettingsRegistry implements FieldSections
 {
@@ -69,6 +70,13 @@ final class SettingsRegistry implements FieldSections
                         'label' => 'Admin footer text',
                         'type'  => 'text',
                         'help'  => 'Replaces the wp-admin footer text. Leave blank for "Powered by Corex".',
+                    ],
+                    // The launch checklist's "Terms page published" reads it (spec 118, US-OVR-03).
+                    'brand.terms_page' => [
+                        'label'   => __('Terms page', 'corex'),
+                        'type'    => 'select',
+                        'options' => $this->pageChoices(),
+                        'help'    => __('The page with your site\'s terms and conditions. The launch checklist checks that it is published.', 'corex'),
                     ],
                     'brand.admin_appearance' => [
                         'label'   => 'CoreX admin appearance',
@@ -336,6 +344,29 @@ final class SettingsRegistry implements FieldSections
                 ],
             ],
         ];
+    }
+
+    /**
+     * The site's pages, for a choice of one, by id, drafts included so a draft can be chosen and
+     * published later. Read only where WordPress is loaded; the declaration stays readable without.
+     *
+     * @return array<string,string>
+     */
+    private function pageChoices(): array
+    {
+        $choices = ['' => __('None chosen', 'corex')];
+
+        if (! function_exists('get_pages')) {
+            return $choices;
+        }
+
+        foreach ((array) get_pages(['post_status' => 'publish,draft,pending,private', 'sort_column' => 'post_title']) as $page) {
+            if ($page instanceof \WP_Post) {
+                $choices[(string) $page->ID] = $page->post_title !== '' ? $page->post_title : '#' . $page->ID;
+            }
+        }
+
+        return $choices;
     }
 
     /**
