@@ -18814,3 +18814,191 @@ package" to the whole installation.
 **Not chosen.** *A client written again for Node*: two clients of one protocol drift apart. *Printing the recovery
 link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
 only when it is needed.
+
+## #450 -- One frame, `EmailFrame`, draws every email CoreX draws; `Layout` is removed
+
+**Date:** 2026-10-26. **Branch:** `spec/120-designed-emails`. **Spec:** 120, story 3 (US-EML-05). **Mode:** CoreX
+Framework.
+
+**Why.** CoreX drew its emails in two frames: `Layout` for Studio and code templates, `StandardEmailDesign` for
+replies, which was the only one the Mail settings reached. `Layout` never showed the logo when a layout filled its
+header region (the shipped ones do) and never applied an empty accent (`??` does not fall back from `''`). A
+non-contact form notification had no frame at all.
+
+**Decided** (EML-D4, under the owner's 2026-10-21 mandate).
+
+1. `Corex\Email\Design\EmailFrame` takes an `EmailContent` (which gains `kind` and `links`, last and optional) and
+   draws it in the site's design with the site's brand, in the email's language. `TemplateRenderer` and
+   `EmailTemplateService` draw through it; `ReplyComposer` too. `Layout` is removed.
+2. Kinds (`EmailKind`): reply, notification, confirmation, newsletter, account, message. Each but message has a
+   footer line saying why the person receives the email. The footer links to the site's privacy page where one is
+   published, and to what the sender adds (a newsletter's Unsubscribe).
+3. The accent: a Studio layout's own accent, else Settings → Mail's, else the theme's `primary` when it is
+   `#rrggbb`, else CoreX's. The logo is always the band's. A Studio layout arranges the body inside the card; a
+   header or footer line that only says the site's name is dropped (the shipped partials say exactly that).
+4. **"Manage preferences"** is linked only where a site gives an address through
+   `corex_newsletter_preferences_url`: corex-newsletter has no preferences page, and the owner's no-dead-UI rule
+   rules out a link to one that does not exist. Decided under the owner's 2026-10-21 mandate.
+5. The standard design styles a template's `<h1>`, `<h2>` and `<a class="button">` (the text's colours turned
+   round, so a button keeps its contrast whatever the accent), and the message cell carries the type, so a table
+   in a template reads in it.
+
+**Verified.** Pest unit `EmailFrameTest`, `TemplateRendererTest`, `EmailTemplateEditorTest`, `EmailDesignGeneratorTest`
+(the generated design still equals the standard one); integration `EmailLanguageTest`, `ReplyEmailDesignTest`,
+`SiteEmailBrandTest`, `EmailWordsLanguageTest`.
+
+**Client impact.** Every CoreX-drawn email looks different; finished messages do not change (#451).
+
+## #451 -- A site's design draws replies unless it says it accepts a kind; finished messages are never framed
+
+**Date:** 2026-10-26. **Spec:** 120, story 3.
+
+**Why.** Muva's design says on its band that the email is a reply. Given a lead or a newsletter it would mislabel
+it. Both clients hand finished messages to the shared mailer, with their own From; Perego's FluentSMTP routes on it.
+
+**Decided.**
+
+1. `KindAwareEmailDesign extends EmailDesign` adds `accepts(string $kind)`. A design implementing only
+   `EmailDesign` is a reply design; any other kind is drawn in the standard design, with no failure reported.
+2. A `MailRequest` without a template name is a finished message: no frame, no added plain text, its own From.
+3. Code templates gain `kind()` and `links()`. The non-contact code-defined form notification becomes the code
+   template `form-notification`, drawn from the answers; the body it hands the `wp_mail()` floor is plain text,
+   one answer per line (it was HTML sent as plain text).
+
+**Verified.** `SiteEmailDesignTest` (two new cases), `SendEmailListenerTest`, `NotificationFileLinkTest`,
+`DesignedEmailsTest` (a finished message captured unchanged).
+
+## #452 -- The preview and the test send are drawn by the code that sends
+
+**Date:** 2026-10-26. **Spec:** 120, story 1 (US-EML-02).
+
+**Why.** The preview was put together in the browser with "Sample key" values and no frame; the test send posted
+the typed HTML, so `{{ site.name }}` arrived literally.
+
+**Decided.**
+
+1. `POST /email-studio/templates/{id}/preview` draws the draft being edited (saved or not) with
+   `EmailTemplateService::render()`, with samples from `EmailSampleValues` (real site name and address, "Jane
+   Cooper", "jane@example.com") that the request may override for that draw only, and an optional `rtl` direction.
+2. `POST /email-studio/test` with `template_id` draws the same email, puts "[Test] " before its subject and sends it
+   with the template's From and plain text. The answer says what happened in words built from the attempt's state
+   and the delivery decision's code, with the reason and `&tab=logs#corex-attempt-<id>`. The old free-body test is
+   kept for a caller that posts one.
+3. A template that cannot be drawn answers 422 with each field's sentence naming the variable or partial; the
+   client shows them in place of the email and offers no test. An invalid address is refused before drawing.
+4. The preview's widths (600 and 375 pixels) are the email's, written in the component, not screen tokens.
+
+**Verified.** Integration `DesignedEmailsTest` (captured HTML and plain text equal the preview); Jest
+`emailStudioPreview.test.js`, `emailStudio.test.js`; Playwright `email-studio-preview.spec.js`.
+
+## #453 -- A Studio email leaves from its template's sender, with its plain text, after the header checks
+
+**Date:** 2026-10-26. **Spec:** 120, story 2 (US-EML-03).
+
+**Decided.**
+
+1. `EmailRouteMessageFactory::message()` builds every Studio send (routes and flow bindings, the inbox resend, the
+   test send, designed emails) with the template's From address and From name when set, and its plain text. The
+   log's resend takes the From of the template version its attempt names and the plain text of the typed body.
+2. The From address is optional; an invalid one, or a From name with a line break, is refused with a sentence that
+   names it. A From address on another domain answers the transport warning's sentence as a save warning.
+3. `EmailStudioService` runs the `HeaderGuard` over subject, From, From name and Reply-To before deciding, as
+   `MailService` does.
+4. The automatic plain text is `PlainText::of()` of the arranged body (headings, tables and rows now read as
+   lines) with the frame's footer; a hand-written one merges values as they are, so "under <500 EGP" is whole.
+
+**Verified.** `EmailTemplateVariablesTest`, `DesignedEmailsTest` (From header on a delivered send).
+
+## #454 -- Variables: one catalog by the emails that supply them; any form field; missing ones left out and named
+
+**Date:** 2026-10-26. **Spec:** 120, story 5 (US-EML-07; EML-D10).
+
+**Decided.**
+
+1. `EmailVariableCatalog` lists the configured `mail.variables` plus what each kind of email supplies (every email,
+   form emails, newsletter, account, access requests); a key no email supplies is listed apart. A placeholder is
+   known when it is in the catalog or is `submission.<field>`; an unknown one is refused, named. The declared keys
+   are read from the content: the comma-separated field is gone.
+2. `{{ form.answers }}` is drawn by CoreX from the context's answers (label, value, a file's link to the
+   submission), escaped. A paragraph, list item or heading whose values are all empty and that holds nothing but
+   a label, or a table row whose values are all empty, is left out; any other empty value is written as nothing.
+   The keys are stored on the attempt (`missing_variables`) and the log says "Sent without: …".
+3. Save warnings name each variable the template's emails do not supply: its default kind, its routes' triggers,
+   and flows that bind it, asked through a new corex-core contract `MailTemplateUsage` that corex-forms binds.
+4. `MailTemplateCatalog` entries gain `variables`. A flow refuses to publish a binding whose template uses a
+   variable the flow does not supply (a field it lacks counts) unless the binding has `accept_missing`, which the
+   Emails tab sets with "Send it without them".
+
+**Verified.** `EmailTemplateVariablesTest`, `FlowEmailDefaultsTest`, Jest `emailsTab.test.js`, `DesignedEmailsTest`.
+
+## #455 -- Default templates: active on a new site, drafts on an upgraded one, reset as a new version
+
+**Date:** 2026-10-26. **Spec:** 120, story 4 (US-EML-01; EML-D5).
+
+**Decided** (two gaps under the owner's 2026-10-21 mandate).
+
+1. `DefaultEmailTemplates` holds each default's shipped content, written in the site's language when installed.
+   Active where the site had no Email Studio defaults before (`corex_email_studio_defaults_version` empty), drafts
+   on an upgraded site; the choice is kept (`corex_email_default_templates_state`) so a default an add-on adds
+   later follows it, and installed slugs are kept (`corex_email_default_templates`). A slug a site's own template
+   uses is left alone. Records are made under the signed-in user or the first administrator.
+2. Reset saves the shipped content as a new version, activated when the template is active.
+3. A new flow with no bindings of its own gets "Admin notification" (to the admin address, Reply-To `email`) and
+   "Contact confirmation" (to `email`) when both are active. The contact confirmation has no name in it: a form
+   need not ask for one.
+4. **Gap: "a site that turns the defaults off still notifies its admin".** Read as: when a flow's team
+   notification has nothing to send (its template has no active version, or no recipient resolves), CoreX's own
+   `form-notification` goes to the admin. A binding switched off sends nothing, as today, so no upgraded site gains
+   an email.
+5. A submitter confirmation with no address is recorded `no_recipient`, not a failed email.
+6. TC-EML-01-06's "the same notification as before" is read as the same recipient, subject and words: the
+   contact notification is in the one frame from this release (#450).
+
+**Verified.** `DefaultEmailTemplatesTest`, `DefaultEmailsSentTest`, `FlowEmailDefaultsTest`.
+
+## #456 -- Designed emails code sends go through the shared mailer (`DesignedEmails`)
+
+**Date:** 2026-10-26. **Spec:** 120, stories 4 and 6.
+
+**Why.** Email Studio's own sending rule blocks a production site with no provider set, which is how both clients
+run. A designed password reset or subscription confirmation must not stop being sent where WordPress's own is.
+Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** A corex-core contract `DesignedEmails::send(slug, to, context, path): ?MailResult`, bound by corex-email
+(`StudioDesignedEmails`): the active version is drawn and sent through `MailService`, so production delivers and a
+development or staging site captures (spec 113's gate). `null` when no active template has the slug or it cannot be
+drawn; the latter dispatches `EmailDesignFailedEvent::TEMPLATE_FAILED` (a notification) and records
+`email.template.fell_back` in the activity log. The newsletter sends Double opt-in (else its own confirmation) and
+Newsletter welcome (else nothing).
+
+**Verified.** `DefaultEmailsSentTest` (opt-in, welcome, fallback).
+
+## #457 -- The account emails: reset asked on the account page, and the welcome, in the frame
+
+**Date:** 2026-10-26. **Spec:** 120, story 6 (US-EML-15; EML-D11; DECISIONS #341).
+
+**Decided.**
+
+1. While a reset asked through the account block is answered, `send_retrieve_password_email` answers false when
+   "Password reset" was sent: CoreX makes the key with `get_password_reset_key()` and sends the template with the
+   account page's reset link, the account, the time it was asked and how long the link works
+   (`password_reset_expiration`, "1 day" by default, in WordPress's words). A reset asked on the login screen stays
+   WordPress's, as #341 set.
+2. Registration sends "Welcome to your account" through `wp_send_new_user_notification_to_user`, linking to the
+   page the form was on (its signed page mark is now sent by the register form too) or the home page.
+3. Either one that is not active or cannot be drawn leaves WordPress's own email to be sent.
+
+**Verified.** `DefaultEmailsSentTest`, `ResetOnTheAccountPageTest` (the designed email links to the page and never
+to `wp-login.php` or the hidden address).
+
+## #458 -- `MailRequest` takes an optional plain text, last
+
+**Date:** 2026-10-26. **Spec:** 120, story 7 (US-EML-19; CR-013).
+
+**Decided.** `MailRequest(..., ?string $plainText = null)`, last; blank is null. `RequestMailer` hands it to the
+message of a finished request only (a template makes its own), the queue payload carries it, and the capture keeps
+it. Email Studio's log shows a kept email's HTML and plain text.
+
+**Verified.** `MailRequestPlainTextTest`, `DesignedEmailsTest`.
+
+**Client impact.** Perego may pass its renderer's text; nothing changes until it does.

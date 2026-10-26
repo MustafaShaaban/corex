@@ -340,7 +340,7 @@ final class MailServiceProvider extends ServiceProvider
 
         // Hook the queue worker LAZILY. Resolving the dispatcher here (plugins_loaded)
         // would eagerly build the mail stack (RequestMailer → TemplateRenderer → EmailFrame
-        // → the site's design) and load the `corex` textdomain before `init` — the
+        // → the site's design) and load the `corex` textdomain before `init`, the
         // "translation triggered too early" notice. The handler resolves the dispatcher
         // only when a queued send actually fires (during queue processing, after init).
         add_action(MailQueueDispatcher::HOOK, [$this, 'runQueuedSend'], 10, 1);

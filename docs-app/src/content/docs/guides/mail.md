@@ -39,8 +39,9 @@ Delivery is **best-effort and never throws** — failures are logged, not fatal.
 - **Design** — `Corex\Email\Design` holds what a designed email is drawn from: `EmailPalette`
   (the colours, light and dark, the one place an email's colours are written), `EmailBrand`
   (the site's name, address, logo, direction and language), and `StandardEmailDesign`, which
-  draws a message as a whole document. A reply from the Submissions inbox is the first email
-  drawn this way; the others still go through the layout above. The inbox's **Preview** asks
+  draws a message as a whole document. `EmailFrame` puts every email CoreX draws in it: a reply,
+  a code template, an Email Studio template (see [A site's own email design](/guides/email-design/)).
+  The inbox's **Preview** asks
   `POST corex/v1/submissions/{id}/reply/preview` for that document and its plain text, built by
   the code that builds the sent one. It sends nothing and keeps nothing of the reply; a site's
   email design that fails there is reported as it is when a reply is sent.
@@ -49,6 +50,52 @@ Delivery is **best-effort and never throws** — failures are logged, not fatal.
   under a `Message-ID` CoreX chose (`Corex\Mail\MessageId`), on a site whose address has a
   host name to make one of. A reply from the Submissions inbox can name the email it answers
   (`In-Reply-To`, `References`), which is what a mail program reads to show it under that one.
+
+## A finished message with its own plain text
+
+A message your code builds itself (its own subject and HTML body, no template) is sent exactly
+as it is given. If your code also renders the same words as plain text, hand that over too: it
+is sent as the text/plain part beside the HTML, for a reader whose mail program shows plain text.
+
+```php
+use Corex\Mail\Mailer;
+use Corex\Mail\MailRequest;
+
+$mailer->send(new MailRequest(
+    to: [$email],
+    subject: 'We received your enquiry',
+    body: $renderer->html($lead),
+    from: 'info@example.com',
+    plainText: $renderer->text($lead),
+));
+```
+
+`plainText` is optional and the last argument, so a request built without it is sent as it
+always was: CoreX adds no text part of its own to a finished message. An empty value, or one of
+spaces only, counts as none. It is kept through the mail queue, and on a development or staging
+site the captured email keeps it: **Email Studio → Delivery logs → Show the email** shows both.
+
+## Emails an owner designs, sent by your code
+
+`Corex\Mail\DesignedEmails` sends an Email Studio template by its slug, through the same mailer
+and under the same delivery rule as every other CoreX email on it. The newsletter's double opt-in
+and welcome and the account add-on's password reset and welcome are sent this way.
+
+```php
+use Corex\Mail\DesignedEmails;
+
+$sent = $designed->send('double-opt-in', [$email], [
+    'action' => ['url' => $confirmUrl],
+], 'Newsletter: confirmation');
+
+if ($sent === null) {
+    // No active template has that slug, or it could not be drawn: send your own email.
+}
+```
+
+`null` means nothing was sent. When the template exists and could not be drawn (a partial it
+names was removed), the people who manage email are told in the notification centre and the
+activity log records it.
 
 ## Replies that continue your own confirmation
 
@@ -115,14 +162,23 @@ What this cannot promise:
 
 ## Inspect email state in wp-admin
 
-**Corex → Email Studio** is available when the CoreX Email add-on is active. Its Overview, Templates, Layouts,
-Partials, and Variables tabs inspect the real engine state. Registered-template detail provides Edit, Preview,
-Plain text, Test send, Routing, and Delivery logs. Preview and Plain text use the real renderer; Layouts previews
-the active brand wrapper; Variables lists only detectable `{{ path }}` placeholders from registered template
-output; Delivery logs are real site-wide attempts and are labelled as not yet filterable by template.
+**Corex → Email Studio** is available when the CoreX Email add-on is active. A template's **Preview** is drawn by
+the server, by the code that sends it, from the draft being edited: its layout, partials and the frame, with a
+sample value for every variable, shown at 600 and 375 pixels and right to left. **Plain text** shows the
+plain-text version that is sent. **Test send** sends exactly that email to one address, with "[Test]" before its
+subject, under the site's delivery rules, and says what happened with a link to its row in the log.
 
-The studio does not mutate code-defined templates or routing. Test Send stays disabled until the neutral `Mailer`
-seam returns a per-send result that a capability + nonce-gated action can report truthfully.
+A template's From name and From address, when set, are what it leaves from; empty, it leaves from the sender in
+Settings → Mail. **Variables** lists what each kind of email supplies, with the sample each is previewed with: a
+form email also has each of the form's fields as `{{ submission.<field> }}`, and `{{ form.answers }}` lists every
+answer with its label. A variable that has no value when an email is sent is left out, with the label it was the
+point of, and the log row says "Sent without: …". A variable no email supplies is refused when the template is
+saved, by name.
+
+A new site starts with four templates active: Contact confirmation, Admin notification, Double opt-in and
+Newsletter welcome (and, with the account add-on, Password reset and Welcome to your account). A new flow is bound
+to the first two. A site upgraded from an earlier release gets them as drafts, bound to nothing. **Reset to shipped
+version** puts one back as CoreX ships it, as a new version.
 
 ## The sender of a reply
 

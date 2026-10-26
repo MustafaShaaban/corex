@@ -40,6 +40,18 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 120, emails that send what was designed** (2026-10-26, branch `spec/120-designed-emails`, DECISIONS #450 to
+#458): revamp release R3.11, seven stories (US-EML-01, 02, 03, 05, 07, 15, 19) under the owner's 2026-10-21
+mandate. One frame (`EmailFrame`) draws every CoreX email with the Mail settings' logo, accent and footer, a reason
+line and links; a site's own design keeps replies unless it accepts a kind. Email Studio's preview and test send are
+drawn by the server with sample values; a template's From and plain text are sent; variables are known from one
+catalog (any form field, `{{ form.answers }}`), a missing one is left out and named on the log row, and a flow will
+not publish a binding that uses one unconfirmed. Six default templates (four, plus two with the account add-on) are
+active on a new site and drafts on an upgraded one; new flows are bound to two; the newsletter and the account add-on
+send theirs through `DesignedEmails` on the shared mailer. `MailRequest` takes an optional `plainText`. Left for
+R3.12: the rich editor, the five-section navigation, the log viewer, named-event routing. A newsletter preferences
+page does not exist, so the preferences link appears only where a site gives one.
+
 **Spec 123, an agent works on a CoreX site through MCP** (2026-10-25, branch `spec/123-agent-abilities`,
 DECISIONS #500 to #513): Claude, or any MCP agent, reads a CoreX site and installs a release, so the owner no
 longer uploads the package by hand in the admin.
