@@ -23,6 +23,12 @@
 	font-family: var(--corex-admin-font-ui);
 }
 
+/* Arabic reads at its own line height (spec 121, US-BRD-04): running text
+   right to left takes the normal line token, which is 1.8 there. */
+[dir="rtl"] .corex-admin :where(p, li, dd, td, th, label) {
+	line-height: var(--corex-admin-line-normal);
+}
+
 /* Full-bleed CoreX surface (body.corex-admin-screen only): strip wp-admin
    padding/margins, hide the wp-admin footer, and paint residual area the shell
    colour so no wp-admin canvas leaks. */

@@ -3816,196 +3816,6 @@ msgstr "رضا العملاء"
 msgid "Frequently asked questions"
 msgstr "الأسئلة الشائعة"
 
-#: packages/cli/src/CliServiceProvider.php
-msgid "Reset Corex site state, with explicit safeguards for destructive and network scope."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Wipe and rebuild the WordPress database."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Preview the reset plan without changing anything."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Supply the typed safeguard required for a hard reset."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Permit network-scoped reset actions."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Show the CoreX operations mode, and whether it was declared or inherited."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Print the mode and nothing else."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Change the CoreX operations mode, with the confirmation the mode needs."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "development, staging, production, maintenance or coming-soon."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Confirm a mode that changes what visitors get: maintenance or coming-soon."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "The typed confirmation for going live: PRODUCTION."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Show or set the proxies trusted to report a visitor’s address."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "An address or CIDR range to trust. The list given replaces the saved one."
-msgstr ""
-
-#: packages/cli/src/CliServiceProvider.php
-msgid "Trust no proxy."
-msgstr ""
-
-#: packages/cli/src/Commands/DoctorCommand.php
-msgid "Health check failed: one or more critical issues found."
-msgstr ""
-
-#: packages/cli/src/Commands/DoctorCommand.php
-msgid "Health check passed with recommendations."
-msgstr ""
-
-#: packages/cli/src/Commands/DoctorCommand.php
-msgid "All Corex health checks passed."
-msgstr ""
-
-#: packages/cli/src/Commands/MigrateCommand.php
-msgid "The --network option requires a WordPress Multisite install."
-msgstr ""
-
-#: packages/cli/src/Commands/MigrateCommand.php
-msgid "No sites have pending schema migrations."
-msgstr ""
-
-#. translators: %s: comma-separated WordPress site ids.
-#: packages/cli/src/Commands/MigrateCommand.php
-#, php-format
-msgid "Would migrate site ids: %s"
-msgstr ""
-
-#: packages/cli/src/Commands/MigrateCommand.php
-msgid "Schema migration failed for one or more sites."
-msgstr ""
-
-#. translators: 1: outcome, 2: site id, 3: components, 4: tables, 5: duration in milliseconds, 6: error.
-#: packages/cli/src/Commands/MigrateCommand.php
-#, php-format
-msgid "[%1$s] site %2$s — components: %3$s; tables: %4$s; ms: %5$s; error: %6$s"
-msgstr ""
-
-#: packages/cli/src/Commands/ModeCommand.php
-msgid "Usage: wp corex mode get, or wp corex mode set <mode>."
-msgstr ""
-
-#. translators: %s: operations mode.
-#: packages/cli/src/Commands/ModeCommand.php
-#, php-format
-msgid "Operations mode: %s (declared)."
-msgstr ""
-
-#. translators: %s: operations mode.
-#: packages/cli/src/Commands/ModeCommand.php
-#, php-format
-msgid "Operations mode: %s (inherited from the WordPress environment type; no mode has been declared)."
-msgstr ""
-
-#: packages/cli/src/Commands/ModeCommand.php
-msgid "Name the mode: wp corex mode set <mode>."
-msgstr ""
-
-#: packages/cli/src/Commands/ModeCommand.php
-msgid "Going live is recorded against a user. Re-run with --user=<login>."
-msgstr ""
-
-#. translators: %s: operations mode.
-#: packages/cli/src/Commands/ModeCommand.php
-#, php-format
-msgid "Operations mode is now %s."
-msgstr ""
-
-#. translators: %s: operations mode.
-#: packages/cli/src/Commands/ModeCommand.php
-#, php-format
-msgid "No change: the site was already in %s."
-msgstr ""
-
-#. translators: %s: operations mode.
-#: packages/cli/src/Commands/ModeCommand.php
-#, php-format
-msgid "%s changes what visitors get. Nothing was changed. Re-run with --acknowledge if that is what you intend."
-msgstr ""
-
-#: packages/cli/src/Commands/ModeCommand.php
-msgid "Going live needs the typed confirmation. Nothing was changed. Re-run with --phrase=PRODUCTION."
-msgstr ""
-
-#: packages/cli/src/Commands/ModeCommand.php
-msgid "The production launch was blocked by readiness checks. Nothing was changed."
-msgstr ""
-
-#. translators: %s: operations mode.
-#: packages/cli/src/Commands/ModeCommand.php
-#, php-format
-msgid "%s cannot be chosen: APP_ENV, the network or the corex_app_env option sets this site's environment. Nothing was changed."
-msgstr ""
-
-#. translators: 1: the value given, 2: the list of valid modes.
-#: packages/cli/src/Commands/ModeCommand.php
-#, php-format
-msgid "\"%1$s\" is not an operations mode. Available: %2$s."
-msgstr ""
-
-#: packages/cli/src/Commands/ReadinessCommand.php
-msgid "Corex readiness has blocking failures."
-msgstr ""
-
-#: packages/cli/src/Commands/ReadinessCommand.php
-msgid "Corex readiness report generated."
-msgstr ""
-
-#: packages/cli/src/Commands/ResetCommand.php
-msgid "Network-activated CoreX add-ons require the --network flag; no reset action was run."
-msgstr ""
-
-#: packages/cli/src/Commands/ResetCommand.php
-msgid "A full reset affects the whole Multisite database and requires the --network flag."
-msgstr ""
-
-#: packages/cli/src/Commands/VersionCommand.php
-#, php-format
-msgid "Invalid version \"%s\" — expected semver x.y.z."
-msgstr ""
-
-#: packages/cli/src/Commands/VersionCommand.php
-#, php-format
-msgid "Already aligned to %s — nothing to change."
-msgstr ""
-
-#: packages/cli/src/Commands/VersionCommand.php
-#, php-format
-msgid "Dry run: %d file(s) would be stamped to %s."
-msgstr ""
-
-#: packages/cli/src/Commands/VersionCommand.php
-#, php-format
-msgid "Stamped %d file(s) to %s."
-msgstr ""
-
 #: plugins/corex-blocks/src/NewsletterSignupRenderer.php
 msgid "Newsletter signup is not available on this site yet."
 msgstr "الاشتراك في النشرة البريدية غير متاح على هذا الموقع بعد."
@@ -15142,8 +14952,8 @@ msgstr "التقني"
 
 #: theme/theme.json
 msgctxt "Font size name"
-msgid "Extra small"
-msgstr "صغير جدًا"
+msgid "Caption"
+msgstr ""
 
 #: theme/theme.json
 msgctxt "Font size name"
@@ -15152,28 +14962,38 @@ msgstr "صغير"
 
 #: theme/theme.json
 msgctxt "Font size name"
-msgid "Base"
-msgstr "أساسي"
+msgid "Body"
+msgstr ""
 
 #: theme/theme.json
 msgctxt "Font size name"
-msgid "Large"
-msgstr "كبير"
+msgid "Lead"
+msgstr ""
 
 #: theme/theme.json
 msgctxt "Font size name"
-msgid "Extra large"
-msgstr "كبير جدًا"
+msgid "Title"
+msgstr ""
 
 #: theme/theme.json
 msgctxt "Font size name"
-msgid "2X large"
-msgstr "ضخم"
+msgid "Heading 3"
+msgstr ""
 
 #: theme/theme.json
 msgctxt "Font size name"
-msgid "Hero"
-msgstr "قسم الواجهة"
+msgid "Heading 2"
+msgstr ""
+
+#: theme/theme.json
+msgctxt "Font size name"
+msgid "Heading 1"
+msgstr ""
+
+#: theme/theme.json
+msgctxt "Font size name"
+msgid "Display"
+msgstr ""
 
 #: theme/theme.json
 msgctxt "Font size name"
@@ -15194,6 +15014,11 @@ msgstr "1"
 msgctxt "Space size name"
 msgid "2"
 msgstr "2"
+
+#: theme/theme.json
+msgctxt "Space size name"
+msgid "2.5"
+msgstr ""
 
 #: theme/theme.json
 msgctxt "Space size name"
@@ -15279,3 +15104,263 @@ msgstr "صفحة الخدمات"
 msgctxt "Custom template name"
 msgid "Account page"
 msgstr "صفحة الحساب"
+
+#: theme/patterns/footer-corporate.php
+msgctxt "Pattern title"
+msgid "Footer — Corporate"
+msgstr ""
+
+#: theme/patterns/footer-corporate.php
+msgctxt "Pattern description"
+msgid "A corporate footer — brand column plus Company, Resources, and Contact link columns, then a legal/utility row."
+msgstr ""
+
+#: theme/patterns/footer-legal.php
+msgctxt "Pattern title"
+msgid "Footer — Legal / Utility"
+msgstr ""
+
+#: theme/patterns/footer-legal.php
+msgctxt "Pattern description"
+msgid "A minimal legal/utility footer — copyright plus legal links in a single row."
+msgstr ""
+
+#: theme/patterns/footer-locations.php
+msgctxt "Pattern title"
+msgid "Footer — Locations"
+msgstr ""
+
+#: theme/patterns/footer-locations.php
+msgctxt "Pattern description"
+msgid "A location footer — the address from the brand settings with its phone and email, then a legal/utility row. The location is left out when no address is set."
+msgstr ""
+
+#: theme/patterns/footer-newsletter.php
+msgctxt "Pattern title"
+msgid "Footer — Newsletter"
+msgstr ""
+
+#: theme/patterns/footer-newsletter.php
+msgctxt "Pattern description"
+msgid "A newsletter footer — a sign-up prompt and call-to-action, then a legal/utility row. The Subscribe button links to the site's published Newsletter page (slug `newsletter`) and is left out when there is none."
+msgstr ""
+
+#: theme/patterns/footer-saas.php
+msgctxt "Pattern title"
+msgid "Footer — SaaS / Product"
+msgstr ""
+
+#: theme/patterns/footer-saas.php
+msgctxt "Pattern description"
+msgid "A product footer — Product, Company, and Resources link columns plus the brand settings' social links, then a legal/utility row."
+msgstr ""
+
+#: theme/patterns/footer-simple.php
+msgctxt "Pattern title"
+msgid "Footer — Simple"
+msgstr ""
+
+#: theme/patterns/footer-simple.php
+msgctxt "Pattern description"
+msgid "A simple footer — brand, a short tagline, and a legal/utility row. Built on core blocks and CoreX brand tokens."
+msgstr ""
+
+#: theme/patterns/header-corporate.php
+msgctxt "Pattern title"
+msgid "Header — Corporate (top bar)"
+msgstr ""
+
+#: theme/patterns/header-corporate.php
+msgctxt "Pattern description"
+msgid "A corporate header — a top utility bar (the brand settings' email and phone, left out when neither is set) above the main brand, navigation, and call-to-action row."
+msgstr ""
+
+#: theme/patterns/header-docs.php
+msgctxt "Pattern title"
+msgid "Header — Docs"
+msgstr ""
+
+#: theme/patterns/header-docs.php
+msgctxt "Pattern description"
+msgid "A documentation header — brand, navigation, and a search slot (the native search block). A neutral section/version slot can be added per site."
+msgstr ""
+
+#: theme/patterns/header-minimal.php
+msgctxt "Pattern title"
+msgid "Header — Minimal Landing"
+msgstr ""
+
+#: theme/patterns/header-minimal.php
+msgctxt "Pattern description"
+msgid "A minimal landing header — brand and a single call-to-action, with reduced navigation for focused campaign pages."
+msgstr ""
+
+#: theme/patterns/header-saas.php
+msgctxt "Pattern title"
+msgid "Header — SaaS / Product"
+msgstr ""
+
+#: theme/patterns/header-saas.php
+msgctxt "Pattern description"
+msgid "A product header — brand, primary navigation with a features mega menu, and a secondary link plus a primary call-to-action."
+msgstr ""
+
+#: theme/patterns/header-simple.php
+msgctxt "Pattern title"
+msgid "Header — Simple Company"
+msgstr ""
+
+#: theme/patterns/header-simple.php
+msgctxt "Pattern description"
+msgid "A simple company header — brand, primary navigation that collapses to an accessible mobile menu, and one call-to-action. Built on core blocks and CoreX brand tokens."
+msgstr ""
+
+#: theme/patterns/header-sticky.php
+msgctxt "Pattern title"
+msgid "Header — Sticky"
+msgstr ""
+
+#: theme/patterns/header-sticky.php
+msgctxt "Pattern description"
+msgid "A solid header that sticks to the top of the viewport and gains a subtle elevation once the page scrolls. Brand, navigation, a search overlay, and a primary call-to-action."
+msgstr ""
+
+#: theme/patterns/header-transparent.php
+msgctxt "Pattern title"
+msgid "Header — Transparent (over hero)"
+msgstr ""
+
+#: theme/patterns/header-transparent.php
+msgctxt "Pattern description"
+msgid "A transparent, sticky header that overlays a hero and resolves to a solid, readable background once scrolled (progressive enhancement; readable without JavaScript)."
+msgstr ""
+
+#: theme/patterns/loading.php
+msgctxt "Pattern title"
+msgid "Loading state"
+msgstr ""
+
+#: theme/patterns/loading.php
+msgctxt "Pattern description"
+msgid "An accessible loading placeholder — a polite status message plus static skeleton bars (no animation, so it is reduced-motion safe by construction). Built on core blocks and CoreX brand tokens; muted placeholder blocks only."
+msgstr ""
+
+#: theme/patterns/maintenance.php
+msgctxt "Pattern title"
+msgid "Maintenance notice"
+msgstr ""
+
+#: theme/patterns/maintenance.php
+msgctxt "Pattern description"
+msgid "A centered maintenance notice — heading, message, and a contact line to the brand settings' email (left out when none is set). Mirrors the live Operations maintenance surface (Corex\\Admin\\StandalonePage) for editor use. Built on core blocks and CoreX brand tokens."
+msgstr ""
+
+#: theme/patterns/megamenu-docs.php
+msgctxt "Pattern title"
+msgid "Mega Menu — Docs / Resources"
+msgstr ""
+
+#: theme/patterns/megamenu-docs.php
+msgctxt "Pattern description"
+msgid "A docs/resources mega menu — grouped resource links across columns. Native details/summary disclosure; usable with no JavaScript."
+msgstr ""
+
+#: theme/patterns/megamenu-product.php
+msgctxt "Pattern title"
+msgid "Mega Menu — Product / Features"
+msgstr ""
+
+#: theme/patterns/megamenu-product.php
+msgctxt "Pattern description"
+msgid "A product mega menu — feature links plus a featured card and a call-to-action. Native details/summary disclosure; usable with no JavaScript."
+msgstr ""
+
+#: theme/patterns/megamenu-services.php
+msgctxt "Pattern title"
+msgid "Mega Menu — Services"
+msgstr ""
+
+#: theme/patterns/megamenu-services.php
+msgctxt "Pattern description"
+msgid "A services mega menu — a multi-column panel of service items, each with a title, description, and link. Native details/summary disclosure; usable with no JavaScript."
+msgstr ""
+
+#: theme/patterns/megamenu-simple.php
+msgctxt "Pattern title"
+msgid "Mega Menu — Simple Dropdown"
+msgstr ""
+
+#: theme/patterns/megamenu-simple.php
+msgctxt "Pattern description"
+msgid "A single-column dropdown built on the native details/summary disclosure — keyboard-operable and usable with no JavaScript. Insert into a header's navigation area."
+msgstr ""
+
+#: theme/patterns/project-card.php
+msgctxt "Pattern title"
+msgid "Project Card"
+msgstr ""
+
+#: theme/patterns/project-card.php
+msgctxt "Pattern description"
+msgid "A single portfolio project card — featured image, project type, title, and excerpt — for use inside a projects query loop."
+msgstr ""
+
+#: theme/patterns/section-contact-info.php
+msgctxt "Pattern title"
+msgid "Contact — Info Cards"
+msgstr ""
+
+#: theme/patterns/section-contact-info.php
+msgctxt "Pattern description"
+msgid "A contact section with a heading and a responsive row of info cards: the address, email and phone from the brand settings, each left out when it is not set. Built on core blocks and CoreX brand tokens."
+msgstr ""
+
+#: theme/patterns/section-logo-cloud.php
+msgctxt "Pattern title"
+msgid "Logo Cloud — Trusted By"
+msgstr ""
+
+#: theme/patterns/section-logo-cloud.php
+msgctxt "Pattern description"
+msgid "A restrained \"trusted by\" row of partner/customer logos with a short lead-in. Built on core blocks and CoreX brand tokens; neutral placeholder logos only. A sample: hidden from visitors and labelled for editors until its content is replaced."
+msgstr ""
+
+#: theme/patterns/section-newsletter.php
+msgctxt "Pattern title"
+msgid "Newsletter — Signup"
+msgstr ""
+
+#: theme/patterns/section-newsletter.php
+msgctxt "Pattern description"
+msgid "A newsletter signup section — a short heading and supporting line above the CoreX newsletter signup block. Built on core blocks and CoreX brand tokens; neutral placeholder content."
+msgstr ""
+
+#: theme/patterns/section-process-steps.php
+msgctxt "Pattern title"
+msgid "Process — Steps"
+msgstr ""
+
+#: theme/patterns/section-process-steps.php
+msgctxt "Pattern description"
+msgid "A numbered process/steps section — a header and a responsive row of ordered steps, each with a number, title, and description. Built on core blocks and CoreX brand tokens; neutral placeholder content."
+msgstr ""
+
+#: theme/patterns/section-selected-work.php
+msgctxt "Pattern title"
+msgid "Selected Work"
+msgstr ""
+
+#: theme/patterns/section-selected-work.php
+msgctxt "Pattern description"
+msgid "A section header and a grid of recent portfolio projects (the dynamic corex/projects block — real projects, or an honest empty state), plus a link to the full projects archive."
+msgstr ""
+
+#: theme/patterns/section-services-grid.php
+msgctxt "Pattern title"
+msgid "Services — Grid"
+msgstr ""
+
+#: theme/patterns/section-services-grid.php
+msgctxt "Pattern description"
+msgid "A section header and a responsive three-column grid of service cards — each with a title, a description, and a link to the site's Services page when it has one. Built on core blocks and CoreX brand tokens; neutral placeholder content."
+msgstr ""
