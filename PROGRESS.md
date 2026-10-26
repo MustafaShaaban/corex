@@ -40,6 +40,18 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 121, tokens and type** (2026-10-23 to 2026-10-26, branch `spec/121-tokens-and-type`, DECISIONS #460 to
+#468): revamp release R2.1, seven stories (US-BRD-02, 03, 04, 08, 09, US-NFR-02, US-DOC-07), built under the
+owner's 2026-10-21 mandate. One brand contract with a test over the admin, email and theme copies; Light and
+System-light one admin; the theme draws its own spacing, type scale, radius and motion (every template moves,
+screenshots in `specs/121-tokens-and-type/evidence/`); Arabic pages in IBM Plex Sans Arabic; interface labels in
+Space Grotesk; the navy logo removed; an Arabic catalogue for every CoreX string, loaded even under the CoreX theme,
+and an Arabic proof in the quality job; the Foundations page written from the tokens. One pull request against
+`main`, not merged or tagged by this session. Owed: the native Arabic review of the catalogue before R2.1 ships
+(NFR-D3, `specs/121-tokens-and-type/arabic-review.md`); Perego's session checks its Arabic forms before taking the
+release (TC-NFR-02-06); the theme's colours, shadows and logo set, and the Foundations page's navy rows, change in
+R2.2.
+
 **Spec 123, an agent works on a CoreX site through MCP** (2026-10-25, branch `spec/123-agent-abilities`,
 DECISIONS #500 to #513): Claude, or any MCP agent, reads a CoreX site and installs a release, so the owner no
 longer uploads the package by hand in the admin.

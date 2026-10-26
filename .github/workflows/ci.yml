@@ -78,6 +78,14 @@ jobs:
         if: ${{ !cancelled() }}
         run: composer i18n:pot
 
+      # The Arabic catalogue against that template (spec 121, US-NFR-02): a translation whose
+      # placeholders or markup differ from its original, or a .mo not compiled from the .po, fails
+      # here. A string with no Arabic yet is listed and does not fail a pull request; the Arabic
+      # proof in the quality job names it with its screen, and the catalogue is completed before a tag.
+      - name: Check the Arabic catalogue
+        if: ${{ !cancelled() }}
+        run: node scripts/i18n-arabic.mjs check plugins/corex-core/languages/corex.pot
+
       - name: Upload the translation template
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -538,6 +546,12 @@ jobs:
           done
           # The Company kit at Full, a page or post for every theme template, and a subscriber.
           wp eval-file tests/e2e/quality/seed-quality-site.php --path=wp
+
+      # WordPress's own Arabic, so the Arabic proof (spec 121) shows a whole admin in Arabic. The
+      # proof checks CoreX's strings only and sets the direction itself, so a download that fails
+      # does not fail the job.
+      - name: Install WordPress's Arabic language pack
+        run: wp language core install ar --path=wp || echo "::warning::WordPress's Arabic pack was not installed"
 
       - name: Set up Node
         uses: actions/setup-node@v7

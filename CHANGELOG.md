@@ -6,6 +6,84 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Tokens and type (spec 121, revamp release R2.1, the first of stage 2; DECISIONS #460 to #468).
+
+**Read Client impact before updating.** The CoreX admin and its login change look on every client site, and
+CoreX now speaks Arabic wherever a site or a user runs WordPress in Arabic.
+
+### Added
+
+- **CoreX in Arabic** (US-NFR-02; DECISIONS #466, #467). corex-core ships an Arabic catalogue,
+  `languages/corex-ar.po` and `.mo`, for every CoreX string: the admin screens, the account block, the forms and
+  their messages, the emails, the theme's patterns. Admin scripts get their Arabic from it when the bundles are
+  built. `languages/glossary-ar.md` holds its terms and style. The catalogue was drafted by machine; its review by
+  a native Arabic speaker is owed before this release ships (`specs/121-tokens-and-type/arabic-review.md`).
+- **An Arabic proof in the quality checks.** Every admin screen and tab, every theme template and the Contact form
+  with its errors run in real Arabic, right to left, at 375 and 1280px, light and dark. A CoreX string with no
+  Arabic fails the run with its text and screen; a missing catalogue fails it as itself. Screenshots are kept for
+  the reader. CI also checks the catalogue against the generated template on every pull request
+  (`node scripts/i18n-arabic.mjs check`).
+- **One brand contract** (US-BRD-02, #460). `design/tokens/brand-contract.json` lists every brand colour, shadow,
+  radius and motion value, taken from the shipped admin set; a unit test fails, naming the token, when the admin
+  tokens, the email palette or the theme's radius and motion hold another value. The theme's colours join it when
+  the theme moves to graphite and brass (R2.2).
+- **The Foundations docs page is written from the shipped tokens** (US-DOC-07, #468):
+  `node scripts/foundations-tokens.mjs --write`. The docs build and the test suite fail, naming the token, when
+  the page and the files disagree.
+
+### Changed
+
+- **The CoreX theme draws its own scales** (US-BRD-03, #462). WordPress's own spacing sizes, font sizes and
+  shadows are off for the CoreX theme. Every page of the theme moves (before and after screenshots of every
+  template are in `specs/121-tokens-and-type/evidence/`):
+  - spacing renders 4, 8, 12, 16, 24, 32, 48, 64 and 96px (slug 40 was 16px on the page, it is now 24px; a new
+    slug `25` is 12px); the page's side gutter is 24px;
+  - headings follow the design's type scale: h1 64px, h2 48px, h3 36px at desktop width, scaling down on a phone,
+    weight 600, with negative tracking (h1 was the browser's 32px);
+  - font sizes are named by their role (Caption, Small, Body, Lead, Title, Heading 3, Heading 2, Heading 1, and the
+    new Display); slugs are unchanged;
+  - radius is 3, 6, 10, 16px and full; buttons use the 6px CoreX radius (8px before);
+  - motion is 80, 140, 200 and 320ms; buttons change colour over 140ms.
+- **Arabic pages use IBM Plex Sans Arabic** (US-BRD-04, #463): body text at line height 1.8 and headings at 1.3 on a
+  page in a language written in Arabic script. The Arabic font files load only on a page that draws Arabic text.
+- **Headings and interface labels in Space Grotesk, long text in the system font** (US-BRD-09, #464): buttons,
+  tabs, navigation and form labels on the CoreX theme, in the CoreX admin and on the login. Emails keep the system
+  font.
+- **The admin's Light and System modes are one** (#461). Choosing Light now gives the light shadows, overlay, login
+  card and backdrop (it kept the dark ones); System on a light computer draws graphite shadows, not navy. The admin's
+  motion follows the design: entrances take 320ms (900ms before), spinners keep their speed.
+- `brand.json` still overrides the **theme only**; it does not reach the admin, the login or the emails.
+
+### Fixed
+
+- Every CoreX string on an Arabic site stayed English when the CoreX theme was active: WordPress kept an empty
+  catalogue for the `corex` domain, which the theme shares. corex-core now loads its catalogue itself (#466).
+- Strings the translation template could not see: the Insights screen and the setup wizard used a helper WordPress's
+  extractor does not read, and did not load their script translations; data table names are translated at run time
+  (#466).
+- The call to action block's heading size never applied: it named a custom property WordPress does not print.
+
+### Removed
+
+- The retired navy and cyan logo, `plugins/corex-config/assets/corex-logo.svg` (US-BRD-08, #465). Spec 111's
+  detection rule sends the Core X symbol instead.
+
+### Client impact
+
+- **Muva** (CoreX admin and login, English). After the update its administrators see buttons, tabs and form
+  labels in Space Grotesk, and an administrator on Light or System in light mode sees graphite shadows and the
+  light overlay. The login's labels and button change face; its logo does not change here (R2.2). Muva's own
+  theme is standalone and is not touched by the theme scale change. CoreX turns Arabic only for a user who picks
+  Arabic as their admin language.
+- **Perego** (bilingual, Arabic pages). The same admin and login changes, and in Arabic the admin uses IBM Plex
+  Sans Arabic at line height 1.8. On Perego's Arabic pages, CoreX strings that Perego does not translate itself
+  (form messages beyond its own list, the account block) turn from English to Arabic; its `gettext_corex` wording
+  still wins where it has some. Check the Arabic contact form after the update. Perego's own theme, fonts and
+  spacing are untouched.
+- **Mizzey**: not on this release.
+- The CoreX theme's look changes on any site that runs it (the inactive CoreX theme card in Appearance does not
+  change here). A client theme generated by `make:site` is standalone and is not changed.
+
 ## [0.48.1] - 2026-10-25
 
 A release installed from your machine with one command, and CoreX's abilities visible to MCP agents (spec 123,

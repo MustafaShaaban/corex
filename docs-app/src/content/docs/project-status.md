@@ -82,8 +82,11 @@ These are real coverage gaps, diagnosed down to "needs fresh eyes".
 
 The RTL acceptance matrix forces `dir="rtl"` onto English strings, so it proves the layout holds and
 proves nothing about Arabic typography. Bidi artifacts visible in those cells belong to the fixture,
-not the product. An Arabic catalogue and its own pass are still owed.
-*Source: `specs/079-admin-errors-access-request/evidence/after/acceptance-matrix.md`, DECISIONS #196.*
+not the product. Since spec 121 CoreX ships an Arabic catalogue and an Arabic proof runs every screen
+in real Arabic, but the catalogue was drafted by machine and its review by a native Arabic speaker is
+still owed; until that review is recorded, this item stays.
+*Source: `specs/079-admin-errors-access-request/evidence/after/acceptance-matrix.md`, DECISIONS #196,
+#466, #467; `specs/121-tokens-and-type/arabic-review.md`.*
 
 ### Development installs may hold leaked test fixtures
 
