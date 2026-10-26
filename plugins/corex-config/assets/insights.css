@@ -175,6 +175,18 @@
 	flex: 1;
 }
 
+/* The subject's icon, the heading and the state chip at the end of the row,
+   in either direction (spec 118, US-INS-02). */
+.corex-admin .corex-insight-widget__head > div {
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-insight-widget__icon {
+	margin-block-start: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text-muted);
+}
+
 .corex-admin .corex-insight-widget__head h2 {
 	margin: 0;
 	font-size: var(--corex-admin-font-md);

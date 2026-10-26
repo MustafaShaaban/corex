@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Kit;
 
 use Corex\Admin\AdminPage;
+use Corex\Kit\Provisioning\KitAppliedRecord;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -27,6 +28,7 @@ final class SetupWizardScreen
         private readonly BlueprintActivator $activator,
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
+        private readonly KitAppliedRecord $applied = new KitAppliedRecord(),
     ) {
     }
 
@@ -79,6 +81,8 @@ final class SetupWizardScreen
         );
         wp_localize_script('corex-setup-wizard', 'corexSetup', [
             'restUrl'  => esc_url_raw(rest_url('corex/v1/setup')),
+            // The one launch checklist the launch step shows (spec 118).
+            'readinessUrl' => esc_url_raw(rest_url('corex/v1/readiness')),
             'nonce'    => wp_create_nonce('wp_rest'),
             'adminUrl' => esc_url_raw(admin_url()),
         ]);
@@ -268,6 +272,7 @@ final class SetupWizardScreen
 
         $name    = sanitize_key(wp_unslash($_POST['corex_kit']));
         $outcome = $this->activator->apply($this->wizard->plan($name));
+        $this->applied->record($name, $outcome);
 
         // Post/Redirect/Get to the applied step so a refresh never re-applies the kit.
         wp_safe_redirect($this->stepUrl([
