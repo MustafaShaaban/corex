@@ -27,9 +27,7 @@ import {
 	unlinkSync,
 } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve( path.dirname( fileURLToPath( import.meta.url ) ), '..' );
 export const LANGUAGES = 'plugins/corex-core/languages';
 const PO = `${ LANGUAGES }/corex-ar.po`;
 const MO = `${ LANGUAGES }/corex-ar.mo`;
@@ -431,6 +429,32 @@ function writeScripts( root ) {
 /* ------------------------------------------------------------------ check */
 
 /**
+ * The titles and descriptions of the theme's pattern files. WordPress translates a pattern file's
+ * header in the theme's text domain, which is CoreX's, with the contexts below; the template CI
+ * generates does not list them, so the check reads them here.
+ *
+ * @param {string} root The repository.
+ * @return {Array<object>} Entries as `parsePo()` returns them, untranslated.
+ */
+export function themePatternEntries( root ) {
+	const folder = path.join( root, 'theme', 'patterns' );
+	const entries = [];
+
+	for ( const name of readdirSync( folder ).filter( ( file ) => file.endsWith( '.php' ) ).sort() ) {
+		const header = readFileSync( path.join( folder, name ), 'utf8' ).slice( 0, 2000 );
+
+		for ( const [ field, ctx ] of [ [ 'Title', 'Pattern title' ], [ 'Description', 'Pattern description' ] ] ) {
+			const match = header.match( new RegExp( `^\\s*\\*\\s*${ field }:\\s*(.+)$`, 'm' ) );
+			if ( match ) {
+				entries.push( { comments: [], refs: [ `theme/patterns/${ name }` ], flags: [], extracted: [], ctx, id: match[ 1 ].trim(), plural: null, str: [ '' ] } );
+			}
+		}
+	}
+
+	return entries;
+}
+
+/**
  * Everything wrong with the catalogue.
  *
  * @param {string} root    The repository.
@@ -453,23 +477,25 @@ export function checkCatalogue( root, pot ) {
 	}
 
 	const missing = [];
-	if ( pot ) {
-		const translated = new Map( catalog.entries.map( ( entry ) => [ keyOf( entry ), entry ] ) );
-		for ( const entry of parsePo( readFileSync( pot, 'utf8' ) ).entries ) {
-			if ( entry.refs.length > 0 && entry.refs.every( ( ref ) => COMMAND_LINE_ONLY.test( ref ) ) ) {
-				continue;
-			}
-			const own = translated.get( keyOf( entry ) );
-			if ( ! own || ! isTranslated( own ) ) {
-				missing.push( `"${ entry.id }" (${ entry.refs[ 0 ] || 'no reference' })` );
-			}
+	const translated = new Map( catalog.entries.map( ( entry ) => [ keyOf( entry ), entry ] ) );
+	const required = [
+		...( pot ? parsePo( readFileSync( pot, 'utf8' ) ).entries : [] ),
+		...themePatternEntries( root ),
+	];
+	for ( const entry of required ) {
+		if ( entry.refs.length > 0 && entry.refs.every( ( ref ) => COMMAND_LINE_ONLY.test( ref ) ) ) {
+			continue;
+		}
+		const own = translated.get( keyOf( entry ) );
+		if ( ! own || ! isTranslated( own ) ) {
+			missing.push( `"${ entry.id }" (${ entry.refs[ 0 ] || 'no reference' })` );
 		}
 	}
 
 	return { problems, missing };
 }
 
-function main( [ command, ...rest ] ) {
+function main( ROOT, [ command, ...rest ] ) {
 	if ( command === 'mo' ) {
 		writeFileSync( path.join( ROOT, MO ), compileMo( parsePo( readFileSync( path.join( ROOT, PO ), 'utf8' ) ) ) );
 		process.stdout.write( `Wrote ${ MO }\n` );
@@ -496,6 +522,10 @@ function main( [ command, ...rest ] ) {
 	return 2;
 }
 
-if ( process.argv[ 1 ] && path.resolve( process.argv[ 1 ] ) === fileURLToPath( import.meta.url ) ) {
-	process.exitCode = main( process.argv.slice( 2 ) );
+// Run as a command, not when a test imports it: `import.meta` does not survive Jest's transform.
+if ( path.basename( process.argv[ 1 ] ?? '' ) === 'i18n-arabic.mjs' ) {
+	process.exitCode = main(
+		path.resolve( path.dirname( process.argv[ 1 ] ), '..' ),
+		process.argv.slice( 2 )
+	);
 }

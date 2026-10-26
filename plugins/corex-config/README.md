@@ -20,8 +20,8 @@ radius); four corners use `currentColor` and the center module is CoreX brass `#
 **Usage rules:** keep at least one module of clear space on every side; minimum size 16px (favicon) / 24px in-app;
 never recolor, rotate, stretch, or add effects to the mark. On a light background use the contrast variant (AA
 brass); the wordmark glyphs are outlined vector paths (no live font dependency) so the mark renders without the
-Space Grotesk webfont. The legacy navy/cyan `assets/corex-logo.svg` is **retained only as rollback/migration
-evidence**, not approved production artwork.
+Space Grotesk webfont. The retired navy and cyan logo was removed in spec 121; the Core X set above is the only
+CoreX artwork.
 
 **Accessibility & client separation:** the bare symbol is decorative (empty `alt`) when adjacent text already
 names the product; the wordmark/lockup are named images (`alt="CoreX"`); a linked brand mark gets an accessible

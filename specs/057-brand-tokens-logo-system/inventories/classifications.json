@@ -2,9 +2,9 @@
   "generated_at": "source-controlled",
   "authority": "theme/theme.json",
   "summary": {
-    "definitions": 77,
-    "consumer_records": 1207,
-    "retained": 56,
+    "definitions": 88,
+    "consumer_records": 1226,
+    "retained": 67,
     "added": 10,
     "aliased": 11,
     "migration_batches": 4,
@@ -121,8 +121,14 @@
     },
     {
       "id": "font-size.2xl",
-      "generated_property": "--wp--preset--font-size--2xl",
+      "generated_property": "--wp--preset--font-size--2-xl",
       "source_path": "theme/theme.json#settings.typography.fontSizes[5]",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "font-size.3xl",
+      "generated_property": "--wp--preset--font-size--3-xl",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[6]",
       "status": "retained-pending-contract-tests"
     },
     {
@@ -132,9 +138,15 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "font-size.display",
+      "generated_property": "--wp--preset--font-size--display",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[8]",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "font-size.hero",
       "generated_property": "--wp--preset--font-size--hero",
-      "source_path": "theme/theme.json#settings.typography.fontSizes[6]",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[7]",
       "status": "retained-pending-contract-tests"
     },
     {
@@ -198,6 +210,12 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "motion.duration.instant",
+      "generated_property": "--wp--custom--motion--duration--instant",
+      "source_path": "theme/theme.json#settings.custom.motion.duration.instant",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "motion.duration.slow",
       "generated_property": "--wp--custom--motion--duration--slow",
       "source_path": "theme/theme.json#settings.custom.motion.duration.slow",
@@ -246,6 +264,12 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "radius.xs",
+      "generated_property": "--wp--custom--radius--xs",
+      "source_path": "theme/theme.json#settings.custom.radius.xs",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "shadow.lg",
       "generated_property": "--wp--preset--shadow--lg",
       "source_path": "theme/theme.json#settings.shadow.presets[2]",
@@ -276,39 +300,81 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "spacing.25",
+      "generated_property": "--wp--preset--spacing--25",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[2]",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "spacing.30",
       "generated_property": "--wp--preset--spacing--30",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[2]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[3]",
       "status": "retained-pending-contract-tests"
     },
     {
       "id": "spacing.40",
       "generated_property": "--wp--preset--spacing--40",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[3]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[4]",
       "status": "retained-pending-contract-tests"
     },
     {
       "id": "spacing.50",
       "generated_property": "--wp--preset--spacing--50",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[4]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[5]",
       "status": "retained-pending-contract-tests"
     },
     {
       "id": "spacing.60",
       "generated_property": "--wp--preset--spacing--60",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[5]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[6]",
       "status": "retained-pending-contract-tests"
     },
     {
       "id": "spacing.70",
       "generated_property": "--wp--preset--spacing--70",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[6]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[7]",
       "status": "retained-pending-contract-tests"
     },
     {
       "id": "spacing.80",
       "generated_property": "--wp--preset--spacing--80",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[7]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[8]",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "tracking.close",
+      "generated_property": "--wp--custom--tracking--close",
+      "source_path": "theme/theme.json#settings.custom.tracking.close",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "tracking.slight",
+      "generated_property": "--wp--custom--tracking--slight",
+      "source_path": "theme/theme.json#settings.custom.tracking.slight",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "tracking.snug",
+      "generated_property": "--wp--custom--tracking--snug",
+      "source_path": "theme/theme.json#settings.custom.tracking.snug",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "tracking.tight",
+      "generated_property": "--wp--custom--tracking--tight",
+      "source_path": "theme/theme.json#settings.custom.tracking.tight",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "tracking.tighter",
+      "generated_property": "--wp--custom--tracking--tighter",
+      "source_path": "theme/theme.json#settings.custom.tracking.tighter",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "tracking.tightest",
+      "generated_property": "--wp--custom--tracking--tightest",
+      "source_path": "theme/theme.json#settings.custom.tracking.tightest",
       "status": "retained-pending-contract-tests"
     },
     {
@@ -600,6 +666,7 @@
         "--corex-admin-font-md",
         "--corex-admin-font-mono",
         "--corex-admin-font-sm",
+        "--corex-admin-font-ui",
         "--corex-admin-font-xl",
         "--corex-admin-font-xs",
         "--corex-admin-info",
@@ -673,6 +740,7 @@
         "--corex-admin-font-md",
         "--corex-admin-font-mono",
         "--corex-admin-font-sm",
+        "--corex-admin-font-ui",
         "--corex-admin-font-xl",
         "--corex-admin-font-xs",
         "--corex-admin-info",
@@ -692,6 +760,7 @@
         "--corex-admin-motion-fast",
         "--corex-admin-motion-shimmer",
         "--corex-admin-motion-slow",
+        "--corex-admin-motion-spin",
         "--corex-admin-notice-dismiss-size",
         "--corex-admin-overlay",
         "--corex-admin-page-min-height",

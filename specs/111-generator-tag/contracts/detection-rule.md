@@ -39,8 +39,9 @@ Check both again before submitting: either may have changed.
   `corex-` does not match.
 - **`requires`**: the rule is only tried on a page already recognised as WordPress, as the list's
   WordPress plugins (WooCommerce, WP Rocket) do.
-- **`icon`**: `plugins/corex-config/assets/corex-logo.svg`, copied into the pull request as
-  `CoreX.svg` (the list names icons by file in `src/images/icons/`).
+- **`icon`**: `plugins/corex-config/assets/brand/corex-symbol.svg`, the Core X symbol, copied into the
+  pull request as `CoreX.svg` (the list names icons by file in `src/images/icons/`). A bare mark reads at the
+  16 to 32px the list shows icons at (spec 121, DECISIONS #465; the navy and cyan logo it named before is retired).
 
 ## Evidence the rule is right (SC-004)
 

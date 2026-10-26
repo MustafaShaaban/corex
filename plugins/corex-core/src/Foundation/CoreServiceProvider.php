@@ -13,6 +13,8 @@ defined('ABSPATH') || exit;
 use Corex\Container\ContainerInterface;
 use Corex\Environment\SiteEnvironment;
 use Corex\Health\HealthModule;
+use Corex\I18n\Catalogue;
+use Corex\I18n\ScriptTranslations;
 use Corex\Mail\Capture\MailGate;
 use Corex\Mail\Capture\MailHold;
 use Corex\Mail\Capture\MailPath;
@@ -82,6 +84,18 @@ final class CoreServiceProvider extends ServiceProvider
         });
 
         // One name and one hold for the whole request: whoever sends, the gate reads the same ones.
+        $this->container->singleton(
+            Catalogue::class,
+            static fn (): Catalogue => new Catalogue(
+                COREX_CORE_PATH . 'languages',
+                dirname(plugin_basename(COREX_CORE_FILE)) . '/languages',
+                WP_LANG_DIR . '/plugins',
+            ),
+        );
+        $this->container->singleton(
+            ScriptTranslations::class,
+            static fn (): ScriptTranslations => new ScriptTranslations(COREX_CORE_PATH . 'languages'),
+        );
         $this->container->singleton(MailPath::class);
         $this->container->singleton(MailHold::class);
         $this->container->singleton(MailGate::class);
@@ -175,10 +189,10 @@ final class CoreServiceProvider extends ServiceProvider
         $this->container->make(WordPressMailNames::class)->register();
 
         // Load the shared `corex` text domain so bundled translations apply (spec 036). All Corex
-        // plugins/add-ons use this one literal domain; the .pot lives under corex-core/languages.
-        add_action('init', static function (): void {
-            load_plugin_textdomain('corex', false, dirname(plugin_basename(COREX_CORE_FILE)) . '/languages');
-        });
+        // plugins/add-ons use this one literal domain; the catalogues live under corex-core/languages.
+        add_action('init', [$this->container->make(Catalogue::class), 'load'], 1);
+        // The script translations that ship beside the catalogue (spec 121).
+        add_filter('load_script_translation_file', [$this->container->make(ScriptTranslations::class), 'locate'], 10, 3);
 
         // Last on `init`, once every provider has booted and named its options, and once what an
         // add-on stores on `init` is stored.

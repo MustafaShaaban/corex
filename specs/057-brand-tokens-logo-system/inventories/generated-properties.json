@@ -1,6 +1,6 @@
 {
   "generated_at": "source-controlled",
-  "count": 77,
+  "count": 88,
   "properties": [
     {
       "id": "border.width.strong",
@@ -264,7 +264,14 @@
     {
       "id": "font-size.2xl",
       "source_path": "theme/theme.json#settings.typography.fontSizes[5]",
-      "generated_property": "--wp--preset--font-size--2xl",
+      "generated_property": "--wp--preset--font-size--2-xl",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.3xl",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[6]",
+      "generated_property": "--wp--preset--font-size--3-xl",
       "unique": true,
       "status": "observed"
     },
@@ -276,8 +283,15 @@
       "status": "observed"
     },
     {
+      "id": "font-size.display",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[8]",
+      "generated_property": "--wp--preset--font-size--display",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "font-size.hero",
-      "source_path": "theme/theme.json#settings.typography.fontSizes[6]",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[7]",
       "generated_property": "--wp--preset--font-size--hero",
       "unique": true,
       "status": "observed"
@@ -291,7 +305,7 @@
     },
     {
       "id": "font-size.medium",
-      "source_path": "theme/theme.json#settings.typography.fontSizes[8]",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[10]",
       "generated_property": "--wp--preset--font-size--medium",
       "unique": true,
       "status": "observed"
@@ -305,7 +319,7 @@
     },
     {
       "id": "font-size.small",
-      "source_path": "theme/theme.json#settings.typography.fontSizes[7]",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[9]",
       "generated_property": "--wp--preset--font-size--small",
       "unique": true,
       "status": "observed"
@@ -367,6 +381,13 @@
       "status": "observed"
     },
     {
+      "id": "motion.duration.instant",
+      "source_path": "theme/theme.json#settings.custom.motion.duration.instant",
+      "generated_property": "--wp--custom--motion--duration--instant",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "motion.duration.slow",
       "source_path": "theme/theme.json#settings.custom.motion.duration.slow",
       "generated_property": "--wp--custom--motion--duration--slow",
@@ -423,6 +444,13 @@
       "status": "observed"
     },
     {
+      "id": "radius.xs",
+      "source_path": "theme/theme.json#settings.custom.radius.xs",
+      "generated_property": "--wp--custom--radius--xs",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "shadow.lg",
       "source_path": "theme/theme.json#settings.shadow.presets[2]",
       "generated_property": "--wp--preset--shadow--lg",
@@ -458,44 +486,93 @@
       "status": "observed"
     },
     {
-      "id": "spacing.30",
+      "id": "spacing.25",
       "source_path": "theme/theme.json#settings.spacing.spacingSizes[2]",
+      "generated_property": "--wp--preset--spacing--25",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.30",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[3]",
       "generated_property": "--wp--preset--spacing--30",
       "unique": true,
       "status": "observed"
     },
     {
       "id": "spacing.40",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[3]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[4]",
       "generated_property": "--wp--preset--spacing--40",
       "unique": true,
       "status": "observed"
     },
     {
       "id": "spacing.50",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[4]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[5]",
       "generated_property": "--wp--preset--spacing--50",
       "unique": true,
       "status": "observed"
     },
     {
       "id": "spacing.60",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[5]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[6]",
       "generated_property": "--wp--preset--spacing--60",
       "unique": true,
       "status": "observed"
     },
     {
       "id": "spacing.70",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[6]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[7]",
       "generated_property": "--wp--preset--spacing--70",
       "unique": true,
       "status": "observed"
     },
     {
       "id": "spacing.80",
-      "source_path": "theme/theme.json#settings.spacing.spacingSizes[7]",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[8]",
       "generated_property": "--wp--preset--spacing--80",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "tracking.close",
+      "source_path": "theme/theme.json#settings.custom.tracking.close",
+      "generated_property": "--wp--custom--tracking--close",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "tracking.slight",
+      "source_path": "theme/theme.json#settings.custom.tracking.slight",
+      "generated_property": "--wp--custom--tracking--slight",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "tracking.snug",
+      "source_path": "theme/theme.json#settings.custom.tracking.snug",
+      "generated_property": "--wp--custom--tracking--snug",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "tracking.tight",
+      "source_path": "theme/theme.json#settings.custom.tracking.tight",
+      "generated_property": "--wp--custom--tracking--tight",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "tracking.tighter",
+      "source_path": "theme/theme.json#settings.custom.tracking.tighter",
+      "generated_property": "--wp--custom--tracking--tighter",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "tracking.tightest",
+      "source_path": "theme/theme.json#settings.custom.tracking.tightest",
+      "generated_property": "--wp--custom--tracking--tightest",
       "unique": true,
       "status": "observed"
     },

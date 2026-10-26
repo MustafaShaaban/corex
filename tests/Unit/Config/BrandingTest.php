@@ -133,12 +133,12 @@ it('exposes the configured footer text and login URL', function () {
         ->and($service->configuredLoginUrl())->toBe('https://x.test');
 });
 
-it('ships a valid Corex SVG logo in the brand palette', function () {
-    $svg = (string) file_get_contents(dirname(__DIR__, 3) . '/plugins/corex-config/assets/corex-logo.svg');
+it('draws the login with the Core X lockup, and the retired navy and cyan logo is gone', function () {
+    $assets = dirname(__DIR__, 3) . '/plugins/corex-config/assets';
+    $lockup = (string) file_get_contents($assets . '/brand/corex-lockup.svg');
 
-    expect($svg)->toContain('<svg')
-        ->toContain('</svg>')
-        ->toContain('#0B1F3B')   // navy
-        ->toContain('#00C2FF')   // cyan
-        ->toContain('Corex');
+    // Spec 121, US-BRD-08 (DECISIONS #465): the old file is removed, not kept as evidence.
+    expect($assets . '/corex-logo.svg')->not->toBeFile()
+        ->and($lockup)->toContain('<svg')->toContain('#c9a25e')
+        ->and(strtolower($lockup))->not->toContain('#0b1f3b')->not->toContain('#00c2ff');
 });

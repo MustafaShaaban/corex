@@ -15,6 +15,14 @@
 	font-family: var(--corex-admin-font-body);
 }
 
+/* Interface labels (buttons, tabs, navigation, form labels) in the display
+   face; long body text stays in the system font (decision BRD-D2, DECISIONS
+   #464). A screen stylesheet that wants another face for one control says so
+   after this, at the same weight. */
+.corex-admin :is(button, .button, .components-button, label, legend, [role="tab"], .nav-tab, nav a) {
+	font-family: var(--corex-admin-font-ui);
+}
+
 /* Full-bleed CoreX surface (body.corex-admin-screen only): strip wp-admin
    padding/margins, hide the wp-admin footer, and paint residual area the shell
    colour so no wp-admin canvas leaks. */
@@ -688,7 +696,7 @@ body.corex-admin-screen .corex-admin__shell {
 	background: var(--corex-admin-surface-raised);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-sm);
-	font-family: var(--corex-admin-font-body);
+	font-family: var(--corex-admin-font-ui);
 	font-size: var(--corex-admin-font-sm);
 	font-weight: 600;
 	line-height: var(--corex-admin-line-tight);
@@ -825,7 +833,7 @@ body.corex-admin-screen .corex-admin__shell {
 	background: var(--corex-admin-surface-raised);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-sm);
-	font-family: var(--corex-admin-font-body);
+	font-family: var(--corex-admin-font-ui);
 	font-weight: 600;
 	line-height: var(--corex-admin-line-tight);
 	text-decoration: none;
@@ -1492,7 +1500,7 @@ body.corex-admin-screen .corex-admin__shell {
 	border-radius: var(--corex-admin-radius-pill);
 	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
 	mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
-	animation: corex-loader-turn var(--corex-admin-motion-slow) linear infinite;
+	animation: corex-loader-turn var(--corex-admin-motion-spin) linear infinite;
 }
 
 /* wp-admin paints every disabled `.button` a pale grey, with `!important`:
@@ -1690,7 +1698,7 @@ body.corex-admin-screen .corex-admin__shell {
 }
 
 .corex-admin .corex-state--loading .dashicons {
-	animation: corex-admin-spin var(--corex-admin-motion-slow) linear infinite;
+	animation: corex-admin-spin var(--corex-admin-motion-spin) linear infinite;
 }
 
 .corex-admin .corex-wizard__steps {

@@ -48,8 +48,8 @@
                     "name": "Arabic",
                     "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif",
                     "fontFace": [
-                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "400", "fontDisplay": "swap", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-400.woff2"] },
-                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "600", "fontDisplay": "swap", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-600.woff2"] }
+                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "400", "fontDisplay": "swap", "unicodeRange": "U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-400.woff2"] },
+                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "600", "fontDisplay": "swap", "unicodeRange": "U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-600.woff2"] }
                     ]
                 },
                 {

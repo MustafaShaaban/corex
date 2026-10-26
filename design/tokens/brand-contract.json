@@ -1,0 +1,61 @@
+{
+	"description": "The CoreX brand, written once (spec 121, US-BRD-02, DECISIONS #460). Every colour, shadow, radius and motion value with the copies that hold it: `admin` is a custom property of plugins/corex-core/assets/css/corex-admin-tokens.css, `email` a member of Corex\\Email\\Design\\EmailPalette or a constant of EmailBrand, `theme` a key of theme/theme.json. tests/Unit/Theme/BrandContractTest.php fails, naming the token, when a copy holds another value. The values are the shipped admin set (decision BRD-D3). The theme's colours and shadows are bound when the theme moves to graphite and brass (US-BRD-01, R2.2); until then they have no `theme` key.",
+	"colors": {
+		"shell": { "dark": "#0d0e11", "light": "#eceef1", "admin": "--corex-admin-shell" },
+		"canvas": { "dark": "#16181d", "light": "#f6f7f9", "admin": "--corex-admin-canvas", "email": "canvas" },
+		"surface": { "dark": "#16181d", "light": "#f6f7f9", "admin": "--corex-admin-surface" },
+		"surface-alt": { "dark": "#1a1d23", "light": "#f3f4f6", "admin": "--corex-admin-surface-alt" },
+		"surface-raised": { "dark": "#1c1f26", "light": "#ffffff", "admin": "--corex-admin-surface-raised", "email": "surface" },
+		"text": { "dark": "#f4f5f7", "light": "#14151a", "admin": "--corex-admin-text", "email": "text" },
+		"text-muted": { "dark": "#9aa0ab", "light": "#5b616d", "admin": "--corex-admin-text-muted", "email": "muted" },
+		"text-subtle": { "dark": "#646b78", "light": "#8b9099", "admin": "--corex-admin-text-subtle" },
+		"border": { "dark": "#262a32", "light": "#e2e5ea", "admin": "--corex-admin-border", "email": "border" },
+		"border-soft": { "dark": "#20242b", "light": "#eef0f3", "admin": "--corex-admin-border-soft" },
+		"border-strong": { "dark": "#343b47", "light": "#c2c8d1", "admin": "--corex-admin-border-strong" },
+		"accent": { "dark": "#c9a25e", "light": "#ad8643", "admin": "--corex-admin-action", "email": "accent" },
+		"accent-hover": { "dark": "#e6cf9f", "light": "#8b6427", "admin": "--corex-admin-action-hover" },
+		"accent-ink": { "dark": "#14151a", "light": "#ffffff", "admin": "--corex-admin-action-ink" },
+		"accent-subtle": { "dark": "rgb(201 162 94 / 14%)", "light": "rgb(173 134 67 / 12%)", "admin": "--corex-admin-action-subtle" },
+		"link": { "dark": "#e2c188", "light": "#76521d", "admin": "--corex-admin-link", "email": "link" },
+		"link-hover": { "dark": "#f0d4a4", "light": "#573a10", "admin": "--corex-admin-link-hover" },
+		"focus": { "dark": "#f0c97d", "light": "#8b6427", "admin": "--corex-admin-focus" },
+		"success": { "dark": "#5fb787", "light": "#2f8f5b", "admin": "--corex-admin-success" },
+		"warning": { "dark": "#e0a33a", "light": "#8a5b13", "admin": "--corex-admin-warning" },
+		"error": { "dark": "#e0645c", "light": "#b23530", "admin": "--corex-admin-error" },
+		"info": { "dark": "#6e9be6", "light": "#176b96", "admin": "--corex-admin-info" },
+		"success-soft": { "dark": "rgb(95 183 135 / 13%)", "light": "rgb(47 143 91 / 12%)", "admin": "--corex-admin-success-soft" },
+		"warning-soft": { "dark": "rgb(224 163 58 / 13%)", "light": "rgb(181 120 31 / 12%)", "admin": "--corex-admin-warning-soft" },
+		"error-soft": { "dark": "rgb(224 100 92 / 13%)", "light": "rgb(194 67 59 / 12%)", "admin": "--corex-admin-error-soft" },
+		"info-soft": { "dark": "rgb(110 155 230 / 13%)", "light": "rgb(23 107 150 / 12%)", "admin": "--corex-admin-info-soft" },
+		"overlay": { "dark": "rgb(7 9 12 / 72%)", "light": "rgb(15 17 22 / 54%)", "admin": "--corex-admin-overlay" },
+		"login-card": { "dark": "#16181d", "light": "#ffffff", "admin": "--corex-admin-login-card" },
+		"login-field": { "dark": "#1c1f26", "light": "#f6f7f9", "admin": "--corex-admin-login-field" },
+		"login-backdrop": {
+			"dark": "radial-gradient(circle at 20% 0%, rgb(201 162 94 / 18%), transparent 34%)",
+			"light": "radial-gradient(circle at 20% 0%, rgb(139 100 39 / 15%), transparent 34%)",
+			"admin": "--corex-admin-login-backdrop"
+		},
+		"skeleton": { "dark": "#262a32", "light": "#e2e5ea", "admin": "--corex-admin-skeleton" },
+		"skeleton-shine": { "dark": "#343b47", "light": "#eef0f3", "admin": "--corex-admin-skeleton-shine" }
+	},
+	"shadows": {
+		"sm": { "dark": "0 1px 2px rgb(0 0 0 / 20%)", "light": "0 1px 2px rgb(20 21 26 / 8%)", "admin": "--corex-admin-shadow-sm" },
+		"md": { "dark": "0 8px 24px rgb(0 0 0 / 24%)", "light": "0 8px 24px rgb(20 21 26 / 10%)", "admin": "--corex-admin-shadow-md" },
+		"lg": { "dark": "0 18px 48px rgb(0 0 0 / 28%)", "light": "0 18px 48px rgb(20 21 26 / 14%)", "admin": "--corex-admin-shadow-lg" }
+	},
+	"radius": {
+		"xs": { "value": "0.1875rem", "admin": "--corex-admin-radius-xs", "theme": "settings.custom.radius.xs" },
+		"sm": { "value": "0.375rem", "admin": "--corex-admin-radius-sm", "theme": "settings.custom.radius.sm" },
+		"md": { "value": "0.625rem", "admin": "--corex-admin-radius-md", "theme": "settings.custom.radius.md", "email": "RADIUS" },
+		"lg": { "value": "1rem", "admin": "--corex-admin-radius-lg", "theme": "settings.custom.radius.lg" },
+		"full": { "value": "999px", "admin": "--corex-admin-radius-pill", "theme": "settings.custom.radius.full" }
+	},
+	"motion": {
+		"instant": { "value": "80ms", "admin": "--corex-admin-motion-instant", "theme": "settings.custom.motion.duration.instant" },
+		"fast": { "value": "140ms", "admin": "--corex-admin-motion-fast", "theme": "settings.custom.motion.duration.fast" },
+		"base": { "value": "200ms", "admin": "--corex-admin-motion-base", "theme": "settings.custom.motion.duration.base" },
+		"slow": { "value": "320ms", "admin": "--corex-admin-motion-slow", "theme": "settings.custom.motion.duration.slow" },
+		"ease-standard": { "value": "cubic-bezier(0.2, 0, 0, 1)", "admin": "--corex-admin-ease", "theme": "settings.custom.motion.easing.standard" },
+		"ease-emphasized": { "value": "cubic-bezier(0.3, 0, 0, 1)", "admin": "--corex-admin-ease-emphasized", "theme": "settings.custom.motion.easing.emphasized" }
+	}
+}

@@ -220,7 +220,7 @@
 	background: none;
 	border: 0;
 	border-block-end: 2px solid transparent;
-	font-family: var(--corex-admin-font-body);
+	font-family: var(--corex-admin-font-ui);
 	font-size: var(--corex-admin-font-sm);
 	font-weight: 500;
 	cursor: pointer;

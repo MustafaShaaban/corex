@@ -17,7 +17,7 @@
         "plugins/corex-config"
     ],
     "scripts": {
-        "build": "npm run build --workspaces --if-present",
+        "build": "npm run build --workspaces --if-present && node scripts/i18n-arabic.mjs scripts",
         "start": "npm run start --workspaces --if-present",
         "lint:js": "wp-scripts lint-js",
         "lint:css": "wp-scripts lint-style",

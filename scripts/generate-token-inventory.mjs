@@ -68,8 +68,12 @@ const ADMIN_OWNERS = [
 
 const readJson = ( root, relative ) =>
 	JSON.parse( readFileSync( path.join( root, relative ), 'utf8' ) );
+// WordPress's `_wp_to_kebab_case()`: a capital starts a word, and so does a letter after a
+// digit (the font size slug `2xl` is printed as `--wp--preset--font-size--2-xl`).
 const kebab = ( value ) =>
-	value.replace( /[A-Z]/g, ( letter ) => `-${ letter.toLowerCase() }` );
+	value
+		.replace( /[A-Z]/g, ( letter ) => `-${ letter.toLowerCase() }` )
+		.replace( /(\d)([a-z])/g, '$1-$2' );
 
 export function generatedProperty( group, parts ) {
 	if ( group === 'custom' ) {
