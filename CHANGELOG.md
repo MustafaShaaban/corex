@@ -30,7 +30,11 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
   **Convert existing library**: it runs in the background, shows converted, skipped and failed of the
   total (also after the page is reopened), can be cancelled, runs once at a time, lists files that
   failed with the reason, and is recorded in the activity log. Images it converts are tracked for
-  delivery as uploads are.
+  delivery as uploads are. It converts ten images a step, so a shared host's time limit does not
+  cut a step short. A background job cancelled while a step runs now stays cancelled (any CoreX
+  job, not only this one).
+- **A save that names no Settings page says nothing was saved** instead of showing the page as if
+  nothing had been asked. A secret the network locks reads "Set by the network", not "Set in .env".
 - **A saved provider secret can be removed** (#446): Remove asks first, naming what stops working,
   and the save deletes it; the removal is in the activity log without the value. A secret set in
   `.env` has no Remove. The Add-ons captcha card says when a key is missing.

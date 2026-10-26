@@ -64,6 +64,17 @@ it('shows a secret set in .env as set there, with no field and no way to remove 
         ->and($html)->not->toContain('corex_remove_secret');
 });
 
+it('shows a secret the network locks as set by the network, never as set in .env', function () {
+    $state = new FieldState('', '', new SettingLock(SettingLock::BY_NETWORK, 'the-secret'));
+    $html  = (new SettingsControls())->control('captcha.secret', ['label' => 'Secret key', 'type' => 'password'], $state);
+
+    expect($html)->toContain('Set by the network')
+        ->and($html)->toContain('Locked by the network administrator')
+        ->and($html)->not->toContain('.env')
+        ->and($html)->not->toContain('the-secret')
+        ->and($html)->not->toContain('corex_remove_secret');
+});
+
 it('offers to remove a saved secret, saying what stops, and never draws its value', function () {
     $html = (new SettingsControls())->control(
         'captcha.secret',

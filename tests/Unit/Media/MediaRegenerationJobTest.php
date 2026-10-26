@@ -35,8 +35,12 @@ function fakeMediaSource(int $total, array $batches): MediaRegenerationSource
             return $this->totalItems;
         }
 
-        public function convertBatch(int $offset, int $limit): array
+        /** @var list<?DateTimeImmutable> */
+        public array $since = [];
+
+        public function convertBatch(int $offset, int $limit, ?DateTimeImmutable $since = null): array
         {
+            $this->since[] = $since;
             $this->calls[] = ['offset' => $offset, 'limit' => $limit];
 
             return $this->batches[count($this->calls) - 1] ?? ['succeeded' => 0, 'failed' => 0];
@@ -137,6 +141,19 @@ it('hands each batch\'s failures to the log by file, and the end of the run once
     expect($done->state)->toBe(BoundedJob::STATE_COMPLETED)
         ->and($log->failed)->toBe([['jobId' => 21, 'failures' => [$missing]]])
         ->and($log->finished)->toBe([BoundedJob::STATE_COMPLETED]);
+});
+
+it('converts at most ten images in a step, whatever the runner offers, and says since when the run is', function () {
+    // A shared host stops a request after about 30 seconds; a step has to finish well inside it.
+    $source = fakeMediaSource(40, [['succeeded' => 10, 'failed' => 0]]);
+    $job    = runningMediaJob(40);
+
+    $next = (new MediaRegenerationJob($source))->handle($job, 100);
+
+    expect($source->calls[0]['limit'])->toBe(MediaRegenerationJob::MOST_PER_STEP)
+        ->and($source->since[0])->toBe($job->createdAt)
+        ->and($next->processed)->toBe(10)
+        ->and($next->state)->toBe(BoundedJob::STATE_RUNNING);
 });
 
 it('never counts more outcomes than images processed', function () {

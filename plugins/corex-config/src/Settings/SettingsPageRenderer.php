@@ -59,7 +59,7 @@ final class SettingsPageRenderer
             );
         }
 
-        $html .= ! $readOnly && $this->hasEditableField($sections) ? $this->saveBar($result !== null) : '';
+        $html .= ! $readOnly && $this->hasEditableField($sections) ? $this->saveBar($result?->saved ?? false) : '';
         $html .= '</form>';
 
         return $html . ($result === null ? '' : $this->toast($result));
@@ -226,6 +226,17 @@ final class SettingsPageRenderer
      */
     private function toast(SettingsSaveResult $result): string
     {
+        if (! $result->saved) {
+            return sprintf(
+                '<div class="corex-toast corex-toast--warning" role="alert" tabindex="-1" data-corex-toast data-corex-toast-stays>'
+                . '<div class="corex-toast__messages"><p class="corex-toast__message">%1$s</p></div>'
+                . '<button type="button" class="corex-toast__dismiss" data-corex-toast-dismiss aria-label="%2$s">&times;</button>'
+                . '</div>',
+                esc_html__('Nothing was saved: the form did not say which Settings page it came from. Open the page again and save from there.', 'corex'),
+                esc_attr__('Dismiss', 'corex'),
+            );
+        }
+
         $removed = '';
         foreach ($result->removed as $key) {
             $removed .= '<p class="corex-toast__message">' . esc_html(sprintf(

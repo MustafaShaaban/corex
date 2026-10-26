@@ -187,11 +187,10 @@ final class AdminDashboard
 
         $pageKey = isset($_POST['corex_settings_page']) ? sanitize_key(wp_unslash($_POST['corex_settings_page'])) : '';
         $userId  = get_current_user_id();
-        $result  = $this->saver->save($pageKey, wp_unslash($_POST), $userId);
-
-        if ($result === null) {
-            return;
-        }
+        // A post that names no Settings page, or one that does not exist, writes nothing, and the
+        // first page says so rather than drawing as if nothing had been asked.
+        $result = $this->saver->save($pageKey, wp_unslash($_POST), $userId)
+            ?? SettingsSaveResult::nothingSaved(SettingsPages::DEFAULT);
 
         $this->flash->keep($userId, $result);
         wp_safe_redirect($this->pages->url($result->page), 303);

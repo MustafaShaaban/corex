@@ -1,7 +1,7 @@
 /**
  * "Convert existing library" draws a run as the server answers it (spec 119, US-SET-06).
  */
-const { isActive, show } = require( '../media-conversion.js' );
+const { isActive, show, init } = require( '../media-conversion.js' );
 
 function panel( available = '1' ) {
 	document.body.innerHTML =
@@ -74,4 +74,85 @@ it( 'offers no start while conversion is unavailable', () => {
 		box.querySelector( '[data-corex-conversion-start]' ).disabled
 	).toBe( true );
 	expect( isActive( null ) ).toBe( false );
+} );
+
+describe( 'Cancel while a step is on its way', () => {
+	const running = {
+		active: true,
+		total: 40,
+		processed: 10,
+		summary: 'Converting: 10 converted, 0 skipped, 0 failed, of 40 images.',
+		failures: [],
+	};
+	const cancelled = {
+		active: false,
+		total: 40,
+		processed: 10,
+		summary:
+			'Cancelled on 26 October 2026: 10 converted, 0 skipped, 0 failed, of 40 images.',
+		failures: [],
+	};
+	const answered = ( run ) =>
+		Promise.resolve( { envelope: { ok: true, data: { run } } } );
+
+	afterEach( () => {
+		jest.useRealTimers();
+		delete window.Corex;
+		delete window.corexMediaConversion;
+	} );
+
+	it( 'keeps the run cancelled when the step answers after Cancel, and asks for no further step', async () => {
+		jest.useFakeTimers();
+		const box = panel();
+		let answerStep;
+		const steps = [];
+		window.corexMediaConversion = {
+			restUrl: 'https://site.test/wp-json/corex/v1/media/conversion',
+			nonce: 'n',
+			i18n: {},
+		};
+		window.Corex = {
+			api: {
+				get: () => answered( running ),
+				post: ( url ) => {
+					if ( url.endsWith( '/advance' ) ) {
+						steps.push( url );
+
+						return new Promise( ( resolve ) => {
+							answerStep = () =>
+								resolve( {
+									envelope: {
+										ok: true,
+										data: { run: running },
+									},
+								} );
+						} );
+					}
+
+					return answered( cancelled );
+				},
+			},
+		};
+
+		init();
+		await Promise.resolve();
+		await Promise.resolve();
+		jest.advanceTimersByTime( 1200 );
+		expect( steps ).toHaveLength( 1 );
+
+		box.querySelector( '[data-corex-conversion-cancel]' ).click();
+		await Promise.resolve();
+		await Promise.resolve();
+		answerStep();
+		await Promise.resolve();
+		await Promise.resolve();
+		jest.advanceTimersByTime( 5000 );
+
+		const summary = box.querySelector( '[data-corex-conversion-summary]' );
+		expect( summary.textContent ).toContain( 'Cancelled on' );
+		expect(
+			box.querySelector( '[data-corex-conversion-cancel]' ).hidden
+		).toBe( true );
+		expect( steps ).toHaveLength( 1 );
+	} );
 } );

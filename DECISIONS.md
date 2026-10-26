@@ -18594,6 +18594,13 @@ converts, as the CLI does — the job wrote WebP files that delivery's gate did 
 the run's job id live in `corex_media_conversion`; start, cancel and end are in the activity log (area settings).
 Counts are clamped to what was processed. The panel reaches Settings through `corex_settings_section_extra`.
 
+**After review (PR #440).** Cancel sticks: `JobRunner` reads the stored job again before it saves a step and keeps
+an end the job reached meanwhile (cancelled, failed or completed) instead of writing the step's own running copy
+over it, and schedules no further step; the page drops an advance answer that arrives after Cancel. A step
+converts at most ten images (`MediaRegenerationJob::MOST_PER_STEP`), so a shared host's 30-second limit does not
+stop one midway; and an image whose tracked WebP was written after the run started counts as converted, not
+skipped, when a stopped step is taken again.
+
 ## #444 — Media, Captcha and Guides follow their add-on; an add-on card has an anchor
 
 **Date:** 2026-10-23. **Spec:** 119, US-SET-07.

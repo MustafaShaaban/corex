@@ -140,8 +140,10 @@ final class SettingsControls
     {
         $name = self::nameOf($key);
 
-        if ($state->locked()) {
-            return '<p class="corex-secret-state corex-secret-state--locked">' . esc_html__('Set in .env', 'corex') . '</p>';
+        if ($state->lock !== null) {
+            $where = $state->lock->isDotenv() ? __('Set in .env', 'corex') : __('Set by the network', 'corex');
+
+            return '<p class="corex-secret-state corex-secret-state--locked">' . esc_html($where) . '</p>';
         }
 
         $html = sprintf(

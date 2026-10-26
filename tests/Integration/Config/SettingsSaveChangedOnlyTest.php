@@ -142,6 +142,15 @@ it('refuses a value its field does not take and changes nothing else', function 
         ->and($result?->refused[0]['name'] ?? '')->toBe('mail_reply_from_address');
 });
 
+it('says nothing was saved when the post named no page, and does not call the page saved', function () {
+    $page = SettingsScreen::draw('general', \Corex\Config\Settings\SettingsSaveResult::nothingSaved('general'));
+
+    expect($page)->toContain('Nothing was saved: the form did not say which Settings page it came from.')
+        ->and($page)->toContain('role="alert"')
+        ->and($page)->toContain('data-state="clean"')
+        ->and($page)->not->toContain('Settings saved.');
+});
+
 it('refuses a page that does not exist', function () {
     $before = storedSettings();
 

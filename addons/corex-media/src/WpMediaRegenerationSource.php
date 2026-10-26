@@ -51,7 +51,7 @@ final class WpMediaRegenerationSource implements MediaRegenerationSource
     /**
      * @return array{succeeded:int,failed:int,failures:list<array{file:string,reason:string}>}
      */
-    public function convertBatch(int $offset, int $limit): array
+    public function convertBatch(int $offset, int $limit, ?\DateTimeImmutable $since = null): array
     {
         $failures = [];
         $items    = [];
@@ -83,6 +83,13 @@ final class WpMediaRegenerationSource implements MediaRegenerationSource
 
         $succeeded = 0;
         foreach ($this->regenerator->plan($items)['actions'] as $action) {
+            if ($action['action'] === 'skip-exists' && $this->writtenSince($action['id'], $since)) {
+                // Converted by this run in a step that was stopped before it was counted.
+                $succeeded++;
+
+                continue;
+            }
+
             if ($action['action'] !== 'convert') {
                 continue;
             }
@@ -119,6 +126,19 @@ final class WpMediaRegenerationSource implements MediaRegenerationSource
         update_post_meta($action['id'], WebpMeta::META_KEY, wp_slash($meta->toArray()));
 
         return true;
+    }
+
+    /** Whether CoreX wrote this image's WebP copy at or after the given moment. */
+    private function writtenSince(int $id, ?\DateTimeImmutable $since): bool
+    {
+        if ($since === null) {
+            return false;
+        }
+
+        $meta = get_post_meta($id, WebpMeta::META_KEY, true);
+        $at   = is_array($meta) ? strtotime((string) ($meta['generated_at'] ?? '')) : false;
+
+        return $at !== false && $at >= $since->getTimestamp();
     }
 
     /** @return list<int> */

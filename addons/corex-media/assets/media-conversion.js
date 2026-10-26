@@ -79,6 +79,10 @@
 			'[data-corex-conversion-summary]'
 		);
 		let timer = null;
+		// Each start, cancel and page load begins a new round; an answer from an earlier round
+		// (an advance that was already on its way when Cancel was pressed) is dropped, so it can
+		// neither redraw the run as running nor start following it again.
+		let round = 0;
 
 		function answer( res ) {
 			const envelope = ( res && res.envelope ) || {};
@@ -95,44 +99,54 @@
 			return run;
 		}
 
+		function inRound( mine, next ) {
+			return function ( res ) {
+				return mine === round ? next( res ) : null;
+			};
+		}
+
 		function follow( run ) {
 			window.clearTimeout( timer );
 			if ( ! isActive( run ) ) {
 				return;
 			}
+			const mine = round;
 			timer = window.setTimeout( function () {
 				api.post(
 					config.restUrl + '/advance',
 					{},
 					{ nonce: config.nonce }
 				)
-					.then( answer )
-					.then( follow );
+					.then( inRound( mine, answer ) )
+					.then( inRound( mine, follow ) );
 			}, STEP_EVERY_MS );
 		}
 
 		panel
 			.querySelector( '[data-corex-conversion-start]' )
 			.addEventListener( 'click', function () {
+				const mine = ++round;
 				api.post( config.restUrl, {}, { nonce: config.nonce } )
-					.then( answer )
-					.then( follow );
+					.then( inRound( mine, answer ) )
+					.then( inRound( mine, follow ) );
 			} );
 
 		panel
 			.querySelector( '[data-corex-conversion-cancel]' )
 			.addEventListener( 'click', function () {
 				window.clearTimeout( timer );
+				const mine = ++round;
 				api.post(
 					config.restUrl + '/cancel',
 					{},
 					{ nonce: config.nonce }
-				).then( answer );
+				).then( inRound( mine, answer ) );
 			} );
 
+		const opened = round;
 		api.get( config.restUrl, { nonce: config.nonce } )
-			.then( answer )
-			.then( follow );
+			.then( inRound( opened, answer ) )
+			.then( inRound( opened, follow ) );
 	}
 
 	if ( typeof document !== 'undefined' ) {
@@ -145,6 +159,6 @@
 
 	// Exported for unit tests (no effect in the browser, where there is no CommonJS module).
 	if ( typeof module !== 'undefined' && module.exports ) {
-		module.exports = { isActive, show };
+		module.exports = { isActive, show, init };
 	}
 } )();

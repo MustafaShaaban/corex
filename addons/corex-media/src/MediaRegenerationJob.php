@@ -29,6 +29,12 @@ final class MediaRegenerationJob implements JobHandler
 {
     public const KIND = 'media-webp-regeneration';
 
+    /**
+     * Images converted in one step, whatever the runner offers. A shared host stops a request
+     * after about 30 seconds, and a step killed midway is taken again from where it was counted.
+     */
+    public const MOST_PER_STEP = 10;
+
     public function __construct(
         private readonly MediaRegenerationSource $source,
         private readonly ?MediaConversionLog $log = null,
@@ -42,8 +48,8 @@ final class MediaRegenerationJob implements JobHandler
 
     public function handle(BoundedJob $job, int $batchSize): BoundedJob
     {
-        $limit  = max(1, $batchSize);
-        $counts = $this->source->convertBatch($job->processed, $limit);
+        $limit  = max(1, min($batchSize, self::MOST_PER_STEP));
+        $counts = $this->source->convertBatch($job->processed, $limit, $job->createdAt);
 
         // Never advance past the declared total, so a final partial batch still completes exactly.
         $processed = min($job->total, $job->processed + $limit);

@@ -17,7 +17,13 @@ use Corex\Boot;
 use Corex\Jobs\BoundedJob;
 use Corex\Media\Conversion\MediaConversionRuns;
 use Corex\Media\Conversion\MediaConversionService;
+use Corex\Media\ImageCapability;
+use Corex\Media\MediaSettings;
+use Corex\Media\WebpConverter;
 use Corex\Media\WebpMeta;
+use Corex\Media\WebpRegenerator;
+use Corex\Media\WpMediaRegenerationSource;
+use Corex\Support\Config\ConfigInterface;
 
 beforeEach(function () {
     if (! Boot::app()->container()->has(MediaConversionService::class) || ! function_exists('imagewebp')) {
@@ -127,6 +133,31 @@ it('runs one conversion at a time, and stops one that is cancelled', function ()
         ->and($this->conversion->cancel())->toBeNull()
         ->and(Boot::app()->container()->make(ActivityService::class)->query(['area' => 'settings'], 1, 1)[0]->kind ?? '')
         ->toBe('media.conversion_cancelled');
+});
+
+it('counts an image a stopped step converted as converted, not skipped', function () {
+    $id = uploadedJpeg($this);
+
+    // What a step killed by the host's time limit leaves: the WebP written and tracked, and no
+    // count saved for it.
+    $original = (string) get_attached_file($id);
+    $webp     = (string) preg_replace('/\.jpg$/', '.webp', $original);
+    $image    = imagecreatefromjpeg($original);
+    imagewebp($image, $webp, 82);
+    imagedestroy($image);
+    update_post_meta($id, WebpMeta::META_KEY, wp_slash(WebpMeta::measure($original, $webp, 82, 5.0)->toArray()));
+
+    // The batch holding only this image, as the job asks for it.
+    $ids    = get_posts(['post_type' => 'attachment', 'post_mime_type' => ['image/jpeg', 'image/png'], 'post_status' => 'inherit', 'fields' => 'ids', 'posts_per_page' => -1, 'orderby' => 'ID', 'order' => 'ASC']);
+    $offset = (int) array_search($id, array_map('intval', $ids), true);
+    $settings   = MediaSettings::fromConfig(Boot::app()->container()->make(ConfigInterface::class));
+    $capability = ImageCapability::detect();
+    $source     = new WpMediaRegenerationSource(new WebpRegenerator($capability, $settings), new WebpConverter($settings->quality), $capability, $settings);
+
+    expect($source->convertBatch($offset, 1, new DateTimeImmutable('-1 minute'))['succeeded'])->toBe(1)
+        // An image that had its WebP before the run is skipped, as before.
+        ->and($source->convertBatch($offset, 1, new DateTimeImmutable('+1 minute'))['succeeded'])->toBe(0)
+        ->and($source->convertBatch($offset, 1)['succeeded'])->toBe(0);
 });
 
 it('answers the latest run when the page is opened again', function () {
