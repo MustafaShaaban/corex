@@ -296,6 +296,18 @@ describe( 'what happened here', () => {
 			[ 'CoreX 0.45.0 was installed, replacing 0.44.0.', 'Mona' ],
 		],
 		[
+			'an installation from a command, with an Application Password',
+			{
+				event: 'installed',
+				version: '0.45.0',
+				from: '0.44.0',
+				by: 7,
+				by_name: 'Mona',
+				signed_in_with: 'release push',
+			},
+			[ 'Mona, with the Application Password "release push"' ],
+		],
+		[
 			'the first installation the site recorded',
 			{
 				event: 'installed',

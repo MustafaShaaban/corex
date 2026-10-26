@@ -58,6 +58,7 @@ Each profile records its package shape, build commands, dependencies, secrets, a
 | [`cpanel-shared-hosting.md`](./cpanel-shared-hosting.md) | cPanel shared hosting (no-symlink strategy) | ✅ D6 |
 | [`first-installation-by-hand.md`](./first-installation-by-hand.md) | A host with no command line: the one installation done by hand | ✅ spec 107 |
 | [`releases-from-the-admin.md`](./releases-from-the-admin.md) | A host with no command line: every release after it, from CoreX → Releases | ✅ spec 107 |
+| [`releases-from-your-machine.md`](./releases-from-your-machine.md) | The same releases in one command on your machine (`npm run release:push`), signed in with an Application Password | ✅ spec 123 |
 | [`ci-cd.md`](./ci-cd.md) | CI/CD wiring per target | ✅ D6 |
 | [`secrets-backups-zero-downtime.md`](./secrets-backups-zero-downtime.md) | Cross-cutting operations | ✅ D6 |
 | [`updates-and-distribution.md`](./updates-and-distribution.md) | Self-update, manifests, and the safe-edit boundary | ✅ spec 034 |
