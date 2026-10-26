@@ -60,7 +60,9 @@ it('uses declared mutation and read endpoints instead of disabled placeholder co
         ->and($client)->toMatch("/post\\(\\s*'layouts'/")
         ->and($client)->toMatch("/post\\(\\s*'partials'/")
         ->and($client)->toMatch("/post\\(\\s*'routes'/")
-        ->and($client)->toMatch("/post\\(\\s*'test'/")
+        // A test send is the previewed email, drawn by the server (spec 120).
+        ->and($client)->toContain("buildEndpoint( config.restUrl, 'test' )")
+        ->and($client)->toContain("buildEndpoint( config.restUrl, 'preview', templateId )")
         ->and($client)->toMatch("/post\\(\\s*'resend'/")
         ->and($client)->toContain('reply_to_rule: replyRule')
         ->and($client)->toContain('settingsUrl={ config.settingsUrl }')
@@ -90,8 +92,9 @@ it('renders desktop mobile and RTL previews in a script-disabled sandbox', funct
         ->and($components)->toContain("direction === 'rtl'")
         ->and($components)->toContain('aria-pressed={ device')
         ->and($components)->toContain('aria-pressed={ direction')
-        ->and($helpers)->toContain('Content-Security-Policy')
-        ->and($helpers)->toContain('escapeHtml');
+        // The email shown is the one the server draws, never one assembled in the browser (spec 120).
+        ->and($components)->toContain('srcDoc={ drawn.html }')
+        ->and($helpers)->not->toContain('composePreviewHtml');
 });
 
 it('loads truthful templates layouts partials routes captures and attempts from the API', function () {

@@ -345,6 +345,7 @@
 	display: flex;
 	justify-content: space-between;
 	gap: var(--corex-admin-space-lg);
+	align-items: flex-start;
 	margin-block-end: var(--corex-admin-space-lg);
 }
 

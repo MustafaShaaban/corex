@@ -184,7 +184,9 @@ export function PreviewPanel( {
 							<>
 								<p className="corex-email-app__preview-subject">
 									<span>{ __( 'Subject', 'corex' ) }</span>{ ' ' }
-									<strong>{ drawn.subject }</strong>
+									<strong dir="auto">
+										{ drawn.subject }
+									</strong>
 								</p>
 								<iframe
 									title={ __(
@@ -235,7 +237,7 @@ export function PlainTextPanel( { selected, drawn, mode } ) {
 				<DrawingErrors errors={ drawn.errors } />
 			) }
 			{ selected && drawn.status !== 'error' && (
-				<pre className="corex-email-app__plain">
+				<pre className="corex-email-app__plain" dir="auto">
 					{ drawn.text || __( 'Drawing the email…', 'corex' ) }
 				</pre>
 			) }

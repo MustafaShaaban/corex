@@ -43,6 +43,8 @@ beforeEach(function () {
     $this->store = Boot::app()->container()->make(WpFlowStore::class);
     $this->store->registerPostType();
     $this->flows = CreatedPosts::watch(WpFlowStore::POST_TYPE, 'corex_submission');
+    // A new flow is bound to the emails CoreX ships, which keep a record of each one sent (spec 120).
+    $this->sentMail = CreatedPosts::watch('corex_email_asset', 'corex_email_log');
     // A submission is counted by the rate limiter, and tells whoever manages submissions.
     $this->transients = WatchedTransients::watch('corex_throttle_');
     $this->mailSettings = MailDelivery::answerAs(MailDelivery::CAPTURE);
@@ -51,6 +53,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    $this->sentMail->delete();
     $this->flows->delete();
     $this->transients->restore();
     NotificationRows::forgetPrefixed('submission.new:kept-');

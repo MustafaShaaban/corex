@@ -96,7 +96,7 @@ function AttemptRow( { attempt, busy, onRetry } ) {
 		<tr id={ `corex-attempt-${ attempt.attempt_id }` }>
 			<td>{ attempt.recipient }</td>
 			<td>
-				{ attempt.subject }
+				<bdi>{ attempt.subject }</bdi>
 				{ missing.length > 0 && (
 					<span className="corex-email-app__missing">
 						{ sprintf(
@@ -214,7 +214,7 @@ function CapturedMessage( { capture } ) {
 				srcDoc={ capture.html_body }
 			/>
 			<h3>{ __( 'Plain-text version', 'corex' ) }</h3>
-			<pre className="corex-email-app__plain">
+			<pre className="corex-email-app__plain" dir="auto">
 				{ capture.plain_text ||
 					__( 'This email has no plain-text version.', 'corex' ) }
 			</pre>
@@ -244,7 +244,7 @@ function CapturesList( { captures } ) {
 							id={ `corex-capture-${ capture.capture_id }` }
 						>
 							<span className="corex-email-app__capture-what">
-								<strong>{ capture.subject }</strong>
+								<strong dir="auto">{ capture.subject }</strong>
 								<span>
 									{ capture.path ||
 										__( 'Email Studio', 'corex' ) }

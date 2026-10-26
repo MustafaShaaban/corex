@@ -90,9 +90,9 @@ describe( 'Email Studio client state', () => {
 		expect(
 			buildEndpoint( '/corex/v1/email-studio', 'resend', 'abc-123' )
 		).toBe( '/corex/v1/email-studio/attempts/abc-123/resend' );
-		expect(
-			buildEndpoint( '/corex/v1/email-studio', 'preview', 12 )
-		).toBe( '/corex/v1/email-studio/templates/12/preview' );
+		expect( buildEndpoint( '/corex/v1/email-studio', 'preview', 12 ) ).toBe(
+			'/corex/v1/email-studio/templates/12/preview'
+		);
 		expect( buildEndpoint( '/corex/v1/email-studio', 'reset', 12 ) ).toBe(
 			'/corex/v1/email-studio/templates/12/reset'
 		);
