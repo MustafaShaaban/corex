@@ -429,25 +429,34 @@ function writeScripts( root ) {
 /* ------------------------------------------------------------------ check */
 
 /**
- * The titles and descriptions of the theme's pattern files. WordPress translates a pattern file's
- * header in the theme's text domain, which is CoreX's, with the contexts below; the template CI
- * generates does not list them, so the check reads them here.
+ * What WordPress translates from the theme's own files: the title and description of each pattern
+ * file and the title of each style variation, in the theme's text domain (CoreX's) with the
+ * contexts below. The template CI generates does not list them, so the check reads them here.
  *
  * @param {string} root The repository.
  * @return {Array<object>} Entries as `parsePo()` returns them, untranslated.
  */
-export function themePatternEntries( root ) {
-	const folder = path.join( root, 'theme', 'patterns' );
+export function themeFileEntries( root ) {
+	const entry = ( ref, ctx, id ) => ( { comments: [], refs: [ ref ], flags: [], extracted: [], ctx, id, plural: null, str: [ '' ] } );
+	const patterns = path.join( root, 'theme', 'patterns' );
+	const styles = path.join( root, 'theme', 'styles' );
 	const entries = [];
 
-	for ( const name of readdirSync( folder ).filter( ( file ) => file.endsWith( '.php' ) ).sort() ) {
-		const header = readFileSync( path.join( folder, name ), 'utf8' ).slice( 0, 2000 );
+	for ( const name of readdirSync( patterns ).filter( ( file ) => file.endsWith( '.php' ) ).sort() ) {
+		const header = readFileSync( path.join( patterns, name ), 'utf8' ).slice( 0, 2000 );
 
 		for ( const [ field, ctx ] of [ [ 'Title', 'Pattern title' ], [ 'Description', 'Pattern description' ] ] ) {
 			const match = header.match( new RegExp( `^\\s*\\*\\s*${ field }:\\s*(.+)$`, 'm' ) );
 			if ( match ) {
-				entries.push( { comments: [], refs: [ `theme/patterns/${ name }` ], flags: [], extracted: [], ctx, id: match[ 1 ].trim(), plural: null, str: [ '' ] } );
+				entries.push( entry( `theme/patterns/${ name }`, ctx, match[ 1 ].trim() ) );
 			}
+		}
+	}
+
+	for ( const name of readdirSync( styles ).filter( ( file ) => file.endsWith( '.json' ) ).sort() ) {
+		const { title } = JSON.parse( readFileSync( path.join( styles, name ), 'utf8' ) );
+		if ( title ) {
+			entries.push( entry( `theme/styles/${ name }`, 'Style variation name', title ) );
 		}
 	}
 
@@ -480,7 +489,7 @@ export function checkCatalogue( root, pot ) {
 	const translated = new Map( catalog.entries.map( ( entry ) => [ keyOf( entry ), entry ] ) );
 	const required = [
 		...( pot ? parsePo( readFileSync( pot, 'utf8' ) ).entries : [] ),
-		...themePatternEntries( root ),
+		...themeFileEntries( root ),
 	];
 	for ( const entry of required ) {
 		if ( entry.refs.length > 0 && entry.refs.every( ( ref ) => COMMAND_LINE_ONLY.test( ref ) ) ) {

@@ -21,7 +21,7 @@ Names the catalogue does not translate, and the Arabic proof does not count as u
 
 CoreX, WordPress, WooCommerce, WP-CLI, PHP, MySQL, SMTP, DKIM, SPF, DMARC, REST, API, JSON, CSV, XML, PDF, Excel, HTML,
 CSS, JavaScript, URL, SVG, WebP, ACF, Polylang, WPML, Gutenberg, reCAPTCHA, hCaptcha, Turnstile, Cloudflare, Google,
-Gmail, Outlook, GitHub, Azure, cron, OPcache, UTF-8, SSO, OAuth, IP, Space Grotesk, JetBrains Mono, IBM Plex Sans
+Gmail, Outlook, GitHub, Azure, cron, WP-Cron, OPcache, UTF-8, SSO, OAuth, IP, HTTP, HTTPS, SSL, CDN, CV, Space Grotesk, JetBrains Mono, IBM Plex Sans
 Arabic; code identifiers, file names, commands, option and hook names.
 
 ## Terms

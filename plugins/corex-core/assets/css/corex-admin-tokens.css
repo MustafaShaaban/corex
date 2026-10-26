@@ -26,6 +26,7 @@
 	font-style: normal;
 	font-weight: 400;
 	font-display: swap;
+	unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF;
 	src: url(../fonts/ibm-plex-sans-arabic-400.woff2) format("woff2");
 }
 
@@ -34,6 +35,7 @@
 	font-style: normal;
 	font-weight: 600;
 	font-display: swap;
+	unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF;
 	src: url(../fonts/ibm-plex-sans-arabic-600.woff2) format("woff2");
 }
 
@@ -157,6 +159,7 @@ body.corex-admin-screen {
 [dir="rtl"] body.corex-admin-screen {
 	--corex-admin-font-body: "CoreX Arabic", system-ui, sans-serif;
 	--corex-admin-font-display: "CoreX Arabic", "CoreX Space Grotesk", sans-serif;
+	--corex-admin-font-mono: "CoreX JetBrains Mono", "CoreX Arabic", ui-monospace, monospace;
 	--corex-admin-line-tight: 1.3;
 	--corex-admin-line-normal: 1.8;
 }

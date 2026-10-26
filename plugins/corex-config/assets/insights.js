@@ -19,8 +19,11 @@
 	}
 
 	const byProvider = {};
-	// eslint-disable-next-line @wordpress/i18n-no-variables -- runtime translate helper; string literals are passed at every call site so extraction still works.
-	const t = ( s ) => ( wp.i18n ? wp.i18n.__( s, 'corex' ) : s );
+	// Named `__` so the translation template reads the literal of every call (spec 121); a page
+	// without wp-i18n shows the English.
+	// eslint-disable-next-line @wordpress/i18n-no-variables, @wordpress/i18n-text-domain
+	const __ = ( text, domain ) =>
+		wp.i18n ? wp.i18n.__( text, domain ) : text;
 
 	/*
 	 * The admin's loading states (spec 108), written as markup: this screen is not React, and
@@ -54,7 +57,7 @@
 	let saidLoading = false;
 	const sayLoading = setTimeout( () => {
 		saidLoading = true;
-		announcement.textContent = t( 'Loading insights…' );
+		announcement.textContent = __( 'Loading insights…', 'corex' );
 	}, 1000 );
 
 	function settle() {
@@ -68,7 +71,7 @@
 		clearTimeout( sayLoading );
 		if ( saidLoading ) {
 			saidLoading = false;
-			announcement.textContent = t( 'Loaded.' );
+			announcement.textContent = __( 'Loaded.', 'corex' );
 		}
 	}
 
@@ -127,7 +130,7 @@
 		const checkedAt =
 			result && result.checkedAt
 				? new Date( result.checkedAt * 1000 ).toLocaleString()
-				: t( 'Not run yet' );
+				: __( 'Not run yet', 'corex' );
 
 		el.className =
 			'corex-insight-card ' +
@@ -141,7 +144,7 @@
 			'</h2>' +
 			( failed
 				? '<p class="corex-insight-card__failed">' +
-					escape( t( 'Could not run' ) ) +
+					escape( __( 'Could not run', 'corex' ) ) +
 					'</p>'
 				: '<div class="corex-insight-card__score" role="img" aria-label="' +
 					scoreLabel( waiting, score, grade ) +
@@ -185,7 +188,7 @@
 			// its width, and the styles draw the loader over it from these attributes.
 			runAttributes( loading, waiting ) +
 			'>' +
-			escape( failed ? t( 'Retry' ) : t( 'Run check' ) ) +
+			escape( failed ? __( 'Retry', 'corex' ) : __( 'Run check', 'corex' ) ) +
 			'</button>' +
 			'<span class="corex-insight-card__time">' +
 			( waiting ? placeholder( bar( 'full' ) ) : escape( checkedAt ) ) +
@@ -227,11 +230,11 @@
 
 	function scoreLabel( waiting, score, grade ) {
 		if ( waiting ) {
-			return t( 'Loading the last result' );
+			return __( 'Loading the last result', 'corex' );
 		}
 		return score === null
-			? t( 'No score yet' )
-			: escape( t( 'Score' ) + ' ' + score + ' / 100, grade ' + grade );
+			? __( 'No score yet', 'corex' )
+			: escape( __( 'Score', 'corex' ) + ' ' + score + ' / 100, grade ' + grade );
 	}
 
 	function scoreText( score ) {
@@ -265,7 +268,7 @@
 						lastResult( id ),
 						false,
 						result.envelope.message ||
-							t( 'The check could not be completed. Try again.' )
+							__( 'The check could not be completed. Try again.', 'corex' )
 					);
 					return;
 				}
@@ -293,9 +296,7 @@
 		if ( ! result.envelope.ok ) {
 			const failure =
 				result.envelope.message ||
-				t(
-					'The last results could not be loaded. Run a check to get new ones.'
-				);
+				__( 'The last results could not be loaded. Run a check to get new ones.', 'corex' );
 			providers.forEach( ( p ) => render( p.id, null, false, failure ) );
 			return;
 		}
@@ -450,11 +451,11 @@
 		el.innerHTML =
 			'<div class="corex-error-state corex-error-state--panel" role="status" aria-live="polite">' +
 			'<p class="corex-error-state__message">' +
-			escape( t( 'The rest of the insights could not be loaded.' ) ) +
+			escape( __( 'The rest of the insights could not be loaded.', 'corex' ) ) +
 			'</p>' +
 			'<div class="corex-error-state__actions">' +
 			'<button type="button" class="button">' +
-			escape( t( 'Try again' ) ) +
+			escape( __( 'Try again', 'corex' ) ) +
 			'</button></div></div>';
 		el.querySelector( 'button' ).addEventListener( 'click', () => {
 			el.remove();

@@ -17,8 +17,11 @@
 
 	const api = window.Corex.api;
 	const { restUrl, nonce, adminUrl } = data;
-	// eslint-disable-next-line @wordpress/i18n-no-variables -- runtime translate helper; string literals are passed at every call site so extraction still works.
-	const t = ( s ) => ( wp.i18n ? wp.i18n.__( s, 'corex' ) : s );
+	// Named `__` so the translation template reads the literal of every call (spec 121); a page
+	// without wp-i18n shows the English.
+	// eslint-disable-next-line @wordpress/i18n-no-variables, @wordpress/i18n-text-domain
+	const __ = ( text, domain ) =>
+		wp.i18n ? wp.i18n.__( text, domain ) : text;
 
 	const STEPS = [
 		'welcome',
@@ -89,7 +92,7 @@
 		const pct = Math.round( ( state.index / ( STEPS.length - 1 ) ) * 100 );
 		return (
 			`<ol class="corex-setup__stepper" aria-label="${ escape(
-				t( 'Setup steps' )
+				__( 'Setup steps', 'corex' )
 			) }">${ items }</ol>` +
 			`<div class="corex-setup__progress" role="progressbar" aria-valuenow="${ pct }" aria-valuemin="0" aria-valuemax="100"><span style="inline-size:${ pct }%"></span></div>`
 		);
@@ -129,7 +132,7 @@
 		const conflicts = ( state.plan && state.plan.conflicts ) || [];
 		if ( conflicts.length === 0 ) {
 			return `<p class="corex-setup__muted">${ escape(
-				t( 'No conflicts — no existing page will be changed.' )
+				__( 'No conflicts — no existing page will be changed.', 'corex' )
 			) }</p>`;
 		}
 		const choices = state.config.conflictChoices || [];
@@ -161,9 +164,7 @@
 	 * @return {string} The sentence, translated.
 	 */
 	function recordedSentence() {
-		return t(
-			'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.'
-		);
+		return __( 'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.', 'corex' );
 	}
 
 	/**
@@ -192,24 +193,22 @@
 		const list =
 			titles.length > 0
 				? `<p>${ escape(
-						t( 'The pages that will be recorded:' )
+						__( 'The pages that will be recorded:', 'corex' )
 					) }</p><ul class="corex-setup__recorded">${ titles
 						.map( ( title ) => `<li>${ escape( title ) }</li>` )
 						.join( '' ) }</ul>`
 				: `<p class="corex-setup__muted">${ escape(
-						t( 'This plan changes none of your existing pages.' )
+						__( 'This plan changes none of your existing pages.', 'corex' )
 					) }</p>`;
 		return (
 			`<p>${ escape( recordedSentence() ) }</p>` +
 			list +
 			`<p>${ escape(
-				t(
-					'Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one.'
-				)
+				__( 'Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one.', 'corex' )
 			) }</p>` +
 			`<label class="corex-setup__confirm"><input type="checkbox" id="corex-setup-backup"${
 				state.backupConfirmed ? ' checked' : ''
-			} /> ${ escape( t( 'I have a full backup of this site.' ) ) }</label>`
+			} /> ${ escape( __( 'I have a full backup of this site.', 'corex' ) ) }</label>`
 		);
 	}
 
@@ -218,9 +217,7 @@
 		if ( key === 'welcome' ) {
 			return (
 				`<p>${ escape(
-					t(
-						'This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it.'
-					)
+					__( 'This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it.', 'corex' )
 				) }</p>` + `<p>${ escape( recordedSentence() ) }</p>`
 			);
 		}
@@ -230,24 +227,22 @@
 				.join( '' );
 			return (
 				`<p>${ escape(
-					t(
-						'Set your company brand details — these save to CoreX Settings and are read across the site.'
-					)
+					__( 'Set your company brand details — these save to CoreX Settings and are read across the site.', 'corex' )
 				) }</p>` +
 				`<ul class="corex-setup__fields">${ rows }</ul>` +
 				`<p><a class="button" href="${ escape(
 					sectionUrl( 'corex-settings-config' )
-				) }">${ escape( t( 'Open Brand settings' ) ) }</a></p>`
+				) }">${ escape( __( 'Open Brand settings', 'corex' ) ) }</a></p>`
 			);
 		}
 		if ( key === 'kit' ) {
 			return `<p>${ escape(
-				t( 'Choose the starter kit for this site.' )
+				__( 'Choose the starter kit for this site.', 'corex' )
 			) }</p><div class="corex-setup__options">${ kitOptions() }</div>`;
 		}
 		if ( key === 'demo' ) {
 			return `<p>${ escape(
-				t( 'Choose how much demo content to seed.' )
+				__( 'Choose how much demo content to seed.', 'corex' )
 			) }</p><div class="corex-setup__options">${ levelOptions() }</div>`;
 		}
 		if ( key === 'plan' ) {
@@ -257,12 +252,10 @@
 			const pages = state.plan ? state.plan.plan.pages.length : 0;
 			return (
 				`<p>${ escape(
-					t(
-						'Review what will be applied. Existing pages are never overwritten unless you choose Replace.'
-					)
+					__( 'Review what will be applied. Existing pages are never overwritten unless you choose Replace.', 'corex' )
 				) }</p>` +
 				`<p class="corex-setup__muted">${ pages } ${ escape(
-					t( 'pages will be created or adopted.' )
+					__( 'pages will be created or adopted.', 'corex' )
 				) }</p>` +
 				`<div class="corex-setup__conflicts">${ conflictControls() }</div>`
 			);
@@ -273,38 +266,36 @@
 		if ( key === 'apply' ) {
 			if ( state.applied ) {
 				return `<p class="corex-setup__ok">${ escape(
-					t( 'Applied.' )
+					__( 'Applied.', 'corex' )
 				) } ${ escape( String( state.applied.pages ) ) } ${ escape(
-					t( 'pages processed.' )
+					__( 'pages processed.', 'corex' )
 				) }</p>`;
 			}
 			return (
 				( state.applyError ? failure( state.applyError ) : '' ) +
 				`<p>${ escape(
-					t( 'Apply the plan now with your choices.' )
+					__( 'Apply the plan now with your choices.', 'corex' )
 				) }</p>` +
 				`<p><button type="button" class="button button-primary" id="corex-setup-apply"${
 					state.backupConfirmed ? '' : ' disabled'
-				}>${ escape( t( 'Apply plan' ) ) }</button></p>`
+				}>${ escape( __( 'Apply plan', 'corex' ) ) }</button></p>`
 			);
 		}
 		if ( key === 'launch' ) {
 			return (
 				`<p>${ escape(
-					t(
-						'Resolve launch blockers — indexing, debug output, email, security, and readiness — before going live.'
-					)
+					__( 'Resolve launch blockers — indexing, debug output, email, security, and readiness — before going live.', 'corex' )
 				) }</p>` +
 				`<p><a class="button" href="${ escape(
 					sectionUrl( 'corex-operations-security' )
-				) }">${ escape( t( 'Open Operations & Security' ) ) }</a> ` +
+				) }">${ escape( __( 'Open Operations & Security', 'corex' ) ) }</a> ` +
 				`<a class="button" href="${ escape(
 					sectionUrl( 'corex-insights' )
-				) }">${ escape( t( 'Open Insights' ) ) }</a></p>`
+				) }">${ escape( __( 'Open Insights', 'corex' ) ) }</a></p>`
 			);
 		}
 		return `<p class="corex-setup__ok">${ escape(
-			t( 'Setup complete. Your site is ready to review.' )
+			__( 'Setup complete. Your site is ready to review.', 'corex' )
 		) }</p>`;
 	}
 
@@ -321,12 +312,12 @@
 			`<footer class="corex-setup__nav">` +
 			( canBack
 				? `<button type="button" class="button" id="corex-setup-back">${ escape(
-						t( 'Back' )
+						__( 'Back', 'corex' )
 					) }</button>`
 				: '' ) +
 			( canNext
 				? `<button type="button" class="button button-primary" id="corex-setup-next">${ escape(
-						t( 'Next' )
+						__( 'Next', 'corex' )
 					) }</button>`
 				: '' ) +
 			`</footer></section>`;
@@ -410,7 +401,7 @@
 			state.planError = res.envelope.ok
 				? ''
 				: res.envelope.message ||
-					t( 'The plan could not be read. Go back and try again.' );
+					__( 'The plan could not be read. Go back and try again.', 'corex' );
 		}
 		state.index = Math.max( 0, Math.min( STEPS.length - 1, index ) );
 		render();
@@ -432,7 +423,7 @@
 			state.applyError = res.envelope.ok
 				? ''
 				: res.envelope.message ||
-					t( 'The plan could not be applied. Try again.' );
+					__( 'The plan could not be applied. Try again.', 'corex' );
 			render();
 		} );
 	}

@@ -894,6 +894,7 @@ msgstr "وصل إرسال جديد من نموذج الاتصال:"
 
 #: addons/corex-email/src/Templates/ContactNotificationTemplate.php
 #: addons/corex-profile/src/Block/AccountRenderer.php
+#: plugins/corex-core/languages/runtime-strings.php
 #: plugins/corex-forms/src/Forms/ContactForm.php
 #: theme/patterns/section-contact-info.php
 #: plugins/corex-blocks/src/blocks/social-share/index.js
@@ -3146,6 +3147,7 @@ msgid "Client"
 msgstr "العميل"
 
 #: addons/corex-kit-portfolio/src/Blocks/ProjectMetaRenderer.php
+#: plugins/corex-core/languages/runtime-strings.php
 #: addons/corex-ui/src/Blocks/team/index.js
 #: plugins/corex-config/src/Access/AccessWorkspace.js
 #: plugins/corex-config/src/Submissions/index.js
@@ -4397,6 +4399,7 @@ msgstr "التشغيل والأمان"
 #: plugins/corex-config/src/Notifications/NotificationsScreen.php
 #: plugins/corex-config/src/Notifications/NotificationToolbar.php
 #: plugins/corex-config/src/Retention/NotificationRetention.php
+#: plugins/corex-core/languages/runtime-strings.php
 #: plugins/corex-core/src/Admin/AdminPage.php
 #: plugins/corex-config/src/admin/components/NotificationDrawer.js
 msgid "Notifications"
@@ -5462,6 +5465,7 @@ msgstr "يسجّل CoreX هنا تغييرات وضع التشغيل، والز�
 #: plugins/corex-config/src/Insights/InsightWidgets.php
 #: plugins/corex-config/src/Notifications/Producers/JobFailureNotificationProducer.php
 #: plugins/corex-config/src/Operations/ComingSoonNotice.php
+#: addons/corex-kit-company/assets/setup-wizard.js
 msgid "Open Operations & Security"
 msgstr "فتح التشغيل والأمان"
 
@@ -5616,6 +5620,7 @@ msgid "No data yet"
 msgstr "لا بيانات بعد"
 
 #: plugins/corex-config/src/Insights/InsightWidgets.php
+#: plugins/corex-config/assets/insights.js
 msgid "Could not run"
 msgstr "تعذّر التشغيل"
 
@@ -6733,12 +6738,26 @@ msgid "The site could not write its recovery file in %s. Without it there would 
 msgstr "تعذّر على الموقع كتابة ملف الاسترداد في %s. ومن دونه لن تكون هناك طريقة للرجوع إذا لم يُحمَّل الإصدار الجديد، لذا لم يتغير شيء. اطلب من الاستضافة السماح للموقع بالكتابة هناك."
 
 #: plugins/corex-config/src/Releases/ReleaseRestGateway.php
+msgid "That is not the name of a package on this site."
+msgstr "هذا ليس اسم حزمة موجودة على هذا الموقع."
+
+#: plugins/corex-config/src/Releases/ReleaseRestGateway.php
 msgid "This request was not signed by this screen. Reload the page and try again."
 msgstr "لم يُوقَّع هذا الطلب من هذه الشاشة. أعد تحميل الصفحة وحاول مرة أخرى."
 
+#. translators: %s: a line of PHP for the site's wp-config.php.
 #: plugins/corex-config/src/Releases/ReleaseRestGateway.php
-msgid "That is not the name of a package on this site."
-msgstr "هذا ليس اسم حزمة موجودة على هذا الموقع."
+#, php-format
+msgid "This site does not let a release be installed with an Application Password. To allow it, add %s to its wp-config.php."
+msgstr "لا يسمح هذا الموقع بتثبيت إصدار باستخدام كلمة مرور تطبيق. للسماح بذلك، أضف %s إلى ملف wp-config.php الخاص به."
+
+#: plugins/corex-config/src/Releases/ReleaseRestGateway.php
+msgid "A release is installed with an Application Password only over HTTPS."
+msgstr "لا يُثبَّت إصدار باستخدام كلمة مرور تطبيق إلا عبر HTTPS."
+
+#: plugins/corex-config/src/Releases/ReleaseRestGateway.php
+msgid "This account may not install releases on this site."
+msgstr "لا يحق لهذا الحساب تثبيت الإصدارات على هذا الموقع."
 
 #: plugins/corex-config/src/Releases/ReleaseReturn.php
 msgid "There is no previous release to go back to on this site."
@@ -7626,6 +7645,7 @@ msgstr "%s، مع الإرسالات المعلَّمة كاختبار"
 
 #: plugins/corex-config/src/Submissions/SubmissionExportAbout.php
 #: plugins/corex-config/src/Submissions/SubmissionExportTable.php
+#: plugins/corex-core/languages/runtime-strings.php
 #: plugins/corex-config/src/Submissions/detail/DetailPane.js
 #: plugins/corex-config/src/Submissions/index.js
 msgid "Status"
@@ -7679,6 +7699,7 @@ msgid "Assigned to"
 msgstr "مُسند إلى"
 
 #: plugins/corex-config/src/Submissions/SubmissionExportTable.php
+#: plugins/corex-core/languages/runtime-strings.php
 #: plugins/corex-config/src/DataModels/CapabilityPanel.js
 #: plugins/corex-config/src/DataModels/ModelsPanel.js
 #: plugins/corex-config/src/Submissions/detail/DetailPane.js
@@ -7696,6 +7717,7 @@ msgid "Campaign"
 msgstr "الحملة"
 
 #: plugins/corex-config/src/Submissions/SubmissionExportTable.php
+#: plugins/corex-core/languages/runtime-strings.php
 #: plugins/corex-config/src/Forms/components/FieldSettings.js
 msgid "Consent"
 msgstr "الموافقة"
@@ -7977,6 +7999,211 @@ msgstr "تعذّر حفظ الرد مع الإرسال الخاص به."
 #: plugins/corex-config/src/Submissions/WpSubmissionTrashStore.php
 msgid "The submission could not be deleted."
 msgstr "تعذّر حذف الإرسال."
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Job applications"
+msgstr "طلبات التوظيف"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Applicant"
+msgstr "المتقدّم"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Job"
+msgstr "الوظيفة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "CV"
+msgstr "CV"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/DataModels/MigrationsPanel.js
+msgid "Applied"
+msgstr "مُطبَّق"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Newsletter subscribers"
+msgstr "مشتركو النشرة البريدية"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Topics"
+msgstr "المواضيع"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Subscribed"
+msgstr "الاشتراك"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Role ability grants"
+msgstr "منح الصلاحيات للأدوار"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/Access/AccessRequestsPanel.js
+msgid "Access requests"
+msgstr "طلبات الوصول"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/Access/AccessWorkspace.js
+msgid "Ability"
+msgstr "الصلاحية"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Effect"
+msgstr "الأثر"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "Source"
+msgstr "المصدر"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Updated"
+msgstr "تاريخ التحديث"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Requester"
+msgstr "مقدّم الطلب"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Area"
+msgstr "المجال"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/Access/AccessWorkspace.js
+#: plugins/corex-config/src/Email/components/LogsPanel.js
+msgid "State"
+msgstr "الحالة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Created"
+msgstr "تاريخ الإنشاء"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Expires"
+msgstr "انتهاء المدة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Activity events"
+msgstr "أحداث النشاط"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Occurred"
+msgstr "وقت الحدوث"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Event"
+msgstr "الحدث"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Actor"
+msgstr "المنفّذ"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Target"
+msgstr "الهدف"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Outcome"
+msgstr "النتيجة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Blog reading events"
+msgstr "أحداث قراءة المدونة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/Blog/BlogProApp.js
+msgid "Post"
+msgstr "المقالة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Reading seconds"
+msgstr "ثواني القراءة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Share target"
+msgstr "وجهة المشاركة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Retention until"
+msgstr "الاحتفاظ حتى"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Bounded jobs"
+msgstr "المهام المحدودة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/Email/components/AssetPanels.js
+msgid "Kind"
+msgstr "النوع"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Processed"
+msgstr "المُعالَج"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Total"
+msgstr "الإجمالي"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Attempts"
+msgstr "المحاولات"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Latest"
+msgstr "الأحدث"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/admin/notifications/NotificationsApp.js
+msgid "Category"
+msgstr "الفئة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/admin/notifications/NotificationsApp.js
+msgid "Severity"
+msgstr "مستوى الخطورة"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/DataModels/ModelsPanel.js
+#: plugins/corex-config/src/Forms/FlowList.js
+msgid "Type"
+msgstr "النوع"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Count"
+msgstr "العدد"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/admin/notifications/NotificationItem.js
+msgid "Resolved"
+msgstr "تم الحل"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Notification user state"
+msgstr "حالة الإشعارات لدى المستخدم"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/Submissions/detail/DetailPane.js
+#: plugins/corex-config/src/Submissions/index.js
+msgid "Notification"
+msgstr "الإشعار"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/Submissions/index.js
+msgid "User"
+msgstr "المستخدم"
+
+#: plugins/corex-core/languages/runtime-strings.php
+#: plugins/corex-config/src/admin/notifications/NotificationItem.js
+msgid "Dismissed"
+msgstr "تم التجاهل"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Login attempts"
+msgstr "محاولات تسجيل الدخول"
+
+#: plugins/corex-core/languages/runtime-strings.php
+msgid "Reason"
+msgstr "السبب"
 
 #: plugins/corex-core/src/Abilities/AbilitiesProvider.php
 msgid "Read-only discovery of a Corex site."
@@ -9406,6 +9633,109 @@ msgstr "فشل طلب الاختبار. تحقق من اتصالك ثم أعد �
 msgid "Number of positions"
 msgstr "عدد الوظائف الشاغرة"
 
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Setup steps"
+msgstr "خطوات الإعداد"
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "No conflicts — no existing page will be changed."
+msgstr "لا تعارضات: لن تتغير أي صفحة موجودة."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else."
+msgstr "قبل التطبيق، يسجّل CoreX الصفحات التي تستبدلها هذه الخطة أو تعتمدها، وإعدادات صفحتك الرئيسية، حتى تتمكن إعادة الضبط من إرجاعها. ولا ينسخ احتياطيًا أي شيء آخر."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "The pages that will be recorded:"
+msgstr "الصفحات التي ستُسجَّل:"
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "This plan changes none of your existing pages."
+msgstr "لا تغيّر هذه الخطة أيًّا من صفحاتك الموجودة."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one."
+msgstr "خذ نسخة احتياطية كاملة لدى مزوّد الاستضافة أو عبر إضافة نسخ احتياطي قبل التطبيق. يبقى التطبيق معطّلًا حتى تؤكد أن لديك واحدة."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "I have a full backup of this site."
+msgstr "لدي نسخة احتياطية كاملة من هذا الموقع."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it."
+msgstr "يضبط هذا المعالج علامتك التجارية، ويختار حزمة البداية ومستوى المحتوى التجريبي، ويعرض عليك الخطة قبل تطبيقها."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Set your company brand details — these save to CoreX Settings and are read across the site."
+msgstr "اضبط بيانات العلامة التجارية لشركتك: تُحفظ في إعدادات CoreX ويقرؤها الموقع كله."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Open Brand settings"
+msgstr "فتح إعدادات العلامة التجارية"
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Choose the starter kit for this site."
+msgstr "اختر حزمة البداية لهذا الموقع."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Choose how much demo content to seed."
+msgstr "اختر مقدار المحتوى التجريبي الذي يُضاف."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Review what will be applied. Existing pages are never overwritten unless you choose Replace."
+msgstr "راجع ما سيُطبَّق. لا يُكتب فوق الصفحات الموجودة أبدًا إلا إذا اخترت استبدال."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "pages will be created or adopted."
+msgstr "من الصفحات ستُنشأ أو تُعتمد."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Applied."
+msgstr "تم التطبيق."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "pages processed."
+msgstr "من الصفحات تمت معالجتها."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Apply the plan now with your choices."
+msgstr "طبّق الخطة الآن بالخيارات التي حددتها."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Apply plan"
+msgstr "تطبيق الخطة"
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Resolve launch blockers — indexing, debug output, email, security, and readiness — before going live."
+msgstr "عالج عوائق الإطلاق قبل نشر الموقع: الفهرسة، ومخرجات التصحيح، والبريد الإلكتروني، والأمان، والجاهزية."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Open Insights"
+msgstr "فتح التحليلات"
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Setup complete. Your site is ready to review."
+msgstr "اكتمل الإعداد. موقعك جاهز للمراجعة."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "Back"
+msgstr "رجوع"
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+#: plugins/corex-config/src/admin/data/Pagination.js
+#: plugins/corex-config/src/admin/notifications/NotificationsApp.js
+#: plugins/corex-config/src/Submissions/index.js
+msgid "Next"
+msgstr "التالي"
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "The plan could not be read. Go back and try again."
+msgstr "تعذّرت قراءة الخطة. ارجع وأعد المحاولة."
+
+#: addons/corex-kit-company/assets/setup-wizard.js
+msgid "The plan could not be applied. Try again."
+msgstr "تعذّر تطبيق الخطة. أعد المحاولة."
+
 #: addons/corex-kit-portfolio/src/Blocks/projects/index.js
 msgid "Number of projects"
 msgstr "عدد المشاريع"
@@ -9734,6 +10064,56 @@ msgstr "WhatsApp"
 msgid "Networks"
 msgstr "الشبكات"
 
+#: plugins/corex-config/assets/insights.js
+msgid "Loading insights…"
+msgstr "جارٍ تحميل التحليلات…"
+
+#: plugins/corex-config/assets/insights.js
+#: plugins/corex-config/src/admin/components/CorexLoadable.js
+msgid "Loaded."
+msgstr "تم التحميل."
+
+#: plugins/corex-config/assets/insights.js
+msgid "Not run yet"
+msgstr "لم يُشغَّل بعد"
+
+#: plugins/corex-config/assets/insights.js
+msgid "Retry"
+msgstr "إعادة المحاولة"
+
+#: plugins/corex-config/assets/insights.js
+msgid "Run check"
+msgstr "تشغيل الفحص"
+
+#: plugins/corex-config/assets/insights.js
+msgid "Loading the last result"
+msgstr "جارٍ تحميل آخر نتيجة"
+
+#: plugins/corex-config/assets/insights.js
+msgid "No score yet"
+msgstr "لا توجد درجة بعد"
+
+#: plugins/corex-config/assets/insights.js
+msgid "Score"
+msgstr "الدرجة"
+
+#: plugins/corex-config/assets/insights.js
+msgid "The check could not be completed. Try again."
+msgstr "تعذّر إكمال الفحص. أعد المحاولة."
+
+#: plugins/corex-config/assets/insights.js
+msgid "The last results could not be loaded. Run a check to get new ones."
+msgstr "تعذّر تحميل آخر النتائج. شغّل فحصًا للحصول على نتائج جديدة."
+
+#: plugins/corex-config/assets/insights.js
+msgid "The rest of the insights could not be loaded."
+msgstr "تعذّر تحميل بقية التحليلات."
+
+#: plugins/corex-config/assets/insights.js
+#: plugins/corex-config/src/admin/components/CorexErrorState.js
+msgid "Try again"
+msgstr "إعادة المحاولة"
+
 #: plugins/corex-config/src/Access/AccessApprovalDialog.js
 msgid "Normal"
 msgstr "عادية"
@@ -9896,10 +10276,6 @@ msgid "Revoke"
 msgstr "سحب"
 
 #: plugins/corex-config/src/Access/AccessRequestsPanel.js
-msgid "Access requests"
-msgstr "طلبات الوصول"
-
-#: plugins/corex-config/src/Access/AccessRequestsPanel.js
 msgid "No one is waiting for access. Requests made from a denied CoreX screen appear here."
 msgstr "لا أحد ينتظر الوصول. تظهر هنا الطلبات المقدَّمة من شاشة CoreX رُفض الوصول إليها."
 
@@ -9962,15 +10338,6 @@ msgid "No roles available"
 msgstr "لا توجد أدوار متاحة"
 
 #: plugins/corex-config/src/Access/AccessWorkspace.js
-msgid "Ability"
-msgstr "الصلاحية"
-
-#: plugins/corex-config/src/Access/AccessWorkspace.js
-#: plugins/corex-config/src/Email/components/LogsPanel.js
-msgid "State"
-msgstr "الحالة"
-
-#: plugins/corex-config/src/Access/AccessWorkspace.js
 msgid "Audit"
 msgstr "التدقيق"
 
@@ -9989,14 +10356,6 @@ msgstr[2] "مرتان، آخرهما"
 msgstr[3] "%d مرات، آخرها"
 msgstr[4] "%d مرة، آخرها"
 msgstr[5] "%d مرة، آخرها"
-
-#: plugins/corex-config/src/admin/components/CorexErrorState.js
-msgid "Try again"
-msgstr "إعادة المحاولة"
-
-#: plugins/corex-config/src/admin/components/CorexLoadable.js
-msgid "Loaded."
-msgstr "تم التحميل."
 
 #: plugins/corex-config/src/admin/components/CorexRichText.js
 msgid "Bold"
@@ -10297,12 +10656,6 @@ msgstr "السابق"
 msgid "Page %1$d of %2$d"
 msgstr "الصفحة %1$d من %2$d"
 
-#: plugins/corex-config/src/admin/data/Pagination.js
-#: plugins/corex-config/src/admin/notifications/NotificationsApp.js
-#: plugins/corex-config/src/Submissions/index.js
-msgid "Next"
-msgstr "التالي"
-
 #. translators: %s: field label.
 #: plugins/corex-config/src/admin/data/QueryBar.js
 #, js-format
@@ -10407,14 +10760,6 @@ msgstr "معلومات"
 #: plugins/corex-config/src/admin/notifications/NotificationItem.js
 msgid "Forms"
 msgstr "النماذج"
-
-#: plugins/corex-config/src/admin/notifications/NotificationItem.js
-msgid "Resolved"
-msgstr "تم الحل"
-
-#: plugins/corex-config/src/admin/notifications/NotificationItem.js
-msgid "Dismissed"
-msgstr "تم التجاهل"
 
 #: plugins/corex-config/src/admin/notifications/NotificationItem.js
 #: plugins/corex-config/src/Forms/FlowList.js
@@ -10524,14 +10869,6 @@ msgid "Notification views"
 msgstr "طرق عرض الإشعارات"
 
 #: plugins/corex-config/src/admin/notifications/NotificationsApp.js
-msgid "Severity"
-msgstr "مستوى الخطورة"
-
-#: plugins/corex-config/src/admin/notifications/NotificationsApp.js
-msgid "Category"
-msgstr "الفئة"
-
-#: plugins/corex-config/src/admin/notifications/NotificationsApp.js
 msgid "Assigned to me"
 msgstr "المسندة إليّ"
 
@@ -10614,10 +10951,6 @@ msgstr[5] "%d دقيقة"
 #: plugins/corex-config/src/Blog/BlogProApp.js
 msgid "Create a WordPress post to start using Blog Pro workflows."
 msgstr "أنشئ مقالة في WordPress لتبدأ استخدام مسارات عمل المدونة الاحترافية."
-
-#: plugins/corex-config/src/Blog/BlogProApp.js
-msgid "Post"
-msgstr "المقالة"
 
 #: plugins/corex-config/src/Blog/BlogProApp.js
 msgid "Untitled post"
@@ -11361,10 +11694,6 @@ msgid "Queued"
 msgstr "في قائمة الانتظار"
 
 #: plugins/corex-config/src/DataModels/MigrationsPanel.js
-msgid "Applied"
-msgstr "مُطبَّق"
-
-#: plugins/corex-config/src/DataModels/MigrationsPanel.js
 #: plugins/corex-config/src/Email/components/OverviewPanel.js
 msgid "Failed"
 msgstr "فشل"
@@ -11570,11 +11899,6 @@ msgid "%d fields"
 msgstr "عدد الحقول: %d"
 
 #: plugins/corex-config/src/DataModels/ModelsPanel.js
-#: plugins/corex-config/src/Forms/FlowList.js
-msgid "Type"
-msgstr "النوع"
-
-#: plugins/corex-config/src/DataModels/ModelsPanel.js
 #: plugins/corex-config/src/Forms/tabs/SuccessTab.js
 msgid "Behavior"
 msgstr "السلوك"
@@ -11676,10 +12000,6 @@ msgstr "HTML التذييل"
 #: plugins/corex-config/src/Email/index.js
 msgid "Partials"
 msgstr "الأجزاء"
-
-#: plugins/corex-config/src/Email/components/AssetPanels.js
-msgid "Kind"
-msgstr "النوع"
 
 #: plugins/corex-config/src/Email/components/AssetPanels.js
 #: plugins/corex-config/src/Email/components/LogsPanel.js
@@ -12826,6 +13146,12 @@ msgstr "تم التخلي عن تثبيت CoreX %s."
 msgid "A package was refused: %s"
 msgstr "رُفضت حزمة: %s"
 
+#. translators: 1: who installed a release. 2: the name of the Application Password used.
+#: plugins/corex-config/src/Releases/ReleaseHistory.js
+#, js-format
+msgid "%1$s, with the Application Password \"%2$s\""
+msgstr "%1$s، بكلمة مرور التطبيق «%2$s»"
+
 #: plugins/corex-config/src/Releases/ReleaseHistory.js
 msgid "What happened here"
 msgstr "ما جرى هنا"
@@ -13560,11 +13886,6 @@ msgid "Triage"
 msgstr "الفرز"
 
 #: plugins/corex-config/src/Submissions/detail/DetailPane.js
-#: plugins/corex-config/src/Submissions/index.js
-msgid "Notification"
-msgstr "الإشعار"
-
-#: plugins/corex-config/src/Submissions/detail/DetailPane.js
 msgid "No hidden fields, campaign data or consent record were stored with this submission."
 msgstr "لم تُخزَّن مع هذا الإرسال أي حقول مخفية أو بيانات حملة أو سجل موافقة."
 
@@ -14290,10 +14611,6 @@ msgid "A submission in the trash stays there until somebody restores it or delet
 msgstr "يبقى الإرسال في سلة المهملات إلى أن يستعيده أحد أو يحذفه نهائيًا."
 
 #: plugins/corex-config/src/Submissions/index.js
-msgid "User"
-msgstr "المستخدم"
-
-#: plugins/corex-config/src/Submissions/index.js
 msgid "Undo"
 msgstr "تراجع"
 
@@ -14470,10 +14787,6 @@ msgstr "أعاد الخادم استجابة غير متوقعة (%d)."
 #: plugins/corex-forms/src/Block/blocks/corex-form/index.js
 msgid "Select a registered form…"
 msgstr "اختر نموذجًا مسجّلًا…"
-
-#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
-msgid "Source"
-msgstr "المصدر"
 
 #: plugins/corex-forms/src/Block/blocks/corex-form/index.js
 #: plugins/corex-forms/src/Block/blocks/flowBlockEditor.js
@@ -14953,7 +15266,7 @@ msgstr "التقني"
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Caption"
-msgstr ""
+msgstr "تسمية توضيحية"
 
 #: theme/theme.json
 msgctxt "Font size name"
@@ -14963,37 +15276,37 @@ msgstr "صغير"
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Body"
-msgstr ""
+msgstr "النص الأساسي"
 
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Lead"
-msgstr ""
+msgstr "فقرة تمهيدية"
 
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Title"
-msgstr ""
+msgstr "عنوان"
 
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Heading 3"
-msgstr ""
+msgstr "عنوان 3"
 
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Heading 2"
-msgstr ""
+msgstr "عنوان 2"
 
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Heading 1"
-msgstr ""
+msgstr "عنوان 1"
 
 #: theme/theme.json
 msgctxt "Font size name"
 msgid "Display"
-msgstr ""
+msgstr "عنوان بارز"
 
 #: theme/theme.json
 msgctxt "Font size name"
@@ -15018,7 +15331,7 @@ msgstr "2"
 #: theme/theme.json
 msgctxt "Space size name"
 msgid "2.5"
-msgstr ""
+msgstr "2.5"
 
 #: theme/theme.json
 msgctxt "Space size name"
@@ -15108,259 +15421,269 @@ msgstr "صفحة الحساب"
 #: theme/patterns/footer-corporate.php
 msgctxt "Pattern title"
 msgid "Footer — Corporate"
-msgstr ""
+msgstr "تذييل: مؤسسي"
 
 #: theme/patterns/footer-corporate.php
 msgctxt "Pattern description"
 msgid "A corporate footer — brand column plus Company, Resources, and Contact link columns, then a legal/utility row."
-msgstr ""
+msgstr "تذييل مؤسسي: عمود للعلامة التجارية مع أعمدة روابط للشركة والموارد والتواصل، ثم صف للروابط القانونية والخدمية."
 
 #: theme/patterns/footer-legal.php
 msgctxt "Pattern title"
 msgid "Footer — Legal / Utility"
-msgstr ""
+msgstr "تذييل: قانوني / خدمي"
 
 #: theme/patterns/footer-legal.php
 msgctxt "Pattern description"
 msgid "A minimal legal/utility footer — copyright plus legal links in a single row."
-msgstr ""
+msgstr "تذييل قانوني وخدمي بسيط: حقوق النشر مع الروابط القانونية في صف واحد."
 
 #: theme/patterns/footer-locations.php
 msgctxt "Pattern title"
 msgid "Footer — Locations"
-msgstr ""
+msgstr "تذييل: المواقع الجغرافية"
 
 #: theme/patterns/footer-locations.php
 msgctxt "Pattern description"
 msgid "A location footer — the address from the brand settings with its phone and email, then a legal/utility row. The location is left out when no address is set."
-msgstr ""
+msgstr "تذييل للموقع الجغرافي: عنوان المقر من إعدادات العلامة التجارية مع الهاتف والبريد الإلكتروني، ثم صف للروابط القانونية والخدمية. يُحذف الموقع الجغرافي عند عدم تعيين عنوان."
 
 #: theme/patterns/footer-newsletter.php
 msgctxt "Pattern title"
 msgid "Footer — Newsletter"
-msgstr ""
+msgstr "تذييل: النشرة البريدية"
 
 #: theme/patterns/footer-newsletter.php
 msgctxt "Pattern description"
 msgid "A newsletter footer — a sign-up prompt and call-to-action, then a legal/utility row. The Subscribe button links to the site's published Newsletter page (slug `newsletter`) and is left out when there is none."
-msgstr ""
+msgstr "تذييل للنشرة البريدية: دعوة إلى الاشتراك ودعوة إلى إجراء، ثم صف للروابط القانونية والخدمية. يرتبط زر «اشتراك» بصفحة النشرة البريدية المنشورة على الموقع (الاسم اللطيف `newsletter`)، ويُحذف إن لم توجد."
 
 #: theme/patterns/footer-saas.php
 msgctxt "Pattern title"
 msgid "Footer — SaaS / Product"
-msgstr ""
+msgstr "تذييل: SaaS / منتج"
 
 #: theme/patterns/footer-saas.php
 msgctxt "Pattern description"
 msgid "A product footer — Product, Company, and Resources link columns plus the brand settings' social links, then a legal/utility row."
-msgstr ""
+msgstr "تذييل للمنتج: أعمدة روابط للمنتج والشركة والموارد مع روابط التواصل الاجتماعي من إعدادات العلامة التجارية، ثم صف للروابط القانونية والخدمية."
 
 #: theme/patterns/footer-simple.php
 msgctxt "Pattern title"
 msgid "Footer — Simple"
-msgstr ""
+msgstr "تذييل: بسيط"
 
 #: theme/patterns/footer-simple.php
 msgctxt "Pattern description"
 msgid "A simple footer — brand, a short tagline, and a legal/utility row. Built on core blocks and CoreX brand tokens."
-msgstr ""
+msgstr "تذييل بسيط: العلامة التجارية وشعار نصي قصير وصف للروابط القانونية والخدمية. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX."
 
 #: theme/patterns/header-corporate.php
 msgctxt "Pattern title"
 msgid "Header — Corporate (top bar)"
-msgstr ""
+msgstr "ترويسة: مؤسسية (بشريط علوي)"
 
 #: theme/patterns/header-corporate.php
 msgctxt "Pattern description"
 msgid "A corporate header — a top utility bar (the brand settings' email and phone, left out when neither is set) above the main brand, navigation, and call-to-action row."
-msgstr ""
+msgstr "ترويسة مؤسسية: شريط علوي للمعلومات (البريد الإلكتروني والهاتف من إعدادات العلامة التجارية، ويُحذف إن لم يُعيَّن أيٌّ منهما) فوق الصف الرئيسي للعلامة التجارية والتنقل والدعوة إلى إجراء."
 
 #: theme/patterns/header-docs.php
 msgctxt "Pattern title"
 msgid "Header — Docs"
-msgstr ""
+msgstr "ترويسة: التوثيق"
 
 #: theme/patterns/header-docs.php
 msgctxt "Pattern description"
 msgid "A documentation header — brand, navigation, and a search slot (the native search block). A neutral section/version slot can be added per site."
-msgstr ""
+msgstr "ترويسة للتوثيق: العلامة التجارية والتنقل وموضع للبحث (مكوّن البحث الأصلي). يمكن إضافة موضع محايد للقسم أو الإصدار في كل موقع."
 
 #: theme/patterns/header-minimal.php
 msgctxt "Pattern title"
 msgid "Header — Minimal Landing"
-msgstr ""
+msgstr "ترويسة: صفحة هبوط بسيطة"
 
 #: theme/patterns/header-minimal.php
 msgctxt "Pattern description"
 msgid "A minimal landing header — brand and a single call-to-action, with reduced navigation for focused campaign pages."
-msgstr ""
+msgstr "ترويسة بسيطة لصفحة هبوط: العلامة التجارية ودعوة واحدة إلى إجراء، مع تنقل مختصر لصفحات الحملات المركّزة."
 
 #: theme/patterns/header-saas.php
 msgctxt "Pattern title"
 msgid "Header — SaaS / Product"
-msgstr ""
+msgstr "ترويسة: SaaS / منتج"
 
 #: theme/patterns/header-saas.php
 msgctxt "Pattern description"
 msgid "A product header — brand, primary navigation with a features mega menu, and a secondary link plus a primary call-to-action."
-msgstr ""
+msgstr "ترويسة للمنتج: العلامة التجارية، وتنقل رئيسي مع قائمة موسّعة للميزات، ورابط ثانوي مع دعوة رئيسية إلى إجراء."
 
 #: theme/patterns/header-simple.php
 msgctxt "Pattern title"
 msgid "Header — Simple Company"
-msgstr ""
+msgstr "ترويسة: شركة بسيطة"
 
 #: theme/patterns/header-simple.php
 msgctxt "Pattern description"
 msgid "A simple company header — brand, primary navigation that collapses to an accessible mobile menu, and one call-to-action. Built on core blocks and CoreX brand tokens."
-msgstr ""
+msgstr "ترويسة بسيطة لشركة: العلامة التجارية، وتنقل رئيسي يُطوى إلى قائمة جوال سهلة الوصول، ودعوة واحدة إلى إجراء. مبنية على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX."
 
 #: theme/patterns/header-sticky.php
 msgctxt "Pattern title"
 msgid "Header — Sticky"
-msgstr ""
+msgstr "ترويسة: مثبّتة"
 
 #: theme/patterns/header-sticky.php
 msgctxt "Pattern description"
 msgid "A solid header that sticks to the top of the viewport and gains a subtle elevation once the page scrolls. Brand, navigation, a search overlay, and a primary call-to-action."
-msgstr ""
+msgstr "ترويسة مصمتة تلتصق بأعلى نافذة العرض وتكتسب ظلًا خفيفًا عند تمرير الصفحة. العلامة التجارية والتنقل وبحث منبثق ودعوة رئيسية إلى إجراء."
 
 #: theme/patterns/header-transparent.php
 msgctxt "Pattern title"
 msgid "Header — Transparent (over hero)"
-msgstr ""
+msgstr "ترويسة: شفافة (فوق الواجهة الرئيسية)"
 
 #: theme/patterns/header-transparent.php
 msgctxt "Pattern description"
 msgid "A transparent, sticky header that overlays a hero and resolves to a solid, readable background once scrolled (progressive enhancement; readable without JavaScript)."
-msgstr ""
+msgstr "ترويسة شفافة مثبّتة تعلو الواجهة الرئيسية، وتتحول إلى خلفية مصمتة سهلة القراءة عند التمرير (تحسين تدريجي؛ مقروءة دون JavaScript)."
 
 #: theme/patterns/loading.php
 msgctxt "Pattern title"
 msgid "Loading state"
-msgstr ""
+msgstr "حالة التحميل"
 
 #: theme/patterns/loading.php
 msgctxt "Pattern description"
 msgid "An accessible loading placeholder — a polite status message plus static skeleton bars (no animation, so it is reduced-motion safe by construction). Built on core blocks and CoreX brand tokens; muted placeholder blocks only."
-msgstr ""
+msgstr "عنصر نائب سهل الوصول للتحميل: رسالة حالة هادئة مع أشرطة هيكلية ثابتة (بلا حركة، فهو آمن لمن يفضّل تقليل الحركة بطبيعة بنائه). مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX؛ مكوّنات نائبة باهتة فقط."
 
 #: theme/patterns/maintenance.php
 msgctxt "Pattern title"
 msgid "Maintenance notice"
-msgstr ""
+msgstr "إشعار الصيانة"
 
 #: theme/patterns/maintenance.php
 msgctxt "Pattern description"
 msgid "A centered maintenance notice — heading, message, and a contact line to the brand settings' email (left out when none is set). Mirrors the live Operations maintenance surface (Corex\\Admin\\StandalonePage) for editor use. Built on core blocks and CoreX brand tokens."
-msgstr ""
+msgstr "إشعار صيانة في وسط الصفحة: عنوان ورسالة وسطر للتواصل عبر البريد الإلكتروني من إعدادات العلامة التجارية (يُحذف إن لم يُعيَّن). يحاكي صفحة الصيانة الحية في وضع التشغيل (Corex\\Admin\\StandalonePage) للاستخدام في المحرر. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX."
 
 #: theme/patterns/megamenu-docs.php
 msgctxt "Pattern title"
 msgid "Mega Menu — Docs / Resources"
-msgstr ""
+msgstr "قائمة موسّعة: التوثيق / الموارد"
 
 #: theme/patterns/megamenu-docs.php
 msgctxt "Pattern description"
 msgid "A docs/resources mega menu — grouped resource links across columns. Native details/summary disclosure; usable with no JavaScript."
-msgstr ""
+msgstr "قائمة موسّعة للتوثيق والموارد: روابط موارد مجمّعة عبر أعمدة. إفصاح أصلي بعنصري details/summary؛ تعمل دون JavaScript."
 
 #: theme/patterns/megamenu-product.php
 msgctxt "Pattern title"
 msgid "Mega Menu — Product / Features"
-msgstr ""
+msgstr "قائمة موسّعة: المنتج / الميزات"
 
 #: theme/patterns/megamenu-product.php
 msgctxt "Pattern description"
 msgid "A product mega menu — feature links plus a featured card and a call-to-action. Native details/summary disclosure; usable with no JavaScript."
-msgstr ""
+msgstr "قائمة موسّعة للمنتج: روابط الميزات مع بطاقة مميّزة ودعوة إلى إجراء. إفصاح أصلي بعنصري details/summary؛ تعمل دون JavaScript."
 
 #: theme/patterns/megamenu-services.php
 msgctxt "Pattern title"
 msgid "Mega Menu — Services"
-msgstr ""
+msgstr "قائمة موسّعة: الخدمات"
 
 #: theme/patterns/megamenu-services.php
 msgctxt "Pattern description"
 msgid "A services mega menu — a multi-column panel of service items, each with a title, description, and link. Native details/summary disclosure; usable with no JavaScript."
-msgstr ""
+msgstr "قائمة موسّعة للخدمات: لوحة متعددة الأعمدة لعناصر الخدمات، لكل منها عنوان ووصف ورابط. إفصاح أصلي بعنصري details/summary؛ تعمل دون JavaScript."
 
 #: theme/patterns/megamenu-simple.php
 msgctxt "Pattern title"
 msgid "Mega Menu — Simple Dropdown"
-msgstr ""
+msgstr "قائمة موسّعة: قائمة منسدلة بسيطة"
 
 #: theme/patterns/megamenu-simple.php
 msgctxt "Pattern description"
 msgid "A single-column dropdown built on the native details/summary disclosure — keyboard-operable and usable with no JavaScript. Insert into a header's navigation area."
-msgstr ""
+msgstr "قائمة منسدلة بعمود واحد مبنية على الإفصاح الأصلي بعنصري details/summary، تعمل بلوحة المفاتيح ودون JavaScript. أدرجها في منطقة التنقل في الترويسة."
 
 #: theme/patterns/project-card.php
 msgctxt "Pattern title"
 msgid "Project Card"
-msgstr ""
+msgstr "بطاقة مشروع"
 
 #: theme/patterns/project-card.php
 msgctxt "Pattern description"
 msgid "A single portfolio project card — featured image, project type, title, and excerpt — for use inside a projects query loop."
-msgstr ""
+msgstr "بطاقة لمشروع واحد من معرض الأعمال: الصورة البارزة ونوع المشروع والعنوان والمقتطف، للاستخدام داخل حلقة استعلام المشاريع."
 
 #: theme/patterns/section-contact-info.php
 msgctxt "Pattern title"
 msgid "Contact — Info Cards"
-msgstr ""
+msgstr "التواصل: بطاقات المعلومات"
 
 #: theme/patterns/section-contact-info.php
 msgctxt "Pattern description"
 msgid "A contact section with a heading and a responsive row of info cards: the address, email and phone from the brand settings, each left out when it is not set. Built on core blocks and CoreX brand tokens."
-msgstr ""
+msgstr "قسم للتواصل فيه عنوان للقسم وصف متجاوب من بطاقات المعلومات: عنوان المقر والبريد الإلكتروني والهاتف من إعدادات العلامة التجارية، ويُحذف كل منها إن لم يُعيَّن. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX."
 
 #: theme/patterns/section-logo-cloud.php
 msgctxt "Pattern title"
 msgid "Logo Cloud — Trusted By"
-msgstr ""
+msgstr "شعارات العملاء: موثوق من قِبل"
 
 #: theme/patterns/section-logo-cloud.php
 msgctxt "Pattern description"
 msgid "A restrained \"trusted by\" row of partner/customer logos with a short lead-in. Built on core blocks and CoreX brand tokens; neutral placeholder logos only. A sample: hidden from visitors and labelled for editors until its content is replaced."
-msgstr ""
+msgstr "صف متّزن «موثوق من قِبل» لشعارات الشركاء والعملاء مع تمهيد قصير. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX؛ شعارات نائبة محايدة فقط. مثال: مخفي عن الزوار ومعلَّم للمحررين حتى يُستبدل محتواه."
 
 #: theme/patterns/section-newsletter.php
 msgctxt "Pattern title"
 msgid "Newsletter — Signup"
-msgstr ""
+msgstr "النشرة البريدية: الاشتراك"
 
 #: theme/patterns/section-newsletter.php
 msgctxt "Pattern description"
 msgid "A newsletter signup section — a short heading and supporting line above the CoreX newsletter signup block. Built on core blocks and CoreX brand tokens; neutral placeholder content."
-msgstr ""
+msgstr "قسم للاشتراك في النشرة البريدية: عنوان قصير وسطر داعم فوق مكوّن الاشتراك في النشرة البريدية من CoreX. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX؛ محتوى نائب محايد."
 
 #: theme/patterns/section-process-steps.php
 msgctxt "Pattern title"
 msgid "Process — Steps"
-msgstr ""
+msgstr "العملية: الخطوات"
 
 #: theme/patterns/section-process-steps.php
 msgctxt "Pattern description"
 msgid "A numbered process/steps section — a header and a responsive row of ordered steps, each with a number, title, and description. Built on core blocks and CoreX brand tokens; neutral placeholder content."
-msgstr ""
+msgstr "قسم مرقّم للعملية وخطواتها: رأس للقسم وصف متجاوب من الخطوات المرتّبة، لكل منها رقم وعنوان ووصف. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX؛ محتوى نائب محايد."
 
 #: theme/patterns/section-selected-work.php
 msgctxt "Pattern title"
 msgid "Selected Work"
-msgstr ""
+msgstr "أعمال مختارة"
 
 #: theme/patterns/section-selected-work.php
 msgctxt "Pattern description"
 msgid "A section header and a grid of recent portfolio projects (the dynamic corex/projects block — real projects, or an honest empty state), plus a link to the full projects archive."
-msgstr ""
+msgstr "رأس للقسم وشبكة من أحدث مشاريع معرض الأعمال (المكوّن الديناميكي corex/projects: مشاريع حقيقية، أو حالة فارغة صادقة)، مع رابط إلى أرشيف المشاريع كاملًا."
 
 #: theme/patterns/section-services-grid.php
 msgctxt "Pattern title"
 msgid "Services — Grid"
-msgstr ""
+msgstr "الخدمات: شبكة"
 
 #: theme/patterns/section-services-grid.php
 msgctxt "Pattern description"
 msgid "A section header and a responsive three-column grid of service cards — each with a title, a description, and a link to the site's Services page when it has one. Built on core blocks and CoreX brand tokens; neutral placeholder content."
-msgstr ""
+msgstr "رأس للقسم وشبكة متجاوبة من ثلاثة أعمدة لبطاقات الخدمات، لكل منها عنوان ووصف ورابط إلى صفحة الخدمات في الموقع إن وُجدت. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX؛ محتوى نائب محايد."
+
+#: theme/styles/dark.json
+msgctxt "Style variation name"
+msgid "Dark"
+msgstr "داكن"
+
+#: theme/styles/editorial.json
+msgctxt "Style variation name"
+msgid "Editorial"
+msgstr "تحريري"

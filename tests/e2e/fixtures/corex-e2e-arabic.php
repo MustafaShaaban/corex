@@ -39,7 +39,7 @@ const COREX_E2E_ARABIC_KEEP = [
     'JSON', 'CSV', 'XML', 'PDF', 'Excel', 'HTML', 'CSS', 'JavaScript', 'URL', 'SVG', 'WebP', 'ACF', 'Polylang', 'WPML',
     'Gutenberg', 'reCAPTCHA', 'hCaptcha', 'Turnstile', 'Cloudflare', 'Google', 'Gmail', 'Outlook', 'GitHub', 'Azure',
     'cron', 'OPcache', 'UTF-8', 'SSO', 'OAuth', 'IP', 'Space Grotesk', 'JetBrains Mono', 'IBM Plex Sans Arabic',
-    'Facebook', 'LinkedIn', 'WhatsApp', 'Honeypot', 'Blog Pro', 'Pro',
+    'Facebook', 'LinkedIn', 'WhatsApp', 'Honeypot', 'Blog Pro', 'Pro', 'HTTPS', 'HTTP', 'CDN', 'CV', 'WP-Cron', 'SSL',
 ];
 
 /** Whether a string that came back unchanged still holds an English word. */
@@ -58,7 +58,10 @@ function corex_e2e_arabic_counts(string $text): bool
         ' ',
         $text,
     ) ?? '';
-    $words = str_ireplace(COREX_E2E_ARABIC_KEEP, ' ', $words);
+    // Longest first, so `cron` does not take the end of `WP-Cron` and leave `WP` behind.
+    $keep = COREX_E2E_ARABIC_KEEP;
+    usort($keep, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+    $words = str_ireplace($keep, ' ', $words);
 
     return preg_match('/[A-Za-z]{2,}/', $words) === 1;
 }
@@ -112,7 +115,9 @@ add_filter(
 );
 
 add_action('init', static function (): void {
-    $keep = wp_json_encode(COREX_E2E_ARABIC_KEEP);
+    $names = COREX_E2E_ARABIC_KEEP;
+    usort($names, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+    $keep = wp_json_encode($names);
 
     // The same test in the browser, for the strings `@wordpress/i18n` translates.
     wp_add_inline_script(

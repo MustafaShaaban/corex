@@ -90,6 +90,8 @@ final class InsightsScreen
             true,
         );
 
+        // Its words come from the catalogue in Arabic and every other language (spec 121).
+        wp_set_script_translations('corex-insights', 'corex');
         wp_localize_script('corex-insights', 'corexInsights', [
             'restUrl'   => esc_url_raw(rest_url('corex/v1/insights')),
             'nonce'     => wp_create_nonce('wp_rest'),
