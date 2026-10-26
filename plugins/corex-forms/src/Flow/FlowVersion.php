@@ -37,4 +37,33 @@ final readonly class FlowVersion
 
         $this->checksum = $configuration->checksum();
     }
+
+    /**
+     * This version's questions under another version's spam protection, for a visitor whose page
+     * carried this version after a newer one went live (spec 122, DECISIONS #470).
+     *
+     * @param array<string,mixed> $protection
+     */
+    public function withProtection(array $protection): self
+    {
+        $configuration = $this->configuration;
+
+        return new self(
+            $this->id,
+            $this->flowId,
+            $this->versionNumber,
+            new FlowConfiguration(
+                schema: $configuration->schema,
+                validation: $configuration->validation,
+                routing: $configuration->routing,
+                emailRoutes: $configuration->emailRoutes,
+                success: $configuration->success,
+                placementSnapshot: $configuration->placementSnapshot,
+                protection: $protection,
+                actions: $configuration->actions,
+            ),
+            $this->createdBy,
+            $this->createdAt,
+        );
+    }
 }

@@ -171,6 +171,8 @@ final class FlowRepository
             'published_at' => $flow->publishedAt?->format(DATE_ATOM),
             'closed_at' => $flow->closedAt?->format(DATE_ATOM),
             'expires_at' => $flow->expiresAt?->format(DATE_ATOM),
+            'publications' => array_map(static fn (FlowPublication $publication): array => $publication->toArray(), $flow->publications),
+            'availability' => $flow->availability->toArray(),
         ];
     }
 
@@ -186,6 +188,7 @@ final class FlowRepository
             'success' => $version->configuration->success,
             'placement_snapshot' => $version->configuration->placementSnapshot,
             'protection' => $version->configuration->protection,
+            'actions' => $version->configuration->actions,
             'created_by' => $version->createdBy,
             'created_at' => $version->createdAt->format(DATE_ATOM),
             'checksum' => $version->checksum,
@@ -248,6 +251,8 @@ final class FlowRepository
             publishedAt: $this->date($payload['published_at'] ?? null),
             closedAt: $this->date($payload['closed_at'] ?? null),
             expiresAt: $this->date($payload['expires_at'] ?? null),
+            publications: FlowPublication::listFrom($payload['publications'] ?? []),
+            availability: FlowAvailability::fromArray($payload['availability'] ?? []),
         );
     }
 
@@ -268,6 +273,7 @@ final class FlowRepository
                 success: (array) ($payload['success'] ?? []),
                 placementSnapshot: (array) ($payload['placement_snapshot'] ?? []),
                 protection: FlowProtection::normalize($payload['protection'] ?? []),
+                actions: FlowConfiguration::actionKeys($payload['actions'] ?? []),
             ),
             createdBy: (int) ($payload['created_by'] ?? 0),
             createdAt: new DateTimeImmutable((string) ($payload['created_at'] ?? '')),

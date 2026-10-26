@@ -15,8 +15,12 @@ use Corex\Forms\Block\ProtectedFormRegistry;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowConfiguration;
+use Corex\Forms\Flow\FlowNoticeText;
 use Corex\Forms\Flow\FlowRepository;
+use Corex\Forms\Flow\FlowResponseCounter;
+use Corex\Forms\Flow\FlowStatusResolver;
 use Corex\Forms\Flow\FlowVersion;
+use Corex\Forms\Submission\PageReference;
 use Corex\Forms\Schema\SchemaExporter;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FlowSchemaFactory;
@@ -42,6 +46,9 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $setting
     Functions\when('wp_enqueue_style')->justReturn(null);
     Functions\when('rest_url')->alias(static fn (string $path): string => 'https://example.test/wp-json/' . $path);
     Functions\when('wp_json_encode')->alias(static fn (mixed $data): string => (string) json_encode($data));
+    // A visitor: no editor's note, and no page to sign.
+    Functions\when('is_user_logged_in')->justReturn(false);
+    Functions\when('get_queried_object_id')->justReturn(0);
 
     $repository = new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));
     $now = new DateTimeImmutable('2026-07-04T10:00:00+00:00');
@@ -117,6 +124,14 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $setting
         new FieldRenderer(),
         new FormChallengeContextFactory(new ChallengeSettings($config), new RemoteAddress()),
         new ProtectedFormRegistry(),
+        new FlowStatusResolver(new class implements FlowResponseCounter {
+            public function responses(int $flowId): int
+            {
+                return 0;
+            }
+        }),
+        new FlowNoticeText(),
+        new PageReference(),
     );
 }
 

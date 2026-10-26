@@ -5,21 +5,26 @@ import {
 	addField,
 	isDirty,
 	moveField,
+	publishState,
 	removeField,
 	stageStatus,
 	updateConfiguration,
 	updateField,
 } from './flowEditor.js';
 import { StageRail } from './StageRail.js';
+import { FlowStateChip, LiveLine } from './FlowState.js';
 import { FormTab } from './tabs/FormTab.js';
 import { ValidationTab } from './tabs/ValidationTab.js';
 import { RoutingTab } from './tabs/RoutingTab.js';
 import { EmailsTab } from './tabs/EmailsTab.js';
 import { ProtectionTab } from './tabs/ProtectionTab.js';
 import { SuccessTab } from './tabs/SuccessTab.js';
+import { AvailabilityTab } from './tabs/AvailabilityTab.js';
 import { PreviewTab } from './tabs/PreviewTab.js';
 import { TestTab } from './tabs/TestTab.js';
+import { VersionsTab } from './tabs/VersionsTab.js';
 import { UnsavedChangesDialog } from './components/UnsavedChangesDialog.js';
+import { UnpublishDialog } from './components/UnpublishDialog.js';
 
 /**
  * The browser's own "Leave site?" warning, while there is something to lose (FR-024).
@@ -73,7 +78,7 @@ function useUnsavedGuard( dirty, saveDraft ) {
 		( run, allowDiscard = false ) =>
 		( event ) => {
 			if ( ! dirty ) {
-				run();
+				run( event );
 				return;
 			}
 			opener.current = event?.currentTarget || null;
@@ -102,15 +107,53 @@ function useUnsavedGuard( dirty, saveDraft ) {
 	return { guard, dialog };
 }
 
-export function FlowEditorPanel( { studio, onBack } ) {
+/**
+ * "Unpublish", asked first: the form leaves every page that shows it (spec 122, FR-006).
+ *
+ * @param {Function} unpublish Unpublishes the flow.
+ * @return {Object} `{ ask, dialog }`.
+ */
+function useUnpublishQuestion( unpublish ) {
+	const [ open, setOpen ] = useState( false );
+	const opener = useRef( null );
+	const pending = useContext( PendingControl );
+	const close = () => {
+		setOpen( false );
+		if ( opener.current?.isConnected ) {
+			opener.current.focus();
+		}
+	};
+
+	return {
+		ask: ( event ) => {
+			opener.current = event?.currentTarget || null;
+			setOpen( true );
+		},
+		dialog: open ? (
+			<UnpublishDialog
+				working={ pending === 'unpublish' }
+				onConfirm={ async () => {
+					await unpublish();
+					setOpen( false );
+				} }
+				onCancel={ close }
+			/>
+		) : null,
+	};
+}
+
+export function FlowEditorPanel( { studio, timezone = '', onBack } ) {
 	const [ stage, setStage ] = useState( 'form' );
+	const [ availabilityDirty, setAvailabilityDirty ] = useState( false );
 	const { state } = studio;
 	const { draft, extensions } = state;
 	const busy = state.status === 'loading' || state.status === 'mutating';
 	const pending = useContext( PendingControl );
 	const dirty = isDirty( state );
 	const { guard, dialog } = useUnsavedGuard( dirty, studio.saveDraft );
-	useLeaveWarning( dirty );
+	const unpublishQuestion = useUnpublishQuestion( studio.unpublish );
+	const publishing = publishState( draft );
+	useLeaveWarning( dirty || availabilityDirty );
 	const changeDraft = ( next ) =>
 		studio.dispatch( { type: 'draft_changed', payload: next } );
 	const changeConfiguration = ( key, value ) =>
@@ -124,7 +167,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 	return (
 		<div className="corex-flow-editor">
 			<header className="corex-surface corex-flow-editor__toolbar">
-				<div>
+				<div className="corex-flow-editor__identity">
 					<button
 						type="button"
 						className="button-link"
@@ -132,8 +175,15 @@ export function FlowEditorPanel( { studio, onBack } ) {
 					>
 						{ __( 'Back to flows', 'corex' ) }
 					</button>
-					<h2>{ draft.flow.name }</h2>
+					<p className="corex-flow-editor__eyebrow">
+						{ __( 'Editing flow', 'corex' ) }
+					</p>
+					<div className="corex-flow-editor__title">
+						<h2>{ draft.flow.name }</h2>
+						<FlowStateChip flow={ draft.flow } />
+					</div>
 					<code>{ draft.flow.slug }</code>
+					<LiveLine flow={ draft.flow } />
 					<p className="description" role="status">
 						{ dirty
 							? __( 'Unsaved changes', 'corex' )
@@ -143,33 +193,40 @@ export function FlowEditorPanel( { studio, onBack } ) {
 				<div className="corex-flow-editor__actions">
 					<button
 						type="button"
-						className="button button-primary"
+						className="button"
 						disabled={ busy }
 						onClick={ studio.saveDraft }
 						{ ...workingProps( pending === 'saveDraft' ) }
 					>
 						{ __( 'Save draft', 'corex' ) }
 					</button>
-					{ draft.flow.state === 'draft' ? (
+					{ publishing === 'publish' || publishing === 'changes' ? (
 						<button
 							type="button"
-							className="button"
+							className="button button-primary"
 							disabled={ busy }
 							onClick={ guard( studio.publish ) }
 							{ ...workingProps( pending === 'publish' ) }
 						>
-							{ __( 'Publish', 'corex' ) }
+							{ publishing === 'publish'
+								? __( 'Publish', 'corex' )
+								: __( 'Publish changes', 'corex' ) }
 						</button>
+					) : null }
+					{ publishing === 'current' && ! dirty ? (
+						<span className="corex-flow-editor__up-to-date">
+							{ __( 'Live version is up to date', 'corex' ) }
+						</span>
 					) : null }
 					{ draft.flow.state !== 'draft' ? (
 						<button
 							type="button"
 							className="button"
 							disabled={ busy }
-							onClick={ guard( studio.unpublish ) }
+							onClick={ guard( unpublishQuestion.ask ) }
 							{ ...workingProps( pending === 'unpublish' ) }
 						>
-							{ __( 'Move to draft', 'corex' ) }
+							{ __( 'Unpublish', 'corex' ) }
 						</button>
 					) : null }
 					{ draft.flow.state === 'published' ? (
@@ -227,7 +284,8 @@ export function FlowEditorPanel( { studio, onBack } ) {
 				{ stage === 'routing' ? (
 					<RoutingTab
 						routing={ draft.configuration.routing }
-						targetTypes={ extensions.routing_targets || [] }
+						schema={ draft.configuration.schema || [] }
+						catalog={ extensions }
 						onChange={ ( value ) =>
 							changeConfiguration( 'routing', value )
 						}
@@ -236,9 +294,15 @@ export function FlowEditorPanel( { studio, onBack } ) {
 				{ stage === 'emails' ? (
 					<EmailsTab
 						routes={ draft.configuration.email_routes || [] }
+						routing={ draft.configuration.routing || {} }
+						schema={ draft.configuration.schema || [] }
 						templates={ extensions.email_templates || [] }
+						onPreview={ studio.previewRouting }
 						onChange={ ( value ) =>
 							changeConfiguration( 'email_routes', value )
+						}
+						onRoutingChange={ ( value ) =>
+							changeConfiguration( 'routing', value )
 						}
 					/>
 				) : null }
@@ -254,9 +318,24 @@ export function FlowEditorPanel( { studio, onBack } ) {
 					<SuccessTab
 						success={ draft.configuration.success || {} }
 						stateTypes={ extensions.success_states || [] }
+						actions={ draft.configuration.actions || [] }
+						registeredActions={ extensions.flow_actions || [] }
 						onChange={ ( value ) =>
 							changeConfiguration( 'success', value )
 						}
+						onActionsChange={ ( value ) =>
+							changeConfiguration( 'actions', value )
+						}
+					/>
+				) : null }
+				{ stage === 'availability' ? (
+					<AvailabilityTab
+						flow={ draft.flow }
+						timezone={ timezone }
+						busy={ busy }
+						saving={ pending === 'availability' }
+						onDirtyChange={ setAvailabilityDirty }
+						onSave={ studio.saveAvailability }
 					/>
 				) : null }
 				{ stage === 'preview' ? <PreviewTab draft={ draft } /> : null }
@@ -268,8 +347,19 @@ export function FlowEditorPanel( { studio, onBack } ) {
 						onRun={ guard( studio.test ) }
 					/>
 				) : null }
+				{ stage === 'versions' ? (
+					<VersionsTab
+						draft={ draft }
+						busy={ busy }
+						pending={ pending }
+						onCopy={ ( versionNumber ) =>
+							guard( () => studio.copyVersion( versionNumber ) )
+						}
+					/>
+				) : null }
 			</div>
 			{ dialog }
+			{ unpublishQuestion.dialog }
 		</div>
 	);
 }

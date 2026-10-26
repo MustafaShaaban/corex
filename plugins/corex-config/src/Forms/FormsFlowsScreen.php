@@ -90,6 +90,11 @@ final class FormsFlowsScreen
             // fixed at boot: a second round trip would add a loading state to a screen that already
             // has one, for data that cannot change while the page is open.
             'catalog' => $this->catalog(),
+            // The Availability tab takes dates in the site's time zone and says which (spec 122).
+            'timezone' => wp_timezone_string(),
+            // What the update did to flow submissions assigned to nobody, for the list to say
+            // (spec 122, FR-014). The forms engine writes it; absent without it.
+            'upgrade' => get_option('corex_flow_owner_upgrade', null),
         ]);
         wp_set_script_translations('corex-forms-builder', 'corex', $base . '/languages');
     }

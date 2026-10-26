@@ -53,6 +53,9 @@ final readonly class Flow
         public ?DateTimeImmutable $publishedAt = null,
         public ?DateTimeImmutable $closedAt = null,
         public ?DateTimeImmutable $expiresAt = null,
+        /** @var list<FlowPublication> Each time a version was made live, oldest first (spec 122). */
+        public array $publications = [],
+        public FlowAvailability $availability = new FlowAvailability(),
     ) {
         if ($id < 0
             || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid) !== 1
@@ -76,6 +79,11 @@ final readonly class Flow
         }
         if ($state === self::STATE_PUBLISHED && $publishedVersion < 1) {
             throw new InvalidArgumentException('A published flow requires a published version.');
+        }
+        foreach ($publications as $publication) {
+            if (! $publication instanceof FlowPublication) {
+                throw new InvalidArgumentException('Flow publications must be FlowPublication values.');
+            }
         }
     }
 
@@ -139,11 +147,66 @@ final readonly class Flow
         );
     }
 
+    /**
+     * Makes a saved version the live one (spec 122, FR-001).
+     *
+     * From a draft this is the first publication. From a published flow it is "Publish changes":
+     * the flow stays published and visitors see the new version from the next page load, so the
+     * form is never off the site. A closed or expired flow goes back to draft first, as before.
+     */
+    public function publish(int $version, int $actorId, DateTimeImmutable $occurredAt): self
+    {
+        $republish = $this->state === self::STATE_PUBLISHED;
+        if (! $republish && ! $this->canTransitionTo(self::STATE_PUBLISHED)) {
+            throw new InvalidArgumentException(sprintf('Flow cannot transition from "%s" to "%s".', $this->state, self::STATE_PUBLISHED));
+        }
+        if ($republish && $version === $this->publishedVersion) {
+            throw new InvalidArgumentException('The live version is already up to date.');
+        }
+
+        return $this->copy(
+            self::STATE_PUBLISHED,
+            $this->currentDraftVersion,
+            $version,
+            new FlowChange($actorId, $occurredAt),
+            [...$this->publications, new FlowPublication($version, $actorId, $occurredAt)],
+        );
+    }
+
+    public function withAvailability(FlowAvailability $availability, int $actorId, DateTimeImmutable $occurredAt): self
+    {
+        return $this->copy(
+            $this->state,
+            $this->currentDraftVersion,
+            $this->publishedVersion,
+            new FlowChange($actorId, $occurredAt),
+            availability: $availability,
+        );
+    }
+
+    /**
+     * The publications, with the live version of a flow published before they were recorded
+     * listed from what the flow knows: its version and when, with no author.
+     *
+     * @return list<FlowPublication>
+     */
+    public function publicationHistory(): array
+    {
+        if ($this->publications !== [] || $this->publishedVersion < 1 || $this->publishedAt === null) {
+            return $this->publications;
+        }
+
+        return [new FlowPublication($this->publishedVersion, 0, $this->publishedAt)];
+    }
+
+    /** @param list<FlowPublication>|null $publications */
     private function copy(
         string $state,
         int $currentDraftVersion,
         int $publishedVersion,
         FlowChange $change,
+        ?array $publications = null,
+        ?FlowAvailability $availability = null,
     ): self {
         return new self(
             id: $this->id,
@@ -162,9 +225,15 @@ final readonly class Flow
             updatedBy: $change->actorId,
             createdAt: $this->createdAt,
             updatedAt: $change->occurredAt,
-            publishedAt: $state === self::STATE_PUBLISHED ? $change->occurredAt : $this->publishedAt,
+            // Only a publication moves it: a draft saved on a live flow is not one.
+            publishedAt: $state === self::STATE_PUBLISHED
+                && ($this->state !== self::STATE_PUBLISHED || $publishedVersion !== $this->publishedVersion)
+                ? $change->occurredAt
+                : $this->publishedAt,
             closedAt: $state === self::STATE_CLOSED ? $change->occurredAt : null,
             expiresAt: $this->expiresAt,
+            publications: $publications ?? $this->publications,
+            availability: $availability ?? $this->availability,
         );
     }
 }

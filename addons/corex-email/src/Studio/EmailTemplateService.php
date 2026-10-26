@@ -22,12 +22,30 @@ final class EmailTemplateService
 {
     private const PLACEHOLDER = '/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/';
 
-    /** @param array<string,array{type:string,label:string}> $variableSchema */
+    /** @var array<string,array{type:string,label:string}>|null */
+    private ?array $schema = null;
+
+    /**
+     * @param array<string,array{type:string,label:string}>|Closure(): array<string,array{type:string,label:string}> $variableSchema
+     *        The variables a template may use, or what works them out. Worked out on first use: other
+     *        plugins declare theirs as WordPress starts (spec 122), after this service is built.
+     */
     public function __construct(
-        private readonly array $variableSchema,
+        private readonly array|Closure $variableSchema,
         private readonly ?EmailPartialRepository $partials = null,
         private readonly ?Layout $brandLayout = null,
     ) {
+    }
+
+    /** @return array<string,array{type:string,label:string}> */
+    private function variables(): array
+    {
+        if ($this->schema === null) {
+            $schema = $this->variableSchema instanceof Closure ? ($this->variableSchema)() : $this->variableSchema;
+            $this->schema = is_array($schema) ? $schema : [];
+        }
+
+        return $this->schema;
     }
 
     /** @return array<string,string> */
@@ -65,14 +83,14 @@ final class EmailTemplateService
 
         $declared = array_fill_keys($version->variableKeys, true);
         foreach ($version->variableKeys as $key) {
-            if (! isset($this->variableSchema[$key])) {
+            if (! isset($this->variables()[$key])) {
                 $errors['variables'] = __('Template variables do not match the declared schema.', 'corex');
                 break;
             }
         }
 
         foreach ($this->placeholders($version, $htmlBody, $plainText) as $key) {
-            if (! isset($declared[$key], $this->variableSchema[$key])) {
+            if (! isset($declared[$key], $this->variables()[$key])) {
                 $errors['variables'] = __('Template variables do not match the declared schema.', 'corex');
                 break;
             }
@@ -85,7 +103,7 @@ final class EmailTemplateService
     public function variableCatalog(): array
     {
         $catalog = [];
-        foreach ($this->variableSchema as $key => $definition) {
+        foreach ($this->variables() as $key => $definition) {
             $definition['label'] = $this->variableLabel($key, $definition['label']);
             $catalog[$this->variableGroup($key)][$key] = $definition;
         }
@@ -103,7 +121,7 @@ final class EmailTemplateService
         $withoutSpecialTokens = preg_replace('/\{\{\s*(?:content|>\s*[a-z0-9-]+)\s*\}\}/i', '', $html) ?? $html;
         preg_match_all(self::PLACEHOLDER, $withoutSpecialTokens, $matches);
         foreach (array_unique($matches[1] ?? []) as $key) {
-            if (! isset($this->variableSchema[$key])) {
+            if (! isset($this->variables()[$key])) {
                 return ['variables' => __('Email HTML contains an unknown variable.', 'corex')];
             }
         }

@@ -10,6 +10,7 @@ namespace Corex\Forms\Submission;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Flow\FlowResponseCounter;
 use Corex\Models\Model;
 use Corex\Repositories\PostRepository;
 use DateTimeImmutable;
@@ -19,7 +20,7 @@ use DateTimeImmutable;
  * only layer that touches the data source). Stores a private `corex_submission` post
  * plus the form slug and each validated value as `corex_field_*` meta — queryable by slug.
  */
-final class SubmissionRepository extends PostRepository implements SubmissionStore
+final class SubmissionRepository extends PostRepository implements SubmissionStore, FlowResponseCounter
 {
     protected function model(): string
     {
@@ -139,6 +140,120 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
         ];
         $this->fields->set($submissionId, 'corex_submission_timeline', $timeline);
     }
+
+    /**
+     * Stored responses of a flow: kept (not in the trash) and not a marked test (spec 122, FR-030).
+     *
+     * Counted in SQL and not through `WP_Query`, which shows a private post only to someone who may
+     * read it: asked while a visitor submits, it found none, and a cap never closed a form.
+     */
+    public function responses(int $flowId): int
+    {
+        global $wpdb;
+
+        return (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id' AND flow.meta_value = %s
+             LEFT JOIN {$wpdb->postmeta} test ON test.post_id = p.ID AND test.meta_key = 'corex_is_test'
+             WHERE p.post_type = 'corex_submission' AND p.post_status = 'private'
+             AND (test.meta_value IS NULL OR test.meta_value <> '1')",
+            (string) $flowId,
+        ));
+    }
+
+    /**
+     * Runs `$work` while no other request runs it for the same flow: a capped flow's count and its
+     * store happen under one MySQL named lock, so two last submissions never both fit (FR-030).
+     * MySQL lets the lock go if the request dies, so nothing is left to clear.
+     *
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    public function oneAtATime(int $flowId, callable $work): mixed
+    {
+        global $wpdb;
+
+        $lock = 'corex_flow_cap_' . $flowId;
+        if ((int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $lock, 10)) !== 1) {
+            throw new \RuntimeException('CoreX could not count the responses of this form.');
+        }
+        try {
+            return $work();
+        } finally {
+            $wpdb->query($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock));
+        }
+    }
+
+    /**
+     * Whether anything is assigned to this person directly or to one of their roles (spec 122,
+     * FR-013): what opens an assigned-only inbox for someone who does not manage submissions.
+     *
+     * @param list<string> $roles
+     */
+    public function hasAssigned(int $userId, array $roles): bool
+    {
+        global $wpdb;
+
+        $roles = array_values(array_filter($roles, static fn (string $role): bool => $role !== ''));
+        $roleClause = $roles === []
+            ? ''
+            : $wpdb->prepare(
+                " OR (type.meta_value = 'role' AND owner.meta_value IN (" . implode(', ', array_fill(0, count($roles), '%s')) . '))',
+                ...$roles,
+            );
+
+        // In SQL, for the reason `responses()` gives: the person asking cannot read these posts yet.
+        return $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT p.ID FROM {$wpdb->posts} p
+                 INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'
+                 INNER JOIN {$wpdb->postmeta} owner ON owner.post_id = p.ID AND owner.meta_key = 'corex_owner_key'
+                 WHERE p.post_type = 'corex_submission' AND p.post_status = 'private'
+                 AND ((type.meta_value = 'user' AND owner.meta_value = %s)",
+                (string) $userId,
+            ) . $roleClause . ') LIMIT 1',
+        ) !== null;
+    }
+
+    /**
+     * Flow submissions whose owner names nobody: stored with a route's type (flow owner, page
+     * owner, field value…) and not a user, a team or a role (spec 122, FR-014).
+     *
+     * @return list<int>
+     */
+    public function withUnresolvedOwner(): array
+    {
+        global $wpdb;
+
+        $types = ['flow_owner', 'page_owner', 'post_author', 'department', 'field_value', 'email', 'extension'];
+
+        // In SQL: it runs on whichever request comes first after the update, a visitor's included.
+        return array_map('intval', $wpdb->get_col($wpdb->prepare(
+            "SELECT DISTINCT p.ID FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id'
+             INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'
+             WHERE p.post_type = 'corex_submission' AND p.post_status IN ('private', 'trash')
+             AND type.meta_value IN (" . implode(', ', array_fill(0, count($types), '%s')) . ')',
+            ...$types,
+        )));
+    }
+
+    public function flowOf(int $submissionId): int
+    {
+        return (int) $this->fields->get($submissionId, 'corex_flow_id', 0);
+    }
+
+    /** Gives a submission to a user and says why on its timeline. Nothing else of it changes. */
+    public function reassignToUser(int $submissionId, int $userId, string $reason): void
+    {
+        $this->fields->set($submissionId, 'corex_owner_type', 'user');
+        $this->fields->set($submissionId, 'corex_owner_key', (string) $userId);
+        $inbox = (array) $this->fields->get($submissionId, 'corex_inbox_json', []);
+        $this->fields->set($submissionId, 'corex_inbox_json', [...$inbox, 'owner_type' => 'user', 'owner_key' => (string) $userId]);
+        $this->appendTimeline($submissionId, 'routing', 'info', ['message' => $reason]);
+    }
+
 
     /** @param array<string,mixed> $metadata */
     private function writeMetadata(int $submissionId, array $metadata): void

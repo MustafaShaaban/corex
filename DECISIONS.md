@@ -19008,3 +19008,148 @@ package" to the whole installation.
 **Not chosen.** *A client written again for Node*: two clients of one protocol drift apart. *Printing the recovery
 link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
 only when it is needed.
+
+## #470 -- A live flow is republished in place; a visitor is judged by the version their page carried
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-01, FR-001 to FR-007. Decided under the owner's 2026-10-21 mandate
+(FLW-D4: yes, versioned).
+
+**Why.** Saving a draft of a live flow already kept the live version untouched; only publishing the draft was
+refused (`published` to `published`), so the owner moved the flow to draft and back, and the form left every page in
+between.
+
+**Decided.**
+- `Flow::publish()` accepts a draft, or a published flow whose saved draft is not its live version, and stays
+  published. Each publication is recorded on the flow (`publications`: version, author, time). A flow published
+  before this release lists its live version with no author. Saving a draft no longer moves `published_at`.
+- A stale editor is refused with "This flow changed since you opened it. Reload to see the latest draft." (409).
+- `POST /flows/{id}/versions/{n}/copy` makes a version the saved draft as a new version; it never publishes.
+  "Move to draft" is "Unpublish" and asks first.
+- The visitor form carries `corex_flow_version`. The submission is judged by that version when it was live at some
+  moment in the last 24 hours (a page's security token lives that long), with the live version's spam protection, and
+  records it. Any other number means the live version.
+
+**Not chosen.** *Always the live version*: a visitor's answer to a question the new version removed would be refused.
+*Any old version*: an old page could bring back a weaker captcha.
+
+**Client impact.** None: Muva and Perego have no builder flow.
+
+## #471 -- Page owner reads a page the site signed into the form
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-03, FR-010. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** The flow block prints `corex_page` as `{page id}.{first 16 hex of wp_hash(flow, page)}`. A missing,
+altered or borrowed value reads as "the page is not known", and the fallback applies. The stored "Post author"
+target resolves the same way. "Department" and "Email" targets are no longer offered and, where stored, name nobody
+so the fallback applies.
+
+**Not chosen.** *The referrer*: absent or forged. *The page address*: needs a lookup and can name any page.
+
+## #472 -- Teams live in one option and are managed on a Teams view in Forms & Flows
+
+**Date:** 2026-10-26. **Spec:** 122, FR-012. FLW-D5 (teams get a screen).
+
+**Decided.** `corex_flow_teams` holds `{key, name, members}`; the key is made from the first name and never changes,
+so a renamed team keeps its submissions. `GET|POST /corex/v1/teams` and `PATCH|DELETE /corex/v1/teams/{key}` go
+through the flow gateway (the forms ability, nonce on writes). A removed team keeps the submissions already assigned
+to it; new ones routed to it fall back. corex-forms adds each person's teams to the existing
+`corex_submission_actor_teams` filter.
+
+**Not chosen.** *A post type or taxonomy*: a site has a handful of teams, read whole on every routing.
+
+## #473 -- Someone routing gave work to sees an inbox of exactly that work
+
+**Date:** 2026-10-26. **Spec:** 122, FR-013. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Holders of "Manage submissions" keep seeing everything, as before. Someone without it opens the inbox
+when `corex_submission_assigned_access` says so: corex-forms answers yes for a member of a team, or a person with a
+submission assigned to them or to one of their roles. Their scope is not "manage all": it shows only what
+`SubmissionAccessScope::allows()` passes (their user, their teams, their roles), with no personal-data export, no
+permanent delete and no restricted notes. The Submissions menu asks such a person for `read`, and the retention panel
+is for managers only.
+
+**Not chosen.** *A "view submissions" ability*: that split is US-ACC-06 (R4.7).
+
+**Client impact.** None today: no one on Muva or Perego is in a team, and no flow submission is assigned to a role.
+
+## #474 -- Old flow submissions assigned to nobody are given to their flow's owner, once
+
+**Date:** 2026-10-26. **Spec:** 122, FR-014.
+
+**Decided.** On `init`, behind the autoloaded option `corex_flow_owner_upgrade` (claimed with `add_option` before it
+runs), every flow submission whose owner type is a route's own type (flow_owner, page_owner, post_author, department,
+field_value, email, extension) is assigned to its flow's owner, with a timeline line. Nothing is deleted. A submission
+whose flow or owner is gone is left. The count is kept, and the Forms & Flows list states it for 30 days. The lookups
+are SQL, since `WP_Query` hides private posts from the visitor whose request may run it.
+
+**Client impact.** Muva and Perego store no flow submissions: the step finds none.
+
+## #475 -- "Routed owner" is a recipient token worked out at routing time
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-04, FR-017 to FR-020. FLW-D5.
+
+**Decided.** The recipient mapping `routed_owner` sends to the assignee: a user's address, each member of a team, or
+each holder of a role up to `routing.recipient_limit` (default 20, at most 100). Over the limit, or with no address,
+the email goes to `routing.fallback_recipient`, else the site administrator, and the binding's delivery record and
+the timeline's notification event carry "Routed owner had no address; sent to ..." (or the role-limit reason). The
+addresses are stored with the routing metadata, so the inbox's "Send again" reaches the same people. The Emails tab
+shows who it would be for each rule and for no match (`POST /flows/{id}/routing-preview`).
+
+**Not chosen.** *Resolving in the email stage*: "Send again" would work it out again, maybe differently.
+
+## #476 -- Flow actions, email variables and routing targets register through three filters
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-07, FR-021 to FR-025. FLW-D11 (finish them as documented hooks).
+
+**Decided.**
+- `corex_flow_actions`, `corex_flow_email_variables` and `corex_flow_routing_targets` return
+  `key => ['label', 'callback']`, read once on `init` (priority 20) into the registries; a bad entry is logged and
+  skipped. The container registries still work. A routing target is stored as `extension` with its key.
+- A new last stage, `actions`, runs the flow's chosen actions (configuration `actions`, in the checksum only when not
+  empty) once per stored submission, records done or failed on the timeline, and always succeeds. A marked test runs
+  them with `is_test` and "This is a test.". Publishing refuses an action the site no longer has.
+- Email variables join Email Studio's list through `corex_email_variable_schema`. `EmailTemplateService` now takes
+  its list as a closure, asked on first use: the service is built on `plugins_loaded`, before `init` registers the
+  variables. Their values are placed in the flow email's context at their dotted path; a failure is left empty and
+  logged.
+
+## #477 -- Availability belongs to the flow; the state a visitor meets is worked out, not stored
+
+**Date:** 2026-10-26. **Spec:** 122, US-VIS-01, US-VIS-02, FR-026 to FR-031. FLW-D1 (dates and a cap).
+
+**Decided.**
+- `availability` on the flow record (open and close instants in UTC, a cap, the closed message, the alternative),
+  saved by `PATCH /flows/{id}/availability` from its own Availability tab, without publishing. The editor shows and
+  takes the site's local time.
+- `FlowStatusResolver` works out draft, scheduled, open, closed or expired from the stored state, the dates and,
+  for a capped flow only, the response count, when a page is served and when a submission arrives. The list files a
+  flow expired by date or cap under "Expired" with its reason.
+- A response counts while stored, not in the trash and not a marked test. A capped flow's check and store run under
+  a MySQL named lock (`corex_flow_cap_{id}`), counted again inside it.
+
+**Not chosen.** *A cron job that flips the state*: it fails on a site whose cron does not run, and clearing a date
+would not reopen a flow.
+
+## #478 -- The owner's closed message is translated through the WPML string hooks
+
+**Date:** 2026-10-26. **Spec:** 122, FR-032. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Saving availability calls `wpml_register_single_string` for the message and the alternative's label
+(context `corex`, names `flow-{slug}-closed-message` and `flow-{slug}-alternative-label`); the block shows
+`wpml_translate_single_string`. WPML defines these and Polylang answers them; with neither, the owner's words show as
+written. CoreX's default wording is an ordinary translatable string.
+
+**Not chosen.** *A CoreX translation driver*: none exists, and Principle IX keeps both plugins optional.
+
+## #479 -- A closed flow answers 409 `flow_closed` with its notice, drawn by the runtime from text
+
+**Date:** 2026-10-26. **Spec:** 122, FR-028, FR-029.
+
+**Decided.** The block renders the flow's heading and a titled notice (`.corex-flow-notice`: title, message, the
+alternative as a link or `mailto:`); a draft or missing flow renders nothing for visitors and an editors-only note
+with a link to the flow (`&corex_flow={id}` opens it in the editor). The block editor lists every flow ever
+published, naming one that is closed, expired or scheduled. The submit route answers 409 with
+`details.notice`; `corex-runtime.js` draws it above the form with `textContent`, links only `http`, `https` and
+`mailto`, and leaves the answers in place.
+
+**Client impact.** Muva's and Perego's code forms never get this answer; the runtime branch is idle for them.

@@ -40,6 +40,17 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 122, flows that stay live and route to people** (2026-10-26, branch `spec/122-live-flows`, DECISIONS #470
+to #479): revamp release R3.9, six stories (US-FLW-01, 03, 04, 07, US-VIS-01, 02), built under the owner's
+2026-10-21 mandate. A live flow takes "Publish changes" without leaving the page, keeps its publications and a
+Versions tab, and asks before Unpublish; routing assigns a user, team (new Teams view) or role, falls back with a
+reason, and a person routed work sees it in their inbox; "Routed owner" is an email recipient; flow actions, email
+variables and routing targets register through three filters and run; an Availability tab sets dates, a cap and the
+closed message, and a closed or scheduled flow shows its notice instead of vanishing. Spec, plan and tasks written,
+every task built; unit, integration (the cap race in two processes), Jest and four new Playwright tests pass locally.
+Open: one pull request, not merged by this session. Owed: `forms-flow.spec.js` still fails on a fresh local install
+(the field-type option reads `email`, as before), read it off CI; the plain-word condition editor is R3.10's.
+
 **Spec 123, an agent works on a CoreX site through MCP** (2026-10-25, branch `spec/123-agent-abilities`,
 DECISIONS #500 to #513): Claude, or any MCP agent, reads a CoreX site and installs a release, so the owner no
 longer uploads the package by hand in the admin.

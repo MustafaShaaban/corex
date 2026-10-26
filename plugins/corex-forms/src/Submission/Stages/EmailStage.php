@@ -10,6 +10,7 @@ namespace Corex\Forms\Submission\Stages;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Flow\EmailVariableValues;
 use Corex\Forms\Submission\FlowEmailAddressResolver;
 use Corex\Forms\Submission\FlowEmailSender;
 use Corex\Forms\Submission\NotificationDelivery;
@@ -38,6 +39,7 @@ final readonly class EmailStage implements SubmissionStage
         private SubmissionRepository $submissions,
         private NotificationDispatcher $dispatcher,
         private FlowEmailAddressResolver $addresses,
+        private EmailVariableValues $variables,
     ) {
     }
 
@@ -84,7 +86,8 @@ final readonly class EmailStage implements SubmissionStage
             $mailContext = $this->mailContext($context);
             $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
             $event = (string) ($binding['event'] ?? 'submitted');
-            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext));
+            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext))
+                + $this->routedNote($binding, $context);
             $headline = $this->promoteHeadline($headline, $this->deliveryFor($result));
             if ($result === null || ! $result->successful()) {
                 $failed ??= $result?->message ?? __('The enabled flow email binding could not be resolved.', 'corex');
@@ -204,10 +207,15 @@ final readonly class EmailStage implements SubmissionStage
         return (! $candidate->successful() && $current->successful()) ? $candidate : $current;
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * What a template is filled in from: the answers, the flow, the routing, and every registered
+     * email variable (spec 122, FR-023).
+     *
+     * @return array<string,mixed>
+     */
     private function mailContext(SubmissionPipelineContext $context): array
     {
-        return [
+        return $this->variables->into([
             'submission' => $context->values,
             'flow' => [
                 'id' => $context->flow->id,
@@ -216,7 +224,23 @@ final readonly class EmailStage implements SubmissionStage
             ],
             'routing' => $context->metadata['routing'] ?? [],
             'is_test' => $context->isTest,
-        ];
+        ]);
+    }
+
+    /**
+     * "Routed owner had no address; sent to …", kept with the delivery of an email addressed to
+     * the routed owner whose routing had to use the fallback recipient (spec 122, FR-018).
+     *
+     * @param array<string,mixed> $binding
+     * @return array{note?:string}
+     */
+    private function routedNote(array $binding, SubmissionPipelineContext $context): array
+    {
+        $note = (string) ($context->metadata['routing']['recipients']['note'] ?? '');
+
+        return $note !== '' && FlowEmailAddressResolver::namesRoutedOwner((string) ($binding['recipient'] ?? ''))
+            ? ['note' => $note]
+            : [];
     }
 
     /**
