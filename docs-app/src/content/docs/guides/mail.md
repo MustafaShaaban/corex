@@ -30,8 +30,8 @@ Delivery is **best-effort and never throws** — failures are logged, not fatal.
 
 ## What the add-on provides
 
-- **Templates** — `TemplateRenderer` merges `{{ path }}` placeholders into an escaped,
-  brand-aware layout (pulled from `theme.json` / `brand.json`).
+- **Templates** — `TemplateRenderer` merges `{{ path }}` placeholders, escaped, and draws the result in the
+  one frame every CoreX email is in (`EmailFrame`), with a plain-text version beside it.
 - **Security** — `HeaderGuard` rejects CR/LF/control characters in headers; recipients are
   resolved + validated.
 - **Driver** — `WpMailDriver` sends via `wp_mail` with the configured from-identity. A message
