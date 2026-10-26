@@ -111,11 +111,15 @@ final class MailServiceProvider extends ServiceProvider
                 );
 
                 // Another plugin may declare variables of its own: the forms engine declares the
-                // email variables developers register for flow emails (spec 122, FR-023).
-                $schema = apply_filters('corex_email_variable_schema', is_array($schema) ? $schema : []);
-
+                // email variables developers register for flow emails (spec 122, FR-023). They are
+                // registered on `init`, and this service is built before it, so the list is asked
+                // for when a template is first checked or drawn.
                 return new EmailTemplateService(
-                    is_array($schema) ? $schema : [],
+                    static function () use ($schema): array {
+                        $declared = apply_filters('corex_email_variable_schema', is_array($schema) ? $schema : []);
+
+                        return is_array($declared) ? $declared : [];
+                    },
                     $c->make(EmailPartialRepository::class),
                     $c->make(Layout::class),
                 );

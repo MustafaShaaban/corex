@@ -24,6 +24,7 @@ final readonly class FlowService
         private FlowRepository $flows,
         private FlowConfigurationValidator $validator,
         private ?FlowNoticeText $noticeText = null,
+        private ?FlowStatusResolver $statuses = null,
     ) {
     }
 
@@ -79,9 +80,9 @@ final readonly class FlowService
     {
         return array_values(array_filter(
             $this->flows->allWithDraft(),
-            static function (array $entry) use ($query, $state): bool {
+            function (array $entry) use ($query, $state): bool {
                 $flow = $entry['flow'];
-                $matchesState = $state === '' || $flow->state === $state;
+                $matchesState = $state === '' || $this->listState($flow) === $state;
                 $matchesQuery = $query === ''
                     || stripos($flow->name, $query) !== false
                     || stripos($flow->slug, $query) !== false;
@@ -89,6 +90,21 @@ final readonly class FlowService
                 return $matchesState && $matchesQuery;
             },
         ));
+    }
+
+    /**
+     * The state the list files a flow under: a flow whose dates or cap closed it is "expired",
+     * a scheduled one is "published", whatever is stored (spec 122, FR-031).
+     */
+    private function listState(Flow $flow): string
+    {
+        if ($this->statuses === null || $flow->state !== Flow::STATE_PUBLISHED) {
+            return $flow->state;
+        }
+
+        return $this->statuses->at($flow, new DateTimeImmutable('now'))->state === FlowStatus::EXPIRED
+            ? Flow::STATE_EXPIRED
+            : Flow::STATE_PUBLISHED;
     }
 
     public function get(int $flowId): Flow

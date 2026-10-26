@@ -40,8 +40,17 @@ final readonly class RoutedRecipients
 
             return [
                 'addresses' => [$fallback],
-                /* translators: 1: the most people a role may reach, 2: the address the email went to instead. */
-                'note' => sprintf(__('Routed owner is a role with more than %1$d people; sent to %2$s', 'corex'), $limit, $fallback),
+                'note' => sprintf(
+                    /* translators: 1: the most people a role may reach, 2: the address the email went to instead. */
+                    _n(
+                        'Routed owner is a role with more than %1$d person; sent to %2$s',
+                        'Routed owner is a role with more than %1$d people; sent to %2$s',
+                        $limit,
+                        'corex',
+                    ),
+                    $limit,
+                    $fallback,
+                ),
             ];
         }
         $addresses = array_values(array_unique(array_filter(array_map(

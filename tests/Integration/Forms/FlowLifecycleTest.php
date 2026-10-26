@@ -142,7 +142,7 @@ it('runs a published visitor flow through storage routing email inbox and timeli
     expect($response->get_status())->toBe(200)
         ->and($data['completed'])->toBeTrue()
         ->and(array_column($data['stages'], 'key'))->toBe([
-            'validation', 'protection', 'storage', 'routing', 'email', 'inbox', 'timeline',
+            'validation', 'protection', 'storage', 'routing', 'email', 'inbox', 'timeline', 'actions',
         ])
         ->and(get_post_meta($submissionId, 'corex_field_email', true))->toBe('visitor@example.com')
         ->and((int) get_post_meta($submissionId, 'corex_flow_id', true))->toBe($flowId)

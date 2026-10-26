@@ -193,6 +193,7 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(FlowRepository::class),
                 $c->make(FlowConfigurationValidator::class),
                 $c->make(FlowNoticeText::class),
+                $c->make(FlowStatusResolver::class),
             ),
         );
         $this->container->singleton(FlowControllerServices::class);

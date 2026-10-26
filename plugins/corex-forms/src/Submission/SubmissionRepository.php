@@ -143,24 +143,22 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
 
     /**
      * Stored responses of a flow: kept (not in the trash) and not a marked test (spec 122, FR-030).
+     *
+     * Counted in SQL and not through `WP_Query`, which shows a private post only to someone who may
+     * read it: asked while a visitor submits, it found none, and a cap never closed a form.
      */
     public function responses(int $flowId): int
     {
-        $query = new \WP_Query([
-            'post_type' => 'corex_submission',
-            'post_status' => 'private',
-            'fields' => 'ids',
-            'posts_per_page' => 1,
-            'no_found_rows' => false,
-            'update_post_meta_cache' => false,
-            'update_post_term_cache' => false,
-            'meta_query' => [
-                ['key' => 'corex_flow_id', 'value' => $flowId, 'compare' => '=', 'type' => 'NUMERIC'],
-                ['key' => 'corex_is_test', 'value' => '1', 'compare' => '!='],
-            ],
-        ]);
+        global $wpdb;
 
-        return (int) $query->found_posts;
+        return (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id' AND flow.meta_value = %s
+             LEFT JOIN {$wpdb->postmeta} test ON test.post_id = p.ID AND test.meta_key = 'corex_is_test'
+             WHERE p.post_type = 'corex_submission' AND p.post_status = 'private'
+             AND (test.meta_value IS NULL OR test.meta_value <> '1')",
+            (string) $flowId,
+        ));
     }
 
     /**
@@ -195,19 +193,27 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
      */
     public function hasAssigned(int $userId, array $roles): bool
     {
-        $owners = ['relation' => 'OR', $this->ownerClause('user', (string) $userId)];
-        foreach ($roles as $role) {
-            $owners[] = $this->ownerClause('role', $role);
-        }
+        global $wpdb;
 
-        return get_posts([
-            'post_type' => 'corex_submission',
-            'post_status' => 'private',
-            'fields' => 'ids',
-            'posts_per_page' => 1,
-            'no_found_rows' => true,
-            'meta_query' => [$owners],
-        ]) !== [];
+        $roles = array_values(array_filter($roles, static fn (string $role): bool => $role !== ''));
+        $roleClause = $roles === []
+            ? ''
+            : $wpdb->prepare(
+                " OR (type.meta_value = 'role' AND owner.meta_value IN (" . implode(', ', array_fill(0, count($roles), '%s')) . '))',
+                ...$roles,
+            );
+
+        // In SQL, for the reason `responses()` gives: the person asking cannot read these posts yet.
+        return $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT p.ID FROM {$wpdb->posts} p
+                 INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'
+                 INNER JOIN {$wpdb->postmeta} owner ON owner.post_id = p.ID AND owner.meta_key = 'corex_owner_key'
+                 WHERE p.post_type = 'corex_submission' AND p.post_status = 'private'
+                 AND ((type.meta_value = 'user' AND owner.meta_value = %s)",
+                (string) $userId,
+            ) . $roleClause . ') LIMIT 1',
+        ) !== null;
     }
 
     /**
@@ -218,21 +224,19 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
      */
     public function withUnresolvedOwner(): array
     {
-        return array_map('intval', get_posts([
-            'post_type' => 'corex_submission',
-            'post_status' => ['private', 'trash'],
-            'fields' => 'ids',
-            'posts_per_page' => -1,
-            'no_found_rows' => true,
-            'meta_query' => [
-                ['key' => 'corex_flow_id', 'compare' => 'EXISTS'],
-                [
-                    'key' => 'corex_owner_type',
-                    'value' => ['flow_owner', 'page_owner', 'post_author', 'department', 'field_value', 'email', 'extension'],
-                    'compare' => 'IN',
-                ],
-            ],
-        ]));
+        global $wpdb;
+
+        $types = ['flow_owner', 'page_owner', 'post_author', 'department', 'field_value', 'email', 'extension'];
+
+        // In SQL: it runs on whichever request comes first after the update, a visitor's included.
+        return array_map('intval', $wpdb->get_col($wpdb->prepare(
+            "SELECT DISTINCT p.ID FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id'
+             INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'
+             WHERE p.post_type = 'corex_submission' AND p.post_status IN ('private', 'trash')
+             AND type.meta_value IN (" . implode(', ', array_fill(0, count($types), '%s')) . ')',
+            ...$types,
+        )));
     }
 
     public function flowOf(int $submissionId): int
@@ -250,15 +254,6 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
         $this->appendTimeline($submissionId, 'routing', 'info', ['message' => $reason]);
     }
 
-    /** @return array<string|int,mixed> One owner, as a meta query clause. */
-    private function ownerClause(string $type, string $key): array
-    {
-        return [
-            'relation' => 'AND',
-            ['key' => 'corex_owner_type', 'value' => $type, 'compare' => '='],
-            ['key' => 'corex_owner_key', 'value' => $key, 'compare' => '='],
-        ];
-    }
 
     /** @param array<string,mixed> $metadata */
     private function writeMetadata(int $submissionId, array $metadata): void

@@ -55,15 +55,6 @@ final readonly class FlowSubmissionController
     {
         try {
             return $this->dispatch($request);
-        } catch (FlowClosedException $closed) {
-            // Not a technical error: the form stopped taking answers after the page was loaded.
-            // The visitor's answers stay on screen and the notice says why (spec 122, FR-029).
-            return new WP_REST_Response(
-                ResponseEnvelope::error('flow_closed', $closed->notice->message, [
-                    'notice' => $closed->notice->toArray(),
-                ])->toArray(),
-                409,
-            );
         } catch (DomainException) {
             return new WP_REST_Response(
                 ResponseEnvelope::error(
@@ -97,7 +88,16 @@ final readonly class FlowSubmissionController
     /** @param array<string,mixed> $values */
     private function run(int $flowId, array $values): Response
     {
-        $result = $this->submissions->submit($flowId, $values);
+        try {
+            $result = $this->submissions->submit($flowId, $values);
+        } catch (FlowClosedException $closed) {
+            // Not a technical error: the form stopped taking answers after the page was loaded.
+            // The visitor's answers stay on screen and the notice says why (spec 122, FR-029).
+            return Response::reject($closed->notice->message, 409, [
+                'code' => 'flow_closed',
+                'notice' => $closed->notice->toArray(),
+            ]);
+        }
         if (! $result->pipeline->completed) {
             $failed = $result->pipeline->stages[array_key_last($result->pipeline->stages)];
             $status = in_array($failed->key, ['validation', 'protection'], true) ? 422 : 502;
@@ -195,7 +195,9 @@ final readonly class FlowSubmissionController
 
             return new WP_REST_Response($body, $response->status);
         }
-        $envelope = ResponseEnvelope::error('flow_submission_failed', $response->reason, $data);
+        $code = (string) ($data['code'] ?? 'flow_submission_failed');
+        unset($data['code']);
+        $envelope = ResponseEnvelope::error($code, $response->reason, $data);
 
         return new WP_REST_Response($envelope->toArray(), $response->status);
     }
