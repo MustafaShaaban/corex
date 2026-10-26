@@ -1,0 +1,61 @@
+/**
+ * "Convert existing library" on Settings > Media (spec 119, US-SET-06).
+ * Tokens and logical properties only.
+ */
+
+.corex-admin .corex-media-conversion {
+	margin-block-start: var(--corex-admin-space-md);
+	padding-block-start: var(--corex-admin-space-md);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-media-conversion__title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-media-conversion__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin-block: var(--corex-admin-space-sm) 0;
+}
+
+.corex-admin .corex-media-conversion__progress {
+	display: block;
+	inline-size: 100%;
+	max-inline-size: 28rem;
+	block-size: var(--corex-admin-space-xs);
+	margin-block-start: var(--corex-admin-space-sm);
+	accent-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-media-conversion [hidden] {
+	display: none;
+}
+
+.corex-admin .corex-media-conversion__summary {
+	margin-block: var(--corex-admin-space-sm) 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-media-conversion__failures {
+	margin-block-start: var(--corex-admin-space-sm);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-media-conversion__failures-title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-media-conversion__failures ul {
+	margin-block: var(--corex-admin-space-2xs) 0;
+	margin-inline: 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	list-style: disc;
+}

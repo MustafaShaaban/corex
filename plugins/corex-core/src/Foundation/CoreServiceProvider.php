@@ -24,6 +24,7 @@ use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
 use Corex\Support\Config\Repository;
+use Corex\Support\Config\SettingLocks;
 use Corex\Support\Config\SettingRegistry;
 use Corex\Support\Config\Sources\DefaultsSource;
 use Corex\Support\Config\Sources\DotenvSource;
@@ -80,6 +81,13 @@ final class CoreServiceProvider extends ServiceProvider
                 new DefaultsSource($this->defaults()),
             ]);
         });
+
+        // Which settings a screen may not edit, read from the two layers above a site's own option
+        // (spec 119, US-SET-02).
+        $this->container->singleton(SettingLocks::class, static fn (ContainerInterface $container): SettingLocks => new SettingLocks(
+            $container->make(DotenvSource::class),
+            $container->make(NetworkLockSource::class),
+        ));
 
         // One name and one hold for the whole request: whoever sends, the gate reads the same ones.
         $this->container->singleton(MailPath::class);

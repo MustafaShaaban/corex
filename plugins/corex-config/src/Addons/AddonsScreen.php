@@ -11,6 +11,7 @@ namespace Corex\Config\Addons;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Docs\DocsUrl;
+use Corex\Config\Settings\ProviderSetup;
 use Corex\Foundation\AddonStatus;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
@@ -36,6 +37,7 @@ final class AddonsScreen
         private readonly AdminPage $page,
         private readonly DocsUrl $docs,
         private readonly AddonCatalogService $catalog = new AddonCatalogService(),
+        private readonly ?ProviderSetup $providers = null,
     ) {
     }
 
@@ -265,7 +267,8 @@ final class AddonsScreen
     {
         $status = $view->status();
 
-        echo '<section class="corex-addon-card corex-surface">';
+        // An id of its own, so a Settings page whose add-on is off can link to this card (spec 119).
+        echo '<section class="corex-addon-card corex-surface" id="corex-addon-' . esc_attr($view->addon->slug) . '">';
         echo '<header class="corex-addon-card__header">';
         echo '<span class="corex-addon-card__logo-tile"><img class="corex-addon-card__logo" src="'
             . esc_url($this->logoUrl($view))
@@ -287,6 +290,15 @@ final class AddonsScreen
         }
 
         $this->renderMeta($view->addon);
+
+        $setup = $this->setupNeed($view);
+        if ($setup !== '') {
+            echo '<p class="corex-addon-card__reason corex-addon-card__setup">'
+                . '<span class="dashicons dashicons-warning" aria-hidden="true"></span>'
+                . '<span>' . esc_html($setup) . ' <a href="'
+                . esc_url(admin_url('admin.php?page=corex-settings-config&section=captcha')) . '">'
+                . esc_html__('Open Settings > Captcha', 'corex') . '</a></span></p>';
+        }
 
         $reason = $this->unavailableReason($view, $state);
         if ($reason !== '') {
@@ -399,6 +411,19 @@ final class AddonsScreen
         return '<span class="corex-toggle__track" aria-hidden="true"><span class="corex-toggle__knob"></span></span>'
             . '<span class="corex-toggle__state">'
             . ($on ? esc_html__('On', 'corex') : esc_html__('Off', 'corex')) . '</span>';
+    }
+
+    /**
+     * What an add-on that is on still needs before it works (spec 119, US-SET-15): Corex Captcha
+     * with a provider whose key is missing, as Settings says it. Empty otherwise.
+     */
+    private function setupNeed(AddonView $view): string
+    {
+        if ($this->providers === null || $view->addon->slug !== 'corex-captcha' || ! $view->active) {
+            return '';
+        }
+
+        return $this->providers->captchaNeed();
     }
 
     /**
