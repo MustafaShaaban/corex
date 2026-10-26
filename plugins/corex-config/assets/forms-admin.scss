@@ -482,3 +482,17 @@
 .corex-admin .corex-flow-test-held li {
 	overflow-wrap: anywhere;
 }
+
+/* A template that uses what the form does not supply (spec 120). */
+.corex-admin .corex-flow-editor__warning {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-warning-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-flow-editor__warning p {
+	margin: 0;
+}

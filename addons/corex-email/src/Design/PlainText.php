@@ -44,6 +44,12 @@ final class PlainText
             $text = (string) preg_replace_callback(self::INNERMOST_LIST, self::listed(...), $text, 1);
         }
         $text = (string) preg_replace('#</p>\s*#iu', "\n\n", $text);
+        // A template's markup goes further than a reply's (spec 120): a heading or a table ends
+        // a block, a row ends a line, and a row's label is set before its value.
+        $text = (string) preg_replace('#</(?:h[1-6]|table)>\s*#iu', "\n\n", $text);
+        $text = (string) preg_replace('#</(?:tr|div)>\s*#iu', "\n", $text);
+        $text = (string) preg_replace('#</th>\s*#iu', ': ', $text);
+        $text = (string) preg_replace('#</td>\s*(?=<td\b)#iu', ' ', $text);
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = str_replace("\u{00A0}", ' ', $text);
         $text = (string) preg_replace('/[ \t]+\n/u', "\n", $text);

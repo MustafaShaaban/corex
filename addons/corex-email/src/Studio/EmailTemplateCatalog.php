@@ -13,12 +13,15 @@ defined('ABSPATH') || exit;
 use Corex\Mail\MailTemplateCatalog;
 
 /**
- * Projects active Email Studio templates for cross-module binding controls.
+ * Projects active Email Studio templates for cross-module binding controls, each with the
+ * variables its active version uses (spec 120), so that a flow can say which it does not supply.
  */
 final readonly class EmailTemplateCatalog implements MailTemplateCatalog
 {
-    public function __construct(private EmailTemplateRepository $templates)
-    {
+    public function __construct(
+        private EmailTemplateRepository $templates,
+        private ?EmailTemplateService $editor = null,
+    ) {
     }
 
     public function templates(): array
@@ -29,12 +32,21 @@ final readonly class EmailTemplateCatalog implements MailTemplateCatalog
         );
 
         return array_values(array_map(
-            static fn (EmailTemplate $template): array => [
+            fn (EmailTemplate $template): array => [
                 'id' => $template->id,
                 'slug' => $template->slug,
                 'name' => $template->name,
+                'variables' => $this->variablesOf($template),
             ],
             $active,
         ));
+    }
+
+    /** @return list<string> */
+    private function variablesOf(EmailTemplate $template): array
+    {
+        $version = $this->templates->findVersion($template->id, $template->activeVersion);
+
+        return $version === null || $this->editor === null ? [] : $this->editor->variablesOf($version);
     }
 }

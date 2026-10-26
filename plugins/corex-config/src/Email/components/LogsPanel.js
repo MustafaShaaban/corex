@@ -3,7 +3,7 @@ import {
 	PendingControl,
 	workingProps,
 } from '../../admin/components/working.js';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import CorexTime from '../../admin/components/CorexTime.js';
 import { Field } from './shared.js';
 
@@ -72,11 +72,41 @@ function RetryEditor( { retry, busy, onResend, onCancel } ) {
 	);
 }
 
+/**
+ * Follows a link to one row (`#corex-attempt-…` from a test send, `#corex-capture-…` from a
+ * flow test) once the rows are drawn: the browser looked for it before it was there.
+ *
+ * @param {string} prefix The rows' id prefix.
+ * @param {Array}  rows   The rows drawn.
+ */
+function useFollowedRow( prefix, rows ) {
+	useEffect( () => {
+		const hash = window.location.hash.slice( 1 );
+		if ( hash.startsWith( prefix ) ) {
+			document
+				.getElementById( hash )
+				?.scrollIntoView( { block: 'center' } );
+		}
+	}, [ prefix, rows ] );
+}
+
 function AttemptRow( { attempt, busy, onRetry } ) {
+	const missing = attempt.missing_variables || [];
 	return (
-		<tr>
+		<tr id={ `corex-attempt-${ attempt.attempt_id }` }>
 			<td>{ attempt.recipient }</td>
-			<td>{ attempt.subject }</td>
+			<td>
+				<bdi>{ attempt.subject }</bdi>
+				{ missing.length > 0 && (
+					<span className="corex-email-app__missing">
+						{ sprintf(
+							/* translators: %s: variable keys, comma separated. */
+							__( 'Sent without: %s', 'corex' ),
+							missing.join( ', ' )
+						) }
+					</span>
+				) }
+			</td>
 			<td>{ attempt.template_slug || __( 'Ad hoc', 'corex' ) }</td>
 			<td>
 				<span
@@ -111,6 +141,7 @@ function AttemptRow( { attempt, busy, onRetry } ) {
 }
 
 function AttemptsTable( { attempts, busy, onRetry } ) {
+	useFollowedRow( 'corex-attempt-', attempts );
 	return (
 		<section className="corex-surface corex-email-app__table-card">
 			<h2>{ __( 'Delivery attempts', 'corex' ) }</h2>
@@ -161,17 +192,38 @@ export function captureStateLabel( state ) {
 		: __( 'Captured', 'corex' );
 }
 
+/**
+ * One kept email, as it would have arrived: its HTML and its plain-text version (spec 120).
+ *
+ * @param {Object} props
+ * @param {Object} props.capture The kept email.
+ * @return {Element} The disclosure.
+ */
+function CapturedMessage( { capture } ) {
+	return (
+		<details className="corex-email-app__capture-body">
+			<summary>{ __( 'Show the email', 'corex' ) }</summary>
+			<h3>{ __( 'As HTML', 'corex' ) }</h3>
+			<iframe
+				title={ sprintf(
+					/* translators: %s: an email's subject. */
+					__( 'The email "%s" as it would have arrived', 'corex' ),
+					capture.subject
+				) }
+				sandbox=""
+				srcDoc={ capture.html_body }
+			/>
+			<h3>{ __( 'Plain-text version', 'corex' ) }</h3>
+			<pre className="corex-email-app__plain" dir="auto">
+				{ capture.plain_text ||
+					__( 'This email has no plain-text version.', 'corex' ) }
+			</pre>
+		</details>
+	);
+}
+
 function CapturesList( { captures } ) {
-	// A link to one email (`#corex-capture-…`, from a flow test's result) is followed once the
-	// list is drawn: the browser looked for the email before it was there.
-	useEffect( () => {
-		const hash = window.location.hash.slice( 1 );
-		if ( hash.startsWith( 'corex-capture-' ) ) {
-			document
-				.getElementById( hash )
-				?.scrollIntoView( { block: 'center' } );
-		}
-	}, [ captures ] );
+	useFollowedRow( 'corex-capture-', captures );
 
 	return (
 		<section className="corex-surface corex-email-app__table-card">
@@ -192,7 +244,7 @@ function CapturesList( { captures } ) {
 							id={ `corex-capture-${ capture.capture_id }` }
 						>
 							<span className="corex-email-app__capture-what">
-								<strong>{ capture.subject }</strong>
+								<strong dir="auto">{ capture.subject }</strong>
 								<span>
 									{ capture.path ||
 										__( 'Email Studio', 'corex' ) }
@@ -203,6 +255,7 @@ function CapturesList( { captures } ) {
 								{ captureStateLabel( capture.state ) }
 							</span>
 							<CorexTime value={ capture.captured_at } />
+							<CapturedMessage capture={ capture } />
 						</li>
 					) ) }
 				</ul>

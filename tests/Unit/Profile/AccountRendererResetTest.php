@@ -22,7 +22,8 @@ beforeEach(function () {
     Functions\when('esc_url')->alias(fn ($v) => (string) $v);
 });
 
-it('sends the page mark with a request for a reset link, and with nothing else', function () {
+// The registration sends it too, for the welcome email's link (spec 120).
+it('sends the page mark with a request for a reset link and with a registration, and nothing else', function () {
     $html = (new AccountRenderer())->render([
         'loggedIn'         => false,
         'registrationOpen' => true,
@@ -31,8 +32,11 @@ it('sends the page mark with a request for a reset link, and with nothing else',
 
     preg_match('~<form[^>]*data-corex-account-form="reset-request".*?</form>~s', $html, $forgot);
 
+    preg_match('~<form[^>]*data-corex-account-form="register".*?</form>~s', $html, $register);
+
     expect($forgot[0])->toContain('<input type="hidden" name="page" value="12.abc&quot;def" />')
-        ->and(substr_count($html, 'name="page"'))->toBe(1);
+        ->and($register[0])->toContain('<input type="hidden" name="page" value="12.abc&quot;def" />')
+        ->and(substr_count($html, 'name="page"'))->toBe(2);
 });
 
 it('leaves the mark out where the block is on no page', function () {

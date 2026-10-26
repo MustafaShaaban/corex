@@ -67,10 +67,13 @@ test( 'loads every functional section without console errors', async ( {
 		} )
 	).toBeVisible();
 
+	// The preview is of the template open in the editor, drawn by the server (spec 120).
 	await page.getByRole( 'button', { name: 'Preview', exact: true } ).click();
-	const preview = page.getByTitle( 'Sandboxed email preview' );
-	await expect( preview ).toBeVisible();
-	await expect( preview ).toHaveAttribute( 'sandbox', '' );
+	await expect(
+		page.getByText(
+			'Select a template on the Templates tab to see it as it is sent.'
+		)
+	).toBeVisible();
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

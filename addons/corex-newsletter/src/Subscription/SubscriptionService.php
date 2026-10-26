@@ -10,9 +10,11 @@ namespace Corex\Newsletter\Subscription;
 
 defined('ABSPATH') || exit;
 
+use Corex\Mail\DesignedEmails;
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Newsletter\Subscriber\SubscriberStore;
+use Corex\Newsletter\Templates\NewsletterLinks;
 use Corex\Newsletter\TokenSigner;
 
 /**
@@ -26,10 +28,16 @@ final class SubscriptionService
     public const CONFIRMED    = 'confirmed';
     public const UNSUBSCRIBED = 'unsubscribed';
 
+    /** The Email Studio templates a subscriber is sent, where they are active (spec 120). */
+    public const OPT_IN_TEMPLATE  = 'double-opt-in';
+    public const WELCOME_TEMPLATE = 'newsletter-welcome';
+
     public function __construct(
         private readonly SubscriberStore $store,
         private readonly TokenSigner $signer,
         private readonly Mailer $mailer,
+        /** Email Studio's designed emails, where CoreX Mail is active (spec 120). */
+        private readonly ?DesignedEmails $designed = null,
     ) {
     }
 
@@ -61,11 +69,26 @@ final class SubscriptionService
             $this->store->setStatus($existing['id'], self::PENDING);
         }
 
-        $this->mailer->send(new MailRequest(
-            to: [$email],
-            templateName: 'newsletter-confirm',
-            context: ['email' => $email, 'confirm_token' => $this->signer->sign('confirm:' . $email)],
-        ));
+        $confirmToken = $this->signer->sign('confirm:' . $email);
+        // The "Double opt-in" template an owner designed, when it is active; the add-on's own
+        // email otherwise (spec 120, story 4).
+        $designed = $this->designed?->send(
+            self::OPT_IN_TEMPLATE,
+            [$email],
+            $this->designedContext($email, ['action' => ['url' => NewsletterLinks::confirm($confirmToken)]]),
+            __('Newsletter: confirmation', 'corex'),
+        );
+        if ($designed === null) {
+            $this->mailer->send(new MailRequest(
+                to: [$email],
+                templateName: 'newsletter-confirm',
+                context: [
+                    'email' => $email,
+                    'confirm_token' => $confirmToken,
+                    'unsubscribe_token' => $this->unsubscribeToken($email),
+                ],
+            ));
+        }
 
         return true;
     }
@@ -83,8 +106,34 @@ final class SubscriptionService
         }
 
         $this->store->setStatus($subscriber['id'], self::CONFIRMED);
+        // A welcome, when the "Newsletter welcome" template is active; none otherwise (spec 120).
+        $this->designed?->send(
+            self::WELCOME_TEMPLATE,
+            [$email],
+            $this->designedContext($email, []),
+            __('Newsletter: welcome', 'corex'),
+        );
 
         return true;
+    }
+
+    /**
+     * What a designed newsletter email is drawn from: its links, and whatever it adds.
+     *
+     * @param array<string,mixed> $more
+     *
+     * @return array<string,mixed>
+     */
+    private function designedContext(string $email, array $more): array
+    {
+        return [
+            'links' => [
+                'unsubscribe' => NewsletterLinks::unsubscribe($this->unsubscribeToken($email)),
+                'preferences' => NewsletterLinks::preferences($email),
+            ],
+            'recipient' => ['email' => $email],
+            'email' => ['kind' => 'newsletter'],
+        ] + $more;
     }
 
     public function unsubscribe(string $token): bool

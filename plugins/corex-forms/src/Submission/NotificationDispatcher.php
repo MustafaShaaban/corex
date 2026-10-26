@@ -141,7 +141,8 @@ final readonly class NotificationDispatcher
             $lines[] = sprintf('%s: %s', $name, self::scalarize($value));
         }
 
-        return implode("\n", $lines);
+        // An email with no words in it reads as a fault; it says what it is (spec 120).
+        return $lines === [] ? __('The submission contained no fields.', 'corex') : implode("\n", $lines);
     }
 
     /**
@@ -173,6 +174,24 @@ final readonly class NotificationDispatcher
         return $rows === ''
             ? '<p>' . esc_html__('The submission contained no fields.', 'corex') . '</p>'
             : '<table role="presentation" cellpadding="0" cellspacing="0">' . $rows . '</table>';
+    }
+
+    /**
+     * Every answer with a label made from its field's name, in the order given: what a
+     * notification's table and a template's "All answers" block list (spec 120).
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return list<array{label:string,value:string}>
+     */
+    public static function answers(array $values): array
+    {
+        $answers = [];
+        foreach ($values as $name => $value) {
+            $answers[] = ['label' => self::humanize((string) $name), 'value' => self::scalarize($value)];
+        }
+
+        return $answers;
     }
 
     private static function humanize(string $name): string

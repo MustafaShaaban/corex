@@ -135,7 +135,27 @@ final class FormsServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): FlowStore => $c->make(WpFlowStore::class),
         );
         $this->container->singleton(FlowRepository::class);
-        $this->container->singleton(FlowConfigurationValidator::class);
+        $this->container->singleton(
+            FlowConfigurationValidator::class,
+            static fn (ContainerInterface $c): FlowConfigurationValidator => new FlowConfigurationValidator(
+                $c->make(FieldTypeRegistry::class),
+                $c->make(RuleRegistry::class),
+                $c->make(\Corex\Forms\Success\SuccessStateRegistry::class),
+                $c->has(MailTemplateCatalog::class) ? $c->make(MailTemplateCatalog::class) : null,
+            ),
+        );
+        // The emails a new flow starts with, where CoreX Mail ships them (spec 120).
+        $this->container->singleton(
+            \Corex\Forms\Flow\DefaultFlowEmails::class,
+            static fn (ContainerInterface $c): \Corex\Forms\Flow\DefaultFlowEmails => new \Corex\Forms\Flow\DefaultFlowEmails(
+                $c->has(MailTemplateCatalog::class) ? $c->make(MailTemplateCatalog::class) : null,
+            ),
+        );
+        // Which templates a flow binds, for Email Studio's warnings (spec 120).
+        $this->container->singleton(
+            \Corex\Mail\MailTemplateUsage::class,
+            static fn (ContainerInterface $c): \Corex\Mail\MailTemplateUsage => $c->make(\Corex\Forms\Flow\FlowTemplateUsage::class),
+        );
         $this->container->singleton(FlowService::class);
         $this->container->singleton(FlowControllerServices::class);
         $this->container->singleton(FlowController::class);
@@ -214,7 +234,17 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
         );
-        $this->container->singleton(EmailStage::class);
+        $this->container->singleton(
+            EmailStage::class,
+            static fn (ContainerInterface $c): EmailStage => new EmailStage(
+                $c->make(FlowEmailSender::class),
+                $c->make(SubmissionRepository::class),
+                $c->make(NotificationDispatcher::class),
+                $c->make(FlowEmailAddressResolver::class),
+                // corex-config's inbox, where a stored submission is read (spec 120).
+                $c->has(\Corex\Mail\SubmissionAddress::class) ? $c->make(\Corex\Mail\SubmissionAddress::class) : null,
+            ),
+        );
         $this->container->singleton(InboxStage::class);
         $this->container->singleton(TimelineStage::class);
         $this->container->singleton(

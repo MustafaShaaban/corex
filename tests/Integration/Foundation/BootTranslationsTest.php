@@ -75,8 +75,8 @@ function translationReportOfOneRequest(bool $admin, bool $rightToLeft = false): 
         require %s;
 
         $email = \Corex\Boot::app()->container()
-            ->make(\Corex\Email\Template\Layout::class)
-            ->wrap('Subject', '<p>Body</p>');
+            ->make(\Corex\Email\Design\EmailFrame::class)
+            ->draw(new \Corex\Email\Design\EmailContent('Subject', '<p>Body</p>', '', \Corex\Email\Design\EmailKind::MESSAGE));
 
         echo 'COREX_REQUEST_JSON:' . wp_json_encode([
             'is_admin' => is_admin(),
@@ -92,7 +92,7 @@ function translationReportOfOneRequest(bool $admin, bool $rightToLeft = false): 
                 array_keys($early),
                 array_values($early),
             ),
-            'email_direction' => preg_match('/<html dir="(rtl|ltr)"/', $email, $found) === 1 ? $found[1] : '',
+            'email_direction' => preg_match('/<html[^>]* dir="(rtl|ltr)"/', $email, $found) === 1 ? $found[1] : '',
         ]);
         PHP,
         $admin ? 'true' : 'false',

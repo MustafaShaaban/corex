@@ -76,7 +76,7 @@ function initialTab() {
 
 function App() {
 	const [ tab, setTab ] = useState( initialTab );
-	const studio = useEmailStudio( config, setTab );
+	const studio = useEmailStudio( config, setTab, tab );
 
 	return (
 		<div className="corex-email-app">

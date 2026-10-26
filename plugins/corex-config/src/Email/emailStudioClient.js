@@ -51,10 +51,8 @@ export function normalizeOverview( payload ) {
 			? source.recent_test_sends
 			: [],
 		health: Array.isArray( source.health ) ? source.health : [],
-		variables:
-			source.variables && typeof source.variables === 'object'
-				? source.variables
-				: {},
+		// Grouped by the emails that supply them, each with a sample (spec 120).
+		variables: Array.isArray( source.variables ) ? source.variables : [],
 	};
 }
 
@@ -124,6 +122,8 @@ const ENDPOINTS = {
 	partials: () => 'partials',
 	routes: () => 'routes',
 	test: () => 'test',
+	preview: ( id ) => `templates/${ id }/preview`,
+	reset: ( id ) => `templates/${ id }/reset`,
 	resend: ( id ) => `attempts/${ id }/resend`,
 	captureScope: () => 'capture-scope',
 };
@@ -153,18 +153,33 @@ export function buildHealthUrl( base, templateId, version ) {
 	);
 }
 
+/**
+ * Whether a value is written as an email address. The server decides; this only spares a
+ * request that it would refuse.
+ *
+ * @param {string} value What was typed.
+ * @return {boolean} Whether it reads as an address.
+ */
+export function isEmailAddress( value ) {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test( String( value || '' ).trim() );
+}
+
 export function validateDraftForm( draft, translate = ( value ) => value ) {
 	const errors = {};
 	if ( ! String( draft.subject || '' ).trim() ) {
 		errors.subject = translate( 'Subject is required.', 'corex' );
 	}
-	if (
-		! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-			String( draft.from_address || '' )
-		)
-	) {
+	// Optional: a template with no From address leaves from the site's sender (spec 120).
+	const from = String( draft.from_address || '' ).trim();
+	if ( from !== '' && ! isEmailAddress( from ) ) {
 		errors.from_address = translate(
-			'A valid sender address is required.',
+			'The From address is not a valid email address.',
+			'corex'
+		);
+	}
+	if ( /[\r\n]/.test( String( draft.from_name || '' ) ) ) {
+		errors.from_name = translate(
+			'The From name cannot contain a line break.',
 			'corex'
 		);
 	}
@@ -192,74 +207,64 @@ export function validateDraftForm( draft, translate = ( value ) => value ) {
 	return errors;
 }
 
-function escapeHtml( value ) {
-	return String( value )
-		.replaceAll( '&', '&amp;' )
-		.replaceAll( '<', '&lt;' )
-		.replaceAll( '>', '&gt;' )
-		.replaceAll( '"', '&quot;' )
-		.replaceAll( "'", '&#039;' );
+/** The draft fields the server draws a template from. */
+const DRAFT_FIELDS = [
+	'subject',
+	'from_name',
+	'from_address',
+	'html_body',
+	'plain_text',
+	'plain_text_mode',
+	'layout_id',
+	'layout_version',
+];
+
+/**
+ * What asks the server to draw the draft being edited, as it would be sent (spec 120).
+ *
+ * @param {Object} draft     The draft in the editor, saved or not.
+ * @param {Object} samples   Sample values typed beside the preview, by variable.
+ * @param {string} direction `rtl` for the right-to-left view, otherwise the site's own.
+ * @return {Object} The request's body.
+ */
+export function previewRequest( draft, samples = {}, direction = 'ltr' ) {
+	const body = Object.fromEntries(
+		DRAFT_FIELDS.map( ( key ) => [ key, draft[ key ] ?? '' ] )
+	);
+
+	return {
+		...body,
+		samples,
+		direction: direction === 'rtl' ? 'rtl' : '',
+	};
 }
 
-export function mergePreviewVariables( html, values = {} ) {
-	return String( html || '' ).replace(
-		/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g,
-		( match, key ) => escapeHtml( values[ key ] ?? `[${ key }]` )
-	);
+/**
+ * What sends the previewed email to one address.
+ *
+ * @param {number} templateId The template.
+ * @param {Object} draft      The draft in the editor.
+ * @param {Object} samples    The sample values the preview used.
+ * @param {string} to         The address typed.
+ * @return {Object} The request's body.
+ */
+export function testSendRequest( templateId, draft, samples, to ) {
+	const { direction, ...preview } = previewRequest( draft, samples );
+
+	return { ...preview, template_id: templateId, to: [ String( to ).trim() ] };
 }
 
-export function previewDocument( html, values = {}, direction = 'ltr' ) {
-	const dir = direction === 'rtl' ? 'rtl' : 'ltr';
-	return `<!doctype html><html dir="${ dir }"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https:; style-src 'unsafe-inline'"></head><body>${ mergePreviewVariables(
-		html,
-		values
-	) }</body></html>`;
-}
+/**
+ * The reasons a template cannot be drawn, in the order the server gave them.
+ *
+ * @param {Object} envelope A failed response.
+ * @return {string[]} One sentence each, naming the variable or partial.
+ */
+export function drawingErrors( envelope ) {
+	const fields = envelope?.details?.fields;
+	const reasons = fields ? Object.values( fields ).filter( Boolean ) : [];
 
-function expandPreviewPartials( html, partials ) {
-	const catalog = Object.fromEntries(
-		partials
-			.filter( ( partial ) => partial.status === 'active' )
-			.map( ( partial ) => [ partial.slug, partial.html_body ] )
-	);
-	return String( html || '' ).replace(
-		/\{\{\s*>\s*([a-z][a-z0-9-]*)\s*\}\}/g,
-		( match, slug ) => catalog[ slug ] ?? `<p>[${ slug }]</p>`
-	);
-}
-
-export function composePreviewHtml( draft, layouts = [], partials = [] ) {
-	const content = expandPreviewPartials( draft.html_body, partials );
-	const layout = layouts.find(
-		( candidate ) =>
-			Number( candidate.id ) === Number( draft.layout_id ) &&
-			Number( candidate.version ) === Number( draft.layout_version )
-	);
-	if ( ! layout ) {
-		return content;
-	}
-
-	const regions = Object.fromEntries(
-		Object.entries( layout.regions || {} ).map( ( [ key, value ] ) => [
-			key,
-			expandPreviewPartials( value, partials ),
-		] )
-	);
-	const body = String( regions.body || '{{ content }}' ).replace(
-		/\{\{\s*content\s*\}\}/g,
-		content
-	);
-	const accent = /^#[0-9a-f]{6}$/i.test( regions.accent || '' )
-		? `border-block-start:4px solid ${ regions.accent };`
-		: '';
-
-	return `<div style="${ accent }">${ regions.header || '' }${ body }${
-		regions.button || ''
-	}${ regions.footer || '' }</div>`;
-}
-
-export function plainTextFromHtml( html ) {
-	const element = document.createElement( 'div' );
-	element.innerHTML = String( html || '' );
-	return ( element.textContent || '' ).replace( /\s+/g, ' ' ).trim();
+	return reasons.length > 0
+		? reasons
+		: [ envelope?.message || 'The template could not be drawn.' ];
 }

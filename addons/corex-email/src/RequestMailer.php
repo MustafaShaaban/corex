@@ -56,6 +56,10 @@ final class RequestMailer implements AttemptingMailer
             $builder->template($request->templateName)->with($request->context);
         } else {
             $builder->subject((string) $request->subject)->body((string) $request->body);
+            // A finished message's own text version, as it was given (spec 120, story 7).
+            if ($request->plainText !== null) {
+                $builder->plainText($request->plainText);
+            }
         }
 
         if ($request->from !== null && $request->from !== '') {

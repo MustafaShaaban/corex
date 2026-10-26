@@ -49,8 +49,9 @@ function emailsDrawnInAnAdminRequest(string $siteLanguage, string $profileLangua
         );
         $reply = $container->make(\Corex\Email\Design\ReplyComposer::class)
             ->compose('salma@example.com', 'Subject', '<p>Hello</p>');
-        // What an Email Studio template is wrapped by, with nothing else around it.
-        $layout = $container->make(\Corex\Email\Template\Layout::class)->wrap('Subject', '<p>Body</p>');
+        // The frame an Email Studio template is drawn in, with nothing else around it (spec 120).
+        $layout = $container->make(\Corex\Email\Design\EmailFrame::class)
+            ->draw(new \Corex\Email\Design\EmailContent('Subject', '<p>Body</p>', '', \Corex\Email\Design\EmailKind::MESSAGE));
 
         return [
             'layout' => $drawn($layout),
@@ -70,9 +71,9 @@ it('draws an email in the language of the site, not of the administrator whose r
 
     // The request is the administrator's: without that, this test would pass on any code.
     expect($drawn['request'])->toBe(['is_admin' => true] + $theRequest)
-        // The bare layout has no words of CoreX's own: only which way it runs.
-        ->and($drawn['drawn']['layout']['html'])->toBe(sprintf('<html dir="%s">', $theEmail['dir']))
-        ->and($drawn['drawn']['template'])->toBe(['html' => sprintf('<html dir="%s">', $theEmail['dir'])] + $theEmail['words'])
+        // Every one of them in the one frame, which runs the site's way (spec 120).
+        ->and($drawn['drawn']['layout']['html'])->toBe(sprintf('<html lang="%s" dir="%s">', $theEmail['lang'], $theEmail['dir']))
+        ->and($drawn['drawn']['template'])->toBe(['html' => sprintf('<html lang="%s" dir="%s">', $theEmail['lang'], $theEmail['dir'])] + $theEmail['words'])
         ->and($drawn['drawn']['reply'])->toBe(
             ['html' => sprintf('<html lang="%s" dir="%s">', $theEmail['lang'], $theEmail['dir'])] + $theEmail['words'],
         )

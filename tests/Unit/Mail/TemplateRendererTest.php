@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 use Corex\Email\Security\HeaderGuard;
 use Corex\Email\Template\EmailTemplate;
-use Corex\Email\Template\Layout;
 use Corex\Email\Template\MailContext;
 use Corex\Email\Template\TemplateRenderer;
+use Corex\Tests\Support\FixedEmailFrame;
 use Corex\Tests\Support\LanguageOfTheRequest;
 
 final class GreetingTemplate extends EmailTemplate
@@ -36,12 +36,14 @@ final class GreetingTemplate extends EmailTemplate
     }
 }
 
+beforeEach(function () {
+    // The frame's footer is in translated sentences.
+    Brain\Monkey\Functions\when('__')->returnArg();
+});
+
 function mailRenderer(): TemplateRenderer
 {
-    return new TemplateRenderer(
-        new Layout(['name' => 'Acme', 'color' => '#0B1F3B', 'logo' => '']),
-        new LanguageOfTheRequest(),
-    );
+    return new TemplateRenderer(FixedEmailFrame::named('Acme'), new LanguageOfTheRequest());
 }
 
 it('merges whitelisted context into subject and body', function () {
@@ -94,7 +96,7 @@ it('leaves a break in a merged value for the guard of this path to refuse', func
         ->toBe('Illegal characters in the subject field.');
 });
 
-it('wraps the body in the brand layout (RTL-aware full document)', function () {
+it('draws the body in the one frame (RTL-aware full document)', function () {
     $rendered = mailRenderer()->render(new GreetingTemplate(), new MailContext([
         'user' => ['name' => 'X'], 'site' => ['name' => 'Y'],
     ]));

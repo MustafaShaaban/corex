@@ -106,7 +106,9 @@ const FIXTURE_CONFIGURATION = {
 	],
 	validation: { email: [ 'required', 'email' ] },
 	routing: { rules: [], fallback: { type: 'flow_owner', config: {} } },
-	email_routes: [],
+	// A binding switched off, and not none: a new flow with none is bound to the emails CoreX
+	// ships (spec 120), and this fixture's submissions send no email.
+	email_routes: [ { event: 'team_notification', enabled: false } ],
 	success: { type: 'inline', message: 'Received.' },
 	placement_snapshot: { type: 'block' },
 	protection: { captcha: 'off' },
