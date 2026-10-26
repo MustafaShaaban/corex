@@ -41,6 +41,12 @@ Corex is built security-first (Constitution Principle VII): a declarative middle
 hard dependency. The self-update flow only fetches from a source **you** configure and installs through
 WordPress's own signed updater — see [`docs/en/05-deployment/updates-and-distribution.md`](docs/en/05-deployment/updates-and-distribution.md).
 
+The Releases routes, which replace a site's code, take the admin screen's nonce. They take an Application
+Password instead only on a site whose `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as `true`, only over
+HTTPS (or on a `local` site), and only for an account that may install releases; no setting can turn this on.
+Leave the constant out on a site that does not install releases from a command (DECISIONS #512,
+[`docs/en/05-deployment/releases-from-your-machine.md`](docs/en/05-deployment/releases-from-your-machine.md)).
+
 ## Dependency advisories
 
 Corex audits the Composer lockfile, root npm lockfile, and docs-app npm lockfile together:

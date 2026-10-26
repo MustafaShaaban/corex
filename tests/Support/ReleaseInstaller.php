@@ -19,6 +19,7 @@ use Closure;
 use Corex\Activity\ActivityService;
 use Corex\Boot;
 use Corex\Config\Releases\InstalledRelease;
+use Corex\Config\Releases\ReleaseCaller;
 use Corex\Config\Releases\ReleaseCompletion;
 use Corex\Config\Releases\ReleaseContentHash;
 use Corex\Config\Releases\ReleaseDesk;
@@ -103,11 +104,19 @@ final class ReleaseInstaller
     public ?Closure $rename = null;
 
     /**
+     * Whether `ask()` signs its requests as the screen does, with the nonce. A test of the
+     * command that installs with an Application Password turns it off, and back on after.
+     */
+    public static bool $signedByTheScreen = true;
+
+    /**
      * @param array<string,string> $before                 Every file on the site before, by path, with what it holds.
      * @param bool                 $allowedByConfiguration What the site's configuration says of installing releases.
      * @param SchemaMigrator|null  $migrator               What makes the release's tables; the site's own, unless a test needs one to fail.
+     * @param bool                 $pushAllowed            Whether the site's configuration lets an Application Password install a
+     *                                                     release (`ReleaseCaller::PUSH_ALLOWED_BY`).
      */
-    public function __construct(array $before, bool $allowedByConfiguration = false, ?SchemaMigrator $migrator = null)
+    public function __construct(array $before, bool $allowedByConfiguration = false, ?SchemaMigrator $migrator = null, bool $pushAllowed = false)
     {
         $this->root = sys_get_temp_dir() . '/corex-site-' . bin2hex(random_bytes(4));
         mkdir($this->root . '/wp-content', 0777, true);
@@ -136,7 +145,8 @@ final class ReleaseInstaller
             fn (string $from, string $to): bool => $this->rename === null ? @rename($from, $to) : ($this->rename)($from, $to),
         );
         $safeguards = new ReleaseSafeguards($this->maintenance, $this->recovery, self::HOME);
-        $record     = new ReleaseRecord($this->store, new ActivityService($this->activity), static fn (int $id): string => 'User ' . $id);
+        $caller     = new ReleaseCaller($pushAllowed);
+        $record     = new ReleaseRecord($this->store, new ActivityService($this->activity), static fn (int $id): string => 'User ' . $id, $caller->applicationPassword(...));
         $desk       = new ReleaseDesk(
             $this->store,
             new ReleasePackageInspector($this->installed, new ReleaseDowngrades($this->root), PHP_VERSION, '7.1.3'),
@@ -155,7 +165,7 @@ final class ReleaseInstaller
         $network      = $container->make(NetworkContext::class);
 
         $this->controller = new ReleasesController(
-            $container->make(ReleaseRestGateway::class),
+            new ReleaseRestGateway($caller),
             $desk,
             new ReleaseUpload($this->store),
             $installation,
@@ -208,7 +218,9 @@ final class ReleaseInstaller
     public static function ask(string $method, string $route, array $params = []): WP_REST_Response
     {
         $request = new WP_REST_Request($method, '/corex/v1' . $route);
-        $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+        if (self::$signedByTheScreen) {
+            $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+        }
         $method === 'GET' ? $request->set_query_params($params) : $request->set_body_params($params);
 
         return rest_get_server()->dispatch($request);
