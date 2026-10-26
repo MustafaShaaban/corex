@@ -14,7 +14,6 @@ declare(strict_types=1);
 use Corex\Boot;
 use Corex\Config\Submissions\SubmissionsController;
 use Corex\Email\Capture\CapturedEmailRepository;
-use Corex\Email\Design\EmailPalette;
 use Corex\Tests\Support\BrandAccent;
 use Corex\Tests\Support\MailDelivery;
 

@@ -31,10 +31,17 @@ async function openTemplate( page, name ) {
 		`This site has no "${ name }" template: CoreX installs it on a new site.`
 	);
 	await chosen.first().click();
-	await expect( page.getByRole( 'heading', { name, level: 2 } ) ).toBeVisible();
+	await expect(
+		page.getByRole( 'heading', { name, level: 2 } )
+	).toBeVisible();
 }
 
-/** The email in the preview, once the server has drawn it. */
+/**
+ * The email in the preview, once the server has drawn it.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @return {import('@playwright/test').FrameLocator} The preview's frame.
+ */
 function previewFrame( page ) {
 	return page.frameLocator( 'iframe[title="The email as it is sent"]' );
 }
@@ -90,7 +97,9 @@ test( 'shows the plain text that is sent, and names a variable that cannot be dr
 		.click();
 	const body = page.getByLabel( 'HTML body' );
 	await body.fill( `${ await body.inputValue() }{{ nonsense.key }}` );
-	await page.getByRole( 'button', { name: 'Test send', exact: true } ).click();
+	await page
+		.getByRole( 'button', { name: 'Test send', exact: true } )
+		.click();
 	await expect(
 		page.getByText( 'Unknown variable: nonsense.key.' )
 	).toBeVisible();
@@ -103,11 +112,15 @@ test( 'sends the previewed email as a test, refusing an address that is not one'
 	page,
 } ) => {
 	await openTemplate( page, 'Contact confirmation' );
-	await page.getByRole( 'button', { name: 'Test send', exact: true } ).click();
+	await page
+		.getByRole( 'button', { name: 'Test send', exact: true } )
+		.click();
 
 	const to = page.getByLabel( 'Send the test to' );
 	await to.fill( 'not-an-address' );
-	await page.getByRole( 'button', { name: 'Send test', exact: true } ).click();
+	await page
+		.getByRole( 'button', { name: 'Send test', exact: true } )
+		.click();
 	await expect(
 		page.getByText(
 			'Enter a valid email address: not-an-address is not one.'
@@ -115,14 +128,19 @@ test( 'sends the previewed email as a test, refusing an address that is not one'
 	).toBeVisible();
 
 	await to.fill( 'me@example.test' );
-	await page.getByRole( 'button', { name: 'Send test', exact: true } ).click();
+	await page
+		.getByRole( 'button', { name: 'Send test', exact: true } )
+		.click();
 	await expect(
 		page.getByText( 'Captured: nothing left this site' )
 	).toBeVisible();
 	const toTheLog = page.getByRole( 'link', {
 		name: 'Open it in the delivery log',
 	} );
-	await expect( toTheLog ).toHaveAttribute( 'href', /tab=logs#corex-attempt-/ );
+	await expect( toTheLog ).toHaveAttribute(
+		'href',
+		/tab=logs#corex-attempt-/
+	);
 
 	// The kept email holds both versions, as it would have arrived.
 	await toTheLog.click();
@@ -137,7 +155,7 @@ test( 'sends the previewed email as a test, refusing an address that is not one'
 	);
 } );
 
-test( 'keeps the preview and the test send inside a phone\'s width', async ( {
+test( "keeps the preview and the test send inside a phone's width", async ( {
 	page,
 } ) => {
 	await page.setViewportSize( { width: 375, height: 812 } );

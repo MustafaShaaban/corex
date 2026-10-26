@@ -132,7 +132,7 @@ under the first administrator's id, since a record needs a person and `init` may
 
 ## R8 Designed emails on the shared mailer (FR-021, FR-031 to FR-034; DECISIONS #456)
 
-**Decision.** A corex-core contract, `Corex\Mail\DesignedEmails`, with `available(string $slug): bool` and
+**Decision.** A corex-core contract, `Corex\Mail\DesignedEmails`, with one method,
 `send(string $slug, array $to, array $context, string $path): ?MailResult`. corex-email implements it: the active
 version of the template with that slug is drawn (frame, From, plain text) and sent through `MailService`, the shared
 mailer, so the delivery rule is the one every other CoreX email on it follows: a production site sends, a development
@@ -146,7 +146,7 @@ site could not send would be a regression against WordPress's own email, which s
 ## R9 Account emails (FR-031 to FR-034; DECISIONS #457)
 
 **Decision.** In corex-profile, while a reset asked through the account block is answered (`ResetEmailLink::during`),
-`send_retrieve_password_email` is answered `false` when "Password reset" is available: CoreX makes the key with
+`send_retrieve_password_email` is answered `false` when "Password reset" was sent: CoreX makes the key with
 `get_password_reset_key()` and sends the template with `action.url` (the account page's reset form,
 `ResetLink::emailed()`), `user.*`, `reset.asked` (the time, in the site's format) and `reset.expires` (from
 `password_reset_expiration`, "24 hours" by default). When it cannot be drawn, WordPress sends its own, relinked as

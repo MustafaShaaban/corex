@@ -72,7 +72,7 @@ function designedProbe(object $test, string $html, string $from = '', string $fr
 }
 
 /** A request with the draft fields of a template's active version, as the editor posts them. */
-function draftRequest(object $test, EmailTemplate $template, array $more = []): WP_REST_Request
+function studioDraftRequest(object $test, EmailTemplate $template, array $more = []): WP_REST_Request
 {
     $version = $test->container->make(EmailTemplateRepository::class)->findVersion($template->id, $template->activeVersion);
     $request = new WP_REST_Request('POST', '/corex/v1/email-studio/templates/' . $template->id . '/preview');
@@ -98,8 +98,8 @@ it('previews the draft framed by the server, with samples that can be changed an
     $template = designedProbe($this, '<p>Hello {{ submission.name }} about {{ form.title }}.</p>');
     $controller = $this->container->make(EmailStudioController::class);
 
-    $drawn = $controller->previewTemplate(draftRequest($this, $template))->get_data()['data'];
-    $changed = $controller->previewTemplate(draftRequest($this, $template, [
+    $drawn = $controller->previewTemplate(studioDraftRequest($this, $template))->get_data()['data'];
+    $changed = $controller->previewTemplate(studioDraftRequest($this, $template, [
         'samples' => ['form.title' => 'Quote request'],
         'direction' => 'rtl',
     ]))->get_data()['data'];
@@ -120,9 +120,9 @@ it('names the variable or the partial a template cannot be drawn without, and se
     $template = designedProbe($this, '<p>Hello</p>');
     $controller = $this->container->make(EmailStudioController::class);
 
-    $unknown = $controller->previewTemplate(draftRequest($this, $template, ['html_body' => '<p>{{ nonsense.key }}</p>']));
-    $partial = $controller->previewTemplate(draftRequest($this, $template, ['html_body' => '<p>Hi</p>{{> promo }}']));
-    $test = $controller->testSend(draftRequest($this, $template, [
+    $unknown = $controller->previewTemplate(studioDraftRequest($this, $template, ['html_body' => '<p>{{ nonsense.key }}</p>']));
+    $partial = $controller->previewTemplate(studioDraftRequest($this, $template, ['html_body' => '<p>Hi</p>{{> promo }}']));
+    $test = $controller->testSend(studioDraftRequest($this, $template, [
         'template_id' => $template->id,
         'to' => ['me@example.test'],
         'html_body' => '<p>{{ nonsense.key }}</p>',
@@ -140,7 +140,7 @@ it('names the variable or the partial a template cannot be drawn without, and se
 it('refuses a test to what is not an address, before anything is drawn or sent', function () {
     $template = designedProbe($this, '<p>Hello</p>');
 
-    $response = $this->container->make(EmailStudioController::class)->testSend(draftRequest($this, $template, [
+    $response = $this->container->make(EmailStudioController::class)->testSend(studioDraftRequest($this, $template, [
         'template_id' => $template->id,
         'to' => ['not-an-address'],
     ]));
@@ -153,9 +153,9 @@ it('refuses a test to what is not an address, before anything is drawn or sent',
 it('sends as a test exactly the email it previews, with "[Test]" before its subject, and says what happened', function () {
     $template = designedProbe($this, '<p>Hello {{ submission.name }}.</p><ul><li>One</li></ul><p><a href="https://example.com/x">More</a></p>');
     $controller = $this->container->make(EmailStudioController::class);
-    $preview = $controller->previewTemplate(draftRequest($this, $template))->get_data()['data'];
+    $preview = $controller->previewTemplate(studioDraftRequest($this, $template))->get_data()['data'];
 
-    $sent = $controller->testSend(draftRequest($this, $template, [
+    $sent = $controller->testSend(studioDraftRequest($this, $template, [
         'template_id' => $template->id,
         'to' => ['me@example.test'],
     ]))->get_data()['data'];

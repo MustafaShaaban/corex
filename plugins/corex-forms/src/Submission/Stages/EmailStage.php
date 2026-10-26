@@ -231,6 +231,7 @@ final readonly class EmailStage implements SubmissionStage
         $address = $context->submissionId !== null && $this->submissionAddresses !== null
             ? $this->submissionAddresses->of($context->submissionId)
             : '';
+        $answers = FlowEmailVariables::answers($context->version->configuration, $context->values, $address);
 
         return [
             'submission' => $context->values,
@@ -242,11 +243,12 @@ final readonly class EmailStage implements SubmissionStage
             'form' => [
                 'slug' => $context->flow->slug,
                 'title' => $context->flow->name,
-                'answers' => FlowEmailVariables::answers($context->version->configuration, $context->values, $address),
+                'answers' => $answers,
             ],
             'links' => ['submission' => $address],
             'submission_url' => $address,
-            'answers' => FlowEmailVariables::answers($context->version->configuration, $context->values, $address),
+            // What CoreX's own form notification lists, where it is sent in a template's place.
+            'answers' => $answers,
             'email' => ['kind' => FlowEmailVariables::kindOf($event)],
             'routing' => $context->metadata['routing'] ?? [],
             'is_test' => $context->isTest,

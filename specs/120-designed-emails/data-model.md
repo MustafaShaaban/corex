@@ -53,5 +53,5 @@ slug, name, kind, layout slug, subject, HTML, plain-text mode. Shipped defaults:
 
 ## Contracts (corex-core): new
 
-- `DesignedEmails`: `available(slug)`, `send(slug, to, context, path): ?MailResult`.
+- `DesignedEmails`: `send(slug, to, context, path): ?MailResult`.
 - `MailTemplateUsage`: `emailsUsing(templateId): list<string>` (kinds of email, for warnings).

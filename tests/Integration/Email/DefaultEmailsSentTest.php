@@ -202,13 +202,23 @@ it('gives way to the sender\'s own email where a template cannot be drawn, and s
         $sent = $this->container->make(DesignedEmails::class)->send('newsletter-welcome', ['a@example.com'], [], 'Newsletter: welcome');
     } finally {
         $store->update($template->id, $record['name'], $record['payload']);
+        // What the activity log recorded of it is this test's, not the site's.
+        global $wpdb;
+        $recorded = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}corex_activity_events WHERE kind = %s AND target_id = %s",
+            'email.template.fell_back',
+            'newsletter-welcome',
+        ));
+        $wpdb->delete($wpdb->prefix . 'corex_activity_events', ['kind' => 'email.template.fell_back', 'target_id' => 'newsletter-welcome']);
     }
 
     expect($sent)->toBeNull()
         ->and($heard)->toHaveCount(1)
         ->and($heard[0]->reason)->toBe(EmailDesignFailedEvent::TEMPLATE_FAILED)
         ->and($heard[0]->design)->toBe('newsletter-welcome')
-        ->and($heard[0]->detail)->toBe('The partial "spec120-missing" is not available.');
+        ->and($heard[0]->detail)->toBe('The partial "spec120-missing" is not available.')
+        // And the activity log says so.
+        ->and($recorded)->toBe(1);
 });
 
 /** A published page with the account block, and its signed mark, for the account emails. */
