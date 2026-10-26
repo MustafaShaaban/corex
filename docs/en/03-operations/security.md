@@ -171,8 +171,8 @@ Two abilities reach further than their screen's name says. Weigh them before all
 
 - **Manage setup** runs the Setup Wizard, whose kit activates CoreX plugins and add-ons and can set the site's front
   page.
-- **Manage Email Studio** reads the captured emails, which can hold what people typed into the site's forms, and
-  sends test mail from the site's address.
+- **Manage Email Studio** lists the captured emails and sends test mail from the site's address. A captured
+  email's content is shown only to site administrators.
 
 ### What only a site administrator may change
 

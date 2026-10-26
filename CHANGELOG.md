@@ -54,6 +54,8 @@ Access & Abilities first.
   a sentence saying a site administrator does it, and the refusal is in the access history.
 - **"Capture only CoreX mail" stays with site administration** (#423, #429), like live delivery: a holder of
   "Manage Email Studio" sees the switch unavailable, with a sentence.
+- **A captured email's content is shown only to site administrators** (#429). Anyone else who holds "Manage
+  Email Studio" sees each captured email's subject, recipients, what sent it, its state and when.
 - **Refused calls to the flow, activity and Blog Pro routes are counted in the access audit** (#429), under
   Forms & Flows, Overview and Blog Pro, like every other CoreX route since spec 117.
 - **At a phone's width the role matrix folds into one list per ability** (#424), each state named with its role,
@@ -80,7 +82,8 @@ Access & Abilities first.
   Overview under "Stored but not applied".
 - **Blog Pro opens for "Manage Blog Pro"** and site administrators. Editors and writers who used it since
   v0.47.0 need "Manage Blog Pro" allowed for their role.
-- **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it.
+- **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it. Such a person who
+  is not a site administrator sees captured emails listed, not their content.
 - **Only a site administrator can allow a Critical ability, change a role they hold, or decide their own access
   request.** A holder of "Manage access" who is not a site administrator is refused these with a sentence.
 - **A bookmark or script that downloaded `admin-post.php?action=corex_data_export`** stops working; export from

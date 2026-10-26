@@ -18730,7 +18730,13 @@ site administrator, and as an administrator) and `AccessHistoryTest` (the histor
    overview shows the switch unavailable, with the sentence, to anyone else. It decides whether other plugins' mail
    leaves a development or staging site.
 4. **The guide names what two abilities reach**: "Manage setup" runs a kit that activates plugins and can set the
-   front page; "Manage Email Studio" reads captured emails and sends test mail from the site's address.
+   front page; "Manage Email Studio" lists captured emails and sends test mail from the site's address.
+5. **A captured email's content is shown only to site administrators** (amended 2026-10-26). `GET
+   corex/v1/email-studio` sends a capture's body, plain text and headers only to someone with `manage_options`;
+   anyone else gets its subject, recipients, path, state and time, with `content_withheld: true`, and the log says
+   "Only a site administrator can open a captured email." No other route sends a capture's content. Verified by
+   `ScreenAbilitiesAccessTest` (a holder of the ability who is not a site administrator gets no content and a 403 on
+   the capture switch; an administrator gets the body) and Jest `emailStudioDelivery.test.js`.
 
 ## #500 -- CoreX agent abilities are public to MCP, and to MCP only
 

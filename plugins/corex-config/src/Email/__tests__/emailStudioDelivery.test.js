@@ -8,6 +8,7 @@ import { createRoot } from '@wordpress/element';
 import { act } from 'react';
 
 import { OverviewPanel } from '../components/OverviewPanel.js';
+import { LogsPanel } from '../components/LogsPanel.js';
 
 const data = {
 	delivery: { environment: 'production', provider_configured: false },
@@ -80,4 +81,45 @@ it( 'leaves the capture switch to a site administrator, and says why to anyone e
 	} finally {
 		delete data.outcome;
 	}
+} );
+
+describe( 'the captured mail list', () => {
+	const capture = ( extra ) => ( {
+		capture_id: 'c1',
+		subject: 'Hello',
+		to: [ 'someone@example.test' ],
+		path: 'Form notification',
+		state: 'captured',
+		captured_at: '2026-10-26T10:00:00+00:00',
+		...extra,
+	} );
+
+	async function drawLogs( captures ) {
+		await act( async () => {
+			root.render(
+				<LogsPanel
+					attempts={ [] }
+					captures={ captures }
+					busy={ false }
+					onResend={ () => {} }
+				/>
+			);
+		} );
+	}
+
+	it( 'says that only a site administrator opens a captured email when its content was withheld', async () => {
+		await drawLogs( [ capture( { content_withheld: true } ) ] );
+
+		expect( container.textContent ).toContain(
+			'Only a site administrator can open a captured email.'
+		);
+	} );
+
+	it( 'says nothing of the kind to a site administrator', async () => {
+		await drawLogs( [ capture( { content_withheld: false } ) ] );
+
+		expect( container.textContent ).not.toContain(
+			'Only a site administrator can open a captured email.'
+		);
+	} );
 } );

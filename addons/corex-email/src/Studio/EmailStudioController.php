@@ -139,6 +139,7 @@ final class EmailStudioController
         $partials  = array_map($this->partialArray(...), $this->partials->all());
         $routes    = array_map($this->routeArray(...), $this->routes->all());
         $captures  = $this->captures->latest(self::RECENT);
+        $withContent = $this->opensCapturedContent();
         $attempts  = $this->attempts->latest(self::RECENT);
         $states    = array_count_values(array_map(static fn (EmailAttempt $attempt): string => $attempt->state, $attempts));
         $recentTests = array_values(array_filter(
@@ -171,7 +172,10 @@ final class EmailStudioController
             'layouts'   => $layouts,
             'partials'  => $partials,
             'routes'    => $routes,
-            'captures'  => array_map($this->captureArray(...), $captures),
+            'captures'  => array_map(
+                fn (CapturedEmail $capture): array => $this->captureArray($capture, $withContent),
+                $captures,
+            ),
             'attempts'  => array_map($this->attemptArray(...), $attempts),
             'recent_test_sends' => array_map($this->attemptArray(...), array_slice($recentTests, 0, 10)),
             'health'     => $this->overviewHealth(),
@@ -595,17 +599,31 @@ final class EmailStudioController
         ];
     }
 
-    /** @return array<string,mixed> */
-    private function captureArray(CapturedEmail $capture): array
+    /**
+     * A captured email's content is shown only to site administrators (DECISIONS #429). Anyone else
+     * who holds "Manage Email Studio" reads what it was, to whom and when, and is told the rest is
+     * not theirs to open.
+     */
+    private function opensCapturedContent(): bool
     {
-        return [
+        return current_user_can('manage_options');
+    }
+
+    /** @return array<string,mixed> */
+    private function captureArray(CapturedEmail $capture, bool $withContent): array
+    {
+        $summary = [
             'id' => $capture->id, 'capture_id' => $capture->captureId, 'attempt_id' => $capture->attemptId,
             'to' => $capture->to, 'subject' => $capture->subject,
-            'html_body' => $capture->body, 'plain_text' => $capture->plainText, 'headers' => $capture->headers,
             'captured_at' => $capture->capturedAt->format(DATE_ATOM),
             'retention_until' => $capture->retentionUntil?->format(DATE_ATOM),
             'path' => $capture->path, 'state' => $capture->state,
+            'content_withheld' => ! $withContent,
         ];
+
+        return $withContent
+            ? $summary + ['html_body' => $capture->body, 'plain_text' => $capture->plainText, 'headers' => $capture->headers]
+            : $summary;
     }
 
     /** @return array<string,mixed> */

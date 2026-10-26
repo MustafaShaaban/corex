@@ -342,3 +342,104 @@ it('counts refused flow, activity and Blog Pro routes in the access audit under 
     expect($statuses)->toBe([403, 403, 403])
         ->and($sections)->toEqualCanonicalizing(['corex-forms', 'corex-settings', 'corex-blog-pro']);
 });
+
+/*
+ * A captured email's content is shown only to site administrators (DECISIONS #429).
+ */
+it('withholds a captured email\'s content from a holder of "Manage Email Studio" who is not a site administrator, and refuses them the capture switch', function () {
+    $capture = Boot::app()->container()->make(\Corex\Email\Capture\CapturedEmailRepository::class)->capture(new \Corex\Email\Message\EmailMessage(
+        ['someone@example.test'],
+        [],
+        [],
+        null,
+        'Spec 117 captured content',
+        '<p>Spec 117 body</p>',
+        ['X-Spec-117' => 'header'],
+        plainText: 'Spec 117 body',
+    ));
+
+    try {
+        (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::MANAGE_EMAIL);
+        wp_set_current_user($this->people['subscriber']);
+        $mine = array_values(array_filter(
+            (array) (screenRoute('GET', 'email-studio')->get_data()['data']['captures'] ?? []),
+            static fn (array $row): bool => $row['capture_id'] === $capture->captureId,
+        ));
+        $scope = screenRoute('POST', 'email-studio/capture-scope', ['scope' => 'corex']);
+
+        wp_set_current_user($this->adminId);
+        $theirs = array_values(array_filter(
+            (array) (screenRoute('GET', 'email-studio')->get_data()['data']['captures'] ?? []),
+            static fn (array $row): bool => $row['capture_id'] === $capture->captureId,
+        ));
+
+        expect($mine)->toHaveCount(1)
+            ->and($mine[0]['subject'])->toBe('Spec 117 captured content')
+            ->and($mine[0]['content_withheld'])->toBeTrue()
+            ->and($mine[0])->not->toHaveKeys(['html_body', 'plain_text', 'headers'])
+            ->and($scope->get_status())->toBe(403)
+            ->and($theirs[0]['html_body'] ?? null)->toBe('<p>Spec 117 body</p>')
+            ->and($theirs[0]['content_withheld'])->toBeFalse();
+    } finally {
+        wp_delete_post($capture->id, true);
+    }
+});
+
+/** The pending request this person made, created through the route. */
+function ownRequestThroughRoute(): int
+{
+    $created = screenRoute('POST', 'access/requests', ['ability' => CorexAbility::MANAGE_FORMS, 'reason' => 'I build the forms.']);
+
+    return (int) ($created->get_data()['data']['result']['affected_ids'][0] ?? 0);
+}
+
+it('refuses a manager who is not a site administrator to set a Critical ability to Inherit', function () {
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::MANAGE_ACCESS);
+    freshAbilities();
+    wp_set_current_user($this->people['subscriber']);
+
+    $response = applyRoleRoute('editor', [CorexAbility::RUN_DANGEROUS_ACTIONS => AccessPolicy::EFFECT_INHERIT]);
+
+    expect(refusalCodes($response))->toBe([AccessPolicy::CRITICAL_ALLOW]);
+});
+
+it('refuses a manager who is not a site administrator to approve their own request', function () {
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::MANAGE_ACCESS);
+    freshAbilities();
+    wp_set_current_user($this->people['subscriber']);
+    $id = ownRequestThroughRoute();
+
+    $approved = screenRoute('POST', 'access/requests/' . $id . '/decision', [
+        'approved'     => true,
+        'note'         => 'Mine.',
+        'expiry_days'  => 30,
+        'confirmation' => [
+            'operation_kind' => AccessService::APPROVAL_OPERATION,
+            'target_hash'    => Boot::app()->container()->make(AccessService::class)->approvalHash($id, [CorexAbility::MANAGE_FORMS]),
+            'actor_id'       => (string) get_current_user_id(),
+            'expires_at'     => (new DateTimeImmutable('+5 minutes'))->format(DATE_ATOM),
+        ],
+    ]);
+
+    try {
+        expect($id)->toBeGreaterThan(0)
+            ->and(refusalCodes($approved))->toBe([AccessService::OWN_REQUEST])
+            ->and(current_user_can(CorexAbility::MANAGE_FORMS))->toBeFalse();
+    } finally {
+        global $wpdb;
+        $wpdb->delete($this->migrator->fullName(AccessTables::REQUESTS), ['id' => $id]);
+    }
+});
+
+it('refuses a change to a role the manager holds as a second role', function () {
+    $manager = new WP_User($this->people['subscriber']);
+    $manager->add_role('editor');
+    $manager->add_cap(CorexAbility::MANAGE_ACCESS);
+    freshAbilities();
+    wp_set_current_user($this->people['subscriber']);
+
+    $response = applyRoleRoute('editor', [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW]);
+
+    expect(refusalCodes($response))->toBe([AccessPolicy::OWN_ACCESS])
+        ->and($this->roles->effectsForRole('editor'))->toBe([]);
+});
