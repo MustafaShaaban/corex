@@ -18731,3 +18731,298 @@ site administrator, and as an administrator) and `AccessHistoryTest` (the histor
    leaves a development or staging site.
 4. **The guide names what two abilities reach**: "Manage setup" runs a kit that activates plugins and can set the
    front page; "Manage Email Studio" reads captured emails and sends test mail from the site's address.
+
+## #500 -- CoreX agent abilities are public to MCP, and to MCP only
+
+**Date:** 2026-10-25. **Spec:** 123, FR-001, FR-002.
+
+**Numbering.** Open branches had claimed decisions up to #479 when this was written (spec 122's plan), so spec
+123 starts at #500 to stay clear of them. Renumber at merge only if a later branch took the same numbers.
+
+**Found.** The two abilities DECISIONS #53 registered (`corex/list-blocks`, `corex/site-info`) never reached an
+agent: the MCP Adapter default server on mu-va.com listed only WordPress's three `core/*` abilities. The MCP
+Adapter (v0.7.1) treats an ability as public only when `meta.mcp.public` is true, or `meta.public` is true
+and `meta.mcp.public` is unset (`McpAbilityExposure::is_public`). CoreX set `meta.show_in_rest` and
+`meta.annotations.readonly` and neither key, so both stayed private.
+
+**Decided.** Every CoreX agent ability sets `meta.mcp.public` to true and leaves `meta.public` unset, so it is
+offered to MCP without opting into every other client channel WordPress may add. Every one carries the
+`readonly`, `destructive` and `idempotent` annotations that apply, which the adapter passes to the agent's
+client as MCP hints.
+
+**Not chosen.** *`meta.public`*: from WordPress 7.1 it also opens the ability to REST and future channels, which
+an agent ability that installs releases has no reason to join.
+
+## #501 -- The MCP Adapter stays a separate plugin
+
+**Date:** 2026-10-25. **Spec:** 123, FR-003. Answered by the owner.
+
+**Decided.** CoreX does not bundle, copy or install the MCP Adapter. A site that wants agents installs the
+official plugin. CoreX registers its agent abilities with the Abilities API, which is part of WordPress 7.0,
+whether or not the adapter is there, and runs unchanged without it (Principle IX).
+
+**Not chosen.** *Bundling `wordpress/mcp-adapter` through Composer*: CoreX would own its updates and would have
+to avoid loading twice on a site that also has the plugin. *Bundling a copy loaded only when the plugin is
+absent*: two paths to test and keep current.
+
+## #502 -- An Application Password stands in for the nonce on the three upload routes only
+
+**Superseded by #512** (2026-10-25): every release route accepts an Application Password behind `COREX_ALLOW_RELEASE_PUSH`.
+
+**Date:** 2026-10-25. **Spec:** 123, FR-014. Answered by the owner.
+
+**Decided.** `ReleaseRestGateway::answer()` refuses any request without a valid `X-WP-Nonce`. The routes that
+report how much of a package is received, append a part and complete an upload accept, in place of the nonce,
+a request WordPress signed in with an Application Password, only while agent changes are on and only for an
+account that passes `mayManage()`. Every other release route keeps the nonce: an agent inspects, installs and
+goes back through agent abilities that call spec 107's services directly and never use those routes.
+
+**Not chosen.** *All release routes*: the whole installation could then be driven by plain REST calls, outside
+MCP and its destructive hints. *A new upload route for the command*: more surface to secure for the same
+result.
+
+## #503 -- A package reaches the site through a Node script; the site never fetches it
+
+**Date:** 2026-10-25. **Spec:** 123, FR-012, FR-013, FR-015. Answered by the owner.
+
+**Decided.** A package's bytes never pass through an MCP call. A Node script in CoreX, run on the owner's
+machine with no WordPress around it, sends the package through spec 107's resumable upload (keyed by SHA-256),
+reading the site's address, the account and its Application Password from a file outside the repository. The
+agent then installs it by SHA-256 through agent abilities.
+
+**Not chosen.** *`wp corex release:push`*: a WP-CLI command must run inside a WordPress install, although it only
+talks to the remote site. *The site pulls the package from a URL*: rejected for now, because the packages live
+only on the owner's machine (`C:\Users\pc\.muva\packages` for Muva) and a site that fetches code from an
+address it is handed is a larger risk than one that receives an upload it already checks. *The package through
+MCP, in parts or as base64*: every byte would pass through the model.
+
+## #504 -- CoreX ships a "CoreX agent" role; the owner makes the user and its password
+
+**Date:** 2026-10-25. **Spec:** 123, FR-005 to FR-008. Answered by the owner.
+
+**Decided.** CoreX registers a "CoreX agent" role holding WordPress's `read` capability and no CoreX ability of
+its own; the owner allows it what it needs in spec 117's role matrix (for releases, `corex_manage_releases`).
+The owner creates the user in the Users screen and makes its Application Password; CoreX never creates a user
+or a password. Agent abilities that change the site are off by default behind one feature flag that no agent
+ability can turn on. On a network, installing still needs a super administrator on the main site
+(`mayManage()`), and this spec does not widen that.
+
+**Not chosen.** *No role, only a written guide*: less code, easier to get wrong. *A `wp corex` command that
+creates the role and the user*: shared hosts such as Muva's have no command line.
+
+## #505 -- The first settings agent abilities: clear the page cache, coming-soon on and off, read the flags
+
+**Date:** 2026-10-25. **Spec:** 123, FR-020. Answered by the owner.
+
+**Decided.** Three settings agent abilities and no more: clear the page cache, only through a page-cache plugin
+CoreX detects (LiteSpeed Cache first) and never as a dependency; turn coming-soon on or off through the service
+the Operations screen uses; and read the feature flags. No agent ability changes a flag.
+
+**Not chosen.** *Writable flags*: an agent could reach switches whose effect it cannot see. *Cache clearing
+only*, and *no settings yet*: both leave the owner opening the admin for the two jobs that follow most
+releases.
+
+## #506 -- The maintenance gate also reads the installation key from a small JSON body
+
+**Date:** 2026-10-25. **Spec:** 123, FR-018; amends spec 107 FR-024a. Plan research R3.
+
+**Found.**
+- An installation swaps folders inside the `step` request made at step `swap`, and that request raises
+  maintenance before it moves anything (`ReleaseSteps::putInPlace`).
+- The `finish` request comes next, while `.maintenance` holds visitors off. It gets through only with the
+  installation's key, read from a header, the server's headers or the address (`ReleaseMaintenance::GATE`).
+- An MCP client can add none of those per call. An agent's `finish` would wait out WordPress's ten minutes
+  (#301), and on a network each batch could wait again.
+
+**Decided.**
+- The gate gains a fourth source. On a `POST` with a JSON content type and a body of at most 64 KB, it decodes
+  the body (depth 16), walks at most 64 nodes for `corex_release_key`, and checks it with the same `hash_equals`
+  as the others.
+- `key_from` gains `body`.
+- The step, finish and cancel agent abilities take the key as input, and refuse one that is not their
+  installation's.
+
+**Not chosen.**
+- *Swap and finish in one call*: that is the request length spec 107 split for shared hosts, and it still
+  leaves a network's later batches stuck.
+- *A loopback request carrying the header*: loopbacks are unreliable on shared hosts.
+- *Letting visitors back in before the database step*.
+- *The push script driving the installation*: it would need #502's rule on every release route.
+
+**Cost.** The key passes through the agent's conversation. It opens the gate and the recovery link for that one
+installation, and is never journaled.
+
+## #507 -- Every CoreX agent ability is one `WP_Ability` subclass that checks once, answers in the gateway's shape, and journals once
+
+**Date:** 2026-10-25. **Spec:** 123, FR-002, FR-005, FR-007, FR-021, FR-022. Plan research R1, R6; plan D1 to D7.
+
+**Found.**
+- The MCP Adapter runs a target ability's permission callback about three times per call.
+- It returns a `WP_Error` to the client as text, without its code.
+- WordPress 7.0 has no hook that fires when an ability is refused or fails; 7.1 does.
+- Both accept `ability_class`.
+
+**Decided.**
+- `Corex\Abilities\AgentAbility extends WP_Ability`:
+  - It decides the permission once per request, through spec 117's `AbilityCheck`, so a refusal is counted
+    once.
+  - It refuses agent changes while the switch is off.
+  - It writes one `agent.call` event (new activity area `agents`, 180 days) holding only the input fields the
+    ability names as safe to keep.
+- Every answer is the release gateway's shape: `{ok, data}` or `{ok:false, reason, message}`. A missing CoreX
+  ability is the only `WP_Error`.
+
+**Not chosen.**
+- *Core's 7.1 hooks*: they miss 7.0.
+- *The adapter's observability handler*: it replaces the server's handler and sees only tool names.
+- *The adapter's result filter*: it ties the journal to the adapter.
+
+## #508 -- New agent abilities are MCP only; the two older ones keep REST and `edit_posts`
+
+**Date:** 2026-10-25. **Spec:** 123, FR-001 (amended), FR-007. Plan research R2, R7.
+
+**Decided.**
+- New agent abilities set `meta.mcp.public` and `show_in_rest = false`. Otherwise core's
+  `wp-abilities/v1/.../run` route would let plain REST calls drive an installation, which #502 rules out.
+- `corex/site-info` and `corex/list-blocks` keep `show_in_rest` for existing callers.
+- Their permission stays `edit_posts`. `corex/site-info` carries the CoreX version, which spec 111 keeps from
+  anyone looking for a vulnerable release, and `read` would show it to every subscriber (on a site with open
+  registration, to anyone). The plan first said `read`; wp-guard caught it while User Story 1 was built, and
+  this entry was corrected then. An agent reads the version through `corex/release-overview` and
+  `corex/release-installed`, which ask for `corex_manage_releases`.
+- Each other agent ability asks for one CoreX ability:
+  - releases: `corex_manage_releases`, plus `mayManage()`'s network rule;
+  - activity log, mode, page cache and flags: `corex_manage_operations`;
+  - submissions: `corex_manage_submissions`.
+- The owner allows the role these in the role matrix. It never needs `corex_manage_admin`.
+
+## #509 -- The agent-changes switch lives in an "Agent access" panel on Operations & Security
+
+**Date:** 2026-10-25. **Spec:** 123, FR-005, FR-006. Plan research R8.
+
+**Found.** Only the add-on activator writes a feature flag today, and no screen toggles one. A shared host has no
+command line for `FEATURES_AGENT_CHANGES`.
+
+**Decided.**
+- Flag `agent_changes`, default off.
+- A panel on Operations & Security shows:
+  - the switch;
+  - whether the MCP Adapter is active;
+  - how many users hold the CoreX agent role;
+  - the last ten agent calls.
+- Only a site administrator can change the switch, through `AdminGuard`.
+- The environment still wins, and the panel says so when it does.
+- Each change writes `agent.switch.changed`.
+
+**Not chosen.** *Environment or option only*: the owner could not turn it on from the admin.
+
+## #510 -- Going back and removing leftovers become prepare and confirm pairs for an agent
+
+**Date:** 2026-10-25. **Spec:** 123, FR-017 and User Story 5 scenario 6 (amended). Plan research R10.
+
+**Found.** The screen goes back with one call that checks the typed version, and removes leftovers with one
+click and no confirmation.
+
+**Decided.**
+- Going back: `corex/release-return-prepare` changes nothing and gives the phrase, and `corex/release-return`
+  calls spec 107's return with it.
+- Leftovers: `corex/release-leftovers-prepare` lists them with a fingerprint (SHA-256 of the sorted `what:where`
+  lines), and `corex/release-leftovers-remove` refuses `leftovers_changed` unless the fingerprint still matches.
+- The screen is unchanged.
+
+## #511 -- A page-cache provider may carry its purge; CoreX ships one for LiteSpeed Cache
+
+**Date:** 2026-10-25. **Spec:** 123, FR-020. Plan research R9.
+
+**Found.** `corex_page_cache_provider` returns only a name and a state, and `CacheManager` answers "unsupported"
+for the page scope. LiteSpeed Cache documents `do_action( 'litespeed_purge_all', $reason )`, safe to call
+whether or not it is active.
+
+**Decided.**
+- A provider's array may carry `purge`, a callable, and `CacheManager` uses it for the page scope.
+- `LiteSpeedPageCache` registers itself only when `has_action( 'litespeed_purge_all' )` is true, that is, when
+  something is listening.
+- With no provider, the agent hears `nothing_to_clear`.
+- LiteSpeed is detected, never required (Principle IX).
+
+## #512 -- Every release route accepts an Application Password, behind `COREX_ALLOW_RELEASE_PUSH`; supersedes #502
+
+**Date:** 2026-10-25. **Spec:** 123, FR-014 and FR-014a (amended), User Story 4 (amended). Answered by the owner,
+relayed by the Muva session: "A: all release routes accept an Application Password behind a separate wp-config
+opt-in, superseding DECISIONS #502; one command builds, uploads and installs."
+
+**Found.** #502 opened only the three upload routes, so a command could send a package but an installation still
+needed the admin screen or an MCP client driving agent abilities that are not built. Muva's host has no command
+line and GitHub Actions does not run on the owner's account, so every release is installed by hand.
+
+**Decided.**
+- `ReleaseRestGateway::answer()` lets a request through when its nonce is valid, as before, or when **all** of
+  these hold:
+  1. WordPress signed it in with an Application Password (`rest_get_authenticated_app_password()` is not null);
+  2. the site's `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as `true`;
+  3. the request came over HTTPS, or the site's environment type is `local`;
+  4. `mayManage()` holds (the route's permission callback has already asked; asked again for the same reason the
+     nonce is).
+- This holds for every release route. A request signed in by cookie still needs the nonce exactly as before:
+  WordPress signs a request in by Application Password only when no cookie has already signed it in.
+- The refusals say which condition failed: `push_off` (the constant), `push_needs_https`, `not_allowed` (the
+  account may not install releases). With neither a nonce nor
+  an Application Password the answer stays `403 not_signed`.
+- `COREX_ALLOW_RELEASE_INSTALL`, the host facts and every refusal of spec 107 are unchanged.
+- The release record and the activity entry of an event name the Application Password the request was signed in
+  with (`signed_in_with`), so the history says who installed and how.
+- Spec 123's `agent_changes` switch no longer governs these routes. It governs agent abilities only.
+
+**Why a second opt-in, and why a constant.** A nonce ties an installation to a person signed in to the admin at
+that moment. An Application Password is a long-lived secret that may already exist for other tools (the mobile
+app, an MCP client), and once these routes accept one, anyone holding one for an account that may manage releases
+can replace the site's code. So it must be switched on deliberately, per site, by whoever controls the server's
+files, and a credential the routes accept must not be able to switch it on: an option or a setting could be
+changed over REST by the same account, a line in `wp-config.php` cannot. It is off on every site until written.
+
+**Why HTTPS is required here too.** WordPress already refuses Application Passwords over plain HTTP unless the
+environment type is `local`, but a plugin can turn that rule off with the `wp_is_application_passwords_available`
+filter. A release replaces code, so these routes keep the rule whatever a filter says. The script refuses
+`http://` to a public host before it sends anything.
+
+**Cost, said plainly.** With both this constant and spec 123's agent role on, an agent account that may manage
+releases can drive the routes with plain REST calls, outside MCP and its destructive hints, which is what #502
+avoided. The documentation recommends that the release push use its own account and its own Application Password,
+and that a site that does not push leaves the constant out.
+
+**Not chosen.** *Only the upload routes* (#502): no one-command install. *A feature flag or a setting*: could be
+turned on over REST by the credential it governs. *A new set of routes for the command*: more surface for the same
+work; the screen's routes, answers and refusals are already built and tested.
+
+## #513 -- `npm run release:push` builds, uploads, installs and checks, through the screen's own client
+
+**Date:** 2026-10-25. **Spec:** 123, FR-013, FR-015, FR-015a to FR-015d (amended). Extends #503 from "sends a
+package" to the whole installation.
+
+**Decided.**
+- `scripts/release-push.mjs` (`npm run release:push`) builds the package with `build:dist --zip` when given
+  `--client` (and passes `--with-plugin` and `--pdf-fonts` through), or takes one already built with `--package`.
+  Then it reads the Releases overview, uploads, inspects, prepares, confirms with the version, runs the steps and
+  the finish, and checks that the site answers and reports the new version.
+- It drives the site with `createReleaseClient()` and `runInstallation()` from the Releases screen's own code
+  (`plugins/corex-config/src/Releases/`), so the screen and the script cannot disagree about the protocol: the
+  installer's mark, waiting past a host's challenge pages, carrying the installation's key past the maintenance
+  answer, and how long to keep asking. The client gains two options, `key` (an installation's key from an earlier
+  run) and a nonce that may be left out.
+- Settings come from `--settings <file>`, `COREX_PUSH_SETTINGS`, the three `COREX_PUSH_SITE`, `COREX_PUSH_USER`
+  and `COREX_PUSH_APP_PASSWORD` variables, or `~/.corex/release-push/<client>.json`, in that order. A settings file
+  inside a git checkout is refused. The password goes only into the `Authorization` header and is never printed.
+- What the screen asks a person to accept, the script asks for as flags: `--accept-older`,
+  `--accept-downgrades`. A site that cannot say whose it is gets the `--client` given.
+- The installation's key and recovery link are written to `~/.corex/release-push/state/<host>.json` (owner-only
+  permissions) at prepare, and removed when the installation finishes. A run that died can be taken up with
+  `--resume`, which carries the saved key past the maintenance answer; without it the script says WordPress lets
+  requests in again by itself within about ten minutes of the swap, and keeps asking for that long.
+- On a failure after the swap it prints the recovery link and the way back (`Releases`, "Go back"), as the screen
+  does.
+- The first release that contains this must be installed from the screen: the release running on the site
+  decides who may use its routes, and older ones accept only the nonce.
+
+**Not chosen.** *A client written again for Node*: two clients of one protocol drift apart. *Printing the recovery
+link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
+only when it is needed.
