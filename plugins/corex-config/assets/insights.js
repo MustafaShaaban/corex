@@ -363,23 +363,45 @@
 		);
 	}
 
+	/**
+	 * The admin's shared state chip (spec 118): an icon and a word, in the state's tone.
+	 *
+	 * @param {string} state The state, which names the chip's look.
+	 * @param {string} word  The state in words.
+	 * @return {string} The chip's HTML.
+	 */
+	function stateChip( state, word ) {
+		return (
+			'<span class="corex-state-chip is-' +
+			escape( state ) +
+			'"><span class="corex-state-chip__icon" aria-hidden="true"></span>' +
+			escape( word ) +
+			'</span>'
+		);
+	}
+
 	function renderWidget( widget ) {
 		const el = document.createElement( 'section' );
 		el.className =
 			'corex-insight-widget is-' + escape( widget.state || 'empty' );
+		// The subject's icon is decoration: the heading says what the widget is about. The chip says
+		// its state in a word beside an icon of its own, so no state is told by colour alone
+		// (spec 118, US-INS-02).
 		el.innerHTML =
-			'<header class="corex-insight-widget__head"><div>' +
+			'<header class="corex-insight-widget__head">' +
+			'<span class="corex-insight-widget__icon corex-admin__nav-icon corex-admin__nav-icon--' +
+			escape( widget.icon || 'insights' ) +
+			'" aria-hidden="true"></span><div>' +
 			'<h2>' +
 			escape( widget.title ) +
 			'</h2>' +
 			'<p class="corex-insight-widget__sub">' +
 			escape( widget.sub ) +
 			'</p></div>' +
-			'<span class="corex-badge corex-badge--' +
-			escape( widget.chipTone || 'subtle' ) +
-			'">' +
-			escape( widget.chip ) +
-			'</span>' +
+			stateChip(
+				widget.chipKey || widget.state || 'empty',
+				widget.chip
+			) +
 			'</header>' +
 			( widget.note
 				? '<p class="corex-insight-widget__note">' +
@@ -449,6 +471,7 @@
 		el.className = 'corex-insight-widget';
 		el.innerHTML =
 			'<div class="corex-error-state corex-error-state--panel" role="status" aria-live="polite">' +
+			stateChip( 'unavailable', t( 'Could not load' ) ) +
 			'<p class="corex-error-state__message">' +
 			escape( t( 'The rest of the insights could not be loaded.' ) ) +
 			'</p>' +

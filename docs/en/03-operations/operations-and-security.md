@@ -122,14 +122,30 @@ confirmation ready — one extra step, and the right question either way.
 
 It has a page of its own: [Coming soon mode](coming-soon.md).
 
-## Production readiness
+## Production readiness: the launch checklist
 
-Readiness checks are grouped by what they mean: **blockers** stop a production change, **warnings**
-do not, and **passed** checks are shown so you can see what was verified. Each blocker links to the
-place it is fixed.
+There is one launch checklist. The Overview, every tab of this screen, the readiness notifications,
+the CoreX widget on the WordPress Dashboard and the Setup Wizard's launch step all read it, so a check
+has the same state everywhere at the same moment, and "4 of 13" on the Overview is "4 of 13 ready"
+here.
+
+It has two groups:
+
+| Group | Checks | Can it block going live? |
+|---|---|---|
+| **Security and hosting** | HTTPS, file editing disabled, debug output hidden, no default `admin` account, search indexing allowed, authentication salts configured | Yes: a failing one **Blocks going live** |
+| **Site and content** | Brand set (company name and admin logo), Kit applied (only while a kit add-on is active), Front page (a static front page, or a theme with its own front-page template), Privacy page published, Terms page published (chosen in Settings → Brand), Test email sent (a test from Email Studio the mail transport accepted in the last 90 days), Login protection on | No: these say **Pending** and advise |
+
+Each check says its state in a word beside an icon: **Ready** (on the Overview, **Done**), **Pending**,
+**Blocks going live** (on the Overview, **Blocked**), or **Could not check** when its facts could not be
+read; that one is never counted as done and never blocks. Without Corex Mail, the test email check
+says **Needs Corex Mail** and is left out of the count. Every check that is not ready links to where it
+is fixed.
 
 You can go live with blockers outstanding by typing the confirmation phrase — that is an override,
-it is deliberate, and it is recorded in the history with your name against it.
+it is deliberate, and it is recorded in the history with your name against it. The Setup Wizard's
+launch step offers the same **Go live**, through this screen's own mode form, so it asks the same
+confirmation and writes the same history row.
 
 ## Login Protection
 

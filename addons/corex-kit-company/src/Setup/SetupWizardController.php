@@ -12,6 +12,7 @@ use Corex\Access\AbilityCheck;
 use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use Corex\Kit\BlueprintActivator;
+use Corex\Kit\Provisioning\KitAppliedRecord;
 use Corex\Kit\SetupWizard;
 use Corex\Provisioning\PageDisposition;
 use WP_REST_Request;
@@ -39,6 +40,7 @@ final class SetupWizardController
         private readonly BlueprintActivator $activator,
         private readonly ConflictResolver $conflicts = new ConflictResolver(),
         private readonly AbilityCheck $abilities = new AbilityCheck(),
+        private readonly KitAppliedRecord $applied = new KitAppliedRecord(),
     ) {
     }
 
@@ -204,7 +206,12 @@ final class SetupWizardController
 
         $outcome = $this->activator->apply($plan, $choices);
 
-        return $this->success(['applied' => true, 'pages' => count($outcome->pages())]);
+        // Recorded as the Add-ons prompt records it, and only when every page was written, so the
+        // Overview's kit row and Add-ons say the same (spec 118, US-OVR-09).
+        return $this->success([
+            'applied' => $this->applied->record($kit, $outcome),
+            'pages'   => count($outcome->pages()),
+        ]);
     }
 
     /**

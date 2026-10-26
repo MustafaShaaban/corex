@@ -33,6 +33,9 @@ final class OperationsModeController
     /** The modes that also need "Run dangerous actions". */
     private const DANGEROUS_MODES = [OperationsMode::PRODUCTION, OperationsMode::MAINTENANCE];
 
+    /** The `corex_return` value that sends the answer back to the Setup Wizard. */
+    public const RETURN_SETUP = 'setup';
+
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly ModeChangeService $changes,
@@ -79,6 +82,13 @@ final class OperationsModeController
         // The result's status is the screen's own vocabulary. "Unchanged" stays distinct from
         // "saved" all the way to the notice: "saved" over a change that did not happen teaches
         // the operator that the notice means nothing, on the one screen where it has to.
+        // The Setup Wizard's launch step posts this same form (spec 118, US-WIZ-06): the same rules
+        // and the same history row, and the answer goes back to the wizard.
+        $return = isset($_POST['corex_return']) ? sanitize_key(wp_unslash($_POST['corex_return'])) : '';
+        if ($return === self::RETURN_SETUP) {
+            $this->redirectToSetup($result->status);
+        }
+
         $this->redirect($result->status, $result->applied, $result->proposed);
     }
 
@@ -94,6 +104,20 @@ final class OperationsModeController
             admin_url('admin.php?page=corex-operations-security'),
             __('Back to Operations & Security', 'corex'),
         );
+        exit;
+    }
+
+    /**
+     * Back to the wizard: its Done step after a change, its launch step when a confirmation is still
+     * owed or the launch was refused, with the outcome to say.
+     */
+    private function redirectToSetup(string $status): void
+    {
+        wp_safe_redirect(add_query_arg([
+            'page'         => 'corex-setup',
+            'corex_step'   => in_array($status, ['saved', 'unchanged'], true) ? 'done' : 'launch',
+            'corex_status' => $status,
+        ], admin_url('admin.php')));
         exit;
     }
 

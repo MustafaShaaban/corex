@@ -89,7 +89,8 @@ it('records a mode change, a refusal, a lockout and an access decision, and keep
     expect($card)->toHaveCount(5)
         ->and($lines[0])->toBe('admin approved an access request')
         // The refused screen by its name, not its page slug.
-        ->and($lines)->toContain('User ' . ($this->admin + 1000) . ' was refused access to Data');
+        // A person who no longer exists is said so (spec 118, US-OVR-07).
+        ->and($lines)->toContain('A deleted user was refused access to Data');
 });
 
 // Each line is one sentence, so a language that puts the person last can say it that way.
@@ -102,7 +103,7 @@ it('says each event as one sentence a translation can reorder', function () {
     $lines = array_column(Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'], 'text');
     remove_filter('gettext', $reordered, 10);
 
-    expect($lines)->toContain('Insights ← User ' . ($this->admin + 3000));
+    expect($lines)->toContain('Insights ← A deleted user');
 });
 
 it('adds one event for a counted refusal, not one per repeat inside its hour', function () {

@@ -18738,6 +18738,200 @@ site administrator, and as an administrator) and `AccessHistoryTest` (the histor
    `ScreenAbilitiesAccessTest` (a holder of the ability who is not a site administrator gets no content and a 403 on
    the capture switch; an administrator gets the body) and Jest `emailStudioDelivery.test.js`.
 
+## #430 — One readiness evaluation, in two groups, that every screen reads
+
+**Date:** 2026-10-23. **Branch:** `claude/spec-118-launch-checklist`. **Spec:** 118, US-OVR-01, US-OVR-03,
+US-WIZ-06 (OVR-D1, OPS-D4, OVR-D4). **Mode:** CoreX Framework. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** Four lists answered "is the site ready": the Overview's own six rows, the Operations snapshot, the readiness
+notifications (from the same snapshot, published again each time a page was opened) and an unused checklist in the
+kit add-on. They disagreed on what they counted.
+
+**Decided.**
+
+1. **`ProductionReadinessSnapshotFactory` is the one evaluation.** It returns the hardening checks in the group
+   `security` and seven site checks (`SiteChecks`, from facts `SiteReadinessFacts` reads, each guarded) in the group
+   `site`. Every check carries the admin path where it is fixed.
+2. **Only `security` checks can be `blocking`.** Site checks are `warning` (Pending) and never block Production, so
+   no site that can launch today is stopped by the upgrade. A check whose facts throw is `unavailable` ("Could not
+   check"): never counted done, never blocking (the rule US-SEC-06 will keep).
+3. **`LaunchChecklist` (pure) is the only way a screen draws it**: groups in a fixed order (security first), rows
+   with state, chip, word, what is missing, and a link only while open, and "N of M" over every check that applies.
+   The Overview card, the Hardening tab and the Environment panel, the Dashboard widget and `GET corex/v1/readiness`
+   (for the wizard) all go through it, so the counts agree by construction.
+4. **Operations evaluates once per render** and hands the snapshot to its sections.
+5. **The kit's `Corex\Kit\Setup\LaunchChecklist` is deleted**: nothing used it.
+
+**Not chosen.** *A second evaluation for the site checks* beside the snapshot: the launch confirmation binds to the
+snapshot's hash, and two evaluations are how the screens drifted.
+
+**Verified.** Pest unit `LaunchChecklistTest` (20); integration `LaunchChecklistTest` (7: both groups, theme
+front page, privacy draft, terms page, no Corex Mail, facts that throw, Overview count equals Operations count);
+Playwright `launch-checklist.spec.js` (the same checks and states on the Overview, Operations and the wizard).
+
+## #431 — One set of states, two voices
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-02, US-SEC-09. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** US-OVR-02 asks the Overview for Done, Pending, Blocked; US-SEC-09 asks Operations and the wizard for Ready
+and "Blocks going live", with "4 of 6 ready". Both test cases are explicit.
+
+**Decided.** `ReadinessWords` holds both voices for the same states: the to-do voice on the Overview (Done, Pending,
+Blocked, Could not check, "N of M") and the gate voice where going live is decided (Ready, Pending, Blocks going
+live, Could not check, "N of M ready"). A check's state and chip are the same in both; only the word changes.
+"Needs Corex Mail" is the state `not_applicable`: shown, left out of both numbers. Plural forms through `_n()` with
+the total as the number; numbers through `number_format_i18n()`.
+
+## #432 — A readiness notification is raised on a change of state, not on each evaluation
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-01 (TC-OVR-01-02, 03).
+
+**Decided.** `RaisedReadinessChecks` (option `corex_readiness_raised`, not autoloaded, written only when it
+changes) remembers which checks are raised. A check that becomes blocking is published once; one that passes is
+resolved; one that cannot be read keeps what it had. A notification resolved by hand while its check still fails is
+raised again only after the check has passed and failed again. On the first evaluation after the upgrade nothing is
+remembered: blockers are published once more (one more occurrence on an open notice) and every other check is
+resolved, as before. A raised check evaluated again is **reworded**, not published: `NotificationService::reword()`
+(through `NotificationRepository::rewordByDedupKey()`) rewrites an open notice's title, body and action label in the evaluating
+request's language without adding an occurrence, in one `UPDATE` that changes nothing when the words are the same.
+Without it a notice raised in one language stayed in it for an owner reading another (the pseudo-locale check
+found it).
+
+**Not chosen.** *Asking the notification table whether an open notice exists*: `NotificationService` has no such
+read, and adding one to a contract other modules implement was not needed.
+
+## #433 — What each "Site and content" check reads
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-03. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **Brand set:** the saved company name and admin logo (as spec 114 decided).
+2. **Kit applied:** the kit provisioner (#438); no row while no kit add-on is active.
+3. **Front page:** a static front page chosen, or a `front-page` block template (block theme) or `front-page.php`
+   (classic theme).
+4. **Privacy page:** WordPress's privacy policy page, published. A draft links to its edit screen.
+5. **Terms page:** a new select on Settings → Brand, `brand.terms_page`, listing the site's pages (drafts too, so a
+   draft can be chosen and published later). Unchosen reads "Choose a terms page" and links there. The Company kit
+   creates no terms page, so no apply sets it.
+6. **Test email sent:** `EmailAttemptRepository::latestAcceptedTest()`: an attempt with source `test` in state
+   `sent` or `opened` in the last 90 days, read from the newest 500 attempts (`EmailStudioStore::latest()`) and
+   stopping at the first older than 90 days. A captured or failed test does not count. A site that sent more
+   than 500 emails since its test is told to send another, which is true enough to act on. With Corex Mail
+   inactive: "Needs Corex Mail", not counted.
+7. **Login protection on:** the Security Center's saved setting.
+
+## #434 — Four state tiles, and PHP fatal errors recorded by corex-core
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-04 (OVR-D2, OVR-D3). Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **The tiles** (`OverviewTiles`, pure; facts from `OverviewTileFacts`): Site health, Environment, Login
+   protection, Add-ons, each a state word, a tone, an icon from the admin's own set, one line of detail and a link.
+   A fact that throws reads "Could not check".
+2. **Site health** reads `HealthModule::report()` and ignores the advisory probes `brand_present` and
+   `theme_active`. A fatal error in the last 7 days makes it "Needs attention".
+3. **`FatalErrorRecorder`** registers a shutdown function in corex-core. WordPress's own handler runs first and
+   does not exit, so this runs after it. It asks `error_get_last()` and writes only for a fatal type. It keeps the
+   time, the type and `FatalErrorSource::of()` (`plugin`, `mu-plugin`, `theme`, `core` or `unknown`, and the
+   folder's name): never the message or the path. `FatalErrorLog` keeps 30 days and at most 50 entries, in option
+   `corex_php_fatal_errors`, not autoloaded.
+4. **The plugin or theme name** is resolved when drawn, and only for `manage_options`.
+5. **Environment** shows the mode and, when a declared mode differs, "WordPress environment: <type>", by the same
+   rule as the Operations notice. **The mode bar and version** above the tiles stay.
+6. **The mode's sentence says what happens to mail** since spec 113: Development "Not a live site. Email is kept in
+   Email Studio instead of being sent."; Staging "Pre-production. Email is kept in Email Studio unless a mail
+   provider and live delivery are set." It promised analytics were off, which nothing in CoreX does. The unused
+   `Overview\EnvironmentMode` resolver, which carried the old sentence, is deleted.
+7. **A notification's primary action** is drawn in the action's deeper shade (`--corex-admin-action-hover`), which
+   its ink reads on at 4.5:1 in both themes: every readiness notice now carries "Fix this check", and the brass
+   itself does not hold white text in the light theme (US-BRD-02 owns the brass everywhere else).
+
+**Verified.** Integration `FatalErrorRecordTest` (3): a separate PHP process ends in a fatal error in a probe
+plugin; the record has exactly `time`, `type`, `kind`, `slug`; a process without one writes nothing; an
+administrator reads the plugin's name, someone else the date only.
+
+## #435 — Each Overview card is drawn on its own
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-06.
+
+**Decided.** The Overview is cards (`OverviewCard`: tiles, readiness, forms, data, attention, integrations,
+activity), built by the container and laid out by `OverviewRenderer`, which draws each inside its own try. A card
+that throws is replaced by `OverviewCardFailure`: its heading, a "Could not load" chip, "Try again" (the Overview
+again) and, for `manage_options`, an 8-character reference that `error_log()` also receives with the card's key and
+the exception. A card never catches its own failure to draw a 0: the readers that returned 0 on an exception
+(forms count, flows count, data source totals) are gone or say "Could not load". A data source whose total throws
+is listed with "Could not load". Insights' forms widget does the same ("Could not load" state).
+
+**Verified.** Integration `OverviewCardsTest` (5): the submissions count, the activity service and the
+notification service each made to throw; the card says "Could not load", no 0 and no other cause, the other cards
+render, and the reference is in the PHP error log.
+
+## #436 — The forms card counts through the inbox's own query
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-05. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Open = new or in progress; Assigned to you = open and owned by `user:<viewer>`; Unread = open and not
+read. All three are `SubmissionQueryService::query()` totals, so tests, the trash and spam are left out exactly as the
+inbox leaves them out, and a person sees only what their scope allows. `SubmissionInboxQuery` gains the filter
+status `open` (not a status a submission has) and `unread`; the inbox reads `status`, `owner` and `unread` from its
+address and offers both in its filters. Without the Submissions ability the card shows no numbers and says why;
+with the forms add-on off it says "Forms are off" and links to Add-ons; with nothing received, "No submissions yet".
+
+**Verified.** Integration `OverviewFormsCardTest`: ten submissions read Open 6, Assigned 2, Unread 3, and each
+number's link asked of the inbox gives the same total.
+
+## #437 — Activity is said by one class
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-07.
+
+**Decided.** `ActivitySentences` says an event as a sentence with the person's display name read now ("A deleted
+user" when gone), with plural forms, and a link where its object can be opened (the trash, the inbox, Operations,
+Add-ons, the Access screen, a data model). A kind with no sentence reads "Something changed in <area>". The
+Overview's activity card, the Insights security card and the Access audit log (`refused()`, `refusedRecords()`)
+use it. The card's "Audit log" link is gone: it led to refusals only, and there is no list of all activity yet.
+
+## #438 — The data card lists the owner's data; a wizard apply is recorded as applied
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-08, US-OVR-09.
+
+**Decided.**
+
+1. **Owner's data = the records group** (`CategorisedDataSource::RECORDS`, or a source that does not say), as the
+   Data screen groups them. Each row: name, count, "Can edit" (update or create supported) or "Read only", linking
+   to `corex-data-models&tab=records&source=<key>`; the Data explorer opens on that source. The card's own link
+   goes straight to the Data Models screen, with no redirect.
+2. **`KitAppliedRecord`** is the one rule: `record()` writes `corex_kit_applied` only when
+   `ApplyOutcome::isComplete()` (every page to create or fill has an id); `isApplied()` is true for a recorded kit,
+   or, only on a site that has never recorded an apply, for a kit whose **every** declared page carries
+   `_corex_kit_page`, so a site whose wizard applied the kit before is recognised without applying anything. The
+   activator records each page it writes, so an apply that failed on a page leaves one without the record and is
+   never read as applied. The Add-ons prompt (`BlueprintKitProvisioner`), the wizard's REST apply and its form
+   apply all record through it. A reset removes the option and the page records, so it reads as not applied.
+
+## #439 — Repeated notices are grouped when read, and states share one chip
+
+**Date:** 2026-10-23. **Spec:** 118, US-SHL-09, US-INS-02. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **`NotificationGroups`** groups unread `export.ready` and `job.failed` notices by `metadata.job_kind` (the job
+   event does not name the data model, so "the same thing" is the kind of export). Anything else, including every
+   notice that asks for a decision, is never grouped. `WpNotificationRepository` groups in its reads: the list shows
+   a group where its newest member stands, titled "3 exports finished", with every member; the unread count counts a
+   group once (the bell and the Attention card). Marking read, dismissing and resolving a group act on each member
+   from the client. Nothing stored changes.
+2. **`.corex-state-chip`** in the admin shell: an icon (a mask from `assets/icons/state-*.svg`, one per state) and
+   the word in the text colour, the edge and icon in the state's tone, so text holds 4.5:1 and the edge 3:1 in both
+   themes. The launch checklist rows and the Insights widgets use it; `.corex-badge` on Add-ons and the Overview's
+   analytics rows are unchanged. Insights widgets carry a decorative subject icon; the screen is titled "Insights"
+   and the agent card "AI and agent readiness".
+
+**Verified.** Integration `NotificationGroupsTest` (3); Jest `notificationItem.test.js` (members and their links;
+a group marked read marks each member); Playwright: Insights chips differ by icon and word and meet 4.5:1 and 3:1,
+light and dark.
+
 ## #500 -- CoreX agent abilities are public to MCP, and to MCP only
 
 **Date:** 2026-10-25. **Spec:** 123, FR-001, FR-002.

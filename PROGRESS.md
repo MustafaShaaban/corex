@@ -164,6 +164,19 @@ refused test package, which lives in the installer's log and the activity log, n
 workspace's story builder should check the Client impact line (TC-NFR-08-05), a change in that workspace and not
 here.
 
+**Spec 118, one launch checklist and an honest Overview** (2026-10-23, branch `claude/spec-118-launch-checklist`,
+DECISIONS #430 to #439): revamp release R3.2, thirteen stories (US-OVR-01 to 09, US-WIZ-06, US-SEC-09, US-INS-02,
+US-SHL-09), open choices decided under the owner's 2026-10-21 mandate. One readiness evaluation in two groups
+(Security and hosting, which can block; Site and content, which advise) is read by the Overview, every tab of
+Operations & Security, the readiness notifications (raised once per failure now), the Dashboard widget and the Setup
+Wizard's launch step, which goes live through the Operations mode form. The Overview opens with four state tiles
+(Site health with a PHP fatal error record kept by corex-core, Environment, Login protection, Add-ons), draws each
+card on its own with "Could not load" and a logged reference, counts open, assigned and unread submissions through
+the inbox's own query, says activity as sentences from one source shared with Insights and the Access audit log, and
+lists only the owner's data. A wizard apply is recorded as applied. Insights chips are a shared state chip; finished
+exports and failed jobs are grouped in the bell. Built, one pull request, not merged by its session, not tagged.
+Owed: TC-WIZ-06-02 (the override phrase) arrives with US-OPS-05; the rail count of US-SHL-09 with US-SHL-08.
+
 **Spec 112, access and logs** (2026-10-20, #430, in v0.47.0): the first release (R0.1) of the
 CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
 locked or critical abilities, grants carry a note and an expiry and can be revoked, repeated refusals are counted,

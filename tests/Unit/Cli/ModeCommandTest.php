@@ -27,6 +27,8 @@ use Corex\Tests\Fixtures\Operations\InMemoryPreviewAccessStore;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
+    // The checklist names where each check is fixed (spec 118).
+    \Corex\Tests\Support\AdminUrlStubs::install();
 
     $GLOBALS['corex_test_options'] = [];
     Functions\when('get_option')->alias(
