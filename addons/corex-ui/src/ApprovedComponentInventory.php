@@ -118,7 +118,7 @@ final class ApprovedComponentInventory
         ['Metric card',        self::STATUS_APPROVED, 'high',   'admin:corex-stat-card'],
         ['Add-on card',        self::STATUS_APPROVED, 'high',   'admin:corex-addon-card'],
         ['Dependency card',    self::STATUS_REVISION, 'high',   'admin:corex-addon-card__requires'],
-        ['Readiness checklist', self::STATUS_REVISION, 'high',  'admin:corex-overview__checks'],
+        ['Readiness checklist', self::STATUS_REVISION, 'high',  'admin:corex-checklist'],
         ['Event log row',      self::STATUS_APPROVED, 'medium', 'admin:corex-activity'],
         ['Setup wizard step',  self::STATUS_APPROVED, 'high',   'admin:corex-setup__step'],
         ['Empty state',        self::STATUS_APPROVED, 'high',   'block-style:corex-empty'],

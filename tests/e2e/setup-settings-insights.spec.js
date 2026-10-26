@@ -13,7 +13,8 @@ test( 'Insights renders the full designed widget set from real state', async ( {
 	const errors = collectConsoleErrors( page );
 	await page.goto( '/wp-admin/admin.php?page=corex-insights' );
 	await expect(
-		page.getByRole( 'heading', { name: 'Readiness & Insights' } )
+		// Titled "Insights" since spec 118 (US-INS-02).
+		page.getByRole( 'heading', { name: 'Insights', exact: true } )
 	).toBeVisible();
 
 	// Two runnable providers (run-cards) + the five informational widgets.

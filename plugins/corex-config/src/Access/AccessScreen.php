@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 use Corex\Admin\AdminPage;
 use Corex\Access\RoleAbilityStore;
+use Corex\Config\Activity\ActivitySentences;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
@@ -39,6 +40,7 @@ final class AccessScreen
         private readonly PendingAccessRequests $pending,
         private readonly PluginActivationInspector $pluginActivationInspector,
         private readonly AccessGrantPresenter $grants,
+        private readonly ActivitySentences $sentences,
     ) {
     }
 
@@ -479,24 +481,18 @@ final class AccessScreen
             . '<span class="corex-access__chip is-warning">' . esc_html__('DENIED', 'corex') . '</span></li>';
     }
 
-    /** @param array{user:int,kind:string,section:string} $entry */
+    /**
+     * A refusal in the words the activity log and the Overview use for it (spec 118, US-OVR-07).
+     *
+     * @param array{user:int,kind:string,section:string} $entry
+     */
     private function auditText(array $entry): string
     {
-        if ($entry['kind'] === 'data') {
-            return sprintf(
-                /* translators: 1: user name, 2: the key of a data model, e.g. "table-access-requests". */
-                __('Access denied: %1$s tried to read %2$s on the Data screen', 'corex'),
-                $this->userLabel($entry['user']),
-                $entry['section'],
-            );
-        }
+        $who = $this->userLabel($entry['user']);
 
-        return sprintf(
-            /* translators: 1: user name, 2: CoreX screen name. */
-            __('Access denied: %1$s tried to open %2$s', 'corex'),
-            $this->userLabel($entry['user']),
-            $this->sectionLabel($entry['section']),
-        );
+        return $entry['kind'] === 'data'
+            ? $this->sentences->refusedRecords($who, $entry['section'])
+            : $this->sentences->refused($who, $entry['section']);
     }
 
     /**
@@ -519,26 +515,7 @@ final class AccessScreen
 
     private function userLabel(int $userId): string
     {
-        if ($userId > 0) {
-            $user = get_userdata($userId);
-            if ($user !== false && $user->display_name !== '') {
-                return $user->display_name;
-            }
-
-            return sprintf(
-                /* translators: %d: WordPress user ID. */
-                __('User #%d', 'corex'),
-                $userId,
-            );
-        }
-
-        return __('Signed-out visitor', 'corex');
-    }
-
-    /** A readable name for a recorded section: its section key or its page slug. */
-    private function sectionLabel(string $section): string
-    {
-        return ScreenNames::of($section);
+        return $userId > 0 ? $this->sentences->person($userId) : __('Signed-out visitor', 'corex');
     }
 
     /**

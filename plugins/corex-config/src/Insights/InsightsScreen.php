@@ -60,7 +60,7 @@ final class InsightsScreen
 
         echo $this->page->open(
             'insights',
-            __('Readiness & Insights', 'corex'),
+            __('Insights', 'corex'),
             __('Run performance and release-readiness checks. Environment-gated results remain explicitly gated.', 'corex'),
         ) . '<div id="corex-insights-app" class="corex-insights"></div>' . $this->page->close();
     }
