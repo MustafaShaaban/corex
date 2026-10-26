@@ -7,9 +7,14 @@ const STAGES = [
 	[ 'emails', __( 'Emails', 'corex' ) ],
 	[ 'protection', __( 'Protection', 'corex' ) ],
 	[ 'success', __( 'Success', 'corex' ) ],
+	[ 'availability', __( 'Availability', 'corex' ) ],
 	[ 'preview', __( 'Preview', 'corex' ) ],
 	[ 'test', __( 'Test', 'corex' ) ],
+	[ 'versions', __( 'Versions', 'corex' ) ],
 ];
+
+/** Tabs that are not a step of building the flow, so they say nothing about being ready. */
+const WITHOUT_STATUS = [ 'availability', 'versions' ];
 
 export function StageRail( { active, statuses, onChange } ) {
 	return (
@@ -27,11 +32,15 @@ export function StageRail( { active, statuses, onChange } ) {
 				>
 					<span>{ index + 1 }</span>
 					<strong>{ label }</strong>
-					<small className={ `is-${ statuses[ key ] || 'ready' }` }>
-						{ statuses[ key ] === 'incomplete'
-							? __( 'Incomplete', 'corex' )
-							: __( 'Ready', 'corex' ) }
-					</small>
+					{ WITHOUT_STATUS.includes( key ) ? null : (
+						<small
+							className={ `is-${ statuses[ key ] || 'ready' }` }
+						>
+							{ statuses[ key ] === 'incomplete'
+								? __( 'Incomplete', 'corex' )
+								: __( 'Ready', 'corex' ) }
+						</small>
+					) }
 				</button>
 			) ) }
 		</nav>

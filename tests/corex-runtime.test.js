@@ -223,6 +223,84 @@ describe( 'Corex.forms.bind', () => {
 		).not.toBe( '' );
 	} );
 
+	// Spec 122, US-VIS-01: a flow that closed after the page loaded.
+	it( 'shows the closed notice and its alternative, and keeps the answers', async () => {
+		mockFetch(
+			{
+				ok: false,
+				code: 'flow_closed',
+				message: 'Applications reopen in March',
+				details: {
+					notice: {
+						title: 'Closed',
+						message: 'Applications reopen in March',
+						alternative: {
+							type: 'email',
+							label: 'Email us',
+							url: 'mailto:jobs@example.test',
+						},
+					},
+				},
+			},
+			{ ok: false, status: 409 }
+		);
+		const form = makeForm( EMAIL_REQUIRED );
+		form.querySelector( 'input[name="email"]' ).value = 'a@b.com';
+		window.Corex.forms.bind( form );
+
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
+		await flush();
+		const notice = document.querySelector( '.corex-flow-notice' );
+
+		expect( notice.nextElementSibling ).toBe( form );
+		expect(
+			notice.querySelector( '.corex-flow-notice__title' ).textContent
+		).toBe( 'Closed' );
+		expect(
+			notice.querySelector( '.corex-flow-notice__alternative a' ).href
+		).toBe( 'mailto:jobs@example.test' );
+		expect( form.querySelector( 'input[name="email"]' ).value ).toBe(
+			'a@b.com'
+		);
+		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe(
+			'Applications reopen in March'
+		);
+	} );
+
+	it( 'draws no link for an alternative that is not a web or mail address', async () => {
+		mockFetch(
+			{
+				ok: false,
+				code: 'flow_closed',
+				message: 'Closed',
+				details: {
+					notice: {
+						title: 'Closed',
+						message: 'This form is closed.',
+						alternative: {
+							type: 'link',
+							label: 'x',
+							url: 'javascript:alert(1)',
+						},
+					},
+				},
+			},
+			{ ok: false, status: 409 }
+		);
+		const form = makeForm( EMAIL_REQUIRED );
+		form.querySelector( 'input[name="email"]' ).value = 'a@b.com';
+		window.Corex.forms.bind( form );
+
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
+		await flush();
+
+		expect( document.querySelector( '.corex-flow-notice a' ) ).toBeNull();
+	} );
+
 	it( 'is idempotent — binding twice does not double-submit', async () => {
 		mockFetch( { ok: true, message: '', data: {} } );
 		const form = makeForm( EMAIL_REQUIRED );

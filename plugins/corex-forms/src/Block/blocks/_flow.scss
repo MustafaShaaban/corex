@@ -23,6 +23,38 @@
 	padding-block: var(--wp--preset--spacing--30);
 }
 
+/* A flow that is not taking answers (spec 122, US-VIS-01): a titled notice, with the owner's
+   alternative. The state is said in words, never by colour alone. */
+.corex-flow-notice {
+	display: grid;
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink);
+	background: var(--wp--preset--color--surface-alt);
+	border-inline-start: 4px solid var(--wp--preset--color--info); /* corex-token-allow: state edge */
+}
+
+.corex-flow-notice p {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.corex-flow-notice__title {
+	font-weight: 700;
+}
+
+.corex-flow-notice__alternative a {
+	color: var(--wp--preset--color--primary);
+	text-decoration: underline;
+}
+
+.corex-flow-notice--editors {
+	font-size: var(--wp--preset--font-size--sm);
+	border-inline-start-color: var(--wp--preset--color--warning);
+}
+
 .corex-flow--cta-flow {
 	padding-block: var(--wp--preset--spacing--60);
 	padding-inline: var(--wp--preset--spacing--60);
