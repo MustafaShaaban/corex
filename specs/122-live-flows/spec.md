@@ -67,7 +67,7 @@ Muva and Perego use code-defined forms, which run none of this: their visitor fo
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Publish changes to a live flow without taking it offline (Priority: P1) — US-FLW-01
+### User Story 1 - Publish changes to a live flow without taking it offline (Priority: P1), US-FLW-01
 
 A site owner edits a form that is already on the site, saves, and presses "Publish changes". Visitors keep seeing the
 form the whole time; afterwards they see the new version.
@@ -99,7 +99,7 @@ the form is on every load and shows the new label after.
 
 ---
 
-### User Story 2 - Routing assigns each submission to a real person or team (Priority: P1) — US-FLW-03
+### User Story 2 - Routing assigns each submission to a real person or team (Priority: P1), US-FLW-03
 
 A site owner routes submissions to a person, a team or a role, or to the flow's owner, the author of the page, or the
 person whose value the visitor picked. The submission is assigned to that person or team, and they see it.
@@ -131,7 +131,7 @@ all submissions, sees it in her inbox.
 
 ---
 
-### User Story 3 - Email the person a submission was routed to (Priority: P2) — US-FLW-04
+### User Story 3 - Email the person a submission was routed to (Priority: P2), US-FLW-04
 
 A site owner chooses "Routed owner" as the recipient of a flow email, and the person or team the routing chose gets it.
 
@@ -156,7 +156,7 @@ email to each of the three.
 
 ---
 
-### User Story 4 - Flow actions, email variables and routing extensions run (Priority: P2) — US-FLW-07
+### User Story 4 - Flow actions, email variables and routing extensions run (Priority: P2), US-FLW-07
 
 A developer registers a flow action, an email variable or a routing target through a documented WordPress hook or the
 container registries; the owner can use it and it runs.
@@ -182,7 +182,7 @@ submits; the action ran once and the timeline says so.
 
 ---
 
-### User Story 5 - A closed or not-yet-open flow tells visitors so and offers another way (Priority: P1) — US-VIS-01
+### User Story 5 - A closed or not-yet-open flow tells visitors so and offers another way (Priority: P1), US-VIS-01
 
 A visitor who reaches a form that is not taking answers is told so and given another way to get in touch.
 
@@ -210,7 +210,7 @@ the heading, "This form is closed." and the "Email us" link.
 
 ---
 
-### User Story 6 - A flow opens and closes on its dates or after a number of responses (Priority: P2) — US-VIS-02
+### User Story 6 - A flow opens and closes on its dates or after a number of responses (Priority: P2), US-VIS-02
 
 A site owner running a registration sets when the form opens, when it closes and how many responses it takes.
 

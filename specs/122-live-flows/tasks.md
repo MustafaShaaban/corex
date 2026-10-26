@@ -5,83 +5,83 @@ open task touches.
 
 ## Phase 1: Setup
 
-- [ ] T001 Set up a scratch WordPress for this worktree (port 8922, database `corex_w122`) and confirm WordPress loads
+- [x] T001 Set up a scratch WordPress for this worktree (port 8922, database `corex_w122`) and confirm WordPress loads
   (Environment Gate).
 
 ## Phase 2: Foundations shared by every story
 
-- [ ] T002 [P] Unit tests: `FlowAvailability` normalizes, validates (order of dates, link, email, cap) and round-trips;
+- [x] T002 [P] Unit tests: `FlowAvailability` normalizes, validates (order of dates, link, email, cap) and round-trips;
   `FlowPublication` round-trips (`tests/Unit/Forms/FlowAvailabilityTest.php`).
-- [ ] T003 `FlowPublication`, `FlowAlternative`, `FlowAvailability`; `Flow` gains publications and availability;
+- [x] T003 `FlowPublication`, `FlowAlternative`, `FlowAvailability`; `Flow` gains publications and availability;
   `FlowRepository` reads and writes them; `FlowConfiguration` gains `actions` (checksum only when not empty).
 
 ## Phase 3: US-FLW-01 Publish changes without going offline (P1)
 
-- [ ] T010 [P] Unit tests: `Flow::publish()` from draft and from published with a newer draft, refused when nothing
+- [x] T010 [P] Unit tests: `Flow::publish()` from draft and from published with a newer draft, refused when nothing
   changed or closed; the conflict message; `FlowService::copyIntoDraft()`; `versionForVisitor()` rules
   (`tests/Unit/Forms/FlowPublishChangesTest.php`).
-- [ ] T011 Integration test: publish, change, save, publish changes; the page renders the form before and after; a
+- [x] T011 Integration test: publish, change, save, publish changes; the page renders the form before and after; a
   submission carrying the old version is accepted and records it; a stale editor is refused
   (`tests/Integration/Forms/FlowPublishChangesTest.php`).
-- [ ] T012 `Flow::publish()`, `FlowService::publish()/copyIntoDraft()/liveVersion()/versionForVisitor()`, the copy
+- [x] T012 `Flow::publish()`, `FlowService::publish()/copyIntoDraft()/liveVersion()/versionForVisitor()`, the copy
   route, the presenter's publications with names.
-- [ ] T013 The block prints `corex_flow_version`; the visitor service runs the submission against the version it
+- [x] T013 The block prints `corex_flow_version`; the visitor service runs the submission against the version it
   names under DECISIONS #470.
-- [ ] T014 [P] Jest: `publishState()` (publish, publish changes, up to date) and the state chip helper.
-- [ ] T015 Editor header (eyebrow, name, chip, live line, Publish changes, Unpublish with confirmation), Versions tab.
+- [x] T014 [P] Jest: `publishState()` (publish, publish changes, up to date) and the state chip helper.
+- [x] T015 Editor header (eyebrow, name, chip, live line, Publish changes, Unpublish with confirmation), Versions tab.
 
 ## Phase 4: US-FLW-03 Routing assigns a person or team (P1)
 
-- [ ] T020 [P] Unit tests: `AssigneeResolver` for each target and each failure; the fallback chain in `RoutingStage`;
+- [x] T020 [P] Unit tests: `AssigneeResolver` for each target and each failure; the fallback chain in `RoutingStage`;
   `PageReference` signs and refuses an altered value (`tests/Unit/Forms/AssigneeResolverTest.php`,
   `tests/Unit/Forms/RoutingStageAssigneeTest.php`).
-- [ ] T021 [P] Unit tests: `TeamService` create, rename, members, delete, key collisions (`tests/Unit/Forms/TeamServiceTest.php`).
-- [ ] T022 Integration tests: teams REST; a team member without "Manage submissions" sees only assigned submissions;
+- [x] T021 [P] Unit tests: `TeamService` create, rename, members, delete, key collisions (`tests/Unit/Forms/TeamServiceTest.php`).
+- [x] T022 Integration tests: teams REST; a team member without "Manage submissions" sees only assigned submissions;
   the upgrade reassigns and counts (`tests/Integration/Forms/FlowRoutingAssignsTest.php`).
-- [ ] T023 `Assignee`, `RoutingDirectory`/`WpRoutingDirectory`, `AssigneeResolver`, `PageReference`; `RoutingStage`,
+- [x] T023 `Assignee`, `RoutingDirectory`/`WpRoutingDirectory`, `AssigneeResolver`, `PageReference`; `RoutingStage`,
   `InboxStage` and `TimelineStage` record the assignee and the failures.
-- [ ] T024 Teams: `Team`, `TeamStore`/`WpTeamStore`, `TeamService`, `TeamController`; `AssignedAccess` answers the
+- [x] T024 Teams: `Team`, `TeamStore`/`WpTeamStore`, `TeamService`, `TeamController`; `AssignedAccess` answers the
   inbox filters; `WpSubmissionAccessPolicy` and `SubmissionsInboxScreen` give the assigned-only inbox.
-- [ ] T025 `FlowOwnerUpgrade` and its notice on the Forms & Flows screen.
-- [ ] T026 [P] Jest: target picker values for each type; field value table; `routingOwner()` words.
-- [ ] T027 Routing tab pickers, Teams view, flow list owner column.
+- [x] T025 `FlowOwnerUpgrade` and its notice on the Forms & Flows screen.
+- [x] T026 [P] Jest: target picker values for each type; field value table; `routingOwner()` words.
+- [x] T027 Routing tab pickers, Teams view, flow list owner column.
 
 ## Phase 5: US-FLW-04 Routed owner (P2)
 
-- [ ] T030 [P] Unit tests: `RoutedRecipients` for user, team, role under and over the limit, no address; the resolver's
+- [x] T030 [P] Unit tests: `RoutedRecipients` for user, team, role under and over the limit, no address; the resolver's
   `routed_owner` token (`tests/Unit/Forms/RoutedRecipientsTest.php`).
-- [ ] T031 Integration test: captured email to the routed user, to each team member, to the fallback with the note
+- [x] T031 Integration test: captured email to the routed user, to each team member, to the fallback with the note
   (`tests/Integration/Forms/FlowRoutedOwnerEmailTest.php`).
-- [ ] T032 `RoutedRecipients`, routing metadata, `FlowEmailAddressResolver`, `EmailStage` note, `RoutingPreview` and
+- [x] T032 `RoutedRecipients`, routing metadata, `FlowEmailAddressResolver`, `EmailStage` note, `RoutingPreview` and
   its route.
-- [ ] T033 Emails tab recipient picker, fallback recipient, limit and preview.
+- [x] T033 Emails tab recipient picker, fallback recipient, limit and preview.
 
 ## Phase 6: US-FLW-07 Extensions run (P2)
 
-- [ ] T040 [P] Unit tests: `FlowExtensionHooks` reads the three filters; `ActionsStage` runs once, records done and
+- [x] T040 [P] Unit tests: `FlowExtensionHooks` reads the three filters; `ActionsStage` runs once, records done and
   failed, passes the test flag; `RoutingTargetRegistry` (`tests/Unit/Forms/FlowExtensionsRunTest.php`).
-- [ ] T041 Integration test: the README's examples, registered through the hooks, run on a submission
+- [x] T041 Integration test: the README's examples, registered through the hooks, run on a submission
   (`tests/Integration/Forms/FlowExtensionHooksTest.php`).
-- [ ] T042 `FlowExtensionHooks`, `RoutingTargetRegistry`, `ActionsStage`, `EmailVariableValues`, the corex-email
+- [x] T042 `FlowExtensionHooks`, `RoutingTargetRegistry`, `ActionsStage`, `EmailVariableValues`, the corex-email
   schema filter, the catalog.
-- [ ] T043 Success tab "After submission" actions; README.
+- [x] T043 Success tab "After submission" actions; README.
 
 ## Phase 7: US-VIS-01 and US-VIS-02 Closed and scheduled flows (P1, P2)
 
-- [ ] T050 [P] Unit tests: `FlowStatusResolver` (draft, scheduled, open, expired by date and cap, closed);
+- [x] T050 [P] Unit tests: `FlowStatusResolver` (draft, scheduled, open, expired by date and cap, closed);
   `FlowNotice` text and alternative (`tests/Unit/Forms/FlowStatusResolverTest.php`).
-- [ ] T051 Integration tests: the block's closed, scheduled, draft (visitor and editor) and missing output; the submit
+- [x] T051 Integration tests: the block's closed, scheduled, draft (visitor and editor) and missing output; the submit
   route's 409; availability saved without publishing reopens; the cap race in two PHP processes
   (`tests/Integration/Forms/FlowAvailabilityTest.php`).
-- [ ] T052 `FlowStatusResolver`, `FlowResponseCounter`, `FlowNotice`, `FlowNoticeText`, `FlowClosedException`; the
+- [x] T052 `FlowStatusResolver`, `FlowResponseCounter`, `FlowNotice`, `FlowNoticeText`, `FlowClosedException`; the
   renderer; the submit route; the lock; the availability route; the list's status and filter.
-- [ ] T053 Runtime `flow_closed` branch (Jest in `plugins/corex-core`), the notice styles, the block editor picker.
-- [ ] T054 Availability tab.
+- [x] T053 Runtime `flow_closed` branch (Jest in `plugins/corex-core`), the notice styles, the block editor picker.
+- [x] T054 Availability tab.
 
 ## Phase 8: Release
 
-- [ ] T060 Playwright: `flow-live-publish.spec.js`, `flow-closed.spec.js`; run the touched `forms-flow.spec.js`.
-- [ ] T061 Measure the editor, the Teams view and the visitor notice at 375px, dark and right to left.
-- [ ] T062 DECISIONS #470 to #479, CHANGELOG under [Unreleased] with Client impact, PROGRESS "In flight", README.
-- [ ] T063 Guards: clean-code-guard, wp-guard, test-guard, docs-guard.
-- [ ] T064 Merge origin/main, push, open the pull request, get CI green.
+- [x] T060 Playwright: `flow-live-publish.spec.js`, `flow-closed.spec.js`; run the touched `forms-flow.spec.js`.
+- [x] T061 Measure the editor, the Teams view and the visitor notice at 375px, dark and right to left.
+- [x] T062 DECISIONS #470 to #479, CHANGELOG under [Unreleased] with Client impact, PROGRESS "In flight", README.
+- [x] T063 Guards: clean-code-guard, wp-guard, test-guard, docs-guard.
+- [x] T064 Merge origin/main, push, open the pull request, get CI green.
