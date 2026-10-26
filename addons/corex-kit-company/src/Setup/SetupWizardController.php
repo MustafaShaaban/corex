@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Corex\Kit\Setup;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use Corex\Kit\BlueprintActivator;
 use Corex\Kit\Provisioning\KitAppliedRecord;
@@ -22,9 +24,9 @@ defined('ABSPATH') || exit;
  * REST for the nine-step setup wizard (spec 068 US8, T195). It exposes the wizard configuration
  * (kits, brand fields, demo levels, conflict choices), the live nine-step progress, a plan preview
  * with real conflicts and the existing pages the kit would adopt, and a guarded apply that honours
- * operator conflict choices. Reads require `manage_options`; the apply additionally requires a valid
- * REST nonce (Principle VII) and the person's confirmation that they have a full backup of their own,
- * and never overwrites existing content without an explicit Replace choice (FR-143). CoreX takes no
+ * operator conflict choices. Reads require "Manage setup" (spec 117); the apply additionally requires a
+ * valid REST nonce (Principle VII) and the person's confirmation that they have a full backup of their
+ * own, and never overwrites existing content without an explicit Replace choice (FR-143). CoreX takes no
  * backup: an apply records the pages it replaces or adopts and the front-page settings, so a reset can
  * put them back (spec 115). The pure seams (`config`, `progressState`, `planPreview`) are unit-tested.
  */
@@ -37,6 +39,7 @@ final class SetupWizardController
         private readonly SetupProgress $progress,
         private readonly BlueprintActivator $activator,
         private readonly ConflictResolver $conflicts = new ConflictResolver(),
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
         private readonly KitAppliedRecord $applied = new KitAppliedRecord(),
     ) {
     }
@@ -64,7 +67,7 @@ final class SetupWizardController
 
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allows(CorexAbility::MANAGE_SETUP, 'corex-setup');
     }
 
     public function canApply(WP_REST_Request $request): bool

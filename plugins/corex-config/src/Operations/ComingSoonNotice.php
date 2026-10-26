@@ -10,6 +10,7 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Config\AdminUi\ScreenAsset;
 use WP_Admin_Bar;
 
@@ -82,7 +83,7 @@ final class ComingSoonNotice
             return;
         }
 
-        $html = $this->html($this->decision(), current_user_can('manage_options'));
+        $html = $this->html($this->decision(), current_user_can(CorexAbility::MANAGE_OPERATIONS));
         if ($html === '') {
             return;
         }
@@ -168,7 +169,7 @@ final class ComingSoonNotice
             'href'   => $this->visitorViewUrl(),
         ]);
 
-        if (current_user_can('manage_options')) {
+        if (current_user_can(CorexAbility::MANAGE_OPERATIONS)) {
             $toolbar->add_node([
                 'parent' => self::TOOLBAR_NODE,
                 'id'     => self::TOOLBAR_NODE . '-operations',

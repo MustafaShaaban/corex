@@ -198,7 +198,7 @@ final class CorexGuides
             ->withSummary(__('Your site measures its own speed. When something feels slow, this tells you whether it is and where the time goes.', 'corex'))
             ->inSection('operations')
             ->onScreen('admin.php?page=corex-insights')
-            ->requiring('manage_options')
+            ->requiring('corex_manage_admin')
             ->ordered(10)
             ->withTopic(GuideTopic::for(
                 'diagnose',

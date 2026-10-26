@@ -45,7 +45,7 @@ final class EverydayScreenGuides
             ->withSummary(__('The one screen that tells you whether anything needs your attention, and what to do about it.', 'corex'))
             ->inSection('general')
             ->onScreen('admin.php?page=corex-settings')
-            ->requiring('manage_options')
+            ->requiring('corex_manage_admin')
             ->ordered(10)
             ->withTopic(GuideTopic::for(
                 'read-it',
@@ -75,7 +75,7 @@ final class EverydayScreenGuides
             ->withSummary(__('Add-ons are the optional parts of CoreX. Anything switched off simply is not there — nothing breaks.', 'corex'))
             ->inSection('general')
             ->onScreen('admin.php?page=corex-addons')
-            ->requiring('manage_options')
+            ->requiring('corex_manage_admin')
             ->ordered(30)
             ->withTopic(GuideTopic::for(
                 'browse',

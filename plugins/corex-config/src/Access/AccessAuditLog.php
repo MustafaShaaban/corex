@@ -43,6 +43,20 @@ final class AccessAuditLog implements AccessRefusalRecorder
     public function register(): void
     {
         add_action('corex_admin_access_denied', [$this, 'recordDenied']);
+        add_action('corex_access_refused', [$this, 'recordRefusedAction'], 10, 2);
+    }
+
+    /**
+     * Action callback: a CoreX route or form refused the current user for want of its screen's
+     * ability (spec 117, FR-005). Recorded under the screen's page slug, counted by the same rule.
+     */
+    public function recordRefusedAction(string $kind, string $section): void
+    {
+        $this->record(
+            $kind,
+            AdminPage::pageSlugForSection($section) ?? $section,
+            function_exists('get_current_user_id') ? get_current_user_id() : 0,
+        );
     }
 
     /**

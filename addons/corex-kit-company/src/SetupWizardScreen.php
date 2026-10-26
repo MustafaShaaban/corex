@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Kit;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
 use Corex\Kit\Provisioning\KitAppliedRecord;
 use Corex\Security\Admin\AdminGuard;
@@ -47,7 +48,7 @@ final class SetupWizardScreen
             'corex-settings',
             __('Corex Setup', 'corex'),
             __('Setup Wizard', 'corex'),
-            'manage_options',
+            CorexAbility::MANAGE_SETUP,
             'corex-setup',
             [$this, 'render'],
             50,
@@ -90,7 +91,7 @@ final class SetupWizardScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->guard->authorized(CorexAbility::MANAGE_SETUP)) {
             echo $this->page->permissionDenied('setup');
 
             return;
@@ -266,7 +267,7 @@ final class SetupWizardScreen
 
     public function maybeApply(): void
     {
-        if (! isset($_POST['corex_kit']) || ! $this->guard->verifiedPost('corex_setup_nonce', 'corex_setup')) {
+        if (! isset($_POST['corex_kit']) || ! $this->guard->verifiedPost('corex_setup_nonce', 'corex_setup', CorexAbility::MANAGE_SETUP, 'corex-setup')) {
             return;
         }
 

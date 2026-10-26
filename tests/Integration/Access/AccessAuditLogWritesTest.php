@@ -93,8 +93,14 @@ it('shows on the audit tab how many times, from the first time to the last', fun
     $this->log->record('denied', 'corex-forms', 990001, $first + 300);
     $this->log->record('denied', 'corex-forms', 990001, $first + 500);
 
+    // The tab holds every access event since spec 117; the person filter keeps it to this one's.
+    $_GET['person'] = '990001';
     $screen = Boot::app()->container()->make(AccessScreen::class);
-    $html   = (string) (new ReflectionMethod($screen, 'auditTab'))->invoke($screen);
+    try {
+        $html = (string) (new ReflectionMethod($screen, 'auditTab'))->invoke($screen);
+    } finally {
+        unset($_GET['person']);
+    }
 
     expect($html)->toContain('3 times, from <time')
         ->and(substr_count($html, 'class="corex-access__event"'))->toBe(1)

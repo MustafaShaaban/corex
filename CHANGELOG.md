@@ -6,10 +6,18 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439).
+Abilities that mean something (spec 117, revamp release R3.1, DECISIONS #420 to #429) and one launch checklist
+and an honest Overview (spec 118, R3.2, DECISIONS #430 to #439).
+
+**Read Client impact before updating.** Every CoreX screen starts checking its own ability, so access
+granted earlier, by approving a request or by an Allow in the role matrix, starts to work. Review CoreX →
+Access & Abilities first.
 
 ### Added
 
+- **"See CoreX screens without changing them"** (spec 117, #422), held by no role until an owner allows
+  it: Overview, Settings, Operations & Security and Insights open read-only, with a "Read only" chip, a
+  sentence naming the ability that makes changes, and every control marked unavailable and saying why.
 - **One launch checklist** (spec 118, revamp release R3.2). The Overview, every tab of Operations &
   Security, the readiness notifications, the CoreX widget on the WordPress Dashboard and the Setup
   Wizard's launch step show the same checks in the same states, in two groups: **Security and
@@ -36,6 +44,46 @@ One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECI
 
 ### Changed
 
+- **Every CoreX screen opens for the people given its ability** (spec 117, #420). Each screen, its routes
+  and its save actions ask for the CoreX ability that names it: Forms & Flows "Manage forms and flows",
+  Email Studio "Manage Email Studio", Settings and the captcha test "Manage settings", Operations &
+  Security and the login protection settings "Manage operations and security", Access & Abilities
+  "Manage access", Blog Pro "Manage Blog Pro", Setup Wizard "Manage setup", and Overview, Add-ons and
+  Insights "Access CoreX admin". Switching to Production or Maintenance also needs "Run dangerous
+  actions", and the inbox's retention forms appear only to people who may use them. A refused route or
+  save answers 403 and is counted in the access audit. The CoreX menu of someone who holds a few
+  abilities lists only their screens.
+- **Site administrators hold every CoreX ability** (#421), and the role matrix can no longer deny one to a
+  role that administers the site. A Deny stored there before is kept, not applied, and listed on the
+  Access Overview.
+- **The role matrix is a grid** (#424): CoreX abilities by area down the side, roles across the top, each
+  cell in words: Allowed (set here), Denied (set here), Allowed through site administration, Not granted,
+  or Locked, with why on focus. "Edit" on a role opens its editor. The WordPress capability grid is gone
+  from the tab.
+- **The Access overview counts CoreX abilities** (#425): each role's count out of all of them, every
+  ability by area with its risk, each screen with the ability it needs, and how you hold yours (site
+  administration, your role, or a grant until a date).
+- **One access history** (#426) on the Audit log tab: role changes, refused role changes with the reason,
+  requests and their decisions, grants revoked or ended, and refused visits and actions, by day, 25 a
+  page, filtered by kind and by person.
+- **Ability and area names are translated** (#427); the access-denied page and a refused change name the
+  ability, not its key.
+- **Email Studio opens for "Manage Email Studio"** (#423). Choosing the delivery provider and turning live
+  delivery on or off stay with site administration; anyone else sees them read-only, with a sentence.
+- **Only a site administrator may widen access to the parts of CoreX that control the site** (#428).
+  Allowing a Critical ability for a role, approving a request for one, changing a role the person
+  making the change holds, and deciding their own access request each need site administration. A
+  holder of "Manage access" who is not a site administrator can still allow and deny the other
+  abilities for other roles and decide other people's requests; for these four they are refused with
+  a sentence saying a site administrator does it, and the refusal is in the access history.
+- **"Capture only CoreX mail" stays with site administration** (#423, #429), like live delivery: a holder of
+  "Manage Email Studio" sees the switch unavailable, with a sentence.
+- **A captured email's content is shown only to site administrators** (#429). Anyone else who holds "Manage
+  Email Studio" sees each captured email's subject, recipients, what sent it, its state and when.
+- **Refused calls to the flow, activity and Blog Pro routes are counted in the access audit** (#429), under
+  Forms & Flows, Overview and Blog Pro, like every other CoreX route since spec 117.
+- **At a phone's width the role matrix folds into one list per ability** (#424), each state named with its role,
+  and its text meets WCAG 2.2 AA contrast in both themes.
 - **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
   not load" with "Try again", never a 0 or another cause, and an administrator reads a reference that
   is also in the PHP error log. The rest of the page still renders.
@@ -59,7 +107,44 @@ One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECI
   screen is titled "Insights" and the agent card "AI and agent readiness". A forms count that cannot
   be read says "Could not load".
 
+### Removed
+
+- **The old Data CSV download** (`admin-post.php?action=corex_data_export`, #429). Nothing in CoreX linked to it;
+  exports are made on the Data screen, which applies the export checks for withheld models and personal data.
+
 ### Client impact
+
+**Spec 117, abilities that mean something:**
+
+- **Muva and Perego: no administrator loses access.** Anyone who can administer the site holds every
+  CoreX ability, and the screens look as before to them.
+- **Grants made earlier start to work.** Every request approved in the past and every Allow in the role
+  matrix now opens its screen. Before updating, open **CoreX → Access & Abilities**: on the Role matrix
+  tab, read the grants list and Revoke what should not stand, and read the grid.
+- **Review every Critical ability Allowed for a role that does not administer the site.** "Manage
+  access", "Manage operations and security", "Install releases" and "Run dangerous actions" Allowed
+  for a role earlier stay Allowed and now open their screens. Only a site administrator could store
+  them, and only a site administrator can now allow them again; set to Deny any that should not
+  stand.
+- **Check for a Deny stored on the Administrator role.** It is kept, ignored, and listed on the Access
+  Overview under "Stored but not applied".
+- **Blog Pro opens for "Manage Blog Pro"** and site administrators. Editors and writers who used it since
+  v0.47.0 need "Manage Blog Pro" allowed for their role.
+- **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it. Such a person who
+  is not a site administrator sees captured emails listed, not their content.
+- **Only a site administrator can allow a Critical ability, change a role they hold, or decide their own access
+  request.** A holder of "Manage access" who is not a site administrator is refused these with a sentence.
+- **A bookmark or script that downloaded `admin-post.php?action=corex_data_export`** stops working; export from
+  CoreX → Data instead. Search a client repository for `corex_data_export` before updating.
+- A client repository carrying copies of CoreX's tests takes the updated
+  `tests/Unit/Access/AccessMatrixTest.php`, `AccessPolicyTest.php`, `AccessServiceTest.php`,
+  `tests/Integration/Access/AccessAuditLogWritesTest.php`, `ScreenAbilitiesAccessTest.php` and
+  `tests/Integration/Blog/BlogProPermissionMatrixTest.php`, and drops `tests/Unit/Data/DataExportControllerTest.php`
+  and `CsvWriterTest.php`.
+  Client-guide screenshots of the Access screen go stale.
+- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+
+**Spec 118, one launch checklist and an honest Overview:**
 
 - **Muva**: the owner sees a new Overview (four state tiles, a two-group checklist, activity as
   sentences, its own data only) and the same checklist on Operations & Security and the Dashboard

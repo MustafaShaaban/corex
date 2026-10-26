@@ -10,6 +10,7 @@ namespace Corex\Config\Blog;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
 use Corex\Http\RouteParam;
 use DateTimeImmutable;
 use WP_Error;
@@ -26,6 +27,7 @@ final class BlogProController
     public function __construct(
         private readonly BlogProServices $services,
         private readonly BlogProPermissions $permissions,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -101,14 +103,24 @@ final class BlogProController
         );
     }
 
-    /** A refusal names what is not allowed (spec 112, FR-025); a missing nonce is refused as before. */
+    /**
+     * A refusal names what is not allowed (spec 112, FR-025); a missing nonce is refused as before.
+     * A refusal for want of "Manage Blog Pro" is recorded in the access audit (spec 117, FR-005);
+     * one WordPress's own permission for a post or comment decides is not an access refusal.
+     */
     private function answer(WP_REST_Request $request, bool $allowed, string $refusal): bool|WP_Error
     {
         if (! $this->hasNonce($request)) {
             return false;
         }
 
-        return $allowed ? true : new WP_Error('rest_forbidden', $refusal, ['status' => 403]);
+        if ($allowed) {
+            return true;
+        }
+
+        $this->abilities->allows(BlogProPermissions::BASE, 'corex-blog-pro');
+
+        return new WP_Error('rest_forbidden', $refusal, ['status' => 403]);
     }
 
     public function hasNonce(WP_REST_Request $request): bool

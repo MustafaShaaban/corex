@@ -10,6 +10,8 @@ namespace Corex\Config\Security;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
@@ -25,11 +27,14 @@ use WP_REST_Response;
  */
 final class SecuritySettingsController
 {
+    private const SCREEN = 'corex-operations-security';
+
     private const NAMESPACE = 'corex/v1';
 
     public function __construct(
         private readonly LoginProtectionSettingsStore $store,
         private readonly LoginSlugAvailability $availability = new LoginSlugAvailability(),
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -40,7 +45,7 @@ final class SecuritySettingsController
                 [
                     'methods'             => 'GET',
                     'callback'            => [$this, 'show'],
-                    'permission_callback' => [$this, 'allowed'],
+                    'permission_callback' => [$this, 'readable'],
                 ],
                 [
                     'methods'             => 'POST',
@@ -112,9 +117,16 @@ final class SecuritySettingsController
         ];
     }
 
+    /** Changing the settings: the screen's ability (spec 117, FR-002). */
     public function allowed(WP_REST_Request $request): bool
     {
-        return current_user_can('manage_options') && $this->hasNonce($request);
+        return $this->abilities->allows(CorexAbility::MANAGE_OPERATIONS, self::SCREEN) && $this->hasNonce($request);
+    }
+
+    /** Reading them: the screen's ability, or the view ability (spec 117, FR-014). */
+    public function readable(WP_REST_Request $request): bool
+    {
+        return $this->abilities->allowsReading(CorexAbility::MANAGE_OPERATIONS, self::SCREEN) && $this->hasNonce($request);
     }
 
     public function show(WP_REST_Request $request): WP_REST_Response

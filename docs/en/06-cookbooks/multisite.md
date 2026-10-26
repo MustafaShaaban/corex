@@ -81,13 +81,14 @@ site-activated add-on    → loads on that site only
 
 ## Example 3 — capabilities for network vs site admin screens
 
-Corex admin screens gate on `manage_options` via the shared `AdminGuard`. On multisite, `manage_options` is a
-**site** capability; network-level actions use `manage_network`. If you add a network-admin screen, gate it on
-the network capability instead.
+Corex admin screens gate on their CoreX ability via the shared `AdminGuard` (spec 117). Every site administrator
+(`manage_options`, a **site** capability) holds every CoreX ability, and a super administrator passes every check;
+network-level actions use `manage_network`. If you add a network-admin screen, gate it on the network capability
+instead.
 
 ```php
 // site-level screen (the default Corex pattern) — fine on multisite, per-site:
-if (! $this->guard->authorized('manage_options')) { return; }
+if (! $this->guard->authorized(CorexAbility::MANAGE_SETTINGS)) { return; }
 
 // a network-admin screen would instead require:
 if (! current_user_can('manage_network')) { return; }

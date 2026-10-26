@@ -337,7 +337,13 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Access\RequestableAbilities::class),
                 $c->has(\Corex\Mail\RoutedMailer::class) ? $c->make(\Corex\Mail\RoutedMailer::class) : null,
                 $c->make(\Corex\Events\EventDispatcher::class),
+                $c->make(\Corex\Access\SiteAdministration::class),
             ),
+        );
+        // Which roles administer the site: their members hold every CoreX ability (spec 117, ACC-D11).
+        $this->container->singleton(
+            \Corex\Access\SiteAdministration::class,
+            static fn (): \Corex\Access\SiteAdministration => new \Corex\Config\Access\WpSiteAdministration(),
         );
         $this->container->singleton(AbilityCompatibility::class);
         $this->container->singleton(RolePluginCompatibility::class);
@@ -1298,7 +1304,6 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Notifications\NotificationsScreen::class)->register();
         $this->container->make(ReleasesScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
-        $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 
         add_action('rest_api_init', function (): void {
             $this->container->make(ActivityController::class)->register();

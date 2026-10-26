@@ -10,6 +10,7 @@ namespace Corex\Config\Forms;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Container\ContainerInterface;
@@ -48,7 +49,7 @@ final class FormsFlowsScreen
             'corex-settings',
             __('CoreX Forms & Flows', 'corex'),
             __('Forms & Flows', 'corex'),
-            'manage_options',
+            CorexAbility::MANAGE_FORMS,
             'corex-forms',
             [$this, 'render'],
             25,
@@ -96,7 +97,7 @@ final class FormsFlowsScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->guard->authorized(CorexAbility::MANAGE_FORMS)) {
             echo $this->page->permissionDenied('forms');
 
             return;

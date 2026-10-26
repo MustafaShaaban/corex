@@ -10,6 +10,8 @@ namespace Corex\Email\Studio;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Email\Capture\CapturedEmail;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\EmailAttempt;
@@ -59,6 +61,7 @@ final class EmailStudioController
         private readonly EmailDeliveryContextFactory $delivery,
         /** What happens to mail on this site, said on every tab (spec 113). */
         private readonly ?MailOutcome $outcome = null,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
         $this->templates = $repositories->templates;
         $this->layouts   = $repositories->layouts;
@@ -81,7 +84,9 @@ final class EmailStudioController
         $this->route('/email-studio/routes', 'POST', 'saveRoute', 'canMutate');
         $this->route('/email-studio/test', 'POST', 'testSend', 'canMutate');
         $this->route('/email-studio/attempts/(?P<attempt>[0-9a-f-]+)/resend', 'POST', 'resend', 'canMutate');
-        $this->route('/email-studio/capture-scope', 'POST', 'saveCaptureScope', 'canMutate');
+        // Which mail is captured decides whether other plugins' mail leaves a development or staging
+        // site, so it stays with site administration like live delivery (spec 117, US-EML-20).
+        $this->route('/email-studio/capture-scope', 'POST', 'saveCaptureScope', 'canConfigureDelivery');
     }
 
     /**
@@ -108,15 +113,23 @@ final class EmailStudioController
         ]);
     }
 
+    /** Email Studio opens for the holders of "Manage Email Studio" (spec 117, US-EML-20). */
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allows(CorexAbility::MANAGE_EMAIL, 'corex-email-studio');
     }
 
     public function canMutate(WP_REST_Request $request): bool
     {
         return $this->canManage()
             && wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false;
+    }
+
+    /** How the whole site delivers mail is chosen by a site administrator (spec 117, FR-007). */
+    public function canConfigureDelivery(WP_REST_Request $request): bool
+    {
+        return $this->canMutate($request)
+            && $this->abilities->allows('manage_options', 'corex-email-studio');
     }
 
     public function index(WP_REST_Request $request): WP_REST_Response
@@ -126,6 +139,7 @@ final class EmailStudioController
         $partials  = array_map($this->partialArray(...), $this->partials->all());
         $routes    = array_map($this->routeArray(...), $this->routes->all());
         $captures  = $this->captures->latest(self::RECENT);
+        $withContent = $this->opensCapturedContent();
         $attempts  = $this->attempts->latest(self::RECENT);
         $states    = array_count_values(array_map(static fn (EmailAttempt $attempt): string => $attempt->state, $attempts));
         $recentTests = array_values(array_filter(
@@ -158,7 +172,10 @@ final class EmailStudioController
             'layouts'   => $layouts,
             'partials'  => $partials,
             'routes'    => $routes,
-            'captures'  => array_map($this->captureArray(...), $captures),
+            'captures'  => array_map(
+                fn (CapturedEmail $capture): array => $this->captureArray($capture, $withContent),
+                $captures,
+            ),
             'attempts'  => array_map($this->attemptArray(...), $attempts),
             'recent_test_sends' => array_map($this->attemptArray(...), array_slice($recentTests, 0, 10)),
             'health'     => $this->overviewHealth(),
@@ -582,17 +599,31 @@ final class EmailStudioController
         ];
     }
 
-    /** @return array<string,mixed> */
-    private function captureArray(CapturedEmail $capture): array
+    /**
+     * A captured email's content is shown only to site administrators (DECISIONS #429). Anyone else
+     * who holds "Manage Email Studio" reads what it was, to whom and when, and is told the rest is
+     * not theirs to open.
+     */
+    private function opensCapturedContent(): bool
     {
-        return [
+        return current_user_can('manage_options');
+    }
+
+    /** @return array<string,mixed> */
+    private function captureArray(CapturedEmail $capture, bool $withContent): array
+    {
+        $summary = [
             'id' => $capture->id, 'capture_id' => $capture->captureId, 'attempt_id' => $capture->attemptId,
             'to' => $capture->to, 'subject' => $capture->subject,
-            'html_body' => $capture->body, 'plain_text' => $capture->plainText, 'headers' => $capture->headers,
             'captured_at' => $capture->capturedAt->format(DATE_ATOM),
             'retention_until' => $capture->retentionUntil?->format(DATE_ATOM),
             'path' => $capture->path, 'state' => $capture->state,
+            'content_withheld' => ! $withContent,
         ];
+
+        return $withContent
+            ? $summary + ['html_body' => $capture->body, 'plain_text' => $capture->plainText, 'headers' => $capture->headers]
+            : $summary;
     }
 
     /** @return array<string,mixed> */

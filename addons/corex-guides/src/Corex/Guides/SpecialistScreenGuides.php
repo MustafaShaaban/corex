@@ -292,8 +292,8 @@ final class SpecialistScreenGuides
             ->withSummary(__('Move posts through review, moderate the comments waiting on them, and see what people actually read.', 'corex'))
             ->inSection('content')
             ->onScreen('admin.php?page=corex-blog-pro')
-            // What the screen enforces since spec 112: anyone WordPress lets edit posts.
-            ->requiring('edit_posts')
+            // What the screen enforces since spec 117: its own ability.
+            ->requiring('corex_manage_blog')
             ->ordered(20)
             ->withTopic(GuideTopic::for(
                 'review',
@@ -341,7 +341,7 @@ final class SpecialistScreenGuides
             ->withSummary(__('Two checks you run on demand: is the site fast, and is it ready to be live.', 'corex'))
             ->inSection('operations')
             ->onScreen('admin.php?page=corex-insights')
-            ->requiring('manage_options')
+            ->requiring('corex_manage_admin')
             ->ordered(50)
             ->withTopic(GuideTopic::for(
                 'run',

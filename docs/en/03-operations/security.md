@@ -142,6 +142,62 @@ An entry that is not an address or a range is refused, and nothing is saved:
 Error: Not an address or a range: proxy.example.com. Nothing was changed.
 ```
 
+## Who can open each CoreX screen
+
+Every CoreX screen, its REST routes and its save actions ask for the CoreX ability that names it (spec 117). An
+ability reaches a person through their role in **CoreX → Access & Abilities → Role matrix**, through a request an
+administrator approved, or through site administration: anyone who can administer the site holds every CoreX
+ability, and the matrix cannot deny a role that can. A Deny stored for such a role before this rule is kept, not
+applied, and listed on the Access screen's Overview.
+
+| Screen | Ability it needs |
+|---|---|
+| Overview, Add-ons, Insights | Access CoreX admin |
+| Settings (and the captcha test) | Manage settings |
+| Forms & Flows | Manage forms and flows |
+| Submissions | Manage submissions (saving retention: Manage settings; applying it: Run dangerous actions) |
+| Email Studio | Manage Email Studio |
+| Data | Manage data or Manage data models |
+| Operations & Security (and the login protection settings) | Manage operations and security |
+| Access & Abilities | Manage access |
+| Blog Pro | Manage Blog Pro; each post and comment then follows WordPress's own permission |
+| Setup Wizard | Manage setup |
+| Notifications | Manage notifications |
+| Releases | Install releases |
+| Guides | Anyone signed in; each guide follows its screen |
+
+Switching the operating mode to Production or Maintenance also needs **Run dangerous actions**. In Settings → Mail,
+the delivery provider and live delivery stay with site administration: anyone else sees them read-only. So does
+Email Studio's **Capture only CoreX mail** switch.
+
+Two abilities reach further than their screen's name says. Weigh them before allowing them for a role:
+
+- **Manage setup** runs the Setup Wizard, whose kit activates CoreX plugins and add-ons and can set the site's front
+  page.
+- **Manage Email Studio** lists the captured emails and sends test mail from the site's address. A captured
+  email's content is shown only to site administrators.
+
+### What only a site administrator may change
+
+A holder of **Manage access** who is not a site administrator can allow and deny abilities for roles they do not
+hold, and decide other people's access requests. Four changes need site administration:
+
+- allowing a Critical ability for a role, or setting one back to Inherit;
+- approving a request for a Critical ability;
+- any change to a role the person making it holds;
+- deciding (approving or denying) one's own access request.
+
+The Critical abilities are Access CoreX admin, Manage access, Manage operations and security, Install releases and
+Run dangerous actions. Anyone else is refused with a sentence saying a site administrator does it, and the refusal is
+listed on the Audit log tab.
+
+**See CoreX screens without changing them** opens Overview, Settings, Operations & Security and Insights read-only for
+someone who lacks their own ability: a "Read only" chip in the header, a sentence naming the ability that makes
+changes, and every control marked unavailable, saying why when focused. No role holds it until an owner allows it.
+Every save such a person sends anyway, to a route or a form, is refused and counted in the audit log.
+
+A person who holds abilities but not "Access CoreX admin" sees a CoreX menu holding only the screens they may open.
+
 ## Access requests
 
 When a signed-in user cannot open a CoreX admin area, the denied screen shows a real request-access form. The request
@@ -202,14 +258,16 @@ listed as no longer in effect.
 Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
 When nobody is waiting, it says nothing at all.
 
-The **Audit log** tab lists refused visits to CoreX screens from the last 30 days. One person's refusals of one screen
-are one line for an hour from the first of them, with how many times and from when to when, so somebody reloading a
-refused page cannot push anybody else's line out; each person keeps at most 20 lines. On a host with a persistent
-object cache the repeats within the hour are counted there and stored once; without one, each repeat updates that
-person's line. Requests and decisions are in the activity log, not here.
+The **Audit log** tab is one history of access, newest first, by day, 25 entries a page, filtered by kind and by
+person: role changes (with what changed) and role changes the safety rules refused (with why), requests made and
+their approval, refusal, cancellation or expiry, grants revoked or ended, and refused visits and actions. Role
+changes, requests and grants are kept for 180 days; refusals for 30. One person's refusals of one screen are one line
+for an hour from the first of them, with how many times and from when to when, so somebody reloading a refused page
+cannot push anybody else's line out; each person keeps at most 20 lines. On a host with a persistent object cache the
+repeats within the hour are counted there and stored once; without one, each repeat updates that person's line.
 
 `GET /corex/v1/access/requests` answers the same list as JSON, to the same people: it needs a REST nonce and
-`manage_options`, as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person
+"Manage access", as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person
 who filed a request included, and a visitor who is not signed in `401`. A person sees their own open request on the
 screen that refused them, not through this route.
 

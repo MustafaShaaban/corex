@@ -141,7 +141,10 @@ final class SubmissionsInboxScreen
                 (int) $preview['count'],
             )
             : __('Retention is off; submissions are kept indefinitely.', 'corex');
-        $prune = $preview['willPrune'] ? $this->pruneForm() : '';
+        // Each form only for the people its handler lets use it (spec 117, FR-004): saving the
+        // policy is a setting; applying it removes or rewrites submissions.
+        $prune = $preview['willPrune'] && $this->guard->authorized(CorexAbility::RUN_DANGEROUS_ACTIONS) ? $this->pruneForm() : '';
+        $save  = $this->guard->authorized(CorexAbility::MANAGE_SETTINGS) ? $this->retentionForm($days) : '';
 
         return '<section class="corex-inbox-retention corex-surface">'
             // The same heading class the inbox header uses, so the eyebrow and the title get the one
@@ -150,7 +153,12 @@ final class SubmissionsInboxScreen
             . '<header><div class="corex-inbox__heading"><p class="corex-inbox__eyebrow">'
             . esc_html__('Privacy operations', 'corex') . '</p>'
             . '<h2>' . esc_html__('Submission retention', 'corex') . '</h2></div><span>' . esc_html($status) . '</span></header>'
-            . '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">'
+            . $save . $prune . '</section>';
+    }
+
+    private function retentionForm(int $days): string
+    {
+        return '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">'
             . '<input type="hidden" name="action" value="' . esc_attr(RetentionController::SAVE_ACTION) . '" />'
             . wp_nonce_field(RetentionController::SAVE_ACTION, RetentionController::NONCE, true, false)
             . '<label for="corex-retention-days">' . esc_html__('Keep for days (0 = forever)', 'corex') . '</label>'
@@ -161,7 +169,7 @@ final class SubmissionsInboxScreen
             . '<input id="corex-trash-days" type="number" name="corex_trash_days" min="0" max="'
             . esc_attr((string) RetentionSettings::MAX_DAYS) . '" value="' . esc_attr((string) $this->trash->retentionDays()) . '" />'
             . '<button type="submit" class="button button-primary">' . esc_html__('Save policy', 'corex') . '</button>'
-            . '</form>' . $prune . '</section>';
+            . '</form>';
     }
 
     private function pruneForm(): string
