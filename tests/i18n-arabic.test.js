@@ -20,7 +20,13 @@ const entry = ( fields ) => ( {
 	...fields,
 } );
 
-/** Reads one translation back out of a compiled `.mo`, as gettext would. */
+/**
+ * Reads one translation back out of a compiled `.mo`, as gettext would.
+ *
+ * @param {Buffer} mo  The file.
+ * @param {string} key The original, with its context glued on.
+ * @return {string|null} The translation, or null when the file has none.
+ */
 function lookUp( mo, key ) {
 	const count = mo.readUInt32LE( 8 );
 	const originals = mo.readUInt32LE( 12 );
@@ -30,9 +36,17 @@ function lookUp( mo, key ) {
 		const length = mo.readUInt32LE( originals + index * 8 );
 		const offset = mo.readUInt32LE( originals + index * 8 + 4 );
 
-		if ( mo.toString( 'utf8', offset, offset + length ).split( '\0' )[ 0 ] === key ) {
+		if (
+			mo
+				.toString( 'utf8', offset, offset + length )
+				.split( '\0' )[ 0 ] === key
+		) {
 			const at = translations + index * 8;
-			return mo.toString( 'utf8', mo.readUInt32LE( at + 4 ), mo.readUInt32LE( at + 4 ) + mo.readUInt32LE( at ) );
+			return mo.toString(
+				'utf8',
+				mo.readUInt32LE( at + 4 ),
+				mo.readUInt32LE( at + 4 ) + mo.readUInt32LE( at )
+			);
 		}
 	}
 
@@ -54,7 +68,9 @@ describe( 'The Arabic catalogue tools', () => {
 			str: [ 'حفظ "المسودة"' ],
 			refs: [ 'plugins/a.php' ],
 		} );
-		expect( tools.parsePo( tools.serializePo( parsed ) ) ).toEqual( parsed );
+		expect( tools.parsePo( tools.serializePo( parsed ) ) ).toEqual(
+			parsed
+		);
 	} );
 
 	test.each( [
@@ -85,8 +101,26 @@ describe( 'The Arabic catalogue tools', () => {
 				entry( { id: '%d file', plural: '%d files', str: forms } )
 			);
 
-		expect( plural( [ 'لا ملفات', 'ملف واحد', 'ملفان', '%d ملفات', '%d ملفًا', '%d ملف' ] ) ).toEqual( [] );
-		expect( plural( [ 'لا ملفات', 'ملف %s', 'ملفان', '%d ملفات', '%d ملفًا', '%d ملف' ] ) ).not.toEqual( [] );
+		expect(
+			plural( [
+				'لا ملفات',
+				'ملف واحد',
+				'ملفان',
+				'%d ملفات',
+				'%d ملفًا',
+				'%d ملف',
+			] )
+		).toEqual( [] );
+		expect(
+			plural( [
+				'لا ملفات',
+				'ملف %s',
+				'ملفان',
+				'%d ملفات',
+				'%d ملفًا',
+				'%d ملف',
+			] )
+		).not.toEqual( [] );
 	} );
 
 	test( 'compile a .mo that answers each original, with its context and plural forms', () => {
@@ -95,7 +129,11 @@ describe( 'The Arabic catalogue tools', () => {
 			entries: [
 				entry( { id: 'Settings', str: [ 'الإعدادات' ] } ),
 				entry( { ctx: 'verb', id: 'Post', str: [ 'نشر' ] } ),
-				entry( { id: '%d file', plural: '%d files', str: [ 'a', 'b', 'c', 'd', 'e', 'f' ] } ),
+				entry( {
+					id: '%d file',
+					plural: '%d files',
+					str: [ 'a', 'b', 'c', 'd', 'e', 'f' ],
+				} ),
 				entry( { id: 'Untranslated', str: [ '' ] } ),
 			],
 		} );
@@ -119,10 +157,20 @@ describe( 'The Arabic catalogue tools', () => {
 			'Plural-Forms: nplurals=6; plural=(n == 0 ? 0 : 5);\n'
 		);
 
-		expect( Object.keys( data.locale_data.messages ) ).toEqual( [ '', 'Save', 'Delete "%s"' ] );
-		expect( data.locale_data.messages[ '' ][ 'plural-forms' ] ).toBe( 'nplurals=6; plural=(n == 0 ? 0 : 5);' );
-		expect( tools.scriptTranslationsOf( 'console.log("Save")', entries, '' ) ).toBeNull();
-		expect( tools.scriptFileName( 'build/inbox.js' ) ).toMatch( /^corex-ar-[0-9a-f]{32}\.json$/ );
+		expect( Object.keys( data.locale_data.messages ) ).toEqual( [
+			'',
+			'Save',
+			'Delete "%s"',
+		] );
+		expect( data.locale_data.messages[ '' ][ 'plural-forms' ] ).toBe(
+			'nplurals=6; plural=(n == 0 ? 0 : 5);'
+		);
+		expect(
+			tools.scriptTranslationsOf( 'console.log("Save")', entries, '' )
+		).toBeNull();
+		expect( tools.scriptFileName( 'build/inbox.js' ) ).toMatch(
+			/^corex-ar-[0-9a-f]{32}\.json$/
+		);
 	} );
 
 	test( 'find no broken translation in the shipped catalogue, and a .mo compiled from it', () => {

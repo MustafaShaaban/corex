@@ -19,9 +19,10 @@
 	const { restUrl, nonce, adminUrl } = data;
 	// Named `__` so the translation template reads the literal of every call (spec 121); a page
 	// without wp-i18n shows the English.
-	// eslint-disable-next-line @wordpress/i18n-no-variables, @wordpress/i18n-text-domain
+	/* eslint-disable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
 	const __ = ( text, domain ) =>
 		wp.i18n ? wp.i18n.__( text, domain ) : text;
+	/* eslint-enable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
 
 	const STEPS = [
 		'welcome',
@@ -132,7 +133,10 @@
 		const conflicts = ( state.plan && state.plan.conflicts ) || [];
 		if ( conflicts.length === 0 ) {
 			return `<p class="corex-setup__muted">${ escape(
-				__( 'No conflicts — no existing page will be changed.', 'corex' )
+				__(
+					'No conflicts — no existing page will be changed.',
+					'corex'
+				)
 			) }</p>`;
 		}
 		const choices = state.config.conflictChoices || [];
@@ -164,7 +168,10 @@
 	 * @return {string} The sentence, translated.
 	 */
 	function recordedSentence() {
-		return __( 'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.', 'corex' );
+		return __(
+			'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.',
+			'corex'
+		);
 	}
 
 	/**
@@ -198,13 +205,19 @@
 						.map( ( title ) => `<li>${ escape( title ) }</li>` )
 						.join( '' ) }</ul>`
 				: `<p class="corex-setup__muted">${ escape(
-						__( 'This plan changes none of your existing pages.', 'corex' )
+						__(
+							'This plan changes none of your existing pages.',
+							'corex'
+						)
 					) }</p>`;
 		return (
 			`<p>${ escape( recordedSentence() ) }</p>` +
 			list +
 			`<p>${ escape(
-				__( 'Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one.', 'corex' )
+				__(
+					'Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one.',
+					'corex'
+				)
 			) }</p>` +
 			`<label class="corex-setup__confirm"><input type="checkbox" id="corex-setup-backup"${
 				state.backupConfirmed ? ' checked' : ''
@@ -217,7 +230,10 @@
 		if ( key === 'welcome' ) {
 			return (
 				`<p>${ escape(
-					__( 'This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it.', 'corex' )
+					__(
+						'This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it.',
+						'corex'
+					)
 				) }</p>` + `<p>${ escape( recordedSentence() ) }</p>`
 			);
 		}
@@ -227,7 +243,10 @@
 				.join( '' );
 			return (
 				`<p>${ escape(
-					__( 'Set your company brand details — these save to CoreX Settings and are read across the site.', 'corex' )
+					__(
+						'Set your company brand details — these save to CoreX Settings and are read across the site.',
+						'corex'
+					)
 				) }</p>` +
 				`<ul class="corex-setup__fields">${ rows }</ul>` +
 				`<p><a class="button" href="${ escape(
@@ -252,7 +271,10 @@
 			const pages = state.plan ? state.plan.plan.pages.length : 0;
 			return (
 				`<p>${ escape(
-					__( 'Review what will be applied. Existing pages are never overwritten unless you choose Replace.', 'corex' )
+					__(
+						'Review what will be applied. Existing pages are never overwritten unless you choose Replace.',
+						'corex'
+					)
 				) }</p>` +
 				`<p class="corex-setup__muted">${ pages } ${ escape(
 					__( 'pages will be created or adopted.', 'corex' )
@@ -284,7 +306,10 @@
 		if ( key === 'launch' ) {
 			return (
 				`<p>${ escape(
-					__( 'Resolve launch blockers — indexing, debug output, email, security, and readiness — before going live.', 'corex' )
+					__(
+						'Resolve launch blockers — indexing, debug output, email, security, and readiness — before going live.',
+						'corex'
+					)
 				) }</p>` +
 				`<p><a class="button" href="${ escape(
 					sectionUrl( 'corex-operations-security' )
@@ -401,7 +426,10 @@
 			state.planError = res.envelope.ok
 				? ''
 				: res.envelope.message ||
-					__( 'The plan could not be read. Go back and try again.', 'corex' );
+					__(
+						'The plan could not be read. Go back and try again.',
+						'corex'
+					);
 		}
 		state.index = Math.max( 0, Math.min( STEPS.length - 1, index ) );
 		render();

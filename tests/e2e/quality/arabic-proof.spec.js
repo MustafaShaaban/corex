@@ -74,13 +74,24 @@ async function openInArabic( page, context, baseURL, address ) {
 		dir: document.documentElement.dir || document.body.dir,
 	} ) );
 
-	return { ...state, missing: [ ...new Set( [ ...state.missing, ...fromRest ] ) ] };
+	return {
+		...state,
+		missing: [ ...new Set( [ ...state.missing, ...fromRest ] ) ],
+	};
 }
 
-/** The face an Arabic text node in the target is drawn in, or null when it has none. */
+/**
+ * The face an Arabic text node in the target is drawn in, or null when it has none.
+ *
+ * @param {string} scope A selector for the part of the page to read.
+ * @return {string|null} The computed font family.
+ */
 function arabicFace( scope ) {
 	const root = document.querySelector( scope ) || document.body;
-	const walker = document.createTreeWalker( root, window.NodeFilter.SHOW_TEXT );
+	const walker = document.createTreeWalker(
+		root,
+		window.NodeFilter.SHOW_TEXT
+	);
 
 	for ( let node = walker.nextNode(); node; node = walker.nextNode() ) {
 		const parent = node.parentElement;
@@ -91,7 +102,7 @@ function arabicFace( scope ) {
 			parent.getClientRects().length > 0 &&
 			! parent.closest( 'code, pre, kbd, samp' )
 		) {
-			return getComputedStyle( parent ).fontFamily;
+			return window.getComputedStyle( parent ).fontFamily;
 		}
 	}
 
@@ -172,7 +183,9 @@ test( 'the Contact form answers an empty submit in Arabic', async ( {
 		.first();
 	await expect( form, `no CoreX form on ${ CONTACT }` ).toBeVisible();
 	await form.locator( '[type="submit"]' ).first().click();
-	await expect( page.locator( '[aria-invalid="true"]' ).first() ).toBeVisible();
+	await expect(
+		page.locator( '[aria-invalid="true"]' ).first()
+	).toBeVisible();
 
 	const state = await page.evaluate( () => ( {
 		catalogue: window.__corexArabicCatalogue,

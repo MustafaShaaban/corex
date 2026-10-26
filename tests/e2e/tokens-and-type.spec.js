@@ -40,24 +40,38 @@ async function adminSession( browser ) {
 	return { context, page, nonce };
 }
 
-/** What one element computes for the properties a test reads. */
+/**
+ * What one element computes for the properties a test reads.
+ *
+ * @param {import('@playwright/test').Page} page     The page.
+ * @param {string}                          selector The element.
+ * @return {Promise<Object>} Its font, size, tracking, line height, radius and transition.
+ */
 function computed( page, selector ) {
-	return page.locator( selector ).first().evaluate( ( element ) => {
-		const style = getComputedStyle( element );
+	return page
+		.locator( selector )
+		.first()
+		.evaluate( ( element ) => {
+			const style = window.getComputedStyle( element );
 
-		return {
-			family: style.fontFamily,
-			size: parseFloat( style.fontSize ),
-			weight: style.fontWeight,
-			tracking: style.letterSpacing,
-			lineHeight: parseFloat( style.lineHeight ),
-			radius: style.borderRadius,
-			transition: style.transitionDuration,
-		};
-	} );
+			return {
+				family: style.fontFamily,
+				size: parseFloat( style.fontSize ),
+				weight: style.fontWeight,
+				tracking: style.letterSpacing,
+				lineHeight: parseFloat( style.lineHeight ),
+				radius: style.borderRadius,
+				transition: style.transitionDuration,
+			};
+		} );
 }
 
-/** Every font file the page asked for while it loaded. */
+/**
+ * Every font file the page asked for while it loaded.
+ *
+ * @param {import('@playwright/test').Page} page The page.
+ * @return {string[]} The file names, filled in as the page loads.
+ */
 function fontRequests( page ) {
 	const files = [];
 	page.on( 'request', ( request ) => {
@@ -106,11 +120,21 @@ test.describe( 'the CoreX theme', () => {
 		await page.goto( '/' );
 
 		const presets = await page.evaluate( () => {
-			const root = getComputedStyle( document.documentElement );
+			const root = window.getComputedStyle( document.documentElement );
 			const read = ( name ) => root.getPropertyValue( name ).trim();
 
 			return {
-				spacing: [ '10', '20', '25', '30', '40', '50', '60', '70', '80' ].map( ( slug ) => {
+				spacing: [
+					'10',
+					'20',
+					'25',
+					'30',
+					'40',
+					'50',
+					'60',
+					'70',
+					'80',
+				].map( ( slug ) => {
 					const probe = document.createElement( 'div' );
 					probe.style.width = `var(--wp--preset--spacing--${ slug })`;
 					document.body.append( probe );
@@ -128,10 +152,14 @@ test.describe( 'the CoreX theme', () => {
 			};
 		} );
 
-		expect( presets.spacing ).toEqual( [ 4, 8, 12, 16, 24, 32, 48, 64, 96 ] );
+		expect( presets.spacing ).toEqual( [
+			4, 8, 12, 16, 24, 32, 48, 64, 96,
+		] );
 		expect( presets.wordPressDefaults ).toEqual( [] );
 		// An English page draws no Arabic glyph, so it fetches no Arabic file (TC-BRD-04-03).
-		expect( files.filter( ( file ) => file.includes( 'arabic' ) ) ).toEqual( [] );
+		expect( files.filter( ( file ) => file.includes( 'arabic' ) ) ).toEqual(
+			[]
+		);
 	} );
 
 	test( 'sets headings on the type scale, buttons and labels in Space Grotesk, paragraphs in the system font', async ( {
@@ -142,7 +170,10 @@ test.describe( 'the CoreX theme', () => {
 		const h1 = await computed( page, 'h1' );
 		const h2 = await computed( page, 'main h2' );
 		const paragraph = await computed( page, 'main p' );
-		const button = await computed( page, '.wp-block-button__link, .wp-element-button' );
+		const button = await computed(
+			page,
+			'.wp-block-button__link, .wp-element-button'
+		);
 		const label = await computed( page, 'label' );
 
 		expect( h1 ).toMatchObject( { size: 64, weight: '600' } );
@@ -173,19 +204,27 @@ test.describe( 'the CoreX theme', () => {
 		const heading = await computed( page, 'main h2' );
 		const ranges = await page.evaluate( () =>
 			[ ...document.fonts ]
-				.filter( ( face ) => face.family.includes( 'IBM Plex Sans Arabic' ) )
+				.filter( ( face ) =>
+					face.family.includes( 'IBM Plex Sans Arabic' )
+				)
 				.map( ( face ) => face.unicodeRange )
 		);
 
-		expect( await page.evaluate( () => document.documentElement.lang ) ).toBe( 'ar' );
+		expect(
+			await page.evaluate( () => document.documentElement.lang )
+		).toBe( 'ar' );
 		expect( paragraph.family ).toMatch( /^"?IBM Plex Sans Arabic"?/ );
 		expect( paragraph.lineHeight / paragraph.size ).toBeCloseTo( 1.8, 2 );
 		expect( heading.family ).toMatch( /^"?IBM Plex Sans Arabic"?/ );
 		expect( heading.lineHeight / heading.size ).toBeCloseTo( 1.3, 2 );
 		// The Arabic face covers Arabic only, so "CoreX 0.46.1" and the address fall to the Latin face.
 		expect( ranges.length ).toBeGreaterThan( 0 );
-		ranges.forEach( ( range ) => expect( range ).toMatch( /^U\+600-6FF/i ) );
-		expect( files.some( ( file ) => file.includes( 'ibm-plex-sans-arabic' ) ) ).toBe( true );
+		ranges.forEach( ( range ) =>
+			expect( range ).toMatch( /^U\+600-6FF/i )
+		);
+		expect(
+			files.some( ( file ) => file.includes( 'ibm-plex-sans-arabic' ) )
+		).toBe( true );
 	} );
 } );
 
@@ -197,9 +236,15 @@ test.describe( 'the login', () => {
 	} ) => {
 		await page.goto( '/wp-login.php' );
 
-		expect( ( await computed( page, 'body' ) ).family ).toMatch( SYSTEM_FONT );
-		expect( ( await computed( page, '#loginform label' ) ).family ).toMatch( /Space Grotesk/ );
-		expect( ( await computed( page, '#wp-submit' ) ).family ).toMatch( /Space Grotesk/ );
+		expect( ( await computed( page, 'body' ) ).family ).toMatch(
+			SYSTEM_FONT
+		);
+		expect( ( await computed( page, '#loginform label' ) ).family ).toMatch(
+			/Space Grotesk/
+		);
+		expect( ( await computed( page, '#wp-submit' ) ).family ).toMatch(
+			/Space Grotesk/
+		);
 	} );
 } );
 
@@ -212,13 +257,29 @@ test.describe( 'the CoreX admin', () => {
 		await page.goto( CORE_X_SCREEN );
 
 		const stylesheets = await page.evaluate( () =>
-			[ ...document.querySelectorAll( 'link[rel="stylesheet"]' ) ].map( ( link ) => link.href )
+			[ ...document.querySelectorAll( 'link[rel="stylesheet"]' ) ].map(
+				( link ) => link.href
+			)
 		);
 
-		expect( ( await computed( page, '.corex-admin .corex-admin__description' ) ).family ).toMatch( SYSTEM_FONT );
-		expect( ( await computed( page, '.corex-admin h1' ) ).family ).toMatch( /Space Grotesk/ );
-		expect( ( await computed( page, '.corex-admin .button, .corex-admin button' ) ).family ).toMatch( /Space Grotesk/ );
-		expect( stylesheets.filter( ( href ) => href.includes( '/themes/' ) ) ).toEqual( [] );
+		expect(
+			( await computed( page, '.corex-admin .corex-admin__description' ) )
+				.family
+		).toMatch( SYSTEM_FONT );
+		expect( ( await computed( page, '.corex-admin h1' ) ).family ).toMatch(
+			/Space Grotesk/
+		);
+		expect(
+			(
+				await computed(
+					page,
+					'.corex-admin .button, .corex-admin button'
+				)
+			).family
+		).toMatch( /Space Grotesk/ );
+		expect(
+			stylesheets.filter( ( href ) => href.includes( '/themes/' ) )
+		).toEqual( [] );
 	} );
 
 	test( 'draws Light and System on a light computer the same, shadows, overlay and login card included', async ( {
@@ -237,7 +298,12 @@ test.describe( 'the CoreX admin', () => {
 				'--corex-admin-surface',
 			];
 			const read = () =>
-				names.map( ( name ) => getComputedStyle( shell ).getPropertyValue( name ).trim() );
+				names.map( ( name ) =>
+					window
+						.getComputedStyle( shell )
+						.getPropertyValue( name )
+						.trim()
+				);
 
 			shell.setAttribute( 'data-corex-theme', 'light' );
 			const light = read();
@@ -251,13 +317,20 @@ test.describe( 'the CoreX admin', () => {
 		expect( tokens.light[ 0 ] ).not.toContain( '11 31 59' );
 	} );
 
-	test( 'reads Arabic at Arabic line height', async ( { page, context, baseURL } ) => {
+	test( 'reads Arabic at Arabic line height', async ( {
+		page,
+		context,
+		baseURL,
+	} ) => {
 		await context.addCookies( [
 			{ name: 'corex_e2e_locale', value: 'ar', url: baseURL },
 		] );
 		await page.goto( CORE_X_SCREEN );
 
-		const paragraph = await computed( page, '.corex-admin .corex-admin__description' );
+		const paragraph = await computed(
+			page,
+			'.corex-admin .corex-admin__description'
+		);
 
 		expect( paragraph.family ).toMatch( /CoreX Arabic/ );
 		expect( paragraph.lineHeight / paragraph.size ).toBeCloseTo( 1.8, 1 );

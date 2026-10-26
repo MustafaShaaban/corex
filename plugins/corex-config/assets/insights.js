@@ -21,9 +21,10 @@
 	const byProvider = {};
 	// Named `__` so the translation template reads the literal of every call (spec 121); a page
 	// without wp-i18n shows the English.
-	// eslint-disable-next-line @wordpress/i18n-no-variables, @wordpress/i18n-text-domain
+	/* eslint-disable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
 	const __ = ( text, domain ) =>
 		wp.i18n ? wp.i18n.__( text, domain ) : text;
+	/* eslint-enable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
 
 	/*
 	 * The admin's loading states (spec 108), written as markup: this screen is not React, and
@@ -188,7 +189,9 @@
 			// its width, and the styles draw the loader over it from these attributes.
 			runAttributes( loading, waiting ) +
 			'>' +
-			escape( failed ? __( 'Retry', 'corex' ) : __( 'Run check', 'corex' ) ) +
+			escape(
+				failed ? __( 'Retry', 'corex' ) : __( 'Run check', 'corex' )
+			) +
 			'</button>' +
 			'<span class="corex-insight-card__time">' +
 			( waiting ? placeholder( bar( 'full' ) ) : escape( checkedAt ) ) +
@@ -234,7 +237,13 @@
 		}
 		return score === null
 			? __( 'No score yet', 'corex' )
-			: escape( __( 'Score', 'corex' ) + ' ' + score + ' / 100, grade ' + grade );
+			: escape(
+					__( 'Score', 'corex' ) +
+						' ' +
+						score +
+						' / 100, grade ' +
+						grade
+				);
 	}
 
 	function scoreText( score ) {
@@ -268,7 +277,10 @@
 						lastResult( id ),
 						false,
 						result.envelope.message ||
-							__( 'The check could not be completed. Try again.', 'corex' )
+							__(
+								'The check could not be completed. Try again.',
+								'corex'
+							)
 					);
 					return;
 				}
@@ -296,7 +308,10 @@
 		if ( ! result.envelope.ok ) {
 			const failure =
 				result.envelope.message ||
-				__( 'The last results could not be loaded. Run a check to get new ones.', 'corex' );
+				__(
+					'The last results could not be loaded. Run a check to get new ones.',
+					'corex'
+				);
 			providers.forEach( ( p ) => render( p.id, null, false, failure ) );
 			return;
 		}
@@ -451,7 +466,9 @@
 		el.innerHTML =
 			'<div class="corex-error-state corex-error-state--panel" role="status" aria-live="polite">' +
 			'<p class="corex-error-state__message">' +
-			escape( __( 'The rest of the insights could not be loaded.', 'corex' ) ) +
+			escape(
+				__( 'The rest of the insights could not be loaded.', 'corex' )
+			) +
 			'</p>' +
 			'<div class="corex-error-state__actions">' +
 			'<button type="button" class="button">' +

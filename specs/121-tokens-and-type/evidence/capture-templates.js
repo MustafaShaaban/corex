@@ -19,10 +19,9 @@ async function main() {
 		throw new Error( 'Usage: capture-templates.js <base-url> <out-dir>' );
 	}
 
-	const list = require( path.resolve(
-		__dirname,
-		'../../../tests/e2e/quality/templates.json'
-	) ).templates;
+	const list = require(
+		path.resolve( __dirname, '../../../tests/e2e/quality/templates.json' )
+	).templates;
 	fs.mkdirSync( out, { recursive: true } );
 
 	const browser = await chromium.launch();

@@ -43,8 +43,10 @@ const COMMAND_LINE_ONLY = /^packages\/cli\//;
 function unquote( line ) {
 	const body = line.slice( line.indexOf( '"' ) + 1, line.lastIndexOf( '"' ) );
 
-	return body.replace( /\\(["\\nt])/g, ( _, character ) =>
-		( { n: '\n', t: '\t', '"': '"', '\\': '\\' } )[ character ]
+	return body.replace(
+		/\\(["\\nt])/g,
+		( _, character ) =>
+			( { n: '\n', t: '\t', '"': '"', '\\': '\\' } )[ character ]
 	);
 }
 
@@ -68,7 +70,16 @@ export function parsePo( text ) {
 	let field = null;
 
 	const start = () => {
-		entry = { comments: [], refs: [], flags: [], extracted: [], ctx: null, id: null, plural: null, str: [] };
+		entry = {
+			comments: [],
+			refs: [],
+			flags: [],
+			extracted: [],
+			ctx: null,
+			id: null,
+			plural: null,
+			str: [],
+		};
 		entries.push( entry );
 		field = null;
 	};
@@ -86,7 +97,12 @@ export function parsePo( text ) {
 		if ( line.startsWith( '#:' ) ) {
 			entry.refs.push( ...line.slice( 2 ).trim().split( /\s+/ ) );
 		} else if ( line.startsWith( '#,' ) ) {
-			entry.flags.push( ...line.slice( 2 ).split( ',' ).map( ( flag ) => flag.trim() ) );
+			entry.flags.push(
+				...line
+					.slice( 2 )
+					.split( ',' )
+					.map( ( flag ) => flag.trim() )
+			);
 		} else if ( line.startsWith( '#.' ) ) {
 			entry.extracted.push( line.slice( 2 ).trim() );
 		} else if ( line.startsWith( '#' ) ) {
@@ -116,8 +132,11 @@ export function parsePo( text ) {
 		}
 	}
 
-	const headerIndex = entries.findIndex( ( item ) => item.id === '' && item.ctx === null );
-	const header = headerIndex >= 0 ? entries.splice( headerIndex, 1 )[ 0 ].str[ 0 ] : '';
+	const headerIndex = entries.findIndex(
+		( item ) => item.id === '' && item.ctx === null
+	);
+	const header =
+		headerIndex >= 0 ? entries.splice( headerIndex, 1 )[ 0 ].str[ 0 ] : '';
 
 	return { header, entries: entries.filter( ( item ) => item.id !== null ) };
 }
@@ -146,28 +165,45 @@ export function serializePo( catalog ) {
 			lines.push( `msgstr ${ quote( entry.str[ 0 ] ?? '' ) }` );
 		} else {
 			lines.push( `msgid_plural ${ quote( entry.plural ) }` );
-			entry.str.forEach( ( form, index ) => lines.push( `msgstr[${ index }] ${ quote( form ?? '' ) }` ) );
+			entry.str.forEach( ( form, index ) =>
+				lines.push( `msgstr[${ index }] ${ quote( form ?? '' ) }` )
+			);
 		}
 		return lines.join( '\n' );
 	};
 
-	return [
-		`msgid ""\nmsgstr ""\n${ catalog.header
-			.split( '\n' )
-			.filter( ( line ) => line !== '' )
-			.map( ( line ) => quote( `${ line }\n` ) )
-			.join( '\n' ) }`,
-		...catalog.entries.map( block ),
-	].join( '\n\n' ) + '\n';
+	return (
+		[
+			`msgid ""\nmsgstr ""\n${ catalog.header
+				.split( '\n' )
+				.filter( ( line ) => line !== '' )
+				.map( ( line ) => quote( `${ line }\n` ) )
+				.join( '\n' ) }`,
+			...catalog.entries.map( block ),
+		].join( '\n\n' ) + '\n'
+	);
 }
 
-/** The key a catalogue is looked up by: the context, if any, glued to the original. */
+/**
+ * The key a catalogue is looked up by: the context, if any, glued to the original.
+ *
+ * @param {Object} entry A parsed entry.
+ * @return {string} Its key.
+ */
 export const keyOf = ( entry ) =>
-	entry.ctx === null ? entry.id : `${ entry.ctx }${ CONTEXT_GLUE }${ entry.id }`;
+	entry.ctx === null
+		? entry.id
+		: `${ entry.ctx }${ CONTEXT_GLUE }${ entry.id }`;
 
-/** Whether an entry carries a translation for every form it has. */
+/**
+ * Whether an entry carries a translation for every form it has.
+ *
+ * @param {Object} entry A parsed entry.
+ * @return {boolean} Whether it does.
+ */
 export const isTranslated = ( entry ) =>
-	entry.str.length > 0 && entry.str.every( ( form ) => typeof form === 'string' && form !== '' );
+	entry.str.length > 0 &&
+	entry.str.every( ( form ) => typeof form === 'string' && form !== '' );
 
 /* ------------------------------------------------------------------ placeholders */
 
@@ -178,12 +214,19 @@ const BRACES = /\{[a-zA-Z_][a-zA-Z0-9_]*\}/g;
 function tokens( text ) {
 	return {
 		printf: ( text.replace( /%%/g, '' ).match( PRINTF ) || [] ).sort(),
-		tags: [ ...text.matchAll( TAG ) ].map( ( match ) => match[ 0 ].startsWith( '</' ) ? `/${ match[ 1 ].toLowerCase() }` : match[ 1 ].toLowerCase() ).sort(),
+		tags: [ ...text.matchAll( TAG ) ]
+			.map( ( match ) =>
+				match[ 0 ].startsWith( '</' )
+					? `/${ match[ 1 ].toLowerCase() }`
+					: match[ 1 ].toLowerCase()
+			)
+			.sort(),
 		braces: ( text.match( BRACES ) || [] ).sort(),
 	};
 }
 
-const same = ( a, b ) => a.length === b.length && a.every( ( item, index ) => item === b[ index ] );
+const same = ( a, b ) =>
+	a.length === b.length && a.every( ( item, index ) => item === b[ index ] );
 const subset = ( part, whole ) => {
 	const left = [ ...whole ];
 
@@ -202,7 +245,7 @@ const subset = ( part, whole ) => {
  * from its original. A plural form may leave a number out ("one item" says no number) but never
  * adds one, since `sprintf()` fails on a placeholder it has no value for.
  *
- * @param {object} entry A parsed entry.
+ * @param {Object} entry A parsed entry.
  * @return {string[]} One line per problem.
  */
 export function problemsOf( entry ) {
@@ -212,25 +255,41 @@ export function problemsOf( entry ) {
 
 	const problems = [];
 	const original = tokens( entry.id );
-	const originalPlural = entry.plural === null ? null : tokens( entry.plural );
+	const originalPlural =
+		entry.plural === null ? null : tokens( entry.plural );
 
 	entry.str.forEach( ( form, index ) => {
 		const translated = tokens( form );
 		const label = entry.plural === null ? '' : ` (form ${ index })`;
 
 		if ( originalPlural ) {
-			const all = [ ...new Set( [ ...originalPlural.printf, ...original.printf ] ) ];
-			if ( ! translated.printf.every( ( token ) => all.includes( token ) ) ) {
-				problems.push( `placeholders ${ translated.printf.join( ' ' ) } are not the original's${ label }` );
+			const all = [
+				...new Set( [ ...originalPlural.printf, ...original.printf ] ),
+			];
+			if (
+				! translated.printf.every( ( token ) => all.includes( token ) )
+			) {
+				problems.push(
+					`placeholders ${ translated.printf.join( ' ' ) } are not the original's${ label }`
+				);
 			}
 		} else if ( ! same( translated.printf, original.printf ) ) {
-			problems.push( `placeholders ${ translated.printf.join( ' ' ) || 'none' } differ from ${ original.printf.join( ' ' ) || 'none' }` );
+			problems.push(
+				`placeholders ${ translated.printf.join( ' ' ) || 'none' } differ from ${ original.printf.join( ' ' ) || 'none' }`
+			);
 		}
 
 		if ( ! same( translated.tags, original.tags ) ) {
 			problems.push( `markup differs${ label }` );
 		}
-		if ( originalPlural ? ! subset( translated.braces, [ ...original.braces, ...originalPlural.braces ] ) : ! same( translated.braces, original.braces ) ) {
+		if (
+			originalPlural
+				? ! subset( translated.braces, [
+						...original.braces,
+						...originalPlural.braces,
+					] )
+				: ! same( translated.braces, original.braces )
+		) {
 			problems.push( `named slots differ${ label }` );
 		}
 	} );
@@ -250,17 +309,25 @@ export function compileMo( catalog ) {
 	const pairs = catalog.entries
 		.filter( isTranslated )
 		.map( ( entry ) => [
-			entry.plural === null ? keyOf( entry ) : `${ keyOf( entry ) }\0${ entry.plural }`,
+			entry.plural === null
+				? keyOf( entry )
+				: `${ keyOf( entry ) }\0${ entry.plural }`,
 			entry.str.join( '\0' ),
 		] );
 	pairs.push( [ '', catalog.header ] );
-	pairs.sort( ( a, b ) => Buffer.compare( Buffer.from( a[ 0 ] ), Buffer.from( b[ 0 ] ) ) );
+	pairs.sort( ( a, b ) =>
+		Buffer.compare( Buffer.from( a[ 0 ] ), Buffer.from( b[ 0 ] ) )
+	);
 
 	const count = pairs.length;
 	const headerSize = 28;
 	const tables = headerSize + count * 16;
-	const originals = pairs.map( ( [ original ] ) => Buffer.from( original, 'utf8' ) );
-	const translations = pairs.map( ( [ , translation ] ) => Buffer.from( translation, 'utf8' ) );
+	const originals = pairs.map( ( [ original ] ) =>
+		Buffer.from( original, 'utf8' )
+	);
+	const translations = pairs.map( ( [ , translation ] ) =>
+		Buffer.from( translation, 'utf8' )
+	);
 
 	let offset = tables;
 	const originalOffsets = originals.map( ( bytes ) => {
@@ -285,9 +352,18 @@ export function compileMo( catalog ) {
 
 	pairs.forEach( ( _, index ) => {
 		out.writeUInt32LE( originals[ index ].length, headerSize + index * 8 );
-		out.writeUInt32LE( originalOffsets[ index ], headerSize + index * 8 + 4 );
-		out.writeUInt32LE( translations[ index ].length, headerSize + count * 8 + index * 8 );
-		out.writeUInt32LE( translationOffsets[ index ], headerSize + count * 8 + index * 8 + 4 );
+		out.writeUInt32LE(
+			originalOffsets[ index ],
+			headerSize + index * 8 + 4
+		);
+		out.writeUInt32LE(
+			translations[ index ].length,
+			headerSize + count * 8 + index * 8
+		);
+		out.writeUInt32LE(
+			translationOffsets[ index ],
+			headerSize + count * 8 + index * 8 + 4
+		);
 		originals[ index ].copy( out, originalOffsets[ index ] );
 		translations[ index ].copy( out, translationOffsets[ index ] );
 	} );
@@ -299,7 +375,11 @@ export function compileMo( catalog ) {
 
 function* walk( directory ) {
 	for ( const name of readdirSync( directory ) ) {
-		if ( name === 'node_modules' || name === 'vendor' || name.startsWith( '.' ) ) {
+		if (
+			name === 'node_modules' ||
+			name === 'vendor' ||
+			name.startsWith( '.' )
+		) {
 			continue;
 		}
 		const full = path.join( directory, name );
@@ -343,11 +423,20 @@ export function scriptsOf( root ) {
 	return found;
 }
 
-/** How a string literal can look in a built script. */
+/**
+ * How a string literal can look in a built script.
+ *
+ * @param {string} text The original.
+ * @return {string[]} It in double quotes, single quotes and backticks.
+ */
 function literals( text ) {
 	const json = JSON.stringify( text ).slice( 1, -1 );
 
-	return [ `"${ json }"`, `'${ json.replace( /\\"/g, '"' ).replace( /'/g, "\\'" ) }'`, `\`${ json.replace( /\\"/g, '"' ) }\`` ];
+	return [
+		`"${ json }"`,
+		`'${ json.replace( /\\"/g, '"' ).replace( /'/g, "\\'" ) }'`,
+		`\`${ json.replace( /\\"/g, '"' ) }\``,
+	];
 }
 
 /**
@@ -355,9 +444,9 @@ function literals( text ) {
  * in it as a literal. A match that is not a call to a translation function only adds an entry
  * nothing asks for.
  *
- * @param {string} source       The script.
+ * @param {string}        source  The script.
  * @param {Array<object>} entries Translated entries referenced from JavaScript.
- * @param {string} header       The catalogue's header, for the plural rule.
+ * @param {string}        header  The catalogue's header, for the plural rule.
  * @return {object|null} Jed locale data, or null when the script asks for no CoreX string.
  */
 export function scriptTranslationsOf( source, entries, header ) {
@@ -367,7 +456,11 @@ export function scriptTranslationsOf( source, entries, header ) {
 
 	const messages = {};
 	for ( const entry of entries ) {
-		if ( literals( entry.id ).some( ( literal ) => source.includes( literal ) ) ) {
+		if (
+			literals( entry.id ).some( ( literal ) =>
+				source.includes( literal )
+			)
+		) {
 			messages[ keyOf( entry ) ] = entry.str;
 		}
 	}
@@ -376,36 +469,61 @@ export function scriptTranslationsOf( source, entries, header ) {
 		return null;
 	}
 
-	const plural = ( header.match( /Plural-Forms:\s*([^\n]+)/ ) || [] )[ 1 ] || 'nplurals=2; plural=(n != 1);';
+	const plural =
+		( header.match( /Plural-Forms:\s*([^\n]+)/ ) || [] )[ 1 ] ||
+		'nplurals=2; plural=(n != 1);';
 
 	return {
-		'translation-revision-date': ( header.match( /PO-Revision-Date:\s*([^\n]+)/ ) || [] )[ 1 ] || '',
+		'translation-revision-date':
+			( header.match( /PO-Revision-Date:\s*([^\n]+)/ ) || [] )[ 1 ] || '',
 		generator: 'scripts/i18n-arabic.mjs',
 		domain: 'messages',
 		locale_data: {
-			messages: { '': { domain: 'messages', 'plural-forms': plural.trim(), lang: LOCALE }, ...messages },
+			messages: {
+				'': {
+					domain: 'messages',
+					'plural-forms': plural.trim(),
+					lang: LOCALE,
+				},
+				...messages,
+			},
 		},
 	};
 }
 
-/** WordPress's file name for a script's translations. */
+/**
+ * WordPress's file name for a script's translations.
+ *
+ * @param {string} relative The script's path inside its plug-in.
+ * @return {string} The file name.
+ */
 export const scriptFileName = ( relative ) =>
 	`corex-${ LOCALE }-${ createHash( 'md5' ).update( relative ).digest( 'hex' ) }.json`;
 
 function writeScripts( root ) {
 	const catalog = parsePo( readFileSync( path.join( root, PO ), 'utf8' ) );
 	const entries = catalog.entries.filter(
-		( entry ) => isTranslated( entry ) && entry.refs.some( ( ref ) => /\.(?:js|jsx|ts|tsx)(?::|$)/.test( ref ) )
+		( entry ) =>
+			isTranslated( entry ) &&
+			entry.refs.some( ( ref ) =>
+				/\.(?:js|jsx|ts|tsx)(?::|$)/.test( ref )
+			)
 	);
 	const languages = path.join( root, LANGUAGES );
 
-	for ( const stale of readdirSync( languages ).filter( ( name ) => /^corex-ar-[0-9a-f]{32}\.json$/.test( name ) ) ) {
+	for ( const stale of readdirSync( languages ).filter( ( name ) =>
+		/^corex-ar-[0-9a-f]{32}\.json$/.test( name )
+	) ) {
 		unlinkSync( path.join( languages, stale ) );
 	}
 
 	const byName = new Map();
 	for ( const { file, relative } of scriptsOf( root ) ) {
-		const data = scriptTranslationsOf( readFileSync( file, 'utf8' ), entries, catalog.header );
+		const data = scriptTranslationsOf(
+			readFileSync( file, 'utf8' ),
+			entries,
+			catalog.header
+		);
 		if ( ! data ) {
 			continue;
 		}
@@ -413,7 +531,10 @@ function writeScripts( root ) {
 		// Two plug-ins with a bundle at the same path share a name; one file answers both.
 		const earlier = byName.get( name );
 		if ( earlier ) {
-			Object.assign( earlier.locale_data.messages, data.locale_data.messages );
+			Object.assign(
+				earlier.locale_data.messages,
+				data.locale_data.messages
+			);
 		} else {
 			byName.set( name, data );
 		}
@@ -437,26 +558,53 @@ function writeScripts( root ) {
  * @return {Array<object>} Entries as `parsePo()` returns them, untranslated.
  */
 export function themeFileEntries( root ) {
-	const entry = ( ref, ctx, id ) => ( { comments: [], refs: [ ref ], flags: [], extracted: [], ctx, id, plural: null, str: [ '' ] } );
+	const entry = ( ref, ctx, id ) => ( {
+		comments: [],
+		refs: [ ref ],
+		flags: [],
+		extracted: [],
+		ctx,
+		id,
+		plural: null,
+		str: [ '' ],
+	} );
 	const patterns = path.join( root, 'theme', 'patterns' );
 	const styles = path.join( root, 'theme', 'styles' );
 	const entries = [];
 
-	for ( const name of readdirSync( patterns ).filter( ( file ) => file.endsWith( '.php' ) ).sort() ) {
-		const header = readFileSync( path.join( patterns, name ), 'utf8' ).slice( 0, 2000 );
+	for ( const name of readdirSync( patterns )
+		.filter( ( file ) => file.endsWith( '.php' ) )
+		.sort() ) {
+		const header = readFileSync(
+			path.join( patterns, name ),
+			'utf8'
+		).slice( 0, 2000 );
 
-		for ( const [ field, ctx ] of [ [ 'Title', 'Pattern title' ], [ 'Description', 'Pattern description' ] ] ) {
-			const match = header.match( new RegExp( `^\\s*\\*\\s*${ field }:\\s*(.+)$`, 'm' ) );
+		for ( const [ field, ctx ] of [
+			[ 'Title', 'Pattern title' ],
+			[ 'Description', 'Pattern description' ],
+		] ) {
+			const match = header.match(
+				new RegExp( `^\\s*\\*\\s*${ field }:\\s*(.+)$`, 'm' )
+			);
 			if ( match ) {
-				entries.push( entry( `theme/patterns/${ name }`, ctx, match[ 1 ].trim() ) );
+				entries.push(
+					entry( `theme/patterns/${ name }`, ctx, match[ 1 ].trim() )
+				);
 			}
 		}
 	}
 
-	for ( const name of readdirSync( styles ).filter( ( file ) => file.endsWith( '.json' ) ).sort() ) {
-		const { title } = JSON.parse( readFileSync( path.join( styles, name ), 'utf8' ) );
+	for ( const name of readdirSync( styles )
+		.filter( ( file ) => file.endsWith( '.json' ) )
+		.sort() ) {
+		const { title } = JSON.parse(
+			readFileSync( path.join( styles, name ), 'utf8' )
+		);
 		if ( title ) {
-			entries.push( entry( `theme/styles/${ name }`, 'Style variation name', title ) );
+			entries.push(
+				entry( `theme/styles/${ name }`, 'Style variation name', title )
+			);
 		}
 	}
 
@@ -466,8 +614,8 @@ export function themeFileEntries( root ) {
 /**
  * Everything wrong with the catalogue.
  *
- * @param {string} root    The repository.
- * @param {string|null} pot A template to compare with, or null.
+ * @param {string}      root The repository.
+ * @param {string|null} pot  A template to compare with, or null.
  * @return {{problems: string[], missing: string[]}} Broken translations and a stale .mo; strings with no Arabic.
  */
 export function checkCatalogue( root, pot ) {
@@ -481,23 +629,35 @@ export function checkCatalogue( root, pot ) {
 	}
 
 	const mo = path.join( root, MO );
-	if ( ! existsSync( mo ) || Buffer.compare( readFileSync( mo ), compileMo( catalog ) ) !== 0 ) {
-		problems.push( `${ MO } is not compiled from ${ PO }: run node scripts/i18n-arabic.mjs mo` );
+	if (
+		! existsSync( mo ) ||
+		Buffer.compare( readFileSync( mo ), compileMo( catalog ) ) !== 0
+	) {
+		problems.push(
+			`${ MO } is not compiled from ${ PO }: run node scripts/i18n-arabic.mjs mo`
+		);
 	}
 
 	const missing = [];
-	const translated = new Map( catalog.entries.map( ( entry ) => [ keyOf( entry ), entry ] ) );
+	const translated = new Map(
+		catalog.entries.map( ( entry ) => [ keyOf( entry ), entry ] )
+	);
 	const required = [
 		...( pot ? parsePo( readFileSync( pot, 'utf8' ) ).entries : [] ),
 		...themeFileEntries( root ),
 	];
 	for ( const entry of required ) {
-		if ( entry.refs.length > 0 && entry.refs.every( ( ref ) => COMMAND_LINE_ONLY.test( ref ) ) ) {
+		if (
+			entry.refs.length > 0 &&
+			entry.refs.every( ( ref ) => COMMAND_LINE_ONLY.test( ref ) )
+		) {
 			continue;
 		}
 		const own = translated.get( keyOf( entry ) );
 		if ( ! own || ! isTranslated( own ) ) {
-			missing.push( `"${ entry.id }" (${ entry.refs[ 0 ] || 'no reference' })` );
+			missing.push(
+				`"${ entry.id }" (${ entry.refs[ 0 ] || 'no reference' })`
+			);
 		}
 	}
 
@@ -506,28 +666,47 @@ export function checkCatalogue( root, pot ) {
 
 function main( ROOT, [ command, ...rest ] ) {
 	if ( command === 'mo' ) {
-		writeFileSync( path.join( ROOT, MO ), compileMo( parsePo( readFileSync( path.join( ROOT, PO ), 'utf8' ) ) ) );
+		writeFileSync(
+			path.join( ROOT, MO ),
+			compileMo(
+				parsePo( readFileSync( path.join( ROOT, PO ), 'utf8' ) )
+			)
+		);
 		process.stdout.write( `Wrote ${ MO }\n` );
 		return 0;
 	}
 
 	if ( command === 'scripts' ) {
-		process.stdout.write( `Wrote ${ writeScripts( ROOT ) } Arabic script translation files into ${ LANGUAGES }\n` );
+		process.stdout.write(
+			`Wrote ${ writeScripts( ROOT ) } Arabic script translation files into ${ LANGUAGES }\n`
+		);
 		return 0;
 	}
 
 	if ( command === 'check' ) {
-		const pot = rest.find( ( argument ) => ! argument.startsWith( '--' ) ) || null;
+		const pot =
+			rest.find( ( argument ) => ! argument.startsWith( '--' ) ) || null;
 		const { problems, missing } = checkCatalogue( ROOT, pot );
 
-		problems.forEach( ( line ) => process.stdout.write( `PROBLEM ${ line }\n` ) );
-		missing.forEach( ( line ) => process.stdout.write( `NO ARABIC ${ line }\n` ) );
-		process.stdout.write( `${ problems.length } problem(s); ${ missing.length } string(s) with no Arabic.\n` );
+		problems.forEach( ( line ) =>
+			process.stdout.write( `PROBLEM ${ line }\n` )
+		);
+		missing.forEach( ( line ) =>
+			process.stdout.write( `NO ARABIC ${ line }\n` )
+		);
+		process.stdout.write(
+			`${ problems.length } problem(s); ${ missing.length } string(s) with no Arabic.\n`
+		);
 
-		return problems.length > 0 || ( rest.includes( '--strict' ) && missing.length > 0 ) ? 1 : 0;
+		return problems.length > 0 ||
+			( rest.includes( '--strict' ) && missing.length > 0 )
+			? 1
+			: 0;
 	}
 
-	process.stderr.write( 'Usage: node scripts/i18n-arabic.mjs mo | scripts | check [corex.pot] [--strict]\n' );
+	process.stderr.write(
+		'Usage: node scripts/i18n-arabic.mjs mo | scripts | check [corex.pot] [--strict]\n'
+	);
 	return 2;
 }
 

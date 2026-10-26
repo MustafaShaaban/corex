@@ -9,7 +9,9 @@ const fs = require( 'node:fs' );
 const path = require( 'node:path' );
 
 const root = path.resolve( __dirname, '..' );
-const generator = require( path.join( root, 'scripts/foundations-tokens.mjs' ) );
+const generator = require(
+	path.join( root, 'scripts/foundations-tokens.mjs' )
+);
 const page = fs.readFileSync( path.join( root, generator.PAGE ), 'utf8' );
 const files = generator.filesOf( root );
 

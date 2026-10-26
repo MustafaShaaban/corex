@@ -27,13 +27,19 @@ const kebab = ( value ) => value.replace( /(\d)([a-z])/g, '$1-$2' );
 /**
  * One table: a header and a row per token, each row keyed by the token it describes.
  *
- * @param {string[]}                   head The column titles.
- * @param {Array<[string, string[]]>}  rows Each token and its cells.
+ * @param {string[]}                  head The column titles.
+ * @param {Array<[string, string[]]>} rows Each token and its cells.
  * @return {{head: string[], rows: Array<[string, string[]]>}} The table.
  */
 const table = ( head, rows ) => ( { head, rows } );
 
-/** The admin stylesheet's custom properties in one rule, keyed by name. */
+/**
+ * The admin stylesheet's custom properties in one rule, keyed by name.
+ *
+ * @param {string} css     The stylesheet, comments removed.
+ * @param {string} opening The rule's selector and its opening brace.
+ * @return {Object<string,string>} Each custom property and its value.
+ */
 function declarations( css, opening ) {
 	const start = css.indexOf( opening );
 	if ( start < 0 ) {
@@ -42,9 +48,12 @@ function declarations( css, opening ) {
 	const body = css.slice( start + opening.length, css.indexOf( '}', start ) );
 
 	return Object.fromEntries(
-		[ ...body.matchAll( /(--corex-admin-[a-z0-9-]+)\s*:\s*([^;]+);/g ) ].map(
-			( match ) => [ match[ 1 ], match[ 2 ].replace( /\s+/g, ' ' ).trim() ]
-		)
+		[
+			...body.matchAll( /(--corex-admin-[a-z0-9-]+)\s*:\s*([^;]+);/g ),
+		].map( ( match ) => [
+			match[ 1 ],
+			match[ 2 ].replace( /\s+/g, ' ' ).trim(),
+		] )
 	);
 }
 
@@ -57,7 +66,10 @@ function declarations( css, opening ) {
 export function tablesFrom( { theme, dark, adminCss } ) {
 	const settings = theme.settings;
 	const darkColours = Object.fromEntries(
-		dark.settings.color.palette.map( ( entry ) => [ entry.slug, entry.color ] )
+		dark.settings.color.palette.map( ( entry ) => [
+			entry.slug,
+			entry.color,
+		] )
 	);
 	const custom = ( group, prefix ) =>
 		Object.entries( settings.custom[ group ] ).map( ( [ key, value ] ) => [
@@ -66,83 +78,165 @@ export function tablesFrom( { theme, dark, adminCss } ) {
 		] );
 
 	const css = adminCss.replace( /\/\*[\s\S]*?\*\//g, '' );
-	const adminDark = declarations( css, '.corex-admin,\nbody.login.corex-login,\nbody.corex-admin-screen {' );
-	const adminLight = declarations( css, 'body.corex-admin-screen.corex-appearance-light {' );
+	const adminDark = declarations(
+		css,
+		'.corex-admin,\nbody.login.corex-login,\nbody.corex-admin-screen {'
+	);
+	const adminLight = declarations(
+		css,
+		'body.corex-admin-screen.corex-appearance-light {'
+	);
 
 	return {
 		theme: [
 			table(
-				[ 'Colour', 'Custom property', 'Default', 'Dark variation', 'Use' ],
+				[
+					'Colour',
+					'Custom property',
+					'Default',
+					'Dark variation',
+					'Use',
+				],
 				settings.color.palette.map( ( entry ) => [
 					`color--${ entry.slug }`,
-					[ cell( entry.slug ), cell( `--wp--preset--color--${ entry.slug }` ), cell( entry.color ), cell( darkColours[ entry.slug ] ?? '' ), entry.name ],
+					[
+						cell( entry.slug ),
+						cell( `--wp--preset--color--${ entry.slug }` ),
+						cell( entry.color ),
+						cell( darkColours[ entry.slug ] ?? '' ),
+						entry.name,
+					],
 				] )
 			),
 			table(
 				[ 'Font family', 'Custom property', 'Stack' ],
 				settings.typography.fontFamilies.map( ( entry ) => [
 					`font-family--${ entry.slug }`,
-					[ cell( entry.slug ), cell( `--wp--preset--font-family--${ entry.slug }` ), cell( entry.fontFamily ) ],
+					[
+						cell( entry.slug ),
+						cell( `--wp--preset--font-family--${ entry.slug }` ),
+						cell( entry.fontFamily ),
+					],
 				] )
 			),
 			table(
-				[ 'Font size', 'Custom property', 'Size', 'Smallest on a phone', 'Role' ],
+				[
+					'Font size',
+					'Custom property',
+					'Size',
+					'Smallest on a phone',
+					'Role',
+				],
 				settings.typography.fontSizes.map( ( entry ) => [
 					`font-size--${ entry.slug }`,
-					[ cell( entry.slug ), cell( `--wp--preset--font-size--${ kebab( entry.slug ) }` ), cell( entry.size ), entry.fluid && entry.fluid.min ? cell( entry.fluid.min ) : 'fixed', entry.name ],
+					[
+						cell( entry.slug ),
+						cell(
+							`--wp--preset--font-size--${ kebab( entry.slug ) }`
+						),
+						cell( entry.size ),
+						entry.fluid && entry.fluid.min
+							? cell( entry.fluid.min )
+							: 'fixed',
+						entry.name,
+					],
 				] )
 			),
 			table(
 				[ 'Spacing', 'Custom property', 'Size' ],
 				settings.spacing.spacingSizes.map( ( entry ) => [
 					`spacing--${ entry.slug }`,
-					[ cell( entry.slug ), cell( `--wp--preset--spacing--${ entry.slug }` ), cell( entry.size ) ],
+					[
+						cell( entry.slug ),
+						cell( `--wp--preset--spacing--${ entry.slug }` ),
+						cell( entry.size ),
+					],
 				] )
 			),
 			table(
 				[ 'Shadow', 'Custom property', 'Value' ],
 				settings.shadow.presets.map( ( entry ) => [
 					`shadow--${ entry.slug }`,
-					[ cell( entry.slug ), cell( `--wp--preset--shadow--${ entry.slug }` ), cell( entry.shadow ) ],
+					[
+						cell( entry.slug ),
+						cell( `--wp--preset--shadow--${ entry.slug }` ),
+						cell( entry.shadow ),
+					],
 				] )
 			),
-			table( [ 'Custom property', 'Value' ], [
-				...custom( 'radius', 'radius' ),
-				...custom( 'tracking', 'tracking' ),
-				...Object.entries( settings.custom.motion.duration ).map( ( [ key, value ] ) => [
-					`motion--duration--${ key }`,
-					[ cell( `--wp--custom--motion--duration--${ key }` ), cell( value ) ],
-				] ),
-				...Object.entries( settings.custom.motion.easing ).map( ( [ key, value ] ) => [
-					`motion--easing--${ key }`,
-					[ cell( `--wp--custom--motion--easing--${ key }` ), cell( value ) ],
-				] ),
-			] ),
+			table(
+				[ 'Custom property', 'Value' ],
+				[
+					...custom( 'radius', 'radius' ),
+					...custom( 'tracking', 'tracking' ),
+					...Object.entries( settings.custom.motion.duration ).map(
+						( [ key, value ] ) => [
+							`motion--duration--${ key }`,
+							[
+								cell(
+									`--wp--custom--motion--duration--${ key }`
+								),
+								cell( value ),
+							],
+						]
+					),
+					...Object.entries( settings.custom.motion.easing ).map(
+						( [ key, value ] ) => [
+							`motion--easing--${ key }`,
+							[
+								cell(
+									`--wp--custom--motion--easing--${ key }`
+								),
+								cell( value ),
+							],
+						]
+					),
+				]
+			),
 		],
 		admin: [
 			table(
 				[ 'Custom property', 'Dark (default)', 'Light' ],
 				Object.entries( adminDark ).map( ( [ name, value ] ) => [
 					name,
-					[ cell( name ), cell( value ), cell( adminLight[ name ] ?? value ) ],
+					[
+						cell( name ),
+						cell( value ),
+						cell( adminLight[ name ] ?? value ),
+					],
 				] )
 			),
 		],
 	};
 }
 
-/** A table as markdown. */
+/**
+ * A table as markdown.
+ *
+ * @param {Object}                    table      A table from `tablesFrom()`.
+ * @param {string[]}                  table.head The column titles.
+ * @param {Array<[string, string[]]>} table.rows Each token and its cells.
+ * @return {string} The markdown.
+ */
 function markdown( { head, rows } ) {
 	const line = ( cells ) => `| ${ cells.join( ' | ' ) } |`;
 
-	return [ line( head ), line( head.map( () => '---' ) ), ...rows.map( ( [ , cells ] ) => line( cells ) ) ].join( '\n' );
+	return [
+		line( head ),
+		line( head.map( () => '---' ) ),
+		...rows.map( ( [ , cells ] ) => line( cells ) ),
+	].join( '\n' );
 }
 
 const section = ( name, tables ) =>
 	`<!-- tokens:${ name } -->\n${ tables.map( markdown ).join( '\n\n' ) }\n<!-- /tokens:${ name } -->`;
 
 const between = ( page, name ) => {
-	const match = page.match( new RegExp( `<!-- tokens:${ name } -->[\\s\\S]*?<!-- /tokens:${ name } -->` ) );
+	const match = page.match(
+		new RegExp(
+			`<!-- tokens:${ name } -->[\\s\\S]*?<!-- /tokens:${ name } -->`
+		)
+	);
 	if ( ! match ) {
 		throw new Error( `${ PAGE } has no <!-- tokens:${ name } --> section` );
 	}
@@ -153,12 +247,13 @@ const between = ( page, name ) => {
  * The page with its tables rewritten.
  *
  * @param {string} page   The page.
- * @param {object} tables From `tablesFrom()`.
+ * @param {Object} tables From `tablesFrom()`.
  * @return {string} The page.
  */
 export function rewrite( page, tables ) {
 	return Object.entries( tables ).reduce(
-		( text, [ name, list ] ) => text.replace( between( text, name ), section( name, list ) ),
+		( text, [ name, list ] ) =>
+			text.replace( between( text, name ), section( name, list ) ),
 		page
 	);
 }
@@ -167,7 +262,7 @@ export function rewrite( page, tables ) {
  * The tokens whose row on the page is not the row the files give, and the rows the page lacks.
  *
  * @param {string} page   The page.
- * @param {object} tables From `tablesFrom()`.
+ * @param {Object} tables From `tablesFrom()`.
  * @return {string[]} One line per token.
  */
 export function differences( page, tables ) {
@@ -178,24 +273,38 @@ export function differences( page, tables ) {
 		for ( const { rows } of list ) {
 			for ( const [ token, cells ] of rows ) {
 				if ( ! written.includes( `| ${ cells.join( ' | ' ) } |` ) ) {
-					found.push( `${ name }: ${ token } differs from what CoreX ships` );
+					found.push(
+						`${ name }: ${ token } differs from what CoreX ships`
+					);
 				}
 			}
 		}
 		const expected = section( name, list );
 		if ( found.length === 0 && written !== expected ) {
-			found.push( `${ name }: the page lists a token CoreX does not ship` );
+			found.push(
+				`${ name }: the page lists a token CoreX does not ship`
+			);
 		}
 	}
 
 	return found;
 }
 
-/** The shipped files, read from a repository. */
+/**
+ * The shipped files, read from a repository.
+ *
+ * @param {string} root The repository.
+ * @return {{theme: Object, dark: Object, adminCss: string}} The files, read.
+ */
 export function filesOf( root ) {
-	const json = ( file ) => JSON.parse( readFileSync( path.join( root, file ), 'utf8' ) );
+	const json = ( file ) =>
+		JSON.parse( readFileSync( path.join( root, file ), 'utf8' ) );
 
-	return { theme: json( THEME ), dark: json( DARK ), adminCss: readFileSync( path.join( root, ADMIN ), 'utf8' ) };
+	return {
+		theme: json( THEME ),
+		dark: json( DARK ),
+		adminCss: readFileSync( path.join( root, ADMIN ), 'utf8' ),
+	};
 }
 
 // Run as a command, not when a test imports it: `import.meta` does not survive Jest's transform.
@@ -212,7 +321,9 @@ if ( path.basename( process.argv[ 1 ] ?? '' ) === 'foundations-tokens.mjs' ) {
 		const found = differences( page, tables );
 		found.forEach( ( line ) => process.stdout.write( `${ line }\n` ) );
 		if ( found.length > 0 ) {
-			process.stdout.write( `Run node scripts/foundations-tokens.mjs --write\n` );
+			process.stdout.write(
+				`Run node scripts/foundations-tokens.mjs --write\n`
+			);
 			process.exitCode = 1;
 		}
 	}

@@ -8,7 +8,9 @@ const { chromium } = require( '@playwright/test' );
 
 ( async () => {
 	const browser = await chromium.launch();
-	const page = await browser.newPage( { viewport: { width: 1280, height: 900 } } );
+	const page = await browser.newPage( {
+		viewport: { width: 1280, height: 900 },
+	} );
 	const fonts = [];
 	page.on( 'response', ( response ) => {
 		if ( response.url().endsWith( '.woff2' ) ) {
@@ -17,7 +19,7 @@ const { chromium } = require( '@playwright/test' );
 	} );
 	await page.goto( process.argv[ 2 ], { waitUntil: 'networkidle' } );
 	const result = await page.evaluate( () => {
-		const root = getComputedStyle( document.documentElement );
+		const root = window.getComputedStyle( document.documentElement );
 		const presets = {};
 		for ( const sheet of document.styleSheets ) {
 			let rules;
@@ -27,10 +29,19 @@ const { chromium } = require( '@playwright/test' );
 				continue;
 			}
 			for ( const rule of rules ) {
-				if ( rule.selectorText === ':root' || rule.selectorText === 'body' ) {
+				if (
+					rule.selectorText === ':root' ||
+					rule.selectorText === 'body'
+				) {
 					for ( const name of rule.style ) {
-						if ( /^--wp--preset--(spacing|font-size|shadow)--/.test( name ) ) {
-							presets[ name ] = root.getPropertyValue( name ).trim();
+						if (
+							/^--wp--preset--(spacing|font-size|shadow)--/.test(
+								name
+							)
+						) {
+							presets[ name ] = root
+								.getPropertyValue( name )
+								.trim();
 						}
 					}
 				}
@@ -41,7 +52,7 @@ const { chromium } = require( '@playwright/test' );
 			if ( ! element ) {
 				return null;
 			}
-			const style = getComputedStyle( element );
+			const style = window.getComputedStyle( element );
 			return {
 				size: style.fontSize,
 				weight: style.fontWeight,
@@ -63,6 +74,8 @@ const { chromium } = require( '@playwright/test' );
 			nav: read( '.wp-block-navigation a' ),
 		};
 	} );
-	console.log( JSON.stringify( { ...result, fonts }, null, 1 ) );
+	process.stdout.write(
+		`${ JSON.stringify( { ...result, fonts }, null, 1 ) }\n`
+	);
 	await browser.close();
 } )();
