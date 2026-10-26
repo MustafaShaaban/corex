@@ -63,12 +63,19 @@ final readonly class FlowExtensionCatalog
                 $this->directory->people(self::PEOPLE_LISTED),
             ),
             'teams' => array_map(static fn (Team $team): array => $team->toArray(), $this->teams->all()),
-            'roles' => array_map(
-                static fn (string $key, string $name): array => ['key' => $key, 'name' => $name],
-                array_keys($this->directory->roles()),
-                array_values($this->directory->roles()),
-            ),
+            'roles' => $this->roles(),
         ];
+    }
+
+    /** @return list<array{key:string,name:string}> */
+    private function roles(): array
+    {
+        $roles = [];
+        foreach ($this->directory->roles() as $key => $name) {
+            $roles[] = ['key' => (string) $key, 'name' => $name];
+        }
+
+        return $roles;
     }
 
     /** @return list<array{key:string,label:string,extension?:string}> */

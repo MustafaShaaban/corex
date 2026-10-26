@@ -10,6 +10,7 @@ namespace Corex\Forms\Block;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Blocks\BlockRenderer;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowNotice;
@@ -74,7 +75,7 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         wp_enqueue_script('corex-runtime');
         wp_enqueue_style('corex-runtime');
 
-        return $this->flowForm($flow, $version, $variant, $attributes, $this->pageId($block));
+        return $this->flowForm($flow, $version, $attributes, $this->pageId($block));
     }
 
     /**
@@ -126,7 +127,7 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             return '';
         }
         $link = '';
-        if (current_user_can('corex_manage_forms') || current_user_can('manage_options')) {
+        if (current_user_can(CorexAbility::MANAGE_FORMS) || current_user_can('manage_options')) {
             $address = admin_url('admin.php?page=corex-forms' . ($flow === null ? '' : '&corex_flow=' . $flow->id));
             $link = sprintf(' <a href="%1$s">%2$s</a>', esc_url($address), esc_html__('Open it in Forms & Flows', 'corex'));
         }
@@ -164,8 +165,9 @@ final readonly class FlowBlockRenderer implements BlockRenderer
     }
 
     /** @param array<string,mixed> $attributes */
-    private function flowForm(Flow $flow, FlowVersion $version, string $variant, array $attributes, int $pageId): string
+    private function flowForm(Flow $flow, FlowVersion $version, array $attributes, int $pageId): string
     {
+        $variant = $this->variant($attributes);
         $schema = $this->schemas->make($version->configuration);
         $fields = '';
         foreach ($schema as $field) {

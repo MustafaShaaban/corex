@@ -138,7 +138,8 @@ add_filter('corex_flow_routing_targets', static function (array $targets): array
 });
 ```
 
-`tests/Integration/Forms/FlowExtensionHooksTest.php` runs these three on a submission. A failing action stops neither
+`tests/Integration/Forms/FlowExtensionHooksTest.php` registers the same three, under keys of its own, before
+WordPress loads, and runs them on a submission and on a marked test. A failing action stops neither
 the submission nor its emails; a variable that fails is left empty and written to the log.
 
 ## Code-defined forms

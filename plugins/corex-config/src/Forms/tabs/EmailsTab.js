@@ -1,5 +1,5 @@
 import { useEffect, useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 
 const EVENTS = [
@@ -317,9 +317,16 @@ function RoutedOwner( { routing, schema, onPreview, onRoutingChange } ) {
 									{ ' · ' }
 									{ line.people
 										.map( ( person ) =>
-											person.email
-												? `${ person.name } <${ person.email }>`
-												: person.name
+											person.reachable
+												? person.name
+												: sprintf(
+														/* translators: %s: a person's name. */
+														__(
+															'%s (no address)',
+															'corex'
+														),
+														person.name
+													)
 										)
 										.join( ', ' ) }
 								</span>

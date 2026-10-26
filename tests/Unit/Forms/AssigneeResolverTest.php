@@ -16,6 +16,8 @@ use Corex\Forms\Flow\FlowVersion;
 use Corex\Forms\Routing\Assignee;
 use Corex\Forms\Routing\AssigneeResolver;
 use Corex\Forms\Routing\RoutedRecipients;
+use Corex\Forms\Routing\RoutingOwnerLabel;
+use Corex\Forms\Routing\RoutingPreview;
 use Corex\Forms\Routing\RoutingPerson;
 use Corex\Forms\Routing\RoutingService;
 use Corex\Forms\Routing\RoutingSubject;
@@ -202,6 +204,34 @@ it('mails the routed owner: a user, every team member, a role up to its limit', 
         ['addresses' => ['admin@example.test'], 'note' => 'Routed owner had no address; sent to admin@example.test'],
     ],
 ]);
+
+it('previews who Routed owner is for each rule and for no match, by name only', function () {
+    $directory = routingDirectory();
+    $preview = new RoutingPreview(
+        new AssigneeResolver($directory, new RoutingTargetRegistry()),
+        new RoutedRecipients($directory),
+        new RoutingOwnerLabel($directory, new RoutingTargetRegistry()),
+    );
+
+    $lines = $preview->lines(routedFlow(), [
+        'rules' => [
+            ['uuid' => 'r-1', 'target' => ['type' => 'team', 'config' => ['value' => 'sales']]],
+            ['uuid' => 'r-2', 'target' => ['type' => 'page_owner', 'config' => []]],
+        ],
+        'fallback' => ['type' => 'flow_owner', 'config' => []],
+    ], []);
+
+    expect(array_column($lines, 'label'))->toBe(['Rule 1', 'Rule 2', 'No rule matches'])
+        ->and($lines[0]['target'])->toBe('Team: Sales')
+        ->and($lines[0]['people'])->toBe([
+            ['id' => 3, 'name' => 'Omar Ali', 'reachable' => true],
+            ['id' => 4, 'name' => 'Lina Saad', 'reachable' => true],
+            ['id' => 5, 'name' => 'Nour Haddad', 'reachable' => false],
+        ])
+        ->and($lines[1]['note'])->toBe('Worked out for each submission.')
+        ->and($lines[2]['target'])->toBe('Form owner (Sara Ahmed)')
+        ->and($lines[2]['people'])->toBe([['id' => 2, 'name' => 'Sara Ahmed', 'reachable' => true]]);
+});
 
 it('signs the page a form was printed on and refuses a changed or borrowed value', function () {
     $pages = new PageReference();
