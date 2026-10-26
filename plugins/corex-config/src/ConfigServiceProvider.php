@@ -51,6 +51,7 @@ use Corex\Config\Branding\BrandingService;
 use Corex\Config\Data\DataAdminScreen;
 use Corex\Config\Data\DataManagementController;
 use Corex\Config\Releases\InstalledRelease;
+use Corex\Config\Releases\ReleaseCaller;
 use Corex\Config\Releases\ReleaseCompletion;
 use Corex\Config\Releases\ReleaseContentHash;
 use Corex\Config\Releases\ReleaseDesk;
@@ -715,6 +716,7 @@ final class ConfigServiceProvider extends ServiceProvider
 
                 return $user instanceof \WP_User && $user->display_name !== '' ? $user->display_name : '#' . $userId;
             },
+            $c->make(ReleaseCaller::class)->applicationPassword(...),
         ));
         $this->container->singleton(ReleaseFinisher::class);
         $this->container->singleton(ReleaseInstallation::class, static fn (ContainerInterface $c): ReleaseInstallation => new ReleaseInstallation(
@@ -731,6 +733,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(ReleaseUpkeep::class);
         $this->container->singleton(ReleaseLeftovers::class);
         $this->container->singleton(ReleaseOverview::class);
+        $this->container->singleton(ReleaseCaller::class, static fn (): ReleaseCaller => ReleaseCaller::ofThisSite());
         $this->container->singleton(ReleaseRestGateway::class);
         $this->container->singleton(ReleasesController::class);
         $this->container->singleton(ReleasesScreen::class);

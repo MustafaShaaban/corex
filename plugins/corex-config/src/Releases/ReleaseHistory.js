@@ -86,14 +86,23 @@ function doneBy( entry ) {
 		return __( 'The recovery link', 'corex' );
 	}
 
-	return (
+	const who =
 		entry.by_name ||
 		sprintf(
 			/* translators: %d: a user's number on the site. */
 			__( 'User %d', 'corex' ),
 			entry.by
-		)
-	);
+		);
+
+	// Installed from a command on somebody's machine (spec 123, FR-014a).
+	return entry.signed_in_with
+		? sprintf(
+				/* translators: 1: who installed a release. 2: the name of the Application Password used. */
+				__( '%1$s, with the Application Password "%2$s"', 'corex' ),
+				who,
+				entry.signed_in_with
+			)
+		: who;
 }
 
 /**
