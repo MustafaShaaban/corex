@@ -15,9 +15,9 @@
 declare(strict_types=1);
 
 use Corex\Boot;
-use Corex\Config\Settings\AdminDashboard;
 use Corex\Config\Settings\SettingsRegistry;
 use Corex\Config\Settings\SettingsStore;
+use Corex\Tests\Support\SettingsScreen;
 
 beforeEach(function () {
     $this->signedInAs = get_current_user_id();
@@ -29,11 +29,9 @@ beforeEach(function () {
     foreach (Boot::app()->container()->make(SettingsRegistry::class)->keys() as $key) {
         $this->asItWas[$key] = get_option($this->settings->optionName($key), null);
     }
-    $this->posted = $_POST;
 });
 
 afterEach(function () {
-    $_POST = $this->posted;
     foreach ($this->asItWas as $key => $value) {
         if ($value === null) {
             delete_option($this->settings->optionName($key));
@@ -45,17 +43,13 @@ afterEach(function () {
 });
 
 /**
- * Saves what was posted through the settings screen, and answers what the screen then says:
- * the toast it draws, as markup, or '' where it draws none.
+ * Saves what was posted on the Email page, and answers what the page then says: the toast it
+ * draws after the redirect, as markup, or '' where it draws none.
  */
 function saidAfterSaving(array $posted): string
 {
-    $_POST = wp_slash($posted + ['corex_settings_nonce' => wp_create_nonce('corex_settings')]);
-    $screen = Boot::app()->container()->make(AdminDashboard::class);
-    $screen->maybeSave();
-    ob_start();
-    $screen->renderSettings();
-    $page = (string) ob_get_clean();
+    $result = SettingsScreen::save('email', $posted);
+    $page   = SettingsScreen::draw('email', $result);
     // The toast and nothing else: the page has other regions with a role of their own.
     preg_match('/<div class="corex-toast\b.*?<\/button><\/div>/s', $page, $toast);
 
@@ -116,12 +110,8 @@ it('quotes what was typed as text, and only its beginning where it is long', fun
         ->and(strlen($said))->toBeLessThan(1500);
 });
 
-it('offers the three settings of a reply\'s sender on the Mail tab, each named', function () {
-    $_POST = [];
-    $screen = Boot::app()->container()->make(AdminDashboard::class);
-    ob_start();
-    $screen->renderSettings();
-    $page = (string) ob_get_clean();
+it('offers the three settings of a reply\'s sender on the Email page, each named', function () {
+    $page = SettingsScreen::draw('email');
 
     expect($page)->toContain('name="mail_reply_from_name"')
         ->and($page)->toContain('name="mail_reply_from_address"')
@@ -129,4 +119,12 @@ it('offers the three settings of a reply\'s sender on the Mail tab, each named',
         ->and($page)->toContain('Reply sender name')
         ->and($page)->toContain('Reply sender address')
         ->and($page)->toContain('Replies are answered to');
+});
+
+it('draws a refused value in its field after the save, so the page opens with it unsaved', function () {
+    $this->settings->save('mail.reply.from_address', 'before@example.com');
+
+    $page = SettingsScreen::draw('email', SettingsScreen::save('email', ['mail_reply_from_address' => 'answers@']));
+
+    expect($page)->toContain('name="mail_reply_from_address" type="email" value="answers@" class="regular-text" data-corex-saved="before@example.com"');
 });

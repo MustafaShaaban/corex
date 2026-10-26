@@ -18520,6 +18520,126 @@ screen-reader pass is not called accessible in the release notes.
 **Not chosen.** *A CI check that a release record exists*: there is no release record file to check yet, and
 inventing one belongs to the release that first needs it.
 
+## #440 — Settings is seven pages, each a form of its own that redirects after a save
+
+**Date:** 2026-10-23. **Branch:** `spec/119-settings-save`. **Spec:** 119, US-SET-01 (SET-D1). **Mode:** CoreX
+Framework. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** One form of nine tabs with one button: no unsaved state, no Discard, edits lost on leaving, and a reload
+offered to resend the form. SET-D1 chose the design's grouped sub-navigation with a save bar per section.
+
+**Decided.**
+
+1. **Seven pages** (`SettingsPages`): General and appearance (Brand, Dashboard widgets), Email (Mail, Forms),
+   Captcha, Media, Insights, Guides, Advanced. Each add-on's section is a page of its own, so it can leave the
+   navigation when the add-on is not installed and still be answered at its address. Data retention joins with R3.5.
+2. **The pages are nested under Settings in the CoreX rail** (`AdminPage::open()` gains an optional `$subnav`); on a
+   phone they are a row of their own. Address `&section=<page>`; `&corex_tab=<section>` still resolves.
+3. **A save writes only the posted page** (`SettingsSaver`), keeps its result in a per-user transient for two
+   minutes and redirects (303) to the page, which says what happened once. A refused value is drawn in its field
+   with the stored value in `data-corex-saved`, so the page opens at "Unsaved changes".
+4. **The bar is a reset and a submit button**, so both work without scripts; the script adds the state, Discard to
+   the stored values, the `beforeunload` question, and sends the save itself so that a save that does not go
+   through (a server error) says so and keeps the edits. A successful save is answered by the redirect, which the
+   script follows.
+5. **On a phone the bar is not sticky**: held to the bottom of a small window it covered the field being typed into
+   (the quality checks' 200% text test).
+
+**Not chosen.** Nine pages (two one-field pages in the rail); a bar per section on one long page (two bars on
+screen); answering the post in place (reload resends).
+
+**Verified.** `SettingsSaveChangedOnlyTest` (13), `SettingsSaveRefusalTest` (9), `SettingsPagesUnitTest`,
+`settings-savebar.test.js` (10), `settings-pages.spec.js` (13), the quality checks on every page (37 pass).
+
+## #441 — Locked values are read from the config engine's own `.env` and network-lock layers
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-02.
+
+**Decided.** `Corex\Support\Config\SettingLocks` asks the `.env` source, then the network-lock source, the same
+instances the config repository and spec 113's `SiteEnvironment` read (bound once in `CoreServiceProvider`, as
+spec 113 binds them). A locked field shows the value in force, `readonly`, described by "Set in the site's .env
+file" or "Locked by the network administrator"; a locked secret is a line "Set in .env" with no input and no
+Remove. The saver skips a locked key whatever is posted. Captcha and Insights states read `ConfigInterface`, so keys
+in `.env` count. **Not chosen:** a "which source answered" method on `Repository` (it changes an interface clients
+build around for one screen's question).
+
+## #442 — Provider tests: one short probe each, remembered by a fingerprint, never the key
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-03.
+
+**Decided.**
+
+1. **What a missing key means is said as the code does it** (`ProviderSetup`): no secret → `NullCaptcha`, honeypot
+   only; no site key → no widget, no token, protected forms refused; no PageSpeed key → Google's shared keyless
+   quota. The story's "performance checks cannot run" was replaced: `PerformanceProvider` runs keyless, and the
+   Overview says "Keyless (shared quota)".
+2. **PageSpeed "Test connection"** asks `runPagespeed?key=` with no page: Google rejects a bad key (`API_KEY_INVALID`,
+   read from the live API) before reading the request, so another 400 means the key was accepted. No measurement
+   runs. **Cloudflare** asks `/user/tokens/verify`, then `/accounts/<id>/tokens/verify` for account tokens; the
+   account ID is checked when a scan runs, and the page says so.
+3. **The latest test per provider** is kept in `corex_provider_tests` (not autoloaded) with an HMAC-SHA256 of the
+   values it used, keyed with `wp_salt('auth')`. Any change to those values, here or in `.env`, reads "Not tested
+   yet". The captcha add-on's own route reports through `corex_provider_tested` and reads the line back through
+   `corex_provider_test_status`, so corex-config does not depend on it.
+
+## #443 — The Media library is converted by the existing bounded job, driven from the page
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-06.
+
+**Decided.** corex-media starts `media-webp-regeneration` (spec 068) through `JobService` with a fixed input hash,
+so one run at a time. The open page polls `POST corex/v1/media/conversion/advance`, which fires the runner's own
+action (`corex_run_bounded_job`) for one step; WP-Cron continues when the page is closed. The batch source now
+reports failures by file (missing, unreadable, refused by the image library) and records `WebpMeta` for what it
+converts, as the CLI does — the job wrote WebP files that delivery's gate did not know. Failures (at most 100) and
+the run's job id live in `corex_media_conversion`; start, cancel and end are in the activity log (area settings).
+Counts are clamped to what was processed. The panel reaches Settings through `corex_settings_section_extra`.
+
+**After review (PR #440).** Cancel sticks: `JobRunner` reads the stored job again before it saves a step and keeps
+an end the job reached meanwhile (cancelled, failed or completed) instead of writing the step's own running copy
+over it, and schedules no further step; the page drops an advance answer that arrives after Cancel. A step
+converts at most ten images (`MediaRegenerationJob::MOST_PER_STEP`), so a shared host's 30-second limit does not
+stop one midway; and an image whose tracked WebP was written after the run started counts as converted, not
+skipped, when a stopped step is taken again.
+
+## #444 — Media, Captcha and Guides follow their add-on; an add-on card has an anchor
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-07.
+
+**Decided.** `SettingsSectionStates` gives the three add-on pages their add-on's state: not installed → not in the
+navigation, and the address shows `AdminPage::state()` "This page is not available"; off → "<Name> is off. These
+settings apply when it is on." with **Open Add-ons** to `#corex-addon-<slug>` (each card gains that id), read-only
+fields and no save bar. Guides had no add-on state and saved an address nothing read.
+
+## #445 — Translation is checked twice; on/off settings are the Add-ons switch
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-08 and US-SET-09.
+
+**Decided.** Every Settings string goes through `__()`; brand names (reCAPTCHA, Cloudflare Turnstile, hCaptcha) stay
+literal. `SettingsTranslationTest` marks what `__()` is given and fails on any unmarked title, label, help, link
+text, choice or page name, and proves it would fail. The quality checks' pseudo-locale run now reaches every
+Settings page (`discover.js` follows `&section=` links), in both directions. The switch is a real checkbox with
+`role="switch"` drawn as the track (`appearance: none`) with the knob over it, so focus is drawn on the control
+the quality checks measure; On and Off are both written and CSS shows the one that matches. The `.corex-toggle`
+styles moved from `addons.css` to the shell stylesheet. Saved values stay "1"/"0".
+
+## #446 — A saved secret is removed by a confirmed save, and the captcha card says when a key is missing
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-15 (CR-019).
+
+**Decided.** A saved, unlocked secret draws a box `corex_remove_secret[]`, "Remove the saved value when I save", with
+what stops working beside it; the script turns it into **Remove** with `window.confirm` (read by every screen
+reader) and **Keep it**. The saver deletes the option only for a password field of the posted page whose add-on is
+on, and records `settings.secret_removed` (area settings, the setting's key and label, never the value). The Add-ons
+captcha card gains one line from `ProviderSetup` when a key is missing; R3.6 (US-ADD-02) makes it its badge.
+
+## #447 — "Login logo link" in Brand, and a web address field refuses a bare word
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-13.
+
+**Decided.** `brand.login_url`, already read by `AdminBranding::loginUrl()`, gets a field, its help saying it is the
+logo's link and not the sign-in address. A `url` or `media` field now takes a value only with a scheme or from the
+site's root (`/contact`, `#`): `esc_url_raw('example')` was `http://example` and was saved.
+
 ## #430 — One readiness evaluation, in two groups, that every screen reads
 
 **Date:** 2026-10-23. **Branch:** `claude/spec-118-launch-checklist`. **Spec:** 118, US-OVR-01, US-OVR-03,

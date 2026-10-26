@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1210,
+    "consumer_records": 1221,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -501,7 +501,8 @@
         "addons/corex-captcha/assets/captcha-admin.css",
         "addons/corex-guides/assets/guides.css",
         "addons/corex-kit-company/assets/setup-wizard.css",
-        "addons/corex-kit-portfolio/src/Blocks/project-meta/style.scss"
+        "addons/corex-kit-portfolio/src/Blocks/project-meta/style.scss",
+        "addons/corex-media/assets/media-conversion.css"
       ],
       "properties": [
         "--corex-admin-action",
@@ -518,6 +519,7 @@
         "--corex-admin-focus-width",
         "--corex-admin-font-display",
         "--corex-admin-font-lg",
+        "--corex-admin-font-md",
         "--corex-admin-font-mono",
         "--corex-admin-font-sm",
         "--corex-admin-font-xs",
@@ -580,7 +582,6 @@
       "properties": [
         "--corex-admin-action",
         "--corex-admin-action-hover",
-        "--corex-admin-action-ink",
         "--corex-admin-action-subtle",
         "--corex-admin-border",
         "--corex-admin-border-soft",
@@ -617,6 +618,7 @@
         "--corex-admin-radius-pill",
         "--corex-admin-radius-sm",
         "--corex-admin-shadow-lg",
+        "--corex-admin-shadow-md",
         "--corex-admin-shadow-sm",
         "--corex-admin-space-2xl",
         "--corex-admin-space-2xs",

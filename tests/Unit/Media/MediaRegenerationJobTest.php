@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use Corex\Jobs\BoundedJob;
+use Corex\Media\Conversion\MediaConversionLog;
 use Corex\Media\MediaRegenerationJob;
 use Corex\Media\MediaRegenerationSource;
 
@@ -34,8 +35,12 @@ function fakeMediaSource(int $total, array $batches): MediaRegenerationSource
             return $this->totalItems;
         }
 
-        public function convertBatch(int $offset, int $limit): array
+        /** @var list<?DateTimeImmutable> */
+        public array $since = [];
+
+        public function convertBatch(int $offset, int $limit, ?DateTimeImmutable $since = null): array
         {
+            $this->since[] = $since;
             $this->calls[] = ['offset' => $offset, 'limit' => $limit];
 
             return $this->batches[count($this->calls) - 1] ?? ['succeeded' => 0, 'failed' => 0];
@@ -96,4 +101,66 @@ it('clamps a negative or zero batch size to at least one item', function () {
     expect($done->processed)->toBe(1)
         ->and($done->state)->toBe(BoundedJob::STATE_COMPLETED)
         ->and($source->calls[0]['limit'])->toBe(1);
+});
+
+/**
+ * A log recording what the job hands it (spec 119, US-SET-06).
+ */
+function recordingConversionLog(): MediaConversionLog
+{
+    return new class implements MediaConversionLog {
+        /** @var list<array{jobId:int,failures:list<array{file:string,reason:string}>}> */
+        public array $failed = [];
+
+        /** @var list<string> */
+        public array $finished = [];
+
+        public function failed(int $jobId, array $failures): void
+        {
+            $this->failed[] = ['jobId' => $jobId, 'failures' => $failures];
+        }
+
+        public function finished(BoundedJob $job): void
+        {
+            $this->finished[] = $job->state;
+        }
+    };
+}
+
+it('hands each batch\'s failures to the log by file, and the end of the run once', function () {
+    $missing = ['file' => 'gone.jpg', 'reason' => 'the file is missing'];
+    $source  = fakeMediaSource(3, [
+        ['succeeded' => 1, 'failed' => 1, 'failures' => [$missing]],
+        ['succeeded' => 1, 'failed' => 0, 'failures' => []],
+    ]);
+    $log = recordingConversionLog();
+    $job = new MediaRegenerationJob($source, $log);
+
+    $done = $job->handle($job->handle(runningMediaJob(3), 2), 2);
+
+    expect($done->state)->toBe(BoundedJob::STATE_COMPLETED)
+        ->and($log->failed)->toBe([['jobId' => 21, 'failures' => [$missing]]])
+        ->and($log->finished)->toBe([BoundedJob::STATE_COMPLETED]);
+});
+
+it('converts at most ten images in a step, whatever the runner offers, and says since when the run is', function () {
+    // A shared host stops a request after about 30 seconds; a step has to finish well inside it.
+    $source = fakeMediaSource(40, [['succeeded' => 10, 'failed' => 0]]);
+    $job    = runningMediaJob(40);
+
+    $next = (new MediaRegenerationJob($source))->handle($job, 100);
+
+    expect($source->calls[0]['limit'])->toBe(MediaRegenerationJob::MOST_PER_STEP)
+        ->and($source->since[0])->toBe($job->createdAt)
+        ->and($next->processed)->toBe(10)
+        ->and($next->state)->toBe(BoundedJob::STATE_RUNNING);
+});
+
+it('never counts more outcomes than images processed', function () {
+    // The library can shrink during a run: a batch can report more than it was given.
+    $source = fakeMediaSource(2, [['succeeded' => 5, 'failed' => 4]]);
+
+    $done = (new MediaRegenerationJob($source))->handle(runningMediaJob(2), 10);
+
+    expect($done->succeeded + $done->failed)->toBeLessThanOrEqual($done->processed);
 });

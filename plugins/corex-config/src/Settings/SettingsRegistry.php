@@ -24,52 +24,59 @@ final class SettingsRegistry implements FieldSections
     {
         return [
             'brand' => [
-                'title'  => 'Brand',
+                'title'  => __('Brand', 'corex'),
                 'fields' => [
                     'brand.company_name' => [
-                        'label' => 'Company name',
+                        'label' => __('Company name', 'corex'),
                         'type'  => 'text',
-                        'help'  => 'Used across the site chrome, footer, and the Setup Wizard brand step.',
+                        'help'  => __('Used across the site chrome, footer, and the Setup Wizard brand step.', 'corex'),
                     ],
                     'brand.tagline' => [
-                        'label' => 'Tagline',
+                        'label' => __('Tagline', 'corex'),
                         'type'  => 'text',
                     ],
                     'brand.phone' => [
-                        'label' => 'Contact phone',
+                        'label' => __('Contact phone', 'corex'),
                         'type'  => 'tel',
                     ],
                     'brand.email' => [
-                        'label' => 'Contact email',
+                        'label' => __('Contact email', 'corex'),
                         'type'  => 'email',
                     ],
                     'brand.address' => [
-                        'label' => 'Address',
+                        'label' => __('Address', 'corex'),
                         'type'  => 'text',
                     ],
                     'brand.primary_action_label' => [
-                        'label' => 'Primary action label',
+                        'label' => __('Primary action label', 'corex'),
                         'type'  => 'text',
-                        'help'  => 'The call-to-action button label used by kit patterns (e.g. "Get a quote").',
+                        'help'  => __('The call-to-action button label used by kit patterns (e.g. "Get a quote").', 'corex'),
                     ],
                     'brand.primary_action_link' => [
-                        'label' => 'Primary action link',
+                        'label' => __('Primary action link', 'corex'),
                         'type'  => 'url',
                     ],
                     'brand.social_links' => [
-                        'label' => 'Social links',
+                        'label' => __('Social links', 'corex'),
                         'type'  => 'text',
-                        'help'  => 'Comma-separated profile URLs.',
+                        'help'  => __('Comma-separated profile URLs.', 'corex'),
                     ],
                     'brand.logo_url'    => [
-                        'label' => 'Admin logo',
+                        'label' => __('Admin logo', 'corex'),
                         'type'  => 'media',
-                        'help'  => 'Used on the CoreX admin shell and the WordPress login screen.',
+                        'help'  => __('Used on the CoreX admin shell and the WordPress login screen.', 'corex'),
+                    ],
+                    // Where the login screen's logo links (spec 119, US-SET-13). Not the sign-in
+                    // address: the Security Center decides that one.
+                    'brand.login_url' => [
+                        'label' => __('Login logo link', 'corex'),
+                        'type'  => 'url',
+                        'help'  => __('Where the logo on the login screen takes people. This is the logo\'s link, not the sign-in address. Leave blank for this site\'s home page.', 'corex'),
                     ],
                     'brand.footer_text' => [
-                        'label' => 'Admin footer text',
+                        'label' => __('Admin footer text', 'corex'),
                         'type'  => 'text',
-                        'help'  => 'Replaces the wp-admin footer text. Leave blank for "Powered by Corex".',
+                        'help'  => __('Replaces the wp-admin footer text. Leave blank for "Powered by Corex".', 'corex'),
                     ],
                     // The launch checklist's "Terms page published" reads it (spec 118, US-OVR-03).
                     'brand.terms_page' => [
@@ -79,18 +86,18 @@ final class SettingsRegistry implements FieldSections
                         'help'    => __('The page with your site\'s terms and conditions. The launch checklist checks that it is published.', 'corex'),
                     ],
                     'brand.admin_appearance' => [
-                        'label'   => 'CoreX admin appearance',
+                        'label'   => __('CoreX admin appearance', 'corex'),
                         'type'    => 'select',
-                        'options' => ['system' => 'System', 'light' => 'Light', 'dark' => 'Dark'],
-                        'help'    => 'System follows your operating-system colour scheme.',
+                        'options' => ['system' => __('System', 'corex'), 'light' => __('Light', 'corex'), 'dark' => __('Dark', 'corex')],
+                        'help'    => __('System follows your operating-system colour scheme.', 'corex'),
                     ],
                 ],
             ],
             'mail' => [
-                'title'  => 'Mail',
+                'title'  => __('Mail', 'corex'),
                 'fields' => [
-                    'mail.from.name'    => ['label' => 'From name', 'type' => 'text'],
-                    'mail.from.address' => ['label' => 'From address', 'type' => 'email'],
+                    'mail.from.name'    => ['label' => __('From name', 'corex'), 'type' => 'text'],
+                    'mail.from.address' => ['label' => __('From address', 'corex'), 'type' => 'email'],
                     'mail.reply_to'     => [
                         'label' => __('Default reply-to address', 'corex'),
                         'type'  => 'email',
@@ -144,150 +151,153 @@ final class SettingsRegistry implements FieldSections
                 ],
             ],
             'forms' => [
-                'title'  => 'Forms',
+                'title'  => __('Forms', 'corex'),
                 'fields' => [
-                    'forms.email.recipient' => ['label' => 'Form notification recipient', 'type' => 'email'],
+                    'forms.email.recipient' => ['label' => __('Form notification recipient', 'corex'), 'type' => 'email'],
                 ],
             ],
             'captcha' => [
-                'title'  => 'Captcha',
+                'title'  => __('Captcha', 'corex'),
                 'fields' => [
                     'captcha.driver' => [
-                        'label'   => 'Captcha driver',
+                        'label'   => __('Captcha driver', 'corex'),
                         'type'    => 'select',
                         'options' => [
-                            'none'      => 'None',
-                            'honeypot'  => 'Honeypot',
+                            'none'      => __('None', 'corex'),
+                            'honeypot'  => __('Honeypot', 'corex'),
                             'recaptcha' => 'reCAPTCHA',
                             'turnstile' => 'Cloudflare Turnstile',
                             'hcaptcha'  => 'hCaptcha',
                         ],
-                        'help' => 'Choose a provider, Honeypot (no keys), or None to disable. reCAPTCHA scores a visitor without showing anything; Turnstile and hCaptcha show their widget above a protected form’s button.',
+                        'help' => __('Choose a provider, Honeypot (no keys), or None to disable. reCAPTCHA scores a visitor without showing anything; Turnstile and hCaptcha show their widget above a protected form’s button.', 'corex'),
                     ],
                     'captcha.site_key' => [
-                        'label'         => 'Site key',
+                        'label'         => __('Site key', 'corex'),
                         'type'          => 'text',
                         'show_for'      => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
                         'help_variants' => [
                             'recaptcha' => [
-                                'help'      => 'The public reCAPTCHA site key.',
+                                'help'      => __('The public reCAPTCHA site key.', 'corex'),
                                 'help_url'  => 'https://www.google.com/recaptcha/admin/create',
-                                'help_link' => 'Create reCAPTCHA keys',
+                                'help_link' => __('Create reCAPTCHA keys', 'corex'),
                             ],
                             'turnstile' => [
-                                'help'      => 'The public Cloudflare Turnstile site key.',
+                                'help'      => __('The public Cloudflare Turnstile site key.', 'corex'),
                                 'help_url'  => 'https://developers.cloudflare.com/turnstile/get-started/',
-                                'help_link' => 'Get Turnstile keys',
+                                'help_link' => __('Get Turnstile keys', 'corex'),
                             ],
                             'hcaptcha' => [
-                                'help'      => 'The public hCaptcha site key.',
+                                'help'      => __('The public hCaptcha site key.', 'corex'),
                                 'help_url'  => 'https://docs.hcaptcha.com/#add-the-hcaptcha-widget-to-your-webpage',
-                                'help_link' => 'hCaptcha site key docs',
+                                'help_link' => __('hCaptcha site key docs', 'corex'),
                             ],
                         ],
                     ],
                     'captcha.secret' => [
-                        'label'         => 'Secret key',
+                        'label'         => __('Secret key', 'corex'),
                         'type'          => 'password',
+                        'remove_effect' => __('The captcha check stops until a new secret key is saved. Forms keep the honeypot.', 'corex'),
                         'show_for'      => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
                         'help_variants' => [
                             'recaptcha' => [
-                                'help'      => 'The private reCAPTCHA secret key.',
+                                'help'      => __('The private reCAPTCHA secret key.', 'corex'),
                                 'help_url'  => 'https://www.google.com/recaptcha/admin/create',
-                                'help_link' => 'Create reCAPTCHA keys',
+                                'help_link' => __('Create reCAPTCHA keys', 'corex'),
                             ],
                             'turnstile' => [
-                                'help'      => 'The private Cloudflare Turnstile secret key.',
+                                'help'      => __('The private Cloudflare Turnstile secret key.', 'corex'),
                                 'help_url'  => 'https://developers.cloudflare.com/turnstile/get-started/',
-                                'help_link' => 'Get Turnstile keys',
+                                'help_link' => __('Get Turnstile keys', 'corex'),
                             ],
                             'hcaptcha' => [
-                                'help'      => 'The private hCaptcha secret key.',
+                                'help'      => __('The private hCaptcha secret key.', 'corex'),
                                 'help_url'  => 'https://docs.hcaptcha.com/#integration-testing-test-keys',
-                                'help_link' => 'hCaptcha secret key docs',
+                                'help_link' => __('hCaptcha secret key docs', 'corex'),
                             ],
                         ],
                     ],
                     'captcha.score_threshold' => [
-                        'label'     => 'reCAPTCHA v3 score threshold',
+                        'label'     => __('reCAPTCHA v3 score threshold', 'corex'),
                         'type'      => 'text',
-                        'help'      => '0.0–1.0. Defaults to 0.3 — conservative for ordinary low-traffic sites. Watch real traffic before raising it; a higher threshold rejects more legitimate visitors. Only protected CoreX forms are covered.',
+                        'help'      => __('0.0–1.0. Defaults to 0.3 — conservative for ordinary low-traffic sites. Watch real traffic before raising it; a higher threshold rejects more legitimate visitors. Only protected CoreX forms are covered.', 'corex'),
                         'help_url'  => 'https://developers.google.com/recaptcha/docs/v3#interpreting_the_score',
-                        'help_link' => 'reCAPTCHA v3 score docs',
+                        'help_link' => __('reCAPTCHA v3 score docs', 'corex'),
                         'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha']],
                     ],
                     'captcha.action' => [
-                        'label'     => 'reCAPTCHA v3 action (global default)',
+                        'label'     => __('reCAPTCHA v3 action (global default)', 'corex'),
                         'type'      => 'text',
-                        'help'      => 'Optional. Each form derives its own action from its slug (corex_form_<slug>); a form can override it. Leave blank unless you need one shared action.',
+                        'help'      => __('Optional. Each form derives its own action from its slug (corex_form_<slug>); a form can override it. Leave blank unless you need one shared action.', 'corex'),
                         'help_url'  => 'https://developers.google.com/recaptcha/docs/v3#actions',
-                        'help_link' => 'reCAPTCHA v3 action docs',
+                        'help_link' => __('reCAPTCHA v3 action docs', 'corex'),
                         'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha']],
                     ],
                     'captcha.allowed_hostnames' => [
-                        'label'     => 'Allowed hostnames',
+                        'label'     => __('Allowed hostnames', 'corex'),
                         'type'      => 'text',
-                        'help'      => 'Comma-separated exact hostnames a verification may originate from (e.g. example.com, staging.example.com). Leave blank to allow this site’s own host only. Matched exactly, never by partial match. The secret key never reaches the browser.',
+                        'help'      => __('Comma-separated exact hostnames a verification may originate from (e.g. example.com, staging.example.com). Leave blank to allow this site’s own host only. Matched exactly, never by partial match. The secret key never reaches the browser.', 'corex'),
                         'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha']],
                     ],
                 ],
             ],
             'media' => [
-                'title'  => 'Media',
+                'title'  => __('Media', 'corex'),
                 'fields' => [
                     'media.webp.support' => [
-                        'label' => 'Server support',
+                        'label' => __('Server support', 'corex'),
                         'type'  => 'info',
-                        'help'  => 'Live image-support on this server. Also reported under Tools → Site Health.',
+                        'help'  => __('Live image-support on this server. Also reported under Tools → Site Health.', 'corex'),
                     ],
                     'media.webp.enabled' => [
-                        'label' => 'Convert uploads to WebP',
+                        'label' => __('Convert uploads to WebP', 'corex'),
                         'type'  => 'checkbox',
-                        'help'  => 'On upload, write a WebP sibling next to the original. Originals are always kept.',
+                        'help'  => __('On upload, write a WebP sibling next to the original. Originals are always kept.', 'corex'),
                     ],
                     'media.webp.quality' => [
-                        'label' => 'WebP quality',
+                        'label' => __('WebP quality', 'corex'),
                         'type'  => 'text',
-                        'help'  => '1–100. 82 is a good balance of size and quality.',
+                        'help'  => __('1–100. 82 is a good balance of size and quality.', 'corex'),
                     ],
                     'media.webp.min_saving' => [
-                        'label' => 'Minimum size saving (%)',
+                        'label' => __('Minimum size saving (%)', 'corex'),
                         'type'  => 'text',
-                        'help'  => 'A WebP is only served when it is at least this much smaller than the original. Default 5.',
+                        'help'  => __('A WebP is only served when it is at least this much smaller than the original. Default 5.', 'corex'),
                     ],
                     'media.webp.convert_jpeg' => [
-                        'label' => 'Convert JPEG uploads',
+                        'label' => __('Convert JPEG uploads', 'corex'),
                         'type'  => 'checkbox',
                     ],
                     'media.webp.convert_png' => [
-                        'label' => 'Convert PNG uploads',
+                        'label' => __('Convert PNG uploads', 'corex'),
                         'type'  => 'checkbox',
                     ],
                 ],
             ],
             'insights' => [
-                'title'  => 'Insights',
+                'title'  => __('Insights', 'corex'),
                 'fields' => [
                     'insights.psi.key' => [
-                        'label'     => 'PageSpeed Insights API key',
+                        'label'     => __('PageSpeed Insights API key', 'corex'),
                         'type'      => 'password',
-                        'help'      => 'Used for performance checks.',
+                        'remove_effect' => __('Performance checks go back to Google\'s shared keyless quota, which is refused when it runs out.', 'corex'),
+                        'help'      => __('Used for performance checks.', 'corex'),
                         'help_url'  => 'https://developers.google.com/speed/docs/insights/v5/get-started',
-                        'help_link' => 'Get a PageSpeed Insights API key',
+                        'help_link' => __('Get a PageSpeed Insights API key', 'corex'),
                     ],
                     'insights.cloudflare.token' => [
-                        'label'     => 'Cloudflare API token',
+                        'label'     => __('Cloudflare API token', 'corex'),
                         'type'      => 'password',
-                        'help'      => 'Used for the security/readiness scan.',
+                        'remove_effect' => __('The Cloudflare security scan stops until a new token is saved.', 'corex'),
+                        'help'      => __('Used for the security/readiness scan.', 'corex'),
                         'help_url'  => 'https://developers.cloudflare.com/fundamentals/api/get-started/create-token/',
-                        'help_link' => 'Create a Cloudflare API token',
+                        'help_link' => __('Create a Cloudflare API token', 'corex'),
                     ],
                     'insights.cloudflare.account_id' => [
-                        'label'     => 'Cloudflare account ID',
+                        'label'     => __('Cloudflare account ID', 'corex'),
                         'type'      => 'text',
-                        'help'      => 'Found in the Cloudflare dashboard under your account home / API section.',
+                        'help'      => __('Found in the Cloudflare dashboard under your account home / API section.', 'corex'),
                         'help_url'  => 'https://developers.cloudflare.com/fundamentals/setup/find-account-and-zone-ids/',
-                        'help_link' => 'Find your Cloudflare account ID',
+                        'help_link' => __('Find your Cloudflare account ID', 'corex'),
                     ],
                 ],
             ],
@@ -295,17 +305,17 @@ final class SettingsRegistry implements FieldSections
             // field here defaults to off; the Command Center widget is not listed because it is
             // registered for everyone with CoreX visibility (FR-023) and is not optional.
             'dashboard' => [
-                'title'  => 'Dashboard',
+                'title'  => __('Dashboard', 'corex'),
                 'fields' => [
                     'dashboard.widgets.attention' => [
-                        'label' => 'Attention widget',
+                        'label' => __('Attention widget', 'corex'),
                         'type'  => 'checkbox',
-                        'help'  => 'Lists your unread CoreX notifications on the WordPress dashboard. Hidden automatically when you have none.',
+                        'help'  => __('Lists your unread CoreX notifications on the WordPress dashboard. Hidden automatically when you have none.', 'corex'),
                     ],
                     'dashboard.widgets.development' => [
-                        'label' => 'Development widget',
+                        'label' => __('Development widget', 'corex'),
                         'type'  => 'checkbox',
-                        'help'  => 'Shows the operating mode and its warnings. Only ever appears while the site is in Development.',
+                        'help'  => __('Shows the operating mode and its warnings. Only ever appears while the site is in Development.', 'corex'),
                     ],
                 ],
             ],
@@ -315,7 +325,7 @@ final class SettingsRegistry implements FieldSections
             // `addons/corex-guides/config/guides.php`; saving here writes the option that layers
             // over it, so a blank field means "use the shipped address", not "no address".
             'guides' => [
-                'title'  => 'Guides',
+                'title'  => __('Guides', 'corex'),
                 'fields' => [
                     'guides.support.email' => [
                         'label' => __('Support email', 'corex'),
@@ -334,13 +344,13 @@ final class SettingsRegistry implements FieldSections
             // this section never fabricates a value. Operations, Data Sources, and Design Tokens keep
             // their dedicated screens rather than being duplicated here.
             'advanced' => [
-                'title'  => 'Advanced',
+                'title'  => __('Advanced', 'corex'),
                 'fields' => [
-                    'advanced.php_version'  => ['label' => 'PHP version', 'type' => 'info', 'help' => 'The PHP runtime this site is on.'],
-                    'advanced.wp_version'   => ['label' => 'WordPress version', 'type' => 'info'],
-                    'advanced.environment'  => ['label' => 'Environment type', 'type' => 'info'],
-                    'advanced.memory_limit' => ['label' => 'PHP memory limit', 'type' => 'info'],
-                    'advanced.multisite'    => ['label' => 'Multisite', 'type' => 'info'],
+                    'advanced.php_version'  => ['label' => __('PHP version', 'corex'), 'type' => 'info', 'help' => __('The PHP runtime this site is on.', 'corex')],
+                    'advanced.wp_version'   => ['label' => __('WordPress version', 'corex'), 'type' => 'info'],
+                    'advanced.environment'  => ['label' => __('Environment type', 'corex'), 'type' => 'info'],
+                    'advanced.memory_limit' => ['label' => __('PHP memory limit', 'corex'), 'type' => 'info'],
+                    'advanced.multisite'    => ['label' => __('Multisite', 'corex'), 'type' => 'info'],
                 ],
             ],
         ];

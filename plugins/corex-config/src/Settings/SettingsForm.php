@@ -11,29 +11,24 @@ namespace Corex\Config\Settings;
 defined('ABSPATH') || exit;
 
 /**
- * Builds the settings form HTML from the registry — every value escaped, and the right
- * control per field type (text/email/url/password input, a media picker, a select, a
- * checkbox). Pure: it takes a value resolver + the pre-built nonce field. The media picker's
- * wp.media wiring is a small enqueued script; the field degrades to an editable value
- * without JS (spec 032).
+ * Draws settings sections as form rows: a label, the control its type calls for, its help, and
+ * the conditions that show it (spec 032, spec 039, spec 060 M6).
  *
- * Spec 060 / M6 US2: an optional per-section state callable lets the form reflect each
- * section's runtime add-on state — a not-installed section is hidden behind a notice, an
- * inactive section shows a disabled notice and disables its inputs, and an active-but-
- * unconfigured section shows a "configuration needed" prompt with its (enterable) fields.
+ * The Settings pages draw one page's sections through {@see rows()} (spec 119). An option page
+ * draws all of its sections through {@see render()}, as tabs with one save button.
  */
 final class SettingsForm
 {
-    public function __construct(private readonly FieldSections $registry)
-    {
+    public function __construct(
+        private readonly FieldSections $registry,
+        private readonly SettingsControls $controls = new SettingsControls(),
+    ) {
     }
 
     /**
-     * @param callable(string):string                       $value        current value for a field key
-     * @param (callable(string):?SettingsSectionState)|null $sectionState per-section runtime state by section key
-     */
-    /**
-     * @param callable(string):string                       $value        current value for a field key
+     * The whole form, as an option page draws it.
+     *
+     * @param callable(string):(string|FieldState)          $value        current value for a field key
      * @param (callable(string):?SettingsSectionState)|null $sectionState per-section runtime state by section key
      * @param string                                        $activeKey    the section to show first (a tab key)
      */
@@ -47,12 +42,32 @@ final class SettingsForm
         }
 
         $html  = '<form method="post" action="" class="corex-settings-form">' . $nonceField;
-        $html .= '<input type="hidden" name="corex_tab" value="' . esc_attr($activeKey)
-            . '" class="corex-settings__active-tab" />';
         $html .= $this->tablist($sections, $activeKey);
 
+        $states = static function (string $key) use ($value): FieldState {
+            $shown = $value($key);
+
+            return $shown instanceof FieldState ? $shown : FieldState::plain((string) $shown);
+        };
+
         foreach ($sections as $sectionKey => $section) {
-            $html .= $this->panel((string) $sectionKey, $section, $value, $sectionState, $activeKey);
+            $state  = $sectionState !== null ? $sectionState((string) $sectionKey) : null;
+            $html  .= sprintf(
+                '<section id="corex-settings-section-%1$s" class="corex-settings-section corex-settings-section--%2$s%5$s"'
+                . ' role="tabpanel" aria-labelledby="corex-tab-%1$s"><h2>%3$s</h2>%4$s',
+                esc_attr((string) $sectionKey),
+                esc_attr($state === null ? 'normal' : str_replace('_', '-', $state->value)),
+                esc_html($section['title']),
+                $this->sectionNotice($state),
+                (string) $sectionKey === $activeKey ? ' is-active' : '',
+            );
+
+            // A not-installed add-on shows only the notice — never its fields.
+            if ($state !== SettingsSectionState::Hidden) {
+                $html .= $this->rows((string) $sectionKey, $section, $states, $state === SettingsSectionState::Disabled);
+            }
+
+            $html .= '</section>';
         }
 
         return $html . sprintf(
@@ -62,9 +77,38 @@ final class SettingsForm
     }
 
     /**
-     * The accessible tablist (one tab per real settings section, in registry order). Buttons
-     * carry the ARIA tab semantics; a small enqueued script shows one panel at a time and wires
-     * arrow-key navigation. Without JS every panel stays visible (a stacked, usable fallback).
+     * One section's fields as a form table.
+     *
+     * @param array{title:string,fields:array<string,array<string,mixed>>} $section
+     * @param callable(string, string):FieldState|callable(string):FieldState $state the field's state, by key (and type)
+     * @param bool                                                       $readOnly the section's add-on is off
+     */
+    public function rows(string $sectionKey, array $section, callable $state, bool $readOnly = false): string
+    {
+        $html  = '<table class="form-table" role="presentation">';
+        $html .= $this->driverNotice($sectionKey, $section, $state);
+
+        foreach ($section['fields'] as $key => $field) {
+            $key        = (string) $key;
+            $name       = SettingsControls::nameOf($key);
+            $fieldState = $state($key, (string) ($field['type'] ?? 'text'));
+
+            $html .= sprintf(
+                '<tr%5$s><th><label for="%1$s">%2$s</label></th><td>%3$s%4$s</td></tr>',
+                esc_attr($name),
+                esc_html((string) $field['label']),
+                $this->controls->control($key, $field, $fieldState, $readOnly),
+                $this->help($name, $field, $state),
+                $this->showForAttrs($field, $state),
+            );
+        }
+
+        return $html . '</table>';
+    }
+
+    /**
+     * The accessible tablist (one tab per section, in registry order). Without scripts every panel
+     * stays visible.
      *
      * @param array<string,array{title:string,fields:array<string,mixed>}> $sections
      */
@@ -91,64 +135,13 @@ final class SettingsForm
     }
 
     /**
-     * One section rendered as an ARIA tabpanel.
-     *
-     * @param array{title:string,fields:array<string,array{label:string,type:string,options?:array<string,string>,help?:string}>} $section
-     * @param callable(string):string                       $value
-     * @param (callable(string):?SettingsSectionState)|null $sectionState
-     */
-    private function panel(string $sectionKey, array $section, callable $value, ?callable $sectionState, string $activeKey): string
-    {
-        $state      = $sectionState !== null ? $sectionState($sectionKey) : null;
-        $stateClass = $state === null ? 'normal' : str_replace('_', '-', $state->value);
-        $isActive   = $sectionKey === $activeKey;
-
-        $html = sprintf(
-            '<section id="corex-settings-section-%1$s" class="corex-settings-section corex-settings-section--%2$s%5$s"'
-            . ' role="tabpanel" aria-labelledby="corex-tab-%1$s"><h2>%3$s</h2>%4$s',
-            esc_attr($sectionKey),
-            esc_attr($stateClass),
-            esc_html($section['title']),
-            $this->sectionNotice($state),
-            $isActive ? ' is-active' : '',
-        );
-
-        // A not-installed add-on shows only the notice — never its fields.
-        if ($state === SettingsSectionState::Hidden) {
-            return $html . '</section>';
-        }
-
-        $disabled = $state === SettingsSectionState::Disabled;
-        $html    .= '<table class="form-table">';
-        $html    .= $this->driverNotice($sectionKey, $section, $value);
-
-        foreach ($section['fields'] as $key => $field) {
-            $name = str_replace('.', '_', $key);
-
-            $html .= sprintf(
-                '<tr%5$s><th><label for="%1$s">%2$s</label></th><td>%3$s%4$s</td></tr>',
-                esc_attr($name),
-                esc_html($field['label']),
-                $this->control($name, $field, (string) $value($key), $disabled),
-                $this->help($name, $field, $value),
-                $this->showForAttrs($field, $value),
-            );
-        }
-
-        return $html . '</table></section>';
-    }
-
-    /**
      * Driver-aware visibility (spec 060): a field may declare `show_for` (a controlling field key
-     * + the values that reveal it). The row is hidden server-side when the current value does not
-     * match (so a reload matches the saved driver) and carries data-attributes so the settings
-     * script can toggle it live as the controlling select changes. Fields without `show_for`
-     * always show.
+     * and the values that reveal it). The row is hidden server-side when the current value does not
+     * match, and the page's script toggles it live as the controlling select changes.
      *
      * @param array{show_for?:array{key:string,values:list<string>}} $field
-     * @param callable(string):string                                 $value
      */
-    private function showForAttrs(array $field, callable $value): string
+    private function showForAttrs(array $field, callable $state): string
     {
         if (! isset($field['show_for']['key'], $field['show_for']['values'])) {
             return '';
@@ -156,32 +149,29 @@ final class SettingsForm
 
         $key     = (string) $field['show_for']['key'];
         $values  = $field['show_for']['values'];
-        $current = (string) $value($key);
-        $hidden  = in_array($current, $values, true) ? '' : ' hidden';
+        $current = $state($key, 'select')->shown;
 
         return sprintf(
             ' class="corex-settings-row" data-corex-show-for="%s" data-corex-show-values="%s"%s',
             esc_attr($key),
             esc_attr(implode(' ', $values)),
-            $hidden,
+            in_array($current, $values, true) ? '' : ' hidden',
         );
     }
 
     /**
-     * The "captcha disabled" notice shown only when the driver is None — provider fields are
-     * hidden, so this explains the section is intentionally off. Toggled live by the same
-     * data-attributes the script reads.
+     * The notice shown in place of the provider fields when the captcha driver is None or the
+     * honeypot. Toggled live by the same data attributes the script reads.
      *
      * @param array{fields:array<string,mixed>} $section
-     * @param callable(string):string           $value
      */
-    private function driverNotice(string $sectionKey, array $section, callable $value): string
+    private function driverNotice(string $sectionKey, array $section, callable $state): string
     {
         if ($sectionKey !== 'captcha' || ! isset($section['fields']['captcha.driver'])) {
             return '';
         }
 
-        $current = (string) $value('captcha.driver');
+        $current = $state('captcha.driver', 'select')->shown;
         $notices = [
             'none'     => esc_html__('Captcha is disabled — no provider selected.', 'corex'),
             'honeypot' => esc_html__('Honeypot adds a hidden spam-trap field that bots fill in — no provider keys are required.', 'corex'),
@@ -192,7 +182,7 @@ final class SettingsForm
             $out .= sprintf(
                 '<tr class="corex-settings-row corex-driver-notice" data-corex-show-for="captcha.driver"'
                 . ' data-corex-show-values="%1$s"%2$s><td colspan="2">'
-                . '<p class="corex-driver-notice__msg" role="status">%3$s</p></td></tr>',
+                . '<p class="corex-driver-notice__msg">%3$s</p></td></tr>',
                 esc_attr($driver),
                 $driver === $current ? '' : ' hidden',
                 $message,
@@ -203,19 +193,15 @@ final class SettingsForm
     }
 
     /**
-     * The field's helper copy + an official reference link (new tab, safe rel). When a field
-     * declares `help_variants` (per controlling-driver value), one help line is rendered per
-     * variant — each shown only for its driver — so each provider gets only its own description
-     * and official reference (e.g. Turnstile never shows reCAPTCHA links). Concise, never a docs
-     * block, and never reveals a saved secret.
+     * The field's help and an official reference link (new tab, safe rel). A field with
+     * `help_variants` gets one line per controlling-driver value, each shown only for its driver.
      *
      * @param array{help?:string,help_url?:string,help_link?:string,help_variants?:array<string,array<string,string>>,show_for?:array{key:string}} $field
-     * @param callable(string):string                                                                                                             $value
      */
-    private function help(string $name, array $field, callable $value): string
+    private function help(string $name, array $field, callable $state): string
     {
         if (isset($field['help_variants'], $field['show_for']['key'])) {
-            return $this->helpVariants((string) $field['show_for']['key'], $field['help_variants'], $value);
+            return $this->helpVariants((string) $field['show_for']['key'], $field['help_variants'], $state);
         }
 
         $text = $this->helpText($field);
@@ -228,15 +214,11 @@ final class SettingsForm
     }
 
     /**
-     * One help line per driver variant, each shown only for its driver value (hidden server-side
-     * when it isn't the current driver, and toggled live by the settings script).
-     *
      * @param array<string,array<string,string>> $variants
-     * @param callable(string):string            $value
      */
-    private function helpVariants(string $key, array $variants, callable $value): string
+    private function helpVariants(string $key, array $variants, callable $state): string
     {
-        $current = (string) $value($key);
+        $current = $state($key, 'select')->shown;
         $out     = '';
 
         foreach ($variants as $driver => $variant) {
@@ -254,8 +236,6 @@ final class SettingsForm
     }
 
     /**
-     * Helper text + optional reference link as an escaped fragment.
-     *
      * @param array{help?:string,help_url?:string,help_link?:string} $field
      */
     private function helpText(array $field): string
@@ -277,10 +257,7 @@ final class SettingsForm
     {
         $message = match ($state) {
             SettingsSectionState::Hidden => esc_html__('This add-on is not installed.', 'corex'),
-            SettingsSectionState::Disabled => esc_html__(
-                'This add-on is inactive — enable it to use these settings.',
-                'corex',
-            ),
+            SettingsSectionState::Disabled => esc_html__('This add-on is inactive — enable it to use these settings.', 'corex'),
             SettingsSectionState::ConfigurationNeeded => esc_html__('Configuration needed.', 'corex'),
             default => '',
         };
@@ -289,152 +266,10 @@ final class SettingsForm
             return '';
         }
 
-        $modifier = str_replace('_', '-', $state->value);
-
         return sprintf(
             '<p class="corex-section-notice corex-section-notice--%1$s" role="status">%2$s</p>',
-            esc_attr($modifier),
+            esc_attr(str_replace('_', '-', $state->value)),
             $message,
-        );
-    }
-
-    /**
-     * @param array{label:string,type:string,options?:array<string,string>} $field
-     */
-    private function control(string $name, array $field, string $value, bool $disabled = false): string
-    {
-        return match ($field['type']) {
-            'media'    => $this->media($name, $value, $disabled),
-            'select'   => $this->select($name, $field['options'] ?? [], $value, $disabled),
-            'checkbox' => $this->checkbox($name, $value, $disabled),
-            'password' => $this->secret($name, $value !== '', $disabled),
-            'info'     => $this->info($value),
-            // A text box, not the browser's colour picker: a picker cannot be left empty, and
-            // empty is how a site says "CoreX's own".
-            'hex-colour' => $this->input($name, 'text', $value, $disabled),
-            default    => $this->input($name, $field['type'], $value, $disabled),
-        };
-    }
-
-    /**
-     * A read-only informational control — no input, never submitted (so it is skipped on save).
-     * Used for live status read-outs such as the Media add-on's server-support summary.
-     */
-    private function info(string $value): string
-    {
-        return '<p class="corex-field-info" role="status">' . esc_html($value) . '</p>';
-    }
-
-    private function disabledAttr(bool $disabled): string
-    {
-        return $disabled ? ' disabled' : '';
-    }
-
-    private function input(string $name, string $type, string $value, bool $disabled = false): string
-    {
-        return sprintf(
-            '<input id="%1$s" name="%1$s" type="%2$s" value="%3$s" class="regular-text"%4$s />',
-            esc_attr($name),
-            esc_attr($type),
-            esc_attr($value),
-            $this->disabledAttr($disabled),
-        );
-    }
-
-    /**
-     * A write-only secret control (spec 060 / M6 US2): the stored secret is never
-     * rendered back — the input is always empty and only a set/not-set hint is shown,
-     * so the value cannot leak via the page source. An empty submit preserves the
-     * stored secret (see the settings save loop).
-     */
-    private function secret(string $name, bool $isSet, bool $disabled = false): string
-    {
-        $tipId = $name . '-secret-tip';
-
-        return sprintf(
-            '<input id="%1$s" name="%1$s" type="password" value="" autocomplete="new-password"'
-            . ' class="regular-text" placeholder="%2$s"%4$s />'
-            . ' <span class="corex-secret-state">%3$s</span>'
-            . ' <span class="corex-tooltip">'
-            . '<button type="button" class="corex-tooltip__trigger" aria-describedby="%5$s"'
-            . ' aria-label="%6$s">&#9432;</button>'
-            . '<span class="corex-tooltip__bubble" role="tooltip" id="%5$s">%7$s</span>'
-            . '</span>',
-            esc_attr($name),
-            $isSet ? esc_attr__('Leave blank to keep the saved value', 'corex') : esc_attr__('Not set', 'corex'),
-            $isSet ? esc_html__('Saved', 'corex') : esc_html__('Not set', 'corex'),
-            $this->disabledAttr($disabled),
-            esc_attr($tipId),
-            esc_attr__('About this secret', 'corex'),
-            esc_html__('Stored write-only — the saved value is never shown again. Leave blank to keep it.', 'corex'),
-        );
-    }
-
-    /**
-     * The admin-logo control (design: Settings Brand tab): a framed preview that shows the
-     * current saved logo as a thumbnail, or a designed empty placeholder when none is set, so
-     * the admin can always tell whether the setting has a value. Select/Change + Remove drive
-     * the preview live via the enqueued media script; the URL field keeps it editable without
-     * JS. No base64 — a normal attachment URL.
-     */
-    private function media(string $name, string $value, bool $disabled = false): string
-    {
-        $hasValue = $value !== '';
-
-        return sprintf(
-            '<div class="corex-media">'
-            . '<div class="corex-media__frame">'
-            . '<img class="corex-media-preview" src="%2$s" alt=""%7$s />'
-            . '<span class="corex-media__placeholder"%8$s>%3$s</span></div>'
-            . '<div class="corex-media__controls">'
-            . '<button type="button" class="button corex-media-select" data-target="%1$s"%6$s>%4$s</button>'
-            . '<button type="button" class="button corex-media-remove" data-target="%1$s"%6$s>%5$s</button>'
-            . '<input id="%1$s" name="%1$s" type="url" value="%9$s" class="corex-media__url regular-text"%6$s /></div></div>',
-            esc_attr($name),
-            $hasValue ? esc_url($value) : '',
-            esc_html__('No logo set', 'corex'),
-            $hasValue ? esc_html__('Change image', 'corex') : esc_html__('Select image', 'corex'),
-            esc_html__('Remove', 'corex'),
-            $this->disabledAttr($disabled),
-            $hasValue ? '' : ' hidden',
-            $hasValue ? ' hidden' : '',
-            esc_attr($value),
-        );
-    }
-
-    /**
-     * @param array<string,string> $options value => label
-     */
-    private function select(string $name, array $options, string $value, bool $disabled = false): string
-    {
-        // `data-corex-select` opts this into the approved CoreX control (DECISIONS #141); the
-        // upgrade script is already enqueued on every CoreX screen by CorexAdminAssets. Without it
-        // the Settings dropdowns were the last ones in the admin still drawing an OS menu.
-        $html = sprintf(
-            '<select id="%1$s" name="%1$s" data-corex-select%2$s>',
-            esc_attr($name),
-            $this->disabledAttr($disabled),
-        );
-
-        foreach ($options as $optionValue => $label) {
-            $html .= sprintf(
-                '<option value="%s"%s>%s</option>',
-                esc_attr((string) $optionValue),
-                (string) $optionValue === $value ? ' selected' : '',
-                esc_html($label),
-            );
-        }
-
-        return $html . '</select>';
-    }
-
-    private function checkbox(string $name, string $value, bool $disabled = false): string
-    {
-        return sprintf(
-            '<input id="%1$s" name="%1$s" type="checkbox" value="1"%2$s%3$s />',
-            esc_attr($name),
-            $value !== '' && $value !== '0' ? ' checked' : '',
-            $this->disabledAttr($disabled),
         );
     }
 }

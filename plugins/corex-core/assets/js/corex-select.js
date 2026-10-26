@@ -267,6 +267,10 @@
 		native.style.display = 'none';
 		native.after( wrap );
 		wrap.append( button, list );
+		// A value set on the native select by a script (Settings' Discard puts the saved value
+		// back) is shown too, not only one chosen from the menu.
+		native.addEventListener( 'change', syncValue );
+
 		syncValue();
 	}
 

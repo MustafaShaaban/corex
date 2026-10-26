@@ -137,12 +137,15 @@ test( 'Settings renders the real sections including the Advanced diagnostics rea
 		'/wp-admin/admin.php?page=corex-settings-config&corex_tab=advanced'
 	);
 	await expect(
-		page.getByRole( 'heading', { name: 'CoreX Settings' } )
+		page.getByRole( 'heading', { name: 'Advanced', level: 1 } )
 	).toBeVisible();
 
-	// The section tabs, including the new Advanced tab.
-	await expect( page.locator( '[data-corex-tab="advanced"]' ) ).toBeVisible();
-	await expect( page.locator( '[data-corex-tab="media"]' ) ).toBeVisible();
+	// The Settings pages under Settings in the rail (spec 119), Advanced the open one.
+	const pages = page.locator( '.corex-admin__subnav' );
+	await expect( pages.locator( '[aria-current="page"]' ) ).toHaveText(
+		'Advanced'
+	);
+	await expect( pages.getByRole( 'link', { name: 'Media' } ) ).toBeVisible();
 	// The Advanced diagnostics show a real PHP version — never a fabricated value.
 	await expect( page.getByText( 'PHP version' ) ).toBeVisible();
 	await expect( page.getByText( /8\.\d+\.\d+/ ).first() ).toBeVisible();
@@ -181,12 +184,12 @@ test( 'Settings refuses a reply sender address that is not one, says so until di
 			'/wp-admin/admin.php?page=corex-settings-config&corex_tab=mail'
 		);
 		await expect(
-			page.getByRole( 'tab', { name: 'Mail' } )
-		).toHaveAttribute( 'aria-selected', 'true' );
+			page.locator( '.corex-admin__subnav [aria-current="page"]' )
+		).toHaveText( 'Email' );
 	};
 	const field = ( name ) => page.locator( `[name="${ name }"]` );
 	const save = () =>
-		page.getByRole( 'button', { name: 'Save settings' } ).click();
+		page.getByRole( 'button', { name: 'Save changes' } ).click();
 	await page.setViewportSize( { width: 1280, height: 900 } );
 	await open();
 	const before = {
@@ -227,13 +230,13 @@ test( 'Settings refuses a reply sender address that is not one, says so until di
 			'aria-invalid',
 			'true'
 		);
-		// The rest was saved, the Mail tab is still the one open, and the field that was
-		// refused is as it was.
+		// The rest was saved, the Email page is the one open, and the field that was
+		// refused still holds what was typed, to be put right (spec 119, US-SET-01).
 		await expect( field( 'mail_reply_from_name' ) ).toHaveValue(
 			'Acme Sales'
 		);
 		await expect( field( 'mail_reply_from_address' ) ).toHaveValue(
-			before.address
+			'answers@acme'
 		);
 
 		// Where it stands: inside the window, its lines one under another, the button to

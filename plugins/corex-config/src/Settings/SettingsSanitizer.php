@@ -34,12 +34,22 @@ final class SettingsSanitizer
             // What was typed is what is judged. Cleaned first, an address WordPress could
             // "repair" was saved as another one: sales@münchen.de as sales@mnchen.de.
             'email'        => is_email(trim($raw)) ? sanitize_email(trim($raw)) : null,
-            'url', 'media' => esc_url_raw($raw) !== '' ? esc_url_raw($raw) : null,
+            'url', 'media' => self::isAddress($raw) && esc_url_raw($raw) !== '' ? esc_url_raw($raw) : null,
             'select'       => in_array($raw, array_keys($options), true) ? $raw : null,
             // Written into a style attribute of an email, so one form only (spec 106).
             'hex-colour'   => preg_match('/^#[0-9a-f]{6}$/i', trim($raw)) === 1 ? strtolower(trim($raw)) : null,
             default        => sanitize_text_field($raw),
         };
+    }
+
+    /**
+     * Whether what was typed is written as an address: with a scheme (`https://`, `mailto:`), or
+     * from this site's root (`/contact`). A bare word was made into `http://example` and saved as
+     * that (spec 119, US-SET-13).
+     */
+    private static function isAddress(string $raw): bool
+    {
+        return preg_match('#^(?:[a-z][a-z0-9+.\-]*:|/|\#)#i', trim($raw)) === 1;
     }
 
     /**
