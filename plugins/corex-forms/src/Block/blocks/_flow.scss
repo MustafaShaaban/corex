@@ -23,8 +23,9 @@
 	padding-block: var(--wp--preset--spacing--30);
 }
 
-/* A flow that is not taking answers (spec 122, US-VIS-01): a titled notice, with the owner's
-   alternative. The state is said in words, never by colour alone. */
+/* A flow that is not taking answers (spec 122, US-VIS-01): a titled
+   notice, with the owner's alternative. The state is said in words,
+   never by colour alone. */
 .corex-flow-notice {
 	display: grid;
 	gap: var(--wp--preset--spacing--20);
@@ -33,7 +34,9 @@
 	padding-inline: var(--wp--preset--spacing--40);
 	color: var(--wp--preset--color--ink);
 	background: var(--wp--preset--color--surface-alt);
-	border-inline-start: 4px solid var(--wp--preset--color--info); /* corex-token-allow: state edge */
+	border-inline-start-style: solid;
+	border-inline-start-color: var(--wp--preset--color--info);
+	border-inline-start-width: 4px; /* corex-token-allow: state edge */
 }
 
 .corex-flow-notice p {

@@ -496,7 +496,7 @@
 	color: var(--corex-admin-text-muted);
 	font-family: var(--corex-admin-font-mono);
 	font-size: var(--corex-admin-font-xs);
-	letter-spacing: 0.08em;
+	letter-spacing: var(--corex-admin-letter-wide);
 	text-transform: uppercase;
 }
 
@@ -684,4 +684,24 @@
 
 .corex-admin .corex-flow-routed-owner__lines > li {
 	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-flow-teams > header > div {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+/* A checkbox keeps its own size beside its words: the editor's input rule
+   above gives every input the full width and a control's height. */
+.corex-admin .corex-flow-editor label.corex-flow-editor__check,
+.corex-admin .corex-flow-teams label.corex-flow-editor__check {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-flow-editor input[type="checkbox"],
+.corex-admin .corex-flow-teams input[type="checkbox"] {
+	inline-size: auto;
+	min-block-size: 0;
 }
