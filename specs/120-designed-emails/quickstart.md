@@ -27,8 +27,8 @@ COREX_BASE_URL=http://127.0.0.1:8920 npx playwright test tests/e2e/email-studio.
 5. **Variables (story 5).** Save `{{ nonsense.key }}`: refused, named. Save `{{ user.name }}` on a template a flow binds:
    saved with a warning; binding it in the flow's Emails tab asks for confirmation.
 6. **Account (story 6).** With the account block on a page, ask a reset there: a framed reset email with a button, a
-   plain link to that page, "24 hours", no login address. Register with a password: a framed welcome, no set-password
+   plain link to that page, "1 day", no login address. Register with a password: a framed welcome, no set-password
    link.
-7. **Plain text on the seam (story 7).** `wp eval 'corex()->make(Corex\Mail\Mailer::class)->send(new
-   Corex\Mail\MailRequest(to: ["a@example.test"], subject: "S", body: "<p>Hi</p>", plainText: "Hi"));'`: the capture
-   shows "Hi" as its plain text.
+7. **Plain text on the seam (story 7).** From a `wp eval-file` script,
+   `Corex\Boot::app()->container()->make(Corex\Mail\Mailer::class)->send(new Corex\Mail\MailRequest(to:
+   ['a@example.test'], subject: 'S', body: '<p>Hi</p>', plainText: 'Hi'));`: the capture shows "Hi" as its plain text.

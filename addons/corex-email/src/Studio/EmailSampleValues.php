@@ -72,7 +72,7 @@ final readonly class EmailSampleValues
             'failure.message'                            => __('The mail server did not accept the email.', 'corex'),
             'action.url'                                 => add_query_arg('corex_sample', '1', $home),
             'links.unsubscribe', 'links.preferences'     => add_query_arg('corex_sample', '1', $home),
-            'reset.expires'                              => __('24 hours', 'corex'),
+            'reset.expires'                              => __('1 day', 'corex'),
             'reset.asked'                                => wp_date((string) get_option('date_format') . ' ' . (string) get_option('time_format')),
             'request.id'                                 => '42',
             'request.ability_key'                        => __('Manage forms', 'corex'),

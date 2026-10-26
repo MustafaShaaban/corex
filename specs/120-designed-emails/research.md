@@ -149,7 +149,7 @@ site could not send would be a regression against WordPress's own email, which s
 `send_retrieve_password_email` is answered `false` when "Password reset" was sent: CoreX makes the key with
 `get_password_reset_key()` and sends the template with `action.url` (the account page's reset form,
 `ResetLink::emailed()`), `user.*`, `reset.asked` (the time, in the site's format) and `reset.expires` (from
-`password_reset_expiration`, "24 hours" by default). When it cannot be drawn, WordPress sends its own, relinked as
+`password_reset_expiration`, "1 day" by default, in WordPress's words). When it cannot be drawn, WordPress sends its own, relinked as
 before. A reset asked on the login screen is not touched (DECISIONS #341). Registration sends "Welcome to your account"
 instead of `wp_new_user_notification()`, linking to the account page the form was on (its signed page mark is now sent
 by the register form too) or the home page; when it cannot be drawn, WordPress's own email is sent as before.

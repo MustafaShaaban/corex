@@ -119,6 +119,7 @@ it('previews the draft framed by the server, with samples that can be changed an
 it('names the variable or the partial a template cannot be drawn without, and sends no test of it', function () {
     $template = designedProbe($this, '<p>Hello</p>');
     $controller = $this->container->make(EmailStudioController::class);
+    $keptBefore = count($this->container->make(CapturedEmailRepository::class)->latest(100));
 
     $unknown = $controller->previewTemplate(studioDraftRequest($this, $template, ['html_body' => '<p>{{ nonsense.key }}</p>']));
     $partial = $controller->previewTemplate(studioDraftRequest($this, $template, ['html_body' => '<p>Hi</p>{{> promo }}']));
@@ -132,9 +133,8 @@ it('names the variable or the partial a template cannot be drawn without, and se
         ->and($unknown->get_data()['details']['fields']['variables'])->toBe('Unknown variable: nonsense.key.')
         ->and($partial->get_data()['details']['fields']['partials'])->toBe('The partial "promo" is not available.')
         ->and($test->get_status())->toBe(422)
-        ->and($this->container->make(CapturedEmailRepository::class)->latest(5))->not->toContain(
-            fn ($capture) => str_contains($capture->subject, '[Test]'),
-        );
+        // Nothing was sent, so nothing was kept.
+        ->and(count($this->container->make(CapturedEmailRepository::class)->latest(100)))->toBe($keptBefore);
 });
 
 it('refuses a test to what is not an address, before anything is drawn or sent', function () {
