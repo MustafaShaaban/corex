@@ -12,7 +12,7 @@ defined('ABSPATH') || exit;
 
 /**
  * Pure model for the designed Insights widget set (spec 067, design: "Corex Insights"):
- * Performance · Cloudflare · Security events · SEO & indexing · AI/Agent readiness ·
+ * Performance · Cloudflare · Security events · SEO & indexing · AI and agent readiness ·
  * Operations health · Forms & Flows analytics. Every widget's state is derived from REAL
  * facts passed in by the screen (stored check results, configured secrets, live local
  * signals, recorded security events) — never invented. Widgets whose data comes from a
@@ -27,6 +27,22 @@ final class InsightWidgets
     public const STATE_DISCONNECTED = 'disconnected';
     public const STATE_EMPTY        = 'empty';
     public const STATE_FAILED       = 'failed';
+    /** A widget whose facts could not be read: "Could not load", never a zero (spec 118). */
+    public const STATE_UNAVAILABLE  = 'unavailable';
+
+    /**
+     * The decorative icon for each widget's subject (spec 118, US-INS-02), from the admin's own set
+     * so a subject carries the mark it has elsewhere in CoreX.
+     */
+    private const SUBJECT_ICONS = [
+        'performance' => 'insights',
+        'cloudflare'  => 'security',
+        'security'    => 'access',
+        'seo'         => 'blog',
+        'ai'          => 'guides',
+        'ops'         => 'settings',
+        'forms'       => 'forms',
+    ];
 
     /**
      * @param array{
@@ -45,9 +61,9 @@ final class InsightWidgets
      *   environment:string,
      *   operationsMode:string,
      *   modeDeclared:bool,
-     *   formsSubmissions:int,
-     *   formsPublishedFlows:int,
-     *   formsTotalFlows:int
+     *   formsSubmissions:int|null,
+     *   formsPublishedFlows:int|null,
+     *   formsTotalFlows:int|null
      * } $facts
      *
      * @return list<array<string,mixed>>
@@ -155,7 +171,7 @@ final class InsightWidgets
             );
             $widget['alt'] = [
                 'title'    => __('Not connected', 'corex'),
-                'message'  => __('Add a Cloudflare API token and account ID to include the URL-scan security signal in AI/Agent readiness runs.', 'corex'),
+                'message'  => __('Add a Cloudflare API token and account ID to include the URL-scan security signal in AI and agent readiness runs.', 'corex'),
                 'ctaLabel' => __('Open Insights settings', 'corex'),
                 'ctaHref'  => 'settings',
             ];
@@ -172,7 +188,7 @@ final class InsightWidgets
         $widget['rows'] = [
             ['label' => __('API token', 'corex'), 'value' => __('Configured', 'corex'), 'tone' => 'success'],
             ['label' => __('Account ID', 'corex'), 'value' => __('Configured', 'corex'), 'tone' => 'success'],
-            ['label' => __('URL-scan signal', 'corex'), 'value' => __('Included in AI/Agent readiness runs', 'corex'), 'tone' => 'info'],
+            ['label' => __('URL-scan signal', 'corex'), 'value' => __('Included in AI and agent readiness runs', 'corex'), 'tone' => 'info'],
             ['label' => __('Zone analytics (cache · WAF)', 'corex'), 'value' => __('Not tracked', 'corex'), 'tone' => 'subtle'],
         ];
 
@@ -243,8 +259,8 @@ final class InsightWidgets
             [
                 'label' => __('Sitemap · robots · llms.txt', 'corex'),
                 'value' => $facts['readinessLatest'] === null
-                    ? __('Not probed yet — run AI/Agent readiness', 'corex')
-                    : __('Probed by the AI/Agent readiness check', 'corex'),
+                    ? __('Not probed yet — run AI and agent readiness', 'corex')
+                    : __('Probed by the AI and agent readiness check', 'corex'),
                 'tone'  => $facts['readinessLatest'] === null ? 'subtle' : 'info',
             ],
         ];
@@ -261,7 +277,7 @@ final class InsightWidgets
     {
         $widget = $this->base(
             'ai',
-            __('AI / Agent readiness', 'corex'),
+            __('AI and agent readiness', 'corex'),
             __('llms.txt · sitemap · robots · MCP', 'corex'),
             $this->providerState($facts['readinessLatest']),
         );
@@ -310,6 +326,26 @@ final class InsightWidgets
      */
     private function forms(array $facts): array
     {
+        $counts = [$facts['formsSubmissions'], $facts['formsPublishedFlows'], $facts['formsTotalFlows']];
+
+        // A count that could not be read is said, never drawn as 0 (spec 118, US-OVR-06).
+        if (in_array(null, $counts, true)) {
+            $widget = $this->base(
+                'forms',
+                __('Forms & Flows analytics', 'corex'),
+                __('Submissions · flows · routing', 'corex'),
+                self::STATE_UNAVAILABLE,
+            );
+            $widget['alt'] = [
+                'title'    => __('Could not load', 'corex'),
+                'message'  => __('The submission and flow counts could not be read. Reload the page to try again.', 'corex'),
+                'ctaLabel' => '',
+                'ctaHref'  => '',
+            ];
+
+            return $widget;
+        }
+
         $published = (int) $facts['formsPublishedFlows'];
 
         $widget = $this->base(
@@ -383,8 +419,10 @@ final class InsightWidgets
             'title'     => $title,
             'sub'       => $sub,
             'state'     => $state,
-            'chip'      => $this->chipLabel($state),
+            'chip'      => $attention === null ? $this->chipLabel($state) : __('Needs attention', 'corex'),
+            'chipKey'   => $attention === null ? $state : 'attention',
             'chipTone'  => $attention ?? $this->chipTone($state),
+            'icon'      => self::SUBJECT_ICONS[$key] ?? 'insights',
             'mount'     => null,
             'note'      => '',
             'rows'      => [],
@@ -401,6 +439,7 @@ final class InsightWidgets
             self::STATE_DISCONNECTED => __('Not connected', 'corex'),
             self::STATE_EMPTY        => __('No data yet', 'corex'),
             self::STATE_FAILED       => __('Could not run', 'corex'),
+            self::STATE_UNAVAILABLE  => __('Could not load', 'corex'),
             default                  => $state,
         };
     }
@@ -409,7 +448,7 @@ final class InsightWidgets
     {
         return match ($state) {
             self::STATE_LIVE, self::STATE_CONNECTED => 'success',
-            self::STATE_FAILED                      => 'warning',
+            self::STATE_FAILED, self::STATE_UNAVAILABLE => 'warning',
             default                                 => 'subtle',
         };
     }
