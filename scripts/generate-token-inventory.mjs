@@ -369,7 +369,11 @@ const directionContext = ( snippets ) => {
  * @param {string} file a tracked path
  * @return {string} its package
  */
-const packageOf = ( file ) => file.split( '/' ).slice( 0, file.startsWith( 'theme/' ) ? 1 : 2 ).join( '/' );
+const packageOf = ( file ) =>
+	file
+		.split( '/' )
+		.slice( 0, file.startsWith( 'theme/' ) ? 1 : 2 )
+		.join( '/' );
 
 /**
  * Component properties (spec 129): a `--corex-*` custom property a package's own stylesheet declares,
