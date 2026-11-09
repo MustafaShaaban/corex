@@ -43,6 +43,7 @@ addons/              optional, self-disabling packages (never hard dependencies)
   corex-newsletter/  double-opt-in subscriber capture.
   corex-careers/     jobs CPT + application flow.
   corex-bookings/    booking/call-request flow.
+  corex-assistant/   site chat that answers from the site's own content and hands visitors to the team.
   corex-kit-company/ corex-kit-portfolio/ corex-kit-woo/   site kits (blueprints + content).
 packages/
   cli/               wp corex commands (make:*, make:site, reset, docs:generate, routes:list, …) + stubs.

@@ -34,7 +34,7 @@ it('puts every registry section on exactly one page', function () {
 
 it('lists the pages in the order the design groups them', function () {
     expect(array_keys((new SettingsPages())->all()))
-        ->toBe(['general', 'email', 'captcha', 'media', 'insights', 'guides', 'advanced']);
+        ->toBe(['general', 'email', 'captcha', 'media', 'assistant', 'insights', 'guides', 'advanced']);
 });
 
 it('finds the page an address asks for', function (string $page, string $tab, ?string $found) {

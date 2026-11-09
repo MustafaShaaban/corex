@@ -13,6 +13,7 @@
         "plugins/corex-forms",
         "addons/corex-ui",
         "addons/corex-careers",
+        "addons/corex-assistant",
         "addons/corex-kit-portfolio",
         "plugins/corex-config"
     ],

@@ -40,6 +40,24 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
+#608): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
+`addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free
+model tiers in turn (Gemini, Groq, OpenRouter, Mistral), with a callback form in the chat that lands in
+Submissions. Settings → Assistant holds the switch, name, image, cap, keys and models, "Check services". A site
+plugs in its knowledge (`corex_assistant_knowledge_provider`), strings (`corex_assistant_strings`) and colours
+(`--corex-assistant-*`). Framework edits: secrets on Settings saved with autoload off (#602); the token inventory
+resolves a package's own `--corex-*` properties (#607).
+- Verified: Pest unit 3,621 green (the whole suite) and integration 206 green (Assistant, Forms, Config);
+  Jest 17; Playwright 3 (Chromium, with an axe WCAG 2.2 AA scan of the open chat); by hand on a scratch WordPress (port 8929, database
+  `corex_wassistant`, in this branch's worktree) with a stubbed model: off by default, lazy chat, chips,
+  fallback on a 429, the callback stored, RTL, phone width, a key saved with autoload off.
+- Not done: no real model was asked (no key in this session); not run on a live site.
+- Owed: the next slice, Perego's revision 2 (paid OpenAI and Claude fallbacks, owner-set order and switches,
+  booking time slots, channel-led required fields, limits and branding on the screen; spec 129 T014 to T018).
+  Perego keeps its own copy until that lands.
+- Next: the owner's word on merging this slice.
+
 **Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
 #447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
 owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar

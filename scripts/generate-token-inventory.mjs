@@ -363,6 +363,40 @@ const directionContext = ( snippets ) => {
 	return 'not-applicable';
 };
 
+/**
+ * The package a file belongs to: `addons/corex-assistant`, `plugins/corex-core`, `theme`.
+ *
+ * @param {string} file a tracked path
+ * @return {string} its package
+ */
+const packageOf = ( file ) => file.split( '/' ).slice( 0, file.startsWith( 'theme/' ) ? 1 : 2 ).join( '/' );
+
+/**
+ * Component properties (spec 129): a `--corex-*` custom property a package's own stylesheet declares,
+ * such as `--corex-assistant-accent: var(--wp--preset--color--primary, LinkText)`. Its value is read
+ * from theme tokens there, once, so a site can restyle the component by setting that one property.
+ * A reference to it from the same package resolves; from any other package it does not.
+ *
+ * @param {string} root the repository
+ * @return {Map<string, string>} `package property` => the stylesheet that declares it
+ */
+const componentProperties = ( root ) => {
+	const declared = new Map();
+	for ( const file of trackedFiles( root ) ) {
+		if ( ! /\.s?css$/.test( file ) || file.includes( '/corex-admin-' ) ) {
+			continue;
+		}
+		const pattern = /^\s*(--corex-[a-zA-Z0-9_-]+)\s*:/gm;
+		const content = readFileSync( path.join( root, file ), 'utf8' );
+		let match;
+		while ( ( match = pattern.exec( content ) ) ) {
+			declared.set( `${ packageOf( file ) } ${ match[ 1 ] }`, file );
+		}
+	}
+
+	return declared;
+};
+
 const collectConsumers = ( root, definitions ) => {
 	const canonical = new Map(
 		definitions.map( ( definition ) => [
@@ -370,6 +404,7 @@ const collectConsumers = ( root, definitions ) => {
 			definition,
 		] )
 	);
+	const components = componentProperties( root );
 	const consumers = [];
 
 	for ( const file of trackedFiles( root ) ) {
@@ -393,15 +428,24 @@ const collectConsumers = ( root, definitions ) => {
 		for ( const [ property, group ] of grouped ) {
 			const definition = canonical.get( property );
 			const isAdminToken = property.startsWith( '--corex-admin-' );
-			const target = isAdminToken
-				? 'scoped --corex-admin-* adapter'
-				: definition?.replacement_id || definition?.id || null;
+			const component = definition
+				? undefined
+				: components.get( `${ packageOf( file ) } ${ property }` );
+			let target = definition?.replacement_id || definition?.id || null;
+			if ( isAdminToken ) {
+				target = 'scoped --corex-admin-* adapter';
+			} else if ( component ) {
+				target = `component property declared in ${ component }`;
+			}
 			const snippets = group.snippets.join( ' | ' );
 			// The scoped --corex-admin-* adapter is the documented admin-token allowance
 			// (spec 057 US4); consuming it from a CoreX admin screen is permitted.
-			const resolution = isAdminToken
-				? 'raw-allowance'
-				: consumerResolution( definition );
+			let resolution = consumerResolution( definition );
+			if ( isAdminToken ) {
+				resolution = 'raw-allowance';
+			} else if ( component ) {
+				resolution = 'valid';
+			}
 			consumers.push( {
 				path: file,
 				selector_or_context: `lines ${ group.lines.join(

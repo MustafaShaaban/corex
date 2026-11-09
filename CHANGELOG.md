@@ -7,9 +7,33 @@ All notable changes to Corex are documented here. The format follows
 ## [Unreleased]
 
 One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439), and
-Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447).
+Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447), and the
+CoreX Assistant add-on (spec 129, DECISIONS #600 to #608).
 
 ### Added
+
+- **Corex Assistant, a new optional add-on** (spec 129, #600). A round chat button on every public page
+  answers visitors from the site's own content, through the free tiers of Google Gemini, Groq, OpenRouter
+  and Mistral asked in turn; when one service's free limit is spent, the next answers, and a key or model
+  error rests a service an hour while a refused message rests none. It says it is an AI that answers from
+  the site only and can be wrong, and names no AI company to visitors. Replies are short, in the language
+  of the visitor's last message (or the one they ask for), and link only to pages the knowledge names;
+  email addresses and international numbers are removed from them. When it cannot help, or a visitor asks for a
+  person, a callback form opens inside the chat and arrives in Submissions with the team notified (with
+  or without an email). The chat code and styles load on first use only; right to left, keyboard,
+  reduced motion and WCAG 2.2 AA (axe) are covered. Visitors are limited to one question at a time, 20
+  an hour and 60 a day (an IPv6 network counts as one), the site to 600 a day by default. Off until
+  activated, switched on and keyed: nothing changes on any site by updating.
+- **Settings → Assistant** (#601): the switch, the assistant's name and image, the daily cap, a key and
+  a model for each service (keys write-only, removable, lockable from `.env` as `ASSISTANT_<SERVICE>_KEY`),
+  each service's state, today's count and **Check services**.
+- **Five filters for a site's own assistant** (#603, #604, #606, #608): `corex_assistant_knowledge_provider`
+  (return a `Corex\Assistant\Knowledge\KnowledgeProvider` with the site's own words and pages),
+  `corex_assistant_strings` (every visitor string, per language), `corex_assistant_voice` (rules for how
+  replies read, per language), `corex_assistant_phone_countries`
+  (the callback form's default and first countries) and `corex_assistant_callback_listeners` (the
+  callback form's listeners, for a site that sends its own designed email). The colours follow the theme's tokens through
+  `--corex-assistant-*` properties a theme can set (#607). Guide: `/guides/assistant/`.
 
 - **One launch checklist** (spec 118, revamp release R3.2). The Overview, every tab of Operations &
   Security, the readiness notifications, the CoreX widget on the WordPress Dashboard and the Setup
@@ -67,6 +91,11 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
 
 ### Changed
 
+- **A secret saved on Settings is no longer autoloaded** (spec 129, #602): the captcha secret, the
+  PageSpeed and Cloudflare keys and the assistant's keys are no longer loaded with every request. A
+  secret already stored keeps its row as it is until its value next changes.
+- **The token inventory accepts a component's own properties** (#607): a `--corex-*` property a
+  package's stylesheet declares resolves for that package only.
 - **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
   not load" with "Try again", never a 0 or another cause, and an administrator reads a reference that
   is also in the PHP error log. The rest of the page still renders.
@@ -133,6 +162,31 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
   only `APP_NAME` and `APP_ENV`, neither a Settings field). A client repository that carries copies
   of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
   `tests/Unit/Media/MediaRegenerationJobTest.php`.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**Spec 129, Corex Assistant:**
+
+- **Every site**: nothing shows and nothing is sent anywhere until an owner activates Corex Assistant on
+  Add-ons, turns on **Show the assistant** and saves a key. Until then its Settings page is read-only with
+  a link to Add-ons. Secrets saved on Settings from now on are stored with autoload off (#602); nothing is
+  rewritten by the update; a stored secret moves to autoload off when its value next changes. A client repository that carries copies of CoreX's tests takes the updated
+  `tests/Unit/Config/SettingsPagesUnitTest.php` and `SettingsTabsTest.php` (the Assistant page sits after
+  Media) and the regenerated `specs/057-brand-tokens-logo-system/inventories/*.json`.
+- **Perego** runs its own copy (its spec 058, released 2026-11-09 and switched off). **It should not switch
+  yet**: its revision 2 (paid OpenAI and Claude fallbacks, the owner ordering and switching services, booking
+  time slots, channel-led required fields, limits and branding on the screen) is not in this add-on; it is
+  the next slice of spec 129. When that lands, it adopts the add-on this way: activate it and paste the same
+  keys on Settings → Assistant (or `ASSISTANT_*_KEY` in `.env`, deleting any `PEREGO_AI_*` constants); return
+  its `AgentProfile` knowledge from a `KnowledgeProvider` on `corex_assistant_knowledge_provider`; move its
+  `AssistantContent` copy into `corex_assistant_strings`, its Gulf Arabic rules into `corex_assistant_voice`,
+  its mark into **Assistant image**, its Gulf-first
+  country order into `corex_assistant_phone_countries` and its colours into `--corex-assistant-*`; then
+  remove its own assistant route (`perego/v1/assistant`), block, settings screen, callback form and the
+  callback branch of its mail listener, in one change, so two buttons never show. Its stored callbacks
+  stay in the inbox under `perego-assistant-callback`. To keep its branded team email for callbacks, it
+  returns its own mail listener from `corex_assistant_callback_listeners` (and matches the new slug
+  `corex-assistant-callback` in it); otherwise the team gets CoreX's form notification.
+- **Muva**: no change unless its owner turns the assistant on.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 
 ## [0.48.1] - 2026-10-25

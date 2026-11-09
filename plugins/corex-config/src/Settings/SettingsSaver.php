@@ -153,7 +153,7 @@ final class SettingsSaver
         }
 
         if (! $this->sanitizer->shouldPreserve($value, $type)) {
-            $this->store->save($key, $value);
+            $this->store->save($key, $value, $type === 'password');
         }
 
         return null;

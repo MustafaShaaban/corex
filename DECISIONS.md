@@ -19128,3 +19128,156 @@ package" to the whole installation.
 **Not chosen.** *A client written again for Node*: two clients of one protocol drift apart. *Printing the recovery
 link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
 only when it is needed.
+
+## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
+
+**Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions
+(124 to 128 and the open pull requests), which had not yet numbered their decisions when this was written.
+
+**Decided.** The owner decided (relayed from the Perego session, 2026-11-09) that the support-style assistant
+Perego built inside its client plugin is a CoreX feature. It becomes `addons/corex-assistant` (namespace
+`Corex\Assistant`), off until activated, then off until switched on and keyed. Perego's behaviour and the four
+fixes of its security review are kept as they were approved: a refused request rests no service; one question
+at a time per visitor through an `add_option()` lock; an IPv6 visitor counts by its /64; a body over 16 KB is
+refused unread and only `user` and `assistant` messages are taken. What was Perego's own becomes a CoreX seam
+(#601 to #607).
+
+**Not chosen.** *Keeping it in Perego and copying it to the next client*: every copy would drift, and none would
+be under CoreX's tests and guards. *Part of corex-forms*: the chat is not a form, and most sites will not want it.
+
+## #601 -- The assistant's settings are a page of the Settings screen, read through the Config engine
+
+**Date:** 2026-11-09. **Spec:** 129, FR-006, FR-014.
+
+**Decided.** Perego drew its own screen under WordPress's Settings menu with `register_setting()`, and let a
+`wp-config.php` constant win over each key. In CoreX the fields are declared in `SettingsRegistry` (section
+`assistant`) on a Settings page of their own (`SettingsPages`, page `assistant`, tied to the add-on like Captcha
+and Media), so they get the save bar, write-only password fields with Remove, read-only display while the add-on
+is off, and locks from the site's `.env` (`ASSISTANT_GROQ_KEY`) in place of constants. The add-on reads them
+through `ConfigInterface`. Its status table, today's count and "Check services" are drawn under the section by
+the `corex_settings_section_extra` filter. "Check services" is a button calling `POST corex/v1/assistant/check`
+(the `auth:manage_options` and `nonce` middleware), not a second form: the Settings page is one form, and its
+script takes every submit of it.
+
+**Not chosen.** *Perego's own screen*: a second way to edit settings, with none of the Settings screen's
+behaviour. *`wp-config.php` constants*: CoreX already has one place a host locks a value, the `.env`.
+
+## #602 -- A password-typed Settings value is saved with autoload off
+
+**Date:** 2026-11-09. **Spec:** 129, FR-006, User Story 3 scenario 6.
+
+**Decided.** `SettingsStore::save()` takes `$secret`; `SettingsSaver` passes it for a `password` field, and the
+option is written with autoload off. This applies to every secret on the screen (the captcha secret, the
+PageSpeed and Cloudflare keys, the assistant's keys), from the next time each is saved; a secret already stored
+keeps its row until its value next changes (`update_option()` writes nothing for an unchanged value). A key then
+is not loaded with every request; while the assistant is on, a public page still reads the assistant's keys to
+decide whether to show the button. Every other setting is saved as before, its autoload left to WordPress.
+
+## #603 -- Knowledge comes from a `KnowledgeProvider`; CoreX's own reads the site's pages
+
+**Date:** 2026-11-09. **Spec:** 129, FR-012, User Story 6.
+
+**Decided.** Perego's knowledge was its `AgentProfile` (the lines its `llms.txt` is written from) and its service
+pages, built per language with Polylang. CoreX has no profile of a site and no language service, so the knowledge
+is a contract, `Corex\Assistant\Knowledge\KnowledgeProvider::for(string $locale): Knowledge`, which a site returns
+from the `corex_assistant_knowledge_provider` filter. CoreX's default, `SiteKnowledge`, is the site's name,
+tagline and up to 40 published pages with the first 400 characters of their text, at most 24 KB, kept six hours
+per language. Saving a page moves its cache to a new generation number instead of deleting transients by a
+`LIKE` query. Only the pages a `Knowledge` names can become link chips.
+
+**Not chosen.** *A search index or embeddings*: Perego's profile was 17 KB, small enough to send whole, and a
+site's knowledge should be its own words, not a crawl. *Sorting the default's pages by language*: that needs a
+language plugin behind an interface CoreX does not have yet; the model answers in the visitor's language.
+
+## #604 -- Visitor strings are CoreX's English, replaced per language by a filter; no vendor name anywhere
+
+**Date:** 2026-11-09. **Spec:** 129, FR-013.
+
+**Decided.** Every string has an English default in the `corex` domain, named after **Assistant name** from
+Settings (else "<site> Assistant"), and the `corex_assistant_strings` filter (`$strings`, `$locale`) replaces any
+of them. The filter cannot add keys or change a string into a list. Perego's Arabic and English copy moves into
+that filter on its side. A unit test fails if a default names a model or its maker; the instructions tell the
+model never to name the company or model behind it, and OpenRouter's `X-Title` is the site's name.
+
+## #605 -- The chat route declares its middleware; the limits are a middleware of the add-on
+
+**Date:** 2026-11-09. **Spec:** 129, FR-007, FR-008.
+
+**Decided.** Perego's controller checked the nonce, the lock and the counts by hand. In CoreX the route runs the
+`Pipeline` with the `nonce` middleware and `AssistantLimitsMiddleware` (the lock, then the hourly, daily and
+site-wide counts; released in `finally`), with the salted visitor key as the request's throttle key, and carries
+`PublicSubmission::MARKER` so Maintenance closes it. The controller only refuses an oversized body, reads the
+conversation's shape and maps the outcome: a limit is a 200 "busy" answer, so the chat offers the team. The
+site-wide cap is the `assistant.daily_cap` setting (600 by default) in place of Perego's constant.
+
+## #606 -- The hand-off is a CoreX form with the engine's own listeners; country names come from the browser
+
+**Date:** 2026-11-09. **Spec:** 129, FR-011, User Story 2.
+
+**Decided.** Perego's callback form stored only and was mailed by Perego's own listener and renderer, with a
+`perego_phone` rule. The CoreX form `corex-assistant-callback` keeps the default listeners: storage, and
+`SendEmailListener`, which tells the team whether or not the visitor gave an email (Reply-To only when they did).
+The phone is checked by the engine's `phone` rule. It is registered only while corex-forms is active; without it
+the chat offers no form. Perego fetched its country list (with Arabic names) from a GET route on the chat
+endpoint; here the ISO-to-dial-code and timezone-to-country tables ship in the lazily loaded chat code, the names
+come from `Intl.DisplayNames` in the page's language, and a site sets its default country and first countries
+with `corex_assistant_phone_countries`. No route, and no country name to translate. A site that sends its own
+designed emails (Perego) swaps the notification for its own listener with `corex_assistant_callback_listeners`,
+because the forms engine runs only the listeners a form declares.
+
+## #607 -- A component may read theme tokens into `--corex-<component>-*` properties of its own
+
+**Date:** 2026-11-09. **Spec:** 129, FR-015.
+
+**Decided.** The chat reads the theme's tokens once, into `--corex-assistant-*` properties on `.corex-assistant`
+(with system colours such as `Canvas` and `LinkText` as the fallback), and its rules read those. A theme whose
+colours are named differently (Perego's) restyles the chat by setting a few properties. The token inventory
+(`scripts/generate-token-inventory.mjs`) resolves a `--corex-*` reference when a stylesheet of the same package
+declares it; from any other package it stays undefined, so the contract still catches a property nobody defines.
+The `--corex-admin-*` adapter keeps its own rule.
+
+**Not chosen.** *Theme tokens directly in every rule*: a client theme without CoreX's slugs could not restyle the
+chat without overriding every rule.
+
+**Also fixed while porting.** Perego's reply shaper turned a colon at the end of a line into a full stop with
+`(:)\s*$`, and `\s` took the line breaks after it, joining two paragraphs. It is `:[ \t]*$` here; Perego's copy
+still has it.
+
+## #608 -- What the guards found, and Perego's revision 2 split into a next slice
+
+**Date:** 2026-11-09. **Spec:** 129.
+
+**Decided.**
+- **Perego's revision 2 is the next slice.** Perego's assistant gained a revision 2 the same day, while this slice
+  was built (`36950af8`, `0bbc9a28` on `feature/058-perego-assistant`). Its generic fixes are taken here: the
+  reply's language decided from the visitor's own words (an English question on an Arabic page was answered in
+  Arabic), reading misspelled and mixed-language questions generously, recommending a service from a stated goal,
+  dropping the colon left before a removed address, and a service's rest ending when it answers. Its Gulf Arabic
+  rules become a site's voice through the new `corex_assistant_voice` filter. The rest (paid OpenAI and Claude
+  fallbacks, owner-set order and switches, booking time slots, channel-led required fields, limits and branding on
+  the screen) is owed to a second slice; Perego keeps its copy until then.
+- **The visitor lock is claimed in the database** (`INSERT IGNORE`, and a takeover that names the old time), not
+  with `add_option()`, which upserts and would hand two racing requests the same lock. A request releases only
+  the lock it holds, by its time, so one that ran past the 45 seconds cannot release the lock a later request took
+  over. Perego's copy has the same race.
+- **A message a service will not answer rests no service**: a 200 whose `finish_reason` is `content_filter` or
+  `length` is a refusal, like a 400; only an unreadable answer is the service's fault. A 400 or 422 that names the
+  key or a missing model is a configuration error and rests the service an hour (Gemini answers a wrong key with
+  a 400).
+- **An IPv4 visitor reported as `::ffff:a.b.c.d`** is that IPv4 visitor, not the /64 every such address shares.
+- **The browser sends a bounded history** (the newest 12 messages, each cut to 600 characters, fewer while the
+  body would pass 15,000 bytes): a long chat would otherwise pass the server's 16,000-byte limit and be refused on
+  every question after.
+- **Replies lose email addresses and international phone numbers** as well as off-site links; a bare domain written
+  as a word is kept, as it cannot be told from a product name and is not a link.
+- **"Asked for a language" means a request**: a whole verb of speaking or writing followed by "in English" or
+  "بالعربي". Perego's looser pattern took "Can you write Arabic content?" as a request for Arabic replies, and
+  "مورد" (which contains "رد") as a verb.
+- **The browser cuts a message by character**, as the server's `mb_substr` does, so an emoji is never cut in half
+  (a half character broke the request and jammed the chat).
+- **A visitor's text keeps its `<`**: tags were stripped from it, which cut "price < 500" short; only control
+  characters are removed, since every reply is shown as text.
+
+**Not chosen.** *Keying the limits by a browser id as well as the address*, so visitors behind one office or
+carrier address do not share a lock and an hourly count: a browser id is the visitor's to change, and Perego's
+approved design counts by address. Recorded as a trade-off in the guide.

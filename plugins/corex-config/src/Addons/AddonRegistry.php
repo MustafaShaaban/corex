@@ -92,6 +92,16 @@ final class AddonRegistry
                 tier: AddonTier::Optional,
             ),
             $this->addon(
+                'corex-assistant',
+                'Corex Assistant',
+                summary: 'A site chat that answers from your own pages and hands visitors to your team.',
+                description: 'A chat button on every public page. It answers from the site\'s own content through free AI model tiers asked in turn, says it is an AI that can be wrong, and opens a callback form inside the chat when it cannot help. Off until switched on and given a key in Settings → Assistant.',
+                provides: ['chat button and lazily loaded chat', 'corex/v1/assistant REST', 'callback form in the Submissions inbox', 'KnowledgeProvider contract'],
+                needsKeys: ['A free API key from at least one of Google Gemini, Groq, OpenRouter or Mistral'],
+                docsUrl: '/guides/assistant/',
+                tier: AddonTier::Optional,
+            ),
+            $this->addon(
                 'corex-careers',
                 'Corex Careers',
                 summary: 'Job listings.',

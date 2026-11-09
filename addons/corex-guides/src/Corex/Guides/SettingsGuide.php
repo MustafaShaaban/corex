@@ -50,6 +50,7 @@ final class SettingsGuide
             ->withTopic(self::mail())
             ->withTopic(self::formsAndCaptcha())
             ->withTopic(self::media())
+            ->withTopic(self::assistant())
             ->withTopic(self::insights())
             ->withTopic(self::dashboardAndGuides())
             ->withTopic(self::advanced());
@@ -63,7 +64,7 @@ final class SettingsGuide
             __('Three behaviours that are not obvious from looking at the screen.', 'corex'),
             [
                 new GuideStep(
-                    __('Choose a page under Settings in the CoreX menu: General and appearance, Email, Captcha, Media, Insights, Guides, Advanced.', 'corex'),
+                    __('Choose a page under Settings in the CoreX menu: General and appearance, Email, Captcha, Media, Assistant, Insights, Guides, Advanced.', 'corex'),
                     __('Each page saves on its own. The bar at the bottom says "Unsaved changes" once you edit something; Discard puts the page back as it was, and leaving the page with unsaved changes asks first.', 'corex'),
                     screenshot: new GuideScreenshot('settings', __('A CoreX Settings page, with the pages listed under Settings and the save bar at the bottom.', 'corex')),
                 ),
@@ -208,6 +209,38 @@ final class SettingsGuide
                 new GuideStep(
                     __('Allowed hostnames — shown only for reCAPTCHA.', 'corex'),
                     __('Comma-separated exact hostnames a verification may come from, such as example.com, staging.example.com. Blank means this site host only.', 'corex'),
+                ),
+            ],
+        );
+    }
+
+    private static function assistant(): GuideTopic
+    {
+        return GuideTopic::for(
+            'assistant',
+            __('Assistant: the chat that answers from your own pages', 'corex'),
+            __('These settings belong to the Corex Assistant add-on (spec 129). While it is off they are shown read-only, with a link to it on the Add-ons screen.', 'corex'),
+            [
+                new GuideStep(
+                    __('Show the assistant: the main switch.', 'corex'),
+                    __('Turned on, a chat button appears on every public page once at least one service below has a key. Off, nothing shows anywhere.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Assistant name and Assistant image: what the chat is called and the picture on its button.', 'corex'),
+                    __('Leave the name blank for your site\'s name followed by "Assistant". The image shows at about 32 pixels: a square one with a transparent background works best.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Google Gemini API key, Groq API key, OpenRouter API key and Mistral API key: one is enough.', 'corex'),
+                    __('Each comes free from the service\'s own site, linked under its field. The assistant asks them in this order and moves to the next while one\'s free limit is spent. A saved key is never shown again; Remove takes it away.', 'corex'),
+                    warning: __('Free tiers of some services may use what is sent to them to improve their models. The chat sends only the conversation and your public pages, and tells visitors not to share sensitive information.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Google Gemini model, Groq model, OpenRouter model and Mistral model: usually blank.', 'corex'),
+                    __('Blank uses the model CoreX ships with. Change one only when its service retires that model; "Check services" under the fields shows which services answer.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Questions a day, whole site: the most the assistant answers in a day.', 'corex'),
+                    __('Defaults to 600. Past it, and past a visitor\'s own 20 an hour or 60 a day, the chat offers its callback form instead of answering. Callbacks arrive in Submissions like any form.', 'corex'),
                 ),
             ],
         );
