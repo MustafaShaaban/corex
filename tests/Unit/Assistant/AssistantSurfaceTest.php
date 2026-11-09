@@ -15,14 +15,17 @@ use Brain\Monkey\Functions;
 use Corex\Assistant\Admin\AssistantPanel;
 use Corex\Assistant\AssistantService;
 use Corex\Assistant\AssistantSettings;
-use Corex\Assistant\Chain\ChatRouter;
+use Corex\Assistant\Booking\BookingHours;
+use Corex\Assistant\Booking\SlotsController;
 use Corex\Assistant\Chain\Cooldowns;
 use Corex\Assistant\Chain\ModelClient;
+use Corex\Assistant\Chain\Provider;
 use Corex\Assistant\Forms\AssistantCallbackForm;
 use Corex\Assistant\Front\AssistantButton;
 use Corex\Assistant\Front\AssistantStrings;
 use Corex\Assistant\Knowledge\Knowledge;
 use Corex\Assistant\Knowledge\KnowledgeProvider;
+use Corex\Assistant\Limits\PaidAnswers;
 use Corex\Assistant\Limits\VisitorLimits;
 use Corex\Config\Settings\SettingsPages;
 use Corex\Config\Settings\SettingsRegistry;
@@ -58,7 +61,7 @@ function assistantService(?string $answer, array $values = ['assistant.groq.key'
 
     return new AssistantService(
         $settings,
-        new ChatRouter($client, AssistantFixtures::cooldowns($cooldowns), static fn (): int => 0),
+        AssistantFixtures::router($client, $cooldowns, static fn (): int => 0),
         $knowledge,
         new AssistantStrings($settings, static fn (): string => 'Example Studio'),
         'example.com',
@@ -185,15 +188,50 @@ it('shows only on public pages when the assistant is live', function (bool $admi
     'off' => [false, ['assistant.groq.key' => 'k'], false],
 ]);
 
+/** The callback form over the given hours, read in plain English. */
+function assistantCallbackForm(?BookingHours $hours = null): AssistantCallbackForm
+{
+    $hours ??= BookingHours::fromSettings(['enabled' => true, 'timezone' => 'Africa/Cairo']);
+
+    return new AssistantCallbackForm(
+        static fn (): BookingHours => $hours,
+        \Closure::fromCallable([BookingHours::class, 'plainFormat']),
+    );
+}
+
+/**
+ * The panel over settings, cooldowns as stored, and counts that read 4 everywhere.
+ *
+ * @param array<string, mixed> $values
+ * @param array<string, mixed> $store
+ */
+function assistantPanel(array $values, array $store): AssistantPanel
+{
+    $settings = AssistantFixtures::settings($values);
+    $count = static fn (): mixed => 4;
+    $nothing = static function (): void {
+    };
+    $at = static fn (): int => 1_000;
+
+    return new AssistantPanel(
+        $settings,
+        new Cooldowns(static fn (): array => $store, $nothing, $at),
+        new VisitorLimits($count, $nothing, $at, static fn (): array => $settings->limits()),
+        new PaidAnswers($count, $nothing, $at, static fn (): int => $settings->paidCap()),
+        new SlotsController($settings, static fn (): string => 'UTC', $at),
+        static fn (int $moment): string => 'at ' . $moment,
+    );
+}
+
 it('asks the hand-off’s questions as a CoreX form, with the engine’s own listeners', function () {
-    $form = new AssistantCallbackForm();
+    $form = assistantCallbackForm();
     $fields = $form->fields();
 
     expect($form->slug)->toBe('corex-assistant-callback')
-        ->and(array_keys($fields))->toBe(['name', 'phone', 'email', 'channel', 'time', 'transcript', 'page'])
+        ->and(array_keys($fields))->toBe(['name', 'phone', 'email', 'channel', 'time', 'slot', 'timezone', 'transcript', 'page'])
         ->and($fields['name']['rules'])->toContain('required')
-        ->and($fields['phone']['rules'])->toBe(['required', 'phone'])
-        ->and($fields['email']['rules'])->not->toContain('required')
+        ->and($fields['phone']['rules'])->toBe(['required_if:channel,call,whatsapp', 'phone'])
+        ->and($fields['email']['rules'])->toBe(['required_if:channel,email', 'email', 'max:160'])
         ->and(array_keys($fields['channel']['options']))->toBe(['call', 'whatsapp', 'email'])
         ->and($form->listeners())->toBe([StoreSubmissionListener::class, SendEmailListener::class]);
 });
@@ -203,49 +241,44 @@ it('lets a site send its own email for a callback in place of CoreX’s, keeping
         static fn (array $listeners): array => [StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail', 42],
     );
 
-    expect((new AssistantCallbackForm())->listeners())->toBe([StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail']);
+    expect(assistantCallbackForm()->listeners())->toBe([StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail']);
 });
 
-it('shows each service’s state and today’s count under the Settings section, and only that section', function () {
-    $store = ['groq' => 2_000];
-    $counts = [];
-    $panel = new AssistantPanel(
-        AssistantFixtures::settings(['assistant.groq.key' => 'k', 'assistant.mistral.key' => 'k']),
-        new Cooldowns(static fn (): array => $store, static function (): void {
-        }, static fn (): int => 1_000),
-        new VisitorLimits(static function (string $key) use (&$counts): mixed {
-            return $counts[$key] ?? 4;
-        }, static function (): void {
-        }, static fn (): int => 1_000, static fn (): int => 50),
-        static fn (int $at): string => 'at ' . $at,
-    );
-
-    $html = $panel->extra('before', 'assistant');
+it('shows each service’s state and today’s counts under Services, and only there', function () {
+    $store = ['groq' => ['until' => 2_000, 'kind' => 'limit', 'status' => 429, 'detail' => 'Rate limit reached', 'at' => 900]];
+    $html = assistantPanel(['assistant.groq.key' => 'k', 'assistant.mistral.key' => 'k'], $store)->extra('before', 'assistant_services');
 
     expect($html)->toStartWith('before')
         ->toContain('Resting until at 2000')
+        ->toContain('Last failed at 900: limit 429. Rate limit reached')
         ->toContain('No key: skipped')
         ->toContain('Ready')
-        ->toContain('4 of 50')
+        ->toContain('4 of 600 questions for the whole site, 4 of 50 paid answers')
         ->toContain('data-corex-assistant-check ')
-        ->and($panel->extra('before', 'captcha'))->toBe('before');
+        ->and(assistantPanel([], $store)->extra('before', 'captcha'))->toBe('before');
 });
 
 it('declares the Assistant page and its fields on the Settings screen, keys write-only', function () {
     $registry = new SettingsRegistry();
-    $fields = $registry->sections()['assistant']['fields'];
+    $sections = $registry->sections();
+    $fields = $sections['assistant']['fields'];
+    $services = $sections['assistant_services']['fields'];
     $page = (new SettingsPages())->find('assistant');
+    $ids = array_keys(Provider::CATALOGUE);
 
     expect($page)->not->toBeNull()
-        ->and($page->sections)->toBe(['assistant'])
+        ->and($page->sections)->toBe(['assistant', 'assistant_services', 'assistant_booking', 'assistant_limits'])
         ->and($page->addon->pluginFile)->toBe('corex-assistant/corex-assistant.php')
         ->and($fields['assistant.enabled']['type'])->toBe('checkbox')
         ->and($fields['assistant.mark']['type'])->toBe('media')
-        ->and($registry->secretKeys())->toContain('assistant.gemini.key', 'assistant.groq.key', 'assistant.openrouter.key', 'assistant.mistral.key')
-        ->and($fields)->toHaveKeys(array_map(
-            static fn (string $id): string => AssistantSettings::modelField($id),
-            array_keys(\Corex\Assistant\Chain\Provider::CATALOGUE),
-        ));
+        ->and($registry->secretKeys())->toContain(...array_map([AssistantSettings::class, 'keyField'], $ids))
+        ->and($services['assistant.order']['type'])->toBe('order')
+        ->and(array_keys($services['assistant.order']['options']))->toBe($ids)
+        ->and($services)->toHaveKeys(array_map([AssistantSettings::class, 'modelField'], $ids))
+        ->and($services)->toHaveKeys(array_map([AssistantSettings::class, 'switchField'], $ids))
+        ->and($services['assistant.paid_cap']['type'])->toBe('number')
+        ->and($sections['assistant_limits']['fields']['assistant.daily_cap']['type'])->toBe('number')
+        ->and($sections['assistant_booking']['fields']['assistant.booking.days']['options'])->toHaveKeys(array_keys(BookingHours::WEEKS));
 });
 
 it('saves a secret with autoload off, and leaves every other setting’s autoload to WordPress', function () {

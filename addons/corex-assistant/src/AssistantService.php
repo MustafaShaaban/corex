@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Assistant\Chain\ChatRouter;
 use Corex\Assistant\Front\AssistantStrings;
+use Corex\Assistant\Knowledge\Knowledge;
 use Corex\Assistant\Knowledge\KnowledgeProvider;
 use Corex\Assistant\Reply\Instructions;
 use Corex\Assistant\Reply\ReplyShaper;
@@ -45,15 +46,8 @@ final class AssistantService
             return self::busy();
         }
 
-        // The reply's language is the visitor's, not the page's, and the knowledge follows it, so its
-        // pages and links are in the language the visitor reads.
-        $replyIn = Instructions::replyLanguage($messages, $locale);
-        $knowledge = $this->knowledge->for($replyIn);
-        $name = (string) ($this->strings->for($replyIn)['name'] ?? '');
-        $text = $this->router->answer($chain, [
-            ['role' => 'system', 'content' => Instructions::system($knowledge, $name, $replyIn, $this->voice($replyIn))],
-            ...$messages,
-        ]);
+        [$knowledge, $conversation] = $this->prepared($messages, $locale);
+        $text = $this->router->answer($chain, $conversation);
         if ($text === null) {
             return self::busy();
         }
@@ -61,6 +55,38 @@ final class AssistantService
         $shaped = ReplyShaper::shape($text, $this->siteHost, $knowledge->links());
 
         return $shaped['reply'] === '' ? self::busy() : $shaped + ['busy' => false];
+    }
+
+    /**
+     * The conversation as a service is asked it: the standing instructions with the site's knowledge
+     * first. "Check services" asks the same, so a service that fails only on a request of real size
+     * fails there too (FR-026).
+     *
+     * @param list<array{role: string, content: string}> $messages
+     * @return list<array{role: string, content: string}>
+     */
+    public function conversation(array $messages, string $locale): array
+    {
+        return $this->prepared($messages, $locale)[1];
+    }
+
+    /**
+     * The reply's language is the visitor's, not the page's, and the knowledge follows it, so its
+     * pages and links are in the language the visitor reads.
+     *
+     * @param list<array{role: string, content: string}> $messages
+     * @return array{0: Knowledge, 1: list<array{role: string, content: string}>}
+     */
+    private function prepared(array $messages, string $locale): array
+    {
+        $replyIn = Instructions::replyLanguage($messages, $locale);
+        $knowledge = $this->knowledge->for($replyIn);
+        $name = (string) ($this->strings->for($replyIn)['name'] ?? '');
+
+        return [$knowledge, [
+            ['role' => 'system', 'content' => Instructions::system($knowledge, $name, $replyIn, $this->voice($replyIn))],
+            ...$messages,
+        ]];
     }
 
     /**

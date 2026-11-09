@@ -13,6 +13,8 @@ defined('ABSPATH') || exit;
 use Corex\Assistant\Admin\AssistantPanel;
 use Corex\Assistant\Admin\ServiceCheck;
 use Corex\Assistant\Admin\ServiceCheckController;
+use Corex\Assistant\Booking\BookingHours;
+use Corex\Assistant\Booking\SlotsController;
 use Corex\Assistant\Chain\ChatRouter;
 use Corex\Assistant\Chain\Cooldowns;
 use Corex\Assistant\Chain\ModelClient;
@@ -23,6 +25,7 @@ use Corex\Assistant\Http\AssistantController;
 use Corex\Assistant\Http\AssistantLimitsMiddleware;
 use Corex\Assistant\Knowledge\KnowledgeProvider;
 use Corex\Assistant\Knowledge\SiteKnowledge;
+use Corex\Assistant\Limits\PaidAnswers;
 use Corex\Assistant\Limits\VisitorLimits;
 use Corex\Assistant\Limits\VisitorLock;
 use Corex\Blocks\BlockMap;
@@ -36,8 +39,9 @@ use Corex\Http\Middleware\Pipeline;
 use Corex\Support\Config\ConfigInterface;
 
 /**
- * Wires the CoreX Assistant (spec 129): the chat route and its limits, the button in the footer, the
- * hand-off form, and the panel under Settings → Assistant.
+ * Wires the CoreX Assistant (spec 129): the chat route and its limits, the paid-answer count, the
+ * button in the footer, the hand-off form and the times it offers, and the panel under Settings →
+ * Assistant.
  *
  * The knowledge is asked of the `corex_assistant_knowledge_provider` filter when the chat first needs
  * it, so a site plugin that adds the filter on `init` or earlier is heard.
@@ -50,9 +54,26 @@ final class AssistantServiceProvider extends ServiceProvider
         $this->container->singleton(Cooldowns::class, static fn (): Cooldowns => Cooldowns::fromWordPress());
         $this->container->singleton(ModelClient::class, static fn (): ModelClient => ModelClient::fromWordPress());
         $this->container->singleton(VisitorLock::class, static fn (): VisitorLock => VisitorLock::fromWordPress());
+        $this->container->singleton(PaidAnswers::class, static function (ContainerInterface $c): PaidAnswers {
+            $settings = $c->make(AssistantSettings::class);
+
+            return new PaidAnswers(
+                static fn (string $key): mixed => get_transient($key),
+                static function (string $key, int $value, int $seconds): void {
+                    set_transient($key, $value, $seconds);
+                },
+                static fn (): int => time(),
+                static fn (): int => $settings->paidCap(),
+            );
+        });
         $this->container->singleton(
             ChatRouter::class,
-            static fn (ContainerInterface $c): ChatRouter => new ChatRouter($c->make(ModelClient::class), $c->make(Cooldowns::class), static fn (): int => time()),
+            static fn (ContainerInterface $c): ChatRouter => new ChatRouter(
+                $c->make(ModelClient::class),
+                $c->make(Cooldowns::class),
+                static fn (): int => time(),
+                $c->make(PaidAnswers::class),
+            ),
         );
         $this->container->singleton(VisitorLimits::class, static function (ContainerInterface $c): VisitorLimits {
             $settings = $c->make(AssistantSettings::class);
@@ -63,9 +84,14 @@ final class AssistantServiceProvider extends ServiceProvider
                     set_transient($key, $value, $seconds);
                 },
                 static fn (): int => time(),
-                static fn (): int => $settings->dailyCap(),
+                static fn (): array => $settings->limits(),
             );
         });
+        $this->container->singleton(SlotsController::class, static fn (ContainerInterface $c): SlotsController => new SlotsController(
+            $c->make(AssistantSettings::class),
+            static fn (): string => (string) wp_timezone_string(),
+            static fn (): int => time(),
+        ));
         $this->container->singleton(
             AssistantLimitsMiddleware::class,
             static fn (ContainerInterface $c): AssistantLimitsMiddleware => new AssistantLimitsMiddleware($c->make(VisitorLock::class), $c->make(VisitorLimits::class)),
@@ -103,6 +129,10 @@ final class AssistantServiceProvider extends ServiceProvider
             $c->make(AssistantSettings::class),
             $c->make(ModelClient::class),
             $c->make(Cooldowns::class),
+            $c->make(AssistantService::class),
+            $c->make(AssistantStrings::class),
+            static fn (): string => AssistantButton::language((string) get_locale()),
+            static fn (): float => microtime(true),
         ));
         $this->container->singleton(ServiceCheckController::class, static fn (ContainerInterface $c): ServiceCheckController => new ServiceCheckController(
             $c->make(ServiceCheck::class),
@@ -113,6 +143,8 @@ final class AssistantServiceProvider extends ServiceProvider
             $c->make(AssistantSettings::class),
             $c->make(Cooldowns::class),
             $c->make(VisitorLimits::class),
+            $c->make(PaidAnswers::class),
+            $c->make(SlotsController::class),
             static fn (int $at): string => (string) wp_date(get_option('date_format', 'Y-m-d') . ' ' . get_option('time_format', 'H:i'), $at),
         ));
     }
@@ -123,6 +155,7 @@ final class AssistantServiceProvider extends ServiceProvider
         add_action('rest_api_init', function (): void {
             $this->container->make(AssistantController::class)->register();
             $this->container->make(ServiceCheckController::class)->register();
+            $this->container->make(SlotsController::class)->register();
         });
         add_action('wp_footer', function (): void {
             $this->container->make(AssistantButton::class)->printInFooter();
@@ -148,7 +181,12 @@ final class AssistantServiceProvider extends ServiceProvider
         }
 
         if ($this->formsActive()) {
-            $this->container->make(FormRegistry::class)->register(new AssistantCallbackForm());
+            $settings = $this->container->make(AssistantSettings::class);
+            $this->container->make(FormRegistry::class)->register(new AssistantCallbackForm(
+                static fn (): BookingHours => $settings->booking((string) wp_timezone_string()),
+                // The team reads the time in the site's language: wp_date() names the days and months.
+                static fn (int $utc, \DateTimeZone $zone): string => (string) wp_date(BookingHours::TEAM_FORMAT, $utc, $zone),
+            ));
         }
     }
 
@@ -160,7 +198,7 @@ final class AssistantServiceProvider extends ServiceProvider
         $asked = $_GET['section'] ?? $_GET['corex_tab'] ?? '';
         $page = is_string($asked) ? sanitize_key(wp_unslash($asked)) : '';
         // phpcs:enable WordPress.Security.NonceVerification.Recommended
-        if (! str_ends_with($hook, '_page_corex-settings-config') || $page !== AssistantPanel::SECTION) {
+        if (! str_ends_with($hook, '_page_corex-settings-config') || $page !== AssistantPanel::PAGE) {
             return;
         }
 

@@ -5,7 +5,9 @@
  * FR-007, FR-008, FR-011, FR-014). The chat route refuses a request without the page's token and a body
  * over its limit, answers "busy" with no service keyed and while the visitor's lock is held, and answers
  * from a stubbed service when one is keyed; the visitor lock holds against a second claim in the real
- * options table; the hand-off form is registered; "Check services" is for administrators only.
+ * options table; the hand-off form is registered; "Check services" is for administrators only. Slice
+ * 2: the times on offer are answered by their own route, never cached, and a hand-off with a time is
+ * stored with it written in both zones; a hand-off by email without an email is refused.
  *
  * Every model call is answered by a `pre_http_request` filter, so nothing here calls out. The keys are
  * answered through `pre_option_` filters, so the site's own saved keys are never touched.
@@ -24,6 +26,7 @@ use Corex\Boot;
 use Corex\Forms\FormRegistry;
 use Corex\Http\ClientAddress;
 use Corex\Http\PublicSubmission;
+use Corex\Tests\Support\CreatedPosts;
 
 /**
  * @param array<string, mixed>|string $body
@@ -243,11 +246,105 @@ it('lets only an administrator run "Check services", which ends a keyed service�
     $response = $check();
 
     expect($response->get_status())->toBe(200)
-        ->and($response->get_data()['data']['results'])->toBe([[
+        ->and($response->get_data()['data']['results'])->toHaveCount(1)
+        ->and($response->get_data()['data']['results'][0])->toMatchArray([
             'service' => 'Groq',
             'model' => Provider::CATALOGUE['groq']['model'],
+            'on' => true,
             'answered' => true,
             'detail' => '',
-        ]])
+        ])
         ->and(get_option(Cooldowns::OPTION))->toBe([]);
+});
+
+/** Booking hours on, every day round the clock, an hour a call, as the test's options. */
+function assistantRouteBookingOn(object $test): void
+{
+    $test->booking = [
+        'corex_assistant_booking_enabled' => static fn (): string => '1',
+        'corex_assistant_booking_days' => static fn (): string => 'every',
+        'corex_assistant_booking_start' => static fn (): string => '00:00',
+        'corex_assistant_booking_end' => static fn (): string => '00:00',
+        'corex_assistant_booking_slot' => static fn (): string => '60',
+        'corex_assistant_booking_notice' => static fn (): string => '0',
+        'corex_assistant_booking_horizon' => static fn (): string => '1',
+        'corex_assistant_booking_timezone' => static fn (): string => 'Africa/Cairo',
+    ];
+    foreach ($test->booking as $option => $answer) {
+        add_filter('pre_option_' . $option, $answer);
+    }
+}
+
+function assistantRouteBookingOff(object $test): void
+{
+    foreach ($test->booking ?? [] as $option => $answer) {
+        remove_filter('pre_option_' . $option, $answer);
+    }
+}
+
+it('answers the times on offer, never cached, only while booking is on', function () {
+    $this->keyed = true;
+    $slots = static fn (): WP_REST_Response => rest_do_request(new WP_REST_Request('GET', '/corex/v1/assistant/slots'));
+
+    $off = $slots();
+    assistantRouteBookingOn($this);
+    try {
+        $on = $slots();
+    } finally {
+        assistantRouteBookingOff($this);
+    }
+
+    expect($off->get_status())->toBe(200)
+        ->and($off->get_data())->toBe(['slots' => []])
+        ->and($on->get_headers()['Cache-Control'] ?? '')->toBe('no-store')
+        ->and($on->get_data()['slots'])->not->toBeEmpty()
+        ->and($on->get_data()['slots'][0])->toBeGreaterThanOrEqual(time() - 3600);
+});
+
+/** @param array<string, string> $answers */
+function assistantRouteHandOff(array $answers): WP_REST_Response
+{
+    $request = new WP_REST_Request('POST', '/corex/v1/forms/' . AssistantCallbackForm::SLUG);
+    $request->set_header('Content-Type', 'application/json');
+    $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    $request->set_body((string) wp_json_encode($answers + ['corex_hp' => '']));
+
+    return rest_do_request($request);
+}
+
+it('stores a hand-off with its requested time written in the visitor’s zone and the business’s', function () {
+    $this->keyed = true;
+    assistantRouteBookingOn($this);
+    $noMail = static fn (): bool => true;
+    add_filter('pre_wp_mail', $noMail);
+    $made = CreatedPosts::watch('corex_submission', 'corex_email_log');
+    $slot = (new DateTimeImmutable('2025-11-13 18:00', new DateTimeZone('Africa/Cairo')))->getTimestamp();
+
+    try {
+        $response = assistantRouteHandOff([
+            'name' => 'Integration Probe',
+            'phone' => '+20 100 000 0000',
+            'channel' => 'call',
+            'slot' => (string) $slot,
+            'timezone' => 'Asia/Riyadh',
+        ]);
+    } finally {
+        remove_filter('pre_wp_mail', $noMail);
+        assistantRouteBookingOff($this);
+        $made->delete();
+    }
+
+    expect($response->get_status())->toBe(200)
+        ->and($response->get_data()['values']['slot'])->toBe('Thu 13 Nov, 7:00 pm Asia/Riyadh = Thu 13 Nov, 6:00 pm Africa/Cairo')
+        ->and($response->get_data()['values']['timezone'])->toBe('Asia/Riyadh');
+});
+
+it('refuses a hand-off by email that gives no email, and one by call that gives no number', function () {
+    $byEmail = assistantRouteHandOff(['name' => 'Integration Probe', 'channel' => 'email', 'phone' => '+20 100 000 0000']);
+    $byCall = assistantRouteHandOff(['name' => 'Integration Probe', 'channel' => 'call', 'email' => 'probe@example.test']);
+
+    expect($byEmail->get_status())->toBe(422)
+        ->and($byEmail->get_data()['details']['errors'] ?? $byEmail->get_data()['errors'] ?? [])->toHaveKey('email')
+        ->and($byCall->get_status())->toBe(422)
+        ->and($byCall->get_data()['details']['errors'] ?? $byCall->get_data()['errors'] ?? [])->toHaveKey('phone');
 });

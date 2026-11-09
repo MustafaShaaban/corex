@@ -443,7 +443,7 @@ final class SettingsRegistry implements FieldSections
     private function assistantServiceFields(): array
     {
         $services = [
-            'gemini'     => ['Google Gemini', 'https://aistudio.google.com/apikey', 'gemini-flash-latest', false],
+            'gemini'     => ['Google Gemini', 'https://aistudio.google.com/apikey', 'gemini-flash-lite-latest', false],
             'groq'       => ['Groq', 'https://console.groq.com/keys', 'openai/gpt-oss-120b', false],
             'openrouter' => ['OpenRouter', 'https://openrouter.ai/settings/keys', 'openrouter/free', false],
             'mistral'    => ['Mistral', 'https://console.mistral.ai/api-keys', 'mistral-small-latest', false],
@@ -613,12 +613,10 @@ final class SettingsRegistry implements FieldSections
      */
     private function assistantLanguages(): array
     {
-        $locales = [function_exists('get_locale') ? (string) get_locale() : 'en_US'];
-        if (function_exists('get_available_languages')) {
-            $locales = [...$locales, ...array_map('strval', get_available_languages())];
-        }
-
-        $codes = array_values(array_unique(array_filter(array_map([self::class, 'languageCode'], $locales))));
+        $codes = array_values(array_unique(array_filter(array_map(
+            [self::class, 'languageCode'],
+            [self::siteLocale(), ...self::installedLocales()],
+        ))));
         $asked = function_exists('apply_filters') ? apply_filters('corex_assistant_languages', $codes) : $codes;
 
         $languages = [];
@@ -640,11 +638,43 @@ final class SettingsRegistry implements FieldSections
         return preg_match('/^[a-z]{2,3}$/', $code) === 1 ? $code : '';
     }
 
-    /** A language's name in the screen's own language, from PHP's intl when it is there. */
+    /**
+     * The site's locale as WordPress set it while it loaded (`wp-settings.php` assigns the global
+     * from `get_locale()`). Read from there rather than asked again, so the declaration calls no
+     * WordPress function and reads the same in a test as on a site.
+     */
+    private static function siteLocale(): string
+    {
+        $locale = $GLOBALS['locale'] ?? 'en_US';
+
+        return is_string($locale) && $locale !== '' ? $locale : 'en_US';
+    }
+
+    /**
+     * The language packs installed for WordPress itself, as `get_available_languages()` lists them:
+     * the `.mo` files in the languages folder, less the time zone and admin-only ones.
+     *
+     * @return list<string> locales, such as ar or pt_BR
+     */
+    private static function installedLocales(): array
+    {
+        $files = defined('WP_LANG_DIR') ? glob(WP_LANG_DIR . '/*.mo') : [];
+        $locales = [];
+        foreach (is_array($files) ? $files : [] as $file) {
+            $locale = basename($file, '.mo');
+            if (! str_starts_with($locale, 'continents-cities') && ! str_starts_with($locale, 'ms-') && ! str_starts_with($locale, 'admin-')) {
+                $locales[] = $locale;
+            }
+        }
+
+        return $locales;
+    }
+
+    /** A language's name in the site's own language, from PHP's intl when it is there. */
     private static function languageName(string $code): string
     {
         if (class_exists(\Locale::class)) {
-            $name = \Locale::getDisplayLanguage($code, function_exists('get_user_locale') ? (string) get_user_locale() : 'en');
+            $name = \Locale::getDisplayLanguage($code, self::siteLocale());
             if ($name !== '' && $name !== $code) {
                 return $name;
             }

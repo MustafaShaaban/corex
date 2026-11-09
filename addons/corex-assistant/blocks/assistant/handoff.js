@@ -1,13 +1,20 @@
 /**
- * The assistant's hand-off form (spec 129, User Story 2): the visitor asks the team to call or write.
+ * The assistant's hand-off form (spec 129, User Stories 2, 9 and 10): the visitor asks the team to
+ * call or write.
  *
  * It posts to the CoreX form `corex-assistant-callback` with the page's REST token, so the forms
  * engine's honeypot, checks, storage and the team's email all apply. The country code is preset from
  * the visitor's clock (dial-codes.js).
+ *
+ * The way to be reached comes first, because it decides what is required: a mobile number to be
+ * called or messaged on WhatsApp, an email to be written to. The forms engine checks the same
+ * (`required_if`). With booking hours on, the times on offer replace the "best time" box once they
+ * arrive (slots.js).
  */
 
 import { countryOptions, presetCountry } from './dial-codes';
 import { el } from './dom';
+import { loadSlots, slotPicker, visitorZone } from './slots';
 
 const HONEYPOT = 'corex_hp';
 const ID = 'corex-assistant-';
@@ -18,12 +25,18 @@ const CHANNELS = [
 ];
 const MIN_PHONE_DIGITS = 6;
 
+/** Which field each way of being reached needs. */
+const NEEDS = { call: 'phone', whatsapp: 'phone', email: 'email' };
+
 function row( name, label, control ) {
 	const id = ID + name;
 	control.id = id;
 	control.name = name;
 	return el( 'div', { class: 'corex-assistant__row', 'data-field': name }, [
-		el( 'label', { for: id, text: label } ),
+		el( 'label', { for: id }, [
+			el( 'span', { text: label } ),
+			el( 'span', { class: 'corex-assistant__optional' } ),
+		] ),
 		control,
 		el( 'span', {
 			class: 'corex-assistant__error',
@@ -50,7 +63,6 @@ function controls( t ) {
 			type: 'tel',
 			autocomplete: 'tel-national',
 			inputmode: 'tel',
-			required: true,
 			maxlength: '20',
 			dir: 'ltr',
 		} ),
@@ -118,6 +130,25 @@ function fillCountries( dial, config ) {
 }
 
 /**
+ * Marks the field the chosen way of being reached needs as required, and the other as optional.
+ *
+ * @param {HTMLFormElement}         form    the hand-off
+ * @param {string}                  channel how they asked to be reached
+ * @param {(key: string) => string} t       a string by key
+ */
+function markNeeded( form, channel, t ) {
+	for ( const field of [ 'phone', 'email' ] ) {
+		const needed = NEEDS[ channel ] === field;
+		const control = form.querySelector( `#${ ID }${ field }` );
+		control.required = needed;
+		control.setAttribute( 'aria-required', String( needed ) );
+		form.querySelector(
+			`[data-field="${ field }"] .corex-assistant__optional`
+		).textContent = needed ? '' : ` ${ t( 'optional' ) }`;
+	}
+}
+
+/**
  * The fields the visitor must fix before anything is sent, with the message for each.
  *
  * @param {Object}                  fields  the form's controls
@@ -127,13 +158,18 @@ function fillCountries( dial, config ) {
  */
 export function problems( fields, channel, t ) {
 	const found = {};
+	const digits = fields.phone.value.replace( /\D/g, '' ).length;
 	if ( ! fields.name.value.trim() ) {
 		found.name = t( 'nameNeeded' );
 	}
-	if ( fields.phone.value.replace( /\D/g, '' ).length < MIN_PHONE_DIGITS ) {
+	// A number is needed to be called; one typed for another channel must still be a number.
+	if (
+		( NEEDS[ channel ] === 'phone' || digits > 0 ) &&
+		digits < MIN_PHONE_DIGITS
+	) {
 		found.phone = t( 'phoneNeeded' );
 	}
-	if ( channel === 'email' && ! fields.email.value.trim() ) {
+	if ( NEEDS[ channel ] === 'email' && ! fields.email.value.trim() ) {
 		found.email = t( 'emailNeeded' );
 	}
 	return found;
@@ -198,7 +234,7 @@ async function post( config, body ) {
 
 /**
  * @param {Object}                  options
- * @param {Object}                  options.config     the chat's settings (form, nonce, locale, countries)
+ * @param {Object}                  options.config     the chat's settings (form, slots, nonce, locale, countries)
  * @param {(key: string) => string} options.t          a string by key
  * @param {() => string}            options.transcript the conversation as the team reads it
  * @param {(name: string) => void}  options.onSent     called with the visitor's name once the team has the request
@@ -215,6 +251,10 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 		phoneRow.querySelector( '.corex-assistant__error' )
 	);
 
+	const timeRow = row( 'time', t( 'fieldTime' ), fields.time );
+	// With booking hours on, the times on offer take the place of the "best time" box.
+	const slotHolder = el( 'div', { class: 'corex-assistant__slot-holder' } );
+	let slotValue = () => '';
 	const submit = el( 'button', {
 		type: 'submit',
 		class: 'corex-assistant__submit',
@@ -235,10 +275,11 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 				text: t( 'handoffText' ),
 			} ),
 			row( 'name', t( 'fieldName' ), fields.name ),
+			channelChoice( t ),
 			phoneRow,
 			row( 'email', t( 'fieldEmail' ), fields.email ),
-			channelChoice( t ),
-			row( 'time', t( 'fieldTime' ), fields.time ),
+			timeRow,
+			slotHolder,
 			el(
 				'label',
 				{ class: 'corex-assistant__check', for: `${ ID }attach` },
@@ -251,13 +292,28 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 	);
 
 	fillCountries( fields.dial, config );
+	const channelNow = () =>
+		form.querySelector( 'input[name="channel"]:checked' )?.value || 'call';
+	markNeeded( form, channelNow(), t );
+	form.querySelector( '.corex-assistant__channels' ).addEventListener(
+		'change',
+		() => markNeeded( form, channelNow(), t )
+	);
+
+	loadSlots( config.slots ).then( ( slots ) => {
+		if ( ! slots.length ) {
+			return;
+		}
+		const picker = slotPicker( slots, config.locale, visitorZone(), t );
+		slotHolder.replaceChildren( picker.node );
+		slotValue = picker.value;
+		timeRow.remove();
+	} );
 
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
 		clearProblems( form );
-		const channel =
-			form.querySelector( 'input[name="channel"]:checked' )?.value ||
-			'call';
+		const channel = channelNow();
 		const found = problems( fields, channel, t );
 		if ( Object.keys( found ).length ) {
 			showProblems( form, found );
@@ -267,12 +323,16 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 
 		submit.disabled = true;
 		submit.textContent = t( 'sending' );
+		const number = fields.phone.value.trim();
 		const result = await post( config, {
 			name: fields.name.value.trim(),
-			phone: `${ fields.dial.value } ${ fields.phone.value.trim() }`.trim(),
+			// No number, no dial code: a bare code is not a number the team can use.
+			phone: number ? `${ fields.dial.value } ${ number }`.trim() : '',
 			email: fields.email.value.trim(),
 			channel,
-			time: fields.time.value.trim(),
+			time: timeRow.isConnected ? fields.time.value.trim() : '',
+			slot: slotValue(),
+			timezone: visitorZone().slice( 0, 64 ),
 			transcript: fields.attach.checked ? transcript() : '',
 			page: window.location.href.slice( 0, 300 ),
 			[ HONEYPOT ]: fields.trap.value,

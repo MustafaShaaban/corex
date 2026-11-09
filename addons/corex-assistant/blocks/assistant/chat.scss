@@ -377,6 +377,7 @@
 	input[type="tel"],
 	input[type="email"],
 	select {
+		box-sizing: border-box; // Padding and border inside its width, not past the form's edge.
 		inline-size: 100%;
 		min-block-size: 2.5rem;
 		padding-inline: var(--corex-assistant-gap-sm);
@@ -455,6 +456,89 @@
 		border-color: var(--corex-assistant-accent);
 		color: var(--corex-assistant-accent);
 	}
+}
+
+/* Beside the label of a field the chosen channel does not need. */
+.corex-assistant__optional {
+	color: var(--corex-assistant-muted);
+	font-weight: 400;
+}
+
+/*
+ * The times on offer (spec 129, User Story 9): a scrolling row of days,
+ * the day's parts, its times, and "Any time".
+ */
+.corex-assistant__slots {
+	display: grid;
+	gap: var(--corex-assistant-gap-sm);
+	min-inline-size: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+
+	legend {
+		margin-block-end: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+		padding: 0;
+	}
+}
+
+.corex-assistant__days,
+.corex-assistant__parts {
+	display: flex;
+	gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+}
+
+.corex-assistant__days {
+	overflow-x: auto;
+	padding-block-end: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+	scrollbar-width: thin;
+}
+
+.corex-assistant__times {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+	gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+}
+
+.corex-assistant__day,
+.corex-assistant__part,
+.corex-assistant__time {
+	flex: none;
+	min-block-size: 2rem;
+	padding-inline: var(--corex-assistant-gap-sm);
+	border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+	border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */
+	background: var(--corex-assistant-surface);
+	color: var(--corex-assistant-ink);
+	font: inherit;
+	font-size: var(--wp--preset--font-size--sm, small);
+	white-space: nowrap;
+	cursor: pointer;
+
+	&:hover {
+		border-color: var(--corex-assistant-accent);
+	}
+
+	&[aria-pressed="true"] {
+		border-color: var(--corex-assistant-accent);
+		color: var(--corex-assistant-accent);
+		font-weight: 600;
+	}
+
+	&:focus-visible {
+		outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);
+		outline-offset: var(--wp--custom--focus--offset, 2px); /* corex-token-allow: fallback only */
+	}
+}
+
+.corex-assistant__any {
+	justify-self: start;
+}
+
+.corex-assistant__slot-note {
+	margin: 0;
+	color: var(--corex-assistant-muted);
+	font-size: var(--wp--preset--font-size--xs, small);
 }
 
 .corex-assistant__check {

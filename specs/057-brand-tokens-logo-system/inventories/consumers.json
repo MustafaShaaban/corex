@@ -23,7 +23,7 @@
   "consumers": [
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 73, 174, 219, 222, 236, 297, 328, 355, 455, 456, 487: background: var(--corex-assistant-accent); | border: var(--corex-assistant-border) solid var(--corex-assistant-accent); | color: var(--corex-assistant-accent);",
+      "selector_or_context": "lines 73, 174, 219, 222, 236, 297, 328, 355, 455, 456, 518, 522, 523, 570: background: var(--corex-assistant-accent); | border: var(--corex-assistant-border) solid var(--corex-assistant-accent); | color: var(--corex-assistant-accent);",
       "property": "--corex-assistant-accent",
       "owner": "other-addon",
       "surface": "front-end",
@@ -33,7 +33,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 15, 62, 90, 123, 164, 194, 219, 284, 292, 367, 383, 450: border: var(--corex-assistant-border) solid var(--corex-assistant-line); | border-block-end: var(--corex-assistant-border) solid var(--corex-assistant-line); | border: var(--corex-assistant-border) solid var(--corex-assistant-surface);",
+      "selector_or_context": "lines 15, 62, 90, 123, 164, 194, 219, 284, 292, 367, 383, 450, 508: border: var(--corex-assistant-border) solid var(--corex-assistant-line); | border-block-end: var(--corex-assistant-border) solid var(--corex-assistant-line); | border: var(--corex-assistant-border) solid var(--corex-assistant-surface);",
       "property": "--corex-assistant-border",
       "owner": "other-addon",
       "surface": "front-end",
@@ -63,7 +63,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 32: outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);",
+      "selector_or_context": "lines 32, 528: outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);",
       "property": "--corex-assistant-focus",
       "owner": "other-addon",
       "surface": "front-end",
@@ -73,7 +73,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 32: outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);",
+      "selector_or_context": "lines 32, 528: outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);",
       "property": "--corex-assistant-focus-width",
       "owner": "other-addon",
       "surface": "front-end",
@@ -93,7 +93,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 59, 60, 61, 139, 149, 158, 185, 207, 208, 218, 243, 250, 283, 290, 305, 306, 343, 365, 382, 412, 430, 449, 463: gap: var(--corex-assistant-gap-sm); | padding-block: var(--corex-assistant-gap-sm); | padding-inline: var(--corex-assistant-gap) var(--corex-assistant-gap-sm);",
+      "selector_or_context": "lines 59, 60, 61, 139, 149, 158, 185, 207, 208, 218, 243, 250, 283, 290, 305, 306, 343, 365, 382, 412, 430, 449, 472, 507, 546: gap: var(--corex-assistant-gap-sm); | padding-block: var(--corex-assistant-gap-sm); | padding-inline: var(--corex-assistant-gap) var(--corex-assistant-gap-sm);",
       "property": "--corex-assistant-gap-sm",
       "owner": "other-addon",
       "surface": "front-end",
@@ -103,7 +103,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 19, 131: color: var(--corex-assistant-ink);",
+      "selector_or_context": "lines 19, 131, 511: color: var(--corex-assistant-ink);",
       "property": "--corex-assistant-ink",
       "owner": "other-addon",
       "surface": "front-end",
@@ -113,7 +113,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 15, 62, 130, 164, 284, 292, 367, 383, 450: border: var(--corex-assistant-border) solid var(--corex-assistant-line); | border-block-end: var(--corex-assistant-border) solid var(--corex-assistant-line); | border-color: var(--corex-assistant-line);",
+      "selector_or_context": "lines 15, 62, 130, 164, 284, 292, 367, 383, 450, 508: border: var(--corex-assistant-border) solid var(--corex-assistant-line); | border-block-end: var(--corex-assistant-border) solid var(--corex-assistant-line); | border-color: var(--corex-assistant-line);",
       "property": "--corex-assistant-line",
       "owner": "other-addon",
       "surface": "front-end",
@@ -123,7 +123,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 111, 126, 179, 256, 316, 344, 395: color: var(--corex-assistant-muted); | background: var(--corex-assistant-muted);",
+      "selector_or_context": "lines 111, 126, 179, 256, 316, 344, 395, 462, 539: color: var(--corex-assistant-muted); | background: var(--corex-assistant-muted);",
       "property": "--corex-assistant-muted",
       "owner": "other-addon",
       "surface": "front-end",
@@ -133,7 +133,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 74, 175, 329, 488: color: var(--corex-assistant-on-accent);",
+      "selector_or_context": "lines 74, 175, 329, 571: color: var(--corex-assistant-on-accent);",
       "property": "--corex-assistant-on-accent",
       "owner": "other-addon",
       "surface": "front-end",
@@ -183,7 +183,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 17, 90, 167, 221, 236, 294, 369, 385: background: var(--corex-assistant-surface); | border: var(--corex-assistant-border) solid var(--corex-assistant-surface); | background: color-mix(in srgb, var(--corex-assistant-accent) 10%, var(--corex-assistant-surface));",
+      "selector_or_context": "lines 17, 90, 167, 221, 236, 294, 369, 385, 510: background: var(--corex-assistant-surface); | border: var(--corex-assistant-border) solid var(--corex-assistant-surface); | background: color-mix(in srgb, var(--corex-assistant-accent) 10%, var(--corex-assistant-surface));",
       "property": "--corex-assistant-surface",
       "owner": "other-addon",
       "surface": "front-end",
@@ -203,7 +203,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 33: outline-offset: var(--wp--custom--focus--offset, 2px); /* corex-token-allow: fallback only */",
+      "selector_or_context": "lines 33, 529: outline-offset: var(--wp--custom--focus--offset, 2px); /* corex-token-allow: fallback only */",
       "property": "--wp--custom--focus--offset",
       "owner": "other-addon",
       "surface": "front-end",
@@ -213,7 +213,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 124, 220, 327, 384, 451, 486: border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */",
+      "selector_or_context": "lines 124, 220, 327, 384, 451, 509, 569: border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */",
       "property": "--wp--custom--radius--md",
       "owner": "other-addon",
       "surface": "front-end",
@@ -243,7 +243,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 223, 356, 396, 405, 424, 439, 464: font-size: var(--wp--preset--font-size--sm, small);",
+      "selector_or_context": "lines 223, 356, 396, 405, 424, 439, 513, 547: font-size: var(--wp--preset--font-size--sm, small);",
       "property": "--wp--preset--font-size--sm",
       "owner": "other-addon",
       "surface": "front-end",
@@ -253,7 +253,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 112, 345: font-size: var(--wp--preset--font-size--xs, small);",
+      "selector_or_context": "lines 112, 345, 540: font-size: var(--wp--preset--font-size--xs, small);",
       "property": "--wp--preset--font-size--xs",
       "owner": "other-addon",
       "surface": "front-end",
@@ -263,7 +263,7 @@
     },
     {
       "path": "addons/corex-assistant/blocks/assistant/chat.scss",
-      "selector_or_context": "lines 215, 217, 249, 291, 351, 402, 437, 447: gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */ | padding-block: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */ | padding: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */",
+      "selector_or_context": "lines 215, 217, 249, 291, 351, 402, 437, 447, 479, 487, 492, 499: gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */ | padding-block: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */ | padding: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */",
       "property": "--wp--preset--spacing--10",
       "owner": "other-addon",
       "surface": "front-end",

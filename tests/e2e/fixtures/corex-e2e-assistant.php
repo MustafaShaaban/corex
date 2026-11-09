@@ -21,7 +21,10 @@ defined('ABSPATH') || exit;
  * leaves the machine. A question naming a price asks for the team; any other is answered with the
  * page this file gives as the assistant's knowledge and an address elsewhere, which the assistant must
  * drop. The visitor's counts and lock are cleared on every such request, so repeated runs never meet the
- * hourly limit. Without the header this file does nothing. No setting is stored: each is answered
+ * hourly limit. `X-Corex-E2E-Assistant: booking` is the same with booking hours on as well (every
+ * day round the clock, an hour a call, the next two days, UTC), so the hand-off offers times (spec 129
+ * slice 2); a hand-off sent with it is answered but neither stored nor emailed. Without the header
+ * this file does nothing. No setting is stored: each is answered
  * through its `pre_option_` filter.
  *
  * An mu-plugin so it is active with no activation step. How the fixtures reach an install is in
@@ -31,8 +34,25 @@ add_action('plugins_loaded', static function (): void {
     $mode = isset($_SERVER['HTTP_X_COREX_E2E_ASSISTANT'])
         ? sanitize_key(wp_unslash((string) $_SERVER['HTTP_X_COREX_E2E_ASSISTANT']))
         : '';
-    if ($mode !== 'on') {
+    if (! in_array($mode, ['on', 'booking'], true)) {
         return;
+    }
+
+    if ($mode === 'booking') {
+        foreach ([
+            'enabled' => '1',
+            'days' => 'every',
+            'start' => '00:00',
+            'end' => '00:00',
+            'slot' => '60',
+            'notice' => '0',
+            'horizon' => '2',
+            'timezone' => 'UTC',
+        ] as $field => $value) {
+            add_filter('pre_option_corex_assistant_booking_' . $field, static fn (): string => $value);
+        }
+        // A hand-off sent here is checked, prepared and answered, and then neither stored nor emailed.
+        add_filter('corex_assistant_callback_listeners', static fn (): array => []);
     }
 
     add_filter('pre_option_corex_assistant_enabled', static fn (): string => '1');

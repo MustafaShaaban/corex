@@ -71,6 +71,7 @@ export function readConfig( root ) {
 		locale: data.locale || 'en',
 		endpoint: data.endpoint || '',
 		form: data.form || '',
+		slots: data.slots || '',
 		nonce: data.nonce || '',
 		mark: data.mark || '',
 		country: data.country || '',

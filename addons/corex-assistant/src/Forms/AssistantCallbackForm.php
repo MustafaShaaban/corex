@@ -10,6 +10,7 @@ namespace Corex\Assistant\Forms;
 
 defined('ABSPATH') || exit;
 
+use Corex\Assistant\Booking\BookingHours;
 use Corex\Forms\Form;
 
 /**
@@ -21,12 +22,47 @@ use Corex\Forms\Form;
  * the visitor gave an email (Reply-To is set only when they did), and the visitor is answered in the
  * chat, not by email. The chat draws its own fields and posts here; the labels below are what the
  * inbox and the team's email show.
+ *
+ * The way to be reached decides what is required (FR-023): a number to be called or messaged on
+ * WhatsApp, an email to be written to. A time the visitor picked from the booking hours arrives as a
+ * moment and is written in both zones before anything stores or sends it (FR-022).
  */
 final class AssistantCallbackForm extends Form
 {
     public const SLUG = 'corex-assistant-callback';
 
     public string $slug = self::SLUG;
+
+    /**
+     * @param \Closure(): BookingHours                  $booking the hours, read only for a request with a time
+     * @param \Closure(int, \DateTimeZone): string      $format  a moment on a zone's clock, as the team reads it
+     */
+    public function __construct(
+        private readonly \Closure $booking,
+        private readonly \Closure $format,
+    ) {
+    }
+
+    /**
+     * A picked time as the team reads it, in the visitor's zone and the business's; a value that is
+     * not a moment is dropped rather than shown as a number.
+     *
+     * @param array<string, mixed> $values
+     * @return array<string, mixed>
+     */
+    public function prepare(array $values): array
+    {
+        $slot = trim((string) ($values['slot'] ?? ''));
+        if ($slot === '') {
+            return $values;
+        }
+
+        $values['slot'] = ctype_digit($slot)
+            ? ($this->booking)()->describe((int) $slot, trim((string) ($values['timezone'] ?? '')), $this->format)
+            : '';
+
+        return $values;
+    }
 
     public function label(): string
     {
@@ -60,12 +96,12 @@ final class AssistantCallbackForm extends Form
             ],
             'phone' => [
                 'type' => 'phone',
-                'rules' => ['required', 'phone'],
+                'rules' => ['required_if:channel,call,whatsapp', 'phone'],
                 'label' => __('Phone', 'corex'),
             ],
             'email' => [
                 'type' => 'email',
-                'rules' => ['email', 'max:160'],
+                'rules' => ['required_if:channel,email', 'email', 'max:160'],
                 'label' => __('Email', 'corex'),
             ],
             'channel' => [
@@ -83,6 +119,18 @@ final class AssistantCallbackForm extends Form
                 'type' => 'text',
                 'rules' => ['max:80'],
                 'label' => __('Best time', 'corex'),
+            ],
+            // A time from the booking hours, sent as UTC seconds and stored in both zones.
+            'slot' => [
+                'type' => 'text',
+                'rules' => ['max_length:12'],
+                'label' => __('Requested time', 'corex'),
+            ],
+            // The visitor's own time zone, from their browser: "evening" means nothing without it.
+            'timezone' => [
+                'type' => 'text',
+                'rules' => ['max_length:64'],
+                'label' => __('Their time zone', 'corex'),
             ],
             'transcript' => [
                 'type' => 'textarea',

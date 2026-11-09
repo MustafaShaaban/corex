@@ -5,7 +5,9 @@
  * on and one service keyed, with a stand-in model), the page carries the button and its own small
  * files only; the chat arrives on first use. A question is answered with a link to this site and none
  * elsewhere, a price brings the hand-off form, the open chat has no WCAG A or AA violation, and Escape
- * closes it with focus back on the button.
+ * closes it with focus back on the button. With booking hours on (slice 2), the hand-off asks the way
+ * to be reached first, needs what that way needs, offers times in the visitor's zone, and the request
+ * comes back with the time written in both zones.
  *
  * Read as a visitor: no session.
  *
@@ -107,6 +109,112 @@ test.describe( 'with the assistant on', () => {
 
 		await expect(
 			page.getByRole( 'dialog' ).getByText( 'What do you build?' )
+		).toBeVisible();
+	} );
+} );
+
+test.describe( 'with booking hours on', () => {
+	test.use( { timezoneId: 'Asia/Riyadh' } );
+
+	test.beforeEach( async ( { page } ) => {
+		await page.setExtraHTTPHeaders( {
+			'X-Corex-E2E-Assistant': 'booking',
+		} );
+	} );
+
+	test( 'asks the way first, offers times in the visitor’s zone, and sends the time chosen', async ( {
+		page,
+	} ) => {
+		await page.goto( PAGE );
+		await page.getByRole( 'button', { name: /^Chat with / } ).click();
+		const dialog = page.getByRole( 'dialog' );
+		await dialog.getByRole( 'button', { name: /talk to someone/ } ).click();
+		const form = dialog.locator( '.corex-assistant__handoff' );
+		const times = form.getByRole( 'group', {
+			name: 'Pick a time for the call (in your local time)',
+		} );
+		await expect( times ).toBeVisible();
+		await expect( form.getByLabel( 'Best time to reach you' ) ).toHaveCount(
+			0
+		);
+
+		// The way to be reached decides what is needed.
+		const fields = await form
+			.locator( ':scope > [data-field], :scope > fieldset' )
+			.evaluateAll( ( nodes ) =>
+				nodes.map( ( node ) => node.dataset.field || node.className )
+			);
+		expect( fields.slice( 0, 4 ) ).toEqual( [
+			'name',
+			'corex-assistant__channels',
+			'phone',
+			'email',
+		] );
+		await expect( form.getByLabel( 'Mobile number' ) ).toHaveAttribute(
+			'aria-required',
+			'true'
+		);
+		await form.getByRole( 'radio', { name: 'Email' } ).check();
+		await expect(
+			form.getByRole( 'textbox', { name: /^Email/ } )
+		).toHaveAttribute( 'aria-required', 'true' );
+		await expect( form.getByLabel( 'Mobile number' ) ).toHaveAttribute(
+			'aria-required',
+			'false'
+		);
+		await form.getByRole( 'radio', { name: 'Call' } ).check();
+
+		const { violations } = await new AxeBuilder( { page } )
+			.include( '.corex-assistant' )
+			.withTags( WCAG_TAGS )
+			.analyze();
+		expect(
+			violations.map(
+				( violation ) =>
+					`${ violation.id }: ${ violation.nodes.length }`
+			)
+		).toEqual( [] );
+
+		// Every field stays inside the form, edge to edge.
+		const overflow = await form.evaluate( ( node ) => {
+			const edge = node.getBoundingClientRect().right;
+			return [
+				...node.querySelectorAll(
+					'input:not([type=radio]):not([type=checkbox]):not(.corex-assistant__trap), select'
+				),
+			]
+				.filter(
+					( field ) =>
+						field.getBoundingClientRect().right > edge + 0.5
+				)
+				.map( ( field ) => field.id );
+		} );
+		expect( overflow ).toEqual( [] );
+
+		await times.locator( '.corex-assistant__day' ).nth( 1 ).click();
+		await times.locator( '.corex-assistant__part' ).first().click();
+		const time = times.locator( '.corex-assistant__times button' ).first();
+		await time.click();
+		await expect( time ).toHaveAttribute( 'aria-pressed', 'true' );
+
+		await form.getByLabel( 'Your name' ).fill( 'Playwright Probe' );
+		await form.getByLabel( 'Mobile number' ).fill( '50 123 4567' );
+		const [ request, response ] = await Promise.all( [
+			page.waitForRequest( /corex-assistant-callback/ ),
+			page.waitForResponse( /corex-assistant-callback/ ),
+			form.getByRole( 'button', { name: 'Send request' } ).click(),
+		] );
+		const sent = request.postDataJSON();
+		const answered = await response.json();
+
+		expect( sent.channel ).toBe( 'call' );
+		expect( sent.timezone ).toBe( 'Asia/Riyadh' );
+		expect( sent.slot ).toMatch( /^\d+$/ );
+		expect( answered.values.slot ).toMatch(
+			/^\w{3} \d{1,2} \w{3}, \d{1,2}:00 [ap]m Asia\/Riyadh = \w{3} \d{1,2} \w{3}, \d{1,2}:00 [ap]m UTC$/
+		);
+		await expect(
+			dialog.getByText( /Thank you, Playwright Probe/ )
 		).toBeVisible();
 	} );
 } );

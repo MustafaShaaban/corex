@@ -122,25 +122,45 @@ it('keeps a failure note short and on one line', function () {
         ->and(mb_strlen($failure->detail))->toBeLessThanOrEqual(200);
 });
 
-it('rests a failed service until its time, and forgets rests that are over', function () {
+it('rests a failed service until its time, keeps how it failed, and forgets rests that are over', function () {
+    // A bare time is how slice 1 stored a rest; one that is over is dropped with the next write.
     $store = ['mistral' => 999_000];
     $cooldowns = AssistantFixtures::cooldowns($store);
 
-    $cooldowns->cool('groq', new Failure(Failure::LIMIT, 429, 30));
+    $cooldowns->cool('groq', new Failure(Failure::LIMIT, 429, 30, 'Rate limit reached'));
 
-    expect($store)->toBe(['groq' => 1_000_030])
+    expect($store)->toBe(['groq' => ['until' => 1_000_030, 'kind' => Failure::LIMIT, 'status' => 429, 'detail' => 'Rate limit reached', 'at' => 1_000_000]])
         ->and($cooldowns->isCooling('groq'))->toBeTrue()
+        ->and($cooldowns->lastFailure('groq'))->toBe(['kind' => Failure::LIMIT, 'status' => 429, 'detail' => 'Rate limit reached', 'at' => 1_000_000])
         ->and($cooldowns->until('mistral'))->toBe(0);
 
     $cooldowns->clear('groq');
-    expect($store)->toBe([]);
+    expect($store)->toBe([])
+        ->and($cooldowns->lastFailure('groq'))->toBeNull();
 });
 
-it('rests no service for a refused request', function () {
+it('rests no service for a refused request, and still says how it failed', function () {
     $store = [];
-    AssistantFixtures::cooldowns($store)->cool('groq', new Failure(Failure::REJECTED, 400));
+    $cooldowns = AssistantFixtures::cooldowns($store);
 
-    expect($store)->toBe([]);
+    $cooldowns->cool('groq', new Failure(Failure::REJECTED, 400, null, 'Invalid value'));
+
+    expect($cooldowns->isCooling('groq'))->toBeFalse()
+        ->and($cooldowns->lastFailure('groq')['kind'])->toBe(Failure::REJECTED);
+});
+
+it('stops showing a failure a week old', function () {
+    $store = ['groq' => ['until' => 0, 'kind' => Failure::SERVER, 'status' => 503, 'detail' => 'down', 'at' => 1_000_000 - 7 * 86400]];
+
+    expect(AssistantFixtures::cooldowns($store)->lastFailure('groq'))->toBeNull();
+});
+
+it('still reads a rest stored as a bare time', function () {
+    $store = ['groq' => 1_000_500];
+    $cooldowns = AssistantFixtures::cooldowns($store);
+
+    expect($cooldowns->until('groq'))->toBe(1_000_500)
+        ->and($cooldowns->lastFailure('groq'))->toBeNull();
 });
 
 it('asks the next service when one fails, skipping the resting ones and resting the one that failed', function () {
@@ -151,13 +171,13 @@ it('asks the next service when one fails, skipping the resting ones and resting 
 
         return str_contains($url, 'groq') ? ['status' => 429, 'headers' => [], 'body' => '{}'] : AssistantFixtures::answer('From the third');
     });
-    $router = new ChatRouter($client, AssistantFixtures::cooldowns($store), static fn (): int => 1_000_000);
+    $router = AssistantFixtures::router($client, $store, static fn (): int => 1_000_000);
 
     $answer = $router->answer([AssistantFixtures::provider('gemini'), AssistantFixtures::provider('groq'), AssistantFixtures::provider('openrouter')], [['role' => 'user', 'content' => 'Hi']]);
 
     expect($answer)->toBe('From the third')
         ->and($asked)->toBe(['api.groq.com', 'openrouter.ai'])
-        ->and($store['groq'])->toBe(1_000_060);
+        ->and($store['groq']['until'])->toBe(1_000_060);
 });
 
 it('answers nothing when every service fails, and stops once its time budget is spent', function () {
@@ -170,7 +190,7 @@ it('answers nothing when every service fails, and stops once its time budget is 
 
         return ['status' => 503, 'headers' => [], 'body' => ''];
     });
-    $router = new ChatRouter($client, AssistantFixtures::cooldowns($store), static function () use (&$clock): int {
+    $router = AssistantFixtures::router($client, $store, static function () use (&$clock): int {
         return $clock;
     });
 
@@ -185,12 +205,13 @@ it('asks the next service after a refused message, resting none, and ends a fini
     $client = new ModelClient(static fn (string $url): array => str_contains($url, 'groq')
         ? ['status' => 400, 'headers' => [], 'body' => '{"error":{"message":"Invalid value"}}']
         : AssistantFixtures::answer('Answered'));
-    $router = new ChatRouter($client, AssistantFixtures::cooldowns($store), static fn (): int => 0);
+    $router = AssistantFixtures::router($client, $store, static fn (): int => 0);
 
     $answer = $router->answer([AssistantFixtures::provider('groq'), AssistantFixtures::provider('openrouter')], [['role' => 'user', 'content' => 'Hi']]);
 
     expect($answer)->toBe('Answered')
-        ->and($store)->toBe([]);
+        ->and(array_keys($store))->toBe(['groq'])
+        ->and($store['groq']['until'])->toBe(0);
 });
 
 it('gives a call no more time than is left of the budget', function () {
@@ -203,7 +224,7 @@ it('gives a call no more time than is left of the budget', function () {
 
         return ['status' => 503, 'headers' => [], 'body' => ''];
     });
-    $router = new ChatRouter($client, AssistantFixtures::cooldowns($store), static function () use (&$clock): int {
+    $router = AssistantFixtures::router($client, $store, static function () use (&$clock): int {
         return $clock;
     });
 

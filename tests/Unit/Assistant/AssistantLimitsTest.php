@@ -16,8 +16,12 @@ use Corex\Assistant\Limits\VisitorLock;
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
 
-/** Limits over an array the test reads back, at a moment the test moves. */
-function assistantLimits(array &$store, int $sitePerDay = 600, ?int &$now = null): VisitorLimits
+/**
+ * Limits over an array the test reads back, at a moment the test moves.
+ *
+ * @param array{hour: int, day: int, site?: int} $caps a visitor's an hour and a day (the site's is $sitePerDay)
+ */
+function assistantLimits(array &$store, int $sitePerDay = 600, ?int &$now = null, array $caps = ['hour' => 20, 'day' => 60]): VisitorLimits
 {
     $now ??= 86400 * 100 + 7200;
 
@@ -31,7 +35,7 @@ function assistantLimits(array &$store, int $sitePerDay = 600, ?int &$now = null
         static function () use (&$now): int {
             return $now;
         },
-        static fn (): int => $sitePerDay,
+        static fn (): array => $caps + ['site' => $sitePerDay],
     );
 }
 
@@ -101,8 +105,8 @@ it('lets a visitor ask twenty questions an hour, and does not count the ones it 
         $allowed += $limits->allow('visitor') ? 1 : 0;
     }
 
-    expect($allowed)->toBe(VisitorLimits::PER_HOUR)
-        ->and($limits->siteToday())->toBe(VisitorLimits::PER_HOUR)
+    expect($allowed)->toBe(20)
+        ->and($limits->siteToday())->toBe(20)
         ->and($limits->allow('someone-else'))->toBeTrue();
 });
 
@@ -114,12 +118,47 @@ it('lets a visitor ask sixty questions a day, whatever the hour', function () {
     $allowed = 0;
     for ($hour = 0; $hour < 5; $hour++) {
         $now = 86400 * 100 + $hour * 3600;
-        for ($i = 0; $i < VisitorLimits::PER_HOUR; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             $allowed += $limits->allow('visitor') ? 1 : 0;
         }
     }
 
-    expect($allowed)->toBe(VisitorLimits::PER_DAY);
+    expect($allowed)->toBe(60);
+});
+
+it('holds a visitor to the caps the owner set on the screen', function () {
+    $store = [];
+    $now = 86400 * 100;
+    $limits = assistantLimits($store, 600, $now, ['hour' => 2, 'day' => 3]);
+
+    $first = [$limits->allow('visitor'), $limits->allow('visitor'), $limits->allow('visitor')];
+    $now += 3600;
+    $later = [$limits->allow('visitor'), $limits->allow('visitor')];
+
+    expect($first)->toBe([true, true, false])
+        ->and($later)->toBe([true, false]);
+});
+
+it('reads the caps once, when a question first needs them', function () {
+    $store = [];
+    $reads = 0;
+    $limits = new VisitorLimits(
+        static fn (string $key): mixed => $store[$key] ?? false,
+        static function (string $key, int $value) use (&$store): void {
+            $store[$key] = $value;
+        },
+        static fn (): int => 86400 * 100,
+        static function () use (&$reads): array {
+            $reads++;
+
+            return ['hour' => 20, 'day' => 60, 'site' => 600];
+        },
+    );
+
+    expect($reads)->toBe(0);
+    $limits->allow('a');
+    $limits->allow('b');
+    expect($reads)->toBe(1);
 });
 
 it('stops the whole site at its daily cap', function () {

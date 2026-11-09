@@ -11,29 +11,31 @@ namespace Corex\Assistant\Limits;
 defined('ABSPATH') || exit;
 
 /**
- * How many questions a visitor, and the whole site, may ask (spec 129, User Story 5).
+ * How many questions a visitor, and the whole site, may ask (spec 129, User Story 5); the owner sets
+ * each on Settings → Assistant → Limits (FR-024).
  *
  * Counts live in transients that expire with their window. Every answer costs a model call, so the
  * caps are what keep one visitor from spending a site's free tiers.
  */
 final class VisitorLimits
 {
-    public const PER_HOUR = 20;
-    public const PER_DAY = 60;
-
     private const PREFIX = 'corex_ai_';
 
+    /** @var array{hour: int, day: int, site: int}|null */
+    private ?array $read = null;
+
     /**
-     * @param \Closure(string): mixed          $get
-     * @param \Closure(string, int, int): void $set   key, value, seconds to keep
-     * @param \Closure(): int                  $now
-     * @param \Closure(): int                  $sitePerDay the site-wide cap, read when it is needed
+     * @param \Closure(string): mixed                               $get
+     * @param \Closure(string, int, int): void                      $set  key, value, seconds to keep
+     * @param \Closure(): int                                       $now
+     * @param \Closure(): array{hour: int, day: int, site: int}     $caps a visitor's an hour and a day, and the
+     *                                                                     site's a day, read when first needed
      */
     public function __construct(
         private readonly \Closure $get,
         private readonly \Closure $set,
         private readonly \Closure $now,
-        private readonly \Closure $sitePerDay,
+        private readonly \Closure $caps,
     ) {
     }
 
@@ -45,9 +47,9 @@ final class VisitorLimits
         $day = intdiv($now, 86400);
 
         $counters = [
-            [self::PREFIX . 'vh_' . $visitor . '_' . $hour, self::PER_HOUR, 3600],
-            [self::PREFIX . 'vd_' . $visitor . '_' . $day, self::PER_DAY, 86400],
-            [$this->siteKey($day), $this->sitePerDay(), 86400],
+            [self::PREFIX . 'vh_' . $visitor . '_' . $hour, $this->cap('hour'), 3600],
+            [self::PREFIX . 'vd_' . $visitor . '_' . $day, $this->cap('day'), 86400],
+            [$this->siteKey($day), $this->cap('site'), 86400],
         ];
 
         foreach ($counters as [$key, $limit]) {
@@ -71,7 +73,14 @@ final class VisitorLimits
 
     public function sitePerDay(): int
     {
-        return max(0, ($this->sitePerDay)());
+        return $this->cap('site');
+    }
+
+    private function cap(string $name): int
+    {
+        $this->read ??= ($this->caps)();
+
+        return max(0, (int) ($this->read[$name] ?? 0));
     }
 
     private function count(string $key): int

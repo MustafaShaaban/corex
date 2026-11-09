@@ -23,11 +23,18 @@ const STRINGS = {
 	emailNeeded: 'Email?',
 	formError: 'Check fields',
 	handoffTitle: 'Shall we call?',
+	optional: '(optional)',
+	fieldSlot: 'Pick a time',
+	anyTime: 'Any time',
+	morning: 'Morning',
+	afternoon: 'Afternoon',
+	evening: 'Evening',
 };
 
 function root(
 	form = '/wp-json/corex/v1/forms/corex-assistant-callback',
-	country = ''
+	country = '',
+	slots = ''
 ) {
 	document.body.innerHTML = '';
 	const node = document.createElement( 'div' );
@@ -35,6 +42,7 @@ function root(
 		locale: 'en',
 		endpoint: '/wp-json/corex/v1/assistant',
 		form,
+		slots,
 		nonce: 'n0nce',
 		countriesFirst: 'AE,SA',
 		country,
@@ -306,26 +314,84 @@ describe( 'the chat', () => {
 } );
 
 describe( 'the hand-off', () => {
-	async function openHandoff() {
-		const node = root();
+	async function openHandoff( slots = '' ) {
+		const node = root(
+			'/wp-json/corex/v1/forms/corex-assistant-callback',
+			'',
+			slots
+		);
 		const panel = node.querySelector( '.corex-assistant__panel' );
 		mountChat( node, panel, { onClose: jest.fn() } );
 		panel.querySelector( '.corex-assistant__human' ).click();
+		await flush();
 		return panel;
 	}
 
-	it( 'says what is missing and sends nothing', async () => {
+	function choose( form, channel ) {
+		const radio = form.querySelector( `input[value="${ channel }"]` );
+		radio.checked = true;
+		radio.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+	}
+
+	function errorsOf( form ) {
+		return [
+			...form.querySelectorAll( '.corex-assistant__error:not([hidden])' ),
+		].map( ( e ) => e.textContent );
+	}
+
+	it( 'asks how to reach the visitor before the number and the email', async () => {
+		const panel = await openHandoff();
+		const order = [
+			...panel.querySelectorAll(
+				'.corex-assistant__handoff > [data-field], .corex-assistant__handoff > fieldset'
+			),
+		].map( ( node ) => node.dataset.field || 'channel' );
+
+		expect( order ).toEqual( [
+			'name',
+			'channel',
+			'phone',
+			'email',
+			'time',
+		] );
+	} );
+
+	it( 'needs the number to be called, the email to be written to, and says the other is optional', async () => {
 		const panel = await openHandoff();
 		const form = panel.querySelector( '.corex-assistant__handoff' );
-		form.querySelector( 'input[value="email"]' ).checked = true;
+		const optional = ( field ) =>
+			form.querySelector(
+				`[data-field="${ field }"] .corex-assistant__optional`
+			).textContent;
+
+		expect( form.querySelector( '#corex-assistant-phone' ).required ).toBe(
+			true
+		);
+		expect( optional( 'email' ) ).toBe( ' (optional)' );
+
+		choose( form, 'email' );
+
+		expect( form.querySelector( '#corex-assistant-email' ).required ).toBe(
+			true
+		);
+		expect(
+			form
+				.querySelector( '#corex-assistant-phone' )
+				.getAttribute( 'aria-required' )
+		).toBe( 'false' );
+		expect( optional( 'phone' ) ).toBe( ' (optional)' );
+		expect( optional( 'email' ) ).toBe( '' );
+	} );
+
+	it( 'says what is missing for the chosen way and sends nothing', async () => {
+		const panel = await openHandoff();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		choose( form, 'email' );
 
 		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
 		await flush();
 
-		const errors = [
-			...form.querySelectorAll( '.corex-assistant__error:not([hidden])' ),
-		].map( ( e ) => e.textContent );
-		expect( errors ).toEqual( [ 'Name?', 'Phone?', 'Email?' ] );
+		expect( errorsOf( form ) ).toEqual( [ 'Name?', 'Email?' ] );
 		expect(
 			form
 				.querySelector( '#corex-assistant-name' )
@@ -371,6 +437,43 @@ describe( 'the hand-off', () => {
 		expect( panel.querySelector( '.corex-assistant__handoff' ) ).toBeNull();
 	} );
 
+	it( 'sends a request by email with no number and no bare dial code', async () => {
+		const panel = await openHandoff();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		window.fetch.mockReturnValue( reply( 200, { ok: true } ) );
+		choose( form, 'email' );
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+		form.querySelector( '#corex-assistant-email' ).value =
+			'sara@example.com';
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+
+		expect(
+			JSON.parse( window.fetch.mock.calls[ 0 ][ 1 ].body )
+		).toMatchObject( {
+			channel: 'email',
+			phone: '',
+			email: 'sara@example.com',
+		} );
+	} );
+
+	it( 'refuses a number too short to call, even when it is not needed', async () => {
+		const panel = await openHandoff();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		choose( form, 'email' );
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+		form.querySelector( '#corex-assistant-email' ).value =
+			'sara@example.com';
+		form.querySelector( '#corex-assistant-phone' ).value = '123';
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+
+		expect( errorsOf( form ) ).toEqual( [ 'Phone?' ] );
+		expect( window.fetch ).not.toHaveBeenCalled();
+	} );
+
 	it( 'sends no chat when the visitor unticks it', async () => {
 		const panel = await openHandoff();
 		const form = panel.querySelector( '.corex-assistant__handoff' );
@@ -400,6 +503,75 @@ describe( 'the hand-off', () => {
 		expect( panel.querySelector( '.corex-assistant__dial' ).value ).toBe(
 			'+966'
 		);
+	} );
+
+	it( 'offers the times by day and part of day, and sends the one chosen with the visitor’s zone', async () => {
+		// A visitor on UTC: Monday 10 Nov 2025 09:00 and 14:00, Tuesday 09:00.
+		jest.spyOn(
+			Intl.DateTimeFormat.prototype,
+			'resolvedOptions'
+		).mockReturnValue( { timeZone: 'UTC' } );
+		const monNine = Date.UTC( 2025, 10, 10, 9 ) / 1000;
+		const monTwo = Date.UTC( 2025, 10, 10, 14 ) / 1000;
+		const tueNine = Date.UTC( 2025, 10, 11, 9 ) / 1000;
+		window.fetch.mockReturnValueOnce(
+			reply( 200, { slots: [ monNine, monTwo, tueNine ] } )
+		);
+		const panel = await openHandoff( '/wp-json/corex/v1/assistant/slots' );
+		await flush();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		const labels = ( selector ) =>
+			[ ...form.querySelectorAll( selector ) ].map(
+				( node ) => node.textContent
+			);
+
+		expect( window.fetch.mock.calls[ 0 ][ 0 ] ).toBe(
+			'/wp-json/corex/v1/assistant/slots'
+		);
+		expect( form.querySelector( '[data-field="time"]' ) ).toBeNull();
+		expect( labels( '.corex-assistant__day' ) ).toHaveLength( 2 );
+		expect( labels( '.corex-assistant__part' ) ).toEqual( [
+			'Morning',
+			'Afternoon',
+		] );
+		expect(
+			form
+				.querySelector( '.corex-assistant__any' )
+				.getAttribute( 'aria-pressed' )
+		).toBe( 'true' );
+
+		form.querySelectorAll( '.corex-assistant__part' )[ 1 ].click();
+		form.querySelector(
+			'.corex-assistant__times .corex-assistant__time'
+		).click();
+		window.fetch.mockReturnValue( reply( 200, { ok: true } ) );
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+		form.querySelector( '#corex-assistant-phone' ).value = '50 123 4567';
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+
+		const body = JSON.parse( window.fetch.mock.calls[ 1 ][ 1 ].body );
+		expect( body.slot ).toBe( String( monTwo ) );
+		expect( body.time ).toBe( '' );
+		expect( body.timezone ).toBe( 'UTC' );
+		expect(
+			form
+				.querySelector( '.corex-assistant__any' )
+				.getAttribute( 'aria-pressed' )
+		).toBe( 'false' );
+	} );
+
+	it( 'keeps the best-time box when no time is on offer', async () => {
+		window.fetch.mockReturnValueOnce( reply( 200, { slots: [] } ) );
+		const panel = await openHandoff( '/wp-json/corex/v1/assistant/slots' );
+		await flush();
+
+		expect(
+			panel.querySelector(
+				'.corex-assistant__handoff [data-field="time"]'
+			)
+		).not.toBeNull();
+		expect( panel.querySelector( '.corex-assistant__slots' ) ).toBeNull();
 	} );
 
 	it( 'lists the site’s first countries first', async () => {

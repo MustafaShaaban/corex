@@ -22,6 +22,10 @@ use Corex\Assistant\AssistantSettings;
  *         return $locale === 'ar' ? ['name' => 'مساعد بيريجو'] + $strings : $strings;
  *     }, 10, 2);
  *
+ * What the owner writes on Settings → Assistant for a language (its name, welcome and suggested
+ * questions, FR-025) wins over the filter: the screen is where the owner changes the words, and an
+ * edit there that code silently overrode would read as broken.
+ *
  * No string names a model or its maker. `done` keeps a `%s` for the visitor's name, filled by the chat.
  */
 final class AssistantStrings
@@ -40,13 +44,14 @@ final class AssistantStrings
      */
     public function for(string $locale): array
     {
-        $defaults = $this->defaults($this->name());
+        $brand = $this->settings->brand($locale);
+        $defaults = $this->defaults($brand['name'] ?? $this->name());
         $filtered = apply_filters('corex_assistant_strings', $defaults, $locale);
 
-        return self::merge($defaults, is_array($filtered) ? $filtered : []);
+        return self::merge(self::merge($defaults, is_array($filtered) ? $filtered : []), $brand);
     }
 
-    /** The assistant's name from Settings, else the site's name with "Assistant". */
+    /** The assistant's name from Settings for every language, else the site's name with "Assistant". */
     private function name(): string
     {
         $name = $this->settings->name();
@@ -118,18 +123,25 @@ final class AssistantStrings
             'fieldName' => __('Your name', 'corex'),
             'fieldPhone' => __('Mobile number', 'corex'),
             'fieldCountry' => __('Country code', 'corex'),
-            'fieldEmail' => __('Email (optional)', 'corex'),
+            'fieldEmail' => __('Email', 'corex'),
+            'optional' => __('(optional)', 'corex'),
             'fieldChannel' => __('Reach me by', 'corex'),
             'channelCall' => __('Call', 'corex'),
             'channelWhatsapp' => __('WhatsApp', 'corex'),
             'channelEmail' => __('Email', 'corex'),
             'fieldTime' => __('Best time to reach you (optional)', 'corex'),
+            'fieldSlot' => __('Pick a time for the call (in your local time)', 'corex'),
+            'morning' => __('Morning', 'corex'),
+            'afternoon' => __('Afternoon', 'corex'),
+            'evening' => __('Evening', 'corex'),
+            'anyTime' => __('Any time that suits you', 'corex'),
+            'slotNote' => __('Our team confirms the time with you.', 'corex'),
             'attach' => __('Attach a summary of this chat, so the team knows what you need', 'corex'),
             'submit' => __('Send request', 'corex'),
             'sending' => __('Sending…', 'corex'),
             'formError' => __('Please check the highlighted fields.', 'corex'),
             'nameNeeded' => __('Add your name.', 'corex'),
-            'phoneNeeded' => __('Add a number we can reach you on.', 'corex'),
+            'phoneNeeded' => __('Add your mobile number to be called or messaged on WhatsApp.', 'corex'),
             'emailNeeded' => __('Add your email to be contacted by email.', 'corex'),
             /* translators: %s: the visitor's name. Keep the %s: the chat fills it in. */
             'done' => __('Thank you, %s. We have your request, and our team will contact you soon.', 'corex'),
