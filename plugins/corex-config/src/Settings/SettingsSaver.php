@@ -131,6 +131,10 @@ final class SettingsSaver
             // A select with nothing stored shows its first choice, and the browser posts it.
             $shown = SettingsControls::chosen($field['options'] ?? [], $shown);
         }
+        if ($type === 'order') {
+            // An order with nothing stored is drawn in its default order, and posted that way.
+            $shown = implode(',', SettingsControls::ordered($field['options'] ?? [], $shown));
+        }
 
         if ($type === 'checkbox') {
             // An unticked switch is not posted: absent is an explicit "off".

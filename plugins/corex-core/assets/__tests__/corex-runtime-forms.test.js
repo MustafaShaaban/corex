@@ -163,6 +163,44 @@ describe( 'the client rule table mirrors the server', () => {
 			expect( errors.f ?? null ).toBe( expected );
 		}
 	);
+
+	// `required_if` (spec 129, FR-023): asked about a field the form left out too, as the
+	// server's RequiredIf is, so a browser never sends what the server refuses.
+	it.each( [
+		[ { channel: 'call', phone: '' }, 'required' ],
+		[ { channel: 'whatsapp' }, 'required' ],
+		[ { channel: 'call', phone: '+20 100 000 0000' }, null ],
+		[ { channel: 'email', phone: '' }, null ],
+		[ { channel: 'email' }, null ],
+	] )( 'asks for the phone when %j', ( values, expected ) => {
+		const errors = window.Corex.forms.validate(
+			[
+				{
+					name: 'phone',
+					required: false,
+					rules: [
+						{
+							rule: 'required_if',
+							params: [ 'channel', 'call', 'whatsapp' ],
+						},
+						{ rule: 'phone' },
+					],
+				},
+			],
+			values
+		);
+
+		expect( errors.phone ?? null ).toBe( expected );
+	} );
+
+	it( 'runs no other rule on an optional field the form left out', () => {
+		const errors = window.Corex.forms.validate(
+			[ { name: 'site', required: false, rules: [ { rule: 'url' } ] } ],
+			{}
+		);
+
+		expect( errors ).toEqual( {} );
+	} );
 } );
 
 describe( 'validation messages', () => {

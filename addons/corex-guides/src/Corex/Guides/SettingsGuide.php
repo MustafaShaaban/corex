@@ -219,28 +219,48 @@ final class SettingsGuide
         return GuideTopic::for(
             'assistant',
             __('Assistant: the chat that answers from your own pages', 'corex'),
-            __('These settings belong to the Corex Assistant add-on (spec 129). While it is off they are shown read-only, with a link to it on the Add-ons screen.', 'corex'),
+            __('These settings belong to the Corex Assistant add-on (spec 129), in four parts: Assistant, Services, Booking and Limits. While the add-on is off they are shown read-only, with a link to it on the Add-ons screen.', 'corex'),
             [
                 new GuideStep(
                     __('Show the assistant: the main switch.', 'corex'),
-                    __('Turned on, a chat button appears on every public page once at least one service below has a key. Off, nothing shows anywhere.', 'corex'),
+                    __('Turned on, a chat button appears on every public page once at least one service is on and has a key. Off, nothing shows anywhere.', 'corex'),
                 ),
                 new GuideStep(
                     __('Assistant name and Assistant image: what the chat is called and the picture on its button.', 'corex'),
                     __('Leave the name blank for your site\'s name followed by "Assistant". The image shows at about 32 pixels: a square one with a transparent background works best.', 'corex'),
                 ),
                 new GuideStep(
-                    __('Google Gemini API key, Groq API key, OpenRouter API key and Mistral API key: one is enough.', 'corex'),
-                    __('Each comes free from the service\'s own site, linked under its field. The assistant asks them in this order and moves to the next while one\'s free limit is spent. A saved key is never shown again; Remove takes it away.', 'corex'),
+                    __('Name in each language, Welcome in each language and Suggested questions in each language: what the chat says, written per language.', 'corex'),
+                    __('One set for each language the site has installed. A blank field keeps what your site\'s code or CoreX says; write all three suggested questions to replace the built-in ones.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Order the services are asked in: Move up and Move down.', 'corex'),
+                    __('The first service that is on and has a key answers; while it rests (its free limit spent, or it failed), the next one does. Free services first keeps the cost at nothing.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Ask, one switch per service: Google Gemini, Groq, OpenRouter and Mistral are free and on; OpenAI and Anthropic Claude are paid and off.', 'corex'),
+                    __('A service that is off is skipped even with a key, so a paid key alone never spends money.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Google Gemini API key, Groq API key, OpenRouter API key, Mistral API key, OpenAI API key and Anthropic Claude API key: one is enough.', 'corex'),
+                    __('The free ones come from the service\'s own site, linked under its field. A saved key is never shown again; Remove takes it away.', 'corex'),
                     warning: __('Free tiers of some services may use what is sent to them to improve their models. The chat sends only the conversation and your public pages, and tells visitors not to share sensitive information.', 'corex'),
                 ),
                 new GuideStep(
-                    __('Google Gemini model, Groq model, OpenRouter model and Mistral model: usually blank.', 'corex'),
-                    __('Blank uses the model CoreX ships with. Change one only when its service retires that model; "Check services" under the fields shows which services answer.', 'corex'),
+                    __('Google Gemini model, Groq model, OpenRouter model, Mistral model, OpenAI model and Anthropic Claude model: usually blank.', 'corex'),
+                    __('Blank uses the model CoreX ships with. Change one only when its service retires that model. "Check services" asks every keyed service a visitor\'s question of real size and says how long each took, or why it failed.', 'corex'),
                 ),
                 new GuideStep(
-                    __('Questions a day, whole site: the most the assistant answers in a day.', 'corex'),
-                    __('Defaults to 600. Past it, and past a visitor\'s own 20 an hour or 60 a day, the chat offers its callback form instead of answering. Callbacks arrive in Submissions like any form.', 'corex'),
+                    __('Paid answers a day: the most answers the paid services give in a day.', 'corex'),
+                    __('Defaults to 50. Past it the paid services wait until the next day (UTC) and only the free ones answer; 0 never uses them.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Offer call times: the callback form offers times for a call instead of asking for the best time.', 'corex'),
+                    __('Your time zone, Days you take calls, First call at, Calls end at, Each call lasts, Earliest call, from now and Days a visitor can choose from set which times are offered. The visitor sees them in their own time zone; the team\'s email gives the chosen time in both. It is a requested time your team confirms: nothing is reserved.', 'corex'),
+                ),
+                new GuideStep(
+                    __('Questions an hour, each visitor, Questions a day, each visitor and Questions a day, whole site: what the assistant answers before it offers the callback form instead.', 'corex'),
+                    __('Defaults 20, 60 and 600. Callbacks arrive in Submissions like any form.', 'corex'),
                 ),
             ],
         );

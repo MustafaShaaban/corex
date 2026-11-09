@@ -52,9 +52,11 @@ it('names every settings field a reader can see on the screen', function () {
     foreach ((new SettingsRegistry())->sections() as $section) {
         foreach ($section['fields'] as $key => $field) {
             // Compared on the label, because that is the string on the screen. Case-insensitive so
-            // the guide may start a sentence with it.
-            if (! str_contains($text, strtolower((string) $field['label']))) {
-                $undocumented[] = sprintf('%s ("%s")', $key, $field['label']);
+            // the guide may start a sentence with it. A label that changes from site to site (one
+            // per language, one per service) names the words the guide uses for it in `guide_label`.
+            $label = (string) ($field['guide_label'] ?? $field['label']);
+            if (! str_contains($text, strtolower($label))) {
+                $undocumented[] = sprintf('%s ("%s")', $key, $label);
             }
         }
     }

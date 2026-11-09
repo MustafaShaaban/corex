@@ -112,6 +112,8 @@ final class FormSubmissionService
             return Response::reject(__('The file could not be stored.', 'corex'), 422);
         }
 
+        // The form's last word on its answers; a field its schema does not declare is not let in.
+        $values    = array_intersect_key($form->prepare($values), $schema);
         $submitted = new FormSubmittedEvent($slug, $values);
         $this->events->dispatch($submitted);
         $this->announce($submitted);

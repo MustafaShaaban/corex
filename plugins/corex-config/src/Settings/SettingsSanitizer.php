@@ -20,7 +20,7 @@ defined('ABSPATH') || exit;
 final class SettingsSanitizer
 {
     /**
-     * @param array<string,string> $options select field option keys
+     * @param array<string,string> $options a select's or an order's option keys
      *
      * @return string|null the clean value, or null when the input is invalid and must be rejected
      */
@@ -36,6 +36,10 @@ final class SettingsSanitizer
             'email'        => is_email(trim($raw)) ? sanitize_email(trim($raw)) : null,
             'url', 'media' => self::isAddress($raw) && esc_url_raw($raw) !== '' ? esc_url_raw($raw) : null,
             'select'       => in_array($raw, array_keys($options), true) ? $raw : null,
+            // A whole number of 0 or more: "20", not "20 a day" nor "-5" (spec 129, FR-024).
+            'number'       => preg_match('/^\d{1,9}$/', trim($raw)) === 1 ? (string) (int) trim($raw) : null,
+            // Cleaned rather than refused: unknown keys dropped, missing ones appended (FR-018).
+            'order'        => implode(',', SettingsControls::ordered($options, $raw)),
             // Written into a style attribute of an email, so one form only (spec 106).
             'hex-colour'   => preg_match('/^#[0-9a-f]{6}$/i', trim($raw)) === 1 ? strtolower(trim($raw)) : null,
             default        => sanitize_text_field($raw),

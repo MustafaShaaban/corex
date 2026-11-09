@@ -961,3 +961,38 @@
 		flex: 1 1 0;
 	}
 }
+
+/* An order of choices (spec 129, FR-018): each item on its own line, Move up and Move down at its end. */
+.corex-admin .corex-order {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	max-inline-size: 28rem;
+	margin: 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-order__item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm) var(--corex-admin-space-2xs);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-order__moves {
+	display: inline-flex;
+	gap: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-order__move {
+	display: inline-grid;
+	place-items: center;
+	min-inline-size: var(--corex-admin-control-height);
+	min-block-size: var(--corex-admin-control-height);
+	padding: 0;
+}

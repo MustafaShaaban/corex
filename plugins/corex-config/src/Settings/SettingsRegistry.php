@@ -278,6 +278,18 @@ final class SettingsRegistry implements FieldSections
                 'title'  => __('Assistant', 'corex'),
                 'fields' => $this->assistantFields(),
             ],
+            'assistant_services' => [
+                'title'  => __('Services', 'corex'),
+                'fields' => $this->assistantServiceFields(),
+            ],
+            'assistant_booking' => [
+                'title'  => __('Booking', 'corex'),
+                'fields' => $this->assistantBookingFields(),
+            ],
+            'assistant_limits' => [
+                'title'  => __('Limits', 'corex'),
+                'fields' => $this->assistantLimitFields(),
+            ],
             'insights' => [
                 'title'  => __('Insights', 'corex'),
                 'fields' => [
@@ -362,9 +374,11 @@ final class SettingsRegistry implements FieldSections
     }
 
     /**
-     * The Assistant's fields (spec 129, FR-006 and FR-014): the switch, its name and mark, the daily
-     * cap, and a key and a model for each AI service, in the order the assistant asks them. The
-     * services are named here rather than read from the add-on, so the screen does not need it loaded.
+     * The Assistant's own fields (spec 129, FR-006, FR-025): the switch, its name and image, and for
+     * each of the site's languages the name, welcome and suggested questions the owner writes.
+     *
+     * A field may carry `guide_label`: the words the Settings guide names it by, where its label
+     * changes from site to site (one per language, one per service).
      *
      * @return array<string,array<string,mixed>>
      */
@@ -374,39 +388,96 @@ final class SettingsRegistry implements FieldSections
             'assistant.enabled' => [
                 'label' => __('Show the assistant', 'corex'),
                 'type'  => 'checkbox',
-                'help'  => __('A chat button on every public page. It shows once at least one service below has a key.', 'corex'),
+                'help'  => __('A chat button on every public page. It shows once at least one service under Services is on and has a key.', 'corex'),
             ],
             'assistant.name' => [
                 'label' => __('Assistant name', 'corex'),
                 'type'  => 'text',
-                'help'  => __('What the chat calls itself. Leave blank for your site\'s name followed by "Assistant". A site in several languages names it per language in code (see the guide).', 'corex'),
+                'help'  => __('What the chat calls itself in every language without a name of its own below. Leave blank for your site\'s name followed by "Assistant".', 'corex'),
             ],
             'assistant.mark' => [
                 'label' => __('Assistant image', 'corex'),
                 'type'  => 'media',
                 'help'  => __('Shown on the round button and beside the assistant\'s name, at about 32 pixels. A square image with a transparent background works best. Leave blank for a speech-bubble icon.', 'corex'),
             ],
-            'assistant.daily_cap' => [
-                'label' => __('Questions a day, whole site', 'corex'),
-                'type'  => 'text',
-                'help'  => __('Past this, the chat offers the callback form instead of answering until the next day (UTC). Default 600. Each visitor may also ask 20 an hour and 60 a day.', 'corex'),
+        ];
+
+        foreach ($this->assistantLanguages() as $code => $language) {
+            $prefix = 'assistant.brand.' . $code . '.';
+            $fields[$prefix . 'name'] = [
+                /* translators: %s: a language, such as Arabic. */
+                'label'       => sprintf(__('Name in %s', 'corex'), $language),
+                'guide_label' => __('Name in each language', 'corex'),
+                'type'        => 'text',
+                'help'        => __('Leave blank for the Assistant name above.', 'corex'),
+            ];
+            $fields[$prefix . 'welcome'] = [
+                /* translators: %s: a language, such as Arabic. */
+                'label'       => sprintf(__('Welcome in %s', 'corex'), $language),
+                'guide_label' => __('Welcome in each language', 'corex'),
+                'type'        => 'text',
+                'help'        => __('The first thing the chat says. Leave blank for the built-in welcome.', 'corex'),
+            ];
+            foreach ([1, 2, 3] as $number) {
+                $fields[$prefix . 'suggestion' . $number] = [
+                    /* translators: 1: 1, 2 or 3. 2: a language, such as Arabic. */
+                    'label'       => sprintf(__('Suggested question %1$d in %2$s', 'corex'), $number, $language),
+                    'guide_label' => __('Suggested questions in each language', 'corex'),
+                    'type'        => 'text',
+                    'help'        => __('A question a visitor can send with one tap. Leave all three blank for the built-in ones.', 'corex'),
+                ];
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * The services (spec 129, FR-006, FR-016 to FR-018): the order the assistant asks them in, and
+     * for each a switch, a key and a model, then the cap on paid answers. The services are named
+     * here rather than read from the add-on, so the screen does not need it loaded. Mirrors
+     * `Corex\Assistant\Chain\Provider::CATALOGUE`.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private function assistantServiceFields(): array
+    {
+        $services = [
+            'gemini'     => ['Google Gemini', 'https://aistudio.google.com/apikey', 'gemini-flash-latest', false],
+            'groq'       => ['Groq', 'https://console.groq.com/keys', 'openai/gpt-oss-120b', false],
+            'openrouter' => ['OpenRouter', 'https://openrouter.ai/settings/keys', 'openrouter/free', false],
+            'mistral'    => ['Mistral', 'https://console.mistral.ai/api-keys', 'mistral-small-latest', false],
+            'openai'     => ['OpenAI', 'https://platform.openai.com/api-keys', 'gpt-5-mini', true],
+            'anthropic'  => ['Anthropic Claude', 'https://platform.claude.com/settings/keys', 'claude-haiku-5-5', true],
+        ];
+
+        $fields = [
+            'assistant.order' => [
+                'label'   => __('Order the services are asked in', 'corex'),
+                'type'    => 'order',
+                'options' => array_map(static fn (array $service): string => $service[0], $services),
+                'help'    => __('The first service that is on and has a key answers; while it rests, the next one does. Free services first keeps the cost at nothing.', 'corex'),
             ],
         ];
 
-        $services = [
-            'gemini'     => ['Google Gemini', 'https://aistudio.google.com/apikey', 'gemini-flash-latest'],
-            'groq'       => ['Groq', 'https://console.groq.com/keys', 'openai/gpt-oss-120b'],
-            'openrouter' => ['OpenRouter', 'https://openrouter.ai/settings/keys', 'openrouter/free'],
-            'mistral'    => ['Mistral', 'https://console.mistral.ai/api-keys', 'mistral-small-latest'],
-        ];
-
-        foreach ($services as $id => [$label, $keysUrl, $model]) {
+        foreach ($services as $id => [$label, $keysUrl, $model, $paid]) {
+            $fields['assistant.' . $id . '.on'] = [
+                /* translators: %s: an AI service, such as Groq. */
+                'label'       => sprintf(__('Ask %s', 'corex'), $label),
+                'guide_label' => __('Ask, one switch per service', 'corex'),
+                'type'        => 'checkbox',
+                'help'        => $paid
+                    ? __('A paid service: each answer it gives is charged to your account with it, up to the paid answers a day below. Off until you switch it on.', 'corex')
+                    : __('A free service. Off, it is skipped even with a key.', 'corex'),
+            ];
             $fields['assistant.' . $id . '.key'] = [
                 /* translators: %s: an AI service, such as Groq. */
                 'label'         => sprintf(__('%s API key', 'corex'), $label),
                 'type'          => 'password',
-                'remove_effect' => __('The assistant stops asking this service. It keeps asking the others that have a key.', 'corex'),
-                'help'          => __('A free key works. Leave the other services blank if you have only one.', 'corex'),
+                'remove_effect' => __('The assistant stops asking this service. It keeps asking the others that are on and have a key.', 'corex'),
+                'help'          => $paid
+                    ? __('A key from a paid account. Leave blank to never use this service.', 'corex')
+                    : __('A free key works. Leave the other services blank if you have only one.', 'corex'),
                 'help_url'      => $keysUrl,
                 /* translators: %s: an AI service, such as Groq. */
                 'help_link'     => sprintf(__('Get a %s key', 'corex'), $label),
@@ -420,7 +491,208 @@ final class SettingsRegistry implements FieldSections
             ];
         }
 
+        $fields['assistant.paid_cap'] = [
+            'label' => __('Paid answers a day', 'corex'),
+            'type'  => 'number',
+            'help'  => __('Past this, the paid services wait until the next day (UTC) and only the free ones answer. 0 never uses them. Default 50.', 'corex'),
+        ];
+
         return $fields;
+    }
+
+    /**
+     * Booking hours (spec 129, FR-020): the times the callback form offers a visitor for a call,
+     * inside the team's hours, in the team's time zone. A requested time the team confirms.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private function assistantBookingFields(): array
+    {
+        $shownWhenOn = ['key' => 'assistant.booking.enabled', 'values' => ['1']];
+        $times       = [];
+        for ($minutes = 0; $minutes < 1440; $minutes += 30) {
+            $time         = sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
+            $times[$time] = $time;
+        }
+        $horizons = [];
+        foreach ([1, 2, 3, 5, 7, 10, 14, 21, 30] as $days) {
+            /* translators: %d: a number of days, 2 or more. */
+            $horizons[(string) $days] = $days === 1 ? __('1 day', 'corex') : sprintf(__('%d days', 'corex'), $days);
+        }
+
+        return [
+            'assistant.booking.enabled' => [
+                'label' => __('Offer call times', 'corex'),
+                'type'  => 'checkbox',
+                'help'  => __('The callback form offers times inside your hours, shown in the visitor\'s own time zone. Off, it asks for the best time in their words.', 'corex'),
+            ],
+            'assistant.booking.timezone' => [
+                'label'    => __('Your time zone', 'corex'),
+                'type'     => 'select',
+                'options'  => ['' => __('The site\'s time zone (Settings, General)', 'corex')] + self::timeZones(),
+                'show_for' => $shownWhenOn,
+            ],
+            'assistant.booking.days' => [
+                'label'    => __('Days you take calls', 'corex'),
+                'type'     => 'select',
+                'options'  => [
+                    'every'   => __('Every day', 'corex'),
+                    'mon-fri' => __('Monday to Friday', 'corex'),
+                    'mon-sat' => __('Monday to Saturday', 'corex'),
+                    'sun-thu' => __('Sunday to Thursday', 'corex'),
+                    'sat-thu' => __('Saturday to Thursday', 'corex'),
+                ],
+                'show_for' => $shownWhenOn,
+            ],
+            'assistant.booking.start' => [
+                'label'    => __('First call at', 'corex'),
+                'type'     => 'select',
+                'options'  => $times,
+                'show_for' => $shownWhenOn,
+            ],
+            'assistant.booking.end' => [
+                'label'    => __('Calls end at', 'corex'),
+                'type'     => 'select',
+                'options'  => $times,
+                'help'     => __('A time at or before the first call runs past midnight into the next day.', 'corex'),
+                'show_for' => $shownWhenOn,
+            ],
+            'assistant.booking.slot' => [
+                'label'    => __('Each call lasts', 'corex'),
+                'type'     => 'select',
+                'options'  => self::durations([15, 20, 30, 45, 60, 90, 120]),
+                'show_for' => $shownWhenOn,
+            ],
+            'assistant.booking.notice' => [
+                'label'    => __('Earliest call, from now', 'corex'),
+                'type'     => 'select',
+                'options'  => ['0' => __('Right away', 'corex')] + self::durations([30, 60, 120, 240, 1440, 2880]),
+                'show_for' => $shownWhenOn,
+            ],
+            'assistant.booking.horizon' => [
+                'label'    => __('Days a visitor can choose from', 'corex'),
+                'type'     => 'select',
+                'options'  => $horizons,
+                'show_for' => $shownWhenOn,
+            ],
+        ];
+    }
+
+    /**
+     * The limits (spec 129, FR-008, FR-024): what one visitor and the whole site may ask.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private function assistantLimitFields(): array
+    {
+        return [
+            'assistant.limit.hour' => [
+                'label' => __('Questions an hour, each visitor', 'corex'),
+                'type'  => 'number',
+                'help'  => __('Past this, that visitor is offered the callback form until the hour is over. Default 20.', 'corex'),
+            ],
+            'assistant.limit.day' => [
+                'label' => __('Questions a day, each visitor', 'corex'),
+                'type'  => 'number',
+                'help'  => __('Default 60.', 'corex'),
+            ],
+            'assistant.daily_cap' => [
+                'label' => __('Questions a day, whole site', 'corex'),
+                'type'  => 'number',
+                'help'  => __('Past this, the chat offers the callback form instead of answering until the next day (UTC). Default 600.', 'corex'),
+            ],
+        ];
+    }
+
+    /**
+     * The languages the site writes in, by the two- or three-letter code the assistant keys its
+     * words by: the site's own language and every installed language pack, narrowed or widened by
+     * the `corex_assistant_languages` filter (a list of codes). At most six.
+     *
+     * @return array<string,string> code => the language's name
+     */
+    private function assistantLanguages(): array
+    {
+        $locales = [function_exists('get_locale') ? (string) get_locale() : 'en_US'];
+        if (function_exists('get_available_languages')) {
+            $locales = [...$locales, ...array_map('strval', get_available_languages())];
+        }
+
+        $codes = array_values(array_unique(array_filter(array_map([self::class, 'languageCode'], $locales))));
+        $asked = function_exists('apply_filters') ? apply_filters('corex_assistant_languages', $codes) : $codes;
+
+        $languages = [];
+        foreach (is_array($asked) ? $asked : [] as $code) {
+            $code = self::languageCode(is_string($code) ? $code : '');
+            if ($code !== '') {
+                $languages[$code] = self::languageName($code);
+            }
+        }
+
+        return array_slice($languages, 0, 6, true);
+    }
+
+    /** A locale as the language code the assistant keys its words by (`ar_EG` is `ar`), or ''. */
+    private static function languageCode(string $locale): string
+    {
+        $code = strtolower((string) strtok(trim($locale), '_-'));
+
+        return preg_match('/^[a-z]{2,3}$/', $code) === 1 ? $code : '';
+    }
+
+    /** A language's name in the screen's own language, from PHP's intl when it is there. */
+    private static function languageName(string $code): string
+    {
+        if (class_exists(\Locale::class)) {
+            $name = \Locale::getDisplayLanguage($code, function_exists('get_user_locale') ? (string) get_user_locale() : 'en');
+            if ($name !== '' && $name !== $code) {
+                return $name;
+            }
+        }
+
+        return strtoupper($code);
+    }
+
+    /**
+     * Durations for a select, keyed by their number of minutes.
+     *
+     * @param list<int> $minutes
+     *
+     * @return array<string,string>
+     */
+    private static function durations(array $minutes): array
+    {
+        $names = [
+            15   => __('15 minutes', 'corex'),
+            20   => __('20 minutes', 'corex'),
+            30   => __('30 minutes', 'corex'),
+            45   => __('45 minutes', 'corex'),
+            60   => __('1 hour', 'corex'),
+            90   => __('1 hour 30 minutes', 'corex'),
+            120  => __('2 hours', 'corex'),
+            240  => __('4 hours', 'corex'),
+            1440 => __('1 day', 'corex'),
+            2880 => __('2 days', 'corex'),
+        ];
+
+        $choices = [];
+        foreach ($minutes as $count) {
+            $choices[(string) $count] = $names[$count];
+        }
+
+        return $choices;
+    }
+
+    /**
+     * The world's time zones by their names, such as Africa/Cairo.
+     *
+     * @return array<string,string>
+     */
+    private static function timeZones(): array
+    {
+        $zones = \DateTimeZone::listIdentifiers();
+
+        return array_combine($zones, $zones);
     }
 
     /**

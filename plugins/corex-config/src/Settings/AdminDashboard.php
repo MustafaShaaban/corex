@@ -119,6 +119,8 @@ final class AdminDashboard
                 'removing'   => __('Removed when you save.', 'corex'),
                 /* translators: %s: what stops working once the saved value is removed. */
                 'confirm'    => __('Remove the saved value? %s', 'corex'),
+                /* translators: 1: an item of an ordered list, such as Groq. 2: its place now. 3: how many there are. */
+                'moved'      => __('%1$s moved to place %2$s of %3$s.', 'corex'),
             ],
         ]);
     }

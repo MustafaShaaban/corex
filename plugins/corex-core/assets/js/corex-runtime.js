@@ -336,6 +336,20 @@
 		required( value ) {
 			return isEmpty( value ) ? 'required' : null;
 		},
+		// `required_if:channel,call,whatsapp`: required while another field holds one of the
+		// answers listed (spec 129, FR-023), as Rules\RequiredIf is.
+		required_if( value, params, values ) {
+			const list = params || [];
+			const answer = values ? values[ list[ 0 ] ] : undefined;
+			if (
+				answer === undefined ||
+				answer === null ||
+				list.slice( 1 ).indexOf( String( answer ) ) === -1
+			) {
+				return null;
+			}
+			return isEmpty( value ) ? 'required' : null;
+		},
 		email( value ) {
 			if ( isEmpty( value ) ) {
 				return null;
@@ -427,15 +441,21 @@
 		},
 	};
 
-	function validateField( field, value ) {
+	// The rules asked about an optional field the form left out, as a RuleForAbsentValue is.
+	const ASKED_WHEN_ABSENT = [ 'required_if' ];
+
+	function validateField( field, value, values, absent ) {
 		const rules = field.rules || [];
 		for ( let i = 0; i < rules.length; i++ ) {
 			const spec = rules[ i ];
 			const rule = RULES[ spec.rule ];
-			if ( ! rule ) {
+			if (
+				! rule ||
+				( absent && ! ASKED_WHEN_ABSENT.includes( spec.rule ) )
+			) {
 				continue;
 			}
-			const error = rule( value, spec.params || [] );
+			const error = rule( value, spec.params || [], values );
 			if ( error ) {
 				return error; // bail per field — first failing rule wins (matches PHP)
 			}
@@ -450,12 +470,11 @@
 				values,
 				field.name
 			);
-			if ( ! present && ! field.required ) {
-				return;
-			}
 			const error = validateField(
 				field,
-				present ? values[ field.name ] : null
+				present ? values[ field.name ] : null,
+				values,
+				! present && ! field.required
 			);
 			if ( error ) {
 				errors[ field.name ] = error;

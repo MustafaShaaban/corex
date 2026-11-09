@@ -38,6 +38,8 @@ final class SettingsControls
             'select'     => $this->select($name, $field['options'] ?? [], $state, $readOnly),
             'checkbox'   => $this->switch($name, $state, $readOnly),
             'password'   => $this->secret($key, $field, $state, $readOnly),
+            'number'     => $this->number($name, $state, $readOnly),
+            'order'      => $this->order($name, (string) $field['label'], $field['options'] ?? [], $state, $readOnly),
             'info'       => $this->info($state->shown),
             // A text box, not the browser's colour picker: a picker cannot be left empty, and
             // empty is how a site says "CoreX's own".
@@ -98,6 +100,92 @@ final class SettingsControls
             esc_attr($state->saved),
             $this->readOnlyAttrs($name, $state, $readOnly, 'readonly aria-readonly="true"'),
         );
+    }
+
+    /** A whole number of 0 or more (spec 129, FR-024): a cap, a limit, a count. */
+    private function number(string $name, FieldState $state, bool $readOnly): string
+    {
+        return sprintf(
+            '<input id="%1$s" name="%1$s" type="number" min="0" step="1" inputmode="numeric" value="%2$s"'
+            . ' class="small-text" data-corex-saved="%3$s"%4$s />',
+            esc_attr($name),
+            esc_attr($state->shown),
+            esc_attr($state->saved),
+            $this->readOnlyAttrs($name, $state, $readOnly, 'readonly aria-readonly="true"'),
+        );
+    }
+
+    /**
+     * An order of choices (spec 129, FR-018): the choices as a numbered list, each with Move up and
+     * Move down, and one hidden input of their keys joined by commas, which is what is saved. The
+     * page's script moves an item and rewrites the input; without scripts the buttons do nothing
+     * and the saved order is posted back as it was.
+     *
+     * @param array<string,string> $options key => label, in the default order
+     */
+    private function order(string $name, string $label, array $options, FieldState $state, bool $readOnly): string
+    {
+        $keys  = self::ordered($options, $state->shown);
+        $last  = count($keys) - 1;
+        $items = '';
+        foreach ($keys as $position => $key) {
+            $items .= sprintf(
+                '<li class="corex-order__item" data-corex-order-key="%1$s"><span class="corex-order__label">%2$s</span>'
+                . '<span class="corex-order__moves">%3$s%4$s</span></li>',
+                esc_attr($key),
+                esc_html($options[$key]),
+                $this->move('up', $options[$key], $readOnly || $position === 0),
+                $this->move('down', $options[$key], $readOnly || $position === $last),
+            );
+        }
+
+        return sprintf(
+            '<ol class="corex-order" data-corex-order="%1$s" aria-label="%2$s">%3$s</ol>'
+            . '<input type="hidden" id="%1$s" name="%1$s" value="%4$s" data-corex-saved="%5$s"%6$s />'
+            . '<p class="screen-reader-text" aria-live="polite" data-corex-order-status></p>',
+            esc_attr($name),
+            esc_attr($label),
+            $items,
+            esc_attr(implode(',', $keys)),
+            esc_attr(implode(',', self::ordered($options, $state->saved))),
+            $readOnly ? ' disabled' : '',
+        );
+    }
+
+    /** One of an order item's two buttons, named for the item it moves. */
+    private function move(string $way, string $item, bool $disabled): string
+    {
+        $name = $way === 'up'
+            /* translators: %s: an item in an ordered list, such as Groq. */
+            ? sprintf(__('Move %s up', 'corex'), $item)
+            /* translators: %s: an item in an ordered list, such as Groq. */
+            : sprintf(__('Move %s down', 'corex'), $item);
+
+        return sprintf(
+            '<button type="button" class="button corex-order__move" data-corex-order-move="%1$s" aria-label="%2$s"%3$s>'
+            . '<span class="dashicons dashicons-arrow-%4$s-alt2" aria-hidden="true"></span></button>',
+            esc_attr($way),
+            esc_attr($name),
+            $disabled ? ' disabled' : '',
+            $way === 'up' ? 'up' : 'down',
+        );
+    }
+
+    /**
+     * The keys of an order as saved: the known ones in the order given, each once, then any the
+     * options hold that the value left out, in the options' order. An unknown key is dropped, so a
+     * choice added since the last save takes its default place at the end.
+     *
+     * @param array<string,string> $options key => label, in the default order
+     *
+     * @return list<string>
+     */
+    public static function ordered(array $options, string $value): array
+    {
+        $known = array_map('strval', array_keys($options));
+        $given = array_map('trim', explode(',', $value));
+
+        return array_values(array_unique([...array_intersect($given, $known), ...$known]));
     }
 
     /**

@@ -12,7 +12,10 @@
  *    confirmation, naming what stops working.
  *  - Test connection (US-SET-03): PageSpeed and Cloudflare keys are tested on the server; the
  *    answer is said in a live region and the "Last tested" line is brought up to date.
- *  - Driver-aware rows, the accessible selects and the save toast, as before.
+ *  - An order of choices (spec 129, FR-018): Move up and Move down rearrange the list and the
+ *    hidden input that is saved.
+ *  - Driver-aware rows (a select's value, or a switch read as "1"/"0"), the accessible selects
+ *    and the save toast, as before.
  */
 ( function () {
 	const settings = window.corexSettings || {};
@@ -431,7 +434,7 @@
 				const control = document.getElementById(
 					key.replace( /\./g, '_' )
 				);
-				const current = control ? control.value : '';
+				const current = control ? currentValue( control ) : '';
 				row.hidden = allowed.indexOf( current ) === -1;
 			} );
 	}
@@ -512,12 +515,120 @@
 		}
 	}
 
+	/**
+	 * An order of choices (spec 129, FR-018). A move rewrites the hidden input that is saved, keeps
+	 * the focus on the moved item, and says where it went. Discard puts the input back, and the
+	 * list follows it.
+	 *
+	 * @param {HTMLFormElement} form the page's form
+	 */
+	function initOrders( form ) {
+		form.querySelectorAll( '[data-corex-order]' ).forEach(
+			function ( list ) {
+				const input = document.getElementById(
+					list.getAttribute( 'data-corex-order' )
+				);
+				if ( ! input ) {
+					return;
+				}
+				const status = list.parentNode.querySelector(
+					'[data-corex-order-status]'
+				);
+
+				function items() {
+					return Array.prototype.slice.call( list.children );
+				}
+
+				function button( item, way ) {
+					return item.querySelector(
+						'[data-corex-order-move="' + way + '"]'
+					);
+				}
+
+				function refresh() {
+					const all = items();
+					all.forEach( function ( item, index ) {
+						button( item, 'up' ).disabled =
+							input.disabled || index === 0;
+						button( item, 'down' ).disabled =
+							input.disabled || index === all.length - 1;
+					} );
+				}
+
+				list.addEventListener( 'click', function ( event ) {
+					const pressed = event.target.closest(
+						'[data-corex-order-move]'
+					);
+					if ( ! pressed || pressed.disabled ) {
+						return;
+					}
+					const way = pressed.getAttribute( 'data-corex-order-move' );
+					const item = pressed.closest( '.corex-order__item' );
+					const sibling =
+						way === 'up'
+							? item.previousElementSibling
+							: item.nextElementSibling;
+					if ( ! sibling ) {
+						return;
+					}
+					list.insertBefore(
+						item,
+						way === 'up' ? sibling : sibling.nextElementSibling
+					);
+					refresh();
+					input.value = items()
+						.map( function ( node ) {
+							return node.getAttribute( 'data-corex-order-key' );
+						} )
+						.join( ',' );
+					changed( input );
+
+					const same = button( item, way );
+					( same.disabled
+						? button( item, way === 'up' ? 'down' : 'up' )
+						: same
+					).focus();
+					if ( status ) {
+						status.textContent = text(
+							'moved',
+							'%1$s moved to place %2$s of %3$s.'
+						)
+							.replace(
+								'%1$s',
+								item.querySelector( '.corex-order__label' )
+									.textContent
+							)
+							.replace(
+								'%2$s',
+								String( items().indexOf( item ) + 1 )
+							)
+							.replace( '%3$s', String( items().length ) );
+					}
+				} );
+
+				// Discard sets the input back: draw the list in its order again.
+				input.addEventListener( 'change', function () {
+					input.value.split( ',' ).forEach( function ( key ) {
+						const item = list.querySelector(
+							'[data-corex-order-key="' + key + '"]'
+						);
+						if ( item ) {
+							list.appendChild( item );
+						}
+					} );
+					refresh();
+				} );
+			}
+		);
+	}
+
 	function initPage() {
 		const form = document.querySelector( '[data-corex-settings-page]' );
 		if ( ! form ) {
 			return;
 		}
 		initSecretRemoval( form );
+		initOrders( form );
 		initProviderTests( form );
 		initSaveBar( form );
 	}

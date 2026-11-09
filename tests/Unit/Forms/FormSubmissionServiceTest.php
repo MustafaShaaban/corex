@@ -279,3 +279,57 @@ it('keeps a notification that failed when another listener\'s went', function ()
 
     expect($event->delivery()?->attemptId)->toBe('second-failed');
 });
+
+/**
+ * A form's `prepare()` (spec 129, FR-022): what it returns is what the listeners are handed, and it
+ * cannot add an answer its fields do not declare.
+ */
+it('hands the listeners the answers the form prepared, and nothing its fields do not declare', function () {
+    $dispatched = [];
+    $form = new class extends Form {
+        public string $slug = 'callback';
+
+        /** @var array<string,array{type?:string,rules?:list<string>}> */
+        protected array $fields = [
+            'name' => ['type' => 'text', 'rules' => ['required']],
+            'slot' => ['type' => 'text'],
+        ];
+
+        public function prepare(array $values): array
+        {
+            return ['slot' => 'Thu 12 Nov, 6:00 pm', 'smuggled' => 'x'] + $values;
+        }
+    };
+
+    $response = submissionService($dispatched, $form)->handle('callback', ['name' => 'Sara', 'slot' => '1762963200']);
+
+    expect($response->isOk())->toBeTrue()
+        ->and($dispatched[0]->values)->toBe(['slot' => 'Thu 12 Nov, 6:00 pm', 'name' => 'Sara'])
+        ->and($response->value)->toBe($dispatched[0]->values);
+});
+
+it('does not prepare a submission that failed validation', function () {
+    $dispatched = [];
+    $prepared = false;
+    $form = new class ($prepared) extends Form {
+        public string $slug = 'callback';
+
+        /** @var array<string,array{type?:string,rules?:list<string>}> */
+        protected array $fields = ['name' => ['type' => 'text', 'rules' => ['required']]];
+
+        public function __construct(private bool &$prepared)
+        {
+        }
+
+        public function prepare(array $values): array
+        {
+            $this->prepared = true;
+
+            return $values;
+        }
+    };
+
+    submissionService($dispatched, $form)->handle('callback', ['name' => '']);
+
+    expect($prepared)->toBeFalse()->and($dispatched)->toBe([]);
+});

@@ -100,6 +100,21 @@ abstract class Form
     }
 
     /**
+     * The values a valid submission is stored and sent with (spec 129, FR-022): run once after
+     * validation and before any listener, so the inbox and the team's email read the same thing.
+     * The default changes nothing. A form may turn a raw answer into what a person reads, such as
+     * a time sent as a timestamp; it must not add a field its schema does not declare.
+     *
+     * @param array<string,mixed> $values validated answers, uploads already stored
+     *
+     * @return array<string,mixed>
+     */
+    public function prepare(array $values): array
+    {
+        return $values;
+    }
+
+    /**
      * Listener service ids for this form's submissions. The default set stores the
      * submission and emails a notification; concrete forms may override.
      *

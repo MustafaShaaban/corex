@@ -106,8 +106,8 @@ final class SettingsPages
             new SettingsPage(
                 'assistant',
                 __('Assistant', 'corex'),
-                __('The chat that answers visitors from your site\'s pages: whether it shows, its name, and the keys of the AI services it asks.', 'corex'),
-                ['assistant'],
+                __('The chat that answers visitors from your site\'s pages: whether it shows, what it says, the AI services it asks and in what order, the call times it offers, and its limits.', 'corex'),
+                ['assistant', 'assistant_services', 'assistant_booking', 'assistant_limits'],
                 new SettingsAddon('corex-assistant/corex-assistant.php', 'corex-assistant', __('Corex Assistant', 'corex')),
             ),
             new SettingsPage(

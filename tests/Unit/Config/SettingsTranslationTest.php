@@ -17,7 +17,10 @@ use Corex\Config\Settings\SettingsPages;
 use Corex\Config\Settings\SettingsRegistry;
 
 /** Names no catalogue translates. */
-const COREX_SETTINGS_BRAND_NAMES = ['reCAPTCHA', 'Cloudflare Turnstile', 'hCaptcha'];
+const COREX_SETTINGS_BRAND_NAMES = [
+    'reCAPTCHA', 'Cloudflare Turnstile', 'hCaptcha',
+    'Google Gemini', 'Groq', 'OpenRouter', 'Mistral', 'OpenAI', 'Anthropic Claude',
+];
 
 beforeEach(function () {
     Functions\when('__')->alias(static fn (string $text): string => '⟦' . $text . '⟧');
@@ -44,7 +47,11 @@ function untranslatedSettingsText(): array
                 }
             }
             foreach ($field['options'] ?? [] as $value => $choice) {
-                $check($key . ' choice ' . $value, $choice);
+                // A choice written as its own value is the same in every language: a time zone
+                // such as Africa/Cairo, a time such as 09:00.
+                if ($choice !== (string) $value) {
+                    $check($key . ' choice ' . $value, $choice);
+                }
             }
             foreach ($field['help_variants'] ?? [] as $variant => $help) {
                 foreach (['help', 'help_link'] as $part) {
