@@ -37,7 +37,7 @@ Jest (jsdom). Built in a worktree with its own WordPress (`corex_wassistant`, `p
 | `Chain\Cooldowns` | `Cooldowns` | option `corex_assistant_cooldowns` |
 | `Chain\ModelClient` | `ModelClient` | OpenRouter's `X-Title` is the site name, not "Perego Assistant" |
 | `Chain\ChatRouter` | `ChatRouter` | none |
-| `AssistantSettings` | `AssistantSettings` | reads `ConfigInterface` (`.env` > option), no constants; name, mark, daily cap |
+| `AssistantSettings` | `AssistantSettings` | the switch, keys and models through `ConfigInterface` (`.env` > option); order, switches, limits, branding and booking from options (slice 2) |
 | `Knowledge\Knowledge` | `Knowledge` | site name and free text lines; no Perego `Brand` |
 | `Knowledge\KnowledgeProvider` | new | the contract a client implements |
 | `Knowledge\SiteKnowledge` | `KnowledgeSource` | default: site name, tagline, up to 40 published pages with the start of their text, capped at 24 KB; transient per locale, dropped on `save_post_page` |
@@ -52,11 +52,12 @@ Jest (jsdom). Built in a worktree with its own WordPress (`corex_wassistant`, `p
 | `Front\AssistantStrings` | `AssistantContent` | English `__()` defaults, `corex_assistant_strings` filter |
 | `Front\AssistantButton` | `AssistantBlock` | block `corex/assistant`, printed in `wp_footer`; config adds `dir`, `country`, `countriesFirst` |
 | `Forms\AssistantCallbackForm` | `AssistantCallbackForm` | `phone` rule only; default listeners (store + team email) |
-| `Admin\AssistantPanel`, `Admin\ServiceCheck`, `Admin\ServiceCheckController` | `AssistantSettingsPage` status + check | drawn under the Settings section by `corex_settings_section_extra`; the check is `POST corex/v1/assistant/check` |
+| `Admin\ServiceCheck`, `Admin\ServiceCheckController` | `AssistantSettingsPage` status + check | the check is `POST corex/v1/assistant/check`; slice 1's `Admin\AssistantPanel` (drawn under a Settings section) is removed in slice 2 |
 
-Framework edits: `AddonProviderRegistry`, `AddonRegistry` (catalogue), `SettingsPages` (page `assistant`),
-`SettingsRegistry` (section `assistant`), `SettingsStore::save()` + `SettingsSaver` (secrets not autoloaded),
-`composer.json`, `package.json` workspaces, `.github/CODEOWNERS`.
+Framework edits: `AddonProviderRegistry`, `AddonRegistry` (catalogue), `composer.json`, `package.json` workspaces,
+`.github/CODEOWNERS`. Slice 1 also edited `SettingsPages`, `SettingsRegistry`, `SettingsStore::save()` and
+`SettingsSaver`; slice 2 returns all four to `main` (the screen of FR-019 replaces the page, and a secret saved
+unloaded was invisible to the Config engine).
 
 ## Front end (`addons/corex-assistant/blocks/assistant`)
 
@@ -82,3 +83,22 @@ code and timezone to ISO, names from `Intl.DisplayNames`, replacing Perego's PHP
 Free tiers change limits and model names (models are settings; Check services shows what answers); free tiers
 may train on requests (the honesty note says no sensitive data; only the conversation and public copy are sent);
 prompt injection (no system role from the visitor, links only to known pages; worst case an off-topic sentence).
+
+## Slice 2 (FR-016 to FR-020)
+
+| Unit | Job |
+|---|---|
+| `Chain\Provider` | catalogue gains `openai` and `anthropic` (paid, `api`, answer-length field, sampling); `fromCatalogue()` |
+| `Chain\ModelClient` | headers and body per API; the Messages API's answer (text blocks, `refusal`, `max_tokens`); 529 a server error |
+| `Chain\ChatRouter` | skips a paid service once today's paid requests are spent; counts each request sent to one |
+| `Chain\Cooldowns` | keeps each service's last failure a week, for the screen |
+| `Limits\VisitorLimits` | caps from the owner (hour, day, site, paid); paid counts |
+| `Booking\BookingHours` | the hours in the business zone; the slots from now; the preview in another zone |
+| `Booking\SlotsController` | `GET corex/v1/assistant/slots`, public, `no-store` |
+| `Forms\RequiredForChannel` | the `required_for:<channels>` rule, asked of absent values too |
+| `Admin\AssistantScreen`, `AssistantScreenView`, `AssistantScreenSave` | CoreX → Assistant: menu, cards, save through `AdminGuard` |
+| `Admin\ServiceCheck` | a real question with the full instructions, timed, each failure recorded |
+| `blocks/assistant/slots.js`, `handoff.js` | the times by the visitor's day, both zones for the team; fields that follow the channel |
+
+Framework edits: `AdminPage` (rail entry and breadcrumb for `assistant`), the rail icon, and slice 1's Settings
+section, page and guide topic removed again.

@@ -14,13 +14,19 @@ use Corex\Forms\Form;
 
 /**
  * The assistant's hand-off (spec 129, FR-011): a visitor asks the team to call or write, from inside
- * the chat.
+ * the chat, at a time they pick when the owner has set booking hours.
  *
  * A CoreX form, so it has the forms engine's honeypot, sanitising, throttle, storage in the Submissions
  * inbox and the team's notification. The default listeners are kept: the team is told whether or not
  * the visitor gave an email (Reply-To is set only when they did), and the visitor is answered in the
  * chat, not by email. The chat draws its own fields and posts here; the labels below are what the
  * inbox and the team's email show.
+ *
+ * The number is required when the visitor asks for a call or WhatsApp, the email when they ask for an
+ * email ({@see RequiredForChannel}). A picked time arrives three ways: `slot` (the moment, in UTC),
+ * `zone` (the visitor's time zone), and `time`, the line the team reads ("Thu, Nov 12, 7:00 PM Riyadh =
+ * Thu, Nov 12, 6:00 PM Cairo"), written by the visitor's browser from the first two. It is a requested
+ * time the team confirms; `slot` is the part to trust, since the visitor's browser wrote the line.
  */
 final class AssistantCallbackForm extends Form
 {
@@ -52,21 +58,13 @@ final class AssistantCallbackForm extends Form
      */
     public function fields(): array
     {
+        $needs = RequiredForChannel::NAME . ':';
+
         return [
             'name' => [
                 'type' => 'text',
                 'rules' => ['required', 'max:120'],
                 'label' => __('Full name', 'corex'),
-            ],
-            'phone' => [
-                'type' => 'phone',
-                'rules' => ['required', 'phone'],
-                'label' => __('Phone', 'corex'),
-            ],
-            'email' => [
-                'type' => 'email',
-                'rules' => ['email', 'max:160'],
-                'label' => __('Email', 'corex'),
             ],
             'channel' => [
                 'type' => 'select',
@@ -79,10 +77,30 @@ final class AssistantCallbackForm extends Form
                     'email' => __('Email', 'corex'),
                 ],
             ],
+            'phone' => [
+                'type' => 'phone',
+                'rules' => [$needs . 'call,whatsapp', 'phone'],
+                'label' => __('Phone', 'corex'),
+            ],
+            'email' => [
+                'type' => 'email',
+                'rules' => [$needs . 'email', 'email', 'max:160'],
+                'label' => __('Email', 'corex'),
+            ],
             'time' => [
                 'type' => 'text',
-                'rules' => ['max:80'],
-                'label' => __('Best time', 'corex'),
+                'rules' => ['max:160'],
+                'label' => __('Requested time', 'corex'),
+            ],
+            'slot' => [
+                'type' => 'text',
+                'rules' => ['max:40'],
+                'label' => __('Requested time (UTC)', 'corex'),
+            ],
+            'zone' => [
+                'type' => 'text',
+                'rules' => ['max:64'],
+                'label' => __('Visitor time zone', 'corex'),
             ],
             'transcript' => [
                 'type' => 'textarea',

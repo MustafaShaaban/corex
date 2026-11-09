@@ -273,11 +273,6 @@ final class SettingsRegistry implements FieldSections
                     ],
                 ],
             ],
-            // The Assistant add-on (spec 129), declared here for the reason the `captcha` section is.
-            'assistant' => [
-                'title'  => __('Assistant', 'corex'),
-                'fields' => $this->assistantFields(),
-            ],
             'insights' => [
                 'title'  => __('Insights', 'corex'),
                 'fields' => [
@@ -359,68 +354,6 @@ final class SettingsRegistry implements FieldSections
                 ],
             ],
         ];
-    }
-
-    /**
-     * The Assistant's fields (spec 129, FR-006 and FR-014): the switch, its name and mark, the daily
-     * cap, and a key and a model for each AI service, in the order the assistant asks them. The
-     * services are named here rather than read from the add-on, so the screen does not need it loaded.
-     *
-     * @return array<string,array<string,mixed>>
-     */
-    private function assistantFields(): array
-    {
-        $fields = [
-            'assistant.enabled' => [
-                'label' => __('Show the assistant', 'corex'),
-                'type'  => 'checkbox',
-                'help'  => __('A chat button on every public page. It shows once at least one service below has a key.', 'corex'),
-            ],
-            'assistant.name' => [
-                'label' => __('Assistant name', 'corex'),
-                'type'  => 'text',
-                'help'  => __('What the chat calls itself. Leave blank for your site\'s name followed by "Assistant". A site in several languages names it per language in code (see the guide).', 'corex'),
-            ],
-            'assistant.mark' => [
-                'label' => __('Assistant image', 'corex'),
-                'type'  => 'media',
-                'help'  => __('Shown on the round button and beside the assistant\'s name, at about 32 pixels. A square image with a transparent background works best. Leave blank for a speech-bubble icon.', 'corex'),
-            ],
-            'assistant.daily_cap' => [
-                'label' => __('Questions a day, whole site', 'corex'),
-                'type'  => 'text',
-                'help'  => __('Past this, the chat offers the callback form instead of answering until the next day (UTC). Default 600. Each visitor may also ask 20 an hour and 60 a day.', 'corex'),
-            ],
-        ];
-
-        $services = [
-            'gemini'     => ['Google Gemini', 'https://aistudio.google.com/apikey', 'gemini-flash-latest'],
-            'groq'       => ['Groq', 'https://console.groq.com/keys', 'openai/gpt-oss-120b'],
-            'openrouter' => ['OpenRouter', 'https://openrouter.ai/settings/keys', 'openrouter/free'],
-            'mistral'    => ['Mistral', 'https://console.mistral.ai/api-keys', 'mistral-small-latest'],
-        ];
-
-        foreach ($services as $id => [$label, $keysUrl, $model]) {
-            $fields['assistant.' . $id . '.key'] = [
-                /* translators: %s: an AI service, such as Groq. */
-                'label'         => sprintf(__('%s API key', 'corex'), $label),
-                'type'          => 'password',
-                'remove_effect' => __('The assistant stops asking this service. It keeps asking the others that have a key.', 'corex'),
-                'help'          => __('A free key works. Leave the other services blank if you have only one.', 'corex'),
-                'help_url'      => $keysUrl,
-                /* translators: %s: an AI service, such as Groq. */
-                'help_link'     => sprintf(__('Get a %s key', 'corex'), $label),
-            ];
-            $fields['assistant.' . $id . '.model'] = [
-                /* translators: %s: an AI service, such as Groq. */
-                'label' => sprintf(__('%s model', 'corex'), $label),
-                'type'  => 'text',
-                /* translators: %s: a model name, such as mistral-small-latest. */
-                'help'  => sprintf(__('Leave blank for %s. Change it only when the service retires that model.', 'corex'), $model),
-            ];
-        }
-
-        return $fields;
     }
 
     /**

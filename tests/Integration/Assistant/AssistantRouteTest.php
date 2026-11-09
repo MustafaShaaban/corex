@@ -242,12 +242,47 @@ it('lets only an administrator run "Check services", which ends a keyed serviceâ
     wp_set_current_user(assistantRouteUser($this, 'administrator'));
     $response = $check();
 
+    $results = $response->get_data()['data']['results'];
+
     expect($response->get_status())->toBe(200)
-        ->and($response->get_data()['data']['results'])->toBe([[
+        ->and($results)->toHaveCount(1)
+        ->and($results[0])->toMatchArray([
             'service' => 'Groq',
             'model' => Provider::CATALOGUE['groq']['model'],
             'answered' => true,
             'detail' => '',
-        ]])
+        ])
+        ->and($results[0]['seconds'])->toBeFloat()
         ->and(get_option(Cooldowns::OPTION))->toBe([]);
+});
+
+it('offers no times until the owner turns booking on, then the next ones, never cached', function () {
+    $ask = static fn (): WP_REST_Response => rest_do_request(new WP_REST_Request('GET', '/corex/v1/assistant/slots'));
+    $off = $ask();
+
+    $booking = static fn (): array => ['enabled' => true, 'timezone' => 'Africa/Cairo', 'days' => [0, 1, 2, 3, 4, 5, 6], 'start' => '00:00', 'end' => '00:00', 'slot' => 60, 'notice' => 0, 'horizon' => 2];
+    add_filter('pre_option_' . \Corex\Assistant\AssistantSettings::BOOKING_OPTION, $booking);
+    $on = $ask();
+    remove_filter('pre_option_' . \Corex\Assistant\AssistantSettings::BOOKING_OPTION, $booking);
+
+    expect($off->get_data())->toBe(['zone' => wp_timezone_string() !== '' && \Corex\Assistant\Booking\BookingHours::knownZone(wp_timezone_string()) ? wp_timezone_string() : 'UTC', 'slots' => []])
+        ->and($on->get_data()['zone'])->toBe('Africa/Cairo')
+        ->and(count($on->get_data()['slots']))->toBeGreaterThan(20)
+        ->and($on->get_data()['slots'][0])->toBeGreaterThanOrEqual(time() - 3600)
+        ->and($on->get_headers()['Cache-Control'] ?? '')->toBe('no-store');
+});
+
+it('draws the Assistant screen for an administrator, in the CoreX shell, with every card', function () {
+    wp_set_current_user(assistantRouteUser($this, 'administrator'));
+    ob_start();
+    Boot::app()->container()->make(\Corex\Assistant\Admin\AssistantScreen::class)->render();
+    $html = (string) ob_get_clean();
+
+    expect($html)->toContain('corex-admin--assistant')
+        ->toContain('id="corex-assistant-services"')
+        ->toContain('id="corex-assistant-booking"')
+        ->toContain('id="corex-assistant-limits"')
+        ->toContain('data-corex-assistant-check')
+        ->toContain('name="corex_assistant_nonce"')
+        ->not->toContain('test-key');
 });

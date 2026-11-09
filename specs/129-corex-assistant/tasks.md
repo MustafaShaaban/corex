@@ -16,11 +16,12 @@
 - [x] T012 Guards (clean-code, wp, test, docs); docs page, CHANGELOG (Client impact), PROGRESS, DECISIONS
 - [x] T013 Pull request
 
-## Next slice (owed): Perego's revision 2
+## Slice 2: Perego's revision 2 and the owner's additions
 
-- [ ] T014 Paid fallbacks: OpenAI (chat completions) and Claude (Messages API), off until keyed, with a daily cap
-  for paid answers
-- [ ] T015 Owner-set order and a switch per service on Settings → Assistant
-- [ ] T016 Booking hours: time slots in the visitor's time zone, both zones in the team's email
-- [ ] T017 Required fields that follow the chosen channel
-- [ ] T018 Limits and per-language branding edited on the screen; a real-size "Check services" question
+- [x] T014 Paid fallbacks: OpenAI (chat completions) and Claude (Messages API), off until switched on, with a daily
+  cap on requests sent to them
+- [x] T015 Owner-set order and a switch per service on CoreX → Assistant
+- [x] T016 Booking hours: time slots in the visitor's time zone, both zones in the team's email
+- [x] T017 Required fields that follow the chosen channel
+- [x] T018 Limits and per-language branding edited on the screen; a real-size "Check services" question
+- [x] T019 CoreX → Assistant screen replaces the Settings page; guards; docs; CHANGELOG; DECISIONS #609 to #614

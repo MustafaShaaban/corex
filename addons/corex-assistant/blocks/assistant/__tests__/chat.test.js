@@ -6,6 +6,7 @@
 import { TextEncoder } from 'util';
 
 import { historyOf, mountChat, transcriptOf } from '../chat';
+import { city, describeSlot, slotGroups } from '../slots';
 import { bindAssistant } from '../view';
 
 const STRINGS = {
@@ -23,6 +24,12 @@ const STRINGS = {
 	emailNeeded: 'Email?',
 	formError: 'Check fields',
 	handoffTitle: 'Shall we call?',
+	fieldPhone: 'Phone',
+	fieldEmail: 'Email',
+	optional: '(optional)',
+	slotAny: 'Any time',
+	fieldSlot: 'When?',
+	slotZone: 'Your zone: %s',
 };
 
 function root(
@@ -72,9 +79,14 @@ async function ask( panel, question ) {
  * @param {string[]} languages
  */
 function visitorIn( timeZone, languages = [ 'en-US' ] ) {
-	jest.spyOn( Intl, 'DateTimeFormat' ).mockImplementation( () => ( {
-		resolvedOptions: () => ( { timeZone } ),
-	} ) );
+	const Real = Intl.DateTimeFormat;
+	// The visitor's own zone when asked with no options; real formatting otherwise.
+	jest.spyOn( Intl, 'DateTimeFormat' ).mockImplementation(
+		( locale, options ) =>
+			options
+				? new Real( locale, options )
+				: { resolvedOptions: () => ( { timeZone } ) }
+	);
 	jest.spyOn( window.navigator, 'languages', 'get' ).mockReturnValue(
 		languages
 	);
@@ -325,13 +337,71 @@ describe( 'the hand-off', () => {
 		const errors = [
 			...form.querySelectorAll( '.corex-assistant__error:not([hidden])' ),
 		].map( ( e ) => e.textContent );
-		expect( errors ).toEqual( [ 'Name?', 'Phone?', 'Email?' ] );
+		// By email: the address is needed and the number is not.
+		expect( errors ).toEqual( [ 'Name?', 'Email?' ] );
 		expect(
 			form
 				.querySelector( '#corex-assistant-name' )
 				.getAttribute( 'aria-invalid' )
 		).toBe( 'true' );
 		expect( window.fetch ).not.toHaveBeenCalled();
+	} );
+
+	it( 'needs the number for a call, and says the address is optional then', async () => {
+		const panel = await openHandoff();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+
+		const errors = [
+			...form.querySelectorAll( '.corex-assistant__error:not([hidden])' ),
+		].map( ( e ) => e.textContent );
+		expect( errors ).toEqual( [ 'Phone?' ] );
+		expect( form.querySelector( '#corex-assistant-phone' ).required ).toBe(
+			true
+		);
+		expect(
+			form.querySelector( 'label[for="corex-assistant-email"]' )
+				.textContent
+		).toBe( 'Email (optional)' );
+	} );
+
+	it( 'offers the site’s times in the visitor’s zone, and sends the picked one in both zones', async () => {
+		visitorIn( 'Asia/Riyadh' );
+		const slot = Date.UTC( 2026, 10, 12, 16, 0 ) / 1000;
+		window.fetch.mockImplementation( ( url ) =>
+			String( url ).includes( '/slots' )
+				? reply( 200, { zone: 'Africa/Cairo', slots: [ slot ] } )
+				: reply( 200, { ok: true } )
+		);
+		const node = root();
+		node.dataset.slots = '/wp-json/corex/v1/assistant/slots';
+		const panel = node.querySelector( '.corex-assistant__panel' );
+		mountChat( node, panel, { onClose: jest.fn() } );
+		panel.querySelector( '.corex-assistant__human' ).click();
+		await flush();
+		await flush();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		const picker = form.querySelector( '#corex-assistant-slot' );
+		expect( form.querySelector( '#corex-assistant-time' ) ).toBeNull();
+		expect( picker.options ).toHaveLength( 2 );
+
+		picker.value = String( slot );
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+		form.querySelector( '#corex-assistant-phone' ).value = '50 123 4567';
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+		await flush();
+
+		const sent = window.fetch.mock.calls.find( ( [ url ] ) =>
+			String( url ).includes( '/forms/' )
+		);
+		const body = JSON.parse( sent[ 1 ].body );
+		expect( body.slot ).toBe( '2026-11-12T16:00:00.000Z' );
+		expect( body.zone ).toBe( 'Asia/Riyadh' );
+		expect( body.time ).toMatch( /7:00\s?PM Riyadh = .*6:00\s?PM Cairo$/ );
 	} );
 
 	it( 'posts the answers to the CoreX form with the token, the honeypot and the chat, then confirms', async () => {
@@ -438,5 +508,33 @@ describe( 'the button', () => {
 		await flush();
 		expect( load ).toHaveBeenCalledTimes( 2 );
 		expect( mount ).toHaveBeenCalledTimes( 1 );
+	} );
+} );
+
+describe( 'the times', () => {
+	it( 'groups the slots by the visitor’s day and names each time in their zone', () => {
+		const nine = Date.UTC( 2026, 10, 12, 6, 0 ) / 1000;
+		const groups = slotGroups(
+			[ nine, nine + 3600, nine + 86400 ],
+			'en',
+			'Asia/Riyadh'
+		);
+
+		expect( groups.map( ( group ) => group.times.length ) ).toEqual( [
+			2, 1,
+		] );
+		expect( groups[ 0 ].day ).toMatch( /Thursday/ );
+		expect( groups[ 0 ].times[ 0 ].label ).toMatch( /9:00\s?AM/ );
+	} );
+
+	it( 'describes a slot once when the visitor is in the site’s own zone', () => {
+		const at = Date.UTC( 2026, 10, 12, 16, 0 ) / 1000;
+
+		expect(
+			describeSlot( at, 'en', 'Africa/Cairo', 'Africa/Cairo' )
+		).toMatch( /6:00\s?PM Cairo$/ );
+		expect( city( 'America/Argentina/Buenos_Aires' ) ).toBe(
+			'Buenos Aires'
+		);
 	} );
 } );

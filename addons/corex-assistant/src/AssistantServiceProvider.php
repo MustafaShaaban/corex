@@ -10,13 +10,18 @@ namespace Corex\Assistant;
 
 defined('ABSPATH') || exit;
 
-use Corex\Assistant\Admin\AssistantPanel;
+use Corex\Admin\AdminPage;
+use Corex\Assistant\Admin\AssistantScreen;
+use Corex\Assistant\Admin\AssistantScreenSave;
+use Corex\Assistant\Admin\AssistantScreenView;
 use Corex\Assistant\Admin\ServiceCheck;
 use Corex\Assistant\Admin\ServiceCheckController;
+use Corex\Assistant\Booking\SlotsController;
 use Corex\Assistant\Chain\ChatRouter;
 use Corex\Assistant\Chain\Cooldowns;
 use Corex\Assistant\Chain\ModelClient;
 use Corex\Assistant\Forms\AssistantCallbackForm;
+use Corex\Assistant\Forms\RequiredForChannel;
 use Corex\Assistant\Front\AssistantButton;
 use Corex\Assistant\Front\AssistantStrings;
 use Corex\Assistant\Http\AssistantController;
@@ -29,31 +34,37 @@ use Corex\Blocks\BlockMap;
 use Corex\Blocks\DynamicBlockRegistrar;
 use Corex\Container\ContainerInterface;
 use Corex\Forms\FormRegistry;
+use Corex\Forms\Validation\RuleRegistry;
 use Corex\Foundation\ServiceProvider;
 use Corex\Http\ClientAddress;
 use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
+use Corex\Security\Admin\AdminGuard;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\Config\SettingLocks;
 
 /**
- * Wires the CoreX Assistant (spec 129): the chat route and its limits, the button in the footer, the
- * hand-off form, and the panel under Settings → Assistant.
+ * Wires the CoreX Assistant (spec 129): the chat route and its limits, the slots route, the button in the
+ * footer, the hand-off form and its rule, and the CoreX → Assistant screen.
  *
  * The knowledge is asked of the `corex_assistant_knowledge_provider` filter when the chat first needs
  * it, so a site plugin that adds the filter on `init` or earlier is heard.
  */
 final class AssistantServiceProvider extends ServiceProvider
 {
+    /** The question "Check services" asks, with the full instructions, at a real question's size. */
+    private const CHECK_QUESTION = 'What do you offer, and how do I get started?';
+
     public function register(): void
     {
-        $this->container->singleton(AssistantSettings::class, static fn (ContainerInterface $c): AssistantSettings => new AssistantSettings($c->make(ConfigInterface::class)));
+        $this->container->singleton(AssistantSettings::class, static fn (ContainerInterface $c): AssistantSettings => new AssistantSettings(
+            $c->make(ConfigInterface::class),
+            static fn (string $name, mixed $default): mixed => get_option($name, $default),
+            (string) wp_timezone_string(),
+        ));
         $this->container->singleton(Cooldowns::class, static fn (): Cooldowns => Cooldowns::fromWordPress());
         $this->container->singleton(ModelClient::class, static fn (): ModelClient => ModelClient::fromWordPress());
         $this->container->singleton(VisitorLock::class, static fn (): VisitorLock => VisitorLock::fromWordPress());
-        $this->container->singleton(
-            ChatRouter::class,
-            static fn (ContainerInterface $c): ChatRouter => new ChatRouter($c->make(ModelClient::class), $c->make(Cooldowns::class), static fn (): int => time()),
-        );
         $this->container->singleton(VisitorLimits::class, static function (ContainerInterface $c): VisitorLimits {
             $settings = $c->make(AssistantSettings::class);
 
@@ -63,9 +74,15 @@ final class AssistantServiceProvider extends ServiceProvider
                     set_transient($key, $value, $seconds);
                 },
                 static fn (): int => time(),
-                static fn (): int => $settings->dailyCap(),
+                static fn (): array => $settings->limits(),
             );
         });
+        $this->container->singleton(ChatRouter::class, static fn (ContainerInterface $c): ChatRouter => new ChatRouter(
+            $c->make(ModelClient::class),
+            $c->make(Cooldowns::class),
+            $c->make(VisitorLimits::class),
+            static fn (): int => time(),
+        ));
         $this->container->singleton(
             AssistantLimitsMiddleware::class,
             static fn (ContainerInterface $c): AssistantLimitsMiddleware => new AssistantLimitsMiddleware($c->make(VisitorLock::class), $c->make(VisitorLimits::class)),
@@ -94,27 +111,32 @@ final class AssistantServiceProvider extends ServiceProvider
             $c->make(ClientAddress::class),
             static fn (): string => wp_salt('nonce'),
         ));
+        $this->container->singleton(SlotsController::class, static fn (ContainerInterface $c): SlotsController => new SlotsController(
+            $c->make(AssistantSettings::class),
+            static fn (): int => time(),
+        ));
         $this->container->singleton(AssistantButton::class, fn (ContainerInterface $c): AssistantButton => new AssistantButton(
             $c->make(AssistantSettings::class),
             $c->make(AssistantStrings::class),
             fn (): string => $this->formsActive() ? (string) rest_url('corex/v1/forms/' . AssistantCallbackForm::SLUG) : '',
         ));
-        $this->container->singleton(ServiceCheck::class, static fn (ContainerInterface $c): ServiceCheck => new ServiceCheck(
+        $this->container->singleton(ServiceCheck::class, fn (ContainerInterface $c): ServiceCheck => new ServiceCheck(
             $c->make(AssistantSettings::class),
             $c->make(ModelClient::class),
             $c->make(Cooldowns::class),
+            $c->make(VisitorLimits::class),
+            static fn (): array => $c->make(AssistantService::class)->conversation(
+                [['role' => 'user', 'content' => self::CHECK_QUESTION]],
+                AssistantButton::language((string) get_locale()),
+            ),
+            static fn (): float => microtime(true),
         ));
         $this->container->singleton(ServiceCheckController::class, static fn (ContainerInterface $c): ServiceCheckController => new ServiceCheckController(
             $c->make(ServiceCheck::class),
             $c->make(Pipeline::class),
             $c->make(MiddlewareResolver::class),
         ));
-        $this->container->singleton(AssistantPanel::class, static fn (ContainerInterface $c): AssistantPanel => new AssistantPanel(
-            $c->make(AssistantSettings::class),
-            $c->make(Cooldowns::class),
-            $c->make(VisitorLimits::class),
-            static fn (int $at): string => (string) wp_date(get_option('date_format', 'Y-m-d') . ' ' . get_option('time_format', 'H:i'), $at),
-        ));
+        $this->registerScreen();
     }
 
     public function boot(): void
@@ -122,19 +144,19 @@ final class AssistantServiceProvider extends ServiceProvider
         add_action('init', [$this, 'install']);
         add_action('rest_api_init', function (): void {
             $this->container->make(AssistantController::class)->register();
+            $this->container->make(SlotsController::class)->register();
             $this->container->make(ServiceCheckController::class)->register();
         });
         add_action('wp_footer', function (): void {
             $this->container->make(AssistantButton::class)->printInFooter();
         }, 5);
-        add_filter('corex_settings_section_extra', function (mixed $html, mixed $section): string {
-            return $this->container->make(AssistantPanel::class)->extra($html, $section);
-        }, 10, 2);
-        add_action('admin_enqueue_scripts', [$this, 'enqueueAdmin']);
+        if (is_admin()) {
+            $this->container->make(AssistantScreen::class)->register();
+        }
         add_action('save_post_page', [SiteKnowledge::class, 'forget']);
     }
 
-    /** The block, and the hand-off form when the forms engine is there to take it (Principle IX). */
+    /** The block, and the hand-off form and its rule when the forms engine is there to take them (Principle IX). */
     public function install(): void
     {
         // The built block when a build has run, else its source (the markup renders; its scripts wait for the build).
@@ -147,30 +169,80 @@ final class AssistantServiceProvider extends ServiceProvider
             }
         }
 
-        if ($this->formsActive()) {
-            $this->container->make(FormRegistry::class)->register(new AssistantCallbackForm());
-        }
-    }
-
-    /** "Check services" on Settings → Assistant, and only there (Principle VI). */
-    public function enqueueAdmin(string $hook): void
-    {
-        // Which Settings page is open; read only to choose what to load, so no nonce applies.
-        // phpcs:disable WordPress.Security.NonceVerification.Recommended
-        $asked = $_GET['section'] ?? $_GET['corex_tab'] ?? '';
-        $page = is_string($asked) ? sanitize_key(wp_unslash($asked)) : '';
-        // phpcs:enable WordPress.Security.NonceVerification.Recommended
-        if (! str_ends_with($hook, '_page_corex-settings-config') || $page !== AssistantPanel::SECTION) {
+        if (! $this->formsActive()) {
             return;
         }
+        $rules = $this->container->make(RuleRegistry::class);
+        if (! in_array(RequiredForChannel::NAME, $rules->keys(), true)) {
+            $rules->register(RequiredForChannel::NAME, new RequiredForChannel());
+        }
+        $this->container->make(FormRegistry::class)->register(new AssistantCallbackForm());
+    }
 
-        $base = dirname(__DIR__) . '/corex-assistant.php';
-        wp_enqueue_script('corex-assistant-admin', plugins_url('assets/assistant-admin.js', $base), ['wp-i18n'], COREX_ASSISTANT_VERSION, true);
-        wp_set_script_translations('corex-assistant-admin', 'corex');
-        wp_localize_script('corex-assistant-admin', 'corexAssistantAdmin', [
-            'endpoint' => esc_url_raw(rest_url('corex/v1/assistant/check')),
-            'nonce' => wp_create_nonce('wp_rest'),
-        ]);
+    /**
+     * The languages the owner writes the assistant's words in: the site's, English, and any a site adds
+     * with the `corex_assistant_languages` filter (a bilingual site adds its second language).
+     *
+     * @return list<string>
+     */
+    public static function languages(): array
+    {
+        $languages = apply_filters('corex_assistant_languages', [AssistantButton::language((string) get_locale()), 'en']);
+        $languages = is_array($languages) ? $languages : [];
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn (mixed $code): string => is_string($code) ? AssistantButton::language($code) : '', $languages),
+            static fn (string $code): bool => $code !== '',
+        )));
+    }
+
+    private function registerScreen(): void
+    {
+        $locked = fn (string $key): bool => $this->container->has(SettingLocks::class)
+            && $this->container->make(SettingLocks::class)->lockOf($key) !== null;
+        $languages = static fn (): array => self::languages();
+
+        $this->container->singleton(AssistantScreenView::class, static fn (ContainerInterface $c): AssistantScreenView => new AssistantScreenView(
+            $c->make(AssistantSettings::class),
+            $c->make(Cooldowns::class),
+            $c->make(VisitorLimits::class),
+            $locked,
+            $languages,
+            static fn (int $at): string => (string) wp_date(get_option('date_format', 'Y-m-d') . ' ' . get_option('time_format', 'H:i'), $at),
+            self::previewZones(),
+        ));
+        $this->container->singleton(AssistantScreenSave::class, static fn (ContainerInterface $c): AssistantScreenSave => new AssistantScreenSave(
+            $c->make(Cooldowns::class),
+            static function (string $option, mixed $value, bool $autoload): void {
+                update_option($option, $value, $autoload);
+            },
+            static function (string $option): void {
+                delete_option($option);
+            },
+            $locked,
+            $languages,
+            (string) wp_timezone_string(),
+        ));
+        $this->container->singleton(AssistantScreen::class, static fn (ContainerInterface $c): AssistantScreen => new AssistantScreen(
+            $c->make(AdminPage::class),
+            $c->make(AdminGuard::class),
+            $c->make(AssistantScreenView::class),
+            $c->make(AssistantScreenSave::class),
+            dirname(__DIR__) . '/corex-assistant.php',
+        ));
+    }
+
+    /**
+     * The zones the booking hours are previewed in on the screen: the site's own and UTC, unless a site
+     * names the ones its visitors are in (`corex_assistant_preview_zones`).
+     *
+     * @return list<string>
+     */
+    private static function previewZones(): array
+    {
+        $zones = apply_filters('corex_assistant_preview_zones', [(string) wp_timezone_string(), 'UTC']);
+
+        return array_values(array_unique(array_filter(is_array($zones) ? $zones : [], 'is_string')));
     }
 
     private function formsActive(): bool

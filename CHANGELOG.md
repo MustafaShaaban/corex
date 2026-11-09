@@ -8,7 +8,7 @@ All notable changes to Corex are documented here. The format follows
 
 One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439), and
 Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447), and the
-CoreX Assistant add-on (spec 129, DECISIONS #600 to #608).
+CoreX Assistant add-on (spec 129, DECISIONS #600 to #615).
 
 ### Added
 
@@ -24,10 +24,22 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #608).
   reduced motion and WCAG 2.2 AA (axe) are covered. Visitors are limited to one question at a time, 20
   an hour and 60 a day (an IPv6 network counts as one), the site to 600 a day by default. Off until
   activated, switched on and keyed: nothing changes on any site by updating.
-- **Settings → Assistant** (#601): the switch, the assistant's name and image, the daily cap, a key and
-  a model for each service (keys write-only, removable, lockable from `.env` as `ASSISTANT_<SERVICE>_KEY`),
-  each service's state, today's count and **Check services**.
-- **Five filters for a site's own assistant** (#603, #604, #606, #608): `corex_assistant_knowledge_provider`
+- **Paid fallbacks, last and capped** (#611): OpenAI (`gpt-5-mini`) and Anthropic Claude (`claude-haiku-5-5`,
+  through Anthropic's own Messages API) can follow the free tiers. They are off until the owner turns them
+  on, and answer at most 50 times a day by default.
+- **Visitors pick a time** (#612): with booking on, the callback form lists the next times the team takes
+  calls, in the visitor's own time zone; the team reads the picked time in both zones ("Thu, Nov 12, 7:00 PM
+  Riyadh = Thu, Nov 12, 6:00 PM Cairo"). A time the team confirms, not a reservation. A call or WhatsApp now
+  needs a number and an email an address (`required_for`), the other being optional.
+- **CoreX → Assistant** (#609, #610): a screen of its own in the CoreX rail. The switch, the button image and
+  each language's name, welcome and suggestions; the services in the owner's order, each with a switch, a
+  write-only key (lockable from `.env` as `ASSISTANT_<SERVICE>_KEY`), a model and its state and last failure;
+  the booking hours with a preview in other zones; the limits (per visitor an hour and a day, site-wide and
+  sent to paid services a day); and **Check services**, which asks each service that is on and has a key a real
+  visitor's question and times it.
+- **Seven filters for a site's own assistant** (#603, #604, #606, #608, #610): `corex_assistant_languages`
+  (the languages the owner writes words in), `corex_assistant_preview_zones` (where the booking hours are
+  previewed), `corex_assistant_knowledge_provider`
   (return a `Corex\Assistant\Knowledge\KnowledgeProvider` with the site's own words and pages),
   `corex_assistant_strings` (every visitor string, per language), `corex_assistant_voice` (rules for how
   replies read, per language), `corex_assistant_phone_countries`
@@ -91,9 +103,6 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #608).
 
 ### Changed
 
-- **A secret saved on Settings is no longer autoloaded** (spec 129, #602): the captcha secret, the
-  PageSpeed and Cloudflare keys and the assistant's keys are no longer loaded with every request. A
-  secret already stored keeps its row as it is until its value next changes.
 - **The token inventory accepts a component's own properties** (#607): a `--corex-*` property a
   package's stylesheet declares resolves for that package only.
 - **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
@@ -167,22 +176,22 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #608).
 **Spec 129, Corex Assistant:**
 
 - **Every site**: nothing shows and nothing is sent anywhere until an owner activates Corex Assistant on
-  Add-ons, turns on **Show the assistant** and saves a key. Until then its Settings page is read-only with
-  a link to Add-ons. Secrets saved on Settings from now on are stored with autoload off (#602); nothing is
-  rewritten by the update; a stored secret moves to autoload off when its value next changes. A client repository that carries copies of CoreX's tests takes the updated
-  `tests/Unit/Config/SettingsPagesUnitTest.php` and `SettingsTabsTest.php` (the Assistant page sits after
-  Media) and the regenerated `specs/057-brand-tokens-logo-system/inventories/*.json`.
-- **Perego** runs its own copy (its spec 058, released 2026-11-09 and switched off). **It should not switch
-  yet**: its revision 2 (paid OpenAI and Claude fallbacks, the owner ordering and switching services, booking
-  time slots, channel-led required fields, limits and branding on the screen) is not in this add-on; it is
-  the next slice of spec 129. When that lands, it adopts the add-on this way: activate it and paste the same
-  keys on Settings → Assistant (or `ASSISTANT_*_KEY` in `.env`, deleting any `PEREGO_AI_*` constants); return
-  its `AgentProfile` knowledge from a `KnowledgeProvider` on `corex_assistant_knowledge_provider`; move its
-  `AssistantContent` copy into `corex_assistant_strings`, its Gulf Arabic rules into `corex_assistant_voice`,
-  its mark into **Assistant image**, its Gulf-first
+  Add-ons, turns on **Show the assistant** on CoreX → Assistant and saves a key. A client repository that carries copies of CoreX's tests
+  takes the updated `tests/Integration/Operations/MaintenanceClosesSubmissionsTest.php` (the chat route is
+  one Maintenance closes) and the regenerated `specs/057-brand-tokens-logo-system/inventories/*.json`.
+- **Perego** runs its own copy (its spec 058 with revision 2, released 2026-11-09 and switched off). This
+  add-on now does what that copy does, so Perego can adopt it with this release: activate it; on CoreX →
+  Assistant enter the same keys (or `ASSISTANT_*_KEY` in `.env`, deleting any `PEREGO_AI_*` constants), the
+  service order and switches, the limits, the booking hours (every day 9:00 to 23:00, Africa/Cairo, 30-minute
+  slots, 2 hours' notice, 7 days), the image and each language's name, welcome and suggestions; add `ar` with
+  `corex_assistant_languages` and Riyadh, Dubai and Cairo with `corex_assistant_preview_zones`; return
+  its `AgentProfile` knowledge from a `KnowledgeProvider` on `corex_assistant_knowledge_provider`; move the
+  rest of its `AssistantContent` copy into `corex_assistant_strings`, its Gulf Arabic rules into
+  `corex_assistant_voice`, its Gulf-first
   country order into `corex_assistant_phone_countries` and its colours into `--corex-assistant-*`; then
-  remove its own assistant route (`perego/v1/assistant`), block, settings screen, callback form and the
-  callback branch of its mail listener, in one change, so two buttons never show. Its stored callbacks
+  remove its own assistant route (`perego/v1/assistant`), block, settings screen, callback form, its
+  `RequiredForChannel` rule and the callback branch of its mail listener, in one change, so two buttons never
+  show. Its old `perego_assistant_*` options can then be deleted. Its stored callbacks
   stay in the inbox under `perego-assistant-callback`. To keep its branded team email for callbacks, it
   returns its own mail listener from `corex_assistant_callback_listeners` (and matches the new slug
   `corex-assistant-callback` in it); otherwise the team gets CoreX's form notification.

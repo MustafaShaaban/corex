@@ -15,8 +15,9 @@ use Corex\Assistant\AssistantSettings;
 /**
  * Everything the assistant shows a visitor (spec 129, FR-013).
  *
- * English defaults in the `corex` domain, named after the assistant's name from Settings (else "<site>
- * Assistant"). A site replaces any of them per language with the `corex_assistant_strings` filter:
+ * English defaults in the `corex` domain, named "<site> Assistant"; then what the owner wrote on the
+ * Assistant screen for the language (name, welcome, suggestions); then a site's code, which replaces any
+ * of them per language with the `corex_assistant_strings` filter:
  *
  *     add_filter('corex_assistant_strings', function (array $strings, string $locale): array {
  *         return $locale === 'ar' ? ['name' => 'مساعد بيريجو'] + $strings : $strings;
@@ -40,18 +41,17 @@ final class AssistantStrings
      */
     public function for(string $locale): array
     {
-        $defaults = $this->defaults($this->name());
+        $owner = $this->settings->brandCopy($locale);
+        $defaults = self::merge($this->defaults($owner['name'] ?? $this->siteAssistant()), $owner);
         $filtered = apply_filters('corex_assistant_strings', $defaults, $locale);
 
         return self::merge($defaults, is_array($filtered) ? $filtered : []);
     }
 
-    /** The assistant's name from Settings, else the site's name with "Assistant". */
-    private function name(): string
+    /** The site's name with "Assistant": the name while the owner has given none. */
+    private function siteAssistant(): string
     {
-        $name = $this->settings->name();
-
-        return $name !== '' ? $name : sprintf(
+        return sprintf(
             /* translators: %s: the site's name. */
             __('%s Assistant', 'corex'),
             ($this->siteName)(),
@@ -118,12 +118,17 @@ final class AssistantStrings
             'fieldName' => __('Your name', 'corex'),
             'fieldPhone' => __('Mobile number', 'corex'),
             'fieldCountry' => __('Country code', 'corex'),
-            'fieldEmail' => __('Email (optional)', 'corex'),
+            'fieldEmail' => __('Email', 'corex'),
+            'optional' => __('(optional)', 'corex'),
             'fieldChannel' => __('Reach me by', 'corex'),
             'channelCall' => __('Call', 'corex'),
             'channelWhatsapp' => __('WhatsApp', 'corex'),
             'channelEmail' => __('Email', 'corex'),
             'fieldTime' => __('Best time to reach you (optional)', 'corex'),
+            'fieldSlot' => __('When should we reach you?', 'corex'),
+            'slotAny' => __('Any time that suits the team', 'corex'),
+            /* translators: %s: the visitor's time zone, such as Asia/Riyadh. */
+            'slotZone' => __('Times are in your time zone (%s). The team confirms the time with you.', 'corex'),
             'attach' => __('Attach a summary of this chat, so the team knows what you need', 'corex'),
             'submit' => __('Send request', 'corex'),
             'sending' => __('Sending…', 'corex'),

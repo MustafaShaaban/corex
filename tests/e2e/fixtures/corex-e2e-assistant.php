@@ -37,6 +37,11 @@ add_action('plugins_loaded', static function (): void {
 
     add_filter('pre_option_corex_assistant_enabled', static fn (): string => '1');
     add_filter('pre_option_corex_assistant_groq_key', static fn (): string => 'e2e-key');
+    // Times a visitor may pick: every day, round the clock, hourly, for two days.
+    add_filter('pre_option_corex_assistant_booking', static fn (): array => [
+        'enabled' => true, 'timezone' => 'Africa/Cairo', 'days' => [0, 1, 2, 3, 4, 5, 6],
+        'start' => '00:00', 'end' => '00:00', 'slot' => 60, 'notice' => 0, 'horizon' => 2,
+    ]);
 
     global $wpdb;
     $wpdb->query($wpdb->prepare(

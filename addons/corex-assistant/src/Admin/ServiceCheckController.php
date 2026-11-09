@@ -19,7 +19,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 
 /**
- * `POST corex/v1/assistant/check` (spec 129, FR-014): "Check services" on Settings → Assistant.
+ * `POST corex/v1/assistant/check` (spec 129, FR-014): "Check services" on CoreX → Assistant.
  * Administrators only: the capability is asked at the route and again in the declared middleware,
  * with the page's REST token.
  */

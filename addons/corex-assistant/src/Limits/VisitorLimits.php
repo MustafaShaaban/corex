@@ -10,30 +10,33 @@ namespace Corex\Assistant\Limits;
 
 defined('ABSPATH') || exit;
 
+use Corex\Assistant\AssistantSettings;
+
 /**
- * How many questions a visitor, and the whole site, may ask (spec 129, User Story 5).
+ * How many questions a visitor and the whole site may ask, and how many answers paid services may give
+ * (spec 129, User Story 5). The caps are the owner's, from the Assistant screen.
  *
- * Counts live in transients that expire with their window. Every answer costs a model call, so the
- * caps are what keep one visitor from spending a site's free tiers.
+ * Counts live in transients that expire with their window. Every answer costs a model call, so the caps
+ * are what keep one visitor from spending a site's free tiers, and a busy day from running up a bill.
  */
 final class VisitorLimits
 {
-    public const PER_HOUR = 20;
-    public const PER_DAY = 60;
-
     private const PREFIX = 'corex_ai_';
 
+    /** @var array{hour: int, day: int, site: int, paid: int}|null */
+    private ?array $read = null;
+
     /**
-     * @param \Closure(string): mixed          $get
-     * @param \Closure(string, int, int): void $set   key, value, seconds to keep
-     * @param \Closure(): int                  $now
-     * @param \Closure(): int                  $sitePerDay the site-wide cap, read when it is needed
+     * @param \Closure(string): mixed                               $get
+     * @param \Closure(string, int, int): void                      $set  key, value, seconds to keep
+     * @param \Closure(): int                                       $now
+     * @param \Closure(): array{hour: int, day: int, site: int, paid: int} $caps read when first needed
      */
     public function __construct(
         private readonly \Closure $get,
         private readonly \Closure $set,
         private readonly \Closure $now,
-        private readonly \Closure $sitePerDay,
+        private readonly \Closure $caps,
     ) {
     }
 
@@ -45,9 +48,9 @@ final class VisitorLimits
         $day = intdiv($now, 86400);
 
         $counters = [
-            [self::PREFIX . 'vh_' . $visitor . '_' . $hour, self::PER_HOUR, 3600],
-            [self::PREFIX . 'vd_' . $visitor . '_' . $day, self::PER_DAY, 86400],
-            [$this->siteKey($day), $this->sitePerDay(), 86400],
+            [self::PREFIX . 'vh_' . $visitor . '_' . $hour, $this->cap('hour'), 3600],
+            [self::PREFIX . 'vd_' . $visitor . '_' . $day, $this->cap('day'), 86400],
+            [$this->siteKey($day), $this->cap('site'), 86400],
         ];
 
         foreach ($counters as [$key, $limit]) {
@@ -63,7 +66,7 @@ final class VisitorLimits
         return true;
     }
 
-    /** Today's questions across the site, for the Settings screen. */
+    /** Today's questions across the site, for the owner's screen. */
     public function siteToday(): int
     {
         return $this->count($this->siteKey(intdiv(($this->now)(), 86400)));
@@ -71,7 +74,35 @@ final class VisitorLimits
 
     public function sitePerDay(): int
     {
-        return max(0, ($this->sitePerDay)());
+        return $this->cap('site');
+    }
+
+    /** Whether a paid service may still answer today. */
+    public function paidLeft(): bool
+    {
+        return $this->paidToday() < $this->cap('paid');
+    }
+
+    public function recordPaid(): void
+    {
+        ($this->set)($this->paidKey(), $this->paidToday() + 1, 86400);
+    }
+
+    public function paidToday(): int
+    {
+        return $this->count($this->paidKey());
+    }
+
+    private function paidKey(): string
+    {
+        return self::PREFIX . 'paid_' . intdiv(($this->now)(), 86400);
+    }
+
+    private function cap(string $name): int
+    {
+        $this->read ??= ($this->caps)();
+
+        return max(0, (int) ($this->read[$name] ?? AssistantSettings::DEFAULT_LIMITS[$name]));
     }
 
     private function count(string $key): int

@@ -65,7 +65,9 @@ final class AssistantButton implements BlockRenderer
             'endpoint' => (string) rest_url(AssistantController::ROUTE_NAMESPACE . AssistantController::ROUTE),
             'form' => ($this->form)(),
             'nonce' => wp_create_nonce('wp_rest'),
-            'mark' => $this->settings->mark(),
+            'mark' => $this->settings->icon(),
+            // Asked only when the hand-off opens, and only while the owner offers times.
+            'slots' => $this->settings->booking()->enabled ? (string) rest_url('corex/v1/assistant/slots') : '',
             'country' => self::iso($phone['default'] ?? ''),
             'countriesFirst' => implode(',', array_filter(array_map([self::class, 'iso'], (array) ($phone['first'] ?? [])))),
             'siteZone' => (string) wp_timezone_string(),
@@ -85,7 +87,7 @@ final class AssistantButton implements BlockRenderer
      * The button, the invitation beside it, the empty panel, and the chat's settings in `data-`
      * attributes. Every value is escaped here.
      *
-     * @param array{locale: string, dir: string, endpoint: string, form: string, nonce: string, mark: string, country: string, countriesFirst: string, siteZone: string, strings: array<string, string|list<string>>} $config
+     * @param array{locale: string, dir: string, endpoint: string, form: string, nonce: string, mark: string, slots?: string, country: string, countriesFirst: string, siteZone: string, strings: array<string, string|list<string>>} $config
      */
     public static function markup(array $config): string
     {
@@ -96,6 +98,7 @@ final class AssistantButton implements BlockRenderer
             . ' data-locale="' . esc_attr($config['locale']) . '"'
             . ' data-endpoint="' . esc_url($config['endpoint']) . '"'
             . ' data-form="' . esc_url($config['form']) . '"'
+            . ' data-slots="' . esc_url($config['slots'] ?? '') . '"'
             . ' data-nonce="' . esc_attr($config['nonce']) . '"'
             . ' data-mark="' . esc_url($config['mark']) . '"'
             . ' data-country="' . esc_attr($config['country']) . '"'

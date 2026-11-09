@@ -11,7 +11,8 @@ namespace Corex\Assistant\Chain;
 defined('ABSPATH') || exit;
 
 /**
- * One question to one model service, in the OpenAI chat-completions format (spec 129, FR-004).
+ * One question to one model service (spec 129, FR-004): in the OpenAI chat-completions format, or in
+ * Anthropic's Messages API for Claude.
  *
  * The HTTP call is passed in, so the classification of every answer is tested without a network:
  * `wp_remote_post` in production ({@see fromWordPress()}).
@@ -20,6 +21,9 @@ final class ModelClient
 {
     /** Room for a short answer; a reasoning model's thinking counts against it too. */
     private const MAX_TOKENS = 900;
+
+    /** The Messages API version Claude is asked in; it refuses `temperature`, `top_p` and `top_k`. */
+    private const ANTHROPIC_VERSION = '2026-10-21';
 
     /** The words a service uses when the spent limit is its daily one. */
     private const DAILY_HINTS = ['per day', 'perday', 'per_day', 'daily', 'requests per day', 'rpd', 'free-models-per-day'];
@@ -66,6 +70,27 @@ final class ModelClient
      */
     public function ask(Provider $provider, array $messages, int $timeout): string|Failure
     {
+        $response = ($this->transport)($provider->endpoint(), [
+            'timeout' => $timeout,
+            'headers' => $this->headers($provider),
+            // A visitor's broken UTF-8 is replaced, not allowed to empty the whole request.
+            'body' => (string) json_encode($this->body($provider, $messages), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE),
+        ]);
+
+        return $this->read($response, $provider->api);
+    }
+
+    /** @return array<string, string> */
+    private function headers(Provider $provider): array
+    {
+        if ($provider->api === Provider::API_MESSAGES) {
+            return [
+                'x-api-key' => $provider->key,
+                'anthropic-version' => self::ANTHROPIC_VERSION,
+                'Content-Type' => 'application/json',
+            ];
+        }
+
         $headers = [
             'Authorization' => 'Bearer ' . $provider->key,
             'Content-Type' => 'application/json',
@@ -76,27 +101,52 @@ final class ModelClient
             $headers['X-Title'] = $this->siteName !== '' ? $this->siteName : $this->siteUrl;
         }
 
-        $body = array_merge([
-            'model' => $provider->model,
-            'messages' => $messages,
-            'temperature' => 0.3,
-            'max_tokens' => self::MAX_TOKENS,
-        ], $provider->extra);
+        return $headers;
+    }
 
-        $response = ($this->transport)($provider->endpoint(), [
-            'timeout' => $timeout,
-            'headers' => $headers,
-            // A visitor's broken UTF-8 is replaced, not allowed to empty the whole request.
-            'body' => (string) json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE),
-        ]);
+    /**
+     * @param list<array{role: string, content: string}> $messages the system message first
+     * @return array<string, mixed>
+     */
+    private function body(Provider $provider, array $messages): array
+    {
+        $body = ['model' => $provider->model];
+        if ($provider->api === Provider::API_MESSAGES) {
+            // The Messages API takes the instructions apart from the conversation.
+            $system = array_filter($messages, static fn (array $m): bool => $m['role'] === 'system');
+            $body['system'] = implode("\n\n", array_column($system, 'content'));
+            $body['messages'] = self::fromVisitor(array_values(array_filter($messages, static fn (array $m): bool => $m['role'] !== 'system')));
+        } else {
+            $body['messages'] = $messages;
+        }
+        $body[$provider->tokensField] = self::MAX_TOKENS;
+        if ($provider->sampling) {
+            $body['temperature'] = 0.3;
+        }
 
-        return $this->read($response);
+        return array_merge($body, $provider->extra);
+    }
+
+    /**
+     * The conversation from the visitor's first message on: the Messages API refuses one that opens with
+     * the assistant, which a history cut to its last messages often does.
+     *
+     * @param list<array{role: string, content: string}> $messages
+     * @return list<array{role: string, content: string}>
+     */
+    private static function fromVisitor(array $messages): array
+    {
+        while ($messages !== [] && $messages[0]['role'] !== 'user') {
+            array_shift($messages);
+        }
+
+        return $messages;
     }
 
     /**
      * @param array{status?: int, headers?: array<string, string>, body?: string, error?: string} $response
      */
-    public function read(array $response): string|Failure
+    public function read(array $response, string $api = Provider::API_CHAT): string|Failure
     {
         if (isset($response['error'])) {
             return new Failure(Failure::SERVER, 0, null, (string) $response['error']);
@@ -130,23 +180,61 @@ final class ModelClient
             return new Failure(Failure::CONFIG, $status, null, $this->excerpt($body));
         }
 
+        // Anthropic's 529 (overloaded) lands here too: a minute's rest, as for any server error.
         if ($status < 200 || $status >= 300) {
             return new Failure(Failure::SERVER, $status, null, $this->excerpt($body));
         }
 
         $data = json_decode($body, true);
+
+        return is_array($data) && $api === Provider::API_MESSAGES ? self::messagesAnswer($data, $status) : self::chatAnswer($data, $status);
+    }
+
+    /**
+     * A chat-completions answer: the first choice's text. No text for this message (its safety filter, or
+     * a model that spent its room thinking) rests no service; an unreadable answer is the service's fault.
+     */
+    private static function chatAnswer(mixed $data, int $status): string|Failure
+    {
         $choice = is_array($data) ? ($data['choices'][0] ?? null) : null;
         $text = is_array($choice) ? ($choice['message']['content'] ?? null) : null;
         if (is_string($text) && trim($text) !== '') {
             return trim($text);
         }
 
-        // No answer to this message (its safety filter, or a model that spent its room thinking): the
-        // service is fine for the next visitor, so it does not rest. An unreadable answer is the service's.
         $finish = is_array($choice) ? (string) ($choice['finish_reason'] ?? '') : '';
         $refused = in_array($finish, ['content_filter', 'length', 'safety'], true) || ! empty($choice['message']['refusal'] ?? null);
 
         return new Failure($refused ? Failure::REJECTED : Failure::SERVER, $status, null, $refused ? 'no answer: ' . $finish : 'empty answer');
+    }
+
+    /**
+     * A Messages API answer: its text blocks joined (thinking blocks are skipped). A refusal, or room
+     * spent before any text, rests no service.
+     *
+     * @param array<string, mixed> $data
+     */
+    private static function messagesAnswer(array $data, int $status): string|Failure
+    {
+        $stop = (string) ($data['stop_reason'] ?? '');
+        if ($stop === 'refusal') {
+            return new Failure(Failure::REJECTED, $status, null, 'no answer: refusal');
+        }
+
+        $parts = [];
+        foreach ((array) ($data['content'] ?? []) as $block) {
+            if (is_array($block) && ($block['type'] ?? '') === 'text' && is_string($block['text'] ?? null)) {
+                $parts[] = $block['text'];
+            }
+        }
+        $text = trim(implode("\n\n", $parts));
+        if ($text !== '') {
+            return $text;
+        }
+
+        return $stop === 'max_tokens'
+            ? new Failure(Failure::REJECTED, $status, null, 'no answer: max_tokens')
+            : new Failure(Failure::SERVER, $status, null, 'empty answer');
     }
 
     /** A 400 or 422 about the key or the model, which a retry from any visitor would get too. */
@@ -173,7 +261,7 @@ final class ModelClient
         return false;
     }
 
-    /** A short, single-line note for the Settings screen. Never the key: it is not in the body. */
+    /** A short, single-line note for the Assistant screen. Never the key: it is not in the body. */
     private function excerpt(string $body): string
     {
         $data = json_decode($body, true);

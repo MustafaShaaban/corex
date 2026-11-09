@@ -5,49 +5,82 @@ description: A chat on every public page that answers from the site's own conten
 
 The optional **Corex Assistant** add-on (spec 129) puts a round chat button on every public page. A visitor
 asks a question and gets a short answer drawn from your site's own content, with links to your pages. When it
-cannot help (a price, a timeline, a person), it opens a callback form inside the chat, and the request arrives
-in **Submissions** like any CoreX form.
+cannot help (a price, a timeline, a person), it opens a callback form inside the chat, where the visitor can also
+pick a time; the request arrives in **Submissions** like any CoreX form.
 
-It runs on the free tiers of four AI services, asked in turn: when one's free limit is spent, the next answers.
-It says on screen that it is an AI that answers from the site only and can be wrong, and no visitor ever sees
-which service answered.
+It runs on the free tiers of four AI services asked in turn: when one's free limit is spent, the next answers.
+Two paid services (OpenAI and Anthropic's Claude) can be added as a last resort, with a daily cap. The chat says
+on screen that it is an AI that answers from the site only and can be wrong, and no visitor ever sees which
+service answered.
 
 ## Switch it on
 
-1. **Add-ons**: activate **Corex Assistant**.
-2. **Settings → Assistant**: turn on **Show the assistant**.
-3. Paste a free API key for at least one service and save. Each field links to the page where the service gives
-   one: Google Gemini (Google AI Studio), Groq, OpenRouter, Mistral. One key is enough; more keys mean more free
-   questions a day before the chat falls back to its callback form.
-4. Press **Check services**. Each keyed service answers "answered" or says why it did not.
+1. **Add-ons**: activate **Corex Assistant**. It adds **Assistant** to the CoreX menu.
+2. **CoreX → Assistant**: turn on **Show the assistant**.
+3. In **Services**, paste a free API key for at least one service and save. Google Gemini (Google AI Studio),
+   Groq, OpenRouter and Mistral give one free; one key is enough, and more keys mean more free questions a day.
+4. Press **Check services**. Each service that is on and has a key is asked a visitor's question with the full instructions,
+   and the screen says which answered and how fast.
+
+Nothing shows on the site until it is switched on **and** at least one service is on with a key. A saved key is
+never shown again; tick **Remove** and save to take it away.
 
 Free tiers of some of these services may use what is sent to them to improve their models. The chat sends only
 the conversation and your public pages, and its note asks visitors not to share sensitive information.
 
-Nothing shows on the site until it is switched on **and** at least one service has a key. A saved key is never
-shown again; **Remove** takes it away.
-
-Keys can also live in the site's `.env`, which then locks the field on the screen:
+Keys and models can also live in the site's `.env`, which then locks them on the screen:
 
 ```dotenv
 ASSISTANT_GEMINI_KEY=...
 ASSISTANT_GROQ_KEY=...
 ASSISTANT_OPENROUTER_KEY=...
 ASSISTANT_MISTRAL_KEY=...
+ASSISTANT_OPENAI_KEY=...
+ASSISTANT_ANTHROPIC_KEY=...
+ASSISTANT_GEMINI_MODEL=gemini-flash-lite-latest
 ```
 
-Any Settings value works the same way (`assistant.daily_cap` is `ASSISTANT_DAILY_CAP`). Keys saved on the
-screen are stored with autoload off, so they are not loaded with every request; while the assistant is on, a public
-page reads them only to decide whether to show the button.
+The switch, the keys and the models are stored as every CoreX setting is, so the site's `.env` can lock them. The
+services, limits, words and booking hours are stored with autoload off: while the assistant is on, a public page
+reads them, with the keys, to decide whether to show the button and how it looks.
+
+## The screen
+
+**Assistant.** The switch, the image on the button (from the media library; blank is a speech-bubble icon), and
+for each language its name, its welcome line and up to three suggested questions. A field left blank keeps the
+built-in words. The languages are the site's and English; a site in another language as well adds it:
+
+```php
+add_filter('corex_assistant_languages', static fn (array $languages): array => [...$languages, 'ar']);
+```
+
+**Services.** One row per service, asked from the top. Move a row up or down, switch a service on or off, paste
+its key, and change its model only when the service retires the one CoreX names. Each row says whether the
+service is ready, resting until a time, off, or has no key, and why it last failed. Free services start on and
+paid ones off: a paid key alone never spends money. Keep paid services last.
+
+**Booking.** When the team takes calls: the time zone, the working days, opening and closing times (a closing
+time at or before the opening time closes the next day), the slot length, the notice a visitor must give and how
+many days ahead they may pick. The card shows the hours as visitors in other zones see them; name those zones with
+`corex_assistant_preview_zones`:
+
+```php
+add_filter('corex_assistant_preview_zones', static fn (): array => ['Asia/Riyadh', 'Asia/Dubai', 'Africa/Cairo']);
+```
+
+**Limits.** Questions a visitor may ask in a clock hour and in a UTC day, questions the whole site answers in a
+day, and answers paid services may give in a day.
+
+**Check services.** As in step 4 above.
 
 ## What it answers, and how it stays honest
 
 Every question is sent with standing instructions that cannot be changed from the chat. The assistant:
 
 - answers only from the knowledge it is given (below), and says when it does not know;
-- never invents prices, durations, discounts, clients, results or guarantees;
 - reads misspelled, mixed-language or half-written questions generously, and recommends a service when the
   visitor describes a goal instead of naming one;
+- never invents prices, durations, discounts, clients, results or guarantees;
 - replies in the language of the visitor's last message (or the language they asked for: "reply in English",
   "كلمني بالعربي"), whatever the page's language, briefly, in plain paragraphs;
 - links only to pages the knowledge names: any other web address in a reply is removed, and so are email
@@ -58,14 +91,13 @@ Every question is sent with standing instructions that cannot be changed from th
 The conversation stays in the visitor's browser tab (session storage) and is never stored on the server. When a
 visitor sends the callback form, the chat goes with it if they leave "Attach a summary of this chat" ticked.
 
-## Limits
+## Limits and rests
 
-Each answer costs a model call, so the chat is limited on the server:
-
-| Limit | Value |
+| Limit | Default |
 |---|---|
 | A visitor (a salted hash of their address; an IPv6 /64 network counts as one) | one question at a time, 20 in a clock hour, 60 in a UTC day |
-| The whole site | 600 in a UTC day, or **Questions a day, whole site** in Settings |
+| The whole site | 600 questions in a UTC day |
+| Paid services | 50 answers in a UTC day |
 | One question | 600 characters; the last 12 messages are sent |
 | One request | 16,000 bytes, refused unread above that |
 
@@ -80,15 +112,63 @@ Each call to a service may take 10 seconds, and the whole search 22. A service t
 | "limit reached" with none | one minute |
 | its daily limit | until the next UTC midnight |
 | a key, credit or model error | one hour |
-| a server error, a timeout, no answer at all | one minute |
+| a server error, an overload, a timeout, no answer at all | one minute |
 | a refusal of this message (its safety filter, a message it cannot take) | not at all |
+
+## The services
+
+| Service | Kind | Default model | Notes |
+|---|---|---|---|
+| Google Gemini | free tier | `gemini-flash-lite-latest` | OpenAI-compatible endpoint |
+| Groq | free tier | `openai/gpt-oss-120b` | |
+| OpenRouter | free tier | `openrouter/free` | |
+| Mistral | free tier | `mistral-small-latest` | |
+| OpenAI | paid | `gpt-5-mini` | sent `max_completion_tokens` and no `temperature`, as GPT-5 models require |
+| Anthropic Claude | paid | `claude-haiku-5-5` | asked through Anthropic's own Messages API (`anthropic-version: 2026-10-21`), with low effort and no sampling settings |
+
+## The callback form and picking a time
+
+The hand-off is the CoreX form `corex-assistant-callback`: name, how to reach them (call, WhatsApp or email), phone
+with its country code, email, the time, the chat and the page it was sent from. A call or WhatsApp needs a number,
+an email needs an address, and the other is optional; the server checks the same with the `required_for` rule. It
+has the forms engine's honeypot, checks and storage, and the team is notified at **Settings → Email → Form
+notification recipient** (else the site administrator), with Reply-To set only when the visitor gave an email. The
+visitor is answered in the chat, not by email. Without the Corex Forms plugin the chat works and offers no form.
+
+With booking on, the form lists the next times in the visitor's own time zone, grouped by day, and "Any time that
+suits the team". A picked time is stored three ways: `time`, the line the team reads ("Thu, Nov 12, 7:00 PM Riyadh
+= Thu, Nov 12, 6:00 PM Cairo"); `slot`, the moment in UTC; and `zone`, the visitor's time zone. It is a time the
+team confirms, not a reservation: nothing checks for a time already asked for. With booking off, the visitor types
+a best time instead.
+
+The country code is preset from the visitor's time zone, then their browser's language, then the site's default.
+A site chooses its default country and the countries listed first:
+
+```php
+add_filter('corex_assistant_phone_countries', static fn (): array => [
+    'default' => 'AE',
+    'first' => ['AE', 'SA', 'KW', 'QA', 'BH', 'OM', 'EG'],
+]);
+```
+
+A site that sends its own designed emails puts its listener in place of CoreX's notification, and keeps storage:
+
+```php
+use Corex\Forms\Listeners\StoreSubmissionListener;
+
+add_filter('corex_assistant_callback_listeners', static fn (): array => [
+    StoreSubmissionListener::class,
+    \Acme\Email\CallbackMail::class, // invoked with the Corex\Forms\Submission\FormSubmittedEvent
+]);
+```
+
+Each entry is a class the CoreX container can build, as for any CoreX form's `listeners()`.
 
 ## Give it better knowledge
 
 Out of the box the assistant knows your site's name, tagline and up to 40 published pages: each page's title,
-address and the start of its text. That is a fair start for a small site. A site that has a written profile of
-itself (an `llms.txt`, an "about us" text, its services in its own words) gives the assistant that instead,
-through a **knowledge provider**:
+address and the start of its text. A site that has a written profile of itself (an `llms.txt`, an "about us" text,
+its services in its own words) gives the assistant that instead, through a **knowledge provider**:
 
 ```php
 use Corex\Assistant\Knowledge\Knowledge;
@@ -116,8 +196,8 @@ final class StudioKnowledge implements KnowledgeProvider
 add_filter('corex_assistant_knowledge_provider', static fn () => new StudioKnowledge());
 ```
 
-- `$locale` is the page's language (`en`, `ar`, ...), so a bilingual site returns each language's own copy and
-  page addresses.
+- `$locale` is the language of the visitor's last message (`en`, `ar`, ...), so a bilingual site returns each
+  language's own copy and page addresses.
 - The lines are free text; Markdown links inside them to this site's pages count as pages the assistant may link
   to.
 - The pages are what a reply's link chips may point to. Nothing else can be linked.
@@ -127,43 +207,33 @@ add_filter('corex_assistant_knowledge_provider', static fn () => new StudioKnowl
 
 Add the filter on `init` or earlier.
 
-## Its name, words and image
+## Its words and voice in code
 
-**Settings → Assistant** sets the **Assistant name** (blank: your site's name followed by "Assistant") and the
-**Assistant image** on the button. Every word a visitor reads can be replaced per language:
+The screen covers the name, welcome and suggestions. Every other word a visitor reads can be replaced per
+language, and a site can add rules for how replies read:
 
 ```php
 add_filter('corex_assistant_strings', static function (array $strings, string $locale): array {
-    if ($locale !== 'ar') {
-        return $strings;
-    }
-
-    return [
-        'name' => 'مساعد الاستوديو',
-        'welcome' => 'أهلًا بك! كيف أخدمك؟',
-        'suggestions' => ['ما الخدمات التي تقدّمونها؟', 'كيف أبدأ مشروعًا معكم؟'],
-        'note' => 'مساعد ذكي يجيب من محتوى موقعنا فقط، وقد يخطئ. لا تشارك بيانات حساسة هنا.',
-    ] + $strings;
+    return $locale === 'ar'
+        ? ['note' => 'مساعد ذكي يجيب من محتوى موقعنا فقط، وقد يخطئ. لا تشارك بيانات حساسة هنا.'] + $strings
+        : $strings;
 }, 10, 2);
-```
 
-The keys are those of `Corex\Assistant\Front\AssistantStrings`: `name`, `status`, `open`, `teaserTitle`,
-`teaserText`, `dismiss`, `welcome`, `suggestions` (a list), `placeholder`, `send`, `note`, `human`, `newChat`,
-`close`, `typing`, `busy`, `error`, `expired`, `handoffTitle`, `handoffText`, the field labels (`fieldName`,
-`fieldPhone`, `fieldCountry`, `fieldEmail`, `fieldChannel`, `fieldTime`), `channelCall`, `channelWhatsapp`,
-`channelEmail`, `attach`, `submit`, `sending`, `formError`, `nameNeeded`, `phoneNeeded`, `emailNeeded` and `done`
-(keep its `%s`, the visitor's name). A key you leave out keeps CoreX's English, or its translation in your
-`corex-<locale>.po`. Keep the honesty `note`, and name no AI company in any string.
-
-How replies read (a dialect to write in, words to avoid) is a list of short rules per language:
-
-```php
 add_filter('corex_assistant_voice', static function (array $rules, string $language): array {
     return $language === 'ar'
         ? [...$rules, 'Write as a Saudi or Gulf company writes to its clients, never in Egyptian dialect.']
         : $rules;
 }, 10, 2);
 ```
+
+The string keys are those of `Corex\Assistant\Front\AssistantStrings`: `name`, `status`, `open`, `teaserTitle`,
+`teaserText`, `dismiss`, `welcome`, `suggestions` (a list), `placeholder`, `send`, `note`, `human`, `newChat`,
+`close`, `typing`, `busy`, `error`, `expired`, `handoffTitle`, `handoffText`, the field labels (`fieldName`,
+`fieldPhone`, `fieldCountry`, `fieldEmail`, `fieldChannel`, `fieldTime`, `fieldSlot`), `optional`, `slotAny`,
+`slotZone` (keep its `%s`, the visitor's zone), `channelCall`, `channelWhatsapp`, `channelEmail`, `attach`,
+`submit`, `sending`, `formError`, `nameNeeded`, `phoneNeeded`, `emailNeeded` and `done` (keep its `%s`, the
+visitor's name). Order of precedence: CoreX's English (or your `corex-<locale>.po`), then the screen, then the
+filter. Keep the honesty `note`, and name no AI company in any string.
 
 ## Its colours
 
@@ -181,62 +251,26 @@ presets). A theme that names its colours differently sets the chat's own propert
 The full list is at the top of the add-on's `blocks/assistant/style.scss`. It is right to left on a page that is
 (`is_rtl()`), and it moves nothing for a visitor who asks for reduced motion.
 
-## The callback form
-
-The hand-off is the CoreX form `corex-assistant-callback`: name, phone with its country code, email (optional),
-call / WhatsApp / email, the best time, the chat, and the page it was sent from. It has the forms engine's
-honeypot, checks and storage, and the team is notified at **Settings → Email → Form notification recipient**
-(else the site administrator), with Reply-To set only when the visitor gave an email. The visitor is answered in
-the chat, not by email. Without the Corex Forms plugin the chat works and offers no form.
-
-A site that sends its own designed emails puts its listener in place of CoreX's notification, and keeps
-storage:
-
-```php
-use Corex\Forms\Listeners\StoreSubmissionListener;
-
-add_filter('corex_assistant_callback_listeners', static fn (): array => [
-    StoreSubmissionListener::class,
-    \Acme\Email\CallbackMail::class, // invoked with the Corex\Forms\Submission\FormSubmittedEvent
-]);
-```
-
-Each entry is a class the CoreX container can build, as for any CoreX form's `listeners()`.
-
-The country code is preset from the visitor's time zone, then their browser's language, then the site's default
-country. A site chooses its default country and the countries listed
-first:
-
-```php
-add_filter('corex_assistant_phone_countries', static fn (): array => [
-    'default' => 'AE',
-    'first' => ['AE', 'SA', 'KW', 'QA', 'BH', 'OM', 'EG'],
-]);
-```
-
 ## Caching and the page token
 
 The button carries the page's REST token, as CoreX forms do; WordPress keeps one valid for 12 to 24 hours. A page
 cache that keeps pages longer than 12 hours will serve some visitors an expired token; the chat then asks them to
-refresh. Keep such pages' cache under 12 hours.
+refresh. Keep such pages' cache under 12 hours. Turning the assistant on or off, or changing its look, reaches
+cached pages only when that cache is cleared.
 
 ## Switching from a site's own copy
 
 This add-on is Perego's spec 058 assistant, generalised. A site that built its own copy switches in one change, so
 two buttons never show:
 
-1. Activate the add-on and paste the same keys on **Settings → Assistant**, or as `ASSISTANT_<SERVICE>_KEY` in
-   `.env` (and delete any old `wp-config.php` constants).
+1. Activate the add-on and enter the same keys, order, switches, limits, booking hours and words on **CoreX →
+   Assistant** (or keys as `ASSISTANT_<SERVICE>_KEY` in `.env`, deleting any old `wp-config.php` constants).
 2. Return its knowledge from a `KnowledgeProvider` on `corex_assistant_knowledge_provider`.
-3. Move its strings into `corex_assistant_strings`, its voice rules into `corex_assistant_voice`, its image into
-   **Assistant image**, its country order into `corex_assistant_phone_countries`, its colours into the
-   `--corex-assistant-*` properties, and its own callback email (if it has one) into
-   `corex_assistant_callback_listeners`.
-4. Remove its own chat route, block, settings screen, callback form and the callback branch of its mail listener.
+3. Move its other strings into `corex_assistant_strings`, its voice rules into `corex_assistant_voice`, its second
+   language into `corex_assistant_languages`, its preview zones into `corex_assistant_preview_zones`, its country
+   order into `corex_assistant_phone_countries`, its colours into the `--corex-assistant-*` properties, and its own
+   callback email (if it has one) into `corex_assistant_callback_listeners`.
+4. Remove its own chat route, block, settings screen, callback form and rule, and the callback branch of its mail
+   listener.
 
 Its old callback submissions stay in the inbox under their old form name.
-
-**Not in the add-on yet** (Perego's revision 2 of 2026-11-09, the next slice of spec 129): paid fallbacks (OpenAI,
-Claude) with a daily cap for paid answers; the owner choosing the services' order and switching each on or off;
-booking hours with time slots shown in the visitor's time zone; required fields that follow the chosen channel;
-limits and branding edited on the screen. A site that uses any of these keeps its own copy until that slice lands.

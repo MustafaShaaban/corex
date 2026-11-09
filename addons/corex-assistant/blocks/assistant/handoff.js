@@ -1,13 +1,17 @@
 /**
- * The assistant's hand-off form (spec 129, User Story 2): the visitor asks the team to call or write.
+ * The assistant's hand-off form (spec 129, User Story 2): the visitor asks the team to call or write,
+ * and, when the site offers times, picks one.
  *
  * It posts to the CoreX form `corex-assistant-callback` with the page's REST token, so the forms
- * engine's honeypot, checks, storage and the team's email all apply. The country code is preset from
- * the visitor's clock (dial-codes.js).
+ * engine's honeypot, checks, storage and the team's email all apply. The way to reach them leads: a
+ * call or WhatsApp needs a number, an email needs an address, and the other is optional. The country
+ * code is preset from the visitor's clock (dial-codes.js); the times are shown in their own time zone
+ * (slots.js).
  */
 
 import { countryOptions, presetCountry } from './dial-codes';
 import { el } from './dom';
+import { describeSlot, fetchSlots, slotGroups, visitorZone } from './slots';
 
 const HONEYPOT = 'corex_hp';
 const ID = 'corex-assistant-';
@@ -16,6 +20,7 @@ const CHANNELS = [
 	[ 'whatsapp', 'channelWhatsapp' ],
 	[ 'email', 'channelEmail' ],
 ];
+const NEEDS_PHONE = [ 'call', 'whatsapp' ];
 const MIN_PHONE_DIGITS = 6;
 
 function row( name, label, control ) {
@@ -50,7 +55,6 @@ function controls( t ) {
 			type: 'tel',
 			autocomplete: 'tel-national',
 			inputmode: 'tel',
-			required: true,
 			maxlength: '20',
 			dir: 'ltr',
 		} ),
@@ -61,6 +65,7 @@ function controls( t ) {
 			dir: 'ltr',
 		} ),
 		time: el( 'input', { type: 'text', maxlength: '80' } ),
+		slot: el( 'select' ),
 		attach: el( 'input', {
 			type: 'checkbox',
 			id: `${ ID }attach`,
@@ -118,6 +123,32 @@ function fillCountries( dial, config ) {
 }
 
 /**
+ * The times on offer, by the visitor's day; "any time" first.
+ *
+ * @param {HTMLSelectElement} select
+ * @param {number[]}          slots
+ * @param {Object}            config the chat's settings
+ * @param {Function}          t      a string by key
+ */
+function fillSlots( select, slots, config, t ) {
+	select.append( el( 'option', { value: '', text: t( 'slotAny' ) } ) );
+	for ( const group of slotGroups( slots, config.locale, visitorZone() ) ) {
+		select.append(
+			el(
+				'optgroup',
+				{ label: group.day },
+				group.times.map( ( time ) =>
+					el( 'option', {
+						value: String( time.value ),
+						text: time.label,
+					} )
+				)
+			)
+		);
+	}
+}
+
+/**
  * The fields the visitor must fix before anything is sent, with the message for each.
  *
  * @param {Object}                  fields  the form's controls
@@ -130,13 +161,42 @@ export function problems( fields, channel, t ) {
 	if ( ! fields.name.value.trim() ) {
 		found.name = t( 'nameNeeded' );
 	}
-	if ( fields.phone.value.replace( /\D/g, '' ).length < MIN_PHONE_DIGITS ) {
+	const digits = fields.phone.value.replace( /\D/g, '' ).length;
+	if (
+		( NEEDS_PHONE.includes( channel ) || digits > 0 ) &&
+		digits < MIN_PHONE_DIGITS
+	) {
 		found.phone = t( 'phoneNeeded' );
 	}
 	if ( channel === 'email' && ! fields.email.value.trim() ) {
 		found.email = t( 'emailNeeded' );
 	}
 	return found;
+}
+
+/**
+ * Marks the fields the chosen channel needs as required, and the others as optional, in their labels too.
+ *
+ * @param {HTMLFormElement}         form
+ * @param {Object}                  fields
+ * @param {string}                  channel
+ * @param {(key: string) => string} t
+ */
+function followChannel( form, fields, channel, t ) {
+	const needs = {
+		phone: NEEDS_PHONE.includes( channel ),
+		email: channel === 'email',
+	};
+	for ( const [ field, required ] of Object.entries( needs ) ) {
+		fields[ field ].required = required;
+		const label = form.querySelector( `label[for="${ ID }${ field }"]` );
+		const base = t( field === 'phone' ? 'fieldPhone' : 'fieldEmail' );
+		if ( label ) {
+			label.textContent = required
+				? base
+				: `${ base } ${ t( 'optional' ) }`;
+		}
+	}
 }
 
 function showProblems( form, found ) {
@@ -197,8 +257,29 @@ async function post( config, body ) {
 }
 
 /**
+ * The time the visitor asked for: a picked slot in both zones, else what they typed.
+ *
+ * @param {Object} fields
+ * @param {Object} offer  the site's zone, from the slots route
+ * @param {Object} config the chat's settings
+ * @return {{time: string, slot: string, zone: string}} the three time fields
+ */
+function requestedTime( fields, offer, config ) {
+	const zone = visitorZone();
+	const at = Number( fields.slot.value );
+	if ( fields.slot.isConnected && at > 0 ) {
+		return {
+			time: describeSlot( at, config.locale, zone, offer.zone ),
+			slot: new Date( at * 1000 ).toISOString(),
+			zone,
+		};
+	}
+	return { time: fields.time.value.trim(), slot: '', zone };
+}
+
+/**
  * @param {Object}                  options
- * @param {Object}                  options.config     the chat's settings (form, nonce, locale, countries)
+ * @param {Object}                  options.config     the chat's settings (form, slots, nonce, locale, countries)
  * @param {(key: string) => string} options.t          a string by key
  * @param {() => string}            options.transcript the conversation as the team reads it
  * @param {(name: string) => void}  options.onSent     called with the visitor's name once the team has the request
@@ -214,6 +295,7 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 		] ),
 		phoneRow.querySelector( '.corex-assistant__error' )
 	);
+	const timeRow = row( 'time', t( 'fieldTime' ), fields.time );
 
 	const submit = el( 'button', {
 		type: 'submit',
@@ -235,10 +317,10 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 				text: t( 'handoffText' ),
 			} ),
 			row( 'name', t( 'fieldName' ), fields.name ),
+			channelChoice( t ),
 			phoneRow,
 			row( 'email', t( 'fieldEmail' ), fields.email ),
-			channelChoice( t ),
-			row( 'time', t( 'fieldTime' ), fields.time ),
+			timeRow,
 			el(
 				'label',
 				{ class: 'corex-assistant__check', for: `${ ID }attach` },
@@ -251,13 +333,38 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 	);
 
 	fillCountries( fields.dial, config );
+	const channelOf = () =>
+		form.querySelector( 'input[name="channel"]:checked' )?.value || 'call';
+	followChannel( form, fields, channelOf(), t );
+	form.querySelectorAll( 'input[name="channel"]' ).forEach( ( radio ) =>
+		radio.addEventListener( 'change', () =>
+			followChannel( form, fields, channelOf(), t )
+		)
+	);
+
+	// With times on offer, the typed time gives way to a list of them in the visitor's own zone.
+	let offer = { zone: '', slots: [] };
+	const ready = fetchSlots( config.slots ).then( ( found ) => {
+		offer = found;
+		if ( found.slots.length === 0 ) {
+			return;
+		}
+		fillSlots( fields.slot, found.slots, config, t );
+		const slotRow = row( 'slot', t( 'fieldSlot' ), fields.slot );
+		slotRow.append(
+			el( 'p', {
+				class: 'corex-assistant__sub',
+				text: t( 'slotZone' ).replace( '%s', visitorZone() ),
+			} )
+		);
+		timeRow.replaceWith( slotRow );
+	} );
 
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
+		await ready;
 		clearProblems( form );
-		const channel =
-			form.querySelector( 'input[name="channel"]:checked' )?.value ||
-			'call';
+		const channel = channelOf();
 		const found = problems( fields, channel, t );
 		if ( Object.keys( found ).length ) {
 			showProblems( form, found );
@@ -265,14 +372,15 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 			return;
 		}
 
+		const phone = fields.phone.value.trim();
 		submit.disabled = true;
 		submit.textContent = t( 'sending' );
 		const result = await post( config, {
 			name: fields.name.value.trim(),
-			phone: `${ fields.dial.value } ${ fields.phone.value.trim() }`.trim(),
-			email: fields.email.value.trim(),
 			channel,
-			time: fields.time.value.trim(),
+			phone: phone ? `${ fields.dial.value } ${ phone }` : '',
+			email: fields.email.value.trim(),
+			...requestedTime( fields, offer, config ),
 			transcript: fields.attach.checked ? transcript() : '',
 			page: window.location.href.slice( 0, 300 ),
 			[ HONEYPOT ]: fields.trap.value,

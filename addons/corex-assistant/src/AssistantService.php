@@ -45,15 +45,8 @@ final class AssistantService
             return self::busy();
         }
 
-        // The reply's language is the visitor's, not the page's, and the knowledge follows it, so its
-        // pages and links are in the language the visitor reads.
-        $replyIn = Instructions::replyLanguage($messages, $locale);
-        $knowledge = $this->knowledge->for($replyIn);
-        $name = (string) ($this->strings->for($replyIn)['name'] ?? '');
-        $text = $this->router->answer($chain, [
-            ['role' => 'system', 'content' => Instructions::system($knowledge, $name, $replyIn, $this->voice($replyIn))],
-            ...$messages,
-        ]);
+        $knowledge = $this->knowledge->for(Instructions::replyLanguage($messages, $locale));
+        $text = $this->router->answer($chain, $this->conversation($messages, $locale));
         if ($text === null) {
             return self::busy();
         }
@@ -61,6 +54,26 @@ final class AssistantService
         $shaped = ReplyShaper::shape($text, $this->siteHost, $knowledge->links());
 
         return $shaped['reply'] === '' ? self::busy() : $shaped + ['busy' => false];
+    }
+
+    /**
+     * What a service is sent: the standing instructions with the knowledge, then the conversation. The
+     * reply's language is the visitor's, not the page's, and the knowledge follows it, so its pages and
+     * links are in the language the visitor reads. "Check services" sends the same, at full size.
+     *
+     * @param list<array{role: string, content: string}> $messages
+     * @return list<array{role: string, content: string}>
+     */
+    public function conversation(array $messages, string $locale): array
+    {
+        $replyIn = Instructions::replyLanguage($messages, $locale);
+        $knowledge = $this->knowledge->for($replyIn);
+        $name = (string) ($this->strings->for($replyIn)['name'] ?? '');
+
+        return [
+            ['role' => 'system', 'content' => Instructions::system($knowledge, $name, $replyIn, $this->voice($replyIn))],
+            ...$messages,
+        ];
     }
 
     /**

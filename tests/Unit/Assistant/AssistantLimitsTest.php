@@ -9,6 +9,7 @@
 
 declare(strict_types=1);
 
+use Corex\Assistant\AssistantSettings;
 use Corex\Assistant\Http\AssistantLimitsMiddleware;
 use Corex\Assistant\Limits\VisitorKey;
 use Corex\Assistant\Limits\VisitorLimits;
@@ -31,7 +32,7 @@ function assistantLimits(array &$store, int $sitePerDay = 600, ?int &$now = null
         static function () use (&$now): int {
             return $now;
         },
-        static fn (): int => $sitePerDay,
+        static fn (): array => ['site' => $sitePerDay] + \Corex\Assistant\AssistantSettings::DEFAULT_LIMITS,
     );
 }
 
@@ -101,8 +102,8 @@ it('lets a visitor ask twenty questions an hour, and does not count the ones it 
         $allowed += $limits->allow('visitor') ? 1 : 0;
     }
 
-    expect($allowed)->toBe(VisitorLimits::PER_HOUR)
-        ->and($limits->siteToday())->toBe(VisitorLimits::PER_HOUR)
+    expect($allowed)->toBe(AssistantSettings::DEFAULT_LIMITS['hour'])
+        ->and($limits->siteToday())->toBe(AssistantSettings::DEFAULT_LIMITS['hour'])
         ->and($limits->allow('someone-else'))->toBeTrue();
 });
 
@@ -114,12 +115,12 @@ it('lets a visitor ask sixty questions a day, whatever the hour', function () {
     $allowed = 0;
     for ($hour = 0; $hour < 5; $hour++) {
         $now = 86400 * 100 + $hour * 3600;
-        for ($i = 0; $i < VisitorLimits::PER_HOUR; $i++) {
+        for ($i = 0; $i < AssistantSettings::DEFAULT_LIMITS['hour']; $i++) {
             $allowed += $limits->allow('visitor') ? 1 : 0;
         }
     }
 
-    expect($allowed)->toBe(VisitorLimits::PER_DAY);
+    expect($allowed)->toBe(AssistantSettings::DEFAULT_LIMITS['day']);
 });
 
 it('stops the whole site at its daily cap', function () {

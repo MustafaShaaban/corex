@@ -10,12 +10,16 @@ namespace Corex\Assistant\Chain;
 
 defined('ABSPATH') || exit;
 
+use Corex\Assistant\Limits\VisitorLimits;
+
 /**
- * Asks the model services in the chain's order until one answers (spec 129, User Story 4).
+ * Asks the model services in the owner's order until one answers (spec 129, User Story 4).
  *
  * A service that fails is skipped for as long as its failure says ({@see Failure::waitSeconds()}), so
- * the next question goes straight to the next one. The whole search stops after {@see BUDGET_SECONDS}:
- * shared hosting ends a request at 30 seconds, and a visitor should not wait that long anyway.
+ * the next question goes straight to the next one. A paid service is asked only while today's paid
+ * requests last, and every request sent to one counts, answered or not: a refusal or an answer cut short
+ * is billed too. The whole search stops after {@see BUDGET_SECONDS}: shared hosting ends a request at 30
+ * seconds, and a visitor should not wait that long anyway.
  */
 final class ChatRouter
 {
@@ -31,6 +35,7 @@ final class ChatRouter
     public function __construct(
         private readonly ModelClient $client,
         private readonly Cooldowns $cooldowns,
+        private readonly VisitorLimits $limits,
         private readonly \Closure $clock,
     ) {
     }
@@ -43,7 +48,7 @@ final class ChatRouter
     {
         $started = ($this->clock)();
         foreach ($chain as $provider) {
-            if ($this->cooldowns->isCooling($provider->id)) {
+            if ($this->cooldowns->isCooling($provider->id) || ($provider->paid && ! $this->limits->paidLeft())) {
                 continue;
             }
 
@@ -52,9 +57,12 @@ final class ChatRouter
                 break;
             }
 
+            if ($provider->paid) {
+                $this->limits->recordPaid();
+            }
             $result = $this->client->ask($provider, $messages, min(self::CALL_TIMEOUT, $left));
             if (is_string($result)) {
-                // A rest that ran out is still on record until now: answering ends it.
+                // A rest that ran out, or a failure note, is still on record until now: answering ends it.
                 $this->cooldowns->clear($provider->id);
 
                 return $result;

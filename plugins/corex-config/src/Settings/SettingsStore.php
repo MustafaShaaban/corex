@@ -26,14 +26,9 @@ final class SettingsStore
         return (string) get_option($this->optionName($key), $default);
     }
 
-    /**
-     * A secret (a password-typed field) is saved with autoload off (spec 129, FR-006): only the code
-     * that uses the key reads it, so it has no business in the memory of every request. Anything else
-     * is saved as before, leaving autoload to WordPress.
-     */
-    public function save(string $key, string $value, bool $secret = false): void
+    public function save(string $key, string $value): void
     {
-        update_option($this->optionName($key), $value, $secret ? false : null);
+        update_option($this->optionName($key), $value);
     }
 
     /** Takes the stored value away, so the setting falls back to its default (spec 119, US-SET-15). */

@@ -14,6 +14,8 @@
 const { test, expect } = require( '@playwright/test' );
 const AxeBuilder = require( '@axe-core/playwright' ).default;
 
+const { STORAGE_STATE } = require( './global-setup' );
+
 const PAGE = '/sample-page/';
 const WCAG_TAGS = [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ];
 
@@ -74,6 +76,9 @@ test.describe( 'with the assistant on', () => {
 			dialog.getByRole( 'heading', { name: 'Shall we contact you?' } )
 		).toBeVisible();
 		await expect( dialog.getByLabel( 'Your name' ) ).toBeVisible();
+		await expect(
+			dialog.getByLabel( 'When should we reach you?' )
+		).toBeVisible();
 
 		const { violations } = await new AxeBuilder( { page } )
 			.include( '.corex-assistant' )
@@ -82,7 +87,7 @@ test.describe( 'with the assistant on', () => {
 		expect(
 			violations.map(
 				( violation ) =>
-					`${ violation.id }: ${ violation.nodes.length }`
+					`${ violation.id }: ${ violation.nodes.map( ( node ) => node.target.join( ' ' ) ).join( ' | ' ) }`
 			)
 		).toEqual( [] );
 
@@ -108,5 +113,38 @@ test.describe( 'with the assistant on', () => {
 		await expect(
 			page.getByRole( 'dialog' ).getByText( 'What do you build?' )
 		).toBeVisible();
+	} );
+} );
+
+test.describe( 'the owner’s screen', () => {
+	test.use( { storageState: STORAGE_STATE } );
+
+	test( 'lists the services with the paid ones off, and has no WCAG A or AA violation', async ( {
+		page,
+	} ) => {
+		await page.goto( '/wp-admin/admin.php?page=corex-assistant' );
+
+		await expect(
+			page.getByRole( 'heading', { name: 'Assistant', level: 1 } )
+		).toBeVisible();
+		await expect( page.getByLabel( 'OpenAI on' ) ).not.toBeChecked();
+		await expect(
+			page.getByLabel( 'Anthropic Claude on' )
+		).not.toBeChecked();
+		await expect( page.getByLabel( 'Groq on' ) ).toBeChecked();
+
+		const { violations } = await new AxeBuilder( { page } )
+			.include( '.corex-assistant-screen' )
+			// The shell's primary button is a known contrast failure on every CoreX screen
+			// (tests/e2e/quality/known-failures.json, US-BRD-02), not this screen's.
+			.exclude( '.corex-assistant-screen__save' )
+			.withTags( WCAG_TAGS )
+			.analyze();
+		expect(
+			violations.map(
+				( violation ) =>
+					`${ violation.id }: ${ violation.nodes.map( ( node ) => node.target.join( ' ' ) ).join( ' | ' ) }`
+			)
+		).toEqual( [] );
 	} );
 } );

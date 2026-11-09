@@ -104,13 +104,6 @@ final class SettingsPages
                 new SettingsAddon('corex-media/corex-media.php', 'corex-media', __('Corex Media', 'corex')),
             ),
             new SettingsPage(
-                'assistant',
-                __('Assistant', 'corex'),
-                __('The chat that answers visitors from your site\'s pages: whether it shows, its name, and the keys of the AI services it asks.', 'corex'),
-                ['assistant'],
-                new SettingsAddon('corex-assistant/corex-assistant.php', 'corex-assistant', __('Corex Assistant', 'corex')),
-            ),
-            new SettingsPage(
                 'insights',
                 __('Insights', 'corex'),
                 __('The keys Insights uses for performance checks and the security scan.', 'corex'),

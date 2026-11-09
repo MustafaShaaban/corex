@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
-use Corex\Assistant\Admin\AssistantPanel;
+use Corex\Assistant\Admin\AssistantScreenSave;
 use Corex\Assistant\AssistantService;
 use Corex\Assistant\AssistantSettings;
 use Corex\Assistant\Chain\ChatRouter;
@@ -24,9 +24,6 @@ use Corex\Assistant\Front\AssistantStrings;
 use Corex\Assistant\Knowledge\Knowledge;
 use Corex\Assistant\Knowledge\KnowledgeProvider;
 use Corex\Assistant\Limits\VisitorLimits;
-use Corex\Config\Settings\SettingsPages;
-use Corex\Config\Settings\SettingsRegistry;
-use Corex\Config\Settings\SettingsStore;
 use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
 use Corex\Tests\Unit\Assistant\AssistantFixtures;
@@ -41,6 +38,7 @@ beforeEach(function () {
 function assistantService(?string $answer, array $values = ['assistant.groq.key' => 'k'], array &$sent = []): AssistantService
 {
     $cooldowns = [];
+    $counts = [];
     $client = new ModelClient(static function (string $url, array $args) use ($answer, &$sent): array {
         $sent = json_decode($args['body'], true);
 
@@ -58,7 +56,7 @@ function assistantService(?string $answer, array $values = ['assistant.groq.key'
 
     return new AssistantService(
         $settings,
-        new ChatRouter($client, AssistantFixtures::cooldowns($cooldowns), static fn (): int => 0),
+        new ChatRouter($client, AssistantFixtures::cooldowns($cooldowns), AssistantFixtures::limits($counts), static fn (): int => 0),
         $knowledge,
         new AssistantStrings($settings, static fn (): string => 'Example Studio'),
         'example.com',
@@ -102,14 +100,20 @@ it('answers busy, offering the team, when nothing can answer', function (?string
     'nothing left after shaping' => ['https://elsewhere.test/', ['assistant.groq.key' => 'k']],
 ]);
 
-it('names the assistant after the site, or as Settings name it', function () {
+it('names the assistant after the site, or as the owner names it for a language', function () {
     $strings = new AssistantStrings(AssistantFixtures::settings([]), static fn (): string => 'Example Studio');
-    $named = new AssistantStrings(AssistantFixtures::settings(['assistant.name' => 'Ava']), static fn (): string => 'Example Studio');
+    $named = new AssistantStrings(AssistantFixtures::settings([], [AssistantSettings::BRAND_OPTION => [
+        'copy' => ['en' => ['name' => 'Ava', 'suggestions' => ['Prices?']], 'ar' => ['welcome' => 'أهلًا']],
+    ]]), static fn (): string => 'Example Studio');
 
     expect($strings->for('en')['name'])->toBe('Example Studio Assistant')
         ->and($strings->for('en')['open'])->toBe('Chat with Example Studio Assistant')
+        ->and($strings->for('en')['done'])->toContain('%s')
+        ->and($named->for('en')['name'])->toBe('Ava')
         ->and($named->for('en')['welcome'])->toContain('I’m Ava.')
-        ->and($strings->for('en')['done'])->toContain('%s');
+        ->and($named->for('en')['suggestions'])->toBe(['Prices?'])
+        ->and($named->for('ar')['welcome'])->toBe('أهلًا')
+        ->and($named->for('ar')['name'])->toBe('Example Studio Assistant');
 });
 
 it('lets a site replace its strings per language, but not add keys or change their shape', function () {
@@ -142,6 +146,7 @@ it('draws the button, the invitation and the empty panel, with every setting esc
         'dir' => 'rtl',
         'endpoint' => 'https://example.com/wp-json/corex/v1/assistant',
         'form' => '',
+        'slots' => 'https://example.com/wp-json/corex/v1/assistant/slots',
         'nonce' => 'abc',
         'mark' => '',
         'country' => 'AE',
@@ -154,6 +159,7 @@ it('draws the button, the invitation and the empty panel, with every setting esc
         ->toContain('data-locale="ar"')
         ->toContain('data-form=""')
         ->toContain('data-countries-first="AE,SA"')
+        ->toContain('data-slots="https://example.com/wp-json/corex/v1/assistant/slots"')
         ->toContain('aria-controls="' . AssistantButton::PANEL_ID . '"')
         ->toContain('aria-expanded="false"')
         ->toContain('class="corex-assistant__mark"')
@@ -190,10 +196,10 @@ it('asks the hand-off’s questions as a CoreX form, with the engine’s own lis
     $fields = $form->fields();
 
     expect($form->slug)->toBe('corex-assistant-callback')
-        ->and(array_keys($fields))->toBe(['name', 'phone', 'email', 'channel', 'time', 'transcript', 'page'])
+        ->and(array_keys($fields))->toBe(['name', 'channel', 'phone', 'email', 'time', 'slot', 'zone', 'transcript', 'page'])
         ->and($fields['name']['rules'])->toContain('required')
-        ->and($fields['phone']['rules'])->toBe(['required', 'phone'])
-        ->and($fields['email']['rules'])->not->toContain('required')
+        ->and($fields['phone']['rules'])->toBe(['required_for:call,whatsapp', 'phone'])
+        ->and($fields['email']['rules'])->toBe(['required_for:email', 'email', 'max:160'])
         ->and(array_keys($fields['channel']['options']))->toBe(['call', 'whatsapp', 'email'])
         ->and($form->listeners())->toBe([StoreSubmissionListener::class, SendEmailListener::class]);
 });
@@ -206,59 +212,112 @@ it('lets a site send its own email for a callback in place of CoreX’s, keeping
     expect((new AssistantCallbackForm())->listeners())->toBe([StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail']);
 });
 
-it('shows each service’s state and today’s count under the Settings section, and only that section', function () {
-    $store = ['groq' => 2_000];
-    $counts = [];
-    $panel = new AssistantPanel(
-        AssistantFixtures::settings(['assistant.groq.key' => 'k', 'assistant.mistral.key' => 'k']),
-        new Cooldowns(static fn (): array => $store, static function (): void {
-        }, static fn (): int => 1_000),
-        new VisitorLimits(static function (string $key) use (&$counts): mixed {
-            return $counts[$key] ?? 4;
-        }, static function (): void {
-        }, static fn (): int => 1_000, static fn (): int => 50),
-        static fn (int $at): string => 'at ' . $at,
+it('needs the number for a call or WhatsApp and the address for an email, even when left out', function (string $channel, mixed $value, ?string $error) {
+    $rule = new \Corex\Assistant\Forms\RequiredForChannel();
+
+    expect($rule->validate($value, ['call', 'whatsapp'], ['channel' => $channel]))->toBe($error)
+        ->and($rule)->toBeInstanceOf(\Corex\Forms\Validation\RuleForAbsentValue::class);
+})->with([
+    'a call with no number' => ['call', '', 'required'],
+    'WhatsApp with the number left out' => ['whatsapp', null, 'required'],
+    'a call with a number' => ['call', '+971 50 123 4567', null],
+    'an email, no number needed' => ['email', '', null],
+]);
+
+/**
+ * A save over arrays: what was written (name => [value, autoload]) and what was removed.
+ *
+ * @param list<string> $locked Config keys `.env` sets
+ */
+function assistantScreenSave(array &$written, array &$removed, array $locked = []): AssistantScreenSave
+{
+    $store = [];
+
+    return new AssistantScreenSave(
+        AssistantFixtures::cooldowns($store),
+        static function (string $option, mixed $value, bool $autoload) use (&$written): void {
+            $written[$option] = [$value, $autoload];
+        },
+        static function (string $option) use (&$removed): void {
+            $removed[] = $option;
+        },
+        static fn (string $key): bool => in_array($key, $locked, true),
+        static fn (): array => ['en', 'ar'],
+        'Africa/Cairo',
     );
+}
 
-    $html = $panel->extra('before', 'assistant');
+it('saves the screen: the switch, keys and models where Config reads them, the rest unloaded, locked keys untouched', function () {
+    Functions\when('sanitize_text_field')->alias(static fn ($text): string => trim(strip_tags((string) $text)));
+    Functions\when('sanitize_textarea_field')->alias(static fn ($text): string => trim(strip_tags((string) $text)));
+    Functions\when('esc_url_raw')->returnArg();
+    $written = [];
+    $removed = [];
 
-    expect($html)->toStartWith('before')
-        ->toContain('Resting until at 2000')
-        ->toContain('No key: skipped')
-        ->toContain('Ready')
-        ->toContain('4 of 50')
-        ->toContain('data-corex-assistant-check ')
-        ->and($panel->extra('before', 'captcha'))->toBe('before');
+    assistantScreenSave($written, $removed, ['assistant.mistral.key'])->save([
+        'enabled' => '1',
+        'services' => [
+            'groq' => ['on' => '1', 'key' => " gsk_ab c\n", 'model' => ''],
+            'mistral' => ['on' => '1', 'key' => 'ignored, set in .env', 'remove' => '1'],
+            'gemini' => ['key' => '', 'remove' => '1'],
+            'openai' => ['on' => '1', 'model' => 'gpt-5-nano'],
+        ],
+        'limits' => ['hour' => '10', 'paid' => 'x'],
+        'brand' => ['icon' => 'https://example.com/i.png', 'copy' => ['ar' => ['name' => '<b>مساعد</b>', 'suggestions' => ['أ', '', 'ب']]]],
+        'booking' => ['enabled' => '1', 'start' => '09:00', 'end' => '23:00', 'days' => ['5', '9']],
+    ]);
+
+    expect($written['corex_assistant_enabled'])->toBe(['1', true])
+        ->and($written['corex_assistant_groq_key'])->toBe(['gsk_abc', true])
+        ->and($written)->not->toHaveKey('corex_assistant_mistral_key')
+        ->and($removed)->toContain('corex_assistant_gemini_key', 'corex_assistant_groq_model')
+        ->and($removed)->not->toContain('corex_assistant_mistral_key')
+        ->and($written['corex_assistant_openai_model'])->toBe(['gpt-5-nano', true])
+        ->and($written[AssistantSettings::SERVICES_OPTION][0]['off'])->toBe(['gemini', 'openrouter', 'anthropic'])
+        ->and($written[AssistantSettings::LIMITS_OPTION])->toBe([['hour' => 10, 'day' => 60, 'site' => 600, 'paid' => 50], false])
+        ->and($written[AssistantSettings::BRAND_OPTION][0]['copy']['ar'])->toBe(['name' => 'مساعد', 'welcome' => '', 'suggestions' => ['أ', 'ب']])
+        ->and($written[AssistantSettings::BOOKING_OPTION][0])->toMatchArray(['enabled' => true, 'timezone' => 'Africa/Cairo', 'days' => [5], 'end' => '23:00'])
+        ->and(array_column(array_intersect_key($written, array_flip([
+            AssistantSettings::SERVICES_OPTION,
+            AssistantSettings::LIMITS_OPTION,
+            AssistantSettings::BRAND_OPTION,
+            AssistantSettings::BOOKING_OPTION,
+        ])), 1))->toBe([false, false, false, false]);
 });
 
-it('declares the Assistant page and its fields on the Settings screen, keys write-only', function () {
-    $registry = new SettingsRegistry();
-    $fields = $registry->sections()['assistant']['fields'];
-    $page = (new SettingsPages())->find('assistant');
+it('leaves a switch the site’s .env sets as it is', function () {
+    Functions\when('sanitize_text_field')->returnArg();
+    Functions\when('sanitize_textarea_field')->returnArg();
+    Functions\when('esc_url_raw')->returnArg();
+    $written = [];
+    $removed = [];
 
-    expect($page)->not->toBeNull()
-        ->and($page->sections)->toBe(['assistant'])
-        ->and($page->addon->pluginFile)->toBe('corex-assistant/corex-assistant.php')
-        ->and($fields['assistant.enabled']['type'])->toBe('checkbox')
-        ->and($fields['assistant.mark']['type'])->toBe('media')
-        ->and($registry->secretKeys())->toContain('assistant.gemini.key', 'assistant.groq.key', 'assistant.openrouter.key', 'assistant.mistral.key')
-        ->and($fields)->toHaveKeys(array_map(
-            static fn (string $id): string => AssistantSettings::modelField($id),
-            array_keys(\Corex\Assistant\Chain\Provider::CATALOGUE),
-        ));
+    assistantScreenSave($written, $removed, [AssistantSettings::ENABLED])->save(['enabled' => '1']);
+
+    expect($written)->not->toHaveKey('corex_assistant_enabled');
 });
 
-it('saves a secret with autoload off, and leaves every other setting’s autoload to WordPress', function () {
-    $calls = [];
-    Functions\when('update_option')->alias(static function (string $name, string $value, ?bool $autoload = null) use (&$calls): bool {
-        $calls[] = [$name, $autoload];
+it('saves the same values when what it saved is posted again', function () {
+    Functions\when('sanitize_text_field')->alias(static fn ($text): string => trim((string) $text));
+    Functions\when('sanitize_textarea_field')->alias(static fn ($text): string => trim((string) $text));
+    Functions\when('esc_url_raw')->returnArg();
+    $first = [];
+    $second = [];
+    $removed = [];
+    $posted = ['booking' => ['enabled' => '1', 'timezone' => 'Asia/Riyadh', 'slot' => '45', 'notice' => '30', 'horizon' => '3', 'days' => ['0', '4']], 'limits' => ['site' => '100']];
 
-        return true;
-    });
-    $store = new SettingsStore();
+    assistantScreenSave($first, $removed)->save($posted);
+    assistantScreenSave($second, $removed)->save(['booking' => $first[AssistantSettings::BOOKING_OPTION][0], 'limits' => $first[AssistantSettings::LIMITS_OPTION][0]]);
 
-    $store->save('assistant.groq.key', 'k', true);
-    $store->save('assistant.name', 'Ava');
-
-    expect($calls)->toBe([['corex_assistant_groq_key', false], ['corex_assistant_name', null]]);
+    expect($second[AssistantSettings::BOOKING_OPTION])->toBe($first[AssistantSettings::BOOKING_OPTION])
+        ->and($second[AssistantSettings::LIMITS_OPTION])->toBe($first[AssistantSettings::LIMITS_OPTION]);
 });
+
+it('moves a service up or down without scripts, and ignores a move off either end', function (string $move, array $expected) {
+    expect(AssistantScreenSave::moved(['gemini', 'groq', 'openai'], $move))->toBe($expected);
+})->with([
+    'up' => ['groq:up', ['groq', 'gemini', 'openai']],
+    'down' => ['groq:down', ['gemini', 'openai', 'groq']],
+    'off the top' => ['gemini:up', ['gemini', 'groq', 'openai']],
+    'unknown' => ['nobody:up', ['gemini', 'groq', 'openai']],
+]);

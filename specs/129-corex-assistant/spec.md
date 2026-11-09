@@ -92,8 +92,8 @@ and the team's email.
 
 ### User Story 3 - The site owner switches it on and keys it (Priority: P1)
 
-The owner opens Settings → Assistant, turns it on, pastes a free key for at least one service and saves. "Check
-services" shows which keyed services answer.
+The owner opens CoreX → Assistant, turns it on, pastes a free key for at least one service and saves. "Check
+services" shows which services answer, and how fast.
 
 **Acceptance Scenarios**:
 
@@ -103,9 +103,13 @@ services" shows which keyed services answer.
 3. **Given** `ASSISTANT_GROQ_KEY` in the site's `.env`, **Then** that key is used and its field is locked.
 4. **Given** keys for several services, **When** "Check services" runs, **Then** each answers "answered" or why
    it did not, and a service that answered is no longer resting.
-5. **Given** the page, **Then** each service shows Ready, Resting until a time, or No key, and today's question
-   count against the site-wide daily cap.
-6. **Given** a saved key, **Then** its option is not autoloaded.
+5. **Given** the page, **Then** each service shows Ready, Resting until a time, Off or No key, and why it last
+   failed, and the limits card shows today's questions and those sent to paid services.
+6. **Given** the services card, **When** the owner moves a service up or down or switches it off and saves, **Then**
+   the chain asks them in that order and skips the ones off; a paid service is off until the owner turns it on.
+7. **Given** a key saved on the screen, **Then** the chain uses it, and the services, limits, words and hours
+   options are not autoloaded. (Slice 1 also kept the keys unloaded; the Config engine reads only options WordPress
+   loads, so a saved key was never used. The keys are stored as every CoreX setting is.)
 
 ### User Story 4 - The chain survives spent free tiers (Priority: P1)
 
@@ -128,7 +132,8 @@ Free tiers run out. The assistant asks the services in order and moves on.
 
 1. **Given** one visitor, **Then** they may ask one question at a time, 20 an hour and 60 a day; past that the chat
    answers "busy" with the hand-off, not an error.
-2. **Given** the whole site, **Then** it answers at most the daily cap (600 unless set) a day.
+2. **Given** the whole site, **Then** it answers at most the daily cap a day (600 by default, set on the Limits
+   card).
 3. **Given** a visitor on IPv6, **Then** every address in their /64 counts as one visitor; the address itself is
    never stored, only a salted hash.
 4. **Given** a body over 16 KB, a role other than `user` or `assistant`, a question over 600 characters or more
@@ -150,8 +155,10 @@ and its mark, without editing CoreX.
 2. **Given** a provider returned by the `corex_assistant_knowledge_provider` filter, **Then** its `Knowledge` is
    used for the visitor's language, and only the pages it names become link chips.
 3. **Given** the `corex_assistant_strings` filter, **Then** every visitor-facing string can be replaced per
-   language; the assistant's name from Settings is used where the filter does not replace it.
-4. **Given** a mark chosen in Settings, **Then** it is the button's and the chat's image; else a built-in icon.
+   language; the name, welcome and suggestions written on the screen for that language are used where the filter
+   does not replace them.
+4. **Given** a button image chosen on the screen, **Then** it is the button's and the chat's image; else a built-in
+   icon.
 5. **Given** the `corex_assistant_phone_countries` filter, **Then** the site chooses the default country and the
    countries listed first.
 
@@ -177,16 +184,18 @@ and its mark, without editing CoreX.
   preview), only when `assistant.enabled` is on AND at least one service has a key.
 - **FR-003**: The button's script and stylesheet MUST be the only assistant assets on a page that was not
   interacted with; the chat code and its stylesheet MUST load on first open, or on hover or focus of the button.
-- **FR-004**: The model chain MUST be Gemini, Groq, OpenRouter, Mistral, in that order, over the OpenAI chat
-  completions format; a service with no key is skipped; each has a default model and an optional model setting.
+- **FR-004**: The model chain MUST default to Gemini, Groq, OpenRouter, Mistral, over the OpenAI chat completions
+  format, then the paid services of FR-016, in the order the owner sets (FR-019); a service with no key or switched
+  off is skipped; each has a default model and an optional model setting.
 - **FR-005**: Cooldowns per service as User Story 4; kept in one option, not autoloaded.
-- **FR-006**: Keys and models MUST be Settings fields (`assistant.<service>.key` as `password`,
-  `assistant.<service>.model` as `text`), readable from `.env` through the Config engine; password-typed Settings
-  values MUST be saved with autoload off.
+- **FR-006**: Keys and models MUST be Config dot-keys (`assistant.<service>.key`, `assistant.<service>.model`)
+  saved by the CoreX → Assistant screen and readable from `.env` through the Config engine. (Slice 1: Settings
+  fields saved with autoload off; superseded, see User Story 3 scenario 7.)
 - **FR-007**: The endpoint MUST be `POST corex/v1/assistant`, taking `{locale, messages}` and answering
   `{reply, team, links, busy}`; it MUST run the `nonce` middleware and the assistant's limits middleware, and carry
   `PublicSubmission::MARKER`.
-- **FR-008**: Limits as User Story 5; the cap is `assistant.daily_cap` (default 600).
+- **FR-008**: Limits as User Story 5, kept in the `corex_assistant_limits` option: 20 an hour, 60 a day per visitor,
+  600 a day site-wide and 50 a day sent to paid services, unless the owner sets others.
 - **FR-009**: The system message MUST tell the model to read the visitor generously, answer only from the
   knowledge, invent no prices or promises, recommend a service when the visitor states a goal, answer in the
   language of the visitor's last message (or the one they asked for), with the site's own voice rules from the
@@ -197,14 +206,14 @@ and its mark, without editing CoreX.
   knowledge names turned into at most two chips, every other web address, email address and international phone
   number removed, Markdown undone.
 - **FR-011**: The hand-off MUST be the code-defined form `corex-assistant-callback` (name, phone, email,
-  channel, time, transcript, page), with the forms engine's default listeners, which a site may replace with the
+  channel, time, slot, zone, transcript, page), with the forms engine's default listeners, which a site may replace with the
   `corex_assistant_callback_listeners` filter. It MUST be registered only when corex-forms is active.
 - **FR-012**: Knowledge MUST come from a `KnowledgeProvider` (`for(string $locale): Knowledge`); the default reads
   the site; the `corex_assistant_knowledge_provider` filter replaces it. Default knowledge MUST be cached per
   language for six hours and dropped when a page is saved.
 - **FR-013**: Every visitor-facing string MUST be translatable (`corex` domain) and replaceable per language by the
   `corex_assistant_strings` filter; no string shown to a visitor may name a model or its maker.
-- **FR-014**: The Settings page "Assistant" MUST show the switch, the assistant's name and mark, the four services'
+- **FR-014** (slice 1, superseded by FR-019): The Settings page "Assistant" MUST show the switch, the assistant's name and mark, the four services'
   keys and models, the daily cap, each service's status, today's count, and "Check services" (administrators only:
   `POST corex/v1/assistant/check` behind `manage_options` and the `auth` and `nonce` middleware).
 - **FR-015**: The front end MUST use theme tokens only, logical properties, `prefers-reduced-motion`, and meet
@@ -222,24 +231,45 @@ and its mark, without editing CoreX.
 - **SC-002**: A page with it on carries only the button's script and stylesheet until the button is used.
 - **SC-003**: The Pest and Jest suites for the add-on pass, and wp-guard, clean-code-guard, test-guard and
   docs-guard run clean on the diff.
-- **SC-004**: A site with the behaviour of Perego's first release of spec 058 can drop its own copy and keep that
-  behaviour by plugging in its knowledge, strings, voice, mark, country order and callback email. Perego's
-  revision 2 (below) needs the next slice first (docs: `docs-app/src/content/docs/guides/assistant.md`, "Switching from a site's own copy").
+- **SC-004**: Perego can drop its own copy (spec 058 with revision 2) and keep its behaviour by entering its
+  settings on CoreX → Assistant and plugging in its knowledge, strings, voice, languages, preview zones, country
+  order and callback email (docs: `docs-app/src/content/docs/guides/assistant.md`, "Switching from a site's own copy").
 
-## The next slice: Perego's revision 2
+## Slice 2: Perego's revision 2 and the owner's additions (2026-11-09)
 
-Perego's assistant gained a revision 2 on 2026-11-09 while this slice was built, read on 2026-11-09 from
-`feature/058-perego-assistant` (`36950af8`, `0bbc9a28`). This slice takes its generic fixes (the reply's language
-from the visitor's words, reading visitors generously, recommending from a goal, the colon before a removed
-address, a service's rest ending when it answers). Not taken, and owed to a second slice of this spec: paid
-fallbacks (OpenAI, and Claude through its own Messages API) with a daily cap for paid answers; the owner ordering
-the services and switching each on or off; booking hours with time slots in the visitor's time zone and both zones
-in the team's email; required fields that follow the chosen channel; limits and per-language branding edited on
-the screen; a "Check services" question of real size.
+Perego's assistant gained a revision 2 on 2026-11-09 while slice 1 was built (`36950af8`, `0bbc9a28`, `50775d97`
+on `feature/058-perego-assistant`), and the owner asked, relayed by the Perego session, for the same in CoreX:
+
+- **FR-016** Paid providers as the last resort, off unless the owner turns them on: OpenAI (a mini model;
+  GPT-5 models take `max_completion_tokens` and refuse `temperature`) and Anthropic Claude through its own
+  Messages API (`POST https://api.anthropic.com/v1/messages`, `x-api-key`, `anthropic-version: 2026-10-21`, no
+  `temperature`, `top_p` or `top_k`, `claude-haiku-5-5`, `output_config: {effort: "low"}`, the text of
+  `content[]` blocks of type `text`; `stop_reason: "refusal"` is a refused request, 429 a limit, 529 a server
+  error). Not an OpenAI-compatible shim. The free tiers stay first. A daily cap on requests sent to paid services (50), each counted whether it answers or not.
+- **FR-017** A "pick a time" step in the hand-off: the owner sets working days and hours in the site's own time
+  zone (Perego: every day 9:00 to 23:00, Cairo, 30-minute slots); the visitor sees the next days' slots in their
+  own time zone, picks one, and the request stores and emails both times ("Thu 7:00 pm Riyadh = 6:00 pm Cairo").
+  A requested time the team confirms, not a booking. Themed with the site's tokens.
+- **FR-018** A call or WhatsApp needs a number and an email an address; the other is optional, in the browser and
+  on the server (`required_for`).
+- **FR-019** The settings are a CoreX screen of their own (`corex-assistant` in the CoreX rail, drawn with
+  `AdminPage` and `.corex-surface` cards): Assistant (switch, image, per-language name, welcome and suggestions),
+  Services (owner's order, a switch each, key, model, status and last failure), Booking (time zone, opening and
+  closing, slot length, notice, days shown, working days, a preview in other zones), Limits (per visitor an hour
+  and a day, site-wide and sent to paid services a day), and "Check services" with a real question, timed. This replaces
+  slice 1's page under Settings (FR-014).
+- **FR-020** Every option the screen saves is stored with autoload off but the switch, and every cleaning step
+  reads its own output back unchanged (Perego met WordPress running a setting's sanitize twice on first save).
+
+CoreX Bookings was weighed as the home of the slot logic and not taken: add-ons may not depend on one another, and
+Bookings' leader-based call requests are a different model (DECISIONS #612).
 
 ## Out of scope
 
-- Storing conversations, analytics on questions, a knowledge editor, voice, file uploads, booking a slot.
+- Storing conversations, analytics on questions, a knowledge editor, voice, file uploads.
+- Calendar sync, double-booking prevention, reminders, payments for a picked time.
+- Clearing a page cache when the assistant is switched on or off (Perego purges LiteSpeed; CoreX knows no page
+  cache by name).
 - Arabic (or any) translation catalogue: CoreX ships none; a site supplies its strings by the filter or a
   `corex-<locale>.po`.
 - Streaming replies.
