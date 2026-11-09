@@ -16,11 +16,17 @@
 - [x] T012 Guards (clean-code, wp, test, docs); docs page, CHANGELOG (Client impact), PROGRESS, DECISIONS
 - [x] T013 Pull request
 
-## Next slice (owed): Perego's revision 2
+## Slice 2: Perego's revision 2 (DECISIONS #609 to #616)
 
-- [ ] T014 Paid fallbacks: OpenAI (chat completions) and Claude (Messages API), off until keyed, with a daily cap
-  for paid answers
-- [ ] T015 Owner-set order and a switch per service on Settings → Assistant
-- [ ] T016 Booking hours: time slots in the visitor's time zone, both zones in the team's email
-- [ ] T017 Required fields that follow the chosen channel
-- [ ] T018 Limits and per-language branding edited on the screen; a real-size "Check services" question
+- [ ] T014 Paid fallbacks: catalogue (`openai`, `anthropic`), `ModelClient` for the Messages API and GPT-5's fields,
+  `PaidAnswers`, the router's paid skip and count, `assistant.paid_cap` (+ tests)
+- [ ] T015 Owner-set order and a switch per service: Settings type `order`, defaults table, `assistant.order`,
+  `assistant.<id>.on`, `AssistantSettings::chain()` in order, cooldown failures, the panel (+ tests)
+- [ ] T016 Booking hours: Settings fields, `BookingHours`, `GET corex/v1/assistant/slots`, `Form::prepare()`, the
+  callback's slot in both zones, the slot picker (+ tests)
+- [ ] T017 Required fields that follow the chosen channel: `required_if` in the forms engine, the callback's rules,
+  the form's channel first (+ tests)
+- [ ] T018 Limits and per-language branding on the screen (Settings type `number`, `assistant.limit.*`,
+  `assistant.brand.<language>.*`), and a real-size "Check services" (+ tests)
+- [ ] T019 Local check on the worktree's WordPress; Playwright with axe
+- [ ] T020 Guards; docs, CHANGELOG (Client impact), DECISIONS, PROGRESS; pull request; Perego's hand-over note
