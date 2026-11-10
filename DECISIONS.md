@@ -19190,3 +19190,45 @@ checks above found no difference. *Pinning `isomorphic-git` to 1.38.x*: nothing 
 as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the policy refuses a high finding
 with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
 choice even where the copy is unused.
+
+## #517 -- The admin shell sets a unitless line height, 1.4, and headings 1.2
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), spec 116's `text-overlaps-at-200`. Follows #516
+(PR #453), which fixed three activity rows one by one and left the shell to this.
+
+**Why.** `.corex-admin` set no `line-height`, so every CoreX screen inherited wp-admin's
+`body { font-size: 13px; line-height: 1.4em }`. An `em` line height is computed once, on `body`, and inherited as
+a length: 18.2px for every line on every screen, whatever its font size. At 200% text a 14px line becomes 28px
+letters on an 18.2px line, and the letters run onto the next line. Measured on all 32 CoreX screens at 375 and
+1280px, light and dark, left to right and right to left (4,500 text boxes per pass): 3,184 of them sat on the
+inherited 18.2px, among them headings of 16 to 24px and display numbers of 24 to 38px.
+
+**Decided.**
+- A new token `--corex-admin-line-base: 1.4` in `corex-admin-tokens.css`, set on `.corex-admin`. A number is
+  inherited as a number, so each element's line is 1.4 times its own font size and grows with it.
+- `:where(.corex-admin) :where(h1, ..., h6)` gets `--corex-admin-line-tight` (1.2). Zero specificity: any
+  component rule for a heading still wins.
+- The three display numbers that had no line height of their own (Email Studio's metrics, the Overview's number
+  tiles, the Insights grade) get the tight token too.
+- Blog Pro's two-part rows (the authors list and the card lists) stay flex rows at phone width and wrap, instead
+  of turning into a block. As a block the name and the count ran together ("admin1 published post"), and the
+  wrapped count's box lay over the name, which is what the 200% check reported there.
+
+**Why 1.4 and not an existing token.** At the base size the old rhythm was 1.4 for 13px text (758 boxes), 1.3 for
+14px (1,690) and 1.52 for 12px (482). 1.4 keeps 13px text exactly where it was, moves 14px lines by +1.4px and 12px
+lines by -1.4px, and is the ratio wp-admin itself uses, so CoreX's text sits on the same rhythm as WordPress's
+around it. `--corex-admin-line-tight` (1.2) is below the height of the text's own box in Segoe UI (about 1.33 of
+the font size): inline runs on consecutive lines would still overlap at 200%. `--corex-admin-line-normal` (1.6)
+would grow every line on every screen by 1 to 4.2px for no reported defect.
+
+**What it changes.** Page heights move by -43 to +168px per screen (at most about 3%): most screens gain 10 to
+40px, the Add-ons and Access matrix screens lose up to 43px (their 12px chips and badges are 1.4px shorter per
+line), Guides gains the most (17 guide titles of 20px, from 18.2 to 24px lines). Left to right and right to left differ in height
+where they did before, by the same amounts (Operations' Environment tab, 106px before and 107px after, at 375px).
+Two loads at 1280px have one cell 24px off the other three after the change (Add-ons' Inactive tab light right to
+left, Operations' Overview dark right to left); a rule with no colour or direction in it cannot move one cell alone,
+and cells of other loads wobbled the same way before it.
+
+**Not fixed here.** The inbox's From and To dates still overlap at 200% and stay in `known-failures.json`
+(US-NFR-04), with the cause in the entry: each date field is 192px wide in a 95px column at that size, so its label
+spills into the other date's. That is the filter panel's layout, not line height.

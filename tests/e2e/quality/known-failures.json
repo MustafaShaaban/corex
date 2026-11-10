@@ -2199,15 +2199,6 @@
 		},
 		{
 			"check": "phone",
-			"rule": "text-overlaps-at-200",
-			"screen": "corex-blog-pro",
-			"signature": "ul.corex-blog-pro__list > li > strong × ul.corex-blog-pro__list > li > span",
-			"since": "2026-10-22",
-			"story": "US-NFR-04",
-			"note": "\"admin\" over \"1 published post\""
-		},
-		{
-			"check": "phone",
 			"rule": "touch-target-under-44",
 			"screen": "corex-forms",
 			"signature": "button[type=submit].button",
@@ -2240,7 +2231,7 @@
 			"signature": "div.corex-inbox__dates > label > span × div.corex-inbox__dates > label > span",
 			"since": "2026-10-22",
 			"story": "US-NFR-04",
-			"note": "\"From\" over \"To\""
+			"note": "\"From\" over \"To\". Not line height (measured 2026-11-10, DECISIONS #517): at 200% each date field is 192px wide in a 95px column, so its label spills into the other date's."
 		},
 		{
 			"check": "phone",

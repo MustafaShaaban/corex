@@ -40,6 +40,13 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**The admin shell's line height** (2026-11-10, branch `fix/admin-shell-line-height`, DECISIONS #517): `.corex-admin`
+sets `--corex-admin-line-base` (1.4, new) and headings `--corex-admin-line-tight`, so text at 200% stays on its
+lines on every CoreX screen; Blog Pro's rows wrap instead of running together at phone width. Blog Pro's
+`text-overlaps-at-200` entry is gone from `known-failures.json`. The inbox dates entry stays (US-NFR-04): at 200%
+each date field is 192px wide in a 95px column, a filter-panel layout fix not yet made. PR #453 (DECISIONS #516)
+sets the normal token on three activity rows; it still stands after this, those rows choosing 1.6 over the base.
+
 **Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
 #447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
 owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar
