@@ -93,18 +93,11 @@ final class AddonRegistry
             ),
             $this->addon(
                 'corex-assistant',
-                // Translated, unlike the older entries (story US-ADD-08 owns theirs): a name and its
-                // description are words a site's owner reads.
-                __('Corex Assistant', 'corex'),
-                summary: __('A site chat that answers from your own pages and hands visitors to your team.', 'corex'),
-                description: __('A chat button on every public page. It answers from the site’s own content through free AI model tiers asked in turn, with paid services as an optional last resort, says it is an AI that can be wrong, and opens a callback form inside the chat when it cannot help. Off until switched on and given a key on CoreX → Assistant.', 'corex'),
-                provides: [
-                    __('chat button and lazily loaded chat', 'corex'),
-                    __('the chat REST route', 'corex'),
-                    __('callback form in the Submissions inbox', 'corex'),
-                    __('knowledge provider contract', 'corex'),
-                ],
-                needsKeys: [__('A free API key from at least one of Google Gemini, Groq, OpenRouter or Mistral', 'corex')],
+                'Corex Assistant',
+                summary: 'A site chat that answers from your own pages and hands visitors to your team.',
+                description: 'A chat button on every public page. It answers from the site’s own content through free AI model tiers asked in turn, with paid services as an optional last resort, says it is an AI that can be wrong, and opens a callback form inside the chat when it cannot help. Off until switched on and given a key on CoreX → Assistant.',
+                provides: ['chat button and lazily loaded chat', 'corex/v1/assistant REST', 'callback form in the Submissions inbox', 'KnowledgeProvider contract'],
+                needsKeys: ['A free API key from at least one of Google Gemini, Groq, OpenRouter or Mistral'],
                 docsUrl: '/guides/assistant/',
                 tier: AddonTier::Optional,
             ),

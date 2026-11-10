@@ -530,9 +530,13 @@ describe( 'the times', () => {
 	it( 'describes a slot once when the visitor is in the site’s own zone', () => {
 		const at = Date.UTC( 2026, 10, 12, 16, 0 ) / 1000;
 
-		expect(
-			describeSlot( at, 'en', 'Africa/Cairo', 'Africa/Cairo' )
-		).toMatch( /6:00\s?PM Cairo$/ );
+		const line = describeSlot( at, 'en', 'Africa/Cairo', 'Africa/Cairo' );
+
+		expect( line ).toMatch( /6:00\s?PM Cairo$/ );
+		expect( line ).not.toContain( ' = ' );
+	} );
+
+	it( 'names a zone by its city, the last part, with spaces', () => {
 		expect( city( 'America/Argentina/Buenos_Aires' ) ).toBe(
 			'Buenos Aires'
 		);

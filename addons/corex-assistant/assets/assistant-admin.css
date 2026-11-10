@@ -47,9 +47,35 @@
 	overflow-x: auto;
 }
 
+/* A table of the shell's own colours: wp-admin's `.widefat` paints it
+   white in the dark appearance. */
+.corex-assistant-services {
+	inline-size: 100%;
+	border-collapse: collapse;
+	color: var(--corex-admin-text);
+}
+
 .corex-assistant-services td,
 .corex-assistant-services th {
+	padding: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	text-align: start;
 	vertical-align: middle;
+}
+
+.corex-assistant-services th {
+	color: var(--corex-admin-text-muted);
+	font-weight: 600;
+}
+
+.corex-assistant-screen .description {
+	color: var(--corex-admin-text-muted);
+}
+
+/* wp-admin rings a focused field with a box shadow too faint on these
+   surfaces; the shell's outline answers. */
+.corex-assistant-screen :is(input, select, textarea):focus {
+	box-shadow: none;
 }
 
 .corex-assistant-services input[type="text"],
@@ -93,5 +119,35 @@
 
 	.corex-assistant-row {
 		grid-template-columns: 1fr;
+	}
+
+	/* On a phone each service is a block of its own: every field carries
+	   its service's name. */
+	.corex-assistant-services,
+	.corex-assistant-services tbody,
+	.corex-assistant-services tr,
+	.corex-assistant-services td {
+		display: block;
+	}
+
+	.corex-assistant-services thead {
+		display: none;
+	}
+
+	.corex-assistant-services tr {
+		padding-block: var(--corex-admin-space-sm);
+		border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	}
+
+	.corex-assistant-services td {
+		padding-block: var(--corex-admin-space-xs);
+		padding-inline: 0;
+		border: 0;
+	}
+
+	/* A finger's target on a phone (spec 116, 44px). */
+	.corex-assistant-services__move .button-link {
+		min-inline-size: 2.75rem;
+		min-block-size: 2.75rem;
 	}
 }

@@ -8,13 +8,17 @@
  * options table; the hand-off form is registered; "Check services" is for administrators only.
  *
  * Every model call is answered by a `pre_http_request` filter, so nothing here calls out. The keys are
- * answered through `pre_option_` filters, so the site's own saved keys are never touched.
+ * answered through `pre_option_` filters, so the site's own saved keys are never touched, except in the
+ * test of a save, which keeps the site's rows and puts them back.
  *
  * @package Corex\Tests\Integration\Assistant
  */
 
 declare(strict_types=1);
 
+use Corex\Assistant\Admin\AssistantScreen;
+use Corex\Assistant\AssistantSettings;
+use Corex\Assistant\Booking\BookingHours;
 use Corex\Assistant\Chain\Cooldowns;
 use Corex\Assistant\Chain\Provider;
 use Corex\Assistant\Forms\AssistantCallbackForm;
@@ -107,6 +111,80 @@ afterEach(function () {
     require_once ABSPATH . 'wp-admin/includes/user.php';
     array_map('wp_delete_user', $this->users);
 });
+
+/** What `wp_die()` or a redirect would have ended the save with. */
+final class AssistantSaveEnded extends RuntimeException
+{
+}
+
+/** The options a save of the screen writes. */
+const ASSISTANT_SAVED_OPTIONS = [
+    'corex_assistant_enabled',
+    'corex_assistant_groq_key',
+    'corex_assistant_groq_model',
+    AssistantSettings::SERVICES_OPTION,
+    AssistantSettings::LIMITS_OPTION,
+    AssistantSettings::BRAND_OPTION,
+    AssistantSettings::BOOKING_OPTION,
+];
+
+/**
+ * Posts the screen as a browser would and runs its save, which ends in `wp_die()` or a redirect.
+ *
+ * @param array<string, mixed> $posted
+ */
+function assistantRouteSave(array $posted): int
+{
+    $_POST = wp_slash($posted);
+    $ended = static fn (): Closure => static function (string|WP_Error $message, string|int $title = '', array $args = []): never {
+        throw new AssistantSaveEnded('refused', (int) ($args['response'] ?? 0));
+    };
+    $redirect = static function (): never {
+        throw new AssistantSaveEnded('saved', 302);
+    };
+    add_filter('wp_die_handler', $ended, PHP_INT_MAX);
+    add_filter('wp_redirect', $redirect, PHP_INT_MAX);
+    try {
+        Boot::app()->container()->make(AssistantScreen::class)->save();
+    } catch (AssistantSaveEnded $end) {
+        return $end->getCode();
+    } finally {
+        remove_filter('wp_die_handler', $ended, PHP_INT_MAX);
+        remove_filter('wp_redirect', $redirect, PHP_INT_MAX);
+        $_POST = [];
+    }
+
+    return 0;
+}
+
+/**
+ * The site's own rows for the options a save writes, to put back after the test.
+ *
+ * @return array<string, array{option_value: string, autoload: string}|null>
+ */
+function assistantRouteKeepRows(): array
+{
+    global $wpdb;
+    $rows = [];
+    foreach (ASSISTANT_SAVED_OPTIONS as $option) {
+        $rows[$option] = $wpdb->get_row($wpdb->prepare("SELECT option_value, autoload FROM {$wpdb->options} WHERE option_name = %s", $option), ARRAY_A);
+    }
+
+    return $rows;
+}
+
+/** @param array<string, array{option_value: string, autoload: string}|null> $rows */
+function assistantRoutePutBackRows(array $rows): void
+{
+    global $wpdb;
+    foreach ($rows as $option => $row) {
+        $wpdb->delete($wpdb->options, ['option_name' => $option]);
+        if ($row !== null) {
+            $wpdb->insert($wpdb->options, ['option_name' => $option] + $row);
+        }
+    }
+    wp_cache_flush();
+}
 
 /** A user with the role, removed after the test. */
 function assistantRouteUser(object $test, string $role): int
@@ -260,16 +338,60 @@ it('offers no times until the owner turns booking on, then the next ones, never 
     $ask = static fn (): WP_REST_Response => rest_do_request(new WP_REST_Request('GET', '/corex/v1/assistant/slots'));
     $off = $ask();
 
+    // Open all day, hourly, no notice: the first time is inside the coming hour.
     $booking = static fn (): array => ['enabled' => true, 'timezone' => 'Africa/Cairo', 'days' => [0, 1, 2, 3, 4, 5, 6], 'start' => '00:00', 'end' => '00:00', 'slot' => 60, 'notice' => 0, 'horizon' => 2];
-    add_filter('pre_option_' . \Corex\Assistant\AssistantSettings::BOOKING_OPTION, $booking);
+    add_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $booking);
+    $asked = time();
     $on = $ask();
-    remove_filter('pre_option_' . \Corex\Assistant\AssistantSettings::BOOKING_OPTION, $booking);
+    remove_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $booking);
 
-    expect($off->get_data())->toBe(['zone' => wp_timezone_string() !== '' && \Corex\Assistant\Booking\BookingHours::knownZone(wp_timezone_string()) ? wp_timezone_string() : 'UTC', 'slots' => []])
+    // The site's zone is read when the add-on boots, so it is this install's own here.
+    expect($off->get_data()['slots'])->toBe([])
+        ->and(BookingHours::knownZone($off->get_data()['zone']))->toBeTrue()
         ->and($on->get_data()['zone'])->toBe('Africa/Cairo')
         ->and(count($on->get_data()['slots']))->toBeGreaterThan(20)
-        ->and($on->get_data()['slots'][0])->toBeGreaterThanOrEqual(time() - 3600)
+        ->and($on->get_data()['slots'][0])->toBeGreaterThanOrEqual($asked)
+        ->and($on->get_data()['slots'][0])->toBeLessThanOrEqual($asked + 3600)
         ->and($on->get_headers()['Cache-Control'] ?? '')->toBe('no-store');
+});
+
+it('refuses a save of the screen without its token or from an editor, and writes nothing', function () {
+    $kept = assistantRouteKeepRows();
+    $posted = ['limits' => ['hour' => '3'], 'services' => ['groq' => ['row' => '1', 'key' => 'never-saved']]];
+
+    wp_set_current_user(assistantRouteUser($this, 'administrator'));
+    $withoutToken = assistantRouteSave($posted);
+    wp_set_current_user(assistantRouteUser($this, 'editor'));
+    $fromEditor = assistantRouteSave($posted + ['corex_assistant_nonce' => wp_create_nonce('corex_assistant_save')]);
+
+    expect($withoutToken)->toBe(403)
+        ->and($fromEditor)->toBe(403)
+        ->and(assistantRouteKeepRows())->toBe($kept);
+});
+
+it('uses a key saved on the screen with nothing but the database to answer for it', function () {
+    $kept = assistantRouteKeepRows();
+    remove_filter('pre_option_corex_assistant_groq_key', $this->answers['corex_assistant_groq_key']);
+    unset($this->answers['corex_assistant_groq_key']);
+    wp_set_current_user(assistantRouteUser($this, 'administrator'));
+
+    try {
+        $status = assistantRouteSave([
+            'corex_assistant_nonce' => wp_create_nonce('corex_assistant_save'),
+            'enabled' => '1',
+            'services' => ['groq' => ['row' => '1', 'on' => '1', 'key' => 'saved-on-the-screen']],
+        ]);
+        // A settings object of its own, as the next request would build, reading what the save stored.
+        $settings = Boot::app()->container()->make(AssistantSettings::class);
+        $chain = array_map(static fn (Provider $p): string => $p->id . ':' . $p->key, $settings->chain());
+        $autoload = $GLOBALS['wpdb']->get_var("SELECT autoload FROM {$GLOBALS['wpdb']->options} WHERE option_name = 'corex_assistant_groq_key'");
+    } finally {
+        assistantRoutePutBackRows($kept);
+    }
+
+    expect($status)->toBe(302)
+        ->and($chain)->toContain('groq:saved-on-the-screen')
+        ->and(in_array($autoload, ['yes', 'on', 'auto-on'], true))->toBeTrue();
 });
 
 it('draws the Assistant screen for an administrator, in the CoreX shell, with every card', function () {

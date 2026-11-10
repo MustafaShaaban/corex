@@ -119,24 +119,16 @@ export async function fetchSlots( url ) {
 	// The form waits for this before it sends, so a slow answer falls back to the plain time field.
 	const controller = new window.AbortController();
 	const timer = window.setTimeout( () => controller.abort(), SLOTS_TIMEOUT );
-	try {
-		const response = await window.fetch( url, {
-			credentials: 'same-origin',
-			signal: controller.signal,
-		} );
-		if ( ! response.ok ) {
-			return { zone: '', slots: [] };
-		}
-		const body = await response.json();
-		return {
-			zone: typeof body.zone === 'string' ? body.zone : '',
-			slots: Array.isArray( body.slots )
-				? body.slots.filter( Number.isFinite )
-				: [],
-		};
-	} catch {
-		return { zone: '', slots: [] };
-	} finally {
-		window.clearTimeout( timer );
-	}
+	const body = await window
+		.fetch( url, { credentials: 'same-origin', signal: controller.signal } )
+		.then( ( response ) => ( response.ok ? response.json() : null ) )
+		.catch( () => null );
+	window.clearTimeout( timer );
+
+	return {
+		zone: typeof body?.zone === 'string' ? body.zone : '',
+		slots: Array.isArray( body?.slots )
+			? body.slots.filter( Number.isFinite )
+			: [],
+	};
 }

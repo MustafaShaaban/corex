@@ -23,7 +23,7 @@
   "consumers": [
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
-      "selector_or_context": "lines 21, 37: border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "selector_or_context": "lines 21, 37, 61, 139: border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
       "property": "--corex-admin-border-soft",
       "owner": "other-addon",
       "surface": "front-end",
@@ -33,7 +33,7 @@
     },
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
-      "selector_or_context": "lines 21, 37: border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
+      "selector_or_context": "lines 21, 37, 61, 139: border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);",
       "property": "--corex-admin-border-width",
       "owner": "other-addon",
       "surface": "front-end",
@@ -63,7 +63,7 @@
     },
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
-      "selector_or_context": "lines 35, 36, 78: margin-block: var(--corex-admin-space-md) 0; | padding: var(--corex-admin-space-md); | margin-inline-end: var(--corex-admin-space-md);",
+      "selector_or_context": "lines 35, 36, 104: margin-block: var(--corex-admin-space-md) 0; | padding: var(--corex-admin-space-md); | margin-inline-end: var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "other-addon",
       "surface": "front-end",
@@ -73,7 +73,7 @@
     },
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
-      "selector_or_context": "lines 15, 18: gap: var(--corex-admin-space-sm) var(--corex-admin-space-lg); | padding-block: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 15, 18, 60, 138: gap: var(--corex-admin-space-sm) var(--corex-admin-space-lg); | padding-block: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
       "owner": "other-addon",
       "surface": "front-end",
@@ -83,17 +83,17 @@
     },
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
-      "selector_or_context": "lines 43, 76: gap: var(--corex-admin-space-xs);",
+      "selector_or_context": "lines 43, 102, 143: gap: var(--corex-admin-space-xs); | padding-block: var(--corex-admin-space-xs);",
       "property": "--corex-admin-space-xs",
       "owner": "other-addon",
       "surface": "front-end",
-      "direction_context": "not-applicable",
+      "direction_context": "logical",
       "resolution": "raw-allowance",
       "target_definition": "scoped --corex-admin-* adapter"
     },
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
-      "selector_or_context": "lines 30: color: var(--corex-admin-text);",
+      "selector_or_context": "lines 30, 55: color: var(--corex-admin-text);",
       "property": "--corex-admin-text",
       "owner": "other-addon",
       "surface": "front-end",
@@ -103,7 +103,7 @@
     },
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
-      "selector_or_context": "lines 89: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 67, 72, 115: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "other-addon",
       "surface": "front-end",

@@ -102,7 +102,7 @@ final class AssistantScreenView
             'services',
             __('Services', 'corex'),
             __('Asked from the top: when one is out of its free limit, the next answers. Paid services cost money for each answer; keep them last and on only if you want them. Visitors never see which service answered.', 'corex'),
-            '<div class="corex-assistant-services-wrap"><table class="widefat corex-assistant-services"><thead><tr>'
+            '<div class="corex-assistant-services-wrap"><table class="corex-assistant-services"><thead><tr>'
             . '<th scope="col">' . esc_html__('Order', 'corex') . '</th>'
             . '<th scope="col">' . esc_html__('Service', 'corex') . '</th>'
             . '<th scope="col">' . esc_html__('On', 'corex') . '</th>'
@@ -115,7 +115,7 @@ final class AssistantScreenView
 
     private function serviceRow(string $id): string
     {
-        $entry = Provider::CATALOGUE[$id];
+        $entry = ['label' => self::serviceName($id)] + Provider::CATALOGUE[$id];
         $name = 'services[' . $id . ']';
 
         return sprintf(
@@ -204,7 +204,7 @@ final class AssistantScreenView
                 '<label class="corex-assistant-day"><input type="checkbox" name="booking[days][]" value="%1$d"%2$s /> %3$s</label>',
                 $day,
                 in_array($day, $hours->days, true) ? ' checked' : '',
-                esc_html($GLOBALS['wp_locale']->get_weekday($day)),
+                esc_html(self::dayName($day)),
             );
         }
         $slots = '';
@@ -319,6 +319,37 @@ final class AssistantScreenView
             esc_html__('On', 'corex'),
             esc_html__('Off', 'corex'),
         );
+    }
+
+    /** A service's name as the owner reads it: a product's name, which a translation may write in its script. */
+    private static function serviceName(string $id): string
+    {
+        $names = [
+            'gemini' => __('Google Gemini', 'corex'),
+            'groq' => __('Groq', 'corex'),
+            'openrouter' => __('OpenRouter', 'corex'),
+            'mistral' => __('Mistral', 'corex'),
+            'openai' => __('OpenAI', 'corex'),
+            'anthropic' => __('Anthropic Claude', 'corex'),
+        ];
+
+        return $names[$id] ?? (string) (Provider::CATALOGUE[$id]['label'] ?? $id);
+    }
+
+    /** A day of the week, 0 for Sunday, in CoreX's own words like the rest of the screen. */
+    private static function dayName(int $day): string
+    {
+        $names = [
+            __('Sunday', 'corex'),
+            __('Monday', 'corex'),
+            __('Tuesday', 'corex'),
+            __('Wednesday', 'corex'),
+            __('Thursday', 'corex'),
+            __('Friday', 'corex'),
+            __('Saturday', 'corex'),
+        ];
+
+        return $names[$day] ?? '';
     }
 
     /** A translated label placed inside a format string: a `%` in a translation stays a `%`. */
