@@ -345,7 +345,7 @@ final class AssistantScreenView
     {
         return match (true) {
             $zone === 'UTC' => __('UTC', 'corex'),
-            BookingHours::isOffset($zone) => __('UTC', 'corex') . $zone,
+            BookingHours::isOffset($zone) => BookingHours::city($zone),
             default => str_replace('_', ' ', $zone),
         };
     }

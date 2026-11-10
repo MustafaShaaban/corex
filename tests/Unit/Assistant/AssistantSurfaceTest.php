@@ -195,7 +195,7 @@ it('shows only on public pages when the assistant is live', function (bool $admi
 ]);
 
 /** The callback form with nothing on offer; its times are tested in AssistantSlotClaimsTest. */
-function plainCallbackForm(): AssistantCallbackForm
+function assistantPlainCallbackForm(): AssistantCallbackForm
 {
     return new AssistantCallbackForm(
         new OpenSlots(AssistantFixtures::settings([]), new MemorySlotClaims(), static fn (): int => 0),
@@ -204,7 +204,7 @@ function plainCallbackForm(): AssistantCallbackForm
 }
 
 it('asks the hand-off’s questions as a CoreX form, with the engine’s own listeners', function () {
-    $form = plainCallbackForm();
+    $form = assistantPlainCallbackForm();
     $fields = $form->fields();
 
     expect($form->slug)->toBe('corex-assistant-callback')
@@ -222,7 +222,7 @@ it('lets a site send its own email for a callback in place of CoreX’s, keeping
         static fn (array $listeners): array => [StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail', 42],
     );
 
-    expect(plainCallbackForm()->listeners())->toBe([StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail', SlotClaimListener::class]);
+    expect(assistantPlainCallbackForm()->listeners())->toBe([StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail', SlotClaimListener::class]);
 });
 
 /**

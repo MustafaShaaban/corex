@@ -169,9 +169,10 @@ test.describe( 'with the assistant on', () => {
 				.click();
 		};
 
-		// The first visitor asks for the first time on offer.
+		// The first visitor asks for the second time on offer: the first is the coming hour, which could pass
+		// before the request is sent.
 		const first = await openHandoff( await context.newPage() );
-		const asked = first.times[ 0 ];
+		const asked = first.times[ 1 ];
 		await send( first, asked );
 		await expect(
 			first.dialog.getByText( /^Thank you, Sara E2E/ )

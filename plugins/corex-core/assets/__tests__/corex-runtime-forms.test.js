@@ -172,6 +172,8 @@ describe( 'the client rule table mirrors the server', () => {
 		[ { channel: 'call', phone: '+20 100 000 0000' }, null ],
 		[ { channel: 'email', phone: '' }, null ],
 		[ { channel: 'email' }, null ],
+		// Only a single answer is compared, as the server compares only a scalar one.
+		[ { channel: [ 'call' ] }, null ],
 	] )( 'asks for the phone when %j', ( values, expected ) => {
 		const errors = window.Corex.forms.validate(
 			[

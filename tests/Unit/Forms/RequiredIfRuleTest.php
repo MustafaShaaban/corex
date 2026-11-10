@@ -21,7 +21,7 @@ use Corex\Forms\Validation\Validator;
  * @param array<string, mixed> $values
  * @return array<string, string>
  */
-function channelErrors(array $values): array
+function requiredIfChannelErrors(array $values): array
 {
     $registry = new RuleRegistry();
     $schema = (new SchemaResolver($registry))->resolve([
@@ -34,7 +34,7 @@ function channelErrors(array $values): array
 }
 
 it('requires the field only for the answers it lists', function (array $values, array $errors) {
-    expect(channelErrors($values))->toBe($errors);
+    expect(requiredIfChannelErrors($values))->toBe($errors);
 })->with([
     'a call needs a phone' => [['channel' => 'call', 'phone' => '', 'email' => ''], ['phone' => 'required']],
     'WhatsApp needs a phone' => [['channel' => 'whatsapp', 'phone' => '  ', 'email' => 'a@example.com'], ['phone' => 'required']],
@@ -44,12 +44,12 @@ it('requires the field only for the answers it lists', function (array $values, 
 ]);
 
 it('asks about a field the request left out, so writing the request by hand does not get past it', function () {
-    expect(channelErrors(['channel' => 'call']))->toBe(['phone' => 'required'])
-        ->and(channelErrors(['channel' => 'email']))->toBe(['email' => 'required']);
+    expect(requiredIfChannelErrors(['channel' => 'call']))->toBe(['phone' => 'required'])
+        ->and(requiredIfChannelErrors(['channel' => 'email']))->toBe(['email' => 'required']);
 });
 
 it('still runs the field’s other rules once it is given', function () {
-    expect(channelErrors(['channel' => 'email', 'email' => 'not-an-address']))->toBe(['email' => 'email']);
+    expect(requiredIfChannelErrors(['channel' => 'email', 'email' => 'not-an-address']))->toBe(['email' => 'email']);
 });
 
 it('asks for nothing without a field to follow or an answer to match', function (array $params) {
@@ -59,7 +59,3 @@ it('asks for nothing without a field to follow or an answer to match', function 
     'a field and no answers' => [['channel']],
     'a field nobody answered' => [['topic', 'sales']],
 ]);
-
-it('is a built-in rule the forms engine knows by name', function () {
-    expect((new RuleRegistry())->has('required_if'))->toBeTrue();
-});

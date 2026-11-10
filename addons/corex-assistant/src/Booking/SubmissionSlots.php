@@ -14,13 +14,15 @@ defined('ABSPATH') || exit;
  * A requested time follows its request in the Submissions inbox (spec 129, FR-021): offered again when the
  * request is moved to the trash or deleted, taken again when it is restored and the time is still free.
  *
- * The inbox trashes and restores by changing the post's status, and deletes with `wp_delete_post()`, as
- * retention does, so the two WordPress hooks below see every way a request leaves or comes back. A restored
+ * The inbox trashes and restores by changing the post's status and deletes with `wp_delete_post()`, and
+ * retention trashes and deletes through the same store, so the two WordPress hooks below see every way a
+ * request leaves or comes back. A restored
  * request whose time another visitor has asked for since is restored all the same: two requests then name
  * the time, and the team sees both.
  */
 final class SubmissionSlots
 {
+    /** The post type `Corex\Forms\Submission\SubmissionRepository` stores a submission as; named here, as {@see StoredCallbackSlot} explains. */
     public const POST_TYPE = 'corex_submission';
 
     /**

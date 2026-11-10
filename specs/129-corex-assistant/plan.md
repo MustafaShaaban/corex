@@ -112,7 +112,8 @@ section, page and guide topic removed again.
 | `corex-forms` `Form::prepare()`, `FormSubmissionService` | the form's last word on its answers, after validation and uploads, before listeners; a refusal is a 422 in the validation shape and forgets the uploads |
 | `corex-core` `assets/js/corex-runtime.js` | `required_if`, asked of a field the form left out too |
 | `Booking\SlotMoment` | a slot read from UTC seconds or an ISO 8601 moment; written back as ISO 8601 UTC |
-| `Booking\SlotClaims`, `Booking\WpSlotClaims` | the claims: one options row per time (`corex_assistant_slot_<seconds>`), value `0` while pending, then the submission id; claimed with `INSERT IGNORE`, as `Limits\VisitorLock` is |
+| `Booking\SlotClaims`, `Booking\WpSlotClaims` | the claims: one options row per time (`corex_assistant_slot_<seconds>`), value `pending:<when>` while pending (free after 15 minutes), then the submission id; claimed with `INSERT IGNORE`, as `Limits\VisitorLock` is |
+| `Booking\TeamClock`, `Booking\StoredCallbackSlot` | the team's clock in the site's language (through `Corex\Mail\SiteLanguage`); the time a stored request asked for, read back on restore |
 | `Booking\OpenSlots` | the offered times less the claimed ones; `claim()` removes past claims first |
 | `Booking\SubmissionSlots` | `transition_post_status` and `deleted_post` on `corex_submission`: release on trash and delete, claim again on restore |
 | `Booking\BookingHours` | offset zones (`+02:00`); `MAX_SLOTS` public for its test |

@@ -39,4 +39,4 @@
   integration through the REST server)
 - [x] T024 Chat: the slot sent as UTC seconds; "slot_taken" fetches the times again and says so (+ Jest,
   Playwright)
-- [ ] T025 Guards (clean-code, wp, test, docs); guide; CHANGELOG (Client impact); PROGRESS; DECISIONS from #617
+- [x] T025 Guards (clean-code, wp, test, docs); guide; CHANGELOG (Client impact); PROGRESS; DECISIONS from #617

@@ -64,6 +64,17 @@ function reply( status, body ) {
 
 const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
+/**
+ * Lets the chat run until a condition holds, however many steps it takes to get there.
+ *
+ * @param {() => boolean} done
+ */
+async function until( done ) {
+	for ( let step = 0; step < 50 && ! done(); step++ ) {
+		await flush();
+	}
+}
+
 async function ask( panel, question ) {
 	panel.querySelector( '.corex-assistant__input' ).value = question;
 	panel
@@ -436,9 +447,11 @@ describe( 'the hand-off', () => {
 		form.querySelector( '#corex-assistant-phone' ).value = '50 123 4567';
 
 		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
-		for ( let i = 0; i < 4; i++ ) {
-			await flush();
-		}
+		await until(
+			() =>
+				form.querySelector( '.corex-assistant__form-error' ).hidden ===
+				false
+		);
 
 		const values = [ ...picker.options ].map( ( option ) => option.value );
 		expect( values ).toEqual( [ '', String( open ) ] );
@@ -477,9 +490,11 @@ describe( 'the hand-off', () => {
 		form.querySelector( '#corex-assistant-phone' ).value = '50 123 4567';
 
 		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
-		for ( let i = 0; i < 4; i++ ) {
-			await flush();
-		}
+		await until(
+			() =>
+				form.querySelector( '.corex-assistant__form-error' ).hidden ===
+				false
+		);
 
 		expect( form.querySelector( '#corex-assistant-slot' ) ).toBeNull();
 		expect( document.activeElement ).toBe(

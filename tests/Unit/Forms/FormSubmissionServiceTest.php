@@ -305,7 +305,7 @@ it('hands the listeners the answers the form prepared, and nothing its fields do
     $response = submissionService($dispatched, $form)->handle('callback', ['name' => 'Sara', 'slot' => '1762963200']);
 
     expect($response->isOk())->toBeTrue()
-        ->and($dispatched[0]->values)->toBe(['slot' => 'Thu 12 Nov, 6:00 pm', 'name' => 'Sara'])
+        ->and($dispatched[0]->values)->toEqual(['name' => 'Sara', 'slot' => 'Thu 12 Nov, 6:00 pm'])
         ->and($response->value)->toBe($dispatched[0]->values);
 });
 

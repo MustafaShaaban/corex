@@ -38,12 +38,13 @@ final class OpenSlots
     /** @return list<int> UTC seconds, in order */
     public function open(): array
     {
+        $offered = $this->settings->booking()->slots(($this->now)());
+        if ($offered === []) {
+            return [];
+        }
         $claimed = array_flip($this->claims->claimed());
 
-        return array_values(array_filter(
-            $this->settings->booking()->slots(($this->now)()),
-            static fn (int $slot): bool => ! isset($claimed[$slot]),
-        ));
+        return array_values(array_filter($offered, static fn (int $slot): bool => ! isset($claimed[$slot])));
     }
 
     public function isOpen(int $slot): bool

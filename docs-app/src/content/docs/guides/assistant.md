@@ -142,15 +142,19 @@ suits the team". A time another visitor has asked for is not listed. The request
 moment in UTC (`2026-11-12T16:00:00Z`); `zone`, the visitor's time zone; and `time`, the line the team reads ("Thu
 12 Nov, 7:00 pm Riyadh = Thu 12 Nov, 6:00 pm Cairo"). The site writes that line from the other two, in the site's
 language and with its time format, so a request written by hand cannot put another one in the inbox. With booking
-off, or "Any time" chosen, nothing is claimed and `time` is what the visitor typed.
+off, `time` is what the visitor typed; with "Any time" chosen, nothing is claimed and `time` is empty.
+
+The hours are kept in the time zone the Booking card names. A site whose WordPress time zone is an offset ("UTC+2")
+starts with that offset, listed as `UTC+02:00`, until the owner picks a city.
 
 Each requested time is claimed once. When two visitors send the same time, the first request is stored and the
 second is answered 422 with `errors.slot` set to `slot_taken`; the chat then says that someone has just asked for
 that time, lists the times still open and chooses none. A time is offered again as soon as its request is moved to
 the trash or deleted in the Submissions inbox (or by retention), and taken again if the request is restored while
 the time is still free. A request nothing stored (a `corex_assistant_callback_listeners` filter without
-`StoreSubmissionListener`) hides no time. Claims are rows named `corex_assistant_slot_<seconds>` in the options
-table, never autoloaded; past ones are removed as new ones are made.
+`StoreSubmissionListener`) hides no time, and a time whose request died before it was stored is offered again
+after 15 minutes. Claims are rows named `corex_assistant_slot_<seconds>` in the options table, never autoloaded;
+past ones are removed as new ones are made.
 
 It is still a time the team confirms, not a booking: CoreX does not put it in a calendar or remind anyone.
 

@@ -395,8 +395,11 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 			return;
 		}
 		if ( result.errors.slot === 'slot_taken' ) {
-			// Another visitor asked for that time first: the times still open, and none chosen.
+			// Another visitor asked for that time first: the times still open, and none chosen. The button
+			// waits for them, so the taken time cannot be sent again meanwhile.
+			submit.disabled = true;
 			showSlots( await fetchSlots( config.slots ) );
+			submit.disabled = false;
 			formError.textContent = t( 'slotTaken' );
 			formError.hidden = false;
 			const choose = slotRow.isConnected ? fields.slot : fields.time;

@@ -341,9 +341,9 @@
 		required_if( value, params, values ) {
 			const list = params || [];
 			const answer = values ? values[ list[ 0 ] ] : undefined;
+			// Only a single answer is compared, as the server compares only a scalar one.
 			if (
-				answer === undefined ||
-				answer === null ||
+				( typeof answer !== 'string' && typeof answer !== 'number' ) ||
 				list.slice( 1 ).indexOf( String( answer ) ) === -1
 			) {
 				return null;
@@ -441,7 +441,8 @@
 		},
 	};
 
-	// The rules asked about an optional field the form left out, as a RuleForAbsentValue is.
+	// The rules asked about an optional field the form left out: on the server, the ones that implement
+	// Corex\Forms\Validation\RuleForAbsentValue. Keep the two lists in step.
 	const ASKED_WHEN_ABSENT = [ 'required_if' ];
 
 	function validateField( field, value, values, absent ) {

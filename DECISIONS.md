@@ -19490,8 +19490,9 @@ browser after they leave, which the owner has not asked for.
 **Decided.**
 - Each time asked for through `corex-assistant-callback` is claimed as a row of the options table,
   `corex_assistant_slot_<seconds>`, written with `INSERT IGNORE`, as `Limits\VisitorLock` is: of two requests
-  for one time, the database lets one write it. The row holds `0` while the request is being taken and then
-  the submission's id. `add_option()` would not do (it upserts, so both would be told they added it).
+  for one time, the database lets one write it. The row holds `pending:<when>` while the request is being
+  taken and then the submission's id. `add_option()` would not do (it upserts, so both would be told they
+  added it).
 - The claim is made in the form's `prepare()` (#618), once every other answer has passed, so a request another
   field refuses never holds a time. The `assistant_slot` rule refuses a time already claimed, past the notice,
   outside the hours or not a time at all, so the usual case is answered with the other errors and claims
@@ -19499,7 +19500,9 @@ browser after they leave, which the owner has not asked for.
 - The callback's last listener, `SlotClaimListener`, is added whatever `corex_assistant_callback_listeners`
   returns: it names the submission in its claim, or releases a claim nothing stored, so a time nobody can find
   in the inbox is never hidden. A request whose PHP process dies between the claim and the listener leaves a
-  pending row that hides its time until the time passes; claims of past times are removed on the next claim.
+  pending row; after 15 minutes it counts as free, and the next claim takes it over with an `UPDATE` naming the
+  old value, as the visitor lock takes over a stale lock. A request confirms or releases only the pending value
+  it wrote. Claims of past times are removed on the next claim.
 - `transition_post_status` and `deleted_post` on `corex_submission` follow the request: to the trash or deleted
   (by hand, in bulk or by retention) frees the time; restored claims it again while it is free and to come. A
   request restored after another visitor took its time is restored anyway, and the team sees both.
@@ -19522,9 +19525,12 @@ runs beside the others, and a time claimed there would stay claimed by a request
   form does not declare. It may throw `Corex\Forms\Validation\AnswersRefused` with field errors: the engine
   answers 422 in the shape of a validation failure (`code: validation_failed`, `errors`), and forgets any file
   it stored for that request, so a refused submission still leaves no file behind (spec 081, FR-005).
-- The assistant's callback writes `time` there from `slot` and the visitor's `zone`, with `wp_date()` in the
-  site's language (`switch_to_locale(get_locale())`) and its time format: "Thu 12 Nov, 7:00 pm Riyadh = Thu 12
-  Nov, 6:00 pm Cairo"; one time when the zones are the same or the visitor's is unknown. `slot` is stored as
+- The assistant's callback writes `time` there from `slot` and the visitor's `zone`, with `wp_date()` and the
+  site's time format, drawn through `Corex\Mail\SiteLanguage` as every CoreX email is (#356): "Thu 12 Nov, 7:00
+  pm Riyadh = Thu 12 Nov, 6:00 pm Cairo"; one time when the zones are the same or the visitor's is unknown.
+  The day and the time are joined by a translatable `%1$s, %2$s`. Like the emails, a request a multilingual
+  plugin answers in another language (it filters `locale`) gets that language, in the line and in the
+  notification around it alike; reading `WPLANG` here alone would split the two. `slot` is stored as
   `2026-11-12T16:00:00Z`; a zone the server does not know is dropped. Without a slot, `time` is what the visitor
   typed. The browser sends `slot` as the slots route gave it, UTC seconds, and no line; a page cached from
   before still sends an ISO moment, and both are read (`SlotMoment`). This replaces #612's "the visitor's

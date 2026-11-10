@@ -11,7 +11,9 @@
  * restoring and deleting the request in the inbox's own trash store frees, takes and frees the time again.
  *
  * The booking hours are answered through their `pre_option_` filter, and the callback's listeners are cut to
- * storage alone, so no setting of the site is touched and no email is sent.
+ * storage alone, so no setting of the site is touched and no email is sent. The site's own claim rows are
+ * set aside before each test and put back after it. Each test asks for the second time on offer: the first
+ * is the coming hour, which could pass between reading the list and sending.
  *
  * @package Corex\Tests\Integration\Assistant
  */
@@ -49,10 +51,39 @@ function assistantSlotHolder(int $slot): ?string
     return $held === null ? null : (string) $held;
 }
 
-function assistantSlotForgetRows(): void
+/** Removes every claim row, and answers what they held, so the site's own can be put back. */
+function assistantSlotTakeRows(): array
 {
     global $wpdb;
-    $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like('corex_assistant_slot_') . '%'));
+    $like = $wpdb->esc_like('corex_assistant_slot_') . '%';
+    $rows = $wpdb->get_results($wpdb->prepare("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like), ARRAY_A);
+    $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
+
+    return is_array($rows) ? $rows : [];
+}
+
+/** @param list<array{option_name: string, option_value: string}> $rows */
+function assistantSlotPutBack(array $rows): void
+{
+    global $wpdb;
+    assistantSlotTakeRows();
+    foreach ($rows as $row) {
+        $wpdb->insert($wpdb->options, $row + ['autoload' => 'off']);
+    }
+}
+
+/** The second time the slots route offers. */
+function assistantNextSlot(): int
+{
+    return assistantOffered()[1];
+}
+
+/** The team's line for a moment, as the site writes it in its own language. */
+function assistantTeamLine(int $slot): string
+{
+    $format = 'D j M, ' . (get_option('time_format') ?: 'g:i a');
+
+    return wp_date($format, $slot, new DateTimeZone('Asia/Riyadh')) . ' Riyadh = ' . wp_date($format, $slot, new DateTimeZone('Africa/Cairo')) . ' Cairo';
 }
 
 /** @param array<string, mixed> $answers */
@@ -83,7 +114,7 @@ beforeEach(function () {
     $this->stored = CreatedPosts::watch('corex_submission');
     $this->transients = WatchedTransients::watch('corex_throttle_');
     $this->submissionNotifications = NotificationRows::snapshotPrefixed('submission.');
-    assistantSlotForgetRows();
+    $this->siteClaims = assistantSlotTakeRows();
 
     // Every day, round the clock, hourly, in Cairo, for two days: the next time is inside the coming hour.
     $this->booking = static fn (): array => ['enabled' => true, 'timezone' => 'Africa/Cairo', 'days' => [0, 1, 2, 3, 4, 5, 6], 'start' => '00:00', 'end' => '00:00', 'slot' => 60, 'notice' => 0, 'horizon' => 2];
@@ -100,7 +131,7 @@ afterEach(function () {
     remove_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $this->booking);
     remove_filter('corex_assistant_callback_listeners', $this->storeOnly);
     $this->stored->delete();
-    assistantSlotForgetRows();
+    assistantSlotPutBack($this->siteClaims);
     NotificationRows::restorePrefixed('submission.', $this->submissionNotifications);
     $this->transients->restore();
 });
@@ -129,17 +160,35 @@ it('gives each time to one claim in the real options table, and frees it by its 
         ->and(wp_load_alloptions())->not->toHaveKey('corex_assistant_slot_' . $soon);
 });
 
+it('frees a pending claim whose request died, and lets the next claim take it over', function () {
+    global $wpdb;
+    $claims = Boot::app()->container()->make(SlotClaims::class);
+    $died = time() + 7200;
+    $running = time() + 10800;
+    $wpdb->insert($wpdb->options, ['option_name' => 'corex_assistant_slot_' . $died, 'option_value' => 'pending:' . (time() - 3600), 'autoload' => 'off']);
+    $wpdb->insert($wpdb->options, ['option_name' => 'corex_assistant_slot_' . $running, 'option_value' => 'pending:' . (time() - 60), 'autoload' => 'off']);
+
+    $offered = $claims->claimed();
+    $tookDied = $claims->claim($died);
+    $tookRunning = $claims->claim($running);
+    $claims->confirm($died, 77);
+
+    expect($offered)->toBe([$running])
+        ->and($tookDied)->toBeTrue()
+        ->and($tookRunning)->toBeFalse()
+        ->and(assistantSlotHolder($died))->toBe('77')
+        // Another request's pending claim is not this one's to name.
+        ->and(assistantSlotHolder($running))->toStartWith('pending:');
+});
+
 it('stores a request with the team’s line written by the server, then stops offering its time', function () {
-    $slot = assistantOffered()[0];
+    $slot = assistantNextSlot();
 
     $response = assistantCallback(['slot' => (string) $slot, 'time' => 'Whatever the visitor typed']);
     $id = $this->stored->ids()[0] ?? 0;
 
-    $cairo = wp_date('D j M', $slot, new DateTimeZone('Africa/Cairo'));
     expect($response->get_status())->toBe(200)
-        ->and(get_post_meta($id, 'corex_field_time', true))->toStartWith(wp_date('D j M', $slot, new DateTimeZone('Asia/Riyadh')))
-        ->and(get_post_meta($id, 'corex_field_time', true))->toContain(' Riyadh = ' . $cairo)
-        ->and(get_post_meta($id, 'corex_field_time', true))->toEndWith(' Cairo')
+        ->and(get_post_meta($id, 'corex_field_time', true))->toBe(assistantTeamLine($slot))
         ->and(get_post_meta($id, 'corex_field_slot', true))->toBe(gmdate('Y-m-d\TH:i:s\Z', $slot))
         ->and(assistantSlotRows())->toBe(['corex_assistant_slot_' . $slot])
         ->and(assistantSlotHolder($slot))->toBe((string) $id)
@@ -147,7 +196,7 @@ it('stores a request with the team’s line written by the server, then stops of
 });
 
 it('refuses a second request for a time with "slot_taken", and stores nothing for it', function () {
-    $slot = assistantOffered()[0];
+    $slot = assistantNextSlot();
     assistantCallback(['slot' => (string) $slot]);
 
     $again = assistantCallback(['slot' => (string) $slot, 'name' => 'Omar']);
@@ -157,36 +206,35 @@ it('refuses a second request for a time with "slot_taken", and stores nothing fo
         ->and($this->stored->ids())->toHaveCount(1);
 });
 
-it('refuses the request that slips past the rule while another takes the time, and leaves the winner’s claim', function () {
-    $slot = assistantOffered()[0];
-    // Another request claims the time after this one's rule has read the claims and before it claims:
-    // the rule reads the claims, then the booking hours, so the claim lands on that read.
-    $booking = $this->booking;
+it('refuses the request whose claim loses the race in prepare(), and leaves the winner’s claim', function () {
+    global $wpdb;
+    $slot = assistantNextSlot();
+    // Another request writes its claim at the moment this one's own claim goes to the database: after this
+    // request's rule has read the claims and passed, whatever order it read them in.
     $raced = false;
-    $racer = static function () use ($booking, $slot, &$raced): array {
-        if (! $raced) {
+    $racer = static function (string $query) use ($slot, &$raced): string {
+        if (! $raced && str_starts_with($query, 'INSERT IGNORE') && str_contains($query, "'corex_assistant_slot_" . $slot . "'")) {
             $raced = true;
-            Boot::app()->container()->make(SlotClaims::class)->claim($slot);
-            Boot::app()->container()->make(SlotClaims::class)->confirm($slot, 999_999);
+            global $wpdb;
+            $wpdb->insert($wpdb->options, ['option_name' => 'corex_assistant_slot_' . $slot, 'option_value' => '999999', 'autoload' => 'off']);
         }
 
-        return $booking();
+        return $query;
     };
-    remove_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $this->booking);
-    add_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $racer);
+    add_filter('query', $racer);
 
     $response = assistantCallback(['slot' => (string) $slot]);
-    remove_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $racer);
-    add_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $this->booking);
+    remove_filter('query', $racer);
 
-    expect($response->get_status())->toBe(422)
+    expect($raced)->toBeTrue()
+        ->and($response->get_status())->toBe(422)
         ->and($response->get_data()['errors'])->toBe(['slot' => 'slot_taken'])
         ->and($this->stored->ids())->toBe([])
         ->and(assistantSlotHolder($slot))->toBe('999999');
 });
 
 it('offers the time again when its request is binned or deleted, and takes it again on restore', function () {
-    $slot = assistantOffered()[0];
+    $slot = assistantNextSlot();
     assistantCallback(['slot' => (string) $slot]);
     $id = $this->stored->ids()[0];
     $trash = Boot::app()->container()->make(WpSubmissionTrashStore::class);
@@ -216,7 +264,7 @@ it('takes no time for "any time", and keeps what the visitor typed', function ()
 });
 
 it('hides no time when nothing stores the request', function () {
-    $slot = assistantOffered()[0];
+    $slot = assistantNextSlot();
     $nothing = static fn (): array => [];
     add_filter('corex_assistant_callback_listeners', $nothing, 20);
 

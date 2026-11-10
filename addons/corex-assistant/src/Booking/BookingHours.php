@@ -80,7 +80,8 @@ final class BookingHours
             : $d['days'];
         sort($days);
         $zone = self::named(is_string($saved['timezone'] ?? null) ? $saved['timezone'] : '');
-        $fallback = self::knownZone(self::named($siteZone)) ? self::named($siteZone) : 'UTC';
+        $siteZone = self::named($siteZone);
+        $fallback = self::knownZone($siteZone) ? $siteZone : 'UTC';
 
         return new self(
             (bool) ($saved['enabled'] ?? $d['enabled']),

@@ -28,8 +28,8 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #619).
   through Anthropic's own Messages API) can follow the free tiers. They are off until the owner turns them
   on, and answer at most 50 times a day by default.
 - **Visitors pick a time** (#612): with booking on, the callback form lists the next times the team takes
-  calls, in the visitor's own time zone; the team reads the picked time in both zones ("Thu, Nov 12, 7:00 PM
-  Riyadh = Thu, Nov 12, 6:00 PM Cairo"). A time the team confirms, not a reservation. A call or WhatsApp now
+  calls, in the visitor's own time zone; the team reads the picked time in both zones (written by the site
+  since #618). A time the team confirms, not a reservation. A call or WhatsApp now
   needs a number and an email an address (`required_if`), the other being optional.
 - **CoreX → Assistant** (#609, #610): a screen of its own in the CoreX rail. The switch, the button image and
   each language's name, welcome and suggestions; the services in the owner's order, each with a switch, a
@@ -40,7 +40,10 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #619).
 - **A time one visitor asked for is not offered to the next** (spec 129 slice 3, #617). Each time picked in the
   assistant's callback is claimed once; the slots route leaves claimed times out, and the second of two visitors
   who send the same time is answered `slot_taken`, with the chat listing the times still open. A time is offered
-  again when its request is moved to the trash or deleted in Submissions, and taken again on restore while free.
+  again when its request is moved to the trash or deleted in Submissions, and taken again on restore while free;
+  a time whose request died before it was stored is offered again after 15 minutes.
+- **Booking hours on a site set to an offset** (#617): a WordPress time zone such as "UTC+2" (`+02:00`) is kept
+  and listed as `UTC+02:00` on CoreX → Assistant. Slice 2 read such a site's hours in UTC.
 - **The team's time line is written by the site** (#618): the inbox and the team's email read "Thu 12 Nov,
   7:00 pm Riyadh = Thu 12 Nov, 6:00 pm Cairo" in the site's language and time format, from the moment and the
   visitor's zone. The visitor's browser no longer writes it, so a request written by hand cannot put a made-up

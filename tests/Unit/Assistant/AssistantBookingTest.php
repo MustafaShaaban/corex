@@ -74,7 +74,7 @@ it('keeps only what it can use from a saved value, and reads its own output the 
 });
 
 /** @param list<int> $slots @return list<string> */
-function onWallClock(array $slots, string $zone): array
+function assistantOnWallClock(array $slots, string $zone): array
 {
     return array_map(static fn (int $at): string => (new DateTimeImmutable('@' . $at))->setTimezone(new DateTimeZone($zone))->format('D H:i'), $slots);
 }
@@ -84,7 +84,7 @@ it('keeps the hours on the business’s wall clock across a clock change', funct
     $hours = BookingHours::fromArray(['enabled' => true, 'timezone' => 'Europe/London', 'start' => '09:00', 'end' => '10:00', 'slot' => 60, 'notice' => 0, 'horizon' => 2]);
     $saturday = (new DateTimeImmutable('2026-10-24 06:00', new DateTimeZone('Europe/London')))->getTimestamp();
 
-    expect(onWallClock($hours->slots($saturday), 'Europe/London'))->toBe(['Sat 09:00', 'Sun 09:00']);
+    expect(assistantOnWallClock($hours->slots($saturday), 'Europe/London'))->toBe(['Sat 09:00', 'Sun 09:00']);
 });
 
 it('offers at most a screen of times', function () {
@@ -97,7 +97,7 @@ it('takes a site time zone written as an offset, as WordPress gives one set to U
     $hours = BookingHours::fromArray(['enabled' => true, 'days' => [1], 'start' => '09:00', 'end' => '10:00', 'slot' => 60, 'notice' => 0, 'horizon' => 1], '+02:00');
 
     expect($hours->timezone)->toBe('+02:00')
-        ->and(onWallClock($hours->slots(ASSISTANT_MONDAY_6AM_CAIRO), 'Africa/Cairo'))->toBe(['Mon 09:00'])
+        ->and(assistantOnWallClock($hours->slots(ASSISTANT_MONDAY_6AM_CAIRO), 'Africa/Cairo'))->toBe(['Mon 09:00'])
         ->and(BookingHours::knownZone('+14:00'))->toBeTrue()
         ->and(BookingHours::knownZone('+15:00'))->toBeFalse();
 });

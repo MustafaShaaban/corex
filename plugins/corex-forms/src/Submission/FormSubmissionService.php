@@ -25,7 +25,8 @@ use Corex\Security\Upload\FormUploads;
  * resolve the form's schema → validate → store uploads → the form's `prepare()`, which may
  * still refuse (spec 129, FR-022) → on success, dispatch the FormSubmittedEvent, and
  * then announce the submission the listeners stored. Pure of WordPress; every rejection
- * short-circuits before any side effect (FR-008, FR-010, FR-011, SC-006). The side effects
+ * short-circuits before any side effect (FR-008, FR-010, FR-011, SC-006), and one from `prepare()`
+ * removes the uploads it was handed. The side effects
  * themselves live in the listeners.
  */
 final class FormSubmissionService

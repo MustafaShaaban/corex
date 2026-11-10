@@ -17,7 +17,9 @@ use Brain\Monkey\Functions;
 use Corex\Assistant\AssistantSettings;
 use Corex\Assistant\Booking\OpenSlots;
 use Corex\Assistant\Booking\SlotMoment;
+use Corex\Assistant\Booking\StoredCallbackSlot;
 use Corex\Assistant\Booking\SubmissionSlots;
+use Corex\Assistant\Booking\TeamClock;
 use Corex\Assistant\Forms\AssistantCallbackForm;
 use Corex\Assistant\Forms\AssistantSlotRule;
 use Corex\Assistant\Forms\SlotClaimListener;
@@ -32,6 +34,7 @@ use Corex\Forms\Submission\FormSubmittedEvent;
 use Corex\Forms\Validation\AnswersRefused;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
+use Corex\Mail\EmailLanguage;
 use Corex\Support\BootLogger;
 use Corex\Tests\Unit\Assistant\AssistantFixtures;
 use Corex\Tests\Unit\Assistant\MemorySlotClaims;
@@ -133,7 +136,7 @@ it('refuses a time that is no longer on offer, and lets "any time" through', fun
 it('claims the time and writes the team’s line itself, over what the browser wrote', function (array $sent, array $stored) {
     $claims = new MemorySlotClaims();
 
-    expect(assistantSlotCallbackForm($claims)->prepare(['name' => 'Sara'] + $sent))->toBe($stored + ['name' => 'Sara'] + $sent)
+    expect(assistantSlotCallbackForm($claims)->prepare(['name' => 'Sara'] + $sent))->toEqual($stored + ['name' => 'Sara'] + $sent)
         ->and($claims->rows)->toBe([assistantCairo('10:00') => 0]);
 })->with([
     'from another zone' => [
@@ -154,7 +157,7 @@ it('keeps the time a visitor typed when they picked none, and claims nothing', f
     $claims = new MemorySlotClaims();
     $prepared = assistantSlotCallbackForm($claims)->prepare(['name' => 'Sara', 'time' => 'after work', 'zone' => 'Asia/Riyadh']);
 
-    expect($prepared)->toBe(['slot' => '', 'zone' => 'Asia/Riyadh', 'name' => 'Sara', 'time' => 'after work'])
+    expect($prepared)->toEqual(['name' => 'Sara', 'time' => 'after work', 'slot' => '', 'zone' => 'Asia/Riyadh'])
         ->and($claims->rows)->toBe([]);
 });
 
@@ -165,17 +168,14 @@ it('refuses the second of two visitors who were both offered a time and sent it 
     $sent = ['name' => 'Sara', 'slot' => (string) assistantCairo('10:00'), 'zone' => 'Africa/Cairo'];
 
     // Both pass the rule before either is prepared, as two requests in flight do.
-    expect($rule->validate($sent['slot'], [], $sent))->toBeNull()
-        ->and($rule->validate($sent['slot'], [], $sent))->toBeNull();
+    $bothPass = [$rule->validate($sent['slot'], [], $sent), $rule->validate($sent['slot'], [], $sent)];
     $form->prepare($sent);
 
-    expect(static fn () => $form->prepare($sent))->toThrow(AnswersRefused::class)
+    expect($bothPass)->toBe([null, null])
+        ->and(static fn () => $form->prepare($sent))->toThrow(function (AnswersRefused $refused): void {
+            expect($refused->errors)->toBe(['slot' => 'slot_taken']);
+        })
         ->and($claims->rows)->toBe([assistantCairo('10:00') => 0]);
-    try {
-        $form->prepare($sent);
-    } catch (AnswersRefused $refused) {
-        expect($refused->errors)->toBe(['slot' => 'slot_taken']);
-    }
 });
 
 it('stores the first request for a time, refuses the next with "slot_taken", and keeps the claim named', function () {
@@ -290,3 +290,38 @@ it('pays no attention to posts that are not submissions', function () {
 
     expect($claims->rows)->toBe([assistantCairo('10:00') => 77]);
 });
+
+it('writes the team’s clock in the site’s language, with the site’s time format or a plain one', function (string $saved, string $line) {
+    $language = new class implements EmailLanguage {
+        public int $drawn = 0;
+
+        public function during(callable $draw): mixed
+        {
+            $this->drawn++;
+
+            return $draw();
+        }
+    };
+    Functions\when('get_option')->justReturn($saved);
+    Functions\when('wp_date')->alias(static fn (string $format, int $at, DateTimeZone $zone): string => (new DateTimeImmutable('@' . $at))->setTimezone($zone)->format($format));
+
+    expect((new TeamClock($language))(assistantCairo('19:00'), 'Asia/Riyadh'))->toBe($line)
+        ->and($language->drawn)->toBe(1);
+})->with([
+    'the site’s 24-hour clock' => ['H:i', 'Mon 9 Nov, 20:00'],
+    'no format saved' => ['', 'Mon 9 Nov, 8:00 pm'],
+]);
+
+it('reads back the time a stored callback asked for, and nothing for another form', function (string $form, string $slot, ?int $read) {
+    Functions\when('get_post_meta')->alias(static fn (int $id, string $key): string => match ($key) {
+        'corex_form_slug' => $form,
+        'corex_field_slot' => $slot,
+        default => '',
+    });
+
+    expect((new StoredCallbackSlot())(77))->toBe($read);
+})->with([
+    'a callback with a time' => [AssistantCallbackForm::SLUG, '2026-11-09T08:00:00Z', 1_794_211_200],
+    'a callback for any time' => [AssistantCallbackForm::SLUG, '', null],
+    'another form' => ['contact', '2026-11-09T08:00:00Z', null],
+]);

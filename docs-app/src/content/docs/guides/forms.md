@@ -285,17 +285,38 @@ Assistant's callback claims the time a visitor picked there, and the second of t
 same time at once is refused with `slot_taken`. Anything a rule can say belongs in a rule.
 
 ```php
+use Corex\Forms\Form;
 use Corex\Forms\Validation\AnswersRefused;
 
-public function prepare(array $values): array
+final class WorkshopForm extends Form
 {
-    if (! $this->seats->take((string) $values['session'])) {
-        throw new AnswersRefused(['session' => 'full']);
+    public string $slug = 'workshop';
+
+    protected array $fields = [
+        'name'    => ['type' => 'text', 'rules' => ['required']],
+        'session' => ['type' => 'select', 'rules' => ['required'], 'options' => ['am' => 'Morning', 'pm' => 'Afternoon']],
+    ];
+
+    public function __construct(private readonly Seats $seats) // your own service
+    {
     }
 
-    return ['session' => $this->seats->label((string) $values['session'])] + $values;
+    public function prepare(array $values): array
+    {
+        if (! $this->seats->take((string) $values['session'])) {
+            throw new AnswersRefused(['session' => 'full']);
+        }
+
+        return $values;
+    }
 }
+
+$container->make(FormRegistry::class)->register(new WorkshopForm($container->make(Seats::class)));
 ```
+
+The error key (`full` here) reaches the browser as a rule's would. The CoreX form block words only the
+built-in keys, so it shows "Please check this field." for this one; a form that says more reads the key in its
+own script, as the assistant's chat reads `slot_taken`.
 
 After defining a form, run `npm run build` so the block's `view.js`/`style.scss` compile.
 The rules are tested on both sides (`composer test` and `npm run test:js`).

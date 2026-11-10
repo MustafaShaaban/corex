@@ -18,9 +18,10 @@ use Corex\Assistant\Admin\ServiceCheck;
 use Corex\Assistant\Admin\ServiceCheckController;
 use Corex\Assistant\Booking\OpenSlots;
 use Corex\Assistant\Booking\SlotClaims;
-use Corex\Assistant\Booking\SlotMoment;
 use Corex\Assistant\Booking\SlotsController;
+use Corex\Assistant\Booking\StoredCallbackSlot;
 use Corex\Assistant\Booking\SubmissionSlots;
+use Corex\Assistant\Booking\TeamClock;
 use Corex\Assistant\Booking\WpSlotClaims;
 use Corex\Assistant\Chain\ChatRouter;
 use Corex\Assistant\Chain\Cooldowns;
@@ -45,6 +46,7 @@ use Corex\Foundation\ServiceProvider;
 use Corex\Http\ClientAddress;
 use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
+use Corex\Mail\EmailLanguage;
 use Corex\Security\Admin\AdminGuard;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\SettingLocks;
@@ -193,10 +195,10 @@ final class AssistantServiceProvider extends ServiceProvider
     private function registerBooking(): void
     {
         $now = static fn (): int => time();
-        $this->container->singleton(SlotClaims::class, static function (): SlotClaims {
+        $this->container->singleton(SlotClaims::class, static function () use ($now): SlotClaims {
             global $wpdb;
 
-            return new WpSlotClaims($wpdb);
+            return new WpSlotClaims($wpdb, $now);
         });
         $this->container->singleton(OpenSlots::class, static fn (ContainerInterface $c): OpenSlots => new OpenSlots(
             $c->make(AssistantSettings::class),
@@ -205,29 +207,13 @@ final class AssistantServiceProvider extends ServiceProvider
         ));
         $this->container->singleton(SlotsController::class, static fn (ContainerInterface $c): SlotsController => new SlotsController($c->make(OpenSlots::class)));
         $this->container->singleton(SlotClaimListener::class, static fn (ContainerInterface $c): SlotClaimListener => new SlotClaimListener($c->make(SlotClaims::class)));
+        $this->container->singleton(StoredCallbackSlot::class, static fn (): StoredCallbackSlot => new StoredCallbackSlot());
         $this->container->singleton(SubmissionSlots::class, static fn (ContainerInterface $c): SubmissionSlots => new SubmissionSlots(
             $c->make(SlotClaims::class),
-            static fn (int $id): ?int => get_post_meta($id, 'corex_form_slug', true) === AssistantCallbackForm::SLUG
-                ? SlotMoment::read(get_post_meta($id, 'corex_field_slot', true))
-                : null,
+            $c->make(StoredCallbackSlot::class)(...),
             $now,
         ));
-    }
-
-    /**
-     * A moment on a zone's clock, as the team reads it in the site's language ("Thu 12 Nov, 7:00 pm"): the
-     * request may come from a visitor whose own language the page was drawn in.
-     */
-    private static function teamClock(int $at, string $zone): string
-    {
-        $switched = switch_to_locale((string) get_locale());
-        /* translators: the day of a requested call time, as PHP's date() writes it: "Thu 12 Nov". */
-        $line = (string) wp_date(__('D j M', 'corex') . ', ' . (string) get_option('time_format', 'g:i a'), $at, new \DateTimeZone($zone));
-        if ($switched) {
-            restore_previous_locale();
-        }
-
-        return $line;
+        $this->container->singleton(TeamClock::class, static fn (ContainerInterface $c): TeamClock => new TeamClock($c->make(EmailLanguage::class)));
     }
 
     /** The block, and the hand-off form and its rules when the forms engine is there to take them (Principle IX). */
@@ -252,9 +238,10 @@ final class AssistantServiceProvider extends ServiceProvider
             $rules->register(AssistantSlotRule::NAME, new AssistantSlotRule($slots));
         }
         $settings = $this->container->make(AssistantSettings::class);
+        $clock = $this->container->make(TeamClock::class)(...);
         $this->container->make(FormRegistry::class)->register(new AssistantCallbackForm(
             $slots,
-            static fn (int $at, string $zone): string => $settings->booking()->describe($at, $zone, self::teamClock(...)),
+            static fn (int $at, string $zone): string => $settings->booking()->describe($at, $zone, $clock),
         ));
     }
 
