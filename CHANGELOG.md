@@ -102,6 +102,24 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
   save "1" or "0".
 - **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
 
+### Security
+
+- **Seven dependency advisories published from 2026-09-18 to 2026-11-09 are closed or bounded**
+  (DECISIONS #514). They failed "Validate dependency advisories" on every pull request from 2026-11-09.
+  All are in build, test or local-development tooling; the 169 built files are byte-identical before and
+  after. Root `package.json` overrides:
+  - `qs` floor raised to `^6.16.1` (GHSA-6pq8-jhm2-2vcw): 6.16.0 to 6.17.1;
+  - `glob` 9 to 14 moved to `^14.0.2` (GHSA-3g3m-2fjr-6pw4): Jest, `test-exclude` and `rimraf`
+    now get 14.0.4;
+  - `minimatch` 7 to 11 moved to `^11.0.1` (GHSA-g3hv-75wg-m249): one 11.0.5 for every consumer
+    that asked for 9.x or 10.x; the 3.x copies ESLint 9, its plugins and glob 7 ask for carry no advisory and stay;
+  - `isomorphic-git` `^1.38.6` (GHSA-9qw7-j9xw-fv9c, high; GHSA-cw2g-2vwq-88w6; GHSA-96wc-2m84-2cj7):
+    1.37.6 to 1.44.12. Nothing loads the installed copy: `@wp-playground/storage` (under `@wordpress/env`)
+    bundles its own isomorphic-git code, which this override does not change.
+- **`deepmerge` is a bounded exception** (GHSA-gcqx-w48m-w2h4, low): 4.3.1 is the latest release and
+  has no fix. Jest merges its configuration with it, and that configuration is written in this repository; the `@wordpress/*`
+  packages that also ask for it are never bundled. Review by 2027-01-31.
+
 ### Client impact
 
 **Spec 118, one launch checklist:**
@@ -134,6 +152,14 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
   of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
   `tests/Unit/Media/MediaRegenerationJobTest.php`.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**Dependency advisories (DECISIONS #514):**
+
+- **Every client**: nothing changes on a site. The overrides
+  and the lockfile touch only build, test and local-development tooling, and the built files are
+  byte-identical. A client repository that copies CoreX's root `package.json` overrides takes the four
+  new or changed entries with it, or its own "Validate dependency advisories" run reports the same
+  advisories.
 
 ## [0.48.1] - 2026-10-25
 

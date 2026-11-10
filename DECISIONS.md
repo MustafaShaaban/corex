@@ -19128,3 +19128,65 @@ package" to the whole installation.
 **Not chosen.** *A client written again for Node*: two clients of one protocol drift apart. *Printing the recovery
 link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
 only when it is needed.
+
+## #514 -- The 2026-11-09 dependency advisories: four overrides and one bounded exception
+
+**Date:** 2026-11-10. **Policy:** `SECURITY.md`, "Dependency advisories"; spec 056's order (fix what is
+compatible, bound the rest, keep major migrations separate).
+
+**Why now.** "Validate dependency advisories" failed on every pull request from 2026-11-09, PR #449 among them,
+with nothing changed in the tree: seven advisories had no policy entry. Four (glob, minimatch, qs, deepmerge)
+were reported first; three more for `isomorphic-git` were published on the evening of 2026-11-09 and showed up
+when the gate was run here. `main`'s weekly run would have failed the same way.
+
+**Decided.** Root `package.json` `overrides`:
+
+| Override | Advisory | Before | After | Consumers |
+|---|---|---|---|---|
+| `qs` `^6.16.0` to `^6.16.1` | GHSA-6pq8-jhm2-2vcw (moderate) | 6.16.0 | 6.17.1 | `express` 4 and `body-parser` 1 under `@wp-playground/cli`, `express` 5 and `body-parser` 2 under `webpack-dev-server` |
+| `glob@>=9.0.0 <15.0.0`: `^14.0.2` | GHSA-3g3m-2fjr-6pw4 (moderate) | 13.0.6, 10.5.0 | 14.0.4 | `jest-config`, `jest-runtime`, `@jest/reporters`, `test-exclude`, `rimraf` (under `@wordpress/env`) |
+| `minimatch@>=7.0.0 <12.0.0`: `^11.0.1` | GHSA-g3hv-75wg-m249 (moderate) | 10.2.6, 9.0.9 | 11.0.5 | glob 14, `test-exclude`, `markdownlint-cli`, `@typescript-eslint/typescript-estree`, ESLint 10 under `@wordpress/scripts` |
+| `isomorphic-git` `^1.38.6` | GHSA-9qw7-j9xw-fv9c (high), GHSA-cw2g-2vwq-88w6, GHSA-96wc-2m84-2cj7 (moderate) | 1.37.6 | 1.44.12 | `@wp-playground/storage`, under `@wordpress/env` |
+
+One bounded exception in `.github/dependency-security-policy.json`: `deepmerge` 4.3.1, GHSA-gcqx-w48m-w2h4 (low),
+exposure `build-test-transitive`, review by 2027-01-31. 4.3.1 is the latest release and the advisory names no
+patched version. Jest merges its configuration, written in this repository, with it; `@svgr/plugin-svgo` declares
+it but its built code does not load it. `@wordpress/components` and `@wordpress/data` also ask for it, but the build maps both to WordPress's own scripts and no built file contains
+it. The gate passes: five findings in the root, five exceptions (the four `simple-git` ones of #244 and this one).
+
+**Three things that are easy to get wrong.**
+- **glob and minimatch are major bumps, so the overrides are scoped by version.** A plain `minimatch` override
+  would also replace the 3.x copies ESLint 9 and its plugins ask for. 3.x carries no advisory and exports a
+  different shape (the trap #272 records for `markdownlint-cli`). The keys name only the affected majors.
+- **The key's range must contain the replacement.** With `minimatch@>=7.0.0 <11.0.1` npm 10 flip-flopped: once
+  a copy became 11.0.5 the key no longer matched it, so the next `npm install --package-lock-only` put 10.2.6
+  back for some consumers, and the run after that undid it again. With the upper bound above the replacement
+  (`<12.0.0`, and `<15.0.0` for glob) three runs in a row wrote the same lockfile.
+- **The `isomorphic-git` override changes what the audit reads, not what runs.** No file in the tree loads the
+  installed `isomorphic-git` package: `@wp-playground/storage` 3.1.47 ships its own bundled isomorphic-git code
+  and its own sparse checkout, and its `package.json` pins 1.37.6. It is reached through wp-env's Playground
+  runtime. `npm run env:start` runs `wp-env start`, whose `--runtime` defaults to `docker`, and no file in this
+  repository names a git resource for a Playground blueprint. The real fix is an
+  `@wp-playground/storage` release built on isomorphic-git 1.38.6 or later (the latest, 3.1.63, still pins
+  1.37.6) reaching `@wordpress/env`.
+
+**Checked** (Node 24.21, npm 10.9.10 for the lockfile and installs, as CI):
+- `npx npm@10 ci` installs the new lockfile; the lockfile diff changes only the packages above, `path-scurry`
+  (glob 14's own), and removes 31 packages that the older glob copies and isomorphic-git 1.37 used.
+- `npm run build`: the 169 files under the workspaces' `build/` directories are byte-identical to a build from
+  `main`'s lockfile.
+- `wp-scripts test-unit-jest --coverage`: 121 suites, 1549 passed, 2 skipped, the same as on `main`, and the
+  coverage totals are identical (5793 of 7248 statements), so glob 14 and minimatch 11 select the same files in
+  Jest and `test-exclude`.
+- `npm run lint:js`: 0 errors, 76 warnings (not run on `main` for comparison). `wp-scripts lint-md-docs` loads minimatch 11 and
+  prints the same report as on `main`, line for line (its table-style errors are already there).
+- Playwright loads its configuration and all 541 tests in 41 files (`--list`). `@playwright/test` depends on
+  none of the changed packages; no site was reachable for a browser run.
+- `@wordpress/env` itself (rimraf with glob 14, express with qs 6.17) was not started.
+
+**Not chosen.** *Bounded exceptions for glob and minimatch*: both have fixed releases and every consumer uses
+only the calls glob 14 and minimatch 11 keep (`glob()`, `glob.sync`, `globSync`, `minimatch()`, `new Minimatch().match()`); the
+checks above found no difference. *Pinning `isomorphic-git` to 1.38.x*: nothing loads it, so the latest 1.x is
+as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the policy refuses a high finding
+with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
+choice even where the copy is unused.

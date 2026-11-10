@@ -280,6 +280,8 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**Merged, not released.** The advisories of 2026-11-09 (DECISIONS #514): overrides for `qs`, `glob` 14, `minimatch` 11 and `isomorphic-git`, and a bounded exception for `deepmerge`, which has no fixed release. The built files are byte-identical; the notes are under `[Unreleased]` → Security in `CHANGELOG.md`.
+
 **In v0.48.1, 2026-10-25.** Spec 123 User Stories 1 and 4 (#442): CoreX abilities public to MCP, and `npm run release:push`, which installs a release with an Application Password on a site that defines `COREX_ALLOW_RELEASE_PUSH` (DECISIONS #512, #513). Its "In flight" paragraph above describes it; the release notes are under `[0.48.1]` in `CHANGELOG.md`. Filed from its verification: #443 (`build:dist` under a `.claude` folder) and #444 (a fresh site's capability checks before the migration runner).
 
 **In v0.48.0, 2026-10-23.** The rest of the revamp's stage 0 and R1.1: spec 113 (R0.2, mail capture, #437), spec 114 (R0.3, truthful screens, #433), spec 115 (R0.4, kit and public page safety, #436) and spec 116 (R1.1, quality checks, #434). Their "In flight" paragraphs above describe each; the release notes are under `[0.48.0]` in `CHANGELOG.md`.
@@ -989,11 +991,13 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`
   before its own filter runs. Measured in DECISIONS #222.
-- Four bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244),
-  all on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
+- Five bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244, #514). Four are
+  on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
   starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is given comes
   from `wp-env.json` in this repository. They are reviewed on 2026-11-30. The `sprintf-js` and
   `braces` exceptions were removed when GitHub withdrew their advisories (2026-10-22, 2026-10-23).
+  The fifth is `deepmerge` 4.3.1 (low, no fixed release; Jest merges its configuration with it), reviewed
+  on 2027-01-31.
 - **One override holds a package above what its parents ask for**: `postcss-selector-parser` at
   7.1.6, in the root and in `docs-app`. `@wordpress/scripts` 36 did not retire it as expected:
   `cssnano` 6 still asks for 6.x. Three more hold `js-yaml`, `smol-toml` and `katex` at patched
