@@ -40,6 +40,11 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**CoreX checkboxes and radios** (2026-11-10, branch `fix/admin-checkbox-radio-look`, DECISIONS #515): the shell
+draws every CoreX admin screen's checkboxes and radios in brass instead of WordPress blue, in
+`plugins/corex-core/assets/css/corex-admin-shell.css`, measured by `tests/e2e/admin-checkboxes.spec.js`. One pull
+request, not merged by its session, not tagged.
+
 **Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
 #447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
 owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar
