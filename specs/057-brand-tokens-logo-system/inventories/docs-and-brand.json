@@ -171,9 +171,9 @@
     {
       "path": "docs-app/src/content/docs/guides/assistant.md",
       "lines": [
-        250,
-        251,
-        252
+        266,
+        267,
+        268
       ],
       "topics": [
         "generated-properties"

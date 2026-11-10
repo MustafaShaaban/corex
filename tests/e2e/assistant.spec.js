@@ -15,8 +15,11 @@ const { test, expect } = require( '@playwright/test' );
 const AxeBuilder = require( '@axe-core/playwright' ).default;
 
 const { STORAGE_STATE } = require( './global-setup' );
+const { wpEval } = require( './helpers' );
 
 const PAGE = '/sample-page/';
+// At example.com, so the suite's teardown knows a request for a test's own.
+const SENDER = 'sara.e2e@example.com';
 const WCAG_TAGS = [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ];
 
 test.use( { storageState: { cookies: [], origins: [] } } );
@@ -35,6 +38,14 @@ test( 'puts nothing on the page while it is off', async ( { page } ) => {
 test.describe( 'with the assistant on', () => {
 	test.beforeEach( async ( { page } ) => {
 		await page.setExtraHTTPHeaders( { 'X-Corex-E2E-Assistant': 'on' } );
+	} );
+
+	// The callback requests a test sent, which would otherwise sit in Submissions and the Data screen for the
+	// specs after this one. Deleting them frees the times they claimed.
+	test.afterEach( () => {
+		wpEval(
+			`foreach ( get_posts( [ 'post_type' => 'corex_submission', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => 'corex_field_email', 'meta_value' => '${ SENDER }' ] ) as $id ) { wp_delete_post( $id, true ); }`
+		);
 	} );
 
 	test( 'answers from the site, hands off to the team, and closes back to its button', async ( {
@@ -159,10 +170,9 @@ test.describe( 'with the assistant on', () => {
 		const send = async ( { dialog, picker }, slot ) => {
 			await dialog.getByLabel( 'Your name' ).fill( 'Sara E2E' );
 			await dialog.getByLabel( 'Mobile number' ).fill( '50 123 4567' );
-			// At example.com, so the suite's teardown knows the request for a test's own.
 			await dialog
 				.getByRole( 'textbox', { name: /^Email/ } )
-				.fill( 'sara.e2e@example.com' );
+				.fill( SENDER );
 			await picker.selectOption( slot );
 			await dialog
 				.getByRole( 'button', { name: 'Send request' } )
