@@ -20,6 +20,7 @@ use Corex\Forms\FormRegistry;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\FormSubmittedEvent;
+use Corex\Forms\Validation\AnswersRefused;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
 use Corex\Security\Upload\AttachmentResult;
@@ -348,4 +349,36 @@ it('stores the file that was sent, whatever the body says under the same name', 
 
     expect($response->isOk())->toBeTrue()
         ->and($response->value['cv'])->toBe(901);
+});
+
+/**
+ * FR-005 again, for a refusal that comes after the file was stored (spec 129, FR-022).
+ */
+it('forgets the stored file when the form refuses the answers in prepare()', function () {
+    $store = new SpyAttachmentStore();
+    $forms = new FormRegistry();
+    $forms->register(new class extends Form {
+        public string $slug = 'apply-once';
+
+        /** @var array<string,array{type?:string,rules?:list<string>}> */
+        protected array $fields = ['cv' => ['type' => 'file', 'rules' => ['required', 'mime:application/pdf']]];
+
+        public function prepare(array $values): array
+        {
+            throw new AnswersRefused(['cv' => 'duplicate']);
+        }
+    });
+    $service = new FormSubmissionService(
+        $forms,
+        new SchemaResolver(new RuleRegistry()),
+        new Validator(new RuleRegistry()),
+        new EventDispatcher(new ListenerProvider(), new BootLogger(false)),
+        $store,
+    );
+
+    $response = $service->handle('apply-once', [], FormSubmissionService::HONEYPOT_KEY, ['cv' => pdfDescriptor()]);
+
+    expect($response->status)->toBe(422)
+        ->and($response->value)->toBe(['cv' => 'duplicate'])
+        ->and($store->forgotten)->toBe([901]);
 });

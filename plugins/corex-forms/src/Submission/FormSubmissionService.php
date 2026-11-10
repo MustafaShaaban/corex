@@ -14,6 +14,7 @@ use Corex\Events\EventDispatcher;
 use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Schema\SchemaResolver;
+use Corex\Forms\Validation\AnswersRefused;
 use Corex\Forms\Validation\Validator;
 use Corex\Http\Middleware\Response;
 use Corex\Security\Upload\AttachmentStorage;
@@ -21,7 +22,8 @@ use Corex\Security\Upload\FormUploads;
 
 /**
  * Orchestrates a submission once the security middleware has run: honeypot check →
- * resolve the form's schema → validate → on success, dispatch the FormSubmittedEvent, and
+ * resolve the form's schema → validate → store uploads → the form's `prepare()`, which may
+ * still refuse (spec 129, FR-022) → on success, dispatch the FormSubmittedEvent, and
  * then announce the submission the listeners stored. Pure of WordPress; every rejection
  * short-circuits before any side effect (FR-008, FR-010, FR-011, SC-006). The side effects
  * themselves live in the listeners.
@@ -112,6 +114,16 @@ final class FormSubmissionService
             return Response::reject(__('The file could not be stored.', 'corex'), 422);
         }
 
+        // The form's last word on its answers; a field its schema does not declare is not let in.
+        try {
+            $values = array_intersect_key($form->prepare($values), $schema);
+        } catch (AnswersRefused $refused) {
+            // Refused as a rule refuses, and like a rule's refusal it leaves no file behind (FR-005).
+            $this->forgetUploads($schema, $values);
+
+            return Response::reject(__('Validation failed.', 'corex'), 422, $refused->errors);
+        }
+
         $submitted = new FormSubmittedEvent($slug, $values);
         $this->events->dispatch($submitted);
         $this->announce($submitted);
@@ -159,6 +171,21 @@ final class FormSubmissionService
         $token = trim((string) ($input[SubmissionChallenge::TOKEN_KEY] ?? ''));
 
         return ! $this->challenge->verify($token, $form->slug, CodeFormProtection::of($form))->passed;
+    }
+
+    /**
+     * Remove what {@see storeUploads()} stored for a submission that was refused after it.
+     *
+     * @param array<string,FieldSchema> $schema
+     * @param array<string,mixed>       $values the answers with each file exchanged for its attachment id
+     */
+    private function forgetUploads(array $schema, array $values): void
+    {
+        foreach ($schema as $name => $field) {
+            if ($field->type === 'file' && is_int($values[$name] ?? null)) {
+                $this->attachments?->forget($values[$name]);
+            }
+        }
     }
 
     /**
