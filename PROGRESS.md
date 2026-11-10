@@ -51,9 +51,9 @@ plugs in its knowledge (`corex_assistant_knowledge_provider`), strings (`corex_a
 (`--corex-assistant-*`). Framework edits: the add-on catalogue and the CoreX rail entry; the token inventory resolves a
 package's own `--corex-*` properties (#607). The slice-1 change that saved Settings secrets unloaded is
 withdrawn (#602): the Config engine reads only loaded options, so a saved secret went unread.
-- Verified (slices 1 and 2, 2026-11-10): Pest unit 3,643 green (the whole suite); integration 1,528 green, 1
+- Verified (slices 1 and 2, 2026-11-10): Pest unit 3,645 green (the whole suite); integration 1,530 green, 1
   skipped and 1 red that is this scratch site's own (`LoginSlugAvailabilityTest`: Git Bash wrote its permalink
-  setting as `/C:/Program Files/Git/%postname%/`; the branch changes no login code); Jest 22; Playwright 4
+  setting as `/C:/Program Files/Git/%postname%/`; the branch changes no login code); Jest 25; Playwright 4
   (Chromium, axe WCAG 2.2 AA on the open chat and the owner's screen); the quality suite's 33 checks on
   CoreX → Assistant, Add-ons and Data, all green; by hand on a scratch WordPress (port 8929, database
   `corex_wassistant`) with a stubbed model: off by default, lazy chat, chips, fallback on a 429, the callback
