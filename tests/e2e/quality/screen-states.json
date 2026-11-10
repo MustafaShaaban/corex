@@ -87,6 +87,13 @@
 				{ "name": "Guide list", "empty": "No guides for this site.", "loading": "Server-rendered; nothing to wait for.", "failed": "Server-rendered; a guide that cannot be read is left out.", "refused": "access-denied page" }
 			]
 		},
+		"corex-assistant": {
+			"title": "Assistant",
+			"panels": [
+				{ "name": "Assistant, Services, Booking and Limits cards", "empty": "Every field shows its default; each service without a key says No key, and the paid ones are off.", "loading": "Server-rendered; nothing to wait for.", "failed": "A save without the screen's token or by someone who may not change settings is refused with a message and writes nothing (spec 129).", "refused": "WordPress's not-allowed page: the screen is registered for manage_options" },
+				{ "name": "Check services results", "empty": "No service has a key yet.", "loading": "Checking..., with the button disabled until the answer.", "failed": "The check could not run, and to reload the page and try again.", "refused": "The check's route answers 401 or 403 to anyone but an administrator; the screen is not shown to them." }
+			]
+		},
 		"corex-setup": {
 			"title": "Setup wizard",
 			"panels": [
