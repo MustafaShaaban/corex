@@ -15,7 +15,7 @@
 	};
 
 	function line( result ) {
-		return result.answered
+		const text = result.answered
 			? /* translators: 1: a service, 2: its model, 3: seconds */ sprintf(
 					__( '%1$s (%2$s): answered in %3$s s', 'corex' ),
 					result.service,
@@ -31,6 +31,12 @@
 					result.model,
 					String( result.seconds ),
 					result.detail
+				);
+		return result.on
+			? text
+			: /* translators: %s: how the service did */ sprintf(
+					__( '%s (switched off)', 'corex' ),
+					text
 				);
 	}
 
@@ -68,7 +74,7 @@
 					region,
 					results.length
 						? results.map( line )
-						: [ __( 'No service is on with a key yet.', 'corex' ) ]
+						: [ __( 'No service has a key yet.', 'corex' ) ]
 				);
 			} catch {
 				show( region, [

@@ -79,7 +79,9 @@ final class AssistantScreenView
             'assistant',
             __('Assistant', 'corex'),
             __('A chat button on every public page. It shows once the switch is on and at least one service below is on with a key.', 'corex'),
-            self::row('enabled', __('Show the assistant', 'corex'), self::toggle('enabled', 'corex-assistant-enabled', $this->settings->enabled()))
+            self::row('enabled', __('Show the assistant', 'corex'), ($this->locked)(AssistantSettings::ENABLED)
+                ? esc_html($this->settings->enabled() ? __('On, set in the site’s .env file', 'corex') : __('Off, set in the site’s .env file', 'corex'))
+                : self::toggle('enabled', 'corex-assistant-enabled', $this->settings->enabled()))
             . self::row('icon', __('Button image', 'corex'), sprintf(
                 '<input type="url" class="regular-text" id="corex-assistant-icon" name="brand[icon]" value="%1$s" placeholder="https://" />'
                 . ' <button type="button" class="button" data-corex-assistant-media>%2$s</button><p class="description">%3$s</p>',
@@ -267,7 +269,7 @@ final class AssistantScreenView
     {
         return '<section class="corex-surface corex-settings-section corex-assistant-card" data-corex-assistant-panel>'
             . '<h2>' . esc_html__('Check services', 'corex') . '</h2>'
-            . '<p>' . esc_html__('Asks each service that is on a visitor’s question, with the full instructions, and shows which answered and how fast. Save new keys first.', 'corex') . '</p>'
+            . '<p>' . esc_html__('Asks each service with a key, on or off, a visitor’s question with the full instructions, and shows which answered and how fast. A paid service is charged for its question and it counts against today’s paid limit. Save new keys first.', 'corex') . '</p>'
             . '<p><button type="button" class="button" data-corex-assistant-check>' . esc_html__('Check services', 'corex') . '</button></p>'
             . '<div role="status" aria-live="polite" data-corex-assistant-results></div></section>';
     }

@@ -22,6 +22,7 @@ use Corex\Assistant\Booking\BookingHours;
 use Corex\Assistant\Chain\Cooldowns;
 use Corex\Assistant\Chain\Provider;
 use Corex\Assistant\Forms\AssistantCallbackForm;
+use Corex\Assistant\Knowledge\SiteKnowledge;
 use Corex\Assistant\Limits\VisitorKey;
 use Corex\Assistant\Limits\VisitorLock;
 use Corex\Boot;
@@ -120,13 +121,23 @@ final class AssistantSaveEnded extends RuntimeException
 /** The options a save of the screen writes. */
 const ASSISTANT_SAVED_OPTIONS = [
     'corex_assistant_enabled',
-    'corex_assistant_groq_key',
-    'corex_assistant_groq_model',
     AssistantSettings::SERVICES_OPTION,
     AssistantSettings::LIMITS_OPTION,
     AssistantSettings::BRAND_OPTION,
     AssistantSettings::BOOKING_OPTION,
 ];
+
+/** @return list<string> every option a save may write or remove: the five arrays and each service's key and model */
+function assistantRouteSavedOptions(): array
+{
+    $options = ASSISTANT_SAVED_OPTIONS;
+    foreach (array_keys(Provider::CATALOGUE) as $id) {
+        $options[] = 'corex_assistant_' . $id . '_key';
+        $options[] = 'corex_assistant_' . $id . '_model';
+    }
+
+    return $options;
+}
 
 /**
  * Posts the screen as a browser would and runs its save, which ends in `wp_die()` or a redirect.
@@ -166,7 +177,7 @@ function assistantRouteKeepRows(): array
 {
     global $wpdb;
     $rows = [];
-    foreach (ASSISTANT_SAVED_OPTIONS as $option) {
+    foreach (assistantRouteSavedOptions() as $option) {
         $rows[$option] = $wpdb->get_row($wpdb->prepare("SELECT option_value, autoload FROM {$wpdb->options} WHERE option_name = %s", $option), ARRAY_A);
     }
 
@@ -381,7 +392,7 @@ it('uses a key saved on the screen with nothing but the database to answer for i
             'enabled' => '1',
             'services' => ['groq' => ['row' => '1', 'on' => '1', 'key' => 'saved-on-the-screen']],
         ]);
-        // A settings object of its own, as the next request would build, reading what the save stored.
+        // The settings keep nothing between reads, so this reads what the save stored, as the next request would.
         $settings = Boot::app()->container()->make(AssistantSettings::class);
         $chain = array_map(static fn (Provider $p): string => $p->id . ':' . $p->key, $settings->chain());
         $autoload = $GLOBALS['wpdb']->get_var("SELECT autoload FROM {$GLOBALS['wpdb']->options} WHERE option_name = 'corex_assistant_groq_key'");
@@ -392,6 +403,67 @@ it('uses a key saved on the screen with nothing but the database to answer for i
     expect($status)->toBe(302)
         ->and($chain)->toContain('groq:saved-on-the-screen')
         ->and(in_array($autoload, ['yes', 'on', 'auto-on'], true))->toBeTrue();
+});
+
+it('turns over a key an earlier build stored unloaded when the same key is saved again', function () {
+    global $wpdb;
+    $kept = assistantRouteKeepRows();
+    remove_filter('pre_option_corex_assistant_groq_key', $this->answers['corex_assistant_groq_key']);
+    unset($this->answers['corex_assistant_groq_key']);
+    wp_set_current_user(assistantRouteUser($this, 'administrator'));
+
+    try {
+        delete_option('corex_assistant_groq_key');
+        add_option('corex_assistant_groq_key', 'the-same-key', '', false);
+        $status = assistantRouteSave([
+            'corex_assistant_nonce' => wp_create_nonce('corex_assistant_save'),
+            'services' => ['groq' => ['row' => '1', 'on' => '1', 'key' => 'the-same-key']],
+        ]);
+        $autoload = $wpdb->get_var("SELECT autoload FROM {$wpdb->options} WHERE option_name = 'corex_assistant_groq_key'");
+        $key = Boot::app()->container()->make(AssistantSettings::class)->key('groq');
+    } finally {
+        assistantRoutePutBackRows($kept);
+    }
+
+    expect($status)->toBe(302)
+        ->and(in_array($autoload, ['yes', 'on', 'auto-on'], true))->toBeTrue()
+        ->and($key)->toBe('the-same-key');
+});
+
+it('builds the knowledge again when a page is published or binned, the tagline changes, or the site asks', function () {
+    $generation = static fn (): int => (int) get_option(SiteKnowledge::GENERATION_OPTION, 0);
+    $told = 0;
+    $listener = static function () use (&$told): void {
+        $told++;
+    };
+    add_action('corex_assistant_knowledge_forgotten', $listener);
+    $tagline = get_option('blogdescription');
+    $steps = [];
+
+    try {
+        $start = $generation();
+        $page = (int) wp_insert_post(['post_type' => 'page', 'post_status' => 'draft', 'post_title' => 'Assistant knowledge probe']);
+        $afterDraft = $generation();
+        wp_publish_post($page);
+        $steps['published'] = $generation() > $afterDraft;
+        $before = $generation();
+        wp_trash_post($page);
+        $steps['binned'] = $generation() > $before;
+        wp_delete_post($page, true);
+        $before = $generation();
+        update_option('blogdescription', $tagline . ' (probe)');
+        $steps['tagline'] = $generation() > $before;
+        $before = $generation();
+        do_action('corex_assistant_forget_knowledge');
+        $steps['asked'] = $generation() > $before;
+    } finally {
+        update_option('blogdescription', $tagline);
+        remove_action('corex_assistant_knowledge_forgotten', $listener);
+    }
+
+    expect($steps)->toBe(['published' => true, 'binned' => true, 'tagline' => true, 'asked' => true])
+        ->and($told)->toBeGreaterThanOrEqual(4)
+        ->and($generation())->toBeGreaterThan($start);
 });
 
 it('draws the Assistant screen for an administrator, in the CoreX shell, with every card', function () {

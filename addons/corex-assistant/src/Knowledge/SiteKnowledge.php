@@ -94,10 +94,15 @@ final class SiteKnowledge implements KnowledgeProvider
         );
     }
 
-    /** Starts a new generation of the cache: a page changed, so every language is built again. */
+    /**
+     * Starts a new generation of the cache: what the knowledge is made of changed, so every language is
+     * built again. A site's own provider hears it on `corex_assistant_knowledge_forgotten` and can drop
+     * its own cache.
+     */
     public static function forget(): void
     {
         update_option(self::GENERATION_OPTION, (int) get_option(self::GENERATION_OPTION, 0) + 1, false);
+        do_action('corex_assistant_knowledge_forgotten');
     }
 
     public function for(string $locale): Knowledge

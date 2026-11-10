@@ -19,8 +19,9 @@ service answered.
 2. **CoreX → Assistant**: turn on **Show the assistant**.
 3. In **Services**, paste a free API key for at least one service and save. Google Gemini (Google AI Studio),
    Groq, OpenRouter and Mistral give one free; one key is enough, and more keys mean more free questions a day.
-4. Press **Check services**. Each service that is on and has a key is asked a visitor's question with the full instructions,
-   and the screen says which answered and how fast.
+4. Press **Check services**. Each service with a key, on or off, is asked a visitor's question with the full
+   instructions, and the screen says which answered and how fast. A paid service is charged for that question,
+   and it counts against today's paid limit.
 
 Nothing shows on the site until it is switched on **and** at least one service is on with a key. A saved key is
 never shown again; tick **Remove** and save to take it away.
@@ -69,7 +70,7 @@ add_filter('corex_assistant_preview_zones', static fn (): array => ['Asia/Riyadh
 ```
 
 **Limits.** Questions a visitor may ask in a clock hour and in a UTC day, questions the whole site answers in a
-day, and answers paid services may give in a day.
+day, and questions sent to paid services in a day (each counts, answered or not).
 
 **Check services.** As in step 4 above.
 
@@ -97,7 +98,7 @@ visitor sends the callback form, the chat goes with it if they leave "Attach a s
 |---|---|
 | A visitor (a salted hash of their address; an IPv6 /64 network counts as one) | one question at a time, 20 in a clock hour, 60 in a UTC day |
 | The whole site | 600 questions in a UTC day |
-| Paid services | 50 answers in a UTC day |
+| Paid services | 50 questions sent in a UTC day, answered or not |
 | One question | 600 characters; the last 12 messages are sent |
 | One request | 16,000 bytes, refused unread above that |
 
@@ -204,6 +205,10 @@ add_filter('corex_assistant_knowledge_provider', static fn () => new StudioKnowl
 - The whole knowledge goes with every question, so keep it to the facts a visitor asks about (tens of
   kilobytes at most). A provider that builds it from the database should keep the result, as the default keeps
   its own for six hours.
+- The default is built again at once when a page is saved, published, unpublished, binned or deleted, when the
+  site's name or tagline changes, and when an update of WordPress, a plugin or a theme finishes. Each time it
+  fires `corex_assistant_knowledge_forgotten`, so your provider can drop its own copy then. When your own
+  content changes (a project, a price list), fire `do_action('corex_assistant_forget_knowledge')`.
 
 Add the filter on `init` or earlier.
 

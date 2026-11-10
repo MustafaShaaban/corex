@@ -19391,3 +19391,33 @@ leaving the field out of the request does not get around it.
 **Not chosen.** *Reading the keys past the Config engine*: the engine is where `.env` wins, and every other CoreX
 secret is stored the same way. *Checking the visitor's time line on the server*: the browser writes it; `slot`,
 the moment in UTC, is what the team can trust, and the form's docblock says so.
+
+## #616 -- Knowledge refreshes when it changes; Check services tries every key; what slice 2 leaves for slice 3
+
+**Date:** 2026-11-10. **Spec:** 129, FR-012, FR-020.
+
+**Decided.**
+- **The default knowledge is built again as soon as what it reads changes**: a page saved, published,
+  unpublished, binned or deleted, the site's name or tagline, a finished update (`upgrader_process_complete`).
+  Slice 1 listened to a page's save only, so a page binned or a new tagline waited up to six hours. Perego's
+  own assistant refreshes when a project changes or a release lands; the generic form is two hooks:
+  `corex_assistant_forget_knowledge`, which a site fires when its own content changes, and
+  `corex_assistant_knowledge_forgotten`, which the add-on fires so a site's provider drops its own cache.
+- **"Check services" asks every service with a key, on or off**, and says which are off, so the owner can try a
+  paid key before switching it on. The question is charged and counts against the paid limit; the card says so.
+- **The hand-off's fields fit the form**: they were `inline-size: 100%` without `box-sizing: border-box`, so their
+  padding and border ran past the form's edge (found by the parallel slice 2 build).
+
+**Left for slice 3** (each its own story, not built here):
+- *A booked time hidden from other visitors* (Perego: a `slot_taken` rule and a fresh list of times). It needs a
+  store of requested times and a rule that refuses one already asked for.
+- *The team's time line written on the server* from `slot` and the visitor's zone, through a forms-engine hook
+  that runs after validation, so a hand-written request cannot put a made-up line in the inbox. Today `slot`, the
+  UTC moment, is the part to trust (#615).
+- *`required_if` as a forms-engine rule* in PHP and the runtime script, replacing the add-on's own
+  `required_for`.
+
+**Not chosen.** *One conversation across browser tabs*: the chat already keeps its conversation across pages for
+as long as the tab is open (`sessionStorage`); keeping it beyond the tab would store a visitor's words in their
+browser after they leave, which the owner has not asked for.
+

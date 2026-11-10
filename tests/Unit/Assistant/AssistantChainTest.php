@@ -9,6 +9,7 @@
 
 declare(strict_types=1);
 
+use Corex\Assistant\Admin\ServiceCheck;
 use Corex\Assistant\AssistantSettings;
 use Corex\Assistant\Chain\ChatRouter;
 use Corex\Assistant\Chain\Cooldowns;
@@ -61,6 +62,14 @@ it('keeps a paid service off until the owner turns it on, whatever its key', fun
         ->and(AssistantFixtures::settings($keys)->live())->toBeFalse()
         ->and(array_map(static fn (Provider $p): string => $p->id, AssistantFixtures::settings($keys, $saved)->chain()))
         ->toBe(['anthropic']);
+});
+
+it('lists every keyed service for "Check services", on or off, while the chain keeps only those on', function () {
+    $settings = AssistantFixtures::settings(['assistant.enabled' => '1', 'assistant.groq.key' => 'q', 'assistant.anthropic.key' => 'a']);
+    $ids = static fn (array $providers): array => array_map(static fn (Provider $p): string => $p->id, $providers);
+
+    expect($ids($settings->keyed()))->toBe(['groq', 'anthropic'])
+        ->and($ids($settings->chain()))->toBe(['groq']);
 });
 
 it('keeps a paid service off when a release adds it after the owner saved the services', function () {
@@ -343,6 +352,27 @@ it('asks a paid service only while today’s paid requests last, counting each o
         ->and($second)->toBeNull()
         ->and($limits->paidToday())->toBe(2)
         ->and($asked)->toBe(['api.openai.com', 'api.anthropic.com']);
+});
+
+it('counts a question "Check services" sends to a paid service, even one that fails', function () {
+    $store = [];
+    $counts = [];
+    $limits = AssistantFixtures::limits($counts);
+    $settings = AssistantFixtures::settings(['assistant.openai.key' => 'o']);
+    $check = new ServiceCheck(
+        $settings,
+        new ModelClient(static fn (): array => ['status' => 503, 'headers' => [], 'body' => '']),
+        AssistantFixtures::cooldowns($store),
+        $limits,
+        static fn (): array => [['role' => 'user', 'content' => 'Hi']],
+        static fn (): float => 0.0,
+    );
+
+    $results = $check->run();
+
+    expect($results)->toHaveCount(1)
+        ->and($results[0])->toMatchArray(['on' => false, 'answered' => false])
+        ->and($limits->paidToday())->toBe(1);
 });
 
 it('counts nothing against the paid limit when a free service answers', function () {

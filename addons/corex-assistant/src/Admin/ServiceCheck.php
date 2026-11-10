@@ -16,10 +16,11 @@ use Corex\Assistant\Chain\ModelClient;
 use Corex\Assistant\Limits\VisitorLimits;
 
 /**
- * "Check services" (spec 129, User Story 3): each service that is on and keyed is asked a visitor's
+ * "Check services" (spec 129, User Story 3): each service with a key, on or off, is asked a visitor's
  * question with the full instructions and knowledge, so the owner sees whether it answers, and how fast,
  * at the size a real question has. A small test question passed while real ones were refused (Perego,
- * 2026-11-09). A service that answers is no longer resting; one that fails rests as it would for a
+ * 2026-11-09). Asking one that is off lets the owner try a key, a paid one too, before switching it on.
+ * A service that answers is no longer resting; one that fails rests as it would for a
  * visitor. A question sent to a paid service counts against today's paid limit, as a visitor's does. The
  * answer names the service and its model, never its key.
  */
@@ -45,11 +46,11 @@ final class ServiceCheck
     }
 
     /**
-     * @return list<array{service: string, model: string, answered: bool, seconds: float, detail: string}>
+     * @return list<array{service: string, model: string, on: bool, answered: bool, seconds: float, detail: string}>
      */
     public function run(): array
     {
-        $chain = $this->settings->chain();
+        $chain = $this->settings->keyed();
         if ($chain === []) {
             return [];
         }
@@ -72,6 +73,7 @@ final class ServiceCheck
             $results[] = [
                 'service' => $provider->label,
                 'model' => $provider->model,
+                'on' => $this->settings->isOn($provider->id),
                 'answered' => is_string($answer),
                 'seconds' => $seconds,
                 'detail' => is_string($answer) ? '' : trim($answer->kind . ' ' . ($answer->status > 0 ? $answer->status : '') . ' ' . $answer->detail),

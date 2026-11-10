@@ -41,7 +41,7 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 ## In flight
 
 **Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
-#615): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
+#616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
 `addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free
 model tiers in turn (Gemini, Groq, OpenRouter, Mistral), with a callback form in the chat that lands in
 Submissions, with a time the visitor picks. CoreX → Assistant holds the switch, the look per language, the

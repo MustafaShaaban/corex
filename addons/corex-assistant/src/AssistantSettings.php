@@ -134,15 +134,26 @@ final class AssistantSettings
      */
     public function chain(): array
     {
-        $chain = [];
+        return array_values(array_filter($this->keyed(), fn (Provider $provider): bool => $this->isOn($provider->id)));
+    }
+
+    /**
+     * Every service with a key, on or off, in the owner's order: what "Check services" asks, so a key can
+     * be tried before its service is switched on.
+     *
+     * @return list<Provider>
+     */
+    public function keyed(): array
+    {
+        $keyed = [];
         foreach ($this->order() as $id) {
             $key = $this->key($id);
-            if ($key !== '' && $this->isOn($id)) {
-                $chain[] = Provider::fromCatalogue($id, $key, $this->storedModel($id));
+            if ($key !== '') {
+                $keyed[] = Provider::fromCatalogue($id, $key, $this->storedModel($id));
             }
         }
 
-        return $chain;
+        return $keyed;
     }
 
     /** @return array{hour: int, day: int, site: int, paid: int} */

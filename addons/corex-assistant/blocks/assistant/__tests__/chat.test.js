@@ -6,7 +6,7 @@
 import { TextEncoder } from 'util';
 
 import { historyOf, mountChat, transcriptOf } from '../chat';
-import { city, describeSlot, slotGroups } from '../slots';
+import { city, describeSlot, fetchSlots, slotGroups } from '../slots';
 import { bindAssistant } from '../view';
 
 const STRINGS = {
@@ -540,5 +540,44 @@ describe( 'the times', () => {
 		expect( city( 'America/Argentina/Buenos_Aires' ) ).toBe(
 			'Buenos Aires'
 		);
+	} );
+} );
+
+describe( 'the times the site offers', () => {
+	const NONE = { zone: '', slots: [] };
+
+	it( 'takes the site’s times when it answers', async () => {
+		window.fetch.mockReturnValue(
+			reply( 200, { zone: 'Africa/Cairo', slots: [ 10, 'x', 20 ] } )
+		);
+
+		await expect( fetchSlots( '/slots' ) ).resolves.toEqual( {
+			zone: 'Africa/Cairo',
+			slots: [ 10, 20 ],
+		} );
+	} );
+
+	it( 'offers none when the site answers with an error', async () => {
+		window.fetch.mockReturnValue( reply( 500, { slots: [ 10 ] } ) );
+
+		await expect( fetchSlots( '/slots' ) ).resolves.toEqual( NONE );
+	} );
+
+	it( 'gives up after five seconds, so the form can still be sent', async () => {
+		jest.useFakeTimers();
+		window.fetch.mockImplementation(
+			( url, { signal } ) =>
+				new Promise( ( resolve, reject ) => {
+					signal.addEventListener( 'abort', () =>
+						reject( new Error( 'aborted' ) )
+					);
+				} )
+		);
+
+		const asked = fetchSlots( '/slots' );
+		jest.advanceTimersByTime( 5000 );
+
+		await expect( asked ).resolves.toEqual( NONE );
+		jest.useRealTimers();
 	} );
 } );

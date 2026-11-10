@@ -2,8 +2,8 @@
 
 /**
  * What the CoreX Assistant answers and shows (spec 129): the service's reply and its "busy" answers,
- * the visitor's strings and the filter over them, the button's markup, the hand-off form, the Settings
- * panel and page, and secrets saved without autoload.
+ * the visitor's strings and the filter over them, the button's markup, the hand-off form, and what a save
+ * of CoreX → Assistant writes.
  *
  * @package Corex\Tests\Unit\Assistant
  */

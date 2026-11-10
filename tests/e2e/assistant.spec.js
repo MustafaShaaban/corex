@@ -80,6 +80,23 @@ test.describe( 'with the assistant on', () => {
 			dialog.getByLabel( 'When should we reach you?' )
 		).toBeVisible();
 
+		// Every field ends inside its form, padding and border included; the honeypot is placed outside on
+		// purpose, so people never see it.
+		const overflow = await dialog
+			.locator( 'form.corex-assistant__handoff' )
+			.evaluate( ( form ) => {
+				const edge = form.getBoundingClientRect().right;
+				return [ ...form.querySelectorAll( 'input, select' ) ]
+					.filter( ( field ) => field.name !== 'corex_hp' )
+					.filter( ( field ) => field.getClientRects().length > 0 )
+					.filter(
+						( field ) =>
+							field.getBoundingClientRect().right > edge + 0.5
+					)
+					.map( ( field ) => field.name );
+			} );
+		expect( overflow ).toEqual( [] );
+
 		const { violations } = await new AxeBuilder( { page } )
 			.include( '.corex-assistant' )
 			.withTags( WCAG_TAGS )

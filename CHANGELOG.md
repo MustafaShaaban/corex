@@ -8,7 +8,7 @@ All notable changes to Corex are documented here. The format follows
 
 One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439), and
 Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447), and the
-CoreX Assistant add-on (spec 129, DECISIONS #600 to #615).
+CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
 
 ### Added
 
@@ -35,8 +35,12 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #615).
   each language's name, welcome and suggestions; the services in the owner's order, each with a switch, a
   write-only key (lockable from `.env` as `ASSISTANT_<SERVICE>_KEY`), a model and its state and last failure;
   the booking hours with a preview in other zones; the limits (per visitor an hour and a day, site-wide and
-  sent to paid services a day); and **Check services**, which asks each service that is on and has a key a real
+  sent to paid services a day); and **Check services**, which asks each service with a key, on or off, a real
   visitor's question and times it.
+- **The knowledge refreshes as soon as it changes** (#616): a page saved, published, unpublished, binned or
+  deleted, the site's name or tagline, a finished update. A site's own knowledge provider hears
+  `corex_assistant_knowledge_forgotten` and asks for a refresh with `corex_assistant_forget_knowledge`.
+  **Check services** also tries keys whose service is switched off.
 - **Seven filters for a site's own assistant** (#603, #604, #606, #608, #610): `corex_assistant_languages`
   (the languages the owner writes words in), `corex_assistant_preview_zones` (where the booking hours are
   previewed), `corex_assistant_knowledge_provider`

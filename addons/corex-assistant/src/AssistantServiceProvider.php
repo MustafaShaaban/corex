@@ -153,7 +153,33 @@ final class AssistantServiceProvider extends ServiceProvider
         if (is_admin()) {
             $this->container->make(AssistantScreen::class)->register();
         }
-        add_action('save_post_page', [SiteKnowledge::class, 'forget']);
+        $this->forgetKnowledgeOnChange();
+    }
+
+    /**
+     * The knowledge is built again as soon as what it is made of changes: a page saved, published,
+     * unpublished or binned, the site's name or tagline, an update that finished. A site whose own
+     * provider reads other content fires `corex_assistant_forget_knowledge` when that content changes.
+     */
+    private function forgetKnowledgeOnChange(): void
+    {
+        $forget = static function (): void {
+            SiteKnowledge::forget();
+        };
+        add_action('save_post_page', $forget);
+        add_action('transition_post_status', static function (string $new, string $old, \WP_Post $post) use ($forget): void {
+            if ($post->post_type === 'page' && $new !== $old && in_array('publish', [$new, $old], true)) {
+                $forget();
+            }
+        }, 10, 3);
+        add_action('deleted_post', static function (int $id, \WP_Post $post) use ($forget): void {
+            if ($post->post_type === 'page') {
+                $forget();
+            }
+        }, 10, 2);
+        foreach (['update_option_blogname', 'update_option_blogdescription', 'upgrader_process_complete', 'corex_assistant_forget_knowledge'] as $hook) {
+            add_action($hook, $forget);
+        }
     }
 
     /** The block, and the hand-off form and its rule when the forms engine is there to take them (Principle IX). */
@@ -215,6 +241,11 @@ final class AssistantServiceProvider extends ServiceProvider
             $c->make(Cooldowns::class),
             static function (string $option, mixed $value, bool $autoload): void {
                 update_option($option, $value, $autoload);
+                // `update_option()` changes nothing for an unchanged value, autoload included: a key an
+                // earlier build stored unloaded would stay unread by the Config engine.
+                if ($autoload) {
+                    wp_set_option_autoload($option, true);
+                }
             },
             static function (string $option): void {
                 delete_option($option);
