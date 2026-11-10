@@ -13,7 +13,7 @@ defined('ABSPATH') || exit;
 /**
  * When the team takes calls, and the times a visitor may ask for (spec 129, "pick a time").
  *
- * The hours are the business's, in its own time zone (Perego: every day 9:00 to 23:00, Cairo time). The
+ * The hours are the business's, in its own time zone (for example every day 9:00 to 23:00, Cairo time). The
  * slots go to the browser as moments in time, so a visitor sees them in their own time zone, and the
  * team reads a chosen slot in both. A slot is a requested time the team confirms, not a reservation:
  * nothing here checks for a slot already asked for.

@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "corex/assistant",
 	"version": "0.48.1",
-	"title": "Corex Assistant",
+	"title": "CoreX Assistant",
 	"category": "corex",
 	"icon": "format-chat",
 	"description": "The assistant's button and chat (spec 129). Printed on every public page by the footer when the assistant is on; not for placing in content.",

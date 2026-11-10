@@ -54,7 +54,7 @@ final class Instructions
             $knowledge->text(),
             '',
             // Last, so it is the instruction freshest in view when the reply is written: a model left to
-            // choose answered an English question in Arabic (Perego, 2026-11-09).
+            // choose answered an English question in Arabic (on a live site, 2026-11-09).
             'Reply ONLY in the language whose code is "' . $replyIn . '", whatever the language of the KNOWLEDGE or of earlier messages.',
         ]);
     }

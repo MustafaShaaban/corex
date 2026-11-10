@@ -27,7 +27,7 @@ final class Failure
     /**
      * This request was refused (its content, a moderation flag, a malformed field). The service is
      * fine for the next visitor, so it is not rested: one visitor's message must not close the
-     * assistant for everyone (Perego's security review, 2026-11-09).
+     * assistant for everyone (a security review, 2026-11-09).
      */
     public const REJECTED = 'rejected';
 

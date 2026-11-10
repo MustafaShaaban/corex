@@ -3,7 +3,7 @@ title: Site assistant
 description: A chat on every public page that answers from the site's own content and hands visitors to the team.
 ---
 
-The optional **Corex Assistant** add-on (spec 129) puts a round chat button on every public page. A visitor
+The optional **CoreX Assistant** add-on (spec 129) puts a round chat button on every public page. A visitor
 asks a question and gets a short answer drawn from your site's own content, with links to your pages. When it
 cannot help (a price, a timeline, a person), it opens a callback form inside the chat, where the visitor can also
 pick a time; the request arrives in **Submissions** like any CoreX form.
@@ -15,7 +15,7 @@ service answered.
 
 ## Switch it on
 
-1. **Add-ons**: activate **Corex Assistant**. It adds **Assistant** to the CoreX menu.
+1. **Add-ons**: activate **CoreX Assistant**. It adds **Assistant** to the CoreX menu.
 2. **CoreX → Assistant**: turn on **Show the assistant**.
 3. In **Services**, paste a free API key for at least one service and save. Google Gemini (Google AI Studio),
    Groq, OpenRouter and Mistral give one free; one key is enough, and more keys mean more free questions a day.
@@ -265,8 +265,7 @@ cached pages only when that cache is cleared.
 
 ## Switching from a site's own copy
 
-This add-on is Perego's spec 058 assistant, generalised. A site that built its own copy switches in one change, so
-two buttons never show:
+A site that built its own copy of an assistant switches to this add-on in one change, so two buttons never show:
 
 1. Activate the add-on and enter the same keys, order, switches, limits, booking hours and words on **CoreX →
    Assistant** (or keys as `ASSISTANT_<SERVICE>_KEY` in `.env`, deleting any old `wp-config.php` constants).

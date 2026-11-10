@@ -12,7 +12,7 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
 
 ### Added
 
-- **Corex Assistant, a new optional add-on** (spec 129, #600). A round chat button on every public page
+- **CoreX Assistant, a new optional add-on** (spec 129, #600). A round chat button on every public page
   answers visitors from the site's own content, through the free tiers of Google Gemini, Groq, OpenRouter
   and Mistral asked in turn; when one service's free limit is spent, the next answers, and a key or model
   error rests a service an hour while a refused message rests none. It says it is an AI that answers from
@@ -177,9 +177,9 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
   `tests/Unit/Media/MediaRegenerationJobTest.php`.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
 
-**Spec 129, Corex Assistant:**
+**Spec 129, CoreX Assistant:**
 
-- **Every site**: nothing shows and nothing is sent anywhere until an owner activates Corex Assistant on
+- **Every site**: nothing shows and nothing is sent anywhere until an owner activates CoreX Assistant on
   Add-ons, turns on **Show the assistant** on CoreX → Assistant and saves a key. A client repository that carries copies of CoreX's tests
   takes the updated `tests/Integration/Operations/MaintenanceClosesSubmissionsTest.php` (the chat route is
   one Maintenance closes) and the regenerated `specs/057-brand-tokens-logo-system/inventories/*.json`.

@@ -2,7 +2,7 @@
     "name": "@corex/assistant",
     "version": "0.1.0",
     "private": true,
-    "description": "Corex Assistant: the chat button and the lazily loaded chat.",
+    "description": "CoreX Assistant: the chat button and the lazily loaded chat.",
     "license": "GPL-2.0-or-later",
     "scripts": {
         "build": "wp-scripts build --webpack-src-dir=blocks --output-path=build/blocks",

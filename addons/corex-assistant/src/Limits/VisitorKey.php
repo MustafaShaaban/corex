@@ -18,7 +18,7 @@ final class VisitorKey
 {
     /**
      * An IPv6 address counts by its /64 network, which one connection is given whole: counting each
-     * address would let one visitor be thousands (Perego's security review, 2026-11-09).
+     * address would let one visitor be thousands (a security review, 2026-11-09).
      */
     public static function of(string $address, string $salt): string
     {

@@ -20,7 +20,7 @@ use Corex\Assistant\AssistantSettings;
  * of them per language with the `corex_assistant_strings` filter:
  *
  *     add_filter('corex_assistant_strings', function (array $strings, string $locale): array {
- *         return $locale === 'ar' ? ['name' => 'مساعد بيريجو'] + $strings : $strings;
+ *         return $locale === 'ar' ? ['name' => 'مساعد الاستوديو'] + $strings : $strings;
  *     }, 10, 2);
  *
  * No string names a model or its maker. `done` keeps a `%s` for the visitor's name, filled by the chat.

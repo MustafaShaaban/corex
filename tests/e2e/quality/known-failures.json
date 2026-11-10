@@ -833,10 +833,10 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-addons",
-			"signature": "Corex Assistant",
+			"signature": "CoreX Assistant",
 			"since": "2026-11-09",
 			"story": "US-ADD-08",
-			"note": "\"Corex Assistant\" in div.corex-addon-card__title-row > h2"
+			"note": "\"CoreX Assistant\" in div.corex-addon-card__title-row > h2"
 		},
 		{
 			"check": "words",
@@ -1427,10 +1427,10 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-addons&tab=active",
-			"signature": "Corex Assistant",
+			"signature": "CoreX Assistant",
 			"since": "2026-11-09",
 			"story": "US-ADD-08",
-			"note": "\"Corex Assistant\" in div.corex-addon-card__title-row > h2"
+			"note": "\"CoreX Assistant\" in div.corex-addon-card__title-row > h2"
 		},
 		{
 			"check": "words",
@@ -2750,10 +2750,10 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-data-models",
-			"signature": "Corex Assistant",
+			"signature": "CoreX Assistant",
 			"since": "2026-11-09",
 			"story": "US-ADD-08",
-			"note": "\"Corex Assistant\" in ul.corex-capability__list > li > strong"
+			"note": "\"CoreX Assistant\" in ul.corex-capability__list > li > strong"
 		},
 		{
 			"check": "words",

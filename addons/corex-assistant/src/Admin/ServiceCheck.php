@@ -18,8 +18,8 @@ use Corex\Assistant\Limits\VisitorLimits;
 /**
  * "Check services" (spec 129, User Story 3): each service with a key, on or off, is asked a visitor's
  * question with the full instructions and knowledge, so the owner sees whether it answers, and how fast,
- * at the size a real question has. A small test question passed while real ones were refused (Perego,
- * 2026-11-09). Asking one that is off lets the owner try a key, a paid one too, before switching it on.
+ * at the size a real question has. A small test question passed while real ones were refused on a live
+ * site (2026-11-09). Asking one that is off lets the owner try a key, a paid one too, before switching it on.
  * A service that answers is no longer resting; one that fails rests as it would for a
  * visitor. A question sent to a paid service counts against today's paid limit, as a visitor's does. The
  * answer names the service and its model, never its key.

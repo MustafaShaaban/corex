@@ -41,7 +41,7 @@ final class Provider
         'gemini' => [
             'label' => 'Google Gemini',
             'base' => 'https://generativelanguage.googleapis.com/v1beta/openai',
-            // Flash-Lite: Flash answered "high demand" (503) on 2026-11-09 while Lite answered in 1.5 s (Perego).
+            // Flash-Lite: Flash answered "high demand" (503) on 2026-11-09 while Lite answered in 1.5 s, on a live site.
             'model' => 'gemini-flash-lite-latest',
             'paid' => false,
             'api' => self::API_CHAT,

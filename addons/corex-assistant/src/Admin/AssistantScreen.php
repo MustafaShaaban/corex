@@ -50,7 +50,7 @@ final class AssistantScreen
     {
         $this->hook = (string) add_submenu_page(
             'corex-settings',
-            __('Corex Assistant', 'corex'),
+            __('CoreX Assistant', 'corex'),
             __('Assistant', 'corex'),
             self::CAPABILITY,
             self::SLUG,

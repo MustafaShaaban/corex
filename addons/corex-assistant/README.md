@@ -1,4 +1,4 @@
-# Corex Assistant
+# CoreX Assistant
 
 A chat on every public page that answers visitors from the site's own content and hands them to the team when
 it cannot help (spec 129). Optional add-on; builds on corex-core, and on corex-forms for the callback form.

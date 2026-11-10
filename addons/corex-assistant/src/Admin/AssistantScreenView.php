@@ -198,7 +198,7 @@ final class AssistantScreenView
         $hours = $this->settings->booking();
         $zones = '';
         foreach (\DateTimeZone::listIdentifiers() as $zone) {
-            $zones .= sprintf('<option value="%1$s"%2$s>%1$s</option>', esc_attr($zone), selected($zone, $hours->timezone, false));
+            $zones .= sprintf('<option value="%1$s"%2$s>%3$s</option>', esc_attr($zone), selected($zone, $hours->timezone, false), esc_html(self::zoneName($zone)));
         }
         $days = '';
         foreach (self::week() as $day) {
@@ -226,12 +226,12 @@ final class AssistantScreenView
             __('Booking', 'corex'),
             __('When the team takes calls. With this on, the callback form lets a visitor pick a time, shown in their own time zone; the team gets it in both. It is a time the team confirms, not a reservation.', 'corex'),
             self::row('booking-enabled', __('Let visitors pick a time', 'corex'), self::toggle('booking[enabled]', 'corex-assistant-booking-enabled', $hours->enabled))
-            . self::row('booking-zone', __('Time zone', 'corex'), '<select id="corex-assistant-booking-zone" name="booking[timezone]">' . $zones . '</select>')
+            . self::row('booking-zone', __('Time zone', 'corex'), '<select id="corex-assistant-booking-zone" name="booking[timezone]" data-corex-select>' . $zones . '</select>')
             . '<fieldset class="corex-assistant-row"><legend class="corex-assistant-row__label">' . esc_html__('Working days', 'corex') . '</legend>'
             . '<div class="corex-assistant-row__control">' . $days . '</div></fieldset>'
             . self::row('booking-start', __('Opens', 'corex'), sprintf('<input type="time" id="corex-assistant-booking-start" name="booking[start]" value="%s" />', esc_attr($hours->start)))
             . self::row('booking-end', __('Closes', 'corex'), sprintf('<input type="time" id="corex-assistant-booking-end" name="booking[end]" value="%s" /><p class="description">%s</p>', esc_attr($hours->end), esc_html__('A closing time at or before the opening time closes the next day.', 'corex')))
-            . self::row('booking-slot', __('Slot length', 'corex'), '<select id="corex-assistant-booking-slot" name="booking[slot]">' . $slots . '</select>')
+            . self::row('booking-slot', __('Slot length', 'corex'), '<select id="corex-assistant-booking-slot" name="booking[slot]" data-corex-select>' . $slots . '</select>')
             . self::row('booking-notice', __('Notice (minutes)', 'corex'), sprintf('<input type="number" id="corex-assistant-booking-notice" name="booking[notice]" min="0" max="%d" value="%d" />', BookingHours::MAX_NOTICE, $hours->notice))
             . self::row('booking-horizon', __('Days shown', 'corex'), sprintf('<input type="number" id="corex-assistant-booking-horizon" name="booking[horizon]" min="1" max="%d" value="%d" />', BookingHours::MAX_HORIZON, $hours->horizon))
             . ($preview !== '' ? '<p>' . esc_html__('Today, as visitors elsewhere see these hours:', 'corex') . '</p><ul class="corex-assistant-preview">' . $preview . '</ul>' : ''),
@@ -336,6 +336,12 @@ final class AssistantScreenView
         ];
 
         return $names[$id] ?? (string) (Provider::CATALOGUE[$id]['label'] ?? $id);
+    }
+
+    /** A time zone as the list shows it: `Africa/Cairo`, `America/Argentina/Buenos Aires`; UTC in CoreX's words. */
+    private static function zoneName(string $zone): string
+    {
+        return $zone === 'UTC' ? __('UTC', 'corex') : str_replace('_', ' ', $zone);
     }
 
     /** A day of the week, 0 for Sunday, in CoreX's own words like the rest of the screen. */

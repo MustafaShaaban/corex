@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Corex Assistant
+ * Plugin Name:       CoreX Assistant
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       A chat on every public page that answers visitors from the site's own content, through free model tiers chained with fallback, and hands a visitor to the team through a CoreX form when it cannot help. Off until switched on and keyed in Settings.
  * Version:           0.48.1
