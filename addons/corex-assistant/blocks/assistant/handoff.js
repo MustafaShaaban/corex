@@ -6,12 +6,13 @@
  * engine's honeypot, checks, storage and the team's email all apply. The way to reach them leads: a
  * call or WhatsApp needs a number, an email needs an address, and the other is optional. The country
  * code is preset from the visitor's clock (dial-codes.js); the times are shown in their own time zone
- * (slots.js).
+ * (slots.js). A time another visitor took first is answered `slot_taken`: the times are fetched again
+ * and the visitor asked to choose another.
  */
 
 import { countryOptions, presetCountry } from './dial-codes';
 import { el } from './dom';
-import { describeSlot, fetchSlots, slotGroups, visitorZone } from './slots';
+import { fetchSlots, slotGroups, visitorZone } from './slots';
 
 const HONEYPOT = 'corex_hp';
 const ID = 'corex-assistant-';
@@ -123,15 +124,17 @@ function fillCountries( dial, config ) {
 }
 
 /**
- * The times on offer, by the visitor's day; "any time" first.
+ * The times on offer, by the visitor's day; "any time" first and chosen. What the list held before goes.
  *
- * @param {HTMLSelectElement} select
- * @param {number[]}          slots
- * @param {Object}            config the chat's settings
- * @param {Function}          t      a string by key
+ * @param {HTMLSelectElement}       select
+ * @param {number[]}                slots
+ * @param {Object}                  config the chat's settings
+ * @param {(key: string) => string} t      a string by key
  */
 function fillSlots( select, slots, config, t ) {
-	select.append( el( 'option', { value: '', text: t( 'slotAny' ) } ) );
+	select.replaceChildren(
+		el( 'option', { value: '', text: t( 'slotAny' ) } )
+	);
 	for ( const group of slotGroups( slots, config.locale, visitorZone() ) ) {
 		select.append(
 			el(
@@ -201,7 +204,9 @@ function followChannel( form, fields, channel, t ) {
 
 function showProblems( form, found ) {
 	for ( const [ field, message ] of Object.entries( found ) ) {
-		const control = form.querySelector( `[data-field="${ field }"] input` );
+		const control = form.querySelector(
+			`[data-field="${ field }"] :is(input, select)`
+		);
 		const slot = form.querySelector(
 			`[data-field="${ field }"] .corex-assistant__error`
 		);
@@ -229,11 +234,11 @@ function clearProblems( form ) {
 }
 
 /**
- * Posts the request; answers whether it was taken and, if not, which fields the engine refused.
+ * Posts the request; answers whether it was taken and, if not, what the engine said of each field.
  *
  * @param {Object} config the chat's settings
  * @param {Object} body   the answers
- * @return {Promise<{ok: boolean, fields: string[]}>} the outcome
+ * @return {Promise<{ok: boolean, errors: Object<string, string>}>} the outcome: field => the engine's key
  */
 async function post( config, body ) {
 	try {
@@ -249,30 +254,25 @@ async function post( config, body ) {
 		const reply = await response.json().catch( () => ( {} ) );
 		return {
 			ok: response.ok && reply.ok !== false,
-			fields: Object.keys( reply.errors || {} ),
+			errors: reply.errors || {},
 		};
 	} catch {
-		return { ok: false, fields: [] };
+		return { ok: false, errors: {} };
 	}
 }
 
 /**
- * The time the visitor asked for: a picked slot in both zones, else what they typed.
+ * The time the visitor asked for: a picked slot, as the site gave it, else what they typed. The site
+ * writes the line the team reads from the slot and the zone.
  *
  * @param {Object} fields
- * @param {Object} offer  the site's zone, from the slots route
- * @param {Object} config the chat's settings
  * @return {{time: string, slot: string, zone: string}} the three time fields
  */
-function requestedTime( fields, offer, config ) {
+function requestedTime( fields ) {
 	const zone = visitorZone();
 	const at = Number( fields.slot.value );
 	if ( fields.slot.isConnected && at > 0 ) {
-		return {
-			time: describeSlot( at, config.locale, zone, offer.zone ),
-			slot: new Date( at * 1000 ).toISOString(),
-			zone,
-		};
+		return { time: '', slot: String( at ), zone };
 	}
 	return { time: fields.time.value.trim(), slot: '', zone };
 }
@@ -303,6 +303,7 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 		text: t( 'submit' ),
 	} );
 	const formError = el( 'p', {
+		id: `${ ID }form-error`,
 		class: 'corex-assistant__form-error',
 		role: 'alert',
 		hidden: true,
@@ -342,23 +343,24 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 		)
 	);
 
-	// With times on offer, the typed time gives way to a list of them in the visitor's own zone.
-	let offer = { zone: '', slots: [] };
-	const ready = fetchSlots( config.slots ).then( ( found ) => {
-		offer = found;
+	// With times on offer, the typed time gives way to a list of them in the visitor's own zone; with none
+	// left, it comes back.
+	const slotRow = row( 'slot', t( 'fieldSlot' ), fields.slot );
+	slotRow.append(
+		el( 'p', {
+			class: 'corex-assistant__sub',
+			text: t( 'slotZone' ).replace( '%s', visitorZone() ),
+		} )
+	);
+	const showSlots = ( found ) => {
 		if ( found.slots.length === 0 ) {
+			slotRow.replaceWith( timeRow );
 			return;
 		}
 		fillSlots( fields.slot, found.slots, config, t );
-		const slotRow = row( 'slot', t( 'fieldSlot' ), fields.slot );
-		slotRow.append(
-			el( 'p', {
-				class: 'corex-assistant__sub',
-				text: t( 'slotZone' ).replace( '%s', visitorZone() ),
-			} )
-		);
 		timeRow.replaceWith( slotRow );
-	} );
+	};
+	const ready = fetchSlots( config.slots ).then( showSlots );
 
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
@@ -380,7 +382,7 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 			channel,
 			phone: phone ? `${ fields.dial.value } ${ phone }` : '',
 			email: fields.email.value.trim(),
-			...requestedTime( fields, offer, config ),
+			...requestedTime( fields ),
 			transcript: fields.attach.checked ? transcript() : '',
 			page: window.location.href.slice( 0, 300 ),
 			[ HONEYPOT ]: fields.trap.value,
@@ -392,10 +394,24 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 			onSent( fields.name.value.trim() );
 			return;
 		}
+		if ( result.errors.slot === 'slot_taken' ) {
+			// Another visitor asked for that time first: the times still open, and none chosen.
+			showSlots( await fetchSlots( config.slots ) );
+			formError.textContent = t( 'slotTaken' );
+			formError.hidden = false;
+			const choose = slotRow.isConnected ? fields.slot : fields.time;
+			choose.setAttribute( 'aria-invalid', 'true' );
+			choose.setAttribute( 'aria-describedby', formError.id );
+			choose.focus();
+			return;
+		}
 		showProblems(
 			form,
 			Object.fromEntries(
-				result.fields.map( ( field ) => [ field, t( 'formError' ) ] )
+				Object.keys( result.errors ).map( ( field ) => [
+					field,
+					t( 'formError' ),
+				] )
 			)
 		);
 		formError.textContent = t( 'formError' );

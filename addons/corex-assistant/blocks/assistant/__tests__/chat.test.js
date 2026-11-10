@@ -6,7 +6,7 @@
 import { TextEncoder } from 'util';
 
 import { historyOf, mountChat, transcriptOf } from '../chat';
-import { city, describeSlot, fetchSlots, slotGroups } from '../slots';
+import { fetchSlots, slotGroups } from '../slots';
 import { bindAssistant } from '../view';
 
 const STRINGS = {
@@ -30,6 +30,7 @@ const STRINGS = {
 	slotAny: 'Any time',
 	fieldSlot: 'When?',
 	slotZone: 'Your zone: %s',
+	slotTaken: 'Taken, choose another',
 };
 
 function root(
@@ -368,7 +369,7 @@ describe( 'the hand-off', () => {
 		).toBe( 'Email (optional)' );
 	} );
 
-	it( 'offers the site’s times in the visitor’s zone, and sends the picked one in both zones', async () => {
+	it( 'offers the site’s times in the visitor’s zone, and sends the picked one as the site gave it', async () => {
 		visitorIn( 'Asia/Riyadh' );
 		const slot = Date.UTC( 2026, 10, 12, 16, 0 ) / 1000;
 		window.fetch.mockImplementation( ( url ) =>
@@ -399,9 +400,94 @@ describe( 'the hand-off', () => {
 			String( url ).includes( '/forms/' )
 		);
 		const body = JSON.parse( sent[ 1 ].body );
-		expect( body.slot ).toBe( '2026-11-12T16:00:00.000Z' );
+		// The site writes the team's line from these two (spec 129, FR-022).
+		expect( body.slot ).toBe( String( slot ) );
 		expect( body.zone ).toBe( 'Asia/Riyadh' );
-		expect( body.time ).toMatch( /7:00\s?PM Riyadh = .*6:00\s?PM Cairo$/ );
+		expect( body.time ).toBe( '' );
+	} );
+
+	it( 'shows the times still open when another visitor took the picked one first', async () => {
+		visitorIn( 'Asia/Riyadh' );
+		const taken = Date.UTC( 2026, 10, 12, 16, 0 ) / 1000;
+		const open = taken + 3600;
+		let offered = [ taken, open ];
+		window.fetch.mockImplementation( ( url ) => {
+			if ( String( url ).includes( '/slots' ) ) {
+				return reply( 200, { zone: 'Africa/Cairo', slots: offered } );
+			}
+			offered = [ open ];
+			return reply( 422, {
+				ok: false,
+				code: 'validation_failed',
+				errors: { slot: 'slot_taken' },
+			} );
+		} );
+		const node = root();
+		node.dataset.slots = '/wp-json/corex/v1/assistant/slots';
+		const panel = node.querySelector( '.corex-assistant__panel' );
+		mountChat( node, panel, { onClose: jest.fn() } );
+		panel.querySelector( '.corex-assistant__human' ).click();
+		await flush();
+		await flush();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		const picker = form.querySelector( '#corex-assistant-slot' );
+		picker.value = String( taken );
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+		form.querySelector( '#corex-assistant-phone' ).value = '50 123 4567';
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		for ( let i = 0; i < 4; i++ ) {
+			await flush();
+		}
+
+		const values = [ ...picker.options ].map( ( option ) => option.value );
+		expect( values ).toEqual( [ '', String( open ) ] );
+		expect( picker.value ).toBe( '' );
+		expect( picker.getAttribute( 'aria-invalid' ) ).toBe( 'true' );
+		expect( document.activeElement ).toBe( picker );
+		const alert = form.querySelector( '.corex-assistant__form-error' );
+		expect( alert.hidden ).toBe( false );
+		expect( alert.textContent ).toBe( 'Taken, choose another' );
+		expect( picker.getAttribute( 'aria-describedby' ) ).toBe( alert.id );
+		expect(
+			panel.querySelector( '.corex-assistant__msg--done' )
+		).toBeNull();
+	} );
+
+	it( 'goes back to the typed time when the taken one was the last on offer', async () => {
+		const taken = Date.UTC( 2026, 10, 12, 16, 0 ) / 1000;
+		let offered = [ taken ];
+		window.fetch.mockImplementation( ( url ) => {
+			if ( String( url ).includes( '/slots' ) ) {
+				return reply( 200, { zone: 'Africa/Cairo', slots: offered } );
+			}
+			offered = [];
+			return reply( 422, { ok: false, errors: { slot: 'slot_taken' } } );
+		} );
+		const node = root();
+		node.dataset.slots = '/wp-json/corex/v1/assistant/slots';
+		const panel = node.querySelector( '.corex-assistant__panel' );
+		mountChat( node, panel, { onClose: jest.fn() } );
+		panel.querySelector( '.corex-assistant__human' ).click();
+		await flush();
+		await flush();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		form.querySelector( '#corex-assistant-slot' ).value = String( taken );
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+		form.querySelector( '#corex-assistant-phone' ).value = '50 123 4567';
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		for ( let i = 0; i < 4; i++ ) {
+			await flush();
+		}
+
+		expect( form.querySelector( '#corex-assistant-slot' ) ).toBeNull();
+		expect( document.activeElement ).toBe(
+			form.querySelector( '#corex-assistant-time' )
+		);
+		expect(
+			form.querySelector( '.corex-assistant__form-error' ).textContent
+		).toBe( 'Taken, choose another' );
 	} );
 
 	it( 'posts the answers to the CoreX form with the token, the honeypot and the chat, then confirms', async () => {
@@ -525,21 +611,6 @@ describe( 'the times', () => {
 		] );
 		expect( groups[ 0 ].day ).toMatch( /Thursday/ );
 		expect( groups[ 0 ].times[ 0 ].label ).toMatch( /9:00\s?AM/ );
-	} );
-
-	it( 'describes a slot once when the visitor is in the site’s own zone', () => {
-		const at = Date.UTC( 2026, 10, 12, 16, 0 ) / 1000;
-
-		const line = describeSlot( at, 'en', 'Africa/Cairo', 'Africa/Cairo' );
-
-		expect( line ).toMatch( /6:00\s?PM Cairo$/ );
-		expect( line ).not.toContain( ' = ' );
-	} );
-
-	it( 'names a zone by its city, the last part, with spaces', () => {
-		expect( city( 'America/Argentina/Buenos_Aires' ) ).toBe(
-			'Buenos Aires'
-		);
 	} );
 } );
 
