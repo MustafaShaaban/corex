@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1226,
+    "consumer_records": 1298,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -498,6 +498,7 @@
     {
       "owner": "other-addon",
       "paths": [
+        "addons/corex-assistant/assets/assistant-admin.css",
         "addons/corex-captcha/assets/captcha-admin.css",
         "addons/corex-guides/assets/guides.css",
         "addons/corex-kit-company/assets/setup-wizard.css",

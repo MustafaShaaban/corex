@@ -29,6 +29,7 @@ function corexMarkedSubmissionRoutes(): array
         'booking request'      => '/corex/v1/bookings/request',
         'job application'      => '/corex/v1/careers/apply',
         'account registration' => '/corex/v1/account/register',
+        'assistant question'   => '/corex/v1/assistant',
     ];
 }
 
@@ -134,5 +135,6 @@ it('does not mark any other CoreX route as a public submission', function () {
         '/corex/v1/bookings/request',
         '/corex/v1/careers/apply',
         '/corex/v1/account/register',
+        '/corex/v1/assistant',
     ]);
 });

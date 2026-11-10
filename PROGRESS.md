@@ -47,6 +47,30 @@ lines on every CoreX screen; Blog Pro's rows wrap instead of running together at
 each date field is 192px wide in a 95px column, a filter-panel layout fix not yet made. PR #453 (DECISIONS #516)
 sets the normal token on three activity rows; it still stands after this, those rows choosing 1.6 over the base.
 
+**Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
+#616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
+`addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free
+model tiers in turn (Gemini, Groq, OpenRouter, Mistral), with a callback form in the chat that lands in
+Submissions, with a time the visitor picks. CoreX → Assistant holds the switch, the look per language, the
+services in the owner's order (free tiers first, paid OpenAI and Claude last and off until turned on), the
+booking hours, the limits and "Check services". A site
+plugs in its knowledge (`corex_assistant_knowledge_provider`), strings (`corex_assistant_strings`) and colours
+(`--corex-assistant-*`). Framework edits: the add-on catalogue and the CoreX rail entry; the token inventory resolves a
+package's own `--corex-*` properties (#607). The slice-1 change that saved Settings secrets unloaded is
+withdrawn (#602): the Config engine reads only loaded options, so a saved secret went unread.
+- Verified (slices 1 and 2, 2026-11-10): Pest unit 3,645 green (the whole suite); integration 1,530 green, 1
+  skipped and 1 red that is this scratch site's own (`LoginSlugAvailabilityTest`: Git Bash wrote its permalink
+  setting as `/C:/Program Files/Git/%postname%/`; the branch changes no login code); Jest 25; Playwright 4
+  (Chromium, axe WCAG 2.2 AA on the open chat and the owner's screen); the quality suite's 33 checks on
+  CoreX → Assistant, Add-ons and Data, all green; by hand on a scratch WordPress (port 8929, database
+  `corex_wassistant`) with a stubbed model: off by default, lazy chat, chips, fallback on a 429, the callback
+  stored, RTL, phone width, a key saved on the screen used by the chain.
+- Not done: no real model was asked (no key in this session); not run on a live site.
+- Slice 2 (same branch, same PR) built Perego's revision 2 and the owner's additions: paid fallbacks, the
+  time picker, channel-led fields, the CoreX → Assistant screen (T014 to T019). Perego can switch once a
+  release carries it.
+- Next: the owner's word on merging this slice.
+
 **Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
 #447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
 owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar
