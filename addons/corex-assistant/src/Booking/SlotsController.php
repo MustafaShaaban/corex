@@ -10,23 +10,18 @@ namespace Corex\Assistant\Booking;
 
 defined('ABSPATH') || exit;
 
-use Corex\Assistant\AssistantSettings;
 use WP_REST_Response;
 
 /**
  * `GET corex/v1/assistant/slots` (spec 129, "pick a time"): the times a visitor may ask for, asked when
  * the hand-off form opens. Public and read-only: it says only when the team takes calls, which the form
- * shows anyway. Never cached, because the slots move on with the clock.
+ * shows anyway. A time another visitor has asked for is left out ({@see OpenSlots}), and nothing says who
+ * asked. Never cached, because the slots move on with the clock and as visitors ask.
  */
 final class SlotsController
 {
-    /**
-     * @param \Closure(): int $now
-     */
-    public function __construct(
-        private readonly AssistantSettings $settings,
-        private readonly \Closure $now,
-    ) {
+    public function __construct(private readonly OpenSlots $slots)
+    {
     }
 
     public function register(): void
@@ -41,10 +36,9 @@ final class SlotsController
 
     public function slots(): WP_REST_Response
     {
-        $hours = $this->settings->booking();
         $response = new WP_REST_Response([
-            'zone' => $hours->timezone,
-            'slots' => $hours->slots(($this->now)()),
+            'zone' => $this->slots->zone(),
+            'slots' => $this->slots->open(),
         ]);
         $response->header('Cache-Control', 'no-store');
 
