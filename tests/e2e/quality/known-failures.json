@@ -2235,15 +2235,6 @@
 		},
 		{
 			"check": "phone",
-			"rule": "text-overlaps-at-200",
-			"screen": "corex-submissions",
-			"signature": "div.corex-inbox__dates > label > span × div.corex-inbox__dates > label > span",
-			"since": "2026-10-22",
-			"story": "US-NFR-04",
-			"note": "\"From\" over \"To\""
-		},
-		{
-			"check": "phone",
 			"rule": "table-wider-than-screen",
 			"screen": "corex-submissions",
 			"signature": "table.corex-inbox__table",

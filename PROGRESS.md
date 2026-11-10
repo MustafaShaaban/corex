@@ -40,6 +40,11 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**The inbox's date filters** (2026-11-10, branch `fix/inbox-dates-fit-200`, DECISIONS #518): the Submissions
+inbox's From and To dates wrap, "To" under "From", when the two do not fit side by side, and on the wide layout the
+range is never narrower than its two dates. The `text-overlaps-at-200` entry for `corex-submissions` is gone from
+`known-failures.json`. Measured at 375 and 1280px, light and dark, both directions, at 100% and 200%.
+
 **Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
 #447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
 owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar

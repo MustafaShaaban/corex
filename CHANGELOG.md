@@ -101,6 +101,12 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
 - **On/off settings are switches** (#445) that say On or Off, as on the Add-ons screen; they still
   save "1" or "0".
 - **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
+- **The Submissions inbox's From and To dates fit on a phone** (DECISIONS #518). The range was two
+  columns at every width, so on a phone each date field was wider than its half: it spilled into the
+  other date, "From" lay over "To" with text at 200%, and in right to left the From field ran off the
+  screen. "To" now goes under "From" when the two do not fit side by side. On the desktop the range is
+  never narrower than its two dates, so the To field stays inside the panel; form, status and owner
+  give up 4px each at 1280px.
 
 ### Security
 
@@ -152,6 +158,16 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
   of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
   `tests/Unit/Media/MediaRegenerationJobTest.php`.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**The inbox's date filters (DECISIONS #518):**
+
+- **Muva** and **Perego**: on a phone the inbox's filter panel is one row taller, "To" under "From";
+  nothing stored changes. A client stylesheet that set columns on `.corex-inbox__dates` or
+  `.corex-inbox__filter-grid` must say so again: the range is now a wrapping row, and the filter grid
+  has four columns where it had five.
+- **A client repository that carries copies of CoreX's tests** takes the updated
+  `tests/e2e/quality/known-failures.json` (one entry fewer).
+- **Mizzey**: not on this release (pinned at v0.42.0).
 
 **Dependency advisories (DECISIONS #514):**
 
