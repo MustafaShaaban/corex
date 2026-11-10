@@ -79,8 +79,8 @@ final class BookingHours
             )))
             : $d['days'];
         sort($days);
-        $zone = is_string($saved['timezone'] ?? null) ? $saved['timezone'] : '';
-        $fallback = self::knownZone($siteZone) ? $siteZone : 'UTC';
+        $zone = self::named(is_string($saved['timezone'] ?? null) ? $saved['timezone'] : '');
+        $fallback = self::knownZone(self::named($siteZone)) ? self::named($siteZone) : 'UTC';
 
         return new self(
             (bool) ($saved['enabled'] ?? $d['enabled']),
@@ -97,13 +97,25 @@ final class BookingHours
     /** A zone name PHP knows (`Africa/Cairo`, `UTC`), or an offset (`+02:00`). */
     public static function knownZone(string $zone): bool
     {
-        return $zone !== '' && (in_array($zone, \DateTimeZone::listIdentifiers(), true) || preg_match(self::OFFSET, $zone) === 1);
+        return $zone !== '' && (in_array($zone, \DateTimeZone::listIdentifiers(), true) || self::isOffset($zone));
+    }
+
+    /** A zone written as an offset: `+02:00`, as WordPress gives a site set to "UTC+2". */
+    public static function isOffset(string $zone): bool
+    {
+        return preg_match(self::OFFSET, $zone) === 1;
+    }
+
+    /** The zone, with no offset from UTC written as UTC: a new WordPress site is `+00:00`. */
+    private static function named(string $zone): string
+    {
+        return in_array($zone, ['+00:00', '-00:00'], true) ? 'UTC' : $zone;
     }
 
     /** The place a zone is named for: `Asia/Riyadh` is Riyadh, `America/Argentina/Buenos_Aires` Buenos Aires, `+02:00` UTC+02:00. */
     public static function city(string $zone): string
     {
-        if (preg_match(self::OFFSET, $zone) === 1) {
+        if (self::isOffset($zone)) {
             return 'UTC' . $zone;
         }
         $parts = explode('/', $zone);

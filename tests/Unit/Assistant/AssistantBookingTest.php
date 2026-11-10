@@ -114,3 +114,8 @@ it('writes a requested time for the team in the visitor’s zone, then the busin
     'the same zone' => ['Africa/Cairo', 'Africa/Cairo', 'Mon 6:00 am Cairo'],
     'a zone nobody knows' => ['Africa/Cairo', 'Mars/Olympus', 'Mon 6:00 am Cairo'],
 ]);
+
+it('reads a zone with no offset from UTC as UTC, as a new WordPress site gives it', function (string $siteZone) {
+    expect(BookingHours::fromArray([], $siteZone)->timezone)->toBe('UTC')
+        ->and(BookingHours::fromArray(['timezone' => $siteZone])->timezone)->toBe('UTC');
+})->with(['+00:00', '-00:00']);

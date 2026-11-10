@@ -197,7 +197,9 @@ final class AssistantScreenView
     {
         $hours = $this->settings->booking();
         $zones = '';
-        foreach (\DateTimeZone::listIdentifiers() as $zone) {
+        // A site set to an offset ("UTC+2") keeps it until the owner picks a place: it is not in PHP's list.
+        $listed = BookingHours::isOffset($hours->timezone) ? [$hours->timezone, ...\DateTimeZone::listIdentifiers()] : \DateTimeZone::listIdentifiers();
+        foreach ($listed as $zone) {
             $zones .= sprintf('<option value="%1$s"%2$s>%3$s</option>', esc_attr($zone), selected($zone, $hours->timezone, false), esc_html(self::zoneName($zone)));
         }
         $days = '';
@@ -338,10 +340,14 @@ final class AssistantScreenView
         return $names[$id] ?? (string) (Provider::CATALOGUE[$id]['label'] ?? $id);
     }
 
-    /** A time zone as the list shows it: `Africa/Cairo`, `America/Argentina/Buenos Aires`; UTC in CoreX's words. */
+    /** A time zone as the list shows it: `Africa/Cairo`, `America/Argentina/Buenos Aires`, `UTC+02:00`; UTC in CoreX's words. */
     private static function zoneName(string $zone): string
     {
-        return $zone === 'UTC' ? __('UTC', 'corex') : str_replace('_', ' ', $zone);
+        return match (true) {
+            $zone === 'UTC' => __('UTC', 'corex'),
+            BookingHours::isOffset($zone) => __('UTC', 'corex') . $zone,
+            default => str_replace('_', ' ', $zone),
+        };
     }
 
     /** A day of the week, 0 for Sunday, in CoreX's own words like the rest of the screen. */

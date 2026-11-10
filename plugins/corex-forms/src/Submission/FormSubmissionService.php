@@ -118,7 +118,7 @@ final class FormSubmissionService
         try {
             $values = array_intersect_key($form->prepare($values), $schema);
         } catch (AnswersRefused $refused) {
-            // Refused as a rule refuses, and like a rule's refusal it leaves no file behind (FR-005).
+            // Refused as a rule refuses, and like a rule's refusal it leaves no file behind (spec 081, FR-005).
             $this->forgetUploads($schema, $values);
 
             return Response::reject(__('Validation failed.', 'corex'), 422, $refused->errors);
@@ -215,7 +215,7 @@ final class FormSubmissionService
             if (! $result->stored) {
                 // A form with two file fields whose second upload fails must not leave the first
                 // one on disk with nothing referring to it — that is personal data nobody can find
-                // to delete (FR-005).
+                // to delete (spec 081, FR-005).
                 foreach ($storedIds as $id) {
                     $this->attachments->forget($id);
                 }

@@ -480,3 +480,15 @@ it('draws the Assistant screen for an administrator, in the CoreX shell, with ev
         ->toContain('name="corex_assistant_nonce"')
         ->not->toContain('test-key');
 });
+
+it('lists a booking zone written as an offset as the chosen time zone, since PHP lists none', function () {
+    wp_set_current_user(assistantRouteUser($this, 'administrator'));
+    $offset = static fn (): array => ['timezone' => '+02:00'];
+    add_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $offset);
+    ob_start();
+    Boot::app()->container()->make(\Corex\Assistant\Admin\AssistantScreen::class)->render();
+    $html = (string) ob_get_clean();
+    remove_filter('pre_option_' . AssistantSettings::BOOKING_OPTION, $offset);
+
+    expect($html)->toContain("<option value=\"+02:00\" selected='selected'>UTC+02:00</option>");
+});

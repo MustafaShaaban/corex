@@ -131,16 +131,28 @@ Each call to a service may take 10 seconds, and the whole search 22. A service t
 
 The hand-off is the CoreX form `corex-assistant-callback`: name, how to reach them (call, WhatsApp or email), phone
 with its country code, email, the time, the chat and the page it was sent from. A call or WhatsApp needs a number,
-an email needs an address, and the other is optional; the server checks the same with the `required_for` rule. It
+an email needs an address, and the other is optional; the server checks the same with the forms engine's
+`required_if` rule (`required_if:channel,call,whatsapp`). It
 has the forms engine's honeypot, checks and storage, and the team is notified at **Settings → Email → Form
 notification recipient** (else the site administrator), with Reply-To set only when the visitor gave an email. The
 visitor is answered in the chat, not by email. Without the Corex Forms plugin the chat works and offers no form.
 
 With booking on, the form lists the next times in the visitor's own time zone, grouped by day, and "Any time that
-suits the team". A picked time is stored three ways: `time`, the line the team reads ("Thu, Nov 12, 7:00 PM Riyadh
-= Thu, Nov 12, 6:00 PM Cairo"); `slot`, the moment in UTC; and `zone`, the visitor's time zone. It is a time the
-team confirms, not a reservation: nothing checks for a time already asked for. With booking off, the visitor types
-a best time instead.
+suits the team". A time another visitor has asked for is not listed. The request is stored three ways: `slot`, the
+moment in UTC (`2026-11-12T16:00:00Z`); `zone`, the visitor's time zone; and `time`, the line the team reads ("Thu
+12 Nov, 7:00 pm Riyadh = Thu 12 Nov, 6:00 pm Cairo"). The site writes that line from the other two, in the site's
+language and with its time format, so a request written by hand cannot put another one in the inbox. With booking
+off, or "Any time" chosen, nothing is claimed and `time` is what the visitor typed.
+
+Each requested time is claimed once. When two visitors send the same time, the first request is stored and the
+second is answered 422 with `errors.slot` set to `slot_taken`; the chat then says that someone has just asked for
+that time, lists the times still open and chooses none. A time is offered again as soon as its request is moved to
+the trash or deleted in the Submissions inbox (or by retention), and taken again if the request is restored while
+the time is still free. A request nothing stored (a `corex_assistant_callback_listeners` filter without
+`StoreSubmissionListener`) hides no time. Claims are rows named `corex_assistant_slot_<seconds>` in the options
+table, never autoloaded; past ones are removed as new ones are made.
+
+It is still a time the team confirms, not a booking: CoreX does not put it in a calendar or remind anyone.
 
 The country code is preset from the visitor's time zone, then their browser's language, then the site's default.
 A site chooses its default country and the countries listed first:
@@ -235,7 +247,7 @@ The string keys are those of `Corex\Assistant\Front\AssistantStrings`: `name`, `
 `teaserText`, `dismiss`, `welcome`, `suggestions` (a list), `placeholder`, `send`, `note`, `human`, `newChat`,
 `close`, `typing`, `busy`, `error`, `expired`, `handoffTitle`, `handoffText`, the field labels (`fieldName`,
 `fieldPhone`, `fieldCountry`, `fieldEmail`, `fieldChannel`, `fieldTime`, `fieldSlot`), `optional`, `slotAny`,
-`slotZone` (keep its `%s`, the visitor's zone), `channelCall`, `channelWhatsapp`, `channelEmail`, `attach`,
+`slotZone` (keep its `%s`, the visitor's zone), `slotTaken`, `channelCall`, `channelWhatsapp`, `channelEmail`, `attach`,
 `submit`, `sending`, `formError`, `nameNeeded`, `phoneNeeded`, `emailNeeded` and `done` (keep its `%s`, the
 visitor's name). Order of precedence: CoreX's English (or your `corex-<locale>.po`), then the screen, then the
 filter. Keep the honesty `note`, and name no AI company in any string.

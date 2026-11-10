@@ -251,7 +251,7 @@ on `feature/058-perego-assistant`), and the owner asked, relayed by the Perego s
   own time zone, picks one, and the request stores and emails both times ("Thu 7:00 pm Riyadh = 6:00 pm Cairo").
   A requested time the team confirms, not a booking. Themed with the site's tokens.
 - **FR-018** A call or WhatsApp needs a number and an email an address; the other is optional, in the browser and
-  on the server (`required_for`).
+  on the server (`required_for`; the engine's `required_if` from slice 3, FR-023).
 - **FR-019** The settings are a CoreX screen of their own (`corex-assistant` in the CoreX rail, drawn with
   `AdminPage` and `.corex-surface` cards): Assistant (switch, image, per-language name, welcome and suggestions),
   Services (owner's order, a switch each, key, model, status and last failure), Booking (time zone, opening and

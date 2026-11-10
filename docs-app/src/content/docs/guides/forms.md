@@ -139,7 +139,7 @@ what is missing, and WordPress reports it as a developer notice.
 | Key | Values |
 |---|---|
 | `type` | `text` `email` `number` `tel` `url` `password` `date` `file` `textarea` `select` `radio` `checkbox` `checkbox-group` `toggle` |
-| `rules` | `required` `email` `url` `max_length:N` `min_length:N` `max:N` `min:N` `numeric` `phone` `phone:national` `pattern:EXPRESSION` `mime:TYPE,TYPE` `max_size:MEGABYTES` |
+| `rules` | `required` `required_if:FIELD,VALUE,VALUE` `email` `url` `max_length:N` `min_length:N` `max:N` `min:N` `numeric` `phone` `phone:national` `pattern:EXPRESSION` `mime:TYPE,TYPE` `max_size:MEGABYTES` |
 | `options` | `value => label` (for `select`/`radio`/`checkbox-group`). The field accepts these values and no other |
 | `label_mode` | `visible` (default) `hidden` `inline` |
 | `width` | `full` (default) `half` `third` `two-thirds` `quarter` (12-col grid) |
@@ -186,6 +186,18 @@ colon inside it is part of it. The server checks it; the browser does not.
 
 ```php
 'postcode' => ['type' => 'text', 'rules' => ['pattern:^\d{4,5}$']],
+```
+
+**`required_if:FIELD,VALUE,...` asks for an answer only while another field holds one of the values.**
+The first parameter is the field to follow, the rest are its answers that make this one required. It
+is asked about a field the request left out too, so writing the request by hand does not get past it,
+and the browser applies it the same way. It answers `required`, which the form already words. With no
+field to follow, or no answers listed, it asks for nothing.
+
+```php
+'channel' => ['type' => 'radio', 'rules' => ['required'], 'options' => ['call' => 'Call', 'email' => 'Email']],
+'phone'   => ['type' => 'tel', 'rules' => ['required_if:channel,call', 'phone']],
+'email'   => ['type' => 'email', 'rules' => ['required_if:channel,email', 'email']],
 ```
 
 **A `file` field takes PDF, JPEG, PNG, WebP, DOC and DOCX, up to 10 MB.** `mime:` narrows that list
@@ -253,11 +265,37 @@ the schema.
 
 ## How validation flows
 
-1. **Client** — the shared [`window.Corex` runtime](/guides/frontend-runtime/) reads the embedded
+1. **Client**: the shared [`window.Corex` runtime](/guides/frontend-runtime/) reads the embedded
    schema and runs the same rules for instant, field-level feedback.
-2. **Submit** — a valid form posts JSON to the secured REST route with the WP nonce.
-3. **Server** — re-validates the **same schema** (authoritative), then dispatches a
-   `FormSubmittedEvent` to the form's listeners (store + email).
+2. **Submit**: a valid form posts JSON to the secured REST route with the WP nonce.
+3. **Server**: re-validates the **same schema** (authoritative), stores any uploaded file, runs the
+   form's `prepare()`, then dispatches a `FormSubmittedEvent` to the form's listeners (store + email).
+
+### The form's last word: `prepare()`
+
+`Form::prepare(array $values): array` runs once for each submission that passed every rule, after its
+files are stored and before any listener. What it returns is what the inbox stores and the email sends;
+a field the form does not declare is dropped from it. The default returns the answers unchanged. A form
+uses it to turn a raw answer into what a person reads, such as a moment sent as a timestamp.
+
+It may still refuse, by throwing `Corex\Forms\Validation\AnswersRefused` with field errors. The visitor
+is answered 422, in the same shape as a rule's refusal, nothing is stored or sent, and any file stored for
+the request is removed. That is for what can only be refused once the form acts on the answers: the CoreX
+Assistant's callback claims the time a visitor picked there, and the second of two visitors who sent the
+same time at once is refused with `slot_taken`. Anything a rule can say belongs in a rule.
+
+```php
+use Corex\Forms\Validation\AnswersRefused;
+
+public function prepare(array $values): array
+{
+    if (! $this->seats->take((string) $values['session'])) {
+        throw new AnswersRefused(['session' => 'full']);
+    }
+
+    return ['session' => $this->seats->label((string) $values['session'])] + $values;
+}
+```
 
 After defining a form, run `npm run build` so the block's `view.js`/`style.scss` compile.
 The rules are tested on both sides (`composer test` and `npm run test:js`).

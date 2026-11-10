@@ -19482,3 +19482,69 @@ the moment in UTC, is what the team can trust, and the form's docblock says so.
 **Not chosen.** *One conversation across browser tabs*: the chat already keeps its conversation across pages for
 as long as the tab is open (`sessionStorage`); keeping it beyond the tab would store a visitor's words in their
 browser after they leave, which the owner has not asked for.
+
+## #617 -- A requested time is claimed once, in a row only one request can write, and freed with its request
+
+**Date:** 2026-11-10. **Spec:** 129, slice 3, FR-021.
+
+**Decided.**
+- Each time asked for through `corex-assistant-callback` is claimed as a row of the options table,
+  `corex_assistant_slot_<seconds>`, written with `INSERT IGNORE`, as `Limits\VisitorLock` is: of two requests
+  for one time, the database lets one write it. The row holds `0` while the request is being taken and then
+  the submission's id. `add_option()` would not do (it upserts, so both would be told they added it).
+- The claim is made in the form's `prepare()` (#618), once every other answer has passed, so a request another
+  field refuses never holds a time. The `assistant_slot` rule refuses a time already claimed, past the notice,
+  outside the hours or not a time at all, so the usual case is answered with the other errors and claims
+  nothing. Both answer `slot_taken`, and the chat fetches the times again and asks the visitor to choose.
+- The callback's last listener, `SlotClaimListener`, is added whatever `corex_assistant_callback_listeners`
+  returns: it names the submission in its claim, or releases a claim nothing stored, so a time nobody can find
+  in the inbox is never hidden. A request whose PHP process dies between the claim and the listener leaves a
+  pending row that hides its time until the time passes; claims of past times are removed on the next claim.
+- `transition_post_status` and `deleted_post` on `corex_submission` follow the request: to the trash or deleted
+  (by hand, in bulk or by retention) frees the time; restored claims it again while it is free and to come. A
+  request restored after another visitor took its time is restored anyway, and the team sees both.
+- Booking hours accept a site zone written as an offset (`+02:00`), which is what `wp_timezone_string()` gives
+  a site set to "UTC+2"; slice 2 read such a site's hours in UTC.
+
+**Not chosen.** *Perego's one option holding the list of booked times*: read, changed and written back, so two
+visitors sending at once can both be given a time, and a binned request keeps it. *A table of the add-on's
+own*: a schema, a migration and an uninstall step for a handful of short rows. *Claiming in the rule*: a rule
+runs beside the others, and a time claimed there would stay claimed by a request another field refused.
+*Holding a time while the form is open*: a visitor who reads the list and leaves would hide it from everyone.
+
+## #618 -- `Form::prepare()` is a form's last word, and may refuse; the assistant writes the team's line there
+
+**Date:** 2026-11-10. **Spec:** 129, slice 3, FR-022.
+
+**Decided.**
+- A code-defined form has `prepare(array $values): array`, run once per submission that passed every rule,
+  after its files are stored and before any listener. What it returns is stored and sent, less any field the
+  form does not declare. It may throw `Corex\Forms\Validation\AnswersRefused` with field errors: the engine
+  answers 422 in the shape of a validation failure (`code: validation_failed`, `errors`), and forgets any file
+  it stored for that request, so a refused submission still leaves no file behind (spec 081, FR-005).
+- The assistant's callback writes `time` there from `slot` and the visitor's `zone`, with `wp_date()` in the
+  site's language (`switch_to_locale(get_locale())`) and its time format: "Thu 12 Nov, 7:00 pm Riyadh = Thu 12
+  Nov, 6:00 pm Cairo"; one time when the zones are the same or the visitor's is unknown. `slot` is stored as
+  `2026-11-12T16:00:00Z`; a zone the server does not know is dropped. Without a slot, `time` is what the visitor
+  typed. The browser sends `slot` as the slots route gave it, UTC seconds, and no line; a page cached from
+  before still sends an ISO moment, and both are read (`SlotMoment`). This replaces #612's "the visitor's
+  browser writes the line" and #615's note that only `slot` could be trusted.
+
+**Not chosen.** *A listener that rewrites the stored values*: listeners run after the event is built, so the
+team's email and the inbox could disagree, and a listener cannot refuse. *A filter on the values*: a form's own
+method keeps the form the one place its rules live. *A rule with side effects*: see #617.
+
+## #619 -- `required_if` is a rule of the forms engine; the add-on's `required_for` goes
+
+**Date:** 2026-11-10. **Spec:** 129, slice 3, FR-023.
+
+**Decided.** `required_if:<field>,<value>,...` is built in: required while another field's answer is one of the
+values, a `RuleForAbsentValue` so a request that leaves the field out is still asked, answering `required`. The
+runtime script applies it the same way, to a field the form left out too, so a CoreX form block never sends what
+the server refuses. With no field to follow or no values it asks for nothing. The callback form uses
+`required_if:channel,call,whatsapp` and `required_if:channel,email`; `Forms\RequiredForChannel` (#613) is
+removed, unreleased. Lifted from the unmerged parallel slice 2 build (`spec/129-assistant-slice-2`, `c8054cd4`),
+with its tests.
+
+**Not chosen.** *Keeping `required_for` in the add-on*: it knew one field name (`channel`), and every form that
+needs "required when" would write its own.
