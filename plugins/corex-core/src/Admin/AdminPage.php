@@ -200,6 +200,7 @@ final class AdminPage
             'corex-insights'            => ['insights', 'insights'],
             'corex-setup'               => ['setup', 'setup'],
             'corex-guides'              => ['guides', 'guides'],
+            'corex-assistant'           => ['assistant', 'assistant'],
             'corex-settings-config'     => ['settings', 'settings'],
         ];
     }
@@ -307,6 +308,7 @@ final class AdminPage
             // browser route matrix to every CoreX route, which is exactly the kind of gap a matrix
             // that lists twelve of fourteen screens cannot find.
             'guides' => __('Guides', 'corex'),
+            'assistant' => __('Assistant', 'corex'),
             'option-page' => __('Options', 'corex'),
         ];
 
