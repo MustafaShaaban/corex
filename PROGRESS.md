@@ -40,6 +40,13 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Activity times that pass contrast** (2026-11-10, branch `fix/activity-time-contrast`, DECISIONS #516): the
+Overview, Access audit log and Insights security card draw event times in `--corex-admin-text-muted`, the Insights
+card dates events through `AdminDateTime`, the three rows get a unitless line height, and `seed-quality-site.php`
+records three refusals so CI's quality job sees these lists with rows. One pull request, not tagged. Left for its own
+pull request: no CoreX rule sets a unitless line height on `.corex-admin`, so every screen inherits wp-admin's fixed
+18.2px, the likely cause of the Blog Pro and inbox `text-overlaps-at-200` entries in `known-failures.json`.
+
 **Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
 #447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
 owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar

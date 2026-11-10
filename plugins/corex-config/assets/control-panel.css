@@ -702,10 +702,14 @@
 	list-style: none;
 }
 
+/* A unitless line height: the one inherited from wp-admin's body is a
+   fixed length, which at 200% text is shorter than the letters, so a
+   wrapped summary ran onto its time. */
 .corex-admin .corex-overview__event {
 	display: grid;
 	gap: var(--corex-admin-space-2xs);
 	padding-block: var(--corex-admin-space-xs);
+	line-height: var(--corex-admin-line-normal);
 	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
 }
 
@@ -728,9 +732,11 @@
 	color: var(--corex-admin-text-muted);
 }
 
+/* Muted, not subtle: a time is text and needs 4.5:1, which subtle
+   (about 3:1) is not. */
 .corex-admin .corex-overview__event-time {
 	font-size: var(--corex-admin-font-xs);
-	color: var(--corex-admin-text-subtle);
+	color: var(--corex-admin-text-muted);
 }
 
 @media (max-width: 60rem) {

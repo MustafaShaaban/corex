@@ -101,6 +101,12 @@ Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #4
 - **On/off settings are switches** (#445) that say On or Off, as on the Add-ons screen; they still
   save "1" or "0".
 - **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
+- **Activity times can be read** (DECISIONS #516): on the Overview's recent activity, the Access audit
+  log and the Insights security card, each event's time is drawn in the muted text colour (5.8:1 or
+  more, in light and dark) and not the subtle one (about 3:1). The Insights card says the time as the
+  Overview does, `10 November 2026 at 7:36 AM` in the site's timezone, not `2026-11-10 07:36` in UTC.
+  At 200% text on a phone, an event's summary no longer runs onto its time. The quality checks' seed
+  now records three refusals, so CI measures these screens with activity on them.
 
 ### Client impact
 

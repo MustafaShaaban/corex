@@ -20,6 +20,7 @@ use Corex\Environment\SiteEnvironment;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowRepository;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\DateTime\AdminDateTime;
 
 defined('ABSPATH') || exit;
 
@@ -49,6 +50,7 @@ final class InsightWidgetFacts
         private readonly OperationsMode $modes,
         private readonly SecurityEventsSince $since,
         private readonly ActivitySentences $sentences,
+        private readonly AdminDateTime $dateTime,
         private readonly string $option = 'corex_insights',
         private readonly ?SiteEnvironment $environment = null,
     ) {
@@ -95,16 +97,22 @@ final class InsightWidgetFacts
      * only (spec 114, US-SAFE-13). It read the twenty newest events of every area and kept the
      * security ones among them, so twenty trashed submissions hid every security event.
      *
-     * @return list<array{text:string,meta:string,tone:string}>
+     * Each is dated as the Overview dates the same event: `meta` is what a person reads, in the
+     * site's timezone and language, and `datetime` is its ISO 8601 value for the `<time>`
+     * element. It was `Y-m-d H:i` in UTC.
+     *
+     * @return list<array{text:string,meta:string,datetime:string,tone:string}>
      */
     private function securityEvents(): array
     {
         $events = [];
 
         foreach ($this->activity->query(['area' => self::SECURITY_AREAS], 1, 5) as $event) {
+            $when     = $this->dateTime->format($event->occurredAt, AdminDateTime::FULL);
             $events[] = [
-                'text' => $this->sentences->of($event)['text'],
-                'meta' => $event->occurredAt->format('Y-m-d H:i'),
+                'text'     => $this->sentences->of($event)['text'],
+                'meta'     => $when->human,
+                'datetime' => $when->machine,
                 'tone' => in_array($event->outcome, [ActivityEvent::OUTCOME_FAILURE, ActivityEvent::OUTCOME_DENIED], true)
                     ? 'warning'
                     : 'info',
