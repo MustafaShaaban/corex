@@ -169,6 +169,17 @@
       ]
     },
     {
+      "path": "docs-app/src/content/docs/guides/assistant.md",
+      "lines": [
+        250,
+        251,
+        252
+      ],
+      "topics": [
+        "generated-properties"
+      ]
+    },
+    {
       "path": "docs-app/src/content/docs/guides/branding.md",
       "lines": [
         3,

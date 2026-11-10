@@ -52,6 +52,7 @@ the same reason — so the next such gap is found by a reader, not by a customer
 | `corex-media` | **Stable** | WebP pipeline behind an activation gate that only serves the converted file when it passes. |
 | `corex-captcha` | **Stable** | Honeypot, reCAPTCHA, Turnstile, hCaptcha. |
 | `corex-ui` | **Stable** | Modal, drawer, tabs, accordion and layout blocks. The modal and the drawer have a browser test of their own (`tests/e2e/block-dialogs.spec.js`); no screen reader was listened to. |
+| `corex-assistant` | **Partial** | A chat that answers from the site through free AI tiers in turn, with a callback form in the chat (spec 129). Unit, integration and browser tests; not yet run on a live site. |
 | `corex-careers` | **Stable** | Job posts, applications, CV upload through the protected store (spec 081). |
 | `corex-profile` | **Partial** | Registration, an auth gateway and session listing (`src/Account`, `src/Session`). The full profile system is explicitly deferred — `ROADMAP.md` §15. |
 | `corex-newsletter` | **Partial** | Signed-token subscribe/confirm, a subscriber store, and a notifier that mails the list on publish (`src/Subscriber`, `src/Subscription`). No campaign composer, no scheduling, no segmentation. |
