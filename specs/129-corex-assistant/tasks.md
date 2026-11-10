@@ -25,3 +25,18 @@
 - [x] T017 Required fields that follow the chosen channel
 - [x] T018 Limits and per-language branding edited on the screen; a real-size "Check services" question
 - [x] T019 CoreX → Assistant screen replaces the Settings page; guards; docs; CHANGELOG; DECISIONS #609 to #614
+
+## Slice 3: a time asked for once, a line the server writes, `required_if`
+
+- [ ] T020 Forms engine: `required_if` built-in rule (PHP, and the runtime script), `Required::missing()`;
+  the add-on's `required_for` removed (+ Pest, Jest)
+- [ ] T021 Forms engine: `Form::prepare()` and `AnswersRefused`, run after validation and stored uploads, before
+  listeners; a refusal answers 422 and forgets the uploads (+ Pest)
+- [ ] T022 Booking: `SlotClaims` (options rows claimed with `INSERT IGNORE`), `OpenSlots`, `SlotMoment`; the
+  slots route leaves out claimed times; offset time zones (+ Pest, integration on the real table)
+- [ ] T023 Callback form: the `assistant_slot` rule, `prepare()` claims the time and writes the team's line with
+  `wp_date()`; `SlotClaimListener` confirms or releases; trash, delete and restore release or claim again (+ Pest,
+  integration through the REST server)
+- [ ] T024 Chat: the slot sent as UTC seconds; "slot_taken" fetches the times again and says so (+ Jest,
+  Playwright)
+- [ ] T025 Guards (clean-code, wp, test, docs); guide; CHANGELOG (Client impact); PROGRESS; DECISIONS from #617

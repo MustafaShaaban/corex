@@ -102,3 +102,31 @@ prompt injection (no system role from the visitor, links only to known pages; wo
 
 Framework edits: `AdminPage` (rail entry and breadcrumb for `assistant`), the rail icon, and slice 1's Settings
 section, page and guide topic removed again.
+
+## Slice 3 (FR-021 to FR-024)
+
+| Unit | Job |
+|---|---|
+| `corex-forms` `Validation\Rules\RequiredIf` | `required_if:<field>,<value>,...`, a `RuleForAbsentValue`; `Required::missing()` shared |
+| `corex-forms` `Validation\AnswersRefused` | the exception a form's `prepare()` throws to refuse, carrying field errors |
+| `corex-forms` `Form::prepare()`, `FormSubmissionService` | the form's last word on its answers, after validation and uploads, before listeners; a refusal is a 422 in the validation shape and forgets the uploads |
+| `corex-core` `assets/js/corex-runtime.js` | `required_if`, asked of a field the form left out too |
+| `Booking\SlotMoment` | a slot read from UTC seconds or an ISO 8601 moment; written back as ISO 8601 UTC |
+| `Booking\SlotClaims`, `Booking\WpSlotClaims` | the claims: one options row per time (`corex_assistant_slot_<seconds>`), value `0` while pending, then the submission id; claimed with `INSERT IGNORE`, as `Limits\VisitorLock` is |
+| `Booking\OpenSlots` | the offered times less the claimed ones; `claim()` removes past claims first |
+| `Booking\SubmissionSlots` | `transition_post_status` and `deleted_post` on `corex_submission`: release on trash and delete, claim again on restore |
+| `Booking\BookingHours` | offset zones (`+02:00`); `MAX_SLOTS` public for its test |
+| `Forms\AssistantSlotRule` | `assistant_slot`: an offered, unclaimed time or nothing; answers `slot_taken` |
+| `Forms\AssistantCallbackForm` | `required_if` for phone and email; `prepare()` claims the time and writes `time`, `slot`, `zone` |
+| `Forms\SlotClaimListener` | appended to the form's listeners whatever the filter returns: names the submission in its claim, or releases a claim nothing stored |
+| `Forms\RequiredForChannel` | removed |
+| `blocks/assistant/handoff.js`, `slots.js` | `slot` sent as UTC seconds; on `slot_taken`, the times fetched again and the visitor told |
+
+Why the claim is made in `prepare()` and not in the rule: a rule runs beside the others, and a claim made there
+would be left behind by a request another field refuses. `prepare()` runs once everything has passed, so the only
+thing that can refuse after a claim is the claim itself. The rule stays, so a time already taken is refused with
+the other answers and nothing is claimed for it.
+
+Why options rows and not a table of the add-on's own: one short row per requested time, never autoloaded, claimed
+and freed by SQL that names it, as the visitor lock already is; a table would add a schema, a migration and an
+uninstall step for a handful of rows.

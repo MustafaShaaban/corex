@@ -264,10 +264,100 @@ on `feature/058-perego-assistant`), and the owner asked, relayed by the Perego s
 CoreX Bookings was weighed as the home of the slot logic and not taken: add-ons may not depend on one another, and
 Bookings' leader-based call requests are a different model (DECISIONS #612).
 
+## Slice 3: a time asked for once, a line the server writes, `required_if` (2026-11-10)
+
+DECISIONS #616 left three pieces for this slice. Perego's live assistant has the first (a `perego_slot_free`
+rule over one option holding a list of times, and a fresh list in the chat when it refuses); the owner wants it
+in the add-on. Perego's list is read, changed and written back, so two visitors sending at once can both be
+given the same time, and a request the team binned keeps its time hidden until it passes. This slice does
+neither.
+
+### User Story 7 - A time one visitor asked for is not offered to the next (Priority: P1)
+
+A visitor picks Thursday 7:00 pm and sends. The next visitor who opens the hand-off does not see Thursday
+7:00 pm. Two visitors who send the same time at once: one request is taken, the other visitor is told the time
+was just taken and shown the times still open.
+
+**Independent Test**: send a request for a time through the form route, then ask the slots route; send the same
+time again and read the refusal; trash the first request in the Submissions inbox and ask the slots route again.
+
+**Acceptance Scenarios**:
+
+1. **Given** a request stored for a time, **When** anyone asks `GET corex/v1/assistant/slots`, **Then** that
+   time is not in the list.
+2. **Given** a time already asked for, or one no longer offered (past the notice, outside the hours, booking
+   off, not a slot at all), **When** a request names it, **Then** the route answers 422 with
+   `errors.slot = "slot_taken"`, nothing is stored and no email is sent.
+3. **Given** that answer, **Then** the chat says the time was just taken, fetches the times again and shows them
+   with no time chosen; with none left it shows the typed "best time" field.
+4. **Given** two requests for one time arriving together, **Then** exactly one is stored; the other gets the
+   answer of scenario 2.
+5. **Given** a stored request, **When** it is moved to the trash or deleted for good (by hand, in bulk or by
+   retention), **Then** its time is offered again. **When** it is restored and its time is still free, **Then**
+   the time is taken again; if another visitor has asked for it since, the restore still succeeds and both
+   requests name the time.
+6. **Given** a request whose storage failed, or a site whose `corex_assistant_callback_listeners` filter stores
+   nothing, **Then** no time is hidden by it.
+7. **Given** "any time" or a typed time, **Then** nothing is claimed and nothing is refused.
+
+### User Story 8 - The team reads a time the server wrote (Priority: P1)
+
+The inbox and the team's email show "Thu 12 Nov, 7:00 pm Riyadh = Thu 12 Nov, 6:00 pm Cairo", written by the
+server from the moment and the visitor's zone, in the site's language. A request written by hand cannot put a
+made-up line there.
+
+**Acceptance Scenarios**:
+
+1. **Given** a request with a `slot` and a known `zone`, **Then** the stored `time` is the server's line, the
+   visitor's zone first, then the booking hours' zone, each with its city; with the same zone, or a zone the
+   server does not know, only the booking hours' time.
+2. **Given** a request with a `time` the browser wrote and a `slot`, **Then** the browser's `time` is replaced.
+3. **Given** a request with no `slot`, **Then** `time` is what the visitor typed, kept as typed.
+4. **Given** a slot, **Then** the stored `slot` is the moment in UTC, written `2026-11-12T16:00:00Z`; `zone` is
+   kept only when the server knows it.
+5. **Given** a site in another language (`de_DE`), **Then** the weekday and month are that language's.
+
+### User Story 9 - A form says which answer makes a field required (Priority: P2)
+
+A form developer writes `'rules' => ['required_if:channel,call,whatsapp']`. The browser and the server ask for
+the field only while `channel` is one of those answers.
+
+**Acceptance Scenarios**:
+
+1. **Given** `required_if:channel,call,whatsapp` on `phone`, **When** `channel` is `call` or `whatsapp` and
+   `phone` is empty or left out of the request, **Then** the server answers `phone: "required"`; with `email`, no
+   error.
+2. **Given** the same rule in a CoreX form block, **Then** the browser gives the same answer before sending.
+3. **Given** no field to follow or no answers listed, **Then** the rule asks for nothing.
+4. **Given** the assistant's callback form, **Then** it uses `required_if`; the add-on's own `required_for` rule
+   is gone.
+
+### Functional Requirements (slice 3)
+
+- **FR-021** Every time requested through `corex-assistant-callback` MUST be claimed once, in the site's
+  database, by a write only one request can win (a row with a unique name, `INSERT IGNORE`), during the forms
+  engine's prepare step (FR-022), after every other answer has passed. A claim is pending until the submission
+  is stored, then names the submission; a request nothing stored releases its claim. Claims of past times are
+  removed when a new claim is made. `GET corex/v1/assistant/slots` and the `assistant_slot` rule MUST leave out
+  claimed times. Moving a submission to the trash or deleting it MUST release its claim; restoring it MUST claim
+  its time again when the time is still free and in the future.
+- **FR-022** The forms engine MUST give a code-defined form `Form::prepare(array $values): array`, run once per
+  valid submission, after validation and after uploads are stored, before any listener; what it returns is what
+  is stored and sent, less any field the form does not declare. A form MAY refuse there by throwing
+  `Corex\Forms\Validation\AnswersRefused` with field errors; the engine then answers 422 in the shape of a
+  validation failure and forgets any upload it stored for that request. The assistant's form writes `time`,
+  `slot` and `zone` there (User Story 8) with `wp_date()` in the site's language.
+- **FR-023** `required_if:<field>,<value>,...` MUST be a built-in rule of the forms engine, a
+  `RuleForAbsentValue`, answering the `required` key; the runtime script MUST apply it the same way, to a field
+  the form left out too. The add-on's `required_for` is removed.
+- **FR-024** The booking hours MUST accept the site's time zone written as an offset (`+02:00`), which is what
+  WordPress gives a site set to "UTC+2".
+
 ## Out of scope
 
 - Storing conversations, analytics on questions, a knowledge editor, voice, file uploads.
-- Calendar sync, double-booking prevention, reminders, payments for a picked time.
+- Calendar sync, reminders, payments for a picked time. A requested time is still one the team confirms: slice 3
+  stops two visitors asking for the same time, it does not book it.
 - Clearing a page cache when the assistant is switched on or off (Perego purges LiteSpeed; CoreX knows no page
   cache by name).
 - Arabic (or any) translation catalogue: CoreX ships none; a site supplies its strings by the filter or a
