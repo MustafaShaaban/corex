@@ -1,0 +1,181 @@
+/*
+ * The assistant's button and invitation (spec 129): on every page, so
+ * only these. The chat's own styles are in chat.scss and arrive with it.
+ *
+ * Every colour, spacing, radius and motion is a theme token, read once into a
+ * `--corex-assistant-*` property. A site whose theme names its colours
+ * differently sets those properties on `.corex-assistant` in its own
+ * stylesheet; without either, system colours keep it readable.
+ */
+
+.corex-assistant {
+	--corex-assistant-accent: var(--wp--preset--color--primary, LinkText);
+	--corex-assistant-on-accent: var(--wp--preset--color--inverse, Canvas);
+	--corex-assistant-surface: var(--wp--preset--color--surface, Canvas);
+	--corex-assistant-surface-alt: var(--wp--preset--color--surface-alt, Canvas);
+	--corex-assistant-ink: var(--wp--preset--color--ink, CanvasText);
+	--corex-assistant-muted: var(--wp--preset--color--ink-soft, GrayText);
+	--corex-assistant-line: var(--wp--preset--color--border, GrayText);
+	--corex-assistant-online: var(--wp--preset--color--success, CanvasText);
+	--corex-assistant-error: var(--wp--preset--color--error, CanvasText);
+	--corex-assistant-radius: var(--wp--custom--radius--lg, 1rem); /* corex-token-allow: fallback only, for a theme without CoreX radii */
+	--corex-assistant-border: var(--wp--custom--border--width--thin, thin);
+	--corex-assistant-shadow: var(--wp--preset--shadow--lg, none);
+	--corex-assistant-gap: var(--wp--preset--spacing--30, 1rem); /* corex-token-allow: fallback only, for a theme without CoreX spacing */
+	--corex-assistant-gap-sm: var(--wp--preset--spacing--20, 0.5rem); /* corex-token-allow: fallback only, for a theme without CoreX spacing */
+	--corex-assistant-focus: var(--wp--custom--focus--color, Highlight);
+	--corex-assistant-focus-width: var(--wp--custom--focus--width, medium);
+	--corex-assistant-speed: var(--wp--custom--motion--duration--base, 0s);
+	--corex-assistant-ease: var(--wp--custom--motion--easing--standard, ease);
+
+	position: fixed;
+	inset-block-end: var(--corex-assistant-gap);
+	inset-inline-end: var(--corex-assistant-gap);
+	z-index: var(--wp--custom--z--sticky, 1100);
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: var(--corex-assistant-gap-sm);
+	color: var(--corex-assistant-ink);
+	font-family: inherit;
+}
+
+.corex-assistant__fab {
+	position: relative;
+	display: grid;
+	place-items: center;
+	inline-size: 3.5rem;
+	block-size: 3.5rem;
+	padding: 0;
+	border: var(--corex-assistant-border) solid color-mix(in srgb, var(--corex-assistant-accent) 45%, transparent);
+	border-radius: 50%;
+	background: var(--corex-assistant-accent);
+	box-shadow: var(--corex-assistant-shadow);
+	color: var(--corex-assistant-on-accent);
+	cursor: pointer;
+	transition: transform var(--corex-assistant-speed) var(--corex-assistant-ease);
+
+	&:hover {
+		transform: translateY(-2px); /* corex-token-allow: a lift too small for a spacing step */
+	}
+
+	&:focus-visible {
+		outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);
+		outline-offset: var(--wp--custom--focus--offset, 2px); /* corex-token-allow: fallback only */
+	}
+
+	&.is-loading {
+		cursor: progress;
+	}
+}
+
+.corex-assistant__mark {
+	inline-size: 2rem;
+	block-size: 2rem;
+	object-fit: contain;
+}
+
+/* "Online": the assistant answers at any hour. */
+.corex-assistant__online {
+	position: absolute;
+	inset-block-start: 0.2rem;
+	inset-inline-end: 0.2rem;
+	inline-size: 0.75rem;
+	block-size: 0.75rem;
+	border: var(--corex-assistant-border) solid var(--corex-assistant-surface);
+	border-radius: 50%;
+	background: var(--corex-assistant-online);
+}
+
+.corex-assistant.is-open .corex-assistant__online {
+	display: none;
+}
+
+.corex-assistant__teaser {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-assistant-gap-sm);
+	max-inline-size: min(16rem, calc(100vw - 2 * var(--corex-assistant-gap))); /* corex-token-allow: the invitation's measure */
+	padding-block: var(--corex-assistant-gap-sm);
+	padding-inline: var(--corex-assistant-gap) var(--corex-assistant-gap-sm);
+	border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+	border-radius: var(--corex-assistant-radius);
+	border-end-end-radius: var(--wp--custom--radius--sm, 0.25rem); /* corex-token-allow: fallback only */
+	background: var(--corex-assistant-surface);
+	box-shadow: var(--corex-assistant-shadow);
+	font-size: var(--wp--preset--font-size--sm, small);
+	line-height: 1.5;
+	animation: corex-assistant-in var(--corex-assistant-speed) var(--corex-assistant-ease) both;
+
+	p {
+		margin: 0;
+	}
+
+	strong {
+		display: block;
+	}
+
+	span {
+		color: var(--corex-assistant-muted);
+	}
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.corex-assistant__dismiss {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 1.75rem;
+	block-size: 1.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: var(--wp--custom--radius--sm, 0.25rem); /* corex-token-allow: fallback only */
+	background: transparent;
+	color: var(--corex-assistant-muted);
+	cursor: pointer;
+
+	&:hover,
+	&:focus-visible {
+		background: color-mix(in srgb, var(--corex-assistant-accent) 14%, transparent);
+		color: var(--corex-assistant-ink);
+	}
+
+	&:focus-visible {
+		outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);
+	}
+}
+
+.corex-assistant__panel[hidden] {
+	display: none;
+}
+
+@keyframes corex-assistant-in {
+
+	from {
+		opacity: 0;
+		transform: translateY(0.5rem); /* corex-token-allow: the entrance's travel */
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-assistant__fab,
+	.corex-assistant__teaser {
+		transition: none;
+		animation: none;
+	}
+
+	.corex-assistant__fab:hover {
+		transform: none;
+	}
+}
+
+@media print {
+
+	.corex-assistant {
+		display: none;
+	}
+}
