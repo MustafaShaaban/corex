@@ -19483,6 +19483,46 @@ the moment in UTC, is what the team can trust, and the form's docblock says so.
 as long as the tab is open (`sessionStorage`); keeping it beyond the tab would store a visitor's words in their
 browser after they leave, which the owner has not asked for.
 
+## #620 -- CoreX gets public hosts on the owner's domain, one host for each kind of thing that runs
+
+**Date:** 2026-11-11. **Branch:** `docs/public-hosts`. **Mode:** Docs/Planning. **Asked by:** the owner, who
+bought `mustafashaaban.com` and pointed a `corex` subdomain at his server.
+
+**Why.** CoreX has no public address of its own. The docs are on GitHub's `mustafashaaban.github.io/corex/`,
+the in-admin updater has no source to read (`updates.endpoint` ships empty), a watched installation from
+CoreX → Releases on a shared host, on v0.46.1 or later, is still owed (spec 107) and has no site to run on that
+is not a client's, and spec 123 left
+"a site downloads its release" out until packages are published "somewhere a site can trust".
+
+**Decided.** Six hosts, split by what runs on them, so each has its own deploy, its own security level and
+its own failure, and a problem on one leaves the others up:
+
+| Host | What it is | Served by | Public |
+|---|---|---|---|
+| `mustafashaaban.com` | The owner's personal site, on the portfolio kit, in its own repository | The owner's server | Yes |
+| `corex.mustafashaaban.com` | CoreX's product site, built with CoreX (`sites/corex-site/`, Client Site Mode) | The owner's server | Yes |
+| `corex-docs.mustafashaaban.com` | The Starlight docs site, moved from `github.io` | GitHub Pages (a CNAME to `mustafashaaban.github.io`) | Yes |
+| `corex-updates.mustafashaaban.com` | Update manifest, packages and their SHA-256, as static files | The owner's server, no PHP | Machines |
+| `corex-demo.mustafashaaban.com` | The kits with their demo content, reset on a schedule | The owner's server | Later |
+| `corex-staging.mustafashaaban.com` | A private install for release checks, the shared-host installation first | The owner's server, password and `noindex` | No |
+
+- **One level of names** (`corex-docs`, not `docs.corex`): one `*.mustafashaaban.com` certificate covers
+  every host. The owner chose the names.
+- **The order** is one spec at a time: the docs move (spec 130), the staging install, the product site, the
+  update channel, the demo, and then spec 123's download-from-a-URL, with signed packages from the updates host.
+- **Nothing in a released site changes by this decision alone.** A site keeps every link it has until a
+  release carries the docs move, and GitHub redirects the old `github.io/corex/` addresses to the custom
+  domain once it is set.
+- **The revamp is not affected.** No open revamp pull request touches the docs links (`DocsUrl`), the docs
+  build or the update source, and the hosts sit outside the framework's code. The product site and the
+  demo show the revamp's screens, so they come after it, not before.
+
+**Not chosen.** *Two-level names* (`docs.corex.mustafashaaban.com`): a wildcard certificate does not cover
+them. *The docs on the owner's server*: GitHub Pages already builds and serves them, costs the server nothing
+and stays up when the server does not. *One WordPress serving every host*: a failed update or a demo reset
+would take the product site down with it. *A CoreX-only domain now*: nothing is lost by waiting, since every
+host keeps canonical links and redirects and moves with one redirect each.
+
 ## #621 -- The CoreX loop replaces Spec Kit's commands; models and effort are routed by a table (constitution v2.0.0)
 
 **Date:** 2026-11-11. **Branch:** `docs/workflow-matt-and-agents`. **Mode:** Docs/Planning. **Asked by:** the

@@ -40,6 +40,16 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Public hosts and spec 130, the docs site on its own host** (2026-11-11, branch `docs/public-hosts`, DECISIONS
+#620): the owner bought `mustafashaaban.com` and made six hosts for CoreX (`corex`, `corex-docs`,
+`corex-updates`, `corex-demo`, `corex-staging`, plus the root for his own site). The plan and its order are in
+`ROADMAP.md` §13, "Public hosts". Spec 130 is a draft for step 1, moving the docs from
+`mustafashaaban.github.io/corex/` to `corex-docs.mustafashaaban.com`. Measured: all six hosts resolve through
+Cloudflare's proxy; `corex-docs` still reaches the owner's server, not GitHub Pages; the repository's Pages
+site has no custom domain. Planning only, no runtime code. Next: spec 130's slices (the CoreX loop), and the owner's
+three steps outside the repository (verify the domain on GitHub, point `corex-docs` at
+`mustafashaaban.github.io` as DNS only, then set the custom domain).
+
 **The CoreX loop, constitution v2.0.0** (2026-11-11, branch `docs/workflow-matt-and-agents`, DECISIONS #621): Spec
 Kit's commands are retired for Matt Pocock's engineering skills around one spec file per feature (grill, spec with
 slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a model and effort, and five agents
