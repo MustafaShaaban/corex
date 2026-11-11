@@ -65,6 +65,8 @@ it('says how the design is registered, with the class it wrote', function () {
 });
 
 it('writes a design that draws an email as it is, holding the message', function () {
+    // The footer says why the person receives the email, in a translated sentence (spec 120).
+    Brain\Monkey\Functions\when('__')->returnArg();
     // A namespace of its own, so loading this file cannot meet another test's class.
     $written = generatedEmailDesign('Drawn', 'GeneratedDesignProbe');
     require_once $written['path'];
@@ -88,6 +90,7 @@ it('writes a design that draws an email as it is, holding the message', function
 
 // "A working copy of the standard design": what the standard one does for a reader, this does.
 it('starts with what the standard design gives a reader: a dark scheme, a footer that names the site, the web only', function () {
+    Brain\Monkey\Functions\when('__')->returnArg();
     $written = generatedEmailDesign('Parity', 'GeneratedDesignParity');
     require_once $written['path'];
     $class = 'GeneratedDesignParity\\Mail\\ParityEmailDesign';

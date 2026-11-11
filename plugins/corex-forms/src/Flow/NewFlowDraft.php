@@ -28,6 +28,12 @@ final readonly class NewFlowDraft
         public FlowConfiguration $configuration,
         public int $actorId,
         public DateTimeImmutable $occurredAt,
+        /**
+         * Whether the flow is made from nothing, on the New flow form, and so starts with the
+         * emails CoreX ships (spec 120, FR-020). A flow created from a configuration of its own
+         * (a copy, an import) keeps the emails that configuration has.
+         */
+        public bool $defaultEmails = false,
     ) {
     }
 }

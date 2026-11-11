@@ -13,7 +13,9 @@ defined('ABSPATH') || exit;
 use Corex\Email\Delivery\DeliveryDecision;
 use Corex\Email\Delivery\DeliveryPolicy;
 use Corex\Email\Delivery\EmailAttempt;
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Design\ReplyComposer;
+use Corex\Email\Routing\EmailRouteMessageFactory;
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Message\SenderName;
 use Corex\Mail\MessageId;
@@ -217,11 +219,14 @@ final readonly class EmailStudioSubmissionGateway implements RecipientAwareSubmi
             throw new DomainException(__('The related email template version is unavailable.', 'corex'));
         }
         $layout = $this->repositories->layouts->findVersion($version->layoutId, $version->layoutVersion);
-        $rendered = $this->templates->render($version, $context, $layout);
+        $context = EmailRouteMessageFactory::withSiteContext($context, array_values($recipients));
+        $rendered = $this->templates->render($version, $context, $layout, EmailKind::of($context['email']['kind'] ?? null));
 
+        // From the template's own sender and with its plain text, as the email it resends was
+        // (spec 120, story 2).
         return $this->studio->resend(
             $attemptId,
-            new EmailMessage($recipients, [], [], null, $rendered['subject'], $rendered['html']),
+            EmailRouteMessageFactory::message($version, array_values($recipients), null, $rendered),
             $this->delivery->make(),
         );
     }

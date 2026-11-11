@@ -50,6 +50,8 @@ function addressOfLength(string $firstPart, int $length, string $host = 'mail'):
 beforeEach(function () {
     // A registration writes to the new member and to the site's administrator.
     add_filter('pre_wp_mail', '__return_true');
+    // The welcome a new member is sent, drawn in Email Studio, leaves a record of itself (spec 120).
+    $this->sentMail = \Corex\Tests\Support\CreatedPosts::watch('corex_email_asset', 'corex_email_log');
     $this->registration = get_option('users_can_register');
     update_option('users_can_register', '1');
 
@@ -59,6 +61,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    $this->sentMail->delete();
     wp_set_current_user(0);
     update_option('users_can_register', $this->registration);
 

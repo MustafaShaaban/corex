@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailContent;
 use Corex\Email\Design\EmailDesign;
+use Corex\Email\Design\EmailKind;
 
 /**
  * {{ class }} — this site's own design for the emails CoreX sends for it.
@@ -31,8 +32,16 @@ use Corex\Email\Design\EmailDesign;
  *                          `<em>`, `<i>`, `<ul>`, `<ol>`, `<li>` and `<a href>`. Print it as it
  *                          is. You may add attributes to its tags; you must not leave it out.
  * - `$content->recipient`  the address the email is for.
+ * - `$content->kind`       what kind of email it is (`EmailKind::REPLY`, …): the footer says why
+ *                          the person receives it.
+ * - `$content->links`      what the footer links to (the privacy page, an unsubscribe link).
  * - `$brand`               the site's name, address, logo, direction (`ltr` or `rtl`), language,
  *                          footer line, and its light and dark colours.
+ *
+ * As written, it draws the site's replies, and CoreX draws every other email in its own design.
+ * To draw other kinds too, implement `Corex\Email\Design\KindAwareEmailDesign` instead and say
+ * which in `accepts()`; then expect a template's own markup (headings, tables, a
+ * `<a class="button">`) in the body, not only a reply's.
  *
  * If this design throws, answers nothing, or answers a document without the message, CoreX
  * sends the email in its standard design and tells the site's email managers why.
@@ -92,18 +101,20 @@ final class {{ class }} implements EmailDesign
                 $this->header($brand, $align),
             )
             . sprintf(
-                '<tr><td class="own-surface" style="padding:24px 24px 8px;background:%1$s;border-left:1px solid %2$s;border-right:1px solid %2$s;border-bottom:1px solid %2$s;border-radius:0 0 10px 10px;text-align:%3$s">%4$s</td></tr>',
+                '<tr><td class="own-surface own-text" style="padding:24px 24px 8px;background:%1$s;border-left:1px solid %2$s;border-right:1px solid %2$s;border-bottom:1px solid %2$s;border-radius:0 0 10px 10px;text-align:%3$s;color:%5$s;font-family:%6$s;font-size:16px;line-height:1.6">%4$s</td></tr>',
                 $colours->surface,
                 $colours->border,
                 $align,
                 $this->message($content->bodyHtml, $brand),
+                $colours->text,
+                $font,
             )
             . sprintf(
                 '<tr><td class="own-muted" style="padding:16px 0 0;text-align:%s;color:%s;font-family:%s;font-size:12px;line-height:1.6">%s</td></tr>',
                 $align,
                 $colours->muted,
                 $font,
-                $footer,
+                $footer . $this->reason($content, $brand) . $this->links($content, $brand),
             )
             . '</table></td></tr></table></body></html>';
     }
@@ -116,13 +127,51 @@ final class {{ class }} implements EmailDesign
     {
         $text = sprintf('color:%s;font-family:%s;font-size:16px;line-height:1.6', $brand->light->text, EmailBrand::FONT);
 
+        $heading = sprintf('color:%s;font-family:%s;font-weight:700;line-height:1.3', $brand->light->text, EmailBrand::FONT);
+
         return strtr($bodyHtml, [
+            '<h1>' => sprintf('<h1 dir="auto" class="own-text" style="margin:0 0 16px;font-size:24px;text-align:start;%s">', $heading),
+            '<h2>' => sprintf('<h2 dir="auto" class="own-text" style="margin:0 0 12px;font-size:19px;text-align:start;%s">', $heading),
+            // A button: the text's colours turned round, so it keeps its contrast.
+            '<a class="button" href=' => sprintf(
+                '<a class="own-button" style="display:inline-block;padding:12px 24px;border-radius:8px;background:%s;color:%s;font-family:%s;font-size:16px;font-weight:600;line-height:1.3;text-decoration:none" href=',
+                $brand->light->text,
+                $brand->light->surface,
+                EmailBrand::FONT,
+            ),
             '<p>' => sprintf('<p dir="auto" class="own-text" style="margin:0 0 16px;text-align:start;%s">', $text),
             '<ul>' => '<ul style="margin:0 0 16px;padding:0 24px">',
             '<ol>' => '<ol style="margin:0 0 16px;padding:0 24px">',
             '<li>' => sprintf('<li dir="auto" class="own-text" style="margin:0 0 6px;text-align:start;%s">', $text),
             '<a href=' => sprintf('<a class="own-link" style="color:%s;text-decoration:underline" href=', $brand->light->link),
         ]);
+    }
+
+    /** Why the person receives the email, on a line of its own. Translate it as the footer. */
+    private function reason(EmailContent $content, EmailBrand $brand): string
+    {
+        $reason = EmailKind::reason($content->kind, $brand->name);
+
+        return $reason === '' ? '' : '<br />' . $this->escaped($reason);
+    }
+
+    /** What the email links to from its footer, on one line. */
+    private function links(EmailContent $content, EmailBrand $brand): string
+    {
+        $links = [];
+        foreach ($content->links as $link) {
+            $address = $this->webAddress($link['url']);
+            if ($address !== '') {
+                $links[] = sprintf(
+                    '<a class="own-muted" style="color:%s;text-decoration:underline" href="%s">%s</a>',
+                    $brand->light->muted,
+                    $address,
+                    $this->escaped($link['label']),
+                );
+            }
+        }
+
+        return $links === [] ? '' : '<br />' . implode(' &middot; ', $links);
     }
 
     /** The header's type, written on every cell that holds its words. */
@@ -207,6 +256,7 @@ final class {{ class }} implements EmailDesign
             . sprintf('.own-text{color:%s !important}', $dark->text)
             . sprintf('.own-muted{color:%s !important}', $dark->muted)
             . sprintf('.own-link{color:%s !important}', $dark->link)
+            . sprintf('.own-button{background:%s !important;color:%s !important}', $dark->text, $dark->surface)
             . '}</style>';
     }
 

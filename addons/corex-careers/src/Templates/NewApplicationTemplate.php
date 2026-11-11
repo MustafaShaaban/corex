@@ -11,6 +11,7 @@ namespace Corex\Careers\Templates;
 defined('ABSPATH') || exit;
 
 use Corex\Email\Template\EmailTemplate;
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Template\MailContext;
 
 /**
@@ -31,5 +32,11 @@ final class NewApplicationTemplate extends EmailTemplate
     public function body(MailContext $context): string
     {
         return '<p>' . esc_html__('A new application was received from:', 'corex') . ' {{ name }}</p>';
+    }
+
+    /** What the frame's footer says about why the person receives it (spec 120). */
+    public function kind(): string
+    {
+        return EmailKind::NOTIFICATION;
     }
 }

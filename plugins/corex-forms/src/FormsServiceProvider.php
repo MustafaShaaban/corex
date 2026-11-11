@@ -184,8 +184,22 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(FieldTypeRegistry::class),
                 $c->make(RuleRegistry::class),
                 $c->make(SuccessStateRegistry::class),
+                $c->has(MailTemplateCatalog::class) ? $c->make(MailTemplateCatalog::class) : null,
                 $c->make(FlowActionRegistry::class),
+                $c->make(EmailVariableRegistry::class),
             ),
+        );
+        // The emails a new flow starts with, where CoreX Mail ships them (spec 120).
+        $this->container->singleton(
+            \Corex\Forms\Flow\DefaultFlowEmails::class,
+            static fn (ContainerInterface $c): \Corex\Forms\Flow\DefaultFlowEmails => new \Corex\Forms\Flow\DefaultFlowEmails(
+                $c->has(MailTemplateCatalog::class) ? $c->make(MailTemplateCatalog::class) : null,
+            ),
+        );
+        // Which templates a flow binds, for Email Studio's warnings (spec 120).
+        $this->container->singleton(
+            \Corex\Mail\MailTemplateUsage::class,
+            static fn (ContainerInterface $c): \Corex\Mail\MailTemplateUsage => $c->make(\Corex\Forms\Flow\FlowTemplateUsage::class),
         );
         $this->container->singleton(
             FlowService::class,
@@ -194,6 +208,7 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(FlowConfigurationValidator::class),
                 $c->make(FlowNoticeText::class),
                 $c->make(FlowStatusResolver::class),
+                $c->make(\Corex\Forms\Flow\DefaultFlowEmails::class),
             ),
         );
         $this->container->singleton(FlowControllerServices::class);
@@ -273,7 +288,18 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
         );
-        $this->container->singleton(EmailStage::class);
+        $this->container->singleton(
+            EmailStage::class,
+            static fn (ContainerInterface $c): EmailStage => new EmailStage(
+                $c->make(FlowEmailSender::class),
+                $c->make(SubmissionRepository::class),
+                $c->make(NotificationDispatcher::class),
+                $c->make(FlowEmailAddressResolver::class),
+                $c->make(\Corex\Forms\Flow\EmailVariableValues::class),
+                // corex-config's inbox, where a stored submission is read (spec 120).
+                $c->has(\Corex\Mail\SubmissionAddress::class) ? $c->make(\Corex\Mail\SubmissionAddress::class) : null,
+            ),
+        );
         $this->container->singleton(InboxStage::class);
         $this->container->singleton(TimelineStage::class);
         $this->container->singleton(ActionsStage::class);
@@ -314,8 +340,10 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(\Corex\Forms\Submission\UploadedFileNames::class),
                 // The inbox is the admin plugin's. Without it there is nowhere to point.
                 $c->has(\Corex\Mail\SubmissionAddress::class) ? $c->make(\Corex\Mail\SubmissionAddress::class) : null,
+                $c->make(\Corex\Forms\Listeners\NotificationStyle::class),
             ),
         );
+        $this->container->singleton(\Corex\Forms\Listeners\NotificationStyle::class);
         $this->container->singleton(\Corex\Forms\Submission\UploadedFileNames::class);
         // The attachment store is built here rather than autowired: it needs an UploadValidator,
         // and that needs an allow-list and a size cap, which are policy rather than dependencies.
@@ -356,6 +384,13 @@ final class FormsServiceProvider extends ServiceProvider
         $this->registerListeners();
 
         add_action('init', [$this, 'registerSubmissionPostType']);
+        // Once, the first time this release runs: how code-defined forms notify (FR-023).
+        $this->container->make(\Corex\Support\Options\LoadedOptions::class)->register(\Corex\Forms\Listeners\NotificationStyle::OPTION, '');
+        add_action('init', function (): void {
+            $this->container->make(\Corex\Forms\Listeners\NotificationStyle::class)->settle(
+                fn (): bool => $this->container->make(SubmissionRepository::class)->any(),
+            );
+        }, 20);
         add_action('init', [$this, 'registerFlowPostType']);
         add_action('init', [$this, 'registerFormBlock']);
         // The documented hooks, read once every plugin has had `init` to add to them (spec 122).
@@ -384,7 +419,8 @@ final class FormsServiceProvider extends ServiceProvider
     {
         $schema = is_array($schema) ? $schema : [];
         foreach ($this->container->make(EmailVariableRegistry::class)->definitions() as $definition) {
-            $schema[$definition['key']] ??= ['type' => 'text', 'label' => $definition['label']];
+            // Supplied by every flow's email (spec 120's catalog lists it with them).
+            $schema[$definition['key']] ??= ['type' => 'text', 'label' => $definition['label'], 'emails' => ['form']];
         }
 
         return $schema;

@@ -10,6 +10,8 @@ namespace Corex\Email\Template;
 
 defined('ABSPATH') || exit;
 
+use Corex\Email\Design\EmailKind;
+
 /**
  * A code-registered email template: a stable name and the subject/body sources.
  * The sources are straight-line text with `{{ path }}` placeholders, merged from
@@ -23,4 +25,24 @@ abstract class EmailTemplate
     abstract public function subject(MailContext $context): string;
 
     abstract public function body(MailContext $context): string;
+
+    /**
+     * What kind of email this is ({@see EmailKind}): it decides the line the frame's footer says
+     * about why the person receives it (spec 120). A template that says nothing is a message.
+     */
+    public function kind(): string
+    {
+        return EmailKind::MESSAGE;
+    }
+
+    /**
+     * What the frame's footer links to for this email, beside the site's privacy page: a
+     * newsletter's unsubscribe link (spec 120).
+     *
+     * @return list<array{label:string,url:string}>
+     */
+    public function links(MailContext $context): array
+    {
+        return [];
+    }
 }

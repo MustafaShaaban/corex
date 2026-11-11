@@ -28,6 +28,8 @@ function templates( studio, busy ) {
 			onDraftChange={ studio.onDraftChange }
 			onSaveDraft={ studio.commands.saveDraft }
 			onActivate={ studio.commands.activate }
+			onReset={ studio.commands.reset }
+			warnings={ studio.commands.warnings }
 		/>
 	);
 }
@@ -56,7 +58,7 @@ function partials( studio, busy ) {
 function variables( studio ) {
 	return (
 		<VariablesPanel
-			catalog={ studio.state.data.variables }
+			groups={ studio.state.data.variables }
 			onInsert={ studio.insertions.insertVariable }
 		/>
 	);
@@ -76,11 +78,13 @@ function routing( studio, busy ) {
 function preview( studio ) {
 	return (
 		<PreviewPanel
-			document={ studio.preview.document }
+			selected={ Boolean( studio.selection.detail ) }
+			drawn={ studio.preview.drawn }
 			direction={ studio.preview.direction }
 			device={ studio.preview.device }
 			onDirection={ studio.preview.setDirection }
 			onDevice={ studio.preview.setDevice }
+			onSample={ studio.preview.setSample }
 		/>
 	);
 }
@@ -88,7 +92,8 @@ function preview( studio ) {
 function plain( studio ) {
 	return (
 		<PlainTextPanel
-			value={ studio.preview.plain }
+			selected={ Boolean( studio.selection.detail ) }
+			drawn={ studio.preview.drawn }
 			mode={ studio.selection.draft.plain_text_mode }
 		/>
 	);
@@ -98,9 +103,11 @@ function test( studio, busy ) {
 	return (
 		<TestSendPanel
 			outcome={ studio.state.data.outcome }
-			draft={ studio.selection.draft }
+			selected={ Boolean( studio.selection.detail ) }
+			drawn={ studio.preview.drawn }
 			busy={ busy }
 			lastResult={ studio.delivery.lastResult }
+			error={ studio.delivery.testError }
 			onSend={ studio.delivery.testSend }
 		/>
 	);

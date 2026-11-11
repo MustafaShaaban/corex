@@ -16,11 +16,13 @@ use Corex\Email\Studio\EmailPartialRepository;
 use Corex\Email\Studio\EmailPartial;
 use Corex\Email\Studio\EmailLayout;
 use Corex\Email\Studio\EmailStudioStore;
-use Corex\Email\Template\Layout;
+use Corex\Email\Design\EmailBrand;
+use Corex\Tests\Support\FixedEmailFrame;
 use Corex\Mail\SubjectLine;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
+    Functions\when('_n')->alias(static fn (string $one, string $many, int $count): string => $count === 1 ? $one : $many);
 });
 
 function emailStudioMemoryStore(): EmailStudioStore
@@ -97,7 +99,8 @@ it('rejects drafts without a subject or HTML body at the server boundary', funct
     ]);
 });
 
-it('rejects unknown undeclared and missing variables', function () {
+// Spec 120: a variable is known from the catalog, or as a form field; an unknown one is named.
+it('rejects an unknown variable, naming it', function () {
     $version = new EmailTemplateVersion(
         id: 2,
         templateId: 1,
@@ -117,7 +120,7 @@ it('rejects unknown undeclared and missing variables', function () {
     );
 
     expect(emailTemplateService()->validateDraft($version))->toMatchArray([
-        'variables' => 'Template variables do not match the declared schema.',
+        'variables' => 'Unknown variable: user.password.',
     ]);
 });
 
@@ -133,7 +136,8 @@ it('rejects scripts event handlers javascript urls PHP and header injection', fu
     'header'     => ["Hello\r\nBcc: victim@example.com", '<p>Hello</p>'],
 ]);
 
-it('renders context with HTML escaping, plain text free of markup, and the subject as it is', function () {
+// Plain text is not markup: a value is written into it as it is (spec 120, story 2).
+it('renders context with HTML escaping, a value whole in the plain text, and the subject as it is', function () {
     $rendered = emailTemplateService()->render(editableVersion(), [
         'user' => ['name' => '<b>Sam</b>'],
         'site' => ['name' => 'CoreX'],
@@ -142,7 +146,7 @@ it('renders context with HTML escaping, plain text free of markup, and the subje
     expect($rendered['html'])->toContain('&lt;b&gt;Sam&lt;/b&gt;')
         ->and($rendered['html'])->not->toContain('<b>Sam</b>')
         ->and($rendered['subject'])->toBe('Welcome <b>Sam</b>')
-        ->and($rendered['plain'])->toBe('Hello Sam at CoreX');
+        ->and($rendered['plain'])->toBe('Hello <b>Sam</b> at CoreX');
 });
 
 // A subject is a header, plain text and not markup (DECISIONS #330).
@@ -204,11 +208,11 @@ it('cuts a merged subject at the length a subject may have', function () {
         ->and($rendered['subject'])->toStartWith('Hello مم');
 });
 
-it('escapes the subject where the brand layout prints it, as the page\'s title', function () {
+it('escapes the subject where the frame prints it, as the page\'s title', function () {
     $service = new EmailTemplateService([
         'user.name' => ['type' => 'text', 'label' => 'User name'],
         'site.name' => ['type' => 'text', 'label' => 'Site name'],
-    ], null, new Layout(['name' => 'CoreX']));
+    ], null, FixedEmailFrame::named('CoreX'));
     $layout = new EmailLayout(4, 'plain', 'Plain', 1, ['body' => '{{ content }}'], null, 7, new DateTimeImmutable());
 
     $rendered = $service->render(
@@ -261,20 +265,20 @@ it('expands active reusable partials before escaping merge values', function () 
     $rendered = $service->render($version, ['site' => ['name' => '<b>CoreX</b>']]);
 
     expect($rendered['html'])->toContain('<p>&lt;b&gt;CoreX&lt;/b&gt;</p>')
-        ->and($rendered['plain'])->toBe('Body CoreX');
+        ->and($rendered['plain'])->toBe('Body <b>CoreX</b>');
 });
 
 it('renders a selected layout with all five regions reusable partials and brand direction', function () {
     $partials = new EmailPartialRepository(emailStudioMemoryStore());
     $now = new DateTimeImmutable('2026-07-03T10:00:00+00:00');
-    $partials->save(new EmailPartial(0, 'header', 'Header', 'header', '<header>{{ site.name }}</header>', '{{ site.name }}', 'active', 1, 7, $now));
-    $partials->save(new EmailPartial(0, 'footer', 'Footer', 'footer', '<footer>{{ site.name }}</footer>', '{{ site.name }}', 'active', 1, 7, $now));
+    $partials->save(new EmailPartial(0, 'header', 'Header', 'header', '<header>Spring at {{ site.name }}</header>', '{{ site.name }}', 'active', 1, 7, $now));
+    $partials->save(new EmailPartial(0, 'footer', 'Footer', 'footer', '<footer>{{ site.name }} Ltd</footer>', '{{ site.name }}', 'active', 1, 7, $now));
 
     $service = new EmailTemplateService([
         'user.name'  => ['type' => 'text', 'label' => 'User name'],
         'site.name'  => ['type' => 'text', 'label' => 'Site name'],
         'action.url' => ['type' => 'url', 'label' => 'Action URL'],
-    ], $partials, new Layout(['name' => 'CoreX', 'color' => '#112233', 'dir' => 'rtl']));
+    ], $partials, FixedEmailFrame::of(EmailBrand::standard('CoreX', 'https://corex.test/', '', 'rtl', 'ar')));
     $layout = new EmailLayout(
         id: 4,
         slug: 'newsletter',
@@ -303,10 +307,11 @@ it('renders a selected layout with all five regions reusable partials and brand 
     );
 
     expect($rendered['html'])->toContain('<!DOCTYPE html>')
-        ->and($rendered['html'])->toContain('<html dir="rtl">')
-        ->and($rendered['html'])->toContain('border-block-start:4px solid #abcdef')
-        ->and($rendered['html'])->toContain('<header>CoreX</header>')
-        ->and($rendered['html'])->toContain('<main><p>Hello Sam</p></main>')
+        ->and($rendered['html'])->toContain('<html lang="ar" dir="rtl">')
+        // The layout's own accent is the card's edge (spec 120).
+        ->and($rendered['html'])->toContain('border-top:4px solid #abcdef')
+        ->and($rendered['html'])->toContain('<header>Spring at CoreX</header>')
+        ->and($rendered['html'])->toMatch('#<main><p [^>]*>Hello Sam</p></main>#')
         ->and($rendered['html'])->toContain('href="https://example.com/start?step=1&amp;mode=safe"')
-        ->and($rendered['html'])->toContain('<footer>CoreX</footer>');
+        ->and($rendered['html'])->toContain('<footer>CoreX Ltd</footer>');
 });

@@ -125,6 +125,9 @@ beforeEach(function () {
     ));
     $templates->activate($template->id, $version->versionNumber, $this->admin, $now);
     $this->templateId = $template->id;
+    // A template with no active version: an email bound to it cannot be sent (spec 120 records a
+    // confirmation with no address to go to as "no recipient", not as a failed email).
+    $this->draftTemplateId = $templates->create('routed-email-draft-' . strtolower(wp_generate_password(6, false, false)), 'Routed email draft', $this->admin, $now)->id;
     $this->captured = fn (string $attemptId): array => array_values(array_filter(
         (new CapturedEmailRepository($this->emailStore))->latest(100),
         static fn ($email): bool => $email->attemptId === $attemptId,
@@ -156,12 +159,12 @@ it('answers the visitor with success, assigns the submission, records its routin
         'routed-email-fails',
         $this->sara,
         ['rules' => [], 'fallback' => ['type' => 'field_value', 'config' => ['value' => 'department', 'owners' => []]]],
-        // The submitter's confirmation, bound to an email question the visitor left empty.
-        [['event' => 'submitter_confirmation', 'enabled' => true, 'template_id' => $this->templateId, 'recipient' => 'email', 'reply_to' => '']],
+        // The submitter's confirmation, bound to a template that has nothing to send.
+        [['event' => 'submitter_confirmation', 'enabled' => true, 'template_id' => $this->draftTemplateId, 'recipient' => 'email', 'reply_to' => '']],
         [$action],
     );
 
-    $response = submitRoutedEmail($flowId, ['name' => 'Visitor', 'department' => 'Other']);
+    $response = submitRoutedEmail($flowId, ['name' => 'Visitor', 'email' => 'visitor@example.test', 'department' => 'Other']);
     $submissionId = (int) $response->get_data()['data']['submission_id'];
     $stages = array_column($response->get_data()['data']['stages'], 'state', 'key');
     $stored = get_posts(['post_type' => 'corex_submission', 'post_status' => 'private', 'fields' => 'ids', 'numberposts' => -1, 'meta_key' => 'corex_flow_id', 'meta_value' => (string) $flowId]);

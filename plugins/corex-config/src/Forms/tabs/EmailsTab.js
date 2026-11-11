@@ -3,10 +3,90 @@ import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 
 const EVENTS = [
-	[ 'submitter_confirmation', __( 'Submitter confirmation', 'corex' ) ],
-	[ 'team_notification', __( 'Team notification', 'corex' ) ],
-	[ 'admin_failure', __( 'Failure alert', 'corex' ) ],
+	'submitter_confirmation',
+	'team_notification',
+	'admin_failure',
 ];
+
+/**
+ * Each email a flow sends, in words: the event's key is the flow's, not the reader's.
+ *
+ * @param {string} eventName The binding's event.
+ * @return {string} Its name.
+ */
+export function eventLabel( eventName ) {
+	switch ( eventName ) {
+		case 'submitter_confirmation':
+			return __( 'Confirmation to the person who filled it in', 'corex' );
+		case 'team_notification':
+			return __( 'Notification to your team', 'corex' );
+		case 'admin_failure':
+			return __( 'Alert when an email fails', 'corex' );
+		default:
+			return eventName;
+	}
+}
+
+/** What every email of a flow supplies, whatever its fields (spec 120). */
+const SUPPLIED = [
+	'site.name',
+	'site.url',
+	'links.privacy',
+	'recipient.email',
+	'form.title',
+	'form.answers',
+	'links.submission',
+];
+
+/**
+ * The variables a template uses that this flow's email does not supply: what the server refuses
+ * to publish until it is removed or confirmed (spec 120, story 5).
+ *
+ * @param {string[]} used       The template's variables.
+ * @param {Object[]} schema     The flow's fields.
+ * @param {string}   eventName  The binding's event.
+ * @param {Object[]} registered The email variables a developer registered for flows (spec 122).
+ * @return {string[]} The variables it lacks.
+ */
+export function missingVariables( used, schema, eventName, registered = [] ) {
+	const supplied = new Set( [
+		...SUPPLIED,
+		...registered.map( ( variable ) => variable?.key ).filter( Boolean ),
+		...( eventName === 'admin_failure' ? [ 'failure.message' ] : [] ),
+		...schema
+			.map( ( field ) => field?.key )
+			.filter( Boolean )
+			.map( ( key ) => `submission.${ key }` ),
+	] );
+
+	return ( used || [] ).filter( ( key ) => ! supplied.has( key ) );
+}
+
+function MissingVariables( { fieldId, missing, accepted, onAccept } ) {
+	return (
+		<div className="corex-flow-editor__warning" role="status">
+			<p>
+				{ sprintf(
+					/* translators: %s: variable keys, comma separated. */
+					__(
+						'This template uses %s, which this form does not supply. Each is left out when the email is sent.',
+						'corex'
+					),
+					missing.join( ', ' )
+				) }
+			</p>
+			<label htmlFor={ `${ fieldId }-accept-missing` }>
+				<input
+					id={ `${ fieldId }-accept-missing` }
+					type="checkbox"
+					checked={ Boolean( accepted ) }
+					onChange={ ( event ) => onAccept( event.target.checked ) }
+				/>
+				{ __( 'Send it without them', 'corex' ) }
+			</label>
+		</div>
+	);
+}
 
 /** The recipient "Routed owner": whoever the submission was routed to (spec 122, FR-017). */
 export const ROUTED_OWNER = 'routed_owner';
@@ -52,8 +132,9 @@ export function firstRecipient( kind, emailFields ) {
 export function EmailsTab( {
 	routes,
 	routing,
-	schema,
+	schema = [],
 	templates,
+	variables = [],
 	onPreview,
 	onChange,
 	onRoutingChange,
@@ -78,16 +159,28 @@ export function EmailsTab( {
 					'corex'
 				) }
 			</p>
-			{ EVENTS.map( ( [ eventName, eventLabel ] ) => {
+			{ EVENTS.map( ( eventName ) => {
 				const binding =
 					routes.find( ( route ) => route.event === eventName ) || {};
 				// The event name is unique within the tab, so it names this binding's controls;
 				// each label points at its own control by `for` rather than wrapping it.
 				const fieldId = `corex-flow-emails-${ eventName }`;
+				const template = templates.find(
+					( candidate ) =>
+						Number( candidate.id ) === Number( binding.template_id )
+				);
+				const missing = template
+					? missingVariables(
+							template.variables,
+							schema,
+							eventName,
+							variables
+						)
+					: [];
 				const kind = recipientKind( binding.recipient, schema );
 				return (
 					<fieldset key={ eventName }>
-						<legend>{ eventLabel }</legend>
+						<legend>{ eventLabel( eventName ) }</legend>
 						<label
 							htmlFor={ `${ fieldId }-enabled` }
 							className="corex-flow-editor__check"
@@ -119,19 +212,33 @@ export function EmailsTab( {
 											'corex'
 										),
 									},
-									...templates.map( ( template ) => ( {
-										value: String( template.id ),
-										label: template.name,
+									...templates.map( ( candidate ) => ( {
+										value: String( candidate.id ),
+										label: candidate.name,
 									} ) ),
 								] }
 								onChange={ ( templateId ) =>
 									update( eventName, {
 										template_id: Number( templateId ),
+										// A confirmation is for the template it was given for.
+										accept_missing: false,
 									} )
 								}
 								block
 							/>
 						</div>
+						{ missing.length > 0 && (
+							<MissingVariables
+								fieldId={ fieldId }
+								missing={ missing }
+								accepted={ binding.accept_missing }
+								onAccept={ ( accepted ) =>
+									update( eventName, {
+										accept_missing: accepted,
+									} )
+								}
+							/>
+						) }
 						<div className="corex-field">
 							<span>{ __( 'To', 'corex' ) }</span>
 							<CorexSelect

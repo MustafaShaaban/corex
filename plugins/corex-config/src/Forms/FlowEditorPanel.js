@@ -297,6 +297,7 @@ export function FlowEditorPanel( { studio, timezone = '', onBack } ) {
 						routing={ draft.configuration.routing || {} }
 						schema={ draft.configuration.schema || [] }
 						templates={ extensions.email_templates || [] }
+						variables={ extensions.email_variables || [] }
 						onPreview={ studio.previewRouting }
 						onChange={ ( value ) =>
 							changeConfiguration( 'email_routes', value )

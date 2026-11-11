@@ -151,6 +151,23 @@ function RecentTestSends( { attempts } ) {
 	);
 }
 
+/**
+ * A health check's status in words (spec 120, FR-038): the server sends `healthy` or `warning`.
+ *
+ * @param {string} status The check's status.
+ * @return {string} The status's label.
+ */
+export function healthStatusLabel( status ) {
+	switch ( status ) {
+		case 'healthy':
+			return __( 'Healthy', 'corex' );
+		case 'warning':
+			return __( 'Needs attention', 'corex' );
+		default:
+			return __( 'Unknown', 'corex' );
+	}
+}
+
 function HealthSummary( { checks } ) {
 	return (
 		<section className="corex-surface corex-email-app__table-card">
@@ -173,7 +190,7 @@ function HealthSummary( { checks } ) {
 									check.template_id
 								) }
 							</strong>
-							<span>{ check.status }</span>
+							<span>{ healthStatusLabel( check.status ) }</span>
 						</li>
 					) ) }
 				</ul>

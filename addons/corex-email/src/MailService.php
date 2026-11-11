@@ -42,7 +42,11 @@ final class MailService
     ) {
     }
 
-    public function deliver(EmailMessage $message): EmailResult
+    /**
+     * @param list<string> $missingVariables The variables a drawn email was sent without: kept on
+     *                                       its log row (spec 120, FR-028).
+     */
+    public function deliver(EmailMessage $message, array $missingVariables = []): EmailResult
     {
         $rejection = $this->guard->inspect([
             'subject'  => $message->subject,
@@ -54,7 +58,7 @@ final class MailService
         if ($rejection !== null) {
             $this->logger->warning(sprintf('Mail rejected: %s', $rejection));
 
-            return $this->result('rejected', $rejection, $message);
+            return $this->result('rejected', $rejection, $message, $missingVariables);
         }
 
         // Every field of the message, and only the recipients changed. This call listed the seven
@@ -76,13 +80,13 @@ final class MailService
         );
 
         if ($clean->to === []) {
-            return $this->result('failed', 'No valid recipient.', $clean);
+            return $this->result('failed', 'No valid recipient.', $clean, $missingVariables);
         }
 
         $decision = $this->gate?->decide(true) ?? MailDecision::Deliver;
         $name = $this->gate === null ? '' : ($this->paths?->current() ?? __('CoreX mail', 'corex'));
         if ($decision !== MailDecision::Deliver) {
-            return $this->keep($clean, $name, $decision);
+            return $this->keep($clean, $name, $decision, $missingVariables);
         }
 
         try {
@@ -95,14 +99,15 @@ final class MailService
             $accepted = false;
         }
 
-        return $this->result($accepted ? 'sent' : 'failed', $accepted ? 'Sent.' : 'Delivery failed.', $clean);
+        return $this->result($accepted ? 'sent' : 'failed', $accepted ? 'Sent.' : 'Delivery failed.', $clean, $missingVariables);
     }
 
     /**
      * Keep an email the gate did not let go: captured (a terminal success, so no retry sends
      * it), or rejected when it could be kept nowhere.
      */
-    private function keep(EmailMessage $email, string $name, MailDecision $decision): EmailResult
+    /** @param list<string> $missingVariables */
+    private function keep(EmailMessage $email, string $name, MailDecision $decision, array $missingVariables): EmailResult
     {
         $message = new CapturedMessage(
             to: $email->to,
@@ -123,15 +128,16 @@ final class MailService
 
         // keep() records the refusal itself when the email cannot be kept after all.
         if ($decision === MailDecision::Refuse || $this->gate?->keep($message, $decision) === null) {
-            return $this->result('rejected', 'Not sent: this site keeps its mail, and there is nowhere to keep it.', $email);
+            return $this->result('rejected', 'Not sent: this site keeps its mail, and there is nowhere to keep it.', $email, $missingVariables);
         }
 
-        return $this->result(MailResult::STATE_CAPTURED, 'Captured: kept in Email Studio, not sent.', $email);
+        return $this->result(MailResult::STATE_CAPTURED, 'Captured: kept in Email Studio, not sent.', $email, $missingVariables);
     }
 
-    private function result(string $status, string $message, EmailMessage $email): EmailResult
+    /** @param list<string> $missingVariables */
+    private function result(string $status, string $message, EmailMessage $email, array $missingVariables = []): EmailResult
     {
-        return new EmailResult($status, $message, $this->log->record($status, $email));
+        return new EmailResult($status, $message, $this->log->record($status, $email, $missingVariables));
     }
 
     /**

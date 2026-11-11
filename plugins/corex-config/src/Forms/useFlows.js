@@ -301,6 +301,8 @@ function newFlowPayload( values ) {
 		placement_type: 'none',
 		placement_id: null,
 		test_mode: false,
+		// Made from nothing: it starts with the emails CoreX ships (spec 120, FR-020).
+		default_emails: true,
 		configuration: {
 			schema: [],
 			validation: {},

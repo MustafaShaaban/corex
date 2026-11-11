@@ -3035,7 +3035,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 299, 473, 475: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);"
+      "context": "lines 299, 558, 560: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);"
     },
     {
       "legacy_property": "--corex-admin-action-hover",
@@ -3049,21 +3049,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 474: background: var(--corex-admin-action-subtle);"
+      "context": "lines 559: background: var(--corex-admin-action-subtle);"
     },
     {
       "legacy_property": "--corex-admin-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 18, 376, 386, 542: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
+      "context": "lines 18, 377, 387, 544, 631: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
     },
     {
       "legacy_property": "--corex-admin-border-soft",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 197, 288, 404, 422: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 197, 288, 405, 423: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-border-strong",
@@ -3077,14 +3077,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 18, 27, 197, 221, 288, 376, 386, 404, 422, 432: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 18, 27, 197, 221, 288, 377, 387, 405, 423, 433, 524, 544: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-control-height",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 23, 216, 228, 244, 368, 374, 381: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);"
+      "context": "lines 23, 216, 228, 244, 369, 375, 382, 534, 542: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);"
     },
     {
       "legacy_property": "--corex-admin-error",
@@ -3105,21 +3105,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 431, 481: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
+      "context": "lines 432, 523, 566: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
     },
     {
       "legacy_property": "--corex-admin-focus-offset",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 482: outline-offset: var(--corex-admin-focus-offset);"
+      "context": "lines 567: outline-offset: var(--corex-admin-focus-offset);"
     },
     {
       "legacy_property": "--corex-admin-focus-width",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 431, 481: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
+      "context": "lines 432, 523, 566: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
     },
     {
       "legacy_property": "--corex-admin-font-2xl",
@@ -3140,28 +3140,28 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 115, 230, 263, 328, 388: font-family: var(--corex-admin-font-mono);"
+      "context": "lines 115, 230, 263, 328, 389: font-family: var(--corex-admin-font-mono);"
     },
     {
       "legacy_property": "--corex-admin-font-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 30, 79, 97, 129, 146, 204, 231, 444, 451: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 30, 79, 97, 129, 146, 204, 231, 445, 452, 483, 495, 519: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 116, 236, 264, 319, 329, 411: font-size: var(--corex-admin-font-xs);"
+      "context": "lines 116, 236, 264, 319, 329, 412: font-size: var(--corex-admin-font-xs);"
     },
     {
       "legacy_property": "--corex-admin-info",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 44, 52, 158, 325, 551: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);"
+      "context": "lines 44, 52, 158, 325, 640: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);"
     },
     {
       "legacy_property": "--corex-admin-info-soft",
@@ -3189,14 +3189,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 364: transition: inline-size var(--corex-admin-motion-fast) ease;"
+      "context": "lines 365: transition: inline-size var(--corex-admin-motion-fast) ease;"
     },
     {
       "legacy_property": "--corex-admin-radius-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 377, 387: border-radius: var(--corex-admin-radius-md);"
+      "context": "lines 378, 388, 545: border-radius: var(--corex-admin-radius-md);"
     },
     {
       "legacy_property": "--corex-admin-radius-pill",
@@ -3217,28 +3217,28 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 16, 95, 304, 324, 358, 437, 460: gap: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
+      "context": "lines 16, 95, 304, 324, 359, 438, 461, 500: gap: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
     },
     {
       "legacy_property": "--corex-admin-space-lg",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 10, 39, 51, 141, 175, 183, 195, 196, 251, 258, 348, 349, 382, 528: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);"
+      "context": "lines 10, 39, 51, 141, 175, 183, 195, 196, 251, 258, 348, 350, 383, 468, 513, 617: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);"
     },
     {
       "legacy_property": "--corex-admin-space-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 24, 50, 74, 86, 135, 156, 190, 257, 420, 529: padding-inline: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
+      "context": "lines 24, 50, 74, 86, 135, 156, 190, 257, 421, 618: padding-inline: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-space-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 84, 123, 140, 218, 250, 284, 403, 421, 442, 541: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin-block: 0 var(--corex-admin-space-sm);"
+      "context": "lines 84, 123, 140, 218, 250, 284, 404, 422, 443, 473, 488, 530, 630: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin-block: 0 var(--corex-admin-space-sm);"
     },
     {
       "legacy_property": "--corex-admin-space-xl",
@@ -3252,14 +3252,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 17, 49, 74, 202, 272, 282, 313, 324, 537: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
+      "context": "lines 17, 49, 74, 202, 272, 282, 313, 324, 512, 626: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-state-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 44, 52, 158, 542: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
+      "context": "lines 44, 52, 158, 631: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
     },
     {
       "legacy_property": "--corex-admin-success",
@@ -3280,21 +3280,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 220, 298, 375, 385, 468: background: var(--corex-admin-surface-raised);"
+      "context": "lines 220, 298, 376, 386, 543, 553: background: var(--corex-admin-surface-raised);"
     },
     {
       "legacy_property": "--corex-admin-text",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 219, 285, 384, 467, 543: color: var(--corex-admin-text);"
+      "context": "lines 219, 285, 385, 552, 632: color: var(--corex-admin-text);"
     },
     {
       "legacy_property": "--corex-admin-text-muted",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 25, 78, 96, 110, 128, 145, 203, 318, 353, 410, 443, 450: color: var(--corex-admin-text-muted);"
+      "context": "lines 25, 78, 96, 110, 128, 145, 203, 318, 354, 411, 444, 451, 482: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-text-subtle",
@@ -3308,7 +3308,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.css",
-      "context": "lines 62, 547: border-inline-start-color: var(--corex-admin-warning);"
+      "context": "lines 62, 518, 636: border-inline-start-color: var(--corex-admin-warning); | color: var(--corex-admin-warning);"
     },
     {
       "legacy_property": "--corex-admin-warning-soft",
@@ -3322,7 +3322,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 299, 473, 475: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);"
+      "context": "lines 299, 558, 560: border-color: var(--corex-admin-action); | color: var(--corex-admin-action);"
     },
     {
       "legacy_property": "--corex-admin-action-hover",
@@ -3336,21 +3336,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 474: background: var(--corex-admin-action-subtle);"
+      "context": "lines 559: background: var(--corex-admin-action-subtle);"
     },
     {
       "legacy_property": "--corex-admin-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 18, 376, 386, 542: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
+      "context": "lines 18, 377, 387, 544, 631: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
     },
     {
       "legacy_property": "--corex-admin-border-soft",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 197, 288, 404, 422: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 197, 288, 405, 423: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-border-strong",
@@ -3364,14 +3364,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 18, 27, 197, 221, 288, 376, 386, 404, 422, 432: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 18, 27, 197, 221, 288, 377, 387, 405, 423, 433, 524, 544: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid transparent; | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-control-height",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 23, 216, 228, 244, 368, 374, 381: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);"
+      "context": "lines 23, 216, 228, 244, 369, 375, 382, 534, 542: min-block-size: var(--corex-admin-control-height); | min-block-size: calc(var(--corex-admin-control-height) * 4); | inline-size: min(calc(var(--corex-admin-control-height) * 10), 100%);"
     },
     {
       "legacy_property": "--corex-admin-error",
@@ -3392,21 +3392,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 431, 481: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
+      "context": "lines 432, 523, 566: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
     },
     {
       "legacy_property": "--corex-admin-focus-offset",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 482: outline-offset: var(--corex-admin-focus-offset);"
+      "context": "lines 567: outline-offset: var(--corex-admin-focus-offset);"
     },
     {
       "legacy_property": "--corex-admin-focus-width",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 431, 481: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
+      "context": "lines 432, 523, 566: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
     },
     {
       "legacy_property": "--corex-admin-font-2xl",
@@ -3427,28 +3427,28 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 115, 230, 263, 328, 388: font-family: var(--corex-admin-font-mono);"
+      "context": "lines 115, 230, 263, 328, 389: font-family: var(--corex-admin-font-mono);"
     },
     {
       "legacy_property": "--corex-admin-font-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 30, 79, 97, 129, 146, 204, 231, 444, 451: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 30, 79, 97, 129, 146, 204, 231, 445, 452, 483, 495, 519: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 116, 236, 264, 319, 329, 411: font-size: var(--corex-admin-font-xs);"
+      "context": "lines 116, 236, 264, 319, 329, 412: font-size: var(--corex-admin-font-xs);"
     },
     {
       "legacy_property": "--corex-admin-info",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 44, 52, 158, 325, 551: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);"
+      "context": "lines 44, 52, 158, 325, 640: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-inline-start-color: var(--corex-admin-info);"
     },
     {
       "legacy_property": "--corex-admin-info-soft",
@@ -3476,14 +3476,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 364: transition: inline-size var(--corex-admin-motion-fast) ease;"
+      "context": "lines 365: transition: inline-size var(--corex-admin-motion-fast) ease;"
     },
     {
       "legacy_property": "--corex-admin-radius-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 377, 387: border-radius: var(--corex-admin-radius-md);"
+      "context": "lines 378, 388, 545: border-radius: var(--corex-admin-radius-md);"
     },
     {
       "legacy_property": "--corex-admin-radius-pill",
@@ -3504,28 +3504,28 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 16, 95, 304, 324, 358, 437, 460: gap: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
+      "context": "lines 16, 95, 304, 324, 359, 438, 461, 500: gap: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
     },
     {
       "legacy_property": "--corex-admin-space-lg",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 10, 39, 51, 141, 175, 183, 195, 196, 251, 258, 348, 349, 382, 528: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);"
+      "context": "lines 10, 39, 51, 141, 175, 183, 195, 196, 251, 258, 348, 350, 383, 468, 513, 617: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);"
     },
     {
       "legacy_property": "--corex-admin-space-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 24, 50, 74, 86, 135, 156, 190, 257, 420, 529: padding-inline: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
+      "context": "lines 24, 50, 74, 86, 135, 156, 190, 257, 421, 618: padding-inline: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-space-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 84, 123, 140, 218, 250, 284, 403, 421, 442, 541: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin-block: 0 var(--corex-admin-space-sm);"
+      "context": "lines 84, 123, 140, 218, 250, 284, 404, 422, 443, 473, 488, 530, 630: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin-block: 0 var(--corex-admin-space-sm);"
     },
     {
       "legacy_property": "--corex-admin-space-xl",
@@ -3539,14 +3539,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 17, 49, 74, 202, 272, 282, 313, 324, 537: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
+      "context": "lines 17, 49, 74, 202, 272, 282, 313, 324, 512, 626: padding-block-end: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-state-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 44, 52, 158, 542: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
+      "context": "lines 44, 52, 158, 631: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);"
     },
     {
       "legacy_property": "--corex-admin-success",
@@ -3567,21 +3567,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 220, 298, 375, 385, 468: background: var(--corex-admin-surface-raised);"
+      "context": "lines 220, 298, 376, 386, 543, 553: background: var(--corex-admin-surface-raised);"
     },
     {
       "legacy_property": "--corex-admin-text",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 219, 285, 384, 467, 543: color: var(--corex-admin-text);"
+      "context": "lines 219, 285, 385, 552, 632: color: var(--corex-admin-text);"
     },
     {
       "legacy_property": "--corex-admin-text-muted",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 25, 78, 96, 110, 128, 145, 203, 318, 353, 410, 443, 450: color: var(--corex-admin-text-muted);"
+      "context": "lines 25, 78, 96, 110, 128, 145, 203, 318, 354, 411, 444, 451, 482: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-text-subtle",
@@ -3595,7 +3595,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/email-studio.scss",
-      "context": "lines 62, 547: border-inline-start-color: var(--corex-admin-warning);"
+      "context": "lines 62, 518, 636: border-inline-start-color: var(--corex-admin-warning); | color: var(--corex-admin-warning);"
     },
     {
       "legacy_property": "--corex-admin-warning-soft",
@@ -3609,7 +3609,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 158, 197, 198, 208, 260, 329, 564, 565: border-color: var(--corex-admin-action); | color: var(--corex-admin-action); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);"
+      "context": "lines 158, 197, 198, 208, 260, 329, 578, 579: border-color: var(--corex-admin-action); | color: var(--corex-admin-action); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);"
     },
     {
       "legacy_property": "--corex-admin-border",
@@ -3623,28 +3623,28 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 145, 191, 241, 315, 324, 605, 667: border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 145, 191, 241, 315, 324, 619, 681: border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-border-width",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 12, 63, 145, 176, 191, 241, 281, 315, 324, 393, 605, 667: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 12, 63, 145, 176, 191, 241, 281, 315, 324, 393, 619, 681: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-control-height",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 60, 290, 291, 635: min-block-size: var(--corex-admin-control-height); | inline-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height);"
+      "context": "lines 60, 290, 291, 649: min-block-size: var(--corex-admin-control-height); | inline-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height);"
     },
     {
       "legacy_property": "--corex-admin-error",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 18, 549, 550: border-inline-start-color: var(--corex-admin-error); | color: var(--corex-admin-error); | border-color: var(--corex-admin-error);"
+      "context": "lines 18, 563, 564: border-inline-start-color: var(--corex-admin-error); | color: var(--corex-admin-error); | border-color: var(--corex-admin-error);"
     },
     {
       "legacy_property": "--corex-admin-focus",
@@ -3679,35 +3679,35 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 169, 497: font-family: var(--corex-admin-font-mono);"
+      "context": "lines 169, 511: font-family: var(--corex-admin-font-mono);"
     },
     {
       "legacy_property": "--corex-admin-font-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 51, 255, 460, 520: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 51, 255, 460, 534: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 170, 178, 193, 209, 498: font-size: var(--corex-admin-font-xs);"
+      "context": "lines 170, 178, 193, 209, 512: font-size: var(--corex-admin-font-xs);"
     },
     {
       "legacy_property": "--corex-admin-info",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 13, 544, 545: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-color: var(--corex-admin-info);"
+      "context": "lines 13, 558, 559: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-color: var(--corex-admin-info);"
     },
     {
       "legacy_property": "--corex-admin-letter-wide",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 499: letter-spacing: var(--corex-admin-letter-wide);"
+      "context": "lines 513: letter-spacing: var(--corex-admin-letter-wide);"
     },
     {
       "legacy_property": "--corex-admin-radius-pill",
@@ -3721,56 +3721,56 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 14, 64, 146, 219, 282, 316, 325, 394, 606, 641: border-radius: var(--corex-admin-radius-sm);"
+      "context": "lines 14, 64, 146, 219, 282, 316, 325, 394, 493, 620, 655: border-radius: var(--corex-admin-radius-sm);"
     },
     {
       "legacy_property": "--corex-admin-space-2xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 49, 163, 175, 248, 275, 335, 345, 449, 490, 529, 611, 623: gap: var(--corex-admin-space-2xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | gap: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
+      "context": "lines 49, 163, 175, 248, 275, 335, 345, 449, 504, 543, 625, 637: gap: var(--corex-admin-space-2xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | gap: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
     },
     {
       "legacy_property": "--corex-admin-space-lg",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 6, 29, 259, 307, 369, 571: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);"
+      "context": "lines 6, 29, 259, 307, 369, 585: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);"
     },
     {
       "legacy_property": "--corex-admin-space-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443, 458, 466, 570, 579, 618, 639: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;"
+      "context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443, 458, 466, 490, 584, 593, 632, 653: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;"
     },
     {
       "legacy_property": "--corex-admin-space-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 89, 139, 141, 215, 277, 368, 391, 458, 507, 603, 604, 639, 651: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-sm) 0 var(--corex-admin-space-md);"
+      "context": "lines 89, 139, 141, 215, 277, 368, 391, 458, 490, 521, 617, 618, 653, 665: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-sm) 0 var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-space-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383, 465, 476, 560, 591, 629, 646, 666, 675, 682, 691, 700: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);"
+      "context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383, 465, 476, 489, 574, 605, 643, 660, 680, 689, 696, 705, 714: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);"
     },
     {
       "legacy_property": "--corex-admin-state-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 13, 260, 565: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action); | box-shadow: inset 0 calc(-1 * var(--corex-admin-state-border)) 0 var(--corex-admin-action);"
+      "context": "lines 13, 260, 492, 579: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);"
     },
     {
       "legacy_property": "--corex-admin-success",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 297, 534, 535: color: var(--corex-admin-success); | border-color: var(--corex-admin-success);"
+      "context": "lines 297, 548, 549: color: var(--corex-admin-success); | border-color: var(--corex-admin-success);"
     },
     {
       "legacy_property": "--corex-admin-surface",
@@ -3784,7 +3784,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 157, 190, 218, 292, 314, 640: background: var(--corex-admin-surface-alt);"
+      "context": "lines 157, 190, 218, 292, 314, 654: background: var(--corex-admin-surface-alt);"
     },
     {
       "legacy_property": "--corex-admin-text",
@@ -3798,21 +3798,28 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 168, 189, 224, 254, 453, 459, 496, 519, 554: color: var(--corex-admin-text-muted);"
+      "context": "lines 168, 189, 224, 254, 453, 459, 510, 533, 568: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-warning",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.css",
-      "context": "lines 301, 539, 540: color: var(--corex-admin-warning); | border-color: var(--corex-admin-warning);"
+      "context": "lines 301, 492, 553, 554: color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning); | border-color: var(--corex-admin-warning);"
+    },
+    {
+      "legacy_property": "--corex-admin-warning-soft",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/forms-admin.css",
+      "context": "lines 491: background: var(--corex-admin-warning-soft);"
     },
     {
       "legacy_property": "--corex-admin-action",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 158, 197, 198, 208, 260, 329, 564, 565: border-color: var(--corex-admin-action); | color: var(--corex-admin-action); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);"
+      "context": "lines 158, 197, 198, 208, 260, 329, 578, 579: border-color: var(--corex-admin-action); | color: var(--corex-admin-action); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);"
     },
     {
       "legacy_property": "--corex-admin-border",
@@ -3826,28 +3833,28 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 145, 191, 241, 315, 324, 605, 667: border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 145, 191, 241, 315, 324, 619, 681: border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-border-width",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 12, 63, 145, 176, 191, 241, 281, 315, 324, 393, 605, 667: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 12, 63, 145, 176, 191, 241, 281, 315, 324, 393, 619, 681: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-control-height",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 60, 290, 291, 635: min-block-size: var(--corex-admin-control-height); | inline-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height);"
+      "context": "lines 60, 290, 291, 649: min-block-size: var(--corex-admin-control-height); | inline-size: var(--corex-admin-control-height); | block-size: var(--corex-admin-control-height);"
     },
     {
       "legacy_property": "--corex-admin-error",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 18, 549, 550: border-inline-start-color: var(--corex-admin-error); | color: var(--corex-admin-error); | border-color: var(--corex-admin-error);"
+      "context": "lines 18, 563, 564: border-inline-start-color: var(--corex-admin-error); | color: var(--corex-admin-error); | border-color: var(--corex-admin-error);"
     },
     {
       "legacy_property": "--corex-admin-focus",
@@ -3882,35 +3889,35 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 169, 497: font-family: var(--corex-admin-font-mono);"
+      "context": "lines 169, 511: font-family: var(--corex-admin-font-mono);"
     },
     {
       "legacy_property": "--corex-admin-font-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 51, 255, 460, 520: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 51, 255, 460, 534: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 170, 178, 193, 209, 498: font-size: var(--corex-admin-font-xs);"
+      "context": "lines 170, 178, 193, 209, 512: font-size: var(--corex-admin-font-xs);"
     },
     {
       "legacy_property": "--corex-admin-info",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 13, 544, 545: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-color: var(--corex-admin-info);"
+      "context": "lines 13, 558, 559: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | color: var(--corex-admin-info); | border-color: var(--corex-admin-info);"
     },
     {
       "legacy_property": "--corex-admin-letter-wide",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 499: letter-spacing: var(--corex-admin-letter-wide);"
+      "context": "lines 513: letter-spacing: var(--corex-admin-letter-wide);"
     },
     {
       "legacy_property": "--corex-admin-radius-pill",
@@ -3924,56 +3931,56 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 14, 64, 146, 219, 282, 316, 325, 394, 606, 641: border-radius: var(--corex-admin-radius-sm);"
+      "context": "lines 14, 64, 146, 219, 282, 316, 325, 394, 493, 620, 655: border-radius: var(--corex-admin-radius-sm);"
     },
     {
       "legacy_property": "--corex-admin-space-2xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 49, 163, 175, 248, 275, 335, 345, 449, 490, 529, 611, 623: gap: var(--corex-admin-space-2xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | gap: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
+      "context": "lines 49, 163, 175, 248, 275, 335, 345, 449, 504, 543, 625, 637: gap: var(--corex-admin-space-2xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | gap: var(--corex-admin-space-2xs) var(--corex-admin-space-xs);"
     },
     {
       "legacy_property": "--corex-admin-space-lg",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 6, 29, 259, 307, 369, 571: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);"
+      "context": "lines 6, 29, 259, 307, 369, 585: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | padding-inline-start: var(--corex-admin-space-lg);"
     },
     {
       "legacy_property": "--corex-admin-space-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443, 458, 466, 570, 579, 618, 639: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;"
+      "context": "lines 11, 43, 74, 102, 217, 313, 392, 422, 443, 458, 466, 490, 584, 593, 632, 653: padding: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md); | margin: var(--corex-admin-space-md) 0 0;"
     },
     {
       "legacy_property": "--corex-admin-space-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 89, 139, 141, 215, 277, 368, 391, 458, 507, 603, 604, 639, 651: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-sm) 0 var(--corex-admin-space-md);"
+      "context": "lines 89, 139, 141, 215, 277, 368, 391, 458, 490, 521, 617, 618, 653, 665: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm); | margin: var(--corex-admin-space-sm) 0 var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-space-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383, 465, 476, 560, 591, 629, 646, 666, 675, 682, 691, 700: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);"
+      "context": "lines 101, 175, 188, 216, 233, 240, 265, 267, 275, 322, 323, 375, 383, 465, 476, 489, 574, 605, 643, 660, 680, 689, 696, 705, 714: gap: var(--corex-admin-space-xs); | padding: var(--corex-admin-space-2xs) var(--corex-admin-space-xs); | padding: 0 var(--corex-admin-space-xs);"
     },
     {
       "legacy_property": "--corex-admin-state-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 13, 260, 565: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action); | box-shadow: inset 0 calc(-1 * var(--corex-admin-state-border)) 0 var(--corex-admin-action);"
+      "context": "lines 13, 260, 492, 579: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);"
     },
     {
       "legacy_property": "--corex-admin-success",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 297, 534, 535: color: var(--corex-admin-success); | border-color: var(--corex-admin-success);"
+      "context": "lines 297, 548, 549: color: var(--corex-admin-success); | border-color: var(--corex-admin-success);"
     },
     {
       "legacy_property": "--corex-admin-surface",
@@ -3987,7 +3994,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 157, 190, 218, 292, 314, 640: background: var(--corex-admin-surface-alt);"
+      "context": "lines 157, 190, 218, 292, 314, 654: background: var(--corex-admin-surface-alt);"
     },
     {
       "legacy_property": "--corex-admin-text",
@@ -4001,14 +4008,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 168, 189, 224, 254, 453, 459, 496, 519, 554: color: var(--corex-admin-text-muted);"
+      "context": "lines 168, 189, 224, 254, 453, 459, 510, 533, 568: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-warning",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/forms-admin.scss",
-      "context": "lines 301, 539, 540: color: var(--corex-admin-warning); | border-color: var(--corex-admin-warning);"
+      "context": "lines 301, 492, 553, 554: color: var(--corex-admin-warning); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning); | border-color: var(--corex-admin-warning);"
+    },
+    {
+      "legacy_property": "--corex-admin-warning-soft",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/forms-admin.scss",
+      "context": "lines 491: background: var(--corex-admin-warning-soft);"
     },
     {
       "legacy_property": "--corex-admin-border",

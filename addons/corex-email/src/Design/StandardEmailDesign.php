@@ -66,13 +66,18 @@ final class StandardEmailDesign implements EmailDesign
                 $this->header($brand, $light, $align),
             )
             . sprintf(
-                '<tr><td class="cx-surface" style="padding:%1$s %1$s 8px;background:%2$s;border-left:1px solid %3$s;border-right:1px solid %3$s;border-bottom:1px solid %3$s;border-radius:0 0 %4$s %4$s;text-align:%5$s">%6$s</td></tr>',
+                // The cell carries the type too: a template's table or line outside a paragraph
+                // reads in it, and not in the mail client's own (spec 120).
+                '<tr><td class="cx-surface cx-text" style="padding:%1$s %1$s 8px;background:%2$s;border-left:1px solid %3$s;border-right:1px solid %3$s;border-bottom:1px solid %3$s;border-radius:0 0 %4$s %4$s;text-align:%5$s;color:%7$s;font-family:%8$s;font-size:16px;line-height:%9$s">%6$s</td></tr>',
                 EmailBrand::SPACE,
                 $light->surface,
                 $light->border,
                 EmailBrand::RADIUS,
                 $align,
                 $this->message($content->bodyHtml, $light),
+                $light->text,
+                $font,
+                EmailBrand::LINE_HEIGHT,
             )
             . sprintf(
                 '<tr><td class="cx-muted" style="padding:16px 0 0;text-align:%s;color:%s;font-family:%s;font-size:12px;line-height:%s">%s</td></tr>',
@@ -80,7 +85,7 @@ final class StandardEmailDesign implements EmailDesign
                 $light->muted,
                 $font,
                 EmailBrand::LINE_HEIGHT,
-                $this->footer($brand, $light),
+                $this->footer($brand, $light) . $this->reason($content, $brand) . $this->links($content, $light),
             )
             . '</table></td></tr></table></body></html>';
     }
@@ -166,7 +171,19 @@ final class StandardEmailDesign implements EmailDesign
     {
         $text = sprintf('color:%s;font-family:%s;font-size:16px;line-height:%s', $light->text, EmailBrand::FONT, EmailBrand::LINE_HEIGHT);
 
+        $heading = sprintf('color:%s;font-family:%s;font-weight:700;line-height:1.3', $light->text, EmailBrand::FONT);
+
         return strtr($bodyHtml, [
+            // A template's heading and button (spec 120). The button is the text's colours
+            // turned round, which keeps its contrast whatever the brand's accent is.
+            '<h1>' => sprintf('<h1 dir="auto" class="cx-text" style="margin:0 0 16px;font-size:24px;text-align:start;%s">', $heading),
+            '<h2>' => sprintf('<h2 dir="auto" class="cx-text" style="margin:0 0 12px;font-size:19px;text-align:start;%s">', $heading),
+            '<a class="button" href=' => sprintf(
+                '<a class="cx-button" style="display:inline-block;padding:12px 24px;border-radius:8px;background:%s;color:%s;font-family:%s;font-size:16px;font-weight:600;line-height:1.3;text-decoration:none" href=',
+                $light->text,
+                $light->surface,
+                EmailBrand::FONT,
+            ),
             '<p>' => sprintf('<p dir="auto" class="cx-text" style="margin:0 0 16px;text-align:start;%s">', $text),
             '<ul>' => sprintf('<ul style="margin:0 0 16px;padding:0 %s">', EmailBrand::SPACE),
             '<ol>' => sprintf('<ol style="margin:0 0 16px;padding:0 %s">', EmailBrand::SPACE),
@@ -194,6 +211,36 @@ final class StandardEmailDesign implements EmailDesign
         return sprintf($this->escaped(__('This message was sent by %s.', 'corex')), $site);
     }
 
+    /** The line that says why the person receives the email, on a line of its own (spec 120). */
+    private function reason(EmailContent $content, EmailBrand $brand): string
+    {
+        $reason = EmailKind::reason($content->kind, $brand->name);
+
+        return $reason === '' ? '' : '<br />' . $this->escaped($reason);
+    }
+
+    /**
+     * What the email links to from its footer, on one line, the links apart: the privacy page,
+     * an unsubscribe link (spec 120).
+     */
+    private function links(EmailContent $content, EmailPalette $light): string
+    {
+        $links = [];
+        foreach ($content->links as $link) {
+            $address = $this->address($link['url']);
+            if ($address !== '') {
+                $links[] = sprintf(
+                    '<a class="cx-muted" style="color:%s;text-decoration:underline" href="%s">%s</a>',
+                    $light->muted,
+                    $address,
+                    $this->escaped($link['label']),
+                );
+            }
+        }
+
+        return $links === [] ? '' : '<br />' . implode(' &middot; ', $links);
+    }
+
     /** The dark palette, for a client that asks for it. */
     private function darkScheme(EmailPalette $dark): string
     {
@@ -206,6 +253,7 @@ final class StandardEmailDesign implements EmailDesign
             . '.cx-text{color:%5$s !important}'
             . '.cx-muted{color:%6$s !important}'
             . '.cx-link{color:%7$s !important}'
+            . '.cx-button{background:%5$s !important;color:%2$s !important}'
             . '}</style>',
             $dark->canvas,
             $dark->surface,

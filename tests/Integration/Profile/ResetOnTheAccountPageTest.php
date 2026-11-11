@@ -41,11 +41,12 @@ function askForReset(string $login, ?string $pageMark): string
 }
 
 /**
- * The address in an email's text that carries the reset key.
+ * The address in an email that carries the reset key: in WordPress's plain text, or in the
+ * designed email's markup (spec 120), where it is written escaped.
  */
 function resetAddressIn(string $message): string
 {
-    preg_match('~\S*key=\S*~', $message, $found);
+    preg_match('~https?://[^\s"<>]*key=[^\s"<>]*~', html_entity_decode($message, ENT_QUOTES | ENT_HTML5, 'UTF-8'), $found);
 
     return $found[0] ?? '';
 }
@@ -91,6 +92,10 @@ beforeEach(function () {
         return true;
     };
     add_filter('pre_wp_mail', $this->keepMail, 10, 2);
+    // Sent as a production site sends, so that the designed email and WordPress's own both reach
+    // `wp_mail()` and are read there; the transport is never reached (spec 120).
+    $this->delivery = \Corex\Tests\Support\MailDelivery::answerAs(\Corex\Tests\Support\MailDelivery::DELIVER);
+    $this->sentMail = \Corex\Tests\Support\CreatedPosts::watch('corex_email_asset', 'corex_email_log');
     // WordPress writes the address a reset was asked from into its email.
     $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
@@ -117,6 +122,8 @@ beforeEach(function () {
 
 afterEach(function () {
     remove_filter('pre_wp_mail', $this->keepMail, 10);
+    \Corex\Tests\Support\MailDelivery::stop($this->delivery);
+    $this->sentMail->delete();
     if ($this->guard !== null) {
         remove_filter('network_site_url', [$this->guard, 'filterSiteUrl'], 20);
     }

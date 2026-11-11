@@ -31,6 +31,7 @@ final class FlowRestInputMapper
             'placement_id' => $this->nullableId(...),
             'test_mode' => $this->boolean(...),
             'configuration' => $this->structured(...),
+            'default_emails' => $this->boolean(...),
         ];
     }
 
@@ -123,6 +124,7 @@ final class FlowRestInputMapper
             configuration: $this->configuration($input['configuration'] ?? []),
             actorId: $actorId,
             occurredAt: $now,
+            defaultEmails: (bool) ($input['default_emails'] ?? false),
         );
     }
 

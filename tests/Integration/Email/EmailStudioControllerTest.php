@@ -90,6 +90,7 @@ beforeEach(function () {
         $this->editor,
         \Corex\Tests\Support\StudioDelivery::factory($this->config, $this->studio),
         administration: new \Corex\Config\Access\WpSiteAdministration(),
+        preview: \Corex\Boot::app()->container()->make(\Corex\Email\Studio\EmailTemplatePreview::class),
     );
 
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
@@ -172,7 +173,8 @@ it('persists creates drafts and activation through the REST boundary', function 
         ->and($detailResponse->get_data()['data']['versions'][0]['subject'])->toBe('Welcome {{ user.name }}')
         ->and($summary['subject'])->toBe('Welcome {{ user.name }}')
         ->and($summary['updated_at'])->not->toBe('')
-        ->and($overviewResponse->get_data()['data']['variables'])->toHaveKeys(['Recipient']);
+        // Grouped by the emails that supply them, each with a sample (spec 120).
+        ->and(array_column($overviewResponse->get_data()['data']['variables'], 'key'))->toContain('every', 'form', 'account');
 });
 
 // A subject is a header, plain text and not markup (DECISIONS #330).
