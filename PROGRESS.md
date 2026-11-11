@@ -74,6 +74,11 @@ lines on every CoreX screen; Blog Pro's rows wrap instead of running together at
 each date field is 192px wide in a 95px column, a filter-panel layout fix not yet made. PR #453 (DECISIONS #516)
 sets the normal token on three activity rows; it still stands after this, those rows choosing 1.6 over the base.
 
+**The inbox's date filters** (2026-11-10, branch `fix/inbox-dates-fit-200`, DECISIONS #518): the Submissions
+inbox's From and To dates wrap, "To" under "From", when the two do not fit side by side, and on the wide layout the
+range is never narrower than its two dates. The `text-overlaps-at-200` entry for `corex-submissions` is gone from
+`known-failures.json`. Measured at 375 and 1280px, light and dark, both directions, at 100% and 200%.
+
 **Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
 #616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
 `addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free

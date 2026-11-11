@@ -19301,6 +19301,46 @@ and cells of other loads wobbled the same way before it.
 (US-NFR-04), with the cause in the entry: each date field is 192px wide in a 95px column at that size, so its label
 spills into the other date's. That is the filter panel's layout, not line height.
 
+## #518 -- The inbox's date range wraps on its own content
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), quality rule `text-overlaps-at-200` on `corex-submissions`.
+
+**Why.** `.corex-inbox__dates` was a grid of two `minmax(0, 1fr)` columns at every width. Each label is a
+one-column grid whose `auto` track grows to its date field's own width, so a field wider than its half spilled
+out of it, and the label's text went with it. Measured on the quality site before the change:
+
+| Cell | Half of the range | Date field | What showed |
+|---|---|---|---|
+| 375px, 100% | 141px | 168px | the From field runs 15px under the To field; "From" lies over "To" (the check reads only 200%) |
+| 375px, 200% | 95px | 192px | "From" over "To", the quality finding; the calendar icons cut off |
+| 375px, 200%, right to left | 95px | 198px | the From field runs to -23px, past the screen's edge |
+| 1280px, 100% | 147px | 152px | the To field ends 5px past the panel's content box |
+
+Line height was not it (#517 fixed that).
+
+**Decided.**
+- The range is a wrapping flex row, each date `flex: 1 1 0`. A flex item's automatic minimum is its content, so
+  the two dates share a line while both fit and "To" goes under "From" when they do not. No width is written down.
+- The wide filter grid is `repeat(3, minmax(0, 1fr)) minmax(max-content, 2fr)`: form, status and owner, then the
+  range as one item two fifths wide, as two of five columns were, and never narrower than its two dates side by
+  side. At 1280px the range is 316px where it was 306, and the other three are 143px where they were 147. Wider
+  panels are unchanged.
+- The 44rem container query puts the range on a row of its own (`1 / -1`, as the owner field); the 24rem query no
+  longer needs a rule for it.
+
+**Measured after,** off the rendered page at 375 and 1280px, light and dark, left to right and right to left, at
+100% and 200%: no date's text lies over the other's; every field is as wide as its label (WordPress's 1px input
+margin aside). On a phone the dates stack: the filter panel is 541px tall where it was 467 at 100%, 971 where it
+was 841 at 200%. At 1280px the panel keeps its height (231px at 100%, 805 at 200%) and the dates stay side by side.
+
+**Not chosen.** *`repeat(auto-fit, minmax(min(100%, <em>), 1fr))`*: no one unit measures a date field here. Its
+date is drawn at WordPress's 14px (16px on a phone) and its padding is in rem, so it needs 152px on the desktop,
+168 on a phone and 192 on a phone at 200%; the range's own font is a fixed 13px, so an em width is one fixed
+number of pixels. Any one value either wraps dates that fit or leaves a field wider than its column at some width
+and text size. *Letting the
+field shrink to its half* (`min-inline-size: 0`): it cuts the date and its calendar button. *Stacking only below a
+breakpoint*: the panel's width, the text size and the field's width move separately; the content decides better.
+
 ## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
 
 **Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions

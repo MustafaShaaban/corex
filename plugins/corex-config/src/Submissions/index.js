@@ -486,7 +486,7 @@ function Filters( { filters, update, flows } ) {
 						placeholder="team:sales"
 					/>
 				</label>
-				{ /* A range is one thing: its two ends stay side by side at every width. */ }
+				{ /* A range is one thing: its two ends stay together, side by side while both fit. */ }
 				<div className="corex-inbox__dates">
 					<label htmlFor={ `${ fieldId }-date-from` }>
 						<span>{ __( 'From', 'corex' ) }</span>

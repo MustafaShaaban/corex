@@ -166,6 +166,13 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
 - **Blog Pro's rows keep the name and the count apart on a phone** (DECISIONS #517): "admin1
   published post" is "admin" and "1 published post" again, side by side or on two lines.
 
+- **The Submissions inbox's From and To dates fit on a phone** (DECISIONS #518). The range was two
+  columns at every width, so on a phone each date field was wider than its half: it spilled into the
+  other date, "From" lay over "To" with text at 200%, and in right to left the From field ran off the
+  screen. "To" now goes under "From" when the two do not fit side by side. On the desktop the range is
+  never narrower than its two dates, so the To field stays inside the panel; form, status and owner
+  give up 4px each at 1280px.
+
 ### Security
 
 - **Seven dependency advisories published from 2026-09-18 to 2026-11-09 are closed or bounded**
@@ -231,6 +238,15 @@ the shell's rule and needs a more specific selector to keep its own look.
   client stylesheet that set a line height on a CoreX admin element keeps it.
 - **A client repository that carries copies of CoreX's tests** takes the updated
   `tests/e2e/quality/known-failures.json` (one entry fewer, one note longer).
+
+**The inbox's date filters (DECISIONS #518):**
+
+- **Muva** and **Perego**: on a phone the inbox's filter panel is one row taller, "To" under "From";
+  nothing stored changes. A client stylesheet that set columns on `.corex-inbox__dates` or
+  `.corex-inbox__filter-grid` must say so again: the range is now a wrapping row, and the filter grid
+  has four columns where it had five.
+- **A client repository that carries copies of CoreX's tests** takes the updated
+  `tests/e2e/quality/known-failures.json` (one entry fewer).
 - **Mizzey**: not on this release (pinned at v0.42.0).
 
 **Spec 129, CoreX Assistant:**
