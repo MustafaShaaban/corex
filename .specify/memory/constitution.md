@@ -206,7 +206,9 @@ any code or making any change in response to a request, the agent MUST:
    waits on → **build one slice at a time, test first** (`tdd`) → run the Guard Gate → **two-model
    review** (`debate-review`) → pull request. A reviewed spec MUST exist in `specs/` **before** the
    code is written (Principle X). No code without a spec. The `/speckit-*` commands are retired
-   (v2.0.0); a spec already underway with a `tasks.md` may finish its slices from it.
+   (v2.0.0); a spec already underway with a `tasks.md` may finish its slices from it. A slice a person
+   sees is **designed first** (Claude Design, on the CoreX design system), approved, and **measured in
+   the browser** against that design before review; it is not done without both.
 3. **Guard before the diff.** Run the relevant guard skill (Guard Gate) clean on the change
    before presenting it; install the guard first if it is missing.
 4. **Update continuity + close the loop.** Update `PROGRESS.md` and log non-trivial choices in

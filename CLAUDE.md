@@ -69,7 +69,9 @@ End every response with the required SUMMARY/…/NEXT STEP handoff format (see A
 Grill (`grill-with-docs`) → research if needed (`research`) → spec with slices in `specs/NNN-name/spec.md`
 → owner-only steps as a checked script (`wizard`) → one slice at a time, test first (`tdd`; bugs start
 with `diagnosing-bugs`) → Guard Gate → two-model review (`debate-review --local`) → PR (`pr`, then
-`babysit-pr` for review rounds) → `retro` after a release. Each step in full: `AGENTS.md`, "The CoreX
+`babysit-pr` for review rounds) → `retro` after a release. Anything a person sees is also designed first in
+Claude Design on the CoreX design system, approved, built with `ui-ux-pro-max`, measured in the browser and
+reviewed against the design (`AGENTS.md`, "UI, UX and front end"): required, not optional. Each step in full: `AGENTS.md`, "The CoreX
 loop". The `/speckit-*` commands are retired; a spec that already has a `tasks.md` may finish from it.
 What to build next: `PROGRESS.md` ("Next") and `ROADMAP.md`.
 
@@ -80,13 +82,15 @@ by feel. Max effort only when the owner asks for it, for one task.
 | Work | Who | Model | Effort |
 |---|---|---|---|
 | Grilling, specs, architecture, final judgment on a diff | the main session | Fable | high |
-| Building a slice (`tdd`), fixing a diagnosed bug | `corex-builder` agent | Opus | medium (high for a bug) |
+| Designs and the CoreX design system in Claude Design | the main session | Fable | high |
+| Building a slice (`tdd`), fixing a diagnosed bug | `corex-builder` agent | Opus | medium (high for a bug or a UI slice) |
 | Tests, fixtures, lockfile and docs chores | `corex-tester` agent | Sonnet | medium |
 | Searching and reading across the repo | `corex-scout` agent | Haiku | low |
 | Reviewing a diff against its spec and the constitution | `corex-reviewer` agent | Fable | high |
+| Comparing a rendered screen with its approved design, measured | `corex-ui-reviewer` agent | Fable | high |
 | The second, other-vendor review | `debate-review`'s `review-debate` lane | Codex | high |
 
-- The four agents are in `.claude/agents/`. Each brief names the spec, the slice, the files the agent
+- The five agents are in `.claude/agents/`. Each brief names the spec, the slice, the files the agent
   owns, and the gate commands, because an agent does not see this conversation.
 - **Builders work in the root checkout, one at a time per set of files.** Two builders run together only
   when their files do not overlap. No worktrees without the owner's approval (§A.7 still holds).

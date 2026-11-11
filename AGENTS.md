@@ -115,12 +115,33 @@ where an agent has no skills, it does the same step by hand.
    IDs (`FR-001`). The spec ends in **slices**: each one pull request, each naming the slices it waits
    on and the principles it touches. No separate plan or task file.
 4. **Steps only the owner can do** (`wizard`): a script that walks the owner through them and checks each.
-5. **Build one slice, test first** (`tdd`). UI slices also apply UI/UX ProMax and measure the rendered
-   page. Bugs start with `diagnosing-bugs`: reproduce, prove the cause, then the regression test.
+5. **Build one slice, test first** (`tdd`). A slice a person sees also follows "UI, UX and front end"
+   below. Bugs start with `diagnosing-bugs`: reproduce, prove the cause, then the regression test.
 6. **Guard Gate** (below), then **two-model review** (`debate-review --local`): one model finds
    problems, a model from another vendor tries to disprove them.
 7. **Pull request** (`pr` for the description). Review rounds: `babysit-pr`.
 8. After a release or a session that went wrong: `retro`, with what changes recorded in `DECISIONS.md`.
+
+### UI, UX and front end: required, not optional
+CoreX has no designer: every screen, page, block and email is designed and built by Claude. So any slice a
+person sees runs these steps too, and a UI slice that skips one is not done.
+
+1. **Design first, in Claude Design** (the Design artifact type in Claude, desktop or web), on the **CoreX
+   design system** (the Design System artifact type), never on a palette or font picked for the occasion.
+   Draw every state the spec names (empty, loading, error, full, a long name, a refused value) at desktop and
+   phone width (375px), in light and dark, left to right and right to left.
+2. **Approval and handoff.** The owner approves the design in the artifact. The approved version and its link
+   go into `design/handoffs/<area>.md` (its README lists what a handoff holds), and the spec points at it. The
+   approved design is the functional contract (DECISIONS #115): nothing in it ships as sample or placeholder.
+3. **Build** with UI/UX ProMax (`ui-ux-pro-max`) on the constitution's rules: tokens from `theme.json` only,
+   logical CSS properties, assets loaded only where the block is, every string translatable.
+4. **Measure the rendered page**, never judge it from a screenshot: gaps, heights and alignment read off the
+   page and kept as browser assertions; light, dark and right to left; 375px and 200% zoom; keyboard and focus.
+   Run `npm run test:quality` (screens, accessibility, states, words, budget).
+5. **Review the UI** before the two-model review: `corex-ui-reviewer` compares the render with the approved
+   design, `design:accessibility-review` checks WCAG 2.2 AA, and `design:ux-copy` checks the words.
+6. **A change to the look starts in the design system**, then reaches the code through `theme.json`, so the
+   next design and the code stay the same.
 
 The `/speckit-*` commands are retired. A spec that already has a `tasks.md` may finish its slices from
 it. Matt Pocock's `to-spec`, `to-tickets`, `implement-spec`, `implement` and `wayfinder` are not used:

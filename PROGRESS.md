@@ -42,8 +42,8 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 **The CoreX loop, constitution v2.0.0** (2026-11-11, branch `docs/workflow-matt-and-agents`, DECISIONS #621): Spec
 Kit's commands are retired for Matt Pocock's engineering skills around one spec file per feature (grill, spec with
-slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a model and effort, and four agents
-are in `.claude/agents/`. Matt's setup: `docs/agents/`, four triage labels created on GitHub. Docs/Planning only.
+slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a model and effort, and five agents
+are in `.claude/agents/`. Anything a person sees is designed first in Claude Design, measured and reviewed against it. Matt's setup: `docs/agents/`, four triage labels created on GitHub. Docs/Planning only.
 Owed: the client scaffold (`wp corex make:site`) still tells client sites to use Spec Kit, its own slice.
 
 **Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to

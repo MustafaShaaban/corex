@@ -31,7 +31,9 @@ flowchart LR
 | `research` | `specs/NNN-name/research.md` | only when the spec depends on outside facts |
 | Spec | `specs/NNN-name/spec.md`: requirements with IDs, then slices | each slice is one PR and names what it waits on |
 | `wizard` | a script for the steps only the owner can do | each step is checked before the next |
-| `tdd` | one slice: a failing test per requirement, then the code | `diagnosing-bugs` first when it is a bug |
+| Claude Design | for anything a person sees: the approved design, on the CoreX design system, every state, 1280px and 375px, light and dark, both directions | required; handed off in `design/handoffs/` |
+| `tdd` | one slice: a failing test per requirement, then the code; UI with `ui-ux-pro-max` | `diagnosing-bugs` first when it is a bug |
+| Measure and UI review | browser assertions, `npm run test:quality`, `corex-ui-reviewer`, `design:accessibility-review`, `design:ux-copy` | required for anything a person sees |
 | Guard Gate, `debate-review --local` | guard results; findings one model raised and another could not disprove | no diff ships before both |
 | `pr`, `babysit-pr` | the pull request and its review rounds | CI green before merge |
 | `retro` | what to change, recorded in `DECISIONS.md` | after a release or a session that went wrong |
