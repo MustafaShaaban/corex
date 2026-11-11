@@ -19188,7 +19188,9 @@ to it; new ones routed to it fall back. corex-forms adds each person's teams to 
 
 **Amended 2026-11-11 (PR #446 review).** A removed team's key is never given out again: its submissions keep the
 key, and a new team of the same name would have inherited them. `TeamService::delete()` records the key in
-`corex_flow_teams_retired` (not autoloaded, read only when a team is made), and `freeKey()` treats it as taken.
+`corex_flow_teams_retired` (not autoloaded, read only when a team is made), and `freeKey()` treats it as taken. The
+key is retired before the team is removed, and a failed retire write refuses the removal ("The team could not be
+removed. Try again."): a removal cut short leaves a team whose key is taken, never a free key.
 
 ## #473 -- Someone routing gave work to sees an inbox of exactly that work
 

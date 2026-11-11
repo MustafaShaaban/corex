@@ -49,9 +49,14 @@ final class WpTeamStore implements TeamStore
         return array_values(array_filter(is_array($stored) ? $stored : [], 'is_string'));
     }
 
-    public function retire(string $key): void
+    public function retire(string $key): bool
     {
+        $retired = $this->retiredKeys();
+        if (in_array($key, $retired, true)) {
+            return true;
+        }
+
         // Read only when a team is made, so it is not loaded on every request.
-        update_option(self::RETIRED_OPTION, array_values(array_unique([...$this->retiredKeys(), $key])), false);
+        return update_option(self::RETIRED_OPTION, [...$retired, $key], false);
     }
 }

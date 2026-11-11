@@ -29,5 +29,6 @@ interface TeamStore
      */
     public function retiredKeys(): array;
 
-    public function retire(string $key): void;
+    /** @return bool Whether the key is now kept as retired: false when the write failed. */
+    public function retire(string $key): bool;
 }

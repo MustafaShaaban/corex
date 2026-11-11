@@ -479,3 +479,31 @@ it('carries the page from the main query only when it shows one page, never an a
         ->not->toContain('name="corex_page"')
         ->and($single)->toMatch('/name="corex_page" value="' . $pageId . '\.[a-f0-9]{16}"/');
 });
+
+it('keeps a percent-encoded alternative link and a two-line closed message exactly as saved (FR-026)', function () {
+    $flowId = publishLiveFlow('live-words-kept');
+    $url = 'https://site.test/%D8%AA%D9%88%D8%A7%D8%B5%D9%84/?q=a%20b';
+    $message = "Applications are closed.\nThey reopen in March.";
+
+    $saved = setAvailability($flowId, [
+        'closed_message' => $message,
+        'alternative' => ['type' => 'link', 'label' => 'Contact us', 'url' => $url],
+    ]);
+    $stored = Boot::app()->container()->make(FlowService::class)->get($flowId)->availability;
+
+    expect($saved->get_status())->toBe(200)
+        ->and($stored->alternative->url)->toBe($url)
+        ->and($stored->closedMessage)->toBe($message);
+});
+
+it('still refuses an alternative link that is not a web address (FR-026)', function () {
+    $flowId = publishLiveFlow('live-words-script');
+
+    $response = setAvailability($flowId, [
+        'alternative' => ['type' => 'link', 'label' => 'Contact us', 'url' => 'javascript:alert(1)'],
+    ]);
+
+    expect($response->get_status())->toBe(422)
+        ->and($response->get_data()['message'])->toBe('The alternative link must be a web address that starts with http:// or https://.')
+        ->and(Boot::app()->container()->make(FlowService::class)->get($flowId)->availability->alternative->url)->toBe('');
+});

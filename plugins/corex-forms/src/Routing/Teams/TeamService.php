@@ -89,8 +89,13 @@ final readonly class TeamService
         if (count($kept) === count($teams)) {
             throw new DomainException(__('The team was not found.', 'corex'));
         }
+        // The key is retired first, and only then is the team removed: a removal cut short
+        // between the two writes leaves a team whose key is already taken, never a free key
+        // that a new team of the same name would take with the old team's submissions.
+        if (! $this->store->retire($key)) {
+            throw new DomainException(__('The team could not be removed. Try again.', 'corex'));
+        }
         $this->store->replace($kept);
-        $this->store->retire($key);
     }
 
     /** @return list<string> The keys of the teams the person is a member of. */

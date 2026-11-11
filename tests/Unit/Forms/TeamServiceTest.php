@@ -26,11 +26,20 @@ beforeEach(function () {
     Functions\when('remove_accents')->returnArg();
 });
 
-function memoryTeams(): TeamService
+/** A team service over a store held in memory; `$failing` names the writes that fail: "retire", "replace once". */
+function memoryTeams(string ...$failing): TeamService
 {
-    return new TeamService(new class implements TeamStore {
+    return new TeamService(new class($failing) implements TeamStore {
         /** @var list<Team> */
         private array $teams = [];
+
+        /** @var list<string> */
+        private array $retired = [];
+
+        /** @param list<string> $failing */
+        public function __construct(private array $failing)
+        {
+        }
 
         public function all(): array
         {
@@ -39,23 +48,45 @@ function memoryTeams(): TeamService
 
         public function replace(array $teams): void
         {
+            if (in_array('replace once', $this->failing, true) && $this->retired !== []) {
+                $this->failing = array_values(array_diff($this->failing, ['replace once']));
+                throw new RuntimeException('The database went away.');
+            }
             $this->teams = $teams;
         }
-
-        /** @var list<string> */
-        private array $retired = [];
 
         public function retiredKeys(): array
         {
             return $this->retired;
         }
 
-        public function retire(string $key): void
+        public function retire(string $key): bool
         {
+            if (in_array('retire', $this->failing, true)) {
+                return false;
+            }
             $this->retired[] = $key;
+
+            return true;
         }
     });
 }
+
+it('keeps a team it could not retire the key of, and says so (FR-012)', function () {
+    $teams = memoryTeams('retire');
+    $team = $teams->create('Sales', [3]);
+
+    expect(fn () => $teams->delete($team->key))->toThrow(DomainException::class, 'The team could not be removed. Try again.')
+        ->and($teams->find('sales'))->not->toBeNull();
+});
+
+it('retires the key before it removes the team, so a removal cut short never frees the key (FR-012)', function () {
+    $teams = memoryTeams('replace once');
+    $team = $teams->create('Sales', [3]);
+
+    expect(fn () => $teams->delete($team->key))->toThrow(RuntimeException::class)
+        ->and($teams->create('Sales', [9])->key)->toBe('sales-2');
+});
 
 it('never gives a new team the key of a removed one, whose submissions stay with that key (FR-012)', function () {
     $teams = memoryTeams();
