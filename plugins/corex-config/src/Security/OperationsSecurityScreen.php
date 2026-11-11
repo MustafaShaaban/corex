@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Security;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\Access\ScreenAccess;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Operations\ModeDisclosure;
 use Corex\Config\Operations\OperationsMode;
@@ -44,6 +45,8 @@ defined('ABSPATH') || exit;
  */
 final class OperationsSecurityScreen
 {
+    private const SLUG = 'corex-operations-security';
+
     private string $hook = '';
 
     public function __construct(
@@ -61,6 +64,7 @@ final class OperationsSecurityScreen
         private readonly LoginRecovery $recovery,
         private readonly LaunchChecklist $checklist,
         private readonly ChecklistMarkup $markup,
+        private readonly ScreenAccess $access = new ScreenAccess(),
     ) {
     }
 
@@ -76,7 +80,7 @@ final class OperationsSecurityScreen
             'corex-settings',
             __('CoreX Operations & Security', 'corex'),
             __('Operations & Security', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::SLUG),
             'corex-operations-security',
             [$this, 'render'],
             30,
@@ -157,7 +161,7 @@ final class OperationsSecurityScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens(self::SLUG)) {
             echo $this->page->permissionDenied('operations-security');
 
             return;
@@ -248,7 +252,8 @@ final class OperationsSecurityScreen
                     : '')
                 . '<p class="corex-cache__layer-meta">'
                 . ($layer->provider !== ''
-                    ? '<span>' . esc_html($layer->provider) . '</span>'
+                    // A product's name (OPcache, LiteSpeed Cache): data, not a word to translate.
+                    ? '<span translate="no">' . esc_html($layer->provider) . '</span>'
                     : '')
                 . '<span>' . esc_html__('Checked', 'corex') . ' ' . $checked->toHtml() . '</span>'
                 . $action
@@ -516,7 +521,11 @@ final class OperationsSecurityScreen
 
             $state = '<p class="corex-opsec__detail">' . esc_html__('A preview link exists.', 'corex') . ' '
                 . esc_html__('Created by', 'corex') . ' '
-                . esc_html($user ? $user->display_name : __('system', 'corex')) . ' · ' . $when->toHtml() . '</p>'
+                // A person's name is data, not a word to translate, and keeps its own direction.
+                . ($user
+                    ? '<span translate="no"><bdi>' . esc_html($user->display_name) . '</bdi></span>'
+                    : esc_html__('system', 'corex'))
+                . ' · ' . $when->toHtml() . '</p>'
                 . '<p class="corex-opsec__detail">'
                 . esc_html__('The link was shown once, when it was made, and cannot be shown again. If it is lost, regenerate it: the old one stops working.', 'corex')
                 . '</p>';

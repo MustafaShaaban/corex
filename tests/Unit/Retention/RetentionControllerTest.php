@@ -17,7 +17,9 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Actions;
 use Brain\Monkey\Functions;
+use Corex\Access\CorexAbility;
 use Corex\Activity\ActivityService;
 use Corex\Config\Retention\RetentionController;
 use Corex\Config\Retention\RetentionSettings;
@@ -49,6 +51,20 @@ function pruneRedirectQuery(array $post): array
 {
     $_POST = $post + [RetentionController::NONCE => 'nonce-value', 'corex_confirm' => '1'];
 
+    try {
+        retentionController()->prune();
+    } catch (RuntimeException $redirect) {
+        parse_str((string) parse_url($redirect->getMessage(), PHP_URL_QUERY), $query);
+
+        return $query;
+    }
+
+    throw new LogicException('The prune handler returned without redirecting.');
+}
+
+/** The handler with the real guard and retention service, and only WordPress stubbed. */
+function retentionController(): RetentionController
+{
     $settings   = new RetentionSettings();
     $trash      = new InMemorySubmissionTrash(new stdClass());
     $controller = new RetentionController(
@@ -81,15 +97,7 @@ function pruneRedirectQuery(array $post): array
         },
     );
 
-    try {
-        $controller->prune();
-    } catch (RuntimeException $redirect) {
-        parse_str((string) parse_url($redirect->getMessage(), PHP_URL_QUERY), $query);
-
-        return $query;
-    }
-
-    throw new LogicException('The prune handler returned without redirecting.');
+    return $controller;
 }
 
 beforeEach(function () {
@@ -146,4 +154,42 @@ it('refuses an action the form does not offer, and says so instead of failing', 
 
     // The whole query: a refusal reports no action and no count, because none ran.
     expect($query)->toBe(['page' => 'corex-submissions', 'corex_status' => 'retention-invalid']);
+});
+
+/*
+ * Each retention form's handler checks what the screen checks before drawing the form (spec 117,
+ * FR-004): saving the policy needs "Manage settings", applying it "Run dangerous actions". A refusal
+ * answers 403 and is recorded under Submissions. `refuse()` ends in `exit` too, so the
+ * `status_header` stub throws the status it was given.
+ */
+function holdingOnly(string ...$abilities): void
+{
+    Functions\when('current_user_can')->alias(static fn (string $cap): bool => in_array($cap, $abilities, true));
+    Functions\when('is_user_logged_in')->justReturn(true);
+    Functions\when('status_header')->alias(static fn (int $code) => throw new DomainException('refused ' . $code));
+}
+
+it('refuses to apply the policy without "Run dangerous actions", and records it under Submissions (FR-004)', function () {
+    holdingOnly(CorexAbility::MANAGE_SETTINGS, CorexAbility::MANAGE_SUBMISSIONS);
+    Actions\expectDone('corex_access_refused')
+        ->once()
+        ->with('action', 'corex-submissions', CorexAbility::RUN_DANGEROUS_ACTIONS);
+
+    expect(fn () => pruneRedirectQuery(['corex_retention_action' => 'trash']))->toThrow(DomainException::class, 'refused 403');
+});
+
+it('refuses to save the policy without "Manage settings", and records it under Submissions (FR-004)', function () {
+    holdingOnly(CorexAbility::RUN_DANGEROUS_ACTIONS, CorexAbility::MANAGE_SUBMISSIONS);
+    Actions\expectDone('corex_access_refused')
+        ->once()
+        ->with('action', 'corex-submissions', CorexAbility::MANAGE_SETTINGS);
+    $_POST = [RetentionController::NONCE => 'nonce-value', 'corex_retention_days' => '30'];
+
+    expect(fn () => retentionController()->save())->toThrow(DomainException::class, 'refused 403');
+});
+
+it('applies the policy for the holder of "Run dangerous actions" (FR-004)', function () {
+    holdingOnly(CorexAbility::RUN_DANGEROUS_ACTIONS);
+
+    expect(pruneRedirectQuery(['corex_retention_action' => 'trash'])['corex_status'] ?? null)->toBe('retention-pruned');
 });

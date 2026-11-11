@@ -10,6 +10,7 @@ namespace Corex\Media;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
 use Corex\Activity\ActivityRepository;
 use Corex\Activity\ActivityService;
 use Corex\Container\ContainerInterface;
@@ -122,7 +123,7 @@ final class MediaServiceProvider extends ServiceProvider
                 MediaConversionService::class,
                 new MediaConversionService($this->container->make(JobService::class), $runs, $source, $capability, $settings),
             );
-            (new MediaConversionController($conversion))->register();
+            (new MediaConversionController($conversion, $this->container->make(AbilityCheck::class)))->register();
             (new MediaConversionPanel($conversion))->register();
         }
 

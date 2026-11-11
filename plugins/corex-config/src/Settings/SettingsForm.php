@@ -81,9 +81,13 @@ final class SettingsForm
      *
      * @param array{title:string,fields:array<string,array<string,mixed>>} $section
      * @param callable(string, string):FieldState|callable(string):FieldState $state the field's state, by key (and type)
-     * @param bool                                                       $readOnly the section's add-on is off
+     * @param bool                                                       $readOnly the section's add-on is off, or the
+     *                                                                             person may read the page and not change it
+     * @param bool                                                       $siteAdministrator whether the person may change the
+     *                                                                             fields marked `site_admin`; an option page
+     *                                                                             marks none (spec 117, FR-008)
      */
-    public function rows(string $sectionKey, array $section, callable $state, bool $readOnly = false): string
+    public function rows(string $sectionKey, array $section, callable $state, bool $readOnly = false, bool $siteAdministrator = true): string
     {
         $html  = '<table class="form-table" role="presentation">';
         $html .= $this->driverNotice($sectionKey, $section, $state);
@@ -92,18 +96,28 @@ final class SettingsForm
             $key        = (string) $key;
             $name       = SettingsControls::nameOf($key);
             $fieldState = $state($key, (string) ($field['type'] ?? 'text'));
+            $locked     = ! $siteAdministrator && ! empty($field['site_admin']);
 
             $html .= sprintf(
-                '<tr%5$s><th><label for="%1$s">%2$s</label></th><td>%3$s%4$s</td></tr>',
+                '<tr%5$s><th><label for="%1$s">%2$s</label></th><td>%3$s%4$s%6$s</td></tr>',
                 esc_attr($name),
                 esc_html((string) $field['label']),
-                $this->controls->control($key, $field, $fieldState, $readOnly),
+                $this->controls->control($key, $field, $fieldState, $readOnly || $locked),
                 $this->help($name, $field, $state),
                 $this->showForAttrs($field, $state),
+                $locked ? $this->siteAdministrationNote() : '',
             );
         }
 
         return $html . '</table>';
+    }
+
+    /** Why a field is read-only for someone who cannot administer the site (spec 117, FR-008). */
+    private function siteAdministrationNote(): string
+    {
+        return '<p class="corex-field-help corex-settings__locked">'
+            . esc_html__('Only a site administrator can change how the whole site delivers mail.', 'corex')
+            . '</p>';
     }
 
     /**

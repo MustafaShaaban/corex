@@ -89,6 +89,7 @@ beforeEach(function () {
         $this->studio,
         $this->editor,
         \Corex\Tests\Support\StudioDelivery::factory($this->config, $this->studio),
+        administration: new \Corex\Config\Access\WpSiteAdministration(),
     );
 
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);

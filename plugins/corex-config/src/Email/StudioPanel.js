@@ -133,6 +133,7 @@ function overview( studio, busy, config ) {
 		<OverviewPanel
 			data={ studio.state.data }
 			settingsUrl={ config.settingsUrl }
+			canConfigureDelivery={ config.canConfigureDelivery !== false }
 			busy={ busy }
 			onScope={ studio.delivery.saveScope }
 		/>

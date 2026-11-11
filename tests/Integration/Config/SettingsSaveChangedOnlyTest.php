@@ -155,7 +155,7 @@ it('refuses a page that does not exist', function () {
     $before = storedSettings();
 
     $saved = Boot::app()->container()->make(\Corex\Config\Settings\SettingsSaver::class)
-        ->save('nowhere', ['brand_tagline' => 'x'], get_current_user_id());
+        ->save('nowhere', ['brand_tagline' => 'x'], get_current_user_id(), true);
 
     expect($saved)->toBeNull()
         ->and(storedSettings())->toBe($before);

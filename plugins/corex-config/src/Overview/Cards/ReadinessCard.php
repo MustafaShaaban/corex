@@ -10,6 +10,7 @@ namespace Corex\Config\Overview\Cards;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
 use Corex\Config\Overview\OverviewCard;
 use Corex\Config\Readiness\ChecklistMarkup;
@@ -70,7 +71,8 @@ final class ReadinessCard implements OverviewCard
 
     private function wizardLink(): string
     {
-        if (! $this->plugins->isActive(self::WIZARD_PLUGIN) || ! current_user_can('manage_options')) {
+        // Offered to the people the wizard opens for (spec 117).
+        if (! $this->plugins->isActive(self::WIZARD_PLUGIN) || ! current_user_can(CorexAbility::MANAGE_SETUP)) {
             return '';
         }
 

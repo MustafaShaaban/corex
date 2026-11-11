@@ -10,18 +10,26 @@ namespace Corex\Media\Conversion;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use WP_REST_Request;
 use WP_REST_Response;
 
 /**
  * The routes Settings > Media drives a library conversion through (spec 119, US-SET-06). Each needs
- * `manage_options` and a REST nonce; each answers the run as the page shows it.
+ * "Manage settings", recorded under Settings when refused (spec 117, FR-002, FR-005), and a REST
+ * nonce; each answers the run as the page shows it.
  */
 final class MediaConversionController
 {
-    public function __construct(private readonly MediaConversionService $conversion)
-    {
+    /** The Settings screen these routes belong to. */
+    private const SCREEN = 'corex-settings-config';
+
+    public function __construct(
+        private readonly MediaConversionService $conversion,
+        private readonly AbilityCheck $abilities,
+    ) {
     }
 
     public function register(): void
@@ -57,7 +65,7 @@ final class MediaConversionController
 
     public function canManage(WP_REST_Request $request): bool
     {
-        return current_user_can('manage_options')
+        return $this->abilities->allows(CorexAbility::MANAGE_SETTINGS, self::SCREEN)
             && wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false;
     }
 

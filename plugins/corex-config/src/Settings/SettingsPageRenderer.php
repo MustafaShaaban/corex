@@ -33,19 +33,40 @@ final class SettingsPageRenderer
     ) {
     }
 
-    public function render(SettingsPage $page, string $action, string $nonceField, ?SettingsSaveResult $result): string
-    {
-        $readOnly = $this->states->forPage($page) === SettingsSectionState::Disabled;
+    /**
+     * @param bool $viewOnly          the person holds the view ability and not "Manage settings" (spec 117,
+     *                                FR-013): the page is drawn as it is while its add-on is off, without
+     *                                its save bar, provider tests or add-on panels
+     * @param bool $siteAdministrator whether the person may change the fields marked `site_admin`
+     *                                (spec 117, FR-008)
+     */
+    public function render(
+        SettingsPage $page,
+        string $action,
+        string $nonceField,
+        ?SettingsSaveResult $result,
+        bool $viewOnly,
+        bool $siteAdministrator,
+    ): string {
+        $addonOff = $this->states->forPage($page) === SettingsSectionState::Disabled;
+        $readOnly = $viewOnly || $addonOff;
         $sections = array_intersect_key($this->registry->sections(), array_flip($page->sections));
 
-        $html = sprintf(
-            '<form method="post" action="%1$s" class="corex-settings-form corex-settings-page" novalidate'
-            . ' data-corex-settings-page="%2$s">%3$s<input type="hidden" name="corex_settings_page" value="%2$s" />',
-            esc_url($action),
-            esc_attr($page->key),
-            $nonceField,
-        );
-        $html .= $readOnly && $page->addon !== null ? $this->addonOff($page->addon) : '';
+        // A reader gets the page without a form: with scripts off, Enter in a read-only field would
+        // otherwise post it (spec 117, FR-013, FR-014).
+        $html = $viewOnly
+            ? sprintf(
+                '<div class="corex-settings-form corex-settings-page" data-corex-settings-page="%1$s">',
+                esc_attr($page->key),
+            )
+            : sprintf(
+                '<form method="post" action="%1$s" class="corex-settings-form corex-settings-page" novalidate'
+                . ' data-corex-settings-page="%2$s">%3$s<input type="hidden" name="corex_settings_page" value="%2$s" />',
+                esc_url($action),
+                esc_attr($page->key),
+                $nonceField,
+            );
+        $html .= $addonOff && $page->addon !== null ? $this->addonOff($page->addon) : '';
 
         $state = $this->fieldStates($result);
         foreach ($sections as $sectionKey => $section) {
@@ -55,12 +76,12 @@ final class SettingsPageRenderer
                 count($sections) > 1
                     ? sprintf('<h2 id="corex-settings-heading-%1$s">%2$s</h2>', esc_attr((string) $sectionKey), esc_html($section['title']))
                     : '',
-                $this->sectionBody((string) $sectionKey, $section, $state, $readOnly),
+                $this->sectionBody((string) $sectionKey, $section, $state, $readOnly, $siteAdministrator),
             );
         }
 
         $html .= ! $readOnly && $this->hasEditableField($sections) ? $this->saveBar($result?->saved ?? false) : '';
-        $html .= '</form>';
+        $html .= $viewOnly ? '</div>' : '</form>';
 
         return $html . ($result === null ? '' : $this->toast($result));
     }
@@ -82,13 +103,13 @@ final class SettingsPageRenderer
 
     /**
      * What a section holds: what its providers need, its fields, and any panel an add-on draws
-     * under it. While its add-on is off, only its fields, read-only.
+     * under it. While its add-on is off, or for a reader, only its fields, read-only.
      *
      * @param array{title:string,fields:array<string,array<string,mixed>>} $section
      */
-    private function sectionBody(string $sectionKey, array $section, callable $state, bool $readOnly): string
+    private function sectionBody(string $sectionKey, array $section, callable $state, bool $readOnly, bool $siteAdministrator): string
     {
-        $fields = $this->form->rows($sectionKey, $section, $state, $readOnly);
+        $fields = $this->form->rows($sectionKey, $section, $state, $readOnly, $siteAdministrator);
 
         return $readOnly ? $fields : $this->providerNotices($sectionKey) . $fields . $this->extras($sectionKey);
     }

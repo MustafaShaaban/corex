@@ -182,6 +182,15 @@ function CapturesList( { captures } ) {
 					'corex'
 				) }
 			</p>
+			{ /* The server sends a captured email's content to site administrators only (DECISIONS #429). */ }
+			{ captures.some( ( capture ) => capture.content_withheld ) && (
+				<p className="corex-email-app__captures-note">
+					{ __(
+						'Only a site administrator can open a captured email.',
+						'corex'
+					) }
+				</p>
+			) }
 			{ captures.length === 0 ? (
 				<p>{ __( 'No captured messages yet.', 'corex' ) }</p>
 			) : (
