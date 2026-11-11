@@ -1,0 +1,33 @@
+/* What the operations mode tells a visitor at a flow (spec 124,
+   US-VIS-04): a test-site note above the form in Development and
+   Staging, and the paused panel instead of the form while forms are
+   paused. Said in words; the edge colour only repeats it. */
+.corex-flow-notice--test,
+.corex-flow-notice--paused {
+	display: grid;
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink);
+	background: var(--wp--preset--color--surface-alt);
+	border-inline-start-style: solid;
+	border-inline-start-width: 4px; /* corex-token-allow: state edge */
+	overflow-wrap: anywhere;
+}
+
+.corex-flow-notice--test {
+	border-inline-start-color: var(--wp--preset--color--info);
+}
+
+.corex-flow-notice--paused {
+	border-inline-start-color: var(--wp--preset--color--warning);
+}
+
+.corex-flow-notice--paused p {
+	margin: 0;
+}
+
+.corex-flow-notice--paused .corex-flow-notice__title {
+	font-weight: 700;
+}

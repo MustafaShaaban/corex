@@ -53,7 +53,8 @@ final class ModeDisclosure
         return match ($this->modes->normalize($mode)) {
             OperationsMode::PRODUCTION  => self::CONFIRM_PHRASE,
             OperationsMode::MAINTENANCE,
-            OperationsMode::COMING_SOON => self::CONFIRM_ACKNOWLEDGEMENT,
+            OperationsMode::COMING_SOON,
+            OperationsMode::FORMS_PAUSED => self::CONFIRM_ACKNOWLEDGEMENT,
             default                     => self::CONFIRM_NONE,
         };
     }
@@ -137,6 +138,10 @@ final class ModeDisclosure
                 'Not open yet. Visitors see the coming-soon page while the site is built behind it.',
                 'corex',
             ),
+            OperationsMode::FORMS_PAUSED => __(
+                'Open to visitors, closed to submissions. Every form says forms are paused until you switch back.',
+                'corex',
+            ),
             default => '',
         };
     }
@@ -148,15 +153,16 @@ final class ModeDisclosure
     {
         return match ($mode) {
             OperationsMode::DEVELOPMENT => [
-                __('The site remains publicly reachable — this mode does not hide it.', 'corex'),
+                __('The site remains publicly reachable: this mode does not hide it.', 'corex'),
+                __('Every public page asks search engines not to index it, and forms show visitors that this is a test site.', 'corex'),
                 __('Readiness blockers are reported but not enforced.', 'corex'),
             ],
             OperationsMode::STAGING => [
-                __('Search engines should be discouraged from indexing this site.', 'corex'),
+                __('Every public page asks search engines not to index it, and forms show visitors that this is a test site.', 'corex'),
                 __('External services still receive real requests unless you have pointed them elsewhere.', 'corex'),
             ],
             OperationsMode::PRODUCTION => [
-                __('Readiness blockers must be resolved, or overridden deliberately by typing the confirmation phrase.', 'corex'),
+                __('Readiness blockers must be resolved, or overridden deliberately with the override phrase, which is recorded in the history.', 'corex'),
             ],
             OperationsMode::MAINTENANCE => [
                 __('Visitors who are not signed in receive a maintenance page with a 503 status.', 'corex'),
@@ -167,6 +173,11 @@ final class ModeDisclosure
             OperationsMode::COMING_SOON => [
                 __('Visitors receive the coming-soon page at the home address with a 200 status. Every other address answers with a temporary redirect to it.', 'corex'),
                 __('Anyone signed in who can edit posts is served the real site. Signed-in users who cannot are treated as visitors.', 'corex'),
+            ],
+            OperationsMode::FORMS_PAUSED => [
+                __('Public form submissions are refused with a message that forms are paused: forms, flows, newsletter sign-ups, booking requests, job applications and account registration. Nothing is stored or mailed.', 'corex'),
+                __('Pages, the admin, sign-in, password reset and comments keep working. Email is delivered and search engines are allowed, as in Production.', 'corex'),
+                __('Signed-in administrators can still submit a form to test it. No form changes its own settings: switching back reopens every form that was open.', 'corex'),
             ],
             default => [],
         };
@@ -184,6 +195,10 @@ final class ModeDisclosure
             OperationsMode::MAINTENANCE => [
                 __('Apart from public submissions, the REST API, AJAX, cron, and wp-admin are never intercepted.', 'corex'),
                 __('Recovery: change the mode back here, or run the recovery command if you cannot reach this screen.', 'corex'),
+                __('The message and the back-by time visitors read are written under Messages for visitors, below.', 'corex'),
+            ],
+            OperationsMode::FORMS_PAUSED => [
+                __('What visitors read on a paused form is written under Messages for visitors, below.', 'corex'),
             ],
             OperationsMode::COMING_SOON => [
                 __('The admin, the login page, the REST API, AJAX and cron are never intercepted, and robots.txt is served normally.', 'corex'),

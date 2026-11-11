@@ -35,6 +35,7 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         private FieldRenderer $fields,
         private FormChallengeContextFactory $challenge,
         private ProtectedFormRegistry $protectedForms,
+        private VisitorFormNotice $visitorNotice,
     ) {
     }
 
@@ -51,6 +52,10 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         }
 
         $variant = $this->variant($attributes);
+        $paused = $this->visitorNotice->pausedPanel();
+        if ($paused !== '') {
+            return $variant === 'success-message' ? '' : $this->paused($flow, $variant, $attributes, $paused);
+        }
         if ($variant === 'success-message') {
             return $this->successMessage($flow, $version);
         }
@@ -108,7 +113,8 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             esc_attr($variant),
             esc_attr($flow->name),
             $this->heading($heading !== '' ? $heading : $flow->name),
-            $intro === '' ? '' : sprintf('<p class="corex-flow__intro">%s</p>', esc_html($intro)),
+            ($intro === '' ? '' : sprintf('<p class="corex-flow__intro">%s</p>', esc_html($intro)))
+                . $this->visitorNotice->testSiteNote(),
             esc_attr($flow->slug),
             $flow->id,
             $version->versionNumber,
@@ -147,6 +153,25 @@ final readonly class FlowBlockRenderer implements BlockRenderer
 
         return ChallengeTokenField::render($action)
             . ChallengeTokenField::widgetPlace($this->challenge->widgetProvider(), $this->challenge->siteKey());
+    }
+
+    /**
+     * Forms paused (spec 124, US-VIS-04): the flow's heading and the paused panel where its form
+     * would be. Nothing to submit, so no runtime is loaded.
+     *
+     * @param array<string,mixed> $attributes
+     */
+    private function paused(Flow $flow, string $variant, array $attributes, string $panel): string
+    {
+        $heading = trim((string) ($attributes['heading'] ?? ''));
+
+        return sprintf(
+            '<section class="corex-flow corex-flow--%1$s corex-flow--paused" data-corex-flow-name="%2$s">%3$s%4$s</section>',
+            esc_attr($variant),
+            esc_attr($flow->name),
+            $this->heading($heading !== '' ? $heading : $flow->name),
+            $panel,
+        );
     }
 
     private function successMessage(Flow $flow, FlowVersion $version): string

@@ -53,12 +53,21 @@ final class MailGate
             return $this->store() === null ? MailDecision::Refuse : MailDecision::Hold;
         }
 
-        $answer = $this->environment->current();
-        if ($answer->isProduction()) {
+        return $this->decideIn($this->environment->current()->environment, $corexMail);
+    }
+
+    /**
+     * What happens to an email on a site of this environment, with no flow test holding mail: the
+     * answer {@see decide()} gives, asked for an environment the site may not be in yet. The
+     * Operations screen shows it for a mode being considered (spec 124, US-OPS-01).
+     */
+    public function decideIn(string $environment, bool $corexMail = true): MailDecision
+    {
+        if ($environment === SiteEnvironment::PRODUCTION) {
             return MailDecision::Deliver;
         }
 
-        if ($answer->isStaging() && $this->liveOnStaging()) {
+        if ($environment === SiteEnvironment::STAGING && $this->liveOnStaging()) {
             return MailDecision::Deliver;
         }
 

@@ -12,6 +12,10 @@ use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FlowBlockRenderer;
 use Corex\Forms\Block\FormBlockRenderer;
 use Corex\Forms\Block\ProtectedFormRegistry;
+use Corex\Forms\Block\VisitorFormNotice;
+use Corex\Environment\SiteEnvironment;
+use Corex\Http\PublicSubmissionPause;
+use Corex\Operations\VisitorMessages;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowConfiguration;
@@ -27,8 +31,14 @@ use Corex\Support\Config\ConfigInterface;
 use Corex\Support\BootLogger;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
-function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $settings = []): FlowBlockRenderer
+function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $settings = [], string $mode = 'production'): FlowBlockRenderer
 {
+    Functions\when('get_option')->alias(static fn (string $name, mixed $default = false): mixed => $name === 'corex_operations_mode' ? $mode : $default);
+    Functions\when('wp_get_environment_type')->justReturn('production');
+    Functions\when('is_user_logged_in')->justReturn(false);
+    Functions\when('current_user_can')->justReturn(false);
+    Functions\when('determine_locale')->justReturn('en_US');
+    Functions\when('get_locale')->justReturn('en_US');
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_attr__')->returnArg();
@@ -117,6 +127,7 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $setting
         new FieldRenderer(),
         new FormChallengeContextFactory(new ChallengeSettings($config), new RemoteAddress()),
         new ProtectedFormRegistry(),
+        new VisitorFormNotice(new SiteEnvironment([]), new PublicSubmissionPause(new VisitorMessages())),
     );
 }
 
@@ -196,3 +207,27 @@ it('gives a protected flow a place for the widget of a provider that shows one',
     'hcaptcha'  => ['hcaptcha', true],
     'recaptcha, which shows nothing' => ['recaptcha', false],
 ]);
+
+it('tells a visitor on a development or staging site that the form is a test (spec 124, US-VIS-04)', function (string $mode) {
+    $html = flowBlockRenderer(mode: $mode)->render(['flowSlug' => 'newsletter'], '', (object) []);
+
+    expect($html)
+        ->toContain('Test site: what you send here is kept for testing and no email is delivered.')
+        ->toContain('<form');
+})->with(['development', 'staging']);
+
+it('says nothing about a test site in production, coming soon or maintenance', function (string $mode) {
+    $html = flowBlockRenderer(mode: $mode)->render(['flowSlug' => 'newsletter'], '', (object) []);
+
+    expect($html)->not->toContain('Test site')->and($html)->toContain('<form');
+})->with(['production', 'coming-soon', 'maintenance']);
+
+it('shows the paused panel instead of the form while forms are paused', function () {
+    $html = flowBlockRenderer(mode: 'forms-paused')->render(['flowSlug' => 'newsletter'], '', (object) []);
+
+    expect($html)
+        ->toContain('Forms are paused')
+        ->toContain('Forms are paused for a short while. Please try again later.')
+        ->toContain('Newsletter signup')
+        ->not->toContain('<form');
+});

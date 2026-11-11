@@ -10,52 +10,52 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
-use Corex\Operations\Confirmation;
 use Corex\Operations\OperationResult;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
-use DomainException;
 
 /**
- * Applies the Production launch safety gate over a shared readiness snapshot.
+ * The Production launch gate (spec 068, spec 124 US-OPS-05).
+ *
+ * Going live with nothing blocking takes the phrase PRODUCTION. Going live past open blockers takes
+ * a different phrase, GO LIVE ANYWAY, so that nobody overrides a blocker by reflex, and it is
+ * recorded as an override: the history row names every blocker it went past and the activity log
+ * gets a security event. The blockers are the ones found when the request was submitted, not when
+ * the page was drawn. The phrases are never translated: they are typed as written in every language.
  */
 final class ProductionLaunchService
 {
-    public const OPERATION_KIND = 'operations.production.launch';
     public const REQUIRED_PHRASE = 'PRODUCTION';
-
-    /** @var array<string,bool> */
-    private array $usedConfirmations = [];
+    public const OVERRIDE_PHRASE = 'GO LIVE ANYWAY';
 
     public function __construct(private readonly OperationsModeStore $store)
     {
     }
 
-    public function preview(
-        ReadinessSnapshot $snapshot,
-        int $actorId,
-        DateTimeImmutable $now,
-    ): ProductionLaunchPreview {
-        return new ProductionLaunchPreview(
-            snapshot: $snapshot,
-            confirmation: new Confirmation(
-                operationKind: self::OPERATION_KIND,
-                targetHash: $snapshot->targetHash(),
-                actorId: $actorId,
-                expiresAt: $now->modify('+5 minutes'),
-                requiredPhrase: self::REQUIRED_PHRASE,
-            ),
-        );
+    /** The phrase going live needs with this readiness. */
+    public static function phraseFor(ReadinessSnapshot $snapshot): string
+    {
+        return $snapshot->hasBlockingChecks() ? self::OVERRIDE_PHRASE : self::REQUIRED_PHRASE;
     }
 
     public function apply(ProductionLaunchRequest $request): OperationResult
     {
-        if ($request->snapshot->hasBlockingChecks() && ! $this->hasValidOverride($request)) {
-            return $this->blockedResult($request->now);
+        if ($request->phrase !== self::phraseFor($request->snapshot)) {
+            return $this->refused($request);
         }
 
-        $this->consumeOverride($request);
-        $this->store->set(OperationsMode::PRODUCTION, $request->actorId);
+        $overridden = $request->snapshot->blockingLabels();
+        $this->store->set(OperationsMode::PRODUCTION, $request->actorId, $overridden);
+
+        if ($overridden !== []) {
+            /**
+             * Fires after the site went live past open readiness blockers (spec 124, US-OPS-05).
+             *
+             * @param int          $actorId    Who went live.
+             * @param list<string> $overridden The blockers it went past, by name.
+             */
+            do_action('corex_production_override', $request->actorId, $overridden);
+        }
 
         return new OperationResult(
             operationId: Uuid::v4(),
@@ -68,56 +68,27 @@ final class ProductionLaunchService
         );
     }
 
-    private function hasValidOverride(ProductionLaunchRequest $request): bool
+    private function refused(ProductionLaunchRequest $request): OperationResult
     {
-        $override = $request->override;
-        if ($override === null) {
-            return false;
-        }
+        $blocked = $request->snapshot->hasBlockingChecks();
 
-        return $override->confirmation->verify(
-            operationKind: self::OPERATION_KIND,
-            targetHash: $request->snapshot->targetHash(),
-            actorId: $request->actorId,
-            phrase: $override->phrase,
-            now: $request->now,
-        );
-    }
-
-    private function consumeOverride(ProductionLaunchRequest $request): void
-    {
-        if ($request->override === null) {
-            return;
-        }
-
-        $key = implode('|', [
-            $request->override->confirmation->operationKind,
-            (string) $request->override->confirmation->actorId,
-            $request->override->confirmation->targetHash,
-        ]);
-        if (isset($this->usedConfirmations[$key])) {
-            throw new DomainException('Production launch confirmation has already been used.');
-        }
-
-        $request->override->confirmation->use($request->now);
-        $this->usedConfirmations[$key] = true;
-    }
-
-    private function blockedResult(DateTimeImmutable $now): OperationResult
-    {
         return new OperationResult(
             operationId: Uuid::v4(),
             state: OperationResult::STATE_BLOCKED,
-            message: __('Production mode is blocked by readiness checks.', 'corex'),
-            errors: [
-                [
-                    'code'    => 'readiness_blocking',
-                    'message' => __('Resolve blocking readiness checks or type PRODUCTION to override.', 'corex'),
-                ],
-            ],
+            message: $blocked
+                ? __('Production mode is blocked by readiness checks.', 'corex')
+                : __('Going live needs the typed confirmation.', 'corex'),
+            errors: [[
+                'code'    => $blocked ? 'readiness_blocking' : 'phrase_required',
+                'message' => sprintf(
+                    /* translators: %s: the phrase to type, e.g. GO LIVE ANYWAY. Never translated. */
+                    __('Type %s to go live.', 'corex'),
+                    self::phraseFor($request->snapshot),
+                ),
+            ]],
             affectedIds: [],
-            startedAt: $now,
-            finishedAt: $now,
+            startedAt: $request->now,
+            finishedAt: $request->now,
         );
     }
 }

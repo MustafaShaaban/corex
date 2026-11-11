@@ -1281,7 +1281,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
-        $this->container->make(\Corex\Config\Operations\MaintenanceSubmissionGuard::class)->register();
+        $this->container->make(\Corex\Config\Operations\PublicSubmissionGuard::class)->register();
+        $this->container->make(\Corex\Config\Operations\ModeRobots::class)->register();
         // The default page is registered in every mode, so it can be designed in the Site Editor
         // before the site is put into Coming soon. The guard acts only while it is.
         $this->container->make(\Corex\Config\Operations\ComingSoonTemplate::class)->register();
