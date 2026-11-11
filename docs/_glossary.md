@@ -21,7 +21,9 @@ future translation phase (spec 028, phase 2). Code identifiers are **never** tra
 | **Blueprint / Kit** | A manifest that composes existing templates, parts, patterns, and modules into a ready-made site shape (e.g. the Company or Portfolio kit). | _TODO_ |
 | **Feature flag** | A named on/off switch (`corex_features_<flag>` option / `FEATURES_<FLAG>` env) that turns a capability on per-site without code changes. | _TODO_ |
 | **Guard Gate** | The rule that no diff ships until the relevant guard skill (clean-code / wp / woo / test / docs) has run clean on it. | _TODO_ |
-| **Spec Kit** | The spec-first workflow (`/speckit-specify → /plan → /tasks → /implement`) — the spec is written before the code and is the durable artifact. | _TODO_ |
+| **Spec Kit** | The command chain (`/speckit-specify → /plan → /tasks → /implement`) CoreX used to write specs until constitution v2.0.0 retired it. Older specs keep its `plan.md` and `tasks.md`. | _TODO_ |
+| **CoreX loop** | How every change is built since constitution v2.0.0: grill the idea, write the spec with its slices, build one slice test first, run the guards and a two-model review, open the PR. | _TODO_ |
+| **Slice** | One part of a spec that ships as one pull request and works on its own. A spec lists its slices and which ones each waits on. | _TODO_ |
 | **AdminGuard** | The shared helper (`Corex\Security\Admin\AdminGuard`) that admin-menu screens route their capability + nonce check through, instead of hand-rolling it. | _TODO_ |
 | **Mailer seam** | The neutral `Corex\Mail\Mailer` interface other modules send mail through, so the delivery driver (wp_mail, queue) can change without touching callers. | _TODO_ |
 | **Field driver (ACF-optional)** | The abstraction that reads custom fields through ACF when present and native post meta otherwise — so ACF is never a hard dependency. | _TODO_ |

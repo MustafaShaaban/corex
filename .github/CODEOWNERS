@@ -9,6 +9,7 @@
 /packages/cli/ @amElnagdy
 
 # Optional add-ons
+/addons/corex-assistant/ @amElnagdy
 /addons/corex-bookings/ @amElnagdy
 /addons/corex-captcha/ @amElnagdy
 /addons/corex-careers/ @amElnagdy

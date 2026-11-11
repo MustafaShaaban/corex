@@ -10,6 +10,7 @@ namespace Corex\Foundation;
 
 defined('ABSPATH') || exit;
 
+use Corex\Assistant\AssistantServiceProvider;
 use Corex\Bookings\BookingsServiceProvider;
 use Corex\Captcha\CaptchaServiceProvider;
 use Corex\Careers\CareersServiceProvider;
@@ -73,6 +74,11 @@ final class AddonProviderRegistry
                 'corex-careers',
                 CareersServiceProvider::class,
                 'corex-careers/corex-careers.php',
+            ),
+            new AddonProvider(
+                'corex-assistant',
+                AssistantServiceProvider::class,
+                'corex-assistant/corex-assistant.php',
             ),
             new AddonProvider(
                 'corex-bookings',
