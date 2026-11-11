@@ -40,6 +40,101 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**The revamp, where it stands on 2026-11-11.** Released: stage 0 (R0.1 to R0.4) and R1.1 (v0.47.0,
+v0.48.0). Merged, not released: R3.2 (spec 118, #439), R3.4 (spec 119, #440), R3.1 (spec 117, #438), R3.9
+(spec 122, #446) and R3.11 (spec 120, #447). The last three were built on 2026-10-23 to 26 and sat unmerged (two of
+them with finished commits only on local branches); on 2026-11-11 each was read by `corex-reviewer` against its spec, fixed
+test first, guarded (`wp-guard`, `clean-code-guard`, `test-guard`), put through the two-model review (Claude and
+Codex) until both agreed nothing was left, brought up to date with each other, and merged with all eleven checks green. What the
+reviews changed is in each spec's DECISIONS entries, as dated "Amended 2026-11-11" paragraphs (#420, #422, #423,
+#450 to #457, #470 to #477). The release plan now follows the CoreX loop: a visible story is designed in Claude Design
+and approved first, a spec ends in slices, and nothing merges without the review steps.
+- **Spec 121, tokens and type (R2.1)**, branch `spec/121-tokens-and-type`: built 2026-10-23 to 26, never run on
+  CI, no pull request yet. Being finished: main merged in, the Arabic catalogue completed for the strings main
+  added since, the right-to-left line height that #454 introduced, and the review's test gaps. The native Arabic
+  review of the catalogue (`specs/121-tokens-and-type/arabic-review.md`) is the owner's and gates the tag.
+- **Spec 124, modes and login protection (R3.8)**, branch `spec/124-modes-and-login`: spec, plan and tasks, plus
+  the code a session left uncommitted on 2026-10-26, pushed as found (commit 34294b63, "not reviewed, not tested").
+  Next: a review of it against its tasks and today's main, then its slices under the CoreX loop.
+- **Spec 129 slice 3** (CoreX Assistant: a time asked for once, a line the server writes, `required_if`), PR
+  #456, DECISIONS #617 to #619: open, not reviewed in this pass.
+- **Spec 130, the docs on their own host**, draft (DECISIONS #620, ROADMAP §13 "Public hosts"). Waits on three
+  steps outside the repository: verify the domain on GitHub, point `corex-docs` at `mustafashaaban.github.io`
+  as DNS only, then set the custom domain.
+- **Spec 110, deploy to production from the local admin**, draft PR #417: waits on the owner's three questions.
+- **Lead left by this pass, not built:** the Settings guide still asks for "Manage settings", so a holder of the
+  view ability does not see it (a guide takes one capability).
+
+**Begun and not finished, 2026-10-13:** the integration test case fails a test that leaves a
+post (DECISIONS #364) and checks nothing else. Measured: one run leaves 19 notifications, 5
+activity events, 2 queued jobs and changed options, by the files named under "Open, and not
+hidden". Every CoreX table has an auto-increment `id` and every insert into them is one row,
+so this process's own inserts can be heard through the `query` filter and `$wpdb->insert_id`.
+Nothing of it is on `main`.
+
+**Spec 107 has run on the host it is for, once well and once not.** Perego's first
+installation from CoreX → Releases on its shared host, on 2026-10-18, finished; its second,
+with a release kept, held the site in maintenance and did not put the release in place. v0.46.1
+is the fix. The operator's guide and the first-installation runbook are written
+(`docs/en/05-deployment/releases-from-the-admin.md`, `first-installation-by-hand.md`). What is
+owed is not code: the next installation on a shared host, on v0.46.1, watched; then
+`last_verified` on those two pages.
+
+| Spec | In v0.45.0 | Where it stops | Resume with |
+|---|---|---|---|
+| [103](specs/103-submissions-inbox-export/spec.md), the submissions inbox and its exports | every slice | three tasks: T045, T043b, and T074b (to whom a notification went, which the server does not record) | the tasks file |
+| [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
+| [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
+| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 6. Slice 5 is built: a site names who its replies are from (#357), and its first half before it: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
+| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built; the first installation on a shared host (Perego, 2026-10-18) stranded in maintenance, fixed on the branch above (#369) | an installation of that fix on a shared host, watched, and its record read |
+| [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
+| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | slices 1 and 2 of six: personal data marked and asked about by one rule (DECISIONS #309); several models in one export, with a history and a 30-day expiry (#312) | slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
+
+What to know before resuming each:
+
+- **Spec 105, slice 5.** `WpSubmissionsReader::anonymizeForRetention()` removes a submission's
+  answers and leaves its uploaded files on disk, where nothing can find them again. This is a
+  defect a site has today and is under "Open, and not hidden".
+  `SubmissionTrashService::forgetTiedData()` already removes a submission's files and its email
+  copies, and has to be called before the answers that name the files are removed.
+- **Spec 109.** From the owner's report of 2026-10-11 on the first client site: Import, Export
+  and Migrations on CoreX → Data each take one model at a time. He answered its five questions
+  "as recommended" (DECISIONS #306): "migrate" meant moving records between installs, so
+  several table changes together are not built; pages, templates and settings get a spec of
+  their own. Slice 1 changes who is offered personal columns on the Data screen, and slice 2
+  removes Data export files older than 30 days on the first daily clean-up: both are in
+  v0.45.0's Client impact, and a client site has to be told of both when it is told of the
+  release. Slice 5 splits `Releases/ReleaseUpload.php`, a file of spec 107, which is finished;
+  what the Releases side relies on is written into task T080. The line a person without the
+  right is shown was drawn in Jest and not walked in a browser, because no fixture account
+  manages data without being an administrator.
+- **Email Studio's store.** `WpEmailStudioStore` slashes a record's name and its content
+  before handing them to WordPress, so a backslash is read back (DECISIONS #329; on `main`
+  in v0.46.0). A store written beside it has to do the same: WordPress
+  unslashes a post's fields and a meta value on their way in, whoever calls it.
+- **Spec 106, a reply's subject.** It is kept as typed on the reply, preview and draft routes
+  and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
+  (DECISIONS #326; in v0.46.0). A subject can now hold `<`, `>`
+  and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
+  is printed before adding a place that prints one. An Email Studio template's subject, and a
+  value merged into it, are read by the same rule (DECISIONS #330; in v0.46.0): nothing is stripped, and a line break in a merged value is a space.
+- **The activity record.** `ActivityService::record()` cuts an actor's label, a target's
+  label and a target's id to `ActivityEvent::LONGEST_TEXT`, 191 characters, which is also
+  what `ActivityTable` makes the columns (DECISIONS #340; in v0.46.0). A new caller may hand over a name of any length. `kind` (100) and
+  `target_type` (64) are not cut: hand them text written in code.
+- **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
+  Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
+
+No dependency pull request is open. **Node 22.22 is the floor** for building (DECISIONS #272); an
+older Node 22 prints a warning and builds.
+
+## Recently landed
+
+**Merged, not released, 2026-11-10 and 11.** #458 (the CoreX loop), #457 (public hosts), #452 to #455 (admin
+checkboxes, activity time contrast, the shell line height, the inbox dates), and the revamp releases above. Their
+paragraphs, and those of the specs released in v0.47.0 to v0.48.1, follow as each was written while it was built;
+"not merged by its session" in them was true then.
+
 **Public hosts and spec 130, the docs site on its own host** (2026-11-11, branch `docs/public-hosts`, DECISIONS
 #620): the owner bought `mustafashaaban.com` and made six hosts for CoreX (`corex`, `corex-docs`,
 `corex-updates`, `corex-demo`, `corex-staging`, plus the root for his own site). The plan and its order are in
@@ -298,86 +393,6 @@ Owed: the owner sends the detection rule in
 `specs/111-generator-tag/contracts/detection-rule.md` to `enthec/webappanalyzer` (it asks for ten
 public CoreX sites) or to Wappalyzer's suggestion form.
 
-**Nothing else is in flight but spec 110** (2026-10-21). v0.47.0 holds everything on `main`;
-the only open pull requests are #417, the draft of spec 110, which waits on the owner's three
-questions, and Dependabot's. v0.46.1 was v0.46.0 and three changes to CoreX → Releases, made after Perego's second
-installation from it on its shared host (LiteSpeed) held the site in maintenance for ten
-minutes with the release not in place, and landed on the owner's word: #418 (DECISIONS #369;
-spec 107 FR-024a, FR-024b, FR-025: the kept release is set aside by one rename instead of
-deleted while visitors are held off, and the installation's key goes in the address too, the
-gate looks in three places and the screen asks through WordPress's ten minutes), #419 (#370;
-FR-022a, FR-022b: an installation stopped before any folder moved can be given up, and what one
-left is named and removed) and #420 (#371; FR-029: a package that would put a third-party
-plugin or theme back to an older version says so and installs only when that is confirmed).
-Owed: the Releases record's entries of 2026-10-18 from Perego (something cleared the
-installation's state before the owner pressed **Finish the installation**), and the next real
-installation's record (`key_from`), watched. This section says where each unfinished spec
-stops, so work resumes from here and not from a transcript.
-
-**Begun and not finished, 2026-10-13:** the integration test case fails a test that leaves a
-post (DECISIONS #364) and checks nothing else. Measured: one run leaves 19 notifications, 5
-activity events, 2 queued jobs and changed options, by the files named under "Open, and not
-hidden". Every CoreX table has an auto-increment `id` and every insert into them is one row,
-so this process's own inserts can be heard through the `query` filter and `$wpdb->insert_id`.
-Nothing of it is on `main`.
-
-**Spec 107 has run on the host it is for, once well and once not.** Perego's first
-installation from CoreX → Releases on its shared host, on 2026-10-18, finished; its second,
-with a release kept, held the site in maintenance and did not put the release in place. v0.46.1
-is the fix. The operator's guide and the first-installation runbook are written
-(`docs/en/05-deployment/releases-from-the-admin.md`, `first-installation-by-hand.md`). What is
-owed is not code: the next installation on a shared host, on v0.46.1, watched; then
-`last_verified` on those two pages.
-
-| Spec | In v0.45.0 | Where it stops | Resume with |
-|---|---|---|---|
-| [103](specs/103-submissions-inbox-export/spec.md), the submissions inbox and its exports | every slice | three tasks: T045, T043b, and T074b (to whom a notification went, which the server does not record) | the tasks file |
-| [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
-| [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
-| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | slices 1 to 4 of seven. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites waited for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313); a reply that was begun is kept as that person's draft until it is sent or discarded (#320) | slice 11, the email saying what it is, which waits on the owner's answer; then 6. Slice 5 is built: a site names who its replies are from (#357), and its first half before it: a reply that did not go can be sent again (#328). Slice 10 is built: a reply is sent in the conversation the person already has, or as a new email (#325). Slice 8 is built: the header is a band of the card and a logo of any shape is held to 180 by 48 (#322). Slice 9 is built: a reply starts with "Re: " and the form's name (#323). Stories 8 to 11 came from the owner's reading of live replies on 2026-10-12 (#321) | story 11's answer |
-| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | all six slices (DECISIONS #307, #310 for the last three) | built; the first installation on a shared host (Perego, 2026-10-18) stranded in maintenance, fixed on the branch above (#369) | an installation of that fix on a shared host, watched, and its record read |
-| [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
-| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | slices 1 and 2 of six: personal data marked and asked about by one rule (DECISIONS #309); several models in one export, with a history and a 30-day expiry (#312) | slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
-
-What to know before resuming each:
-
-- **Spec 105, slice 5.** `WpSubmissionsReader::anonymizeForRetention()` removes a submission's
-  answers and leaves its uploaded files on disk, where nothing can find them again. This is a
-  defect a site has today and is under "Open, and not hidden".
-  `SubmissionTrashService::forgetTiedData()` already removes a submission's files and its email
-  copies, and has to be called before the answers that name the files are removed.
-- **Spec 109.** From the owner's report of 2026-10-11 on the first client site: Import, Export
-  and Migrations on CoreX → Data each take one model at a time. He answered its five questions
-  "as recommended" (DECISIONS #306): "migrate" meant moving records between installs, so
-  several table changes together are not built; pages, templates and settings get a spec of
-  their own. Slice 1 changes who is offered personal columns on the Data screen, and slice 2
-  removes Data export files older than 30 days on the first daily clean-up: both are in
-  v0.45.0's Client impact, and a client site has to be told of both when it is told of the
-  release. Slice 5 splits `Releases/ReleaseUpload.php`, a file of spec 107, which is finished;
-  what the Releases side relies on is written into task T080. The line a person without the
-  right is shown was drawn in Jest and not walked in a browser, because no fixture account
-  manages data without being an administrator.
-- **Email Studio's store.** `WpEmailStudioStore` slashes a record's name and its content
-  before handing them to WordPress, so a backslash is read back (DECISIONS #329; on `main`
-  in v0.46.0). A store written beside it has to do the same: WordPress
-  unslashes a post's fields and a meta value on their way in, whoever calls it.
-- **Spec 106, a reply's subject.** It is kept as typed on the reply, preview and draft routes
-  and on Email Studio's **Test send** and **Resend**, by one rule, `Corex\Mail\SubjectLine`
-  (DECISIONS #326; in v0.46.0). A subject can now hold `<`, `>`
-  and `&` together: whatever prints one escapes it there. Read #326's list of where a subject
-  is printed before adding a place that prints one. An Email Studio template's subject, and a
-  value merged into it, are read by the same rule (DECISIONS #330; in v0.46.0): nothing is stripped, and a line break in a merged value is a space.
-- **The activity record.** `ActivityService::record()` cuts an actor's label, a target's
-  label and a target's id to `ActivityEvent::LONGEST_TEXT`, 191 characters, which is also
-  what `ActivityTable` makes the columns (DECISIONS #340; in v0.46.0). A new caller may hand over a name of any length. `kind` (100) and
-  `target_type` (64) are not cut: hand them text written in code.
-- **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
-  Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
-
-No dependency pull request is open. **Node 22.22 is the floor** for building (DECISIONS #272); an
-older Node 22 prints a warning and builds.
-
-## Recently landed
 
 **Merged, not released.** The advisories of 2026-11-09 (DECISIONS #514): overrides for `qs`, `glob` 14, `minimatch` 11 and `isomorphic-git`, and a bounded exception for `deepmerge`, which has no fixed release. The built files are byte-identical; the notes are under `[Unreleased]` → Security in `CHANGELOG.md`.
 
@@ -727,9 +742,17 @@ Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
 ## Next
 
-The next *feature* spec is an owner decision; [`ROADMAP.md`](ROADMAP.md) §17 lists the candidates in
-order. **M3 (navigation and template parts) and M4 (the company-page contract)** are the substantive
-product direction — everything else on that list is remediation or productization.
+The revamp comes first, in its release plan's order, under the CoreX loop (AGENTS.md):
+1. Spec 121 (R2.1) to a pull request, reviewed and green; the owner's native Arabic review before its tag.
+2. A release of what is merged (R3.1, R3.2, R3.4, R3.9, R3.11), once the owner accepts what is visible in it and
+   the Muva and Perego sessions have read its client impact.
+3. Spec 124 (R3.8): review the saved work, then its slices.
+4. The CoreX design system in Claude Design, made from `main`'s tokens once R2.1 lands: no later visible release
+   starts without its screens drawn there and approved.
+
+Outside the revamp, [`ROADMAP.md`](ROADMAP.md) §17 lists the candidates in order. **M3 (navigation and template
+parts) and M4 (the company-page contract)** are the substantive product direction; everything else on that list
+is remediation or productization.
 
 Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 
