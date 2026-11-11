@@ -19332,6 +19332,11 @@ where they are captured. Sending them through the shared mailer instead was left
 leaves without the site's provider is a new rule). Verified: `FlowEmailStageOutcomeTest`, `DefaultEmailsSentTest`
 (which now switches on the defaults it needs, so it runs on an upgraded install too), Jest `newFlowEmails.test.js`.
 
+**Amended 2026-11-11** (two-model review of PR #447). Point 2's reset is written in the site's language, as the
+install is (DECISIONS #362): `DefaultEmailTemplates` is given `EmailLanguage` and draws the shipped words inside
+`during()`, so an Arabic site whose administrator reads the admin in English keeps Arabic emails after a reset.
+Verified: `DefaultResetLanguageTest`.
+
 ## #456 -- Designed emails code sends go through the shared mailer (`DesignedEmails`)
 
 **Date:** 2026-10-26. **Spec:** 120, stories 4 and 6.
@@ -19369,6 +19374,12 @@ it to `MailService::deliver($message, $missingVariables)`, which keeps it on the
 
 **Verified.** `DefaultEmailsSentTest`, `ResetOnTheAccountPageTest` (the designed email links to the page and never
 to `wp-login.php` or the hidden address).
+
+**Amended 2026-11-11** (two-model review of PR #447). Point 3 also covers a designed email that was drawn and did not
+go: only a result that `MailResult::successful()` calls sent (delivered, accepted, queued, or captured on a
+development or staging site, which then sends no real one) stands in for WordPress's email. A failed or refused one
+leaves WordPress to send its own, through the same mail gate; WordPress makes its reset key after the filter is
+asked, so the link in its email works. Verified: `AccountEmailFallbackTest`.
 
 ## #458 -- `MailRequest` takes an optional plain text, last
 

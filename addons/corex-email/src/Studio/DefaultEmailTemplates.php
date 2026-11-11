@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Closure;
 use Corex\Email\Design\EmailKind;
 use Corex\Support\Options\LoadedOptions;
+use Corex\Mail\EmailLanguage;
 use DateTimeImmutable;
 use DomainException;
 
@@ -43,6 +44,8 @@ final class DefaultEmailTemplates
         private readonly EmailTemplateRepository $templates,
         private readonly EmailLayoutRepository $layouts,
         private readonly EmailTemplateService $editor,
+        /** Writes a reset in the site's language, as the install is (DECISIONS #362). */
+        private readonly ?EmailLanguage $language = null,
     ) {
     }
 
@@ -116,6 +119,15 @@ final class DefaultEmailTemplates
      * edited ones kept in its history.
      */
     public function reset(int $templateId, int $actorId, DateTimeImmutable $now): EmailTemplateVersion
+    {
+        // The shipped words go out in every email the site sends with the template: written in
+        // the site's language, not the language of whoever resets it.
+        $reset = fn (): EmailTemplateVersion => $this->resetNow($templateId, $actorId, $now);
+
+        return $this->language === null ? $reset() : $this->language->during($reset);
+    }
+
+    private function resetNow(int $templateId, int $actorId, DateTimeImmutable $now): EmailTemplateVersion
     {
         $template = $this->templates->find($templateId);
         $definition = $template === null ? null : $this->definition($template->slug);

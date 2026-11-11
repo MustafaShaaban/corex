@@ -87,6 +87,11 @@ final class AccountEmails
         }
     }
 
+    /**
+     * Whether the designed reset went: delivered, accepted, queued, or kept on a development or
+     * staging site, which must not then send WordPress's own. A failed or refused one leaves
+     * WordPress to send its own; WordPress makes its key after this answer, so its link works.
+     */
     private function sentReset(int $pageId, WP_User $user): bool
     {
         $key = get_password_reset_key($user);
@@ -104,9 +109,10 @@ final class AccountEmails
             ],
         ], __('Account: password reset', 'corex'));
 
-        return $sent !== null;
+        return $sent?->successful() === true;
     }
 
+    /** Whether the designed welcome went, as for the reset; WordPress's own is sent otherwise. */
     private function sentWelcome(int $pageId, WP_User $user): bool
     {
         $page = $pageId > 0 ? (string) get_permalink($pageId) : '';
@@ -115,7 +121,7 @@ final class AccountEmails
             'account' => ['url' => $page !== '' ? $page : (string) home_url('/')],
         ], __('Account: welcome', 'corex'));
 
-        return $sent !== null;
+        return $sent?->successful() === true;
     }
 
     /** How long a reset link works, in words: "1 day", "2 hours". */
