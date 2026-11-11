@@ -169,7 +169,9 @@ final readonly class Flow
             $this->currentDraftVersion,
             $version,
             new FlowChange($actorId, $occurredAt),
-            [...$this->publications, new FlowPublication($version, $actorId, $occurredAt)],
+            // From the history, not the stored list: a flow published before publications were
+            // recorded keeps its old live version, which a visitor's open page may still carry.
+            [...$this->publicationHistory(), new FlowPublication($version, $actorId, $occurredAt)],
         );
     }
 
@@ -230,7 +232,12 @@ final readonly class Flow
                 && ($this->state !== self::STATE_PUBLISHED || $publishedVersion !== $this->publishedVersion)
                 ? $change->occurredAt
                 : $this->publishedAt,
-            closedAt: $state === self::STATE_CLOSED ? $change->occurredAt : null,
+            // Only closing moves it: availability saved on a closed flow keeps the day it closed.
+            closedAt: match (true) {
+                $state !== self::STATE_CLOSED => null,
+                $this->state === self::STATE_CLOSED => $this->closedAt ?? $change->occurredAt,
+                default => $change->occurredAt,
+            },
             expiresAt: $this->expiresAt,
             publications: $publications ?? $this->publications,
             availability: $availability ?? $this->availability,

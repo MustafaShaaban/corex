@@ -15,6 +15,7 @@ import {
 	requestedFlow,
 } from '../flowEditor.js';
 import { catalogRows } from '../formCatalog.js';
+import { liveLine } from '../FlowState.js';
 import { FlowEditorPanel } from '../FlowEditorPanel.js';
 import { PendingControl } from '../../admin/components/working.js';
 import {
@@ -26,6 +27,7 @@ import {
 import {
 	firstRecipient,
 	recipientKind,
+	routedPerson,
 	ROUTED_OWNER,
 } from '../tabs/EmailsTab.js';
 import {
@@ -297,6 +299,39 @@ describe( 'availability', () => {
 			availabilityPayload( availabilityForm( {} ) ).max_responses
 		).toBeNull();
 	} );
+
+	it( 'sends a cap below 1 as typed so the server refuses it (FR-026)', () => {
+		expect(
+			availabilityPayload( {
+				...availabilityForm( {} ),
+				max_responses: '0',
+			} ).max_responses
+		).toBe( 0 );
+		expect(
+			availabilityPayload( {
+				...availabilityForm( {} ),
+				max_responses: '-2',
+			} ).max_responses
+		).toBe( -2 );
+		expect(
+			availabilityPayload( {
+				...availabilityForm( {} ),
+				max_responses: ' ',
+			} ).max_responses
+		).toBeNull();
+	} );
+
+	it.each( [ '2.5', '1e3', 'many' ] )(
+		'sends %s as typed, never as a whole number it is not (FR-026)',
+		( typed ) => {
+			expect(
+				availabilityPayload( {
+					...availabilityForm( {} ),
+					max_responses: typed,
+				} ).max_responses
+			).toBe( typed );
+		}
+	);
 } );
 
 describe( 'the flow list', () => {
@@ -322,5 +357,64 @@ describe( 'the flow list', () => {
 		expect( row.state ).toBe( 'expired' );
 		expect( row.reason ).toBe( 'Reached 200 responses' );
 		expect( row.routingOwner ).toBe( 'Form owner (Sara Ahmed)' );
+	} );
+} );
+
+describe( 'liveLine', () => {
+	const publications = [
+		{ version: 3, at: '2026-10-21T10:00:00+00:00', by_name: 'Sara Ahmed' },
+	];
+
+	it( 'names the live version of a published flow, with who published it', () => {
+		const line = liveLine( {
+			state: 'published',
+			published_version: 3,
+			publications,
+		} );
+
+		expect( line ).toContain( 'Live: version 3, published ' );
+		expect( line ).toContain( ' by Sara Ahmed' );
+	} );
+
+	it( 'adds why a published flow is not taking answers', () => {
+		expect(
+			liveLine( {
+				state: 'published',
+				published_version: 3,
+				publications,
+				status: { state: 'expired', label: 'Closed on 20 October' },
+			} )
+		).toMatch( /^Live: version 3, .+\. Closed on 20 October$/ );
+	} );
+
+	it( 'says nothing is live for an unpublished or closed flow that keeps its old version', () => {
+		expect(
+			liveLine( { state: 'draft', published_version: 3, publications } )
+		).toBe( '' );
+		expect(
+			liveLine( {
+				state: 'closed',
+				published_version: 3,
+				publications,
+				status: { state: 'closed', label: 'Closed' },
+			} )
+		).toBe( 'Closed' );
+	} );
+} );
+
+describe( 'routedPerson (FR-019)', () => {
+	test.each( [
+		[
+			'a person with an address',
+			{ name: 'Sara Ahmed', email: 'sara@example.test', reachable: true },
+			'Sara Ahmed (sara@example.test)',
+		],
+		[
+			'a person with no address',
+			{ name: 'Nour Haddad', email: '', reachable: false },
+			'Nour Haddad (no address)',
+		],
+	] )( 'names %s', ( _case, person, expected ) => {
+		expect( routedPerson( person ) ).toBe( expected );
 	} );
 } );

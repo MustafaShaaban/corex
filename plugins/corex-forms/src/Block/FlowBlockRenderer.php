@@ -135,13 +135,20 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         return sprintf('<p class="corex-flow-notice corex-flow-notice--editors">%1$s%2$s</p>', esc_html($text), $link);
     }
 
-    /** The page the block is printed on, for "Page owner" routing. */
+    /**
+     * The page the block is printed on, for "Page owner" routing. Without a block context, the
+     * main query's only when it shows one post or page: on an archive the queried object is a
+     * term or a person, whose ID names no page.
+     */
     private function pageId(object $block): int
     {
         $context = property_exists($block, 'context') && is_array($block->context) ? $block->context : [];
         $pageId = (int) ($context['postId'] ?? 0);
+        if ($pageId > 0) {
+            return $pageId;
+        }
 
-        return $pageId > 0 ? $pageId : (int) get_queried_object_id();
+        return is_singular() ? (int) get_queried_object_id() : 0;
     }
 
     /** @param array<string,mixed> $attributes */

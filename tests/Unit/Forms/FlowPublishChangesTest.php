@@ -180,3 +180,39 @@ it('lists the live version of a flow published before publications were recorded
     expect(array_map(static fn ($publication): array => $publication->toArray(), $flow->publicationHistory()))
         ->toBe([['version' => 4, 'by' => 0, 'at' => '2026-01-01T00:00:00+00:00']]);
 });
+
+it('keeps the old live version when changes are published on a flow with no recorded publications (FR-002, FR-007)', function () {
+    $repository = new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));
+    $at = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
+    $flow = $repository->save(new Flow(
+        id: 0,
+        uuid: '1d5d3c2b-8a8f-4b4e-9c4f-0e2a7b6c5d4e',
+        slug: 'old',
+        name: 'Old',
+        description: '',
+        state: Flow::STATE_PUBLISHED,
+        ownerId: 11,
+        placementType: Flow::PLACEMENT_NONE,
+        placementId: null,
+        currentDraftVersion: 1,
+        publishedVersion: 1,
+        testMode: false,
+        createdBy: 11,
+        updatedBy: 11,
+        createdAt: $at,
+        updatedAt: $at,
+        publishedAt: $at,
+    ));
+    $repository->appendVersion(new FlowVersion(0, $flow->id, 1, liveFlowConfiguration('Email'), 11, $at));
+    $service = new FlowService($repository, new FlowConfigurationValidator(new FieldTypeRegistry(), new RuleRegistry(), new SuccessStateRegistry()));
+    saveLiveDraft($service, $flow->id, liveFlowConfiguration('Work email'), 12, '2026-10-21T09:00:00+00:00');
+
+    $published = $service->publish(new FlowTransition($flow->id, 2, 12, new DateTimeImmutable('2026-10-21T10:00:00+00:00')));
+    $seen = $service->versionForVisitor($published, 1, new DateTimeImmutable('2026-10-21T10:05:00+00:00'));
+
+    expect(array_map(static fn ($publication): array => $publication->toArray(), $published->publicationHistory()))->toBe([
+        ['version' => 1, 'by' => 0, 'at' => '2026-01-01T00:00:00+00:00'],
+        ['version' => 2, 'by' => 12, 'at' => '2026-10-21T10:00:00+00:00'],
+    ])
+        ->and($seen->versionNumber)->toBe(1);
+});

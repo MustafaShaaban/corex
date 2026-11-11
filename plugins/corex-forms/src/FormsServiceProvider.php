@@ -279,17 +279,23 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(ActionsStage::class);
         $this->container->singleton(
             FormSubmissionPipeline::class,
-            static fn (ContainerInterface $c): FormSubmissionPipeline => new FormSubmissionPipeline([
-                $c->make(ValidationStage::class),
-                $c->make(ProtectionStage::class),
-                $c->make(StorageStage::class),
-                $c->make(RoutingStage::class),
-                $c->make(EmailStage::class),
-                $c->make(InboxStage::class),
-                $c->make(TimelineStage::class),
-                // Last: an action sees what was kept and cannot stop any of it (spec 122, FR-022).
-                $c->make(ActionsStage::class),
-            ]),
+            static fn (ContainerInterface $c): FormSubmissionPipeline => new FormSubmissionPipeline(
+                [
+                    $c->make(ValidationStage::class),
+                    $c->make(ProtectionStage::class),
+                    $c->make(StorageStage::class),
+                    $c->make(RoutingStage::class),
+                    // The assignment and the routing timeline come before the emails, so an email
+                    // that cannot be sent never leaves a submission assigned to nobody (FR-008).
+                    $c->make(InboxStage::class),
+                    $c->make(TimelineStage::class),
+                    $c->make(EmailStage::class),
+                    // Last: an action sees what was kept and cannot stop any of it (spec 122, FR-022).
+                    $c->make(ActionsStage::class),
+                ],
+                // A failed email is recorded and the actions still run (spec 122, FR-022).
+                continueAfterFailure: ['email'],
+            ),
         );
         $this->container->singleton(FlowTestService::class);
         $this->container->singleton(FlowVisitorSubmissionService::class);

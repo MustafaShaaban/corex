@@ -179,3 +179,30 @@ it('shows nothing for a draft or an open flow', function () {
     expect($text->notice($flow, new FlowStatus(FlowStatus::OPEN)))->toBeNull()
         ->and($text->notice($flow, new FlowStatus(FlowStatus::DRAFT)))->toBeNull();
 });
+
+it('keeps the date a flow was closed when its availability is saved while closed (FR-026)', function () {
+    $closed = availabilityFlow(Flow::STATE_CLOSED, new FlowAvailability());
+
+    $saved = $closed->withAvailability(new FlowAvailability(closedMessage: 'Back in March'), 3, new DateTimeImmutable('2026-10-23T12:00:00+00:00'));
+
+    expect($saved->closedAt?->format(DATE_ATOM))->toBe('2026-10-01T09:00:00+00:00');
+});
+
+it('refuses a response cap below 1 instead of saving it as no cap (FR-026)', function (mixed $cap) {
+    expect(fn () => FlowAvailability::fromArray(['max_responses' => $cap])->assertValid())
+        ->toThrow(DomainException::class, 'The response cap must be a whole number of at least 1.');
+})->with(['zero' => [0], 'zero as text' => ['0'], 'negative' => [-4], 'not a number' => ['many'], 'a fraction as text' => ['2.5'], 'a fraction' => [2.5], 'an exponent' => ['1e3']]);
+
+it('reads an empty cap as no cap', function (mixed $cap) {
+    $availability = FlowAvailability::fromArray(['max_responses' => $cap]);
+    $availability->assertValid();
+
+    expect($availability->maxResponses)->toBeNull();
+})->with(['nothing' => [null], 'empty text' => [''], 'spaces' => ['  ']]);
+
+it('keeps a whole-number cap of at least 1, as a number or as text (FR-026)', function (mixed $cap) {
+    $availability = FlowAvailability::fromArray(['max_responses' => $cap]);
+    $availability->assertValid();
+
+    expect($availability->maxResponses)->toBe(3);
+})->with(['a number' => [3], 'text' => ['3'], 'text with spaces' => [' 3 ']]);

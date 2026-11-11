@@ -16,9 +16,9 @@ use Corex\Access\CorexAbility;
  * Resolves the current WordPress user's Inbox scope without exposing records first.
  *
  * Whoever manages submissions sees every one, as before. Someone who does not, but to whom
- * routing gave work (a team member, or a person with something assigned to them or their role),
- * gets an inbox of exactly that, with none of the managers' extra rights (spec 122, FR-013;
- * DECISIONS #473). The forms engine answers `corex_submission_assigned_access`; without it,
+ * routing gave work (a team member, or a person with a flow submission assigned to them or their
+ * role), gets an inbox of exactly that: flow submissions only, with none of the managers' extra
+ * rights (spec 122, FR-013; DECISIONS #473). The forms engine answers `corex_submission_assigned_access`; without it,
  * nobody but managers gets a scope, as before.
  */
 final class WpSubmissionAccessPolicy implements SubmissionAccessPolicy
@@ -81,6 +81,7 @@ final class WpSubmissionAccessPolicy implements SubmissionAccessPolicy
             manageAll: false,
             teamKeys: $this->keys(apply_filters('corex_submission_actor_teams', [], $actorId)),
             roleKeys: array_values(array_filter(array_map('sanitize_key', (array) $user->roles))),
+            flowsOnly: true,
         );
     }
 

@@ -43,12 +43,15 @@ export function FlowStateChip( { flow } ) {
  * The live line: "Live: version 3, published 21 October 2026 at 10:00 by Sara Ahmed", or why a
  * published flow is not taking answers ("Opens on …", "Closed on …").
  *
+ * Only a published flow has a live version: an unpublished or closed one keeps the number of the
+ * version it last showed, and nothing of it is live.
+ *
  * @param {Object} flow The flow, with its `publications` (newest first) and `status`.
- * @return {string} The line, or '' for a flow that was never published.
+ * @return {string} The line, or the reason alone for a flow that is not published.
  */
 export function liveLine( flow ) {
 	const reason = flow?.status?.label || '';
-	if ( ! flow?.published_version ) {
+	if ( flow?.state !== 'published' || ! flow?.published_version ) {
 		return reason;
 	}
 	const live = ( flow.publications || [] ).find(

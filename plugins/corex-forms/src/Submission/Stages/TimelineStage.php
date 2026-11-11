@@ -14,8 +14,13 @@ use Corex\Forms\Submission\SubmissionPipelineContext;
 use Corex\Forms\Submission\SubmissionRepository;
 use Corex\Forms\Submission\SubmissionStage;
 use Corex\Forms\Submission\SubmissionStageResult;
-use Corex\Mail\MailResult;
 
+/**
+ * Records that the submission arrived and who it was routed to.
+ *
+ * It runs before the emails, so an email that cannot be sent never leaves the timeline without the
+ * routing; the email stage records its own outcome after it (spec 122, FR-009).
+ */
 final readonly class TimelineStage implements SubmissionStage
 {
     public function __construct(private SubmissionRepository $submissions)
@@ -44,20 +49,6 @@ final readonly class TimelineStage implements SubmissionStage
         ]);
 
         $this->recordRouting($context->submissionId, (array) ($context->metadata['routing'] ?? []));
-
-        // Record the notification outcome as its own timeline event, so an administrator sees not
-        // just "submitted" but whether the notification was accepted, captured, queued, or failed.
-        $delivery = $context->metadata['notification_delivery'] ?? null;
-        if (is_array($delivery) && isset($delivery['status'])) {
-            $status = (string) $delivery['status'];
-            $this->submissions->appendTimeline($context->submissionId, 'notification', $this->outcomeFor($status), [
-                'delivery_status' => $status,
-                'provider' => $delivery['provider'] ?? null,
-                'attempt_id' => $delivery['attempt_id'] ?? null,
-                'reason' => $delivery['safe_reason'] ?? '',
-                'note' => $this->routedNote($context),
-            ]);
-        }
 
         return SubmissionStageResult::success(
             $this->key(),
@@ -88,28 +79,5 @@ final readonly class TimelineStage implements SubmissionStage
             'assignee' => $routing['assignee'] ?? [],
             'message' => trim(implode(' ', array_map(static fn (array $failure): string => (string) ($failure['reason'] ?? ''), $failures)) . ' ' . $outcome),
         ]);
-    }
-
-    /** The routed owner's note, when an enabled email went to "Routed owner" (DECISIONS #475). */
-    private function routedNote(SubmissionPipelineContext $context): string
-    {
-        foreach ((array) ($context->metadata['email']['bindings'] ?? []) as $binding) {
-            if (is_array($binding) && ($binding['note'] ?? '') !== '') {
-                return (string) $binding['note'];
-            }
-        }
-
-        return '';
-    }
-
-    /** Coarse timeline outcome for a delivery status, so tone-based rendering stays predictable. */
-    private function outcomeFor(string $status): string
-    {
-        return match ($status) {
-            MailResult::STATE_ACCEPTED, MailResult::STATE_CAPTURED, MailResult::STATE_SENT, MailResult::STATE_OPENED => 'success',
-            MailResult::STATE_QUEUED, MailResult::STATE_SENDING => 'pending',
-            MailResult::STATE_FAILED, MailResult::STATE_REJECTED, MailResult::STATE_BOUNCED => 'failure',
-            default => 'info', // not_attempted / unavailable
-        };
     }
 }

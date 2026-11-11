@@ -42,7 +42,7 @@ final readonly class FlowStatusResolver
     private function underCap(Flow $flow): FlowStatus
     {
         $cap = $flow->availability->maxResponses;
-        if ($cap === null) {
+        if ($cap === null || $cap < 1) {
             return new FlowStatus(FlowStatus::OPEN);
         }
         $responses = $this->counter->responses($flow->id);

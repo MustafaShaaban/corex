@@ -16,7 +16,8 @@ use DomainException;
  * Creates, changes and removes teams, and says which teams a person belongs to (spec 122, FR-012).
  *
  * A team's key is made from its first name and never changes, so a submission assigned to a team
- * stays assigned to it when the team is renamed.
+ * stays assigned to it when the team is renamed. A removed team's key is never given out again:
+ * its submissions keep it, and a new team of the same name would inherit them.
  */
 final readonly class TeamService
 {
@@ -89,6 +90,7 @@ final readonly class TeamService
             throw new DomainException(__('The team was not found.', 'corex'));
         }
         $this->store->replace($kept);
+        $this->store->retire($key);
     }
 
     /** @return list<string> The keys of the teams the person is a member of. */
@@ -122,7 +124,7 @@ final readonly class TeamService
     {
         $base = sanitize_key(str_replace(' ', '-', remove_accents($name)));
         $base = $base !== '' ? substr($base, 0, 60) : 'team';
-        $taken = array_map(static fn (Team $team): string => $team->key, $teams);
+        $taken = [...array_map(static fn (Team $team): string => $team->key, $teams), ...$this->store->retiredKeys()];
         $key = $base;
         for ($suffix = 2; in_array($key, $taken, true); $suffix++) {
             $key = $base . '-' . $suffix;

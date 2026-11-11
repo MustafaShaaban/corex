@@ -74,7 +74,9 @@ routes through CoreX Mail when active and falls back to `wp_mail()` otherwise, a
 **notification-delivery** outcome (`accepted`/`captured`/`queued`/`failed`/`rejected`/`not attempted`) — a saved
 submission is never lost to a mail failure, and `wp_mail()` acceptance is recorded as *accepted*, never *sent*. Each
 stage returns a traceable state and message. A failure stops later stages, preserves already-committed safe state, and
-identifies whether retry is appropriate; it never reports false success.
+identifies whether retry is appropriate; it never reports false success. The email stage is the exception: it runs
+after routing, the inbox and the timeline, and a failed email is recorded while the actions stage still runs (spec 122,
+DECISIONS #476); the run still reports that it did not complete.
 
 Stored `corex_submission` records include the flow/version identity, field values, test marker, consent snapshot, UTM
 and hidden metadata, spam result, routing result, email result, Inbox assignment, and timeline entry. Marked tests use

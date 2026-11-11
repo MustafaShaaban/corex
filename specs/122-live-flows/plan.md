@@ -31,7 +31,7 @@ Studio's variable list (corex-email).
 **Language/Version**: PHP 8.3; React through `@wordpress/element` for the Forms & Flows app (built by `wp-scripts`);
 vanilla JS for the visitor runtime.
 **Primary Dependencies**: WordPress 7.0 REST, block and options APIs; MySQL named locks.
-**Storage**: the flow record's payload (publications, availability); one option for teams (`corex_flow_teams`); one
+**Storage**: the flow record's payload (publications, availability); one option for teams (`corex_flow_teams`) and one for the keys of removed teams (`corex_flow_teams_retired`, amended 2026-11-11); one
 option for the upgrade record (`corex_flow_owner_upgrade`); submission post meta as today. No new table.
 **Testing**: Pest unit (Brain Monkey) and integration (real WordPress), Jest, Playwright.
 **Constraints**:
@@ -68,7 +68,7 @@ option for the upgrade record (`corex_flow_owner_upgrade`); submission post meta
 | Page owner source (#471) | A hidden `corex_page` field `{id}.{hmac}` | The referrer header: absent or forged; the page URL: needs a lookup and can be any page. |
 | Teams (#472) | One option, keys from names, members by user ID, CRUD over REST under the flow gateway | A post type: more than a handful of rows is not expected; a taxonomy: wrong shape. |
 | Assigned-only inbox (#473) | Team members and people with assigned submissions, through two filters corex-config already reads or gains | A new ability: belongs to US-ACC-06 (R4.7). |
-| Upgrade (#474) | Runs on `init` behind an option, in pages of 200, records the count | A WP-CLI command: a shared host has none. |
+| Upgrade (#474) | Runs on `admin_init` (signed in) and a cron hook, never on a visitor's request, in batches of 200 under a lock, and records the count only after the last batch (amended 2026-11-11) | A WP-CLI command: a shared host has none. |
 | Routed owner (#475) | Token `routed_owner` in the recipient mapping; recipients worked out at routing and stored with it | Resolving in the email stage: the inbox's "Send again" would not see the same answer. |
 | Extension hooks (#476) | Three filters read once on `init` (priority 20) into the registries; actions run in a stage after the timeline | `do_action` with the registry: binds callers to a class. |
 | Availability (#477) | On the flow, outside versions; effective state computed; cap under `GET_LOCK` | A cron job flipping states: fails on a site whose cron does not run. |

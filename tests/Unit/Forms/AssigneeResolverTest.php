@@ -16,6 +16,7 @@ use Corex\Forms\Flow\FlowVersion;
 use Corex\Forms\Routing\Assignee;
 use Corex\Forms\Routing\AssigneeResolver;
 use Corex\Forms\Routing\RoutedRecipients;
+use Corex\Forms\Routing\RoutingChain;
 use Corex\Forms\Routing\RoutingOwnerLabel;
 use Corex\Forms\Routing\RoutingPreview;
 use Corex\Forms\Routing\RoutingPerson;
@@ -205,15 +206,19 @@ it('mails the routed owner: a user, every team member, a role up to its limit', 
     ],
 ]);
 
-it('previews who Routed owner is for each rule and for no match, by name only', function () {
+function routingPreview(): RoutingPreview
+{
     $directory = routingDirectory();
-    $preview = new RoutingPreview(
+
+    return new RoutingPreview(
         new AssigneeResolver($directory, new RoutingTargetRegistry()),
         new RoutedRecipients($directory),
         new RoutingOwnerLabel($directory, new RoutingTargetRegistry()),
     );
+}
 
-    $lines = $preview->lines(routedFlow(), [
+it('previews who Routed owner is for each rule and for no match, by name and address (FR-019)', function () {
+    $lines = routingPreview()->lines(routedFlow(), [
         'rules' => [
             ['uuid' => 'r-1', 'target' => ['type' => 'team', 'config' => ['value' => 'sales']]],
             ['uuid' => 'r-2', 'target' => ['type' => 'page_owner', 'config' => []]],
@@ -224,13 +229,32 @@ it('previews who Routed owner is for each rule and for no match, by name only', 
     expect(array_column($lines, 'label'))->toBe(['Rule 1', 'Rule 2', 'No rule matches'])
         ->and($lines[0]['target'])->toBe('Team: Sales')
         ->and($lines[0]['people'])->toBe([
-            ['id' => 3, 'name' => 'Omar Ali', 'reachable' => true],
-            ['id' => 4, 'name' => 'Lina Saad', 'reachable' => true],
-            ['id' => 5, 'name' => 'Nour Haddad', 'reachable' => false],
+            ['id' => 3, 'name' => 'Omar Ali', 'email' => 'omar@example.test', 'reachable' => true],
+            ['id' => 4, 'name' => 'Lina Saad', 'email' => 'lina@example.test', 'reachable' => true],
+            ['id' => 5, 'name' => 'Nour Haddad', 'email' => '', 'reachable' => false],
         ])
         ->and($lines[1]['note'])->toBe('Worked out for each submission.')
         ->and($lines[2]['target'])->toBe('Form owner (Sara Ahmed)')
-        ->and($lines[2]['people'])->toBe([['id' => 2, 'name' => 'Sara Ahmed', 'reachable' => true]]);
+        ->and($lines[2]['people'])->toBe([['id' => 2, 'name' => 'Sara Ahmed', 'email' => 'sara@example.test', 'reachable' => true]]);
+});
+
+it('previews where a rule that names nobody goes instead: the fallback, then the flow owner (FR-009, FR-019)', function () {
+    $lines = routingPreview()->lines(routedFlow(), [
+        'rules' => [
+            ['uuid' => 'r-1', 'target' => ['type' => 'team', 'config' => ['value' => 'gone']]],
+        ],
+        'fallback' => ['type' => 'team', 'config' => ['value' => 'sales']],
+    ], []);
+    $orphaned = routingPreview()->lines(routedFlow(), [
+        'rules' => [],
+        'fallback' => ['type' => 'user', 'config' => ['value' => '99']],
+    ], []);
+
+    expect($lines[0]['people'])->toHaveCount(3)
+        ->and($lines[0]['people'][0]['email'])->toBe('omar@example.test')
+        ->and($lines[0]['note'])->toEndWith('Assigned to Sales instead.')
+        ->and($orphaned[0]['people'])->toBe([['id' => 2, 'name' => 'Sara Ahmed', 'email' => 'sara@example.test', 'reachable' => true]])
+        ->and($orphaned[0]['note'])->toEndWith('Assigned to Sara Ahmed instead.');
 });
 
 it('signs the page a form was printed on and refuses a changed or borrowed value', function () {
@@ -242,4 +266,16 @@ it('signs the page a form was printed on and refuses a changed or borrowed value
         ->and($pages->verify($signed, 10))->toBeNull()
         ->and($pages->verify('40', 9))->toBeNull()
         ->and($pages->sign(0, 9))->toBe('');
+});
+
+it('builds the one routing chain both the submission and the preview follow (FR-009)', function () {
+    $types = static fn (array $chain): array => array_map(static fn (RoutingTarget $target): string => $target->type, $chain);
+    $team = new RoutingTarget('team', ['value' => 'sales']);
+    $user = new RoutingTarget('user', ['value' => '3']);
+    $owner = new RoutingTarget('flow_owner');
+
+    expect($types(RoutingChain::for($team, $user, matchedIsFallback: false)))->toBe(['team', 'user', 'flow_owner'])
+        ->and($types(RoutingChain::for($user, $user, matchedIsFallback: true)))->toBe(['user', 'flow_owner'])
+        ->and($types(RoutingChain::for($team, $owner, matchedIsFallback: false)))->toBe(['team', 'flow_owner'])
+        ->and($types(RoutingChain::for($owner, $owner, matchedIsFallback: true)))->toBe(['flow_owner']);
 });

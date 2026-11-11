@@ -97,9 +97,15 @@ final readonly class FlowSubmissionController
                 'code' => 'flow_closed',
                 'notice' => $closed->notice->toArray(),
             ]);
+        } catch (SubmissionBusyException $busy) {
+            // Nothing was stored: the visitor may send again (FR-030).
+            return Response::reject($busy->getMessage(), 503, ['code' => 'flow_busy']);
         }
-        if (! $result->pipeline->completed) {
-            $failed = $result->pipeline->stages[array_key_last($result->pipeline->stages)];
+        $failed = $result->pipeline->failedStage();
+        // Stored, and only an email failed: the visitor is done. Sending again would store a second
+        // submission and run every action again; the failure stays on the submission and its
+        // history, and the site's failure alert still goes (DECISIONS #476).
+        if (! $result->pipeline->completed && $failed !== null && ! $result->pipeline->storedFailingOnlyAt('email')) {
             $status = in_array($failed->key, ['validation', 'protection'], true) ? 422 : 502;
 
             return Response::reject($failed->message, $status, $this->resultData($result));

@@ -19,11 +19,14 @@ Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIO
 - **Routing assigns a real person or team.** Targets are User, Team, Role, Flow owner, Page owner (the author of the
   page the form was sent from), Field value (a value-to-owner table) and registered routing extensions, each picked
   by name. A target that names nobody falls back to the flow's fallback, then to the flow's owner, and the
-  submission's history says why. Teams are made on a new **Teams** view in Forms & Flows. A person who does not
-  manage submissions sees in their inbox what is assigned to them, their team or their role.
+  submission's history says why. Teams are made on a new **Teams** view in Forms & Flows; a removed team's key is
+  never given to a new one. A person who does not manage submissions sees in their inbox the flow submissions
+  assigned to them, their team or their role, and only those flows in its form filter. A submission of a form
+  defined in code that a manager once assigned to them opens no inbox and is not listed.
 - **"Routed owner" as an email recipient**: the person, every team member, or every holder of a role (up to 20 by
   default). With nobody to reach, the flow's fallback address or the site administrator gets it, and the delivery
-  record says so. The Emails tab shows who it would be for each rule.
+  record and the history say so. The Emails tab shows who it would be for each rule, by name and address, and
+  where a rule that names nobody goes instead. "Send again" in the inbox reaches the same people.
 - **Flow actions, email variables and routing targets run.** Registered through the filters
   `corex_flow_actions`, `corex_flow_email_variables` and `corex_flow_routing_targets` (or the registries): an
   action chosen on the Success tab's "After submission" runs once per stored submission and its result is on the
@@ -40,10 +43,20 @@ Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIO
 - **"Move to draft" is "Unpublish"** and asks first: the form leaves every page that shows it.
 - **The submit route of a flow that is not taking answers answers 409 `flow_closed`** with the notice, instead of
   404 "This flow is not available for submissions." A draft or missing flow still answers 404.
-- **Every visual flow's pipeline has an eighth stage, `actions`**, after `timeline`; it always succeeds.
+- **Every visual flow's pipeline has an eighth stage, `actions`**, and runs in this order: validation, protection,
+  storage, routing, inbox, timeline, email, actions. The assignment and the routing history come before the emails,
+  and an email that cannot be sent is recorded without stopping the actions. When the submission was stored and only
+  its email failed, the visitor gets the form's normal success instead of a 502, so nobody sends it twice; the
+  failure stays on the submission and its history, and the site's failure alert still goes. The `actions` stage
+  always succeeds.
+- **A capped flow counts and stores under one lock, and only those two.** A visitor who waits more than ten
+  seconds for it is answered 503 `flow_busy`, "Many people are sending this form right now. Please try again in a
+  moment.", and nothing is stored. Both of CoreX's database locks are named after the site's table prefix. A cap
+  that is not a whole number of at least 1 is refused when availability is saved.
 - **Flow submissions are assigned to a user, a team or a role.** Ones stored before this release with a route's
-  own type ("flow_owner", "page_owner"…) are given to their flow's owner once, on the first request after the
-  update; the Forms & Flows list says how many. Nothing is deleted.
+  own type ("flow_owner", "page_owner"…) are given to their flow's owner once, 200 at a time, from a signed-in
+  admin page and then WP-Cron, never from a visitor's request; the step is recorded as done only after the last
+  batch, and the Forms & Flows list then says how many. Nothing is deleted.
 - **Email Studio reads its variable list when a template is first checked**, so a plugin can add variables on
   `init` through `corex_email_variable_schema`.
 
@@ -51,8 +64,10 @@ Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIO
 
 - **Muva and Perego**: their forms are code-defined, so none of this reaches their visitors: no routing, availability,
   closed notice or flow action runs for them, and the upgrade step finds no flow submission to move. The visitor
-  runtime gains a branch for an answer (`flow_closed`) their routes never give. Their inbox opens for nobody new:
-  no one on either site is in a team and no flow submission is assigned to a role. On the Forms & Flows screen
+  runtime gains a branch for answers (`flow_closed`, `flow_busy`) their routes never give. Their inbox opens for
+  nobody new: only a flow submission assigned to someone opens it for a person who does not manage submissions,
+  neither site stores one, and no one on either site is in a team. A code-form submission a manager assigned to
+  someone in the inbox stays visible to managers only, as before. On the Forms & Flows screen
   they see a Flows/Teams switch and their code forms as before.
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 

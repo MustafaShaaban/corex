@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Forms\Routing\Assignee;
 use Corex\Forms\Routing\AssigneeResolver;
 use Corex\Forms\Routing\RoutedRecipients;
+use Corex\Forms\Routing\RoutingChain;
 use Corex\Forms\Routing\RoutingCondition;
 use Corex\Forms\Routing\RoutingPlan;
 use Corex\Forms\Routing\RoutingRule;
@@ -59,13 +60,7 @@ final readonly class RoutingStage implements SubmissionStage
             $this->pageId($context),
             $context->isTest,
         );
-        $candidates = [$resolved->target];
-        if (! $resolved->usedFallback) {
-            $candidates[] = $fallback;
-        }
-        if ($fallback->type !== 'flow_owner') {
-            $candidates[] = new RoutingTarget('flow_owner');
-        }
+        $candidates = RoutingChain::for($resolved->target, $fallback, $resolved->usedFallback);
 
         $assignee = Assignee::none();
         $failures = [];

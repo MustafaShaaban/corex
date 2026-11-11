@@ -39,12 +39,11 @@ final readonly class FlowAvailability
     public static function fromArray(mixed $stored): self
     {
         $stored = is_array($stored) ? $stored : [];
-        $cap = $stored['max_responses'] ?? null;
 
         return new self(
             self::instant($stored['opens_at'] ?? null),
             self::instant($stored['closes_at'] ?? null),
-            is_numeric($cap) && (int) $cap > 0 ? (int) $cap : null,
+            self::cap($stored['max_responses'] ?? null),
             trim((string) ($stored['closed_message'] ?? '')),
             FlowAlternative::fromArray(is_array($stored['alternative'] ?? null) ? $stored['alternative'] : []),
         );
@@ -68,10 +67,30 @@ final readonly class FlowAvailability
         if ($this->opensAt !== null && $this->closesAt !== null && $this->closesAt <= $this->opensAt) {
             throw new DomainException(__('The closing date must be after the opening date.', 'corex'));
         }
+        if ($this->maxResponses !== null && $this->maxResponses < 1) {
+            throw new DomainException(__('The response cap must be a whole number of at least 1.', 'corex'));
+        }
         if (mb_strlen($this->closedMessage) > self::MAX_MESSAGE_LENGTH) {
             throw new DomainException(__('The closed message is too long. Keep it under 500 characters.', 'corex'));
         }
         $this->alternative->assertValid();
+    }
+
+    /**
+     * No cap when nothing was given. Anything else is kept as a whole number, 0 when it is not one
+     * ("2.5", "1e3", "many"), so that `assertValid()` refuses it instead of saving it as no cap or
+     * as a cap the owner did not type.
+     */
+    private static function cap(mixed $value): ?int
+    {
+        if ($value === null || (is_string($value) && trim($value) === '')) {
+            return null;
+        }
+        $whole = is_int($value) || is_string($value)
+            ? filter_var(is_string($value) ? trim($value) : $value, FILTER_VALIDATE_INT)
+            : false;
+
+        return $whole === false ? 0 : $whole;
     }
 
     private static function instant(mixed $value): ?DateTimeImmutable

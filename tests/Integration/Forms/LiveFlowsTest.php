@@ -219,6 +219,71 @@ it('shows a closed flow\'s heading, the closed message and the alternative, and 
         ]);
 });
 
+it('shows the owner words as written when no translation plugin answers the hooks (FR-032)', function () {
+    $flowId = publishLiveFlow('live-words-plain');
+    // As on a site without WPML or Polylang: nothing listens to either hook.
+    $registered = $GLOBALS['wp_filter']['wpml_register_single_string'] ?? null;
+    $translated = $GLOBALS['wp_filter']['wpml_translate_single_string'] ?? null;
+    unset($GLOBALS['wp_filter']['wpml_register_single_string'], $GLOBALS['wp_filter']['wpml_translate_single_string']);
+
+    try {
+        $saved = setAvailability($flowId, [
+            'closed_message' => 'Applications reopen in March',
+            'alternative' => ['type' => 'email', 'label' => 'Email us', 'email' => 'jobs@example.test'],
+        ]);
+        Boot::app()->container()->make(FlowController::class)->close(liveFlowRequest('POST', "/corex/v1/flows/{$flowId}/close", ['expected_version' => 1], ['id' => $flowId]));
+        wp_set_current_user(0);
+        $closed = renderLiveFlow($flowId);
+    } finally {
+        if ($registered !== null) {
+            $GLOBALS['wp_filter']['wpml_register_single_string'] = $registered;
+        }
+        if ($translated !== null) {
+            $GLOBALS['wp_filter']['wpml_translate_single_string'] = $translated;
+        }
+    }
+
+    expect($saved->get_status())->toBe(200)
+        ->and($closed)->toContain('Applications reopen in March')
+        ->toContain('>Email us</a>');
+});
+
+it('registers the owner words with a translation plugin and shows its translation (FR-032)', function () {
+    $flowId = publishLiveFlow('live-words-translated');
+    $offered = [];
+    $register = static function (string $context, string $name, string $text) use (&$offered): void {
+        $offered[$name] = [$context, $text];
+    };
+    $translate = static fn (string $text, string $context, string $name): string => match ($name) {
+        'flow-live-words-translated-closed-message' => 'Les candidatures rouvrent en mars',
+        'flow-live-words-translated-alternative-label' => 'Écrivez-nous',
+        default => $text,
+    };
+    add_action('wpml_register_single_string', $register, 10, 3);
+    add_filter('wpml_translate_single_string', $translate, 10, 3);
+
+    try {
+        setAvailability($flowId, [
+            'closed_message' => 'Applications reopen in March',
+            'alternative' => ['type' => 'email', 'label' => 'Email us', 'email' => 'jobs@example.test'],
+        ]);
+        Boot::app()->container()->make(FlowController::class)->close(liveFlowRequest('POST', "/corex/v1/flows/{$flowId}/close", ['expected_version' => 1], ['id' => $flowId]));
+        wp_set_current_user(0);
+        $closed = renderLiveFlow($flowId);
+    } finally {
+        remove_action('wpml_register_single_string', $register, 10);
+        remove_filter('wpml_translate_single_string', $translate, 10);
+    }
+
+    expect($offered)->toBe([
+        'flow-live-words-translated-closed-message' => ['corex', 'Applications reopen in March'],
+        'flow-live-words-translated-alternative-label' => ['corex', 'Email us'],
+    ])
+        ->and($closed)->toContain('Les candidatures rouvrent en mars')
+        ->toContain('>Écrivez-nous</a>')
+        ->not->toContain('Applications reopen in March');
+});
+
 it('says when a scheduled flow opens, refuses a submission before then, and opens again when the date is cleared', function () {
     $flowId = publishLiveFlow('live-scheduled');
     $opens = (new DateTimeImmutable('+2 days', wp_timezone()))->setTime(9, 0);
@@ -266,6 +331,98 @@ it('counts responses up to the cap, marked tests left out', function () {
         ->and($third->get_data()['message'])->toBe('This form is closed.');
 });
 
+it('refuses a cap below 1 instead of saving it as no cap (FR-026)', function () {
+    $flowId = publishLiveFlow('live-bad-cap');
+
+    $response = setAvailability($flowId, ['max_responses' => 0]);
+
+    expect($response->get_status())->toBe(422)
+        ->and($response->get_data()['message'])->toBe('The response cap must be a whole number of at least 1.')
+        ->and(Boot::app()->container()->make(FlowService::class)->get($flowId)->availability->maxResponses)->toBeNull();
+});
+
+it('holds the cap lock for the count and the store only, not for the emails or the actions (FR-030)', function () {
+    global $wpdb;
+    $held = [];
+    $action = 'live_lock_probe_' . strtolower(wp_generate_password(6, false, false));
+    $lock = '';
+    Boot::app()->container()->make(\Corex\Forms\Flow\FlowActionRegistry::class)->register($action, 'Lock probe', static function () use (&$held, &$lock, $wpdb): void {
+        $held[] = $wpdb->get_var($wpdb->prepare('SELECT IS_USED_LOCK(%s)', $lock));
+    });
+    $controller = Boot::app()->container()->make(FlowController::class);
+    $created = $controller->create(liveFlowRequest('POST', '/corex/v1/flows', [
+        'slug' => 'live-lock-scope',
+        'name' => 'Live flow',
+        'owner_id' => get_current_user_id(),
+        'configuration' => ['actions' => [$action]] + liveFlowDocument('Email'),
+    ]));
+    $flowId = (int) $created->get_data()['data']['flow']['id'];
+    $controller->publish(liveFlowRequest('POST', "/corex/v1/flows/{$flowId}/publish", ['expected_version' => 1], ['id' => $flowId]));
+    setAvailability($flowId, ['max_responses' => 5]);
+    // Named for this site, so two sites on one database server never wait on each other.
+    $lock = $wpdb->prefix . 'corex_flow_cap_' . $flowId;
+    $storing = [];
+    $whileStoring = static function (int $postId, WP_Post $post) use (&$storing, &$lock, $wpdb): void {
+        if ($post->post_type === 'corex_submission') {
+            $storing[] = $wpdb->get_var($wpdb->prepare('SELECT IS_USED_LOCK(%s)', $lock)) !== null;
+        }
+    };
+    add_action('wp_insert_post', $whileStoring, 10, 2);
+
+    try {
+        $response = submitLiveFlow($flowId, ['email' => 'one@example.test']);
+    } finally {
+        remove_action('wp_insert_post', $whileStoring, 10);
+    }
+
+    expect($response->get_status())->toBe(200)
+        ->and($storing)->toBe([true])
+        ->and($held)->toBe([null]);
+});
+
+it('answers 503 with a message a visitor can read when another submission holds the count too long (FR-030)', function () {
+    global $wpdb;
+    $flowId = publishLiveFlow('live-lock-busy');
+    setAvailability($flowId, ['max_responses' => 5]);
+    $lock = $wpdb->prefix . 'corex_flow_cap_' . $flowId;
+    // Another request, on a connection of its own, is counting this flow's responses.
+    $other = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $other->query("SELECT GET_LOCK('{$lock}', 0)");
+    // The route as the site builds it, with no wait for the lock: the test need not sit out ten seconds.
+    $container = Boot::app()->container();
+    $route = new FlowSubmissionController(
+        new \Corex\Forms\Submission\FlowVisitorSubmissionService(
+            $container->make(FlowService::class),
+            $container->make(\Corex\Forms\Submission\FormSubmissionPipeline::class),
+            $container->make(\Corex\Forms\Submission\FlowSchemaFactory::class),
+            $container->make(\Corex\Events\EventDispatcher::class),
+            $container->make(\Corex\Forms\Flow\FlowStatusResolver::class),
+            $container->make(\Corex\Forms\Flow\FlowNoticeText::class),
+            $container->make(\Corex\Forms\Submission\PageReference::class),
+            $container->make(\Corex\Forms\Submission\SubmissionRepository::class),
+            capLockWait: 0,
+        ),
+        $container->make(\Corex\Http\Middleware\Pipeline::class),
+        $container->make(\Corex\Http\Middleware\MiddlewareResolver::class),
+        $container->make(\Corex\Http\ClientAddress::class),
+    );
+    $started = microtime(true);
+    wp_set_current_user(0);
+
+    try {
+        $response = $route->submit(liveFlowRequest('POST', "/corex/v1/flows/{$flowId}/submit", ['email' => 'one@example.test'], ['id' => $flowId]));
+    } finally {
+        $other->query("SELECT RELEASE_LOCK('{$lock}')");
+        $other->close();
+    }
+
+    expect(microtime(true) - $started)->toBeLessThan(5.0)
+        ->and($response->get_status())->toBe(503)
+        ->and($response->get_data()['code'])->toBe('flow_busy')
+        ->and($response->get_data()['message'])->toBe('Many people are sending this form right now. Please try again in a moment.')
+        ->and(Boot::app()->container()->make(\Corex\Forms\Submission\SubmissionRepository::class)->responses($flowId))->toBe(0);
+});
+
 it('refuses an availability whose dates are out of order', function () {
     $flowId = publishLiveFlow('live-bad-dates');
 
@@ -299,4 +456,26 @@ it('carries the signed page the form was printed on', function () {
     $pageId = wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Apply']);
 
     expect(renderLiveFlow($flowId, $pageId))->toMatch('/name="corex_page" value="' . $pageId . '\.[a-f0-9]{16}"/');
+});
+
+it('carries the page from the main query only when it shows one page, never an archive (FR-010)', function () {
+    $flowId = publishLiveFlow('live-page-query');
+    $pageId = wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Apply']);
+    $previous = [$GLOBALS['wp_query'] ?? null, $GLOBALS['wp_the_query'] ?? null];
+
+    try {
+        // An author archive: the queried object is a person, whose ID is no page.
+        $GLOBALS['wp_the_query'] = $GLOBALS['wp_query'] = new WP_Query(['author' => get_current_user_id()]);
+        $archiveId = get_queried_object_id();
+        $archive = renderLiveFlow($flowId);
+        $GLOBALS['wp_the_query'] = $GLOBALS['wp_query'] = new WP_Query(['page_id' => $pageId]);
+        $single = renderLiveFlow($flowId);
+    } finally {
+        [$GLOBALS['wp_query'], $GLOBALS['wp_the_query']] = $previous;
+    }
+
+    expect($archiveId)->toBeGreaterThan(0)
+        ->and($archive)->toContain('<form')
+        ->not->toContain('name="corex_page"')
+        ->and($single)->toMatch('/name="corex_page" value="' . $pageId . '\.[a-f0-9]{16}"/');
 });

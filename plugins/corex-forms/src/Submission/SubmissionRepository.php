@@ -169,14 +169,16 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
      * @template T
      * @param callable():T $work
      * @return T
+     *
+     * @throws SubmissionBusyException When the lock is not free within `$waitSeconds`.
      */
-    public function oneAtATime(int $flowId, callable $work): mixed
+    public function oneAtATime(int $flowId, callable $work, int $waitSeconds = 10): mixed
     {
         global $wpdb;
 
-        $lock = 'corex_flow_cap_' . $flowId;
-        if ((int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $lock, 10)) !== 1) {
-            throw new \RuntimeException('CoreX could not count the responses of this form.');
+        $lock = self::lockName('corex_flow_cap_' . $flowId);
+        if ((int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $lock, max(0, $waitSeconds))) !== 1) {
+            throw new SubmissionBusyException();
         }
         try {
             return $work();
@@ -186,8 +188,9 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
     }
 
     /**
-     * Whether anything is assigned to this person directly or to one of their roles (spec 122,
-     * FR-013): what opens an assigned-only inbox for someone who does not manage submissions.
+     * Whether a flow submission is assigned to this person directly or to one of their roles (spec
+     * 122, FR-013): what opens an assigned-only inbox for someone who does not manage submissions.
+     * Only a flow's: a code form's submission a manager assigned in the inbox opens nothing.
      *
      * @param list<string> $roles
      */
@@ -207,9 +210,11 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
         return $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT p.ID FROM {$wpdb->posts} p
+                 INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id'
                  INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'
                  INNER JOIN {$wpdb->postmeta} owner ON owner.post_id = p.ID AND owner.meta_key = 'corex_owner_key'
                  WHERE p.post_type = 'corex_submission' AND p.post_status = 'private'
+                 AND CAST(flow.meta_value AS UNSIGNED) > 0
                  AND ((type.meta_value = 'user' AND owner.meta_value = %s)",
                 (string) $userId,
             ) . $roleClause . ') LIMIT 1',
@@ -218,25 +223,68 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
 
     /**
      * Flow submissions whose owner names nobody: stored with a route's type (flow owner, page
-     * owner, field value…) and not a user, a team or a role (spec 122, FR-014).
+     * owner, field value…) and not a user, a team or a role (spec 122, FR-014). Oldest first, from
+     * after `$afterId`, at most `$limit`, so the upgrade can move them a batch at a time.
      *
      * @return list<int>
      */
-    public function withUnresolvedOwner(): array
+    public function withUnresolvedOwner(int $afterId = 0, int $limit = 0): array
     {
         global $wpdb;
 
         $types = ['flow_owner', 'page_owner', 'post_author', 'department', 'field_value', 'email', 'extension'];
+        $page = $limit > 0 ? $wpdb->prepare(' LIMIT %d', $limit) : '';
 
-        // In SQL: it runs on whichever request comes first after the update, a visitor's included.
+        // In SQL: the person running the upgrade (an administrator's request or cron) may not be
+        // able to read these posts through WP_Query's capability checks.
         return array_map('intval', $wpdb->get_col($wpdb->prepare(
             "SELECT DISTINCT p.ID FROM {$wpdb->posts} p
              INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id'
              INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'
              WHERE p.post_type = 'corex_submission' AND p.post_status IN ('private', 'trash')
-             AND type.meta_value IN (" . implode(', ', array_fill(0, count($types), '%s')) . ')',
+             AND p.ID > %d
+             AND type.meta_value IN (" . implode(', ', array_fill(0, count($types), '%s')) . ')
+             ORDER BY p.ID ASC',
+            $afterId,
             ...$types,
-        )));
+        ) . $page));
+    }
+
+    /**
+     * Runs `$work` unless another request is already running it under the same name, in which
+     * case it runs nothing and answers false. A MySQL named lock: let go if the request dies.
+     *
+     * @param callable():void $work
+     */
+    public function unlessBusy(string $name, callable $work): bool
+    {
+        global $wpdb;
+
+        $lock = self::lockName($name);
+        if ((int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, 0)', $lock)) !== 1) {
+            return false;
+        }
+        try {
+            $work();
+        } finally {
+            $wpdb->query($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock));
+        }
+
+        return true;
+    }
+
+    /**
+     * A named lock belongs to the MySQL server, not to the site: named after the site's table
+     * prefix, two sites (or two sites of a network) sharing a server never wait on each other.
+     * MySQL refuses a name over 64 characters, so a longer one is hashed.
+     */
+    private static function lockName(string $name): string
+    {
+        global $wpdb;
+
+        $lock = $wpdb->prefix . $name;
+
+        return strlen($lock) <= 64 ? $lock : 'corex_' . md5($lock);
     }
 
     public function flowOf(int $submissionId): int

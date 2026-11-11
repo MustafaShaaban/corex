@@ -115,6 +115,11 @@ it('says "Could not load" on a card whose source throws, and renders every other
                     failingRead();
                 }
 
+                public function flowIdsIn(SubmissionAccessScope $scope): array
+                {
+                    return [];
+                }
+
                 public function findInbox(int $id, SubmissionAccessScope $scope): ?array
                 {
                     failingRead();

@@ -24,12 +24,16 @@ use DomainException;
  * Runs visitor input against the flow version the visitor answered (spec 122, DECISIONS #470).
  *
  * A flow that is not taking answers refuses with its notice (FR-029). A capped flow counts and
- * stores under one lock, so the count never goes past its cap (FR-030).
+ * stores under one lock, so the count never goes past its cap (FR-030); a visitor who waited too
+ * long for it gets {@see SubmissionBusyException}.
  */
 final readonly class FlowVisitorSubmissionService
 {
     /** The version the visitor's page was printed with, sent back with the answers. */
     public const VERSION_FIELD = 'corex_flow_version';
+
+    /** How long a visitor waits, in seconds, for another submission to a capped flow to be counted. */
+    public const CAP_LOCK_WAIT = 10;
 
     public function __construct(
         private FlowService $flows,
@@ -40,6 +44,7 @@ final readonly class FlowVisitorSubmissionService
         private FlowNoticeText $notices,
         private PageReference $pages,
         private SubmissionRepository $submissions,
+        private int $capLockWait = self::CAP_LOCK_WAIT,
     ) {
     }
 
@@ -54,23 +59,10 @@ final readonly class FlowVisitorSubmissionService
         $pageId = $this->pages->verify($values[PageReference::FIELD] ?? null, $flow->id);
         unset($values[self::VERSION_FIELD], $values[PageReference::FIELD]);
         $version = $this->flows->versionForVisitor($flow, $seen, $now);
-        $run = fn (): SubmissionPipelineResult => $this->pipeline->run(new SubmissionPipelineContext(
-            $flow,
-            $version,
-            $values,
-            false,
-            null,
-            ['source' => ['page_id' => $pageId]],
-        ));
-
-        $result = $flow->availability->maxResponses === null
-            ? $run()
-            : $this->submissions->oneAtATime($flow->id, function () use ($flow, $now, $run): SubmissionPipelineResult {
-                // Counted again under the lock: another request may have taken the last place.
-                $this->assertOpen($flow, $now);
-
-                return $run();
-            });
+        $result = $this->pipeline->run(
+            new SubmissionPipelineContext($flow, $version, $values, false, null, ['source' => ['page_id' => $pageId]]),
+            $this->capped($flow, $now),
+        );
         $this->announce($result);
 
         return new FlowVisitorResult($result, $version->configuration->success);
@@ -92,6 +84,31 @@ final readonly class FlowVisitorSubmissionService
         }
 
         return $schema;
+    }
+
+    /**
+     * A capped flow counts and stores under one lock, so the count never goes past its cap
+     * (FR-030). Only the store: the checks before it and the emails and actions after it run
+     * outside, so one slow email never keeps the next visitor waiting.
+     *
+     * @return array<string,callable(callable():SubmissionStageResult):SubmissionStageResult>
+     */
+    private function capped(Flow $flow, DateTimeImmutable $now): array
+    {
+        if ($flow->availability->maxResponses === null) {
+            return [];
+        }
+
+        return ['storage' => fn (callable $store): SubmissionStageResult => $this->submissions->oneAtATime(
+            $flow->id,
+            function () use ($flow, $now, $store): SubmissionStageResult {
+                // Counted again under the lock: another request may have taken the last place.
+                $this->assertOpen($flow, $now);
+
+                return $store();
+            },
+            $this->capLockWait,
+        )];
     }
 
     /** @throws FlowClosedException|DomainException */

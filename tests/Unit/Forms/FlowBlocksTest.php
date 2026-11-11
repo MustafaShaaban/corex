@@ -48,6 +48,7 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $setting
     Functions\when('wp_json_encode')->alias(static fn (mixed $data): string => (string) json_encode($data));
     // A visitor: no editor's note, and no page to sign.
     Functions\when('is_user_logged_in')->justReturn(false);
+    Functions\when('is_singular')->justReturn(false);
     Functions\when('get_queried_object_id')->justReturn(0);
 
     $repository = new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));

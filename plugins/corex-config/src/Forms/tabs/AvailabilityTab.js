@@ -36,15 +36,21 @@ export function availabilityForm( availability = {} ) {
 }
 
 /**
- * What is sent: a cap as a number, or nothing.
+ * What is sent: a whole number as a number, or nothing when the field is empty. Anything else
+ * ("2.5", "many") is sent as typed, and a number below 1 as itself, so the server refuses it with
+ * its reason instead of saving no cap or a cap the owner did not type (FR-026).
  *
  * @param {Object} form The fields' values.
  * @return {Object} The request's `availability`.
  */
 export function availabilityPayload( form ) {
-	const cap = parseInt( form.max_responses, 10 );
+	const typed = String( form.max_responses ?? '' ).trim();
+	let maxResponses = /^-?\d+$/.test( typed ) ? Number( typed ) : typed;
+	if ( typed === '' ) {
+		maxResponses = null;
+	}
 
-	return { ...form, max_responses: cap > 0 ? cap : null };
+	return { ...form, max_responses: maxResponses };
 }
 
 export function AvailabilityTab( {

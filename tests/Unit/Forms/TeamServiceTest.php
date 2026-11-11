@@ -41,8 +41,35 @@ function memoryTeams(): TeamService
         {
             $this->teams = $teams;
         }
+
+        /** @var list<string> */
+        private array $retired = [];
+
+        public function retiredKeys(): array
+        {
+            return $this->retired;
+        }
+
+        public function retire(string $key): void
+        {
+            $this->retired[] = $key;
+        }
     });
 }
+
+it('never gives a new team the key of a removed one, whose submissions stay with that key (FR-012)', function () {
+    $teams = memoryTeams();
+    $removed = $teams->create('Sales', [3]);
+    $teams->delete($removed->key);
+
+    $again = $teams->create('Sales', [9]);
+    $teams->delete($again->key);
+    $third = $teams->create('Sales', []);
+
+    expect($removed->key)->toBe('sales')
+        ->and($again->key)->toBe('sales-2')
+        ->and($third->key)->toBe('sales-3');
+});
 
 it('creates a team with a key made from its name, and a second of the same name gets its own key', function () {
     $teams = memoryTeams();

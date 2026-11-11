@@ -237,6 +237,30 @@ export function EmailsTab( {
 }
 
 /**
+ * One person "Routed owner" reaches, by name and address (spec 122, FR-019).
+ *
+ * @param {Object}  person           A person of a preview line.
+ * @param {string}  person.name      Their name.
+ * @param {string}  person.email     Their address, or ''.
+ * @param {boolean} person.reachable Whether they have an address.
+ * @return {string} "Sara Ahmed (sara@example.test)", or "Nour Haddad (no address)".
+ */
+export function routedPerson( person ) {
+	return person.reachable && person.email
+		? sprintf(
+				/* translators: 1: a person's name, 2: their email address. */
+				__( '%1$s (%2$s)', 'corex' ),
+				person.name,
+				person.email
+			)
+		: sprintf(
+				/* translators: %s: a person's name. */
+				__( '%s (no address)', 'corex' ),
+				person.name
+			);
+}
+
+/**
  * Where "Routed owner" goes when the routing names nobody with an address, how many people a role
  * may reach, and who it would be for each rule (spec 122, FR-018, FR-019).
  *
@@ -316,18 +340,7 @@ function RoutedOwner( { routing, schema, onPreview, onRoutingChange } ) {
 								<span>
 									{ ' · ' }
 									{ line.people
-										.map( ( person ) =>
-											person.reachable
-												? person.name
-												: sprintf(
-														/* translators: %s: a person's name. */
-														__(
-															'%s (no address)',
-															'corex'
-														),
-														person.name
-													)
-										)
+										.map( routedPerson )
 										.join( ', ' ) }
 								</span>
 							) : null }
