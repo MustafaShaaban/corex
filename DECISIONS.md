@@ -19522,3 +19522,70 @@ them. *The docs on the owner's server*: GitHub Pages already builds and serves t
 and stays up when the server does not. *One WordPress serving every host*: a failed update or a demo reset
 would take the product site down with it. *A CoreX-only domain now*: nothing is lost by waiting, since every
 host keeps canonical links and redirects and moves with one redirect each.
+
+## #621 -- The CoreX loop replaces Spec Kit's commands; models and effort are routed by a table (constitution v2.0.0)
+
+**Date:** 2026-11-11. **Branch:** `docs/workflow-matt-and-agents`. **Mode:** Docs/Planning. **Asked by:** the
+owner: "if spec kit doesn't fit with matt's flow we can stop using it, i need the best workflow", with
+delegation and switching models and effort.
+
+**Why.** Spec Kit's chain (`specify → clarify → plan → tasks → implement`) asks its questions after the spec is
+drafted, so specs 107 and 110 stopped on owner questions after writing; it produces a plan, a task list and
+checklists that slices already cover; and it owns the process, which made its own side effects hard to see
+(#251: it rewrote a tracked state file and a section of `CLAUDE.md`). Matt Pocock's engineering skills fix
+the first two: `grill-with-docs` finds the open questions before the spec, and building in slices is what
+CoreX already did. They do not replace the spec file: tests, docs and 620 DECISIONS entries point at spec
+numbers and requirement IDs.
+
+**Decided.**
+- **The loop** (constitution v2.0.0, Pre-Implementation Confirmation Rule step 2; `AGENTS.md`): grill →
+  research when needed → `specs/NNN-name/spec.md` with requirement IDs and slices → `wizard` for owner-only
+  steps → one slice at a time with `tdd` (`diagnosing-bugs` first for a bug) → Guard Gate → `debate-review`
+  → PR (`pr`, `babysit-pr`) → `retro` after a release. Principle X is unchanged.
+- **Retired:** the `/speckit-*` commands. A spec with a `tasks.md` may finish from it. The skill files and
+  `.specify/` stay for those specs and are not used for new ones.
+- **Not used:** Matt's `to-spec`, `to-tickets`, `implement-spec`, `implement` and `wayfinder`, which would
+  write a second plan into GitHub issues next to `specs/` and `ROADMAP.md`.
+- **Matt's setup for this repository:** GitHub Issues, the five default triage labels (four created today),
+  and the glossary and decisions in CoreX's own `docs/_glossary.md` and `DECISIONS.md`, never a new
+  `GLOSSARY.md` or `docs/adr/` (`docs/agents/`).
+- **Models and effort** (`CLAUDE.md`, "Models, effort and agents"): Fable at high effort for grilling, specs
+  and final judgment; `corex-builder` on Opus, medium (high for a bug); `corex-tester` on Sonnet, medium;
+  `corex-scout` on Haiku, low; `corex-reviewer` on Fable, high; Codex at high effort as the second reviewer.
+  Max effort only when the owner asks, for one task. The five agents are `.claude/agents/`, with
+  `corex-ui-reviewer` (Fable, high) for what a person sees.
+- **One lever per job:** the main session for judgment, in-app agents for Claude models, delegate lanes only
+  for Codex. `claude-delegate` lanes would duplicate the in-app agents and are not configured.
+- **Agents never commit**, and builders work in the root checkout one at a time per set of files (§A.7's
+  single-workspace rule still holds).
+- **The handoff format** says `SPEC STATUS` with slices instead of `SPEC KIT STATUS` with task IDs.
+- **UI is a required part of the loop**, because CoreX has no designer (the owner: "this is not an option as we
+  have no designer"). A slice a person sees is designed first in Claude Design on the CoreX design system, in
+  every state, at 1280px and 375px, light and dark, left to right and right to left; approved by the owner and
+  handed off in `design/handoffs/`; built with `ui-ux-pro-max`; measured in the browser and run through
+  `npm run test:quality`; reviewed by `corex-ui-reviewer`, `design:accessibility-review` and `design:ux-copy`.
+  A change to the look starts in the design system. Claude Design now lives in Claude as the Design and Design
+  System artifact types (both available in the desktop app's Code tab); standalone claude.ai/design closes on
+  2026-12-14. No CoreX design system exists in Claude yet: making it is its own task.
+- **One recorded round per UI slice for the owner** (`ui-review-loop`, amElnagdy, installed 2026-11-11 with
+  `agent-browser` 0.32.4): the owner watches a short video of the flow and comments on moments in it. The
+  video and timeline never reach the model; each browser step does, so steps return diffs, the round runs on
+  `corex-tester` (Sonnet), and full coverage audits run only on request. Scratch sites with test data only.
+  `.agent-review/` is ignored. Kept only if the first UI slice shows it saves more review rounds than it costs.
+  **On this Windows machine** it needed three things, checked with a recorded round of corex.local's home page
+  (timeline, network capture and a WebM video): `agent-browser.exe` copied beside npm's wrapper in the nvm Node
+  folder, because the skill starts `agent-browser` without a shell and Node then finds only an `.exe` (redo it
+  after an nvm switch); `ffmpeg` from winget (`Gyan.FFmpeg`) for the video, on PATH in new shells; and Developer
+  Mode for the one self-test check that creates a symbolic link (the other 19 pass). With the agent-browser
+  backend a step is a verb (`run -- snapshot`, `run -- click @e12`); the script form is the other backend's.
+
+**Not changed, and owed.** The CoreX design system in Claude (from `theme.json` and the approved admin
+designs), and moving anything still in standalone Claude Design before 2026-12-14. `wp corex make:site` still writes a client `AGENTS.md` that tells a client site
+to run Spec Kit with `SPECIFY_FEATURE_DIRECTORY` (`SiteScaffolder` and its test, #251). That is framework
+code with a test and a client impact, so it is its own slice.
+
+**Not chosen.** *Keeping Spec Kit and adding Matt's skills beside it*: two processes for one change, and the
+questions still come after the spec. *Dropping the spec file for GitHub issues*, as Matt's own flow does: it
+would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
+in-app agents already carry a model and effort each, and their results come back to the session that checks
+them.

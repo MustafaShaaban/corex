@@ -34,7 +34,7 @@ to install it on Windows / Linux / macOS, and a command to verify it.
 | 01 | Architecture | **Lives in docs-app** — this handbook links to it (no duplication) | see [What lives where](#what-lives-where) |
 | 02 | Core concepts | **Lives in docs-app** (guides) — linked | see [What lives where](#what-lives-where) |
 | 03 | Class reference | **Generated** by `wp corex docs:generate`, published in docs-app — linked, never hand-written | see [What lives where](#what-lives-where) |
-| 04 | [Team workflow](./en/04-team-workflow/) | Onboarding, git-flow-lite, commits, PR review, Claude Code + Spec Kit, quality gates | phase D7 |
+| 04 | [Team workflow](./en/04-team-workflow/) | Onboarding, git-flow-lite, commits, PR review, Claude Code + the CoreX loop, quality gates | phase D7 |
 | 05 | [Deployment](./en/05-deployment/) | Docker dev/prod, Azure, AWS, cPanel, CI/CD, secrets, backups, zero-downtime | phases D3–D6 |
 | 06 | [Cookbooks](./en/06-cookbooks/) | Complex scenarios — Woo detect-and-defer, multisite, headless, AI-agent flows, paid add-ons | phase D8 |
 | 07 | [Troubleshooting](./en/07-troubleshooting/) | The real errors and how to fix them | phase D9 |
@@ -86,5 +86,5 @@ New pages start from [`en/_template.md`](./en/_template.md) (and
 
 - [`internal/COREX-FRAMEWORK.md`](../COREX-FRAMEWORK.md) — the architecture reference.
 - [`internal/COREX-WORKING-GUIDE.md`](../COREX-WORKING-GUIDE.md) — how the team works + the continuity protocol.
-- [`internal/COREX-SPECKIT-START.md`](../COREX-SPECKIT-START.md) — the Spec Kit build sequence.
+- [`internal/COREX-SPECKIT-START.md`](../COREX-SPECKIT-START.md): the Spec Kit build sequence (historical; retired by constitution v2.0.0).
 - [`specs/constitution.md`](../specs/constitution.md) — the non-negotiable rules.
