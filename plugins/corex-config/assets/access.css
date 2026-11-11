@@ -275,6 +275,7 @@
 	/* The kind chip moves under the entry when both do not fit. */
 	flex: 1 1 auto;
 	min-inline-size: 0;
+	line-height: var(--corex-admin-line-normal);
 }
 
 .corex-admin .corex-access__event-text {
@@ -283,6 +284,7 @@
 	font-size: var(--corex-admin-font-sm);
 }
 
+/* Muted, not subtle: the times are text and need 4.5:1. */
 .corex-admin .corex-access__event-meta {
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-xs);

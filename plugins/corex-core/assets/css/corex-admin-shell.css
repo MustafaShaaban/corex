@@ -13,6 +13,11 @@
 	margin-inline: 0 var(--corex-admin-space-lg);
 	color: var(--corex-admin-text);
 	font-family: var(--corex-admin-font-body);
+
+	/* A number, never a length. wp-admin's `body { line-height: 1.4em }`
+	   reached here as a fixed 18.2px, so text enlarged to 200% ran over the
+	   line below it (US-NFR-04). */
+	line-height: var(--corex-admin-line-base);
 }
 
 /* Full-bleed CoreX surface (body.corex-admin-screen only): strip wp-admin
@@ -800,6 +805,12 @@ body.corex-admin-screen .corex-admin__shell {
 	font-family: var(--corex-admin-font-display);
 }
 
+/* Headings set their lines tight. Zero specificity, so a component's own
+   heading rule wins. */
+:where(.corex-admin) :where(h1, h2, h3, h4, h5, h6) {
+	line-height: var(--corex-admin-line-tight);
+}
+
 /* No wp-admin default links in the CoreX surface: content links use the brass
    token; buttons keep their styling. Real specificity (not :where) so wp-admin
    colours never leak; underline only on hover (no layout shift). */
@@ -1136,9 +1147,123 @@ body.corex-admin-screen .corex-admin__shell {
 	box-shadow: 0 0 0 3px var(--corex-admin-action-subtle);
 }
 
-.corex-admin input[type="checkbox"],
-.corex-admin input[type="radio"] {
-	accent-color: var(--corex-admin-action);
+/* Checkboxes and radios, drawn by CoreX.
+   wp-admin's forms.css gives both `appearance: none` and paints them itself,
+   checked in the admin theme's blue with a white SVG tick, so an
+   `accent-color` here changed nothing. These rules take over the drawing and
+   leave the input the browser's own: Space, the label, the focus order and the
+   posted value are unchanged. Sizes and margins stay wp-admin's (1rem, and
+   1.5625rem at phone width), so no layout moves.
+
+   The unchecked edge is the muted text colour, not a border token: a box is
+   identified by its edge alone, and both border tokens are under the 3:1 that
+   WCAG 1.4.11 asks of it in both appearances. The tick and the dash are a
+   clip-path over the ink colour, so they follow the tokens, and they are not
+   mirrored in right-to-left, where a tick reads the same. `.corex-switch`
+   draws its own checkbox and is left out. */
+.corex-admin input:is([type="checkbox"], [type="radio"]):not(.corex-switch__input) {
+	-webkit-appearance: none;
+	appearance: none;
+	display: inline-grid;
+
+	/* wp-admin centres a radio's content, which would shrink the mark to
+	   nothing. */
+	place-content: stretch;
+	place-items: stretch;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-text-muted);
+	box-shadow: none;
+	cursor: pointer;
+	transition: background-color var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin input[type="checkbox"]:not(.corex-switch__input) {
+	border-radius: calc(var(--corex-admin-radius-sm) / 2);
+}
+
+.corex-admin input:is([type="checkbox"], [type="radio"]):not(.corex-switch__input):hover {
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin input[type="checkbox"]:not(.corex-switch__input):is(:checked, :indeterminate),
+.corex-admin input[type="radio"]:checked {
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+/* The mark fills the box (a grid item stretches) and is cut to shape. */
+.corex-admin input[type="checkbox"]:not(.corex-switch__input):is(:checked, :indeterminate)::before,
+.corex-admin input[type="radio"]:checked::before {
+	content: "";
+	float: none;
+	inline-size: auto;
+	block-size: auto;
+	margin: 0;
+	background: var(--corex-admin-action-ink);
+
+	/* wp-admin dims a disabled box's mark again, on top of the box. */
+	opacity: 1;
+}
+
+.corex-admin input[type="checkbox"]:not(.corex-switch__input):checked::before {
+	clip-path: polygon(16% 52%, 28% 40%, 42% 54%, 72% 24%, 84% 36%, 42% 78%);
+}
+
+/* A box both checked and indeterminate shows the dash, as browsers do. */
+.corex-admin input[type="checkbox"]:not(.corex-switch__input):indeterminate::before {
+	clip-path: polygon(22% 43%, 78% 43%, 78% 57%, 22% 57%);
+}
+
+.corex-admin input[type="radio"]:checked::before {
+	margin: 25%;
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+/* A disabled box keeps its edge under the pointer: it does not answer it. */
+.corex-admin input:is([type="checkbox"], [type="radio"]):not(.corex-switch__input):disabled {
+	border-color: var(--corex-admin-text-muted);
+	cursor: not-allowed;
+	opacity: var(--corex-admin-disabled-opacity);
+}
+
+.corex-admin input[type="checkbox"]:not(.corex-switch__input):is(:checked, :indeterminate):disabled,
+.corex-admin input[type="radio"]:checked:disabled {
+	border-color: var(--corex-admin-action);
+}
+
+/* wp-admin rings a focused box in blue on `:focus`, so on every click too; the
+   CoreX ring is for the keyboard. The outline is stated again here because
+   wp-admin's transparent `:focus` outline outranks the shell's general rule. */
+.corex-admin input:is([type="checkbox"], [type="radio"]):not(.corex-switch__input):focus {
+	box-shadow: none;
+}
+
+.corex-admin input:is([type="checkbox"], [type="radio"]):not(.corex-switch__input):focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* In a forced-colours mode the system repaints backgrounds, which would hide a
+   mark drawn as one, so the mark takes the system's text colour. */
+@media (forced-colors: active) {
+
+	.corex-admin input[type="checkbox"]:not(.corex-switch__input):is(:checked, :indeterminate)::before,
+	.corex-admin input[type="radio"]:checked::before {
+		forced-color-adjust: none;
+		background: CanvasText;
+	}
+
+	.corex-admin input[type="checkbox"]:not(.corex-switch__input):is(:checked, :indeterminate):disabled::before,
+	.corex-admin input[type="radio"]:checked:disabled::before {
+		background: GrayText;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin input:is([type="checkbox"], [type="radio"]):not(.corex-switch__input) {
+		transition: none;
+	}
 }
 
 /* Label text stacked above its control.

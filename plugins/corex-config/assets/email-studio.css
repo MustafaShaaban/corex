@@ -149,6 +149,7 @@
 .corex-admin .corex-email-app__metric strong {
 	font-family: var(--corex-admin-font-display);
 	font-size: var(--corex-admin-font-2xl);
+	line-height: var(--corex-admin-line-tight);
 }
 
 .corex-admin .corex-email-app__notice {

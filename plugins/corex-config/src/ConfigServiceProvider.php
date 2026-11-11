@@ -792,6 +792,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Operations\OperationsMode::class),
                 $c->make(\Corex\Config\Activity\SecurityEventsSince::class),
                 $c->make(\Corex\Config\Activity\ActivitySentences::class),
+                $c->make(\Corex\Support\DateTime\AdminDateTime::class),
                 environment: $c->make(\Corex\Environment\SiteEnvironment::class),
             ));
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>

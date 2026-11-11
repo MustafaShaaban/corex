@@ -86,6 +86,22 @@ if (! get_user_by('login', 'corex-quality-subscriber')) {
     fwrite(STDOUT, "Subscriber corex-quality-subscriber created.\n");
 }
 
+// Activity, so the Overview's recent activity, the Access audit log and the Insights security card
+// are measured with rows in them and not only empty. The subscriber is refused two screens, the
+// first twice in the hour, as a person reloading a page they cannot open would be: the audit log
+// counts that one entry "2 times, from … to …", and each new entry writes one activity event. A
+// second run adds to the counts and nothing else.
+$subscriber = get_user_by('login', 'corex-quality-subscriber');
+
+if ($subscriber instanceof WP_User) {
+    $auditLog = \Corex\Boot::app()->container()->make(\Corex\Config\Access\AccessAuditLog::class);
+    $now      = time();
+    $auditLog->record('denied', 'corex-access', $subscriber->ID, $now - 1800);
+    $auditLog->record('denied', 'corex-access', $subscriber->ID, $now - 300);
+    $auditLog->record('denied', 'corex-settings', $subscriber->ID, $now - 120);
+    fwrite(STDOUT, "Three refusals of the subscriber recorded, with their activity events.\n");
+}
+
 $blog = get_page_by_path('blog');
 
 if ($blog instanceof WP_Post && (int) get_option('page_for_posts') === 0) {
