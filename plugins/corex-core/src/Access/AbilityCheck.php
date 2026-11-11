@@ -37,7 +37,20 @@ final class AbilityCheck
      */
     public function allows(string $ability, string $section): bool
     {
-        if (current_user_can($ability)) {
+        return $this->allowsWhen(current_user_can($ability), $ability, $section);
+    }
+
+    /**
+     * The answer of a check made elsewhere, such as {@see SiteAdministration::userAdministersSite()},
+     * with a refusal recorded under the screen as {@see allows()} records one.
+     *
+     * @param bool   $held    Whether the person holds what is needed.
+     * @param string $ability What is needed, named in the record.
+     * @param string $section The screen's page slug.
+     */
+    public function allowsWhen(bool $held, string $ability, string $section): bool
+    {
+        if ($held) {
             return true;
         }
 

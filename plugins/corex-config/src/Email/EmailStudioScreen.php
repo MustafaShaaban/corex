@@ -11,6 +11,7 @@ namespace Corex\Config\Email;
 defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
+use Corex\Access\SiteAdministration;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Multisite\PluginActivationInspector;
@@ -30,6 +31,7 @@ final class EmailStudioScreen
         private readonly AdminPage $page,
         private readonly TransportAdvisory $advisory,
         private readonly PluginActivationInspector $pluginActivationInspector,
+        private readonly SiteAdministration $administration,
     ) {
     }
 
@@ -84,7 +86,7 @@ final class EmailStudioScreen
             'settingsUrl' => esc_url_raw(admin_url('admin.php?page=corex-settings-config&corex_tab=mail')),
             // Choosing how the whole site delivers mail stays with site administration (spec 117,
             // US-EML-20); anyone else is told so instead of being sent to a field they cannot change.
-            'canConfigureDelivery' => $this->guard->authorized('manage_options'),
+            'canConfigureDelivery' => $this->administration->userAdministersSite(get_current_user_id()),
         ]);
         wp_set_script_translations('corex-email-studio', 'corex', dirname(__DIR__, 2) . '/languages');
     }

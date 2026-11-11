@@ -1164,6 +1164,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Admin\AdminPage::class),
                 $c->make(\Corex\Config\Email\TransportAdvisory::class),
                 $c->make(\Corex\Multisite\PluginActivationInspector::class),
+                $c->make(\Corex\Access\SiteAdministration::class),
             ),
         );
     }

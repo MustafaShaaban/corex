@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\AbilityCheck;
 use Corex\Access\CorexAbility;
+use Corex\Access\SiteAdministration;
 use Corex\Email\Capture\CapturedEmail;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\EmailAttempt;
@@ -62,6 +63,11 @@ final class EmailStudioController
         /** What happens to mail on this site, said on every tab (spec 113). */
         private readonly ?MailOutcome $outcome = null,
         private readonly AbilityCheck $abilities = new AbilityCheck(),
+        /**
+         * Who administers the site (spec 117, FR-007; DECISIONS #429). Null where corex-config, which
+         * answers it, is not there: then nobody is taken for a site administrator.
+         */
+        private readonly ?SiteAdministration $administration = null,
     ) {
         $this->templates = $repositories->templates;
         $this->layouts   = $repositories->layouts;
@@ -129,7 +135,7 @@ final class EmailStudioController
     public function canConfigureDelivery(WP_REST_Request $request): bool
     {
         return $this->canMutate($request)
-            && $this->abilities->allows('manage_options', 'corex-email-studio');
+            && $this->abilities->allowsWhen($this->administersSite(), 'manage_options', 'corex-email-studio');
     }
 
     public function index(WP_REST_Request $request): WP_REST_Response
@@ -606,7 +612,12 @@ final class EmailStudioController
      */
     private function opensCapturedContent(): bool
     {
-        return current_user_can('manage_options');
+        return $this->administersSite();
+    }
+
+    private function administersSite(): bool
+    {
+        return $this->administration?->userAdministersSite(get_current_user_id()) ?? false;
     }
 
     /** @return array<string,mixed> */

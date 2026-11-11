@@ -45,7 +45,7 @@ final class SecuritySettingsController
                 [
                     'methods'             => 'GET',
                     'callback'            => [$this, 'show'],
-                    'permission_callback' => [$this, 'readable'],
+                    'permission_callback' => [$this, 'allowed'],
                 ],
                 [
                     'methods'             => 'POST',
@@ -117,16 +117,13 @@ final class SecuritySettingsController
         ];
     }
 
-    /** Changing the settings: the screen's ability (spec 117, FR-002). */
+    /**
+     * Reading or changing the settings: the screen's ability (spec 117, FR-002). The view ability does
+     * not read them: Operations & Security has no read-only view (DECISIONS #422, amended 2026-11-11).
+     */
     public function allowed(WP_REST_Request $request): bool
     {
         return $this->abilities->allows(CorexAbility::MANAGE_OPERATIONS, self::SCREEN) && $this->hasNonce($request);
-    }
-
-    /** Reading them: the screen's ability, or the view ability (spec 117, FR-014). */
-    public function readable(WP_REST_Request $request): bool
-    {
-        return $this->abilities->allowsReading(CorexAbility::MANAGE_OPERATIONS, self::SCREEN) && $this->hasNonce($request);
     }
 
     public function show(WP_REST_Request $request): WP_REST_Response

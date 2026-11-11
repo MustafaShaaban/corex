@@ -43,6 +43,20 @@ describe( 'corex-read-only (FR-013)', () => {
 		).toBe( 'true' );
 	} );
 
+	it( 'marks a control an island draws after the page loaded', async () => {
+		load( '<form method="post"><div id="island"></div></form>' );
+		const button = document.createElement( 'button' );
+		button.id = 'late';
+		document.getElementById( 'island' ).append( button );
+		// The observer answers after the change, as a microtask.
+		await Promise.resolve();
+
+		expect( button.getAttribute( 'aria-disabled' ) ).toBe( 'true' );
+		expect( button.getAttribute( 'aria-describedby' ) ).toBe(
+			'corex-readonly-note'
+		);
+	} );
+
 	it( 'leaves filters, pagers and navigation marked to be skipped usable', () => {
 		load(
 			'<div class="corex-filters" data-corex-readonly-skip><select id="period"><option>7</option></select>' +
@@ -96,7 +110,9 @@ describe( 'corex-read-only (FR-013)', () => {
 	} );
 
 	it( 'lets the browser keep its own keys: reload, copy, moving focus and the caret in a text box', () => {
-		load( '<form method="post"><input id="name" type="text" value="Acme" /></form>' );
+		load(
+			'<form method="post"><input id="name" type="text" value="Acme" /></form>'
+		);
 		const input = document.getElementById( 'name' );
 
 		expect( key( input, 'F5' ) ).toBe( false );
@@ -115,7 +131,10 @@ describe( 'corex-read-only (FR-013)', () => {
 			bubbles: true,
 			cancelable: true,
 		} );
-		const cut = new window.Event( 'cut', { bubbles: true, cancelable: true } );
+		const cut = new window.Event( 'cut', {
+			bubbles: true,
+			cancelable: true,
+		} );
 		document.getElementById( 'form' ).dispatchEvent( submit );
 		document.getElementById( 'rich' ).dispatchEvent( cut );
 

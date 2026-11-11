@@ -281,6 +281,102 @@ it('refuses a Settings save from the holder of the view ability with 403, and re
 });
 
 /**
+ * What `AdminDashboard::maybeSave()` answered: `refused <status>` for the standard refusal,
+ * `redirected` for a save, which ends in `exit` after the redirect, or `returned`.
+ *
+ * @param array<string,string> $post
+ */
+function settingsSaveAnswer(array $post): string
+{
+    $_POST    = $post;
+    $refusal  = static fn (): callable => static fn (string $message, string $title, array $args): never
+        => throw new RuntimeException('refused ' . ($args['response'] ?? 0));
+    $redirect = static fn (): never => throw new RuntimeException('redirected');
+    add_filter('wp_die_handler', $refusal);
+    add_filter('wp_redirect', $redirect);
+
+    try {
+        Boot::app()->container()->make(AdminDashboard::class)->maybeSave();
+    } catch (RuntimeException $answer) {
+        return $answer->getMessage();
+    } finally {
+        remove_filter('wp_die_handler', $refusal);
+        remove_filter('wp_redirect', $redirect);
+        $_POST = [];
+    }
+
+    return 'returned';
+}
+
+it('saves Settings for a holder of "Manage settings" and leaves the delivery fields as they were, posted anyway (FR-008)', function () {
+    $store = Boot::app()->container()->make(SettingsStore::class);
+    $kept  = settingsAsStored();
+    $store->save('mail.live_delivery', '1');
+    $store->save('mail.provider', 'wp-mail');
+    ($this->allowForEditors)([CorexAbility::MANAGE_SETTINGS => AccessPolicy::EFFECT_ALLOW]);
+    wp_set_current_user($this->people['editor']);
+
+    try {
+        $answer = settingsSaveAnswer([
+            'corex_settings_nonce' => wp_create_nonce('corex_settings'),
+            'corex_settings_page'  => 'email',
+            'mail_from_name'       => 'Acme Sales',
+            'mail_provider'        => '',
+            'mail_live_delivery'   => '0',
+        ]);
+
+        expect($answer)->toBe('redirected')
+            ->and($store->get('mail.from_name'))->toBe('Acme Sales')
+            ->and($store->get('mail.provider'))->toBe('wp-mail')
+            ->and($store->get('mail.live_delivery'))->toBe('1');
+    } finally {
+        putSettingsBack($kept);
+    }
+});
+
+it('records nothing for a Settings save without a valid nonce, such as one sent from another site (FR-005)', function () {
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::VIEW_SCREENS);
+    wp_set_current_user($this->people['subscriber']);
+    $kept = settingsAsStored();
+
+    try {
+        $answer = settingsSaveAnswer([
+            'corex_settings_nonce' => 'not-a-nonce',
+            'corex_settings_page'  => 'general',
+            'brand_company_name'   => 'Sent from elsewhere',
+        ]);
+
+        expect($answer)->toBe('returned')
+            ->and(refusalsOf($this->people['subscriber']))->toBe([])
+            ->and(settingsAsStored())->toBe($kept);
+    } finally {
+        putSettingsBack($kept);
+    }
+});
+
+it('counts a refused Settings save with a valid nonce once (FR-005, FR-014)', function () {
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::VIEW_SCREENS);
+    wp_set_current_user($this->people['subscriber']);
+
+    $answer = settingsSaveAnswer([
+        'corex_settings_nonce' => wp_create_nonce('corex_settings'),
+        'corex_settings_page'  => 'general',
+    ]);
+
+    expect($answer)->toBe('refused 403')
+        ->and(array_column(refusalsOf($this->people['subscriber']), 'count', 'section'))->toBe(['corex-settings-config' => 1]);
+});
+
+it('draws the read-only Settings page without a form, so nothing on it can be posted (FR-013, FR-014)', function () {
+    $page = SettingsScreen::draw('general', viewOnly: true, siteAdministrator: false);
+
+    expect($page)->not->toContain('<form')
+        ->and($page)->not->toContain('corex_settings_page')
+        ->and($page)->not->toContain('data-corex-savebar')
+        ->and($page)->toContain('corex-settings-page')
+        ->and($page)->toContain('name="brand_company_name"');
+});
+/**
  * Every stored setting, by key, so a test that saves can put them back.
  *
  * @return array<string,mixed>

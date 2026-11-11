@@ -52,13 +52,20 @@ final class SettingsPageRenderer
         $readOnly = $viewOnly || $addonOff;
         $sections = array_intersect_key($this->registry->sections(), array_flip($page->sections));
 
-        $html = sprintf(
-            '<form method="post" action="%1$s" class="corex-settings-form corex-settings-page" novalidate'
-            . ' data-corex-settings-page="%2$s">%3$s<input type="hidden" name="corex_settings_page" value="%2$s" />',
-            esc_url($action),
-            esc_attr($page->key),
-            $nonceField,
-        );
+        // A reader gets the page without a form: with scripts off, Enter in a read-only field would
+        // otherwise post it (spec 117, FR-013, FR-014).
+        $html = $viewOnly
+            ? sprintf(
+                '<div class="corex-settings-form corex-settings-page" data-corex-settings-page="%1$s">',
+                esc_attr($page->key),
+            )
+            : sprintf(
+                '<form method="post" action="%1$s" class="corex-settings-form corex-settings-page" novalidate'
+                . ' data-corex-settings-page="%2$s">%3$s<input type="hidden" name="corex_settings_page" value="%2$s" />',
+                esc_url($action),
+                esc_attr($page->key),
+                $nonceField,
+            );
         $html .= $addonOff && $page->addon !== null ? $this->addonOff($page->addon) : '';
 
         $state = $this->fieldStates($result);
@@ -74,7 +81,7 @@ final class SettingsPageRenderer
         }
 
         $html .= ! $readOnly && $this->hasEditableField($sections) ? $this->saveBar($result?->saved ?? false) : '';
-        $html .= '</form>';
+        $html .= $viewOnly ? '</div>' : '</form>';
 
         return $html . ($result === null ? '' : $this->toast($result));
     }

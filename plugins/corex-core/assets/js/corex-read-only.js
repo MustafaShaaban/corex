@@ -40,9 +40,17 @@
 		'PageDown',
 	];
 
-	/** A form that asks for a page changes nothing: a filter, a search. */
+	/**
+	 * A form that asks for a page changes nothing: a filter, a search.
+	 *
+	 * @param {?HTMLFormElement} form The form, or null for a control outside one.
+	 * @return {boolean} Whether it only asks for a page.
+	 */
 	function asksForAPage( form ) {
-		return !! form && ( form.getAttribute( 'method' ) || 'get' ).toLowerCase() === 'get';
+		return (
+			!! form &&
+			( form.getAttribute( 'method' ) || 'get' ).toLowerCase() === 'get'
+		);
 	}
 
 	function isKept( control ) {
@@ -96,7 +104,13 @@
 		} );
 	}
 
-	/** Whether a key pressed on this control would press it or change its value. */
+	/**
+	 * Whether a key pressed on this control would press it or change its value.
+	 *
+	 * @param {KeyboardEvent} event   The key pressed.
+	 * @param {Element}       control The marked control it was pressed on.
+	 * @return {boolean} Whether it would change something.
+	 */
 	function changes( event, control ) {
 		if ( event.ctrlKey || event.metaKey || event.altKey ) {
 			return false;

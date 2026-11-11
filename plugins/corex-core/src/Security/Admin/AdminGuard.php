@@ -38,7 +38,9 @@ final class AdminGuard
      * submission — so the unslash + sanitize + verify dance lives in exactly one place.
      *
      * Given the screen it belongs to, a submission refused for want of the capability is published
-     * on `corex_access_refused` for the access audit, as a refused route is (spec 117, FR-005).
+     * on `corex_access_refused` for the access audit, as a refused route is (spec 117, FR-005), and
+     * only when it carries a valid nonce: a post another site makes the person's browser send is
+     * not a refusal of theirs.
      */
     public function verifiedPost(
         string $field,
@@ -46,15 +48,25 @@ final class AdminGuard
         string $capability = 'manage_options',
         ?string $section = null,
     ): bool {
-        if (! $this->authorized($capability)) {
-            if ($section !== null && isset($_POST[$field]) && is_user_logged_in()) {
-                /** This action is documented in {@see AbilityCheck::allows()}. */
-                do_action('corex_access_refused', AbilityCheck::KIND_ACTION, $section, $capability);
-            }
-
+        if (! $this->hasValidNonce($field, $action)) {
             return false;
         }
 
+        if ($this->authorized($capability)) {
+            return true;
+        }
+
+        if ($section !== null && is_user_logged_in()) {
+            /** This action is documented in {@see AbilityCheck::allows()}. */
+            do_action('corex_access_refused', AbilityCheck::KIND_ACTION, $section, $capability);
+        }
+
+        return false;
+    }
+
+    /** Whether the POST carries a valid nonce for $action in the $field key. */
+    public function hasValidNonce(string $field, string $action): bool
+    {
         if (! isset($_POST[$field])) {
             return false;
         }

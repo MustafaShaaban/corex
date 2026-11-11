@@ -10,6 +10,7 @@ namespace Corex\Config\Settings;
 
 use Corex\Access\AbilityCheck;
 use Corex\Access\CorexAbility;
+use Corex\Access\SiteAdministration;
 use Corex\Admin\AdminPage;
 use Corex\Config\Access\ScreenAccess;
 use Corex\Config\AdminUi\ScreenAsset;
@@ -30,9 +31,6 @@ final class AdminDashboard
 {
     private const OVERVIEW = 'corex-settings';
 
-    /** What changing how the whole site delivers mail needs (spec 117, FR-008). */
-    private const SITE_ADMINISTRATION = 'manage_options';
-
     private string $hook = '';
     private string $settingsHook = '';
 
@@ -49,6 +47,8 @@ final class AdminDashboard
         private readonly OverviewRenderer $overview,
         private readonly ScreenAccess $access,
         private readonly AbilityCheck $abilities,
+        /** Changing how the whole site delivers mail needs it (spec 117, FR-008). */
+        private readonly SiteAdministration $administration,
     ) {
     }
 
@@ -187,7 +187,7 @@ final class AdminDashboard
             $readOnly ? '' : wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false),
             $this->flash->take(get_current_user_id(), $page->key),
             $readOnly,
-            $this->guard->authorized(self::SITE_ADMINISTRATION),
+            $this->administration->userAdministersSite(get_current_user_id()),
         );
         echo $this->page->close();
     }
@@ -198,13 +198,14 @@ final class AdminDashboard
      */
     public function maybeSave(): void
     {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- only whether a save was sent; verified below.
-        if (! isset($_POST['corex_settings_nonce'])) {
+        // The nonce first: a post another site makes a person's browser send is neither a save nor
+        // a refusal of theirs.
+        if (! $this->guard->hasValidNonce('corex_settings_nonce', 'corex_settings')) {
             return;
         }
 
         // A save from someone without "Manage settings", the holder of the view ability among them,
-        // is refused with the standard refusal and recorded (spec 117, FR-005, FR-014).
+        // is refused with the standard refusal and recorded once (spec 117, FR-005, FR-014).
         if (! $this->abilities->allows(CorexAbility::MANAGE_SETTINGS, SettingsPages::SCREEN)) {
             wp_die(
                 esc_html__('You can read these settings but not change them.', 'corex'),
@@ -213,16 +214,12 @@ final class AdminDashboard
             );
         }
 
-        if (! $this->guard->verifiedPost('corex_settings_nonce', 'corex_settings', CorexAbility::MANAGE_SETTINGS)) {
-            return;
-        }
-
         $pageKey = isset($_POST['corex_settings_page']) ? sanitize_key(wp_unslash($_POST['corex_settings_page'])) : '';
         $userId  = get_current_user_id();
         // A post that names no Settings page, or one that does not exist, writes nothing, and the
         // first page says so rather than drawing as if nothing had been asked. How the whole site
         // delivers mail is left as it is unless a site administrator saves (spec 117, FR-008).
-        $result = $this->saver->save($pageKey, wp_unslash($_POST), $userId, $this->guard->authorized(self::SITE_ADMINISTRATION))
+        $result = $this->saver->save($pageKey, wp_unslash($_POST), $userId, $this->administration->userAdministersSite(get_current_user_id()))
             ?? SettingsSaveResult::nothingSaved(SettingsPages::DEFAULT);
 
         $this->flash->keep($userId, $result);

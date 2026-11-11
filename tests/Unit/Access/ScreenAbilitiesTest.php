@@ -131,3 +131,14 @@ it('records nothing while WordPress asks every method of the route again for the
 
     expect((new AbilityCheck())->allows(CorexAbility::MANAGE_EMAIL, 'corex-email-studio'))->toBeFalse();
 });
+
+it('records a refusal of a check answered elsewhere, such as site administration, under its screen (FR-005)', function () {
+    Functions\when('is_user_logged_in')->justReturn(true);
+    Functions\when('doing_filter')->justReturn(false);
+    Actions\expectDone('corex_access_refused')->once()->with('action', 'corex-email-studio', 'manage_options');
+
+    $check = new AbilityCheck();
+
+    expect($check->allowsWhen(false, 'manage_options', 'corex-email-studio'))->toBeFalse()
+        ->and($check->allowsWhen(true, 'manage_options', 'corex-email-studio'))->toBeTrue();
+});
