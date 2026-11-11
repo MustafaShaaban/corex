@@ -30,6 +30,16 @@ final class FlowActionRegistry
         $this->actions[$key] = ['label' => $label, 'action' => Closure::fromCallable($action)];
     }
 
+    public function has(string $key): bool
+    {
+        return isset($this->actions[$key]);
+    }
+
+    public function label(string $key): string
+    {
+        return $this->actions[$key]['label'] ?? $key;
+    }
+
     /** @param array<string,mixed> $context */
     public function execute(string $key, array $context): mixed
     {

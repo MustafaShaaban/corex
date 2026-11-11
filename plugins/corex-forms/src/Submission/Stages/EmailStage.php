@@ -10,6 +10,7 @@ namespace Corex\Forms\Submission\Stages;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Flow\EmailVariableValues;
 use Corex\Forms\Submission\FlowEmailAddressResolver;
 use Corex\Forms\Submission\FlowEmailSender;
 use Corex\Forms\Submission\NotificationDelivery;
@@ -30,6 +31,9 @@ use Corex\Mail\MailResult;
  * single headline {@see NotificationDelivery} is projected to `corex_notification_delivery`, so an
  * administrator can see whether the notification was accepted, captured, queued, rejected, or
  * failed — never a saved submission with an unknown fate.
+ *
+ * It runs after the inbox assignment and the routing timeline, and a failure here does not stop the
+ * flow's actions (spec 122, FR-008, FR-022): the pipeline records it and goes on.
  */
 final readonly class EmailStage implements SubmissionStage
 {
@@ -38,6 +42,7 @@ final readonly class EmailStage implements SubmissionStage
         private SubmissionRepository $submissions,
         private NotificationDispatcher $dispatcher,
         private FlowEmailAddressResolver $addresses,
+        private EmailVariableValues $variables,
     ) {
     }
 
@@ -84,7 +89,8 @@ final readonly class EmailStage implements SubmissionStage
             $mailContext = $this->mailContext($context);
             $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
             $event = (string) ($binding['event'] ?? 'submitted');
-            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext));
+            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext))
+                + $this->routedNote($binding, $context);
             $headline = $this->promoteHeadline($headline, $this->deliveryFor($result));
             if ($result === null || ! $result->successful()) {
                 $failed ??= $result?->message ?? __('The enabled flow email binding could not be resolved.', 'corex');
@@ -204,10 +210,15 @@ final readonly class EmailStage implements SubmissionStage
         return (! $candidate->successful() && $current->successful()) ? $candidate : $current;
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * What a template is filled in from: the answers, the flow, the routing, and every registered
+     * email variable (spec 122, FR-023).
+     *
+     * @return array<string,mixed>
+     */
     private function mailContext(SubmissionPipelineContext $context): array
     {
-        return [
+        return $this->variables->into([
             'submission' => $context->values,
             'flow' => [
                 'id' => $context->flow->id,
@@ -216,7 +227,23 @@ final readonly class EmailStage implements SubmissionStage
             ],
             'routing' => $context->metadata['routing'] ?? [],
             'is_test' => $context->isTest,
-        ];
+        ]);
+    }
+
+    /**
+     * "Routed owner had no address; sent to …", kept with the delivery of an email addressed to
+     * the routed owner whose routing had to use the fallback recipient (spec 122, FR-018).
+     *
+     * @param array<string,mixed> $binding
+     * @return array{note?:string}
+     */
+    private function routedNote(array $binding, SubmissionPipelineContext $context): array
+    {
+        $note = (string) ($context->metadata['routing']['recipients']['note'] ?? '');
+
+        return $note !== '' && FlowEmailAddressResolver::namesRoutedOwner((string) ($binding['recipient'] ?? ''))
+            ? ['note' => $note]
+            : [];
     }
 
     /**
@@ -260,10 +287,51 @@ final readonly class EmailStage implements SubmissionStage
         return $outcomes;
     }
 
+    /**
+     * Keeps the outcome with the submission and records it as its own timeline event, so an
+     * administrator sees whether the notification was accepted, captured, queued or failed, with
+     * the routed owner's note when the email had to go to the fallback recipient (FR-018).
+     */
     private function persist(SubmissionPipelineContext $context): void
     {
-        if ($context->submissionId !== null) {
-            $this->submissions->updatePipelineMetadata($context->submissionId, $context->metadata);
+        if ($context->submissionId === null) {
+            return;
         }
+        $this->submissions->updatePipelineMetadata($context->submissionId, $context->metadata);
+        $delivery = $context->metadata['notification_delivery'] ?? null;
+        if (! is_array($delivery) || ! isset($delivery['status'])) {
+            return;
+        }
+        $status = (string) $delivery['status'];
+        $this->submissions->appendTimeline($context->submissionId, 'notification', $this->timelineOutcome($status), [
+            'delivery_status' => $status,
+            'provider' => $delivery['provider'] ?? null,
+            'attempt_id' => $delivery['attempt_id'] ?? null,
+            'reason' => $delivery['safe_reason'] ?? '',
+            'note' => $this->deliveredNote($context),
+        ]);
+    }
+
+    /** The routed owner's note, when an enabled email went to "Routed owner" (DECISIONS #475). */
+    private function deliveredNote(SubmissionPipelineContext $context): string
+    {
+        foreach ((array) ($context->metadata['email']['bindings'] ?? []) as $binding) {
+            if (is_array($binding) && ($binding['note'] ?? '') !== '') {
+                return (string) $binding['note'];
+            }
+        }
+
+        return '';
+    }
+
+    /** Coarse timeline outcome for a delivery status, so tone-based rendering stays predictable. */
+    private function timelineOutcome(string $status): string
+    {
+        return match ($status) {
+            MailResult::STATE_ACCEPTED, MailResult::STATE_CAPTURED, MailResult::STATE_SENT, MailResult::STATE_OPENED => 'success',
+            MailResult::STATE_QUEUED, MailResult::STATE_SENDING => 'pending',
+            MailResult::STATE_FAILED, MailResult::STATE_REJECTED, MailResult::STATE_BOUNCED => 'failure',
+            default => 'info', // not_attempted / unavailable
+        };
     }
 }

@@ -131,7 +131,7 @@ it('creates updates publishes and reads an immutable flow through REST', functio
         ->and((int) get_post_meta($submitted->get_data()['data']['submission_id'], 'corex_is_test', true))->toBe(0)
         ->and($tested->get_data()['data']['completed'])->toBeTrue()
         ->and($tested->get_data()['data']['is_test'])->toBeTrue()
-        ->and($tested->get_data()['data']['stages'])->toHaveCount(7)
+        ->and($tested->get_data()['data']['stages'])->toHaveCount(8)
         ->and((int) get_post_meta($tested->get_data()['data']['submission_id'], 'corex_is_test', true))->toBe(1)
         ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_consent_snapshot_json', true))->toBe([])
         ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_utm_json', true))->toBe([])

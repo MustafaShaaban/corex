@@ -10,6 +10,8 @@
  * how the filters apply to something with no lifecycle) are all testable without a DOM.
  */
 
+import { displayState } from './flowEditor.js';
+
 export const SOURCE_VISUAL_FLOW = 'visual_flow';
 export const SOURCE_CODE_FORM = 'code_form';
 export const SOURCE_EXTERNAL = 'external';
@@ -38,10 +40,13 @@ function flowRow( flow ) {
 		slug: flow.slug,
 		name: flow.name,
 		source: SOURCE_VISUAL_FLOW,
-		state: flow.state,
+		// What the flow does now: one closed by its dates or cap reads Expired (spec 122).
+		state: displayState( flow ),
+		reason: flow.status?.label || '',
 		editable: true,
 		fieldCount: Number( flow.field_count ) || 0,
 		routingTarget: flow.routing_target || '',
+		routingOwner: flow.routing_owner || '',
 		updatedAt: flow.updated_at || '',
 		fields: [],
 		validationSummary: '',
@@ -57,9 +62,11 @@ function catalogRow( entry ) {
 		name: entry.label || entry.slug,
 		source: entry.source,
 		state: entry.active ? STATE_REGISTERED : 'inactive',
+		reason: '',
 		editable: false,
 		fieldCount: Number( entry.field_count ) || 0,
 		routingTarget: '',
+		routingOwner: '',
 		updatedAt: '',
 		fields: asArray( entry.fields ),
 		validationSummary: entry.validation_summary || '',
