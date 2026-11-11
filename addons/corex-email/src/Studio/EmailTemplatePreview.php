@@ -140,7 +140,11 @@ final readonly class EmailTemplatePreview
         if ($errors !== []) {
             throw new EmailTemplateUnrenderable($errors);
         }
-        $samples = $this->samples->for($this->editor->variablesOf($draft), $overrides);
+        // The layout's variables too: a newsletter footer's links are the layout's (FR-002).
+        $samples = $this->samples->for([
+            ...$this->editor->variablesOf($draft),
+            ...$this->editor->variablesIn('', implode("\n", array_map('strval', $layout->regions)), ''),
+        ], $overrides);
         $kind = $this->defaults->definition($template->slug)?->kind
             ?? ($layout?->slug === 'newsletter' ? EmailKind::NEWSLETTER : EmailKind::MESSAGE);
 

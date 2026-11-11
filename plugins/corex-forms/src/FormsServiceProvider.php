@@ -276,8 +276,10 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(\Corex\Forms\Submission\UploadedFileNames::class),
                 // The inbox is the admin plugin's. Without it there is nowhere to point.
                 $c->has(\Corex\Mail\SubmissionAddress::class) ? $c->make(\Corex\Mail\SubmissionAddress::class) : null,
+                $c->make(\Corex\Forms\Listeners\NotificationStyle::class),
             ),
         );
+        $this->container->singleton(\Corex\Forms\Listeners\NotificationStyle::class);
         $this->container->singleton(\Corex\Forms\Submission\UploadedFileNames::class);
         // The attachment store is built here rather than autowired: it needs an UploadValidator,
         // and that needs an allow-list and a size cap, which are policy rather than dependencies.
@@ -318,6 +320,13 @@ final class FormsServiceProvider extends ServiceProvider
         $this->registerListeners();
 
         add_action('init', [$this, 'registerSubmissionPostType']);
+        // Once, the first time this release runs: how code-defined forms notify (FR-023).
+        $this->container->make(\Corex\Support\Options\LoadedOptions::class)->register(\Corex\Forms\Listeners\NotificationStyle::OPTION, '');
+        add_action('init', function (): void {
+            $this->container->make(\Corex\Forms\Listeners\NotificationStyle::class)->settle(
+                fn (): bool => $this->container->make(SubmissionRepository::class)->any(),
+            );
+        }, 20);
         add_action('init', [$this, 'registerFlowPostType']);
         add_action('init', [$this, 'registerFormBlock']);
 

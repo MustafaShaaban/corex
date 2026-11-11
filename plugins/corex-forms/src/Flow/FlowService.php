@@ -51,7 +51,7 @@ final readonly class FlowService
             id: 0,
             flowId: $flow->id,
             versionNumber: 1,
-            configuration: $this->withDefaultEmails($draft->configuration),
+            configuration: $draft->defaultEmails ? $this->withDefaultEmails($draft->configuration) : $draft->configuration,
             createdBy: $draft->actorId,
             createdAt: $draft->occurredAt,
         ));
@@ -60,7 +60,7 @@ final readonly class FlowService
     }
 
     /**
-     * A new flow's configuration with the emails it starts with, when it names none of its own.
+     * A flow made from nothing, with the emails it starts with, when it names none of its own.
      */
     private function withDefaultEmails(FlowConfiguration $configuration): FlowConfiguration
     {

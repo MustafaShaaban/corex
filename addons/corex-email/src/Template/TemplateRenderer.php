@@ -39,11 +39,12 @@ final class TemplateRenderer
             $subject = $this->merge($template->subject($context), $context, escape: false);
             $body    = $this->merge($template->body($context), $context, escape: true);
             $kind    = $template->kind();
+            $links   = $template->links($context);
 
             return new RenderedEmail(
                 $subject,
-                $this->frame->draw(new EmailContent($subject, $body, '', $kind, $template->links($context))),
-                PlainText::of($body) . "\n\n" . $this->frame->plainFooter($kind),
+                $this->frame->draw(new EmailContent($subject, $body, '', $kind, $links)),
+                PlainText::of($body) . "\n\n" . $this->frame->plainFooter($kind, $links),
             );
         });
     }

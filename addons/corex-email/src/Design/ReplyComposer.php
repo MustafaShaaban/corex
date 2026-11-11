@@ -36,7 +36,7 @@ final readonly class ReplyComposer
     {
         return $this->language->during(fn (): ComposedEmail => new ComposedEmail(
             $this->frame->draw(new EmailContent($subject, $bodyHtml, $recipient, EmailKind::REPLY)),
-            PlainText::of($bodyHtml) . "\n\n" . $this->frame->plainFooter(EmailKind::REPLY),
+            PlainText::of($bodyHtml) . "\n\n" . $this->frame->plainSignature(),
         ));
     }
 }

@@ -55,23 +55,57 @@ final readonly class EmailFrame
 
     /**
      * The footer as the plain-text version ends: the footer's line and, for a kind that has one,
-     * why the person receives the email, under the signature separator.
+     * why the person receives the email, under the signature separator; then each link the
+     * email's footer gives (a newsletter's Unsubscribe), with its address, as the HTML footer
+     * links to it (spec 120, FR-012).
+     *
+     * @param list<array{label:string,url:string}> $links The email's own footer links.
      */
-    public function plainFooter(string $kind): string
+    public function plainFooter(string $kind, array $links = []): string
     {
-        return $this->inEmailLanguage(fn (): string => $this->footerLines($kind));
+        return $this->inEmailLanguage(fn (): string => $this->footerLines($kind) . $this->linkLines($links));
+    }
+
+    /**
+     * The plain-text signature a reply has always ended with: the footer's line under the
+     * signature separator, and nothing else (spec 120, FR-016: replies as before).
+     */
+    public function plainSignature(): string
+    {
+        return $this->inEmailLanguage(fn (): string => "-- \n" . $this->footerLine($this->brands->brand()));
+    }
+
+    /** @param list<array{label:string,url:string}> $links */
+    private function linkLines(array $links): string
+    {
+        $lines = '';
+        foreach ($links as $link) {
+            // As the HTML footer takes them (EmailContent): a label and a web address each.
+            if (trim($link['label']) === '' || preg_match('#^https?://#i', $link['url']) !== 1) {
+                continue;
+            }
+            /* translators: 1: a footer link's label, such as "Unsubscribe". 2: its web address. */
+            $lines .= "\n" . sprintf(__('%1$s: %2$s', 'corex'), $link['label'], $link['url']);
+        }
+
+        return $lines;
     }
 
     private function footerLines(string $kind): string
     {
         $brand = $this->brands->brand();
-        $line = $brand->footer !== ''
+        $reason = EmailKind::reason(EmailKind::of($kind), $brand->name);
+
+        return "-- \n" . $this->footerLine($brand) . ($reason === '' ? '' : "\n" . $reason);
+    }
+
+    /** The footer's line: Settings → Mail's, or who sent the email. */
+    private function footerLine(EmailBrand $brand): string
+    {
+        return $brand->footer !== ''
             ? $brand->footer
             /* translators: 1: the name of the site an email was sent from. 2: the site's address. */
             : sprintf(__('This message was sent by %1$s (%2$s).', 'corex'), $brand->name, $brand->homeUrl);
-        $reason = EmailKind::reason(EmailKind::of($kind), $brand->name);
-
-        return "-- \n" . $line . ($reason === '' ? '' : "\n" . $reason);
     }
 
     /** The site's name as its emails show it: what a region that only repeats it is told by. */

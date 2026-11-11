@@ -2,8 +2,11 @@
  * Email Studio's preview and test send are the email that is sent (spec 120, story 1), its plain
  * text is what goes out (story 2), and a kept email shows its plain-text version (story 7).
  *
- * Runs against a site that keeps its mail (operations mode Development), so a test send is
- * captured and nobody receives it.
+ * The site's own mail settings are not relied on: CI's site is a production site with no
+ * provider, which blocks every email ("Blocked: no mail provider is set"), and a development
+ * install may deliver for real. The test send asks, with the header `X-Corex-E2E-Mail: capture`
+ * (`fixtures/corex-e2e-mail-delivery.php`), to be answered as a development site, so it is
+ * captured and nobody receives it. The other tests send nothing.
  */
 
 const { test, expect } = require( '@playwright/test' );
@@ -111,6 +114,8 @@ test( 'shows the plain text that is sent, and names a variable that cannot be dr
 test( 'sends the previewed email as a test, refusing an address that is not one', async ( {
 	page,
 } ) => {
+	// Kept in Email Studio whatever the site is set to: nothing leaves this site.
+	await page.setExtraHTTPHeaders( { 'X-Corex-E2E-Mail': 'capture' } );
 	await openTemplate( page, 'Contact confirmation' );
 	await page
 		.getByRole( 'button', { name: 'Test send', exact: true } )

@@ -360,6 +360,10 @@ each as given, and Email Studio's log shows the text version; one built the old 
 - **SC-004**: 0 messages handed over finished change: their raw subject, body, From, Reply-To and parts equal what
   v0.47.0 sends (TC-EML-01-07, 03-06, 03-07, 05-06, 05-07, 19-02).
 - **SC-005**: A new site's first flow submission sends 2 emails with no configuration.
+  *Note, 2026-11-11:* the site's delivery rules still apply (spec 113; DECISIONS #455, amended 2026-11-11). On a
+  development or staging site the 2 emails are captured; on a production site with no provider or with live delivery
+  off they are recorded as not set up, with the reason, and leave once delivery is set up. The criterion is not met
+  there by sending around those rules.
 - **SC-006**: 0 emails go out with `{{ }}` or an empty label left in them.
 
 ## Client impact

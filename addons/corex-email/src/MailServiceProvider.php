@@ -81,6 +81,9 @@ final class MailServiceProvider extends ServiceProvider
 
     private const STUDIO_DEFAULTS_VERSION = '4';
 
+    /** The defaults version from which a template's own From is sent (spec 120). */
+    private const STUDIO_SENDERS_VERSION = '4';
+
     public function register(): void
     {
         $this->container->singleton(TemplateRegistry::class);
@@ -121,6 +124,7 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(EmailPartialRepository::class),
                 $c->make(EmailFrame::class),
                 $c->make(EmailLanguage::class),
+                $c->make(\Corex\Email\Security\AddressGuard::class),
             ),
         );
 
@@ -390,6 +394,13 @@ final class MailServiceProvider extends ServiceProvider
         // What is stored here is named, and in three partials worded, by CoreX, and the words go
         // out in the site's emails. They are written in the site's language, not in that of
         // whoever's request happens to be the first to reach `init` (DECISIONS #362).
+        // A site that had Email Studio before spec 120 never sent a template's From: its
+        // templates keep the site's sender until they are saved again (DECISIONS #453, amended
+        // 2026-11-11). Before the defaults go in, which use their own.
+        if ($installedVersion !== '' && version_compare($installedVersion, self::STUDIO_SENDERS_VERSION, '<')) {
+            $this->container->make(EmailTemplateRepository::class)->keepSiteSender();
+        }
+
         $this->container->make(EmailLanguage::class)->during(function () use ($templates, $installedVersion): void {
             $now = new \DateTimeImmutable('now');
             $this->container->make(EmailLayoutRepository::class)->installDefaults(

@@ -32,6 +32,18 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
      *
      * @param array<string,mixed> $values
      */
+    /** Whether the site has stored a form submission, in any state, the trash included. */
+    public function any(): bool
+    {
+        return get_posts([
+            'post_type'      => Submission::postType(),
+            'post_status'    => array_keys(get_post_stati()),
+            'posts_per_page' => 1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+        ]) !== [];
+    }
+
     public function save(string $slug, array $values): int
     {
         return $this->store($slug, $values)->id();

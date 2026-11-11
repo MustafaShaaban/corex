@@ -377,7 +377,16 @@ final class EmailStudioService
     ): EmailDeliveryOutcome
     {
         if ($decision->action === DeliveryDecision::ACTION_BLOCK) {
-            return new EmailDeliveryOutcome(EmailAttempt::STATE_REJECTED, 'delivery-policy', $decision->reason, false);
+            // A site that has not chosen a provider or switched live delivery on is not set up
+            // to send: said apart, so that what asked can tell it from a failure (spec 120).
+            $notSetUp = in_array($decision->code, [DeliveryPolicy::NO_PROVIDER, DeliveryPolicy::LIVE_OFF], true);
+
+            return new EmailDeliveryOutcome(
+                EmailAttempt::STATE_REJECTED,
+                $notSetUp ? MailResult::PROVIDER_NOT_SET_UP : 'delivery-policy',
+                $decision->reason,
+                false,
+            );
         }
 
         if ($decision->action === DeliveryDecision::ACTION_CAPTURE) {

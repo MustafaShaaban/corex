@@ -40,24 +40,45 @@ beforeEach(function () {
     $this->settings = MailDelivery::answerAs(MailDelivery::CAPTURE);
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($administrators[0] ?? 0));
+    // The site's own default templates a test switched on, as they were: put back afterwards.
+    $this->siteTemplates = [];
 });
 
 afterEach(function () {
     MailDelivery::stop($this->settings);
+    $store = $this->container->make(Corex\Email\Studio\WpEmailStudioStore::class);
+    foreach ($this->siteTemplates as $record) {
+        $store->update($record['id'], $record['name'], $record['payload']);
+    }
     $this->posts->delete();
     $this->transients->restore();
     wp_set_current_user(0);
 });
 
-/** The default template with this slug, when this site has it active; the test is skipped otherwise. */
+/**
+ * The default template with this slug, active as CoreX ships it, whatever this site made of it:
+ * an upgraded site has it as a draft, and an owner may have edited it. The site's template is
+ * put back as it was after the test; one this test had to make is removed with its posts.
+ * Skipped only where no add-on ships the default (the account emails need corex-profile).
+ */
 function activeDefault(object $test, string $slug): EmailTemplate
 {
-    $template = $test->container->make(EmailTemplateRepository::class)->findBySlug($slug);
-    if ($template === null || $template->status !== EmailTemplate::STATUS_ACTIVE) {
-        test()->markTestSkipped("The default template {$slug} is not active on this site.");
+    $defaults = $test->container->make(Corex\Email\Studio\DefaultEmailTemplates::class);
+    $definition = $defaults->definition($slug);
+    if ($definition === null) {
+        test()->markTestSkipped("No active add-on ships the default template {$slug}.");
     }
+    $templates = $test->container->make(EmailTemplateRepository::class);
+    $now = new DateTimeImmutable('now');
+    $template = $templates->findBySlug($slug);
+    if ($template === null) {
+        $template = $templates->create($slug, $definition->name, get_current_user_id(), $now);
+    } else {
+        $test->siteTemplates[] = $test->container->make(Corex\Email\Studio\WpEmailStudioStore::class)->find($template->id);
+    }
+    $shipped = $defaults->reset($template->id, get_current_user_id(), $now);
 
-    return $template;
+    return $templates->activate($template->id, $shipped->versionNumber, get_current_user_id(), $now);
 }
 
 /** @return array<string,CapturedEmail> The emails kept since the test began, by subject. */
@@ -90,6 +111,8 @@ it('starts a new flow with the two emails CoreX ships, and sends both on a submi
         'slug' => 'quote-' . $tag,
         'name' => 'Quote request',
         'owner_id' => get_current_user_id(),
+        // What the New flow form asks for: a flow made from nothing starts with them (FR-020).
+        'default_emails' => true,
         'placement_type' => 'block',
         'configuration' => [
             'schema' => [
@@ -123,6 +146,31 @@ it('starts a new flow with the two emails CoreX ships, and sends both on a submi
         ->and($kept['New submission: Quote request']->body)->toContain('this address receives notifications from')
         ->and($kept['Thanks, we have your message']->to)->toBe(['salma@example.com'])
         ->and($kept['Thanks, we have your message']->plainText)->toContain('Your email: salma@example.com');
+});
+
+it('FR-020: gives the two emails only to a flow created new, not to one created from a configuration of its own', function () {
+    activeDefault($this, 'admin-notification');
+    activeDefault($this, 'contact-confirmation');
+    $flows = $this->container->make(FlowController::class);
+    $tag = strtolower(wp_generate_password(6, false, false));
+
+    // A copy of a flow that sends no email, as a duplicate or an import posts it.
+    $copied = $flows->create(defaultsRequest('POST', '/corex/v1/flows', [
+        'slug' => 'copied-' . $tag,
+        'name' => 'Copied form',
+        'owner_id' => get_current_user_id(),
+        'placement_type' => 'none',
+        'configuration' => [
+            'schema' => [['uuid' => 'e', 'key' => 'email', 'label' => 'Your email', 'type' => 'email', 'required' => true]],
+            'validation' => ['email' => ['required', 'email']],
+            'routing' => ['rules' => [], 'fallback' => ['type' => 'flow_owner', 'config' => []]],
+            'email_routes' => [],
+            'success' => ['type' => 'inline', 'message' => 'Received.'],
+            'placement_snapshot' => ['type' => 'none'],
+        ],
+    ]))->get_data()['data'];
+
+    expect($copied['version']['configuration']['email_routes'])->toBe([]);
 });
 
 it('sends the double opt-in and, on confirmation, the welcome, with an unsubscribe link', function () {

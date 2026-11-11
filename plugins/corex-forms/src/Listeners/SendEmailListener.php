@@ -55,6 +55,11 @@ final class SendEmailListener
         private readonly ConfigInterface $config,
         private readonly ?UploadedFileNames $files = null,
         private readonly ?SubmissionAddress $addresses = null,
+        /**
+         * Whether this site's notifications are designed or as before (FR-023). The container
+         * always gives it; a listener built without one (a unit test) sends designed.
+         */
+        private readonly ?NotificationStyle $style = null,
     ) {
     }
 
@@ -87,21 +92,29 @@ final class SendEmailListener
             $recipient = (string) get_option('admin_email');
         }
 
+        $designed = $this->style?->designed() ?? true;
         // Handed over as what writes it: the dispatcher asks in the email's language, so the
         // subject and the lines CoreX adds to the body are the site's and not the request's.
         $write = static fn (): MailRequest => new MailRequest(
             to: $recipient !== '' ? [$recipient] : [],
-            // Drawn in the one frame through a template, the contact form's own or the one for
-            // every other form (spec 120). The body is what the `wp_mail()` floor sends when
-            // CoreX Mail is not there to draw it: plain text, one answer per line.
-            templateName: $event->formSlug === self::CONTACT_FORM ? self::CONTACT_TEMPLATE : self::FORM_TEMPLATE,
+            // Designed (a new site, spec 120): drawn in the one frame through a template, the
+            // contact form's own or the one for every other form, and the body the `wp_mail()`
+            // floor sends is plain text, one answer per line. As before (an upgraded site,
+            // FR-023): only the contact form has a template, and the body is HTML (issue #138).
+            templateName: match (true) {
+                $event->formSlug === self::CONTACT_FORM => self::CONTACT_TEMPLATE,
+                $designed => self::FORM_TEMPLATE,
+                default => null,
+            },
             context: $context,
             subject: sprintf(
                 /* translators: %s: form slug */
                 __('New "%s" form submission', 'corex'),
                 $event->formSlug,
             ),
-            body: NotificationDispatcher::plainTextBody($answers) . self::whereFilesAreOpened(count($files), $address),
+            body: $designed
+                ? NotificationDispatcher::plainTextBody($answers) . self::whereFilesAreOpened(count($files), $address)
+                : NotificationDispatcher::htmlBody($answers) . self::whereFilesAreOpenedHtml(count($files), $address),
             // So the recipient can just hit Reply. The submitter's address was only readable inside
             // the body, which makes answering a contact form a copy-and-paste job.
             replyTo: self::submitterAddress($event->values),
@@ -138,6 +151,28 @@ final class SendEmailListener
             $files,
             'corex',
         ) . ' ' . $address;
+    }
+
+    /**
+     * The same line in the HTML body an upgraded site sends, as it was before spec 120.
+     */
+    private static function whereFilesAreOpenedHtml(int $files, string $address): string
+    {
+        if ($files === 0 || $address === '') {
+            return '';
+        }
+
+        return sprintf(
+            '<p>%s <a href="%s">%s</a></p>',
+            esc_html(_n(
+                'The file is opened from the submission, after signing in to the site.',
+                'The files are opened from the submission, after signing in to the site.',
+                $files,
+                'corex',
+            )),
+            esc_url($address),
+            esc_html__('Open the submission', 'corex'),
+        );
     }
 
     /**

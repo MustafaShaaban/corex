@@ -25,14 +25,16 @@ the spec's; the revamp story is in brackets.
   `Layout` removed; `MessageBuilder` sends the plain text of a template.
 - [x] T010 [US3] Code templates' kinds and links: contact notification (with the submission link), newsletter
   (unsubscribe in the frame), bookings, careers, guides.
-- [x] T011 [US3] `Templates/FormNotificationTemplate.php`; `SendEmailListener` uses it and hands the floor a plain body.
+- [x] T011 [US3] `Templates/FormNotificationTemplate.php`; `SendEmailListener` uses it and hands the floor a plain body
+  on a new site; an upgraded one sends as before (`NotificationStyle`, settled once; FR-023).
 - [x] T012 [P] [US3] Unit: frame per kind, reason and links, accent order, region dedupe, kind-aware site design, reply
   unchanged for a site design; integration: four kinds in one frame on a capturing site.
 
 ## Phase 3: Story 2, what a Studio send carries [US-EML-03] (FR-007 to FR-011)
 
 - [x] T013 [US2] `EmailTemplateService`: From optional, named errors, plain text by `PlainText`, merged values whole.
-- [x] T014 [US2] `EmailRouteMessageFactory`, gateway `resendTo()`, controller resend: From, From name, plain text.
+- [x] T014 [US2] `EmailRouteMessageFactory`, gateway `resendTo()`, controller resend: From, From name, plain text;
+  a revision stored before the update keeps the site's sender until saved again (`keepSiteSender()`, #453 amended).
 - [x] T015 [US2] `EmailStudioService::dispatch()` runs the `HeaderGuard`.
 - [x] T016 [P] [US2] Unit and integration: From and plain part on a routed send, a resend, defaults to the general
   sender, `<500` whole, refusals named, finished messages unchanged.
@@ -41,7 +43,9 @@ the spec's; the revamp story is in brackets.
 
 - [x] T017 [US5] `Studio/EmailVariableCatalog.php` (groups, known keys, supplies) and `EmailSampleValues.php`.
 - [x] T018 [US5] `EmailTemplateService`: known-key check naming the key, `form.answers` block, missing values left
-  out with their blocks, `missing` returned; attempt `missing_variables` stored and shown in the log.
+  out with their blocks (and a link whose address is only empty values, with its words), `missing` returned; attempt
+  `missing_variables` stored and shown in the log, and kept on the shared mailer's row for designed emails; after
+  merging, `AddressGuard` keeps only http, https, mailto or tel in an `href` and http or https in a `src`.
 - [x] T019 [US5] corex-core `MailTemplateUsage`; corex-forms `FlowTemplateUsage`; save warnings in the draft route.
 - [x] T020 [US5] `MailTemplateCatalog` entries' `variables`; `FlowConfigurationValidator` refuses an unsupplied
   variable unless `accept_missing`; `EmailsTab.js` warns, names the events in words and asks for the confirmation.
@@ -51,7 +55,8 @@ the spec's; the revamp story is in brackets.
 
 ## Phase 5: Story 1, preview and test send [US-EML-02] (FR-001 to FR-006)
 
-- [x] T024 [US1] `Studio/EmailTemplatePreview.php`: draw a draft with samples and direction; test send of it.
+- [x] T024 [US1] `Studio/EmailTemplatePreview.php`: draw a draft with samples (its own variables and its layout's)
+  and direction; test send of it.
 - [x] T025 [US1] Controller `preview` and template `test` routes; result in words with reason and log address.
 - [x] T026 [US1] Client: server preview with samples beside it, Desktop 600px / Mobile 375px / Right to left; Plain
   text tab from the server; Test send with one address, refusal, result and link; error in place of the preview.
@@ -61,8 +66,10 @@ the spec's; the revamp story is in brackets.
 
 - [x] T028 [US4] `Studio/DefaultEmailTemplates.php`: definitions, install active or as drafts, reset; installed from
   `MailServiceProvider::registerEmailStudio()`; reset route and button with confirmation.
-- [x] T029 [US4] corex-forms: default bindings on flow create; submitter without an address is `no_recipient`; team
-  notification with nothing to send falls back to the PHP contact notification.
+- [x] T029 [US4] corex-forms: default bindings on a flow made on the New flow form (`default_emails`); submitter
+  without an address is `no_recipient`; a team notification bound to a template with nothing to send falls back to
+  the PHP contact notification (one routed by its trigger does not); a site not set up to send records the emails as
+  `not_configured`, not failed.
 - [x] T030 [US4] corex-core `DesignedEmails`; corex-email `StudioDesignedEmails`; corex-newsletter double opt-in and
   welcome through it.
 - [x] T031 [P] [US4] Integration: fresh install active, upgrade drafts, reset keeps history, new flow sends two,

@@ -32,6 +32,8 @@ final class EmailLog extends Model
             'mail_status'  => 'corex_mail_status',
             'recipients'   => 'corex_mail_to',
             'mail_subject' => 'corex_mail_subject',
+            // The variables a designed email was sent without, comma separated (spec 120, FR-028).
+            'missing_variables' => 'corex_mail_missing_variables',
         ];
     }
 }

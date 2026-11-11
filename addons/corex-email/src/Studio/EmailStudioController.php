@@ -548,8 +548,8 @@ final class EmailStudioController
         return new EmailMessage(
             ...[
                 ...get_object_vars($message),
-                'from'      => $version !== null && $version->fromAddress !== '' ? $version->fromAddress : null,
-                'fromName'  => $version !== null && trim($version->fromName) !== '' ? $version->fromName : null,
+                'from'      => $version?->sentFrom(),
+                'fromName'  => $version?->sentFromName(),
                 'plainText' => PlainText::of($message->body),
             ],
         );

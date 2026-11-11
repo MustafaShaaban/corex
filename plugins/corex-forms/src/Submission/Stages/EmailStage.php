@@ -84,6 +84,7 @@ final readonly class EmailStage implements SubmissionStage
         $failed = null;
         $retryable = false;
         $headline = null;
+        $notSetUp = null;
         foreach ($primary as $binding) {
             $event = (string) ($binding['event'] ?? 'submitted');
             $mailContext = $this->mailContext($context, $event);
@@ -96,11 +97,18 @@ final readonly class EmailStage implements SubmissionStage
             }
             $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
             // The team is told of a submission even when its template cannot send it: the PHP
-            // notification goes in its place (spec 120, story 4).
-            if ($result === null && $event === 'team_notification') {
+            // notification goes in its place (spec 120, story 4). Only for a template: an email
+            // routed by its trigger with no route sends nothing, as before (DECISIONS #455.4).
+            if ($result === null && $event === 'team_notification' && $this->sender->sendsTemplate($binding)) {
                 $result = $this->teamFallback($context, $binding, $mailContext);
             }
             $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $recipients);
+            // A site not set up to send email has not failed to send one: it is recorded as a
+            // form with no email was, not configured (spec 120, SC-005).
+            if ($result?->notSetUp() === true) {
+                $notSetUp ??= $result;
+                continue;
+            }
             $headline = $this->promoteHeadline($headline, $this->deliveryFor($result));
             if ($result === null || ! $result->successful()) {
                 $failed ??= $result?->message ?? __('The enabled flow email binding could not be resolved.', 'corex');
@@ -112,21 +120,32 @@ final readonly class EmailStage implements SubmissionStage
         }
         $next = $context->withMetadata([
             'email' => [
-                'state' => $failed === null ? 'complete' : 'failed',
+                'state' => match (true) {
+                    $failed !== null => 'failed',
+                    $headline === null && $notSetUp !== null => 'not_configured',
+                    default => 'complete',
+                },
                 'bindings' => $outcomes,
             ],
-            'notification_delivery' => ($headline ?? NotificationDelivery::notAttempted(
-                'no_binding',
-                __('No notification is configured for this form.', 'corex'),
-            ))->toArray(),
+            'notification_delivery' => ($headline ?? $this->notSent($notSetUp))->toArray(),
         ]);
         $this->persist($next);
 
         return $failed === null
-            ? SubmissionStageResult::success($this->key(), $next, $context->isTest
-                ? __('The emails were held for the test and not sent. They are in the Email Studio log.', 'corex')
-                : __('Flow email bindings completed.', 'corex'))
+            ? SubmissionStageResult::success($this->key(), $next, match (true) {
+                $context->isTest => __('The emails were held for the test and not sent. They are in the Email Studio log.', 'corex'),
+                $headline === null && $notSetUp !== null => __('Not sent: this site is not set up to send email yet.', 'corex'),
+                default => __('Flow email bindings completed.', 'corex'),
+            })
             : SubmissionStageResult::failure($this->key(), $next, $failed, $retryable);
+    }
+
+    /** The headline when no email was tried: none is configured, or the site cannot send yet. */
+    private function notSent(?MailResult $notSetUp): NotificationDelivery
+    {
+        return $notSetUp === null
+            ? NotificationDelivery::notAttempted('no_binding', __('No notification is configured for this form.', 'corex'))
+            : NotificationDelivery::notAttempted('delivery_not_set_up', $notSetUp->message);
     }
 
     /**

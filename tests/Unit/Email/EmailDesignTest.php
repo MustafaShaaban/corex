@@ -413,8 +413,7 @@ it('composes a reply as the designed document and the same words in plain text',
         ->and($email->html)->toContain('Thanks, Sam.')
         ->and($email->text)->toBe(
             "Thanks, Sam.\n\nSee the offer (https://example.com/offer).\n\n-- \n"
-            . "This message was sent by Acme & Sons (https://acme.test/).\n"
-            // Why the person receives it, as the frame's footer says (spec 120).
-            . 'You receive this email because you wrote to Acme & Sons.',
+            // A reply's plain text is what it was before spec 120 (FR-016): the footer's line only.
+            . 'This message was sent by Acme & Sons (https://acme.test/).',
         );
 });

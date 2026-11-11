@@ -73,7 +73,7 @@ final readonly class StudioDesignedEmails implements DesignedEmails
         }
 
         $message = EmailRouteMessageFactory::message($version, array_values($to), null, $rendered);
-        $result = $this->paths->during($path, fn () => $this->mail->deliver($message));
+        $result = $this->paths->during($path, fn () => $this->mail->deliver($message, $rendered['missing']));
 
         return new MailResult(
             attemptId: Uuid::v4(),

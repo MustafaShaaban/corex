@@ -19163,6 +19163,17 @@ non-contact form notification had no frame at all.
 
 **Client impact.** Every CoreX-drawn email looks different; finished messages do not change (#451).
 
+**Amended 2026-11-11** (review of PR #447). (a) Point 4 is kept in the drawing, not only in the partial: a link
+whose address is made only of variables that are all empty is left out with its words, and the paragraph, item or
+heading it leaves empty with it (`EmailTemplateService::links()`; only an element the left-out link emptied, and a
+table cell is kept, empty, so a layout's spacer cells stay), so the newsletter layout's `{{> preferences }}` no
+longer drew `<a href="">Preferences</a>` and `Preferences ()` in every Double opt-in and Newsletter welcome; a
+hand-written plain-text line that is only a label for empty values goes the same way. (b) A code template's plain text
+ends with its footer links, label and address, as its HTML footer has them (`EmailFrame::plainFooter($kind, $links)`):
+the newsletter's Unsubscribe. (c) A reply's plain text ends as it did before this release, with the footer's line only
+(`EmailFrame::plainSignature()`, FR-016); its HTML keeps the reason line of point 2. Verified: `EmailTemplateLinksTest`,
+`TemplateRendererTest`, `EmailDesignTest`.
+
 ## #451 -- A site's design draws replies unless it says it accepts a kind; finished messages are never framed
 
 **Date:** 2026-10-26. **Spec:** 120, story 3.
@@ -19181,6 +19192,14 @@ it. Both clients hand finished messages to the shared mailer, with their own Fro
 
 **Verified.** `SiteEmailDesignTest` (two new cases), `SendEmailListenerTest`, `NotificationFileLinkTest`,
 `DesignedEmailsTest` (a finished message captured unchanged).
+
+**Amended 2026-11-11** (review of PR #447). Point 3 is for a new site. FR-023 keeps an upgraded site's code-defined
+form notifications as they were: the contact form through its template, every other form as a finished HTML message
+(no template), and the same HTML body on the `wp_mail()` floor. Which a site is, is decided once, the first time this
+release runs, and stored (`corex_forms_notification_style`, `Corex\Forms\Listeners\NotificationStyle`): `as_before`
+where the site has a stored form submission, `designed` where it has none (it has sent no form notification, so none
+changes); a site with nothing stored yet sends as before. Verified: `SendEmailListenerTest`,
+`CodeFormNotificationStyleTest`.
 
 ## #452 -- The preview and the test send are drawn by the code that sends
 
@@ -19205,6 +19224,11 @@ the typed HTML, so `{{ site.name }}` arrived literally.
 **Verified.** Integration `DesignedEmailsTest` (captured HTML and plain text equal the preview); Jest
 `emailStudioPreview.test.js`, `emailStudio.test.js`; Playwright `email-studio-preview.spec.js`.
 
+**Amended 2026-11-11** (review of PR #447). (a) The preview samples the variables of the draft's layout as well as
+its own, so a newsletter footer's links are drawn with a sample (FR-002). Verified: `DesignedEmailsTest`. (b) Test send
+asserts in the browser on a production-type site through the suite's `X-Corex-E2E-Mail: capture` header; a test send
+on a development or staging site is captured by `EmailStudioService::decide()`, with no way round it.
+
 ## #453 -- A Studio email leaves from its template's sender, with its plain text, after the header checks
 
 **Date:** 2026-10-26. **Spec:** 120, story 2 (US-EML-03).
@@ -19222,6 +19246,20 @@ the typed HTML, so `{{ site.name }}` arrived literally.
    lines) with the frame's footer; a hand-written one merges values as they are, so "under <500 EGP" is whole.
 
 **Verified.** `EmailTemplateVariablesTest`, `DesignedEmailsTest` (From header on a delivered send).
+
+**Amended 2026-11-11** (review of PR #447). No template's From changes with the update. Before spec 120 a template's
+stored From was validated and never sent; point 1 would have started sending it, so a placeholder address or a mailbox
+the site's SMTP plugin has no connection for would have been used from the first email after the update. Each
+revision stored when a site that had Email Studio before (`corex_email_studio_defaults_version` set and below 4)
+updates is marked `sender: site` by `EmailTemplateRepository::keepSiteSender()`, once, before the defaults go in;
+`EmailTemplateVersion::sentFrom()` and `sentFromName()` answer null for a marked revision, so it leaves from Settings →
+Mail's sender as before, for a route, a flow binding, a designed email and the log's resend. A revision saved after
+the update (the owner saving the template, a reset, a new template, a default) is not marked and leaves from its own
+From. Decided under the owner's 2026-10-21 mandate and SAFE-D2. Verified: `DesignedEmailsTest` (an upgraded template
+sends from the site's sender, a new one from its own, the upgraded one from its own once saved again).
+
+**Client impact** (amended). Muva and Perego: a template made in Email Studio before the update keeps its sender until
+it is saved; check its From before saving it.
 
 ## #454 -- Variables: one catalog by the emails that supply them; any form field; missing ones left out and named
 
@@ -19244,6 +19282,17 @@ the typed HTML, so `{{ site.name }}` arrived literally.
    Emails tab sets with "Send it without them".
 
 **Verified.** `EmailTemplateVariablesTest`, `FlowEmailDefaultsTest`, Jest `emailsTab.test.js`, `DesignedEmailsTest`.
+
+**Amended 2026-11-11** (review of PR #447). (a) After the values are merged, `Corex\Email\Security\AddressGuard`
+reads every tag with WordPress's `WP_HTML_Tag_Processor`, as a browser reads it (unquoted attributes, a link never
+closed, another attribute before `href`, an `<area>`, an `<img src>`), and takes off an `href` that is not http,
+https, mailto or tel, or a `src` that is not http or https, spaces and control characters in the scheme ignored; the
+element keeps its words (FR-030). A pattern over the markup was bypassed by each of those shapes. The container
+gives the guard to `EmailTemplateService`; a service built without WordPress (a unit test) has none, so the check is
+proven in integration (`MergedAddressTest`). (b) A variable a designed
+email (newsletter, account) was sent without is named on its row of the shared mailer's log
+(`corex_mail_missing_variables`), as Email Studio's rows name it (FR-028). Verified: `EmailTemplateLinksTest`,
+`DesignedEmailsTest`.
 
 ## #455 -- Default templates: active on a new site, drafts on an upgraded one, reset as a new version
 
@@ -19270,6 +19319,19 @@ the typed HTML, so `{{ site.name }}` arrived literally.
 
 **Verified.** `DefaultEmailTemplatesTest`, `DefaultEmailsSentTest`, `FlowEmailDefaultsTest`.
 
+**Amended 2026-11-11** (review of PR #447). (a) Point 3: only a flow made from nothing gets the two emails, when
+the New flow form asks for them (`default_emails`); a flow created through the API from a configuration of its own (a
+copy, an import) keeps the emails it has. (b) Point 4 applies to a team email bound to a template: one routed by its
+trigger that no route matches sends nothing, as before, so no upgraded site gains an email. (c) SC-005 on a site that
+is not set up to send: Email Studio's own rule refuses a flow's emails on a production site with no provider or with
+live delivery off, which is how a new site starts. That refusal is not a failed email: the result says so
+(`MailResult::PROVIDER_NOT_SET_UP`, `notSetUp()`), and the email stage records it as a flow with no email was recorded,
+`not_configured`, with the reason, instead of failing the submission's email stage and sending the failure alerts. A
+new site sends the two emails once a provider is chosen and live delivery is on, or on a development or staging site,
+where they are captured. Sending them through the shared mailer instead was left for the owner (a flow email that
+leaves without the site's provider is a new rule). Verified: `FlowEmailStageOutcomeTest`, `DefaultEmailsSentTest`
+(which now switches on the defaults it needs, so it runs on an upgraded install too), Jest `newFlowEmails.test.js`.
+
 ## #456 -- Designed emails code sends go through the shared mailer (`DesignedEmails`)
 
 **Date:** 2026-10-26. **Spec:** 120, stories 4 and 6.
@@ -19286,6 +19348,9 @@ drawn; the latter dispatches `EmailDesignFailedEvent::TEMPLATE_FAILED` (a notifi
 Newsletter welcome (else nothing).
 
 **Verified.** `DefaultEmailsSentTest` (opt-in, welcome, fallback).
+
+**Amended 2026-11-11** (review of PR #447). The drawing's `missing` is no longer dropped: `StudioDesignedEmails` hands
+it to `MailService::deliver($message, $missingVariables)`, which keeps it on the log row (#454, amended).
 
 ## #457 -- The account emails: reset asked on the account page, and the welcome, in the frame
 

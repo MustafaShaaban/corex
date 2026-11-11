@@ -16,6 +16,7 @@ use Corex\Email\Design\EmailContent;
 use Corex\Email\Design\EmailFrame;
 use Corex\Email\Design\EmailKind;
 use Corex\Email\Design\PlainText;
+use Corex\Email\Security\AddressGuard;
 use Corex\Mail\EmailLanguage;
 use Corex\Mail\SubjectLine;
 
@@ -39,6 +40,12 @@ final class EmailTemplateService
     /** Where a layout's body puts the template's content. */
     private const CONTENT = '{{ content }}';
 
+    /** A link: the quote around its address, the address, and its words. */
+    private const LINK = '#<a\b[^>]*?\bhref\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)</a>#is';
+
+    /** Where a link was left out, until the element it leaves empty is left out with it. */
+    private const LEFT_OUT = "\u{E000}";
+
     private readonly EmailVariableCatalog $variables;
 
     /**
@@ -50,6 +57,11 @@ final class EmailTemplateService
         private readonly ?EmailPartialRepository $partials = null,
         private readonly ?EmailFrame $frame = null,
         private readonly ?EmailLanguage $language = null,
+        /**
+         * Takes off an address a merged value made unsafe (FR-030). WordPress's HTML parser, so
+         * the container gives it; a service built without WordPress (a unit test) has none.
+         */
+        private readonly ?AddressGuard $addresses = null,
     ) {
         $this->variables = $variables instanceof EmailVariableCatalog ? $variables : new EmailVariableCatalog($variables);
     }
@@ -295,19 +307,12 @@ final class EmailTemplateService
      */
     private function fragment(string $html, array $context, array &$missing): string
     {
+        $html = $this->links($html, $context, $missing);
         $html = preg_replace_callback(
             self::BLOCK,
             function (array $block) use ($context, &$missing): string {
                 preg_match_all(self::PLACEHOLDER, $block[0], $keys);
-                if (($keys[1] ?? []) === []) {
-                    return $block[0];
-                }
-                foreach ($keys[1] as $key) {
-                    if (! $this->isEmpty($context, $key)) {
-                        return $block[0];
-                    }
-                }
-                if (! $this->onlyLabels($block[1], $block[0])) {
+                if (! $this->allEmpty($context, $keys[1] ?? []) || ! $this->onlyLabels($block[1], $block[0])) {
                     return $block[0];
                 }
                 $missing = [...$missing, ...$keys[1]];
@@ -317,11 +322,59 @@ final class EmailTemplateService
             $html,
         ) ?? $html;
 
-        return $this->merge($html, $context, $missing, function (string $key) use ($context): string {
+        $merged = $this->merge($html, $context, $missing, function (string $key) use ($context): string {
             return $key === EmailVariableCatalog::ANSWERS
                 ? $this->answersHtml($context)
                 : self::escaped($this->contextValue($context, $key));
         });
+
+        return $this->addresses?->sanitize($merged) ?? $merged;
+    }
+
+    /**
+     * Whether there are keys and each has no value: what a block, a link or a line is left out
+     * for.
+     *
+     * @param array<string,mixed> $context
+     * @param list<string>        $keys
+     */
+    private function allEmpty(array $context, array $keys): bool
+    {
+        return $keys !== [] && array_filter($keys, fn (string $key): bool => ! $this->isEmpty($context, $key)) === [];
+    }
+
+    /**
+     * Markup without a link that goes nowhere: a link whose address is made only of values that
+     * are all empty is left out with its words (a footer's "Preferences" where the site gives no
+     * page for it, FR-012), and the paragraph, item, heading or box that held nothing else with
+     * it; a table cell is kept, empty, so the table keeps its columns. An address a value makes
+     * unsafe is taken off after merging, by the {@see AddressGuard} (FR-030).
+     *
+     * @param array<string,mixed> $context
+     * @param list<string>        $missing
+     */
+    private function links(string $html, array $context, array &$missing): string
+    {
+        $html = preg_replace_callback(
+            self::LINK,
+            function (array $link) use ($context, &$missing): string {
+                preg_match_all(self::PLACEHOLDER, $link[2], $keys);
+                if (! $this->allEmpty($context, $keys[1] ?? [])) {
+                    return $link[0];
+                }
+                $missing = [...$missing, ...$keys[1]];
+
+                return self::LEFT_OUT;
+            },
+            $html,
+        ) ?? $html;
+        if (! str_contains($html, self::LEFT_OUT)) {
+            return $html;
+        }
+        // Only an element a left-out link emptied: one marker at least, and nothing but space.
+        $emptied = '#<(p|li|h[1-6]|div|span)\b[^>]*>\s*(?:' . self::LEFT_OUT . '\s*)+</\1>#u';
+
+        return str_replace(self::LEFT_OUT, '', (string) preg_replace($emptied, '', $html));
     }
 
     /**
@@ -347,11 +400,37 @@ final class EmailTemplateService
      */
     private function plain(string $text, array $context, array &$missing): string
     {
+        $text = $this->withoutEmptyLabels($text, $context, $missing);
         $merged = $this->merge($text, $context, $missing, fn (string $key): string => $key === EmailVariableCatalog::ANSWERS
             ? $this->answersText($context)
             : $this->contextValue($context, $key));
 
         return trim((string) preg_replace('/[ \t]+\n/u', "\n", $merged));
+    }
+
+    /**
+     * A hand-written plain text without a line whose values are all empty and that says nothing
+     * else, or only a label ending in a colon ("Preferences: {{ links.preferences }}"), as such
+     * a block is left out of the HTML (FR-012, FR-028).
+     *
+     * @param array<string,mixed> $context
+     * @param list<string>        $missing
+     */
+    private function withoutEmptyLabels(string $text, array $context, array &$missing): string
+    {
+        $kept = [];
+        foreach (explode("\n", $text) as $line) {
+            preg_match_all(self::PLACEHOLDER, $line, $keys);
+            $keys = $keys[1] ?? [];
+            $words = trim((string) preg_replace(self::PLACEHOLDER, '', $line));
+            if ($this->allEmpty($context, $keys) && ($words === '' || str_ends_with($words, ':'))) {
+                $missing = [...$missing, ...$keys];
+                continue;
+            }
+            $kept[] = $line;
+        }
+
+        return implode("\n", $kept);
     }
 
     /**

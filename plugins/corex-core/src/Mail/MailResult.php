@@ -28,6 +28,13 @@ final class MailResult
     public const STATE_BOUNCED  = 'bounced';
     public const STATE_OPENED   = 'opened';
 
+    /**
+     * Who refused an email the site is not set up to send: a production site with no mail
+     * provider chosen, or with live delivery off, which is how a new site starts (spec 120,
+     * SC-005). Nothing was tried, so nothing failed.
+     */
+    public const PROVIDER_NOT_SET_UP = 'delivery-not-set-up';
+
     private const STATES = [
         self::STATE_ACCEPTED,
         self::STATE_CAPTURED,
@@ -79,6 +86,12 @@ final class MailResult
             self::STATE_SENT,
             self::STATE_OPENED,
         ], true);
+    }
+
+    /** Whether the email was refused only because the site is not set up to send email yet. */
+    public function notSetUp(): bool
+    {
+        return $this->state === self::STATE_REJECTED && $this->provider === self::PROVIDER_NOT_SET_UP;
     }
 
     public function terminal(): bool

@@ -19,5 +19,8 @@ use Corex\Email\Message\EmailMessage;
  */
 interface EmailLogStore
 {
-    public function record(string $status, EmailMessage $message): ?int;
+    /**
+     * @param list<string> $missingVariables The variables a drawn email was sent without (spec 120).
+     */
+    public function record(string $status, EmailMessage $message, array $missingVariables = []): ?int;
 }

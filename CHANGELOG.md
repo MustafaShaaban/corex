@@ -81,8 +81,9 @@ client site's own code hands to the shared mailer are sent exactly as before.
   bell and the Overview count it once. Nothing stored changes.
 - **Email Studio's Preview is the email that is sent.** It is drawn on the server, by the code that sends it, from
   the draft being edited (saved or not): its layout, partials and the frame, with a believable sample for every
-  variable ("Jane Cooper", "jane@example.com", the site's real name and address). The samples are listed beside
-  it and can be changed for that preview; nothing is saved. Desktop (600px), Mobile (375px) and Right to left show
+  variable ("Jane Cooper", "jane@example.com", the site's real name and address), its layout's too (a newsletter
+  footer's Unsubscribe and Preferences). The samples are listed beside it and can be changed for that preview;
+  nothing is saved. Desktop (600px), Mobile (375px) and Right to left show
   the same email. A template that cannot be drawn names the variable or the partial in place of the email.
 - **Test send sends exactly the previewed email** to one address, with "[Test]" before its subject, under the
   site's delivery rules, and says what happened in words ("Captured: nothing left this site", "Delivered to the
@@ -90,13 +91,20 @@ client site's own code hands to the shared mailer are sent exactly as before.
   that is not one is refused before anything is sent.
 - **Default emails.** A new site starts with four active templates: Contact confirmation, Admin notification,
   Double opt-in and Newsletter welcome; with the account add-on also Password reset and Welcome to your account.
-  A new flow is bound to the first two (the admin notification names the form and links to the submission). The
+  A flow made on the New flow form is bound to the first two (the admin notification names the form and links to
+  the submission); one created through the API from a configuration of its own is not. On a site not set up to
+  send email (production with no provider, or live delivery off, as a new site starts) Email Studio refuses them,
+  and the submission records its email as not configured, as a form with no email did, not as a failed email. The
   newsletter sends Double opt-in and, once confirmed, Newsletter welcome when they are active. **Reset to shipped
   version** puts a default back, after a confirmation, as a new version.
 - **Variables a template can use**: any field of a form (`{{ submission.<field> }}`) and `{{ form.answers }}`, every
   answer with its label in the form's order. The Variables tab groups them by the emails that supply them, each
   with its sample. A variable with no value when an email is sent is left out with the label it was the point of,
-  and the log row says "Sent without: …"; one no email supplies is refused when the template is saved, by name;
+  and the log row says "Sent without: …" (a newsletter or account email's row on the shared mailer names it
+  too). A link whose address is made only of empty values is left out with its words, in the HTML and the plain
+  text, so a newsletter's "Preferences" is not drawn where the site gives no page for it. Once the values are in,
+  every link's address must be http, https, mailto or tel and every image's source http or https, read as a browser
+  reads the markup; any other address is taken off and the words stay. One no email supplies is refused when the template is saved, by name;
   saving warns of one the template's emails do not supply, and a flow will not publish a binding that uses one
   until "Send it without them" is ticked.
 - **The account emails are designed.** A reset asked on the account page is drawn in the frame, says which account
@@ -173,18 +181,24 @@ client site's own code hands to the shared mailer are sent exactly as before.
   card's top (the Mail settings' accent, else the theme's `primary` colour), the message on a card, and a footer
   with the site's name, a line saying why the person receives the email ("You receive this email because you wrote
   to Acme.") and links (the privacy page where one is published; Unsubscribe on newsletter mail). Each carries a
-  plain-text version.
+  plain-text version that ends with the footer's line, the reason and the email's own links (a newsletter email's
+  Unsubscribe and its address). A reply's plain text ends as it did before, with the footer's line only.
 - **A template sends what it says.** An email from a template (a flow binding, a route, a resend, a test) leaves
   from the template's From name and From address when they are set, and from Settings → Mail's sender otherwise;
-  the From address is now optional. It carries a plain-text part: the one written by hand, or one made from the HTML
+  the From address is now optional. A template saved before this release stored its From and never sent it: it
+  keeps leaving from Settings → Mail's sender until it is saved again, and from then from the From it shows. It carries a plain-text part: the one written by hand, or one made from the HTML
   that keeps paragraphs, line breaks, list items and every link's address. A value such as "under <500 EGP" is kept
   whole. An invalid From address or a From name with a line break is refused on save, by name.
 - **A site's own design (`corex_email_design`) still draws replies only**, unless it says it accepts another kind.
 - **A flow's submitter confirmation with no address to send to** is recorded as "no recipient", not as a failed
   email. **A flow's team notification whose template has nothing to send** goes out as CoreX's own form
-  notification, so the admin is still told.
-- **Without CoreX Mail, a code-defined form's notification is plain text**, one answer per line (it was HTML
-  handed to a plain-text sender).
+  notification, so the admin is still told. One routed by its trigger that no route matches sends nothing, as
+  before.
+- **A code-defined form's notification on a new site** is drawn in the frame (the contact form through its
+  template, every other form through `form-notification`), and without CoreX Mail it is plain text, one answer per
+  line. **A site that had form submissions when it updated sends them as before**: the contact form through its
+  template, every other form as the same HTML message, with the same HTML without CoreX Mail. Decided once, the
+  first time this release runs, and kept (`corex_forms_notification_style`).
 - **Email Studio's log** shows a kept email's HTML and plain text ("Show the email"), and a flow's Emails tab names
   each email in words.
 
@@ -243,12 +257,21 @@ client site's own code hands to the shared mailer are sent exactly as before.
 - **Muva**: its leads and briefs are finished messages and are sent exactly as before (same subject, body, From,
   Reply-To and attachment, no frame, no added plain text). Its inbox replies stay in its own design: its
   `corex_email_design` filter is a reply design and is given nothing else. Email Studio gets the four default
-  templates as **drafts**, bound to nothing; nothing it sends changes.
+  templates as **drafts**, bound to nothing; nothing it sends changes. A template it made in Email Studio before the
+  update keeps leaving from Settings → Mail's sender, as today, until somebody saves it again: check its From name
+  and From address before saving it, since from then it leaves from them (an address FluentSMTP has no connection
+  for is not delivered). Its code-defined form notifications are sent as before: it has submissions, so the update
+  keeps them as they were.
 - **Perego**: its form, comment, careers and reply mail are finished messages and are sent as before, with the same
   From (info@, noreply@, contact@), Reply-To and single HTML part, so FluentSMTP routes them as it does now. Its
   renderer may start passing its text version as `plainText` when its session chooses; until then nothing changes.
-  It gets the four default templates as drafts.
+  It gets the four default templates as drafts. As for Muva, a template it made in Email Studio before the update
+  keeps leaving from Settings → Mail's sender until it is saved again; check its From first, as FluentSMTP routes
+  on it. Its code-defined form notifications are sent as before, the same HTML body on the `wp_mail()` path it uses
+  without CoreX Mail.
 - **Mizzey**: pinned to v0.42.0; not affected until it moves.
+- **Email Studio's log** names the provider of an email refused because the site is not set up to send
+  `delivery-not-set-up` (it was `delivery-policy`, still the name for an email refused for any other reason).
 - Neither Muva nor Perego runs corex-newsletter or corex-profile, so the newsletter and account emails do not reach
   them. On a site that does, the new templates are drafts after the update: switch them on in **Email Studio →
   Templates** (open one, then **Activate latest draft**); until then the site sends what it sends today.

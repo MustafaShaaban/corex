@@ -62,7 +62,8 @@ final readonly class EmailRouteMessageFactory
 
     /**
      * The email a drawn template version is sent as: from the template's own sender where it
-     * names one, Settings → Mail's otherwise, with its plain text as the text/plain part.
+     * names one and the revision was saved since spec 120, Settings → Mail's otherwise, with its
+     * plain text as the text/plain part.
      *
      * @param list<string>                                                          $to
      * @param array{subject:string,html:string,plain:string,missing:list<string>} $rendered
@@ -77,9 +78,9 @@ final readonly class EmailRouteMessageFactory
             $rendered['subject'],
             $rendered['html'],
             ['Content-Type' => 'text/html; charset=UTF-8'],
-            from: $version->fromAddress !== '' ? $version->fromAddress : null,
+            from: $version->sentFrom(),
             plainText: $rendered['plain'] !== '' ? $rendered['plain'] : null,
-            fromName: trim($version->fromName) !== '' ? $version->fromName : null,
+            fromName: $version->sentFromName(),
         );
     }
 

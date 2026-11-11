@@ -90,6 +90,26 @@ function useFollowedRow( prefix, rows ) {
 	}, [ prefix, rows ] );
 }
 
+/**
+ * An attempt's state in words (spec 120, FR-038): the states `EmailAttempt` records.
+ *
+ * @param {string} state The attempt's state.
+ * @return {string} The state's label.
+ */
+export function attemptStateLabel( state ) {
+	const labels = {
+		captured: __( 'Captured', 'corex' ),
+		queued: __( 'Queued', 'corex' ),
+		sending: __( 'Sending', 'corex' ),
+		sent: __( 'Sent', 'corex' ),
+		failed: __( 'Failed', 'corex' ),
+		rejected: __( 'Rejected', 'corex' ),
+		bounced: __( 'Bounced', 'corex' ),
+		opened: __( 'Opened', 'corex' ),
+	};
+	return labels[ state ] ?? __( 'Unknown', 'corex' );
+}
+
 function AttemptRow( { attempt, busy, onRetry } ) {
 	const missing = attempt.missing_variables || [];
 	return (
@@ -112,7 +132,7 @@ function AttemptRow( { attempt, busy, onRetry } ) {
 				<span
 					className={ `corex-email-app__badge is-${ attempt.state }` }
 				>
-					{ attempt.state }
+					{ attemptStateLabel( attempt.state ) }
 				</span>
 			</td>
 			<td>

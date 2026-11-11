@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\EmailAttemptRepository;
+use Corex\Email\MailServiceProvider;
 use Corex\Email\Routing\EmailRouteService;
 use Corex\Email\Studio\DefaultEmailTemplates;
 use Corex\Email\Studio\EmailLayoutRepository;
@@ -28,6 +29,7 @@ use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Tests\Support\CreatedPosts;
 use Corex\Tests\Support\MailDelivery;
+use Corex\Tests\Support\OptionRow;
 
 beforeEach(function () {
     $this->container = Corex\Boot::app()->container();
@@ -107,13 +109,33 @@ it('previews the draft framed by the server, with samples that can be changed an
     expect($drawn['subject'])->toBe('Hello Contact form')
         ->and($drawn['html'])->toContain('Hello Jane Cooper about Contact form.')
         ->and($drawn['html'])->toContain('This message was sent by')
+        // The draft's own variables, then its layout's (the shipped header and footer name the site).
         ->and(array_column($drawn['samples'], 'value', 'key'))->toBe([
             'form.title' => 'Contact form',
             'submission.name' => 'Jane Cooper',
+            'site.name' => wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES),
         ])
         ->and($drawn['text'])->toStartWith('Hello Jane Cooper about Contact form.')
         ->and($changed['subject'])->toBe('Hello Quote request')
         ->and($changed['html'])->toContain(' dir="rtl"');
+});
+
+it('FR-002: samples the variables its layout uses too, so a newsletter footer previews with its links', function () {
+    $template = designedProbe($this, '<p>Hello {{ submission.name }}.</p>');
+    $newsletter = $this->container->make(EmailLayoutRepository::class)->find('newsletter');
+    $controller = $this->container->make(EmailStudioController::class);
+
+    $drawn = $controller->previewTemplate(studioDraftRequest($this, $template, [
+        'layout_id' => $newsletter->id,
+        'layout_version' => $newsletter->version,
+    ]))->get_data()['data'];
+    $samples = array_column($drawn['samples'], 'value', 'key');
+
+    expect(array_keys($samples))->toContain('submission.name', 'links.unsubscribe', 'links.preferences')
+        ->and($samples['links.unsubscribe'])->toContain('corex_sample=1')
+        ->and($drawn['html'])->toContain('>Unsubscribe</a>')
+        ->and($drawn['html'])->not->toContain('href=""')
+        ->and($drawn['text'])->toMatch('/Unsubscribe \(http[^)]+corex_sample=1\)/');
 });
 
 it('names the variable or the partial a template cannot be drawn without, and sends no test of it', function () {
@@ -198,6 +220,61 @@ it('sends a routed template from its own sender with its plain text, and from th
         ->and(implode("\n", (array) $sent[1]['headers']))->not->toContain('sales@example.com');
 });
 
+it('keeps an upgraded site\'s templates sending from the site\'s sender until they are saved again, and a new one from its own', function () {
+    MailDelivery::stop($this->settings);
+    $this->settings = MailDelivery::answerAs(MailDelivery::DELIVER);
+    $versionRow = OptionRow::capture(MailServiceProvider::STUDIO_DEFAULTS_OPTION);
+    $sent = [];
+    $spy = function (array $atts) use (&$sent): array {
+        $sent[] = implode("\n", (array) $atts['headers']);
+
+        return $atts;
+    };
+    // Saved before this release: its From was stored and never sent.
+    $before = designedProbe($this, '<p>Hello</p>', 'placeholder@example.com', 'Placeholder');
+    // The upgrade marks every revision on the install: each that is the site's, not this test's,
+    // is put back as it was once the test is over.
+    $store = $this->container->make(Corex\Email\Studio\WpEmailStudioStore::class);
+    $siteRevisions = [];
+    foreach ($store->all('email_template') as $template) {
+        if ($template['id'] !== $before->id) {
+            array_push($siteRevisions, ...$store->all('email_template_version', $template['id']));
+        }
+    }
+    update_option(MailServiceProvider::STUDIO_DEFAULTS_OPTION, '3');
+    add_filter('wp_mail', $spy);
+
+    try {
+        (new MailServiceProvider($this->container))->registerEmailStudio();
+        $after = designedProbe($this, '<p>Hello</p>', 'sales@example.com', 'Sales');
+        $mailer = $this->container->make(EmailRouteService::class);
+        $mailer->dispatchTemplate($before->id, ['sam@example.com'], null, []);
+        $mailer->dispatchTemplate($after->id, ['sam@example.com'], null, []);
+
+        // The owner saves the old template again: from now on its From is the one it says.
+        $templates = $this->container->make(EmailTemplateRepository::class);
+        $stored = $templates->findVersion($before->id, $before->activeVersion);
+        $resaved = $templates->saveDraft(new EmailTemplateVersion(...[...get_object_vars($stored), 'sentFromSite' => false]));
+        $templates->activate($before->id, $resaved->versionNumber, get_current_user_id(), new DateTimeImmutable('now'));
+        $mailer->dispatchTemplate($before->id, ['sam@example.com'], null, []);
+    } finally {
+        remove_filter('wp_mail', $spy);
+        OptionRow::restore(MailServiceProvider::STUDIO_DEFAULTS_OPTION, $versionRow);
+        foreach ($siteRevisions as $revision) {
+            $store->update($revision['id'], $revision['name'], $revision['payload']);
+        }
+    }
+    $untouched = array_map(static fn (array $revision): mixed => $store->find($revision['id'])['payload']['sender'] ?? null, $siteRevisions);
+
+    expect($stored->sentFromSite)->toBeTrue()
+        // The site's own revisions are as they were before the test.
+        ->and($untouched)->toBe(array_map(static fn (array $revision): mixed => $revision['payload']['sender'] ?? null, $siteRevisions))
+        ->and($sent[0])->not->toContain('placeholder@example.com')
+        ->and($sent[0])->not->toContain('Placeholder')
+        ->and($sent[1])->toContain('From: Sales <sales@example.com>')
+        ->and($sent[2])->toContain('From: Placeholder <placeholder@example.com>');
+});
+
 it('leaves out a block whose value is missing, and names the variable on the email\'s log row', function () {
     $template = designedProbe($this, '<p>Thanks for writing.</p><p>Phone: {{ submission.phone }}</p><p>Hello {{ submission.name }}</p>');
 
@@ -260,4 +337,14 @@ it('puts a default back as it was shipped, through its route, as a new version',
         ->toBe($this->container->make(DefaultEmailTemplates::class)->definition('admin-notification')->htmlBody)
         ->and($versions)->toBe($before + 1)
         ->and($controller->resetTemplate($notDefault)->get_status())->toBe(404);
+});
+
+it('FR-028: names on its log row a variable a designed email was sent without', function () {
+    $template = designedProbe($this, '<p>Thanks.</p><p>Phone: {{ submission.phone }}</p>');
+
+    $result = $this->container->make(Corex\Mail\DesignedEmails::class)->send($template->slug, ['sam@example.com'], [], 'Spec 120: designed probe');
+
+    expect($result?->logId)->not->toBeNull()
+        // The probe's subject names the form, which this email was not given either.
+        ->and(get_post_meta((int) $result?->logId, 'corex_mail_missing_variables', true))->toBe('form.title, submission.phone');
 });

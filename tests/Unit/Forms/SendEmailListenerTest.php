@@ -211,3 +211,97 @@ it('has its own words written in the language of the email', function () {
     expect($mailer->request->subject)->toBe('[email] New "callback" form submission')
         ->and($mailer->request->body)->toBe('[email] The submission contained no fields.');
 });
+
+/** The site's settled notification style, answered as `get_option()` would. */
+function notificationStyleIs(string $style): void
+{
+    Functions\when('get_option')->alias(static fn (string $option, mixed $default = false): mixed => match ($option) {
+        Corex\Forms\Listeners\NotificationStyle::OPTION => $style,
+        'admin_email' => 'admin@example.com',
+        default => $default,
+    });
+}
+
+function styledListener(?AttemptingMailer $mailer): SendEmailListener
+{
+    return new SendEmailListener(
+        new NotificationDispatcher(new LanguageOfTheRequest(), null, $mailer),
+        emailListenerConfig(),
+        style: new Corex\Forms\Listeners\NotificationStyle(),
+    );
+}
+
+// FR-023: a site that sent code-defined form notifications before spec 120 sends them as it did.
+it('FR-023: sends an upgraded site\'s form other than the contact form as before, a finished HTML message', function () {
+    notificationStyleIs(Corex\Forms\Listeners\NotificationStyle::AS_BEFORE);
+    Functions\when('esc_url')->returnArg();
+    $mailer = requestKeepingMailer();
+
+    styledListener($mailer)->dispatch(new FormSubmittedEvent('callback', ['phone' => '01016999700']));
+
+    expect($mailer->request->templateName)->toBeNull()
+        ->and($mailer->request->body)->toBe(NotificationDispatcher::htmlBody(['phone' => '01016999700']));
+});
+
+it('FR-023: keeps an upgraded site\'s contact form on its template, with the HTML body it had', function () {
+    notificationStyleIs(Corex\Forms\Listeners\NotificationStyle::AS_BEFORE);
+    $mailer = requestKeepingMailer();
+
+    styledListener($mailer)->dispatch(submittedEvent());
+
+    expect($mailer->request->templateName)->toBe('contact-notification')
+        ->and($mailer->request->body)->toBe(NotificationDispatcher::htmlBody(['name' => 'Sam', 'message' => 'Hello']));
+});
+
+it('FR-023: hands an upgraded site\'s wp_mail() floor the HTML body it had', function () {
+    notificationStyleIs(Corex\Forms\Listeners\NotificationStyle::AS_BEFORE);
+    $sent = null;
+    Functions\expect('wp_mail')->once()->andReturnUsing(static function (mixed $to, string $subject, string $body) use (&$sent): bool {
+        $sent = $body;
+
+        return true;
+    });
+
+    styledListener(null)->dispatch(new FormSubmittedEvent('callback', ['phone' => '01016999700']));
+
+    expect($sent)->toBe(NotificationDispatcher::htmlBody(['phone' => '01016999700']));
+});
+
+it('FR-018: sends a new site\'s form through the form notification template, with a plain-text floor body', function () {
+    notificationStyleIs(Corex\Forms\Listeners\NotificationStyle::DESIGNED);
+    $mailer = requestKeepingMailer();
+
+    styledListener($mailer)->dispatch(new FormSubmittedEvent('callback', ['phone' => '01016999700']));
+
+    expect($mailer->request->templateName)->toBe('form-notification')
+        ->and($mailer->request->body)->toBe('phone: 01016999700');
+});
+
+it('FR-023: sends as before on a site whose style is not settled yet', function () {
+    notificationStyleIs('');
+
+    expect((new Corex\Forms\Listeners\NotificationStyle())->designed())->toBeFalse();
+});
+
+it('FR-023: settles the style once: as before where the site has submissions, designed where it has none', function () {
+    $stored = [];
+    Functions\when('get_option')->alias(static function (string $option, mixed $default = false) use (&$stored): mixed {
+        return $stored[$option] ?? $default;
+    });
+    Functions\when('update_option')->alias(static function (string $option, mixed $value) use (&$stored): bool {
+        $stored[$option] = $value;
+
+        return true;
+    });
+    Functions\when('wp_set_option_autoload')->justReturn(true);
+    $style = new Corex\Forms\Listeners\NotificationStyle();
+
+    $style->settle(static fn (): bool => true);
+    $style->settle(static fn (): bool => false);
+    $upgraded = $stored[Corex\Forms\Listeners\NotificationStyle::OPTION];
+    $stored = [];
+    $style->settle(static fn (): bool => false);
+
+    expect($upgraded)->toBe(Corex\Forms\Listeners\NotificationStyle::AS_BEFORE)
+        ->and($stored[Corex\Forms\Listeners\NotificationStyle::OPTION])->toBe(Corex\Forms\Listeners\NotificationStyle::DESIGNED);
+});
