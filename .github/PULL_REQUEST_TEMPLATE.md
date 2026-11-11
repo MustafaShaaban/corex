@@ -4,7 +4,7 @@ What this PR changes and why. Link the spec/issue (e.g. `specs/0XX-...`, `Closes
 
 ## Type
 
-- [ ] Feature (went through Spec Kit: specify → clarify → plan → tasks → implement)
+- [ ] Feature (went through the CoreX loop: grill → spec with slices → test first → guards → two-model review)
 - [ ] Fix
 - [ ] Docs
 - [ ] Refactor / chore

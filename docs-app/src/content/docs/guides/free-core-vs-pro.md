@@ -72,7 +72,7 @@ These capabilities can be commercial because they are advanced, vertical, or ope
 ## Deferred and out of scope
 
 Deferred items are not blockers for the first client sites. Out-of-scope items are not part of this readiness spec.
-Either category needs a new or updated Spec Kit feature before implementation.
+Either category needs a new or updated spec before implementation.
 
 ## Verify the boundary
 
