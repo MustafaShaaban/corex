@@ -46,7 +46,7 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 `ROADMAP.md` §13, "Public hosts". Spec 130 is a draft for step 1, moving the docs from
 `mustafashaaban.github.io/corex/` to `corex-docs.mustafashaaban.com`. Measured: all six hosts resolve through
 Cloudflare's proxy; `corex-docs` still reaches the owner's server, not GitHub Pages; the repository's Pages
-site has no custom domain. Planning only, no runtime code. Next: plan and tasks for spec 130, and the owner's
+site has no custom domain. Planning only, no runtime code. Next: spec 130's slices (the CoreX loop), and the owner's
 three steps outside the repository (verify the domain on GitHub, point `corex-docs` at
 `mustafashaaban.github.io` as DNS only, then set the custom domain).
 
