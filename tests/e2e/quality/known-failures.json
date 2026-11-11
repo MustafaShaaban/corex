@@ -554,6 +554,15 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-addons",
+			"signature": "corex-assistant",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"corex-assistant\" in p.corex-addon-card__slug"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons",
 			"signature": "corex-ui",
 			"since": "2026-10-22",
 			"story": "US-ADD-08",
@@ -819,6 +828,60 @@
 			"since": "2026-10-22",
 			"story": "US-ADD-08",
 			"note": "\"WooCommerce Kit\" in div.corex-addon-card__title-row > h2"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons",
+			"signature": "CoreX Assistant",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"CoreX Assistant\" in div.corex-addon-card__title-row > h2"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons",
+			"signature": "A site chat that answers from your own pages and hands visitors to your team.",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"A site chat that answers from your own pages and hands visitors to your team.\" in p.corex-addon-card__desc"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons",
+			"signature": "chat button and lazily loaded chat",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"chat button and lazily loaded chat\" in ul.corex-addon-card__chips > li"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons",
+			"signature": "corex/v#/assistant REST",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"corex/v1/assistant REST\" in ul.corex-addon-card__chips > li"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons",
+			"signature": "callback form in the Submissions inbox",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"callback form in the Submissions inbox\" in ul.corex-addon-card__chips > li"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons",
+			"signature": "KnowledgeProvider contract",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"KnowledgeProvider contract\" in ul.corex-addon-card__chips > li"
 		},
 		{
 			"check": "words",
@@ -1103,6 +1166,15 @@
 			"check": "words",
 			"rule": "not-translated",
 			"screen": "corex-addons&tab=active",
+			"signature": "corex-assistant",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"corex-assistant\" in p.corex-addon-card__slug"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons&tab=active",
 			"signature": "corex-ui",
 			"since": "2026-10-22",
 			"story": "US-ADD-08",
@@ -1350,6 +1422,60 @@
 			"since": "2026-10-22",
 			"story": "US-ADD-08",
 			"note": "\"WebP conversion on upload\" in ul.corex-addon-card__chips > li"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons&tab=active",
+			"signature": "CoreX Assistant",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"CoreX Assistant\" in div.corex-addon-card__title-row > h2"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons&tab=active",
+			"signature": "A site chat that answers from your own pages and hands visitors to your team.",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"A site chat that answers from your own pages and hands visitors to your team.\" in p.corex-addon-card__desc"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons&tab=active",
+			"signature": "chat button and lazily loaded chat",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"chat button and lazily loaded chat\" in ul.corex-addon-card__chips > li"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons&tab=active",
+			"signature": "corex/v#/assistant REST",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"corex/v1/assistant REST\" in ul.corex-addon-card__chips > li"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons&tab=active",
+			"signature": "callback form in the Submissions inbox",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"callback form in the Submissions inbox\" in ul.corex-addon-card__chips > li"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-addons&tab=active",
+			"signature": "KnowledgeProvider contract",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"KnowledgeProvider contract\" in ul.corex-addon-card__chips > li"
 		},
 		{
 			"check": "words",
@@ -2619,6 +2745,15 @@
 			"since": "2026-10-22",
 			"story": "US-NFR-06",
 			"note": "\"WooCommerce Kit\" in div.corex-addon-card__title-row > h2"
+		},
+		{
+			"check": "words",
+			"rule": "not-translated",
+			"screen": "corex-data-models",
+			"signature": "CoreX Assistant",
+			"since": "2026-11-09",
+			"story": "US-ADD-08",
+			"note": "\"CoreX Assistant\" in ul.corex-capability__list > li > strong"
 		},
 		{
 			"check": "words",

@@ -329,6 +329,7 @@ final class ReadinessCommand
             'addons/corex-captcha/corex-captcha.php',
             'addons/corex-newsletter/corex-newsletter.php',
             'addons/corex-careers/corex-careers.php',
+            'addons/corex-assistant/corex-assistant.php',
             'addons/corex-bookings/corex-bookings.php',
             'addons/corex-media/corex-media.php',
             'addons/corex-kit-company/corex-kit-company.php',

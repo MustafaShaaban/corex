@@ -40,6 +40,36 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**The CoreX loop, constitution v2.0.0** (2026-11-11, branch `docs/workflow-matt-and-agents`, DECISIONS #621): Spec
+Kit's commands are retired for Matt Pocock's engineering skills around one spec file per feature (grill, spec with
+slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a model and effort, and five agents
+are in `.claude/agents/`. Anything a person sees is designed first in Claude Design, measured and reviewed against it. Matt's setup: `docs/agents/`, four triage labels created on GitHub. Docs/Planning only.
+Owed: the client scaffold (`wp corex make:site`) still tells client sites to use Spec Kit, its own slice.
+
+**Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
+#616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
+`addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free
+model tiers in turn (Gemini, Groq, OpenRouter, Mistral), with a callback form in the chat that lands in
+Submissions, with a time the visitor picks. CoreX → Assistant holds the switch, the look per language, the
+services in the owner's order (free tiers first, paid OpenAI and Claude last and off until turned on), the
+booking hours, the limits and "Check services". A site
+plugs in its knowledge (`corex_assistant_knowledge_provider`), strings (`corex_assistant_strings`) and colours
+(`--corex-assistant-*`). Framework edits: the add-on catalogue and the CoreX rail entry; the token inventory resolves a
+package's own `--corex-*` properties (#607). The slice-1 change that saved Settings secrets unloaded is
+withdrawn (#602): the Config engine reads only loaded options, so a saved secret went unread.
+- Verified (slices 1 and 2, 2026-11-10): Pest unit 3,645 green (the whole suite); integration 1,530 green, 1
+  skipped and 1 red that is this scratch site's own (`LoginSlugAvailabilityTest`: Git Bash wrote its permalink
+  setting as `/C:/Program Files/Git/%postname%/`; the branch changes no login code); Jest 25; Playwright 4
+  (Chromium, axe WCAG 2.2 AA on the open chat and the owner's screen); the quality suite's 33 checks on
+  CoreX → Assistant, Add-ons and Data, all green; by hand on a scratch WordPress (port 8929, database
+  `corex_wassistant`) with a stubbed model: off by default, lazy chat, chips, fallback on a 429, the callback
+  stored, RTL, phone width, a key saved on the screen used by the chain.
+- Not done: no real model was asked (no key in this session); not run on a live site.
+- Slice 2 (same branch, same PR) built Perego's revision 2 and the owner's additions: paid fallbacks, the
+  time picker, channel-led fields, the CoreX → Assistant screen (T014 to T019). Perego can switch once a
+  release carries it.
+- Next: the owner's word on merging this slice.
+
 **Spec 122, flows that stay live and route to people** (2026-10-26, branch `spec/122-live-flows`, DECISIONS #470
 to #479): revamp release R3.9, six stories (US-FLW-01, 03, 04, 07, US-VIS-01, 02), built under the owner's
 2026-10-21 mandate. A live flow takes "Publish changes" without leaving the page, keeps its publications and a
@@ -290,6 +320,8 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**Merged, not released.** The advisories of 2026-11-09 (DECISIONS #514): overrides for `qs`, `glob` 14, `minimatch` 11 and `isomorphic-git`, and a bounded exception for `deepmerge`, which has no fixed release. The built files are byte-identical; the notes are under `[Unreleased]` → Security in `CHANGELOG.md`.
 
 **In v0.48.1, 2026-10-25.** Spec 123 User Stories 1 and 4 (#442): CoreX abilities public to MCP, and `npm run release:push`, which installs a release with an Application Password on a site that defines `COREX_ALLOW_RELEASE_PUSH` (DECISIONS #512, #513). Its "In flight" paragraph above describes it; the release notes are under `[0.48.1]` in `CHANGELOG.md`. Filed from its verification: #443 (`build:dist` under a `.claude` folder) and #444 (a fresh site's capability checks before the migration runner).
 
@@ -1000,11 +1032,13 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`
   before its own filter runs. Measured in DECISIONS #222.
-- Four bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244),
-  all on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
+- Five bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244, #514). Four are
+  on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
   starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is given comes
   from `wp-env.json` in this repository. They are reviewed on 2026-11-30. The `sprintf-js` and
   `braces` exceptions were removed when GitHub withdrew their advisories (2026-10-22, 2026-10-23).
+  The fifth is `deepmerge` 4.3.1 (low, no fixed release; Jest merges its configuration with it), reviewed
+  on 2027-01-31.
 - **One override holds a package above what its parents ask for**: `postcss-selector-parser` at
   7.1.6, in the root and in `docs-app`. `@wordpress/scripts` 36 did not retire it as expected:
   `cssnano` 6 still asks for 6.x. Three more hold `js-yaml`, `smol-toml` and `katex` at patched
