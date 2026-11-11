@@ -328,6 +328,7 @@
 		);
 	}
 
+	// `meta` is the date a person reads and `datetime` its ISO value, both from the server.
 	function widgetEvent( e ) {
 		return (
 			'<li class="corex-insight-widget__event is-' +
@@ -335,7 +336,9 @@
 			'">' +
 			'<span>' +
 			escape( e.text ) +
-			'</span><time>' +
+			'</span><time datetime="' +
+			escape( e.datetime ) +
+			'">' +
 			escape( e.meta ) +
 			'</time></li>'
 		);

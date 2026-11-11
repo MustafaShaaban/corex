@@ -107,6 +107,14 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
 
 ### Changed
 
+- **Checkboxes and radios on every CoreX admin screen are drawn in CoreX's colours** (DECISIONS #515).
+  wp-admin draws both itself, in its theme's blue with a white tick, which the shell's `accent-color`
+  never reached. A checked box or radio is now brass with a tick, dash or dot in the action ink, the
+  unchecked edge is dark enough to see (3:1 in both appearances), a disabled one is dimmed in its own
+  colours, and a click no longer leaves a blue ring: the keyboard gets the CoreX focus ring. Light and
+  dark, left-to-right and right-to-left, and the system's forced colours are covered. The input is
+  still the browser's own, so keyboard, labels and what a form posts are unchanged. The Settings
+  switches and the front end are not touched.
 - **The token inventory accepts a component's own properties** (#607): a `--corex-*` property a
   package's stylesheet declares resolves for that package only.
 - **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
@@ -143,6 +151,21 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
 - **On/off settings are switches** (#445) that say On or Off, as on the Add-ons screen; they still
   save "1" or "0".
 - **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
+- **Activity times can be read** (DECISIONS #516): on the Overview's recent activity, the Access audit
+  log and the Insights security card, each event's time is drawn in the muted text colour (5.8:1 or
+  more, in light and dark) and not the subtle one (about 3:1). The Insights card says the time as the
+  Overview does, `10 November 2026 at 7:36 AM` in the site's timezone, not `2026-11-10 07:36` in UTC.
+  At 200% text on a phone, an event's summary no longer runs onto its time. The quality checks' seed
+  now records three refusals, so CI measures these screens with activity on them.
+
+- **Text enlarged to 200% stays on its own lines on every CoreX screen** (DECISIONS #517). The admin
+  shell had no line height of its own and inherited wp-admin's as a fixed 18.2px, so 28px letters ran
+  onto the next line. `.corex-admin` now sets `--corex-admin-line-base` (1.4, new), headings and the
+  large numbers on Email Studio, the Overview and Insights set `--corex-admin-line-tight` (1.2).
+  Screens are up to about 3% taller or shorter: 14px lines gain 1.4px, 12px lines lose 1.4px.
+- **Blog Pro's rows keep the name and the count apart on a phone** (DECISIONS #517): "admin1
+  published post" is "admin" and "1 published post" again, side by side or on two lines.
+
 - **The Submissions inbox's From and To dates fit on a phone** (DECISIONS #518). The range was two
   columns at every width, so on a phone each date field was wider than its half: it spilled into the
   other date, "From" lay over "To" with text at 200%, and in right to left the From field ran off the
@@ -169,6 +192,13 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
   packages that also ask for it are never bundled. Review by 2027-01-31.
 
 ### Client impact
+
+**Checkboxes and radios (DECISIONS #515):** every CoreX admin screen's checkboxes and radios change
+look, from WordPress blue to CoreX brass, on Muva, Perego and any site that takes this release,
+including add-on screens inside the CoreX shell (`.corex-admin`), such as CoreX → Assistant (PR #449).
+Nothing is stored or posted differently. Client-guide screenshots that show a checkbox go stale. A
+client stylesheet that drew its own checkbox inside `.corex-admin` with `appearance: none` now meets
+the shell's rule and needs a more specific selector to keep its own look.
 
 **Spec 118, one launch checklist:**
 
@@ -200,6 +230,14 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
   of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
   `tests/Unit/Media/MediaRegenerationJobTest.php`.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**The admin shell's line height (DECISIONS #517):**
+
+- **Muva** and **Perego**: every CoreX admin screen is up to about 3% taller or shorter; nothing
+  stored changes. Client-guide screenshots of CoreX screens may show slightly different spacing. A
+  client stylesheet that set a line height on a CoreX admin element keeps it.
+- **A client repository that carries copies of CoreX's tests** takes the updated
+  `tests/e2e/quality/known-failures.json` (one entry fewer, one note longer).
 
 **The inbox's date filters (DECISIONS #518):**
 

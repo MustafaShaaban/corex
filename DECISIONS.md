@@ -19191,6 +19191,116 @@ as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the
 with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
 choice even where the copy is unused.
 
+## #515 -- CoreX draws the admin's checkboxes and radios, in brass, with a clip-path mark
+
+**Date:** 2026-11-10. **Spec:** none (a shell fix the owner asked for while reviewing CoreX → Assistant, PR #449).
+
+**Found.** `.corex-admin input[type="checkbox"], input[type="radio"] { accent-color: … }` had no effect: wp-admin's
+`forms.css` gives both `appearance: none` and paints them itself, checked in `--wp-admin-theme-color` with a white
+SVG tick as `::before` content. On CoreX → Assistant a checked box measured `rgb(56, 88, 233)`.
+
+**Decided.**
+- The shell takes over the drawing for every checkbox and radio inside `.corex-admin`, except `.corex-switch__input`,
+  which draws its own track. The input stays the browser's: `appearance: none` on the real `<input>`, so Space,
+  arrow keys, labels, focus order and the posted value are unchanged. Sizes and margins stay wp-admin's (1rem, and
+  1.5625rem at phone width), so no layout moves and no target-size finding changes.
+- Checked, and a checkbox's indeterminate: background and border `--corex-admin-action`, mark in
+  `--corex-admin-action-ink`. Unchecked: `--corex-admin-surface` with a `--corex-admin-text-muted` edge. Disabled:
+  the same colours at `--corex-admin-disabled-opacity`. Keyboard focus: `--corex-admin-focus` outline; wp-admin's
+  `:focus` box-shadow is removed, so a click leaves no blue ring.
+- The tick, the dash and the radio dot are a `::before` filled with the ink colour and cut with `clip-path` (the dot
+  is a circle). A colour in an SVG data URL cannot read a custom property, so wp-admin's approach would have frozen
+  one appearance's colour. The polygon is physical, so the tick is not mirrored in right-to-left, where it reads the
+  same.
+- In a forced-colours mode the system repaints backgrounds, which would hide a mark drawn as one, so the mark takes
+  `CanvasText` (`GrayText` when disabled) with `forced-color-adjust: none`.
+- `tests/e2e/admin-checkboxes.spec.js` measures the Notifications screen's Preferences checkboxes (checked, unchecked,
+  indeterminate, disabled, keyboard and click focus) and two radios placed in that panel, in both appearances and
+  both directions. It fails on the stylesheet before this change.
+
+**Not chosen.** *`--corex-admin-border-strong` for the unchecked edge*, which the request named: it is 1.6:1 against
+the surface in both appearances, under the 3:1 WCAG 1.4.11 asks of the only thing that shows a box is there.
+`--corex-admin-text-muted` is 5.8:1 (light) and 6.8:1 (dark). *Larger boxes*: WordPress's size, with the label as
+part of the target, is what every other admin screen uses. *A per-screen fix*: the owner asked for one rule for all
+of CoreX.
+
+## #516 -- Activity times are drawn in the muted text colour, with a line height of their own, and the quality seed records activity
+
+**Date:** 2026-11-10. **Spec:** 116 (US-NFR-03, US-NFR-04, US-NFR-06), spec 076 (FR-002). Found by a local run of
+`tests/e2e/quality` against a scratch site that had activity records.
+
+**Found.** Three lists of activity draw each event's time in `--corex-admin-text-subtle`: the Overview's recent
+activity (`.corex-overview__event-time`), the Access audit log (`.corex-access__event-meta`, which holds its `time`
+elements) and the Insights security card (`.corex-insight-widget__event time`). Subtle is 2.99 to 3.31:1 on the
+surfaces these sit on, in both appearances, under the 4.5:1 WCAG 2.2 AA asks of text (axe `color-contrast`). The
+Insights card also wrote the time as `Y-m-d H:i` in UTC (`2026-11-10 07:36`, the `machine-timestamp` rule), where the
+Overview writes the same event as `10 November 2026 at 7:36 AM` in the site's timezone. At 200% text on a phone, the
+Overview's event summary ran onto its time (`text-overlaps-at-200`): no CoreX rule sets a unitless line height, so
+the rows inherit wp-admin's `body { line-height: 1.4em }` as a fixed 18.2px, shorter than 28px letters. CI did not
+report any of it: `seed-quality-site.php` recorded no activity, and the only activity a run makes is the refusals of
+the refused-state checks (`states.spec.js`), which a screen's own check may or may not come after.
+
+**Decided.**
+- The three times use `--corex-admin-text-muted`: 5.80:1 on the light surface and 6.22:1 on the light raised
+  surface, 6.76:1 and 6.28:1 in dark. They stay smaller than the line they belong to, which is what tells them
+  apart.
+- The three rows (`.corex-overview__event`, `.corex-access__event-body`, `.corex-insight-widget__event`) set
+  `line-height: var(--corex-admin-line-normal)`, a unitless 1.6, so their lines grow with their text.
+- `InsightWidgetFacts` dates each security event through `AdminDateTime::FULL`, as the Overview does, and hands the
+  card the words (`meta`) and the ISO value (`datetime`); `insights.js` writes `<time datetime="…">`.
+- `seed-quality-site.php` has the quality subscriber refused the Access screen twice and the Overview once, through
+  `AccessAuditLog::record()`: one audit entry counted "2 times, from … to …", one entry of one refusal, and the two
+  `access.denied` activity events they write. The Overview, the Access audit tab and the Insights security card are
+  measured with rows in CI from now on.
+
+**Not chosen.** *A unitless line height on `.corex-admin` itself*: it is the likely cause of the two other
+`text-overlaps-at-200` entries in `known-failures.json` (Blog Pro, the inbox's dates; read, not measured), but it
+changes the vertical rhythm of every CoreX screen and wants its own pull request with the screens measured. Left as a follow-up. *Seeding rows into
+the activity table directly*: the seed would then pass whatever the table holds; through the audit log it writes what
+a real refusal writes. *Recording the findings in `known-failures.json`*: each has a fix of a few lines.
+
+## #517 -- The admin shell sets a unitless line height, 1.4, and headings 1.2
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), spec 116's `text-overlaps-at-200`. Follows #516
+(PR #453), which fixed three activity rows one by one and left the shell to this.
+
+**Why.** `.corex-admin` set no `line-height`, so every CoreX screen inherited wp-admin's
+`body { font-size: 13px; line-height: 1.4em }`. An `em` line height is computed once, on `body`, and inherited as
+a length: 18.2px for every line on every screen, whatever its font size. At 200% text a 14px line becomes 28px
+letters on an 18.2px line, and the letters run onto the next line. Measured on all 32 CoreX screens at 375 and
+1280px, light and dark, left to right and right to left (4,500 text boxes per pass): 3,184 of them sat on the
+inherited 18.2px, among them headings of 16 to 24px and display numbers of 24 to 38px.
+
+**Decided.**
+- A new token `--corex-admin-line-base: 1.4` in `corex-admin-tokens.css`, set on `.corex-admin`. A number is
+  inherited as a number, so each element's line is 1.4 times its own font size and grows with it.
+- `:where(.corex-admin) :where(h1, ..., h6)` gets `--corex-admin-line-tight` (1.2). Zero specificity: any
+  component rule for a heading still wins.
+- The three display numbers that had no line height of their own (Email Studio's metrics, the Overview's number
+  tiles, the Insights grade) get the tight token too.
+- Blog Pro's two-part rows (the authors list and the card lists) stay flex rows at phone width and wrap, instead
+  of turning into a block. As a block the name and the count ran together ("admin1 published post"), and the
+  wrapped count's box lay over the name, which is what the 200% check reported there.
+
+**Why 1.4 and not an existing token.** At the base size the old rhythm was 1.4 for 13px text (758 boxes), 1.3 for
+14px (1,690) and 1.52 for 12px (482). 1.4 keeps 13px text exactly where it was, moves 14px lines by +1.4px and 12px
+lines by -1.4px, and is the ratio wp-admin itself uses, so CoreX's text sits on the same rhythm as WordPress's
+around it. `--corex-admin-line-tight` (1.2) is below the height of the text's own box in Segoe UI (about 1.33 of
+the font size): inline runs on consecutive lines would still overlap at 200%. `--corex-admin-line-normal` (1.6)
+would grow every line on every screen by 1 to 4.2px for no reported defect.
+
+**What it changes.** Page heights move by -43 to +168px per screen (at most about 3%): most screens gain 10 to
+40px, the Add-ons and Access matrix screens lose up to 43px (their 12px chips and badges are 1.4px shorter per
+line), Guides gains the most (17 guide titles of 20px, from 18.2 to 24px lines). Left to right and right to left differ in height
+where they did before, by the same amounts (Operations' Environment tab, 106px before and 107px after, at 375px).
+Two loads at 1280px have one cell 24px off the other three after the change (Add-ons' Inactive tab light right to
+left, Operations' Overview dark right to left); a rule with no colour or direction in it cannot move one cell alone,
+and cells of other loads wobbled the same way before it.
+
+**Not fixed here.** The inbox's From and To dates still overlap at 200% and stay in `known-failures.json`
+(US-NFR-04), with the cause in the entry: each date field is 192px wide in a 95px column at that size, so its label
+spills into the other date's. That is the filter panel's layout, not line height.
+
 ## #518 -- The inbox's date range wraps on its own content
 
 **Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), quality rule `text-overlaps-at-200` on `corex-submissions`.
@@ -19522,3 +19632,110 @@ the moment in UTC, is what the team can trust, and the form's docblock says so.
 **Not chosen.** *One conversation across browser tabs*: the chat already keeps its conversation across pages for
 as long as the tab is open (`sessionStorage`); keeping it beyond the tab would store a visitor's words in their
 browser after they leave, which the owner has not asked for.
+
+## #620 -- CoreX gets public hosts on the owner's domain, one host for each kind of thing that runs
+
+**Date:** 2026-11-11. **Branch:** `docs/public-hosts`. **Mode:** Docs/Planning. **Asked by:** the owner, who
+bought `mustafashaaban.com` and pointed a `corex` subdomain at his server.
+
+**Why.** CoreX has no public address of its own. The docs are on GitHub's `mustafashaaban.github.io/corex/`,
+the in-admin updater has no source to read (`updates.endpoint` ships empty), a watched installation from
+CoreX → Releases on a shared host, on v0.46.1 or later, is still owed (spec 107) and has no site to run on that
+is not a client's, and spec 123 left
+"a site downloads its release" out until packages are published "somewhere a site can trust".
+
+**Decided.** Six hosts, split by what runs on them, so each has its own deploy, its own security level and
+its own failure, and a problem on one leaves the others up:
+
+| Host | What it is | Served by | Public |
+|---|---|---|---|
+| `mustafashaaban.com` | The owner's personal site, on the portfolio kit, in its own repository | The owner's server | Yes |
+| `corex.mustafashaaban.com` | CoreX's product site, built with CoreX (`sites/corex-site/`, Client Site Mode) | The owner's server | Yes |
+| `corex-docs.mustafashaaban.com` | The Starlight docs site, moved from `github.io` | GitHub Pages (a CNAME to `mustafashaaban.github.io`) | Yes |
+| `corex-updates.mustafashaaban.com` | Update manifest, packages and their SHA-256, as static files | The owner's server, no PHP | Machines |
+| `corex-demo.mustafashaaban.com` | The kits with their demo content, reset on a schedule | The owner's server | Later |
+| `corex-staging.mustafashaaban.com` | A private install for release checks, the shared-host installation first | The owner's server, password and `noindex` | No |
+
+- **One level of names** (`corex-docs`, not `docs.corex`): one `*.mustafashaaban.com` certificate covers
+  every host. The owner chose the names.
+- **The order** is one spec at a time: the docs move (spec 130), the staging install, the product site, the
+  update channel, the demo, and then spec 123's download-from-a-URL, with signed packages from the updates host.
+- **Nothing in a released site changes by this decision alone.** A site keeps every link it has until a
+  release carries the docs move, and GitHub redirects the old `github.io/corex/` addresses to the custom
+  domain once it is set.
+- **The revamp is not affected.** No open revamp pull request touches the docs links (`DocsUrl`), the docs
+  build or the update source, and the hosts sit outside the framework's code. The product site and the
+  demo show the revamp's screens, so they come after it, not before.
+
+**Not chosen.** *Two-level names* (`docs.corex.mustafashaaban.com`): a wildcard certificate does not cover
+them. *The docs on the owner's server*: GitHub Pages already builds and serves them, costs the server nothing
+and stays up when the server does not. *One WordPress serving every host*: a failed update or a demo reset
+would take the product site down with it. *A CoreX-only domain now*: nothing is lost by waiting, since every
+host keeps canonical links and redirects and moves with one redirect each.
+
+## #621 -- The CoreX loop replaces Spec Kit's commands; models and effort are routed by a table (constitution v2.0.0)
+
+**Date:** 2026-11-11. **Branch:** `docs/workflow-matt-and-agents`. **Mode:** Docs/Planning. **Asked by:** the
+owner: "if spec kit doesn't fit with matt's flow we can stop using it, i need the best workflow", with
+delegation and switching models and effort.
+
+**Why.** Spec Kit's chain (`specify → clarify → plan → tasks → implement`) asks its questions after the spec is
+drafted, so specs 107 and 110 stopped on owner questions after writing; it produces a plan, a task list and
+checklists that slices already cover; and it owns the process, which made its own side effects hard to see
+(#251: it rewrote a tracked state file and a section of `CLAUDE.md`). Matt Pocock's engineering skills fix
+the first two: `grill-with-docs` finds the open questions before the spec, and building in slices is what
+CoreX already did. They do not replace the spec file: tests, docs and 620 DECISIONS entries point at spec
+numbers and requirement IDs.
+
+**Decided.**
+- **The loop** (constitution v2.0.0, Pre-Implementation Confirmation Rule step 2; `AGENTS.md`): grill →
+  research when needed → `specs/NNN-name/spec.md` with requirement IDs and slices → `wizard` for owner-only
+  steps → one slice at a time with `tdd` (`diagnosing-bugs` first for a bug) → Guard Gate → `debate-review`
+  → PR (`pr`, `babysit-pr`) → `retro` after a release. Principle X is unchanged.
+- **Retired:** the `/speckit-*` commands. A spec with a `tasks.md` may finish from it. The skill files and
+  `.specify/` stay for those specs and are not used for new ones.
+- **Not used:** Matt's `to-spec`, `to-tickets`, `implement-spec`, `implement` and `wayfinder`, which would
+  write a second plan into GitHub issues next to `specs/` and `ROADMAP.md`.
+- **Matt's setup for this repository:** GitHub Issues, the five default triage labels (four created today),
+  and the glossary and decisions in CoreX's own `docs/_glossary.md` and `DECISIONS.md`, never a new
+  `GLOSSARY.md` or `docs/adr/` (`docs/agents/`).
+- **Models and effort** (`CLAUDE.md`, "Models, effort and agents"): Fable at high effort for grilling, specs
+  and final judgment; `corex-builder` on Opus, medium (high for a bug); `corex-tester` on Sonnet, medium;
+  `corex-scout` on Haiku, low; `corex-reviewer` on Fable, high; Codex at high effort as the second reviewer.
+  Max effort only when the owner asks, for one task. The five agents are `.claude/agents/`, with
+  `corex-ui-reviewer` (Fable, high) for what a person sees.
+- **One lever per job:** the main session for judgment, in-app agents for Claude models, delegate lanes only
+  for Codex. `claude-delegate` lanes would duplicate the in-app agents and are not configured.
+- **Agents never commit**, and builders work in the root checkout one at a time per set of files (§A.7's
+  single-workspace rule still holds).
+- **The handoff format** says `SPEC STATUS` with slices instead of `SPEC KIT STATUS` with task IDs.
+- **UI is a required part of the loop**, because CoreX has no designer (the owner: "this is not an option as we
+  have no designer"). A slice a person sees is designed first in Claude Design on the CoreX design system, in
+  every state, at 1280px and 375px, light and dark, left to right and right to left; approved by the owner and
+  handed off in `design/handoffs/`; built with `ui-ux-pro-max`; measured in the browser and run through
+  `npm run test:quality`; reviewed by `corex-ui-reviewer`, `design:accessibility-review` and `design:ux-copy`.
+  A change to the look starts in the design system. Claude Design now lives in Claude as the Design and Design
+  System artifact types (both available in the desktop app's Code tab); standalone claude.ai/design closes on
+  2026-12-14. No CoreX design system exists in Claude yet: making it is its own task.
+- **One recorded round per UI slice for the owner** (`ui-review-loop`, amElnagdy, installed 2026-11-11 with
+  `agent-browser` 0.32.4): the owner watches a short video of the flow and comments on moments in it. The
+  video and timeline never reach the model; each browser step does, so steps return diffs, the round runs on
+  `corex-tester` (Sonnet), and full coverage audits run only on request. Scratch sites with test data only.
+  `.agent-review/` is ignored. Kept only if the first UI slice shows it saves more review rounds than it costs.
+  **On this Windows machine** it needed three things, checked with a recorded round of corex.local's home page
+  (timeline, network capture and a WebM video): `agent-browser.exe` copied beside npm's wrapper in the nvm Node
+  folder, because the skill starts `agent-browser` without a shell and Node then finds only an `.exe` (redo it
+  after an nvm switch); `ffmpeg` from winget (`Gyan.FFmpeg`) for the video, on PATH in new shells; and Developer
+  Mode for the one self-test check that creates a symbolic link (the other 19 pass). With the agent-browser
+  backend a step is a verb (`run -- snapshot`, `run -- click @e12`); the script form is the other backend's.
+
+**Not changed, and owed.** The CoreX design system in Claude (from `theme.json` and the approved admin
+designs), and moving anything still in standalone Claude Design before 2026-12-14. `wp corex make:site` still writes a client `AGENTS.md` that tells a client site
+to run Spec Kit with `SPECIFY_FEATURE_DIRECTORY` (`SiteScaffolder` and its test, #251). That is framework
+code with a test and a client impact, so it is its own slice.
+
+**Not chosen.** *Keeping Spec Kit and adding Matt's skills beside it*: two processes for one change, and the
+questions still come after the spec. *Dropping the spec file for GitHub issues*, as Matt's own flow does: it
+would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
+in-app agents already carry a model and effort each, and their results come back to the session that checks
+them.
