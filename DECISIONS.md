@@ -20089,6 +20089,82 @@ and text size. *Letting the
 field shrink to its half* (`min-inline-size: 0`): it cuts the date and its calendar button. *Stacking only below a
 breakpoint*: the panel's width, the text size and the field's width move separately; the content decides better.
 
+## #520 -- Spec 124 asks for spec 117's abilities; Forms paused is a dangerous mode
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Mode:** Docs/Planning. **Decided:** under the
+owner's delegation of the revamp, on a read of the spec against `main`.
+
+Spec 124 was written on 2026-10-26, before spec 117 made every screen ask for its own ability. Changing the mode
+needs "Manage operations"; Production and Maintenance already need "Run dangerous actions" as well
+(`OperationsModeController`), and so does **Forms paused**, because like Maintenance it closes every public form on a
+site that stays open. The messages for visitors, the maintenance preview and the lockout release need "Manage
+operations". Operations & Security has no read-only view (DECISIONS #422, amended 2026-11-11).
+
+**Not chosen.** *Forms paused as an ordinary mode*: a paused site loses every lead until someone notices; that is the
+same harm Maintenance can do.
+
+## #521 -- A closed or scheduled flow keeps its own notice on a site in Forms paused
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+When the site is in Forms paused and a flow is closed or not yet open, the visitor sees the flow's own notice. A
+closed flow stays closed after the pause, so "Forms are paused, try again later" would be untrue there. The paused
+panel is drawn through spec 122's notice panel (`FlowBlockRenderer::unavailable()`, `.corex-flow-notice`) and the
+runtime draws it from the 503 as it draws `flow_closed`: one panel, one stylesheet.
+
+## #522 -- Forms paused closes the Assistant's hand-off, not its chat
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+Spec 129's chat route declares itself a public submission, so the gate of FR-004 would close the chat. The chat
+answers questions and stores nothing a person sent in a form; the callback form it opens does. In Forms paused the
+chat keeps answering and its hand-off is refused with the paused message (FR-004a). The route that takes the
+hand-off keeps the marker; the chat route stops counting as a public submission without losing the middleware it
+declares (nonce, throttle, limits).
+
+## #523 -- The test-site notice says what the mail gate decides
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+FR-021 gave the flow block's test-site notice a fixed sentence saying no email is delivered. On staging the mail gate
+delivers when a provider and live delivery are both on, and under CoreX-only capture other plugins' mail leaves
+(`MailGate`), so the sentence would be untrue there. The notice says the site is a test copy, and adds that its emails
+are kept on the site only when the gate keeps them. The same correction applies to the mode cards' Email row
+("Captured, nothing leaves" only where that is so). The revamp story US-VIS-04 carries the fixed sentence; its
+correction goes through the planning workspace's change control.
+
+## #524 -- A mode change clears the page caches CoreX can clear
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+`noindex` (FR-002) and the paused panel (FR-021) are in the page. A page cache would keep serving the old page after a
+mode change: a launched site still saying `noindex`, or a paused site still showing its forms. A mode change clears
+CoreX's own caches and the page cache of a cache plugin through the purge it offers, and the activity log's
+mode-changed event says what was cleared (FR-004b).
+
+## #525 -- Spec 124 is built in twelve slices, server first, from the spec and not from the code of 2026-10-26
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+The code a session left uncommitted on 2026-10-26 covers about a quarter of the tasks and its launch path calls
+methods it removed, so going live would fail. It is kept, as found, on `spec/124-modes-and-login` (34294b63) and
+ported from where it reads right, never merged as it is. The spec now ends in twelve slices (CoreX loop, constitution
+v2.0.0): slices 1 to 6 change no screen and are built now; slices 7 to 11 change what a person sees and each starts
+only when its screens are drawn in Claude Design on the CoreX design system and approved by the owner; slice 12 is
+the docs and the client impact.
+
+## #526 -- A live site whose stored mode is Development or Staging is de-indexed on update
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+FR-002 makes Development and Staging answer `noindex`. A live site whose stored mode wrongly says one of them is
+de-indexed by the update. That is what the mode says, and such a site has captured its mail since spec 113, so the
+mode would already have been noticed. The release's client impact tells the Muva and Perego sessions to read
+`corex_operations_mode` on their live sites before taking it.
+
+**Not chosen.** *Skip `noindex` on sites whose WordPress environment type says production*: two answers to "what kind
+of site is this" is what spec 113 removed.
+
 ## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
 
 **Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions
