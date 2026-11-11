@@ -52,7 +52,7 @@ final class InsightWidgets
      *   readinessLatest:?array<string,mixed>,
      *   searchVisible:bool,
      *   prettyPermalinks:bool,
-     *   securityEvents:list<array{text:string,meta:string,tone:string}>,
+     *   securityEvents:list<array{text:string,meta:string,datetime:string,tone:string}>,
      *   securityEventsSince?:string,
      *   cronDisabledByConstant:bool,
      *   cronOverdue:int,

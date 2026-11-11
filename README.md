@@ -51,7 +51,7 @@ packages/
 theme/               parent FSE block theme — presentation only (theme.json tokens, templates, parts).
 docs-app/            Astro + Starlight documentation site (guides + generated class reference).
 docs/               bilingual (EN/AR) getting-started, team-workflow, deployment, and cookbook docs.
-specs/              Spec Kit specs (constitution pointer → .specify/memory/).
+specs/              One spec per feature (constitution pointer → .specify/memory/).
 tests/              Pest (Unit, Integration), Jest, Playwright (e2e).
 ```
 
@@ -175,7 +175,7 @@ into one mode before editing — **CoreX Framework / Client Site / Deployment / 
   GitHub Actions runs PR gates; Azure Pipelines (`azure-pipelines.yml`) builds + deploys. See
   [shared-host dist](docs/en/05-deployment/shared-host-dist.md) and [Azure Pipelines](docs/en/05-deployment/azure-pipelines.md).
 
-The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Gate** (safe to ship) → **UI/UX ProMax**
+The rule hierarchy: **Role Gate** (where) → **the spec** (what) → **Guard Gate** (safe to ship) → **UI/UX ProMax**
 (UI good enough).
 
 ## Client readiness
@@ -210,7 +210,7 @@ see [PROJECT-STATUS.md](PROJECT-STATUS.md), under *Known open items*, for how.
 
 ## Contributing
 
-Corex is built **spec-first** (Spec Kit) under a strict constitution, with guard skills as the quality gate
+Corex is built **spec-first** (the CoreX loop) under a strict constitution, with guard skills as the quality gate
 and a NEXT STEP handoff on every change. See `CONTRIBUTING.md` and `docs/internal/COREX-WORKING-GUIDE.md` before opening a PR
 — including the rule that every feature PR updates its documentation in the same change.
 

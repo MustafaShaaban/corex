@@ -42,7 +42,7 @@ Every session on the client site is **[Client Site Mode](./agent-roles.md#2-clie
 - Do **not** edit `wp/wp-content/` or `dist/` as source.
 - Keep client specs in `sites/<client>/specs/`, progress in `sites/<client>/PROGRESS.md`, decisions in
   `sites/<client>/DECISIONS.md`.
-- Follow **Spec Kit**, the **Guard Gate**, and **UI/UX ProMax**.
+- Follow **the CoreX loop** (specs in `sites/<client>/specs/`), the **Guard Gate**, and **UI/UX ProMax**.
 - For a framework bug, **stop** and open a CoreX Framework Mode task — never patch CoreX internals for one client.
 
 Everything outside `sites/` and `.github/workflows/site-*.yml` is framework-owned, the repository root

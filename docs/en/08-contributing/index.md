@@ -22,7 +22,7 @@ and links the authoritative sources rather than duplicating their rules.
 
 ```mermaid
 flowchart LR
-  pick[Pick the next task<br/>PROGRESS.md → Next] --> spec[Open a spec<br/>/speckit-specify]
+  pick[Pick the next task<br/>PROGRESS.md → Next] --> spec[Grill, then write the spec<br/>grill-with-docs → spec.md]
   spec --> build[Build test-first]
   build --> guard[Run the Guard Gate on the diff]
   guard --> pr[Branch off develop → PR → CI green]
@@ -31,7 +31,7 @@ flowchart LR
 
 1. **Pick a task** from [`PROGRESS.md`](../../../PROGRESS.md) → "Next" (or agree a new one).
 2. **Open a spec first** — code never precedes its spec (Principle X). See
-   [The Spec Kit loop](../04-team-workflow/spec-kit.md).
+   [The CoreX loop](../04-team-workflow/spec-kit.md).
 3. **Build it test-first** (Pest / Jest / Playwright). See [Quality gates](../04-team-workflow/quality-gates.md).
 4. **Run the Guard Gate** on your diff (clean-code / wp / woo / test / docs) and fix any violation.
 5. **Branch, commit, PR**: branch off `develop`, use [Conventional Commits](../04-team-workflow/branching-and-commits.md),
