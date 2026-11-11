@@ -56,6 +56,11 @@ slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a
 are in `.claude/agents/`. Anything a person sees is designed first in Claude Design, measured and reviewed against it. Matt's setup: `docs/agents/`, four triage labels created on GitHub. Docs/Planning only.
 Owed: the client scaffold (`wp corex make:site`) still tells client sites to use Spec Kit, its own slice.
 
+**CoreX checkboxes and radios** (2026-11-10, branch `fix/admin-checkbox-radio-look`, DECISIONS #515): the shell
+draws every CoreX admin screen's checkboxes and radios in brass instead of WordPress blue, in
+`plugins/corex-core/assets/css/corex-admin-shell.css`, measured by `tests/e2e/admin-checkboxes.spec.js`. One pull
+request, not merged by its session, not tagged.
+
 **Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
 #616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
 `addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free

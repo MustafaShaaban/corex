@@ -19191,6 +19191,39 @@ as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the
 with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
 choice even where the copy is unused.
 
+## #515 -- CoreX draws the admin's checkboxes and radios, in brass, with a clip-path mark
+
+**Date:** 2026-11-10. **Spec:** none (a shell fix the owner asked for while reviewing CoreX → Assistant, PR #449).
+
+**Found.** `.corex-admin input[type="checkbox"], input[type="radio"] { accent-color: … }` had no effect: wp-admin's
+`forms.css` gives both `appearance: none` and paints them itself, checked in `--wp-admin-theme-color` with a white
+SVG tick as `::before` content. On CoreX → Assistant a checked box measured `rgb(56, 88, 233)`.
+
+**Decided.**
+- The shell takes over the drawing for every checkbox and radio inside `.corex-admin`, except `.corex-switch__input`,
+  which draws its own track. The input stays the browser's: `appearance: none` on the real `<input>`, so Space,
+  arrow keys, labels, focus order and the posted value are unchanged. Sizes and margins stay wp-admin's (1rem, and
+  1.5625rem at phone width), so no layout moves and no target-size finding changes.
+- Checked, and a checkbox's indeterminate: background and border `--corex-admin-action`, mark in
+  `--corex-admin-action-ink`. Unchecked: `--corex-admin-surface` with a `--corex-admin-text-muted` edge. Disabled:
+  the same colours at `--corex-admin-disabled-opacity`. Keyboard focus: `--corex-admin-focus` outline; wp-admin's
+  `:focus` box-shadow is removed, so a click leaves no blue ring.
+- The tick, the dash and the radio dot are a `::before` filled with the ink colour and cut with `clip-path` (the dot
+  is a circle). A colour in an SVG data URL cannot read a custom property, so wp-admin's approach would have frozen
+  one appearance's colour. The polygon is physical, so the tick is not mirrored in right-to-left, where it reads the
+  same.
+- In a forced-colours mode the system repaints backgrounds, which would hide a mark drawn as one, so the mark takes
+  `CanvasText` (`GrayText` when disabled) with `forced-color-adjust: none`.
+- `tests/e2e/admin-checkboxes.spec.js` measures the Notifications screen's Preferences checkboxes (checked, unchecked,
+  indeterminate, disabled, keyboard and click focus) and two radios placed in that panel, in both appearances and
+  both directions. It fails on the stylesheet before this change.
+
+**Not chosen.** *`--corex-admin-border-strong` for the unchecked edge*, which the request named: it is 1.6:1 against
+the surface in both appearances, under the 3:1 WCAG 1.4.11 asks of the only thing that shows a box is there.
+`--corex-admin-text-muted` is 5.8:1 (light) and 6.8:1 (dark). *Larger boxes*: WordPress's size, with the label as
+part of the target, is what every other admin screen uses. *A per-screen fix*: the owner asked for one rule for all
+of CoreX.
+
 ## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
 
 **Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions
