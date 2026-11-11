@@ -40,6 +40,27 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Public hosts and spec 130, the docs site on its own host** (2026-11-11, branch `docs/public-hosts`, DECISIONS
+#620): the owner bought `mustafashaaban.com` and made six hosts for CoreX (`corex`, `corex-docs`,
+`corex-updates`, `corex-demo`, `corex-staging`, plus the root for his own site). The plan and its order are in
+`ROADMAP.md` §13, "Public hosts". Spec 130 is a draft for step 1, moving the docs from
+`mustafashaaban.github.io/corex/` to `corex-docs.mustafashaaban.com`. Measured: all six hosts resolve through
+Cloudflare's proxy; `corex-docs` still reaches the owner's server, not GitHub Pages; the repository's Pages
+site has no custom domain. Planning only, no runtime code. Next: spec 130's slices (the CoreX loop), and the owner's
+three steps outside the repository (verify the domain on GitHub, point `corex-docs` at
+`mustafashaaban.github.io` as DNS only, then set the custom domain).
+
+**The CoreX loop, constitution v2.0.0** (2026-11-11, branch `docs/workflow-matt-and-agents`, DECISIONS #621): Spec
+Kit's commands are retired for Matt Pocock's engineering skills around one spec file per feature (grill, spec with
+slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a model and effort, and five agents
+are in `.claude/agents/`. Anything a person sees is designed first in Claude Design, measured and reviewed against it. Matt's setup: `docs/agents/`, four triage labels created on GitHub. Docs/Planning only.
+Owed: the client scaffold (`wp corex make:site`) still tells client sites to use Spec Kit, its own slice.
+
+**CoreX checkboxes and radios** (2026-11-10, branch `fix/admin-checkbox-radio-look`, DECISIONS #515): the shell
+draws every CoreX admin screen's checkboxes and radios in brass instead of WordPress blue, in
+`plugins/corex-core/assets/css/corex-admin-shell.css`, measured by `tests/e2e/admin-checkboxes.spec.js`. One pull
+request, not merged by its session, not tagged.
+
 **Activity times that pass contrast** (2026-11-10, branch `fix/activity-time-contrast`, DECISIONS #516): the
 Overview, Access audit log and Insights security card draw event times in `--corex-admin-text-muted`, the Insights
 card dates events through `AdminDateTime`, the three rows get a unitless line height, and `seed-quality-site.php`

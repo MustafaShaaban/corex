@@ -107,6 +107,14 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
 
 ### Changed
 
+- **Checkboxes and radios on every CoreX admin screen are drawn in CoreX's colours** (DECISIONS #515).
+  wp-admin draws both itself, in its theme's blue with a white tick, which the shell's `accent-color`
+  never reached. A checked box or radio is now brass with a tick, dash or dot in the action ink, the
+  unchecked edge is dark enough to see (3:1 in both appearances), a disabled one is dimmed in its own
+  colours, and a click no longer leaves a blue ring: the keyboard gets the CoreX focus ring. Light and
+  dark, left-to-right and right-to-left, and the system's forced colours are covered. The input is
+  still the browser's own, so keyboard, labels and what a form posts are unchanged. The Settings
+  switches and the front end are not touched.
 - **The token inventory accepts a component's own properties** (#607): a `--corex-*` property a
   package's stylesheet declares resolves for that package only.
 - **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
@@ -169,6 +177,13 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
   packages that also ask for it are never bundled. Review by 2027-01-31.
 
 ### Client impact
+
+**Checkboxes and radios (DECISIONS #515):** every CoreX admin screen's checkboxes and radios change
+look, from WordPress blue to CoreX brass, on Muva, Perego and any site that takes this release,
+including add-on screens inside the CoreX shell (`.corex-admin`), such as CoreX → Assistant (PR #449).
+Nothing is stored or posted differently. Client-guide screenshots that show a checkbox go stale. A
+client stylesheet that drew its own checkbox inside `.corex-admin` with `appearance: none` now meets
+the shell's rule and needs a more specific selector to keep its own look.
 
 **Spec 118, one launch checklist:**
 
