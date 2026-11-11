@@ -38,11 +38,14 @@ final class SettingsSaver
     }
 
     /**
-     * @param array<string,mixed> $posted the post, unslashed
+     * @param array<string,mixed> $posted            the post, unslashed
+     * @param bool                $siteAdministrator whether the person saving administers the site; anyone
+     *                                               else leaves the fields marked `site_admin` as they
+     *                                               were (spec 117, FR-008)
      *
      * @return SettingsSaveResult|null null when no page of that key may be saved
      */
-    public function save(string $pageKey, array $posted, int $actorId): ?SettingsSaveResult
+    public function save(string $pageKey, array $posted, int $actorId, bool $siteAdministrator): ?SettingsSaveResult
     {
         $page = $this->pages->find($pageKey);
         if ($page === null) {
@@ -53,7 +56,7 @@ final class SettingsSaver
         $refused  = [];
         $removed  = [];
 
-        foreach ($this->editableFields($page) as $key => $field) {
+        foreach ($this->editableFields($page, $siteAdministrator) as $key => $field) {
             if (($field['type'] ?? '') === 'password' && in_array($key, $toRemove, true)) {
                 $removed = [...$removed, ...$this->remove($key, $field, $actorId)];
 
@@ -71,11 +74,14 @@ final class SettingsSaver
 
     /**
      * The fields of the page a save may write: in a section whose add-on is there and on, not a
-     * read-out, and not locked by the site's `.env` or the network.
+     * read-out, not locked by the site's `.env` or the network, and, for someone who does not
+     * administer the site, not one of how the whole site delivers mail (spec 117, FR-008). That last
+     * skip is needed, not only tidy: an unposted switch is read as off, so a save without it would
+     * turn live delivery off.
      *
      * @return array<string,array<string,mixed>> key => field
      */
-    private function editableFields(SettingsPage $page): array
+    private function editableFields(SettingsPage $page, bool $siteAdministrator): array
     {
         $sections = $this->registry->sections();
         $fields   = [];
@@ -86,6 +92,10 @@ final class SettingsSaver
             }
 
             foreach ($sections[$sectionKey]['fields'] as $key => $field) {
+                if (! $siteAdministrator && ! empty($field['site_admin'])) {
+                    continue;
+                }
+
                 $type = (string) ($field['type'] ?? 'text');
                 if ($type !== 'info' && ! $this->values->state((string) $key, $type)->locked()) {
                     $fields[(string) $key] = $field;

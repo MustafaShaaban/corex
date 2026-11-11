@@ -10,12 +10,15 @@ namespace Corex\Email;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\SiteAdministration;
 use Corex\Container\ContainerInterface;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Driver\WpMailDriver;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\DeliveryPolicy;
 use Corex\Email\Delivery\EmailAttemptRepository;
+use Corex\Email\Delivery\MailOutcome;
 use Corex\Email\Design\EmailBrandSource;
 use Corex\Email\Design\EmailDesign;
 use Corex\Email\Design\EmailFrame;
@@ -33,6 +36,7 @@ use Corex\Email\Routing\EmailRouteDispatcher;
 use Corex\Email\Routing\EmailRouteMessageFactory;
 use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Email\Routing\EmailRouteService;
+use Corex\Email\Studio\EmailDeliveryContextFactory;
 use Corex\Email\Studio\EmailLayoutRepository;
 use Corex\Email\Studio\EmailPartialRepository;
 use Corex\Email\Studio\EmailStudioController;
@@ -331,7 +335,24 @@ final class MailServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Email\Studio\EmailStudioSubmissionRecords =>
                 new \Corex\Email\Studio\EmailStudioSubmissionRecords($c->make(WpEmailStudioStore::class)),
         );
-        $this->container->singleton(EmailStudioController::class);
+        // Built here rather than wired by type, because who administers the site is answered by
+        // corex-config, which may not be there (Principle IX).
+        $this->container->singleton(
+            EmailStudioController::class,
+            static fn (ContainerInterface $c): EmailStudioController => new EmailStudioController(
+                $c->make(EmailStudioRepositories::class),
+                $c->make(EmailStudioService::class),
+                $c->make(EmailTemplateService::class),
+                $c->make(EmailDeliveryContextFactory::class),
+                $c->make(MailOutcome::class),
+                $c->make(AbilityCheck::class),
+                $c->has(SiteAdministration::class) ? $c->make(SiteAdministration::class) : null,
+                // Spec 120: the preview and test send, the defaults' reset, the save warnings.
+                preview: $c->make(\Corex\Email\Studio\EmailTemplatePreview::class),
+                defaults: $c->make(\Corex\Email\Studio\DefaultEmailTemplates::class),
+                warnings: $c->make(\Corex\Email\Studio\EmailTemplateWarnings::class),
+            ),
+        );
     }
 
     public function boot(): void

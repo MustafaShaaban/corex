@@ -1,8 +1,9 @@
 <?php
 
 /**
- * Unit tests for the pure Access & Abilities matrix (spec 065). No WordPress.
- * Contract: reflect the REAL role capabilities; invent no capability; CoreX admin maps to manage_options.
+ * Unit tests for the pure Access & Abilities model (spec 067, spec 117). No WordPress.
+ * Contract: every cell resolves the way WordPress will answer for the role's members; a role that
+ * administers the site holds every CoreX ability; counts and "Your permissions" use CoreX abilities.
  *
  * @package Corex\Tests\Unit\Access
  */
@@ -12,11 +13,13 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Access\AccessPolicy;
 use Corex\Access\CorexAbility;
+use Corex\Access\CorexAbilityCatalog;
 use Corex\Config\Access\AccessMatrix;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
     $this->matrix = new AccessMatrix();
+    $this->total  = count(CorexAbilityCatalog::defaults()->all());
 });
 
 /**
@@ -25,90 +28,149 @@ beforeEach(function () {
 function accessRoles(): array
 {
     return [
-        ['key' => 'administrator', 'name' => 'Administrator', 'caps' => ['manage_options' => true, 'publish_posts' => true, 'upload_files' => true, 'edit_others_posts' => true, 'manage_categories' => true]],
-        ['key' => 'author', 'name' => 'Author', 'caps' => ['publish_posts' => true, 'upload_files' => true]],
+        ['key' => 'administrator', 'name' => 'Administrator', 'caps' => ['manage_options' => true, 'edit_posts' => true]],
+        ['key' => 'editor', 'name' => 'Editor', 'caps' => ['edit_posts' => true, 'edit_others_posts' => true]],
         ['key' => 'subscriber', 'name' => 'Subscriber', 'caps' => ['read' => true]],
     ];
 }
 
-it('maps CoreX admin access to the real manage_options capability', function () {
-    $groups = $this->matrix->groups();
-    $adminRow = array_values(array_filter($groups, static fn (array $g): bool => $g['key'] === 'corex_admin'))[0];
+/** @return array<string,array<string,mixed>> the grid's rows by ability key */
+function gridRows(AccessMatrix $matrix, array $effects): array
+{
+    return array_column($matrix->editableCorexMatrix(accessRoles(), $effects, [])['rows'], null, 'key');
+}
 
-    expect($adminRow['cap'])->toBe('manage_options');
+it('resolves each cell to one of the five states', function () {
+    $rows = gridRows($this->matrix, [
+        'editor'     => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW],
+        'subscriber' => [CorexAbility::MANAGE_BLOG => AccessPolicy::EFFECT_DENY],
+    ]);
+
+    expect($rows[CorexAbility::MANAGE_FORMS]['cells']['editor']['state'])->toBe(AccessMatrix::STATE_ALLOWED_SET)
+        ->and($rows[CorexAbility::MANAGE_BLOG]['cells']['subscriber']['state'])->toBe(AccessMatrix::STATE_DENIED_SET)
+        ->and($rows[CorexAbility::MANAGE_EMAIL]['cells']['editor']['state'])->toBe(AccessMatrix::STATE_NOT_GRANTED)
+        ->and($rows[CorexAbility::MANAGE_ADMIN]['cells']['editor']['state'])->toBe(AccessMatrix::STATE_LOCKED)
+        ->and($rows[CorexAbility::MANAGE_ADMIN]['cells']['administrator']['state'])->toBe(AccessMatrix::STATE_ALLOWED_ADMIN);
 });
 
-it('builds a truthful role x capability matrix from the real roles', function () {
-    $built = $this->matrix->build(accessRoles());
+it('shows a role that administers the site as allowed everywhere, offers no edit, and flags a Deny stored there', function () {
+    $rows = gridRows($this->matrix, ['administrator' => [CorexAbility::MANAGE_EMAIL => AccessPolicy::EFFECT_DENY]]);
+    $cell = $rows[CorexAbility::MANAGE_EMAIL]['cells']['administrator'];
 
-    expect($built['roles'])->toHaveCount(3)
-        ->and($built['rows'][0]['cells']['administrator'])->toBeTrue()   // corex admin
-        ->and($built['rows'][0]['cells']['author'])->toBeFalse()          // author lacks manage_options
-        ->and($built['rows'][0]['cells']['subscriber'])->toBeFalse();
+    expect($cell['state'])->toBe(AccessMatrix::STATE_ALLOWED_ADMIN)
+        ->and($cell['editable'])->toBeFalse()
+        ->and($cell['reason'])->toBe('site_administrator')
+        ->and($cell['ignoredDeny'])->toBeTrue()
+        ->and($rows[CorexAbility::MANAGE_FORMS]['cells']['administrator']['ignoredDeny'])->toBeFalse();
 });
 
-it('reflects publish capability truthfully per role', function () {
-    $built = $this->matrix->build(accessRoles());
-    $content = array_values(array_filter($built['rows'], static fn (array $r): bool => $r['key'] === 'content'))[0];
+it('keeps an ordinary role editable except for the locked ability', function () {
+    $rows = gridRows($this->matrix, []);
 
-    expect($content['cells']['author'])->toBeTrue()
-        ->and($content['cells']['subscriber'])->toBeFalse();
+    expect($rows[CorexAbility::MANAGE_FORMS]['cells']['editor']['editable'])->toBeTrue()
+        ->and($rows[CorexAbility::MANAGE_FORMS]['cells']['editor']['reason'])->toBeNull()
+        ->and($rows[CorexAbility::MANAGE_ADMIN]['cells']['editor']['editable'])->toBeFalse()
+        ->and($rows[CorexAbility::MANAGE_ADMIN]['cells']['editor']['reason'])->toBe('locked_definition');
 });
 
-it('reports the current user permissions against the tracked capabilities', function () {
-    $abilities = $this->matrix->forUser(['manage_options' => true, 'upload_files' => true]);
-    $byLabel = [];
-    foreach ($abilities as $a) {
-        $byLabel[$a['cap']] = $a['granted'];
-    }
+it('names each row and its area for people, with the key kept for developers', function () {
+    $row = gridRows($this->matrix, [])[CorexAbility::MANAGE_EMAIL];
 
-    expect($byLabel['manage_options'])->toBeTrue()
-        ->and($byLabel['upload_files'])->toBeTrue()
-        ->and($byLabel['publish_posts'])->toBeFalse();
+    expect($row['label'])->toBe('Manage Email Studio')
+        ->and($row['groupLabel'])->toBe('Email Studio')
+        ->and($row['riskLabel'])->toBe('Sensitive')
+        ->and($row['key'])->toBe(CorexAbility::MANAGE_EMAIL);
 });
 
-it('marks the code-gated CoreX admin ability as high risk and locked', function () {
-    $groups = $this->matrix->groups();
-    $byKey = [];
-    foreach ($groups as $g) {
-        $byKey[$g['key']] = $g;
-    }
+it('marks which roles administer the site', function () {
+    $roles = array_column($this->matrix->editableCorexMatrix(accessRoles(), [], [])['roles'], 'administers', 'key');
 
-    expect($byKey['corex_admin']['risk'])->toBe('high')
-        ->and($byKey['corex_admin']['locked'])->toBeTrue()
-        ->and($byKey['content']['risk'])->toBe('standard')
-        ->and($byKey['content']['locked'])->toBeFalse();
+    expect($roles)->toBe(['administrator' => true, 'editor' => false, 'subscriber' => false]);
 });
 
-it('carries risk and locked metadata through to matrix rows', function () {
-    $built = $this->matrix->build(accessRoles());
-
-    expect($built['rows'][0]['locked'])->toBeTrue()
-        ->and($built['rows'][0]['risk'])->toBe('high')
-        ->and($built['rows'][1]['locked'])->toBeFalse();
-});
-
-it('summarises roles with real user counts, origin, and granted ability counts', function () {
-    $summaries = $this->matrix->roleSummaries(accessRoles(), ['administrator' => 2, 'author' => 5]);
-
-    expect($summaries)->toHaveCount(3)
-        ->and($summaries[0]['name'])->toBe('Administrator')
-        ->and($summaries[0]['isCore'])->toBeTrue()
-        ->and($summaries[0]['users'])->toBe(2)
-        ->and($summaries[0]['granted'])->toBe(5)      // holds every tracked capability
-        ->and($summaries[0]['total'])->toBe(5)
-        ->and($summaries[1]['granted'])->toBe(2)      // author: publish_posts + upload_files
-        ->and($summaries[1]['users'])->toBe(5)
-        ->and($summaries[2]['users'])->toBe(0);       // subscriber count missing => 0
-});
-
-it('flags a custom role as non-core', function () {
+it('counts the CoreX abilities each role holds, as the matrix resolves them', function () {
     $summaries = $this->matrix->roleSummaries(
-        [['key' => 'site_manager', 'name' => 'Site Manager', 'caps' => []]],
+        accessRoles(),
+        ['administrator' => 2, 'editor' => 5],
+        ['editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW, CorexAbility::MANAGE_BLOG => AccessPolicy::EFFECT_ALLOW]],
+    );
+
+    expect($summaries[0]['granted'])->toBe($this->total)
+        ->and($summaries[0]['total'])->toBe($this->total)
+        ->and($summaries[0]['users'])->toBe(2)
+        ->and($summaries[1]['granted'])->toBe(2)
+        ->and($summaries[2]['granted'])->toBe(0)
+        ->and($summaries[2]['users'])->toBe(0);
+});
+
+it('counts a role that administers the site as holding everything even with a Deny stored', function () {
+    $summaries = $this->matrix->roleSummaries(
+        [accessRoles()[0]],
+        [],
+        ['administrator' => [CorexAbility::MANAGE_EMAIL => AccessPolicy::EFFECT_DENY]],
+    );
+
+    expect($summaries[0]['granted'])->toBe($this->total);
+});
+
+it('flags a role WordPress does not ship', function () {
+    $summaries = $this->matrix->roleSummaries(
+        [['key' => 'shop_manager', 'name' => 'Shop manager', 'caps' => []]],
         [],
     );
 
     expect($summaries[0]['isCore'])->toBeFalse();
+});
+
+it('lists every CoreX ability by area with its risk in words', function () {
+    $groups = $this->matrix->abilityGroups();
+    $listed = array_merge(...array_values($groups));
+    $admin  = array_column($listed, null, 'key')[CorexAbility::MANAGE_ADMIN];
+
+    expect($listed)->toHaveCount($this->total)
+        ->and(array_keys($groups))->toContain('Forms & Flows', 'Operations & Security')
+        ->and($admin['riskLabel'])->toBe('Critical')
+        ->and($admin['locked'])->toBeTrue();
+});
+
+it('lists each Deny stored for a role that administers the site, and only those', function () {
+    $ignored = $this->matrix->ignoredDenies(accessRoles(), [
+        'administrator' => [CorexAbility::MANAGE_EMAIL => AccessPolicy::EFFECT_DENY, CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW],
+        'editor'        => [CorexAbility::MANAGE_BLOG => AccessPolicy::EFFECT_DENY],
+    ]);
+
+    expect($ignored)->toBe([['role' => 'Administrator', 'ability' => 'Manage Email Studio']]);
+});
+
+it('says how the person holds each CoreX ability they hold', function () {
+    $held = [
+        CorexAbility::MANAGE_FORMS  => true,
+        CorexAbility::MANAGE_ACCESS => true,
+        CorexAbility::MANAGE_BLOG   => true,
+        CorexAbility::MANAGE_EMAIL  => false,
+    ];
+
+    $mine = array_column($this->matrix->forUser(
+        $held,
+        [accessRoles()[1]],
+        ['editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW]],
+        [CorexAbility::MANAGE_ACCESS => '2026-11-20T00:00:00+00:00'],
+    ), null, 'key');
+
+    expect(array_keys($mine))->toBe([CorexAbility::MANAGE_ACCESS, CorexAbility::MANAGE_FORMS, CorexAbility::MANAGE_BLOG])
+        ->and($mine[CorexAbility::MANAGE_FORMS]['how'])->toBe(AccessMatrix::HELD_ROLE)
+        ->and($mine[CorexAbility::MANAGE_FORMS]['role'])->toBe('Editor')
+        ->and($mine[CorexAbility::MANAGE_ACCESS]['how'])->toBe(AccessMatrix::HELD_GRANT)
+        ->and($mine[CorexAbility::MANAGE_ACCESS]['until'])->toBe('2026-11-20T00:00:00+00:00')
+        ->and($mine[CorexAbility::MANAGE_BLOG]['how'])->toBe(AccessMatrix::HELD_ACCOUNT);
+});
+
+it('says a site administrator holds every ability through site administration', function () {
+    $held = array_fill_keys(array_map(static fn ($a) => $a->key, CorexAbilityCatalog::defaults()->all()), true);
+    $mine = $this->matrix->forUser($held, [accessRoles()[0]], [], []);
+
+    expect($mine)->toHaveCount($this->total)
+        ->and(array_unique(array_column($mine, 'how')))->toBe([AccessMatrix::HELD_SITE_ADMINISTRATION]);
 });
 
 it('detects known permissions plugins and ignores everything else', function () {
@@ -125,27 +187,7 @@ it('reports no conflicts when no permissions plugin is active', function () {
     expect($this->matrix->conflicts(['akismet/akismet.php']))->toBe([]);
 });
 
-it('projects editable CoreX ability states without mutating native WordPress capabilities', function () {
-    $matrix = $this->matrix->editableCorexMatrix(
-        roles: [
-            ['key' => 'administrator', 'name' => 'Administrator'],
-            ['key' => 'editor', 'name' => 'Editor'],
-        ],
-        effectsByRole: [
-            'editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW],
-        ],
-        activePlugins: [],
-    );
-    $byKey = array_column($matrix['rows'], null, 'key');
-
-    expect($byKey[CorexAbility::MANAGE_FORMS]['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_ALLOW)
-        ->and($byKey[CorexAbility::MANAGE_FORMS]['cells']['editor']['editable'])->toBeTrue()
-        ->and($byKey[CorexAbility::MANAGE_DATA]['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_INHERIT)
-        ->and($byKey[CorexAbility::MANAGE_ADMIN]['cells']['editor']['editable'])->toBeFalse()
-        ->and($byKey[CorexAbility::MANAGE_ADMIN]['cells']['editor']['reason'])->toBe('locked_definition');
-});
-
-it('makes native platform capabilities read-only when a role plugin is active but keeps CoreX states visible', function () {
+it('keeps CoreX states editable when a role plugin is active', function () {
     $matrix = $this->matrix->editableCorexMatrix(
         roles: [['key' => 'editor', 'name' => 'Editor']],
         effectsByRole: ['editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_DENY]],

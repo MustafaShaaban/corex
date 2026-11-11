@@ -89,6 +89,7 @@ beforeEach(function () {
         $this->studio,
         $this->editor,
         \Corex\Tests\Support\StudioDelivery::factory($this->config, $this->studio),
+        administration: new \Corex\Config\Access\WpSiteAdministration(),
         preview: \Corex\Boot::app()->container()->make(\Corex\Email\Studio\EmailTemplatePreview::class),
     );
 

@@ -40,9 +40,50 @@ final class AccessAuditLog implements AccessRefusalRecorder
     private const RETENTION_DAYS = 30;
     private const DAY_SECONDS    = 86400;
 
+    /**
+     * The refused actions recorded in this request, so a check asked twice in one request is one
+     * refusal (spec 117, FR-005). A REST dispatch is a request of its own.
+     *
+     * @var array<string,true>
+     */
+    private array $refusedThisRequest = [];
+
     public function register(): void
     {
         add_action('corex_admin_access_denied', [$this, 'recordDenied']);
+        add_action('corex_access_refused', [$this, 'recordRefusedAction'], 10, 3);
+        add_filter('rest_pre_dispatch', [$this, 'startRequest']);
+    }
+
+    /**
+     * Action callback: a CoreX route or form refused the current user for want of its screen's
+     * ability (spec 117, FR-005). Recorded under the screen's page slug, counted by the same rule,
+     * once per request for each screen and ability.
+     */
+    public function recordRefusedAction(string $kind, string $section, string $ability = ''): void
+    {
+        $slug   = AdminPage::pageSlugForSection($section) ?? $section;
+        $userId = function_exists('get_current_user_id') ? get_current_user_id() : 0;
+        $key    = implode('|', [$userId, $kind, $slug, $ability]);
+
+        if (isset($this->refusedThisRequest[$key])) {
+            return;
+        }
+
+        $this->refusedThisRequest[$key] = true;
+        $this->record($kind, $slug, $userId);
+    }
+
+    /**
+     * A request starts: what an earlier one in this process refused is counted again when refused
+     * again. Called on `rest_pre_dispatch`, since a REST dispatch is a request of its own, and
+     * passes that filter's value through. A process that serves one request needs no call.
+     */
+    public function startRequest(mixed $result = null): mixed
+    {
+        $this->refusedThisRequest = [];
+
+        return $result;
     }
 
     /**

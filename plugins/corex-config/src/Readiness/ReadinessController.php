@@ -10,6 +10,8 @@ namespace Corex\Config\Readiness;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeController;
 use Corex\Config\Operations\OperationsModeStore;
@@ -24,7 +26,8 @@ use WP_REST_Response;
  * launch step (spec 118, US-WIZ-06). It carries what the step needs to offer "Go live" through the
  * Operations screen's own mode form: where that form posts, its nonce and the phrase it asks for.
  * The form, not this route, changes the mode, so the confirmation and the history row are the
- * Operations screen's. Read with the capability the wizard and Operations need.
+ * Operations screen's. Read with the Setup Wizard's ability, "Manage setup" (spec 117); a refusal is
+ * recorded in the access audit.
  */
 final class ReadinessController
 {
@@ -33,6 +36,7 @@ final class ReadinessController
         private readonly LaunchChecklist $checklist,
         private readonly OperationsMode $modes,
         private readonly OperationsModeStore $store,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -47,7 +51,7 @@ final class ReadinessController
 
     public function canRead(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allows(CorexAbility::MANAGE_SETUP, 'corex-setup');
     }
 
     public function show(): WP_REST_Response

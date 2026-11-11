@@ -8,7 +8,11 @@ declare(strict_types=1);
 
 namespace Corex\Config\Settings;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
+use Corex\Access\SiteAdministration;
 use Corex\Admin\AdminPage;
+use Corex\Config\Access\ScreenAccess;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Overview\OverviewRenderer;
 use Corex\Security\Admin\AdminGuard;
@@ -20,9 +24,13 @@ defined('ABSPATH') || exit;
  *
  * Settings is a set of pages (spec 119): this class finds the page an address asks for, draws it
  * with its place in the rail, and saves it: verify, save that page, keep the result, redirect.
+ *
+ * Both screens open for their own ability, and read-only for the view ability (spec 117, FR-013).
  */
 final class AdminDashboard
 {
+    private const OVERVIEW = 'corex-settings';
+
     private string $hook = '';
     private string $settingsHook = '';
 
@@ -37,6 +45,10 @@ final class AdminDashboard
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly OverviewRenderer $overview,
+        private readonly ScreenAccess $access,
+        private readonly AbilityCheck $abilities,
+        /** Changing how the whole site delivers mail needs it (spec 117, FR-008). */
+        private readonly SiteAdministration $administration,
     ) {
     }
 
@@ -52,7 +64,7 @@ final class AdminDashboard
         $this->hook = (string) add_menu_page(
             __('CoreX Framework', 'corex'),
             __('COREX FRAMEWORK', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::OVERVIEW),
             'corex-settings',
             [$this, 'render'],
             'dashicons-layout',
@@ -63,7 +75,7 @@ final class AdminDashboard
             'corex-settings',
             __('CoreX Overview', 'corex'),
             __('Overview', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::OVERVIEW),
             'corex-settings',
             [$this, 'render'],
             0,
@@ -73,7 +85,7 @@ final class AdminDashboard
             'corex-settings',
             __('CoreX Settings', 'corex'),
             __('Settings', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(SettingsPages::SCREEN),
             SettingsPages::SCREEN,
             [$this, 'renderSettings'],
             40,
@@ -125,7 +137,7 @@ final class AdminDashboard
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens(self::OVERVIEW)) {
             echo $this->page->permissionDenied('overview');
 
             return;
@@ -135,6 +147,7 @@ final class AdminDashboard
             'overview',
             __('CoreX Overview', 'corex'),
             __('Framework health, onboarding progress, and the current operational state.', 'corex'),
+            readOnly: $this->access->readOnly(self::OVERVIEW),
         );
 
         // The Overview is one cohesive readiness dashboard (spec 064) built from real state.
@@ -144,17 +157,18 @@ final class AdminDashboard
 
     public function renderSettings(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens(SettingsPages::SCREEN)) {
             echo $this->page->permissionDenied('settings');
 
             return;
         }
 
-        $page = $this->requestedPage();
+        $page     = $this->requestedPage();
+        $readOnly = $this->access->readOnly(SettingsPages::SCREEN);
 
         // An address for a page that does not exist, or whose add-on is not installed.
         if ($page === null || $this->states->forPage($page) === SettingsSectionState::Hidden) {
-            echo $this->page->open('settings', __('Settings', 'corex'), '', '', $this->subnav(''));
+            echo $this->page->open('settings', __('Settings', 'corex'), '', '', $this->subnav(''), readOnly: $readOnly);
             echo $this->page->state(
                 'info',
                 __('This page is not available', 'corex'),
@@ -165,12 +179,15 @@ final class AdminDashboard
             return;
         }
 
-        echo $this->page->open('settings', $page->title, $page->description, $page->title, $this->subnav($page->key));
+        echo $this->page->open('settings', $page->title, $page->description, $page->title, $this->subnav($page->key), readOnly: $readOnly);
         echo $this->renderer->render(
             $page,
             $this->pages->url($page->key),
-            wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false),
+            // A read-only page has nothing to send, so it carries no nonce to send it with.
+            $readOnly ? '' : wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false),
             $this->flash->take(get_current_user_id(), $page->key),
+            $readOnly,
+            $this->administration->userAdministersSite(get_current_user_id()),
         );
         echo $this->page->close();
     }
@@ -181,15 +198,28 @@ final class AdminDashboard
      */
     public function maybeSave(): void
     {
-        if (! $this->guard->verifiedPost('corex_settings_nonce', 'corex_settings')) {
+        // The nonce first: a post another site makes a person's browser send is neither a save nor
+        // a refusal of theirs.
+        if (! $this->guard->hasValidNonce('corex_settings_nonce', 'corex_settings')) {
             return;
+        }
+
+        // A save from someone without "Manage settings", the holder of the view ability among them,
+        // is refused with the standard refusal and recorded once (spec 117, FR-005, FR-014).
+        if (! $this->abilities->allows(CorexAbility::MANAGE_SETTINGS, SettingsPages::SCREEN)) {
+            wp_die(
+                esc_html__('You can read these settings but not change them.', 'corex'),
+                esc_html__('Access denied', 'corex'),
+                ['response' => 403],
+            );
         }
 
         $pageKey = isset($_POST['corex_settings_page']) ? sanitize_key(wp_unslash($_POST['corex_settings_page'])) : '';
         $userId  = get_current_user_id();
         // A post that names no Settings page, or one that does not exist, writes nothing, and the
-        // first page says so rather than drawing as if nothing had been asked.
-        $result = $this->saver->save($pageKey, wp_unslash($_POST), $userId)
+        // first page says so rather than drawing as if nothing had been asked. How the whole site
+        // delivers mail is left as it is unless a site administrator saves (spec 117, FR-008).
+        $result = $this->saver->save($pageKey, wp_unslash($_POST), $userId, $this->administration->userAdministersSite(get_current_user_id()))
             ?? SettingsSaveResult::nothingSaved(SettingsPages::DEFAULT);
 
         $this->flash->keep($userId, $result);

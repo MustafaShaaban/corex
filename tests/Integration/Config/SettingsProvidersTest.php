@@ -189,13 +189,25 @@ it('removes nothing for a person who may not change Settings', function () {
         'corex_remove_secret'  => ['insights.psi.key'],
     ]);
 
-    Boot::app()->container()->make(AdminDashboard::class)->maybeSave();
+    // The save is refused with the standard refusal, which ends the request (spec 117, FR-005).
+    $handler = static fn (): callable => static fn (string $message, string $title, array $args): never
+        => throw new RuntimeException('refused ' . ($args['response'] ?? 0));
+    add_filter('wp_die_handler', $handler);
+    $answer = 'saved';
+    try {
+        Boot::app()->container()->make(AdminDashboard::class)->maybeSave();
+    } catch (RuntimeException $refused) {
+        $answer = $refused->getMessage();
+    } finally {
+        remove_filter('wp_die_handler', $handler);
+    }
 
     $_POST = $posted;
     wp_set_current_user($this->admin);
     require_once ABSPATH . 'wp-admin/includes/user.php';
     wp_delete_user((int) $editor);
-    expect($this->store->get('insights.psi.key'))->toBe(COREX_TEST_SECRET);
+    expect($answer)->toBe('refused 403')
+        ->and($this->store->get('insights.psi.key'))->toBe(COREX_TEST_SECRET);
 });
 
 it('says on the captcha card that a key is missing, as Settings says it', function () {

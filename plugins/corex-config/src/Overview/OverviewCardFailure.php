@@ -10,6 +10,7 @@ namespace Corex\Config\Overview;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Config\Readiness\ChecklistMarkup;
 
 /**
@@ -38,7 +39,9 @@ class OverviewCardFailure
 
     private function card(OverviewCard $card, string $reference): string
     {
-        $forAdministrator = current_user_can('manage_options')
+        // "Access CoreX admin" comes only with site administration (spec 117): someone reading the
+        // Overview read-only does not get the reference.
+        $forAdministrator = current_user_can(CorexAbility::MANAGE_ADMIN)
             ? '<p class="corex-overview__muted corex-overview__reference">' . esc_html(sprintf(
                 /* translators: %s: a short reference, also written to the PHP error log, e.g. 3FA9C21B. */
                 __('Reference: %s', 'corex'),

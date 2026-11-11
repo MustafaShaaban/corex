@@ -84,3 +84,38 @@ test( 'the log shows an attempt state in words and keeps the key for its badge',
 	expect( badge.className ).toContain( 'is-captured' );
 	cleanup();
 } );
+
+// Spec 117 (DECISIONS #429) withholds a captured email's content from anybody but a site
+// administrator; spec 120's "Show the email" is not offered for one it has no content of.
+test( 'offers no "Show the email" for a captured email whose content is withheld', () => {
+	const capture = {
+		capture_id: 'c1',
+		subject: 'Hello',
+		to: [ 'jane@example.com' ],
+		state: 'captured',
+		captured_at: '2026-11-11T10:00:00Z',
+	};
+	const { container, cleanup } = mount(
+		<LogsPanel
+			attempts={ [] }
+			captures={ [
+				{ ...capture, content_withheld: true },
+				{
+					...capture,
+					capture_id: 'c2',
+					content_withheld: false,
+					html_body: '<p>Hello</p>',
+					plain_text: 'Hello',
+				},
+			] }
+			busy={ false }
+			onResend={ () => {} }
+		/>
+	);
+
+	expect( container.querySelector( '#corex-capture-c1 details' ) ).toBeNull();
+	expect(
+		container.querySelector( '#corex-capture-c2 details' )
+	).not.toBeNull();
+	cleanup();
+} );

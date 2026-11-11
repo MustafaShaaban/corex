@@ -26,13 +26,39 @@ final readonly class FlowTemplateUsage implements MailTemplateUsage
     public function emailsUsing(int $templateId): array
     {
         foreach ($this->flows->allWithDraft() as $entry) {
-            foreach ((array) $entry['version']->configuration->emailRoutes as $binding) {
-                if (is_array($binding) && (int) ($binding['template_id'] ?? 0) === $templateId) {
+            foreach ($this->versionsOf($entry['flow'], $entry['version']) as $version) {
+                if ($this->binds($version, $templateId)) {
                     return [self::FORM];
                 }
             }
         }
 
         return [];
+    }
+
+    /**
+     * A flow's draft, and its published version where that is another one: the one visitors are
+     * sent emails from now.
+     *
+     * @return list<FlowVersion>
+     */
+    private function versionsOf(Flow $flow, FlowVersion $draft): array
+    {
+        $published = $flow->publishedVersion > 0 && $flow->publishedVersion !== $draft->versionNumber
+            ? $this->flows->findVersion($flow->id, $flow->publishedVersion)
+            : null;
+
+        return $published === null ? [$draft] : [$draft, $published];
+    }
+
+    private function binds(FlowVersion $version, int $templateId): bool
+    {
+        foreach ((array) $version->configuration->emailRoutes as $binding) {
+            if (is_array($binding) && (int) ($binding['template_id'] ?? 0) === $templateId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

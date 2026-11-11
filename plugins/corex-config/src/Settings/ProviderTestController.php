@@ -10,19 +10,24 @@ namespace Corex\Config\Settings;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use WP_REST_Request;
 use WP_REST_Response;
 
 /**
- * "Test connection" for the Insights providers' keys (spec 119, US-SET-03). `manage_options` and a
- * REST nonce gate it, as the captcha test route is gated; the answer carries the line the page
- * shows and whether the key worked, never the key.
+ * "Test connection" for the Insights providers' keys (spec 119, US-SET-03). "Manage settings" and a
+ * REST nonce gate it, as the captcha test route is gated, and a refusal is recorded under Settings
+ * (spec 117, FR-002, FR-005); the answer carries the line the page shows and whether the key worked,
+ * never the key.
  */
 final class ProviderTestController
 {
-    public function __construct(private readonly ProviderTestService $tests)
-    {
+    public function __construct(
+        private readonly ProviderTestService $tests,
+        private readonly AbilityCheck $abilities,
+    ) {
     }
 
     public function register(): void
@@ -41,7 +46,7 @@ final class ProviderTestController
 
     public function canRun(WP_REST_Request $request): bool
     {
-        return current_user_can('manage_options')
+        return $this->abilities->allows(CorexAbility::MANAGE_SETTINGS, SettingsPages::SCREEN)
             && wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false;
     }
 
