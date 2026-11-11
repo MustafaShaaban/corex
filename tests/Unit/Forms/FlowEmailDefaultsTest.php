@@ -74,6 +74,43 @@ it('says which of a template\'s variables a flow\'s email does not supply', func
         ->and(FlowEmailVariables::missing(['failure.message'], $configuration, 'admin_failure'))->toBe([]);
 });
 
+// Spec 122, FR-023: a variable a developer registers for flow emails is supplied by every flow.
+it('counts a registered flow email variable as supplied', function () {
+    expect(FlowEmailVariables::missing(['order.total', 'user.name'], flowWithFields('email'), 'team_notification', ['order.total']))
+        ->toBe(['user.name']);
+});
+
+it('publishes a template that uses a variable a developer registered for flow emails', function () {
+    Functions\when('__')->returnArg();
+    $registry = new Corex\Forms\Flow\EmailVariableRegistry();
+    $registry->register('order.total', 'Order total', static fn (): string => '10');
+    $validator = new Corex\Forms\Flow\FlowConfigurationValidator(
+        new Corex\Forms\Schema\FieldTypeRegistry(),
+        new Corex\Forms\Validation\RuleRegistry(),
+        new Corex\Forms\Success\SuccessStateRegistry(),
+        flowTemplates([['id' => 4, 'slug' => 'orders', 'name' => 'Orders', 'variables' => ['order.total', 'user.name']]]),
+        registeredVariables: $registry,
+    );
+    $configuration = new FlowConfiguration(
+        schema: [['uuid' => 'e', 'key' => 'email', 'label' => 'Email', 'type' => 'email']],
+        validation: [],
+        routing: [],
+        emailRoutes: [['event' => 'team_notification', 'enabled' => true, 'template_id' => 4, 'recipient' => 'team@example.com']],
+        success: ['type' => 'inline', 'message' => 'Thanks.'],
+        placementSnapshot: [],
+    );
+    $refused = '';
+    try {
+        (new ReflectionMethod($validator, 'validateEmails'))->invoke($validator, $configuration);
+    } catch (DomainException $error) {
+        $refused = $error->getMessage();
+    }
+
+    // Refused for the variable nothing supplies, and only for it.
+    expect($refused)->toContain('user.name')
+        ->and($refused)->not->toContain('order.total');
+});
+
 it('lists every answer with its field\'s label in the form\'s order, a file as a link to the submission', function () {
     $answers = FlowEmailVariables::answers(
         flowWithFields('email', 'name', 'cv'),

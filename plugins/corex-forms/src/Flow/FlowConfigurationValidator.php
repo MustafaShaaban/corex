@@ -31,6 +31,10 @@ final readonly class FlowConfigurationValidator
         private SuccessStateRegistry $successStates,
         /** What each Email Studio template uses, where CoreX Mail is active (spec 120). */
         private ?MailTemplateCatalog $templates = null,
+        /** The actions the site has (spec 122, FR-022). */
+        private ?FlowActionRegistry $actions = null,
+        /** The email variables a developer registered for flows (spec 122, FR-023). */
+        private ?EmailVariableRegistry $registeredVariables = null,
     ) {
     }
 
@@ -42,6 +46,7 @@ final readonly class FlowConfigurationValidator
             $this->validateRouting($configuration, $fieldKeys);
             $this->validateEmails($configuration);
             $this->validateSuccess($configuration);
+            $this->validateActions($configuration);
         } catch (InvalidArgumentException $exception) {
             throw new DomainException($exception->getMessage(), 0, $exception);
         }
@@ -105,6 +110,21 @@ final readonly class FlowConfigurationValidator
             new RoutingCondition($field, (string) ($condition['operator'] ?? ''), $condition['value'] ?? null);
             $this->validateTarget((array) ($rule['target'] ?? []), $fieldKeys);
         }
+        $fallbackRecipient = trim((string) ($configuration->routing['fallback_recipient'] ?? ''));
+        if ($fallbackRecipient !== '' && filter_var($fallbackRecipient, FILTER_VALIDATE_EMAIL) === false) {
+            throw new DomainException(__('"If Routed owner has no address" must be an email address.', 'corex'));
+        }
+    }
+
+    /** A flow runs only actions the site has; one that is gone fails the publication (FR-022). */
+    private function validateActions(FlowConfiguration $configuration): void
+    {
+        foreach ($configuration->actions as $key) {
+            if ($this->actions !== null && ! $this->actions->has($key)) {
+                /* translators: %s: the key of a flow action. */
+                throw new DomainException(sprintf(__('The action "%s" is not available on this site.', 'corex'), $key));
+            }
+        }
     }
 
     /**
@@ -163,6 +183,7 @@ final readonly class FlowConfigurationValidator
                 array_values(array_filter((array) ($template['variables'] ?? []), 'is_string')),
                 $configuration,
                 (string) $binding['event'],
+                array_column($this->registeredVariables?->definitions() ?? [], 'key'),
             );
             if ($missing !== []) {
                 throw new DomainException(sprintf(

@@ -126,3 +126,19 @@ it('takes the From address as optional, and refuses one that is not an address o
         ->and(variablesService()->validateDraft(variablesVersion('<p>x</p>', fromName: "Sales\nBcc: x@example.com")))
         ->toBe(['fromName' => 'The From name cannot contain a line break.']);
 });
+
+// Spec 122, FR-023: a variable another plugin declares for the emails it sends (the forms engine,
+// for flow emails) is supplied by those emails, and listed with them.
+it('takes a declared variable as supplied by the emails its declaration names', function () {
+    $catalog = new EmailVariableCatalog(static fn (): array => [
+        'order.total' => ['type' => 'text', 'label' => 'Order total', 'emails' => [EmailVariableCatalog::FORM]],
+        'crm.id' => ['type' => 'text', 'label' => 'CRM id'],
+    ]);
+    $groups = array_column($catalog->groups(), 'variables', 'key');
+
+    expect($catalog->supplies(EmailVariableCatalog::FORM, 'order.total'))->toBeTrue()
+        ->and($catalog->supplies(EmailVariableCatalog::ACCOUNT, 'order.total'))->toBeFalse()
+        ->and(array_column($groups[EmailVariableCatalog::FORM], 'key'))->toContain('order.total')
+        ->and(array_column($groups['other'], 'key'))->toBe(['crm.id'])
+        ->and($catalog->isKnown('order.total'))->toBeTrue();
+});

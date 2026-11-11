@@ -10,6 +10,8 @@ namespace Corex\Email\Studio;
 
 defined('ABSPATH') || exit;
 
+use Closure;
+
 /**
  * Every variable an Email Studio template can use, grouped by the emails that supply it
  * (spec 120, story 5).
@@ -56,9 +58,28 @@ final class EmailVariableCatalog
         ],
     ];
 
-    /** @param array<string,array{type?:string,label?:string}> $configured The `mail.variables` configuration. */
-    public function __construct(private readonly array $configured = [])
+    /** @var array<string,array{type?:string,label?:string}>|null */
+    private ?array $resolved = null;
+
+    /**
+     * @param array<string,array{type?:string,label?:string,emails?:list<string>}>|Closure(): array<string,array{type?:string,label?:string,emails?:list<string>}> $configured
+     *        The `mail.variables` configuration, or what works it out. Worked out on first use: other
+     *        plugins declare theirs on `corex_email_variable_schema` as WordPress starts (spec 122,
+     *        FR-023), after this catalog is built.
+     */
+    public function __construct(private readonly array|Closure $configured = [])
     {
+    }
+
+    /** @return array<string,array{type?:string,label?:string}> */
+    private function configured(): array
+    {
+        if ($this->resolved === null) {
+            $configured = $this->configured instanceof Closure ? ($this->configured)() : $this->configured;
+            $this->resolved = is_array($configured) ? $configured : [];
+        }
+
+        return $this->resolved;
     }
 
     public function isKnown(string $key): bool
@@ -79,7 +100,27 @@ final class EmailVariableCatalog
             return true;
         }
 
-        return in_array($key, self::SUPPLIED[$group] ?? [], true);
+        return in_array($key, $this->supplied()[$group] ?? [], true);
+    }
+
+    /**
+     * What each group of emails supplies: CoreX's own, and each variable another plugin declares
+     * for the emails it names (`emails`; the forms engine for flow emails, spec 122).
+     *
+     * @return array<string,list<string>>
+     */
+    private function supplied(): array
+    {
+        $supplied = self::SUPPLIED;
+        foreach ($this->configured() as $key => $definition) {
+            foreach ((array) ($definition['emails'] ?? []) as $group) {
+                if (isset($supplied[$group]) && ! in_array($key, $supplied[$group], true)) {
+                    $supplied[$group][] = (string) $key;
+                }
+            }
+        }
+
+        return $supplied;
     }
 
     /** The emails of a group, as a sentence names them: "a form email". */
@@ -104,11 +145,11 @@ final class EmailVariableCatalog
     {
         $groups = [];
         $named = [];
-        foreach (self::SUPPLIED as $group => $keys) {
+        foreach ($this->supplied() as $group => $keys) {
             $groups[] = $this->group($group, $keys);
             $named = [...$named, ...$keys];
         }
-        $other = array_values(array_diff(array_keys($this->configured), $named));
+        $other = array_values(array_diff(array_keys($this->configured()), $named));
         if ($other !== []) {
             $groups[] = $this->group(self::OTHER, $other);
         }
@@ -159,18 +200,18 @@ final class EmailVariableCatalog
             return sprintf(__('Form field "%s"', 'corex'), substr($key, strlen('submission.')));
         }
 
-        return (string) ($this->configured[$key]['label'] ?? $key);
+        return (string) ($this->configured()[$key]['label'] ?? $key);
     }
 
     private function groupOf(string $key): ?string
     {
-        foreach (self::SUPPLIED as $group => $keys) {
+        foreach ($this->supplied() as $group => $keys) {
             if (in_array($key, $keys, true)) {
                 return $group;
             }
         }
 
-        return isset($this->configured[$key]) ? self::OTHER : null;
+        return isset($this->configured()[$key]) ? self::OTHER : null;
     }
 
     /**

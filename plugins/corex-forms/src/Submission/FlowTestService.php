@@ -35,7 +35,7 @@ final readonly class FlowTestService
         $flow = $this->flows->get($flowId);
         $version = $this->flows->preview($flowId);
         if ($version->versionNumber !== $expectedVersion) {
-            throw new \Corex\Forms\Flow\FlowConflictException(__('The flow draft version is stale.', 'corex'));
+            throw new \Corex\Forms\Flow\FlowConflictException(FlowService::conflict());
         }
 
         [$result, $held] = $this->hold->during(fn (): SubmissionPipelineResult => $this->pipeline->run(new SubmissionPipelineContext(

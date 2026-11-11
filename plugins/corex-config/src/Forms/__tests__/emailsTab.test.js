@@ -16,8 +16,15 @@ function mount( props ) {
 	const container = document.createElement( 'div' );
 	document.body.appendChild( container );
 	const root = createRoot( container );
+	// The tab's whole contract: spec 122 gives it the routing and asks who Routed owner is.
+	const tab = {
+		routing: {},
+		onPreview: () => new Promise( () => {} ),
+		onRoutingChange: () => {},
+		...props,
+	};
 	act( () => {
-		root.render( <EmailsTab { ...props } /> );
+		root.render( <EmailsTab { ...tab } /> );
 	} );
 	return {
 		container,
@@ -61,6 +68,18 @@ it( 'finds the variables a template uses that the form does not supply', () => {
 	expect(
 		missingVariables( [ 'failure.message' ], schema, 'admin_failure' )
 	).toEqual( [] );
+} );
+
+// Spec 122, FR-023: a variable a developer registers for flow emails is supplied by every flow.
+it( 'counts a registered flow email variable as supplied', () => {
+	expect(
+		missingVariables(
+			[ 'order.total', 'user.name' ],
+			schema,
+			'team_notification',
+			[ { key: 'order.total', label: 'Order total' } ]
+		)
+	).toEqual( [ 'user.name' ] );
 } );
 
 it( 'warns of a bound template’s missing variables and records the confirmation to send without them', () => {

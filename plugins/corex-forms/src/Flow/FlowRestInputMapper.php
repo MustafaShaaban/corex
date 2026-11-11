@@ -11,6 +11,8 @@ namespace Corex\Forms\Flow;
 defined('ABSPATH') || exit;
 
 use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
 use WP_REST_Request;
 
 /**
@@ -45,6 +47,53 @@ final class FlowRestInputMapper
     public function transitionShape(): array
     {
         return ['expected_version' => 'absint'];
+    }
+
+    public function copyShape(): array
+    {
+        return ['expected_version' => 'absint', 'expected_checksum' => 'sanitize_text_field'];
+    }
+
+    /**
+     * The availability passes through as sent (an array, or nothing): `availability()` cleans each
+     * field the way it is kept. A generic text clean first would strip a link's percent-encoding
+     * and a closed message's line breaks before the field's own cleaning saw them.
+     */
+    public function availabilityShape(): array
+    {
+        return ['availability' => static fn (mixed $sent): array => is_array($sent) ? $sent : []];
+    }
+
+    public function routingPreviewShape(): array
+    {
+        return ['routing' => $this->structured(...), 'schema' => $this->structured(...)];
+    }
+
+    /**
+     * What the Availability tab sent. Its dates are the site's local date and time, as the
+     * editor's fields show them, and are kept as instants in UTC (spec 122, FR-026).
+     *
+     * @param array<string,mixed> $input
+     */
+    public function availability(array $input): FlowAvailability
+    {
+        $sent = is_array($input['availability'] ?? null) ? $input['availability'] : [];
+        $alternative = is_array($sent['alternative'] ?? null) ? $sent['alternative'] : [];
+        $cap = $sent['max_responses'] ?? null;
+
+        return FlowAvailability::fromArray([
+            'opens_at' => $this->instant(self::text($sent['opens_at'] ?? '')),
+            'closes_at' => $this->instant(self::text($sent['closes_at'] ?? '')),
+            // A number, or text that `FlowAvailability` reads as a whole number or refuses.
+            'max_responses' => is_int($cap) || is_float($cap) ? $cap : sanitize_text_field(self::text($cap)),
+            'closed_message' => sanitize_textarea_field(self::text($sent['closed_message'] ?? '')),
+            'alternative' => [
+                'type' => sanitize_key(self::text($alternative['type'] ?? 'none')),
+                'label' => sanitize_text_field(self::text($alternative['label'] ?? '')),
+                'url' => esc_url_raw(self::text($alternative['url'] ?? '')),
+                'email' => sanitize_email(self::text($alternative['email'] ?? '')),
+            ],
+        ]);
     }
 
     public function testShape(): array
@@ -110,7 +159,22 @@ final class FlowRestInputMapper
             success: (array) ($document['success'] ?? []),
             placementSnapshot: (array) ($document['placement_snapshot'] ?? []),
             protection: FlowProtection::normalize($document['protection'] ?? []),
+            actions: FlowConfiguration::actionKeys($document['actions'] ?? []),
         );
+    }
+
+    /** A local `Y-m-d\TH:i` in the site's time zone, as an ATOM instant in UTC; '' when empty or unreadable. */
+    private function instant(mixed $local): string
+    {
+        $local = is_string($local) ? trim($local) : '';
+        if ($local === '') {
+            return '';
+        }
+        try {
+            return (new DateTimeImmutable($local, wp_timezone()))->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM);
+        } catch (Exception) {
+            return '';
+        }
     }
 
     private function nullableId(mixed $candidate): ?int
@@ -121,6 +185,12 @@ final class FlowRestInputMapper
     private function boolean(mixed $candidate): bool
     {
         return filter_var($candidate, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /** A sent value as text: what a field holds, or '' for anything that is not one value. */
+    private static function text(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 
     /** @return array<string|int,mixed> */

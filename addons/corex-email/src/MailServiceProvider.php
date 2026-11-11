@@ -113,7 +113,15 @@ final class MailServiceProvider extends ServiceProvider
                 $defaults = self::defaultMailConfig();
                 $schema = $c->make(ConfigInterface::class)->get('mail.variables', $defaults['variables'] ?? []);
 
-                return new EmailVariableCatalog(is_array($schema) ? $schema : []);
+                // Another plugin may declare variables of its own: the forms engine declares the
+                // email variables developers register for flow emails (spec 122, FR-023). They are
+                // registered on `init`, and this catalog is built before it, so the list is asked
+                // for when a template is first checked or drawn.
+                return new EmailVariableCatalog(static function () use ($schema): array {
+                    $declared = apply_filters('corex_email_variable_schema', is_array($schema) ? $schema : []);
+
+                    return is_array($declared) ? $declared : [];
+                });
             },
         );
         $this->container->singleton(EmailSampleValues::class);

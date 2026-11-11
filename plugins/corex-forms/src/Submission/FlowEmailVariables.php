@@ -31,14 +31,17 @@ final class FlowEmailVariables
     /**
      * The variables a template uses that this flow's email does not supply.
      *
-     * @param list<string> $used The template's variables.
+     * @param list<string> $used       The template's variables.
+     * @param list<string> $registered The email variables a developer registered for flows: every
+     *                                 flow supplies them (spec 122, FR-023).
      *
      * @return list<string>
      */
-    public static function missing(array $used, FlowConfiguration $configuration, string $event): array
+    public static function missing(array $used, FlowConfiguration $configuration, string $event, array $registered = []): array
     {
         $supplied = [
             ...self::EVERY,
+            ...$registered,
             ...self::FLOW,
             ...($event === 'admin_failure' ? self::FAILURE : []),
             ...array_map(static fn (string $key): string => 'submission.' . $key, self::fieldKeys($configuration)),

@@ -103,6 +103,17 @@ withdrawn (#602): the Config engine reads only loaded options, so a saved secret
   release carries it.
 - Next: the owner's word on merging this slice.
 
+**Spec 122, flows that stay live and route to people** (2026-10-26, branch `spec/122-live-flows`, DECISIONS #470
+to #479): revamp release R3.9, six stories (US-FLW-01, 03, 04, 07, US-VIS-01, 02), built under the owner's
+2026-10-21 mandate. A live flow takes "Publish changes" without leaving the page, keeps its publications and a
+Versions tab, and asks before Unpublish; routing assigns a user, team (new Teams view) or role, falls back with a
+reason, and a person routed work sees it in their inbox; "Routed owner" is an email recipient; flow actions, email
+variables and routing targets register through three filters and run; an Availability tab sets dates, a cap and the
+closed message, and a closed or scheduled flow shows its notice instead of vanishing. Spec, plan and tasks written,
+every task built; unit, integration (the cap race in two processes), Jest and four new Playwright tests pass locally.
+Open: one pull request, not merged by this session. Owed: `forms-flow.spec.js` still fails on a fresh local install
+(the field-type option reads `email`, as before), read it off CI; the plain-word condition editor is R3.10's.
+
 **Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
 #447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
 owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar
