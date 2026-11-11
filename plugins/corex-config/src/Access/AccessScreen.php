@@ -307,7 +307,7 @@ final class AccessScreen
 
         $personOptions = '<option value="0">' . esc_html__('Everyone', 'corex') . '</option>';
         foreach ($people as $id => $name) {
-            $personOptions .= '<option value="' . esc_attr((string) $id) . '"' . selected($person, $id, false) . '>' . esc_html($name) . '</option>';
+            $personOptions .= '<option value="' . esc_attr((string) $id) . '"' . selected($person, $id, false) . ' translate="no">' . esc_html($name) . '</option>';
         }
 
         return '<form class="corex-access__filters" method="get" action="' . esc_url(admin_url('admin.php')) . '">'
@@ -357,11 +357,16 @@ final class AccessScreen
                 $last,
             );
         $tone = in_array($entry['kind'], ['refused', 'role_refused', 'denied'], true) ? ' is-warning' : '';
+        // A person's name is data, not a word to translate, and keeps its own direction; "CoreX"
+        // or "Signed-out visitor" in its place is a translated word.
+        $who = $entry['whoId'] > 0
+            ? '<strong translate="no"><bdi>' . esc_html($entry['who']) . '</bdi></strong>'
+            : '<strong>' . esc_html($entry['who']) . '</strong>';
 
         return '<li class="corex-access__event">'
             . '<span class="corex-access__event-dot" aria-hidden="true"></span>'
             . '<span class="corex-access__event-body"><span class="corex-access__event-text">'
-            . '<strong>' . esc_html($entry['who']) . '</strong> ' . esc_html($entry['text']) . '</span>'
+            . $who . ' ' . esc_html($entry['text']) . '</span>'
             . '<span class="corex-access__event-meta">' . $when . '</span></span>'
             . '<span class="corex-access__chip' . $tone . '">' . esc_html($entry['kindLabel']) . '</span></li>';
     }

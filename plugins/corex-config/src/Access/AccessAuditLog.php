@@ -75,10 +75,11 @@ final class AccessAuditLog implements AccessRefusalRecorder
     }
 
     /**
-     * Filter callback, passing its value through: a REST dispatch starts a request of its own, so
-     * what an earlier dispatch in this process refused is counted again when refused again.
+     * A request starts: what an earlier one in this process refused is counted again when refused
+     * again. Called on `rest_pre_dispatch`, since a REST dispatch is a request of its own, and
+     * passes that filter's value through. A process that serves one request needs no call.
      */
-    public function startRequest(mixed $result): mixed
+    public function startRequest(mixed $result = null): mixed
     {
         $this->refusedThisRequest = [];
 

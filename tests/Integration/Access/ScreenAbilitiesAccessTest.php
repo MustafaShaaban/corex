@@ -814,6 +814,9 @@ it('refuses the Assistant check route and save to someone without "Access CoreX 
     wp_set_current_user($this->people['editor']);
     $check = screenRoute('POST', 'assistant/check')->get_status();
 
+    // The save is a request of its own, after the route's: started as the plugin starts one, so
+    // each of the two refusals is counted (FR-005).
+    Boot::app()->container()->make(AccessAuditLog::class)->startRequest();
     $_POST   = ['corex_assistant_nonce' => wp_create_nonce('corex_assistant_save')];
     $handler = static fn (): callable => static fn (string $message, string $title, array $args): never
         => throw new RuntimeException('refused ' . ($args['response'] ?? 0));

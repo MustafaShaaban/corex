@@ -126,3 +126,21 @@ it('says why a decision on a request was refused (DECISIONS #428)', function () 
         ->and($entries[0]['text'])->toContain('only a site administrator can allow it')
         ->and($entries[1]['text'])->toContain('Only a site administrator can decide their own access request.');
 });
+
+/** One row of the Audit log tab as the screen draws it. */
+function auditRowFor(array $entry): string
+{
+    $screen = Boot::app()->container()->make(\Corex\Config\Access\AccessScreen::class);
+
+    return (string) (new ReflectionMethod($screen, 'auditRow'))->invoke($screen, $entry + [
+        'at' => 1_760_000_000, 'first' => 1_760_000_000, 'count' => 1, 'kind' => 'refused',
+        'kindLabel' => 'Refused', 'subjectId' => 0, 'text' => 'Refused Settings',
+    ]);
+}
+
+it('marks a person\'s name in the history as data, not words, isolated for right to left', function () {
+    expect(auditRowFor(['who' => 'corex-quality-subscriber', 'whoId' => 7]))
+        ->toContain('<strong translate="no"><bdi>corex-quality-subscriber</bdi></strong>')
+        ->and(auditRowFor(['who' => 'CoreX', 'whoId' => 0]))
+        ->toContain('<strong>CoreX</strong>');
+});

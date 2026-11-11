@@ -520,7 +520,11 @@ final class OperationsSecurityScreen
 
             $state = '<p class="corex-opsec__detail">' . esc_html__('A preview link exists.', 'corex') . ' '
                 . esc_html__('Created by', 'corex') . ' '
-                . esc_html($user ? $user->display_name : __('system', 'corex')) . ' · ' . $when->toHtml() . '</p>'
+                // A person's name is data, not a word to translate, and keeps its own direction.
+                . ($user
+                    ? '<span translate="no"><bdi>' . esc_html($user->display_name) . '</bdi></span>'
+                    : esc_html__('system', 'corex'))
+                . ' · ' . $when->toHtml() . '</p>'
                 . '<p class="corex-opsec__detail">'
                 . esc_html__('The link was shown once, when it was made, and cannot be shown again. If it is lost, regenerate it: the old one stops working.', 'corex')
                 . '</p>';
