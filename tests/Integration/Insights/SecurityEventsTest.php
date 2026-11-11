@@ -25,6 +25,7 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Events\EventDispatcher;
 use Corex\Security\LoginLockoutEvent;
+use Corex\Support\DateTime\AdminDateTime;
 
 beforeEach(function () {
     $this->modeWas  = get_option(OperationsModeStore::OPTION, null);
@@ -127,4 +128,17 @@ it('says from when it has records, written once', function () {
 
     expect($first)->toBeGreaterThan(0)->toBeLessThanOrEqual(time())
         ->and($since->since())->toBe($first);
+});
+
+// A person reads the date in the site's words and timezone, as on the Overview; the card showed
+// `2026-11-10 07:36` in UTC.
+it('dates each event as every CoreX screen does, with its ISO value for the time element', function () {
+    Boot::app()->container()->make(AccessAuditLog::class)->record('denied', 'corex-insights', $this->admin + 4000);
+    $event = Boot::app()->container()->make(ActivityService::class)->query(['kind' => SecurityActivityRecorder::ACCESS_DENIED], 1, 1)[0];
+    $card  = Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'][0];
+    $want  = Boot::app()->container()->make(AdminDateTime::class)->format($event->occurredAt, AdminDateTime::FULL);
+
+    expect($card['meta'])->toBe($want->human)
+        ->and($card['meta'])->not->toMatch('/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/')
+        ->and($card['datetime'])->toBe($want->machine);
 });
