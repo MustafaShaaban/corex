@@ -5,7 +5,15 @@
 import { withQuery } from '../admin/restAddress.js';
 import { generateUuid } from './uuid.js';
 
-const FLOW_ACTIONS = [ 'preview', 'publish', 'unpublish', 'close', 'test' ];
+const FLOW_ACTIONS = [
+	'preview',
+	'publish',
+	'unpublish',
+	'close',
+	'test',
+	'availability',
+	'routing-preview',
+];
 
 export const initialFlowState = {
 	status: 'idle',
@@ -56,6 +64,17 @@ export function flowReducer( state, action ) {
 			};
 		case 'draft_changed':
 			return { ...state, draft: action.payload, message: '' };
+		// The flow record changed without a new draft version (its availability): the edits on
+		// screen stay as they are.
+		case 'flow_changed':
+			return {
+				...state,
+				status: 'ready',
+				draft: state.draft
+					? { ...state.draft, flow: action.payload }
+					: state.draft,
+				message: action.message || '',
+			};
 		case 'cleared':
 			return {
 				...state,
@@ -64,6 +83,14 @@ export function flowReducer( state, action ) {
 				saved: null,
 				testResult: null,
 				message: '',
+			};
+		// The Teams view changed a team: routing offers the new list without a reload.
+		case 'teams_changed':
+			return {
+				...state,
+				extensions: state.extensions
+					? { ...state.extensions, teams: action.payload }
+					: state.extensions,
 			};
 		case 'mutating':
 			return { ...state, status: 'mutating', message: '' };
@@ -171,6 +198,67 @@ export function stageStatus( draft ) {
 	};
 }
 
+/**
+ * What the editor offers to publish (spec 122, US-FLW-01).
+ *
+ * @param {Object} draft The draft on screen: `flow` and the saved `version`.
+ * @return {string} `publish` for a draft, `changes` for a live flow whose saved draft is newer
+ *                  than its live version, `current` for a live flow with nothing new, and ''
+ *                  for a closed or expired flow, which goes back to draft first.
+ */
+export function publishState( draft ) {
+	const flow = draft?.flow || {};
+	if ( flow.state === 'draft' ) {
+		return 'publish';
+	}
+	if ( flow.state !== 'published' ) {
+		return '';
+	}
+	return draft.version?.version_number !== flow.published_version
+		? 'changes'
+		: 'current';
+}
+
+/**
+ * The state the editor header and the list show, from what the flow does now: a published flow
+ * whose dates or cap closed it reads Expired, one not open yet reads Scheduled (spec 122).
+ *
+ * @param {Object} flow A flow from the REST client, with its `status`.
+ * @return {string} `draft`, `published`, `scheduled`, `closed` or `expired`.
+ */
+export function displayState( flow ) {
+	const status = flow?.status?.state;
+	if ( status === 'scheduled' || status === 'expired' ) {
+		return status;
+	}
+	return flow?.state || 'draft';
+}
+
+/**
+ * The address that copies a saved version into the draft (spec 122, FR-005).
+ *
+ * @param {string}        base    The flows route.
+ * @param {number|string} id      The flow.
+ * @param {number}        version The version to copy.
+ * @return {string} The address.
+ */
+export function copyVersionEndpoint( base, id, version ) {
+	return `${ flowEndpoint( base, id ) }/versions/${ encodeURIComponent(
+		version
+	) }/copy`;
+}
+
+/**
+ * The flow an address asks to open (`&corex_flow=12`), as a link from a block's editor note does.
+ *
+ * @param {string} search The page's query string.
+ * @return {number} The flow's id, or 0.
+ */
+export function requestedFlow( search ) {
+	const id = Number( new URLSearchParams( search ).get( 'corex_flow' ) );
+	return Number.isInteger( id ) && id > 0 ? id : 0;
+}
+
 export function flowEndpoint( base, id = '', action = '' ) {
 	if ( action && ! FLOW_ACTIONS.includes( action ) ) {
 		throw new Error( `Unknown flow action: ${ action }` );
@@ -202,6 +290,8 @@ export function draftFromDetail( detail ) {
 				flow: detail.flow,
 				version: current,
 				configuration: current.configuration,
+				// Every saved version, for the Versions tab to open (spec 122, FR-005).
+				versions,
 			}
 		: null;
 }

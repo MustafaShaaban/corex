@@ -9,6 +9,7 @@
 
 declare(strict_types=1);
 
+use Corex\Boot;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowConfiguration;
 use Corex\Forms\Flow\FlowProtection;
@@ -50,7 +51,7 @@ it('projects the protection block back to the builder through the REST presenter
     $config = new FlowConfiguration([], [], [], [], [], [], ['captcha' => 'on', 'threshold' => 0.7]);
     $version = new FlowVersion(9, 7, 1, $config, 1, $now);
 
-    $projected = (new FlowRestPresenter())->version($version);
+    $projected = Boot::app()->container()->make(FlowRestPresenter::class)->version($version);
 
     expect($projected['configuration']['protection'])->toBe(['captcha' => 'on', 'threshold' => 0.7]);
 });

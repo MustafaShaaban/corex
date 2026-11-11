@@ -32,6 +32,8 @@ final class SubmissionsInboxScreen
         private readonly SubmissionRetention $retention,
         private readonly FlowFilterOptions $flows,
         private readonly SubmissionTrashRetention $trash,
+        private readonly SubmissionAccessPolicy $access,
+        private readonly SubmissionInboxReader $submissions,
     ) {
     }
 
@@ -47,7 +49,7 @@ final class SubmissionsInboxScreen
             'corex-settings',
             __('CoreX Submissions', 'corex'),
             __('Submissions', 'corex'),
-            CorexAbility::MANAGE_SUBMISSIONS,
+            $this->capability(),
             'corex-submissions',
             [$this, 'render'],
             26,
@@ -96,13 +98,33 @@ final class SubmissionsInboxScreen
             'nonce' => wp_create_nonce('wp_rest'),
             // Real form names to filter by. The inbox asked for a numeric flow ID, which nobody
             // knows. Empty when the forms add-on is absent — the filter drops, the screen works.
-            'flows' => $this->flows->all(),
+            'flows' => $this->formsToFilterBy(),
             // Where delivery is switched on, for a person who may switch it. The reply box links
             // there when replies are not being delivered; anybody else is told who can (spec 106).
             'mailSettingsUrl' => $this->guard->authorized(CorexAbility::MANAGE_SETTINGS)
                 ? esc_url_raw(admin_url('admin.php?page=corex-settings-config&corex_tab=mail'))
                 : '',
         ];
+    }
+
+    /**
+     * Every form for a manager. For someone with an assigned-only inbox, only the flows they have
+     * work in: the names of the others are not theirs to read (spec 122, FR-013).
+     *
+     * @return list<array{id:int,name:string,slug:string}>
+     */
+    private function formsToFilterBy(): array
+    {
+        if ($this->manages()) {
+            return $this->flows->all();
+        }
+        $scope = $this->access->scopeFor(get_current_user_id());
+        $theirs = $scope === null ? [] : $this->submissions->flowIdsIn($scope);
+
+        return array_values(array_filter(
+            $this->flows->all(),
+            static fn (array $form): bool => in_array((int) $form['id'], $theirs, true),
+        ));
     }
 
     public function render(): void
@@ -119,14 +141,31 @@ final class SubmissionsInboxScreen
             __('Search, assign, reply, export, and retain every accessible real or marked-test flow response.', 'corex'),
         );
         echo '<div id="corex-submissions-app" aria-live="polite"></div>';
-        echo $this->retentionNotice() . $this->retentionPanel();
+        if ($this->manages()) {
+            echo $this->retentionNotice() . $this->retentionPanel();
+        }
         echo $this->page->close();
+    }
+
+    /**
+     * Managers open the screen by their ability. Someone routing gave work to opens it as anyone
+     * signed in may, and sees only what is theirs (spec 122, FR-013): WordPress asks for this
+     * capability before the screen draws, so it is the one they hold.
+     */
+    private function capability(): string
+    {
+        return ! $this->manages() && $this->authorized() ? 'read' : CorexAbility::MANAGE_SUBMISSIONS;
+    }
+
+    private function manages(): bool
+    {
+        return $this->guard->authorized(CorexAbility::MANAGE_SUBMISSIONS)
+            || $this->guard->authorized('manage_options');
     }
 
     private function authorized(): bool
     {
-        return $this->guard->authorized(CorexAbility::MANAGE_SUBMISSIONS)
-            || $this->guard->authorized('manage_options');
+        return $this->manages() || $this->access->scopeFor(get_current_user_id()) !== null;
     }
 
     private function retentionPanel(): string
