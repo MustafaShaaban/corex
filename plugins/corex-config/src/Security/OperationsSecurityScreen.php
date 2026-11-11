@@ -252,7 +252,8 @@ final class OperationsSecurityScreen
                     : '')
                 . '<p class="corex-cache__layer-meta">'
                 . ($layer->provider !== ''
-                    ? '<span>' . esc_html($layer->provider) . '</span>'
+                    // A product's name (OPcache, LiteSpeed Cache): data, not a word to translate.
+                    ? '<span translate="no">' . esc_html($layer->provider) . '</span>'
                     : '')
                 . '<span>' . esc_html__('Checked', 'corex') . ' ' . $checked->toHtml() . '</span>'
                 . $action
