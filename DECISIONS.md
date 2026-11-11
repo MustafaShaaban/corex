@@ -19224,6 +19224,41 @@ the surface in both appearances, under the 3:1 WCAG 1.4.11 asks of the only thin
 part of the target, is what every other admin screen uses. *A per-screen fix*: the owner asked for one rule for all
 of CoreX.
 
+## #516 -- Activity times are drawn in the muted text colour, with a line height of their own, and the quality seed records activity
+
+**Date:** 2026-11-10. **Spec:** 116 (US-NFR-03, US-NFR-04, US-NFR-06), spec 076 (FR-002). Found by a local run of
+`tests/e2e/quality` against a scratch site that had activity records.
+
+**Found.** Three lists of activity draw each event's time in `--corex-admin-text-subtle`: the Overview's recent
+activity (`.corex-overview__event-time`), the Access audit log (`.corex-access__event-meta`, which holds its `time`
+elements) and the Insights security card (`.corex-insight-widget__event time`). Subtle is 2.99 to 3.31:1 on the
+surfaces these sit on, in both appearances, under the 4.5:1 WCAG 2.2 AA asks of text (axe `color-contrast`). The
+Insights card also wrote the time as `Y-m-d H:i` in UTC (`2026-11-10 07:36`, the `machine-timestamp` rule), where the
+Overview writes the same event as `10 November 2026 at 7:36 AM` in the site's timezone. At 200% text on a phone, the
+Overview's event summary ran onto its time (`text-overlaps-at-200`): no CoreX rule sets a unitless line height, so
+the rows inherit wp-admin's `body { line-height: 1.4em }` as a fixed 18.2px, shorter than 28px letters. CI did not
+report any of it: `seed-quality-site.php` recorded no activity, and the only activity a run makes is the refusals of
+the refused-state checks (`states.spec.js`), which a screen's own check may or may not come after.
+
+**Decided.**
+- The three times use `--corex-admin-text-muted`: 5.80:1 on the light surface and 6.22:1 on the light raised
+  surface, 6.76:1 and 6.28:1 in dark. They stay smaller than the line they belong to, which is what tells them
+  apart.
+- The three rows (`.corex-overview__event`, `.corex-access__event-body`, `.corex-insight-widget__event`) set
+  `line-height: var(--corex-admin-line-normal)`, a unitless 1.6, so their lines grow with their text.
+- `InsightWidgetFacts` dates each security event through `AdminDateTime::FULL`, as the Overview does, and hands the
+  card the words (`meta`) and the ISO value (`datetime`); `insights.js` writes `<time datetime="…">`.
+- `seed-quality-site.php` has the quality subscriber refused the Access screen twice and the Overview once, through
+  `AccessAuditLog::record()`: one audit entry counted "2 times, from … to …", one entry of one refusal, and the two
+  `access.denied` activity events they write. The Overview, the Access audit tab and the Insights security card are
+  measured with rows in CI from now on.
+
+**Not chosen.** *A unitless line height on `.corex-admin` itself*: it is the likely cause of the two other
+`text-overlaps-at-200` entries in `known-failures.json` (Blog Pro, the inbox's dates; read, not measured), but it
+changes the vertical rhythm of every CoreX screen and wants its own pull request with the screens measured. Left as a follow-up. *Seeding rows into
+the activity table directly*: the seed would then pass whatever the table holds; through the audit log it writes what
+a real refusal writes. *Recording the findings in `known-failures.json`*: each has a fix of a few lines.
+
 ## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
 
 **Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions

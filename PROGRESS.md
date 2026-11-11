@@ -61,6 +61,12 @@ draws every CoreX admin screen's checkboxes and radios in brass instead of WordP
 `plugins/corex-core/assets/css/corex-admin-shell.css`, measured by `tests/e2e/admin-checkboxes.spec.js`. One pull
 request, not merged by its session, not tagged.
 
+**Activity times that pass contrast** (2026-11-10, branch `fix/activity-time-contrast`, DECISIONS #516): the
+Overview, Access audit log and Insights security card draw event times in `--corex-admin-text-muted`, the Insights
+card dates events through `AdminDateTime`, the three rows get a unitless line height, and `seed-quality-site.php`
+records three refusals so CI's quality job sees these lists with rows. One pull request (#453), not tagged. The
+shell-wide unitless line height it left out is PR #454 (DECISIONS #517).
+
 **Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
 #616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
 `addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free
