@@ -1,8 +1,16 @@
 <!--
 SYNC IMPACT REPORT
-Latest amendment: 1.2.1 → 1.2.2 (PATCH — path correction only. The four COREX-*.md working documents
-moved from the repository root to docs/internal/, so the source-of-truth hierarchy and the §26 rule
-now name their real location. No principle added, removed, or redefined.)
+Latest amendment: 1.2.2 → 2.0.0 (MAJOR: an operating rule redefined. The Pre-Implementation
+Confirmation Rule's step 2 no longer requires the Spec Kit command chain; it requires the CoreX loop:
+grill, spec with slices, build test-first, guards, two-model review. Principle X is unchanged: a
+reviewed spec in specs/ before code.)
+  - 2.0.0 (2026-11-11): the owner's direction to use the best workflow, with Spec Kit dropped if it did
+    not fit Matt Pocock's engineering skills. The spec file stays, because tests, docs and DECISIONS
+    point at spec numbers and requirement IDs; Spec Kit's commands, plan, task list and checklists go.
+    Governance: the template re-check names the spec template only; Compliance names the loop's review
+    step instead of /speckit-plan's Constitution Check. Templates: spec-template.md kept as the spec
+    skeleton; plan-template.md, tasks-template.md and checklist-template.md kept for specs already
+    underway, unused for new ones. DECISIONS.md #621.
   - 1.2.2 (2026-08-05): COREX-FRAMEWORK.md relocated to docs/internal/ by spec 098's documentation
     consolidation; the hierarchy entry and the architectural-change rule repointed. The root now holds
     only the canonical set (README, PROJECT-STATUS, ROADMAP, CHANGELOG, PROGRESS, DECISIONS, AGENTS,
@@ -192,9 +200,13 @@ any code or making any change in response to a request, the agent MUST:
 1. **Confirm against the standard first.** Check the request against this constitution and
    the relevant spec(s). If it conflicts, **say so and stop** — surface the conflict and wait
    for the user, rather than complying.
-2. **Spec before code (Spec Kit flow).** For any non-trivial implementation, follow
-   `/speckit-specify → /clarify → /plan → /tasks → /implement`. A reviewed spec MUST exist in
-   `specs/` **before** the code is written (Principle X). No code without a spec.
+2. **Spec before code (the CoreX loop).** For any non-trivial change: **grill** the idea
+   (`grill-with-docs`) until no question is open → write **`specs/NNN-name/spec.md`**: the
+   requirements, each with an ID, and the **slices**, each one pull request that says which slices it
+   waits on → **build one slice at a time, test first** (`tdd`) → run the Guard Gate → **two-model
+   review** (`debate-review`) → pull request. A reviewed spec MUST exist in `specs/` **before** the
+   code is written (Principle X). No code without a spec. The `/speckit-*` commands are retired
+   (v2.0.0); a spec already underway with a `tasks.md` may finish its slices from it.
 3. **Guard before the diff.** Run the relevant guard skill (Guard Gate) clean on the change
    before presenting it; install the guard first if it is missing.
 4. **Update continuity + close the loop.** Update `PROGRESS.md` and log non-trivial choices in
@@ -207,7 +219,9 @@ any code or making any change in response to a request, the agent MUST:
 Rationale: an autonomous "Finish Corex" initiative delivered working, tested code but **bypassed
 the Spec Kit flow** — no spec files were written before the code. Authority order (A.1) puts the
 constitution above any prose brief; this rule makes "confirm, then spec, then build" the default
-that a brief cannot silently override.
+that a brief cannot silently override. In v2.0.0 the loop kept the spec and replaced Spec Kit's
+commands: grilling finds the open questions before the spec is written, which `/speckit-clarify` did
+after, and slices replace a separate plan and task list (DECISIONS #621).
 
 ## Source-of-Truth Hierarchy
 
@@ -226,13 +240,15 @@ If code contradicts the constitution, the code is wrong, not the constitution.
 - This constitution supersedes all other practices and conventions.
 - **Amendments** MUST be made by editing this canonical file, recording the change in the
   Sync Impact Report comment above, bumping the version per the policy below, and logging the
-  rationale in `DECISIONS.md`. Dependent Spec Kit templates MUST be re-checked in the same change.
+  rationale in `DECISIONS.md`. The spec template (`.specify/templates/spec-template.md`) MUST be
+  re-checked in the same change.
 - **Versioning policy** (semantic):
   - MAJOR — backward-incompatible governance/principle removal or redefinition.
   - MINOR — a new principle/section or materially expanded guidance.
   - PATCH — clarifications, wording, non-semantic refinements.
-- **Compliance** — every spec, plan, task set, and diff is reviewed against these principles.
-  The Spec Kit `/speckit-plan` Constitution Check gate enforces this before implementation.
+- **Compliance**: every spec, slice, and diff is reviewed against these principles: a spec names
+  the principles its slices touch before any slice is built, and the review step of the loop
+  (the Guard Gate, then the two-model review) checks each diff against them.
 - Architectural changes MUST update `docs/internal/COREX-FRAMEWORK.md` in the same change (its §26 rule).
 
-**Version**: 1.2.2 | **Ratified**: 2026-06-07 | **Last Amended**: 2026-08-05
+**Version**: 2.0.0 | **Ratified**: 2026-06-07 | **Last Amended**: 2026-11-11
