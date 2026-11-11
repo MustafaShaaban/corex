@@ -158,6 +158,14 @@ CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
   At 200% text on a phone, an event's summary no longer runs onto its time. The quality checks' seed
   now records three refusals, so CI measures these screens with activity on them.
 
+- **Text enlarged to 200% stays on its own lines on every CoreX screen** (DECISIONS #517). The admin
+  shell had no line height of its own and inherited wp-admin's as a fixed 18.2px, so 28px letters ran
+  onto the next line. `.corex-admin` now sets `--corex-admin-line-base` (1.4, new), headings and the
+  large numbers on Email Studio, the Overview and Insights set `--corex-admin-line-tight` (1.2).
+  Screens are up to about 3% taller or shorter: 14px lines gain 1.4px, 12px lines lose 1.4px.
+- **Blog Pro's rows keep the name and the count apart on a phone** (DECISIONS #517): "admin1
+  published post" is "admin" and "1 published post" again, side by side or on two lines.
+
 ### Security
 
 - **Seven dependency advisories published from 2026-09-18 to 2026-11-09 are closed or bounded**
@@ -215,6 +223,15 @@ the shell's rule and needs a more specific selector to keep its own look.
   of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
   `tests/Unit/Media/MediaRegenerationJobTest.php`.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**The admin shell's line height (DECISIONS #517):**
+
+- **Muva** and **Perego**: every CoreX admin screen is up to about 3% taller or shorter; nothing
+  stored changes. Client-guide screenshots of CoreX screens may show slightly different spacing. A
+  client stylesheet that set a line height on a CoreX admin element keeps it.
+- **A client repository that carries copies of CoreX's tests** takes the updated
+  `tests/e2e/quality/known-failures.json` (one entry fewer, one note longer).
+- **Mizzey**: not on this release (pinned at v0.42.0).
 
 **Spec 129, CoreX Assistant:**
 

@@ -67,6 +67,13 @@ card dates events through `AdminDateTime`, the three rows get a unitless line he
 records three refusals so CI's quality job sees these lists with rows. One pull request (#453), not tagged. The
 shell-wide unitless line height it left out is PR #454 (DECISIONS #517).
 
+**The admin shell's line height** (2026-11-10, branch `fix/admin-shell-line-height`, DECISIONS #517): `.corex-admin`
+sets `--corex-admin-line-base` (1.4, new) and headings `--corex-admin-line-tight`, so text at 200% stays on its
+lines on every CoreX screen; Blog Pro's rows wrap instead of running together at phone width. Blog Pro's
+`text-overlaps-at-200` entry is gone from `known-failures.json`. The inbox dates entry stays (US-NFR-04): at 200%
+each date field is 192px wide in a 95px column, a filter-panel layout fix not yet made. PR #453 (DECISIONS #516)
+sets the normal token on three activity rows; it still stands after this, those rows choosing 1.6 over the base.
+
 **Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
 #616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
 `addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free

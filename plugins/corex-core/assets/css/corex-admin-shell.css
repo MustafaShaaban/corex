@@ -13,6 +13,11 @@
 	margin-inline: 0 var(--corex-admin-space-lg);
 	color: var(--corex-admin-text);
 	font-family: var(--corex-admin-font-body);
+
+	/* A number, never a length. wp-admin's `body { line-height: 1.4em }`
+	   reached here as a fixed 18.2px, so text enlarged to 200% ran over the
+	   line below it (US-NFR-04). */
+	line-height: var(--corex-admin-line-base);
 }
 
 /* Full-bleed CoreX surface (body.corex-admin-screen only): strip wp-admin
@@ -798,6 +803,12 @@ body.corex-admin-screen .corex-admin__shell {
 .corex-admin h6 {
 	color: var(--corex-admin-text);
 	font-family: var(--corex-admin-font-display);
+}
+
+/* Headings set their lines tight. Zero specificity, so a component's own
+   heading rule wins. */
+:where(.corex-admin) :where(h1, h2, h3, h4, h5, h6) {
+	line-height: var(--corex-admin-line-tight);
 }
 
 /* No wp-admin default links in the CoreX surface: content links use the brass
