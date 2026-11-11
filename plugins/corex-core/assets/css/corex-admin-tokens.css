@@ -80,6 +80,10 @@ body.corex-admin-screen {
 	--corex-admin-font-xl: 1.5rem;
 	--corex-admin-font-2xl: clamp(1.75rem, 3vw, 2.5rem);
 	--corex-admin-line-tight: 1.2;
+
+	/* The shell's line height: the ratio wp-admin gives its 13px text, kept
+	   as a number so lines grow with enlarged text (DECISIONS #517). */
+	--corex-admin-line-base: 1.4;
 	--corex-admin-line-normal: 1.6;
 	--corex-admin-letter-wide: 0.12em;
 	--corex-admin-space-2xs: 0.25rem;

@@ -40,11 +40,44 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Public hosts and spec 130, the docs site on its own host** (2026-11-11, branch `docs/public-hosts`, DECISIONS
+#620): the owner bought `mustafashaaban.com` and made six hosts for CoreX (`corex`, `corex-docs`,
+`corex-updates`, `corex-demo`, `corex-staging`, plus the root for his own site). The plan and its order are in
+`ROADMAP.md` §13, "Public hosts". Spec 130 is a draft for step 1, moving the docs from
+`mustafashaaban.github.io/corex/` to `corex-docs.mustafashaaban.com`. Measured: all six hosts resolve through
+Cloudflare's proxy; `corex-docs` still reaches the owner's server, not GitHub Pages; the repository's Pages
+site has no custom domain. Planning only, no runtime code. Next: spec 130's slices (the CoreX loop), and the owner's
+three steps outside the repository (verify the domain on GitHub, point `corex-docs` at
+`mustafashaaban.github.io` as DNS only, then set the custom domain).
+
 **The CoreX loop, constitution v2.0.0** (2026-11-11, branch `docs/workflow-matt-and-agents`, DECISIONS #621): Spec
 Kit's commands are retired for Matt Pocock's engineering skills around one spec file per feature (grill, spec with
 slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a model and effort, and five agents
 are in `.claude/agents/`. Anything a person sees is designed first in Claude Design, measured and reviewed against it. Matt's setup: `docs/agents/`, four triage labels created on GitHub. Docs/Planning only.
 Owed: the client scaffold (`wp corex make:site`) still tells client sites to use Spec Kit, its own slice.
+
+**CoreX checkboxes and radios** (2026-11-10, branch `fix/admin-checkbox-radio-look`, DECISIONS #515): the shell
+draws every CoreX admin screen's checkboxes and radios in brass instead of WordPress blue, in
+`plugins/corex-core/assets/css/corex-admin-shell.css`, measured by `tests/e2e/admin-checkboxes.spec.js`. One pull
+request, not merged by its session, not tagged.
+
+**Activity times that pass contrast** (2026-11-10, branch `fix/activity-time-contrast`, DECISIONS #516): the
+Overview, Access audit log and Insights security card draw event times in `--corex-admin-text-muted`, the Insights
+card dates events through `AdminDateTime`, the three rows get a unitless line height, and `seed-quality-site.php`
+records three refusals so CI's quality job sees these lists with rows. One pull request (#453), not tagged. The
+shell-wide unitless line height it left out is PR #454 (DECISIONS #517).
+
+**The admin shell's line height** (2026-11-10, branch `fix/admin-shell-line-height`, DECISIONS #517): `.corex-admin`
+sets `--corex-admin-line-base` (1.4, new) and headings `--corex-admin-line-tight`, so text at 200% stays on its
+lines on every CoreX screen; Blog Pro's rows wrap instead of running together at phone width. Blog Pro's
+`text-overlaps-at-200` entry is gone from `known-failures.json`. The inbox dates entry stays (US-NFR-04): at 200%
+each date field is 192px wide in a 95px column, a filter-panel layout fix not yet made. PR #453 (DECISIONS #516)
+sets the normal token on three activity rows; it still stands after this, those rows choosing 1.6 over the base.
+
+**The inbox's date filters** (2026-11-10, branch `fix/inbox-dates-fit-200`, DECISIONS #518): the Submissions
+inbox's From and To dates wrap, "To" under "From", when the two do not fit side by side, and on the wide layout the
+range is never narrower than its two dates. The `text-overlaps-at-200` entry for `corex-submissions` is gone from
+`known-failures.json`. Measured at 375 and 1280px, light and dark, both directions, at 100% and 200%.
 
 **Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
 #616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.

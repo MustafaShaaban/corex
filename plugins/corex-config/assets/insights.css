@@ -106,6 +106,7 @@
 	font-family: var(--corex-admin-font-display);
 	font-size: var(--corex-admin-font-xl);
 	font-weight: 700;
+	line-height: var(--corex-admin-line-tight);
 }
 
 .corex-admin .corex-insight-card__num,
@@ -244,14 +245,16 @@
 	padding-block: var(--corex-admin-space-xs);
 	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
 	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
 }
 
 .corex-admin .corex-insight-widget__event:last-child {
 	border-block-end: 0;
 }
 
+/* Muted, not subtle: a time is text and needs 4.5:1. */
 .corex-admin .corex-insight-widget__event time {
-	color: var(--corex-admin-text-subtle);
+	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-xs);
 }
 

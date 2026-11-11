@@ -19444,6 +19444,156 @@ as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the
 with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
 choice even where the copy is unused.
 
+## #515 -- CoreX draws the admin's checkboxes and radios, in brass, with a clip-path mark
+
+**Date:** 2026-11-10. **Spec:** none (a shell fix the owner asked for while reviewing CoreX → Assistant, PR #449).
+
+**Found.** `.corex-admin input[type="checkbox"], input[type="radio"] { accent-color: … }` had no effect: wp-admin's
+`forms.css` gives both `appearance: none` and paints them itself, checked in `--wp-admin-theme-color` with a white
+SVG tick as `::before` content. On CoreX → Assistant a checked box measured `rgb(56, 88, 233)`.
+
+**Decided.**
+- The shell takes over the drawing for every checkbox and radio inside `.corex-admin`, except `.corex-switch__input`,
+  which draws its own track. The input stays the browser's: `appearance: none` on the real `<input>`, so Space,
+  arrow keys, labels, focus order and the posted value are unchanged. Sizes and margins stay wp-admin's (1rem, and
+  1.5625rem at phone width), so no layout moves and no target-size finding changes.
+- Checked, and a checkbox's indeterminate: background and border `--corex-admin-action`, mark in
+  `--corex-admin-action-ink`. Unchecked: `--corex-admin-surface` with a `--corex-admin-text-muted` edge. Disabled:
+  the same colours at `--corex-admin-disabled-opacity`. Keyboard focus: `--corex-admin-focus` outline; wp-admin's
+  `:focus` box-shadow is removed, so a click leaves no blue ring.
+- The tick, the dash and the radio dot are a `::before` filled with the ink colour and cut with `clip-path` (the dot
+  is a circle). A colour in an SVG data URL cannot read a custom property, so wp-admin's approach would have frozen
+  one appearance's colour. The polygon is physical, so the tick is not mirrored in right-to-left, where it reads the
+  same.
+- In a forced-colours mode the system repaints backgrounds, which would hide a mark drawn as one, so the mark takes
+  `CanvasText` (`GrayText` when disabled) with `forced-color-adjust: none`.
+- `tests/e2e/admin-checkboxes.spec.js` measures the Notifications screen's Preferences checkboxes (checked, unchecked,
+  indeterminate, disabled, keyboard and click focus) and two radios placed in that panel, in both appearances and
+  both directions. It fails on the stylesheet before this change.
+
+**Not chosen.** *`--corex-admin-border-strong` for the unchecked edge*, which the request named: it is 1.6:1 against
+the surface in both appearances, under the 3:1 WCAG 1.4.11 asks of the only thing that shows a box is there.
+`--corex-admin-text-muted` is 5.8:1 (light) and 6.8:1 (dark). *Larger boxes*: WordPress's size, with the label as
+part of the target, is what every other admin screen uses. *A per-screen fix*: the owner asked for one rule for all
+of CoreX.
+
+## #516 -- Activity times are drawn in the muted text colour, with a line height of their own, and the quality seed records activity
+
+**Date:** 2026-11-10. **Spec:** 116 (US-NFR-03, US-NFR-04, US-NFR-06), spec 076 (FR-002). Found by a local run of
+`tests/e2e/quality` against a scratch site that had activity records.
+
+**Found.** Three lists of activity draw each event's time in `--corex-admin-text-subtle`: the Overview's recent
+activity (`.corex-overview__event-time`), the Access audit log (`.corex-access__event-meta`, which holds its `time`
+elements) and the Insights security card (`.corex-insight-widget__event time`). Subtle is 2.99 to 3.31:1 on the
+surfaces these sit on, in both appearances, under the 4.5:1 WCAG 2.2 AA asks of text (axe `color-contrast`). The
+Insights card also wrote the time as `Y-m-d H:i` in UTC (`2026-11-10 07:36`, the `machine-timestamp` rule), where the
+Overview writes the same event as `10 November 2026 at 7:36 AM` in the site's timezone. At 200% text on a phone, the
+Overview's event summary ran onto its time (`text-overlaps-at-200`): no CoreX rule sets a unitless line height, so
+the rows inherit wp-admin's `body { line-height: 1.4em }` as a fixed 18.2px, shorter than 28px letters. CI did not
+report any of it: `seed-quality-site.php` recorded no activity, and the only activity a run makes is the refusals of
+the refused-state checks (`states.spec.js`), which a screen's own check may or may not come after.
+
+**Decided.**
+- The three times use `--corex-admin-text-muted`: 5.80:1 on the light surface and 6.22:1 on the light raised
+  surface, 6.76:1 and 6.28:1 in dark. They stay smaller than the line they belong to, which is what tells them
+  apart.
+- The three rows (`.corex-overview__event`, `.corex-access__event-body`, `.corex-insight-widget__event`) set
+  `line-height: var(--corex-admin-line-normal)`, a unitless 1.6, so their lines grow with their text.
+- `InsightWidgetFacts` dates each security event through `AdminDateTime::FULL`, as the Overview does, and hands the
+  card the words (`meta`) and the ISO value (`datetime`); `insights.js` writes `<time datetime="…">`.
+- `seed-quality-site.php` has the quality subscriber refused the Access screen twice and the Overview once, through
+  `AccessAuditLog::record()`: one audit entry counted "2 times, from … to …", one entry of one refusal, and the two
+  `access.denied` activity events they write. The Overview, the Access audit tab and the Insights security card are
+  measured with rows in CI from now on.
+
+**Not chosen.** *A unitless line height on `.corex-admin` itself*: it is the likely cause of the two other
+`text-overlaps-at-200` entries in `known-failures.json` (Blog Pro, the inbox's dates; read, not measured), but it
+changes the vertical rhythm of every CoreX screen and wants its own pull request with the screens measured. Left as a follow-up. *Seeding rows into
+the activity table directly*: the seed would then pass whatever the table holds; through the audit log it writes what
+a real refusal writes. *Recording the findings in `known-failures.json`*: each has a fix of a few lines.
+
+## #517 -- The admin shell sets a unitless line height, 1.4, and headings 1.2
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), spec 116's `text-overlaps-at-200`. Follows #516
+(PR #453), which fixed three activity rows one by one and left the shell to this.
+
+**Why.** `.corex-admin` set no `line-height`, so every CoreX screen inherited wp-admin's
+`body { font-size: 13px; line-height: 1.4em }`. An `em` line height is computed once, on `body`, and inherited as
+a length: 18.2px for every line on every screen, whatever its font size. At 200% text a 14px line becomes 28px
+letters on an 18.2px line, and the letters run onto the next line. Measured on all 32 CoreX screens at 375 and
+1280px, light and dark, left to right and right to left (4,500 text boxes per pass): 3,184 of them sat on the
+inherited 18.2px, among them headings of 16 to 24px and display numbers of 24 to 38px.
+
+**Decided.**
+- A new token `--corex-admin-line-base: 1.4` in `corex-admin-tokens.css`, set on `.corex-admin`. A number is
+  inherited as a number, so each element's line is 1.4 times its own font size and grows with it.
+- `:where(.corex-admin) :where(h1, ..., h6)` gets `--corex-admin-line-tight` (1.2). Zero specificity: any
+  component rule for a heading still wins.
+- The three display numbers that had no line height of their own (Email Studio's metrics, the Overview's number
+  tiles, the Insights grade) get the tight token too.
+- Blog Pro's two-part rows (the authors list and the card lists) stay flex rows at phone width and wrap, instead
+  of turning into a block. As a block the name and the count ran together ("admin1 published post"), and the
+  wrapped count's box lay over the name, which is what the 200% check reported there.
+
+**Why 1.4 and not an existing token.** At the base size the old rhythm was 1.4 for 13px text (758 boxes), 1.3 for
+14px (1,690) and 1.52 for 12px (482). 1.4 keeps 13px text exactly where it was, moves 14px lines by +1.4px and 12px
+lines by -1.4px, and is the ratio wp-admin itself uses, so CoreX's text sits on the same rhythm as WordPress's
+around it. `--corex-admin-line-tight` (1.2) is below the height of the text's own box in Segoe UI (about 1.33 of
+the font size): inline runs on consecutive lines would still overlap at 200%. `--corex-admin-line-normal` (1.6)
+would grow every line on every screen by 1 to 4.2px for no reported defect.
+
+**What it changes.** Page heights move by -43 to +168px per screen (at most about 3%): most screens gain 10 to
+40px, the Add-ons and Access matrix screens lose up to 43px (their 12px chips and badges are 1.4px shorter per
+line), Guides gains the most (17 guide titles of 20px, from 18.2 to 24px lines). Left to right and right to left differ in height
+where they did before, by the same amounts (Operations' Environment tab, 106px before and 107px after, at 375px).
+Two loads at 1280px have one cell 24px off the other three after the change (Add-ons' Inactive tab light right to
+left, Operations' Overview dark right to left); a rule with no colour or direction in it cannot move one cell alone,
+and cells of other loads wobbled the same way before it.
+
+**Not fixed here.** The inbox's From and To dates still overlap at 200% and stay in `known-failures.json`
+(US-NFR-04), with the cause in the entry: each date field is 192px wide in a 95px column at that size, so its label
+spills into the other date's. That is the filter panel's layout, not line height.
+
+## #518 -- The inbox's date range wraps on its own content
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), quality rule `text-overlaps-at-200` on `corex-submissions`.
+
+**Why.** `.corex-inbox__dates` was a grid of two `minmax(0, 1fr)` columns at every width. Each label is a
+one-column grid whose `auto` track grows to its date field's own width, so a field wider than its half spilled
+out of it, and the label's text went with it. Measured on the quality site before the change:
+
+| Cell | Half of the range | Date field | What showed |
+|---|---|---|---|
+| 375px, 100% | 141px | 168px | the From field runs 15px under the To field; "From" lies over "To" (the check reads only 200%) |
+| 375px, 200% | 95px | 192px | "From" over "To", the quality finding; the calendar icons cut off |
+| 375px, 200%, right to left | 95px | 198px | the From field runs to -23px, past the screen's edge |
+| 1280px, 100% | 147px | 152px | the To field ends 5px past the panel's content box |
+
+Line height was not it (#517 fixed that).
+
+**Decided.**
+- The range is a wrapping flex row, each date `flex: 1 1 0`. A flex item's automatic minimum is its content, so
+  the two dates share a line while both fit and "To" goes under "From" when they do not. No width is written down.
+- The wide filter grid is `repeat(3, minmax(0, 1fr)) minmax(max-content, 2fr)`: form, status and owner, then the
+  range as one item two fifths wide, as two of five columns were, and never narrower than its two dates side by
+  side. At 1280px the range is 316px where it was 306, and the other three are 143px where they were 147. Wider
+  panels are unchanged.
+- The 44rem container query puts the range on a row of its own (`1 / -1`, as the owner field); the 24rem query no
+  longer needs a rule for it.
+
+**Measured after,** off the rendered page at 375 and 1280px, light and dark, left to right and right to left, at
+100% and 200%: no date's text lies over the other's; every field is as wide as its label (WordPress's 1px input
+margin aside). On a phone the dates stack: the filter panel is 541px tall where it was 467 at 100%, 971 where it
+was 841 at 200%. At 1280px the panel keeps its height (231px at 100%, 805 at 200%) and the dates stay side by side.
+
+**Not chosen.** *`repeat(auto-fit, minmax(min(100%, <em>), 1fr))`*: no one unit measures a date field here. Its
+date is drawn at WordPress's 14px (16px on a phone) and its padding is in rem, so it needs 152px on the desktop,
+168 on a phone and 192 on a phone at 200%; the range's own font is a fixed 13px, so an em width is one fixed
+number of pixels. Any one value either wraps dates that fit or leaves a field wider than its column at some width
+and text size. *Letting the
+field shrink to its half* (`min-inline-size: 0`): it cuts the date and its calendar button. *Stacking only below a
+breakpoint*: the panel's width, the text size and the field's width move separately; the content decides better.
+
 ## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
 
 **Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions
@@ -19735,6 +19885,46 @@ the moment in UTC, is what the team can trust, and the form's docblock says so.
 **Not chosen.** *One conversation across browser tabs*: the chat already keeps its conversation across pages for
 as long as the tab is open (`sessionStorage`); keeping it beyond the tab would store a visitor's words in their
 browser after they leave, which the owner has not asked for.
+
+## #620 -- CoreX gets public hosts on the owner's domain, one host for each kind of thing that runs
+
+**Date:** 2026-11-11. **Branch:** `docs/public-hosts`. **Mode:** Docs/Planning. **Asked by:** the owner, who
+bought `mustafashaaban.com` and pointed a `corex` subdomain at his server.
+
+**Why.** CoreX has no public address of its own. The docs are on GitHub's `mustafashaaban.github.io/corex/`,
+the in-admin updater has no source to read (`updates.endpoint` ships empty), a watched installation from
+CoreX → Releases on a shared host, on v0.46.1 or later, is still owed (spec 107) and has no site to run on that
+is not a client's, and spec 123 left
+"a site downloads its release" out until packages are published "somewhere a site can trust".
+
+**Decided.** Six hosts, split by what runs on them, so each has its own deploy, its own security level and
+its own failure, and a problem on one leaves the others up:
+
+| Host | What it is | Served by | Public |
+|---|---|---|---|
+| `mustafashaaban.com` | The owner's personal site, on the portfolio kit, in its own repository | The owner's server | Yes |
+| `corex.mustafashaaban.com` | CoreX's product site, built with CoreX (`sites/corex-site/`, Client Site Mode) | The owner's server | Yes |
+| `corex-docs.mustafashaaban.com` | The Starlight docs site, moved from `github.io` | GitHub Pages (a CNAME to `mustafashaaban.github.io`) | Yes |
+| `corex-updates.mustafashaaban.com` | Update manifest, packages and their SHA-256, as static files | The owner's server, no PHP | Machines |
+| `corex-demo.mustafashaaban.com` | The kits with their demo content, reset on a schedule | The owner's server | Later |
+| `corex-staging.mustafashaaban.com` | A private install for release checks, the shared-host installation first | The owner's server, password and `noindex` | No |
+
+- **One level of names** (`corex-docs`, not `docs.corex`): one `*.mustafashaaban.com` certificate covers
+  every host. The owner chose the names.
+- **The order** is one spec at a time: the docs move (spec 130), the staging install, the product site, the
+  update channel, the demo, and then spec 123's download-from-a-URL, with signed packages from the updates host.
+- **Nothing in a released site changes by this decision alone.** A site keeps every link it has until a
+  release carries the docs move, and GitHub redirects the old `github.io/corex/` addresses to the custom
+  domain once it is set.
+- **The revamp is not affected.** No open revamp pull request touches the docs links (`DocsUrl`), the docs
+  build or the update source, and the hosts sit outside the framework's code. The product site and the
+  demo show the revamp's screens, so they come after it, not before.
+
+**Not chosen.** *Two-level names* (`docs.corex.mustafashaaban.com`): a wildcard certificate does not cover
+them. *The docs on the owner's server*: GitHub Pages already builds and serves them, costs the server nothing
+and stays up when the server does not. *One WordPress serving every host*: a failed update or a demo reset
+would take the product site down with it. *A CoreX-only domain now*: nothing is lost by waiting, since every
+host keeps canonical links and redirects and moves with one redirect each.
 
 ## #621 -- The CoreX loop replaces Spec Kit's commands; models and effort are routed by a table (constitution v2.0.0)
 
