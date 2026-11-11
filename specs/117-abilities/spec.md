@@ -37,7 +37,8 @@ This spec builds on its `AccessService`, `RequestableAbilities` and grants list.
 - Q: Move every screen to its ability, or limit the matrix to what is enforced? → A: **Move them (ACC-D7).**
 - Q: What lets a person see a CoreX screen without changing it? → A: **One new ability, "See CoreX screens without
   changing them" (SHL-D3)**, held by no role by default and granted in Access & Abilities. It opens Overview,
-  Settings, Operations & Security and Insights read-only; every other screen keeps the full refusal.
+  Settings and Insights read-only; every other screen keeps the full refusal. (Amended 2026-11-11, DECISIONS
+  #422: Operations & Security was on the list and is taken off it.)
 - Q: Blog Pro opens for anyone who can edit posts since spec 112, which said stage 3 would give it its own
   ability. Which wins? → A: **Its own ability, "Manage Blog Pro"**, as US-ACC-01 lists and spec 112 anticipated
   (DECISIONS #379). Inside Blog Pro, each post and comment still follows WordPress's own permission for it.
@@ -158,7 +159,8 @@ A site owner reads one grid of CoreX abilities by role, with where each answer c
 **Acceptance Scenarios** (US-SHL-06):
 
 1. A person holding "See CoreX screens without changing them" (granted in Access & Abilities, held by no role by
-   default) opens Overview, Settings, Operations & Security and Insights read-only.
+   default) opens Overview, Settings and Insights read-only, and is refused Operations & Security (amended
+   2026-11-11, DECISIONS #422).
 2. On a read-only screen every control that changes something is disabled and says why when focused, a "Read only"
    chip sits in the header, and a sentence names who can make changes and how to ask for access.
 3. Secrets stay hidden exactly as for an administrator; nothing read-only shows more than the full screen shows.
@@ -236,10 +238,14 @@ A site owner reads one grid of CoreX abilities by role, with where each answer c
 
 - **FR-012**: A new ability, "See CoreX screens without changing them", MUST exist, held by no role by default,
   implied by "Access CoreX admin", and requestable.
-- **FR-013**: A holder who lacks a screen's manage ability MUST get Overview, Settings, Operations & Security and
-  Insights in read-only mode: a "Read only" chip in the header, a sentence naming the ability that makes changes
-  and who holds it, a way to request it (or, where it cannot be requested, that an administrator grants it through
-  the role matrix), and every control that changes something marked disabled and described on focus.
+- **FR-013**: A holder who lacks a screen's manage ability MUST get Overview, Settings and Insights in read-only
+  mode: a "Read only" chip in the header, a sentence naming the ability that makes changes and who holds it, a way
+  to request it (or, where it cannot be requested, that an administrator grants it through the role matrix; or,
+  for a locked ability, that only site administrators hold it), and every control that changes something marked
+  disabled and described on focus. Controls that only move around the screen (filters, pagers, links) and the
+  browser's own keys keep working. *Amended 2026-11-11 (DECISIONS #422): Operations & Security is not read-only;
+  it shows the login policy, the trusted proxies and locked-out accounts by name, and its read-only view printed
+  its forms.*
 - **FR-014**: Those screens' read routes MUST answer the holder; their write routes and form handlers MUST refuse
   and record the refusal.
 - **FR-015**: A read-only screen MUST NOT show any value the full screen hides (secrets stay write-only).

@@ -16,8 +16,55 @@ Access & Abilities first.
 ### Added
 
 - **"See CoreX screens without changing them"** (spec 117, #422), held by no role until an owner allows
-  it: Overview, Settings, Operations & Security and Insights open read-only, with a "Read only" chip, a
-  sentence naming the ability that makes changes, and every control marked unavailable and saying why.
+  it: Overview, Settings and Insights open read-only, with a "Read only" chip, a sentence naming the
+  ability that makes changes, and every control marked unavailable and saying why. Filters, pagers, links
+  and the browser's own keys keep working. Operations & Security does not open for it: it shows the login
+  policy, the trusted proxies and locked-out accounts by name.
+
+One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439), and
+Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447), and the
+CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
+
+### Added
+
+- **CoreX Assistant, a new optional add-on** (spec 129, #600). A round chat button on every public page
+  answers visitors from the site's own content, through the free tiers of Google Gemini, Groq, OpenRouter
+  and Mistral asked in turn; when one service's free limit is spent, the next answers, and a key or model
+  error rests a service an hour while a refused message rests none. It says it is an AI that answers from
+  the site only and can be wrong, and names no AI company to visitors. Replies are short, in the language
+  of the visitor's last message (or the one they ask for), and link only to pages the knowledge names;
+  email addresses and international numbers are removed from them. When it cannot help, or a visitor asks for a
+  person, a callback form opens inside the chat and arrives in Submissions with the team notified (with
+  or without an email). The chat code and styles load on first use only; right to left, keyboard,
+  reduced motion and WCAG 2.2 AA (axe) are covered. Visitors are limited to one question at a time, 20
+  an hour and 60 a day (an IPv6 network counts as one), the site to 600 a day by default. Off until
+  activated, switched on and keyed: nothing changes on any site by updating.
+- **Paid fallbacks, last and capped** (#611): OpenAI (`gpt-5-mini`) and Anthropic Claude (`claude-haiku-5-5`,
+  through Anthropic's own Messages API) can follow the free tiers. They are off until the owner turns them
+  on, and answer at most 50 times a day by default.
+- **Visitors pick a time** (#612): with booking on, the callback form lists the next times the team takes
+  calls, in the visitor's own time zone; the team reads the picked time in both zones ("Thu, Nov 12, 7:00 PM
+  Riyadh = Thu, Nov 12, 6:00 PM Cairo"). A time the team confirms, not a reservation. A call or WhatsApp now
+  needs a number and an email an address (`required_for`), the other being optional.
+- **CoreX → Assistant** (#609, #610): a screen of its own in the CoreX rail. The switch, the button image and
+  each language's name, welcome and suggestions; the services in the owner's order, each with a switch, a
+  write-only key (lockable from `.env` as `ASSISTANT_<SERVICE>_KEY`), a model and its state and last failure;
+  the booking hours with a preview in other zones; the limits (per visitor an hour and a day, site-wide and
+  sent to paid services a day); and **Check services**, which asks each service with a key, on or off, a real
+  visitor's question and times it.
+- **The knowledge refreshes as soon as it changes** (#616): a page saved, published, unpublished, binned or
+  deleted, the site's name or tagline, a finished update. A site's own knowledge provider hears
+  `corex_assistant_knowledge_forgotten` and asks for a refresh with `corex_assistant_forget_knowledge`.
+  **Check services** also tries keys whose service is switched off.
+- **Seven filters for a site's own assistant** (#603, #604, #606, #608, #610): `corex_assistant_languages`
+  (the languages the owner writes words in), `corex_assistant_preview_zones` (where the booking hours are
+  previewed), `corex_assistant_knowledge_provider`
+  (return a `Corex\Assistant\Knowledge\KnowledgeProvider` with the site's own words and pages),
+  `corex_assistant_strings` (every visitor string, per language), `corex_assistant_voice` (rules for how
+  replies read, per language), `corex_assistant_phone_countries`
+  (the callback form's default and first countries) and `corex_assistant_callback_listeners` (the
+  callback form's listeners, for a site that sends its own designed email). The colours follow the theme's tokens through
+  `--corex-assistant-*` properties a theme can set (#607). Guide: `/guides/assistant/`.
 - **One launch checklist** (spec 118, revamp release R3.2). The Overview, every tab of Operations &
   Security, the readiness notifications, the CoreX widget on the WordPress Dashboard and the Setup
   Wizard's launch step show the same checks in the same states, in two groups: **Security and
@@ -41,6 +88,36 @@ Access & Abilities first.
 - **Repeated notices are grouped**: unread "Export finished" and "Background job failed"
   notifications of one kind of job are one item ("3 exports finished") with each member listed; the
   bell and the Overview count it once. Nothing stored changes.
+- **Settings are pages, each saved on its own** (spec 119, #440). Settings is seven pages listed under
+  Settings in the CoreX rail: General and appearance, Email, Captcha, Media, Insights, Guides and
+  Advanced, each with its own address. A bar at the bottom says "No changes", "Unsaved changes" or
+  "All changes saved"; Discard puts the page back without a reload; leaving with unsaved changes
+  asks first. A save writes only that page, lands back on it, and a reload does not send it again.
+  A refused value stays in its field, named, and a save that does not go through says so and keeps
+  the edits. Without scripts each page still saves with its own button.
+- **A value set in the site's `.env` or by the network shows as locked** (#441): the value in
+  force, read-only, with "Set in the site's .env file" or "Locked by the network administrator". A
+  save never writes it, and Captcha and Insights count keys set in `.env` as set.
+- **Provider settings say what is missing and remember their last test** (#442). Captcha names the
+  missing key and what it means for forms; Insights says what happens without a PageSpeed key and
+  names the missing half of the Cloudflare pair. PageSpeed and Cloudflare gain **Test connection**,
+  and each provider, captcha included, shows "Last test failed on <date>: <reason>", "Last tested on
+  <date>: working" or "Not tested yet" until a key changes. No key is ever sent to the browser or
+  kept with a result.
+- **The Media library can be converted to WebP from the admin** (#443). Settings > Media has
+  **Convert existing library**: it runs in the background, shows converted, skipped and failed of the
+  total (also after the page is reopened), can be cancelled, runs once at a time, lists files that
+  failed with the reason, and is recorded in the activity log. Images it converts are tracked for
+  delivery as uploads are. It converts ten images a step, so a shared host's time limit does not
+  cut a step short. A background job cancelled while a step runs now stays cancelled (any CoreX
+  job, not only this one).
+- **A save that names no Settings page says nothing was saved** instead of showing the page as if
+  nothing had been asked. A secret the network locks reads "Set by the network", not "Set in .env".
+- **A saved provider secret can be removed** (#446): Remove asks first, naming what stops working,
+  and the save deletes it; the removal is in the activity log without the value. A secret set in
+  `.env` has no Remove. The Add-ons captcha card says when a key is missing.
+- **Brand has "Login logo link"** (#447), where the login screen's logo takes people; blank keeps
+  the home page.
 
 ### Changed
 
@@ -49,10 +126,12 @@ Access & Abilities first.
   Email Studio "Manage Email Studio", Settings and the captcha test "Manage settings", Operations &
   Security and the login protection settings "Manage operations and security", Access & Abilities
   "Manage access", Blog Pro "Manage Blog Pro", Setup Wizard "Manage setup", and Overview, Add-ons and
-  Insights "Access CoreX admin". Switching to Production or Maintenance also needs "Run dangerous
-  actions", and the inbox's retention forms appear only to people who may use them. A refused route or
-  save answers 403 and is counted in the access audit. The CoreX menu of someone who holds a few
-  abilities lists only their screens.
+  Insights "Access CoreX admin". The Assistant (spec 129) asks for "Access CoreX admin" too, and
+  Settings' provider test and Corex Media's library conversion "Manage settings" (#420). Switching to
+  Production or Maintenance also needs "Run dangerous actions", and the inbox's retention forms appear
+  only to people who may use them. A refused route or save answers 403 and is counted once in the access
+  audit (no longer twice for a REST call, and never for a reader who only opened a page). The CoreX menu
+  of someone who holds a few abilities lists only their screens.
 - **Site administrators hold every CoreX ability** (#421), and the role matrix can no longer deny one to a
   role that administers the site. A Deny stored there before is kept, not applied, and listed on the
   Access Overview.
@@ -84,6 +163,9 @@ Access & Abilities first.
   Forms & Flows, Overview and Blog Pro, like every other CoreX route since spec 117.
 - **At a phone's width the role matrix folds into one list per ability** (#424), each state named with its role,
   and its text meets WCAG 2.2 AA contrast in both themes.
+
+- **The token inventory accepts a component's own properties** (#607): a `--corex-*` property a
+  package's stylesheet declares resolves for that package only.
 - **Each Overview card loads on its own** (spec 118). A card whose data cannot be read says "Could
   not load" with "Try again", never a 0 or another cause, and an administrator reads a reference that
   is also in the PHP error log. The rest of the page still renders.
@@ -132,19 +214,63 @@ Access & Abilities first.
   v0.47.0 need "Manage Blog Pro" allowed for their role.
 - **Email Studio opens for anyone granted "Manage Email Studio"** before; check who holds it. Such a person who
   is not a site administrator sees captured emails listed, not their content.
+- **Who gains or loses a screen (Muva, Perego).** A person granted "Manage settings" gains Settings, its provider
+  test and, with Corex Media on, the library conversion; they never change the delivery provider or live delivery.
+  A person granted "See CoreX screens without changing them" gains Overview, Settings and Insights read-only, and
+  **not Operations & Security**, which has no read-only view (it opens only for "Manage operations and security").
+  The Assistant stays with site administrators ("Access CoreX admin"), so nobody gains or loses it (Muva has it off;
+  Perego can adopt it with this release).
 - **Only a site administrator can allow a Critical ability, change a role they hold, or decide their own access
   request.** A holder of "Manage access" who is not a site administrator is refused these with a sentence.
 - **A bookmark or script that downloaded `admin-post.php?action=corex_data_export`** stops working; export from
   CoreX → Data instead. Search a client repository for `corex_data_export` before updating.
 - A client repository carrying copies of CoreX's tests takes the updated
   `tests/Unit/Access/AccessMatrixTest.php`, `AccessPolicyTest.php`, `AccessServiceTest.php`,
-  `tests/Integration/Access/AccessAuditLogWritesTest.php`, `ScreenAbilitiesAccessTest.php` and
+  `ScreenAbilitiesTest.php`, `AccessAuditLogTest.php`, `tests/Unit/Retention/RetentionControllerTest.php`,
+  `tests/Integration/Access/AccessAuditLogWritesTest.php`, `ScreenAbilitiesAccessTest.php`,
+  `tests/Integration/Config/SettingsProvidersTest.php`, `SettingsLockedValuesTest.php`,
+  `SettingsSaveChangedOnlyTest.php`, `tests/Support/SettingsScreen.php` (`SettingsSaver::save()` and
+  `SettingsPageRenderer::render()` take who is saving or reading) and
   `tests/Integration/Blog/BlogProPermissionMatrixTest.php`, and drops `tests/Unit/Data/DataExportControllerTest.php`
-  and `CsvWriterTest.php`.
+  and `CsvWriterTest.php`. A Settings save refused for want of "Manage settings" now ends in `wp_die` (403).
   Client-guide screenshots of the Access screen go stale.
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 
 **Spec 118, one launch checklist and an honest Overview:**
+
+### Fixed
+
+- **A Settings page whose add-on is off says so** (spec 119, #444): "Corex Media is off. These
+  settings apply when it is on." with **Open Add-ons** to its card, and the fields read-only. Guides
+  now follows Corex Guides. A page whose add-on is not installed is not listed, and its address says
+  it is not available.
+- **Every word on Settings can be translated** (#445): titles, labels, help, choices, notices and
+  the environment name on Advanced. A unit test fails on a Settings label added without translation.
+- **On/off settings are switches** (#445) that say On or Off, as on the Add-ons screen; they still
+  save "1" or "0".
+- **A web address field refuses a bare word** (#447): "example" was saved as `http://example`.
+
+### Security
+
+- **Seven dependency advisories published from 2026-09-18 to 2026-11-09 are closed or bounded**
+  (DECISIONS #514). They failed "Validate dependency advisories" on every pull request from 2026-11-09.
+  All are in build, test or local-development tooling; the 169 built files are byte-identical before and
+  after. Root `package.json` overrides:
+  - `qs` floor raised to `^6.16.1` (GHSA-6pq8-jhm2-2vcw): 6.16.0 to 6.17.1;
+  - `glob` 9 to 14 moved to `^14.0.2` (GHSA-3g3m-2fjr-6pw4): Jest, `test-exclude` and `rimraf`
+    now get 14.0.4;
+  - `minimatch` 7 to 11 moved to `^11.0.1` (GHSA-g3hv-75wg-m249): one 11.0.5 for every consumer
+    that asked for 9.x or 10.x; the 3.x copies ESLint 9, its plugins and glob 7 ask for carry no advisory and stay;
+  - `isomorphic-git` `^1.38.6` (GHSA-9qw7-j9xw-fv9c, high; GHSA-cw2g-2vwq-88w6; GHSA-96wc-2m84-2cj7):
+    1.37.6 to 1.44.12. Nothing loads the installed copy: `@wp-playground/storage` (under `@wordpress/env`)
+    bundles its own isomorphic-git code, which this override does not change.
+- **`deepmerge` is a bounded exception** (GHSA-gcqx-w48m-w2h4, low): 4.3.1 is the latest release and
+  has no fix. Jest merges its configuration with it, and that configuration is written in this repository; the `@wordpress/*`
+  packages that also ask for it are never bundled. Review by 2027-01-31.
+
+### Client impact
+
+**Spec 118, one launch checklist:**
 
 - **Muva**: the owner sees a new Overview (four state tiles, a two-group checklist, activity as
   sentences, its own data only) and the same checklist on Operations & Security and the Dashboard
@@ -161,6 +287,52 @@ Access & Abilities first.
   removed) and the specs that name "Readiness & Insights" (now "Insights"). Code that implements
   `Corex\Notifications\NotificationService` or `NotificationRepository` adds `reword()` /
   `rewordByDedupKey()`; no client site implements either.
+
+**Spec 119, Settings that save what you changed:**
+
+- **Muva** and **Perego**: owners find Settings as pages under Settings in the CoreX rail, with a
+  save bar, instead of nine tabs; links to `&corex_tab=` still open the right page. No stored value
+  is changed or written by the update. Both have Guides off, so their Guides page becomes read-only
+  with a link to Add-ons. Both have Corex Media on and gain "Convert existing library"; nothing runs
+  until an owner starts it. A saved secret gains Remove; nothing is removed until an owner presses
+  it and saves. A value their host's `.env` sets shows as locked (their `.env.example` files hold
+  only `APP_NAME` and `APP_ENV`, neither a Settings field). A client repository that carries copies
+  of CoreX's tests takes the updated `tests/Unit/Config/AdminScreenVisualContractTest.php` and
+  `tests/Unit/Media/MediaRegenerationJobTest.php`.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**Spec 129, CoreX Assistant:**
+
+- **Every site**: nothing shows and nothing is sent anywhere until an owner activates CoreX Assistant on
+  Add-ons, turns on **Show the assistant** on CoreX → Assistant and saves a key. A client repository that carries copies of CoreX's tests
+  takes the updated `tests/Integration/Operations/MaintenanceClosesSubmissionsTest.php` (the chat route is
+  one Maintenance closes) and the regenerated `specs/057-brand-tokens-logo-system/inventories/*.json`.
+- **Perego** runs its own copy (its spec 058 with revision 2, released 2026-11-09 and switched off). This
+  add-on now does what that copy does, so Perego can adopt it with this release: activate it; on CoreX →
+  Assistant enter the same keys (or `ASSISTANT_*_KEY` in `.env`, deleting any `PEREGO_AI_*` constants), the
+  service order and switches, the limits, the booking hours (every day 9:00 to 23:00, Africa/Cairo, 30-minute
+  slots, 2 hours' notice, 7 days), the image and each language's name, welcome and suggestions; add `ar` with
+  `corex_assistant_languages` and Riyadh, Dubai and Cairo with `corex_assistant_preview_zones`; return
+  its `AgentProfile` knowledge from a `KnowledgeProvider` on `corex_assistant_knowledge_provider`; move the
+  rest of its `AssistantContent` copy into `corex_assistant_strings`, its Gulf Arabic rules into
+  `corex_assistant_voice`, its Gulf-first
+  country order into `corex_assistant_phone_countries` and its colours into `--corex-assistant-*`; then
+  remove its own assistant route (`perego/v1/assistant`), block, settings screen, callback form, its
+  `RequiredForChannel` rule and the callback branch of its mail listener, in one change, so two buttons never
+  show. Its old `perego_assistant_*` options can then be deleted. Its stored callbacks
+  stay in the inbox under `perego-assistant-callback`. To keep its branded team email for callbacks, it
+  returns its own mail listener from `corex_assistant_callback_listeners` (and matches the new slug
+  `corex-assistant-callback` in it); otherwise the team gets CoreX's form notification.
+- **Muva**: no change unless its owner turns the assistant on.
+- **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**Dependency advisories (DECISIONS #514):**
+
+- **Every client**: nothing changes on a site. The overrides
+  and the lockfile touch only build, test and local-development tooling, and the built files are
+  byte-identical. A client repository that copies CoreX's root `package.json` overrides takes the four
+  new or changed entries with it, or its own "Validate dependency advisories" run reports the same
+  advisories.
 
 ## [0.48.1] - 2026-10-25
 

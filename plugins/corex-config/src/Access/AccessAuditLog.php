@@ -40,23 +40,49 @@ final class AccessAuditLog implements AccessRefusalRecorder
     private const RETENTION_DAYS = 30;
     private const DAY_SECONDS    = 86400;
 
+    /**
+     * The refused actions recorded in this request, so a check asked twice in one request is one
+     * refusal (spec 117, FR-005). A REST dispatch is a request of its own.
+     *
+     * @var array<string,true>
+     */
+    private array $refusedThisRequest = [];
+
     public function register(): void
     {
         add_action('corex_admin_access_denied', [$this, 'recordDenied']);
-        add_action('corex_access_refused', [$this, 'recordRefusedAction'], 10, 2);
+        add_action('corex_access_refused', [$this, 'recordRefusedAction'], 10, 3);
+        add_filter('rest_pre_dispatch', [$this, 'startRequest']);
     }
 
     /**
      * Action callback: a CoreX route or form refused the current user for want of its screen's
-     * ability (spec 117, FR-005). Recorded under the screen's page slug, counted by the same rule.
+     * ability (spec 117, FR-005). Recorded under the screen's page slug, counted by the same rule,
+     * once per request for each screen and ability.
      */
-    public function recordRefusedAction(string $kind, string $section): void
+    public function recordRefusedAction(string $kind, string $section, string $ability = ''): void
     {
-        $this->record(
-            $kind,
-            AdminPage::pageSlugForSection($section) ?? $section,
-            function_exists('get_current_user_id') ? get_current_user_id() : 0,
-        );
+        $slug   = AdminPage::pageSlugForSection($section) ?? $section;
+        $userId = function_exists('get_current_user_id') ? get_current_user_id() : 0;
+        $key    = implode('|', [$userId, $kind, $slug, $ability]);
+
+        if (isset($this->refusedThisRequest[$key])) {
+            return;
+        }
+
+        $this->refusedThisRequest[$key] = true;
+        $this->record($kind, $slug, $userId);
+    }
+
+    /**
+     * Filter callback, passing its value through: a REST dispatch starts a request of its own, so
+     * what an earlier dispatch in this process refused is counted again when refused again.
+     */
+    public function startRequest(mixed $result): mixed
+    {
+        $this->refusedThisRequest = [];
+
+        return $result;
     }
 
     /**

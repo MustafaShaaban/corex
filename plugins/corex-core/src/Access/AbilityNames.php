@@ -142,7 +142,7 @@ final class AbilityNames
             ],
             CorexAbility::VIEW_SCREENS => [
                 __('See CoreX screens without changing them', 'corex'),
-                __('Open Overview, Settings, Operations & Security and Insights read-only.', 'corex'),
+                __('Open Overview, Settings and Insights read-only.', 'corex'),
             ],
         ];
     }

@@ -175,8 +175,6 @@ final class OperationsSecurityScreen
             'operations-security',
             __('CoreX Operations & Security', 'corex'),
             __('The operating mode, WordPress hardening status, and security posture for this site.', 'corex'),
-            '',
-            $this->access->readOnly(self::SLUG),
         );
 
         // Links, not an ARIA tablist. `AdminPage::tabs()` renders `?tab=` anchors with

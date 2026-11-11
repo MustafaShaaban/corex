@@ -133,9 +133,23 @@ test.describe( 'someone allowed to look but not to change', () => {
 		await expect(
 			page.locator( 'input[name="corex_settings_nonce"]' )
 		).toHaveCount( 0 );
+		await expect( page.locator( '[data-corex-savebar]' ) ).toHaveCount( 0 );
 
 		const forms = await page.goto( '/wp-admin/admin.php?page=corex-forms' );
 		expect( forms.status() ).toBe( 403 );
+
+		// Not read-only (DECISIONS #422, amended 2026-11-11): it shows the trusted proxies and
+		// locked-out accounts by name.
+		const operations = await page.goto(
+			'/wp-admin/admin.php?page=corex-operations-security'
+		);
+		expect( operations.status() ).toBe( 403 );
+
+		// "Access CoreX admin" is locked: the sentence says only site administrators hold it.
+		await page.goto( '/wp-admin/admin.php?page=corex-settings' );
+		await expect( page.locator( '#corex-readonly-note' ) ).toContainText(
+			'only site administrators hold'
+		);
 
 		await page.context().close();
 	} );

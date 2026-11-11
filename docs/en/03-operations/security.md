@@ -191,10 +191,12 @@ The Critical abilities are Access CoreX admin, Manage access, Manage operations 
 Run dangerous actions. Anyone else is refused with a sentence saying a site administrator does it, and the refusal is
 listed on the Audit log tab.
 
-**See CoreX screens without changing them** opens Overview, Settings, Operations & Security and Insights read-only for
-someone who lacks their own ability: a "Read only" chip in the header, a sentence naming the ability that makes
+**See CoreX screens without changing them** opens Overview, Settings and Insights read-only for someone who lacks
+their own ability: a "Read only" chip in the header, a sentence naming the ability that makes
 changes, and every control marked unavailable, saying why when focused. No role holds it until an owner allows it.
-Every save such a person sends anyway, to a route or a form, is refused and counted in the audit log.
+Every save such a person sends anyway, to a route or a form, is refused and counted in the audit log. It does not open
+Operations & Security, which shows the login policy, the trusted proxies and locked-out accounts by name: that screen
+needs "Manage operations and security".
 
 A person who holds abilities but not "Access CoreX admin" sees a CoreX menu holding only the screens they may open.
 

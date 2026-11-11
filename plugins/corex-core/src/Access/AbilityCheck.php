@@ -18,6 +18,12 @@ defined('ABSPATH') || exit;
  * and the access audit counts it the way it counts refused page views. Publishing an action, as the
  * denied page does with `corex_admin_access_denied`, keeps add-ons and corex-forms free of the Access
  * screen's classes.
+ *
+ * Nothing is published while WordPress builds a REST response's `Allow` header
+ * (`rest_send_allow_header()` on `rest_post_dispatch`): it asks every permission callback of the
+ * matched route again, once per method, to list what this person may do, and none of those questions
+ * is a refusal. Without this a refused call was counted twice, and a reader who opened a route was
+ * recorded as refused its write method.
  */
 final class AbilityCheck
 {
@@ -35,7 +41,7 @@ final class AbilityCheck
             return true;
         }
 
-        if (is_user_logged_in()) {
+        if (is_user_logged_in() && ! doing_filter('rest_post_dispatch')) {
             /**
              * A CoreX route or form refused the current person for want of an ability.
              *

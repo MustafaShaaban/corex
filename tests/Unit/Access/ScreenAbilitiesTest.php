@@ -40,12 +40,26 @@ it('names the ability each screen needs, by page slug and by section', function 
     ['corex-submissions', 'submissions', CorexAbility::MANAGE_SUBMISSIONS],
     ['corex-notifications', 'notifications', CorexAbility::MANAGE_NOTIFICATIONS],
     ['corex-releases', 'releases', CorexAbility::MANAGE_RELEASES],
+    // The Assistant add-on (spec 129), which asked for site administration (DECISIONS #420, amended 2026-11-11).
+    ['corex-assistant', 'assistant', CorexAbility::MANAGE_ADMIN],
 ]);
 
-it('opens exactly Overview, Settings, Operations & Security and Insights read-only', function () {
+it('opens exactly Overview, Settings and Insights read-only, and never Operations & Security or the Assistant', function () {
     $readOnly = array_keys(array_filter(ScreenAbilities::all(), static fn (array $screen): bool => $screen['readOnly']));
 
-    expect($readOnly)->toEqualCanonicalizing(['corex-settings', 'corex-settings-config', 'corex-operations-security', 'corex-insights']);
+    // Operations & Security shows the login policy, the trusted proxies and locked-out accounts by
+    // name (DECISIONS #422, amended 2026-11-11).
+    expect($readOnly)->toEqualCanonicalizing(['corex-settings', 'corex-settings-config', 'corex-insights'])
+        ->and(ScreenAbilities::opensReadOnly('corex-operations-security'))->toBeFalse()
+        ->and(ScreenAbilities::opensReadOnly('corex-assistant'))->toBeFalse();
+});
+
+it('refuses Operations & Security to the view ability alone', function () {
+    holding(CorexAbility::VIEW_SCREENS);
+    $access = new ScreenAccess();
+
+    expect($access->mode('corex-operations-security'))->toBe(ScreenAccess::NONE)
+        ->and($access->menuCapability('corex-operations-security'))->toBe(CorexAbility::MANAGE_OPERATIONS);
 });
 
 it('makes the denied page ask for the same ability the screen checks', function () {
@@ -107,4 +121,13 @@ it('lets the view ability read only the screens that open read-only', function (
     expect($check->allowsReading(CorexAbility::MANAGE_ADMIN, 'corex-insights'))->toBeTrue()
         ->and($check->allows(CorexAbility::MANAGE_ADMIN, 'corex-insights'))->toBeFalse()
         ->and($check->allowsReading(CorexAbility::MANAGE_EMAIL, 'corex-email-studio'))->toBeFalse();
+});
+
+it('records nothing while WordPress asks every method of the route again for the Allow header (FR-005)', function () {
+    holding();
+    Functions\when('is_user_logged_in')->justReturn(true);
+    Functions\when('doing_filter')->alias(static fn (?string $hook = null): bool => $hook === 'rest_post_dispatch');
+    Actions\expectDone('corex_access_refused')->never();
+
+    expect((new AbilityCheck())->allows(CorexAbility::MANAGE_EMAIL, 'corex-email-studio'))->toBeFalse();
 });

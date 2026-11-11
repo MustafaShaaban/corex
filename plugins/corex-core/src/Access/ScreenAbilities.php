@@ -33,7 +33,9 @@ final class ScreenAbilities
         // Records need "Manage data" and everything else on the screen "Manage data models"; either
         // opens it. Records is what most people ask for, so it is the one a request names.
         'corex-data-models'         => ['section' => 'data-models', 'ability' => CorexAbility::MANAGE_DATA, 'readOnly' => false],
-        'corex-operations-security' => ['section' => 'operations-security', 'ability' => CorexAbility::MANAGE_OPERATIONS, 'readOnly' => true],
+        // Not read-only (amended 2026-11-11, DECISIONS #422): it shows the login policy, the trusted
+        // proxies and lockouts with account names, which a reader of CoreX screens has no need of.
+        'corex-operations-security' => ['section' => 'operations-security', 'ability' => CorexAbility::MANAGE_OPERATIONS, 'readOnly' => false],
         'corex-notifications'       => ['section' => 'notifications', 'ability' => CorexAbility::MANAGE_NOTIFICATIONS, 'readOnly' => false],
         'corex-releases'            => ['section' => 'releases', 'ability' => CorexAbility::MANAGE_RELEASES, 'readOnly' => false],
         'corex-access'              => ['section' => 'access', 'ability' => CorexAbility::MANAGE_ACCESS, 'readOnly' => false],
@@ -41,6 +43,8 @@ final class ScreenAbilities
         'corex-insights'            => ['section' => 'insights', 'ability' => CorexAbility::MANAGE_ADMIN, 'readOnly' => true],
         'corex-setup'               => ['section' => 'setup', 'ability' => CorexAbility::MANAGE_SETUP, 'readOnly' => false],
         'corex-settings-config'     => ['section' => 'settings', 'ability' => CorexAbility::MANAGE_SETTINGS, 'readOnly' => true],
+        // The Assistant add-on (spec 129): its keys and limits are for whoever runs the CoreX admin.
+        'corex-assistant'           => ['section' => 'assistant', 'ability' => CorexAbility::MANAGE_ADMIN, 'readOnly' => false],
     ];
 
     /** The ability a screen needs, by its page slug or its section key; "Access CoreX admin" for anything else. */

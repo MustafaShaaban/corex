@@ -1,11 +1,14 @@
 /**
  * A CoreX screen opened read-only (spec 117, US-SHL-06).
  *
- * The holder of "See CoreX screens without changing them" gets Overview, Settings, Operations &
- * Security and Insights with every control that changes something marked unavailable. The controls
- * stay focusable, so each one is announced with the sentence that says why (`aria-describedby`
- * points at it), and pressing, typing into or submitting them does nothing. Links and tabs, which
- * only move around the screen, keep working.
+ * The holder of "See CoreX screens without changing them" gets Overview, Settings and Insights with
+ * every control that changes something marked unavailable. The controls stay focusable, so each one
+ * is announced with the sentence that says why (`aria-describedby` points at it), and pressing,
+ * typing into or submitting them does nothing.
+ *
+ * What only moves around the screen keeps working: links, tabs, a form that asks for a page
+ * (`method="get"`, such as a filter), and anything inside `data-corex-readonly-skip` (filters,
+ * pagers, navigation). So do the browser's own keys: Tab, reload, copy, the caret in a text box.
  *
  * The screen's own islands draw their controls after this runs, so the content is watched and every
  * control that appears is marked too. The server refuses every save from this person whatever the
@@ -21,14 +24,41 @@
 	const CONTROLS =
 		'input, select, textarea, button, [role="button"], [role="switch"], [role="checkbox"], [contenteditable="true"]';
 	const KEPT = 'a, [role="tab"], [data-corex-readonly-skip]';
-	const MOVES = [ 'Tab', 'Shift', 'Escape' ];
+	// Keys that press a control or change its value. Anything else (Tab, Escape, F5, a key held
+	// with Ctrl, Alt or Cmd) is the browser's and passes.
+	const PRESSES = [ 'Enter', ' ', 'Spacebar' ];
+	const EDITS = [ 'Backspace', 'Delete' ];
+	// They change a select, a radio group or a slider; in a read-only text box they move the caret.
+	const STEPS = [
+		'ArrowUp',
+		'ArrowDown',
+		'ArrowLeft',
+		'ArrowRight',
+		'Home',
+		'End',
+		'PageUp',
+		'PageDown',
+	];
+
+	/** A form that asks for a page changes nothing: a filter, a search. */
+	function asksForAPage( form ) {
+		return !! form && ( form.getAttribute( 'method' ) || 'get' ).toLowerCase() === 'get';
+	}
+
+	function isKept( control ) {
+		return (
+			control.matches( KEPT ) ||
+			control.closest( '[data-corex-readonly-skip]' ) !== null ||
+			asksForAPage( control.form || control.closest( 'form' ) )
+		);
+	}
 
 	function mark( scope ) {
 		scope.querySelectorAll( CONTROLS ).forEach( ( control ) => {
 			if (
 				control.dataset.corexReadonly === 'marked' ||
-				control.matches( KEPT ) ||
-				control.type === 'hidden'
+				control.type === 'hidden' ||
+				isKept( control )
 			) {
 				return;
 			}
@@ -44,6 +74,8 @@
 						'file',
 						'button',
 						'submit',
+						'range',
+						'color',
 					].includes( control.type ) )
 			) {
 				control.readOnly = true;
@@ -64,6 +96,26 @@
 		} );
 	}
 
+	/** Whether a key pressed on this control would press it or change its value. */
+	function changes( event, control ) {
+		if ( event.ctrlKey || event.metaKey || event.altKey ) {
+			return false;
+		}
+		if ( PRESSES.includes( event.key ) ) {
+			return true;
+		}
+		// The browser already keeps a read-only text box as it is; only the caret moves.
+		if ( control.readOnly ) {
+			return false;
+		}
+
+		return (
+			STEPS.includes( event.key ) ||
+			EDITS.includes( event.key ) ||
+			event.key.length === 1
+		);
+	}
+
 	function stop( event ) {
 		const control =
 			event.target instanceof window.Element
@@ -72,7 +124,7 @@
 		if ( ! control ) {
 			return;
 		}
-		if ( event.type === 'keydown' && MOVES.includes( event.key ) ) {
+		if ( event.type === 'keydown' && ! changes( event, control ) ) {
 			return;
 		}
 
@@ -88,11 +140,16 @@
 		'change',
 		'input',
 		'paste',
+		'cut',
 		'drop',
 	].forEach( ( type ) => root.addEventListener( type, stop, true ) );
 	root.addEventListener(
 		'submit',
 		( event ) => {
+			if ( asksForAPage( event.target ) ) {
+				return;
+			}
+
 			event.preventDefault();
 			event.stopImmediatePropagation();
 		},

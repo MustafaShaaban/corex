@@ -341,7 +341,8 @@ final class SpecialistScreenGuides
             ->withSummary(__('Two checks you run on demand: is the site fast, and is it ready to be live.', 'corex'))
             ->inSection('operations')
             ->onScreen('admin.php?page=corex-insights')
-            ->requiring('corex_manage_admin')
+            // Whoever can open the screen, the reader of CoreX screens among them (spec 117, FR-013).
+            ->requiring('corex_view_screens')
             ->ordered(50)
             ->withTopic(GuideTopic::for(
                 'run',

@@ -94,6 +94,23 @@ Tests are written with each story (constitution: mandatory). `[P]` = can run in 
 - [x] T033 Refusals of the flow gateway, the activity routes and Blog Pro recorded; the old CSV export removed; the
   capture switch kept for site administrators; the guide on Manage setup and Manage Email Studio. DECISIONS #429.
 
+## Phase 12: Merge of main and review findings (2026-11-11)
+
+- [x] T034 Merge main (specs 119, 129) into the branch: `AdminPage::open()` takes `subnav` and `readOnly`; the
+  Settings pages open for "Manage settings", read-only for the view ability (`SettingsPageRenderer::render()`
+  `viewOnly`), refuse and record a save (`AdminDashboard::maybeSave()`, `wp_die` 403); `SettingsSaver::save()` and
+  `SettingsForm::rows()` keep the delivery fields with site administration (FR-008). Integration tests in
+  `ScreenAbilitiesAccessTest` (a hand-made post), `SettingsProvidersTest` updated. DECISIONS #423 amended.
+- [x] T035 Main's new routes on their ability: the provider test and Media's conversion on "Manage settings"; the
+  Assistant on "Access CoreX admin" through `ScreenAbilities`, `ScreenNames` and `AbilityCheck`. Unit and
+  integration tests. DECISIONS #420 amended.
+- [x] T036 Operations & Security off the read-only list; the locked-ability sentence on Overview and Insights;
+  the read-only script leaves filters, pagers, GET forms and browser keys alone; the Overview and Insights guides
+  open for a reader. Unit, Jest and integration tests. DECISIONS #422 amended.
+- [x] T037 A refusal is recorded once: never from the `Allow` header pass, once per request per screen and
+  ability. Integration test through the whole REST server. Tests for FR-003 (Staging), FR-004 (forms and
+  handlers) and FR-014 (Settings save).
+
 ## Dependencies
 
 Phase 2 before everything; US1 before US6 and US7; US5 before US2 and US3.

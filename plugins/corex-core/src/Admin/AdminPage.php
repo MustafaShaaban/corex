@@ -46,13 +46,24 @@ final class AdminPage
     }
 
     /**
-     * @param bool $readOnly The screen opens without its controls for the holder of the view ability
-     *                       (spec 117, US-SHL-06): a "Read only" chip in the header, a sentence saying
-     *                       which ability makes changes and how to ask for it, and the content marked
-     *                       for the read-only script.
+     * @param list<array{label:string,url:string,current:bool}> $subnav   the pages of this screen, drawn
+     *                                                                  under its entry in the rail
+     *                                                                  (spec 119: the Settings pages)
+     * @param bool                                              $readOnly the screen opens without its controls for
+     *                                                                  the holder of the view ability (spec 117,
+     *                                                                  US-SHL-06): a "Read only" chip in the
+     *                                                                  header, a sentence saying which ability
+     *                                                                  makes changes and how to ask for it, and
+     *                                                                  the content marked for the read-only script
      */
-    public function open(string $section, string $title, string $description = '', string $crumbSuffix = '', bool $readOnly = false): string
-    {
+    public function open(
+        string $section,
+        string $title,
+        string $description = '',
+        string $crumbSuffix = '',
+        array $subnav = [],
+        bool $readOnly = false,
+    ): string {
         $descriptionHtml = $description === ''
             ? ''
             : '<p class="corex-admin__description">' . esc_html($description) . '</p>';
@@ -94,7 +105,7 @@ final class AdminPage
             . '<div class="corex-admin__notices">%7$s<hr class="wp-header-end" /></div>%9$s'
             . '<div class="corex-admin__content"%10$s>',
             esc_attr($section),
-            $this->rail($section),
+            $this->rail($section, $subnav),
             esc_html($breadcrumb),
             esc_html($title),
             $descriptionHtml,
@@ -113,7 +124,21 @@ final class AdminPage
      */
     private function readOnlyNote(string $section): string
     {
-        $name = AbilityNames::label(ScreenAbilities::abilityFor($section));
+        $ability = ScreenAbilities::abilityFor($section);
+        $name    = AbilityNames::label($ability);
+
+        // A locked ability, "Access CoreX admin" on Overview and Insights, is held by site
+        // administrators alone: no role can be given it and nobody can ask for it.
+        if ($this->requestable?->isLocked($ability) ?? false) {
+            return '<section class="corex-readonly-note corex-surface" aria-label="' . esc_attr__('Read only', 'corex') . '">'
+                . '<p class="corex-readonly-note__text" id="corex-readonly-note">'
+                . sprintf(
+                    /* translators: %s: the name of a CoreX ability only site administrators hold, e.g. "Access CoreX admin". */
+                    esc_html__('You can read this screen but not change it. Changes need “%s”, which only site administrators hold: it cannot be given to a role or requested.', 'corex'),
+                    esc_html($name),
+                )
+                . '</p></section>';
+        }
 
         $ask = $this->canBeRequested($section)
             ? '<details class="corex-readonly-note__request"><summary>'
@@ -143,19 +168,30 @@ final class AdminPage
      * icon and an explicit active state. It is CoreX-owned chrome inside the framed
      * surface — the generic wp-admin menu outside it is never restyled.
      */
-    private function rail(string $active): string
+    /**
+     * @param list<array{label:string,url:string,current:bool}> $subnav
+     */
+    private function rail(string $active, array $subnav = []): string
     {
         $nav = '';
         foreach ($this->railItems($active) as [$slug, $icon, $label, $isActive]) {
-            $nav .= sprintf(
+            // With pages of its own, the screen's entry is the current place (`true`) and the open
+            // page under it is the current page: one element in a page says `page`.
+            $hasPages = $isActive && $subnav !== [];
+            $current  = $hasPages ? ' aria-current="true"' : ' aria-current="page"';
+            $nav     .= sprintf(
                 '<a class="corex-admin__nav-item%1$s" href="%2$s"%3$s>'
                 . '<span class="corex-admin__nav-icon corex-admin__nav-icon--%4$s" aria-hidden="true"></span>%5$s</a>',
                 $isActive ? ' is-active' : '',
                 esc_url(admin_url('admin.php?page=' . $slug)),
-                $isActive ? ' aria-current="page"' : '',
+                $isActive ? $current : '',
                 esc_attr($icon),
                 esc_html($label),
             );
+
+            if ($hasPages) {
+                $nav .= $this->subnav($label, $subnav);
+            }
         }
 
         return '<aside class="corex-admin__rail">'
@@ -163,6 +199,30 @@ final class AdminPage
             . '<p class="corex-admin__rail-group">' . esc_html__('COREX FRAMEWORK', 'corex') . '</p>'
             . '<nav class="corex-admin__nav" aria-label="' . esc_attr__('CoreX framework', 'corex') . '">'
             . $nav . '</nav></aside>';
+    }
+
+    /**
+     * A screen's own pages, nested under its rail entry as the design draws the Settings pages.
+     *
+     * @param list<array{label:string,url:string,current:bool}> $pages
+     */
+    private function subnav(string $screen, array $pages): string
+    {
+        $items = '';
+        foreach ($pages as $page) {
+            $items .= sprintf(
+                '<li><a class="corex-admin__subnav-item%1$s" href="%2$s"%3$s>%4$s</a></li>',
+                $page['current'] ? ' is-active' : '',
+                esc_url($page['url']),
+                $page['current'] ? ' aria-current="page"' : '',
+                esc_html($page['label']),
+            );
+        }
+
+        /* translators: %s: the name of a CoreX screen, such as Settings. */
+        $name = sprintf(__('%s pages', 'corex'), $screen);
+
+        return '<ul class="corex-admin__subnav" aria-label="' . esc_attr($name) . '">' . $items . '</ul>';
     }
 
     /**
@@ -196,6 +256,7 @@ final class AdminPage
             'corex-insights'            => ['insights', 'insights'],
             'corex-setup'               => ['setup', 'setup'],
             'corex-guides'              => ['guides', 'guides'],
+            'corex-assistant'           => ['assistant', 'assistant'],
             'corex-settings-config'     => ['settings', 'settings'],
         ];
     }
@@ -307,6 +368,7 @@ final class AdminPage
             // browser route matrix to every CoreX route, which is exactly the kind of gap a matrix
             // that lists twelve of fourteen screens cannot find.
             'guides' => __('Guides', 'corex'),
+            'assistant' => __('Assistant', 'corex'),
             'option-page' => __('Options', 'corex'),
         ];
 

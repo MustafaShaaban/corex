@@ -64,8 +64,7 @@ final class InsightsScreen
             'insights',
             __('Insights', 'corex'),
             __('Run performance and release-readiness checks. Environment-gated results remain explicitly gated.', 'corex'),
-            '',
-            $this->access->readOnly('corex-insights'),
+            readOnly: $this->access->readOnly('corex-insights'),
         ) . '<div id="corex-insights-app" class="corex-insights"></div>' . $this->page->close();
     }
 

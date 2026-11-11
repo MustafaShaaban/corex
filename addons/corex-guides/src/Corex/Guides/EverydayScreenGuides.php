@@ -45,7 +45,8 @@ final class EverydayScreenGuides
             ->withSummary(__('The one screen that tells you whether anything needs your attention, and what to do about it.', 'corex'))
             ->inSection('general')
             ->onScreen('admin.php?page=corex-settings')
-            ->requiring('corex_manage_admin')
+            // Whoever can open the screen, the reader of CoreX screens among them (spec 117, FR-013).
+            ->requiring('corex_view_screens')
             ->ordered(10)
             ->withTopic(GuideTopic::for(
                 'read-it',

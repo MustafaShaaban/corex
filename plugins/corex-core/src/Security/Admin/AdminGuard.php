@@ -10,6 +10,8 @@ namespace Corex\Security\Admin;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+
 /**
  * The single capability + nonce gate for Corex admin-menu screens.
  *
@@ -46,8 +48,8 @@ final class AdminGuard
     ): bool {
         if (! $this->authorized($capability)) {
             if ($section !== null && isset($_POST[$field]) && is_user_logged_in()) {
-                /** This action is documented in {@see \Corex\Access\AbilityCheck::allows()}. */
-                do_action('corex_access_refused', 'action', $section, $capability);
+                /** This action is documented in {@see AbilityCheck::allows()}. */
+                do_action('corex_access_refused', AbilityCheck::KIND_ACTION, $section, $capability);
             }
 
             return false;

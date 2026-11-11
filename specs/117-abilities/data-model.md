@@ -11,7 +11,7 @@ No table or option changes shape. New values:
 | Risk | sensitive |
 | Locked | no |
 | Implied by | `corex_manage_admin` |
-| Opens read-only | Overview, Settings, Operations & Security, Insights |
+| Opens read-only | Overview, Settings, Insights (Operations & Security taken off, DECISIONS #422 amended 2026-11-11) |
 
 ## Screen map (`ScreenAbilities`)
 
