@@ -19527,6 +19527,17 @@ numbers and requirement IDs.
   A change to the look starts in the design system. Claude Design now lives in Claude as the Design and Design
   System artifact types (both available in the desktop app's Code tab); standalone claude.ai/design closes on
   2026-12-14. No CoreX design system exists in Claude yet: making it is its own task.
+- **One recorded round per UI slice for the owner** (`ui-review-loop`, amElnagdy, installed 2026-11-11 with
+  `agent-browser` 0.32.4): the owner watches a short video of the flow and comments on moments in it. The
+  video and timeline never reach the model; each browser step does, so steps return diffs, the round runs on
+  `corex-tester` (Sonnet), and full coverage audits run only on request. Scratch sites with test data only.
+  `.agent-review/` is ignored. Kept only if the first UI slice shows it saves more review rounds than it costs.
+  **On this Windows machine** it needed three things, checked with a recorded round of corex.local's home page
+  (timeline, network capture and a WebM video): `agent-browser.exe` copied beside npm's wrapper in the nvm Node
+  folder, because the skill starts `agent-browser` without a shell and Node then finds only an `.exe` (redo it
+  after an nvm switch); `ffmpeg` from winget (`Gyan.FFmpeg`) for the video, on PATH in new shells; and Developer
+  Mode for the one self-test check that creates a symbolic link (the other 19 pass). With the agent-browser
+  backend a step is a verb (`run -- snapshot`, `run -- click @e12`); the script form is the other backend's.
 
 **Not changed, and owed.** The CoreX design system in Claude (from `theme.json` and the approved admin
 designs), and moving anything still in standalone Claude Design before 2026-12-14. `wp corex make:site` still writes a client `AGENTS.md` that tells a client site

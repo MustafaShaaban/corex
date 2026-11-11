@@ -88,6 +88,7 @@ by feel. Max effort only when the owner asks for it, for one task.
 | Searching and reading across the repo | `corex-scout` agent | Haiku | low |
 | Reviewing a diff against its spec and the constitution | `corex-reviewer` agent | Fable | high |
 | Comparing a rendered screen with its approved design, measured | `corex-ui-reviewer` agent | Fable | high |
+| The recorded round for the owner (`ui-review-loop`), one per UI slice | `corex-tester` agent | Sonnet | medium |
 | The second, other-vendor review | `debate-review`'s `review-debate` lane | Codex | high |
 
 - The five agents are in `.claude/agents/`. Each brief names the spec, the slice, the files the agent

@@ -140,7 +140,17 @@ person sees runs these steps too, and a UI slice that skips one is not done.
    Run `npm run test:quality` (screens, accessibility, states, words, budget).
 5. **Review the UI** before the two-model review: `corex-ui-reviewer` compares the render with the approved
    design, `design:accessibility-review` checks WCAG 2.2 AA, and `design:ux-copy` checks the words.
-6. **A change to the look starts in the design system**, then reaches the code through `theme.json`, so the
+6. **One recorded round for the owner** (`ui-review-loop`), after steps 4 and 5 pass: a short recording of the
+   slice's flow that the owner watches on a local review page and comments on at the moment in the video; the
+   next round addresses each comment. Limits, because the model never sees the video but does see each step:
+   - one round per slice, at the end, never while building; one more per batch of comments;
+   - steps that return only what changed (`snapshot` with a diff), never a full page dump after every click;
+   - run by `corex-tester` (Sonnet), so the steps fill that agent's context, not the main session's;
+   - coverage audits (every screen and state) only when the owner asks, for example before a release;
+   - only on a scratch site with test data, never a client site; on corex.local, mail goes to capture first,
+     because the video and the timeline keep whatever was on screen and typed.
+   The measured browser tests in step 4 stay the main check; the round shows what numbers cannot.
+7. **A change to the look starts in the design system**, then reaches the code through `theme.json`, so the
    next design and the code stay the same.
 
 The `/speckit-*` commands are retired. A spec that already has a `tasks.md` may finish its slices from
