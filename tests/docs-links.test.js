@@ -16,12 +16,16 @@
  */
 const fs = require( 'node:fs' );
 const path = require( 'node:path' );
+const { docsAddress } = require( '../docs-app/docs-address.mjs' );
 
 const repositoryRoot = path.resolve( __dirname, '..' );
 const distDirectory = path.join( repositoryRoot, 'docs-app', 'dist' );
 
-/** The same default `docs-app/astro.config.mjs` uses, and the same env override. */
-const base = ( process.env.COREX_DOCS_BASE || '/corex' ).replace( /\/$/, '' );
+/**
+ * The base the build used, by the rule `docs-app/astro.config.mjs` reads, without its trailing
+ * slash: `/corex` on the project page, the empty string at a domain's root (spec 130).
+ */
+const base = docsAddress( process.env ).base.replace( /\/$/, '' );
 
 /**
  * Every `.html` file under the built site.
@@ -135,7 +139,8 @@ describe( 'built documentation site', () => {
 			for ( const file of htmlFiles( distDirectory ) ) {
 				const html = fs.readFileSync( file, 'utf8' );
 
-				if ( html.includes( `${ base }${ base }/` ) ) {
+				// At a domain's root there is no base to carry twice, and the needle would be `/`.
+				if ( base !== '' && html.includes( `${ base }${ base }/` ) ) {
 					doubled.push( path.relative( distDirectory, file ) );
 				}
 			}

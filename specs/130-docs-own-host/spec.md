@@ -1,10 +1,10 @@
 # Feature Specification: The docs site on its own host
 
-**Feature Branch**: `docs/public-hosts`
+**Feature Branch**: `docs/public-hosts` (the spec), `spec/130-docs-own-host` (slice 1)
 
 **Created**: 2026-11-11
 
-**Status**: Draft
+**Status**: Sliced 2026-11-12 (DECISIONS #622). Slice 1 built; the switch waits on the owner's three steps; slice 2 waits on the switch
 
 **Input**: Owner direction, 2026-11-11: CoreX's public hosts on `mustafashaaban.com` (DECISIONS #620). Step 1
 of that plan moves the documentation site from `https://mustafashaaban.github.io/corex/` to
@@ -181,6 +181,53 @@ true before (specs 090 and 092, earlier DECISIONS entries, the changelog) and in
   when no base is configured, and to the configured base when one is.
 - **SC-005**: A search of the repository for `mustafashaaban.github.io` finds only the records listed in FR-008
   and this spec.
+
+## Slices (DECISIONS #622)
+
+The switch's hazard (§ "The switch has an order") is a build made for one address and served from another.
+Slice 1 removes it: the published build reads its address from GitHub Pages itself, so the build follows the
+custom domain the moment it is set, and the order of the owner's steps can no longer break the site.
+
+### Slice 1: the build follows Pages' address, and the published site is checked (built 2026-11-12)
+
+- `.github/workflows/docs.yml` reads the Pages address (`actions/configure-pages`: origin and base path) and
+  builds for it; after every deploy it runs `scripts/check-docs-host.mjs` against the published address, and,
+  once that address is not the project page, checks that each page read is reached from `github.io/corex/`.
+- `docs-app/docs-address.mjs` is the one rule for the build address, read by `astro.config.mjs` and by
+  `tests/docs-links.test.js`. An empty base path is the domain root (Pages' answer for a custom domain), not
+  "unset". The defaults stay the project page until slice 2.
+- Covers FR-001, FR-002, FR-006 (checked), SC-001, SC-002 (checked on every deploy). Changes nothing a reader
+  sees while Pages has no custom domain. Safe to merge before the switch.
+- Tests: `tests/docs-address.test.js`, `tests/check-docs-host.test.js`; the existing link test, run on a build
+  made for the root and on one made for `/corex`.
+
+### The switch: the owner's steps, in order, each with its check (FR-007, FR-010)
+
+`specs/130-docs-own-host/switch.sh` walks through them and runs each check; run it from the repository root
+with `gh` signed in. In order:
+
+1. **Verify `mustafashaaban.com` on GitHub** (account Settings → Pages → Verified domains → Add a domain), add
+   the TXT record GitHub shows in Cloudflare, click Verify. Check: the
+   `_github-pages-challenge-MustafaShaaban.mustafashaaban.com` TXT record answers, and GitHub says verified.
+2. **Point `corex-docs` at GitHub Pages** in Cloudflare: a CNAME to `mustafashaaban.github.io`, **DNS only**
+   (grey cloud). Check: the public answer for `corex-docs.mustafashaaban.com` is that CNAME.
+3. **Set the custom domain** on the repository's Pages site (repository Settings → Pages → Custom domain), then
+   rebuild at once (`gh workflow run docs.yml`), wait for the certificate, and enforce HTTPS. Check: the Pages
+   API names the domain, the certificate is `approved`, `https_enforced` is true.
+4. **Check the moved site**: the rebuild's last step runs the site check with `--moved-from`. Check: the run
+   passes. SC-003 (at most ten minutes unreachable) is met when steps 3 and 4 run back to back, as the script
+   does; the certificate may take longer, during which the new address answers with a certificate error.
+
+Whether to turn Cloudflare's proxy on for `corex-docs` afterwards is left for then (edge case "GitHub cannot
+issue its certificate"); nothing in this spec needs it.
+
+### Slice 2: the admin and the records name the new address (after the switch)
+
+- `DocsUrl`'s fallback becomes `https://corex-docs.mustafashaaban.com`, with `DocsUrlTest` and
+  `AddonsDocsLinkTest`; `docs-address.mjs`'s defaults become the new host and the root; the README, the CI/CD
+  guide and spec 111's detection rule give the new address (FR-004, FR-005, FR-008, SC-004, SC-005).
+- **Starts only after step 4 passes** (FR-009), and edits `plugins/corex-config/`, so it is claimed with
+  whoever holds `plugins/` at the time.
 
 ## Assumptions
 

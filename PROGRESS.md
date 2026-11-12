@@ -58,9 +58,13 @@ and approved first, a spec ends in slices, and nothing merges without the review
   Next: a review of it against its tasks and today's main, then its slices under the CoreX loop.
 - **Spec 129 slice 3** (CoreX Assistant: a time asked for once, a line the server writes, `required_if`), PR
   #456, DECISIONS #617 to #619: open, not reviewed in this pass.
-- **Spec 130, the docs on their own host**, draft (DECISIONS #620, ROADMAP §13 "Public hosts"). Waits on three
-  steps outside the repository: verify the domain on GitHub, point `corex-docs` at `mustafashaaban.github.io`
-  as DNS only, then set the custom domain.
+- **Spec 130, the docs on their own host** (DECISIONS #620, #622, ROADMAP §13 "Public hosts"). Slice 1 is
+  branch `spec/130-docs-own-host` (2026-11-12): the docs build reads its address from GitHub Pages and the
+  published site is checked after every deploy, so the custom domain can be set at any time. The switch waits
+  on the owner's steps, walked by `specs/130-docs-own-host/switch.sh` (verify the domain on GitHub, point
+  `corex-docs` at `mustafashaaban.github.io` as DNS only, set the custom domain). Slice 2 (`DocsUrl`'s fallback,
+  in `plugins/`) waits for the switch. Measured 2026-11-12: no host has moved yet; all five still reach the
+  owner's server through Cloudflare's proxy.
 - **Spec 110, deploy to production from the local admin**, draft PR #417: waits on the owner's three questions.
 - **Lead left by this pass, not built:** the Settings guide still asks for "Manage settings", so a holder of the
   view ability does not see it (a guide takes one capability).

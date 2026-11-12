@@ -11,6 +11,7 @@ on:
       - 'addons/**'
       - 'docs-app/**'
       - 'scripts/generate-docs.php'
+      - 'scripts/check-docs-host.mjs'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -56,8 +57,20 @@ jobs:
       - name: Generate the class reference
         run: composer docs:generate
 
+      # The address the site is served from, as GitHub Pages reports it: the project page
+      # (`https://mustafashaaban.github.io`, base `/corex`) or the custom domain (base empty,
+      # the domain's root). The build is made for that address, so setting or removing the
+      # custom domain in the repository's settings needs only this workflow to run again, and
+      # the site is never built for one address and served from another (spec 130).
+      - name: Read the Pages address
+        id: pages
+        uses: actions/configure-pages@v6
+
       - name: Build the documentation site
         working-directory: docs-app
+        env:
+          COREX_DOCS_SITE: ${{ steps.pages.outputs.origin }}
+          COREX_DOCS_BASE: ${{ steps.pages.outputs.base_path }}
         run: |
           npm ci
           npm run build
@@ -88,3 +101,22 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
+
+      # The published site as a reader reaches it: its pages, styles and search load at the
+      # address it was built for, and plain HTTP is sent to HTTPS. Once the site has moved off
+      # the project page, every page read must also be reached from its old `github.io/corex/`
+      # address, which released admins still link to (spec 130, SC-001 and SC-002).
+      - name: Check the published site
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          PROJECT_PAGE: https://mustafashaaban.github.io/corex/
+        run: |
+          if [ "$PAGE_URL" = "$PROJECT_PAGE" ]; then
+            node scripts/check-docs-host.mjs "$PAGE_URL" --retries 4
+          else
+            node scripts/check-docs-host.mjs "$PAGE_URL" --moved-from "$PROJECT_PAGE" --retries 4
+          fi

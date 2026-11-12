@@ -20487,3 +20487,32 @@ questions still come after the spec. *Dropping the spec file for GitHub issues*,
 would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
 in-app agents already carry a model and effort each, and their results come back to the session that checks
 them.
+
+## #622 -- The docs build reads its address from GitHub Pages, so the custom domain can be set in any order
+
+**Date:** 2026-11-12. **Branch:** `spec/130-docs-own-host`. **Mode:** Deployment. **Asked by:** the owner ("start
+using the new domains and deploy to it, auto deploy and handle these things").
+
+**Why.** Spec 130's switch had an order: the docs build is made for one address (`mustafashaaban.github.io` under
+`/corex`), and a site built for a subpath breaks when served from a domain's root. The build address lived in two
+environment defaults, so the build had to change in the same minutes as the owner's click in the repository's
+Pages settings, and a build or a click out of step would publish a site with no styles and broken links. The
+link test also read an empty base as "unset", so a build for a root could not even be checked.
+
+**Decided.**
+- `.github/workflows/docs.yml` asks Pages for the address it serves (`actions/configure-pages`'s `origin` and
+  `base_path`) and builds for that. Setting the custom domain then needs only the workflow to run again, which
+  the switch steps do straight away.
+- One rule, `docs-app/docs-address.mjs`, turns the two values into the build's site and base, read by the Astro
+  config and by `tests/docs-links.test.js`. An empty base path is the domain's root.
+- After every deploy, `scripts/check-docs-host.mjs` checks the published site as a reader reaches it: pages
+  linked from the home page and one step further, their stylesheets, the search index, HTTP sent to HTTPS, and,
+  once the site is off the project page, that each page is reached from its old `github.io/corex/` address. A
+  failure fails the run, so a broken publish is seen the minute it happens.
+- Spec 130 is two slices: slice 1 (the above) changes nothing a reader sees and merges before the switch; slice
+  2 (`DocsUrl`'s fallback and the records) waits for the switch to pass (FR-009). The owner's steps are a
+  checked script, `specs/130-docs-own-host/switch.sh`.
+
+**Not chosen.** *Changing the defaults to the new host now*: the published build would move before the domain
+does. *A `CNAME` file in the build*: Pages built by a workflow ignores it; the domain is a repository setting.
+*Checking only the build*: the build cannot know which address it is served from, which is the whole hazard.
