@@ -61,6 +61,9 @@ and approved first, a spec ends in slices, and nothing merges without the review
 - **Spec 130, the docs on their own host**, draft (DECISIONS #620, ROADMAP §13 "Public hosts"). Waits on three
   steps outside the repository: verify the domain on GitHub, point `corex-docs` at `mustafashaaban.github.io`
   as DNS only, then set the custom domain.
+- **Spec 132, the update channel**, draft (DECISIONS #624, ROADMAP §13 "Public hosts" step 4): a release tag
+  publishes the framework package, its SHA-256 and the updater's manifest to `corex-updates.mustafashaaban.com`.
+  After spec 131; waits on the owner's choice of what the updater offers (tell and link, recommended).
 - **Spec 110, deploy to production from the local admin**, draft PR #417: waits on the owner's three questions.
 - **Lead left by this pass, not built:** the Settings guide still asks for "Manage settings", so a holder of the
   view ability does not see it (a guide takes one capability).

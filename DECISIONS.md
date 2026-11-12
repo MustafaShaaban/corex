@@ -20487,3 +20487,24 @@ questions still come after the spec. *Dropping the spec file for GitHub issues*,
 would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
 in-app agents already carry a model and effort each, and their results come back to the session that checks
 them.
+
+## #624 -- The update channel is static files published by a release tag; what the updater offers is the owner's call
+
+**Date:** 2026-11-12. **Branch:** `spec/132-updates-host`. **Mode:** Deployment. **Asked by:** the owner (deploy
+CoreX's hosts automatically), step 4 of the public hosts (#620).
+
+**Why.** `updates.endpoint` ships empty and no workflow publishes release packages, so a CoreX site has no way to
+learn of a newer framework. The in-admin updater (spec 034) hands WordPress a one-plugin package, while a CoreX
+release is several plugins, a theme and a CLI package that move together.
+
+**Decided** (spec 132, a draft).
+- `corex-updates.mustafashaaban.com` serves static files only: each framework release package, its SHA-256, and
+  the manifest in the updater's format. A release tag publishes them, package and hash first and the manifest
+  last, over SSH with a key that writes only there. Client packages are never published.
+- Built after staging (spec 131), so every published package has been installed on a real host first.
+- **The owner chooses what the updater offers.** Recommended: it tells the administrator a release exists and
+  links to its notes, and the release is installed from CoreX → Releases; nothing installs from a URL on its own
+  until packages are signed (#620's step 6).
+
+**Not chosen.** *GitHub release assets as the channel*: possible, but #620 puts machine-read files on the owner's
+host, and GitHub's asset addresses redirect to short-lived storage URLs that are harder to cache and to pin.
