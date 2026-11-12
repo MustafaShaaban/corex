@@ -308,11 +308,12 @@ Production: gone, and Settings > Reading unchanged.
   APP_ENV" (or the lock's name) when a lock decides; a row whose answer cannot be read MUST say "Could not check".
 - **FR-002**: In Development and Staging every front-end response MUST carry `noindex` in the page (`wp_robots`) and an
   `X-Robots-Tag: noindex` header; no other mode adds either, and the Reading setting MUST NOT be changed.
-  *Amended 2026-11-12 (DECISIONS #625):* `noindex` follows the site's environment, not its mode. A site whose
-  environment is development or staging, whether declared by the mode, locked (`APP_ENV`, the network's lock, the
-  `corex_app_env` option) or inherited from WordPress's environment type, carries both in every mode, Coming soon,
-  Forms paused and Maintenance included, and the Coming soon page drawn without `wp_head` says it too; a production
-  site carries neither. "Front-end response" means what WordPress answers through its front-end pipeline (pages,
+  *Amended 2026-11-12 (DECISIONS #625):* `noindex` follows the site's environment, not its mode, the same answer the
+  mail gate gives. A site locked to development or staging (`APP_ENV`, the network's lock, the `corex_app_env`
+  option) carries both in every mode, Coming soon, Forms paused and Maintenance included, and the Coming soon page
+  drawn without `wp_head` says it too. Without a lock the stored mode decides: Development and Staging carry both, a
+  visitor mode is production and carries neither, and an environment inherited from WordPress's environment type
+  carries both only while no mode is stored. A production site carries neither. "Front-end response" means what WordPress answers through its front-end pipeline (pages,
   feeds, sitemaps, 404s, attachment pages); files the web server serves straight from `wp-content/uploads` get
   neither. FR-003's "allowing indexing like Production" holds on a production site.
 - **FR-003**: "Forms paused" (`forms-paused`) MUST be a mode, ordered after Coming soon, needing an acknowledgement,

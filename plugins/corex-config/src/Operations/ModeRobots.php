@@ -25,11 +25,12 @@ use Corex\Environment\SiteEnvironment;
  * it gets neither.
  *
  * The question is the site's environment ({@see SiteEnvironment::current()}), not its operations
- * mode: a development or staging site keeps `noindex` in every mode, Coming soon, Forms paused and
- * Maintenance included, whether its environment is declared by the mode, locked (`APP_ENV`, the
- * network, the `corex_app_env` option) or inherited from WordPress's environment type. That is the
- * same answer the mail gate gives, so a site never says "staging" for its mail and "production" to
- * search engines (spec 113).
+ * mode, which is the same answer the mail gate gives, so a site never says "staging" for its mail
+ * and "production" to search engines (spec 113). A site whose environment is locked to development
+ * or staging (`APP_ENV`, the network, the `corex_app_env` option) keeps `noindex` in every mode,
+ * Coming soon, Forms paused and Maintenance included. Without a lock the stored mode decides, and a
+ * visitor mode is production there: an environment inherited from WordPress's environment type
+ * keeps `noindex` only while no mode is stored, and a declared Development or Staging always does.
  *
  * The Reading setting (`blog_public`) is never written, so going live removes the `noindex` with
  * no other step, and the owner's own choice in Settings > Reading is what the live site keeps. A

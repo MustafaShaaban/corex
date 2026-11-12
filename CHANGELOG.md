@@ -25,9 +25,10 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 and 2; DECI
   environment is development or staging, declared, locked or inherited (the mode chosen, `APP_ENV` in `.env`, the
   network's lock, the `corex_app_env` option, or WordPress's environment type), carries a robots `noindex` in the page
   and an `X-Robots-Tag: noindex` header on every front-end response: pages, feeds, sitemaps, 404s and attachment
-  pages (`Corex\Config\Operations\ModeRobots`, on `wp_robots` and `wp_headers`). It does so in every mode, Coming
-  soon, Forms paused and Maintenance included, and the Coming soon page of a theme with no block templates says it
-  too. A production site adds neither. Files the web server serves straight from `wp-content/uploads` never reach
+  pages (`Corex\Config\Operations\ModeRobots`, on `wp_robots` and `wp_headers`). A site locked to development or
+  staging does so in every mode, Coming soon, Forms paused and Maintenance included, and the Coming soon page of a
+  theme with no block templates says it too. Without a lock, Coming soon, Forms paused and Maintenance are
+  production, so an environment inherited from WordPress keeps `noindex` only while no mode is stored. A production site adds neither. Files the web server serves straight from `wp-content/uploads` never reach
   WordPress and get neither. Settings > Reading (`blog_public`) is never written, so going live removes the
   `noindex` with no other step.
 - **A mode change clears page caches** (spec 124, FR-004b, DECISIONS #524). Every change of mode, from the screen,
