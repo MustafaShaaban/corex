@@ -143,6 +143,9 @@ self-heal, boots after every other provider, add-ons included, so the heal sees 
 calls `Migrator::create()` from a hook: that is `dbDelta()` on every request. The heal reads every
 component's version in one statement and takes its per-site lock only when one of them is behind, so an
 admin or cron request of a site that is current makes one read for it and no write (DECISIONS #360).
+A component may carry data steps (`DataMigrationStep`): idempotent, batched work on its stored rows, run on
+every migration path after its tables exist and before its version is stored, so a step that fails is run
+again (spec 124, FR-020).
 
 **Options read on every request.** An option stored with autoload off is a query each time a request first
 asks for it, and so is an option with no row. A provider whose store is read on every request registers the

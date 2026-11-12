@@ -18,7 +18,9 @@ use Corex\Config\Security\LoginProtection\LoginProtectionEnforcer;
 use Corex\Config\Security\LoginProtection\LoginProtectionPolicy;
 use Corex\Config\Security\LoginProtection\LoginProtectionService;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\WpLoginAccounts;
 use Corex\Config\Security\LoginProtection\WpLoginAttemptStore;
+use Corex\Config\Security\LoginProtection\WpLoginHashKey;
 use Corex\Database\Schema\Migrator;
 
 /**
@@ -35,9 +37,10 @@ function forgetLoginEnforcementAttempts(Migrator $migrator): void
 {
     global $wpdb;
 
+    // Keyed with the site's own secret since spec 124 (FR-019), so found by the value the policy makes.
     $wpdb->delete(
         $migrator->fullName(LoginAttemptTable::NAME),
-        ['network_hash' => hash('sha256', LOGIN_ENFORCEMENT_TEST_IP)],
+        ['network_hash' => \Corex\Boot::app()->container()->make(LoginProtectionPolicy::class)->networkHashOf(LOGIN_ENFORCEMENT_TEST_IP)],
     );
 }
 
@@ -71,7 +74,7 @@ afterEach(function () {
 function loginEnforcer(WpLoginAttemptStore $attempts, \Corex\Config\Security\LoginProtection\LoginProtectionSettings $settings): LoginProtectionEnforcer
 {
     return new LoginProtectionEnforcer(
-        new LoginProtectionService(new LoginProtectionPolicy($settings), $attempts),
+        new LoginProtectionService(new LoginProtectionPolicy($settings, new WpLoginHashKey()), $attempts, new WpLoginAccounts()),
         new ClientIpResolver($settings),
         $settings,
     );

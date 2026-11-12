@@ -16,7 +16,7 @@ use DateTimeZone;
 use RuntimeException;
 
 /**
- * WordPress persistence adapter for hashed login attempt and lockout evidence.
+ * WordPress persistence adapter for keyed login attempt and lockout evidence.
  */
 final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore, LoginLockoutReader
 {
@@ -48,43 +48,44 @@ final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore,
         }
     }
 
-    public function failures(string $identityHash, string $networkHash, DateTimeImmutable $since): array
+    public function failures(LoginAttemptKeys $keys, DateTimeImmutable $since): array
     {
         global $wpdb;
 
+        [$pairs, $values] = $this->pairsClause($keys);
         $rows = $wpdb->get_results($wpdb->prepare(
-            'SELECT * FROM ' . $this->table() . ' WHERE identity_hash = %s AND network_hash = %s AND outcome = %s AND occurred_at >= %s ORDER BY occurred_at ASC, id ASC',
-            $identityHash,
-            $networkHash,
-            LoginAttemptRecord::FAILED,
-            $this->date($since),
+            'SELECT * FROM ' . $this->table() . ' WHERE ' . $pairs . ' AND outcome = %s AND occurred_at >= %s ORDER BY occurred_at ASC, id ASC',
+            [...$values, LoginAttemptRecord::FAILED, $this->date($since)],
         ), ARRAY_A);
 
         return array_map($this->hydrate(...), is_array($rows) ? $rows : []);
     }
 
-    public function latestLockout(string $identityHash, string $networkHash, DateTimeImmutable $now): ?LoginAttemptRecord
+    public function latestLockout(LoginAttemptKeys $keys, DateTimeImmutable $now): ?LoginAttemptRecord
     {
         global $wpdb;
 
+        [$pairs, $values] = $this->pairsClause($keys);
         $row = $wpdb->get_row($wpdb->prepare(
-            'SELECT * FROM ' . $this->table() . ' WHERE identity_hash = %s AND network_hash = %s AND outcome = %s AND locked_until > %s ORDER BY locked_until DESC, id DESC LIMIT 1',
-            $identityHash,
-            $networkHash,
-            LoginAttemptRecord::LOCKED,
-            $this->date($now),
+            'SELECT * FROM ' . $this->table() . ' WHERE ' . $pairs . ' AND outcome = %s AND locked_until > %s ORDER BY locked_until DESC, id DESC LIMIT 1',
+            [...$values, LoginAttemptRecord::LOCKED, $this->date($now)],
         ), ARRAY_A);
 
         return is_array($row) ? $this->hydrate($row) : null;
     }
 
-    public function pruneExpired(DateTimeImmutable $now, int $limit = 500): int
+    /**
+     * Deletes up to `$limit` rows that occurred before `$cutoff`, oldest first, and returns how many.
+     * A lockout still in force at `$now` is kept, however old.
+     */
+    public function pruneOlderThan(DateTimeImmutable $cutoff, DateTimeImmutable $now, int $limit = 500): int
     {
         global $wpdb;
 
         $limit = min(self::MAX_PRUNE_SIZE, max(1, $limit));
         $ids = $wpdb->get_col($wpdb->prepare(
-            'SELECT id FROM ' . $this->table() . ' WHERE retention_until <= %s ORDER BY retention_until ASC, id ASC LIMIT %d',
+            'SELECT id FROM ' . $this->table() . ' WHERE occurred_at < %s AND (locked_until IS NULL OR locked_until <= %s) ORDER BY occurred_at ASC, id ASC LIMIT %d',
+            $this->date($cutoff),
             $this->date($now),
             $limit,
         ));
@@ -140,6 +141,26 @@ final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore,
         }
 
         return (int) $released;
+    }
+
+    /**
+     * The attempt's pairs as one condition: the keyed values, or the plain ones a row stored before
+     * the update carries (spec 124, FR-019). Each pair is matched whole, through the
+     * identity-and-network index.
+     *
+     * @return array{0:string,1:list<string>}
+     */
+    private function pairsClause(LoginAttemptKeys $keys): array
+    {
+        $conditions = [];
+        $values = [];
+        foreach ($keys->pairs() as [$identityHash, $networkHash]) {
+            $conditions[] = '(identity_hash = %s AND network_hash = %s)';
+            $values[] = $identityHash;
+            $values[] = $networkHash;
+        }
+
+        return ['(' . implode(' OR ', $conditions) . ')', $values];
     }
 
     /** @param array<string,mixed> $row */

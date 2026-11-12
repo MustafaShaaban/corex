@@ -20641,3 +20641,103 @@ search needs a server rule.
 test that stubbed `rocket_clean_domain` left every later `PageCachePurge` built with the real table believing WP Rocket
 active. `PageCachePurgeTest` checks the real table by its names and arguments, and runs it with every function renamed
 `corex_test_real_...`; it asserts no real name is defined after it.
+## #626 -- Sign-in values are keyed with the site's own secret, and old ones count until they age out
+
+**Date:** 2026-11-12. **Spec:** 124, slice 3 (FR-019, FR-020). **Branch:** `spec/124-slice-3-sign-in-privacy`.
+**Decided:** under the owner's delegation of the revamp.
+
+**The key.** A sign-in attempt's username and address are stored as `hash_hmac('sha256', ...)` with a key derived
+from `wp_salt('auth')` and the site's id (`WpLoginHashKey`). The salt lives in `wp-config.php`, so a copy of the
+database alone does not carry the key to the hashes in it; the site's id makes each site of a network store
+different values (scenario 4). A site whose salts are changed gets a new key: attempts under the old one stop
+counting, which can end a lockout early and never starts one.
+
+**The old values.** The release before this one stored plain SHA-256 hashes. Counting and the latest-lockout check
+read the plain pair beside the keyed one, so failures and an active lockout stored before the update are counted
+until they leave the window, deleted within the retention period (30 days by default) (scenario 5; see the
+amendment below); nothing is ever written under the plain pair. The plain lookup can be removed once
+every client has run this release for longer than its longest counting window and lockout; removed too early, an old
+lockout ends early.
+
+**One fingerprint wherever a lockout is shown.** The Lockouts panel, the lockout notice and `LoginLockoutEvent` show
+the first 12 hex characters of `HMAC(site key, stored hash)`. The panel used to show a 12-character prefix of the
+stored hash itself, which for a plain hash gives an IPv4 address back in seconds. The derivation is the same for
+keyed and plain rows, so a notice lines up with its row on the panel either way.
+
+**The account.** On the attempt that starts a lockout (and only then) the typed username is looked up as a login,
+then as an email. A lockout of an account records its user id and the notice names it by display name; any other
+reads "unknown username" and its fingerprint. A display name that is the account's own login or email is shown, on
+purpose (FR-016); only people who manage operations see notices. The visitor's refusal is the same either way, so
+no username-enumeration channel is added.
+
+**Not chosen.** *A key stored in an option*: it would sit in the database beside the hashes it protects. *Deleting
+rows stored before the update*: FR-019 says they keep counting.
+
+**Amended 2026-11-12 (security review of slice 3).** Decided by the orchestrator under the owner's delegation.
+
+- *Old rows are deleted, not only left to age.* `WpLoginAttemptStore` had a prune with no caller, so no sign-in
+  record was ever deleted and "Keep sign-in records" did nothing; a plain row such as `sha256('::1')` reads back with
+  one guess. The attempts table is now a `PrunableStore` of the daily retention sweep (`LoginAttemptRetention`),
+  with the login settings' window read when the sweep runs, by when each attempt happened, in batches, on each site's
+  own cron and table. A lockout still in force is kept however old. So attempts stored before the update are counted
+  until they leave the window, deleted within the retention period (30 days by default). *Not chosen:* a key-version
+  column, so a data step could re-key plain rows. A plain row cannot be re-keyed without the username and address it
+  hides, and deleting it within the retention period ends it without a schema change.
+- *A username and an address are hashed in separate domains.* Hashed alike, `identityHashOf(x)` equalled
+  `networkHashOf(x)`, so a suspected address typed as the username confirmed itself through the fingerprints. Each
+  HMAC message now starts with its domain and a NUL byte (`identity`, `network`, and for a fingerprint
+  `identity-fingerprint` or `network-fingerprint`). A prefix was chosen over two keys derived from the site key: it
+  separates the domains as surely, with one key and no extra derivation per attempt. Done now, while no keyed row
+  exists on a client site; the plain values of the release before keep their old form, since they are only compared
+  with rows it stored.
+- *The account is named by display name and login.* A display name is the account holder's to choose, so a
+  subscriber could take a colleague's and lock themselves out, and the notice would read as an attack on the
+  colleague while the panel showed `user_login`. The notice reads "<display name> (<login>)", or the login alone when
+  the two are the same.
+- *Where the key lives.* The salt is in `wp-config.php` only while the salts are defined there. When they are not,
+  WordPress makes them and keeps them in the `auth_key` and `auth_salt` options, and a copy of the database then
+  carries the key. `HardeningFacts` already reports that state (`authSaltsConfigured`).
+
+## #627 -- A schema component can carry data steps; old lockout notices are rewritten by one
+
+**Date:** 2026-11-12. **Spec:** 124, slice 3 (FR-020, scenario 5). **Branch:** `spec/124-slice-3-sign-in-privacy`.
+**Decided:** under the owner's delegation of the revamp.
+
+`SchemaComponent` takes an optional list of `DataMigrationStep`s. `SiteMigrationRunner` runs them after the
+component's tables exist and before its version is stored, in each site's scope; a step that fails leaves the version
+unwritten and runs again next time. That reaches every path a site is migrated by (the self-heal, `wp corex migrate`,
+`ReleaseFinisher`, `SiteLifecycleSubscriber`). Product foundation's schema becomes version 5.
+
+`LockoutNoticeRewrite` is the first step. Lockout notices stored before the update held the typed username and the
+full address in their title, body, merge key, source and details. Each is rewritten once, in batches of 100: "unknown
+username" (old rows have no account), the fingerprints its own old plain-hash rows show on the panel (the raw values
+are read in memory, hashed the old way, fingerprinted, and dropped), the merge key `security.lockout:legacy:<id>`,
+and no address in its details. A resolved notice stays resolved and keeps its count. A rewritten row has a new
+source type and is never selected again, so a second run changes nothing. New notices merge by
+`security.lockout:account:<id>` or `security.lockout:identity:<fingerprint>`, so the next lockout of a name an old
+notice held opens a new notice.
+
+**Not chosen.** *Listening for `SiteMigrated`*: only the self-heal and `wp corex migrate` send it. *A version bump
+alone*: it runs `dbDelta` and changes no stored row.
+
+**Amended 2026-11-12 (security review of slice 3).** Decided by the orchestrator under the owner's delegation.
+
+- *Merge keys outside the old key space.* The old producer wrote `security.lockout:` and the typed username, so a
+  visitor who had locked out the username `legacy:12` made the key the rewrite gives row 12, and the rewrite failed
+  on the unique `dedup_key` for good; `account:1` would have absorbed account 1's first new notice. New keys start
+  `security.lockout.` (a dot): `security.lockout.account:<id>`, `security.lockout.identity:<fingerprint>`,
+  `security.lockout.legacy:<id>`. No old key can start that way. The producer's merge goes through the repository's
+  generic `upsertByDedupKey()`; no other reader parses these keys.
+- *A notice the rewrite cannot write is skipped.* The rest are rewritten, and the step then fails with the count and
+  the ids. The skipped notices keep their old shape, so the next run takes them again.
+- *A failing step is logged and backed off.* Nothing listened for `SiteMigrationFailed` and the self-heal returned
+  quietly, so a failing step reran with `dbDelta` on every admin page, admin-ajax call and cron run, with no record.
+  The self-heal now writes the failure once through `BootLogger` (the debug log, and an admin notice in debug mode)
+  and holds that component back on that site for 15 minutes (a site-scoped transient, `corex_schema_backoff`, by
+  component). `SiteMigrationResult::$componentsFailed` names them; the runner takes an optional list of components to
+  leave out. `wp corex migrate` and `ReleaseFinisher` pass none and still try at once.
+- *Rewritten notices may be stored in English on a translated site.* On the self-heal path the rewrite calls `__()`
+  as early as `MultisiteServiceProvider::boot()`, before `init`, when the site's translations may not be loaded. No
+  translation of these strings ships today, so nothing changes yet. When one does, the notice should keep its words
+  as message keys with arguments (its `title_key` and `message_key` are already stored) and be rendered when read,
+  or the rewrite should run on `init` or later; either keeps a stored notice in the reader's language.

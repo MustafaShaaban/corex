@@ -58,9 +58,11 @@ and approved first, a spec ends in slices, and nothing merges without the review
   Slice 1 (Forms paused as a mode, one gate for Maintenance and Forms paused, the Assistant's chat kept open and its
   hand-off refused, the abilities) is merged (#463, `4c30bc19`); the mode is chosen from the command line until
   slice 8 draws the mode cards. Slice 2 (`noindex` on development and staging sites, following the environment
-  rather than the mode; a mode change asks page-cache plugins to clear their pages) is built on
-  `spec/124-slice-2-noindex-and-caches`, reviewed by `corex-reviewer` and being fixed (DECISIONS #625, amended
-  2026-11-12). Next: slice 2's two-model review and its pull request, then slice 3. Held: `OperationsMode.php:189`
+  rather than the mode; a mode change asks page-cache plugins to clear their pages) is merged (#465, `f6b45eb0`,
+  DECISIONS #625). Slice 3 (sign-in privacy: values keyed with the site's secret, old ones counted until they age
+  out, the account or "unknown username", one fingerprint on the panel and the notice, old lockout notices rewritten
+  by the first schema data step; DECISIONS #626, #627) is on `spec/124-slice-3-sign-in-privacy`. Next: slice 3's
+  reviews and pull request, then slice 4 (the three login switches, after 3). Held: `OperationsMode.php:189`
   and `ModeDisclosure.php:157` still tell a Staging owner that search engines "should be discouraged", which is no
   longer true once slice 2 ships; the wording is held for slice 8's screen copy, but a release cut before slice 8
   would ship it.

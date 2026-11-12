@@ -21,8 +21,11 @@ use Corex\Config\Access\AccessAuditLog;
 use Corex\Config\Activity\SecurityActivityRecorder;
 use Corex\Config\Activity\SecurityEventsSince;
 use Corex\Config\Insights\InsightWidgetFacts;
+use Corex\Config\Notifications\Lockouts\LoginLockoutNotice;
+use Corex\Config\Notifications\NotificationTable;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Database\Schema\Migrator;
 use Corex\Events\EventDispatcher;
 use Corex\Security\LoginLockoutEvent;
 use Corex\Support\DateTime\AdminDateTime;
@@ -40,7 +43,17 @@ afterEach(function () {
     foreach ([OperationsModeStore::OPTION => $this->modeWas, 'corex_operations_mode_log' => $this->logWas, 'corex_access_audit_log' => $this->auditWas] as $option => $value) {
         $value === null ? delete_option($option) : update_option($option, $value);
     }
+
+    // The notice the lockout opened. It used to be left, with the made-up username and address in it.
+    global $wpdb;
+    $wpdb->delete(
+        (new Migrator())->fullName(NotificationTable::NAME),
+        ['dedup_key' => LoginLockoutNotice::identityKey(SECURITY_EVENTS_TEST_FINGERPRINT)],
+    );
 });
+
+/** The fingerprint of the made-up lockout these tests announce. */
+const SECURITY_EVENTS_TEST_FINGERPRINT = 'c0ffee124e10';
 
 /** The kinds the card shows, newest first. */
 function cardKinds(): array
@@ -65,7 +78,8 @@ it('records a mode change, a refusal, a lockout and an access decision, and keep
     $store = Boot::app()->container()->make(OperationsModeStore::class);
     $store->set($store->current() === OperationsMode::STAGING ? OperationsMode::DEVELOPMENT : OperationsMode::STAGING, $this->admin);
     Boot::app()->container()->make(AccessRefusalRecorder::class)->refused($this->admin + 1000, 'denied', 'corex-data');
-    Boot::app()->container()->make(EventDispatcher::class)->dispatch(new LoginLockoutEvent('someone', '203.0.113.9', new DateTimeImmutable('+15 minutes')));
+    // A lockout carries fingerprints since spec 124 (FR-020), never the typed username or the address.
+    Boot::app()->container()->make(EventDispatcher::class)->dispatch(new LoginLockoutEvent(null, SECURITY_EVENTS_TEST_FINGERPRINT, 'c0ffee124e11', new DateTimeImmutable('+15 minutes')));
     $now = new DateTimeImmutable('now');
     $this->activity->record($this->admin, ActivityEvent::ACTOR_USER, 'admin', ActivityEvent::AREA_ACCESS, 'access.request.approved', 'access_request', '7', 'Data', ActivityEvent::OUTCOME_SUCCESS, ['key' => 'access.request.approved', 'args' => []], [], ActivityEvent::SENSITIVITY_SECURITY, $now->modify('+1 day'), $now);
 
@@ -82,8 +96,7 @@ it('records a mode change, a refusal, a lockout and an access decision, and keep
     // When the lock ends, and not the username typed or the visitor's address.
     expect(array_keys($lockout->context))->toBe(['locked_until'])
         ->and($lockout->targetLabel)->toBe('Sign-in')
-        ->and(wp_json_encode($lockout))->not->toContain('someone')
-        ->and(wp_json_encode($lockout))->not->toContain('203.0.113.9');
+        ->and(wp_json_encode($lockout))->not->toContain(SECURITY_EVENTS_TEST_FINGERPRINT);
 
     $card  = Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'];
     $lines = array_column($card, 'text');

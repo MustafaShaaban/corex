@@ -7,6 +7,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Database\Schema\DataMigrationStep;
 use Corex\Database\Schema\NetworkMigrationResult;
 use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaMigrator;
@@ -187,11 +188,41 @@ final class FakeNetworkContext100 implements NetworkContext
     }
 }
 
+/** A data step that writes what it did on the shared timeline, and can be made to fail. */
+final class RecordingDataStep100 implements DataMigrationStep
+{
+    public bool $fails = false;
+
+    /** @var list<string> */
+    public array $timeline;
+
+    /** @param list<string> $timeline */
+    public function __construct(array &$timeline, private readonly string $name = 'rewrite-notices')
+    {
+        $this->timeline =& $timeline;
+    }
+
+    public function id(): string
+    {
+        return $this->name;
+    }
+
+    public function run(): void
+    {
+        $this->timeline[] = 'step:' . $this->name;
+
+        if ($this->fails) {
+            throw new RuntimeException('the rows could not be rewritten');
+        }
+    }
+}
+
 /**
  * @param list<int> $siteIds
+ * @param (callable(list<string>&): list<DataMigrationStep>)|null $steps
  * @return array{0: SiteMigrationRunner, 1: FakeSchemaMigrator100, 2: ArraySchemaVersionStore100, 3: FakeSiteScope100, 4: ListenerProvider}
  */
-function migrationRunner100(array $siteIds = [1]): array
+function migrationRunner100(array $siteIds = [1], ?callable $steps = null): array
 {
     $timeline = [];
     $migrator = new FakeSchemaMigrator100($timeline);
@@ -203,6 +234,7 @@ function migrationRunner100(array $siteIds = [1]): array
         '3',
         [new Table('activity'), new Table('jobs')],
         'corex_product_foundation_schema_version',
+        $steps === null ? [] : $steps($timeline),
     ));
     $listeners = new ListenerProvider();
     $events = new EventDispatcher($listeners, new BootLogger(false));
@@ -358,4 +390,99 @@ it('dispatches component failures but leaves successful migration events to call
     $runner->runForSite(1);
 
     expect($events)->toBe(['failed:product-foundation']);
+});
+
+/**
+ * A version can need the rows already stored to change, not only the tables: spec 124 rewrites the
+ * lockout notices an earlier release kept the typed username and the address in (FR-020). The
+ * component's data steps run on every path a site is migrated by, after its tables exist and before
+ * its version is stored, so a step that fails is tried again.
+ */
+it('spec 124 FR-020: runs a component data step after its tables exist and before its version is stored', function () {
+    $step = null;
+    [$runner, $migrator, $versions] = migrationRunner100([1], function (array &$timeline) use (&$step): array {
+        $step = new RecordingDataStep100($timeline);
+
+        return [$step];
+    });
+    $migrator->existing = ['activity' => true, 'jobs' => true];
+
+    $result = $runner->runForSite(1);
+
+    expect($migrator->timeline)->toBe([
+        'create:activity',
+        'create:jobs',
+        'exists:activity',
+        'exists:jobs',
+        'step:rewrite-notices',
+        'put:corex_product_foundation_schema_version=3',
+    ])->and($result->outcome)->toBe(SiteMigrationOutcome::Migrated)
+        ->and($versions->puts)->toBe([['corex_product_foundation_schema_version', '3']]);
+});
+
+it('spec 124 FR-020: leaves the version unwritten when a data step fails, reports it, and runs it again next time', function () {
+    $step = null;
+    [$runner, $migrator, $versions, , $listeners] = migrationRunner100([1], function (array &$timeline) use (&$step): array {
+        $step = new RecordingDataStep100($timeline);
+
+        return [$step];
+    });
+    $failed = [];
+    $listeners->listen(SiteMigrationFailed::class, function (SiteMigrationFailed $event) use (&$failed): void {
+        $failed[] = $event->componentId . ': ' . $event->error;
+    });
+    $migrator->existing = ['activity' => true, 'jobs' => true];
+    $step->fails = true;
+
+    $first = $runner->runForSite(1);
+    $step->fails = false;
+    $second = $runner->runForSite(1);
+
+    expect($first->outcome)->toBe(SiteMigrationOutcome::Failed)
+        ->and($first->error)->toContain('rewrite-notices')
+        ->and($first->error)->toContain('the rows could not be rewritten')
+        ->and($failed)->toHaveCount(1)
+        ->and($failed[0])->toStartWith('product-foundation: ')
+        ->and($second->outcome)->toBe(SiteMigrationOutcome::Migrated)
+        ->and($versions->puts)->toBe([['corex_product_foundation_schema_version', '3']]);
+});
+
+it('spec 124 FR-020: runs no data step for a component that is current, nor before its tables exist', function () {
+    $step = null;
+    [$runner, $migrator, $versions] = migrationRunner100([1], function (array &$timeline) use (&$step): array {
+        $step = new RecordingDataStep100($timeline);
+
+        return [$step];
+    });
+
+    $migrator->existing = ['activity' => true];
+    $partial = $runner->runForSite(1);
+    $versions->versions['corex_product_foundation_schema_version'] = '3';
+    $versions->forget(['corex_product_foundation_schema_version']);
+    $current = $runner->runForSite(1);
+
+    expect($partial->outcome)->toBe(SiteMigrationOutcome::Failed)
+        ->and($current->outcome)->toBe(SiteMigrationOutcome::AlreadyCurrent)
+        ->and($migrator->timeline)->not->toContain('step:rewrite-notices');
+});
+
+it('spec 124: names the components that failed, and leaves out the ones it is told to skip', function () {
+    $step = null;
+    [$runner, $migrator, $versions] = migrationRunner100([1], function (array &$timeline) use (&$step): array {
+        $step = new RecordingDataStep100($timeline);
+
+        return [$step];
+    });
+    $migrator->existing = ['activity' => true, 'jobs' => true];
+    $step->fails = true;
+
+    $failed = $runner->runForSite(1);
+    $skippedIsDue = $runner->isDueForSite(1, ['product-foundation']);
+    $skipped = $runner->runForSite(1, ['product-foundation']);
+
+    expect($failed->componentsFailed)->toBe(['product-foundation'])
+        ->and($skippedIsDue)->toBeFalse()
+        ->and($skipped->outcome)->toBe(SiteMigrationOutcome::AlreadyCurrent)
+        ->and(array_count_values($migrator->timeline)['step:rewrite-notices'])->toBe(1)
+        ->and($versions->puts)->toBe([]);
 });

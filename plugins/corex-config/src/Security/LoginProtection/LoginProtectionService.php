@@ -10,16 +10,22 @@ namespace Corex\Config\Security\LoginProtection;
 
 defined('ABSPATH') || exit;
 
+use Corex\Security\LoginLockoutEvent;
 use DateTimeImmutable;
 
 /**
  * Applies login rate limiting without storing raw credentials or raw IP addresses.
+ *
+ * An attempt is counted by keyed values (spec 124, FR-019), and the rows the release before this one
+ * stored under plain hashes are counted with them until they leave the window. The account a username
+ * belongs to is looked up once, on the way into a lockout, and kept on the lockout row (FR-016).
  */
 final class LoginProtectionService
 {
     public function __construct(
         private readonly LoginProtectionPolicy $policy,
         private readonly LoginAttemptStore $store,
+        private readonly LoginAccounts $accounts,
     ) {
     }
 
@@ -29,11 +35,7 @@ final class LoginProtectionService
             return new LoginProtectionDecision(false, 'disabled');
         }
 
-        $lockout = $this->store->latestLockout(
-            $this->policy->identityHash($context),
-            $this->policy->networkHash($context),
-            $now,
-        );
+        $lockout = $this->store->latestLockout($this->policy->keys($context), $now);
 
         if ($lockout !== null) {
             return new LoginProtectionDecision(true, 'active_lockout', $lockout->lockedUntil);
@@ -53,33 +55,37 @@ final class LoginProtectionService
             return $active;
         }
 
-        $identityHash = $this->policy->identityHash($context);
-        $networkHash = $this->policy->networkHash($context);
+        $keys = $this->policy->keys($context);
         $recent = $this->store->failures(
-            $identityHash,
-            $networkHash,
+            $keys,
             $now->modify('-' . $this->policy->settings->windowSeconds . ' seconds'),
         );
 
         if (count($recent) + 1 >= $this->policy->settings->threshold) {
             $lockedUntil = $now->modify('+' . $this->policy->settings->lockoutSeconds . ' seconds');
-            $this->store->record(new LoginAttemptRecord(
-                identityHash: $identityHash,
-                networkHash: $networkHash,
+            $lockout = new LoginAttemptRecord(
+                identityHash: $keys->identityHash,
+                networkHash: $keys->networkHash,
                 outcome: LoginAttemptRecord::LOCKED,
                 reasonCode: 'threshold_exceeded',
-                userId: null,
+                userId: $this->accounts->idFor($context->identity),
                 occurredAt: $now,
                 retentionUntil: $this->policy->retentionUntil($now),
                 lockedUntil: $lockedUntil,
-            ));
+            );
+            $this->store->record($lockout);
 
-            return new LoginProtectionDecision(true, 'threshold_exceeded', $lockedUntil);
+            return new LoginProtectionDecision(true, 'threshold_exceeded', $lockedUntil, new LoginLockoutEvent(
+                $lockout->userId,
+                $this->policy->identityFingerprint($lockout->identityHash),
+                $this->policy->networkFingerprint($lockout->networkHash),
+                $lockedUntil,
+            ));
         }
 
         $this->store->record(new LoginAttemptRecord(
-            identityHash: $identityHash,
-            networkHash: $networkHash,
+            identityHash: $keys->identityHash,
+            networkHash: $keys->networkHash,
             outcome: LoginAttemptRecord::FAILED,
             reasonCode: 'invalid_credentials',
             userId: null,

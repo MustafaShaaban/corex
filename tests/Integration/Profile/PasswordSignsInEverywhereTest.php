@@ -98,7 +98,10 @@ afterEach(function () {
 
     $wpdb->delete(
         (new Migrator())->fullName(LoginAttemptTable::NAME),
-        ['network_hash' => hash('sha256', PASSWORD_TEST_IP)],
+        // Keyed with the site's own secret since spec 124 (FR-019).
+        ['network_hash' => \Corex\Boot::app()->container()
+            ->make(\Corex\Config\Security\LoginProtection\LoginProtectionPolicy::class)
+            ->networkHashOf(PASSWORD_TEST_IP)],
     );
     $_SERVER = $this->server;
 });
