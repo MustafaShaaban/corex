@@ -53,9 +53,13 @@ and approved first, a spec ends in slices, and nothing merges without the review
   CI, no pull request yet. Being finished: main merged in, the Arabic catalogue completed for the strings main
   added since, the right-to-left line height that #454 introduced, and the review's test gaps. The native Arabic
   review of the catalogue (`specs/121-tokens-and-type/arabic-review.md`) is the owner's and gates the tag.
-- **Spec 124, modes and login protection (R3.8)**, branch `spec/124-modes-and-login`: spec, plan and tasks, plus
-  the code a session left uncommitted on 2026-10-26, pushed as found (commit 34294b63, "not reviewed, not tested").
-  Next: a review of it against its tasks and today's main, then its slices under the CoreX loop.
+- **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
+  (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).
+  Slice 1 (Forms paused as a mode, one gate for Maintenance and Forms paused, the Assistant's chat kept open and its
+  hand-off refused, the abilities) is on branch `spec/124-slice-1-forms-paused`: guarded, read by
+  `corex-reviewer` and fixed on 2026-11-12; the mode is chosen from the command line until slice 8 draws the mode
+  cards. Next: the two-model review and its pull request, then slice 2 (`noindex` in Development and Staging, a
+  mode change clears page caches).
 - **Spec 129 slice 3** (CoreX Assistant: a time asked for once, a line the server writes, `required_if`), PR
   #456, DECISIONS #617 to #619: open, not reviewed in this pass.
 - **Spec 130, the docs on their own host**, draft (DECISIONS #620, ROADMAP §13 "Public hosts"). Waits on three
