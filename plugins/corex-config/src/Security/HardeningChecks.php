@@ -29,8 +29,10 @@ final class HardeningChecks
      *   debugDisplayOff:bool,
      *   defaultAdminAbsent:bool,
      *   indexingAllowed:bool,
-     *   authSaltsConfigured:bool
-     * } $facts
+     *   authSaltsConfigured:bool,
+     *   trustedProxiesNarrow?:bool
+     * } $facts `trustedProxiesNarrow` passes when left out, as facts gathered before it existed are
+     *          (spec 124, FR-015).
      *
      * @return list<array{key:string,label:string,status:string,detail:string}>
      */
@@ -78,6 +80,15 @@ final class HardeningChecks
                 $facts['authSaltsConfigured'],
                 __('WordPress authentication unique keys and salts are configured.', 'corex'),
                 __('Set unique WordPress authentication unique keys and salts in wp-config.php.', 'corex'),
+            ),
+            // A list stored before the route and the command refused `/0` is still used as stored:
+            // ignoring it would count every visitor behind a CDN as the CDN (DECISIONS #629).
+            $this->check(
+                'trusted_proxies',
+                __('Trusted proxies name only your proxies', 'corex'),
+                $facts['trustedProxiesNarrow'] ?? true,
+                __('No trusted proxy range covers every address.', 'corex'),
+                __('A trusted proxy range covers every address (/0), so any visitor can choose the address their failed sign-ins are counted by and get around the limit. List only your own proxies with wp corex security trusted-proxies, or clear the list with --clear.', 'corex'),
             ),
         ];
     }

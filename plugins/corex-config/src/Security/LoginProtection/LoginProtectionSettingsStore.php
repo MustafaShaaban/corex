@@ -47,6 +47,10 @@ final class LoginProtectionSettingsStore
         'successful_login_logging',
     ];
 
+    public function __construct(private readonly LoginSettingsLock $lock = new LoginSettingsLock())
+    {
+    }
+
     /**
      * Persist a sanitized login-protection payload and return the stored settings. The custom login
      * URL is served by {@see LoginRouteGuard} via request interception, so no rewrite flush is needed.
@@ -115,17 +119,6 @@ final class LoginProtectionSettingsStore
             return $this->current();
         }
 
-        $hiding = ($switches ?? $this->current()->switches())->hideWpLogin;
-        if ($hiding && array_key_exists('custom_slug', $changes)) {
-            $reason = LoginSlug::rejectionReason(sanitize_title(trim((string) $changes['custom_slug'])));
-            if ($reason !== null) {
-                throw LoginSettingsRefused::addressNeededToHide($reason);
-            }
-        }
-
-        $stored = get_option(self::OPTION, []);
-        $stored = is_array($stored) ? $stored : [];
-
         if ($switches !== null) {
             $changes += [
                 'enabled'                 => $switches->previousEnabled(),
@@ -136,9 +129,86 @@ final class LoginProtectionSettingsStore
             ];
         }
 
-        LoadedOptions::store(self::OPTION, array_replace($stored, $changes));
+        $this->rewrite(function (array $stored) use ($changes, $switches): array {
+            $hiding = ($switches ?? $this->current()->switches())->hideWpLogin;
+            if ($hiding && array_key_exists('custom_slug', $changes)) {
+                $reason = LoginSlug::rejectionReason(sanitize_title(trim((string) $changes['custom_slug'])));
+                if ($reason !== null) {
+                    throw LoginSettingsRefused::addressNeededToHide($reason);
+                }
+            }
+
+            return array_replace($stored, $changes);
+        });
 
         return $this->current();
+    }
+
+    /**
+     * Change the stored option under the settings' lock ({@see LoginSettingsLock}): read it as the
+     * database holds it now, hand it to `$edit`, and write what comes back when it differs. Every
+     * writer of this option goes through here or through {@see self::rewriteForRecovery()} (this
+     * store, `wp corex security trusted-proxies`, `wp corex security reset-login`), so two of them
+     * never lose each other's change.
+     *
+     * @param callable(array<string,mixed>): array<string,mixed> $edit
+     *
+     * @return array<string,mixed> the option as written
+     *
+     * @throws LoginSettingsBusy when another save holds the lock past the wait
+     */
+    public function rewrite(callable $edit): array
+    {
+        return $this->lock->hold(fn (): array => $this->writeFresh($edit));
+    }
+
+    /**
+     * For `wp corex security reset-login` only: change the option under the lock when it can be had
+     * within the wait, and without it when it cannot.
+     *
+     * Recovery is how a locked-out owner gets back in, so it must not give up because a save is in
+     * progress or has hung. Written without the lock, that save may be overwritten, or may overwrite
+     * this; the command says so. Nothing a person drives from a screen may call this: it gives up the
+     * one guarantee {@see self::rewrite()} makes.
+     *
+     * @param callable(array<string,mixed>): array<string,mixed> $edit
+     *
+     * @return bool whether the lock was held while it wrote
+     */
+    public function rewriteForRecovery(callable $edit): bool
+    {
+        try {
+            $this->rewrite($edit);
+
+            return true;
+        } catch (LoginSettingsBusy) {
+            $this->writeFresh($edit);
+
+            return false;
+        }
+    }
+
+    /**
+     * @param callable(array<string,mixed>): array<string,mixed> $edit
+     *
+     * @return array<string,mixed>
+     */
+    private function writeFresh(callable $edit): array
+    {
+        // What this request read when it began may be older than the row now: forget it.
+        wp_cache_delete(self::OPTION, 'options');
+        wp_cache_delete('alloptions', 'options');
+        wp_cache_delete('notoptions', 'options');
+
+        $stored = get_option(self::OPTION, []);
+        $stored = is_array($stored) ? $stored : [];
+
+        $next = $edit($stored);
+        if ($next !== $stored) {
+            LoadedOptions::store(self::OPTION, $next);
+        }
+
+        return $next;
     }
 
     public function current(): LoginProtectionSettings

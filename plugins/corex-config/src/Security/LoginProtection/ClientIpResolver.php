@@ -71,7 +71,13 @@ final readonly class ClientIpResolver
     private function inCidr(string $ip, string $range): bool
     {
         if (! str_contains($range, '/')) {
-            return $ip === $range;
+            // As the address it is, not as text: a list stored before CoreX wrote one spelling may
+            // hold `2001:DB8::1` for `2001:db8::1`. An IPv4-mapped IPv6 address is 16 bytes and an
+            // IPv4 address 4, so the two are not taken for each other.
+            $ipBytes = inet_pton($ip);
+            $rangeBytes = filter_var($range, FILTER_VALIDATE_IP) === false ? false : inet_pton($range);
+
+            return $ipBytes !== false && $ipBytes === $rangeBytes;
         }
 
         [$subnet, $bits] = explode('/', $range, 2);

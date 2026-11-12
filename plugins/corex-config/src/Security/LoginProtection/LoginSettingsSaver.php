@@ -57,6 +57,10 @@ final class LoginSettingsSaver
             return LoginSettingsSaveOutcome::saved($this->store->update($input->changes, $input->switches));
         } catch (LoginSettingsRefused $refused) {
             return LoginSettingsSaveOutcome::refused([$refused->field => LoginSettingsProblem::fromRefusal($refused)]);
+        } catch (LoginSettingsBusy) {
+            return LoginSettingsSaveOutcome::refused([
+                'request' => new LoginSettingsProblem('request', LoginSettingsProblem::REASON_BUSY),
+            ]);
         }
     }
 }

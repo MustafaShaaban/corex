@@ -17,6 +17,7 @@ use Corex\Access\CorexAbility;
 use Corex\Boot;
 use Corex\Config\Access\AccessAuditLog;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\LoginSettingsLock;
 use Corex\Support\Options\LoadedOptions;
 use Corex\Tests\Support\OptionRow;
 
@@ -64,7 +65,24 @@ function loginSettingsRow(): ?array
     return is_array($row) ? $row : null;
 }
 
+/**
+ * A published page at `about`: the site's own when it has one, or one this test publishes, which
+ * it deletes afterwards.
+ */
+function publishedAboutPage(object $test): void
+{
+    $page = get_page_by_path('about');
+    if ($page instanceof WP_Post && $page->post_status === 'publish') {
+        return;
+    }
+
+    $id = wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'About', 'post_name' => 'about']);
+    expect($id)->toBeInt()->and(get_post_field('post_name', $id))->toBe('about');
+    $test->pages[] = $id;
+}
+
 beforeEach(function () {
+    $this->pages = [];
     $this->settingsRow = OptionRow::capture(LoginProtectionSettingsStore::OPTION);
     $this->auditRow = OptionRow::capture('corex_access_audit_log');
     $this->people = [];
@@ -81,6 +99,9 @@ afterEach(function () {
     require_once ABSPATH . 'wp-admin/includes/user.php';
     foreach ($this->people as $id) {
         wp_delete_user($id);
+    }
+    foreach ($this->pages as $id) {
+        wp_delete_post($id, true);
     }
 
     OptionRow::restore(LoginProtectionSettingsStore::OPTION, $this->settingsRow);
@@ -210,6 +231,166 @@ it('FR-004c: refuses a save without the REST nonce, even from an administrator',
     $before = loginSettingsRow();
 
     expect(loginSettingsRoute('POST', ['max_attempts' => 9], nonce: false)->get_status())->toBe(403)
+        ->and(loginSettingsRow())->toBe($before);
+});
+
+it('FR-015: refuses an address a published page already answers at, and saves nothing', function () {
+    publishedAboutPage($this);
+    $before = loginSettingsRow();
+
+    $response = loginSettingsRoute('POST', ['custom_slug' => 'about']);
+    $data = $response->get_data();
+
+    expect($response->get_status())->toBe(422)
+        ->and($data['details']['fields']['custom_slug'])->toBe(['reason' => 'address', 'detail' => 'taken_by_page'])
+        ->and($data['errors']['custom_slug'])->toContain('published page')
+        ->and(loginSettingsRow())->toBe($before);
+});
+
+it('FR-013, FR-015: says hiding wp-login.php needs an address of its own when the address is a page\'s', function () {
+    publishedAboutPage($this);
+    $before = loginSettingsRow();
+
+    $response = loginSettingsRoute('POST', ['hide_wp_login' => true, 'custom_slug' => 'about']);
+    $data = $response->get_data();
+
+    expect($response->get_status())->toBe(422)
+        ->and($data['details']['fields']['custom_slug'])->toBe(['reason' => 'address_needed_to_hide', 'detail' => 'taken_by_page'])
+        ->and($data['errors']['custom_slug'])->toContain('wp-login.php can only be hidden behind a login address of your own.')
+        ->and(loginSettingsRow())->toBe($before);
+});
+
+it('FR-015: takes the route\'s own answer posted back with one field changed, and changes only that field', function () {
+    $before = get_option(LoginProtectionSettingsStore::OPTION);
+    $answer = loginSettingsRoute('GET')->get_data()['login_protection'];
+    expect($answer['window_minutes'])->toBeNull()->and($answer['window_seconds'])->toBe(30);
+
+    $response = loginSettingsRoute('POST', ['max_attempts' => 9] + $answer);
+    $after = get_option(LoginProtectionSettingsStore::OPTION);
+    $expected = ['threshold' => 9] + $before;
+    ksort($after);
+    ksort($expected);
+
+    expect($response->get_status())->toBe(200)
+        ->and($after)->toBe($expected)
+        ->and($after['window_seconds'])->toBe(30);
+});
+
+it('FR-015: takes a whole-minute window posted back beside its seconds', function () {
+    LoadedOptions::store(LoginProtectionSettingsStore::OPTION, ['window_seconds' => 600] + LOGIN_SETTINGS_SET_FROM_THE_COMMAND_LINE);
+    $answer = loginSettingsRoute('GET')->get_data()['login_protection'];
+
+    $response = loginSettingsRoute('POST', ['max_attempts' => 4] + $answer);
+
+    expect($answer['window_minutes'])->toBe(10)
+        ->and($response->get_status())->toBe(200)
+        ->and(get_option(LoginProtectionSettingsStore::OPTION)['window_seconds'])->toBe(600)
+        ->and(get_option(LoginProtectionSettingsStore::OPTION)['threshold'])->toBe(4);
+});
+
+it('FR-014: the previous screen saving Max attempts leaves wp-login.php hidden and limits off as they are', function () {
+    LoadedOptions::store(LoginProtectionSettingsStore::OPTION, [
+        'hide_wp_login'           => true,
+        'hide_admin'              => false,
+        'limit_attempts'          => false,
+        'enabled'                 => true,
+        'block_default_endpoints' => false,
+    ] + LOGIN_SETTINGS_SET_FROM_THE_COMMAND_LINE);
+
+    // What the previous screen sends: every field, the two old keys as it read them.
+    $response = loginSettingsRoute('POST', [
+        'enabled'                  => true,
+        'block_default_endpoints'  => false,
+        'custom_slug'              => 'team-door',
+        'max_attempts'             => 8,
+        'window_seconds'           => 60,
+        'lockout_seconds'          => 900,
+        'trusted_proxies'          => [],
+        'retention_days'           => 30,
+        'successful_login_logging' => true,
+    ]);
+
+    expect($response->get_status())->toBe(200)
+        ->and($response->get_data()['login_protection'])->toMatchArray([
+            'hide_wp_login'  => true,
+            'hide_admin'     => false,
+            'limit_attempts' => false,
+            'max_attempts'   => 8,
+        ]);
+});
+
+it('FR-015: keeps a stored list the rules now refuse when the screen posts it back unchanged', function () {
+    LoadedOptions::store(LoginProtectionSettingsStore::OPTION, [
+        'trusted_proxy_mode'   => true,
+        'trusted_proxy_ranges' => ['0.0.0.0/0'],
+    ] + LOGIN_SETTINGS_SET_FROM_THE_COMMAND_LINE);
+
+    $response = loginSettingsRoute('POST', ['trusted_proxies' => ['0.0.0.0/0'], 'max_attempts' => 6]);
+
+    expect($response->get_status())->toBe(200)
+        ->and(get_option(LoginProtectionSettingsStore::OPTION)['trusted_proxy_ranges'])->toBe(['0.0.0.0/0'])
+        ->and(get_option(LoginProtectionSettingsStore::OPTION)['threshold'])->toBe(6);
+});
+
+it('FR-015: stores a trusted proxy in one spelling', function () {
+    loginSettingsRoute('POST', ['trusted_proxies' => "2001:DB8::1\n2001:0db8:0000:0000:0000:0000:0000:0002"]);
+
+    expect(get_option(LoginProtectionSettingsStore::OPTION)['trusted_proxy_ranges'])->toBe(['2001:db8::1', '2001:db8::2']);
+});
+
+it('FR-015: answers a request with nothing to save with its own refusal, and writes nothing', function () {
+    $before = loginSettingsRow();
+
+    $response = loginSettingsRoute('POST', ['login_url' => 'https://example.test/']);
+
+    expect($response->get_status())->toBe(422)
+        ->and($response->get_data()['details']['fields'])->toBe(['request' => ['reason' => 'nothing_to_save']])
+        ->and($response->get_data()['errors']['request'])->toBeString()->not->toBe('')
+        ->and(loginSettingsRow())->toBe($before);
+});
+
+it('FR-015: holds a named lock while it writes, and lets it go', function () {
+    global $wpdb;
+
+    $lock = Boot::app()->container()->make(LoginSettingsLock::class)->name();
+    $heldAtWrite = null;
+    $watch = static function (string $sql) use (&$heldAtWrite, $lock, $wpdb): string {
+        if ($heldAtWrite === null && str_starts_with(ltrim($sql), 'UPDATE `' . $wpdb->options . '`')) {
+            $heldAtWrite = false;
+            $heldAtWrite = $wpdb->get_var($wpdb->prepare('SELECT IS_USED_LOCK(%s)', $lock)) !== null;
+        }
+
+        return $sql;
+    };
+    add_filter('query', $watch);
+
+    try {
+        $response = loginSettingsRoute('POST', ['max_attempts' => 7]);
+    } finally {
+        remove_filter('query', $watch);
+    }
+
+    expect($response->get_status())->toBe(200)
+        ->and($heldAtWrite)->toBeTrue()
+        ->and($wpdb->get_var($wpdb->prepare('SELECT IS_USED_LOCK(%s)', $lock)))->toBeNull();
+});
+
+it('FR-015: refuses with "try again" and writes nothing while another save holds the lock', function () {
+    $before = loginSettingsRow();
+    $other = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $lock = Boot::app()->container()->make(LoginSettingsLock::class)->name();
+    $other->query("SELECT GET_LOCK('" . $other->real_escape_string($lock) . "', 0)");
+
+    try {
+        $response = loginSettingsRoute('POST', ['max_attempts' => 7]);
+    } finally {
+        $other->query("SELECT RELEASE_LOCK('" . $other->real_escape_string($lock) . "')");
+        $other->close();
+    }
+
+    expect($response->get_status())->toBe(409)
+        ->and($response->get_data()['code'])->toBe('login_settings_busy')
+        ->and($response->get_data()['message'])->toContain('try again')
         ->and(loginSettingsRow())->toBe($before);
 });
 

@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\LoginSettingsBusy;
 use Corex\Config\Security\LoginProtection\LoginSettingsRefused;
 use Corex\Config\Security\LoginProtection\LoginSwitches;
+use Corex\Tests\Support\NamedLockWpdb;
 
 /** @return array<string,mixed> the stored option, its keys sorted so a comparison reads values only */
 function loginUpdateStored(): array
@@ -38,9 +40,14 @@ beforeEach(function () {
         static fn (string $key, $default = false) => $GLOBALS['corex_test_options'][$key] ?? $default,
     );
     Functions\when('wp_set_option_autoload')->justReturn(true);
-    Functions\when('update_option')->alias(static function (string $key, $value): bool {
+    Functions\when('wp_cache_delete')->justReturn(true);
+    $this->wpdb = new NamedLockWpdb();
+    $GLOBALS['wpdb'] = $this->wpdb;
+    $this->lockHeldAtWrite = null;
+    Functions\when('update_option')->alias(function (string $key, $value): bool {
         $GLOBALS['corex_test_options'][$key] = $value;
         $GLOBALS['corex_test_option_writes']++;
+        $this->lockHeldAtWrite = $this->wpdb->held;
 
         return true;
     });
@@ -73,6 +80,40 @@ it('keeps a 30-second window when only the maximum attempts change (FR-015, scen
     expect(loginUpdateStored())->toBe(loginUpdateSorted(['threshold' => 7] + $this->stored))
         ->and($saved->windowSeconds)->toBe(30)
         ->and($saved->threshold)->toBe(7);
+});
+
+it('FR-015: writes under a named lock for this site, and lets it go', function () {
+    $this->store->update(['threshold' => 7]);
+
+    expect($this->lockHeldAtWrite)->toStartWith('corex_login_settings_')
+        ->and($this->wpdb->held)->toBeNull()
+        ->and($this->wpdb->statements[0])->toContain('GET_LOCK')
+        ->and(end($this->wpdb->statements))->toContain('RELEASE_LOCK');
+});
+
+it('FR-015: names the lock by database and options table, so each site of a network has its own', function () {
+    $this->store->update(['threshold' => 7]);
+    $first = $this->lockHeldAtWrite;
+
+    $this->wpdb->options = 'wp_2_options';
+    $this->store->update(['threshold' => 8]);
+
+    expect($this->lockHeldAtWrite)->not->toBe($first);
+});
+
+it('FR-015: writes nothing when another save holds the lock, and says so', function () {
+    $this->wpdb->grants = false;
+
+    expect(fn () => $this->store->update(['threshold' => 7]))->toThrow(LoginSettingsBusy::class);
+
+    expect($GLOBALS['corex_test_option_writes'])->toBe(0);
+});
+
+it('lets the lock go when the write is refused', function () {
+    expect(fn () => $this->store->update(['custom_slug' => ''], new LoginSwitches(true, true, true)))
+        ->toThrow(LoginSettingsRefused::class);
+
+    expect($this->wpdb->held)->toBeNull();
 });
 
 it('writes nothing when it is given nothing to change', function () {

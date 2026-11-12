@@ -20828,3 +20828,44 @@ answer first. "Manage operations" is required (spec 117); the nonce stays.
 `lockout_seconds`) are still taken; mixing them with their new equivalents is refused. The previous screen clamps a
 window to at least 60 seconds and sends every field, so its save turns a 30-second window into 60. A warning beside
 the proxy field has no text yet; slice 10's design writes it. This slice is not released before slice 10 (#628).
+
+**Amended 2026-11-13 (review of slice 5).** Decided by the orchestrator under the owner's delegation.
+
+- *A value equal to the one in force is no change.* A field is checked and written only when its value differs from
+  the one in force: the address after normalising, a number in its stored unit, a switch, and the trusted proxy list
+  compared line by line in its stored spelling. So the route's own answer posted back with one field changed answers
+  200 and writes that field, and a value stored before a rule existed (a 30-second window, a `/0` range, a list of 101)
+  is kept while a request does not change it. `trusted_proxy_mode` follows the list when it is not sent.
+- *Pairs that agree are taken.* Beside the switches, an old key equal to the one in force says nothing, and one that
+  differs must equal what the switches write; otherwise it is refused (`two_shapes`) under the old field sent. Beside
+  its seconds, `window_minutes` or `lockout_minutes` must be the seconds / 60, or `null`, which the route answers for
+  a length that is not a whole minute. Alone, the old pair equal to the pair in force changes no switch, so the
+  previous screen saving Max attempts does not fold `wp-login.php` hidden with limits off into a combination it can
+  show. This replaces "mixing them with their new equivalents is refused" above.
+- *The proxy rule is one, and shared* (`TrustedProxyRange`): each line an IPv4 or IPv6 address or CIDR range, at most
+  100 lines, no `/0`, each stored as `inet_ntop(inet_pton(address))` plus `/prefix`. The route and
+  `wp corex security trusted-proxies` ask it, so the command refuses a `/0` range and a 101st entry (exit 1) and
+  stores the same spelling. The literal `/0` check guards against a slip and is not a boundary: `0.0.0.0/1` with
+  `128.0.0.0/1` still trusts every IPv4 address, and is accepted.
+- *A stored `/0` is used as stored and reported.* The resolver does not ignore it: a site behind a CDN that relies on
+  it would suddenly count every visitor as the CDN's address, and one lockout would shut everyone out. Hardening's
+  "Trusted proxies name only your proxies" check warns while proxies are trusted and the list has a `/0` range, and
+  says how to fix it; like every hardening check it is in the launch checklist.
+- *Addresses are compared as addresses.* `ClientIpResolver` matches a single trusted address by its packed bytes, so
+  `2001:DB8::1` or the address written in full trusts `2001:db8::1`. An IPv4-mapped address (`::ffff:10.0.0.1`) and
+  the IPv4 address it carries are 16 and 4 bytes and are not taken for each other: the owner lists the spelling the
+  server reports. *Not chosen:* unmapping, which would widen a list without the owner's word.
+- *One write at a time.* `LoginProtectionSettingsStore::rewrite()` reads the row as it is (the options cache
+  forgotten) and writes under a MySQL named lock per site (`LoginSettingsLock`, named for the database and the site's
+  options table, as spec 079's FR-008a lock is), with a 2-second wait. The route and both commands that write the
+  option (`trusted-proxies`, `reset-login`) go through it, each given the container's store. A save that cannot have
+  the lock writes nothing: the route answers 409 `login_settings_busy` with a translated "try again", and
+  `trusted-proxies` exits 1. 409 and not 422, because nothing in the request is wrong. Recovery is the exception:
+  `reset-login` is how a locked-out owner gets back in, so when the lock cannot be had it writes without it
+  (`rewriteForRecovery()`, named so no screen calls it), releases the lockouts, exits 0 and prints that a concurrent
+  save may have been overwritten. *Not chosen:* refusing recovery while busy, which leaves the owner locked out
+  behind a save that may have hung.
+- *Smaller rules.* A switch value of `''` is refused as "must be on or off" (`filter_var()` reads it as off). A
+  refused proxy line is repeated up to 64 bytes cut on a character boundary (`mb_strcut()`). A request that names no
+  setting answers 422 with `errors.request` and the reason `nothing_to_save`, rather than a 200 that reads as saved.
+  The route's argument descriptions are translated.

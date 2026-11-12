@@ -10,6 +10,9 @@ namespace Corex\Config\Security;
 
 defined('ABSPATH') || exit;
 
+use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\TrustedProxyRange;
+
 /**
  * Gathers the REAL, locally-verified WordPress hardening facts (spec 063/064). This is the single
  * boundary that reads the constants/functions, shared by the Operations & Security screen and the
@@ -19,7 +22,7 @@ defined('ABSPATH') || exit;
 final class HardeningFacts
 {
     /**
-     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool}
+     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool,trustedProxiesNarrow:bool}
      */
     public static function gather(): array
     {
@@ -39,7 +42,21 @@ final class HardeningFacts
             'defaultAdminAbsent' => username_exists('admin') === false,
             'indexingAllowed'    => (string) get_option('blog_public', '1') !== '0',
             'authSaltsConfigured' => self::authSaltsConfigured(),
+            'trustedProxiesNarrow' => self::trustedProxiesNarrow(),
         ];
+    }
+
+    /**
+     * Whether no trusted proxy range covers every address (spec 124, FR-015). A list is in force
+     * only while proxies are trusted, so one left behind with that off is no finding.
+     */
+    private static function trustedProxiesNarrow(): bool
+    {
+        $stored = get_option(LoginProtectionSettingsStore::OPTION, []);
+        $stored = is_array($stored) ? $stored : [];
+
+        return ! ((bool) ($stored['trusted_proxy_mode'] ?? false)
+            && TrustedProxyRange::trustsEveryAddress(array_map('strval', (array) ($stored['trusted_proxy_ranges'] ?? []))));
     }
 
     private static function authSaltsConfigured(): bool

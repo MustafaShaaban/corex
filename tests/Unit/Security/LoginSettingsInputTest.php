@@ -45,18 +45,31 @@ it('asks to change only the fields the request sends (FR-015, scenario 2)', func
         ->and($input->switches)->toBeNull();
 });
 
-it('asks to change nothing when the request sends nothing it knows (FR-015)', function () {
+it('refuses a request with no field it knows: there is nothing to save (FR-015)', function () {
     $input = LoginSettingsInput::read(['_wpnonce' => 'x', 'login_url' => 'https://example.test/'], $this->current);
 
+    expect(array_keys($input->problems))->toBe(['request'])
+        ->and($input->problems['request']->reason)->toBe(LoginSettingsProblem::REASON_NOTHING_TO_SAVE)
+        ->and($input->changes)->toBe([]);
+});
+
+it('takes a value equal to the one in force as no change, and does not check it (FR-015)', function () {
+    $input = LoginSettingsInput::read([
+        'max_attempts'             => 5,
+        'window_seconds'           => 30,
+        'custom_slug'              => 'Team-Entry',
+        'successful_login_logging' => true,
+        'trusted_proxy_mode'       => false,
+    ], $this->current);
+
     expect($input->problems)->toBe([])
-        ->and($input->changes)->toBe([])
-        ->and($input->switches)->toBeNull();
+        ->and($input->changes)->toBe([]);
 });
 
 it('turns the minutes and days the screen shows into the stored seconds and days (FR-015)', function () {
     $input = LoginSettingsInput::read([
         'window_minutes'           => 10,
-        'lockout_minutes'          => 15,
+        'lockout_minutes'          => 20,
         'retention_days'           => 45,
         'successful_login_logging' => false,
     ], $this->current);
@@ -64,17 +77,17 @@ it('turns the minutes and days the screen shows into the stored seconds and days
     expect($input->problems)->toBe([])
         ->and($input->changes)->toBe([
             'window_seconds'           => 600,
-            'lockout_seconds'          => 900,
+            'lockout_seconds'          => 1200,
             'retain_days'              => 45,
             'successful_login_logging' => false,
         ]);
 });
 
 it('still takes the seconds the previous screen sends (FR-015, until slice 10)', function () {
-    $input = LoginSettingsInput::read(['window_seconds' => 300, 'lockout_seconds' => 900], $this->current);
+    $input = LoginSettingsInput::read(['window_seconds' => 300, 'lockout_seconds' => 1200], $this->current);
 
     expect($input->problems)->toBe([])
-        ->and($input->changes)->toBe(['window_seconds' => 300, 'lockout_seconds' => 900]);
+        ->and($input->changes)->toBe(['window_seconds' => 300, 'lockout_seconds' => 1200]);
 });
 
 it('accepts every number at the edges of its range (FR-015)', function (string $field, int $value) {
@@ -119,6 +132,13 @@ it('refuses a switch that is neither on nor off', function (string $field) {
     expect($input->problems[$field]->reason)->toBe(LoginSettingsProblem::REASON_NOT_ON_OR_OFF);
 })->with(['hide_wp_login', 'hide_admin', 'limit_attempts', 'enabled', 'block_default_endpoints', 'trusted_proxy_mode', 'successful_login_logging']);
 
+it('refuses an empty string as a switch value, rather than read it as off', function (string $field) {
+    $input = LoginSettingsInput::read([$field => ''], $this->current);
+
+    expect($input->problems[$field]->reason)->toBe(LoginSettingsProblem::REASON_NOT_ON_OR_OFF)
+        ->and($input->changes)->toBe([]);
+})->with(['hide_wp_login', 'hide_admin', 'limit_attempts', 'enabled', 'block_default_endpoints', 'trusted_proxy_mode', 'successful_login_logging']);
+
 it('changes one switch and keeps the other two as they are (FR-013, FR-015)', function () {
     $switches = LoginSettingsInput::read(['hide_admin' => false], $this->current)->switches;
 
@@ -131,17 +151,78 @@ it('reads the previous screen\'s two keys in their old meaning (FR-014)', functi
     expect($switches)->toEqual(new LoginSwitches(true, true, true));
 });
 
-it('refuses the switches and the previous screen\'s keys in one request', function () {
+it('refuses the switches beside an old key that says otherwise, keyed by the old key sent', function () {
     $input = LoginSettingsInput::read(['hide_admin' => true, 'enabled' => false], $this->current);
 
-    expect($input->problems['enabled']->reason)->toBe(LoginSettingsProblem::REASON_TWO_SHAPES)
+    expect(array_keys($input->problems))->toBe(['enabled'])
+        ->and($input->problems['enabled']->reason)->toBe(LoginSettingsProblem::REASON_TWO_SHAPES)
+        ->and($input->switches)->toBeNull();
+
+    $input = LoginSettingsInput::read(['hide_wp_login' => false, 'hide_admin' => false, 'block_default_endpoints' => true], $this->current);
+
+    expect(array_keys($input->problems))->toBe(['block_default_endpoints']);
+});
+
+it('takes the switches beside the old keys they would write, as the route answers them (FR-014)', function () {
+    $input = LoginSettingsInput::read([
+        'hide_wp_login'           => true,
+        'hide_admin'              => true,
+        'limit_attempts'          => true,
+        'enabled'                 => true,
+        'block_default_endpoints' => true,
+    ], $this->current);
+
+    expect($input->problems)->toBe([])
+        ->and($input->switches)->toEqual(new LoginSwitches(true, true, true));
+});
+
+it('takes the switches and old keys in force, posted back, as no change (FR-014, FR-015)', function () {
+    $input = LoginSettingsInput::read([
+        'hide_wp_login'           => false,
+        'hide_admin'              => true,
+        'limit_attempts'          => true,
+        'enabled'                 => true,
+        'block_default_endpoints' => false,
+    ], $this->current);
+
+    expect($input->problems)->toBe([])
         ->and($input->switches)->toBeNull();
 });
 
-it('refuses a length sent in minutes and in seconds at once', function () {
+it('changes no switch when the previous screen sends the old pair as it is in force (FR-014)', function () {
+    // wp-login.php hidden, limits off: a combination the previous screen cannot show.
+    $current = LoginProtectionSettings::of(new LoginSwitches(hideWpLogin: true, hideAdmin: false, limitAttempts: false), customSlug: 'team-entry');
+
+    $input = LoginSettingsInput::read([
+        'enabled'                 => $current->enabled,
+        'block_default_endpoints' => $current->blockDefaultEndpoints,
+        'max_attempts'            => 8,
+    ], $current);
+
+    expect($input->problems)->toBe([])
+        ->and($input->switches)->toBeNull()
+        ->and($input->changes)->toBe(['threshold' => 8]);
+});
+
+it('refuses a length sent in minutes and in seconds that disagree', function () {
+    $input = LoginSettingsInput::read(['window_minutes' => 5, 'window_seconds' => 120], $this->current);
+
+    expect(array_keys($input->problems))->toBe(['window_minutes'])
+        ->and($input->problems['window_minutes']->reason)->toBe(LoginSettingsProblem::REASON_TWO_UNITS);
+});
+
+it('takes minutes and seconds that agree, as the route answers them', function () {
     $input = LoginSettingsInput::read(['window_minutes' => 5, 'window_seconds' => 300], $this->current);
 
-    expect($input->problems['window_minutes']->reason)->toBe(LoginSettingsProblem::REASON_TWO_UNITS);
+    expect($input->problems)->toBe([])
+        ->and($input->changes)->toBe(['window_seconds' => 300]);
+});
+
+it('takes no minutes beside the seconds of a length that is not a whole minute (FR-015)', function () {
+    $input = LoginSettingsInput::read(['window_minutes' => null, 'window_seconds' => 30, 'max_attempts' => 6], $this->current);
+
+    expect($input->problems)->toBe([])
+        ->and($input->changes)->toBe(['threshold' => 6]);
 });
 
 it('saves a trusted proxy range, as a list or one per line (scenario 4)', function (mixed $sent) {
@@ -158,9 +239,29 @@ it('saves a trusted proxy range, as a list or one per line (scenario 4)', functi
 ]);
 
 it('trusts nobody when the list is emptied', function () {
-    expect(LoginSettingsInput::read(['trusted_proxies' => ''], $this->current)->changes)
+    $current = LoginProtectionSettings::of(new LoginSwitches(false, false, true), trustedProxyMode: true, trustedProxyRanges: ['203.0.113.0/24']);
+
+    expect(LoginSettingsInput::read(['trusted_proxies' => ''], $current)->changes)
         ->toBe(['trusted_proxy_ranges' => [], 'trusted_proxy_mode' => false]);
 });
+
+it('stores each proxy line in one spelling (FR-015)', function () {
+    expect(LoginSettingsInput::read(['trusted_proxies' => "2001:DB8::1\n2001:0db8:0000:0000:0000:0000:0000:0002/128"], $this->current)->changes)
+        ->toBe(['trusted_proxy_ranges' => ['2001:db8::1', '2001:db8::2/128'], 'trusted_proxy_mode' => true]);
+});
+
+it('takes the stored list posted back as no change, even one the rules now refuse (FR-015)', function (array $stored, mixed $sent) {
+    $current = LoginProtectionSettings::of(new LoginSwitches(false, false, true), trustedProxyMode: true, trustedProxyRanges: $stored);
+
+    $input = LoginSettingsInput::read(['trusted_proxies' => $sent, 'max_attempts' => 6], $current);
+
+    expect($input->problems)->toBe([])
+        ->and($input->changes)->toBe(['threshold' => 6]);
+})->with([
+    'a /0 range'                => [['0.0.0.0/0'], ['0.0.0.0/0']],
+    '101 lines'                 => [array_map(static fn (int $i): string => "10.0.0.{$i}", range(1, 101)), array_map(static fn (int $i): string => "10.0.0.{$i}", range(1, 101))],
+    'another spelling, as text' => [['2001:DB8::1'], "2001:db8::1\n"],
+]);
 
 it('refuses a proxy line that is not an IPv4 or IPv6 address or range, naming the line (scenario 3)', function () {
     $problem = LoginSettingsInput::read(
@@ -214,8 +315,18 @@ it('refuses more trusted proxy lines than it keeps', function () {
 });
 
 it('takes the trusted proxy switch as sent', function () {
+    // Sent off, as it is in force: the list changes and the switch stays off.
     expect(LoginSettingsInput::read(['trusted_proxies' => ['203.0.113.0/24'], 'trusted_proxy_mode' => false], $this->current)->changes)
-        ->toBe(['trusted_proxy_ranges' => ['203.0.113.0/24'], 'trusted_proxy_mode' => false]);
+        ->toBe(['trusted_proxy_ranges' => ['203.0.113.0/24']]);
+});
+
+it('repeats at most 64 bytes of a refused line, never half a character', function () {
+    // A three-byte character: byte 64 falls inside the 22nd, so 21 are kept.
+    $line = str_repeat("\u{20ac}", 30);
+    $problem = LoginSettingsInput::read(['trusted_proxies' => [$line]], $this->current)->problems['trusted_proxies'];
+
+    expect(strlen($problem->value))->toBe(63)
+        ->and(mb_check_encoding($problem->value, 'UTF-8'))->toBeTrue();
 });
 
 it('normalises a login address the way it is stored', function () {

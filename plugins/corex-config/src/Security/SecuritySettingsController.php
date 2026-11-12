@@ -74,27 +74,32 @@ final class SecuritySettingsController
      */
     private function saveArgs(): array
     {
-        $fields = [
-            'hide_wp_login'            => 'Hide wp-login.php (on or off).',
-            'hide_admin'               => 'Hide the admin from visitors who are not signed in (on or off).',
-            'limit_attempts'           => 'Limit failed sign-ins (on or off).',
-            'enabled'                  => 'The protection switch of the previous screen, read in its old meaning; not with the three switches.',
-            'block_default_endpoints'  => 'The hide switch of the previous screen, read in its old meaning; not with the three switches.',
-            'custom_slug'              => 'The login address.',
-            'max_attempts'             => 'Failed attempts before a lockout.',
-            'window_minutes'           => 'The counting window, in whole minutes.',
-            'lockout_minutes'          => 'The lockout length, in whole minutes.',
-            'window_seconds'           => 'The counting window in seconds, as the previous screen sends it; not with window_minutes.',
-            'lockout_seconds'          => 'The lockout length in seconds, as the previous screen sends it; not with lockout_minutes.',
-            'trusted_proxies'          => 'Trusted proxies: text with one IPv4 or IPv6 address or CIDR range per line, or a list of them.',
-            'trusted_proxy_mode'       => 'Trust the proxies (on or off); follows the list when not sent with it.',
-            'retention_days'           => 'Days sign-in records are kept.',
-            'successful_login_logging' => 'Record successful sign-ins (on or off).',
-        ];
+        $range = static fn (string $field): array => LoginSettingsInput::RANGES[$field];
 
-        foreach (LoginSettingsInput::RANGES as $field => [$min, $max]) {
-            $fields[$field] .= sprintf(' From %d to %d.', $min, $max);
-        }
+        $fields = [
+            'hide_wp_login'            => __('Hide wp-login.php (on or off).', 'corex'),
+            'hide_admin'               => __('Hide the admin from visitors who are not signed in (on or off).', 'corex'),
+            'limit_attempts'           => __('Limit failed sign-ins (on or off).', 'corex'),
+            'enabled'                  => __('The protection switch of the previous screen, read in its old meaning. Beside the three switches it must agree with them.', 'corex'),
+            'block_default_endpoints'  => __('The hide switch of the previous screen, read in its old meaning. Beside the three switches it must agree with them.', 'corex'),
+            'custom_slug'              => __('The login address.', 'corex'),
+            /* translators: 1: the fewest attempts, 2: the most. */
+            'max_attempts'             => sprintf(__('Failed attempts before a lockout, from %1$d to %2$d.', 'corex'), ...$range('max_attempts')),
+            /* translators: 1: the shortest window in minutes, 2: the longest. */
+            'window_minutes'           => sprintf(__('The counting window in whole minutes, from %1$d to %2$d; null when it is not a whole minute.', 'corex'), ...$range('window_minutes')),
+            /* translators: 1: the shortest lockout in minutes, 2: the longest. */
+            'lockout_minutes'          => sprintf(__('The lockout length in whole minutes, from %1$d to %2$d; null when it is not a whole minute.', 'corex'), ...$range('lockout_minutes')),
+            /* translators: 1: the shortest window in seconds, 2: the longest. */
+            'window_seconds'           => sprintf(__('The counting window in seconds, from %1$d to %2$d. Beside window_minutes it must say the same.', 'corex'), ...$range('window_seconds')),
+            /* translators: 1: the shortest lockout in seconds, 2: the longest. */
+            'lockout_seconds'          => sprintf(__('The lockout length in seconds, from %1$d to %2$d. Beside lockout_minutes it must say the same.', 'corex'), ...$range('lockout_seconds')),
+            /* translators: %d: the most trusted proxy lines kept. */
+            'trusted_proxies'          => sprintf(__('Trusted proxies: text with one IPv4 or IPv6 address or CIDR range per line, or a list of them, at most %d. A range that trusts every address is refused.', 'corex'), LoginSettingsInput::MAX_PROXIES),
+            'trusted_proxy_mode'       => __('Trust the proxies (on or off). When it is not sent, it follows the list.', 'corex'),
+            /* translators: 1: the fewest days, 2: the most. */
+            'retention_days'           => sprintf(__('Days sign-in records are kept, from %1$d to %2$d.', 'corex'), ...$range('retention_days')),
+            'successful_login_logging' => __('Record successful sign-ins (on or off).', 'corex'),
+        ];
 
         return array_map(
             static fn (string $description): array => ['required' => false, 'description' => $description],
@@ -122,6 +127,13 @@ final class SecuritySettingsController
         $body = is_array($body) ? $body : $request->get_body_params();
 
         $outcome = $this->saver->save(is_array($body) ? $body : []);
+
+        if ($outcome->isBusy()) {
+            return new WP_REST_Response(ResponseEnvelope::error(
+                'login_settings_busy',
+                __('The login settings are being saved by another request. Nothing was saved; try again in a moment.', 'corex'),
+            )->toArray(), 409);
+        }
 
         if ($outcome->isRefused() || $outcome->settings === null) {
             $refusal = ResponseEnvelope::validation(

@@ -42,4 +42,10 @@ final readonly class LoginSettingsSaveOutcome
     {
         return $this->problems !== [];
     }
+
+    /** Another save held the settings past the wait, and nothing was written. */
+    public function isBusy(): bool
+    {
+        return ($this->problems['request'] ?? null)?->reason === LoginSettingsProblem::REASON_BUSY;
+    }
 }

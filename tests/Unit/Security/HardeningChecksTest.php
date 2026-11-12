@@ -28,13 +28,14 @@ function hardeningFacts(array $overrides = []): array
         'defaultAdminAbsent' => true,
         'indexingAllowed'    => true,
         'authSaltsConfigured' => true,
+        'trustedProxiesNarrow' => true,
     ], $overrides);
 }
 
 it('passes every check on a fully hardened install', function () {
     $checks = (new HardeningChecks())->checks(hardeningFacts());
 
-    expect($checks)->toHaveCount(6)
+    expect($checks)->toHaveCount(7)
         ->and(array_column($checks, 'status'))->each->toBe(HardeningChecks::PASS);
 });
 
@@ -45,6 +46,23 @@ it('warns on the exact check whose fact is false — never a fabricated pass', f
 
     expect($ssl['status'])->toBe(HardeningChecks::WARN)
         ->and(array_column($others, 'status'))->each->toBe(HardeningChecks::PASS);
+});
+
+it('spec 124 FR-015: warns when the trusted proxies include a range that trusts every address, and says how to fix it', function () {
+    $checks = array_column((new HardeningChecks())->checks(hardeningFacts(['trustedProxiesNarrow' => false])), null, 'key');
+
+    expect($checks['trusted_proxies']['status'])->toBe(HardeningChecks::WARN)
+        ->and($checks['trusted_proxies']['detail'])->toContain('every address')
+        ->and($checks['trusted_proxies']['detail'])->toContain('wp corex security trusted-proxies');
+});
+
+it('passes the trusted proxy check for facts gathered before it existed', function () {
+    $facts = hardeningFacts();
+    unset($facts['trustedProxiesNarrow']);
+
+    $checks = array_column((new HardeningChecks())->checks($facts), null, 'key');
+
+    expect($checks['trusted_proxies']['status'])->toBe(HardeningChecks::PASS);
 });
 
 it('counts the warnings truthfully', function () {

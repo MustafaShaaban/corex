@@ -71,7 +71,9 @@ wp corex security reset-login
 ```
 
 The command disables the protected login gates, releases active lockouts, and prints the restored `wp-login.php` URL.
-It does not change users, roles, passwords, content, or unrelated CoreX settings.
+It does not change users, roles, passwords, content, or unrelated CoreX settings. It runs even while a save of the
+login settings is in progress: it waits two seconds for that save to finish, then writes anyway. When it had to, it
+prints a line saying the other save may have been overwritten; check the login settings once you are signed in.
 
 ## What every page says the site runs
 
@@ -111,7 +113,9 @@ wp corex security trusted-proxies 127.0.0.1 ::1
 
 Each argument is an address or a CIDR range, and the list given replaces the saved one. A `/0` range
 (`0.0.0.0/0`, `::/0`) is refused: it would make every visitor a trusted proxy, free to choose the address
-their sign-in attempts are counted by. With no
+their sign-in attempts are counted by. At most 100 entries are kept; a longer list is refused whole. Each
+address is stored in one spelling, so `2001:DB8::1` and `2001:0db8:0000:0000:0000:0000:0000:0001` are both
+stored as `2001:db8::1`. With no
 argument the command prints the list. `--clear` trusts no proxy. The Security screen has no field for
 this list; the command is how it is set.
 

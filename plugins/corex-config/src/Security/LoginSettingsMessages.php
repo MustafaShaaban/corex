@@ -80,6 +80,8 @@ final class LoginSettingsMessages
                 number_format_i18n((int) $problem->max),
             ),
             LoginSettingsProblem::REASON_NOT_A_LIST => __('Write the trusted proxies as text, one address or range per line.', 'corex'),
+            LoginSettingsProblem::REASON_NOTHING_TO_SAVE => __('The request names no login protection setting, so there is nothing to save.', 'corex'),
+            LoginSettingsProblem::REASON_BUSY => __('The login settings are being saved by another request. Nothing was saved; try again in a moment.', 'corex'),
             LoginSettingsProblem::REASON_TWO_UNITS => $problem->field === 'lockout_minutes'
                 ? __('Send the lockout length in minutes or in seconds, not both.', 'corex')
                 : __('Send the counting window in minutes or in seconds, not both.', 'corex'),

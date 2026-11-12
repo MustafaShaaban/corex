@@ -18,6 +18,12 @@ defined('ABSPATH') || exit;
  */
 final readonly class LoginSettingsProblem
 {
+    /** A request with no field the route knows: there is nothing to save. Keyed `request`. */
+    public const REASON_NOTHING_TO_SAVE = 'nothing_to_save';
+
+    /** Another save of the login settings held them and did not finish in time. Keyed `request`. */
+    public const REASON_BUSY = 'busy';
+
     /** A number outside its range, or not a whole number: `min` and `max` say the range. */
     public const REASON_OUT_OF_RANGE = 'out_of_range';
 
