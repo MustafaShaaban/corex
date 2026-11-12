@@ -29,8 +29,8 @@ use Corex\Support\Options\LoadedOptions;
  *
  * Since spec 113 a value set in `.env` (`APP_ENV`), locked by the network or held by the
  * `corex_app_env` option decides the environment first ({@see SiteEnvironment}): it fixes the
- * mode to its own environment, except that Coming soon and Maintenance, which change only what
- * visitors see, stay available and in force under any lock.
+ * mode to its own environment, except that Coming soon, Forms paused and Maintenance, which change
+ * only what visitors get, stay available and in force under any lock.
  */
 final class OperationsModeStore
 {
@@ -63,7 +63,7 @@ final class OperationsModeStore
         $stored = (string) get_option(self::OPTION, '');
         $declared = $stored !== '' && $this->modes->isValid($stored) ? $stored : null;
 
-        // Coming soon and Maintenance close the site to visitors, and a lock never reopens it.
+        // Coming soon, Forms paused and Maintenance change what visitors get, and a lock never undoes it.
         if (in_array($declared, SiteEnvironment::VISITOR_MODES, true)) {
             return $declared;
         }
@@ -94,7 +94,7 @@ final class OperationsModeStore
         return $answer !== null && $answer->isLocked() ? $answer : null;
     }
 
-    /** Whether the mode may be chosen: a lock allows its own environment's mode, Coming soon and Maintenance. */
+    /** Whether the mode may be chosen: a lock allows its own environment's mode and the visitor modes. */
     public function allows(string $mode): bool
     {
         return $this->environment === null || $this->environment->allowsMode($mode);

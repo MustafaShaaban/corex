@@ -166,7 +166,7 @@ applied, and listed on the Access screen's Overview.
 | Releases | Install releases |
 | Guides | Anyone signed in; each guide follows its screen |
 
-Switching the operating mode to Production or Maintenance also needs **Run dangerous actions**. In Settings → Mail,
+Switching the operating mode to Production, Maintenance or Forms paused also needs **Run dangerous actions**. In Settings → Mail,
 the delivery provider and live delivery stay with site administration: anyone else sees them read-only. So does
 Email Studio's **Capture only CoreX mail** switch.
 

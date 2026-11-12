@@ -179,6 +179,7 @@ wp corex mode get                                  # the mode, and whether it wa
 wp corex mode get --porcelain                      # the mode and nothing else, for a script
 wp corex mode set staging                          # a mode that needs no confirmation
 wp corex mode set coming-soon --acknowledge        # a mode that changes what visitors get
+wp corex mode set forms-paused --acknowledge       # the site stays open, every public form refuses
 wp corex mode set maintenance --acknowledge
 wp corex mode set production --phrase=PRODUCTION --user=<login>
 ```
@@ -189,7 +190,7 @@ The same change the Operations & Security screen makes, by the same rules: both 
 | The mode | Needs | Without it |
 |---|---|---|
 | `development`, `staging` | nothing | — |
-| `coming-soon`, `maintenance` | `--acknowledge` | nothing changes, exit 1 |
+| `coming-soon`, `forms-paused`, `maintenance` | `--acknowledge` | nothing changes, exit 1 |
 | `production` | `--phrase=PRODUCTION` and `--user=<login>` | nothing changes, exit 1 |
 
 - **Exit codes.** 0 when the site is in the mode asked for afterwards, including when it already

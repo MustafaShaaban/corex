@@ -30,8 +30,8 @@ final class OperationsModeController
 
     private const SCREEN = 'corex-operations-security';
 
-    /** The modes that also need "Run dangerous actions". */
-    private const DANGEROUS_MODES = [OperationsMode::PRODUCTION, OperationsMode::MAINTENANCE];
+    /** The modes that also need "Run dangerous actions" (spec 117; Forms paused: spec 124, DECISIONS #520). */
+    private const DANGEROUS_MODES = [OperationsMode::PRODUCTION, OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED];
 
     /** The `corex_return` value that sends the answer back to the Setup Wizard. */
     public const RETURN_SETUP = 'setup';
@@ -55,8 +55,9 @@ final class OperationsModeController
 
         $mode = isset($_POST['corex_mode']) ? sanitize_key(wp_unslash($_POST['corex_mode'])) : '';
 
-        // Production opens the site to everyone and Maintenance closes it: both also need "Run
-        // dangerous actions" (spec 117, FR-003). The command line has no person and keeps its rules.
+        // Production opens the site to everyone, Maintenance closes it and Forms paused closes every
+        // public form: each also needs "Run dangerous actions" (spec 117, FR-003; spec 124, FR-004c).
+        // The command line has no person and keeps its rules.
         if (in_array($mode, self::DANGEROUS_MODES, true)
             && ! $this->guard->verifiedPost(self::NONCE, self::ACTION, CorexAbility::RUN_DANGEROUS_ACTIONS, self::SCREEN)) {
             $this->refuse(sprintf(

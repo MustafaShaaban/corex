@@ -121,6 +121,25 @@ it('saves maintenance once it is acknowledged', function () {
         ->and($this->store->current())->toBe(OperationsMode::MAINTENANCE);
 });
 
+it('asks for the acknowledgement Forms paused needs, proposing the mode back, and writes nothing (spec 124, FR-003)', function () {
+    $result = $this->service->apply(modeChange(OperationsMode::FORMS_PAUSED));
+
+    expect($result->status)->toBe(ModeChangeResult::NEEDS_ACKNOWLEDGEMENT)
+        ->and($result->proposed)->toBe(OperationsMode::FORMS_PAUSED)
+        ->and($this->store->isDeclared())->toBeFalse()
+        ->and(modeChangeLog())->toBe([]);
+});
+
+it('pauses forms once acknowledged, and records who did it (spec 124, FR-003)', function () {
+    $result = $this->service->apply(modeChange(OperationsMode::FORMS_PAUSED, acknowledged: true));
+
+    expect($result->status)->toBe(ModeChangeResult::SAVED)
+        ->and($this->store->current())->toBe(OperationsMode::FORMS_PAUSED)
+        ->and(modeChangeLog())->toHaveCount(1)
+        ->and(modeChangeLog()[0]['to'])->toBe(OperationsMode::FORMS_PAUSED)
+        ->and(modeChangeLog()[0]['user'])->toBe(7);
+});
+
 it('says nothing changed when the declared mode is applied again, and logs nothing', function () {
     $this->service->apply(modeChange(OperationsMode::STAGING));
     $result = $this->service->apply(modeChange(OperationsMode::STAGING));
