@@ -109,7 +109,9 @@ Name the proxies:
 wp corex security trusted-proxies 127.0.0.1 ::1
 ```
 
-Each argument is an address or a CIDR range, and the list given replaces the saved one. With no
+Each argument is an address or a CIDR range, and the list given replaces the saved one. A `/0` range
+(`0.0.0.0/0`, `::/0`) is refused: it would make every visitor a trusted proxy, free to choose the address
+their sign-in attempts are counted by. With no
 argument the command prints the list. `--clear` trusts no proxy. The Security screen has no field for
 this list; the command is how it is set.
 

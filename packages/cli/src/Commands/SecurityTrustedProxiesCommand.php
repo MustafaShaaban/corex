@@ -11,6 +11,7 @@ namespace Corex\Cli\Commands;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\TrustedProxyRange;
 use Corex\Support\Options\LoadedOptions;
 
 /**
@@ -42,11 +43,13 @@ final class SecurityTrustedProxiesCommand
      *
      * @param list<string> $ranges Addresses or CIDR ranges.
      *
-     * @return list<string> The entries that are neither. When there are any, nothing is saved.
+     * @return list<string> The entries that are neither, or that trust every address (a `/0` range,
+     *                      which would let any visitor choose the address a login lockout counts).
+     *                      When there are any, nothing is saved.
      */
     public function trust(array $ranges): array
     {
-        $refused = array_values(array_filter($ranges, fn (string $range): bool => ! $this->isAddressOrRange($range)));
+        $refused = array_values(array_filter($ranges, static fn (string $range): bool => ! TrustedProxyRange::isValid($range)));
 
         if ($refused !== []) {
             return $refused;
@@ -81,11 +84,40 @@ final class SecurityTrustedProxiesCommand
         $refused = $this->trust($args);
 
         if ($refused !== []) {
-            \WP_CLI::error(sprintf('Not an address or a range: %s. Nothing was changed.', implode(', ', $refused)));
+            \WP_CLI::error($this->refusal($refused));
         }
 
         $this->report();
         \WP_CLI::success('Trusted proxies saved.');
+    }
+
+    /**
+     * Why the list was refused, naming the entries: a range that trusts every address is said apart,
+     * because it is well-formed and the owner may not see what is wrong with it.
+     *
+     * @param list<string> $refused The entries {@see self::trust()} refused.
+     */
+    public function refusal(array $refused): string
+    {
+        $everyAddress = array_values(array_filter(
+            $refused,
+            static fn (string $range): bool => TrustedProxyRange::rejectionReason($range) === TrustedProxyRange::REASON_TRUSTS_EVERY_ADDRESS,
+        ));
+        $malformed = array_values(array_diff($refused, $everyAddress));
+
+        $sentences = [];
+        if ($malformed !== []) {
+            $sentences[] = sprintf('Not an address or a range: %s.', implode(', ', $malformed));
+        }
+        if ($everyAddress !== []) {
+            $sentences[] = sprintf(
+                'Trusts every address: %s. A range that trusts every address would let anyone choose the address their sign-in attempts are counted by.',
+                implode(', ', $everyAddress),
+            );
+        }
+        $sentences[] = 'Nothing was changed.';
+
+        return implode(' ', $sentences);
     }
 
     private function report(): void
@@ -111,17 +143,5 @@ final class SecurityTrustedProxiesCommand
         $settings = get_option(LoginProtectionSettingsStore::OPTION, []);
 
         return is_array($settings) ? $settings : [];
-    }
-
-    private function isAddressOrRange(string $range): bool
-    {
-        [$address, $prefix] = array_pad(explode('/', $range, 2), 2, null);
-        $packed             = filter_var($address, FILTER_VALIDATE_IP) === false ? false : inet_pton($address);
-
-        if ($packed === false) {
-            return false;
-        }
-
-        return $prefix === null || (ctype_digit($prefix) && (int) $prefix <= strlen($packed) * 8);
     }
 }

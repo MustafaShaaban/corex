@@ -35,6 +35,18 @@ final class LoginProtectionSettingsStore
 
     private const SWITCH_KEYS = [self::HIDE_WP_LOGIN, self::HIDE_ADMIN, self::LIMIT_ATTEMPTS];
 
+    /** The stored keys {@see self::update()} changes one by one; the switches come as one value. */
+    private const CHANGEABLE_KEYS = [
+        'custom_slug',
+        'threshold',
+        'window_seconds',
+        'lockout_seconds',
+        'trusted_proxy_mode',
+        'trusted_proxy_ranges',
+        'retain_days',
+        'successful_login_logging',
+    ];
+
     /**
      * Persist a sanitized login-protection payload and return the stored settings. The custom login
      * URL is served by {@see LoginRouteGuard} via request interception, so no rewrite flush is needed.
@@ -77,6 +89,54 @@ final class LoginProtectionSettingsStore
             'successful_login_logging' => (bool) ($input['successful_login_logging'] ?? true),
         ];
         LoadedOptions::store(self::OPTION, $stored);
+
+        return $this->current();
+    }
+
+    /**
+     * Change only the keys given, and leave every other stored key as it is (spec 124, FR-015).
+     *
+     * `save()` writes every setting, with a default for each one it is not given; this writes over
+     * the option as stored, so a value no request sent (a 30-second window set from the command line,
+     * a key another release wrote) is not rewritten. The switches are written, with the previous
+     * release's two keys beside them (FR-014), only when they are given; otherwise all five stay as
+     * stored and are read as {@see self::current()} reads them. Nothing is written when nothing is
+     * given.
+     *
+     * @param array<string,mixed> $changes stored key => value; keys this store does not keep are ignored
+     *
+     * @throws LoginSettingsRefused when wp-login.php would be hidden behind no usable address
+     */
+    public function update(array $changes, ?LoginSwitches $switches = null): LoginProtectionSettings
+    {
+        $changes = array_intersect_key($changes, array_flip(self::CHANGEABLE_KEYS));
+
+        if ($changes === [] && $switches === null) {
+            return $this->current();
+        }
+
+        $hiding = ($switches ?? $this->current()->switches())->hideWpLogin;
+        if ($hiding && array_key_exists('custom_slug', $changes)) {
+            $reason = LoginSlug::rejectionReason(sanitize_title(trim((string) $changes['custom_slug'])));
+            if ($reason !== null) {
+                throw LoginSettingsRefused::addressNeededToHide($reason);
+            }
+        }
+
+        $stored = get_option(self::OPTION, []);
+        $stored = is_array($stored) ? $stored : [];
+
+        if ($switches !== null) {
+            $changes += [
+                'enabled'                 => $switches->previousEnabled(),
+                'block_default_endpoints' => $switches->previousBlockDefaultEndpoints(),
+                self::HIDE_WP_LOGIN       => $switches->hideWpLogin,
+                self::HIDE_ADMIN          => $switches->hideAdmin,
+                self::LIMIT_ATTEMPTS      => $switches->limitAttempts,
+            ];
+        }
+
+        LoadedOptions::store(self::OPTION, array_replace($stored, $changes));
 
         return $this->current();
     }

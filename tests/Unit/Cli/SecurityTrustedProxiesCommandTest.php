@@ -71,6 +71,27 @@ it('refuses the whole list when one entry is not an address or a range, and save
     'a range with no prefix' => ['10.0.0.0/'],
 ]);
 
+it('refuses a range that trusts every address, and saves nothing (spec 124, FR-015)', function (string $entry) {
+    $options = ['corex_login_protection_settings' => ['trusted_proxy_mode' => true, 'trusted_proxy_ranges' => ['127.0.0.1']]];
+    trustedProxyOptions($options);
+
+    $command = new SecurityTrustedProxiesCommand();
+    $refused = $command->trust(['10.0.0.1', $entry]);
+
+    expect($refused)->toBe([$entry])
+        ->and($options['corex_login_protection_settings']['trusted_proxy_ranges'])->toBe(['127.0.0.1'])
+        ->and($command->refusal($refused))->toContain($entry)->toContain('every address');
+})->with([
+    'IPv4 /0' => ['0.0.0.0/0'],
+    'IPv6 /0' => ['::/0'],
+    'any IPv4 network /0' => ['10.0.0.0/0'],
+]);
+
+it('says which entries are not an address or a range', function () {
+    expect((new SecurityTrustedProxiesCommand())->refusal(['proxy.example.com', '10.0.0.0/33']))
+        ->toBe('Not an address or a range: proxy.example.com, 10.0.0.0/33. Nothing was changed.');
+});
+
 it('trusts nobody once the list is cleared', function () {
     $options = ['corex_login_protection_settings' => [
         'custom_slug' => 'team-login',

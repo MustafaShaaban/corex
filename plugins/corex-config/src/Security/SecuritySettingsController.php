@@ -14,16 +14,20 @@ use Corex\Access\AbilityCheck;
 use Corex\Access\CorexAbility;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
-use Corex\Config\Security\LoginProtection\LoginSlug;
-use Corex\Config\Security\LoginProtection\LoginSlugAvailability;
+use Corex\Config\Security\LoginProtection\LoginSettingsInput;
+use Corex\Config\Security\LoginProtection\LoginSettingsSaver;
 use Corex\Config\Security\LoginProtection\LoginUrl;
+use Corex\Http\ResponseEnvelope;
 use WP_REST_Request;
 use WP_REST_Response;
 
 /**
- * Persists the Security Center's login-protection settings (custom login URL, failed-login limiting,
- * threshold/window/lockout, trusted proxies, retention). Cap + nonce gated. Without this route the
- * Security Center controls were display-only and never took effect (FR-076).
+ * Reads and saves the Security Center's login-protection settings: the three switches, the login
+ * address, the limits, trusted proxies, retention and recording successful sign-ins (spec 124,
+ * FR-013, FR-015). "Manage operations" and the REST nonce are asked of both methods.
+ *
+ * A save changes only the fields it sends and refuses a value out of its range with the range,
+ * keyed by field in spec 043's validation answer, with nothing written ({@see LoginSettingsSaver}).
  */
 final class SecuritySettingsController
 {
@@ -33,7 +37,8 @@ final class SecuritySettingsController
 
     public function __construct(
         private readonly LoginProtectionSettingsStore $store,
-        private readonly LoginSlugAvailability $availability = new LoginSlugAvailability(),
+        private readonly LoginSettingsSaver $saver,
+        private readonly LoginSettingsMessages $messages,
         private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
@@ -58,63 +63,43 @@ final class SecuritySettingsController
     }
 
     /**
-     * Declared validation for the write route, which previously had none at all.
+     * The fields a save may send, every one optional: a field left out is not changed (FR-015).
      *
-     * The numeric bounds are enforced here so a nonsense value is refused at the edge instead of
-     * being clamped somewhere downstream into something the owner never asked for. The address has
-     * rules of its own that depend on normalising it first, so it is checked in save().
+     * They carry no `type` or bounds on purpose. WordPress would refuse a bad value before the
+     * callback in its own shape, one field at a time and in English; {@see LoginSettingsInput}
+     * checks them all, against {@see LoginSettingsInput::RANGES}, and the refusal names each field
+     * with its range in one translated answer.
      *
      * @return array<string,array<string,mixed>>
      */
     private function saveArgs(): array
     {
-        return [
-            'enabled' => [
-                'type'     => 'boolean',
-                'required' => false,
-            ],
-            'block_default_endpoints' => [
-                'type'     => 'boolean',
-                'required' => false,
-            ],
-            'custom_slug' => [
-                'type'              => 'string',
-                'required'          => false,
-                'sanitize_callback' => 'sanitize_text_field',
-            ],
-            'max_attempts' => [
-                'type'    => 'integer',
-                'minimum' => 1,
-                'maximum' => 50,
-            ],
-            'window_seconds' => [
-                'type'    => 'integer',
-                'minimum' => 60,
-                'maximum' => 86400,
-            ],
-            'lockout_seconds' => [
-                'type'    => 'integer',
-                'minimum' => 60,
-                'maximum' => 604800,
-            ],
-            'retention_days' => [
-                'type'    => 'integer',
-                'minimum' => 1,
-                'maximum' => 365,
-            ],
-            'trusted_proxies' => [
-                'type'  => 'array',
-                'items' => ['type' => 'string'],
-            ],
-            'trusted_proxy_mode' => [
-                'type'     => 'boolean',
-                'required' => false,
-            ],
-            'successful_login_logging' => [
-                'type'     => 'boolean',
-                'required' => false,
-            ],
+        $fields = [
+            'hide_wp_login'            => 'Hide wp-login.php (on or off).',
+            'hide_admin'               => 'Hide the admin from visitors who are not signed in (on or off).',
+            'limit_attempts'           => 'Limit failed sign-ins (on or off).',
+            'enabled'                  => 'The protection switch of the previous screen, read in its old meaning; not with the three switches.',
+            'block_default_endpoints'  => 'The hide switch of the previous screen, read in its old meaning; not with the three switches.',
+            'custom_slug'              => 'The login address.',
+            'max_attempts'             => 'Failed attempts before a lockout.',
+            'window_minutes'           => 'The counting window, in whole minutes.',
+            'lockout_minutes'          => 'The lockout length, in whole minutes.',
+            'window_seconds'           => 'The counting window in seconds, as the previous screen sends it; not with window_minutes.',
+            'lockout_seconds'          => 'The lockout length in seconds, as the previous screen sends it; not with lockout_minutes.',
+            'trusted_proxies'          => 'Trusted proxies: text with one IPv4 or IPv6 address or CIDR range per line, or a list of them.',
+            'trusted_proxy_mode'       => 'Trust the proxies (on or off); follows the list when not sent with it.',
+            'retention_days'           => 'Days sign-in records are kept.',
+            'successful_login_logging' => 'Record successful sign-ins (on or off).',
         ];
+
+        foreach (LoginSettingsInput::RANGES as $field => [$min, $max]) {
+            $fields[$field] .= sprintf(' From %d to %d.', $min, $max);
+        }
+
+        return array_map(
+            static fn (string $description): array => ['required' => false, 'description' => $description],
+            $fields,
+        );
     }
 
     /**
@@ -136,104 +121,40 @@ final class SecuritySettingsController
         $body = $request->get_json_params();
         $body = is_array($body) ? $body : $request->get_body_params();
 
-        $slug = $this->slugFrom($body);
+        $outcome = $this->saver->save(is_array($body) ? $body : []);
 
-        // Two questions, two answers. `LoginSlug` says whether the address is well-formed and not
-        // one WordPress reserves; `LoginSlugAvailability` says whether anything already answers
-        // there. A slug can pass every rule in the first and still collide with a published page —
-        // `about` is a good slug and a common page — and the pattern cannot see that.
-        $rejection = LoginSlug::rejectionReason($slug)
-            ?? $this->availability->rejectionReason($slug);
+        if ($outcome->isRefused() || $outcome->settings === null) {
+            $refusal = ResponseEnvelope::validation(
+                $this->messages->errors($outcome->problems),
+                __('Nothing was saved. Correct the settings named below and save again.', 'corex'),
+            )->toArray();
 
-        // Refuse rather than let the store substitute a working address behind the owner's back:
-        // they would leave believing the login is where they typed it. Nothing is written, so the
-        // configuration that is currently working stays working.
-        if ($rejection !== null) {
-            return new WP_REST_Response([
-                'code'    => 'corex_invalid_login_slug',
-                'message' => $this->slugRejectionMessage($rejection),
-            ], 400);
+            return new WP_REST_Response(['details' => $this->messages->details($outcome->problems)] + $refusal, 422);
         }
 
-        $ranges = array_values(array_filter(array_map(
-            'sanitize_text_field',
-            (array) ($body['trusted_proxies'] ?? []),
-        )));
-
-        $saved = $this->store->save([
-            'enabled'                  => filter_var($body['enabled'] ?? false, FILTER_VALIDATE_BOOL),
-            'custom_slug'              => $slug,
-            'block_default_endpoints'  => filter_var($body['block_default_endpoints'] ?? true, FILTER_VALIDATE_BOOL),
-            'threshold'                => (int) ($body['max_attempts'] ?? 5),
-            'window_seconds'           => (int) ($body['window_seconds'] ?? 300),
-            'lockout_seconds'          => (int) ($body['lockout_seconds'] ?? 900),
-            'trusted_proxy_mode'       => array_key_exists('trusted_proxy_mode', $body)
-                ? filter_var($body['trusted_proxy_mode'], FILTER_VALIDATE_BOOL)
-                : $ranges !== [],
-            'trusted_proxy_ranges'     => $ranges,
-            'retain_days'              => (int) ($body['retention_days'] ?? 30),
-            'successful_login_logging' => filter_var($body['successful_login_logging'] ?? true, FILTER_VALIDATE_BOOL),
-        ]);
-
         return new WP_REST_Response([
-            'login_protection' => $this->payload($saved),
+            'login_protection' => $this->payload($outcome->settings),
             'message'          => __('Login protection settings saved.', 'corex'),
         ], 200);
     }
 
     /**
-     * The address the owner is asking for, normalised the way it will be stored.
+     * The settings as stored, in the route's shape: the switches, the previous release's two keys
+     * (which the current screen still reads until slice 10), the lengths in whole minutes and in
+     * seconds, and the trusted proxies with the switch that trusts them, which is what a warning
+     * beside that field is about.
      *
-     * Validation has to run on the normalised value, not the raw one: "Team Entry" is fine and
-     * becomes "team-entry", while "!!!" normalises to nothing and is not.
+     * A length that is not a whole minute (set from the command line) has no minutes: `null`, with
+     * its seconds beside it, so nothing rounds it to a value the owner did not choose.
      *
-     * @param array<string,mixed> $body
+     * @return array<string,mixed>
      */
-    private function slugFrom(array $body): string
-    {
-        // Omitted and empty are different intentions. A client that never sends the field is asking
-        // for the default. An owner who cleared the box typed nothing on purpose and should be told
-        // so, not quietly given an address they did not choose.
-        if (! array_key_exists('custom_slug', $body)) {
-            return LoginSlug::DEFAULT;
-        }
-
-        return sanitize_title(trim((string) $body['custom_slug']));
-    }
-
-    /**
-     * Turn a rejection code into something an owner can act on.
-     *
-     * LoginSlug returns codes rather than sentences because it runs on plugins_loaded, long before
-     * translations load. This is the layer that talks to a person, so it is the layer that
-     * translates.
-     */
-    private function slugRejectionMessage(string $reason): string
-    {
-        return match ($reason) {
-            LoginSlug::REASON_RESERVED => __(
-                'That login address is reserved by WordPress. Choose a different one.',
-                'corex',
-            ),
-            LoginSlugAvailability::REASON_TAKEN_BY_PAGE => __(
-                'A published page already uses that address. Choose a different one, or the login and that page would compete for the same URL.',
-                'corex',
-            ),
-            LoginSlugAvailability::REASON_TAKEN_BY_ROUTE => __(
-                'Something on this site already routes that address — a post type archive, a category base, or another plugin. Choose a different one.',
-                'corex',
-            ),
-            default => __(
-                'Use 3 to 81 characters for the login address: lowercase letters, numbers, and hyphens, starting with a letter or number.',
-                'corex',
-            ),
-        };
-    }
-
-    /** @return array<string,mixed> */
     private function payload(LoginProtectionSettings $settings): array
     {
         return [
+            'hide_wp_login'            => $settings->hideWpLogin,
+            'hide_admin'               => $settings->hideAdmin,
+            'limit_attempts'           => $settings->limitAttempts,
             'enabled'                  => $settings->enabled,
             'block_default_endpoints'  => $settings->blockDefaultEndpoints,
             'custom_slug'              => $settings->customSlug,
@@ -241,13 +162,20 @@ final class SecuritySettingsController
             // who just moved their login is told the old one.
             'login_url'                => esc_url_raw(LoginUrl::forSettings($settings)),
             'max_attempts'             => $settings->threshold,
+            'window_minutes'           => $this->wholeMinutes($settings->windowSeconds),
             'window_seconds'           => $settings->windowSeconds,
+            'lockout_minutes'          => $this->wholeMinutes($settings->lockoutSeconds),
             'lockout_seconds'          => $settings->lockoutSeconds,
             'trusted_proxy_mode'       => $settings->trustedProxyMode,
             'trusted_proxies'          => $settings->trustedProxyRanges,
             'retention_days'           => $settings->retainDays,
             'successful_login_logging' => $settings->successfulLoginLogging,
         ];
+    }
+
+    private function wholeMinutes(int $seconds): ?int
+    {
+        return $seconds % 60 === 0 ? intdiv($seconds, 60) : null;
     }
 
     private function hasNonce(WP_REST_Request $request): bool

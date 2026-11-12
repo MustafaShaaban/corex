@@ -6,7 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECISIONS #520 to #526, #625 to #627).
+Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 5; DECISIONS #520 to #526, #625 to #628).
 
 ### Added
 
@@ -98,6 +98,25 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECIS
   `LoginAddressState` now says `recovery` whenever the constant is set and any switch is on, not only when
   `wp-login.php` is hidden, so a forgotten line that reopens a hidden admin is reported.
 - **Successful sign-ins are recorded as before**: whenever "Record successful sign-ins" is on and any switch is on.
+- **The login settings route saves only what a request sends** (spec 124 slice 5, FR-015).
+  `POST corex/v1/security/login-protection` takes any subset of the settings and leaves every other stored value as it
+  is, so a 30-second window set from the command line stays 30 seconds when only Max attempts is saved; before, a
+  field left out was reset to its default. It takes the three switches (`hide_wp_login`, `hide_admin`,
+  `limit_attempts`; one sent alone leaves the other two as they are), the counting window and the lockout in whole
+  minutes (`window_minutes` 1 to 1,440, `lockout_minutes` 1 to 10,080), and the previous screen's `enabled`,
+  `block_default_endpoints`, `window_seconds` (60 to 86,400) and `lockout_seconds` (60 to 604,800) until slice 10;
+  the switches and the old pair together, or one length in both units, are refused. `max_attempts` is 1 to 50 and
+  `retention_days` 1 to 365. `trusted_proxies` is text with one IPv4 or IPv6 address or CIDR range per line, or a list
+  of them, at most 100. A `/0` range (`0.0.0.0/0`, `::/0`) is refused: it would make every client a trusted proxy,
+  free to choose the address its sign-in attempts are counted by. `wp corex security trusted-proxies` now asks the
+  same rule (`TrustedProxyRange`) and refuses a `/0` range too, with an error and exit 1. `trusted_proxy_mode`
+  follows the list unless it is sent. A refusal answers 422 in spec 043's
+  validation shape (`ok: false`, `code: validation_failed`, `message`, `errors` keyed by field with a translated
+  sentence that names the range or the bad proxy line, and `details.fields` with the reason, `min`, `max` and the
+  refused `lines`), and nothing is saved, not even the valid fields of the same request. A save answers with the
+  settings as stored: the switches, the two old keys, `window_minutes` and `lockout_minutes` (`null` when the length
+  is not a whole minute) beside `window_seconds` and `lockout_seconds`, the trusted proxies and `trusted_proxy_mode`.
+  The route still needs "Manage operations" and the REST nonce. `LoginProtectionSettingsStore` gains `update()`.
   Only failed sign-ins need the limits switch.
 - **The launch checklist's "Login protection on" passes only while failed sign-ins are limited** (limits are the
   defence, hiding is obscurity). Its sentences are now "Failed sign-ins are limited" and "Failed sign-ins are not
@@ -199,6 +218,14 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECIS
   reported with any switch on), `OverviewTruthTest`, `RecoveryOnTest`, `LaunchChecklistTest` (the login check's
   sentences) and `LoginProtectionEnforcementTest`. Both sites limit failed sign-ins, so their launch checklist's
   login check still passes.
+- **Muva and Perego, the login settings route (slice 5)**: a script that posts to
+  `corex/v1/security/login-protection` and leaves a field out no longer resets that field to its default; it stays as
+  stored, the login address included. A refused save now answers 422 with `code: validation_failed` and an `errors`
+  object keyed by field, where an unusable login address answered 400 with `code: corex_invalid_login_slug` and a
+  `message`; read `errors.custom_slug`. Out-of-range numbers, which WordPress refused with `rest_invalid_param` and
+  400, now answer the same way. Neither client's own code calls the route today. A client repository that carries
+  copies of CoreX's tests takes the updated `LoginPolicySaveTest` (the controller comes from the container). This
+  slice is not released before slice 10 (DECISIONS #628).
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves. When it moves, its own listener
   `StaffActivityLog::lockedOut()` (`platform/mizzey-site/src/Security/StaffActivityLog.php`) stops recording who was
   locked out: it reads `$event->identity` and `$event->clientIp` behind `isset`, which are gone, so it silently writes

@@ -20801,3 +20801,30 @@ combination those words do not describe.
   off whole, so `/login`, `/admin` and `/dashboard` all reach the 404. Putting back only its admin half would send
   `/admin` and `/dashboard` to `/wp-admin/`, which with the admin not hidden reveals the address anyway (the first
   point). No code change.
+
+## #629 -- The login settings route saves only what it is sent, and refuses with the range
+
+**Date:** 2026-11-13. **Spec:** 124, slice 5 (FR-015 server half, FR-004c). **Branch:**
+`spec/124-slice-5-login-settings-route`. **Decided:** under the owner's delegation of the revamp.
+
+**What a save writes.** `corex/v1/security/login-protection` takes any subset of the settings and writes only the
+fields it is sent (`LoginSettingsInput`, `LoginProtectionSettingsStore::update()`); the switches and both old keys
+are written only when a switch is sent (#628), so a save of other fields leaves all five stored keys as they are.
+Lengths are sent in minutes and stored as seconds (minutes x 60); a stored length that is not a whole minute is
+answered as `null` minutes beside its exact seconds, and kept unless that field is sent.
+
+**Ranges.** Attempts 1 to 50; counting window 1 to 1,440 minutes; lockout 1 to 10,080 minutes (the previous
+release's seconds bounds); retention 1 to 365 days; at most 100 trusted-proxy lines, each an IPv4 or IPv6 address or
+CIDR range. A `/0` range is refused, by the route and by `wp corex security trusted-proxies` through one rule
+(`TrustedProxyRange`): it would make every client a trusted proxy, free to set in `X-Forwarded-For` the address the
+attempt limit counts by.
+
+**Refusals.** Spec 043's validation envelope: 422, `errors` keyed by field with a translated sentence, and
+`details.fields` with the reason code, the range or the refused lines. Nothing is written, not even the valid fields
+of the same request. The route's arguments carry descriptions only, so WordPress's own `rest_invalid_param` does not
+answer first. "Manage operations" is required (spec 117); the nonce stays.
+
+**Until slice 10.** The previous screen's fields (`enabled`, `block_default_endpoints`, `window_seconds`,
+`lockout_seconds`) are still taken; mixing them with their new equivalents is refused. The previous screen clamps a
+window to at least 60 seconds and sends every field, so its save turns a 30-second window into 60. A warning beside
+the proxy field has no text yet; slice 10's design writes it. This slice is not released before slice 10 (#628).
