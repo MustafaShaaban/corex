@@ -22,6 +22,10 @@ defined('ABSPATH') || exit;
  * 2.5 KB wp_die page where a real miss returns the ~80 KB theme 404 — telling a scanner "something
  * is hidden here" on response size alone. So the rules here are: let WordPress produce the 404
  * itself, and make sure nothing anywhere still points at the default endpoint.
+ *
+ * Two switches act here, each on its own (spec 124, FR-013): hiding wp-login.php and hiding the admin
+ * from signed-out visitors. The own address is served, and login URLs point at it, whenever any of the
+ * three switches is on. admin-ajax.php, admin-post.php and options.php are never hidden.
  */
 final class LoginRouteGuard
 {
@@ -67,6 +71,7 @@ final class LoginRouteGuard
 
     public function register(): void
     {
+        // The own address works whenever any switch is on (spec 124, FR-013); `enabled` says so.
         if (! $this->settings->enabled) {
             return;
         }
@@ -91,17 +96,17 @@ final class LoginRouteGuard
         add_filter('wp_redirect', [$this, 'filterLoginUrl'], 20, 1);
         add_filter('site_option_welcome_email', [$this, 'filterWelcomeEmail'], 20, 1);
 
-        if (! $this->hidesDefaults()) {
-            return;
+        if ($this->hidesWpLogin()) {
+            // Core redirects /login, /dashboard, and /admin to wp-login.php. With the filters above
+            // in place it redirected them to the *custom slug* instead, handing the secret to anyone
+            // who guessed /login, which is the first thing anyone guesses (DECISIONS #140).
+            remove_action('template_redirect', 'wp_redirect_admin_locations', 1000);
         }
 
-        // Core redirects /login, /dashboard, and /admin to wp-login.php. With the filters above
-        // in place it redirected them to the *custom slug* instead — handing the secret to anyone
-        // who guessed /login, which is the first thing anyone guesses (DECISIONS #140).
-        remove_action('template_redirect', 'wp_redirect_admin_locations', 1000);
-
-        // The first moment the login state is knowable, and before anything core hooks there.
-        add_action('setup_theme', [$this, 'sealHiddenAdminRequest'], 1);
+        if ($this->hidesAdmin()) {
+            // The first moment the login state is knowable, and before anything core hooks there.
+            add_action('setup_theme', [$this, 'sealHiddenAdminRequest'], 1);
+        }
     }
 
     /**
@@ -152,7 +157,7 @@ final class LoginRouteGuard
 
         // is_admin() covers admin-ajax.php and admin-post.php, which post to wp-login.php-adjacent
         // paths and must never be hidden or scheduled work and async features break.
-        if (! $isAdmin && $this->isDefaultLoginPath($path) && $this->hidesDefaults()) {
+        if (! $isAdmin && $this->isDefaultLoginPath($path) && $this->hidesWpLogin()) {
             return self::HIDE;
         }
 
@@ -167,7 +172,7 @@ final class LoginRouteGuard
      */
     public function hidesAdminArea(bool $isAdmin, bool $loggedIn, bool $ajax, string $script, string $path): bool
     {
-        if (! $this->hidesDefaults() || ! $isAdmin || $loggedIn || $ajax) {
+        if (! $this->hidesAdmin() || ! $isAdmin || $loggedIn || $ajax) {
             return false;
         }
 
@@ -549,10 +554,23 @@ final class LoginRouteGuard
         return strtolower(basename($path));
     }
 
-    /** The one rule the Security Center and the Overview print (spec 114, US-SAFE-11). */
-    private function hidesDefaults(): bool
+    /**
+     * Whether wp-login.php is hidden: the rule the Security Center and the Overview print (spec 114,
+     * US-SAFE-11), which follows the first switch and gives way to recovery (spec 124, FR-013).
+     */
+    private function hidesWpLogin(): bool
     {
         return LoginAddressState::of($this->settings, $this->unguarded) === LoginAddressState::HIDDEN;
+    }
+
+    /**
+     * Whether the admin area is hidden from signed-out visitors: the second switch. Recovery reopens
+     * it too, as it did when one setting hid both: an owner who adds the recovery line and goes to
+     * /wp-admin/ out of habit is sent to sign in, not shown a missing page.
+     */
+    private function hidesAdmin(): bool
+    {
+        return $this->settings->hideAdmin && ! $this->unguarded;
     }
 
     public function customLoginPath(): string

@@ -432,7 +432,7 @@ final class CliServiceProvider extends ServiceProvider
 
                 $securityReset->run();
             },
-            'definition' => [],
+            'definition' => $this->resetLoginCommandDefinition(),
         ];
 
         $registrations['corex security trusted-proxies'] = [
@@ -522,6 +522,19 @@ final class CliServiceProvider extends ServiceProvider
             'corex',
             $this->container->make(GeneratorContext::class)->prefix,
         ]));
+    }
+
+    /**
+     * What `wp corex security reset-login --help` says (spec 124, User Story 6 scenario 7).
+     *
+     * @return array{shortdesc: string, longdesc: string}
+     */
+    private function resetLoginCommandDefinition(): array
+    {
+        return [
+            'shortdesc' => __('Turn every CoreX login switch off and release active lockouts.', 'corex'),
+            'longdesc'  => __('Turns off hiding wp-login.php, hiding the admin from visitors who are not signed in, and limiting failed sign-ins, and puts the login address back to corex-login. Releases every lockout still in force and prints the wp-login.php address that works now. Users, passwords, roles and other settings are not changed. Without a command line, add define( \'COREX_LOGIN_UNGUARD\', true ); to wp-config.php instead: wp-login.php and the admin open again while the line is there, and nothing is saved.', 'corex'),
+        ];
     }
 
     /**

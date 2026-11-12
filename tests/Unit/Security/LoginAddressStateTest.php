@@ -42,3 +42,17 @@ it('says hidden only with protection on, hiding on and recovery off', function (
     'protection on, hiding on, recovery'  => [true, true, true, LoginAddressState::RECOVERY],
     'protection on, hiding on'            => [true, true, false, LoginAddressState::HIDDEN],
 ]);
+
+it('spec 124 FR-013: follows the "hide wp-login.php" switch alone, with any switch on meaning protection is on', function (bool $login, bool $admin, bool $limits, bool $recovery, string $state) {
+    $settings = LoginProtectionSettings::of(new \Corex\Config\Security\LoginProtection\LoginSwitches($login, $admin, $limits), customSlug: 'team-login');
+
+    expect(LoginAddressState::of($settings, $recovery))->toBe($state);
+})->with([
+    'all off'                          => [false, false, false, false, LoginAddressState::OFF],
+    'all off, recovery'                => [false, false, false, true, LoginAddressState::OFF],
+    'limits only'                      => [false, false, true, false, LoginAddressState::REACHABLE],
+    'the admin hidden only'            => [false, true, false, false, LoginAddressState::REACHABLE],
+    'wp-login.php hidden only'         => [true, false, false, false, LoginAddressState::HIDDEN],
+    'wp-login.php hidden, recovery'    => [true, false, false, true, LoginAddressState::RECOVERY],
+    'all on'                           => [true, true, true, false, LoginAddressState::HIDDEN],
+]);

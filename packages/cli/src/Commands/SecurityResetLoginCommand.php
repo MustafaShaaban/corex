@@ -13,12 +13,17 @@ defined('ABSPATH') || exit;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginLockoutStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
+use Corex\Config\Security\LoginProtection\LoginSwitches;
 use Corex\Config\Security\LoginProtection\LoginUrl;
 use Corex\Support\Options\LoadedOptions;
 use DateTimeImmutable;
 
 /**
  * Restores a safe login path without depending on the protected custom login URL.
+ *
+ * It turns all three login switches off (spec 124, FR-013, User Story 6 scenario 7), in both stored
+ * shapes, so this release and an older one both read them off, and releases every active lockout.
+ * Every other stored setting is kept.
  */
 final class SecurityResetLoginCommand
 {
@@ -31,10 +36,14 @@ final class SecurityResetLoginCommand
      */
     public function restore(DateTimeImmutable $now): array
     {
+        $off = LoginSwitches::off();
         $settings = get_option(LoginProtectionSettingsStore::OPTION, []);
         $settings = is_array($settings) ? $settings : [];
-        $settings['enabled'] = false;
-        $settings['block_default_endpoints'] = false;
+        $settings[LoginProtectionSettingsStore::HIDE_WP_LOGIN] = $off->hideWpLogin;
+        $settings[LoginProtectionSettingsStore::HIDE_ADMIN] = $off->hideAdmin;
+        $settings[LoginProtectionSettingsStore::LIMIT_ATTEMPTS] = $off->limitAttempts;
+        $settings['enabled'] = $off->previousEnabled();
+        $settings['block_default_endpoints'] = $off->previousBlockDefaultEndpoints();
         // Reset the slug too: recovery exists for owners locked out by a bad one, and leaving it
         // in place means re-enabling protection walks straight back into the same lockout.
         $settings['custom_slug'] = LoginSlug::DEFAULT;
@@ -63,6 +72,7 @@ final class SecurityResetLoginCommand
     {
         $result = $this->restore(new DateTimeImmutable('now'));
 
+        \WP_CLI::log('Login switches: hide wp-login.php off, hide the admin off, limit failed sign-ins off.');
         \WP_CLI::log(sprintf('Restored login URL: %s', $result['restored_login_url']));
         \WP_CLI::log(sprintf('Released active lockouts: %d', $result['released_lockouts']));
         \WP_CLI::log(sprintf(

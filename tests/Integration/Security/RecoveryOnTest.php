@@ -91,3 +91,22 @@ it('says they are reachable while protection is off, whatever the hiding setting
     expect($html)->toMatch('/Default login endpoints<\/span><span class="corex-opsec__summary-value">Reachable</')
         ->and($html)->not->toContain('>Hidden<');
 });
+
+// Spec 124, FR-013, User Story 6 scenario 7: the tab reads each switch as it is in force, and the
+// previous release's two keys beside them, from either stored shape. Only the facts change here;
+// slice 10 draws them.
+it('gives the Login Protection tab each switch as it is in force', function (array $stored, array $switches) {
+    $answer = static fn (): array => $stored + ['custom_slug' => 'team-login'];
+    add_filter('pre_option_' . LoginProtectionSettingsStore::OPTION, $answer, 20);
+
+    $policy = callScreen(securityScreenWithRecovery(false), 'securityConfig')['loginPolicy'];
+    remove_filter('pre_option_' . LoginProtectionSettingsStore::OPTION, $answer, 20);
+
+    expect([$policy['hide_wp_login'], $policy['hide_admin'], $policy['limit_attempts']])->toBe($switches)
+        ->and($policy['enabled'])->toBe(in_array(true, $switches, true));
+})->with([
+    'previous release, protection on, hiding on' => [['enabled' => true, 'block_default_endpoints' => true], [true, true, true]],
+    'previous release, protection on, hiding off' => [['enabled' => true, 'block_default_endpoints' => false], [false, false, true]],
+    'previous release, protection off' => [['enabled' => false, 'block_default_endpoints' => true], [false, false, false]],
+    'this release, the admin hidden alone' => [['hide_wp_login' => false, 'hide_admin' => true, 'limit_attempts' => false, 'enabled' => true, 'block_default_endpoints' => false], [false, true, false]],
+]);

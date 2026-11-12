@@ -1029,6 +1029,12 @@ final class OperationsSecurityScreen
         $storedSlug = is_array($stored) ? (string) ($stored['custom_slug'] ?? '') : '';
 
         return [
+            // The three switches as they are in force (spec 124, FR-013). The two keys after them
+            // are the previous release's, which this release's screen still reads until it is
+            // redrawn with the switches (spec 124, slice 10).
+            'hide_wp_login' => $settings->hideWpLogin,
+            'hide_admin' => $settings->hideAdmin,
+            'limit_attempts' => $settings->limitAttempts,
             'enabled' => $settings->enabled,
             'block_default_endpoints' => $settings->blockDefaultEndpoints,
             'custom_slug' => $settings->customSlug,

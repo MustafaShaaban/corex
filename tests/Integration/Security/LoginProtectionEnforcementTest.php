@@ -22,6 +22,7 @@ use Corex\Config\Security\LoginProtection\WpLoginAccounts;
 use Corex\Config\Security\LoginProtection\WpLoginAttemptStore;
 use Corex\Config\Security\LoginProtection\WpLoginHashKey;
 use Corex\Database\Schema\Migrator;
+use Corex\Tests\Support\OptionRow;
 
 /**
  * The address every attempt here is made from. It is in a range reserved for documentation, so no
@@ -52,7 +53,7 @@ beforeEach(function () {
 
     // The tests start from "nothing saved"; the install's own policy is put back afterwards. It
     // used to be deleted and left deleted.
-    $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
+    $this->previousLoginSettings = OptionRow::capture(LoginProtectionSettingsStore::OPTION);
     delete_option(LoginProtectionSettingsStore::OPTION);
     forgetLoginEnforcementAttempts($this->migrator);
     $this->previousServer = $_SERVER;
@@ -61,12 +62,9 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    delete_option(LoginProtectionSettingsStore::OPTION);
-    if ($this->previousLoginSettings !== null) {
-        // Re-added rather than updated, so it comes back not autoloaded — which is how the
-        // settings store writes it — whatever the tests saved in between.
-        update_option(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings, false);
-    }
+    // The row as it was found, its autoload included: it came back unloaded, which the store has not
+    // written since it moved to loaded options (DECISIONS #366).
+    OptionRow::restore(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings);
     forgetLoginEnforcementAttempts($this->migrator);
     $_SERVER = $this->previousServer;
 });

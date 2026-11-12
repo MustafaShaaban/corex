@@ -6,7 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECISIONS #520 to #526, #625 to #627).
+Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECISIONS #520 to #526, #625 to #627).
 
 ### Added
 
@@ -57,12 +57,39 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECIS
   step no longer reruns, `dbDelta` and all, on every admin page, admin-ajax call and cron run. `wp corex migrate` and a
   release installed from the admin still try at once. `SiteMigrationResult` gains `componentsFailed`, and
   `SiteMigrationRunner::runForSite()` and `isDueForSite()` take an optional list of components to leave out.
+- **Three login switches** (spec 124 slice 4, FR-013). Login protection is now three switches that each act on their
+  own: hide `wp-login.php`, hide the admin from visitors who are not signed in, and limit failed sign-ins
+  (`Corex\Config\Security\LoginProtection\LoginSwitches`, stored as `hide_wp_login`, `hide_admin` and
+  `limit_attempts` in `corex_login_protection_settings`). The site's own login address works whenever any switch is
+  on. Hiding `wp-login.php` needs a usable address: a save that hides it with the address cleared or unusable is
+  refused (`LoginSettingsRefused`, with the field and the reason code) and nothing is written. `admin-ajax.php`,
+  `admin-post.php` and `options.php` stay reachable in every combination. The Login Protection tab's data
+  (`loginPolicy`) and the Overview's facts (`OverviewFacts::gather()['loginSwitches']`) now carry each switch and
+  whether recovery is on; the screens draw them in slice 10 and their markup does not change here. The screen and
+  its settings route still read and send the previous release's two keys until slices 5 and 10.
+- **`wp corex security reset-login --help`** says what the command does, and the command turns all three switches
+  off in both stored shapes.
 - **Sign-in records are deleted after the retention period.** "Keep sign-in records" (30 days by default) did
   nothing: no row was ever deleted. The attempts table is now one of the stores the daily retention sweep prunes, on
   each site, by when each attempt happened; a lockout still in force is kept however old.
 
 ### Changed
 
+- **Login settings are read in both stored shapes and written in both** (spec 124 slice 4, FR-014). Settings saved by
+  the previous release keep their meaning and are not rewritten: protection on with hiding on reads as all three
+  switches on with the same address; protection on without hiding reads as limits on, with the own address beside
+  `wp-login.php`; protection off reads as all three off, whatever "hide" was stored as. A save from a screen that still
+  sends `enabled` and `block_default_endpoints` is read the same way. A save now writes the three switches and the
+  two old keys beside them, so a site that later runs an older CoreX does the closest thing that hides nothing the
+  owner did not ask to hide: `enabled` is on whenever any switch is (the own address keeps working there, with limits),
+  and `block_default_endpoints` is on only when both `wp-login.php` and the admin are hidden. When an older CoreX
+  changes the two old keys after a save (its recovery command turns them off and keeps the switches), the old keys
+  win, so that recovery is not undone by updating again. `LoginProtectionSettings` gains `hideWpLogin`, `hideAdmin`,
+  `limitAttempts`, `of()` and `switches()`; `enabled` now means "a switch is on", and `blockDefaultEndpoints` is the
+  stored or written old key and decides nothing. Attempts are limited only by `limitAttempts`
+  (`LoginProtectionEnforcer`, `LoginProtectionService`), and `LoginAddressState` follows `hideWpLogin`.
+- **The recovery constant reopens `wp-login.php` and the admin whatever the switches say.**
+  `define( 'COREX_LOGIN_UNGUARD', true );` in `wp-config.php` keeps the custom address working, as before.
 - **`Corex\Security\LoginLockoutEvent` carries no typed username and no address** (FR-020). Its constructor is now
   `(?int $userId, string $identityFingerprint, string $networkFingerprint, DateTimeImmutable $lockedUntil)`; the
   `identity` and `clientIp` properties are gone, and the constructor refuses anything that is not a 12-character
@@ -144,6 +171,15 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECIS
   the keyed address), `SiteMigrationRunnerTest` and `SchemaSelfHealTest` (`SchemaSelfHeal` now takes a `BootLogger`).
   Sign-in records older than "Keep sign-in records" are now deleted by the daily sweep, the rows stored before the
   update included.
+- **Muva and Perego, login switches (slice 4)**: both sites store protection on, hiding on and the address
+  `corex-login` with the default limits (as their own docs record: `/corex-login/` signs in, `/wp-login.php` and a
+  signed-out `/wp-admin/` answer 404). After the update those settings read as all three switches on with the same
+  address, and `/wp-login.php`, `/wp-admin/` and `/corex-login/` answer exactly as before; nothing is rewritten on
+  update. The first save of the login settings after the update writes the three switches and the two old keys
+  beside them. Perego's `.htaccess` rule that answers 403 at `/wp-login.php` is its own and is not affected. A client
+  repository that carries copies of CoreX's tests takes `LoginProtectionSettingsStoreTest` (an unusable address is
+  refused while `wp-login.php` is hidden), `SecurityResetLoginCommandTest`, `LoginAddressStateTest`,
+  `OverviewTruthTest` and `RecoveryOnTest`.
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves. When it moves, its own listener
   `StaffActivityLog::lockedOut()` (`platform/mizzey-site/src/Security/StaffActivityLog.php`) stops recording who was
   locked out: it reads `$event->identity` and `$event->clientIp` behind `isset`, which are gone, so it silently writes
