@@ -9,6 +9,9 @@
 declare(strict_types=1);
 
 use Corex\Config\Security\LoginProtection\ClientIpResolver;
+use Corex\Config\Security\LoginProtection\LoginAccounts;
+use Corex\Config\Security\LoginProtection\LoginAttemptKeys;
+use Corex\Config\Security\LoginProtection\LoginHashKey;
 use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginAttemptStore;
 use Corex\Config\Security\LoginProtection\LoginProtectionContext;
@@ -32,6 +35,32 @@ function loginPolicy(array $overrides = []): LoginProtectionSettings
     );
 }
 
+function serviceTestKey(): LoginHashKey
+{
+    return new class () implements LoginHashKey {
+        public function current(): string
+        {
+            return 'service-test-key';
+        }
+    };
+}
+
+/** No username here belongs to an account. */
+function serviceTestAccounts(): LoginAccounts
+{
+    return new class () implements LoginAccounts {
+        public function idFor(string $typed): ?int
+        {
+            return null;
+        }
+
+        public function nameOf(int $userId): string
+        {
+            return '';
+        }
+    };
+}
+
 function loginContext(string $identity = 'owner@example.com', string $ip = '203.0.113.9'): LoginProtectionContext
 {
     return new LoginProtectionContext(
@@ -43,7 +72,7 @@ function loginContext(string $identity = 'owner@example.com', string $ip = '203.
 
 it('locks a repeated failed login by identity and network without storing raw credentials or IPs', function () {
     $store = new CorexTestLoginAttemptStore();
-    $service = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy()), $store);
+    $service = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy(), serviceTestKey()), $store, serviceTestAccounts());
     $now = new DateTimeImmutable('2026-07-07T12:00:00+00:00');
 
     expect($service->recordFailure(loginContext(), $now)->locked)->toBeFalse()
@@ -63,7 +92,7 @@ it('locks a repeated failed login by identity and network without storing raw cr
 
 it('ignores failures outside the configured window and releases after the lockout expires', function () {
     $store = new CorexTestLoginAttemptStore();
-    $service = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy()), $store);
+    $service = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy(), serviceTestKey()), $store, serviceTestAccounts());
     $now = new DateTimeImmutable('2026-07-07T12:00:00+00:00');
 
     $service->recordFailure(loginContext(), $now->modify('-10 minutes'));
@@ -81,10 +110,11 @@ it('ignores failures outside the configured window and releases after the lockou
 
 it('logs successful sign-ins only when the policy enables success logging', function () {
     $store = new CorexTestLoginAttemptStore();
-    $enabled = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy()), $store);
+    $enabled = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy(), serviceTestKey()), $store, serviceTestAccounts());
     $disabled = new LoginProtectionService(
-        new LoginProtectionPolicy(loginPolicy(['successfulLoginLogging' => false])),
+        new LoginProtectionPolicy(loginPolicy(['successfulLoginLogging' => false]), serviceTestKey()),
         $store,
+        serviceTestAccounts(),
     );
 
     $enabled->recordSuccess(loginContext(), userId: 15, now: new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
@@ -138,7 +168,7 @@ it('takes the address the nearest trusted proxy saw, not one the client wrote', 
 
 it('does not record or lock out when login protection is disabled', function () {
     $store = new CorexTestLoginAttemptStore();
-    $service = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy(['enabled' => false])), $store);
+    $service = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy(['enabled' => false]), serviceTestKey()), $store, serviceTestAccounts());
 
     $decision = $service->recordFailure(loginContext(), new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
 
@@ -157,25 +187,23 @@ final class CorexTestLoginAttemptStore implements LoginAttemptStore
         $this->records[] = $record;
     }
 
-    public function failures(string $identityHash, string $networkHash, DateTimeImmutable $since): array
+    public function failures(LoginAttemptKeys $keys, DateTimeImmutable $since): array
     {
         return array_values(array_filter(
             $this->records,
             static fn (LoginAttemptRecord $record): bool =>
                 $record->outcome === 'failed'
-                && $record->identityHash === $identityHash
-                && $record->networkHash === $networkHash
+                && $keys->matches($record->identityHash, $record->networkHash)
                 && $record->occurredAt >= $since,
         ));
     }
 
-    public function latestLockout(string $identityHash, string $networkHash, DateTimeImmutable $now): ?LoginAttemptRecord
+    public function latestLockout(LoginAttemptKeys $keys, DateTimeImmutable $now): ?LoginAttemptRecord
     {
         foreach (array_reverse($this->records) as $record) {
             if (
                 $record->outcome === 'locked'
-                && $record->identityHash === $identityHash
-                && $record->networkHash === $networkHash
+                && $keys->matches($record->identityHash, $record->networkHash)
                 && $record->lockedUntil !== null
                 && $record->lockedUntil > $now
             ) {

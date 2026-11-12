@@ -196,7 +196,9 @@ final class ConfigServiceProvider extends ServiceProvider
 {
     private const FOUNDATION_SCHEMA_OPTION  = 'corex_product_foundation_schema_version';
     // 4: the access requests table keeps a grant's expiry and how it ended (spec 112).
-    private const FOUNDATION_SCHEMA_VERSION = '4';
+    // 5: lockout notices stored before keep no typed username or address (spec 124, FR-020): no
+    //    table changes, one data step.
+    private const FOUNDATION_SCHEMA_VERSION = '5';
 
     public function register(): void
     {
@@ -256,6 +258,13 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Notifications\NotificationRepository::class,
             static fn (ContainerInterface $c): \Corex\Notifications\NotificationRepository => $c->make(\Corex\Config\Notifications\WpNotificationRepository::class),
         );
+        // The one-time rewrite of lockout notices stored before spec 124 (FR-020): a data step of
+        // the product foundation's schema, version 5.
+        $this->container->singleton(
+            \Corex\Config\Notifications\Lockouts\LockoutNoticeStore::class,
+            \Corex\Config\Notifications\Lockouts\WpLockoutNoticeStore::class,
+        );
+        $this->container->singleton(\Corex\Config\Notifications\Lockouts\LockoutNoticeRewrite::class);
         $this->container->singleton(
             \Corex\Notifications\NotificationService::class,
             static fn (ContainerInterface $c): \Corex\Notifications\NotificationService => new \Corex\Config\Notifications\NotificationServiceImpl(
@@ -491,6 +500,16 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Security\LoginProtection\LoginProtectionSettings::class,
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\LoginProtectionSettings =>
                 $c->make(\Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore::class)->current(),
+        );
+        // A sign-in record's values are keyed with the site's own secret, read when it is asked for
+        // so a run across a network's sites gets each site's key (spec 124, FR-019).
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginHashKey::class,
+            \Corex\Config\Security\LoginProtection\WpLoginHashKey::class,
+        );
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginAccounts::class,
+            \Corex\Config\Security\LoginProtection\WpLoginAccounts::class,
         );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionPolicy::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionService::class);
@@ -1207,6 +1226,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $notificationUserStateTable->schema(),
             ],
             self::FOUNDATION_SCHEMA_OPTION,
+            [$this->container->make(\Corex\Config\Notifications\Lockouts\LockoutNoticeRewrite::class)],
         ));
         $this->container->make(AbilityCompatibility::class)->register();
         $this->registerNotificationProducers();

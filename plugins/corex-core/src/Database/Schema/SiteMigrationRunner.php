@@ -18,7 +18,9 @@ use Throwable;
 
 /**
  * Runs idempotent per-site schema work through SiteScope, preserving partial-create
- * retry semantics and returning failures that ProviderRepository would only log.
+ * retry semantics and returning failures that ProviderRepository would only log. A component's
+ * data steps run after its tables exist and before its version is stored, so a step that fails
+ * leaves the component behind and is run again (spec 124, FR-020).
  * Prefix handling deliberately stays in Migrator::fullName(): global $wpdb is read
  * per call, so switch_to_blog() already selects the correct site prefix (FR-031,
  * FR-034).
@@ -202,7 +204,25 @@ final class SiteMigrationRunner
 
         foreach ($component->tables as $table) {
             if (! $this->migrator->exists($table->name)) {
-                return $this->failedComponent($siteId, $component, $fromVersion, $table->name);
+                return $this->failedComponent(
+                    $siteId,
+                    $component,
+                    $fromVersion,
+                    sprintf('Schema component [%s] did not create table [%s].', $component->id, $table->name),
+                );
+            }
+        }
+
+        foreach ($component->steps as $step) {
+            try {
+                $step->run();
+            } catch (Throwable $e) {
+                return $this->failedComponent(
+                    $siteId,
+                    $component,
+                    $fromVersion,
+                    sprintf('Schema component [%s] step [%s] failed: %s', $component->id, $step->id(), $e->getMessage()),
+                );
             }
         }
 
@@ -220,13 +240,8 @@ final class SiteMigrationRunner
         int $siteId,
         SchemaComponent $component,
         string $fromVersion,
-        string $missingTable,
+        string $error,
     ): array {
-        $error = sprintf(
-            'Schema component [%s] did not create table [%s].',
-            $component->id,
-            $missingTable,
-        );
         // The runner owns failure dispatch because the component/version detail is
         // not recoverable from the aggregate SiteMigrationResult returned to callers.
         $this->events->dispatch(new SiteMigrationFailed(

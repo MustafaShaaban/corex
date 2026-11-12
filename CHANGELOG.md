@@ -21,6 +21,50 @@ Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #
   offered in the mode chooser until the mode cards are drawn (slice 8). The Assistant's chat
   (`POST corex/v1/assistant`) is no longer a public submission: it keeps its token and limits and answers in
   Forms paused and Maintenance; only its hand-off is refused (DECISIONS #522).
+- **A lockout names its account** (spec 124 slice 3, FR-016, the record half). When the locked-out username belongs to
+  an account (its login, or its email typed as the username), the lockout row keeps the account's id and the
+  notification names it: "Repeated login failures locked out “<display name>”". Otherwise the notification says
+  "Repeated login failures locked out an unknown username" with a short fingerprint. The account is looked up once,
+  on the attempt that starts the lockout, and what a visitor sees does not change with whether it exists.
+- **Data steps in schema migrations.** A `Corex\Database\Schema\SchemaComponent` takes an optional list of
+  `Corex\Database\Schema\DataMigrationStep`s, run on every migration path (the admin's self-heal, `wp corex migrate`,
+  a release installed from the admin, a new site) in each site's scope, after the component's tables exist and before
+  its version is stored. A step that fails leaves the version unwritten and is run again. The product foundation's
+  schema is version 5, with one step.
+
+### Changed
+
+- **`Corex\Security\LoginLockoutEvent` carries no typed username and no address** (FR-020). Its constructor is now
+  `(?int $userId, string $identityFingerprint, string $networkFingerprint, DateTimeImmutable $lockedUntil)`; the
+  `identity` and `clientIp` properties are gone, and the constructor refuses anything that is not a 12-character
+  fingerprint.
+- **`LoginAttemptStore::failures()` and `latestLockout()` take a `LoginAttemptKeys`** (both the keyed pair and the
+  plain pair stored before the update) instead of two hashes, and `LoginProtectionPolicy` and
+  `LoginProtectionService` take a `LoginHashKey` and a `LoginAccounts` from the container.
+- **A lockout of an existing account names it by its display name, on purpose** (FR-016 beside SC-003). The spec
+  asks for the account to be named, so when an account's display name is its own login or its email address, and
+  that is what was typed, that text appears in the notice. It is the account's name, already in `wp_users`, shown
+  only to people who manage operations. Every other typed username (an unknown one, or an email typed for an
+  account whose display name is something else) is kept nowhere.
+
+### Security
+
+- **Sign-in records are keyed with the site's own secret** (spec 124 slice 3, FR-019). The typed username and the
+  visitor's address were stored as plain SHA-256, which anyone holding the table could read back by hashing a list of
+  usernames or the IPv4 range. Both are now HMAC-SHA256 with a key made from WordPress's auth salt and the site's id,
+  so the same username makes different values on two sites, a network's included. Attempts stored before the update
+  keep counting until they leave the counting window, and a lockout active when the site updates holds until its end.
+- **Nothing CoreX stores or shows about a lockout holds the typed username or a full address** (FR-020). The lockout
+  notification kept both in plain text (its title, body, merge key, source and details); it now keeps an account id
+  or a fingerprint, and the network only as a fingerprint. On update, every lockout notice stored before, open or
+  resolved, is rewritten once to the same rule and reads "unknown username", since an old lockout recorded no account.
+- **The Lockouts panel no longer shows prefixes of the stored values** (FR-020). It showed the first 12 characters of
+  each lockout's identity and network hash. For a row stored before the update those are a plain SHA-256, and 12
+  characters of a plain hash of an address give the address back to anyone who hashes the IPv4 range. The panel, the
+  lockout notice and the `LoginLockoutEvent` now all show one fingerprint: the first 12 characters of an HMAC, with
+  the site key, of the stored value. It is the same for a keyed row and a plain one, cannot be checked without the
+  key, and lines a notice up with its row. Only the values change; the panel's markup does not. Its rows' `id`
+  (a React key, used for nothing else) changes with them.
 
 ### Client impact
 
@@ -33,6 +77,15 @@ Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #
   (both modes; the chat route is no longer one they close), and `MaintenanceDecisionTest`, `MaintenanceGuardTest`
   and `MaintenanceModeTest` (`MaintenanceDecision` now takes `Corex\Http\PublicSubmissionPause`), plus
   `OperationsModeTest` and `ModeCommandTest` (the mode order).
+- **Muva and Perego, sign-in privacy (slice 3)**: on the first admin page or cron run after the update, every stored
+  lockout notice is rewritten: it reads "unknown username" with a fingerprint instead of the username, and no longer
+  shows the address. Its merge key changes, so the next lockout of the same username opens a new notice instead of
+  adding to the old one. A lockout active at the update holds until its end. A client listener of
+  `LoginLockoutEvent` that read `$event->identity` or `$event->clientIp` stops working: read `$event->userId` and the
+  fingerprints. A client repository that carries copies of CoreX's tests takes the updated
+  `LoginProtectionServiceTest`, `LoginLockoutNotificationProducerTest`, `ProducerActionCoverageTest`,
+  `LoginProtectionEnforcementTest`, `SecurityEventsTest` and `PasswordSignsInEverywhereTest` (attempts are found by
+  the keyed address).
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 
 Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIONS #470 to #479).

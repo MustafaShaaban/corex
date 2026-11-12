@@ -26,6 +26,7 @@ use Corex\Config\Readiness\LaunchChecklist;
 use Corex\Config\Readiness\ReadinessWords;
 use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
+use Corex\Config\Security\LoginProtection\LoginProtectionPolicy;
 use Corex\Config\Security\LoginProtection\LoginAddressState;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
@@ -57,6 +58,7 @@ final class OperationsSecurityScreen
         private readonly ProductionReadinessSnapshotFactory $readiness,
         private readonly LoginProtectionSettingsStore $loginSettings,
         private readonly LoginLockoutReader $lockouts,
+        private readonly LoginProtectionPolicy $loginPolicy,
         private readonly AdminDateTime $dateTime,
         private readonly ModeDisclosure $disclosure,
         private readonly CacheStatusReport $cacheStatus,
@@ -946,10 +948,14 @@ final class OperationsSecurityScreen
      * This was hardcoded to an empty array, so the panel reported "no lockouts" no matter what had
      * actually been recorded — a control that always says the same thing tells the operator nothing.
      *
-     * Identities are stored as SHA-256 by design (LoginAttemptRecord), so there is no name to show.
-     * A short fingerprint is enough to tell two lockouts apart and to line one up with the audit
-     * log, and the account is named only when the attempt matched a real user, which is already
+     * Identities are stored as hashes by design (LoginAttemptRecord), so there is no name to show.
+     * A short fingerprint is enough to tell two lockouts apart and to line one up with its lockout
+     * notice, and the account is named only when the attempt matched a real user, which is already
      * recorded. Nothing here is reconstructed or guessed.
+     *
+     * The fingerprint is the policy's, keyed again with the site key, never a prefix of the stored
+     * value: a row stored before spec 124 holds a plain SHA-256, and twelve characters of a plain
+     * hash of an address give the address back to anyone who hashes the IPv4 range (FR-020).
      *
      * @return list<array<string,mixed>>
      */
@@ -961,9 +967,9 @@ final class OperationsSecurityScreen
             $lockedUntil = $record->lockedUntil;
 
             return [
-                'id' => substr($record->identityHash, 0, 12) . '-' . ($lockedUntil?->format('U') ?? '0'),
-                'identity' => substr($record->identityHash, 0, 12),
-                'network' => substr($record->networkHash, 0, 12),
+                'id' => $this->loginPolicy->fingerprint($record->identityHash) . '-' . ($lockedUntil?->format('U') ?? '0'),
+                'identity' => $this->loginPolicy->fingerprint($record->identityHash),
+                'network' => $this->loginPolicy->fingerprint($record->networkHash),
                 'account' => $this->accountName($record->userId),
                 'reason' => $record->reasonCode,
                 'active' => $lockedUntil !== null && $lockedUntil > $now,

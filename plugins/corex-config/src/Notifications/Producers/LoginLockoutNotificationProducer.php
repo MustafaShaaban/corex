@@ -11,6 +11,8 @@ namespace Corex\Config\Notifications\Producers;
 defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
+use Corex\Config\Notifications\Lockouts\LoginLockoutNotice;
+use Corex\Config\Security\LoginProtection\LoginAccounts;
 use Corex\Events\ListenerProvider;
 use Corex\Notifications\Notification;
 use Corex\Notifications\NotificationAction;
@@ -24,15 +26,19 @@ use DateTimeImmutable;
 
 /**
  * Turns a login lockout into a security notification for the operations/security managers (holders of
- * {@see CorexAbility::MANAGE_OPERATIONS}). Keyed by the locked identity, so repeated lockouts of the
- * same account merge into one growing notification — a sustained attack reads as one escalating
- * signal, not a flood. Dependency-aware via class_exists (FR-014).
+ * {@see CorexAbility::MANAGE_OPERATIONS}). Keyed by the locked account, or by the fingerprint of an
+ * unknown username, so repeated lockouts merge into one growing notification — a sustained attack
+ * reads as one escalating signal, not a flood. Dependency-aware via class_exists (FR-014).
+ *
+ * The notice names the account, or says "unknown username" with a short fingerprint, and gives the
+ * network only as a fingerprint (spec 124, FR-016, FR-020): see {@see LoginLockoutNotice}.
  */
 final class LoginLockoutNotificationProducer implements NotificationProducer
 {
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly ListenerProvider $listeners,
+        private readonly LoginAccounts $accounts,
     ) {
     }
 
@@ -57,31 +63,28 @@ final class LoginLockoutNotificationProducer implements NotificationProducer
 
     private function lockout(LoginLockoutEvent $event): Notification
     {
+        $notice = LoginLockoutNotice::of(
+            $event->userId,
+            $event->userId === null ? null : $this->accounts->nameOf($event->userId),
+            $event->identityFingerprint,
+            $event->networkFingerprint,
+            $event->lockedUntil,
+        );
+
         return Notification::create(
-            type: 'security.lockout',
+            type: LoginLockoutNotice::TYPE,
             category: NotificationCategory::SECURITY,
             severity: NotificationSeverity::WARNING,
             sourceModule: 'security',
             titleKey: 'notifications.security.lockout.title',
             messageKey: 'notifications.security.lockout.body',
-            rendered: [
-                'title' => sprintf(
-                    /* translators: %s: the locked account identity. */
-                    __('Repeated login failures locked out “%s”', 'corex'),
-                    $event->identity,
-                ),
-                'body'  => sprintf(
-                    /* translators: %s: the client IP address. */
-                    __('The attempts came from %s. Review them in Operations & Security.', 'corex'),
-                    $event->clientIp,
-                ),
-            ],
-            dedupKey: 'security.lockout:' . $event->identity,
+            rendered: $notice->rendered,
+            dedupKey: $notice->dedupKey,
             recipient: NotificationRecipient::forAbility(CorexAbility::MANAGE_OPERATIONS),
             occurredAt: new DateTimeImmutable('now'),
-            sourceType: 'login_identity',
-            sourceId: $event->identity,
-            metadata: ['client_ip' => $event->clientIp, 'locked_until' => $event->lockedUntil->format(DATE_ATOM)],
+            sourceType: $notice->sourceType,
+            sourceId: $notice->sourceId,
+            metadata: $notice->metadata,
             action: NotificationAction::to(
                 'notifications.security.lockout.action',
                 add_query_arg(['page' => 'corex-operations-security'], admin_url('admin.php')),
