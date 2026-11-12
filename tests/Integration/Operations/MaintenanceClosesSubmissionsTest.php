@@ -84,6 +84,8 @@ beforeEach(function () {
         return $query;
     };
 
+    $this->withoutManageOptions = static fn (array $allcaps): array => ['manage_options' => false] + $allcaps;
+
     add_filter('rest_dispatch_request', static fn () => new WP_REST_Response(COREX_TEST_HANDLER_REACHED, 200));
     wp_set_current_user(0);
 });
@@ -94,6 +96,7 @@ afterEach(function () {
     remove_filter('query', $this->spyQueries);
     remove_all_filters('rest_dispatch_request');
     remove_all_filters('corex_maintenance_bypass');
+    remove_filter('user_has_cap', $this->withoutManageOptions);
     wp_set_current_user(0);
 });
 
@@ -158,16 +161,16 @@ it('lets a signed-in administrator submit in both modes (FR-004)', function (str
     }
 })->with([OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED]);
 
-it('refuses a signed-in person who is not an administrator in Forms paused (FR-004)', function () {
-    $this->mode = OperationsMode::FORMS_PAUSED;
-    $editorId = (int) (get_users(['role' => 'editor', 'number' => 1, 'fields' => 'ID'])[0] ?? 0);
-    if ($editorId === 0) {
-        $this->markTestSkipped('No editor on this install.');
-    }
-    wp_set_current_user($editorId);
+it('refuses a signed-in person who may not manage options in both modes (FR-004)', function (string $mode) {
+    $this->mode = $mode;
+    // A real signed-in account with only the administrator's ability taken away, so the test runs
+    // on every install and asks the gate's own question, not whether the install has an editor.
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    add_filter('user_has_cap', $this->withoutManageOptions);
 
     expect(corexSubmit('/corex/v1/forms/contact')->get_status())->toBe(503);
-});
+})->with([OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED]);
 
 it('lets a submission through when the emergency bypass filter passes it in Maintenance', function () {
     add_filter('corex_maintenance_bypass', '__return_true');

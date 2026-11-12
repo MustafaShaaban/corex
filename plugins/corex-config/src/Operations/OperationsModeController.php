@@ -56,7 +56,8 @@ final class OperationsModeController
         $mode = isset($_POST['corex_mode']) ? sanitize_key(wp_unslash($_POST['corex_mode'])) : '';
 
         // Production opens the site to everyone, Maintenance closes it and Forms paused closes every
-        // public form: each also needs "Run dangerous actions" (spec 117, FR-003; spec 124, FR-004c). The command line has no person and keeps its rules.
+        // public form: each also needs "Run dangerous actions" (spec 117, FR-003; spec 124, FR-004c).
+        // The command line has no person and keeps its rules.
         if (in_array($mode, self::DANGEROUS_MODES, true)
             && ! $this->guard->verifiedPost(self::NONCE, self::ACTION, CorexAbility::RUN_DANGEROUS_ACTIONS, self::SCREEN)) {
             $this->refuse(sprintf(

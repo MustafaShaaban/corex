@@ -10,33 +10,27 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
+use Corex\Http\PublicSubmissionPause;
+
 /**
  * Who Maintenance closes the site to (spec 065, spec 112): everyone but a signed-in administrator,
  * while the mode is `maintenance`, unless the `corex_maintenance_bypass` filter passes the request
  * (DECISIONS #123).
  *
  * It says nothing about the kind of request. The page guard adds its own rule that the admin,
- * cron, AJAX and REST are never sent the maintenance page. Public submissions are closed by
- * {@see PublicSubmissionGuard}, which asks corex-core's `PublicSubmissionPause` the same question
- * with the same answer, for Forms paused as well (spec 124).
+ * cron, AJAX and REST are never sent the maintenance page. The answer is corex-core's
+ * {@see PublicSubmissionPause}, which also closes public submissions through
+ * {@see PublicSubmissionGuard}, so the maintenance page and the closed forms cannot disagree about
+ * who passes (spec 124). Forms paused closes the forms only, never the site.
  */
 final class MaintenanceDecision
 {
-    public function __construct(private readonly OperationsModeStore $store)
+    public function __construct(private readonly PublicSubmissionPause $pause)
     {
     }
 
     public function closedToCurrentVisitor(): bool
     {
-        if ($this->store->current() !== OperationsMode::MAINTENANCE) {
-            return false;
-        }
-
-        if (function_exists('apply_filters') && apply_filters('corex_maintenance_bypass', false) === true) {
-            return false;
-        }
-
-        // Never close the site to a signed-in administrator: the operator cannot lock themselves out.
-        return ! (is_user_logged_in() && current_user_can('manage_options'));
+        return $this->pause->closedBy() === PublicSubmissionPause::MAINTENANCE;
     }
 }

@@ -20122,6 +20122,10 @@ chat keeps answering and its hand-off is refused with the paused message (FR-004
 hand-off keeps the marker; the chat route stops counting as a public submission without losing the middleware it
 declares (nonce, throttle, limits).
 
+The chat is open in Maintenance too, as it is not a public submission in any mode. Nobody loses by it: a visitor
+in Maintenance gets the maintenance page, which draws no chat button, and a direct request still needs the page's
+token and passes the limits. The hand-off stays closed in both modes.
+
 ## #523 -- The test-site notice says what the mail gate decides
 
 **Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
