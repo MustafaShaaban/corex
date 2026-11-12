@@ -20487,3 +20487,29 @@ questions still come after the spec. *Dropping the spec file for GitHub issues*,
 would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
 in-app agents already carry a model and effort each, and their results come back to the session that checks
 them.
+
+## #623 -- Staging is installed on every push to main through the Releases routes, and kept private in front of the server
+
+**Date:** 2026-11-12. **Branch:** `spec/131-staging-host`. **Mode:** Deployment. **Asked by:** the owner ("start
+using the new domains and deploy to it, auto deploy and handle these things").
+
+**Why.** `corex-staging.mustafashaaban.com` is step 2 of the public hosts (#620): a private install where spec
+107's owed watched installation from CoreX → Releases runs, and where every package is installed on a real host
+before a client's site gets it.
+
+**Decided** (spec 131, a draft until the owner answers its two questions).
+- **CI installs each push with `release:push`** (spec 123), which drives spec 107's routes with the screen's own
+  client, rather than copying files over SSH. The deploy is then the same path a client's administrator uses,
+  checked on every push, and a failed installation leaves the previous release running by spec 107's journaled
+  swap. SSH is used once, to set the host up.
+- **Staging tracks `main`, not tags**: a tag is a `main` commit staging has already run.
+- **The workflow is off until the watched installation has passed** (a repository variable turns it on), since
+  `release:push` needs a release on the site that the screen installed first.
+- **Privacy in front of the server, recommended as Cloudflare Access** (people by a one-time code to the owner's
+  email, CI by a service token). An Application Password travels in HTTP Basic `Authorization`, so a server
+  password (`.htpasswd`) would refuse CI's push; WordPress's own sign-in alone leaves the sign-in page public.
+  Plus `X-Robots-Tag: noindex, nofollow`, `blog_public` 0, and mail captured, not delivered.
+
+**Not chosen.** *rsync of the `dist/` tree over SSH on each push*: it skips the Releases code that staging
+exists to check, and a half-copied tree has no journal to return from. *Deploying tags only*: a release would
+meet a real host for the first time when it is already published.
