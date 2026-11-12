@@ -212,7 +212,8 @@ with `gh` signed in. In order:
 2. **Point `corex-docs` at GitHub Pages** in Cloudflare: a CNAME to `mustafashaaban.github.io`, **DNS only**
    (grey cloud). Check: the public answer for `corex-docs.mustafashaaban.com` is that CNAME.
 3. **Set the custom domain** on the repository's Pages site (repository Settings → Pages → Custom domain), then
-   rebuild at once (`gh workflow run docs.yml`), wait for the certificate, and enforce HTTPS. Check: the Pages
+   rebuild at once (`gh workflow run docs.yml`), wait for the certificate, enforce HTTPS, and rebuild again so
+   the site is built and checked for its `https://` address (the deploy check fails on any other). Check: the Pages
    API names the domain, the certificate is `approved`, `https_enforced` is true.
 4. **Check the moved site**: the rebuild's last step runs the site check with `--moved-from`. Check: the run
    passes. SC-003 (at most ten minutes unreachable) is met when steps 3 and 4 run back to back, as the script

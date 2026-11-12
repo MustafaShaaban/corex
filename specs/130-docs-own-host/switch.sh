@@ -276,17 +276,19 @@ note "Rebuild started. Waiting for GitHub's certificate for ${DOCS_HOST} (usuall
 wait_for "GitHub has issued the certificate" cert_issued
 step "On the same page, tick 'Enforce HTTPS' if it is not ticked already."
 wait_for "HTTPS is enforced" https_forced
+note "Rebuilding once more, now that Pages reports an https:// address, so the site is built and checked for it."
+gh workflow run docs.yml --repo "$REPO" --ref main
 
 stage "Check the moved site"
 say "The rebuild reads the new address from Pages and builds for the domain's root."
 note "Its last step checks the site at ${DOCS_HOST} and that every old github.io/corex/ address redirects to the same page."
-sleep 5
+sleep 10
 RUN_ID=$(gh run list --repo "$REPO" --workflow docs.yml --limit 1 --json databaseId --jq '.[0].databaseId')
 if gh run watch "$RUN_ID" --repo "$REPO" --exit-status; then
   printf '  %s✓%s the docs build and its check passed\n' "$GREEN" "$RESET"
 else
   SKIPPED+=("The docs run failed: gh run view $RUN_ID --repo $REPO --log-failed")
-  warn "the docs run failed. If the certificate came after the build, run it again: gh workflow run docs.yml --repo $REPO --ref main"
+  warn "the docs run failed; its log says which page or address. Run it again with: gh workflow run docs.yml --repo $REPO --ref main"
 fi
 say "Tell the CoreX session it is done, so it can ship slice 2 (the admin's links)."
 

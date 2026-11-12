@@ -52,16 +52,16 @@ function htmlFiles( directory ) {
 }
 
 /**
- * Root-absolute internal URLs that do not start with the base.
+ * Root-absolute internal URLs in one built page, deduplicated.
  *
- * Only `/…` is a problem. A scheme (`https:`), a protocol-relative `//host`, a fragment, a `mailto:`
+ * Only `/…` can be wrong. A scheme (`https:`), a protocol-relative `//host`, a fragment, a `mailto:`
  * and a relative path all resolve correctly whatever the base is — including `data:` URIs, which are
  * long enough to bury a real finding if they were reported.
  *
  * @param {string} html One built page.
- * @return {Array<string>} The offending URLs, deduplicated.
+ * @return {Array<string>} The URLs.
  */
-function offendingUrls( html ) {
+function rootAbsoluteUrls( html ) {
 	const urls = new Set();
 
 	// Code samples are stripped first, because inside one an `href="…"` is *prose about markup*,
@@ -78,16 +78,44 @@ function offendingUrls( html ) {
 		.replace( /<code\b[^>]*>[\s\S]*?<\/code>/gi, '' );
 
 	for ( const [ , url ] of markup.matchAll( /(?:href|src)="([^"]*)"/g ) ) {
-		if ( ! url.startsWith( '/' ) || url.startsWith( '//' ) ) {
-			continue;
+		if ( url.startsWith( '/' ) && ! url.startsWith( '//' ) ) {
+			urls.add( url );
 		}
-		if ( url === base || url.startsWith( `${ base }/` ) ) {
-			continue;
-		}
-		urls.add( url );
 	}
 
 	return [ ...urls ];
+}
+
+/**
+ * Root-absolute internal URLs that do not start with the base.
+ *
+ * @param {string} html One built page.
+ * @return {Array<string>} The offending URLs.
+ */
+function offendingUrls( html ) {
+	return rootAbsoluteUrls( html ).filter(
+		( url ) => url !== base && ! url.startsWith( `${ base }/` )
+	);
+}
+
+/**
+ * Whether a root-absolute URL under the base names something the build wrote: a file, or a
+ * folder with an `index.html`. At a domain's root every path starts with the base, so this is
+ * what catches a link still written for the old base (spec 130: the home page's hero link).
+ *
+ * @param {string} url A root-absolute URL.
+ * @return {boolean} True when `dist/` holds its target.
+ */
+function namesABuiltFile( url ) {
+	const relative = decodeURIComponent(
+		url.slice( base.length ).split( /[?#]/ )[ 0 ]
+	);
+	const target = path.join( distDirectory, relative );
+
+	return (
+		( fs.existsSync( target ) && fs.statSync( target ).isFile() ) ||
+		fs.existsSync( path.join( target, 'index.html' ) )
+	);
 }
 
 describe( 'built documentation site', () => {
@@ -146,6 +174,32 @@ describe( 'built documentation site', () => {
 			}
 
 			expect( doubled ).toEqual( [] );
+		} );
+
+		it( 'only names pages and files the build made', () => {
+			const missing = new Set();
+			// Every page carries the whole sidebar, so the same few thousand URLs repeat on all of them.
+			const checked = new Set();
+
+			for ( const file of htmlFiles( distDirectory ) ) {
+				for ( const url of rootAbsoluteUrls(
+					fs.readFileSync( file, 'utf8' )
+				) ) {
+					if ( checked.has( url ) ) {
+						continue;
+					}
+					checked.add( url );
+
+					if (
+						url.startsWith( `${ base }/` ) &&
+						! namesABuiltFile( url )
+					) {
+						missing.add( url );
+					}
+				}
+			}
+
+			expect( [ ...missing ].sort() ).toEqual( [] );
 		} );
 	} );
 } );

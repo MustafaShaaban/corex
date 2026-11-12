@@ -20512,6 +20512,12 @@ link test also read an empty base as "unset", so a build for a root could not ev
 - Spec 130 is two slices: slice 1 (the above) changes nothing a reader sees and merges before the switch; slice
   2 (`DocsUrl`'s fallback and the records) waits for the switch to pass (FR-009). The owner's steps are a
   checked script, `specs/130-docs-own-host/switch.sh`.
+- **What the two-model review found, fixed before the PR**: the home page's "Get started" button was the one
+  link written with `/corex` in it (hero actions are frontmatter, which neither the rehype rewrite nor
+  Starlight prefixes), so the first root build would have published it as a 404. It is relative now, and the
+  link test checks that every root-absolute link names a file the build made, which catches a stale base at
+  the root, where "starts with the base" is true of every path. The switch rebuilds once more after HTTPS is
+  enforced, and the deploy check fails on an address that is not `https://`.
 
 **Not chosen.** *Changing the defaults to the new host now*: the published build would move before the domain
 does. *A `CNAME` file in the build*: Pages built by a workflow ignores it; the domain is a repository setting.

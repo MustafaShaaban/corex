@@ -115,6 +115,12 @@ jobs:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
           PROJECT_PAGE: https://mustafashaaban.github.io/corex/
         run: |
+          # An http:// address means HTTPS is not enforced yet, and a site built for it names http
+          # links; fail rather than publish that as checked (spec 130, FR-006).
+          case "$PAGE_URL" in
+            https://*) ;;
+            *) echo "::error::Pages serves $PAGE_URL, not over HTTPS. Enforce HTTPS in the repository's Pages settings and run this workflow again."; exit 1 ;;
+          esac
           if [ "$PAGE_URL" = "$PROJECT_PAGE" ]; then
             node scripts/check-docs-host.mjs "$PAGE_URL" --retries 4
           else
