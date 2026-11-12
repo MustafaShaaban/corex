@@ -61,7 +61,10 @@ and approved first, a spec ends in slices, and nothing merges without the review
 - **Spec 130, the docs on their own host**, draft (DECISIONS #620, ROADMAP §13 "Public hosts"). Waits on three
   steps outside the repository: verify the domain on GitHub, point `corex-docs` at `mustafashaaban.github.io`
   as DNS only, then set the custom domain.
-- **Spec 110, deploy to production from the local admin**, draft PR #417: waits on the owner's three questions.
+- **Spec 110, deploy to production from the local admin**, draft PR #417: waits on the owner's three
+  questions (how production is backed up, which reopens spec 107's decision 4; whether production needs a
+  configuration line before it accepts a deploy; whether the sites' packaging scripts are retired). Nothing
+  is planned or built before the answers.
 - **Lead left by this pass, not built:** the Settings guide still asks for "Manage settings", so a holder of the
   view ability does not see it (a guide takes one capability).
 
@@ -72,12 +75,12 @@ hidden". Every CoreX table has an auto-increment `id` and every insert into them
 so this process's own inserts can be heard through the `query` filter and `$wpdb->insert_id`.
 Nothing of it is on `main`.
 
-**Spec 107 has run on the host it is for, once well and once not.** Perego's first
+**Spec 107 has run on the host it is for: twice well and once not.** Perego's first
 installation from CoreX → Releases on its shared host, on 2026-10-18, finished; its second,
 with a release kept, held the site in maintenance and did not put the release in place. v0.46.1
-is the fix. The operator's guide and the first-installation runbook are written
+is the fix, and its own installation there that evening finished. The operator's guide and the first-installation runbook are written
 (`docs/en/05-deployment/releases-from-the-admin.md`, `first-installation-by-hand.md`). What is
-owed is not code: the next installation on a shared host, on v0.46.1, watched; then
+owed is not code: an installation run by v0.46.1 on a shared host, watched; then
 `last_verified` on those two pages.
 
 | Spec | In v0.45.0 | Where it stops | Resume with |
