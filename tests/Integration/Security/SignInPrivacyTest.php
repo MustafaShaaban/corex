@@ -23,6 +23,7 @@ declare(strict_types=1);
 use Corex\Access\CorexAbility;
 use Corex\Boot;
 use Corex\Config\Activity\SecurityActivityRecorder;
+use Corex\Config\Notifications\Lockouts\LockoutNoticeRewrite;
 use Corex\Config\Notifications\Lockouts\LoginLockoutNotice;
 use Corex\Config\Notifications\NotificationTable;
 use Corex\Config\Security\LoginProtection\ClientIpResolver;
@@ -109,6 +110,40 @@ function corexPlacesHolding(string $needle): array
     }
 
     return $found;
+}
+
+/** A lockout notice exactly as the release before this one wrote it. */
+function insertOldLockoutNotice(string $typed, ?string $sourceType = 'login_identity'): int
+{
+    global $wpdb;
+    $now = gmdate('Y-m-d H:i:s');
+
+    $wpdb->insert(signInPrivacyTable(NotificationTable::NAME), [
+        'uuid'               => wp_generate_uuid4(),
+        'type'               => LoginLockoutNotice::TYPE,
+        'category'           => 'security',
+        'severity'           => 'warning',
+        'source_module'      => 'security',
+        'source_type'        => $sourceType,
+        'source_id'          => $typed,
+        'title_key'          => 'notifications.security.lockout.title',
+        'message_key'        => 'notifications.security.lockout.body',
+        'rendered_json'      => wp_json_encode([
+            'title' => 'Repeated login failures locked out “' . $typed . '”',
+            'body'  => 'The attempts came from ' . SIGN_IN_PRIVACY_IP . '. Review them in Operations & Security.',
+        ]),
+        'dedup_key'          => 'security.lockout:' . $typed,
+        'occurrences'        => 2,
+        'first_occurred_at'  => $now,
+        'latest_occurred_at' => $now,
+        'created_at'         => $now,
+        'updated_at'         => $now,
+        'resolved_at'        => $now,
+        'recipient_json'     => wp_json_encode(NotificationRecipient::forAbility(CorexAbility::MANAGE_OPERATIONS)->toArray()),
+        'metadata_json'      => wp_json_encode(['client_ip' => SIGN_IN_PRIVACY_IP, 'locked_until' => '2026-11-12T10:15:00+00:00']),
+    ]);
+
+    return (int) $wpdb->insert_id;
 }
 
 /** Fail to sign in as this username until the lockout starts, through WordPress's own path. */
@@ -242,7 +277,7 @@ it('SC-003, US-SEC-10 scenarios 1 and 3: after a lockout of an unknown username,
     expect($notices)->toHaveCount(1)
         // The lockout happened and was announced: the notice says what it is.
         ->and($rendered['title'])->toContain('unknown username')
-        ->and($rendered['body'])->toContain(signInPrivacyPolicy()->fingerprint(signInPrivacyPolicy()->identityHashOf($username)))
+        ->and($rendered['body'])->toContain(signInPrivacyPolicy()->identityFingerprint(signInPrivacyPolicy()->identityHashOf($username)))
         ->and(corexPlacesHolding($username))->toBe([])
         ->and(corexPlacesHolding(SIGN_IN_PRIVACY_IP))->toBe([])
         ->and((string) wp_json_encode($this->mail))->not->toContain($username)
@@ -287,9 +322,10 @@ it('US-SEC-10 scenario 2, FR-016: a lockout of an account typed by its email nam
         LoginAttemptRecord::LOCKED,
     ), ARRAY_A);
 
-    expect($rendered['title'])->toContain($login)
+    // WordPress gives a new account its login as its display name: the login alone names it.
+    expect($rendered['title'])->toContain('“' . $login . '”')
         ->and($rendered['title'])->not->toContain('unknown username')
-        ->and($notices[0]['dedup_key'])->toBe('security.lockout:account:' . $userId)
+        ->and($notices[0]['dedup_key'])->toBe('security.lockout.account:' . $userId)
         ->and((int) $locked['user_id'])->toBe($userId)
         // The account is named; what was typed (its email) and the address are kept nowhere.
         ->and(corexPlacesHolding($email))->toBe([])
@@ -320,33 +356,7 @@ it('US-SEC-10 scenario 5, FR-020: the update rewrites a lockout notice stored be
     global $wpdb;
     $username = 'Sc005-Notice-' . wp_generate_password(10, false);
     $table = signInPrivacyTable(NotificationTable::NAME);
-    $now = gmdate('Y-m-d H:i:s');
-    // The row exactly as the release before this one wrote it.
-    $wpdb->insert($table, [
-        'uuid'               => wp_generate_uuid4(),
-        'type'               => LoginLockoutNotice::TYPE,
-        'category'           => 'security',
-        'severity'           => 'warning',
-        'source_module'      => 'security',
-        'source_type'        => 'login_identity',
-        'source_id'          => $username,
-        'title_key'          => 'notifications.security.lockout.title',
-        'message_key'        => 'notifications.security.lockout.body',
-        'rendered_json'      => wp_json_encode([
-            'title' => 'Repeated login failures locked out “' . $username . '”',
-            'body'  => 'The attempts came from ' . SIGN_IN_PRIVACY_IP . '. Review them in Operations & Security.',
-        ]),
-        'dedup_key'          => 'security.lockout:' . $username,
-        'occurrences'        => 2,
-        'first_occurred_at'  => $now,
-        'latest_occurred_at' => $now,
-        'created_at'         => $now,
-        'updated_at'         => $now,
-        'resolved_at'        => $now,
-        'recipient_json'     => wp_json_encode(NotificationRecipient::forAbility(CorexAbility::MANAGE_OPERATIONS)->toArray()),
-        'metadata_json'      => wp_json_encode(['client_ip' => SIGN_IN_PRIVACY_IP, 'locked_until' => '2026-11-12T10:15:00+00:00']),
-    ]);
-    $id = (int) $wpdb->insert_id;
+    $id = insertOldLockoutNotice($username);
     $runner = Boot::app()->container()->make(SiteMigrationRunner::class);
 
     // The site was on the release before: its foundation schema said 4.
@@ -363,13 +373,125 @@ it('US-SEC-10 scenario 5, FR-020: the update rewrites a lockout notice stored be
         ->and(corexPlacesHolding($username))->toBe([])
         ->and(corexPlacesHolding(SIGN_IN_PRIVACY_IP))->toBe([])
         ->and(json_decode((string) $rewritten['rendered_json'], true)['title'])->toContain('unknown username')
-        ->and($rewritten['dedup_key'])->toBe('security.lockout:legacy:' . $id)
+        ->and($rewritten['dedup_key'])->toBe('security.lockout.legacy:' . $id)
         ->and(json_decode((string) $rewritten['metadata_json'], true)['locked_until'])->toBe('2026-11-12T10:15:00+00:00')
         // A resolved notice stays resolved, and keeps its count.
         ->and($rewritten['resolved_at'])->not->toBeNull()
         ->and((int) $rewritten['occurrences'])->toBe(2)
         ->and($again->succeeded())->toBeTrue()
         ->and($twice)->toBe($rewritten);
+});
+
+/**
+ * The old keys were `security.lockout:` and the typed username, so a visitor could have typed a key
+ * the rewrite or a new notice writes. Before this, a username `legacy:<id>` made that row's rewrite
+ * fail on the table's unique merge key every time, and `account:<id>` held an account's first key.
+ */
+it('FR-020: rewrites old notices whose usernames look like new keys, and no NULL source type is left behind', function () {
+    global $wpdb;
+    $table = signInPrivacyTable(NotificationTable::NAME);
+    $first = insertOldLockoutNotice('Sc005-first-' . wp_generate_password(8, false));
+    $lookalike = insertOldLockoutNotice('legacy:' . $first);
+    $accountLike = insertOldLockoutNotice('account:1');
+    $noSource = insertOldLockoutNotice('Sc005-nosource-' . wp_generate_password(8, false), null);
+
+    Boot::app()->container()->make(LockoutNoticeRewrite::class)->run();
+
+    $keys = $wpdb->get_results($wpdb->prepare(
+        'SELECT id, dedup_key, source_type FROM ' . $table . ' WHERE id IN (%d, %d, %d, %d) ORDER BY id ASC',
+        $first,
+        $lookalike,
+        $accountLike,
+        $noSource,
+    ), ARRAY_A);
+
+    expect(array_column($keys, 'dedup_key'))->toBe([
+        'security.lockout.legacy:' . $first,
+        'security.lockout.legacy:' . $lookalike,
+        'security.lockout.legacy:' . $accountLike,
+        'security.lockout.legacy:' . $noSource,
+    ])->and(array_unique(array_column($keys, 'source_type')))->toBe([LoginLockoutNotice::SOURCE_FINGERPRINT]);
+});
+
+it('FR-020: the first lockout notice of an account is its own, when an old notice was keyed by a username that looks like it', function () {
+    global $wpdb;
+    $login = 'sc005owner' . strtolower(wp_generate_password(8, false));
+    $userId = wp_insert_user(['user_login' => $login, 'user_email' => $login . '@example.test', 'user_pass' => wp_generate_password(24)]);
+    $this->users[] = $userId;
+    $old = insertOldLockoutNotice('account:' . $userId);
+
+    failUntilLockedOut($login);
+
+    $notices = array_values(array_filter(
+        lockoutNoticesSince($this->noticesBefore),
+        static fn (array $notice): bool => (int) $notice['id'] !== $old,
+    ));
+    $oldNow = $wpdb->get_row($wpdb->prepare('SELECT occurrences FROM ' . signInPrivacyTable(NotificationTable::NAME) . ' WHERE id = %d', $old), ARRAY_A);
+
+    expect($notices)->toHaveCount(1)
+        ->and($notices[0]['dedup_key'])->toBe('security.lockout.account:' . $userId)
+        ->and((int) $notices[0]['occurrences'])->toBe(1)
+        ->and((int) $oldNow['occurrences'])->toBe(2);
+});
+
+it('FR-016: names an account whose display name is not its login by both', function () {
+    $login = 'sc016acct' . strtolower(wp_generate_password(8, false));
+    $userId = wp_insert_user([
+        'user_login'   => $login,
+        'user_email'   => $login . '@example.test',
+        'user_pass'    => wp_generate_password(24),
+        'display_name' => 'Colleague Example',
+    ]);
+    $this->users[] = $userId;
+
+    failUntilLockedOut($login);
+
+    $rendered = json_decode((string) lockoutNoticesSince($this->noticesBefore)[0]['rendered_json'], true);
+    expect($rendered['title'])->toContain('“Colleague Example (' . $login . ')”');
+});
+
+it('FR-016: finds an account by its login, and by its email, on real WordPress', function () {
+    $login = 'sc016find' . strtolower(wp_generate_password(8, false));
+    $userId = wp_insert_user(['user_login' => $login, 'user_email' => $login . '@example.test', 'user_pass' => wp_generate_password(24)]);
+    $this->users[] = $userId;
+    $accounts = Boot::app()->container()->make(LoginAccounts::class);
+
+    expect($accounts->idFor($login))->toBe($userId)
+        ->and($accounts->idFor('  ' . $login . ' '))->toBe($userId)
+        ->and($accounts->idFor($login . '@example.test'))->toBe($userId)
+        ->and($accounts->idFor('nobody-' . $login))->toBeNull();
+});
+
+/**
+ * The account is looked up on the attempt that starts the lockout, after WordPress has answered it.
+ * Whatever WordPress itself says about an unknown username, CoreX adds nothing to that answer, and
+ * the refusal that follows reads the same for an account and for no account.
+ */
+it('FR-016: the visitor is answered the same on the attempt that starts a lockout, whether the username is an account or not', function () {
+    $login = 'sc016same' . strtolower(wp_generate_password(8, false));
+    $userId = wp_insert_user(['user_login' => $login, 'user_email' => $login . '@example.test', 'user_pass' => wp_generate_password(24)]);
+    $this->users[] = $userId;
+    $answer = static fn (mixed $result): array => $result instanceof WP_Error
+        ? [$result->get_error_codes(), $result->get_error_messages()]
+        : ['not an error'];
+    $answers = [];
+
+    foreach (['account' => $login, 'none' => 'sc016-nobody-' . wp_generate_password(8, false)] as $kind => $username) {
+        $before = null;
+        for ($attempt = 1; $attempt < SIGN_IN_PRIVACY_THRESHOLD; $attempt++) {
+            $before = wp_authenticate($username, 'wrong-' . $attempt);
+        }
+        $starting = wp_authenticate($username, 'wrong-last');
+        $after = wp_authenticate($username, 'wrong-after');
+        $answers[$kind] = [$answer($before), $answer($starting), $answer($after)];
+    }
+
+    // The attempt that starts the lockout is answered as the one before it was.
+    expect($answers['account'][1])->toBe($answers['account'][0])
+        ->and($answers['none'][1])->toBe($answers['none'][0])
+        // The refusal after it is word for word the same.
+        ->and($answers['account'][2])->toBe($answers['none'][2])
+        ->and($answers['account'][2][0])->toBe(['corex_login_locked']);
 });
 
 it('FR-020: the Lockouts panel shows an old unkeyed row by fingerprints that are no prefix of its hashes, and the same ones a notice shows', function () {
@@ -391,10 +513,10 @@ it('FR-020: the Lockouts panel shows an old unkeyed row by fingerprints that are
 
     $panel = (new ReflectionMethod($screen, 'lockoutsPayload'))->invoke($screen);
     $shown = (string) wp_json_encode($panel);
-    $row = array_values(array_filter($panel, static fn (array $lockout): bool => $lockout['network'] === signInPrivacyPolicy()->fingerprint($plainNetwork)));
+    $row = array_values(array_filter($panel, static fn (array $lockout): bool => $lockout['network'] === signInPrivacyPolicy()->networkFingerprint($plainNetwork)));
 
     expect($row)->toHaveCount(1)
-        ->and($row[0]['identity'])->toBe(signInPrivacyPolicy()->fingerprint($plainIdentity))
+        ->and($row[0]['identity'])->toBe(signInPrivacyPolicy()->identityFingerprint($plainIdentity))
         ->and($shown)->not->toContain(substr($plainNetwork, 0, 12))
         ->and($shown)->not->toContain(substr($plainIdentity, 0, 12))
         ->and($shown)->not->toContain(SIGN_IN_PRIVACY_IP);

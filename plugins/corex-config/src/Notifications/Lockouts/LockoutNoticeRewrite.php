@@ -14,6 +14,7 @@ use Corex\Config\Security\LoginProtection\LoginProtectionPolicy;
 use Corex\Database\Schema\DataMigrationStep;
 use DateTimeImmutable;
 use Exception;
+use RuntimeException;
 
 /**
  * Rewrites, once, the lockout notices stored before spec 124 to the rule a new one follows (FR-020,
@@ -26,8 +27,11 @@ use Exception;
  * Its fingerprints are the ones the Lockouts panel shows for the rows of that old lockout, which hold
  * plain hashes: the old values are read here, hashed as the release before hashed them, keyed into a
  * fingerprint, and dropped, never written anywhere. Its
- * merge key is its own (`security.lockout:legacy:<id>`), so it can never collide with a notice
- * written since the update, and a new lockout opens a notice of its own.
+ * merge key is its own (`security.lockout.legacy:<id>`, outside every key the old producer could
+ * write), so it can never collide with another notice, and a new lockout opens a notice of its own.
+ *
+ * A notice whose write fails is skipped, the rest are rewritten, and the ones that failed are
+ * reported together at the end. They are still in the old shape, so the next run takes them again.
  *
  * It runs as a data step of the product foundation's schema (version 5), in the scope of each site a
  * migration reaches. It reads in batches by id, so every row is read once, and it selects only notices
@@ -35,8 +39,6 @@ use Exception;
  */
 final class LockoutNoticeRewrite implements DataMigrationStep
 {
-    private const LEGACY_KEY_PREFIX = LoginLockoutNotice::TYPE . ':';
-
     public function __construct(
         private readonly LockoutNoticeStore $notices,
         private readonly LoginProtectionPolicy $policy,
@@ -52,14 +54,27 @@ final class LockoutNoticeRewrite implements DataMigrationStep
     public function run(): void
     {
         $afterId = 0;
+        $failed = [];
 
         do {
             $batch = $this->notices->legacyAfter($afterId, $this->batchSize);
             foreach ($batch as $notice) {
-                $this->notices->rewrite($notice->id, $this->rewritten($notice));
                 $afterId = $notice->id;
+                try {
+                    $this->notices->rewrite($notice->id, $this->rewritten($notice));
+                } catch (RuntimeException) {
+                    $failed[] = $notice->id;
+                }
             }
         } while (count($batch) === $this->batchSize);
+
+        if ($failed !== []) {
+            throw new RuntimeException(sprintf(
+                '%d lockout notices could not be rewritten (ids %s).',
+                count($failed),
+                implode(', ', $failed),
+            ));
+        }
     }
 
     private function rewritten(StoredLockoutNotice $old): LoginLockoutNotice
@@ -67,10 +82,10 @@ final class LockoutNoticeRewrite implements DataMigrationStep
         return LoginLockoutNotice::of(
             null,
             null,
-            $this->policy->fingerprint($this->policy->legacyIdentityHashOf($this->typedUsername($old))),
+            $this->policy->identityFingerprint($this->policy->legacyIdentityHashOf($this->typedUsername($old))),
             $this->network($old->metadata['client_ip'] ?? null),
             $this->lockedUntil($old),
-        )->withDedupKey(self::LEGACY_KEY_PREFIX . 'legacy:' . $old->id);
+        )->asLegacy($old->id);
     }
 
     /** What was typed, from where the old producer put it: the source id, else its merge key. */
@@ -80,8 +95,8 @@ final class LockoutNoticeRewrite implements DataMigrationStep
             return $old->sourceId;
         }
 
-        return str_starts_with($old->dedupKey, self::LEGACY_KEY_PREFIX)
-            ? substr($old->dedupKey, strlen(self::LEGACY_KEY_PREFIX))
+        return str_starts_with($old->dedupKey, LoginLockoutNotice::OLD_KEY_PREFIX)
+            ? substr($old->dedupKey, strlen(LoginLockoutNotice::OLD_KEY_PREFIX))
             : $old->dedupKey;
     }
 
@@ -91,7 +106,7 @@ final class LockoutNoticeRewrite implements DataMigrationStep
             return '';
         }
 
-        return $this->policy->fingerprint($this->policy->legacyNetworkHashOf($clientIp));
+        return $this->policy->networkFingerprint($this->policy->legacyNetworkHashOf($clientIp));
     }
 
     private function lockedUntil(StoredLockoutNotice $old): DateTimeImmutable

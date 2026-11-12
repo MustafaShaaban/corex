@@ -193,7 +193,7 @@ final class CorexTestLoginAttemptStore implements LoginAttemptStore
             $this->records,
             static fn (LoginAttemptRecord $record): bool =>
                 $record->outcome === 'failed'
-                && $keys->matches($record->identityHash, $record->networkHash)
+                && in_array([$record->identityHash, $record->networkHash], $keys->pairs(), true)
                 && $record->occurredAt >= $since,
         ));
     }
@@ -203,7 +203,7 @@ final class CorexTestLoginAttemptStore implements LoginAttemptStore
         foreach (array_reverse($this->records) as $record) {
             if (
                 $record->outcome === 'locked'
-                && $keys->matches($record->identityHash, $record->networkHash)
+                && in_array([$record->identityHash, $record->networkHash], $keys->pairs(), true)
                 && $record->lockedUntil !== null
                 && $record->lockedUntil > $now
             ) {

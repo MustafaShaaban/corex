@@ -17,7 +17,7 @@ use DateTimeImmutable;
  * Applies login rate limiting without storing raw credentials or raw IP addresses.
  *
  * An attempt is counted by keyed values (spec 124, FR-019), and the rows the release before this one
- * stored under plain hashes are counted with them until they age out. The account a username
+ * stored under plain hashes are counted with them until they leave the window. The account a username
  * belongs to is looked up once, on the way into a lockout, and kept on the lockout row (FR-016).
  */
 final class LoginProtectionService
@@ -77,8 +77,8 @@ final class LoginProtectionService
 
             return new LoginProtectionDecision(true, 'threshold_exceeded', $lockedUntil, new LoginLockoutEvent(
                 $lockout->userId,
-                $this->policy->fingerprint($lockout->identityHash),
-                $this->policy->fingerprint($lockout->networkHash),
+                $this->policy->identityFingerprint($lockout->identityHash),
+                $this->policy->networkFingerprint($lockout->networkHash),
                 $lockedUntil,
             ));
         }

@@ -102,7 +102,7 @@ it('US-SEC-10 scenario 1: says "unknown username" and a short fingerprint for a 
     expect($note->rendered['title'])->toContain('unknown username')
         ->and($note->rendered['body'])->toContain('a1b2c3d4e5f6')
         ->and($note->rendered['body'])->toContain('0f1e2d3c4b5a')
-        ->and($note->dedupKey)->toBe('security.lockout:identity:a1b2c3d4e5f6')
+        ->and($note->dedupKey)->toBe('security.lockout.identity:a1b2c3d4e5f6')
         ->and($note->sourceType)->toBe('login_fingerprint')
         ->and($note->sourceId)->toBe('a1b2c3d4e5f6')
         ->and($note->metadata)->toBe([
@@ -111,6 +111,23 @@ it('US-SEC-10 scenario 1: says "unknown username" and a short fingerprint for a 
             'identity_fingerprint' => 'a1b2c3d4e5f6',
             'network_fingerprint'  => '0f1e2d3c4b5a',
         ]);
+});
+
+/**
+ * The release before wrote `security.lockout:` and the typed username, so a visitor who typed
+ * `account:42` made `security.lockout:account:42`. A new key starts `security.lockout.` (a dot),
+ * which no old key can, so no old notice can take a new one's place.
+ */
+it('FR-020: keys a new notice outside every key the release before could write', function () {
+    $unknown = fireLockout(lockoutRecordingService(), unknownLockout())->published[0];
+    $account = fireLockout(
+        lockoutRecordingService(),
+        new LoginLockoutEvent(42, 'a1b2c3d4e5f6', '0f1e2d3c4b5a', new DateTimeImmutable('now')),
+    )->published[0];
+
+    expect($unknown->dedupKey)->not->toStartWith('security.lockout:')
+        ->and($account->dedupKey)->not->toStartWith('security.lockout:')
+        ->and($account->dedupKey)->toStartWith('security.lockout.');
 });
 
 it('US-SEC-10 scenario 2, FR-016: names the account and shows no address', function () {
@@ -122,7 +139,7 @@ it('US-SEC-10 scenario 2, FR-016: names the account and shows no address', funct
     expect($note->rendered['title'])->toContain('Sara Example')
         ->and($note->rendered['title'])->not->toContain('unknown username')
         ->and($note->rendered['body'])->toContain('0f1e2d3c4b5a')
-        ->and($note->dedupKey)->toBe('security.lockout:account:42')
+        ->and($note->dedupKey)->toBe('security.lockout.account:42')
         ->and($note->sourceType)->toBe('login_account')
         ->and($note->sourceId)->toBe('42')
         ->and($note->metadata['user_id'])->toBe(42)

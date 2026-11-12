@@ -74,13 +74,18 @@ final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore,
         return is_array($row) ? $this->hydrate($row) : null;
     }
 
-    public function pruneExpired(DateTimeImmutable $now, int $limit = 500): int
+    /**
+     * Deletes up to `$limit` rows that occurred before `$cutoff`, oldest first, and returns how many.
+     * A lockout still in force at `$now` is kept, however old.
+     */
+    public function pruneOlderThan(DateTimeImmutable $cutoff, DateTimeImmutable $now, int $limit = 500): int
     {
         global $wpdb;
 
         $limit = min(self::MAX_PRUNE_SIZE, max(1, $limit));
         $ids = $wpdb->get_col($wpdb->prepare(
-            'SELECT id FROM ' . $this->table() . ' WHERE retention_until <= %s ORDER BY retention_until ASC, id ASC LIMIT %d',
+            'SELECT id FROM ' . $this->table() . ' WHERE occurred_at < %s AND (locked_until IS NULL OR locked_until <= %s) ORDER BY occurred_at ASC, id ASC LIMIT %d',
+            $this->date($cutoff),
             $this->date($now),
             $limit,
         ));

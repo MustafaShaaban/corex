@@ -22,9 +22,25 @@ use DateTimeImmutable;
  *
  * What is shown of a stored value is a fingerprint keyed again with the same key (FR-020), so a
  * row stored as a plain hash before the update cannot be read back from its fingerprint either.
+ *
+ * Each kind of value is hashed in its own domain: the message starts with what it is (`identity`,
+ * `network`, and for a fingerprint `identity-fingerprint` or `network-fingerprint`) and a NUL byte.
+ * Hashed alike, an address typed as the username made the same value as that address, so typing
+ * a suspected address confirmed it through the fingerprints. A prefix on the message was chosen
+ * over two keys derived from the site key: it separates the domains as surely, with one key and
+ * no extra derivation per attempt. The plain values of the release before keep their old form,
+ * since they are only ever compared with rows it stored.
  */
 final readonly class LoginProtectionPolicy
 {
+    private const IDENTITY = 'identity';
+
+    private const NETWORK = 'network';
+
+    private const IDENTITY_FINGERPRINT = 'identity-fingerprint';
+
+    private const NETWORK_FINGERPRINT = 'network-fingerprint';
+
     public function __construct(
         public LoginProtectionSettings $settings,
         private LoginHashKey $key,
@@ -44,12 +60,12 @@ final readonly class LoginProtectionPolicy
     /** The keyed value a typed username is recorded under, read as WordPress reads it: trimmed, any case. */
     public function identityHashOf(string $identity): string
     {
-        return hash_hmac('sha256', $this->normalized($identity), $this->key->current());
+        return $this->keyed(self::IDENTITY, $this->normalized($identity));
     }
 
     public function networkHashOf(string $clientIp): string
     {
-        return hash_hmac('sha256', $clientIp, $this->key->current());
+        return $this->keyed(self::NETWORK, $clientIp);
     }
 
     /** The values this attempt is counted by: the keyed pair, and the plain pair stored before the update. */
@@ -76,19 +92,30 @@ final readonly class LoginProtectionPolicy
     }
 
     /**
-     * The short fingerprint shown for a stored value, keyed or plain: the first characters of its
-     * HMAC with the site key. A prefix of a plain hash would give the address back to anyone who
-     * hashed the IPv4 range; this one cannot be checked without the key. The Lockouts panel and the
-     * lockout notice both show this, so a notice lines up with its row.
+     * The short fingerprint shown for a stored identity value, keyed or plain: the first characters
+     * of its HMAC with the site key. A prefix of a plain hash would give the value back to anyone
+     * who hashed a list of names; this one cannot be checked without the key. The Lockouts panel and
+     * the lockout notice both show this, so a notice lines up with its row.
      */
-    public function fingerprint(string $storedHash): string
+    public function identityFingerprint(string $storedHash): string
     {
-        return substr(hash_hmac('sha256', $storedHash, $this->key->current()), 0, LoginLockoutEvent::FINGERPRINT_LENGTH);
+        return substr($this->keyed(self::IDENTITY_FINGERPRINT, $storedHash), 0, LoginLockoutEvent::FINGERPRINT_LENGTH);
+    }
+
+    /** The short fingerprint shown for a stored network value: see {@see identityFingerprint()}. */
+    public function networkFingerprint(string $storedHash): string
+    {
+        return substr($this->keyed(self::NETWORK_FINGERPRINT, $storedHash), 0, LoginLockoutEvent::FINGERPRINT_LENGTH);
     }
 
     public function retentionUntil(DateTimeImmutable $now): DateTimeImmutable
     {
         return $now->modify('+' . $this->settings->retainDays . ' days');
+    }
+
+    private function keyed(string $domain, string $value): string
+    {
+        return hash_hmac('sha256', $domain . "\0" . $value, $this->key->current());
     }
 
     private function normalized(string $identity): string

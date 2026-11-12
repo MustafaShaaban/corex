@@ -465,3 +465,24 @@ it('spec 124 FR-020: runs no data step for a component that is current, nor befo
         ->and($current->outcome)->toBe(SiteMigrationOutcome::AlreadyCurrent)
         ->and($migrator->timeline)->not->toContain('step:rewrite-notices');
 });
+
+it('spec 124: names the components that failed, and leaves out the ones it is told to skip', function () {
+    $step = null;
+    [$runner, $migrator, $versions] = migrationRunner100([1], function (array &$timeline) use (&$step): array {
+        $step = new RecordingDataStep100($timeline);
+
+        return [$step];
+    });
+    $migrator->existing = ['activity' => true, 'jobs' => true];
+    $step->fails = true;
+
+    $failed = $runner->runForSite(1);
+    $skippedIsDue = $runner->isDueForSite(1, ['product-foundation']);
+    $skipped = $runner->runForSite(1, ['product-foundation']);
+
+    expect($failed->componentsFailed)->toBe(['product-foundation'])
+        ->and($skippedIsDue)->toBeFalse()
+        ->and($skipped->outcome)->toBe(SiteMigrationOutcome::AlreadyCurrent)
+        ->and(array_count_values($migrator->timeline)['step:rewrite-notices'])->toBe(1)
+        ->and($versions->puts)->toBe([]);
+});

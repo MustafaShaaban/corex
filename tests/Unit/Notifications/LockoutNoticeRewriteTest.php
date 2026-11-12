@@ -51,8 +51,21 @@ final class ArrayLockoutNoticeStore implements LockoutNoticeStore
         return array_slice(array_values($legacy), 0, $limit);
     }
 
+    /** @var list<int> Rows whose write fails, as one the database refuses. */
+    public array $refuses = [];
+
     public function rewrite(int $id, LoginLockoutNotice $notice): void
     {
+        // The table's merge key is unique: a write that would repeat another row's is refused.
+        foreach ($this->rows as $other => $row) {
+            if ($other !== $id && $row->dedupKey === $notice->dedupKey) {
+                throw new RuntimeException('Duplicate entry for key notification_dedup');
+            }
+        }
+        if (in_array($id, $this->refuses, true)) {
+            throw new RuntimeException('The database refused the write.');
+        }
+
         $this->rewritten[$id] = $notice;
         $old = $this->rows[$id];
         $this->rows[$id] = new StoredLockoutNotice($id, $notice->sourceType, $notice->sourceId, $notice->dedupKey, $notice->metadata, $old->latestOccurredAt);
@@ -84,7 +97,7 @@ function rewritePolicy(): LoginProtectionPolicy
 }
 
 /** A notice as the release before this one stored it. */
-function legacyNotice(int $id, string $username = 'Sara.Example', mixed $ip = '198.51.100.77'): StoredLockoutNotice
+function legacyNotice(int $id, string $username = 'Sara.Example', mixed $ip = '198.51.100.77', ?string $sourceType = 'login_identity'): StoredLockoutNotice
 {
     $metadata = ['locked_until' => '2026-11-12T10:15:00+00:00'];
     if ($ip !== null) {
@@ -93,7 +106,7 @@ function legacyNotice(int $id, string $username = 'Sara.Example', mixed $ip = '1
 
     return new StoredLockoutNotice(
         $id,
-        'login_identity',
+        $sourceType,
         $username,
         'security.lockout:' . $username,
         $metadata,
@@ -111,7 +124,7 @@ it('FR-020: rewrites an old notice so no part of it holds the typed username or 
     $stored = (string) json_encode([$notice->rendered, $notice->dedupKey, $notice->sourceType, $notice->sourceId, $notice->metadata]);
     expect(strtolower($stored))->not->toContain('sara.example')
         ->and($stored)->not->toContain('198.51.100.77')
-        ->and($notice->dedupKey)->toBe('security.lockout:legacy:7')
+        ->and($notice->dedupKey)->toBe('security.lockout.legacy:7')
         ->and($notice->metadata['locked_until'])->toBe('2026-11-12T10:15:00+00:00')
         ->and(array_keys($notice->metadata))->not->toContain('client_ip');
 });
@@ -124,8 +137,8 @@ it('US-SEC-10 scenario 5, edge case: an old notice reads "unknown username", wit
     (new LockoutNoticeRewrite($store, $policy))->run();
 
     // The old lockout's rows hold the plain hashes; the panel shows them keyed again, and so does the notice.
-    $identity = $policy->fingerprint(hash('sha256', 'sara.example'));
-    $network = $policy->fingerprint(hash('sha256', '198.51.100.77'));
+    $identity = $policy->identityFingerprint(hash('sha256', 'sara.example'));
+    $network = $policy->networkFingerprint(hash('sha256', '198.51.100.77'));
     expect($store->rewritten[7]->rendered['title'])->toContain('unknown username')
         ->and($store->rewritten[7]->rendered['body'])->toContain($identity)
         ->and($store->rewritten[7]->rendered['body'])->toContain($network)
@@ -164,11 +177,11 @@ it('FR-020: works through the notices in batches, and a second run changes nothi
 
     expect($firstReads)->toBe([[0, 2], [2, 2], [4, 2]])
         ->and(array_map(static fn (StoredLockoutNotice $row): string => $row->dedupKey, $after))->toBe([
-            1 => 'security.lockout:legacy:1',
-            2 => 'security.lockout:legacy:2',
-            3 => 'security.lockout:legacy:3',
-            4 => 'security.lockout:legacy:4',
-            5 => 'security.lockout:legacy:5',
+            1 => 'security.lockout.legacy:1',
+            2 => 'security.lockout.legacy:2',
+            3 => 'security.lockout.legacy:3',
+            4 => 'security.lockout.legacy:4',
+            5 => 'security.lockout.legacy:5',
         ])
         ->and($store->rewritten)->toBe([])
         ->and($store->rows)->toEqual($after);
@@ -176,9 +189,54 @@ it('FR-020: works through the notices in batches, and a second run changes nothi
 
 it('leaves a notice already written to the new rule alone', function () {
     $store = new ArrayLockoutNoticeStore();
-    $store->rows[9] = new StoredLockoutNotice(9, LoginLockoutNotice::SOURCE_ACCOUNT, '42', 'security.lockout:account:42', ['user_id' => 42], new DateTimeImmutable('now'));
+    $store->rows[9] = new StoredLockoutNotice(9, LoginLockoutNotice::SOURCE_ACCOUNT, '42', 'security.lockout.account:42', ['user_id' => 42], new DateTimeImmutable('now'));
 
     (new LockoutNoticeRewrite($store, rewritePolicy()))->run();
 
     expect($store->rewritten)->toBe([]);
+});
+
+it('FR-020: rewrites an old notice the release before stored with no source type', function () {
+    $store = new ArrayLockoutNoticeStore();
+    $store->rows[4] = legacyNotice(4, 'owner', '198.51.100.77', null);
+
+    (new LockoutNoticeRewrite($store, rewritePolicy()))->run();
+
+    expect($store->rewritten[4]->dedupKey)->toBe('security.lockout.legacy:4')
+        ->and($store->rewritten[4]->sourceType)->toBe(LoginLockoutNotice::SOURCE_FINGERPRINT);
+});
+
+/**
+ * The old keys were `security.lockout:` and whatever was typed. A visitor who typed `legacy:2` had
+ * made the key the rewrite gave row 2 once it was written with a colon, so that row could never be
+ * rewritten; one who typed `account:1` held the key of account 1's first notice.
+ */
+it('FR-020: completes when typed usernames look like the keys it writes', function () {
+    $store = new ArrayLockoutNoticeStore();
+    $store->rows[2] = legacyNotice(2, 'someone');
+    $store->rows[3] = legacyNotice(3, 'legacy:2');
+    $store->rows[5] = legacyNotice(5, 'account:1');
+    $store->rows[6] = legacyNotice(6, 'identity:' . str_repeat('a', 12));
+
+    (new LockoutNoticeRewrite($store, rewritePolicy()))->run();
+
+    expect(array_keys($store->rewritten))->toBe([2, 3, 5, 6])
+        ->and($store->rows[2]->dedupKey)->toBe('security.lockout.legacy:2')
+        ->and($store->rows[3]->dedupKey)->toBe('security.lockout.legacy:3')
+        ->and($store->rows[5]->dedupKey)->toBe('security.lockout.legacy:5');
+});
+
+it('FR-020: skips a notice whose write fails, rewrites the rest, and then reports each one it could not', function () {
+    $store = new ArrayLockoutNoticeStore();
+    foreach ([1, 2, 3, 4] as $id) {
+        $store->rows[$id] = legacyNotice($id, 'user-' . $id);
+    }
+    $store->refuses = [2, 4];
+
+    expect(fn () => (new LockoutNoticeRewrite($store, rewritePolicy(), batchSize: 2))->run())
+        ->toThrow(RuntimeException::class, '2 lockout notices could not be rewritten (ids 2, 4)');
+    expect(array_keys($store->rewritten))->toBe([1, 3])
+        // The two are still in the old shape, so the next run takes them again.
+        ->and($store->rows[2]->sourceType)->toBe('login_identity')
+        ->and($store->rows[4]->sourceType)->toBe('login_identity');
 });

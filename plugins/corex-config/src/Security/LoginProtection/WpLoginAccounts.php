@@ -44,6 +44,17 @@ final class WpLoginAccounts implements LoginAccounts
             );
         }
 
-        return $user->display_name !== '' ? $user->display_name : $user->user_login;
+        // The display name is the account holder's to choose, so a subscriber could take a
+        // colleague's and lock themselves out; the login beside it says which account it was.
+        if ($user->display_name === '' || $user->display_name === $user->user_login) {
+            return $user->user_login;
+        }
+
+        return sprintf(
+            /* translators: 1: the account's display name, 2: its login. */
+            __('%1$s (%2$s)', 'corex'),
+            $user->display_name,
+            $user->user_login,
+        );
     }
 }

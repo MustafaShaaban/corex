@@ -22,6 +22,10 @@ interface LoginAccounts
     /** The account a typed username names: by its login, then by its email for an address. */
     public function idFor(string $typed): ?int;
 
-    /** The name a lockout notice gives the account. */
+    /**
+     * The name a lockout notice gives the account: "<display name> (<login>)", or the login alone
+     * when the two are the same. A display name is the account holder's to choose, so it alone could
+     * point a notice at someone else.
+     */
     public function nameOf(int $userId): string;
 }

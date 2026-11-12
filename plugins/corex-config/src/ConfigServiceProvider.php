@@ -298,9 +298,12 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Submissions\SubmissionExportRetention::class),
                 $c->make(\Corex\Config\DataModels\DataExportRetention::class),
                 $c->make(\Corex\Config\Submissions\SubmissionTrashRetention::class),
+                // Sign-in records, with the login settings' window (spec 124, FR-019).
+                $c->make(\Corex\Config\Security\LoginProtection\LoginAttemptRetention::class),
             ]),
         );
         $this->container->singleton(\Corex\Config\Retention\RetentionScheduler::class);
+        $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginAttemptRetention::class);
 
         $this->container->singleton(
             CorexAbilityCatalog::class,

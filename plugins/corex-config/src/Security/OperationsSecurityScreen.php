@@ -967,9 +967,9 @@ final class OperationsSecurityScreen
             $lockedUntil = $record->lockedUntil;
 
             return [
-                'id' => $this->loginPolicy->fingerprint($record->identityHash) . '-' . ($lockedUntil?->format('U') ?? '0'),
-                'identity' => $this->loginPolicy->fingerprint($record->identityHash),
-                'network' => $this->loginPolicy->fingerprint($record->networkHash),
+                'id' => $this->loginPolicy->identityFingerprint($record->identityHash) . '-' . ($lockedUntil?->format('U') ?? '0'),
+                'identity' => $this->loginPolicy->identityFingerprint($record->identityHash),
+                'network' => $this->loginPolicy->networkFingerprint($record->networkHash),
                 'account' => $this->accountName($record->userId),
                 'reason' => $record->reasonCode,
                 'active' => $lockedUntil !== null && $lockedUntil > $now,

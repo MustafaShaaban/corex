@@ -42,7 +42,9 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECIS
   purge that throws or answers that it failed); a purge that fails never fails or undoes the change.
 - **A lockout names its account** (spec 124 slice 3, FR-016, the record half). When the locked-out username belongs to
   an account (its login, or its email typed as the username), the lockout row keeps the account's id and the
-  notification names it: "Repeated login failures locked out “<display name>”". Otherwise the notification says
+  notification names it: "Repeated login failures locked out “<display name> (<login>)”", or the login alone when
+  the display name is the login (a display name is the account holder's to choose, so alone it could point a notice
+  at a colleague). Otherwise the notification says
   "Repeated login failures locked out an unknown username" with a short fingerprint. The account is looked up once,
   on the attempt that starts the lockout, and what a visitor sees does not change with whether it exists.
 - **Data steps in schema migrations.** A `Corex\Database\Schema\SchemaComponent` takes an optional list of
@@ -50,6 +52,14 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECIS
   a release installed from the admin, a new site) in each site's scope, after the component's tables exist and before
   its version is stored. A step that fails leaves the version unwritten and is run again. The product foundation's
   schema is version 5, with one step.
+- **A component that fails to migrate is logged and held back.** The admin's self-heal writes the failure to the
+  debug log once (through `BootLogger`) and leaves that component alone on that site for 15 minutes, so a failing data
+  step no longer reruns, `dbDelta` and all, on every admin page, admin-ajax call and cron run. `wp corex migrate` and a
+  release installed from the admin still try at once. `SiteMigrationResult` gains `componentsFailed`, and
+  `SiteMigrationRunner::runForSite()` and `isDueForSite()` take an optional list of components to leave out.
+- **Sign-in records are deleted after the retention period.** "Keep sign-in records" (30 days by default) did
+  nothing: no row was ever deleted. The attempts table is now one of the stores the daily retention sweep prunes, on
+  each site, by when each attempt happened; a lockout still in force is kept however old.
 
 ### Changed
 
@@ -60,19 +70,31 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECIS
 - **`LoginAttemptStore::failures()` and `latestLockout()` take a `LoginAttemptKeys`** (both the keyed pair and the
   plain pair stored before the update) instead of two hashes, and `LoginProtectionPolicy` and
   `LoginProtectionService` take a `LoginHashKey` and a `LoginAccounts` from the container.
-- **A lockout of an existing account names it by its display name, on purpose** (FR-016 beside SC-003). The spec
-  asks for the account to be named, so when an account's display name is its own login or its email address, and
-  that is what was typed, that text appears in the notice. It is the account's name, already in `wp_users`, shown
-  only to people who manage operations. Every other typed username (an unknown one, or an email typed for an
-  account whose display name is something else) is kept nowhere.
+- **A lockout of an existing account names it by its display name and login, on purpose** (FR-016 beside SC-003).
+  The spec asks for the account to be named, so the notice reads "<display name> (<login>)", or the login alone when
+  the two are the same. When what was typed is the account's login, or its email and the email is its display name,
+  that text appears in the notice. It is the account's name, already in `wp_users`, shown only to people who manage
+  operations. Every other typed username (an unknown one, or an email typed for an account whose display name is
+  something else) is kept nowhere.
+- **Lockout notices merge by keys the release before could not write.** New keys are
+  `security.lockout.account:<id>`, `security.lockout.identity:<fingerprint>` and, for a rewritten old notice,
+  `security.lockout.legacy:<id>`, with a dot after `security.lockout`. Old keys were `security.lockout:` and the typed
+  username, so a visitor who typed `legacy:12` or `account:1` had made a key of the new shape: the first stopped the
+  rewrite on the unique key for good, the second would have taken an account's first notice. The rewrite now also
+  skips a notice it cannot write, rewrites the rest, and reports the ones it could not, which the next run takes
+  again.
 
 ### Security
 
 - **Sign-in records are keyed with the site's own secret** (spec 124 slice 3, FR-019). The typed username and the
   visitor's address were stored as plain SHA-256, which anyone holding the table could read back by hashing a list of
   usernames or the IPv4 range. Both are now HMAC-SHA256 with a key made from WordPress's auth salt and the site's id,
-  so the same username makes different values on two sites, a network's included. Attempts stored before the update
-  keep counting until they leave the counting window, and a lockout active when the site updates holds until its end.
+  so the same username makes different values on two sites, a network's included. A username and an address are
+  hashed in separate domains, so an address typed as a username no longer makes the same value as that address, and
+  neither do their fingerprints. Attempts stored before the update are counted until they leave the window, deleted
+  within the retention period (30 days by default); a lockout active when the site updates holds until its end.
+  While the site's salts are not defined in `wp-config.php`, WordPress keeps them in the `auth_key` and `auth_salt`
+  options, and a copy of the database then carries the key; the Hardening checks report that state.
 - **Nothing CoreX stores or shows about a lockout holds the typed username or a full address** (FR-020). The lockout
   notification kept both in plain text (its title, body, merge key, source and details); it now keeps an account id
   or a fingerprint, and the network only as a fingerprint. On update, every lockout notice stored before, open or
@@ -81,8 +103,9 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECIS
   each lockout's identity and network hash. For a row stored before the update those are a plain SHA-256, and 12
   characters of a plain hash of an address give the address back to anyone who hashes the IPv4 range. The panel, the
   lockout notice and the `LoginLockoutEvent` now all show one fingerprint: the first 12 characters of an HMAC, with
-  the site key, of the stored value. It is the same for a keyed row and a plain one, cannot be checked without the
-  key, and lines a notice up with its row. Only the values change; the panel's markup does not. Its rows' `id`
+  the site key, of the stored value (in its own domain for a username and for an address). It is the same for a
+  keyed row and a plain one, cannot be checked without the key, and lines a notice up with its row. Only the values
+  change; the panel's markup does not. Its rows' `id`
   (a React key, used for nothing else) changes with them.
 
 ### Client impact
@@ -118,8 +141,14 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 3; DECIS
   fingerprints. A client repository that carries copies of CoreX's tests takes the updated
   `LoginProtectionServiceTest`, `LoginLockoutNotificationProducerTest`, `ProducerActionCoverageTest`,
   `LoginProtectionEnforcementTest`, `SecurityEventsTest` and `PasswordSignsInEverywhereTest` (attempts are found by
-  the keyed address).
-- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+  the keyed address), `SiteMigrationRunnerTest` and `SchemaSelfHealTest` (`SchemaSelfHeal` now takes a `BootLogger`).
+  Sign-in records older than "Keep sign-in records" are now deleted by the daily sweep, the rows stored before the
+  update included.
+- **Mizzey** is pinned to v0.42.0 and is not affected until it moves. When it moves, its own listener
+  `StaffActivityLog::lockedOut()` (`platform/mizzey-site/src/Security/StaffActivityLog.php`) stops recording who was
+  locked out: it reads `$event->identity` and `$event->clientIp` behind `isset`, which are gone, so it silently writes
+  a lockout of user 0 with no identity. It must read `$event->userId` (null for an unknown username) and the
+  fingerprints `$event->identityFingerprint` and `$event->networkFingerprint` instead, and stop keeping the address.
 
 Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIONS #470 to #479).
 

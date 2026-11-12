@@ -31,6 +31,21 @@ final readonly class LoginLockoutNotice
     public const SOURCE_FINGERPRINT = 'login_fingerprint';
 
     /**
+     * Merge keys start `security.lockout.` (a dot). The release before wrote `security.lockout:`
+     * (a colon) and the typed username, so a username such as `account:1` or `legacy:12` made a key
+     * of that shape. No old key can start with a dot here, so no old notice can take a new one's
+     * key, and the rewrite of old ones can never collide with one.
+     */
+    private const KEY_ACCOUNT = self::TYPE . '.account:';
+
+    private const KEY_IDENTITY = self::TYPE . '.identity:';
+
+    private const KEY_LEGACY = self::TYPE . '.legacy:';
+
+    /** What every merge key written before spec 124 starts with: the type, a colon, what was typed. */
+    public const OLD_KEY_PREFIX = self::TYPE . ':';
+
+    /**
      * @param array{title:string,body:string} $rendered
      * @param array<string,mixed>             $metadata
      */
@@ -72,7 +87,7 @@ final readonly class LoginLockoutNotice
                     ),
                     'body'  => self::accountBody($network),
                 ],
-                self::TYPE . ':account:' . $userId,
+                self::KEY_ACCOUNT . $userId,
                 self::SOURCE_ACCOUNT,
                 (string) $userId,
                 $metadata,
@@ -84,17 +99,23 @@ final readonly class LoginLockoutNotice
                 'title' => __('Repeated login failures locked out an unknown username', 'corex'),
                 'body'  => self::unknownBody($identity, $network),
             ],
-            self::TYPE . ':identity:' . $identity,
+            self::KEY_IDENTITY . $identity,
             self::SOURCE_FINGERPRINT,
             $identity,
             $metadata,
         );
     }
 
-    /** The same notice under another merge key. */
-    public function withDedupKey(string $dedupKey): self
+    /** The same notice under the merge key of the old notice it rewrites, which is its own. */
+    public function asLegacy(int $noticeId): self
     {
-        return new self($this->rendered, $dedupKey, $this->sourceType, $this->sourceId, $this->metadata);
+        return new self($this->rendered, self::KEY_LEGACY . $noticeId, $this->sourceType, $this->sourceId, $this->metadata);
+    }
+
+    /** The merge key of an unknown username's lockouts, by its fingerprint. */
+    public static function identityKey(string $identity): string
+    {
+        return self::KEY_IDENTITY . $identity;
     }
 
     private static function accountBody(string $network): string

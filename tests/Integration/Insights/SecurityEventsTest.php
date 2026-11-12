@@ -48,7 +48,7 @@ afterEach(function () {
     global $wpdb;
     $wpdb->delete(
         (new Migrator())->fullName(NotificationTable::NAME),
-        ['dedup_key' => LoginLockoutNotice::TYPE . ':identity:' . SECURITY_EVENTS_TEST_FINGERPRINT],
+        ['dedup_key' => LoginLockoutNotice::identityKey(SECURITY_EVENTS_TEST_FINGERPRINT)],
     );
 });
 

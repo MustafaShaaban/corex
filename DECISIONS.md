@@ -20653,8 +20653,9 @@ different values (scenario 4). A site whose salts are changed gets a new key: at
 counting, which can end a lockout early and never starts one.
 
 **The old values.** The release before this one stored plain SHA-256 hashes. Counting and the latest-lockout check
-read the plain pair beside the keyed one, so failures and an active lockout stored before the update still hold
-until they age out (scenario 5); nothing is ever written under the plain pair. The plain lookup can be removed once
+read the plain pair beside the keyed one, so failures and an active lockout stored before the update are counted
+until they leave the window, deleted within the retention period (30 days by default) (scenario 5; see the
+amendment below); nothing is ever written under the plain pair. The plain lookup can be removed once
 every client has run this release for longer than its longest counting window and lockout; removed too early, an old
 lockout ends early.
 
@@ -20671,6 +20672,31 @@ no username-enumeration channel is added.
 
 **Not chosen.** *A key stored in an option*: it would sit in the database beside the hashes it protects. *Deleting
 rows stored before the update*: FR-019 says they keep counting.
+
+**Amended 2026-11-12 (security review of slice 3).** Decided by the orchestrator under the owner's delegation.
+
+- *Old rows are deleted, not only left to age.* `WpLoginAttemptStore` had a prune with no caller, so no sign-in
+  record was ever deleted and "Keep sign-in records" did nothing; a plain row such as `sha256('::1')` reads back with
+  one guess. The attempts table is now a `PrunableStore` of the daily retention sweep (`LoginAttemptRetention`),
+  with the login settings' window read when the sweep runs, by when each attempt happened, in batches, on each site's
+  own cron and table. A lockout still in force is kept however old. So attempts stored before the update are counted
+  until they leave the window, deleted within the retention period (30 days by default). *Not chosen:* a key-version
+  column, so a data step could re-key plain rows. A plain row cannot be re-keyed without the username and address it
+  hides, and deleting it within the retention period ends it without a schema change.
+- *A username and an address are hashed in separate domains.* Hashed alike, `identityHashOf(x)` equalled
+  `networkHashOf(x)`, so a suspected address typed as the username confirmed itself through the fingerprints. Each
+  HMAC message now starts with its domain and a NUL byte (`identity`, `network`, and for a fingerprint
+  `identity-fingerprint` or `network-fingerprint`). A prefix was chosen over two keys derived from the site key: it
+  separates the domains as surely, with one key and no extra derivation per attempt. Done now, while no keyed row
+  exists on a client site; the plain values of the release before keep their old form, since they are only compared
+  with rows it stored.
+- *The account is named by display name and login.* A display name is the account holder's to choose, so a
+  subscriber could take a colleague's and lock themselves out, and the notice would read as an attack on the
+  colleague while the panel showed `user_login`. The notice reads "<display name> (<login>)", or the login alone when
+  the two are the same.
+- *Where the key lives.* The salt is in `wp-config.php` only while the salts are defined there. When they are not,
+  WordPress makes them and keeps them in the `auth_key` and `auth_salt` options, and a copy of the database then
+  carries the key. `HardeningFacts` already reports that state (`authSaltsConfigured`).
 
 ## #627 -- A schema component can carry data steps; old lockout notices are rewritten by one
 
@@ -20693,3 +20719,25 @@ notice held opens a new notice.
 
 **Not chosen.** *Listening for `SiteMigrated`*: only the self-heal and `wp corex migrate` send it. *A version bump
 alone*: it runs `dbDelta` and changes no stored row.
+
+**Amended 2026-11-12 (security review of slice 3).** Decided by the orchestrator under the owner's delegation.
+
+- *Merge keys outside the old key space.* The old producer wrote `security.lockout:` and the typed username, so a
+  visitor who had locked out the username `legacy:12` made the key the rewrite gives row 12, and the rewrite failed
+  on the unique `dedup_key` for good; `account:1` would have absorbed account 1's first new notice. New keys start
+  `security.lockout.` (a dot): `security.lockout.account:<id>`, `security.lockout.identity:<fingerprint>`,
+  `security.lockout.legacy:<id>`. No old key can start that way. The producer's merge goes through the repository's
+  generic `upsertByDedupKey()`; no other reader parses these keys.
+- *A notice the rewrite cannot write is skipped.* The rest are rewritten, and the step then fails with the count and
+  the ids. The skipped notices keep their old shape, so the next run takes them again.
+- *A failing step is logged and backed off.* Nothing listened for `SiteMigrationFailed` and the self-heal returned
+  quietly, so a failing step reran with `dbDelta` on every admin page, admin-ajax call and cron run, with no record.
+  The self-heal now writes the failure once through `BootLogger` (the debug log, and an admin notice in debug mode)
+  and holds that component back on that site for 15 minutes (a site-scoped transient, `corex_schema_backoff`, by
+  component). `SiteMigrationResult::$componentsFailed` names them; the runner takes an optional list of components to
+  leave out. `wp corex migrate` and `ReleaseFinisher` pass none and still try at once.
+- *Rewritten notices may be stored in English on a translated site.* On the self-heal path the rewrite calls `__()`
+  as early as `MultisiteServiceProvider::boot()`, before `init`, when the site's translations may not be loaded. No
+  translation of these strings ships today, so nothing changes yet. When one does, the notice should keep its words
+  as message keys with arguments (its `title_key` and `message_key` are already stored) and be rendered when read,
+  or the rewrite should run on `init` or later; either keeps a stored notice in the reader's language.

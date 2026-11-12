@@ -19,6 +19,7 @@ final class SiteMigrationResult
     /**
      * @param list<string> $componentsMigrated
      * @param list<string> $tablesCreated
+     * @param list<string> $componentsFailed the components whose tables or data steps failed
      */
     public function __construct(
         public readonly int $siteId,
@@ -27,6 +28,7 @@ final class SiteMigrationResult
         public readonly array $tablesCreated = [],
         public readonly ?string $error = null,
         public readonly float $durationMs = 0.0,
+        public readonly array $componentsFailed = [],
     ) {
     }
 

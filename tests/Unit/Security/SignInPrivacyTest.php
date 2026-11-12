@@ -103,7 +103,7 @@ final class PrivacyAttemptStore implements LoginAttemptStore
         return array_values(array_filter(
             $this->records,
             static fn (LoginAttemptRecord $record): bool => $record->outcome === LoginAttemptRecord::FAILED
-                && $keys->matches($record->identityHash, $record->networkHash)
+                && in_array([$record->identityHash, $record->networkHash], $keys->pairs(), true)
                 && $record->occurredAt >= $since,
         ));
     }
@@ -113,7 +113,7 @@ final class PrivacyAttemptStore implements LoginAttemptStore
         foreach (array_reverse($this->records) as $record) {
             if (
                 $record->outcome === LoginAttemptRecord::LOCKED
-                && $keys->matches($record->identityHash, $record->networkHash)
+                && in_array([$record->identityHash, $record->networkHash], $keys->pairs(), true)
                 && $record->lockedUntil !== null
                 && $record->lockedUntil > $now
             ) {
@@ -144,10 +144,10 @@ it('FR-019: keys both stored values with the site key, so they are not the plain
     $policy = new LoginProtectionPolicy(privacySettings(), privacyKey());
 
     expect($policy->identityHash(privacyContext()))
-        ->toBe(hash_hmac('sha256', 'sara.example', 'site-one-key'))
+        ->toBe(hash_hmac('sha256', "identity\0sara.example", 'site-one-key'))
         ->not->toBe(hash('sha256', 'sara.example'))
         ->and($policy->networkHash(privacyContext()))
-        ->toBe(hash_hmac('sha256', '198.51.100.77', 'site-one-key'))
+        ->toBe(hash_hmac('sha256', "network\0" . '198.51.100.77', 'site-one-key'))
         ->not->toBe(hash('sha256', '198.51.100.77'));
 });
 
@@ -281,8 +281,8 @@ it('FR-020: announces a lockout with a short fingerprint of each stored value, k
     $lockout = $service->recordFailure(privacyContext(), new DateTimeImmutable('2026-11-12T10:00:00+00:00'))->lockout;
 
     expect($lockout)->toBeInstanceOf(LoginLockoutEvent::class)
-        ->and($lockout?->identityFingerprint)->toBe($policy->fingerprint($store->records[0]->identityHash))
-        ->and($lockout?->networkFingerprint)->toBe($policy->fingerprint($store->records[0]->networkHash))
+        ->and($lockout?->identityFingerprint)->toBe($policy->identityFingerprint($store->records[0]->identityHash))
+        ->and($lockout?->networkFingerprint)->toBe($policy->networkFingerprint($store->records[0]->networkHash))
         ->and($lockout?->lockedUntil->format(DATE_ATOM))->toBe('2026-11-12T10:15:00+00:00');
 });
 
@@ -290,10 +290,29 @@ it('FR-020: makes a fingerprint that is no prefix of the value it stands for, so
     $policy = new LoginProtectionPolicy(privacySettings(), privacyKey());
     $plainAddress = hash('sha256', '198.51.100.77');
 
-    expect($policy->fingerprint($plainAddress))
-        ->toBe(substr(hash_hmac('sha256', $plainAddress, 'site-one-key'), 0, 12))
+    expect($policy->networkFingerprint($plainAddress))
+        ->toBe(substr(hash_hmac('sha256', "network-fingerprint\0" . $plainAddress, 'site-one-key'), 0, 12))
         ->toMatch('/^[0-9a-f]{12}$/')
         ->not->toBe(substr($plainAddress, 0, 12))
         // Another site's key makes another fingerprint of the same stored value.
-        ->not->toBe((new LoginProtectionPolicy(privacySettings(), privacyKey('site-two-key')))->fingerprint($plainAddress));
+        ->not->toBe((new LoginProtectionPolicy(privacySettings(), privacyKey('site-two-key')))->networkFingerprint($plainAddress));
+});
+
+/**
+ * A username and an address were hashed the same way, so typing a suspected address as the
+ * username made the same value as that address, and the fingerprints confirmed the guess. Each is
+ * now hashed in its own domain, and so is each fingerprint.
+ */
+it('FR-020: hashes the same text differently as a username and as an address, and fingerprints them differently too', function () {
+    $policy = new LoginProtectionPolicy(privacySettings(), privacyKey());
+    $text = '198.51.100.77';
+    $asUsername = $policy->identityHashOf($text);
+    $asAddress = $policy->networkHashOf($text);
+
+    expect($asUsername)->not->toBe($asAddress)
+        ->and($policy->identityFingerprint($asUsername))->not->toBe($policy->networkFingerprint($asAddress))
+        // The same stored value fingerprinted as either kind differs as well.
+        ->and($policy->identityFingerprint($asAddress))->not->toBe($policy->networkFingerprint($asAddress))
+        // And no fingerprint is a value the attempts table could hold.
+        ->and($policy->identityFingerprint($asUsername))->not->toBe(substr($asUsername, 0, 12));
 });
