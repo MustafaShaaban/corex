@@ -29,8 +29,8 @@ use Corex\Support\Options\LoadedOptions;
  *
  * Since spec 113 a value set in `.env` (`APP_ENV`), locked by the network or held by the
  * `corex_app_env` option decides the environment first ({@see SiteEnvironment}): it fixes the
- * mode to its own environment, except that Coming soon and Maintenance, which change only what
- * visitors see, stay available and in force under any lock.
+ * mode to its own environment, except that Coming soon, Forms paused and Maintenance, which change
+ * only what visitors get, stay available and in force under any lock.
  */
 final class OperationsModeStore
 {

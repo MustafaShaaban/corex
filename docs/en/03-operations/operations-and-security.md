@@ -58,7 +58,7 @@ screen and every email follows it. In this order:
 |---|---|
 | **Development** | Every email is captured: kept in `CoreX → Email Studio → Delivery logs`, named by what sent it, and nobody receives it. |
 | **Staging** | Captured, unless live delivery is on with a provider CoreX Mail sends through; then sent for real. |
-| **Production, Coming soon, Maintenance** | Sent exactly as before. |
+| **Production, Coming soon, Forms paused, Maintenance** | Sent exactly as before. |
 
 Captured mail includes WordPress's own emails (a password reset, a new user) and other plugins'
 mail. Email Studio's Overview has a switch, **Capture only CoreX mail**, that lets those through
@@ -107,7 +107,11 @@ confirmation ready — one extra step, and the right question either way.
 - Apart from those submissions, the REST API, AJAX, cron and `wp-admin` are **never** intercepted,
   so scheduled work and integrations keep running.
 - A REST route of your own that takes public submissions closes with them when it declares
-  `Corex\Http\PublicSubmission::MARKER => true` in its `register_rest_route()` arguments.
+  `Corex\Http\PublicSubmission::MARKER => true` in its `register_rest_route()` arguments. It also
+  closes in **Forms paused**, which keeps the site open and refuses every such route with **503**,
+  the code `forms_paused` and "Forms are paused for a short while. Please try again later." Until
+  the mode cards are on this screen, Forms paused is chosen with
+  `wp corex mode set forms-paused --acknowledge`.
 - To come back: change the mode here. If you cannot reach this screen, the recovery command in the
   Login Protection section works from the command line.
 

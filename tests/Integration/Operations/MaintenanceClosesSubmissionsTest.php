@@ -15,6 +15,7 @@
 
 declare(strict_types=1);
 
+use Corex\Assistant\Forms\AssistantCallbackForm;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 
@@ -36,7 +37,7 @@ function corexMarkedSubmissionRoutes(): array
         'booking request'      => '/corex/v1/bookings/request',
         'job application'      => '/corex/v1/careers/apply',
         'account registration' => '/corex/v1/account/register',
-        'assistant hand-off'   => '/corex/v1/forms/corex-assistant-callback',
+        'assistant hand-off'   => '/corex/v1/forms/' . AssistantCallbackForm::SLUG,
     ];
 }
 
@@ -86,7 +87,13 @@ beforeEach(function () {
 
     $this->withoutManageOptions = static fn (array $allcaps): array => ['manage_options' => false] + $allcaps;
 
-    add_filter('rest_dispatch_request', static fn () => new WP_REST_Response(COREX_TEST_HANDLER_REACHED, 200));
+    // Counted, so a refusal that came after the handler had run (and stored and mailed) would fail.
+    $this->handlerCalls = 0;
+    add_filter('rest_dispatch_request', function () {
+        $this->handlerCalls++;
+
+        return new WP_REST_Response(COREX_TEST_HANDLER_REACHED, 200);
+    });
     wp_set_current_user(0);
 });
 
@@ -121,6 +128,8 @@ it('refuses each public submission with 503, the mode\'s sentence and no errors,
             ->and($this->writes)->toBe([], $route)
             ->and($this->mailed)->toBe([], $route);
     }
+
+    expect($this->handlerCalls)->toBe(0);
 })->with(corexClosingModes());
 
 it('refuses exactly the same routes in Maintenance and in Forms paused (spec 124, US-OPS-02 scenario 6)', function () {

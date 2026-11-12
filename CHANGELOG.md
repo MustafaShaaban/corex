@@ -24,12 +24,15 @@ Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #
 
 ### Client impact
 
-- **Muva and Perego**: nothing changes unless someone chooses Forms paused. Maintenance's refusal keeps its code
+- **Muva and Perego**: nothing changes unless someone chooses Forms paused, except on a site running the Assistant
+  add-on (neither does today), whose chat now answers in Maintenance too. Maintenance's refusal keeps its code
   `site_in_maintenance` and its sentence exactly. Perego, which maps refusals by exact string, can map the new code
-  `forms_paused` and its sentence "Forms are paused for a short while. Please try again later." A client repository
-  that carries copies of CoreX's tests takes the updated
-  `tests/Integration/Operations/MaintenanceClosesSubmissionsTest.php` (both modes; the chat route is no longer one
-  they close).
+  `forms_paused` and its sentence "Forms are paused for a short while. Please try again later." The Assistant's
+  callback form now shows the server's sentence when a refusal names no field. A client repository that carries
+  copies of CoreX's tests takes the updated `tests/Integration/Operations/MaintenanceClosesSubmissionsTest.php`
+  (both modes; the chat route is no longer one they close), and `MaintenanceDecisionTest`, `MaintenanceGuardTest`
+  and `MaintenanceModeTest` (`MaintenanceDecision` now takes `Corex\Http\PublicSubmissionPause`), plus
+  `OperationsModeTest` and `ModeCommandTest` (the mode order).
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 
 Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIONS #470 to #479).
