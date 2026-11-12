@@ -18,7 +18,9 @@ use Corex\Assistant\AssistantSettings;
 use Corex\Assistant\Chain\ChatRouter;
 use Corex\Assistant\Chain\Cooldowns;
 use Corex\Assistant\Chain\ModelClient;
+use Corex\Assistant\Booking\OpenSlots;
 use Corex\Assistant\Forms\AssistantCallbackForm;
+use Corex\Assistant\Forms\SlotClaimListener;
 use Corex\Assistant\Front\AssistantButton;
 use Corex\Assistant\Front\AssistantStrings;
 use Corex\Assistant\Knowledge\Knowledge;
@@ -27,6 +29,7 @@ use Corex\Assistant\Limits\VisitorLimits;
 use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
 use Corex\Tests\Unit\Assistant\AssistantFixtures;
+use Corex\Tests\Unit\Assistant\MemorySlotClaims;
 
 beforeEach(function () {
     Functions\stubTranslationFunctions();
@@ -191,17 +194,27 @@ it('shows only on public pages when the assistant is live', function (bool $admi
     'off' => [false, ['assistant.groq.key' => 'k'], false],
 ]);
 
+/** The callback form with nothing on offer; its times are tested in AssistantSlotClaimsTest. */
+function assistantPlainCallbackForm(): AssistantCallbackForm
+{
+    return new AssistantCallbackForm(
+        new OpenSlots(AssistantFixtures::settings([]), new MemorySlotClaims(), static fn (): int => 0),
+        static fn (int $at, string $zone): string => '',
+    );
+}
+
 it('asks the hand-off’s questions as a CoreX form, with the engine’s own listeners', function () {
-    $form = new AssistantCallbackForm();
+    $form = assistantPlainCallbackForm();
     $fields = $form->fields();
 
     expect($form->slug)->toBe('corex-assistant-callback')
         ->and(array_keys($fields))->toBe(['name', 'channel', 'phone', 'email', 'time', 'slot', 'zone', 'transcript', 'page'])
         ->and($fields['name']['rules'])->toContain('required')
-        ->and($fields['phone']['rules'])->toBe(['required_for:call,whatsapp', 'phone'])
-        ->and($fields['email']['rules'])->toBe(['required_for:email', 'email', 'max:160'])
+        ->and($fields['phone']['rules'])->toBe(['required_if:channel,call,whatsapp', 'phone'])
+        ->and($fields['email']['rules'])->toBe(['required_if:channel,email', 'email', 'max:160'])
+        ->and($fields['slot']['rules'])->toBe(['max:40', 'assistant_slot'])
         ->and(array_keys($fields['channel']['options']))->toBe(['call', 'whatsapp', 'email'])
-        ->and($form->listeners())->toBe([StoreSubmissionListener::class, SendEmailListener::class]);
+        ->and($form->listeners())->toBe([StoreSubmissionListener::class, SendEmailListener::class, SlotClaimListener::class]);
 });
 
 it('lets a site send its own email for a callback in place of CoreX’s, keeping storage', function () {
@@ -209,20 +222,8 @@ it('lets a site send its own email for a callback in place of CoreX’s, keeping
         static fn (array $listeners): array => [StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail', 42],
     );
 
-    expect((new AssistantCallbackForm())->listeners())->toBe([StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail']);
+    expect(assistantPlainCallbackForm()->listeners())->toBe([StoreSubmissionListener::class, 'Acme\\BrandedCallbackMail', SlotClaimListener::class]);
 });
-
-it('needs the number for a call or WhatsApp and the address for an email, even when left out', function (string $channel, mixed $value, ?string $error) {
-    $rule = new \Corex\Assistant\Forms\RequiredForChannel();
-
-    expect($rule->validate($value, ['call', 'whatsapp'], ['channel' => $channel]))->toBe($error)
-        ->and($rule)->toBeInstanceOf(\Corex\Forms\Validation\RuleForAbsentValue::class);
-})->with([
-    'a call with no number' => ['call', '', 'required'],
-    'WhatsApp with the number left out' => ['whatsapp', null, 'required'],
-    'a call with a number' => ['call', '+971 50 123 4567', null],
-    'an email, no number needed' => ['email', '', null],
-]);
 
 /**
  * A save over arrays: what was written (name => [value, autoload]) and what was removed.

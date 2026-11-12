@@ -117,7 +117,7 @@ Access & Abilities first.
 
 One launch checklist and an honest Overview (spec 118, revamp release R3.2, DECISIONS #430 to #439), and
 Settings that save what you changed (spec 119, revamp release R3.4, DECISIONS #440 to #447), and the
-CoreX Assistant add-on (spec 129, DECISIONS #600 to #616).
+CoreX Assistant add-on (spec 129, DECISIONS #600 to #619).
 
 Emails that send what was designed (spec 120, revamp release R3.11, seven stories; DECISIONS #450 to #458).
 
@@ -142,15 +142,31 @@ client site's own code hands to the shared mailer are sent exactly as before.
   through Anthropic's own Messages API) can follow the free tiers. They are off until the owner turns them
   on, and answer at most 50 times a day by default.
 - **Visitors pick a time** (#612): with booking on, the callback form lists the next times the team takes
-  calls, in the visitor's own time zone; the team reads the picked time in both zones ("Thu, Nov 12, 7:00 PM
-  Riyadh = Thu, Nov 12, 6:00 PM Cairo"). A time the team confirms, not a reservation. A call or WhatsApp now
-  needs a number and an email an address (`required_for`), the other being optional.
+  calls, in the visitor's own time zone; the team reads the picked time in both zones (written by the site
+  since #618). A time the team confirms, not a reservation. A call or WhatsApp now
+  needs a number and an email an address (`required_if`), the other being optional.
 - **CoreX → Assistant** (#609, #610): a screen of its own in the CoreX rail. The switch, the button image and
   each language's name, welcome and suggestions; the services in the owner's order, each with a switch, a
   write-only key (lockable from `.env` as `ASSISTANT_<SERVICE>_KEY`), a model and its state and last failure;
   the booking hours with a preview in other zones; the limits (per visitor an hour and a day, site-wide and
   sent to paid services a day); and **Check services**, which asks each service with a key, on or off, a real
   visitor's question and times it.
+- **A time one visitor asked for is not offered to the next** (spec 129 slice 3, #617). Each time picked in the
+  assistant's callback is claimed once; the slots route leaves claimed times out, and the second of two visitors
+  who send the same time is answered `slot_taken`, with the chat listing the times still open. A time is offered
+  again when its request is moved to the trash or deleted in Submissions, and taken again on restore while free;
+  a time whose request died before it was stored is offered again after 15 minutes.
+- **Booking hours on a site set to an offset** (#617): a WordPress time zone such as "UTC+2" (`+02:00`) is kept
+  and listed as `UTC+02:00` on CoreX → Assistant. Slice 2 read such a site's hours in UTC.
+- **The team's time line is written by the site** (#618): the inbox and the team's email read "Thu 12 Nov,
+  7:00 pm Riyadh = Thu 12 Nov, 6:00 pm Cairo" in the site's language and time format, from the moment and the
+  visitor's zone. The visitor's browser no longer writes it, so a request written by hand cannot put a made-up
+  line in the inbox; `slot` is stored as `2026-11-12T16:00:00Z`.
+- **Forms: `Form::prepare()`** (#618). A form defined in code gets the last word on its answers, after every rule
+  and after files are stored, before any listener; it may refuse there with
+  `Corex\Forms\Validation\AnswersRefused`, answered 422 like a rule's refusal, with the request's files removed.
+- **Forms: `required_if:FIELD,VALUE,...`** (#619), a built-in rule, applied the same way in the browser and asked
+  of a field the request left out too.
 - **The knowledge refreshes as soon as it changes** (#616): a page saved, published, unpublished, binned or
   deleted, the site's name or tagline, a finished update. A site's own knowledge provider hears
   `corex_assistant_knowledge_forgotten` and asks for a refresh with `corex_assistant_forget_knowledge`.
@@ -569,6 +585,25 @@ the shell's rule and needs a more specific selector to keep its own look.
   `corex-assistant-callback` in it); otherwise the team gets CoreX's form notification.
 - **Muva**: no change unless its owner turns the assistant on.
 - **Mizzey**: not on this release (pinned at v0.42.0); nothing changes until it moves.
+
+**Spec 129 slice 3, a time asked for once (DECISIONS #617 to #619):**
+
+- **Every site**: nothing changes until the assistant is on with booking hours. Then a picked time is hidden
+  from other visitors until its request is binned or deleted. The rows are `corex_assistant_slot_<seconds>` in
+  the options table, never autoloaded.
+- **A site with its own callback listeners** (`corex_assistant_callback_listeners`): CoreX now adds
+  `Corex\Assistant\Forms\SlotClaimListener` last, whatever the filter returns; nothing to change. A listener
+  that reads `time` gets the site's line; one that read `slot` as `2026-11-12T16:00:00.000Z` now gets
+  `2026-11-12T16:00:00Z` (`Corex\Assistant\Booking\SlotMoment::read()` reads both).
+- **A site that words the chat with `corex_assistant_strings`**: a new key, `slotTaken`, is said when a time
+  was just taken; add it in each language the site words.
+- **A form defined in code**: nothing changes. `prepare()` returns the answers unchanged unless the form
+  overrides it. A site that registered a rule of its own named `required_if` must rename it: the name is now
+  taken, and registering it again throws.
+- **Perego**: when it moves to the add-on, its `perego_slot_free` rule (`Forms/Rules/SlotFree.php`), its
+  `Assistant/BookedSlots` option and the `slot_taken` branch of its own hand-off go with the rest of its copy;
+  the add-on does the same, with the race and the binned request handled. Its booked times stay in its own
+  option and are not carried over: a time a Perego visitor asked for before the switch can be offered again.
 
 **Dependency advisories (DECISIONS #514):**
 

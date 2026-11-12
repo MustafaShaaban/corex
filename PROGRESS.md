@@ -200,7 +200,20 @@ withdrawn (#602): the Config engine reads only loaded options, so a saved secret
 - Slice 2 (same branch, same PR) built Perego's revision 2 and the owner's additions: paid fallbacks, the
   time picker, channel-led fields, the CoreX → Assistant screen (T014 to T019). Perego can switch once a
   release carries it.
-- Next: the owner's word on merging this slice.
+- Slices 1 and 2 merged as PR #449 (`7ef4d31c`, 2026-11-10). **Slice 3** (branch `spec/129-assistant-slice-3`,
+  DECISIONS #617 to #619, T020 to T025): a time one visitor asked for is hidden from the next, claimed with
+  `INSERT IGNORE` in the callback's new `prepare()` step and freed when its request is binned or deleted; the
+  team's time line written by the site with `wp_date()`; `required_if` in the forms engine and its runtime,
+  replacing `required_for`. Verified 2026-11-10 on a scratch WordPress (port 8957, database `corex_wslots`):
+  Pest unit 3,705 green; integration 1,538 green, 1 skipped (including the claim race on the real options
+  table and trash, restore and delete through the inbox's own trash store); Jest 1,580 green; Playwright
+  `assistant.spec.js` 5 green (a time hidden from the next visitor, a stale list refused and refreshed); the
+  quality suite's checks on CoreX → Assistant. Not done: two truly simultaneous HTTP requests (`php -S` serves
+  one at a time; the race is proven by a claim written the moment `prepare()`'s own claim reaches the
+  database); a German site by hand (the line is drawn through `Corex\Mail\SiteLanguage` as CoreX emails are).
+  Guards: clean-code, wp, test and docs run on the diff; their should-fix items are fixed (a pending claim of a
+  request that died goes stale after 15 minutes, `TeamClock` and `StoredCallbackSlot` out of the provider).
+- Next: the owner's word on merging slice 3's pull request. Not built: calendar sync, reminders.
 
 **Spec 122, flows that stay live and route to people** (2026-10-26, branch `spec/122-live-flows`, DECISIONS #470
 to #479): revamp release R3.9, six stories (US-FLW-01, 03, 04, 07, US-VIS-01, 02), built under the owner's

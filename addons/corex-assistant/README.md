@@ -18,7 +18,8 @@ The full guide, for site owners and developers, is `docs-app/src/content/docs/gu
   behind the page's REST token and the assistant's limits. `POST /wp-json/corex/v1/assistant/check` is "Check
   services", administrators only.
 - **The callback.** The CoreX form `corex-assistant-callback`, stored in Submissions and notified to the team.
-  With booking on, the visitor picks a time from `GET /wp-json/corex/v1/assistant/slots`, shown in their zone.
+  With booking on, the visitor picks a time from `GET /wp-json/corex/v1/assistant/slots`, shown in their zone; a
+  time another visitor asked for is not offered.
 
 ## Extending it
 
@@ -44,7 +45,7 @@ Colours: set `--corex-assistant-*` on `.corex-assistant` (listed at the top of `
 | `src/Limits/`, `src/Http/` | the visitor key, counts and lock, their middleware, the chat route |
 | `src/Front/`, `src/Forms/` | the button and its strings, the callback form |
 | `src/Admin/` | CoreX → Assistant (screen, view, save) and "Check services" |
-| `src/Booking/` | the booking hours and the slots route |
+| `src/Booking/` | the booking hours, the slots route, and the claims that keep a requested time from being offered twice |
 | `blocks/assistant/` | `view.js` (the button) and the lazily loaded `chat.js`, `dom.js`, `handoff.js`, `dial-codes.js` |
 
 Build with `npm run build -w addons/corex-assistant`.

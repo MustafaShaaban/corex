@@ -72,3 +72,50 @@ it('keeps only what it can use from a saved value, and reads its own output the 
     ])
         ->and(BookingHours::fromArray($hours->toArray(), 'UTC')->toArray())->toBe($hours->toArray());
 });
+
+/** @param list<int> $slots @return list<string> */
+function assistantOnWallClock(array $slots, string $zone): array
+{
+    return array_map(static fn (int $at): string => (new DateTimeImmutable('@' . $at))->setTimezone(new DateTimeZone($zone))->format('D H:i'), $slots);
+}
+
+it('keeps the hours on the business’s wall clock across a clock change', function () {
+    // Europe/London leaves summer time on Sunday 25 October 2026.
+    $hours = BookingHours::fromArray(['enabled' => true, 'timezone' => 'Europe/London', 'start' => '09:00', 'end' => '10:00', 'slot' => 60, 'notice' => 0, 'horizon' => 2]);
+    $saturday = (new DateTimeImmutable('2026-10-24 06:00', new DateTimeZone('Europe/London')))->getTimestamp();
+
+    expect(assistantOnWallClock($hours->slots($saturday), 'Europe/London'))->toBe(['Sat 09:00', 'Sun 09:00']);
+});
+
+it('offers at most a screen of times', function () {
+    $hours = assistantHours(['start' => '00:00', 'end' => '00:00', 'slot' => 15, 'notice' => 0, 'horizon' => 30]);
+
+    expect($hours->slots(ASSISTANT_MONDAY_6AM_CAIRO))->toHaveCount(BookingHours::MAX_SLOTS);
+});
+
+it('takes a site time zone written as an offset, as WordPress gives one set to UTC+2', function () {
+    $hours = BookingHours::fromArray(['enabled' => true, 'days' => [1], 'start' => '09:00', 'end' => '10:00', 'slot' => 60, 'notice' => 0, 'horizon' => 1], '+02:00');
+
+    expect($hours->timezone)->toBe('+02:00')
+        ->and(assistantOnWallClock($hours->slots(ASSISTANT_MONDAY_6AM_CAIRO), 'Africa/Cairo'))->toBe(['Mon 09:00'])
+        ->and(BookingHours::knownZone('+14:00'))->toBeTrue()
+        ->and(BookingHours::knownZone('+15:00'))->toBeFalse();
+});
+
+it('writes a requested time for the team in the visitor’s zone, then the business’s, each by its city', function (string $business, string $visitor, string $line) {
+    $hours = BookingHours::fromArray(['timezone' => $business]);
+    $clock = static fn (int $at, string $zone): string => (new DateTimeImmutable('@' . $at))->setTimezone(new DateTimeZone($zone))->format('D g:i a');
+
+    expect($hours->describe(ASSISTANT_MONDAY_6AM_CAIRO, $visitor, $clock))->toBe($line);
+})->with([
+    'from Riyadh' => ['Africa/Cairo', 'Asia/Riyadh', 'Mon 7:00 am Riyadh = Mon 6:00 am Cairo'],
+    'a city with a space' => ['Africa/Cairo', 'America/Argentina/Buenos_Aires', 'Mon 1:00 am Buenos Aires = Mon 6:00 am Cairo'],
+    'a business set by offset' => ['+02:00', 'UTC', 'Mon 4:00 am UTC = Mon 6:00 am UTC+02:00'],
+    'the same zone' => ['Africa/Cairo', 'Africa/Cairo', 'Mon 6:00 am Cairo'],
+    'a zone nobody knows' => ['Africa/Cairo', 'Mars/Olympus', 'Mon 6:00 am Cairo'],
+]);
+
+it('reads a zone with no offset from UTC as UTC, as a new WordPress site gives it', function (string $siteZone) {
+    expect(BookingHours::fromArray([], $siteZone)->timezone)->toBe('UTC')
+        ->and(BookingHours::fromArray(['timezone' => $siteZone])->timezone)->toBe('UTC');
+})->with(['+00:00', '-00:00']);
