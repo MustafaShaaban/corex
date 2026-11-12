@@ -339,7 +339,7 @@ its own spec, in this order, and none is authorized by appearing here (§16):
 | 1 | `corex-docs.mustafashaaban.com` | The docs site, moved from `mustafashaaban.github.io/corex/`, still on GitHub Pages | 130 (draft) |
 | 2 | `corex-staging.mustafashaaban.com` | Private install, password and `noindex`; the owed watched installation from CoreX → Releases (spec 107) runs here | Not written |
 | 3 | `corex.mustafashaaban.com` | Product site built with CoreX, `sites/corex-site/`, after the revamp's screens land | Not written |
-| 4 | `corex-updates.mustafashaaban.com` | Static manifest, packages and SHA-256 for the in-admin updater (`updates.endpoint`) | Not written |
+| 4 | `corex-updates.mustafashaaban.com` | Static manifest, packages and SHA-256 for the in-admin updater (`updates.endpoint`) | 132 (draft) |
 | 5 | `corex-demo.mustafashaaban.com` | The kits with demo content, reset on a schedule | Not written |
 | 6 | (the updates host) | Spec 123's "a site downloads its release", with signed packages | Not written |
 
