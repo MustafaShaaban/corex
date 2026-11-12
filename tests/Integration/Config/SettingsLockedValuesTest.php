@@ -114,7 +114,7 @@ function drawWith(SettingsPageRenderer $renderer, string $page): string
 {
     $pages = Boot::app()->container()->make(SettingsPages::class);
 
-    return $renderer->render($pages->find($page), $pages->url($page), '', null);
+    return $renderer->render($pages->find($page), $pages->url($page), '', null, false, true);
 }
 
 it('shows a value set in .env, read-only, and says where it is set', function () {
@@ -133,7 +133,7 @@ it('leaves a field set in .env untouched when its page is saved, and does not re
     ['renderer' => $renderer, 'saver' => $saver] = settingsWithEnv($this->dir, "BRAND_COMPANY_NAME=Acme\n");
 
     $posted = SettingsScreen::posted(drawWith($renderer, 'general'), ['brand_company_name' => 'Typed anyway', 'brand_tagline' => 'Changed']);
-    $result = $saver->save('general', $posted, get_current_user_id());
+    $result = $saver->save('general', $posted, get_current_user_id(), true);
 
     expect($this->store->get('brand.company_name'))->toBe('Old')
         ->and($this->store->get('brand.tagline'))->toBe('Changed')

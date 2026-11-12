@@ -50,6 +50,13 @@ final class MailRequest
     public readonly array $attachments;
 
     /**
+     * The same words as plain text, sent beside the HTML body as its text/plain part (spec 120,
+     * story 7). Null for a message that has none, which is sent as it always was: CoreX adds no
+     * text part of its own to a message handed over finished.
+     */
+    public readonly ?string $plainText;
+
+    /**
      * @param list<string>        $to
      * @param array<string,mixed> $context merge data for $templateName
      */
@@ -64,6 +71,7 @@ final class MailRequest
         ?string $parentAttemptId = null,
         ?string $from = null,
         array $attachments = [],
+        ?string $plainText = null,
     ) {
         $this->to              = $to;
         $this->templateName    = $templateName;
@@ -78,6 +86,9 @@ final class MailRequest
             array_map('intval', $attachments),
             static fn (int $id): bool => $id > 0,
         ));
+        // A text version with nothing in it is none: an empty part would be shown to a reader whose
+        // program prefers plain text, in place of the HTML.
+        $this->plainText = $plainText !== null && trim($plainText) !== '' ? $plainText : null;
 
         foreach ([$this->requestId, $this->parentAttemptId] as $id) {
             if ($id !== null && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $id) !== 1) {

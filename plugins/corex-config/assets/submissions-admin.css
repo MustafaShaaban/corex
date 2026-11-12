@@ -82,9 +82,13 @@
  * two sidebars. So the panel is a container and the grid inside it asks how
  * wide that is.
  *
- * Search has the first row. Under it, five equal columns: form, status, owner,
- * and the date range, which is one item two columns wide so that "From" and
- * "To" are never parted. Left to wrap freely, "To" fell onto a row of its own.
+ * Search has the first row. Under it, form, status and owner, then the date
+ * range, which is one item so that "From" and "To" are never parted. Left to
+ * wrap freely, "To" fell onto a row of its own.
+ *
+ * The range is two fifths of the row, as two of five columns were, and never
+ * narrower than its two dates side by side need: a date field is as wide as
+ * its date, so a column too narrow for it is not an option.
  */
 .corex-admin .corex-inbox__filters {
 	container-type: inline-size;
@@ -96,7 +100,7 @@
 
 .corex-admin .corex-inbox__filter-grid {
 	display: grid;
-	grid-template-columns: repeat(5, minmax(0, 1fr));
+	grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(max-content, 2fr);
 	gap: var(--corex-admin-space-sm);
 }
 
@@ -104,11 +108,20 @@
 	grid-column: 1 / -1;
 }
 
+/*
+ * "From" and "To" share a line while both dates fit on it, and "To" goes under
+ * "From" when they do not: on a phone, or with the text made larger. A grid of
+ * two columns kept them side by side at any width, so each field spilled out
+ * of its half and its label lay over the other's.
+ */
 .corex-admin .corex-inbox__dates {
-	display: grid;
-	grid-column: span 2;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	display: flex;
+	flex-wrap: wrap;
 	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-inbox__dates > label {
+	flex: 1 1 0;
 }
 
 @container (max-width: 44rem) { /* corex-token-allow: the filter panel's own width */
@@ -116,8 +129,10 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
-	/* The odd one of three: a row of its own, not half a row beside nothing. */
-	.corex-admin .corex-inbox__owner {
+	/* Owner, the odd one of three, and the range, which is two fields: each
+	   a row of its own, not half a row beside nothing or a field in half. */
+	.corex-admin .corex-inbox__owner,
+	.corex-admin .corex-inbox__dates {
 		grid-column: 1 / -1;
 	}
 }
@@ -125,10 +140,6 @@
 @container (max-width: 24rem) { /* corex-token-allow: the filter panel's own width */
 	.corex-admin .corex-inbox__filter-grid {
 		grid-template-columns: minmax(0, 1fr);
-	}
-
-	.corex-admin .corex-inbox__dates {
-		grid-column: auto;
 	}
 }
 

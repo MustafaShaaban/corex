@@ -95,7 +95,7 @@ export default function AccessRequestsPanel( {
 											request.ability
 										)
 									: sprintf(
-											/* translators: 1: person's name, 2: a CoreX area's key, e.g. "data". */
+											/* translators: 1: person's name, 2: the name of a CoreX area, e.g. "Forms & Flows". */
 											__(
 												'%1$s asked for the %2$s area',
 												'corex'

@@ -10,6 +10,7 @@ namespace Corex\Config\Overview;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Config\Addons\AddonRegistry;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
@@ -89,7 +90,8 @@ final class OverviewTileFacts
 
         return [
             'date'   => (string) wp_date((string) get_option('date_format', 'Y-m-d'), $latest['time']),
-            'source' => current_user_can('manage_options') ? $this->sourceName($latest['kind'], $latest['slug']) : '',
+            // "Access CoreX admin" comes only with site administration (spec 117).
+            'source' => current_user_can(CorexAbility::MANAGE_ADMIN) ? $this->sourceName($latest['kind'], $latest['slug']) : '',
         ];
     }
 

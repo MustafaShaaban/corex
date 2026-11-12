@@ -1,11 +1,11 @@
 import { useReducer, useState } from '@wordpress/element';
-import { __, _n, sprintf } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import AccessChangeDialog from './AccessChangeDialog.js';
 import AccessGrantsPanel from './AccessGrantsPanel.js';
+import AccessMatrixGrid from './AccessMatrixGrid.js';
 import AccessRequestsPanel from './AccessRequestsPanel.js';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
-import CorexTime from '../admin/components/CorexTime.js';
 import { usePending, workingProps } from '../admin/components/working.js';
 import { applyRoleChanges, previewRoleChanges } from './accessClient.js';
 import {
@@ -36,6 +36,91 @@ const effectLabel = ( effect ) =>
 	EFFECTS.find( ( candidate ) => candidate.value === effect )?.label ||
 	effect;
 
+/**
+ * Today's editor for one role (spec 067): one choice per ability, then a preview and a confirmation.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.state    The access state.
+ * @param {string}   props.role     The role's key.
+ * @param {Array}    props.roles    The roles that can be edited.
+ * @param {Function} props.dispatch The reducer's dispatch.
+ * @return {Element} The editor.
+ */
+function RoleEditor( { state, role, roles, dispatch } ) {
+	return (
+		<>
+			<div className="corex-field corex-access__mode-label">
+				<span>{ __( 'Role', 'corex' ) }</span>
+				<CorexSelect
+					id="corex-access-role"
+					label={ __( 'Role', 'corex' ) }
+					value={ role }
+					options={ roles.map( ( candidate ) => ( {
+						value: candidate.key,
+						label: candidate.name,
+					} ) ) }
+					onChange={ ( next ) =>
+						dispatch( { type: 'selectRole', role: next } )
+					}
+					emptyLabel={ __( 'No roles available', 'corex' ) }
+					block
+				/>
+			</div>
+			<div className="corex-access__scroll">
+				<table className="corex-access__matrix">
+					<thead>
+						<tr>
+							<th>{ __( 'Ability', 'corex' ) }</th>
+							<th>{ __( 'State', 'corex' ) }</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ state.rows.map( ( row ) => {
+							const cell = row.cells[ role ] || {
+								effect: 'inherit',
+								editable: false,
+								reason: 'missing_role',
+							};
+							return (
+								<tr key={ row.key }>
+									<th scope="row" title={ row.key }>
+										{ row.label }
+									</th>
+									<td>
+										<CorexSelect
+											label={ row.label }
+											value={
+												state.draft?.[ role ]?.[
+													row.key
+												] || cell.effect
+											}
+											options={ EFFECTS }
+											disabled={ ! cell.editable }
+											onChange={ ( effect ) =>
+												dispatch( {
+													type: 'setEffect',
+													role,
+													ability: row.key,
+													effect,
+												} )
+											}
+										/>
+										{ cell.reason ? (
+											<span className="corex-access__muted">
+												{ lockedReason( cell.reason ) }
+											</span>
+										) : null }
+									</td>
+								</tr>
+							);
+						} ) }
+					</tbody>
+				</table>
+			</div>
+		</>
+	);
+}
+
 export default function AccessWorkspace( { config } ) {
 	// How many times the grants were changed here; the grants panel reads them again each time.
 	const [ grantsRead, setGrantsRead ] = useState( 0 );
@@ -48,20 +133,22 @@ export default function AccessWorkspace( { config } ) {
 				payload: config?.matrix || {},
 			} )
 	);
-	const selectedRole = state.selectedRole || state.roles[ 0 ]?.key || '';
-	const changes = buildRoleChanges( state.rows, state.draft, selectedRole );
+	// A role that administers the site holds every ability and has nothing to edit (spec 117).
+	const editable = state.roles.filter( ( role ) => ! role.administers );
+	const editing = state.editingRole;
+	const changes = editing
+		? buildRoleChanges( state.rows, state.draft, editing )
+		: {};
 	const [ pending, during ] = usePending();
+	const roleName = ( key ) =>
+		state.roles.find( ( role ) => role.key === key )?.name || key;
 
 	const preview = async () => {
 		try {
-			const answer = await previewRoleChanges(
-				config,
-				selectedRole,
-				changes
-			);
+			const answer = await previewRoleChanges( config, editing, changes );
 			dispatch( {
 				type: 'preview',
-				preview: { ...answer, role: selectedRole },
+				preview: { ...answer, role: editing },
 			} );
 		} catch ( reason ) {
 			dispatch( { type: 'error', message: reason.message } );
@@ -95,17 +182,36 @@ export default function AccessWorkspace( { config } ) {
 					<p className="corex-admin__eyebrow">
 						{ __( 'COREX ABILITIES', 'corex' ) }
 					</p>
-					<h2>{ __( 'Editable access matrix', 'corex' ) }</h2>
+					<h2>
+						{ editing
+							? sprintf(
+									/* translators: %s: a role's name. */
+									__( 'Editing %s', 'corex' ),
+									roleName( editing )
+								)
+							: __( 'What each role can do', 'corex' ) }
+					</h2>
 				</div>
-				<button
-					type="button"
-					className="button button-primary"
-					disabled={ Object.keys( changes ).length === 0 }
-					onClick={ () => during( 'preview', preview ) }
-					{ ...workingProps( pending === 'preview' ) }
-				>
-					{ __( 'Preview changes', 'corex' ) }
-				</button>
+				{ editing ? (
+					<div className="corex-access__head-actions">
+						<button
+							type="button"
+							className="button"
+							onClick={ () => dispatch( { type: 'grid' } ) }
+						>
+							{ __( 'Back to the grid', 'corex' ) }
+						</button>
+						<button
+							type="button"
+							className="button button-primary"
+							disabled={ Object.keys( changes ).length === 0 }
+							onClick={ () => during( 'preview', preview ) }
+							{ ...workingProps( pending === 'preview' ) }
+						>
+							{ __( 'Preview changes', 'corex' ) }
+						</button>
+					</div>
+				) : null }
 			</header>
 			{ state.notice?.tone === 'success' && (
 				<p className="corex-access__notice" role="status">
@@ -121,11 +227,7 @@ export default function AccessWorkspace( { config } ) {
 			{ state.preview && (
 				<AccessChangeDialog
 					preview={ state.preview }
-					roleName={
-						state.roles.find(
-							( role ) => role.key === state.preview.role
-						)?.name || state.preview.role
-					}
+					roleName={ roleName( state.preview.role ) }
 					rows={ state.rows }
 					effectLabel={ effectLabel }
 					onApply={ apply }
@@ -135,82 +237,25 @@ export default function AccessWorkspace( { config } ) {
 			{ state.conflicts.length ? (
 				<p className="corex-access__muted">
 					{ __(
-						'External role plugin active. Native platform capabilities stay read-only; CoreX-owned abilities remain editable.',
+						'A role plugin is active. CoreX manages only its own abilities here; WordPress capabilities stay with that plugin.',
 						'corex'
 					) }
 				</p>
 			) : null }
-			<div className="corex-field corex-access__mode-label">
-				<span>{ __( 'Role', 'corex' ) }</span>
-				<CorexSelect
-					id="corex-access-role"
-					label={ __( 'Role', 'corex' ) }
-					value={ selectedRole }
-					options={ state.roles.map( ( role ) => ( {
-						value: role.key,
-						label: role.name,
-					} ) ) }
-					onChange={ ( role ) =>
-						dispatch( { type: 'selectRole', role } )
-					}
-					emptyLabel={ __( 'No roles available', 'corex' ) }
-					block
+			{ editing ? (
+				<RoleEditor
+					state={ state }
+					role={ editing }
+					roles={ editable }
+					dispatch={ dispatch }
 				/>
-			</div>
-			<div className="corex-access__scroll">
-				<table className="corex-access__matrix">
-					<thead>
-						<tr>
-							<th>{ __( 'Ability', 'corex' ) }</th>
-							<th>{ __( 'State', 'corex' ) }</th>
-						</tr>
-					</thead>
-					<tbody>
-						{ state.rows.map( ( row ) => {
-							const cell = row.cells[ selectedRole ] || {
-								effect: 'inherit',
-								editable: false,
-								reason: 'missing_role',
-							};
-							return (
-								<tr key={ row.key }>
-									<th scope="row">
-										{ row.label }
-										<code className="corex-access__cap">
-											{ row.key }
-										</code>
-									</th>
-									<td>
-										<CorexSelect
-											label={ row.label }
-											value={
-												state.draft?.[ selectedRole ]?.[
-													row.key
-												] || cell.effect
-											}
-											options={ EFFECTS }
-											disabled={ ! cell.editable }
-											onChange={ ( effect ) =>
-												dispatch( {
-													type: 'setEffect',
-													role: selectedRole,
-													ability: row.key,
-													effect,
-												} )
-											}
-										/>
-										{ cell.reason ? (
-											<span className="corex-access__muted">
-												{ lockedReason( cell.reason ) }
-											</span>
-										) : null }
-									</td>
-								</tr>
-							);
-						} ) }
-					</tbody>
-				</table>
-			</div>
+			) : (
+				<AccessMatrixGrid
+					roles={ state.roles }
+					rows={ state.rows }
+					onEdit={ ( role ) => dispatch( { type: 'edit', role } ) }
+				/>
+			) }
 			<div className="corex-access__panels">
 				<AccessRequestsPanel
 					config={ config }
@@ -220,40 +265,6 @@ export default function AccessWorkspace( { config } ) {
 					config={ config }
 					refreshKey={ grantsRead }
 				/>
-				<section>
-					<h3>{ __( 'Audit', 'corex' ) }</h3>
-					<p className="corex-access__muted">
-						{ __(
-							'Refused visits to CoreX screens, counted per person and screen for an hour at a time. Requests and decisions are in the activity log.',
-							'corex'
-						) }
-					</p>
-					<ul>
-						{ ( config?.audit || [] ).map( ( event ) => (
-							<li key={ `${ event.text }:${ event.first }` }>
-								{ event.text }{ ' ' }
-								<span className="corex-access__muted">
-									{ event.count > 1
-										? sprintf(
-												/* translators: %d: how many times. */
-												_n(
-													'%d time, last',
-													'%d times, last',
-													event.count,
-													'corex'
-												),
-												event.count
-											)
-										: null }{ ' ' }
-									<CorexTime
-										value={ event.last }
-										kind="full"
-									/>
-								</span>
-							</li>
-						) ) }
-					</ul>
-				</section>
 			</div>
 		</section>
 	);

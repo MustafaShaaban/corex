@@ -13,7 +13,10 @@ defined('ABSPATH') || exit;
 use InvalidArgumentException;
 
 /**
- * Pure guard against locked definitions, self-lockout, and last-administrator removal.
+ * Pure guard against locked definitions, self-lockout, last-administrator removal, a Deny on a
+ * role whose members administer the site, who always hold every CoreX ability (spec 117, ACC-D11),
+ * and the changes that only a site administrator may make (DECISIONS #428): allowing a Critical
+ * ability, and changing access that applies to the person making the change.
  */
 final class AccessPolicy
 {
@@ -23,6 +26,12 @@ final class AccessPolicy
 
     private const EFFECTS = [self::EFFECT_ALLOW, self::EFFECT_DENY, self::EFFECT_INHERIT];
 
+    /** Blocker: a change to access that applies to the person making it, by someone who does not administer the site. */
+    public const OWN_ACCESS = 'own_access_needs_site_administrator';
+
+    /** Blocker: an Allow or Inherit of a Critical ability by someone who does not administer the site. */
+    public const CRITICAL_ALLOW = 'critical_needs_site_administrator';
+
     public function __construct(private readonly CorexAbilityCatalog $catalog)
     {
     }
@@ -31,18 +40,25 @@ final class AccessPolicy
      * @param array<string,string> $changes
      * @param list<int>            $affectedUserIds
      * @param list<int>            $fullAccessAdminIds
+     * @param bool                 $administersSite      Whether the role changed is one that administers the site.
+     * @param bool                 $actorAdministersSite Whether the person making the change administers the
+     *                                                   site. Defaults to no, so a caller that does not say
+     *                                                   gets the narrower answer.
      */
     public function preview(
         int $actorId,
         array $changes,
         array $affectedUserIds,
         array $fullAccessAdminIds,
+        bool $administersSite = false,
+        bool $actorAdministersSite = false,
     ): AccessChangePreview {
         if ($actorId < 1) {
             throw new InvalidArgumentException('Access changes require an authenticated actor.');
         }
 
         $blockers = [];
+        $ownAccess = ! $actorAdministersSite && in_array($actorId, $affectedUserIds, true);
 
         foreach ($changes as $abilityKey => $effect) {
             // PHP keeps the key "123" of an array as the integer 123, and a list sent where a map
@@ -60,6 +76,23 @@ final class AccessPolicy
 
             if ($ability->locked) {
                 $blockers[] = ['code' => 'ability_locked', 'ability' => $abilityKey];
+                continue;
+            }
+
+            if ($effect === self::EFFECT_DENY && $administersSite) {
+                $blockers[] = ['code' => 'site_administrator_role', 'ability' => $abilityKey];
+                continue;
+            }
+
+            if ($ownAccess) {
+                $blockers[] = ['code' => self::OWN_ACCESS, 'ability' => $abilityKey];
+                continue;
+            }
+
+            // Inherit is included: it hands the ability back to whatever WordPress gives the role,
+            // which a role plugin may have written. Only a Deny narrows for certain.
+            if ($effect !== self::EFFECT_DENY && $ability->risk === CorexAbility::RISK_CRITICAL && ! $actorAdministersSite) {
+                $blockers[] = ['code' => self::CRITICAL_ALLOW, 'ability' => $abilityKey];
                 continue;
             }
 

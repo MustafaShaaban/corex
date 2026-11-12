@@ -10,6 +10,7 @@ namespace Corex\Assistant;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
 use Corex\Admin\AdminPage;
 use Corex\Assistant\Admin\AssistantScreen;
 use Corex\Assistant\Admin\AssistantScreenSave;
@@ -140,6 +141,7 @@ final class AssistantServiceProvider extends ServiceProvider
             $c->make(ServiceCheck::class),
             $c->make(Pipeline::class),
             $c->make(MiddlewareResolver::class),
+            $c->make(AbilityCheck::class),
         ));
         $this->registerScreen();
     }

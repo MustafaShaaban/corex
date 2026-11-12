@@ -550,8 +550,68 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         foreach ($scope->roleKeys as $key) {
             $allowed[] = $this->ownerClause('role', $key);
         }
+        if (! $scope->flowsOnly) {
+            return $allowed;
+        }
 
-        return $allowed;
+        // An assigned-only inbox holds flow submissions only (spec 122, FR-013).
+        return ['relation' => 'AND',
+            ['key' => 'corex_flow_id', 'value' => 0, 'compare' => '>', 'type' => 'UNSIGNED'],
+            $allowed,
+        ];
+    }
+
+    /**
+     * The flows whose submissions this scope reaches, so an assigned-only inbox offers only those
+     * forms to filter by and names no other (spec 122, FR-013). One query, read on every load of
+     * the Submissions screen: the distinct flow IDs, never the submissions themselves.
+     *
+     * @return list<int>
+     */
+    public function flowIdsIn(SubmissionAccessScope $scope): array
+    {
+        global $wpdb;
+
+        $joins = ["INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id'"];
+        $where = [
+            "p.post_type = 'corex_submission'",
+            "p.post_status IN ('private', 'trash')",
+            'CAST(flow.meta_value AS UNSIGNED) > 0',
+        ];
+        if (! $scope->manageAll) {
+            $joins[] = "INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'";
+            $joins[] = "INNER JOIN {$wpdb->postmeta} owner ON owner.post_id = p.ID AND owner.meta_key = 'corex_owner_key'";
+            $where[] = '(' . implode(' OR ', $this->ownerConditions($scope)) . ')';
+        }
+
+        return array_map('intval', $wpdb->get_col(
+            "SELECT DISTINCT CAST(flow.meta_value AS UNSIGNED) FROM {$wpdb->posts} p "
+            . implode(' ', $joins) . ' WHERE ' . implode(' AND ', $where),
+        ));
+    }
+
+    /**
+     * The scope's owners as prepared SQL conditions on the `type` and `owner` meta joins: the
+     * same user, team and role matches as {@see scopeClause()}.
+     *
+     * @return list<string>
+     */
+    private function ownerConditions(SubmissionAccessScope $scope): array
+    {
+        global $wpdb;
+
+        $conditions = [$wpdb->prepare("(type.meta_value = 'user' AND owner.meta_value = %s)", (string) $scope->actorId)];
+        foreach (['team' => $scope->teamKeys, 'role' => $scope->roleKeys] as $type => $keys) {
+            if ($keys !== []) {
+                $conditions[] = $wpdb->prepare(
+                    '(type.meta_value = %s AND owner.meta_value IN (' . implode(', ', array_fill(0, count($keys), '%s')) . '))',
+                    $type,
+                    ...$keys,
+                );
+            }
+        }
+
+        return $conditions;
     }
 
     /**

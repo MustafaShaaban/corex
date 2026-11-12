@@ -110,6 +110,7 @@ final class CorexAbilityCatalog
             CorexAbility::MANAGE_SETUP,
             CorexAbility::MANAGE_SETTINGS,
             CorexAbility::MANAGE_RELEASES,
+            CorexAbility::VIEW_SCREENS,
         ];
 
         return [
@@ -283,6 +284,21 @@ final class CorexAbilityCatalog
                 [],
                 ['corex-settings-config'],
                 ['settings.save'],
+            ),
+            // Opens Overview, Settings and Insights without the controls that change them, for someone
+            // who answers questions about the site (spec 117, SHL-D3; Operations & Security left out,
+            // DECISIONS #422 amended 2026-11-11).
+            // Held by no role until an owner allows it.
+            self::ability(
+                CorexAbility::VIEW_SCREENS,
+                'See CoreX screens without changing them',
+                'Open Overview, Settings and Insights read-only.',
+                CorexAbility::GROUP_ADMIN,
+                CorexAbility::RISK_SENSITIVE,
+                false,
+                [],
+                ['corex-settings', 'corex-settings-config', 'corex-insights'],
+                [],
             ),
         ];
     }

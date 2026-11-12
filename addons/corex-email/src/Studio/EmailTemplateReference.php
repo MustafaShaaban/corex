@@ -22,6 +22,12 @@ final class EmailTemplateReference
         public readonly ?int $templateId = null,
         public readonly ?int $templateVersion = null,
         public readonly ?int $routeId = null,
+        /**
+         * The variables the email was drawn without (spec 120), kept on its attempt.
+         *
+         * @var list<string>
+         */
+        public readonly array $missingVariables = [],
     ) {
         if (preg_match('/^[a-z][a-z0-9-]*$/', $this->slug) !== 1
             || ($this->templateId !== null && $this->templateId < 1)

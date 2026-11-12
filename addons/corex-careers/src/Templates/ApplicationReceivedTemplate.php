@@ -11,6 +11,7 @@ namespace Corex\Careers\Templates;
 defined('ABSPATH') || exit;
 
 use Corex\Email\Template\EmailTemplate;
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Template\MailContext;
 
 /**
@@ -32,5 +33,11 @@ final class ApplicationReceivedTemplate extends EmailTemplate
     {
         return '<p>' . esc_html__('Hi', 'corex') . ' {{ name }},</p>'
             . '<p>' . esc_html__('Thank you for applying — our team will review your application and be in touch.', 'corex') . '</p>';
+    }
+
+    /** What the frame's footer says about why the person receives it (spec 120). */
+    public function kind(): string
+    {
+        return EmailKind::CONFIRMATION;
     }
 }

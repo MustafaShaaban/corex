@@ -50,8 +50,16 @@ final class SettingsScreen
      * The page's form and what the save said, as markup.
      *
      * @param list<string>|null $active
+     * @param bool              $viewOnly          drawn for the holder of the view ability (spec 117)
+     * @param bool              $siteAdministrator drawn for a site administrator (spec 117, FR-008)
      */
-    public static function draw(string $page, ?SettingsSaveResult $result = null, ?array $active = null): string
+    public static function draw(
+        string $page,
+        ?SettingsSaveResult $result = null,
+        ?array $active = null,
+        bool $viewOnly = false,
+        bool $siteAdministrator = true,
+    ): string
     {
         $container = Boot::app()->container();
         $renderer  = $container->make(SettingsPageRenderer::class, ['states' => self::states($active)]);
@@ -62,6 +70,8 @@ final class SettingsScreen
             $pages->url($page),
             wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false),
             $result,
+            $viewOnly,
+            $siteAdministrator,
         );
     }
 
@@ -71,14 +81,15 @@ final class SettingsScreen
      *
      * @param array<string,string|list<string>> $changes field name => value
      * @param list<string>|null                 $active
+     * @param bool                              $siteAdministrator saved by a site administrator (spec 117, FR-008)
      */
-    public static function save(string $page, array $changes, ?array $active = null): ?SettingsSaveResult
+    public static function save(string $page, array $changes, ?array $active = null, bool $siteAdministrator = true): ?SettingsSaveResult
     {
-        $posted = self::posted(self::draw($page, null, $active), $changes);
+        $posted = self::posted(self::draw($page, null, $active, false, $siteAdministrator), $changes);
 
         return Boot::app()->container()
             ->make(SettingsSaver::class, ['states' => self::states($active)])
-            ->save($page, $posted, get_current_user_id());
+            ->save($page, $posted, get_current_user_id(), $siteAdministrator);
     }
 
     /**

@@ -60,6 +60,8 @@ final class ScreenNames
             'corex-releases'            => __('Releases', 'corex'),
             'guides'                    => __('Guides', 'corex'),
             'corex-guides'              => __('Guides', 'corex'),
+            'assistant'                 => __('Assistant', 'corex'),
+            'corex-assistant'           => __('Assistant', 'corex'),
         ];
     }
 }

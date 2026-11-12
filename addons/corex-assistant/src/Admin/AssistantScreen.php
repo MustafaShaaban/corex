@@ -10,14 +10,16 @@ namespace Corex\Assistant\Admin;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\ScreenAbilities;
 use Corex\Admin\AdminPage;
 use Corex\Security\Admin\AdminGuard;
 
 /**
  * CoreX → Assistant (spec 129, FR-014): one screen in the CoreX rail, drawn in the CoreX shell, where the
  * owner switches the assistant on, gives it its look, orders and keys its services, sets the booking
- * hours and the limits, and checks the services. Administrators only; the save goes through
- * {@see AdminGuard} with its own nonce.
+ * hours and the limits, and checks the services. It opens for "Access CoreX admin", read from the
+ * one screen map (spec 117, FR-001), which site administrators hold; the save goes through
+ * {@see AdminGuard} with its own nonce, and a refused save is recorded under the screen.
  */
 final class AssistantScreen
 {
@@ -26,7 +28,6 @@ final class AssistantScreen
 
     private const SAVE_ACTION = 'corex_assistant_save';
     private const NONCE_FIELD = 'corex_assistant_nonce';
-    private const CAPABILITY = 'manage_options';
 
     private string $hook = '';
 
@@ -52,7 +53,7 @@ final class AssistantScreen
             'corex-settings',
             __('CoreX Assistant', 'corex'),
             __('Assistant', 'corex'),
-            self::CAPABILITY,
+            ScreenAbilities::abilityFor(self::SLUG),
             self::SLUG,
             [$this, 'render'],
             55,
@@ -83,7 +84,7 @@ final class AssistantScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized(self::CAPABILITY)) {
+        if (! $this->guard->authorized(ScreenAbilities::abilityFor(self::SLUG))) {
             echo $this->page->permissionDenied(self::SECTION); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- AdminPage escapes its markup.
 
             return;
@@ -115,7 +116,7 @@ final class AssistantScreen
 
     public function save(): void
     {
-        if (! $this->guard->verifiedPost(self::NONCE_FIELD, self::SAVE_ACTION, self::CAPABILITY)) {
+        if (! $this->guard->verifiedPost(self::NONCE_FIELD, self::SAVE_ACTION, ScreenAbilities::abilityFor(self::SLUG), self::SLUG)) {
             wp_die(esc_html__('This change could not be saved: the page was open too long, or you may not change these settings. Open the screen again and save from there.', 'corex'), '', ['response' => 403]);
         }
 

@@ -6,14 +6,24 @@ import CorexTime from '../../admin/components/CorexTime.js';
  * settings. What happens to mail is said above every tab; this is where it is changed.
  *
  * @param {Object}                  props
- * @param {Object}                  props.delivery    The delivery settings the Studio was sent.
- * @param {Object}                  props.outcome     What happens to mail on this site.
- * @param {string}                  props.settingsUrl The Mail settings screen.
- * @param {boolean}                 props.busy        Whether a change is being saved.
- * @param {(scope: string) => void} props.onScope     Saves the capture scope (`all` or `corex`).
+ * @param {Object}                  props.delivery             The delivery settings the Studio was sent.
+ * @param {Object}                  props.outcome              What happens to mail on this site.
+ * @param {string}                  props.settingsUrl          The Mail settings screen.
+ * @param {boolean}                 props.busy                 Whether a change is being saved.
+ * @param {(scope: string) => void} props.onScope              Saves the capture scope (`all` or `corex`).
+ * @param {boolean}                 props.canConfigureDelivery Whether this person may change how
+ *                                                             the site delivers mail: a site
+ *                                                             administrator (spec 117, US-EML-20).
  * @return {Element} The delivery panel.
  */
-function DeliveryHero( { delivery, outcome, settingsUrl, busy, onScope } ) {
+function DeliveryHero( {
+	delivery,
+	outcome,
+	settingsUrl,
+	busy,
+	onScope,
+	canConfigureDelivery,
+} ) {
 	const capturing = outcome && outcome.environment !== 'production';
 	const onlyCorex = outcome?.scope === 'corex';
 
@@ -27,9 +37,13 @@ function DeliveryHero( { delivery, outcome, settingsUrl, busy, onScope } ) {
 					<input
 						id="corex-email-capture-scope"
 						type="checkbox"
-						aria-describedby="corex-email-capture-scope-help"
+						aria-describedby={
+							canConfigureDelivery
+								? 'corex-email-capture-scope-help'
+								: 'corex-email-capture-scope-help corex-email-delivery-admin'
+						}
 						checked={ onlyCorex }
-						disabled={ busy || ! onScope }
+						disabled={ busy || ! onScope || ! canConfigureDelivery }
 						onChange={ ( event ) =>
 							onScope?.( event.target.checked ? 'corex' : 'all' )
 						}
@@ -52,7 +66,18 @@ function DeliveryHero( { delivery, outcome, settingsUrl, busy, onScope } ) {
 					</div>
 				</div>
 			) }
-			{ ! delivery.provider_configured && (
+			{ ! canConfigureDelivery && (
+				<p
+					id="corex-email-delivery-admin"
+					className="corex-email-app__note"
+				>
+					{ __(
+						'Turning delivery on or off, choosing its provider and choosing which mail is captured change how the whole site sends mail, so a site administrator does them.',
+						'corex'
+					) }
+				</p>
+			) }
+			{ canConfigureDelivery && ! delivery.provider_configured && (
 				<p>
 					<a className="button button-primary" href={ settingsUrl }>
 						{ __( 'Configure delivery', 'corex' ) }
@@ -126,6 +151,23 @@ function RecentTestSends( { attempts } ) {
 	);
 }
 
+/**
+ * A health check's status in words (spec 120, FR-038): the server sends `healthy` or `warning`.
+ *
+ * @param {string} status The check's status.
+ * @return {string} The status's label.
+ */
+export function healthStatusLabel( status ) {
+	switch ( status ) {
+		case 'healthy':
+			return __( 'Healthy', 'corex' );
+		case 'warning':
+			return __( 'Needs attention', 'corex' );
+		default:
+			return __( 'Unknown', 'corex' );
+	}
+}
+
 function HealthSummary( { checks } ) {
 	return (
 		<section className="corex-surface corex-email-app__table-card">
@@ -148,7 +190,7 @@ function HealthSummary( { checks } ) {
 									check.template_id
 								) }
 							</strong>
-							<span>{ check.status }</span>
+							<span>{ healthStatusLabel( check.status ) }</span>
 						</li>
 					) ) }
 				</ul>
@@ -157,7 +199,13 @@ function HealthSummary( { checks } ) {
 	);
 }
 
-export function OverviewPanel( { data, settingsUrl, busy, onScope } ) {
+export function OverviewPanel( {
+	data,
+	settingsUrl,
+	busy,
+	onScope,
+	canConfigureDelivery = true,
+} ) {
 	return (
 		<div className="corex-email-app__stack">
 			<DeliveryHero
@@ -166,6 +214,7 @@ export function OverviewPanel( { data, settingsUrl, busy, onScope } ) {
 				settingsUrl={ settingsUrl }
 				busy={ busy }
 				onScope={ onScope }
+				canConfigureDelivery={ canConfigureDelivery }
 			/>
 			<DeliveryMetrics counts={ data.counts || {} } />
 			<RecentTestSends attempts={ data.recentTestSends } />

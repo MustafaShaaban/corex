@@ -18520,6 +18520,272 @@ screen-reader pass is not called accessible in the release notes.
 **Not chosen.** *A CI check that a release record exists*: there is no release record file to check yet, and
 inventing one belongs to the release that first needs it.
 
+## #420 — Every CoreX screen, route and save action asks for the CoreX ability that names it, read from one map
+
+**Date:** 2026-10-23. **Branch:** `spec/117-abilities`. **Spec:** 117, User Story 1 (US-ACC-01). **Mode:** CoreX
+Framework. Decided under the owner's 2026-10-21 mandate (ACC-D7: move them).
+
+**Why.** An Allow in the role matrix or an approved request should open the screen it names. Ten CoreX screens asked
+for site administration instead, so the matrix promised what it did not do.
+
+**Decided.**
+
+1. **`Corex\Access\ScreenAbilities`** (corex-core) maps each CoreX page slug to its section, its ability and whether
+   it opens read-only (#422). The menus, the render checks, `AdminPage::requestAbilityFor()` and the Access screen's
+   requirements card read it. Overview, Add-ons and Insights: `corex_manage_admin`; Settings and the captcha test:
+   `corex_manage_settings`; Forms & Flows (screen, the flow gateway and its middleware): `corex_manage_forms`; Email
+   Studio: `corex_manage_email` (#423); Operations & Security, its login protection route, the mode and preview link
+   handlers and the Coming soon toolbar link: `corex_manage_operations`; Access & Abilities and every access route:
+   `corex_manage_access`; Blog Pro: `corex_manage_blog` (`BlogProPermissions::BASE`, as #379 said stage 3 would);
+   Setup Wizard, its routes and its apply: `corex_manage_setup`; the activity routes and the kit notice:
+   `corex_manage_admin`. The two Data handlers nothing posts to ask for the Data abilities. Guides for Overview,
+   Add-ons, Performance and Insights require `corex_manage_admin`; Blog Pro's guide `corex_manage_blog`.
+2. **Production and Maintenance also need `corex_run_dangerous_actions`**, checked in `OperationsModeController`
+   before the service runs; the command line has no person and keeps its rules.
+3. **The inbox's retention forms** appear only to people their handler accepts: saving needs
+   `corex_manage_settings`, applying `corex_run_dangerous_actions`.
+4. **Refusals are recorded.** `Corex\Access\AbilityCheck::allows()` (routes) and `AdminGuard::verifiedPost()` given
+   a section (forms) publish `corex_access_refused` with kind `action` and the screen; `AccessAuditLog` counts it
+   under the screen's slug by #377's rule. An action keeps the add-ons and corex-forms free of the Access classes.
+5. **The rail** reads the CoreX submenu under its real parent (`$_wp_real_parent_file`), so a person without
+   "Access CoreX admin", whose CoreX menu WordPress points at their first screen, sees only their screens.
+6. **The denied page** names the ability by its translated name and no longer says the screen needs site
+   administration.
+
+**Not chosen.** *Removing the `ability || manage_options` checks of Data, Submissions and the widgets*: with #421 the
+ability alone answers the same, and the change would touch screens this release does not otherwise change.
+
+**Verified (for #420 to #427).** Pest unit: `ScreenAbilitiesTest`, `AbilityNamesTest`, `AccessMatrixTest`
+(rewritten), `AccessPolicyTest` and `AccessServiceTest` additions; the whole unit suite, 3357 passing. Pest
+integration on a WordPress of the branch's own: `ScreenAbilitiesAccessTest` (an editor allowed one ability reaches
+its routes and is refused the others with 403, the refusal counted under the screen, a granted person opens Email
+Studio, an administrator with a stored Deny keeps all sixteen, the view ability reads and is refused a change, Blog
+Pro needs its ability, a Settings save by a non-administrator leaves the delivery fields), `AccessHistoryTest`, the
+updated `BlogProPermissionMatrixTest` and `AccessAuditLogWritesTest`; the whole suite, all passing but
+`LoginSlugAvailabilityTest`'s rewrite-route case, which fails on a fresh install without these changes too. Jest
+`accessMatrixGrid.test.js`, `emailStudioDelivery.test.js`, the updated `accessChanges.test.js`, and the whole suite
+(1440). Playwright `abilities.spec.js` (5: the one-ability menu and 403, read-only Settings, the Maintenance refusal,
+the grid at 400px with Edit, the history filter) and the touched specs.
+
+**Client impact.** Administrators see no change. Past grants and matrix Allows start opening their screens. Editors
+and writers who used Blog Pro since v0.47.0 need "Manage Blog Pro" allowed for their role.
+
+**Amended 2026-11-11 (merge of main into spec 117, review of PR #438).** Main brought three things that asked for
+site administration, and they now follow the map like every other screen. Decided by the orchestrator under the
+owner's delegation.
+
+1. **The Assistant (spec 129)** is in `ScreenAbilities` as `corex-assistant`, needing "Access CoreX admin", not
+   read-only, and in `ScreenNames`. Its menu, its render check, its save (`verifiedPost` with the screen, so a refused
+   save is counted) and `POST corex/v1/assistant/check` (through `AbilityCheck`, and the route's `auth:` middleware)
+   read it. No new ability. Only site administrators hold "Access CoreX admin" (it is locked), so administrators see
+   no change and nobody else gains the screen.
+2. **Settings' provider test and Corex Media's library conversion routes** (`settings/providers/{provider}/test`,
+   `media/conversion`, `media/conversion/advance`, `media/conversion/cancel`, spec 119) ask for "Manage settings"
+   through `AbilityCheck` under `corex-settings-config`, as the captcha test does, and record a refusal under
+   Settings.
+3. **A refusal is recorded once.** WordPress asks every permission callback of a matched route again, once per
+   method, to build the `Allow` header (`rest_send_allow_header()` on `rest_post_dispatch`). `AbilityCheck` publishes
+   nothing during that filter, so a refused call is no longer counted twice and a reader who opened a read route is
+   not recorded as refused its write method. `AccessAuditLog` also counts a refusal of one screen and ability once
+   per request (a REST dispatch starts a request of its own, on `rest_pre_dispatch`). `AdminGuard` names the kind
+   with `AbilityCheck::KIND_ACTION`.
+
+## #421 — Site administrators hold every CoreX ability, and the matrix cannot deny a role that administers the site
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 1. Decided under the owner's 2026-10-21 mandate (ACC-D11).
+
+**Why.** Once screens ask for abilities, a Deny on the Administrator role would hide screens from every
+administrator. Owners must keep everything they have.
+
+**Decided.**
+
+1. `AbilityCompatibility` gives anyone holding `manage_options` every ability and returns before applying any role
+   effect. A super administrator passes every check before the filter, as WordPress decides.
+2. `AccessPolicy::preview()` takes `administersSite`; a Deny on such a role is refused with blocker
+   `site_administrator_role`. `AccessService` asks the new `Corex\Access\SiteAdministration` (implemented by
+   `WpSiteAdministration`: the role has `manage_options`), an optional last constructor argument.
+3. A Deny stored before is kept in the table, not applied, and listed once on the Access screen's Overview
+   (`AccessMatrix::ignoredDenies()`); the grid shows such a cell as "Allowed through site administration".
+
+**Not chosen.** *Deleting stored Denies on upgrade*: nobody chose that.
+
+## #422 — "See CoreX screens without changing them" opens four screens read-only
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 6 (US-SHL-06). Decided under the owner's 2026-10-21 mandate (SHL-D3).
+
+**Decided.**
+
+1. **`corex_view_screens`**, group CoreX admin, sensitive, implied by `corex_manage_admin`, requestable, held by no
+   role. `ScreenAccess::mode()` answers manage, view or none; `menuCapability()` registers the menu entry with the
+   ability this person holds, because WordPress takes one capability per entry and checks it again on opening.
+2. **Overview, Settings, Operations & Security and Insights** render for it with `AdminPage::open(..., readOnly:
+   true)`: a "Read only" chip in the title, a sentence (`#corex-readonly-note`) naming the ability that makes changes,
+   and the request form in a disclosure, or the matrix sentence where the ability cannot be requested.
+3. **`corex-read-only.js`** (corex-core, enqueued on CoreX screens, inert elsewhere) marks every input, select,
+   textarea and button of the content `aria-disabled`, `readonly` where it applies and described by the sentence,
+   and stops presses, value-changing keys and submits; it watches the content, so the React islands are covered.
+   Links and tabs keep working. Controls stay focusable, so their reason is announced.
+4. **Read routes accept it, writes do not**: `AbilityCheck::allowsReading()` for `GET insights*` and
+   `GET security/login-protection`; runs, saves and the Settings form refuse and are recorded. A read-only Settings
+   page carries no nonce, and a save posted anyway is refused with the standard refusal (`wp_die`, 403).
+
+**Not chosen.** *`disabled` on every control*: not focusable, so nothing could say why.
+
+**Amended 2026-11-11 (review of PR #438).** Decided by the orchestrator under the owner's delegation.
+
+1. **Operations & Security is no longer read-only.** Its read-only view still printed its forms and their nonces,
+   and the screen shows the login policy, the trusted proxies and locked-out accounts by name, which a reader of
+   CoreX screens has no need of. "See CoreX screens without changing them" now opens **Overview, Settings and
+   Insights**; whoever lacks "Manage operations and security" is refused Operations & Security and
+   `GET security/login-protection` as before spec 117. The catalogue's description says so.
+2. **A locked ability has a sentence of its own.** Overview and Insights need "Access CoreX admin", which only site
+   administrators hold and nobody can be given or ask for: their read-only sentence says that
+   (`RequestableAbilities::isLocked()`), with no request form and no mention of the role matrix.
+3. **Settings drawn read-only** passes `viewOnly` to `SettingsPageRenderer::render()`, which draws the page as it
+   draws a page whose add-on is off (fields read-only, no save bar, provider tests or add-on panels) without the
+   add-on's "is off" notice, and with no nonce.
+4. **`corex-read-only.js` leaves alone what only moves around the screen**: a form with `method="get"`, anything
+   inside `data-corex-readonly-skip` (filters, pagers, navigation), and the browser's own keys (Tab, reload, copy,
+   anything held with Ctrl, Alt or Cmd, the caret in a read-only text box). It stops Enter, Space, value-changing keys
+   and `cut` as well as `paste`.
+5. **The Overview and Insights guides** ask for the view ability, which "Access CoreX admin" implies, so they open for
+   whoever can open those screens.
+
+## #423 — Email Studio opens for "Manage Email Studio"; how the whole site delivers mail stays with site administration
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 7 (US-EML-20, CR-014). Reverses #116 (5) under the owner's
+2026-10-21 mandate.
+
+**Decided.** The screen and its twelve routes ask for `corex_manage_email`. The delivery provider and live delivery
+(Settings → Mail) carry `site_admin: true`: `SettingsForm` draws them disabled with a sentence for anyone without
+`manage_options`, and `AdminDashboard::maybeSave()` leaves them as they were for such a person. Email Studio's
+"Configure delivery" is replaced for them by a sentence (`canConfigureDelivery`). The failure notification's link
+already carries `corex_manage_email` and is withheld from anyone without it. CoreX stores no mail provider secret.
+
+**Amended 2026-11-11 (merge of main's spec 119 Settings).** The rule moved with the code that saves: main's
+`SettingsSaver::save()` takes `siteAdministrator`, and for anyone else its editable fields leave out those marked
+`site_admin`. The skip is required, not tidy: the saver reads an unposted switch as off, so without it a save by a
+holder of "Manage settings" would turn live delivery off. A post made by hand that sends `mail_provider` changes
+nothing either. `SettingsForm::rows()` draws the two fields read-only with the sentence; `SettingsForm::render()`
+(option pages) is unchanged. `AdminDashboard::maybeSave()` refuses a save from anyone without "Manage settings"
+with the standard refusal (`wp_die`, 403) and records it before the nonce is checked.
+
+## #424 — The role matrix is a grid of resolved states, with today's editor behind "Edit"
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 2 (US-ACC-02).
+
+**Decided.** `AccessMatrix::editableCorexMatrix()` sends each role's `administers`, and per cell its `state`
+(`allowed_set`, `denied_set`, `allowed_admin`, `not_granted`, `locked`), `reason` (`site_administrator`,
+`locked_definition`) and `ignoredDeny`, with translated row, area and risk names. `AccessMatrixGrid.js` draws the grid
+by area with the ability column sticky inside a frame that scrolls on its own; each cell is a mark (hidden from
+screen readers) and its words; a cell that cannot be set is focusable and described by a tooltip. "Edit" opens the
+editor for that role; an applied change updates the grid. The WordPress capability grid and the tab's own audit list
+are gone.
+
+**Amended 2026-10-23 (quality checks).** At 600px and narrower the grid folds into one list per ability: the roles and
+their Edit buttons first, then each ability with every role's state, each cell carrying its role's name
+(`.corex-access__cell-role`, hidden at wider widths, where the column header names it). Spec 116's checks count any
+table wider than a 375px screen, and a frame that scrolled on its own was one. The grid's secondary text, the
+history's times and the matrix headers use `--corex-admin-text-muted`, which meets AA in both themes;
+`--corex-admin-text-subtle` does not. US-ACC-02 scenario 8, FR-017 and SC-003 are amended to match.
+
+## #425 — The overview counts CoreX abilities as the matrix resolves them
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 3 (US-ACC-03).
+
+**Decided.** Role cards count the abilities in an allowed state out of all sixteen, with `number_format_i18n` and
+plural forms; roles WordPress does not ship read "Added by a plugin or the site". The groups card lists every ability
+by area with its risk in words and Locked. "Your permissions" lists what you hold and how: site administration, your
+role (the first whose matrix Allow gives it), granted to you until a date (a standing grant), or your account. The
+requirements card is built from `ScreenAbilities`. The capability groups of #114 point 4 are gone.
+
+## #426 — One access history on the Audit log tab
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 4 (US-ACC-04).
+
+**Decided.** `AccessHistory` reads the activity stream's access area (the newest thousand events) and the counted
+refusals, turns each into who, whom or what, when, a kind label and a sentence, sorts newest first, filters by kind
+and person, and pages by 25. The tab is drawn on the server with a GET filter form and day headings. Two new activity
+kinds: `access.role.refused` (with the blockers) and `access.request.expired` (when somebody tries to decide a request
+that ran out). The empty state names what is recorded and how long (180 and 30 days).
+
+**Not chosen.** *A new history table*: both sources already exist and are pruned on their own terms.
+
+## #427 — Ability, area and risk names are given in the site's language by one lookup
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 5 (US-ACC-05).
+
+**Decided.** `Corex\Access\AbilityNames` translates each shipped ability's name and description, each area and each
+risk at the moment it is shown, with literal strings; an ability registered by someone else keeps its own text. The
+matrix, overview, grants, requests, approval dialog, denied page and refusal messages use it; a key appears only as a
+`title`. A refused role change says why in words (`AccessService::refusalReason()`). The approval phrase stays the key
+(#376).
+
+## #428 — What only a site administrator may change in Access & Abilities
+
+**Date:** 2026-10-23. **Branch:** `spec/117-abilities`. **Spec:** 117, FR-011a (added with this decision). **Mode:**
+CoreX Framework. Decided under the owner's 2026-10-21 mandate, on review of PR #438.
+
+**Why.** Spec 117 opened the Access screen to holders of "Manage access". Some changes there decide who controls the
+site, and they stay with the people who already control it.
+
+**Decided.**
+
+1. **Four changes need site administration** (`manage_options`; on a network a super administrator holds it):
+   allowing a Critical ability for a role or setting one to Inherit (blocker `critical_needs_site_administrator`);
+   approving a request for a Critical ability (the same blocker, in the approval's preview); any change to a role the
+   person making it holds (`own_access_needs_site_administrator`); and deciding, approving or denying, one's own
+   access request (`own_request_needs_site_administrator`). Denying a Critical ability for a role one does not hold
+   stays open to a holder of "Manage access": it narrows. Locked abilities stay refused to everyone (#421).
+2. **`AccessPolicy::preview()`** takes `actorAdministersSite`, false unless said, so a caller that does not ask gets
+   the narrower answer. `AccessService` asks `SiteAdministration::userAdministersSite()` (new;
+   `WpSiteAdministration` answers with `user_can($id, 'manage_options')`) and, with no `SiteAdministration` given,
+   treats nobody as a site administrator.
+3. **A refused decision is recorded** in the activity stream's access area as `access.request.refused`, with the
+   reasons, and the Audit log tab lists it as "Decision refused". A refused role change was recorded already
+   (`access.role.refused`, #426). The rules are checked before the note and the confirmation, so the refusal says what
+   the rules say whatever was typed.
+4. **The dialogs say why** in words: the role editor's preview and the approval dialog list each blocker's reason.
+
+**Stored Allows.** Critical abilities Allowed for a role before this release stay Allowed and are applied, as before
+(`AbilityCompatibility`). Only a site administrator could store them (the Access routes asked for `manage_options`
+until spec 117), and they are now the only way such a role holds one. The release notes ask owners to review them.
+
+**Not chosen.** *Ignoring stored Critical Allows until a site administrator confirms them again*: it would take away
+access owners chose on purpose, with no screen yet to confirm it from.
+
+**Verified.** Pest unit `AccessPolicyTest` (Critical Allow and Inherit refused, Critical Deny allowed, own role
+refused, administrator allowed) and `AccessServiceTest` (each refusal recorded; own request refused for approve and
+deny; someone else's request decided; administrator decides their own; no `SiteAdministration` means no); Pest
+integration `ScreenAbilitiesAccessTest` (the same through the routes, as a holder of "Manage access" who is not a
+site administrator, and as an administrator) and `AccessHistoryTest` (the history's sentence).
+
+## #429 — Three loose ends of spec 117: the old CSV export, refusals of three more routes, and the capture switch
+
+**Date:** 2026-10-23. **Spec:** 117, FR-005, US-EML-20. Decided under the owner's 2026-10-21 mandate, on review of PR
+#438.
+
+**Decided.**
+
+1. **The `admin_post_corex_data_export` handler is removed** with `DataExportController` and `CsvWriter`. Nothing
+   linked to it since the Data screen's exports became runs (spec 109), and it read a source without the checks those
+   runs make for withheld models and personal data. The Data screen's export is the only one.
+2. **The flow gateway, the activity routes and Blog Pro record their refusals** through `AbilityCheck`, under Forms &
+   Flows, Overview and Blog Pro. Blog Pro records only a refusal for want of "Manage Blog Pro"; one WordPress's own
+   permission for a post or comment decides is not an access refusal.
+3. **Email Studio's "Capture only CoreX mail" switch** (spec 113, merged into this branch) stays with site
+   administration like live delivery (#423): its route asks for "Manage Email Studio" and `manage_options`, and the
+   overview shows the switch unavailable, with the sentence, to anyone else. It decides whether other plugins' mail
+   leaves a development or staging site.
+4. **The guide names what two abilities reach**: "Manage setup" runs a kit that activates plugins and can set the
+   front page; "Manage Email Studio" lists captured emails and sends test mail from the site's address.
+5. **A captured email's content is shown only to site administrators** (amended 2026-10-26). `GET
+   corex/v1/email-studio` sends a capture's body, plain text and headers only to someone with `manage_options`;
+   anyone else gets its subject, recipients, path, state and time, with `content_withheld: true`, and the log says
+   "Only a site administrator can open a captured email." No other route sends a capture's content. Verified by
+   `ScreenAbilitiesAccessTest` (a holder of the ability who is not a site administrator gets no content and a 403 on
+   the capture switch; an administrator gets the body) and Jest `emailStudioDelivery.test.js`.
+
 ## #440 — Settings is seven pages, each a form of its own that redirects after a save
 
 **Date:** 2026-10-23. **Branch:** `spec/119-settings-save`. **Spec:** 119, US-SET-01 (SET-D1). **Mode:** CoreX
@@ -19129,6 +19395,488 @@ package" to the whole installation.
 link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
 only when it is needed.
 
+## #450 -- One frame, `EmailFrame`, draws every email CoreX draws; `Layout` is removed
+
+**Date:** 2026-10-26. **Branch:** `spec/120-designed-emails`. **Spec:** 120, story 3 (US-EML-05). **Mode:** CoreX
+Framework.
+
+**Why.** CoreX drew its emails in two frames: `Layout` for Studio and code templates, `StandardEmailDesign` for
+replies, which was the only one the Mail settings reached. `Layout` never showed the logo when a layout filled its
+header region (the shipped ones do) and never applied an empty accent (`??` does not fall back from `''`). A
+non-contact form notification had no frame at all.
+
+**Decided** (EML-D4, under the owner's 2026-10-21 mandate).
+
+1. `Corex\Email\Design\EmailFrame` takes an `EmailContent` (which gains `kind` and `links`, last and optional) and
+   draws it in the site's design with the site's brand, in the email's language. `TemplateRenderer` and
+   `EmailTemplateService` draw through it; `ReplyComposer` too. `Layout` is removed.
+2. Kinds (`EmailKind`): reply, notification, confirmation, newsletter, account, message. Each but message has a
+   footer line saying why the person receives the email. The footer links to the site's privacy page where one is
+   published, and to what the sender adds (a newsletter's Unsubscribe).
+3. The accent: a Studio layout's own accent, else Settings → Mail's, else the theme's `primary` when it is
+   `#rrggbb`, else CoreX's. The logo is always the band's. A Studio layout arranges the body inside the card; a
+   header or footer line that only says the site's name is dropped (the shipped partials say exactly that).
+4. **"Manage preferences"** is linked only where a site gives an address through
+   `corex_newsletter_preferences_url`: corex-newsletter has no preferences page, and the owner's no-dead-UI rule
+   rules out a link to one that does not exist. Decided under the owner's 2026-10-21 mandate.
+5. The standard design styles a template's `<h1>`, `<h2>` and `<a class="button">` (the text's colours turned
+   round, so a button keeps its contrast whatever the accent), and the message cell carries the type, so a table
+   in a template reads in it.
+
+**Verified.** Pest unit `EmailFrameTest`, `TemplateRendererTest`, `EmailTemplateEditorTest`, `EmailDesignGeneratorTest`
+(the generated design still equals the standard one); integration `EmailLanguageTest`, `ReplyEmailDesignTest`,
+`SiteEmailBrandTest`, `EmailWordsLanguageTest`.
+
+**Client impact.** Every CoreX-drawn email looks different; finished messages do not change (#451).
+
+**Amended 2026-11-11** (review of PR #447). (a) Point 4 is kept in the drawing, not only in the partial: a link
+whose address is made only of variables that are all empty is left out with its words, and the paragraph, item or
+heading it leaves empty with it (`EmailTemplateService::links()`; only an element the left-out link emptied, and a
+table cell is kept, empty, so a layout's spacer cells stay), so the newsletter layout's `{{> preferences }}` no
+longer drew `<a href="">Preferences</a>` and `Preferences ()` in every Double opt-in and Newsletter welcome; a
+hand-written plain-text line that is only a label for empty values goes the same way. (b) A code template's plain text
+ends with its footer links, label and address, as its HTML footer has them (`EmailFrame::plainFooter($kind, $links)`):
+the newsletter's Unsubscribe. (c) A reply's plain text ends as it did before this release, with the footer's line only
+(`EmailFrame::plainSignature()`, FR-016); its HTML keeps the reason line of point 2. Verified: `EmailTemplateLinksTest`,
+`TemplateRendererTest`, `EmailDesignTest`.
+
+## #451 -- A site's design draws replies unless it says it accepts a kind; finished messages are never framed
+
+**Date:** 2026-10-26. **Spec:** 120, story 3.
+
+**Why.** Muva's design says on its band that the email is a reply. Given a lead or a newsletter it would mislabel
+it. Both clients hand finished messages to the shared mailer, with their own From; Perego's FluentSMTP routes on it.
+
+**Decided.**
+
+1. `KindAwareEmailDesign extends EmailDesign` adds `accepts(string $kind)`. A design implementing only
+   `EmailDesign` is a reply design; any other kind is drawn in the standard design, with no failure reported.
+2. A `MailRequest` without a template name is a finished message: no frame, no added plain text, its own From.
+3. Code templates gain `kind()` and `links()`. The non-contact code-defined form notification becomes the code
+   template `form-notification`, drawn from the answers; the body it hands the `wp_mail()` floor is plain text,
+   one answer per line (it was HTML sent as plain text).
+
+**Verified.** `SiteEmailDesignTest` (two new cases), `SendEmailListenerTest`, `NotificationFileLinkTest`,
+`DesignedEmailsTest` (a finished message captured unchanged).
+
+**Amended 2026-11-11** (review of PR #447). Point 3 is for a new site. FR-023 keeps an upgraded site's code-defined
+form notifications as they were: the contact form through its template, every other form as a finished HTML message
+(no template), and the same HTML body on the `wp_mail()` floor. Which a site is, is decided once, the first time this
+release runs, and stored (`corex_forms_notification_style`, `Corex\Forms\Listeners\NotificationStyle`): `as_before`
+where the site has a stored form submission, `designed` where it has none (it has sent no form notification, so none
+changes); a site with nothing stored yet sends as before. Verified: `SendEmailListenerTest`,
+`CodeFormNotificationStyleTest`.
+
+## #452 -- The preview and the test send are drawn by the code that sends
+
+**Date:** 2026-10-26. **Spec:** 120, story 1 (US-EML-02).
+
+**Why.** The preview was put together in the browser with "Sample key" values and no frame; the test send posted
+the typed HTML, so `{{ site.name }}` arrived literally.
+
+**Decided.**
+
+1. `POST /email-studio/templates/{id}/preview` draws the draft being edited (saved or not) with
+   `EmailTemplateService::render()`, with samples from `EmailSampleValues` (real site name and address, "Jane
+   Cooper", "jane@example.com") that the request may override for that draw only, and an optional `rtl` direction.
+2. `POST /email-studio/test` with `template_id` draws the same email, puts "[Test] " before its subject and sends it
+   with the template's From and plain text. The answer says what happened in words built from the attempt's state
+   and the delivery decision's code, with the reason and `&tab=logs#corex-attempt-<id>`. The old free-body test is
+   kept for a caller that posts one.
+3. A template that cannot be drawn answers 422 with each field's sentence naming the variable or partial; the
+   client shows them in place of the email and offers no test. An invalid address is refused before drawing.
+4. The preview's widths (600 and 375 pixels) are the email's, written in the component, not screen tokens.
+
+**Verified.** Integration `DesignedEmailsTest` (captured HTML and plain text equal the preview); Jest
+`emailStudioPreview.test.js`, `emailStudio.test.js`; Playwright `email-studio-preview.spec.js`.
+
+**Amended 2026-11-11** (review of PR #447). (a) The preview samples the variables of the draft's layout as well as
+its own, so a newsletter footer's links are drawn with a sample (FR-002). Verified: `DesignedEmailsTest`. (b) Test send
+asserts in the browser on a production-type site through the suite's `X-Corex-E2E-Mail: capture` header; a test send
+on a development or staging site is captured by `EmailStudioService::decide()`, with no way round it.
+
+## #453 -- A Studio email leaves from its template's sender, with its plain text, after the header checks
+
+**Date:** 2026-10-26. **Spec:** 120, story 2 (US-EML-03).
+
+**Decided.**
+
+1. `EmailRouteMessageFactory::message()` builds every Studio send (routes and flow bindings, the inbox resend, the
+   test send, designed emails) with the template's From address and From name when set, and its plain text. The
+   log's resend takes the From of the template version its attempt names and the plain text of the typed body.
+2. The From address is optional; an invalid one, or a From name with a line break, is refused with a sentence that
+   names it. A From address on another domain answers the transport warning's sentence as a save warning.
+3. `EmailStudioService` runs the `HeaderGuard` over subject, From, From name and Reply-To before deciding, as
+   `MailService` does.
+4. The automatic plain text is `PlainText::of()` of the arranged body (headings, tables and rows now read as
+   lines) with the frame's footer; a hand-written one merges values as they are, so "under <500 EGP" is whole.
+
+**Verified.** `EmailTemplateVariablesTest`, `DesignedEmailsTest` (From header on a delivered send).
+
+**Amended 2026-11-11** (review of PR #447). No template's From changes with the update. Before spec 120 a template's
+stored From was validated and never sent; point 1 would have started sending it, so a placeholder address or a mailbox
+the site's SMTP plugin has no connection for would have been used from the first email after the update. Each
+revision stored when a site that had Email Studio before (`corex_email_studio_defaults_version` set and below 4)
+updates is marked `sender: site` by `EmailTemplateRepository::keepSiteSender()`, once, before the defaults go in;
+`EmailTemplateVersion::sentFrom()` and `sentFromName()` answer null for a marked revision, so it leaves from Settings →
+Mail's sender as before, for a route, a flow binding, a designed email and the log's resend. A revision saved after
+the update (the owner saving the template, a reset, a new template, a default) is not marked and leaves from its own
+From. Decided under the owner's 2026-10-21 mandate and SAFE-D2. Verified: `DesignedEmailsTest` (an upgraded template
+sends from the site's sender, a new one from its own, the upgraded one from its own once saved again).
+
+**Client impact** (amended). Muva and Perego: a template made in Email Studio before the update keeps its sender until
+it is saved; check its From before saving it.
+
+## #454 -- Variables: one catalog by the emails that supply them; any form field; missing ones left out and named
+
+**Date:** 2026-10-26. **Spec:** 120, story 5 (US-EML-07; EML-D10).
+
+**Decided.**
+
+1. `EmailVariableCatalog` lists the configured `mail.variables` plus what each kind of email supplies (every email,
+   form emails, newsletter, account, access requests); a key no email supplies is listed apart. A placeholder is
+   known when it is in the catalog or is `submission.<field>`; an unknown one is refused, named. The declared keys
+   are read from the content: the comma-separated field is gone.
+2. `{{ form.answers }}` is drawn by CoreX from the context's answers (label, value, a file's link to the
+   submission), escaped. A paragraph, list item or heading whose values are all empty and that holds nothing but
+   a label, or a table row whose values are all empty, is left out; any other empty value is written as nothing.
+   The keys are stored on the attempt (`missing_variables`) and the log says "Sent without: …".
+3. Save warnings name each variable the template's emails do not supply: its default kind, its routes' triggers,
+   and flows that bind it, asked through a new corex-core contract `MailTemplateUsage` that corex-forms binds.
+4. `MailTemplateCatalog` entries gain `variables`. A flow refuses to publish a binding whose template uses a
+   variable the flow does not supply (a field it lacks counts) unless the binding has `accept_missing`, which the
+   Emails tab sets with "Send it without them".
+
+**Verified.** `EmailTemplateVariablesTest`, `FlowEmailDefaultsTest`, Jest `emailsTab.test.js`, `DesignedEmailsTest`.
+
+**Amended 2026-11-11** (review of PR #447). (a) After the values are merged, `Corex\Email\Security\AddressGuard`
+reads every tag with WordPress's `WP_HTML_Tag_Processor`, as a browser reads it (unquoted attributes, a link never
+closed, another attribute before `href`, an `<area>`, an `<img src>`), and takes off an `href` that is not http,
+https, mailto or tel, or a `src` that is not http or https, spaces and control characters in the scheme ignored; the
+element keeps its words (FR-030). A pattern over the markup was bypassed by each of those shapes. The container
+gives the guard to `EmailTemplateService`; a service built without WordPress (a unit test) has none, so the check is
+proven in integration (`MergedAddressTest`). (b) A variable a designed
+email (newsletter, account) was sent without is named on its row of the shared mailer's log
+(`corex_mail_missing_variables`), as Email Studio's rows name it (FR-028). Verified: `EmailTemplateLinksTest`,
+`DesignedEmailsTest`.
+
+**Amended 2026-11-11** (merge with spec 122). The email variables a developer registers for flow emails (spec 122,
+FR-023, declared on `corex_email_variable_schema`) are read by `EmailVariableCatalog` when it is first asked, and
+are supplied by form emails: the declaration says which emails supply a variable (`emails`), so the Variables tab
+lists them with the form emails, a save gives no warning for them, and a flow publishes a binding that uses them
+without "Send it without them" (`FlowEmailVariables::missing()` and the Emails tab count them). Verified:
+`EmailTemplateVariablesTest`, `FlowEmailDefaultsTest`, Jest `emailsTab.test.js`.
+
+## #455 -- Default templates: active on a new site, drafts on an upgraded one, reset as a new version
+
+**Date:** 2026-10-26. **Spec:** 120, story 4 (US-EML-01; EML-D5).
+
+**Decided** (two gaps under the owner's 2026-10-21 mandate).
+
+1. `DefaultEmailTemplates` holds each default's shipped content, written in the site's language when installed.
+   Active where the site had no Email Studio defaults before (`corex_email_studio_defaults_version` empty), drafts
+   on an upgraded site; the choice is kept (`corex_email_default_templates_state`) so a default an add-on adds
+   later follows it, and installed slugs are kept (`corex_email_default_templates`). A slug a site's own template
+   uses is left alone. Records are made under the signed-in user or the first administrator.
+2. Reset saves the shipped content as a new version, activated when the template is active.
+3. A new flow with no bindings of its own gets "Admin notification" (to the admin address, Reply-To `email`) and
+   "Contact confirmation" (to `email`) when both are active. The contact confirmation has no name in it: a form
+   need not ask for one.
+4. **Gap: "a site that turns the defaults off still notifies its admin".** Read as: when a flow's team
+   notification has nothing to send (its template has no active version, or no recipient resolves), CoreX's own
+   `form-notification` goes to the admin. A binding switched off sends nothing, as today, so no upgraded site gains
+   an email.
+5. A submitter confirmation with no address is recorded `no_recipient`, not a failed email.
+6. TC-EML-01-06's "the same notification as before" is read as the same recipient, subject and words: the
+   contact notification is in the one frame from this release (#450).
+
+**Verified.** `DefaultEmailTemplatesTest`, `DefaultEmailsSentTest`, `FlowEmailDefaultsTest`.
+
+**Amended 2026-11-11** (review of PR #447). (a) Point 3: only a flow made from nothing gets the two emails, when
+the New flow form asks for them (`default_emails`); a flow created through the API from a configuration of its own (a
+copy, an import) keeps the emails it has. (b) Point 4 applies to a team email bound to a template: one routed by its
+trigger that no route matches sends nothing, as before, so no upgraded site gains an email. (c) SC-005 on a site that
+is not set up to send: Email Studio's own rule refuses a flow's emails on a production site with no provider or with
+live delivery off, which is how a new site starts. That refusal is not a failed email: the result says so
+(`MailResult::PROVIDER_NOT_SET_UP`, `notSetUp()`), and the email stage records it as a flow with no email was recorded,
+`not_configured`, with the reason, instead of failing the submission's email stage and sending the failure alerts. A
+new site sends the two emails once a provider is chosen and live delivery is on, or on a development or staging site,
+where they are captured. Sending them through the shared mailer instead was left for the owner (a flow email that
+leaves without the site's provider is a new rule). Verified: `FlowEmailStageOutcomeTest`, `DefaultEmailsSentTest`
+(which now switches on the defaults it needs, so it runs on an upgraded install too), Jest `newFlowEmails.test.js`.
+
+**Amended 2026-11-11** (two-model review of PR #447). Point 2's reset is written in the site's language, as the
+install is (DECISIONS #362): `DefaultEmailTemplates` is given `EmailLanguage` and draws the shipped words inside
+`during()`, so an Arabic site whose administrator reads the admin in English keeps Arabic emails after a reset.
+Verified: `DefaultResetLanguageTest`.
+
+## #456 -- Designed emails code sends go through the shared mailer (`DesignedEmails`)
+
+**Date:** 2026-10-26. **Spec:** 120, stories 4 and 6.
+
+**Why.** Email Studio's own sending rule blocks a production site with no provider set, which is how both clients
+run. A designed password reset or subscription confirmation must not stop being sent where WordPress's own is.
+Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** A corex-core contract `DesignedEmails::send(slug, to, context, path): ?MailResult`, bound by corex-email
+(`StudioDesignedEmails`): the active version is drawn and sent through `MailService`, so production delivers and a
+development or staging site captures (spec 113's gate). `null` when no active template has the slug or it cannot be
+drawn; the latter dispatches `EmailDesignFailedEvent::TEMPLATE_FAILED` (a notification) and records
+`email.template.fell_back` in the activity log. The newsletter sends Double opt-in (else its own confirmation) and
+Newsletter welcome (else nothing).
+
+**Verified.** `DefaultEmailsSentTest` (opt-in, welcome, fallback).
+
+**Amended 2026-11-11** (review of PR #447). The drawing's `missing` is no longer dropped: `StudioDesignedEmails` hands
+it to `MailService::deliver($message, $missingVariables)`, which keeps it on the log row (#454, amended).
+
+## #457 -- The account emails: reset asked on the account page, and the welcome, in the frame
+
+**Date:** 2026-10-26. **Spec:** 120, story 6 (US-EML-15; EML-D11; DECISIONS #341).
+
+**Decided.**
+
+1. While a reset asked through the account block is answered, `send_retrieve_password_email` answers false when
+   "Password reset" was sent: CoreX makes the key with `get_password_reset_key()` and sends the template with the
+   account page's reset link, the account, the time it was asked and how long the link works
+   (`password_reset_expiration`, "1 day" by default, in WordPress's words). A reset asked on the login screen stays
+   WordPress's, as #341 set.
+2. Registration sends "Welcome to your account" through `wp_send_new_user_notification_to_user`, linking to the
+   page the form was on (its signed page mark is now sent by the register form too) or the home page.
+3. Either one that is not active or cannot be drawn leaves WordPress's own email to be sent.
+
+**Verified.** `DefaultEmailsSentTest`, `ResetOnTheAccountPageTest` (the designed email links to the page and never
+to `wp-login.php` or the hidden address).
+
+**Amended 2026-11-11** (two-model review of PR #447). Point 3 also covers a designed email that was drawn and did not
+go: only a result that `MailResult::successful()` calls sent (delivered, accepted, queued, or captured on a
+development or staging site, which then sends no real one) stands in for WordPress's email. A failed or refused one
+leaves WordPress to send its own, through the same mail gate; WordPress makes its reset key after the filter is
+asked, so the link in its email works. Verified: `AccountEmailFallbackTest`.
+
+## #458 -- `MailRequest` takes an optional plain text, last
+
+**Date:** 2026-10-26. **Spec:** 120, story 7 (US-EML-19; CR-013).
+
+**Decided.** `MailRequest(..., ?string $plainText = null)`, last; blank is null. `RequestMailer` hands it to the
+message of a finished request only (a template makes its own), the queue payload carries it, and the capture keeps
+it. Email Studio's log shows a kept email's HTML and plain text.
+
+**Verified.** `MailRequestPlainTextTest`, `DesignedEmailsTest`.
+
+**Client impact.** Perego may pass its renderer's text; nothing changes until it does.
+
+## #470 -- A live flow is republished in place; a visitor is judged by the version their page carried
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-01, FR-001 to FR-007. Decided under the owner's 2026-10-21 mandate
+(FLW-D4: yes, versioned).
+
+**Why.** Saving a draft of a live flow already kept the live version untouched; only publishing the draft was
+refused (`published` to `published`), so the owner moved the flow to draft and back, and the form left every page in
+between.
+
+**Decided.**
+- `Flow::publish()` accepts a draft, or a published flow whose saved draft is not its live version, and stays
+  published. Each publication is recorded on the flow (`publications`: version, author, time). A flow published
+  before this release lists its live version with no author. Saving a draft no longer moves `published_at`.
+- A stale editor is refused with "This flow changed since you opened it. Reload to see the latest draft." (409).
+- `POST /flows/{id}/versions/{n}/copy` makes a version the saved draft as a new version; it never publishes.
+  "Move to draft" is "Unpublish" and asks first.
+- The visitor form carries `corex_flow_version`. The submission is judged by that version when it was live at some
+  moment in the last 24 hours (a page's security token lives that long), with the live version's spam protection, and
+  records it. Any other number means the live version.
+
+**Not chosen.** *Always the live version*: a visitor's answer to a question the new version removed would be refused.
+*Any old version*: an old page could bring back a weaker captcha.
+
+**Client impact.** None: Muva and Perego have no builder flow.
+
+**Amended 2026-11-11 (PR #446 review).** A flow published before this release has no stored publications, and its
+first "Publish changes" saved a history holding only the new version: the old live version was gone, so a page
+printed with it was judged by the new one (FR-007) and the Versions tab lost its row. `Flow::publish()` now builds on
+`publicationHistory()`, which lists that old live version with no author, so it stays in the stored history.
+
+## #471 -- Page owner reads a page the site signed into the form
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-03, FR-010. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** The flow block prints `corex_page` as `{page id}.{first 16 hex of wp_hash(flow, page)}`. A missing,
+altered or borrowed value reads as "the page is not known", and the fallback applies. The stored "Post author"
+target resolves the same way. "Department" and "Email" targets are no longer offered and, where stored, name nobody
+so the fallback applies.
+
+**Not chosen.** *The referrer*: absent or forged. *The page address*: needs a lookup and can name any page.
+
+**Amended 2026-11-11 (PR #446 review).** Without a block context, the page is the main query's only when it shows
+one post or page (`is_singular()`): on an archive the queried object is a term or a person, whose ID named a page
+that was never there.
+
+## #472 -- Teams live in one option and are managed on a Teams view in Forms & Flows
+
+**Date:** 2026-10-26. **Spec:** 122, FR-012. FLW-D5 (teams get a screen).
+
+**Decided.** `corex_flow_teams` holds `{key, name, members}`; the key is made from the first name and never changes,
+so a renamed team keeps its submissions. `GET|POST /corex/v1/teams` and `PATCH|DELETE /corex/v1/teams/{key}` go
+through the flow gateway (the forms ability, nonce on writes). A removed team keeps the submissions already assigned
+to it; new ones routed to it fall back. corex-forms adds each person's teams to the existing
+`corex_submission_actor_teams` filter.
+
+**Not chosen.** *A post type or taxonomy*: a site has a handful of teams, read whole on every routing.
+
+**Amended 2026-11-11 (PR #446 review).** A removed team's key is never given out again: its submissions keep the
+key, and a new team of the same name would have inherited them. `TeamService::delete()` records the key in
+`corex_flow_teams_retired` (not autoloaded, read only when a team is made), and `freeKey()` treats it as taken. The
+key is retired before the team is removed, and a failed retire write refuses the removal ("The team could not be
+removed. Try again."): a removal cut short leaves a team whose key is taken, never a free key.
+
+## #473 -- Someone routing gave work to sees an inbox of exactly that work
+
+**Date:** 2026-10-26. **Spec:** 122, FR-013. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Holders of "Manage submissions" keep seeing everything, as before. Someone without it opens the inbox
+when `corex_submission_assigned_access` says so: corex-forms answers yes for a member of a team, or a person with a
+submission assigned to them or to one of their roles. Their scope is not "manage all": it shows only what
+`SubmissionAccessScope::allows()` passes (their user, their teams, their roles), with no personal-data export, no
+permanent delete and no restricted notes. The Submissions menu asks such a person for `read`, and the retention panel
+is for managers only.
+
+**Not chosen.** *A "view submissions" ability*: that split is US-ACC-06 (R4.7).
+
+**Client impact.** None today: no one on Muva or Perego is in a team, and no flow submission is assigned to a role.
+
+**Amended 2026-11-11 (PR #446 review).** "Assigned" means a **flow** submission. The inbox already let a manager
+assign any submission, a code form's included, to a user, team or role, so on an updated site a person once given a
+code-form submission would suddenly have had the Submissions menu and could read, reply to and trash it.
+`SubmissionRepository::hasAssigned()` now counts only submissions with a `corex_flow_id`, and the assigned-only scope
+carries `flowsOnly`, which `SubmissionAccessScope::allows()` and the inbox query both apply. The inbox's form filter
+lists, for such a person, only the flows they have work in (`SubmissionInboxReader::flowIdsIn()`, one `SELECT
+DISTINCT` of the flow IDs joined on the scope's owners), not every flow's name. A manager whose scope a site narrows
+with `corex_submission_manage_all` is unchanged.
+
+## #474 -- Old flow submissions assigned to nobody are given to their flow's owner, once
+
+**Date:** 2026-10-26. **Spec:** 122, FR-014.
+
+**Decided.** On `init`, behind the autoloaded option `corex_flow_owner_upgrade` (claimed with `add_option` before it
+runs), every flow submission whose owner type is a route's own type (flow_owner, page_owner, post_author, department,
+field_value, email, extension) is assigned to its flow's owner, with a timeline line. Nothing is deleted. A submission
+whose flow or owner is gone is left. The count is kept, and the Forms & Flows list states it for 30 days. The lookups
+are SQL, since `WP_Query` hides private posts from the visitor whose request may run it.
+
+**Client impact.** Muva and Perego store no flow submissions: the step finds none.
+
+**Amended 2026-11-11 (PR #446 review).** The step no longer runs on `init` of any request, and its record is no
+longer claimed before the work: a request that timed out midway left it marked as done for good. It now runs from
+`admin_init` for a signed-in person (not admin-ajax) and from the WP-Cron event `corex_flow_owner_upgrade`, one batch
+of 200 per run under a MySQL named lock, oldest first. Between batches the option holds `{after, moved}`; the first
+batch schedules the cron event so the rest goes on without anyone opening the admin. Only after the last batch is
+`{ran_at, moved}` written and the event cleared, and only then does the list state the count. A submission moved by a
+run that died is a user's and is not picked again. A run that finds the lock held by another moves nothing and
+schedules the next step a minute later, so a cron run that met a busy lock is never the last one. The lock is named
+after the site's table prefix (`{prefix}corex_flow_owner_upgrade`), so sites sharing a database server never wait on
+each other.
+
+## #475 -- "Routed owner" is a recipient token worked out at routing time
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-04, FR-017 to FR-020. FLW-D5.
+
+**Decided.** The recipient mapping `routed_owner` sends to the assignee: a user's address, each member of a team, or
+each holder of a role up to `routing.recipient_limit` (default 20, at most 100). Over the limit, or with no address,
+the email goes to `routing.fallback_recipient`, else the site administrator, and the binding's delivery record and
+the timeline's notification event carry "Routed owner had no address; sent to ..." (or the role-limit reason). The
+addresses are stored with the routing metadata, so the inbox's "Send again" reaches the same people. The Emails tab
+shows who it would be for each rule and for no match (`POST /flows/{id}/routing-preview`).
+
+**Not chosen.** *Resolving in the email stage*: "Send again" would work it out again, maybe differently.
+
+**Amended 2026-11-11 (PR #446 review).** The Emails tab's preview names each person with their address, as FR-019
+says (it showed names only), and follows a target that names nobody as a submission does (FR-009): the flow's
+fallback, then the flow's owner, with each reason and "Assigned to {name} instead.". The addresses are shown to
+whoever may edit the flow. The preview and the routing stage take that order from one place, `RoutingChain`.
+
+## #476 -- Flow actions, email variables and routing targets register through three filters
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-07, FR-021 to FR-025. FLW-D11 (finish them as documented hooks).
+
+**Decided.**
+- `corex_flow_actions`, `corex_flow_email_variables` and `corex_flow_routing_targets` return
+  `key => ['label', 'callback']`, read once on `init` (priority 20) into the registries; a bad entry is logged and
+  skipped. The container registries still work. A routing target is stored as `extension` with its key.
+- A new last stage, `actions`, runs the flow's chosen actions (configuration `actions`, in the checksum only when not
+  empty) once per stored submission, records done or failed on the timeline, and always succeeds. A marked test runs
+  them with `is_test` and "This is a test.". Publishing refuses an action the site no longer has.
+- Email variables join Email Studio's list through `corex_email_variable_schema`. `EmailTemplateService` now takes
+  its list as a closure, asked on first use: the service is built on `plugins_loaded`, before `init` registers the
+  variables. Their values are placed in the flow email's context at their dotted path; a failure is left empty and
+  logged.
+
+**Amended 2026-11-11 (PR #446 review).** The pipeline stopped at its first failed stage, and `email` ran before
+`inbox`, `timeline` and `actions`: an email that could not be sent (a confirmation bound to an optional email
+question left empty) left the submission stored but assigned to nobody, its routing off the history and its actions
+unrun. The order is now validation, protection, storage, routing, inbox, timeline, email, actions, and
+`FormSubmissionPipeline` takes the keys of stages whose failure is recorded rather than fatal: `email`. The run still
+reports not completed (spec 068, FR-044), with the failed stage found by `failedStage()`. The email stage writes its
+own "notification" history event, which the timeline stage used to write.
+
+When the submission was stored and the email stage is the only one that failed
+(`SubmissionPipelineResult::storedFailingOnlyAt('email')`), the flow's submit route answers the visitor with its
+normal success (200, the flow's success state), so the form shows its message and clears; it answered 502. The
+response's `completed` and `stages` still say the email failed, the failure stays on the submission's email record
+and history, and the flow's `admin_failure` alert still goes to the site. Decided by the orchestrator: told to send
+again, the visitor would store a second submission and run every action again. Code-defined forms (Muva, Perego) are
+stored by `FormSubmissionService`, which never runs this pipeline: nothing changes for them.
+
+## #477 -- Availability belongs to the flow; the state a visitor meets is worked out, not stored
+
+**Date:** 2026-10-26. **Spec:** 122, US-VIS-01, US-VIS-02, FR-026 to FR-031. FLW-D1 (dates and a cap).
+
+**Decided.**
+- `availability` on the flow record (open and close instants in UTC, a cap, the closed message, the alternative),
+  saved by `PATCH /flows/{id}/availability` from its own Availability tab, without publishing. The editor shows and
+  takes the site's local time.
+- `FlowStatusResolver` works out draft, scheduled, open, closed or expired from the stored state, the dates and,
+  for a capped flow only, the response count, when a page is served and when a submission arrives. The list files a
+  flow expired by date or cap under "Expired" with its reason.
+- A response counts while stored, not in the trash and not a marked test. A capped flow's check and store run under
+  a MySQL named lock (`corex_flow_cap_{id}`), counted again inside it.
+
+**Not chosen.** *A cron job that flips the state*: it fails on a site whose cron does not run, and clearing a date
+would not reopen a flow.
+
+**Amended 2026-11-11 (PR #446 review).** The lock covered the whole pipeline, emails and actions included, and a
+ten-second wait ended in an uncaught exception, a 500 for the visitor. `FormSubmissionPipeline::run()` takes a
+wrapper for one stage, and a capped flow wraps only `storage` (the count is checked again inside it). A wait over ten
+seconds throws `SubmissionBusyException`, answered 503 `flow_busy` with a translatable message; nothing is stored. A
+cap below 1, or anything not a whole number ("2.5", "1e3"), is refused with "The response cap must be a whole number
+of at least 1." instead of being saved as no cap or as a cap nobody typed (`FILTER_VALIDATE_INT`; the Availability tab
+sends such text as typed), and saving availability on a closed flow no longer moves the date it was closed. The lock
+is named after the site's table prefix (`{prefix}corex_flow_cap_{id}`), and the wait is the visitor service's
+`capLockWait` (10 seconds by default).
+
+## #478 -- The owner's closed message is translated through the WPML string hooks
+
+**Date:** 2026-10-26. **Spec:** 122, FR-032. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Saving availability calls `wpml_register_single_string` for the message and the alternative's label
+(context `corex`, names `flow-{slug}-closed-message` and `flow-{slug}-alternative-label`); the block shows
+`wpml_translate_single_string`. WPML defines these and Polylang answers them; with neither, the owner's words show as
+written. CoreX's default wording is an ordinary translatable string.
+
+**Not chosen.** *A CoreX translation driver*: none exists, and Principle IX keeps both plugins optional.
+
+## #479 -- A closed flow answers 409 `flow_closed` with its notice, drawn by the runtime from text
+
+**Date:** 2026-10-26. **Spec:** 122, FR-028, FR-029.
+
+**Decided.** The block renders the flow's heading and a titled notice (`.corex-flow-notice`: title, message, the
+alternative as a link or `mailto:`); a draft or missing flow renders nothing for visitors and an editors-only note
+with a link to the flow (`&corex_flow={id}` opens it in the editor). The block editor lists every flow ever
+published, naming one that is closed, expired or scheduled. The submit route answers 409 with
+`details.notice`; `corex-runtime.js` draws it above the form with `textContent`, links only `http`, `https` and
+`mailto`, and leaves the answers in place.
+
+**Client impact.** Muva's and Perego's code forms never get this answer; the runtime branch is idle for them.
+
 ## #514 -- The 2026-11-09 dependency advisories: four overrides and one bounded exception
 
 **Date:** 2026-11-10. **Policy:** `SECURITY.md`, "Dependency advisories"; spec 056's order (fix what is
@@ -19190,6 +19938,156 @@ checks above found no difference. *Pinning `isomorphic-git` to 1.38.x*: nothing 
 as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the policy refuses a high finding
 with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
 choice even where the copy is unused.
+
+## #515 -- CoreX draws the admin's checkboxes and radios, in brass, with a clip-path mark
+
+**Date:** 2026-11-10. **Spec:** none (a shell fix the owner asked for while reviewing CoreX → Assistant, PR #449).
+
+**Found.** `.corex-admin input[type="checkbox"], input[type="radio"] { accent-color: … }` had no effect: wp-admin's
+`forms.css` gives both `appearance: none` and paints them itself, checked in `--wp-admin-theme-color` with a white
+SVG tick as `::before` content. On CoreX → Assistant a checked box measured `rgb(56, 88, 233)`.
+
+**Decided.**
+- The shell takes over the drawing for every checkbox and radio inside `.corex-admin`, except `.corex-switch__input`,
+  which draws its own track. The input stays the browser's: `appearance: none` on the real `<input>`, so Space,
+  arrow keys, labels, focus order and the posted value are unchanged. Sizes and margins stay wp-admin's (1rem, and
+  1.5625rem at phone width), so no layout moves and no target-size finding changes.
+- Checked, and a checkbox's indeterminate: background and border `--corex-admin-action`, mark in
+  `--corex-admin-action-ink`. Unchecked: `--corex-admin-surface` with a `--corex-admin-text-muted` edge. Disabled:
+  the same colours at `--corex-admin-disabled-opacity`. Keyboard focus: `--corex-admin-focus` outline; wp-admin's
+  `:focus` box-shadow is removed, so a click leaves no blue ring.
+- The tick, the dash and the radio dot are a `::before` filled with the ink colour and cut with `clip-path` (the dot
+  is a circle). A colour in an SVG data URL cannot read a custom property, so wp-admin's approach would have frozen
+  one appearance's colour. The polygon is physical, so the tick is not mirrored in right-to-left, where it reads the
+  same.
+- In a forced-colours mode the system repaints backgrounds, which would hide a mark drawn as one, so the mark takes
+  `CanvasText` (`GrayText` when disabled) with `forced-color-adjust: none`.
+- `tests/e2e/admin-checkboxes.spec.js` measures the Notifications screen's Preferences checkboxes (checked, unchecked,
+  indeterminate, disabled, keyboard and click focus) and two radios placed in that panel, in both appearances and
+  both directions. It fails on the stylesheet before this change.
+
+**Not chosen.** *`--corex-admin-border-strong` for the unchecked edge*, which the request named: it is 1.6:1 against
+the surface in both appearances, under the 3:1 WCAG 1.4.11 asks of the only thing that shows a box is there.
+`--corex-admin-text-muted` is 5.8:1 (light) and 6.8:1 (dark). *Larger boxes*: WordPress's size, with the label as
+part of the target, is what every other admin screen uses. *A per-screen fix*: the owner asked for one rule for all
+of CoreX.
+
+## #516 -- Activity times are drawn in the muted text colour, with a line height of their own, and the quality seed records activity
+
+**Date:** 2026-11-10. **Spec:** 116 (US-NFR-03, US-NFR-04, US-NFR-06), spec 076 (FR-002). Found by a local run of
+`tests/e2e/quality` against a scratch site that had activity records.
+
+**Found.** Three lists of activity draw each event's time in `--corex-admin-text-subtle`: the Overview's recent
+activity (`.corex-overview__event-time`), the Access audit log (`.corex-access__event-meta`, which holds its `time`
+elements) and the Insights security card (`.corex-insight-widget__event time`). Subtle is 2.99 to 3.31:1 on the
+surfaces these sit on, in both appearances, under the 4.5:1 WCAG 2.2 AA asks of text (axe `color-contrast`). The
+Insights card also wrote the time as `Y-m-d H:i` in UTC (`2026-11-10 07:36`, the `machine-timestamp` rule), where the
+Overview writes the same event as `10 November 2026 at 7:36 AM` in the site's timezone. At 200% text on a phone, the
+Overview's event summary ran onto its time (`text-overlaps-at-200`): no CoreX rule sets a unitless line height, so
+the rows inherit wp-admin's `body { line-height: 1.4em }` as a fixed 18.2px, shorter than 28px letters. CI did not
+report any of it: `seed-quality-site.php` recorded no activity, and the only activity a run makes is the refusals of
+the refused-state checks (`states.spec.js`), which a screen's own check may or may not come after.
+
+**Decided.**
+- The three times use `--corex-admin-text-muted`: 5.80:1 on the light surface and 6.22:1 on the light raised
+  surface, 6.76:1 and 6.28:1 in dark. They stay smaller than the line they belong to, which is what tells them
+  apart.
+- The three rows (`.corex-overview__event`, `.corex-access__event-body`, `.corex-insight-widget__event`) set
+  `line-height: var(--corex-admin-line-normal)`, a unitless 1.6, so their lines grow with their text.
+- `InsightWidgetFacts` dates each security event through `AdminDateTime::FULL`, as the Overview does, and hands the
+  card the words (`meta`) and the ISO value (`datetime`); `insights.js` writes `<time datetime="…">`.
+- `seed-quality-site.php` has the quality subscriber refused the Access screen twice and the Overview once, through
+  `AccessAuditLog::record()`: one audit entry counted "2 times, from … to …", one entry of one refusal, and the two
+  `access.denied` activity events they write. The Overview, the Access audit tab and the Insights security card are
+  measured with rows in CI from now on.
+
+**Not chosen.** *A unitless line height on `.corex-admin` itself*: it is the likely cause of the two other
+`text-overlaps-at-200` entries in `known-failures.json` (Blog Pro, the inbox's dates; read, not measured), but it
+changes the vertical rhythm of every CoreX screen and wants its own pull request with the screens measured. Left as a follow-up. *Seeding rows into
+the activity table directly*: the seed would then pass whatever the table holds; through the audit log it writes what
+a real refusal writes. *Recording the findings in `known-failures.json`*: each has a fix of a few lines.
+
+## #517 -- The admin shell sets a unitless line height, 1.4, and headings 1.2
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), spec 116's `text-overlaps-at-200`. Follows #516
+(PR #453), which fixed three activity rows one by one and left the shell to this.
+
+**Why.** `.corex-admin` set no `line-height`, so every CoreX screen inherited wp-admin's
+`body { font-size: 13px; line-height: 1.4em }`. An `em` line height is computed once, on `body`, and inherited as
+a length: 18.2px for every line on every screen, whatever its font size. At 200% text a 14px line becomes 28px
+letters on an 18.2px line, and the letters run onto the next line. Measured on all 32 CoreX screens at 375 and
+1280px, light and dark, left to right and right to left (4,500 text boxes per pass): 3,184 of them sat on the
+inherited 18.2px, among them headings of 16 to 24px and display numbers of 24 to 38px.
+
+**Decided.**
+- A new token `--corex-admin-line-base: 1.4` in `corex-admin-tokens.css`, set on `.corex-admin`. A number is
+  inherited as a number, so each element's line is 1.4 times its own font size and grows with it.
+- `:where(.corex-admin) :where(h1, ..., h6)` gets `--corex-admin-line-tight` (1.2). Zero specificity: any
+  component rule for a heading still wins.
+- The three display numbers that had no line height of their own (Email Studio's metrics, the Overview's number
+  tiles, the Insights grade) get the tight token too.
+- Blog Pro's two-part rows (the authors list and the card lists) stay flex rows at phone width and wrap, instead
+  of turning into a block. As a block the name and the count ran together ("admin1 published post"), and the
+  wrapped count's box lay over the name, which is what the 200% check reported there.
+
+**Why 1.4 and not an existing token.** At the base size the old rhythm was 1.4 for 13px text (758 boxes), 1.3 for
+14px (1,690) and 1.52 for 12px (482). 1.4 keeps 13px text exactly where it was, moves 14px lines by +1.4px and 12px
+lines by -1.4px, and is the ratio wp-admin itself uses, so CoreX's text sits on the same rhythm as WordPress's
+around it. `--corex-admin-line-tight` (1.2) is below the height of the text's own box in Segoe UI (about 1.33 of
+the font size): inline runs on consecutive lines would still overlap at 200%. `--corex-admin-line-normal` (1.6)
+would grow every line on every screen by 1 to 4.2px for no reported defect.
+
+**What it changes.** Page heights move by -43 to +168px per screen (at most about 3%): most screens gain 10 to
+40px, the Add-ons and Access matrix screens lose up to 43px (their 12px chips and badges are 1.4px shorter per
+line), Guides gains the most (17 guide titles of 20px, from 18.2 to 24px lines). Left to right and right to left differ in height
+where they did before, by the same amounts (Operations' Environment tab, 106px before and 107px after, at 375px).
+Two loads at 1280px have one cell 24px off the other three after the change (Add-ons' Inactive tab light right to
+left, Operations' Overview dark right to left); a rule with no colour or direction in it cannot move one cell alone,
+and cells of other loads wobbled the same way before it.
+
+**Not fixed here.** The inbox's From and To dates still overlap at 200% and stay in `known-failures.json`
+(US-NFR-04), with the cause in the entry: each date field is 192px wide in a 95px column at that size, so its label
+spills into the other date's. That is the filter panel's layout, not line height.
+
+## #518 -- The inbox's date range wraps on its own content
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), quality rule `text-overlaps-at-200` on `corex-submissions`.
+
+**Why.** `.corex-inbox__dates` was a grid of two `minmax(0, 1fr)` columns at every width. Each label is a
+one-column grid whose `auto` track grows to its date field's own width, so a field wider than its half spilled
+out of it, and the label's text went with it. Measured on the quality site before the change:
+
+| Cell | Half of the range | Date field | What showed |
+|---|---|---|---|
+| 375px, 100% | 141px | 168px | the From field runs 15px under the To field; "From" lies over "To" (the check reads only 200%) |
+| 375px, 200% | 95px | 192px | "From" over "To", the quality finding; the calendar icons cut off |
+| 375px, 200%, right to left | 95px | 198px | the From field runs to -23px, past the screen's edge |
+| 1280px, 100% | 147px | 152px | the To field ends 5px past the panel's content box |
+
+Line height was not it (#517 fixed that).
+
+**Decided.**
+- The range is a wrapping flex row, each date `flex: 1 1 0`. A flex item's automatic minimum is its content, so
+  the two dates share a line while both fit and "To" goes under "From" when they do not. No width is written down.
+- The wide filter grid is `repeat(3, minmax(0, 1fr)) minmax(max-content, 2fr)`: form, status and owner, then the
+  range as one item two fifths wide, as two of five columns were, and never narrower than its two dates side by
+  side. At 1280px the range is 316px where it was 306, and the other three are 143px where they were 147. Wider
+  panels are unchanged.
+- The 44rem container query puts the range on a row of its own (`1 / -1`, as the owner field); the 24rem query no
+  longer needs a rule for it.
+
+**Measured after,** off the rendered page at 375 and 1280px, light and dark, left to right and right to left, at
+100% and 200%: no date's text lies over the other's; every field is as wide as its label (WordPress's 1px input
+margin aside). On a phone the dates stack: the filter panel is 541px tall where it was 467 at 100%, 971 where it
+was 841 at 200%. At 1280px the panel keeps its height (231px at 100%, 805 at 200%) and the dates stay side by side.
+
+**Not chosen.** *`repeat(auto-fit, minmax(min(100%, <em>), 1fr))`*: no one unit measures a date field here. Its
+date is drawn at WordPress's 14px (16px on a phone) and its padding is in rem, so it needs 152px on the desktop,
+168 on a phone and 192 on a phone at 200%; the range's own font is a fixed 13px, so an em width is one fixed
+number of pixels. Any one value either wraps dates that fit or leaves a field wider than its column at some width
+and text size. *Letting the
+field shrink to its half* (`min-inline-size: 0`): it cuts the date and its calendar button. *Stacking only below a
+breakpoint*: the panel's width, the text size and the field's width move separately; the content decides better.
 
 ## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
 
@@ -19554,3 +20452,110 @@ with its tests.
 
 **Not chosen.** *Keeping `required_for` in the add-on*: it knew one field name (`channel`), and every form that
 needs "required when" would write its own.
+
+## #620 -- CoreX gets public hosts on the owner's domain, one host for each kind of thing that runs
+
+**Date:** 2026-11-11. **Branch:** `docs/public-hosts`. **Mode:** Docs/Planning. **Asked by:** the owner, who
+bought `mustafashaaban.com` and pointed a `corex` subdomain at his server.
+
+**Why.** CoreX has no public address of its own. The docs are on GitHub's `mustafashaaban.github.io/corex/`,
+the in-admin updater has no source to read (`updates.endpoint` ships empty), a watched installation from
+CoreX → Releases on a shared host, on v0.46.1 or later, is still owed (spec 107) and has no site to run on that
+is not a client's, and spec 123 left
+"a site downloads its release" out until packages are published "somewhere a site can trust".
+
+**Decided.** Six hosts, split by what runs on them, so each has its own deploy, its own security level and
+its own failure, and a problem on one leaves the others up:
+
+| Host | What it is | Served by | Public |
+|---|---|---|---|
+| `mustafashaaban.com` | The owner's personal site, on the portfolio kit, in its own repository | The owner's server | Yes |
+| `corex.mustafashaaban.com` | CoreX's product site, built with CoreX (`sites/corex-site/`, Client Site Mode) | The owner's server | Yes |
+| `corex-docs.mustafashaaban.com` | The Starlight docs site, moved from `github.io` | GitHub Pages (a CNAME to `mustafashaaban.github.io`) | Yes |
+| `corex-updates.mustafashaaban.com` | Update manifest, packages and their SHA-256, as static files | The owner's server, no PHP | Machines |
+| `corex-demo.mustafashaaban.com` | The kits with their demo content, reset on a schedule | The owner's server | Later |
+| `corex-staging.mustafashaaban.com` | A private install for release checks, the shared-host installation first | The owner's server, password and `noindex` | No |
+
+- **One level of names** (`corex-docs`, not `docs.corex`): one `*.mustafashaaban.com` certificate covers
+  every host. The owner chose the names.
+- **The order** is one spec at a time: the docs move (spec 130), the staging install, the product site, the
+  update channel, the demo, and then spec 123's download-from-a-URL, with signed packages from the updates host.
+- **Nothing in a released site changes by this decision alone.** A site keeps every link it has until a
+  release carries the docs move, and GitHub redirects the old `github.io/corex/` addresses to the custom
+  domain once it is set.
+- **The revamp is not affected.** No open revamp pull request touches the docs links (`DocsUrl`), the docs
+  build or the update source, and the hosts sit outside the framework's code. The product site and the
+  demo show the revamp's screens, so they come after it, not before.
+
+**Not chosen.** *Two-level names* (`docs.corex.mustafashaaban.com`): a wildcard certificate does not cover
+them. *The docs on the owner's server*: GitHub Pages already builds and serves them, costs the server nothing
+and stays up when the server does not. *One WordPress serving every host*: a failed update or a demo reset
+would take the product site down with it. *A CoreX-only domain now*: nothing is lost by waiting, since every
+host keeps canonical links and redirects and moves with one redirect each.
+
+## #621 -- The CoreX loop replaces Spec Kit's commands; models and effort are routed by a table (constitution v2.0.0)
+
+**Date:** 2026-11-11. **Branch:** `docs/workflow-matt-and-agents`. **Mode:** Docs/Planning. **Asked by:** the
+owner: "if spec kit doesn't fit with matt's flow we can stop using it, i need the best workflow", with
+delegation and switching models and effort.
+
+**Why.** Spec Kit's chain (`specify → clarify → plan → tasks → implement`) asks its questions after the spec is
+drafted, so specs 107 and 110 stopped on owner questions after writing; it produces a plan, a task list and
+checklists that slices already cover; and it owns the process, which made its own side effects hard to see
+(#251: it rewrote a tracked state file and a section of `CLAUDE.md`). Matt Pocock's engineering skills fix
+the first two: `grill-with-docs` finds the open questions before the spec, and building in slices is what
+CoreX already did. They do not replace the spec file: tests, docs and 620 DECISIONS entries point at spec
+numbers and requirement IDs.
+
+**Decided.**
+- **The loop** (constitution v2.0.0, Pre-Implementation Confirmation Rule step 2; `AGENTS.md`): grill →
+  research when needed → `specs/NNN-name/spec.md` with requirement IDs and slices → `wizard` for owner-only
+  steps → one slice at a time with `tdd` (`diagnosing-bugs` first for a bug) → Guard Gate → `debate-review`
+  → PR (`pr`, `babysit-pr`) → `retro` after a release. Principle X is unchanged.
+- **Retired:** the `/speckit-*` commands. A spec with a `tasks.md` may finish from it. The skill files and
+  `.specify/` stay for those specs and are not used for new ones.
+- **Not used:** Matt's `to-spec`, `to-tickets`, `implement-spec`, `implement` and `wayfinder`, which would
+  write a second plan into GitHub issues next to `specs/` and `ROADMAP.md`.
+- **Matt's setup for this repository:** GitHub Issues, the five default triage labels (four created today),
+  and the glossary and decisions in CoreX's own `docs/_glossary.md` and `DECISIONS.md`, never a new
+  `GLOSSARY.md` or `docs/adr/` (`docs/agents/`).
+- **Models and effort** (`CLAUDE.md`, "Models, effort and agents"): Fable at high effort for grilling, specs
+  and final judgment; `corex-builder` on Opus, medium (high for a bug); `corex-tester` on Sonnet, medium;
+  `corex-scout` on Haiku, low; `corex-reviewer` on Fable, high; Codex at high effort as the second reviewer.
+  Max effort only when the owner asks, for one task. The five agents are `.claude/agents/`, with
+  `corex-ui-reviewer` (Fable, high) for what a person sees.
+- **One lever per job:** the main session for judgment, in-app agents for Claude models, delegate lanes only
+  for Codex. `claude-delegate` lanes would duplicate the in-app agents and are not configured.
+- **Agents never commit**, and builders work in the root checkout one at a time per set of files (§A.7's
+  single-workspace rule still holds).
+- **The handoff format** says `SPEC STATUS` with slices instead of `SPEC KIT STATUS` with task IDs.
+- **UI is a required part of the loop**, because CoreX has no designer (the owner: "this is not an option as we
+  have no designer"). A slice a person sees is designed first in Claude Design on the CoreX design system, in
+  every state, at 1280px and 375px, light and dark, left to right and right to left; approved by the owner and
+  handed off in `design/handoffs/`; built with `ui-ux-pro-max`; measured in the browser and run through
+  `npm run test:quality`; reviewed by `corex-ui-reviewer`, `design:accessibility-review` and `design:ux-copy`.
+  A change to the look starts in the design system. Claude Design now lives in Claude as the Design and Design
+  System artifact types (both available in the desktop app's Code tab); standalone claude.ai/design closes on
+  2026-12-14. No CoreX design system exists in Claude yet: making it is its own task.
+- **One recorded round per UI slice for the owner** (`ui-review-loop`, amElnagdy, installed 2026-11-11 with
+  `agent-browser` 0.32.4): the owner watches a short video of the flow and comments on moments in it. The
+  video and timeline never reach the model; each browser step does, so steps return diffs, the round runs on
+  `corex-tester` (Sonnet), and full coverage audits run only on request. Scratch sites with test data only.
+  `.agent-review/` is ignored. Kept only if the first UI slice shows it saves more review rounds than it costs.
+  **On this Windows machine** it needed three things, checked with a recorded round of corex.local's home page
+  (timeline, network capture and a WebM video): `agent-browser.exe` copied beside npm's wrapper in the nvm Node
+  folder, because the skill starts `agent-browser` without a shell and Node then finds only an `.exe` (redo it
+  after an nvm switch); `ffmpeg` from winget (`Gyan.FFmpeg`) for the video, on PATH in new shells; and Developer
+  Mode for the one self-test check that creates a symbolic link (the other 19 pass). With the agent-browser
+  backend a step is a verb (`run -- snapshot`, `run -- click @e12`); the script form is the other backend's.
+
+**Not changed, and owed.** The CoreX design system in Claude (from `theme.json` and the approved admin
+designs), and moving anything still in standalone Claude Design before 2026-12-14. `wp corex make:site` still writes a client `AGENTS.md` that tells a client site
+to run Spec Kit with `SPECIFY_FEATURE_DIRECTORY` (`SiteScaffolder` and its test, #251). That is framework
+code with a test and a client impact, so it is its own slice.
+
+**Not chosen.** *Keeping Spec Kit and adding Matt's skills beside it*: two processes for one change, and the
+questions still come after the spec. *Dropping the spec file for GitHub issues*, as Matt's own flow does: it
+would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
+in-app agents already carry a model and effort each, and their results come back to the session that checks
+them.

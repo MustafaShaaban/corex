@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailPalette;
 use Corex\Email\Template\EmailTemplate;
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Template\MailContext;
 
 /**
@@ -169,5 +170,11 @@ final class SupportRequestTemplate extends EmailTemplate
             EmailBrand::LINE_HEIGHT,
             esc_html__('Sent from the Guides screen in your CoreX admin. Reply to this email to answer directly.', 'corex'),
         );
+    }
+
+    /** What the frame's footer says about why the person receives it (spec 120). */
+    public function kind(): string
+    {
+        return EmailKind::NOTIFICATION;
     }
 }

@@ -5,6 +5,10 @@
  * and comment moderation needs comment moderation rights (spec 112, User Story 5, FR-024 to
  * FR-028, SC-006).
  *
+ * Since spec 117 Blog Pro opens for the holders of "Manage Blog Pro": every account here but the
+ * subscriber is given it, so what WordPress lets each role do with a post or comment is what is
+ * measured.
+ *
  * Through the real REST server. A `rest_dispatch_request` filter answers in every handler's place,
  * so what is measured is whether the route lets the request through, and no post or comment of
  * the test's own is changed by it. Every account, post and comment here is the test's own.
@@ -16,8 +20,8 @@ declare(strict_types=1);
 
 const BLOG_MATRIX_REACHED = 'corex_test_blog_handler_reached';
 
-/** @return int The new account's id. */
-function blogMatrixUser(string $role): int
+/** @return int The new account's id, given "Manage Blog Pro" unless it is to be refused it. */
+function blogMatrixUser(string $role, bool $blogPro = true): int
 {
     $id = wp_insert_user([
         'user_login' => 'corex-blog-' . $role . '-' . wp_generate_password(6, false),
@@ -26,6 +30,10 @@ function blogMatrixUser(string $role): int
         'role'       => $role,
     ]);
     expect($id)->toBeInt();
+
+    if ($blogPro && $role !== 'subscriber') {
+        (new WP_User($id))->add_cap(\Corex\Access\CorexAbility::MANAGE_BLOG);
+    }
 
     return $id;
 }
@@ -157,9 +165,12 @@ it('edits a comment only for people who may edit that comment', function () {
         ->and($edits($this->authorsOwnHeld))->toBe([false, true, true, true]);
 });
 
-it('opens to anyone who may edit posts, and to nobody else', function () {
+it('opens to the holders of "Manage Blog Pro", and to nobody else', function () {
     $subscriber = blogMatrixUser('subscriber');
     $this->users['subscriber'] = $subscriber;
+    $this->users['plain editor'] = blogMatrixUser('editor', false);
+
+    expect(($this->lets)('plain editor', 'GET', 'authors'))->toBeFalse();
 
     expect(($this->lets)('subscriber', 'GET', 'authors'))->toBeFalse()
         ->and(($this->lets)('subscriber', 'GET', 'analytics', ['post_id' => $this->otherPublished]))->toBeFalse()
