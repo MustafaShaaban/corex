@@ -6,6 +6,32 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #520 to #526).
+
+### Added
+
+- **Forms paused, a sixth operations mode** (spec 124, FR-003, FR-004). The site stays open and every public
+  submission (code-defined forms, flows, the newsletter, bookings, job applications, account registration and the
+  Assistant's callback form) is refused with HTTP 503, `Retry-After: 3600`, the code `forms_paused` and "Forms are
+  paused for a short while. Please try again later."; a signed-in administrator still submits. Maintenance and
+  Forms paused now refuse through one gate (`Corex\Config\Operations\PublicSubmissionGuard`, which replaces
+  `MaintenanceSubmissionGuard`), so they close exactly the same routes. Set it with
+  `wp corex mode set forms-paused --acknowledge`; it needs "Manage operations" and "Run dangerous actions" from the
+  screen, writes the same history row, survives an `APP_ENV` lock and answers "production" for mail. It is not
+  offered in the mode chooser until the mode cards are drawn (slice 8). The Assistant's chat
+  (`POST corex/v1/assistant`) is no longer a public submission: it keeps its token and limits and answers in
+  Forms paused and Maintenance; only its hand-off is refused (DECISIONS #522).
+
+### Client impact
+
+- **Muva and Perego**: nothing changes unless someone chooses Forms paused. Maintenance's refusal keeps its code
+  `site_in_maintenance` and its sentence exactly. Perego, which maps refusals by exact string, can map the new code
+  `forms_paused` and its sentence "Forms are paused for a short while. Please try again later." A client repository
+  that carries copies of CoreX's tests takes the updated
+  `tests/Integration/Operations/MaintenanceClosesSubmissionsTest.php` (both modes; the chat route is no longer one
+  they close).
+- **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
+
 Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIONS #470 to #479).
 
 ### Added

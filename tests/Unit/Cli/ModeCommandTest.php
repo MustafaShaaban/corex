@@ -130,7 +130,31 @@ it('refuses a mode that changes what visitors get without --acknowledge, changes
         ->and($result->message)->toContain('--acknowledge')
         ->and($this->store->isDeclared())->toBeFalse()
         ->and(modeCommandLog())->toBe([]);
-})->with([OperationsMode::COMING_SOON, OperationsMode::MAINTENANCE]);
+})->with([OperationsMode::COMING_SOON, OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED]);
+
+it('pauses forms with --acknowledge and leaves the pause again, writing the rows the screen writes (spec 124, FR-012)', function () {
+    $paused = $this->command->execute('set', ['forms-paused'], ['acknowledge' => true], 7, $this->now);
+    $left   = $this->command->execute('set', ['staging'], [], 7, $this->now);
+    $fromTheCommand = modeCommandLog();
+
+    // The same two changes, made the way the screen makes them, on a clean slate.
+    $GLOBALS['corex_test_options'] = [];
+    $this->service->apply(new ModeChangeRequest('forms-paused', 7, $this->now, acknowledged: true));
+    $this->service->apply(new ModeChangeRequest('staging', 7, $this->now));
+    $fromTheScreen = modeCommandLog();
+
+    $withoutTime = static fn (array $rows): array => array_map(
+        static fn (array $row): array => array_diff_key($row, ['time' => 0]),
+        $rows,
+    );
+
+    expect($paused->ok)->toBeTrue()
+        ->and($paused->mode)->toBe(OperationsMode::FORMS_PAUSED)
+        ->and($left->ok)->toBeTrue()
+        ->and($left->mode)->toBe(OperationsMode::STAGING)
+        ->and($fromTheCommand)->toHaveCount(2)
+        ->and($withoutTime($fromTheCommand))->toBe($withoutTime($fromTheScreen));
+});
 
 it('sets a mode that needs no confirmation without asking for one', function () {
     $result = $this->command->execute('set', ['development'], [], 7, $this->now);
@@ -181,7 +205,7 @@ it('fails on a mode that does not exist, and lists the ones that do', function (
     expect($result->ok)->toBeFalse()
         ->and($result->shouldExitNonZero())->toBeTrue()
         ->and($result->message)->toContain('holiday')
-        ->and($result->message)->toContain('development, staging, production, maintenance, coming-soon')
+        ->and($result->message)->toContain('development, staging, production, coming-soon, forms-paused, maintenance')
         ->and(modeCommandLog())->toBe([]);
 });
 

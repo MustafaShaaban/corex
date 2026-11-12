@@ -17,8 +17,8 @@ use Corex\Support\Config\Source;
  *
  * In this order: `APP_ENV` in `.env`, a value the network locks, or the `corex_app_env`
  * option, each of which locks the operations mode; then the operations mode the owner chose;
- * then WordPress's environment type. Coming soon and Maintenance are production here: they change
- * what visitors see, not where mail goes.
+ * then WordPress's environment type. Coming soon, Forms paused and Maintenance are production here:
+ * they change what visitors get, not where mail goes.
  *
  * The three lock layers are read one by one rather than through the config repository, whose
  * defaults layer answers `app.env` with "production" on every site and so hides the two answers
@@ -43,14 +43,14 @@ final class SiteEnvironment
     public const MODE_OPTION = 'corex_operations_mode';
 
     /** The operations modes that are production for mail. */
-    public const PRODUCTION_MODES = ['production', 'coming-soon', 'maintenance'];
+    public const PRODUCTION_MODES = ['production', 'coming-soon', 'forms-paused', 'maintenance'];
 
     /**
-     * The operations modes that change only what visitors see. A lock never takes them away: a
-     * site put in Coming soon or Maintenance stays closed to visitors whatever `APP_ENV` says,
-     * while its mail follows the lock.
+     * The operations modes that change only what visitors get. A lock never takes them away: a
+     * site put in Coming soon, Forms paused or Maintenance stays so whatever `APP_ENV` says, while
+     * its mail follows the lock.
      */
-    public const VISITOR_MODES = ['coming-soon', 'maintenance'];
+    public const VISITOR_MODES = ['coming-soon', 'forms-paused', 'maintenance'];
 
     private const KEY = 'app.env';
 
@@ -83,7 +83,7 @@ final class SiteEnvironment
 
     /**
      * Whether an operations mode may be chosen while a lock decides: the lock's own environment,
-     * and Coming soon and Maintenance under any lock. Without a lock every mode may.
+     * and the visitor modes under any lock. Without a lock every mode may.
      */
     public function allowsMode(string $mode): bool
     {

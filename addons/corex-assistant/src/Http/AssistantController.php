@@ -18,7 +18,6 @@ use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
-use Corex\Http\PublicSubmission;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -57,8 +56,10 @@ final class AssistantController
             'callback' => [$this, 'ask'],
             // Public endpoint: intent is the nonce middleware, abuse the limits middleware (Principle VII).
             'permission_callback' => '__return_true',
-            // Closed while the site is in Maintenance (spec 112).
-            PublicSubmission::MARKER => true,
+            // Not a public submission (spec 124, FR-004a, DECISIONS #522): the chat stores nothing
+            // a person sent in a form, so Forms paused keeps it answering. Its hand-off is the
+            // callback form, posted to the forms route, which declares the public submission
+            // marker and is refused in Forms paused and Maintenance.
         ]);
     }
 

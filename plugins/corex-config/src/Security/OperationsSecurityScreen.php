@@ -578,7 +578,7 @@ final class OperationsSecurityScreen
         $proposed = $this->proposedMode($current);
 
         $options = '';
-        foreach ($this->modes->all() as $mode) {
+        foreach ($this->modes->offered($current) as $mode) {
             $meta = $this->modes->describe($mode);
             $options .= sprintf(
                 '<option value="%1$s"%2$s%3$s>%4$s</option>',
@@ -673,7 +673,7 @@ final class OperationsSecurityScreen
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
         $requested = isset($_GET['mode']) ? sanitize_key(wp_unslash($_GET['mode'])) : '';
 
-        return $this->modes->isValid($requested) ? $requested : $current;
+        return in_array($requested, $this->modes->offered($current), true) ? $requested : $current;
     }
 
     /**

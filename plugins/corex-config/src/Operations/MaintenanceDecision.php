@@ -16,9 +16,9 @@ defined('ABSPATH') || exit;
  * (DECISIONS #123).
  *
  * It says nothing about the kind of request. The page guard adds its own rule that the admin,
- * cron, AJAX and REST are never sent the maintenance page; the submission guard closes only the
- * REST routes that declare a public submission. Both ask this one question, so they cannot
- * disagree about who passes.
+ * cron, AJAX and REST are never sent the maintenance page. Public submissions are closed by
+ * {@see PublicSubmissionGuard}, which asks corex-core's `PublicSubmissionPause` the same question
+ * with the same answer, for Forms paused as well (spec 124).
  */
 final class MaintenanceDecision
 {
