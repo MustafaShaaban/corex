@@ -22,8 +22,8 @@ use DateTimeImmutable;
  * Restores a safe login path without depending on the protected custom login URL.
  *
  * It turns all three login switches off (spec 124, FR-013, User Story 6 scenario 7), in both stored
- * shapes, so this release and an older one both read them off, and releases every active lockout.
- * Every other stored setting is kept.
+ * shapes, so this release and an older one both read them off, puts the login address back to
+ * `corex-login`, and releases every active lockout. Every other stored setting is kept.
  */
 final class SecurityResetLoginCommand
 {
