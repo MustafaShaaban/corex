@@ -25,6 +25,7 @@ use Corex\Boot;
 use Corex\Config\Activity\SecurityActivityRecorder;
 use Corex\Config\Notifications\Lockouts\LockoutNoticeRewrite;
 use Corex\Config\Notifications\Lockouts\LoginLockoutNotice;
+use Corex\Config\Notifications\Lockouts\WpLockoutNoticeStore;
 use Corex\Config\Notifications\NotificationTable;
 use Corex\Config\Security\LoginProtection\ClientIpResolver;
 use Corex\Config\Security\LoginProtection\LoginAccounts;
@@ -534,4 +535,22 @@ it('FR-020: the Lockouts panel and the notice give a new lockout the same finger
 
     expect($row)->toHaveCount(1)
         ->and($row[0]['network'])->toBe($metadata['network_fingerprint']);
+});
+
+it('FR-020: a failed read of the old notices fails the rewrite, so the schema version is not stored and it runs again', function () {
+    global $wpdb;
+
+    $store  = Boot::app()->container()->make(WpLockoutNoticeStore::class);
+    $broken = static fn (string $query): string => str_contains($query, 'source_type NOT IN')
+        ? 'SELECT corex_no_such_column FROM ' . $wpdb->prefix . 'corex_no_such_table'
+        : $query;
+    $suppressed = $wpdb->suppress_errors(true);
+    add_filter('query', $broken);
+
+    try {
+        expect(fn () => $store->legacyAfter(0, 100))->toThrow(RuntimeException::class);
+    } finally {
+        remove_filter('query', $broken);
+        $wpdb->suppress_errors($suppressed);
+    }
 });

@@ -44,7 +44,9 @@ final class WpLockoutNoticeStore implements LockoutNoticeStore
             max(1, $limit),
         ), ARRAY_A);
 
-        if (! is_array($rows)) {
+        // A failed query still answers an empty array, which would read as "nothing left" and let
+        // the schema version be stored with old notices unrewritten; the error is what tells them apart.
+        if (! is_array($rows) || $wpdb->last_error !== '') {
             throw new RuntimeException('CoreX could not read the lockout notices to rewrite.');
         }
 
