@@ -927,17 +927,34 @@ final class OperationsSecurityScreen
      * hiding setting alone, so a fresh install said "Hidden" while the login form was served.
      * While recovery is on they answer whatever the settings say (spec 112, FR-022).
      *
+     * Since spec 124 (FR-013) each address has its own switch, so the value says what each does when
+     * only one is hidden. With wp-login.php hidden and the admin not, a signed-out visit to the admin
+     * is redirected to the own address, which the note says (DECISIONS #628, amended).
+     *
      * @return array{0:string,1:string,2:string} the value, the section it links to, and a note
      */
     private function defaultEndpointsState(LoginProtectionSettings $policy): array
     {
-        return match (LoginAddressState::of($policy, $this->recovery->active())) {
-            LoginAddressState::HIDDEN   => [__('Hidden', 'corex'), 'login', ''],
-            LoginAddressState::RECOVERY => [
+        $state = LoginAddressState::of($policy, $this->recovery->active());
+
+        if ($state === LoginAddressState::RECOVERY) {
+            return [
                 __('Recovery active: the default login is reachable', 'corex'),
                 'login',
                 __('Recovery ends when the COREX_LOGIN_UNGUARD line is removed from wp-config.php.', 'corex'),
+            ];
+        }
+
+        $loginHidden = $state === LoginAddressState::HIDDEN;
+
+        return match (true) {
+            $loginHidden && $policy->hideAdmin => [__('Hidden', 'corex'), 'login', ''],
+            $loginHidden => [
+                __('wp-login.php hidden, wp-admin reachable', 'corex'),
+                'login',
+                __('A signed-out visit to wp-admin is sent to the login address, so the address is not private. Hide the admin as well to keep it private.', 'corex'),
             ],
+            $policy->hideAdmin => [__('wp-login.php reachable, wp-admin hidden', 'corex'), 'login', ''],
             default => [__('Reachable', 'corex'), 'login', ''],
         };
     }

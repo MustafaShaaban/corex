@@ -533,7 +533,7 @@ final class CliServiceProvider extends ServiceProvider
     {
         return [
             'shortdesc' => __('Turn every CoreX login switch off and release active lockouts.', 'corex'),
-            'longdesc'  => __('Turns off hiding wp-login.php, hiding the admin from visitors who are not signed in, and limiting failed sign-ins, and puts the login address back to corex-login. Releases every lockout still in force and prints the wp-login.php address that works now. Users, passwords, roles and other settings are not changed. Without a command line, add define( \'COREX_LOGIN_UNGUARD\', true ); to wp-config.php instead: wp-login.php and the admin open again while the line is there, and nothing is saved.', 'corex'),
+            'longdesc'  => __('Turns off hiding wp-login.php, hiding the admin from visitors who are not signed in, and limiting failed sign-ins, and puts the login address back to corex-login. Releases every lockout still in force and prints the wp-login.php address that works now. Users, passwords, roles and other settings are not changed. Without a command line, add define( \'COREX_LOGIN_UNGUARD\', true ); to wp-config.php instead: wp-login.php and the admin open again while the line is there, and nothing is saved. The line does not end a lockout; this command does.', 'corex'),
         ];
     }
 

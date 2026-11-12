@@ -138,7 +138,7 @@ It has two groups:
 | Group | Checks | Can it block going live? |
 |---|---|---|
 | **Security and hosting** | HTTPS, file editing disabled, debug output hidden, no default `admin` account, search indexing allowed, authentication salts configured | Yes: a failing one **Blocks going live** |
-| **Site and content** | Brand set (company name and admin logo), Kit applied (only while a kit add-on is active), Front page (a static front page, or a theme with its own front-page template), Privacy page published, Terms page published (chosen in Settings → Brand), Test email sent (a test from Email Studio the mail transport accepted in the last 90 days), Login protection on | No: these say **Pending** and advise |
+| **Site and content** | Brand set (company name and admin logo), Kit applied (only while a kit add-on is active), Front page (a static front page, or a theme with its own front-page template), Privacy page published, Terms page published (chosen in Settings → Brand), Test email sent (a test from Email Studio the mail transport accepted in the last 90 days), Login protection on (failed sign-ins are limited; hiding the login or the admin alone does not count) | No: these say **Pending** and advise |
 
 Each check says its state in a word beside an icon: **Ready** (on the Overview, **Done**), **Pending**,
 **Blocks going live** (on the Overview, **Blocked**), or **Could not check** when its facts could not be

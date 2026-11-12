@@ -31,14 +31,15 @@ function loginSettings(bool $enabled, bool $hides): LoginProtectionSettings
     );
 }
 
-it('says hidden only with protection on, hiding on and recovery off', function (bool $enabled, bool $hides, bool $recovery, string $state) {
+it('says hidden only with protection on, hiding on and recovery off, and recovery whenever it is set with protection on', function (bool $enabled, bool $hides, bool $recovery, string $state) {
     expect(LoginAddressState::of(loginSettings($enabled, $hides), $recovery))->toBe($state);
 })->with([
     'protection off, hiding on'           => [false, true, false, LoginAddressState::OFF],
     'protection off, hiding on, recovery' => [false, true, true, LoginAddressState::OFF],
     'protection off, hiding off'          => [false, false, false, LoginAddressState::OFF],
     'protection on, hiding off'           => [true, false, false, LoginAddressState::REACHABLE],
-    'protection on, hiding off, recovery' => [true, false, true, LoginAddressState::REACHABLE],
+    // Spec 124 slice 4 review: recovery is reported whenever it is set and a switch is on.
+    'protection on, hiding off, recovery' => [true, false, true, LoginAddressState::RECOVERY],
     'protection on, hiding on, recovery'  => [true, true, true, LoginAddressState::RECOVERY],
     'protection on, hiding on'            => [true, true, false, LoginAddressState::HIDDEN],
 ]);
@@ -54,5 +55,8 @@ it('spec 124 FR-013: follows the "hide wp-login.php" switch alone, with any swit
     'the admin hidden only'            => [false, true, false, false, LoginAddressState::REACHABLE],
     'wp-login.php hidden only'         => [true, false, false, false, LoginAddressState::HIDDEN],
     'wp-login.php hidden, recovery'    => [true, false, false, true, LoginAddressState::RECOVERY],
+    // A forgotten recovery line reopening a hidden admin, or doing nothing yet, is still reported.
+    'the admin hidden only, recovery'  => [false, true, false, true, LoginAddressState::RECOVERY],
+    'limits only, recovery'            => [false, false, true, true, LoginAddressState::RECOVERY],
     'all on'                           => [true, true, true, false, LoginAddressState::HIDDEN],
 ]);

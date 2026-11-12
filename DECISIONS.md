@@ -20773,4 +20773,31 @@ the old code first. Neither client records its stored value; both record behavio
 CI.
 
 **Until slices 5 and 10.** The current screen still sends only the two old keys, so a combination it cannot express
-(made by code or by hand) is turned into its old-key meaning on its next save.
+(made by code or by hand) is turned into its old-key meaning on its next save. The Overview's login tile and row
+keep their words until slice 10, because they are screen copy: with limits off and `wp-login.php` hidden they read
+"On" and "Login address hidden" (`OverviewTiles.php`, `OverviewModel.php`), which says nothing about the limits being
+off. So **slice 5 may not be released before slice 10**: once the route saves the switches, a site can be in a
+combination those words do not describe.
+
+**Amended 2026-11-12 (review of slice 4).** Decided by the orchestrator under the owner's delegation.
+
+- *Hiding `wp-login.php` alone leaves the own address public.* With it on and the admin not hidden, a signed-out
+  request for `/wp-admin/` is redirected to the own address (`Location: /team-entry/...`), as scenario 1 asks. So 2
+  of the 8 combinations (`wp-login.php` hidden, admin not, with or without limits) give no obscurity for the login
+  address. Only hiding the admin as well keeps it private. Slice 10 must say so beside the first switch; until then
+  the Security Center's "Default login endpoints" row says it in its note. No code change.
+- *What a person reads is true, server side.* The launch checklist's "Login protection on" passes only while
+  failed sign-ins are limited (`SiteReadinessFacts`): limits are the defence, hiding is obscurity. Its sentences
+  say "Failed sign-ins are limited" and "Failed sign-ins are not limited"; its key and label are unchanged.
+  `LoginAddressState` answers `recovery` whenever the recovery constant is set and any switch is on, before it
+  would answer `reachable`, so a forgotten constant that reopens a hidden admin is reported. "Default login
+  endpoints" says what each address does: "Hidden" (both), "wp-login.php hidden, wp-admin reachable" (with the note
+  above), "wp-login.php reachable, wp-admin hidden", or "Reachable"; only the value and the note it reads changed,
+  not the markup.
+- *Recording successful sign-ins keeps its meaning.* It records while its own setting is on and any switch is on,
+  as it did while protection was on (`LoginProtectionEnforcer::recordSuccess()`, `LoginProtectionService::recordSuccess()`).
+  Only failed attempts need the limits switch.
+- *`/admin` and `/dashboard` are not found while `wp-login.php` is hidden.* `wp_redirect_admin_locations` is taken
+  off whole, so `/login`, `/admin` and `/dashboard` all reach the 404. Putting back only its admin half would send
+  `/admin` and `/dashboard` to `/wp-admin/`, which with the admin not hidden reveals the address anyway (the first
+  point). No code change.

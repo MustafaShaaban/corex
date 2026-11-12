@@ -125,3 +125,36 @@ it('does not enforce or record when login protection is disabled', function () {
     // No lockout is possible while disabled; the authenticate result passes through untouched.
     expect($enforcer->blockLockedOut(null, 'owner', 'secret'))->toBeNull();
 });
+
+/** This test's attempts, found by the keyed address they were made from. */
+function loginEnforcementOutcomes(): array
+{
+    global $wpdb;
+
+    return $wpdb->get_col($wpdb->prepare(
+        'SELECT outcome FROM ' . (new Migrator())->fullName(LoginAttemptTable::NAME) . ' WHERE network_hash = %s ORDER BY id ASC',
+        \Corex\Boot::app()->container()->make(LoginProtectionPolicy::class)->networkHashOf(LOGIN_ENFORCEMENT_TEST_IP),
+    ));
+}
+
+// Spec 124 slice 4 review: recording successful sign-ins keeps its meaning. It records whenever its
+// own setting and any switch are on, as it did while protection was on; only failures need limits.
+it('records a successful sign-in whenever a switch is on and recording is on, and a failure only with limits', function (array $switches, bool $logging, array $outcomes) {
+    $settings = \Corex\Config\Security\LoginProtection\LoginProtectionSettings::of(
+        new \Corex\Config\Security\LoginProtection\LoginSwitches(...$switches),
+        successfulLoginLogging: $logging,
+    );
+    $enforcer = loginEnforcer($this->attempts, $settings);
+    $user = get_user_by('id', (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0]);
+
+    $enforcer->recordFailure('owner');
+    $enforcer->recordSuccess('owner', $user);
+
+    expect(loginEnforcementOutcomes())->toBe($outcomes);
+})->with([
+    'the admin hidden alone' => [[false, true, false], true, ['success']],
+    'wp-login.php hidden alone' => [[true, false, false], true, ['success']],
+    'limits alone' => [[false, false, true], true, ['failed', 'success']],
+    'every switch off' => [[false, false, false], true, []],
+    'the admin hidden, recording off' => [[false, true, false], false, []],
+]);

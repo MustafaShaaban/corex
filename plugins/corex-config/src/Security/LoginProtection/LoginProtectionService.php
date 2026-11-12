@@ -98,7 +98,8 @@ final class LoginProtectionService
 
     public function recordSuccess(LoginProtectionContext $context, int $userId, DateTimeImmutable $now): LoginProtectionDecision
     {
-        if (! $this->policy->settings->limitAttempts || ! $this->policy->settings->successfulLoginLogging) {
+        // Its own setting, with any switch on: a successful sign-in is not a limit (spec 124).
+        if (! $this->policy->settings->enabled || ! $this->policy->settings->successfulLoginLogging) {
             return new LoginProtectionDecision(false, 'success_not_logged');
         }
 

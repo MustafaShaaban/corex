@@ -67,6 +67,11 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECIS
   (`loginPolicy`) and the Overview's facts (`OverviewFacts::gather()['loginSwitches']`) now carry each switch and
   whether recovery is on; the screens draw them in slice 10 and their markup does not change here. The screen and
   its settings route still read and send the previous release's two keys until slices 5 and 10.
+  Hiding `wp-login.php` alone does not keep the own address private: a signed-out visit to `/wp-admin/` is
+  redirected to it, as scenario 1 asks, so 2 of the 8 combinations (`wp-login.php` hidden and the admin not, with or
+  without limits) give no obscurity for the address. Only hiding the admin as well keeps it private. With
+  `wp-login.php` hidden, `/login`, `/admin` and `/dashboard` are not found either (WordPress's shortcut redirects are
+  taken off whole).
 - **`wp corex security reset-login --help`** says what the command does, and the command turns all three switches
   off in both stored shapes.
 - **Sign-in records are deleted after the retention period.** "Keep sign-in records" (30 days by default) did
@@ -90,6 +95,18 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECIS
   (`LoginProtectionEnforcer`, `LoginProtectionService`), and `LoginAddressState` follows `hideWpLogin`.
 - **The recovery constant reopens `wp-login.php` and the admin whatever the switches say.**
   `define( 'COREX_LOGIN_UNGUARD', true );` in `wp-config.php` keeps the custom address working, as before.
+  `LoginAddressState` now says `recovery` whenever the constant is set and any switch is on, not only when
+  `wp-login.php` is hidden, so a forgotten line that reopens a hidden admin is reported.
+- **Successful sign-ins are recorded as before**: whenever "Record successful sign-ins" is on and any switch is on.
+  Only failed sign-ins need the limits switch.
+- **The launch checklist's "Login protection on" passes only while failed sign-ins are limited** (limits are the
+  defence, hiding is obscurity). Its sentences are now "Failed sign-ins are limited" and "Failed sign-ins are not
+  limited" (they were "Login protection is on" and "Login protection is off"); the check's key and label are
+  unchanged.
+- **The Security Center's "Default login endpoints" says what each address does**: "Hidden" (both), "wp-login.php
+  hidden, wp-admin reachable" with a note that a signed-out visit to wp-admin is sent to the login address, so it is
+  not private, "wp-login.php reachable, wp-admin hidden", or "Reachable". It said "Reachable" with the admin
+  hidden.
 - **`Corex\Security\LoginLockoutEvent` carries no typed username and no address** (FR-020). Its constructor is now
   `(?int $userId, string $identityFingerprint, string $networkFingerprint, DateTimeImmutable $lockedUntil)`; the
   `identity` and `clientIp` properties are gone, and the constructor refuses anything that is not a 12-character
@@ -178,8 +195,10 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECIS
   update. The first save of the login settings after the update writes the three switches and the two old keys
   beside them. Perego's `.htaccess` rule that answers 403 at `/wp-login.php` is its own and is not affected. A client
   repository that carries copies of CoreX's tests takes `LoginProtectionSettingsStoreTest` (an unusable address is
-  refused while `wp-login.php` is hidden), `SecurityResetLoginCommandTest`, `LoginAddressStateTest`,
-  `OverviewTruthTest` and `RecoveryOnTest`.
+  refused while `wp-login.php` is hidden), `SecurityResetLoginCommandTest`, `LoginAddressStateTest` (recovery is
+  reported with any switch on), `OverviewTruthTest`, `RecoveryOnTest`, `LaunchChecklistTest` (the login check's
+  sentences) and `LoginProtectionEnforcementTest`. Both sites limit failed sign-ins, so their launch checklist's
+  login check still passes.
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves. When it moves, its own listener
   `StaffActivityLog::lockedOut()` (`platform/mizzey-site/src/Security/StaffActivityLog.php`) stops recording who was
   locked out: it reads `$event->identity` and `$event->clientIp` behind `isset`, which are gone, so it silently writes

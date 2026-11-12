@@ -89,7 +89,8 @@ final class LoginProtectionEnforcer
 
     public function recordSuccess(string $username, mixed $user = null): void
     {
-        if (! $this->settings->limitAttempts || ! $user instanceof WP_User) {
+        // Recording successful sign-ins keeps its meaning: its own setting, with any switch on.
+        if (! $this->settings->enabled || ! $user instanceof WP_User) {
             return;
         }
 

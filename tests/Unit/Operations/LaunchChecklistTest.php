@@ -88,7 +88,7 @@ it('says what is missing on an open check, never the passing condition', functio
     'privacy page a draft' => [['privacy' => ['page' => 3, 'published' => false]], 'privacy_page', 'The privacy policy page is not published', 'post.php?post=3&action=edit'],
     'no terms page' => [['terms' => ['page' => 0, 'published' => false]], 'terms_page', 'Choose a terms page', SiteChecks::BRAND_SETTINGS],
     'no test email' => [['testEmail' => ['mail' => true, 'sent' => false]], 'test_email', 'No test email sent in the last 90 days', 'admin.php?page=corex-email-studio'],
-    'login protection off' => [['login' => false], 'login_protection', 'Login protection is off', 'admin.php?page=corex-operations-security&tab=login'],
+    'failed sign-ins not limited (spec 124: hiding alone does not pass)' => [['login' => false], 'login_protection', 'Failed sign-ins are not limited', 'admin.php?page=corex-operations-security&tab=login'],
     'no logo' => [['brand' => ['name' => true, 'logo' => false]], 'brand', 'No admin logo', SiteChecks::BRAND_SETTINGS],
 ]);
 
@@ -177,3 +177,10 @@ it('blocks Production only on a blocked security check', function () {
 it('refuses a check in a group that does not exist', function () {
     checklistSnapshot(['x' => ['elsewhere', ReadinessSnapshot::PASS]]);
 })->throws(InvalidArgumentException::class);
+
+it('spec 124: says the login check passes because failed sign-ins are limited', function () {
+    $check = siteChecksByKey(['login' => true])['login_protection'];
+
+    expect($check['state'])->toBe(ReadinessSnapshot::PASS)
+        ->and($check['summary'])->toBe('Failed sign-ins are limited');
+});

@@ -15,11 +15,16 @@
  * SC-002: the previous release's answers below were read from this site running the previous
  * release's code (commit 7500f390), before this slice changed it, for each of the four shapes its
  * save could store. Neither client records its stored option; both record behaviour that only
- * "protection on, hiding on" with the address `corex-login` and the default limits produces
- * (Muva: `sites/muva/docs/client-guide/guide.md`, "mu-va.com/corex-login/", and `/wp-login.php`
- * answering 404 in `sites/muva/PROGRESS.md`; Perego: `sites/perego/docs/hosting.md`, "Sign-in:
- * `/corex-login/`. `/wp-login.php` and logged-out `/wp-admin/` answer 404", with 5 failures in 5
- * minutes and a 15-minute lockout in `sites/perego/PROGRESS.md`; `trusted_proxy_mode` off in both).
+ * "protection on, hiding on" with the address `corex-login` and the default limits produces. Both
+ * are other repositories, read on this machine, not files of this one:
+ *   - Muva: `C:\wamp64\www\muva\sites\muva\docs\client-guide\guide.md` ("mu-va.com/corex-login/",
+ *     and "not found" at wp-login.php and wp-admin), `C:\wamp64\www\muva\sites\muva\PROGRESS.md`
+ *     (`/wp-login.php` answering 404) and `C:\wamp64\www\muva\sites\muva\DECISIONS.md` (#12,
+ *     `trusted_proxy_mode` off);
+ *   - Perego: `C:\wamp64\www\perego\sites\perego\docs\hosting.md` ("Sign-in: `/corex-login/`.
+ *     `/wp-login.php` and logged-out `/wp-admin/` answer 404") and
+ *     `C:\wamp64\www\perego\sites\perego\PROGRESS.md` (5 failures in 5 minutes, a 15-minute lockout,
+ *     `trusted_proxy_mode` off).
  *
  * @package Corex\Tests\Integration\Security
  */
@@ -220,7 +225,11 @@ it('FR-013, scenario 1: with only "Hide wp-login.php" on, wp-login.php is not fo
         ->and($admin['code'])->toBe(302)
         ->and($admin['location'])->toStartWith(home_url('/team-entry/'))
         // The shortcut WordPress keeps does not hand the address out.
-        ->and($shortcut['location'])->not->toContain('team-entry');
+        ->and($shortcut['location'])->not->toContain('team-entry')
+        // WordPress's shortcut redirects are taken off whole, so these are not found either (DECISIONS #628,
+        // amended): sending them to /wp-admin/ would reveal the address anyway.
+        ->and(corexAskAsVisitor('/admin')['code'])->toBe(404)
+        ->and(corexAskAsVisitor('/dashboard')['code'])->toBe(404);
 });
 
 it('FR-013, scenario 2: with only "Hide the admin" on, /wp-admin/ is not found and wp-login.php signs in', function () {

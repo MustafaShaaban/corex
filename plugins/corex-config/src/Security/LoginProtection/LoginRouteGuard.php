@@ -193,7 +193,7 @@ final class LoginRouteGuard
      *
      * From here until the 404 is rendered the URL filters leave the default address alone, so
      * anything else that bounces this request to the login early sends it to wp-login.php, which
-     * is hidden too. The Customizer's own check is taken off, so this request reaches the 404
+     * names no custom address (and is not found as well when the first switch hides it). The Customizer's own check is taken off, so this request reaches the 404
      * every other hidden admin address gets. The rewriting is back on for the 404 itself: a real
      * missing page links to the slug wherever the theme links to the login, and this one must not
      * differ.

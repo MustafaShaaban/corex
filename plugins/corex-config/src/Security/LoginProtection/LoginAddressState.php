@@ -32,7 +32,11 @@ final class LoginAddressState
     /** wp-login.php is hidden. */
     public const HIDDEN = 'hidden';
 
-    /** The settings would hide it, and the recovery constant keeps it reachable. */
+    /**
+     * The recovery constant is set while a switch is on: wp-login.php and the admin answer whatever the
+     * switches say. Reported whatever the switches are, so a forgotten line that reopens a hidden admin,
+     * or will reopen whatever is hidden next, is never read as an ordinary state.
+     */
     public const RECOVERY = 'recovery';
 
     public static function of(LoginProtectionSettings $settings, bool $recoveryActive): string
@@ -41,10 +45,10 @@ final class LoginAddressState
             return self::OFF;
         }
 
-        if (! $settings->hideWpLogin) {
-            return self::REACHABLE;
+        if ($recoveryActive) {
+            return self::RECOVERY;
         }
 
-        return $recoveryActive ? self::RECOVERY : self::HIDDEN;
+        return $settings->hideWpLogin ? self::HIDDEN : self::REACHABLE;
     }
 }
