@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Activity\ActivityEvent;
 use Corex\Config\Access\ScreenNames;
 use Corex\Config\Operations\OperationsMode;
+use Corex\Config\Operations\PageCachePurge;
 
 /**
  * What happened, in a sentence a site owner reads (spec 118, US-OVR-07). The one source of activity
@@ -78,12 +79,7 @@ final class ActivitySentences
                 $who,
             )),
             SecurityActivityRecorder::MODE_CHANGED => $this->said(
-                sprintf(
-                    /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
-                    __('%1$s changed the mode to %2$s', 'corex'),
-                    $who,
-                    $this->modes->describe((string) ($event->context['to'] ?? $event->targetId))['label'],
-                ),
+                $this->modeChanged($event, $who),
                 'admin.php?page=corex-operations-security&tab=environment',
             ),
             SecurityActivityRecorder::ACCESS_DENIED => $this->said(
@@ -163,6 +159,78 @@ final class ActivitySentences
             ActivityEvent::ACTOR_CRON => __('A scheduled task', 'corex'),
             default                   => __('CoreX', 'corex'),
         };
+    }
+
+    /**
+     * A change of mode, and the page-cache plugins it asked to clear (spec 124, FR-004b). It says
+     * what CoreX knows: that it asked, not that the pages are gone, since a plugin can return early
+     * without saying so (DECISIONS #625). A change recorded before caches were cleared on one has
+     * no `page_caches` and reads as it did then.
+     */
+    private function modeChanged(ActivityEvent $event, string $who): string
+    {
+        $mode   = $this->modes->describe((string) ($event->context['to'] ?? $event->targetId))['label'];
+        $caches = $event->context['page_caches'] ?? null;
+
+        if (! is_array($caches)) {
+            /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
+            return sprintf(__('%1$s changed the mode to %2$s', 'corex'), $who, $mode);
+        }
+
+        $askedKeys = is_array($caches['asked'] ?? null) ? $caches['asked'] : [];
+        $asked     = $this->pageCaches($askedKeys);
+        $failed    = $this->pageCaches($caches['failed'] ?? []);
+
+        return match (true) {
+            $asked !== '' && $failed !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket". 4: the ones whose cache could not be cleared. */
+                _n(
+                    '%1$s changed the mode to %2$s and asked %3$s to clear its page cache. The page cache of %4$s could not be cleared',
+                    '%1$s changed the mode to %2$s and asked %3$s to clear their page caches. The page cache of %4$s could not be cleared',
+                    count($askedKeys),
+                    'corex',
+                ),
+                $who,
+                $mode,
+                $asked,
+                $failed,
+            ),
+            $asked !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket and LiteSpeed Cache". */
+                _n(
+                    '%1$s changed the mode to %2$s and asked %3$s to clear its page cache',
+                    '%1$s changed the mode to %2$s and asked %3$s to clear their page caches',
+                    count($askedKeys),
+                    'corex',
+                ),
+                $who,
+                $mode,
+                $asked,
+            ),
+            $failed !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins whose cache could not be cleared, e.g. "WP Rocket". */
+                __('%1$s changed the mode to %2$s. The page cache of %3$s could not be cleared', 'corex'),
+                $who,
+                $mode,
+                $failed,
+            ),
+            default => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
+                __('%1$s changed the mode to %2$s. No page-cache plugin CoreX can ask was active', 'corex'),
+                $who,
+                $mode,
+            ),
+        };
+    }
+
+    /** Cache plugins by their product names, as a list in the reader's language; empty for none. */
+    private function pageCaches(mixed $keys): string
+    {
+        $names = is_array($keys)
+            ? array_map(static fn (mixed $key): string => PageCachePurge::label((string) $key), array_values($keys))
+            : [];
+
+        return $names === [] ? '' : wp_sprintf_l('%l', $names);
     }
 
     private function addon(ActivityEvent $event, string $who): string

@@ -43,7 +43,7 @@ function comingSoonNotice(): ComingSoonNotice
     return new ComingSoonNotice(
         new ComingSoonGuard(
             $store,
-            new ComingSoonTemplate(new StandalonePage('', '')),
+            new ComingSoonTemplate(new StandalonePage('', ''), new \Corex\Config\Operations\ModeRobots(new \Corex\Environment\SiteEnvironment([]))),
             new ComingSoonSitemap(),
             new PreviewAccess(new InMemoryPreviewAccessStore(), 'a-key-only-the-site-knows'),
         ),

@@ -56,10 +56,16 @@ and approved first, a spec ends in slices, and nothing merges without the review
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).
   Slice 1 (Forms paused as a mode, one gate for Maintenance and Forms paused, the Assistant's chat kept open and its
-  hand-off refused, the abilities) is on branch `spec/124-slice-1-forms-paused`: guarded, read by
-  `corex-reviewer` and fixed on 2026-11-12; the mode is chosen from the command line until slice 8 draws the mode
-  cards. Next: the two-model review and its pull request, then slice 2 (`noindex` in Development and Staging, a
-  mode change clears page caches).
+  hand-off refused, the abilities) is merged (#463, `4c30bc19`); the mode is chosen from the command line until
+  slice 8 draws the mode cards. Slice 2 (`noindex` on development and staging sites, following the environment
+  rather than the mode; a mode change asks page-cache plugins to clear their pages) is merged (#465, `f6b45eb0`,
+  DECISIONS #625). Slice 3 (sign-in privacy: values keyed with the site's secret, old ones counted until they age
+  out, the account or "unknown username", one fingerprint on the panel and the notice, old lockout notices rewritten
+  by the first schema data step; DECISIONS #626, #627) is on `spec/124-slice-3-sign-in-privacy`. Next: slice 3's
+  reviews and pull request, then slice 4 (the three login switches, after 3). Held: `OperationsMode.php:189`
+  and `ModeDisclosure.php:157` still tell a Staging owner that search engines "should be discouraged", which is no
+  longer true once slice 2 ships; the wording is held for slice 8's screen copy, but a release cut before slice 8
+  would ship it.
 - **Spec 129 slice 3** (CoreX Assistant: a time asked for once, a line the server writes, `required_if`), PR
   #456, DECISIONS #617 to #619: open, not reviewed in this pass.
 - **Spec 130, the docs on their own host**, draft (DECISIONS #620, ROADMAP §13 "Public hosts"). Waits on three
