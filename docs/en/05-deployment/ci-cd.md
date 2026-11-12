@@ -25,6 +25,11 @@ A third workflow, **Docs** ([`.github/workflows/docs.yml`](../../../.github/work
 to `main`: it regenerates the per-class reference from source (`composer docs:generate`, a headless equivalent
 of `wp corex docs:generate` that needs no WordPress) and builds the docs site, so the published reference can
 never drift from the code, then publishes it to GitHub Pages at <https://mustafashaaban.github.io/corex/>.
+The build is made for the address Pages reports (`actions/configure-pages`), so a custom domain set in the
+repository's Pages settings takes effect at the next run, and after every deploy
+[`scripts/check-docs-host.mjs`](../../../scripts/check-docs-host.mjs) checks the published site: its pages,
+styles and search load, plain HTTP is sent to HTTPS, and, once the site has moved, old addresses redirect to the
+same page (spec 130).
 
 ## Pipeline stages
 

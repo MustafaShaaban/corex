@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { docsAddress } from './docs-address.mjs';
 
 // Corex documentation site.
 //
@@ -11,19 +12,19 @@ import starlight from '@astrojs/starlight';
 // Apache (WAMP): build, then point a vhost `docs.corex.local` at `docs-app/dist`
 // (DocumentRoot), or browse the repo path http://localhost/corex/docs-app/dist/.
 //
-// Published at https://mustafashaaban.github.io/corex/ by `.github/workflows/docs.yml`.
-// A GitHub project page is served from a repository subpath, so `base` is not optional
-// there: without it every internal link, asset and Pagefind index URL resolves to the
-// domain root and the site 404s on itself.
+// Published by `.github/workflows/docs.yml`, which builds for the address GitHub Pages reports:
+// the project page https://mustafashaaban.github.io/corex/, or the custom domain once one is
+// set (spec 130). A project page is served from a repository subpath, so `base` is not optional
+// there: without it every internal link, asset and Pagefind index URL resolves to the domain
+// root and the site 404s on itself. A custom domain is served from its root.
 //
-// Both are overridable so the same build serves somewhere else unchanged — set
-// COREX_DOCS_SITE and COREX_DOCS_BASE for a dedicated domain (`base: '/'`), or for the
-// local repo-subpath URL above.
+// The address comes from COREX_DOCS_SITE and COREX_DOCS_BASE, read by `./docs-address.mjs`
+// (the one rule the link test reads too). Set them for a dedicated domain (an empty base is the
+// root), or for the local repo-subpath URL above.
 //
 // Search is Pagefind (bundled with Starlight): instant, fuzzy, keyboard-driven, and
 // fully client-side — it indexes every page + heading at build time, no server needed.
-const site = process.env.COREX_DOCS_SITE || 'https://mustafashaaban.github.io';
-const base = process.env.COREX_DOCS_BASE || '/corex';
+const { site, base } = docsAddress( process.env );
 
 /** `base` without a trailing slash, so joining never produces `//`. */
 const basePrefix = base.replace( /\/$/, '' );

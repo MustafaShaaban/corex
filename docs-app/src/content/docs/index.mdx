@@ -5,11 +5,12 @@ template: splash
 hero:
   tagline: A Laravel-inspired WordPress framework. Spec-first. Block-native. RTL by default.
   actions:
-    # The one link that carries the base literally. Hero actions are frontmatter, not markdown, so
-    # the rehype rewrite in astro.config.mjs never sees them — and Starlight does not prefix them
-    # either. Change this alongside COREX_DOCS_BASE if the site ever moves.
+    # Relative on purpose: hero actions are frontmatter, not markdown, so the rehype rewrite in
+    # astro.config.mjs never sees them, and Starlight does not prefix them either. From the home
+    # page a relative link resolves under whatever base the site is built for (`/corex/` on the
+    # project page, `/` on its own host, spec 130), where a root-absolute one would name one base.
     - text: Get started
-      link: /corex/getting-started/overview/
+      link: getting-started/overview/
       icon: right-arrow
       variant: primary
     - text: View on GitHub

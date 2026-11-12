@@ -6,6 +6,22 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+The docs site is built for the address GitHub Pages serves, and checked after every deploy (spec 130 slice 1,
+DECISIONS #622).
+
+### Changed
+
+- **The docs build follows the Pages address.** `.github/workflows/docs.yml` builds the site for the address
+  Pages reports, so the custom domain `corex-docs.mustafashaaban.com` takes effect at the next run once it is set
+  in the repository's settings. After every deploy, `scripts/check-docs-host.mjs` checks that the published
+  pages, styles and search load, that HTTP is sent to HTTPS and, after the move, that old `github.io/corex/`
+  addresses redirect to the same page.
+
+### Client impact
+
+- None. Nothing that ships in a release changes; the admin's docs links still point at
+  `mustafashaaban.github.io/corex/` until spec 130's slice 2.
+
 Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIONS #470 to #479).
 
 ### Added
