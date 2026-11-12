@@ -14,8 +14,12 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Admin\StandalonePage;
 use Corex\Config\Operations\ComingSoonTemplate;
+use Corex\Config\Operations\ModeRobots;
+use Corex\Environment\SiteEnvironment;
+use Corex\Support\Config\Source;
 
-function comingSoonTemplate(): ComingSoonTemplate
+/** A site whose `APP_ENV` says `$appEnv`, or that has none when it is null. */
+function comingSoonTemplate(?string $appEnv = null): ComingSoonTemplate
 {
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
@@ -24,7 +28,27 @@ function comingSoonTemplate(): ComingSoonTemplate
 
     $assets = dirname(__DIR__, 3) . '/plugins/corex-core/assets';
 
-    return new ComingSoonTemplate(new StandalonePage($assets, 'http://example.test/plugins/corex-core/assets'));
+    Functions\when('wp_get_environment_type')->justReturn('production');
+    $dotenv = new class ($appEnv) implements Source {
+        public function __construct(private readonly ?string $value)
+        {
+        }
+
+        public function has(string $key): bool
+        {
+            return $key === 'app.env' && $this->value !== null;
+        }
+
+        public function get(string $key): mixed
+        {
+            return $this->value;
+        }
+    };
+
+    return new ComingSoonTemplate(
+        new StandalonePage($assets, 'http://example.test/plugins/corex-core/assets'),
+        new ModeRobots(new SiteEnvironment([[SiteEnvironment::BY_DOTENV, $dotenv]])),
+    );
 }
 
 /**
@@ -69,7 +93,7 @@ it('says the page is coming soon, in a string a translator can reach', function 
 
         return 'ترجمة';
     });
-    $template = new ComingSoonTemplate(new StandalonePage('', ''));
+    $template = new ComingSoonTemplate(new StandalonePage('', ''), new ModeRobots(new SiteEnvironment([])));
 
     $content = $template->defaultContent();
 
@@ -125,4 +149,17 @@ it('asks crawlers to stay away from the fallback page when WordPress is set to d
     Functions\when('get_option')->alias(static fn (string $key): string => $key === 'blog_public' ? '0' : '');
 
     expect(comingSoonTemplate()->standalone())->toContain('<meta name="robots" content="noindex, nofollow"');
+});
+
+it('FR-002 (amended): asks crawlers to stay away from the fallback page of a staging copy, whatever the Reading setting says', function () {
+    // A staging copy locked by APP_ENV, in Coming soon: the block template gets its noindex from
+    // wp_robots, and this whole document, which never runs wp_head, has to say it too.
+    Functions\when('get_bloginfo')->justReturn('');
+    Functions\when('get_option')->alias(static fn (string $key, $default = false) => match ($key) {
+        'blog_public'           => '1',
+        'corex_operations_mode' => 'coming-soon',
+        default                 => $default,
+    });
+
+    expect(comingSoonTemplate('staging')->standalone())->toContain('<meta name="robots" content="noindex, nofollow"');
 });

@@ -6,7 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #520 to #526).
+Modes that do what they say (spec 124, revamp release R3.8, slices 1 and 2; DECISIONS #520 to #526, #625).
 
 ### Added
 
@@ -21,6 +21,25 @@ Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #
   offered in the mode chooser until the mode cards are drawn (slice 8). The Assistant's chat
   (`POST corex/v1/assistant`) is no longer a public submission: it keeps its token and limits and answers in
   Forms paused and Maintenance; only its hand-off is refused (DECISIONS #522).
+- **Development and staging sites keep search engines out** (spec 124, FR-002, DECISIONS #625). A site whose
+  environment is development or staging, declared, locked or inherited (the mode chosen, `APP_ENV` in `.env`, the
+  network's lock, the `corex_app_env` option, or WordPress's environment type), carries a robots `noindex` in the page
+  and an `X-Robots-Tag: noindex` header on every front-end response: pages, feeds, sitemaps, 404s and attachment
+  pages (`Corex\Config\Operations\ModeRobots`, on `wp_robots` and `wp_headers`). A site locked to development or
+  staging does so in every mode, Coming soon, Forms paused and Maintenance included, and the Coming soon page of a
+  theme with no block templates says it too. Without a lock, Coming soon, Forms paused and Maintenance are
+  production, so an environment inherited from WordPress keeps `noindex` only while no mode is stored. A production site adds neither. Files the web server serves straight from `wp-content/uploads` never reach
+  WordPress and get neither. Settings > Reading (`blog_public`) is never written, so going live removes the
+  `noindex` with no other step.
+- **A mode change clears page caches** (spec 124, FR-004b, DECISIONS #524). Every change of mode, from the screen,
+  the command line or a launch, asks each active page-cache plugin to clear its pages through its own purge:
+  WP Rocket (`rocket_clean_domain()`), W3 Total Cache (`w3tc_flush_posts()`), LiteSpeed Cache
+  (`do_action('litespeed_purge', '*')`), WP Super Cache (`wp_cache_clear_cache()`, this site only on a network),
+  WP Fastest Cache (`wpfc_clear_all_cache()`) and SiteGround Optimizer (`sg_cachepress_purge_cache()` with this
+  site's address); none of them flushes an object cache (`Corex\Config\Operations\PageCachePurge`). CoreX keeps no
+  page cache of its own. Cloudflare's plugin offers no purge CoreX can call and is not cleared. The activity log's
+  mode-changed event says which plugins were asked to clear their page cache and which could not be cleared (a
+  purge that throws or answers that it failed); a purge that fails never fails or undoes the change.
 
 ### Client impact
 
@@ -33,6 +52,20 @@ Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #
   (both modes; the chat route is no longer one they close), and `MaintenanceDecisionTest`, `MaintenanceGuardTest`
   and `MaintenanceModeTest` (`MaintenanceDecision` now takes `Corex\Http\PublicSubmissionPause`), plus
   `OperationsModeTest` and `ModeCommandTest` (the mode order).
+- **Muva and Perego, before taking this release** (DECISIONS #526, #625): read the mode in force on the live site,
+  with `wp corex mode get` or on the Operations & Security screen, not the stored option, and check the three locks
+  that decide before it: `APP_ENV` in `.env`, the network's lock, and the `corex_app_env` option. After the update a
+  site whose environment comes out as development or staging answers every page with `noindex` and leaves search
+  results, in every mode. That includes a live site that stores `production` with `APP_ENV=staging` left in `.env`,
+  and one in Coming soon, Forms paused or Maintenance under such a lock (`wp corex mode get` then names the visitor
+  mode, so read the lock too). A site that stores `staging` under a production lock is safe: the lock wins. With
+  nothing stored and no lock, WordPress's environment type decides, and `staging`, `development` or `local` keeps
+  search engines out. Fix the lock or set Production first. On a staging copy that is the intended result.
+- **Muva and Perego, after taking it**: a mode change now clears the page cache of WP Rocket, W3 Total Cache,
+  LiteSpeed Cache, WP Super Cache, WP Fastest Cache or SiteGround Optimizer when one is active (DECISIONS #625). A
+  client repository that carries copies of CoreX's tests takes `ActivitySentencesTest` (the mode-changed sentence
+  can now say which plugins were asked to clear their page cache) and `ComingSoonTemplateTest`,
+  `ComingSoonGuardTest` and `ComingSoonNoticeTest` (`ComingSoonTemplate` now also takes `ModeRobots`).
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 
 Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIONS #470 to #479).
