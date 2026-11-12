@@ -34,6 +34,8 @@ it('asks each mode for its own confirmation and no other', function (string $mod
     // Spec 101, FR-002: closing the site to visitors is acknowledged, not typed. The phrase stays
     // reserved for going live.
     'coming soon' => [OperationsMode::COMING_SOON, ModeDisclosure::CONFIRM_ACKNOWLEDGEMENT],
+    // Spec 124, FR-003: pausing every form is acknowledged, as closing the site is.
+    'forms paused' => [OperationsMode::FORMS_PAUSED, ModeDisclosure::CONFIRM_ACKNOWLEDGEMENT],
 ]);
 
 it('never asks for both confirmations at once', function (string $mode) {

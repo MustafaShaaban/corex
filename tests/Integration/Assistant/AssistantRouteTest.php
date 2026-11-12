@@ -211,10 +211,13 @@ function assistantRouteUser(object $test, string $role): int
     return (int) $id;
 }
 
-it('is a public route that the site closes in Maintenance', function () {
+it('is not a public submission, so a site in Forms paused keeps answering in the chat (spec 124, FR-004a)', function () {
     $route = rest_get_server()->get_routes()['/corex/v1/assistant'][0] ?? [];
 
-    expect($route[PublicSubmission::MARKER] ?? false)->toBeTrue();
+    // Its own guards stay where it declares them: the page's token, then the limits.
+    expect($route)->not->toBe([])
+        ->and($route[PublicSubmission::MARKER] ?? false)->toBeFalse()
+        ->and($route['permission_callback'] ?? null)->toBe('__return_true');
 });
 
 it('refuses a request without the page’s token, and counts and locks nothing for it', function () {

@@ -33,7 +33,9 @@ add-on it is built once, kept by the framework's tests and guards, and switched 
 - **Settings values are saved autoloaded.** `SettingsStore::save()` calls `update_option()` with no autoload
   argument, so a saved secret (the captcha secret, the PageSpeed key) is read into memory on every request.
 - **Routes declare middleware.** A public CoreX route runs `nonce` and `throttle` through the `Pipeline`, and
-  `PublicSubmission::MARKER` closes it while the site is in Maintenance (spec 112).
+  `PublicSubmission::MARKER` closes a route that takes a public submission while the site is in Maintenance
+  (spec 112) or Forms paused. The chat route does not declare it since spec 124 (FR-004a, DECISIONS #522); its
+  hand-off, the callback form, does.
 - **`ClientAddress`** gives the visitor's address, reading the proxies the site trusts.
 - **CoreX has no language service and no Arabic catalogue.** Its strings are English in the `corex` domain; a
   site's language plugin sets the locale WordPress reports (`determine_locale()`), and `is_rtl()` follows it.
@@ -141,7 +143,8 @@ Free tiers run out. The assistant asks the services in order and moves on.
    dropped.
 5. **Given** a request without the page's REST token, **Then** it is refused (403) and the chat asks the visitor to
    refresh.
-6. **Given** the site in Maintenance, **Then** the route is closed like the forms routes.
+6. **Given** the site in Maintenance or Forms paused, **Then** the chat still answers and its hand-off is refused
+   like the forms routes, with the mode's sentence (amended by spec 124, FR-004a, DECISIONS #522).
 
 ### User Story 6 - A client plugs in its knowledge and its voice (Priority: P2)
 

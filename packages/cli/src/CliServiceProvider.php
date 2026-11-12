@@ -568,11 +568,11 @@ final class CliServiceProvider extends ServiceProvider
                     'type'        => 'positional',
                     'name'        => 'mode',
                     'optional'    => false,
-                    'description' => __('development, staging, production, maintenance or coming-soon.', 'corex'),
+                    'description' => __('development, staging, production, coming-soon, forms-paused or maintenance.', 'corex'),
                 ],
                 $this->resetFlag(
                     'acknowledge',
-                    __('Confirm a mode that changes what visitors get: maintenance or coming-soon.', 'corex'),
+                    __('Confirm a mode that changes what visitors get: coming-soon, forms-paused or maintenance.', 'corex'),
                 ),
                 [
                     'type'        => 'assoc',
