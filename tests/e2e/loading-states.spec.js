@@ -377,6 +377,9 @@ test( 'in Email Studio the button that was pressed is the one that works', async
 	await page.getByLabel( 'Name', { exact: true } ).fill( 'Held by a test' );
 
 	const create = page.getByRole( 'button', { name: 'Create', exact: true } );
+	// In view first: the click would scroll a button below the window into it, and the box
+	// measured before would then be the page's movement, not the button's.
+	await create.scrollIntoViewIfNeeded();
 	const before = await box( create );
 
 	await create.click();

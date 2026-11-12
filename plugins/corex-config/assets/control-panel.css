@@ -444,6 +444,109 @@
 	font-size: var(--corex-admin-font-xs);
 }
 
+/* The state tiles (spec 118): a tile is a column, its link at its foot, so the
+   four links line up whatever each tile has to say. */
+.corex-admin .corex-overview__tile {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-overview__tile-label {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-overview__tile.is-success .corex-overview__tile-icon {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-overview__tile.is-warning .corex-overview__tile-icon {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-overview__tile.is-info .corex-overview__tile-icon {
+	color: var(--corex-admin-info);
+}
+
+.corex-admin .corex-overview__tile-meta {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-overview__tile-link {
+	margin-block-start: auto;
+	padding-block-start: var(--corex-admin-space-xs);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* The readiness card is as tall as its rows (US-OVR-02): stretched to the
+   column beside it, it drew an empty band under its last row. */
+.corex-admin .corex-overview__readiness {
+	align-self: start;
+}
+
+.corex-admin .corex-overview__readiness .corex-checklist__group-head:first-of-type {
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+/* The forms card's three numbers, each a link to the inbox it counted. */
+.corex-admin .corex-overview__numbers {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-overview__number {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+	min-block-size: var(--corex-admin-touch-target);
+	padding: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	text-decoration: none;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-overview__number:hover {
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-overview__number-value {
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 600;
+	line-height: var(--corex-admin-line-tight);
+}
+
+.corex-admin .corex-overview__number-label {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-overview__src-access {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+	white-space: nowrap;
+}
+
+.corex-admin .corex-overview__footnote {
+	margin-block: var(--corex-admin-space-sm) 0;
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-overview__reference {
+	font-family: var(--corex-admin-font-mono);
+}
+
 .corex-admin .corex-overview__grid {
 	display: grid;
 	gap: var(--corex-admin-space-md);
@@ -516,7 +619,6 @@
 	white-space: nowrap;
 }
 
-.corex-admin .corex-overview__checks,
 .corex-admin .corex-overview__sources,
 .corex-admin .corex-overview__integrations {
 	list-style: none;
@@ -525,45 +627,6 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--corex-admin-space-2xs);
-}
-
-.corex-admin .corex-overview__check {
-	display: grid;
-	grid-template-columns: auto 1fr auto;
-	align-items: center;
-	gap: var(--corex-admin-space-sm);
-	padding-block: var(--corex-admin-space-xs);
-	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
-}
-
-.corex-admin .corex-overview__check:last-child {
-	border-block-end: 0;
-}
-
-.corex-admin .corex-overview__check-mark {
-	inline-size: 1.25rem;
-	block-size: 1.25rem;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: var(--corex-admin-radius-pill);
-	font-size: var(--corex-admin-font-xs);
-	color: var(--corex-admin-text-muted);
-	background: var(--corex-admin-surface-alt);
-}
-
-.corex-admin .corex-overview__check.is-success .corex-overview__check-mark {
-	color: var(--corex-admin-success);
-}
-
-.corex-admin .corex-overview__check.is-warning .corex-overview__check-mark {
-	color: var(--corex-admin-warning);
-}
-
-.corex-admin .corex-overview__check-note {
-	color: var(--corex-admin-text-muted);
-	font-size: var(--corex-admin-font-sm);
-	text-align: end;
 }
 
 .corex-admin .corex-overview__big {
@@ -595,8 +658,11 @@
 }
 
 .corex-admin .corex-overview__src-name {
+	flex: 1;
+	min-inline-size: 0;
 	font-family: var(--corex-admin-font-mono);
 	font-size: var(--corex-admin-font-sm);
+	overflow-wrap: anywhere;
 }
 
 .corex-admin .corex-overview__src-count {
@@ -637,10 +703,14 @@
 	list-style: none;
 }
 
+/* A unitless line height: the one inherited from wp-admin's body is a
+   fixed length, which at 200% text is shorter than the letters, so a
+   wrapped summary ran onto its time. */
 .corex-admin .corex-overview__event {
 	display: grid;
 	gap: var(--corex-admin-space-2xs);
 	padding-block: var(--corex-admin-space-xs);
+	line-height: var(--corex-admin-line-normal);
 	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
 }
 
@@ -663,9 +733,11 @@
 	color: var(--corex-admin-text-muted);
 }
 
+/* Muted, not subtle: a time is text and needs 4.5:1, which subtle
+   (about 3:1) is not. */
 .corex-admin .corex-overview__event-time {
 	font-size: var(--corex-admin-font-xs);
-	color: var(--corex-admin-text-subtle);
+	color: var(--corex-admin-text-muted);
 }
 
 @media (max-width: 60rem) {
@@ -679,4 +751,220 @@
 /* Operations Mode: maintenance tone on the Overview env badge (spec 065). */
 .corex-admin .corex-overview__env.is-danger {
 	border-inline-start-color: var(--corex-admin-error);
+}
+
+/* ==========================================================================
+   Settings pages (spec 119): one form per page, a save bar fixed to the
+   bottom of the page, locked fields, provider tests, and a removable secret.
+   ========================================================================== */
+.corex-admin .corex-settings-page {
+	gap: var(--corex-admin-space-lg);
+}
+
+/* A page with one section: its heading is the page's, so the form table starts
+   the card. */
+.corex-admin .corex-settings-page .corex-settings-section > .form-table:first-child,
+.corex-admin .corex-settings-page .corex-settings-section > .corex-section-notice:first-child {
+	margin-block-start: 0;
+}
+
+.corex-admin .corex-settings-page .corex-settings-section > .form-table:first-child tr:first-child th,
+.corex-admin .corex-settings-page .corex-settings-section > .form-table:first-child tr:first-child td {
+	border-block-start: 0;
+}
+
+/* The save bar: sticks to the bottom of the window while the page scrolls, and
+   rests under the last section at its end. */
+.corex-admin .corex-savebar {
+	position: sticky;
+	inset-block-end: 0;
+	z-index: 20;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-md);
+}
+
+.corex-admin .corex-savebar__status {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-savebar__dot {
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	background: var(--corex-admin-text-subtle);
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+.corex-admin .corex-savebar[data-state="dirty"] .corex-savebar__status {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-savebar[data-state="dirty"] .corex-savebar__dot {
+	background: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-savebar[data-state="saved"] .corex-savebar__dot {
+	background: var(--corex-admin-success);
+}
+
+/* Without scripts the line cannot follow an edit: it shows only what is true
+   when the page arrives, which is "All changes saved" right after a save. */
+.no-js .corex-admin .corex-savebar[data-state="clean"] .corex-savebar__status {
+	visibility: hidden;
+}
+
+.corex-admin .corex-savebar__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin-inline-start: auto;
+}
+
+/* A save that did not go through: said in the bar, edits kept. */
+.corex-admin .corex-savebar__error {
+	flex-basis: 100%;
+	order: -1;
+	margin: 0;
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-error-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-error);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-savebar__error[hidden] {
+	display: none;
+}
+
+/* The toast sits above the save bar, not over it. */
+.corex-admin--settings .corex-toast {
+	inset-block-end: calc(var(--corex-admin-space-2xl) * 2);
+}
+
+/* A value set in the site's .env or by the network: shown, not editable, and
+   where it is set said under it. */
+.corex-admin .corex-field-lock {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin-block: var(--corex-admin-space-2xs) 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+.corex-admin .corex-field-lock .dashicons {
+	flex: none;
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-settings-section input[readonly] {
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-raised);
+	border-style: dashed;
+}
+
+.corex-admin .corex-secret-state--locked {
+	margin: 0;
+}
+
+/* A saved secret's Remove: the box to tick without scripts, a button
+   with them. */
+.corex-admin .corex-secret-remove {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin-inline-start: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-secret-remove__note {
+	color: var(--corex-admin-warning);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+/* An add-on that is off: what it means and the way to its card. */
+.corex-admin .corex-settings-addon-off {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+}
+
+.corex-admin .corex-settings-addon-off p {
+	margin: 0;
+}
+
+/* A provider's latest test, and its "Test connection". */
+.corex-admin .corex-provider-status {
+	margin-block: var(--corex-admin-space-md) 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-provider-test {
+	margin-block-start: var(--corex-admin-space-md);
+	padding-block-start: var(--corex-admin-space-md);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-provider-test__name {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-provider-test .corex-provider-status {
+	margin-block-start: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-provider-test__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	margin-block: var(--corex-admin-space-sm) 0;
+}
+
+.corex-admin .corex-provider-test__result {
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+@media (max-width: 782px) {
+
+	/* On a phone the bar takes its place after the last section: held to the
+	   bottom of a small window it covers the field being typed into. */
+	.corex-admin .corex-savebar {
+		position: static;
+		padding-inline: var(--corex-admin-space-md);
+	}
+
+	.corex-admin .corex-savebar__actions {
+		inline-size: 100%;
+	}
+
+	.corex-admin .corex-savebar__actions .button {
+		flex: 1 1 0;
+	}
 }

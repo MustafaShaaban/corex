@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityNames;
 use Corex\Access\AccessRequestStore;
 use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbilityCatalog;
@@ -59,8 +60,8 @@ final class PendingAccessRequests
             'requester' => $this->users->displayName((int) $row['requesterId']),
             // The label an administrator recognises, falling back to the key rather than to an
             // empty cell: an unknown ability still has to be decidable.
-            'ability' => $ability?->label ?? $abilityKey,
-            'area'    => $row['areaKey'] !== null ? (string) $row['areaKey'] : '',
+            'ability' => $ability !== null ? AbilityNames::labelOf($ability) : $abilityKey,
+            'area'    => $row['areaKey'] !== null ? AbilityNames::area((string) $row['areaKey']) : '',
             'reason'  => (string) $row['reason'],
             // Canonical UTC ISO 8601, formatted in the browser by the spec 076 contract. The screen
             // decides how a date reads; the transport does not.

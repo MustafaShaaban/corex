@@ -14,8 +14,10 @@ use Brain\Monkey\Functions;
 use Corex\Blocks\NewsletterSignupRenderer;
 use Corex\Multisite\SingleSiteMultisiteContext;
 use Corex\Multisite\WpPluginActivationInspector;
+use Corex\Security\FormChallenge;
+use Corex\Security\NoFormChallenge;
 
-function renderNewsletter(bool $active = true, array $attributes = []): string
+function renderNewsletter(bool $active = true, array $attributes = [], ?FormChallenge $challenge = null): string
 {
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
@@ -31,6 +33,7 @@ function renderNewsletter(bool $active = true, array $attributes = []): string
 
     return (new NewsletterSignupRenderer(
         new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+        $challenge ?? new NoFormChallenge(),
     ))->render($attributes, '', new stdClass());
 }
 
@@ -71,5 +74,42 @@ it('carries no third-party script and no fabricated success message in the initi
 
     expect($html)->not->toContain('<script')
         // The status region starts empty; success text only appears after a real endpoint response.
-        ->and($html)->toContain('corex-newsletter-signup__status" role="status" aria-live="polite">');
+        ->and($html)->toContain('corex-newsletter-signup__status" role="status" aria-live="polite" data-corex-captcha-message></p>');
+});
+
+it('carries no check when the site has no captcha provider (spec 115)', function () {
+    $html = renderNewsletter();
+
+    expect($html)->not->toContain('captcha_token')
+        ->and($html)->not->toContain('data-corex-captcha ');
+});
+
+it('carries the provider check inside the form, after its consent, for the signup action (spec 115)', function () {
+    $challenge = new class () implements FormChallenge {
+        public string $askedFor = '';
+
+        public function fields(string $action): string
+        {
+            $this->askedFor = $action;
+
+            return '<input type="hidden" name="captcha_token" data-corex-captcha-action="' . $action . '" />';
+        }
+
+        public function formAttribute(): string
+        {
+            return 'data-corex-captcha';
+        }
+
+        public function refusal(string $token, string $action): ?string
+        {
+            return null;
+        }
+    };
+
+    $html = renderNewsletter(true, [], $challenge);
+
+    expect($challenge->askedFor)->toBe(NewsletterSignupRenderer::CAPTCHA_ACTION)
+        ->and($html)->toMatch('~<form [^>]*data-corex-captcha novalidate>~')
+        ->and(strpos($html, 'name="captcha_token"'))->toBeGreaterThan(strpos($html, 'name="consent"'))
+        ->and(strpos($html, 'name="captcha_token"'))->toBeLessThan(strpos($html, '</form>'));
 });

@@ -47,6 +47,14 @@ final class BlocksServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(ConnectorRegistry::class);
+
+        $this->container->singleton(
+            SampleBlocks::class,
+            static fn (): SampleBlocks => new SampleBlocks(
+                dirname(__DIR__) . '/corex-blocks.php',
+                defined('COREX_BLOCKS_VERSION') ? (string) COREX_BLOCKS_VERSION : '0.0.0',
+            ),
+        );
     }
 
     public function boot(): void
@@ -57,6 +65,9 @@ final class BlocksServiceProvider extends ServiceProvider
         $this->container->make(PluginRealpathRegistrar::class)->register();
 
         add_filter('block_categories_all', [$this, 'registerBlockCategory']);
+
+        // Sample content in shipped patterns: hidden from visitors, labelled for editors (spec 115).
+        $this->container->make(SampleBlocks::class)->register();
 
         add_action('init', function (): void {
             $registrar = $this->container->make(DynamicBlockRegistrar::class);

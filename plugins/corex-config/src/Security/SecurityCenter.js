@@ -1,5 +1,6 @@
 import { useId, useReducer } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import CorexCopyField from '../admin/components/CorexCopyField.js';
 import CorexTime from '../admin/components/CorexTime.js';
 import {
 	buildLoginPolicyPayload,
@@ -16,6 +17,12 @@ import { workingProps } from '../admin/components/working.js';
  * `all` keeps the pre-077 behaviour — every panel in one mount — so the component stays usable
  * outside the sectioned screen and its existing tests keep describing something real.
  */
+/** The line the Recovery panel tells an owner to add to wp-config.php. Code: never translated. */
+const RECOVERY_LINE = "define( 'COREX_LOGIN_UNGUARD', true );";
+
+/** The comment WordPress writes in wp-config.php, quoted as it is in the file. */
+const WP_CONFIG_STOP_LINE = "That's all, stop editing";
+
 const SECTION_PANELS = {
 	environment: [ 'readiness' ],
 	login: [ 'loginPolicy', 'lockouts', 'recovery' ],
@@ -83,16 +90,18 @@ export default function SecurityCenter( { config = {}, section = 'all' } ) {
  * OperationsSecurityScreen::modeCard() further down the same page. Two identical sets of controls,
  * one inert, sat one above the other.
  *
- * Removing them also fixes what they hid. The blocker badge read its count from `modeActionState`,
- * which reports zero for every mode except production — so the header claimed "Ready" while real
- * blockers were listed directly beneath it, unless you happened to pick Production in the preview.
- * It now reads the readiness snapshot itself, which is what it was always describing.
+ * It is the one launch checklist (spec 118), in the words of the gate: each group with its own "N
+ * of M ready", each row with its state in a word beside an icon, and a link to the fix on every row
+ * that is not ready (US-SEC-09).
  *
  * @param {Object} root0       Props.
  * @param {Object} root0.state The security-center state.
  */
 function LaunchChecklist( { state } ) {
-	const blockingCount = state.readiness?.blockingCount || 0;
+	const readiness = state.readiness;
+	const groups = readiness.groups.length
+		? readiness.groups
+		: [ { key: 'security', title: '', count: '', rows: readiness.checks } ];
 
 	return (
 		<section className="corex-surface corex-security__panel">
@@ -103,27 +112,62 @@ function LaunchChecklist( { state } ) {
 					</p>
 					<h2>{ __( 'Production readiness', 'corex' ) }</h2>
 				</div>
-				<span
-					className={ blockingCount > 0 ? 'is-warning' : 'is-ready' }
-				>
-					{ blockingCount > 0
-						? sprintf(
-								/* translators: %d: number of blocking readiness checks. */
-								__( '%d blocker(s)', 'corex' ),
-								blockingCount
-							)
-						: __( 'Ready', 'corex' ) }
+				<span className="corex-security__count">
+					{ readiness.count }
 				</span>
 			</header>
-			<ul className="corex-security__checks">
-				{ state.readiness.checks.map( ( check ) => (
-					<li key={ check.key } className={ `is-${ check.status }` }>
-						<span>{ check.label }</span>
-						<small>{ check.detail }</small>
-					</li>
-				) ) }
-			</ul>
+			{ readiness.blockingText ? (
+				<p className="corex-security__blocking">
+					{ readiness.blockingText }
+				</p>
+			) : null }
+			{ groups.map( ( group ) => (
+				<div className="corex-checklist__group" key={ group.key }>
+					{ group.title ? (
+						<h3 className="corex-checklist__group-head">
+							<span>{ group.title }</span>
+							<span className="corex-checklist__group-count">
+								{ group.count }
+							</span>
+						</h3>
+					) : null }
+					<ul className="corex-checklist">
+						{ group.rows.map( ( check ) => (
+							<ChecklistRow key={ check.key } check={ check } />
+						) ) }
+					</ul>
+				</div>
+			) ) }
 		</section>
+	);
+}
+
+/**
+ * One check: its name (the link to its fix while it is not ready), its state in a word beside an
+ * icon, and what is missing. The same markup the server draws on the Hardening tab.
+ *
+ * @param {Object} root0       Props.
+ * @param {Object} root0.check One normalized check.
+ */
+function ChecklistRow( { check } ) {
+	return (
+		<li
+			className={ `corex-checklist__row is-${ check.chip }` }
+			data-check={ check.key }
+		>
+			<span className="corex-checklist__label">
+				{ check.resolutionUrl && check.state !== 'pass' ? (
+					<a href={ check.resolutionUrl }>{ check.label }</a>
+				) : (
+					check.label
+				) }
+			</span>
+			<span className={ `corex-state-chip is-${ check.chip }` }>
+				<span className="corex-state-chip__icon" aria-hidden="true" />
+				{ check.word }
+			</span>
+			<span className="corex-checklist__note">{ check.detail }</span>
+		</li>
 	);
 }
 
@@ -185,6 +229,14 @@ function LoginPolicy( {
 						: __( 'Disabled', 'corex' ) }
 				</span>
 			</header>
+			{ config.recoveryActive && (
+				<p className="corex-security__warning" role="note">
+					{ __(
+						'Recovery is on: wp-login.php is open to everyone. Remove COREX_LOGIN_UNGUARD from wp-config.php to hide it again.',
+						'corex'
+					) }
+				</p>
+			) }
 			{ policy.slugSubstituted && (
 				<p className="corex-security__notice is-error" role="alert">
 					{ sprintf(
@@ -275,11 +327,12 @@ function LoginPolicy( {
 			{ policy.enabled && policy.blockDefaultEndpoints && (
 				<p className="corex-security__warning" role="note">
 					{ sprintf(
-						/* translators: %s: the CLI recovery command. */
+						/* translators: 1: the wp-config.php constant, 2: the CLI recovery command. */
 						__(
-							'Bookmark that address before you sign out. Once saved, wp-login.php and wp-admin return "not found" for everyone, and this address is the only way in. If you lose it, run %s.',
+							'Bookmark that address before you sign out. Once saved, wp-login.php and wp-admin return "not found" for everyone, and this address is the only way in. If you lose it, Recovery below gives two ways back: add %1$s to wp-config.php, or run %2$s.',
 							'corex'
 						),
+						'COREX_LOGIN_UNGUARD',
 						config.recoveryCommand ||
 							'wp corex security reset-login'
 					) }
@@ -358,10 +411,10 @@ function Lockouts( { lockouts, summary } ) {
 /**
  * Recovery is documentation, not a control.
  *
- * It used to carry a "Mark command reviewed" button that only flipped a label — no server call, no
- * effect. Recovery necessarily runs from the CLI: it exists for the case where the admin cannot be
- * reached, so a button inside the admin could not perform it even in principle. Showing the command
- * is the honest whole of what this panel can do.
+ * Recovery exists for the case where the admin cannot be reached, so a button inside the admin
+ * could not perform it even in principle. The panel gives the two ways that work from outside it
+ * (spec 112, FR-020): a line added to wp-config.php through the host's file manager, for an owner
+ * with no command line, and the CLI command.
  *
  * @param {Object} props        Component props.
  * @param {Object} props.config The localized security config.
@@ -371,15 +424,67 @@ function Recovery( { config } ) {
 	const command = config.recoveryCommand || 'wp corex security reset-login';
 
 	return (
-		<section className="corex-surface corex-security__panel">
+		<section className="corex-surface corex-security__panel corex-security__recovery">
 			<h2>{ __( 'Recovery', 'corex' ) }</h2>
 			<p>
 				{ __(
-					'Locked out? Run this on the server to restore the default login address and release every active lockout. Your users and passwords are untouched.',
+					'Lost the login address, or locked out? There are two ways back in. Your users and passwords are untouched by either.',
 					'corex'
 				) }
 			</p>
-			<code>{ command }</code>
+			<h3>{ __( 'Without a command line', 'corex' ) }</h3>
+			<ol>
+				<li>
+					{ __(
+						'Open wp-config.php with your host’s file manager.',
+						'corex'
+					) }
+				</li>
+				<li>
+					{ sprintf(
+						/* translators: %s: a line of wp-config.php, quoted as written in the file. */
+						__(
+							'Add this line above the line that says “%s”:',
+							'corex'
+						),
+						WP_CONFIG_STOP_LINE
+					) }
+					<CorexCopyField
+						label={ __( 'Line to add', 'corex' ) }
+						value={ RECOVERY_LINE }
+					/>
+				</li>
+				<li>
+					{ sprintf(
+						/* translators: %s: the WordPress login address. */
+						__( 'Sign in at %s.', 'corex' ),
+						'/wp-login.php'
+					) }
+				</li>
+				<li>
+					{ __(
+						'Remove the line again once you are signed in.',
+						'corex'
+					) }
+				</li>
+			</ol>
+			<p>
+				{ __(
+					'While the line is there, wp-login.php is open to everyone and the site’s own login address keeps working. It does not end a lockout: a lockout ends when its lockout length has passed.',
+					'corex'
+				) }
+			</p>
+			<h3>{ __( 'With a command line', 'corex' ) }</h3>
+			<CorexCopyField
+				label={ __( 'Command to run on the server', 'corex' ) }
+				value={ command }
+			/>
+			<p>
+				{ __(
+					'It turns login protection off, puts the default login address back and ends every lockout.',
+					'corex'
+				) }
+			</p>
 		</section>
 	);
 }

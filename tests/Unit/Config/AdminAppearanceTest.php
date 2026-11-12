@@ -2,8 +2,7 @@
 
 /**
  * CoreX admin appearance contract (Spec 060 / Blocker 12). The appearance setting resolves to
- * system/light/dark (invalid → system) and the SSO-slot setting reads truthfully; the admin
- * shell pins the chosen theme via a data attribute (light/dark) or leaves it to the OS scheme
+ * system/light/dark (invalid → system); the admin shell pins the chosen theme via a data attribute (light/dark) or leaves it to the OS scheme
  * (system).
  *
  * @package Corex\Tests\Unit\Config
@@ -16,31 +15,22 @@ use Corex\Admin\AdminPage;
 use Corex\Config\Branding\BrandingService;
 use Corex\Support\Config\ConfigInterface;
 
-function brandingWith(string $appearanceReturn, string $ssoReturn): BrandingService
+function brandingWith(string $appearanceReturn): BrandingService
 {
     $config = Mockery::mock(ConfigInterface::class);
     $config->shouldReceive('get')->with('brand.admin_appearance', 'system')->andReturn($appearanceReturn);
-    $config->shouldReceive('get')->with('brand.login_sso_enabled', '')->andReturn($ssoReturn);
 
     return new BrandingService($config, 'https://example.test/default-logo.svg');
 }
 
 it('resolves the appearance setting, falling back to system for unknown values', function (string $stored, string $expected) {
-    expect(brandingWith($stored, '')->adminAppearance())->toBe($expected);
+    expect(brandingWith($stored)->adminAppearance())->toBe($expected);
 })->with([
     ['system', 'system'],
     ['light', 'light'],
     ['dark', 'dark'],
     ['', 'system'],
     ['purple', 'system'],
-]);
-
-it('reads the SSO-slot setting truthfully', function (string $stored, bool $expected) {
-    expect(brandingWith('system', $stored)->loginSsoEnabled())->toBe($expected);
-})->with([
-    ['1', true],
-    ['', false],
-    ['0', false],
 ]);
 
 it('pins the admin shell theme only for an explicit light/dark appearance', function (string $appearance, bool $hasAttr) {

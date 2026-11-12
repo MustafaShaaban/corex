@@ -33,6 +33,14 @@ final class MailDelivery
     /** A production site with a provider chosen and live delivery off: an email is refused. */
     public const REFUSE = 'refuse';
 
+    /**
+     * A production site with a provider and live delivery on: an email goes to `wp_mail()`, the
+     * way a client site sends (spec 113 leaves production untouched). The transport is never
+     * reached: a `pre_wp_mail` answer that comes before every other one stops it, and a test's
+     * own `pre_wp_mail` listener still sees each email.
+     */
+    public const DELIVER = 'deliver';
+
     private const SETTINGS = [
         self::CAPTURE => ['corex_app_env' => 'development'],
         self::REFUSE => [
@@ -40,10 +48,15 @@ final class MailDelivery
             'corex_mail_provider' => 'wp-mail',
             'corex_mail_live_delivery' => '0',
         ],
+        self::DELIVER => [
+            'corex_app_env' => 'production',
+            'corex_mail_provider' => 'wp-mail',
+            'corex_mail_live_delivery' => '1',
+        ],
     ];
 
     /**
-     * @return list<array{0:string,1:callable}> Each filter with its hook, for {@see stop()}.
+     * @return list<array{0:string,1:callable,2?:int}> Each filter with its hook (and priority), for {@see stop()}.
      */
     public static function answerAs(string $mode): array
     {
@@ -52,6 +65,12 @@ final class MailDelivery
             $filter = static fn (): string => $value;
             add_filter('pre_option_' . $option, $filter);
             $filters[] = ['pre_option_' . $option, $filter];
+        }
+
+        if ($mode === self::DELIVER) {
+            $stop = static fn (mixed $return): mixed => $return ?? true;
+            add_filter('pre_wp_mail', $stop, PHP_INT_MIN);
+            $filters[] = ['pre_wp_mail', $stop, PHP_INT_MIN];
         }
 
         // An install can fix these settings where an option does not reach: an `.env` file is
@@ -72,12 +91,12 @@ final class MailDelivery
     }
 
     /**
-     * @param list<array{0:string,1:callable}> $filters What {@see answerAs()} returned.
+     * @param list<array{0:string,1:callable,2?:int}> $filters What {@see answerAs()} returned.
      */
     public static function stop(array $filters): void
     {
-        foreach ($filters as [$hook, $filter]) {
-            remove_filter($hook, $filter);
+        foreach ($filters as $entry) {
+            remove_filter($entry[0], $entry[1], $entry[2] ?? 10);
         }
     }
 }

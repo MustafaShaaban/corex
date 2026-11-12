@@ -1,0 +1,18 @@
+/**
+ * The label CoreX draws, for people who can edit, above sample content
+ * that visitors do not see (spec 115, US-SAFE-14). Theme tokens and
+ * logical properties; colours, border and size fall back for a theme
+ * without CoreX's tokens, since this loads on any site.
+ */
+.corex-sample-label {
+	margin-block: 0 var(--wp--preset--spacing--20);
+	padding-block: var(--wp--preset--spacing--10);
+	padding-inline: var(--wp--preset--spacing--20);
+	color: var(--wp--preset--color--ink, CanvasText);
+	background: var(--wp--preset--color--surface-alt, Canvas);
+	border:
+		var(--wp--custom--border--width--thin, thin) dashed
+		var(--wp--preset--color--border, GrayText);
+	border-radius: var(--wp--custom--radius--md, 0);
+	font-size: var(--wp--preset--font-size--xs, smaller);
+}

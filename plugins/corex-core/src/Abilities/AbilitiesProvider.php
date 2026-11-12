@@ -14,10 +14,15 @@ use Corex\Foundation\ServiceProvider;
 use WP_Block_Type_Registry;
 
 /**
- * Registers Corex's WP 7.0 Abilities (the agent/MCP discovery surface) — gated on the
+ * Registers Corex's WP 7.0 Abilities (the agent/MCP discovery surface), gated on the
  * Abilities API being present so the framework runs unchanged on older cores. The
- * abilities are read-only (annotated `readonly`), capability-gated, and exposed in REST.
- * Registration happens on the API's own init hooks, as the API requires.
+ * abilities are read-only (annotated `readonly` and `idempotent`), capability-gated, and
+ * exposed in REST. Registration happens on the API's own init hooks, as the API requires.
+ *
+ * They are public to MCP on purpose (spec 123, DECISIONS #500, #508). The MCP Adapter lists an
+ * ability only when `meta.mcp.public` is true, or `meta.public` is true and `meta.mcp.public` is
+ * unset; without the first key no agent could see these. `meta.public` is left unset because from
+ * WordPress 7.1 it also opts an ability into every other client channel.
  */
 final class AbilitiesProvider extends ServiceProvider
 {
@@ -77,8 +82,11 @@ final class AbilitiesProvider extends ServiceProvider
     }
 
     /**
-     * Register one read-only, capability-gated, REST-exposed ability — the shared shape
-     * for every Corex ability, so each call site only supplies what differs.
+     * Register one read-only, capability-gated, REST-exposed, MCP-public ability: the shared
+     * shape of these two, so each call site only supplies what differs. They stay behind
+     * `edit_posts` because `corex/site-info` carries the CoreX version, which spec 111 keeps
+     * from anyone looking for a vulnerable release; `read` would show it to every subscriber
+     * (DECISIONS #508).
      *
      * @param array<string,string> $outputSchema
      * @param callable():array<mixed> $execute
@@ -97,7 +105,11 @@ final class AbilitiesProvider extends ServiceProvider
             'output_schema'       => $outputSchema,
             'execute_callback'    => $execute,
             'permission_callback' => static fn (): bool => current_user_can('edit_posts'),
-            'meta'                => ['annotations' => ['readonly' => true], 'show_in_rest' => true],
+            'meta'                => [
+                'annotations'  => ['readonly' => true, 'idempotent' => true],
+                'show_in_rest' => true,
+                'mcp'          => ['public' => true],
+            ],
         ]);
     }
 }

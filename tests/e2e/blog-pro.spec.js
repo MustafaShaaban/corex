@@ -5,8 +5,9 @@
  * single template exposes the functional social-share, newsletter, and comment surfaces. No console
  * errors on either.
  *
- * Rewritten for spec 075. The previous version asserted four metric cards and a "Moderation queue"
- * heading, both of which that spec replaced — the same way spec 074 left a notification spec clicking
+ * Rewritten for spec 075, and for spec 114, which replaced the reading-signals panel of a site with
+ * no reading data by one line and removed the Sharing card. The spec 075 version asserted four
+ * metric cards and a "Moderation queue" heading, both of which that spec replaced — the same way spec 074 left a notification spec clicking
  * a tab it had deleted. A browser spec that is not re-run when its surface changes is not a test.
  */
 
@@ -33,15 +34,20 @@ test.describe( 'Blog Pro admin workspace', () => {
 		);
 		await expect( selector ).toBeVisible();
 
-		// The analytics heading quotes the same post the selector shows.
-		const subject = ( await selector.textContent() ).trim();
+		// Spec 114, US-BLG-05: CoreX collects no reading data yet, and this site has none. The
+		// screen says so in one line, with no "Reading signals" panel and no period, which
+		// described figures that cannot exist.
 		await expect(
-			page.locator( '.corex-blog-pro__panel h2' )
-		).toContainText( subject );
-		// And the period is stated, because a count without a window means nothing.
+			page.locator( '[data-corex-blog-no-reading-data]' )
+		).toHaveText(
+			'CoreX does not collect reading data yet. Figures appear here once it does.'
+		);
+		await expect( page.locator( '.corex-blog-pro__panel' ) ).toHaveCount(
+			0
+		);
 		await expect(
 			page.locator( '.corex-blog-pro__subject-meta' )
-		).toContainText( '30' );
+		).not.toContainText( 'Figures cover' );
 
 		// Scoped to the screen's own content, not the whole document. Unscoped, this matched twice
 		// once spec 096 gave Blog Pro a contextual Help tab — the guide for this screen naturally
@@ -55,9 +61,15 @@ test.describe( 'Blog Pro admin workspace', () => {
 		await expect(
 			page.getByRole( 'heading', { name: 'Authors' } )
 		).toBeVisible();
+		// The Sharing card listed networks the share block does not show, from a setting
+		// nobody can change: it is gone (spec 114, US-BLG-05).
 		await expect(
 			page.getByRole( 'heading', { name: 'Sharing' } )
-		).toBeVisible();
+		).toHaveCount( 0 );
+		const body = await page.locator( '.corex-blog-pro-app' ).innerText();
+		expect( body ).not.toMatch(
+			/record(ed|s)? a visit|visits? (are|is) recorded/i
+		);
 
 		expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual(
 			[]
@@ -99,7 +111,7 @@ test.describe( 'Blog Pro admin workspace', () => {
 			page.locator( '[data-corex-blog-post-selector] [role="combobox"]' )
 		).toBeVisible();
 		await expect(
-			page.locator( '.corex-blog-pro__panel h2' )
+			page.locator( '[data-corex-blog-no-reading-data]' )
 		).toBeVisible();
 	} );
 

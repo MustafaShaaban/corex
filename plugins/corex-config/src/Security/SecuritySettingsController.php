@@ -10,6 +10,8 @@ namespace Corex\Config\Security;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
@@ -25,11 +27,14 @@ use WP_REST_Response;
  */
 final class SecuritySettingsController
 {
+    private const SCREEN = 'corex-operations-security';
+
     private const NAMESPACE = 'corex/v1';
 
     public function __construct(
         private readonly LoginProtectionSettingsStore $store,
         private readonly LoginSlugAvailability $availability = new LoginSlugAvailability(),
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -112,9 +117,13 @@ final class SecuritySettingsController
         ];
     }
 
+    /**
+     * Reading or changing the settings: the screen's ability (spec 117, FR-002). The view ability does
+     * not read them: Operations & Security has no read-only view (DECISIONS #422, amended 2026-11-11).
+     */
     public function allowed(WP_REST_Request $request): bool
     {
-        return current_user_can('manage_options') && $this->hasNonce($request);
+        return $this->abilities->allows(CorexAbility::MANAGE_OPERATIONS, self::SCREEN) && $this->hasNonce($request);
     }
 
     public function show(WP_REST_Request $request): WP_REST_Response

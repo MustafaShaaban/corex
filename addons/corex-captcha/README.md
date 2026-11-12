@@ -48,7 +48,9 @@ On **Corex → Settings**, next to the captcha secret field, this add-on adds a 
 (`assets/captcha-admin.js`, enqueued only on that screen). It POSTs to `corex/v1/captcha/test`
 (`manage_options` + nonce) and shows a classified, actionable result inline — `ok`, `missing_keys` (naming the
 key to add), `invalid_keys`, `network_error`, or `not_applicable`. The probe runs server-side and the button
-renders only the result's status + message, so **no secret ever reaches the browser**.
+renders only the result's status + message, so **no secret ever reaches the browser**. Each result is handed to
+Settings through the `corex_provider_tested` action (whether it worked and why not, never a key), which keeps
+"Last test failed on <date>: <reason>" on the Captcha page until a later test passes or a key changes (spec 119).
 
 **Enabling** this add-on gives you the captcha drivers, the verification endpoint, and its Test button;
 **disabling** it removes the button and the `corex/v1/captcha/test` route. Required config for the key-based

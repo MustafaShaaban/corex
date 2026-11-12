@@ -7,9 +7,12 @@ lockouts, recovery, and security activity.
 
 Production mode is guarded by the same readiness snapshot shown on screen. Before switching to Production:
 
-1. Review every launch checklist item.
+1. Review every launch checklist item: the "Security and hosting" checks can block going live, the
+   "Site and content" checks advise.
 2. Resolve blocking checks when possible.
 3. If you intentionally override blockers, type `PRODUCTION` exactly in the confirmation field.
+
+The Setup Wizard's launch step shows the same checklist and offers the same Go live.
 
 CoreX records the mode transition in the operations-mode history. Maintenance mode remains separately confirmed because
 it affects real visitors.
@@ -47,7 +50,21 @@ Only a rule in the web server can change what they answer.
 Hiding is obscurity, not access control. It cuts automated probing; the rate limiting above is what actually
 defends credentials.
 
-If an owner is locked out or the protected route is misconfigured, run:
+If an owner has lost the login address, is locked out, or the protected route is misconfigured, there are two ways
+back in. The Recovery panel in **Operations & Security → Login Protection** gives both, with the code ready to copy.
+
+**Without a command line** (most shared hosts): open `wp-config.php` with the host's file manager, add this line above
+the line that says "That's all, stop editing", sign in at `/wp-login.php`, then remove the line:
+
+```php
+define( 'COREX_LOGIN_UNGUARD', true );
+```
+
+While the line is there, `wp-login.php` is open to everyone and the custom login address keeps working. It does not
+end a lockout; a lockout ends when its lockout length has passed. The Login Protection section and the "Default login
+endpoints" row on the overview say that recovery is on until the line is removed.
+
+**With a command line:**
 
 ```bash
 wp corex security reset-login
@@ -56,7 +73,29 @@ wp corex security reset-login
 The command disables the protected login gates, releases active lockouts, and prints the restored `wp-login.php` URL.
 It does not change users, roles, passwords, content, or unrelated CoreX settings.
 
-For emergency request-level bypasses, define `COREX_LOGIN_UNGUARD` only long enough to regain access, then remove it.
+## What every page says the site runs
+
+Every front-end page's head carries one line naming CoreX, printed beside WordPress's own:
+
+```html
+<meta name="generator" content="CoreX" />
+```
+
+Technology scanners such as Wappalyzer recognise a platform by this line. It names CoreX and
+carries no version, because a version tells anyone looking for a vulnerable site which release
+to try. Removing WordPress's generator tag, as some security plugins do, leaves CoreX's in place.
+
+The line is not printed on admin screens, the login page, feeds, REST responses or the Coming soon
+page a visitor sees, which names no platform at all. The real site served to an administrator or a
+preview link while Coming soon is on still carries it.
+
+To leave it out of every page of one site, add this to the site's own plugin or theme:
+
+```php
+add_filter('corex_generator_tag', '__return_false');
+```
+
+A page cache keeps the line it was cached with: clear it after adding the filter.
 
 ## Behind a proxy, a load balancer or a CDN
 
@@ -103,6 +142,64 @@ An entry that is not an address or a range is refused, and nothing is saved:
 Error: Not an address or a range: proxy.example.com. Nothing was changed.
 ```
 
+## Who can open each CoreX screen
+
+Every CoreX screen, its REST routes and its save actions ask for the CoreX ability that names it (spec 117). An
+ability reaches a person through their role in **CoreX → Access & Abilities → Role matrix**, through a request an
+administrator approved, or through site administration: anyone who can administer the site holds every CoreX
+ability, and the matrix cannot deny a role that can. A Deny stored for such a role before this rule is kept, not
+applied, and listed on the Access screen's Overview.
+
+| Screen | Ability it needs |
+|---|---|
+| Overview, Add-ons, Insights | Access CoreX admin |
+| Settings (and the captcha test) | Manage settings |
+| Forms & Flows | Manage forms and flows |
+| Submissions | Manage submissions (saving retention: Manage settings; applying it: Run dangerous actions) |
+| Email Studio | Manage Email Studio |
+| Data | Manage data or Manage data models |
+| Operations & Security (and the login protection settings) | Manage operations and security |
+| Access & Abilities | Manage access |
+| Blog Pro | Manage Blog Pro; each post and comment then follows WordPress's own permission |
+| Setup Wizard | Manage setup |
+| Notifications | Manage notifications |
+| Releases | Install releases |
+| Guides | Anyone signed in; each guide follows its screen |
+
+Switching the operating mode to Production or Maintenance also needs **Run dangerous actions**. In Settings → Mail,
+the delivery provider and live delivery stay with site administration: anyone else sees them read-only. So does
+Email Studio's **Capture only CoreX mail** switch.
+
+Two abilities reach further than their screen's name says. Weigh them before allowing them for a role:
+
+- **Manage setup** runs the Setup Wizard, whose kit activates CoreX plugins and add-ons and can set the site's front
+  page.
+- **Manage Email Studio** lists the captured emails and sends test mail from the site's address. A captured
+  email's content is shown only to site administrators.
+
+### What only a site administrator may change
+
+A holder of **Manage access** who is not a site administrator can allow and deny abilities for roles they do not
+hold, and decide other people's access requests. Four changes need site administration:
+
+- allowing a Critical ability for a role, or setting one back to Inherit;
+- approving a request for a Critical ability;
+- any change to a role the person making it holds;
+- deciding (approving or denying) one's own access request.
+
+The Critical abilities are Access CoreX admin, Manage access, Manage operations and security, Install releases and
+Run dangerous actions. Anyone else is refused with a sentence saying a site administrator does it, and the refusal is
+listed on the Audit log tab.
+
+**See CoreX screens without changing them** opens Overview, Settings and Insights read-only for someone who lacks
+their own ability: a "Read only" chip in the header, a sentence naming the ability that makes
+changes, and every control marked unavailable, saying why when focused. No role holds it until an owner allows it.
+Every save such a person sends anyway, to a route or a form, is refused and counted in the audit log. It does not open
+Operations & Security, which shows the login policy, the trusted proxies and locked-out accounts by name: that screen
+needs "Manage operations and security".
+
+A person who holds abilities but not "Access CoreX admin" sees a CoreX menu holding only the screens they may open.
+
 ## Access requests
 
 When a signed-in user cannot open a CoreX admin area, the denied screen shows a real request-access form. The request
@@ -112,6 +209,12 @@ is stored through the Access workflow with:
 - the requester;
 - a required reason;
 - a seven-day expiry.
+
+Abilities that control the whole site cannot be requested: those the catalogue marks locked or critical (CoreX admin,
+access, operations and security, releases, dangerous actions), any ability that implies one, and an area that holds
+one. An administrator grants those through the role matrix. On the screens that need one of them (Overview, Add-ons,
+Access, Operations & Security, Releases) the denied page says so and shows no form, and a request for one through REST
+is answered `400` with the refusal code `ability_not_requestable` or `area_not_requestable`, storing nothing.
 
 ### What the requester sees
 
@@ -139,15 +242,34 @@ or one made after the first was decided or expired, is a new request.
 
 ### What the administrator sees
 
-Pending requests appear in **CoreX Access & Abilities → Role matrix**, each naming who asked, which ability they asked
-for, when, and why, with **Approve** and **Deny**. Approval grants the requested CoreX-owned ability immediately;
-denial records the decision without granting access. Both write an audit entry.
+Pending requests appear in **CoreX Access & Abilities → Role matrix**, each naming who asked, which ability or area
+they asked for, when, and why, with **Approve** and **Deny**. Denial records the decision without granting access.
+
+**Approve** first shows what would be granted: each ability with its risk, the area it came from and the requester's
+reason. The administrator writes a note, chooses when access ends (7, 30 or 90 days; 30 is selected), and, for an
+ability marked dangerous, types its key (for example `corex_manage_data`); the server checks all of it again, with the
+same safety policy as a role change. Both decisions write an audit entry.
+
+Beside the requests, **Access granted by approval** lists every grant that stands: who has it, who approved it and when,
+the note, and when it ends. **Revoke** takes the ability back, unless another standing grant still gives it to the same
+person. Once a day CoreX ends the grants whose time has passed and tells the person and the approver in the
+Notification Center. A grant approved before expiries existed says "No expiry (granted before expiries existed)", stays
+in effect and can be revoked. A grant whose ability was taken away elsewhere (a role editor, the command line) is
+listed as no longer in effect.
 
 Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
 When nobody is waiting, it says nothing at all.
 
+The **Audit log** tab is one history of access, newest first, by day, 25 entries a page, filtered by kind and by
+person: role changes (with what changed) and role changes the safety rules refused (with why), requests made and
+their approval, refusal, cancellation or expiry, grants revoked or ended, and refused visits and actions. Role
+changes, requests and grants are kept for 180 days; refusals for 30. One person's refusals of one screen are one line
+for an hour from the first of them, with how many times and from when to when, so somebody reloading a refused page
+cannot push anybody else's line out; each person keeps at most 20 lines. On a host with a persistent object cache the
+repeats within the hour are counted there and stored once; without one, each repeat updates that person's line.
+
 `GET /corex/v1/access/requests` answers the same list as JSON, to the same people: it needs a REST nonce and
-`manage_options`, as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person
+"Manage access", as the screen and the decision route do. Anybody else who is signed in is answered `403`, the person
 who filed a request included, and a visitor who is not signed in `401`. A person sees their own open request on the
 screen that refused them, not through this route.
 

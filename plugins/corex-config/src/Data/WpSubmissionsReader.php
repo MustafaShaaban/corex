@@ -97,6 +97,33 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         return true;
     }
 
+    /**
+     * Who the submission's emails went to, recorded with each email and each resend (spec 112,
+     * FR-032), taken out of the email record and the history: the rest of both stays.
+     */
+    private function forgetRecipients(int $id): void
+    {
+        $emails = get_post_meta($id, 'corex_email_json', true);
+        if (is_array($emails) && is_array($emails['bindings'] ?? null)) {
+            foreach ($emails['bindings'] as $event => $binding) {
+                if (is_array($binding)) {
+                    unset($emails['bindings'][$event]['recipients']);
+                }
+            }
+            update_post_meta($id, 'corex_email_json', $emails);
+        }
+
+        $history = get_post_meta($id, 'corex_submission_timeline', true);
+        if (is_array($history)) {
+            foreach ($history as $at => $entry) {
+                if (is_array($entry) && is_array($entry['summary'] ?? null)) {
+                    unset($history[$at]['summary']['recipients']);
+                }
+            }
+            update_post_meta($id, 'corex_submission_timeline', $history);
+        }
+    }
+
     public function anonymizeForRetention(int $id): bool
     {
         if (get_post_type($id) !== 'corex_submission') {
@@ -118,6 +145,7 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
                 delete_post_meta($id, (string) $key);
             }
         }
+        $this->forgetRecipients($id);
         update_post_meta($id, 'corex_values_json', ['anonymized' => true]);
         update_post_meta($id, 'corex_retention_state', 'anonymized');
         update_post_meta($id, 'corex_submission_updated_at', gmdate(DATE_ATOM));
@@ -441,7 +469,16 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             $clauses[] = ['key' => 'corex_form_slug', 'value' => $query->formSlug, 'compare' => '='];
         }
         if ($query->status !== '') {
-            $clauses[] = $this->statusClause($query->status);
+            $clauses[] = $query->status === SubmissionInboxQuery::OPEN
+                ? ['relation' => 'OR', ...array_map($this->statusClause(...), SubmissionInboxQuery::OPEN_STATUSES)]
+                : $this->statusClause($query->status);
+        }
+        if ($query->unread) {
+            // Marking a submission unread empties the field; one never opened has none.
+            $clauses[] = ['relation' => 'OR',
+                ['key' => 'corex_read_at', 'compare' => 'NOT EXISTS'],
+                ['key' => 'corex_read_at', 'value' => '', 'compare' => '='],
+            ];
         }
         if ($query->owner !== '') {
             [$ownerType, $ownerKey] = explode(':', $query->owner, 2);
@@ -513,8 +550,68 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         foreach ($scope->roleKeys as $key) {
             $allowed[] = $this->ownerClause('role', $key);
         }
+        if (! $scope->flowsOnly) {
+            return $allowed;
+        }
 
-        return $allowed;
+        // An assigned-only inbox holds flow submissions only (spec 122, FR-013).
+        return ['relation' => 'AND',
+            ['key' => 'corex_flow_id', 'value' => 0, 'compare' => '>', 'type' => 'UNSIGNED'],
+            $allowed,
+        ];
+    }
+
+    /**
+     * The flows whose submissions this scope reaches, so an assigned-only inbox offers only those
+     * forms to filter by and names no other (spec 122, FR-013). One query, read on every load of
+     * the Submissions screen: the distinct flow IDs, never the submissions themselves.
+     *
+     * @return list<int>
+     */
+    public function flowIdsIn(SubmissionAccessScope $scope): array
+    {
+        global $wpdb;
+
+        $joins = ["INNER JOIN {$wpdb->postmeta} flow ON flow.post_id = p.ID AND flow.meta_key = 'corex_flow_id'"];
+        $where = [
+            "p.post_type = 'corex_submission'",
+            "p.post_status IN ('private', 'trash')",
+            'CAST(flow.meta_value AS UNSIGNED) > 0',
+        ];
+        if (! $scope->manageAll) {
+            $joins[] = "INNER JOIN {$wpdb->postmeta} type ON type.post_id = p.ID AND type.meta_key = 'corex_owner_type'";
+            $joins[] = "INNER JOIN {$wpdb->postmeta} owner ON owner.post_id = p.ID AND owner.meta_key = 'corex_owner_key'";
+            $where[] = '(' . implode(' OR ', $this->ownerConditions($scope)) . ')';
+        }
+
+        return array_map('intval', $wpdb->get_col(
+            "SELECT DISTINCT CAST(flow.meta_value AS UNSIGNED) FROM {$wpdb->posts} p "
+            . implode(' ', $joins) . ' WHERE ' . implode(' AND ', $where),
+        ));
+    }
+
+    /**
+     * The scope's owners as prepared SQL conditions on the `type` and `owner` meta joins: the
+     * same user, team and role matches as {@see scopeClause()}.
+     *
+     * @return list<string>
+     */
+    private function ownerConditions(SubmissionAccessScope $scope): array
+    {
+        global $wpdb;
+
+        $conditions = [$wpdb->prepare("(type.meta_value = 'user' AND owner.meta_value = %s)", (string) $scope->actorId)];
+        foreach (['team' => $scope->teamKeys, 'role' => $scope->roleKeys] as $type => $keys) {
+            if ($keys !== []) {
+                $conditions[] = $wpdb->prepare(
+                    '(type.meta_value = %s AND owner.meta_value IN (' . implode(', ', array_fill(0, count($keys), '%s')) . '))',
+                    $type,
+                    ...$keys,
+                );
+            }
+        }
+
+        return $conditions;
     }
 
     /**

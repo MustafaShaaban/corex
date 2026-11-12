@@ -16,15 +16,20 @@ use Corex\Newsletter\Subscriber\SubscriberStore;
 use Corex\Newsletter\Subscription\SubscriptionService;
 use Corex\Newsletter\TokenSigner;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\MailDelivery;
 
 // Subscribing sends the confirmation email, and Corex Mail logs every send as a post. Nothing
 // hands that log's id back, so it is caught as it is inserted — each run used to leave one on
 // the install.
 beforeEach(function () {
+    // Spec 113: these emails are sent the way a production site sends them. MailDelivery stops
+    // each one before the transport.
+    $this->productionMail = MailDelivery::answerAs(MailDelivery::DELIVER);
     $this->emailLogs = CreatedPosts::watch('corex_email_log');
 });
 
 afterEach(function () {
+    MailDelivery::stop($this->productionMail);
     $this->emailLogs->delete();
 });
 

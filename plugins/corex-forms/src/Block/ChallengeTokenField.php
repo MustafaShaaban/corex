@@ -10,7 +10,7 @@ namespace Corex\Forms\Block;
 
 defined('ABSPATH') || exit;
 
-use Corex\Forms\Submission\SubmissionChallenge;
+use Corex\Security\ChallengeFields;
 
 /**
  * The hidden field a protected form sends its challenge token in, for a form built in the
@@ -18,7 +18,8 @@ use Corex\Forms\Submission\SubmissionChallenge;
  *
  * It is printed empty. The provider's script fills it when the visitor submits, and reads the
  * action to ask for from the field itself, so two forms that share a name each get their own
- * (spec 104, FR-017).
+ * (spec 104, FR-017). The markup itself is core's {@see ChallengeFields}, which the add-ons' forms
+ * print too (spec 115).
  */
 final class ChallengeTokenField
 {
@@ -28,21 +29,11 @@ final class ChallengeTokenField
      */
     public static function widgetPlace(string $provider, string $siteKey): string
     {
-        return $provider === ''
-            ? ''
-            : sprintf(
-                '<div class="corex-form__challenge" data-corex-challenge="%s" data-corex-sitekey="%s"></div>',
-                esc_attr($provider),
-                esc_attr($siteKey),
-            );
+        return ChallengeFields::widgetPlace($provider, $siteKey);
     }
 
     public static function render(string $action): string
     {
-        return sprintf(
-            '<input type="hidden" name="%s" value="" class="corex-form__captcha-token" data-corex-captcha-action="%s" />',
-            esc_attr(SubmissionChallenge::TOKEN_KEY),
-            esc_attr($action),
-        );
+        return ChallengeFields::token($action);
     }
 }

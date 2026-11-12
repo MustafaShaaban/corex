@@ -24,6 +24,16 @@ corex-core (custom tables, events), Corex Mail (008), and Corex Captcha (012).
   `wp_salt`); a tampered token verifies to nothing. The email links carry their own auth (no nonce).
 - The `newsletter_topic` taxonomy on posts is the shared topic set.
 
+## Captcha
+
+With a captcha provider on (Turnstile, hCaptcha or reCAPTCHA v3, with its keys),
+`POST /wp-json/corex/v1/newsletter/subscribe` refuses a sign-up without the provider's check, answering
+`422` with `error: "captcha"` and a `message`; nothing is stored and no email is sent. The Newsletter
+Signup block (corex-blocks) carries the check and sends its token. A site's own form sends a
+`captcha_token`; with reCAPTCHA v3 the token is judged against the action `corex_newsletter`
+(`Corex\Blocks\NewsletterSignupRenderer::CAPTCHA_ACTION`), the site's own hostname (or
+`captcha.allowed_hostnames`) and the configured score.
+
 ## Tests
 
 ```bash

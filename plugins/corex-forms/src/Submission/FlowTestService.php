@@ -12,15 +12,20 @@ defined('ABSPATH') || exit;
 
 use Corex\Forms\Flow\FlowService;
 use Corex\Forms\Flow\FlowVersion;
+use Corex\Mail\Capture\MailHold;
 
 /**
  * Runs the complete pipeline with a persisted marked-test submission.
+ *
+ * Every email the run sends is held, on any site: kept in Email Studio and never sent
+ * (spec 113, US3; the owner's decision SAFE-D3). The result lists what was held.
  */
 final readonly class FlowTestService
 {
     public function __construct(
         private FlowService $flows,
         private FormSubmissionPipeline $pipeline,
+        private MailHold $hold,
     ) {
     }
 
@@ -30,15 +35,17 @@ final readonly class FlowTestService
         $flow = $this->flows->get($flowId);
         $version = $this->flows->preview($flowId);
         if ($version->versionNumber !== $expectedVersion) {
-            throw new \Corex\Forms\Flow\FlowConflictException(__('The flow draft version is stale.', 'corex'));
+            throw new \Corex\Forms\Flow\FlowConflictException(FlowService::conflict());
         }
 
-        return $this->pipeline->run(new SubmissionPipelineContext(
+        [$result, $held] = $this->hold->during(fn (): SubmissionPipelineResult => $this->pipeline->run(new SubmissionPipelineContext(
             $flow,
             $version,
             $values === [] ? $this->sampleValues($version) : $values,
             true,
-        ));
+        )));
+
+        return $result->withHeldEmails($held);
     }
 
     /** @return array<string,mixed> */

@@ -13,7 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Forms\Flow\FlowProtection;
 use Corex\Http\ClientAddress;
 use Corex\Security\ChallengeContext;
-use Corex\Support\Config\ConfigInterface;
+use Corex\Security\ChallengeSettings;
 
 /**
  * Builds the server-side {@see ChallengeContext} a submission is judged against.
@@ -26,15 +26,11 @@ use Corex\Support\Config\ConfigInterface;
  */
 final readonly class FormChallengeContextFactory
 {
-    private const DEFAULT_THRESHOLD = 0.3;
-
-    /** The providers CoreX places a challenge for. A token is checked for any driver that is bound. */
-    private const PLACED_DRIVERS = ['recaptcha', 'turnstile', 'hcaptcha'];
-
-    /** Those of them whose challenge is a widget the visitor sees. reCAPTCHA v3 shows none. */
-    private const WIDGET_DRIVERS = ['turnstile', 'hcaptcha'];
-
-    public function __construct(private ConfigInterface $config, private ClientAddress $client)
+    /**
+     * @param ChallengeSettings $settings The site-wide settings, shared with every other CoreX form that checks
+     *                                    a token (spec 115).
+     */
+    public function __construct(private ChallengeSettings $settings, private ClientAddress $client)
     {
     }
 
@@ -50,12 +46,12 @@ final readonly class FormChallengeContextFactory
 
         $threshold = isset($protection['threshold'])
             ? FlowProtection::clampThreshold((float) $protection['threshold'])
-            : $this->globalThreshold();
+            : $this->settings->threshold();
 
         return new ChallengeContext(
             expectedAction: $action,
             threshold: $threshold,
-            allowedHostnames: $this->allowedHostnames(),
+            allowedHostnames: $this->settings->allowedHostnames(),
             remoteIp: $this->remoteIp(),
         );
     }
@@ -80,9 +76,7 @@ final readonly class FormChallengeContextFactory
      */
     public function widgetProvider(): string
     {
-        $driver = (string) $this->config->get('captcha.driver', 'none');
-
-        return in_array($driver, self::WIDGET_DRIVERS, true) ? $driver : '';
+        return $this->settings->widgetProvider();
     }
 
     /**
@@ -90,42 +84,12 @@ final readonly class FormChallengeContextFactory
      */
     public function siteKey(): string
     {
-        return (string) $this->config->get('captcha.site_key', '');
+        return $this->settings->siteKey();
     }
 
     public function providerConfigured(): bool
     {
-        $driver = (string) $this->config->get('captcha.driver', 'none');
-        $secret = (string) $this->config->get('captcha.secret', '');
-
-        return in_array($driver, self::PLACED_DRIVERS, true) && $secret !== '';
-    }
-
-    private function globalThreshold(): float
-    {
-        $raw = $this->config->get('captcha.score_threshold', self::DEFAULT_THRESHOLD);
-
-        return is_numeric($raw) ? FlowProtection::clampThreshold((float) $raw) : self::DEFAULT_THRESHOLD;
-    }
-
-    /** @return list<string> */
-    private function allowedHostnames(): array
-    {
-        $configured = $this->config->get('captcha.allowed_hostnames', '');
-        $hosts = is_array($configured)
-            ? $configured
-            : array_map('trim', explode(',', (string) $configured));
-
-        $hosts = array_values(array_filter(array_map('strval', $hosts), static fn (string $h): bool => $h !== ''));
-
-        if ($hosts === []) {
-            $siteHost = (string) wp_parse_url((string) home_url(), PHP_URL_HOST);
-            if ($siteHost !== '') {
-                $hosts = [$siteHost];
-            }
-        }
-
-        return $hosts;
+        return $this->settings->providerConfigured();
     }
 
     private function remoteIp(): ?string

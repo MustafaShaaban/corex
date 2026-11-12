@@ -1,0 +1,505 @@
+/*
+ * The assistant's chat window (spec 129). Loaded with chat.js, never with
+ * the page. Reads the `--corex-assistant-*` properties style.scss sets from
+ * the theme's tokens; logical properties only, so a right-to-left page
+ * mirrors without a second set of rules.
+ */
+
+.corex-assistant__panel {
+	order: -1;
+	display: flex;
+	flex-direction: column;
+	inline-size: min(24rem, calc(100vw - 2 * var(--corex-assistant-gap)));
+	block-size: min(40rem, calc(100dvh - 6rem));
+	overflow: hidden;
+	border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+	border-radius: var(--corex-assistant-radius);
+	background: var(--corex-assistant-surface);
+	box-shadow: var(--corex-assistant-shadow);
+	color: var(--corex-assistant-ink);
+	font-size: var(--wp--preset--font-size--base, medium);
+	line-height: 1.6;
+	text-align: start;
+	animation: corex-assistant-in var(--corex-assistant-speed) var(--corex-assistant-ease) both;
+
+	// No more specific than one class, so each control's own rule wins.
+	:where(button, input, select, textarea) {
+		font: inherit;
+		color: inherit;
+	}
+
+	:focus-visible {
+		outline: var(--corex-assistant-focus-width) solid var(--corex-assistant-focus);
+		outline-offset: var(--wp--custom--focus--offset, 2px); /* corex-token-allow: fallback only */
+	}
+}
+
+/* A phone: the chat is a sheet over the page, the button hidden under it. */
+@media (max-width: 599px) { /* corex-token-allow: the phone breakpoint, under the theme's 600px */
+
+	.corex-assistant.is-open {
+		inset: 0;
+	}
+
+	.corex-assistant.is-open .corex-assistant__fab {
+		display: none;
+	}
+
+	.corex-assistant__panel {
+		inline-size: 100%;
+		block-size: 100dvh;
+		border: 0;
+		border-radius: 0;
+	}
+}
+
+.corex-assistant__head {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-assistant-gap-sm);
+	padding-block: var(--corex-assistant-gap-sm);
+	padding-inline: var(--corex-assistant-gap) var(--corex-assistant-gap-sm);
+	border-block-end: var(--corex-assistant-border) solid var(--corex-assistant-line);
+}
+
+.corex-assistant__avatar {
+	position: relative;
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	border-radius: 50%;
+	background: var(--corex-assistant-accent);
+	color: var(--corex-assistant-on-accent);
+
+	img,
+	svg {
+		inline-size: 1.4rem;
+		block-size: 1.4rem;
+		object-fit: contain;
+	}
+
+	&::after {
+		content: "";
+		position: absolute;
+		inset-block-end: 0;
+		inset-inline-end: 0;
+		inline-size: 0.65rem;
+		block-size: 0.65rem;
+		border: var(--corex-assistant-border) solid var(--corex-assistant-surface);
+		border-radius: 50%;
+		background: var(--corex-assistant-online);
+	}
+}
+
+.corex-assistant__glyph {
+	display: contents;
+}
+
+.corex-assistant__who {
+	flex: 1;
+	min-inline-size: 0;
+	line-height: 1.3;
+
+	strong,
+	span {
+		display: block;
+	}
+
+	span {
+		color: var(--corex-assistant-muted);
+		font-size: var(--wp--preset--font-size--xs, small);
+	}
+}
+
+.corex-assistant__icon {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.25rem;
+	block-size: 2.25rem;
+	padding: 0;
+	border: var(--corex-assistant-border) solid transparent;
+	border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */
+	background: transparent;
+	color: var(--corex-assistant-muted);
+	cursor: pointer;
+
+	&:hover {
+		border-color: var(--corex-assistant-line);
+		color: var(--corex-assistant-ink);
+	}
+}
+
+.corex-assistant__log {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: var(--corex-assistant-gap-sm);
+	padding: var(--corex-assistant-gap);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background: var(--corex-assistant-surface-alt);
+	scrollbar-width: thin;
+}
+
+.corex-assistant__msg {
+	max-inline-size: 86%;
+	padding-block: var(--corex-assistant-gap-sm);
+	padding-inline: var(--corex-assistant-gap);
+	overflow-wrap: anywhere;
+
+	p {
+		margin: 0;
+	}
+
+	p + p {
+		margin-block-start: var(--corex-assistant-gap-sm);
+	}
+}
+
+.corex-assistant__msg--bot {
+	align-self: flex-start;
+	border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+	border-radius: var(--corex-assistant-radius);
+	border-end-start-radius: var(--wp--custom--radius--sm, 0.25rem); /* corex-token-allow: fallback only */
+	background: var(--corex-assistant-surface);
+}
+
+.corex-assistant__msg--me {
+	align-self: flex-end;
+	border-radius: var(--corex-assistant-radius);
+	border-end-end-radius: var(--wp--custom--radius--sm, 0.25rem); /* corex-token-allow: fallback only */
+	background: var(--corex-assistant-accent);
+	color: var(--corex-assistant-on-accent);
+}
+
+.corex-assistant__msg--note {
+	color: var(--corex-assistant-muted);
+}
+
+.corex-assistant__msg--done {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-assistant-gap-sm);
+}
+
+.corex-assistant__tick {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 1.6rem;
+	block-size: 1.6rem;
+	border: var(--corex-assistant-border) solid var(--corex-assistant-online);
+	border-radius: 50%;
+	color: var(--corex-assistant-online);
+
+	svg {
+		inline-size: 0.9rem;
+		block-size: 0.9rem;
+	}
+}
+
+.corex-assistant__links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-assistant-gap-sm);
+	margin-block-start: var(--corex-assistant-gap-sm);
+}
+
+.corex-assistant__link,
+.corex-assistant__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+	min-block-size: 2rem;
+	padding-block: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+	padding-inline: var(--corex-assistant-gap-sm);
+	border: var(--corex-assistant-border) solid var(--corex-assistant-accent);
+	border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */
+	background: var(--corex-assistant-surface);
+	color: var(--corex-assistant-accent);
+	font-size: var(--wp--preset--font-size--sm, small);
+	font-weight: 600;
+	text-align: start;
+	text-decoration: none;
+	cursor: pointer;
+
+	svg {
+		inline-size: 0.9rem;
+		block-size: 0.9rem;
+		flex: none;
+	}
+
+	&:hover {
+		background: color-mix(in srgb, var(--corex-assistant-accent) 10%, var(--corex-assistant-surface));
+	}
+}
+
+.corex-assistant__suggest {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-assistant-gap-sm);
+}
+
+.corex-assistant__typing {
+	display: flex;
+	align-self: flex-start;
+	gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+	padding: var(--corex-assistant-gap-sm) var(--corex-assistant-gap);
+
+	i {
+		inline-size: 0.45rem;
+		block-size: 0.45rem;
+		border-radius: 50%;
+		background: var(--corex-assistant-muted);
+		animation: corex-assistant-dot 1.2s infinite ease-in-out; /* corex-token-allow: a loop, not a transition */
+	}
+
+	i:nth-child(2) {
+		animation-delay: 0.15s; /* corex-token-allow: the dots' stagger */
+	}
+
+	i:nth-child(3) {
+		animation-delay: 0.3s; /* corex-token-allow: the dots' stagger */
+	}
+}
+
+@keyframes corex-assistant-dot {
+
+	0%,
+	80%,
+	100% {
+		opacity: 0.3;
+	}
+
+	40% {
+		opacity: 1;
+	}
+}
+
+.corex-assistant__foot {
+	padding: var(--corex-assistant-gap-sm) var(--corex-assistant-gap) var(--corex-assistant-gap);
+	border-block-start: var(--corex-assistant-border) solid var(--corex-assistant-line);
+}
+
+.corex-assistant__field {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--corex-assistant-gap-sm);
+	padding: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+	border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+	border-radius: var(--corex-assistant-radius);
+	background: var(--corex-assistant-surface);
+
+	&:focus-within {
+		border-color: var(--corex-assistant-accent);
+	}
+}
+
+.corex-assistant__input {
+	flex: 1;
+	min-inline-size: 0;
+	max-block-size: 7.5rem;
+	padding-block: var(--corex-assistant-gap-sm);
+	padding-inline: var(--corex-assistant-gap-sm);
+	border: 0;
+	background: transparent;
+	resize: none;
+
+	&:focus-visible {
+		outline: none;
+	}
+
+	&::placeholder {
+		color: var(--corex-assistant-muted);
+	}
+}
+
+.corex-assistant__send {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	border: 0;
+	border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */
+	background: var(--corex-assistant-accent);
+	color: var(--corex-assistant-on-accent);
+	cursor: pointer;
+
+	&:disabled {
+		cursor: progress;
+		opacity: 0.6;
+	}
+}
+
+[dir="rtl"] .corex-assistant__send svg {
+	transform: scaleX(-1);
+}
+
+.corex-assistant__note {
+	margin-block: var(--corex-assistant-gap-sm) 0;
+	color: var(--corex-assistant-muted);
+	font-size: var(--wp--preset--font-size--xs, small);
+	line-height: 1.5;
+}
+
+.corex-assistant__human {
+	min-block-size: 1.75rem;
+	margin-block-start: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--corex-assistant-accent);
+	font-size: var(--wp--preset--font-size--sm, small);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+/* The hand-off form. */
+.corex-assistant__handoff {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-assistant-gap-sm);
+	padding: var(--corex-assistant-gap);
+	border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+	border-radius: var(--corex-assistant-radius);
+	background: var(--corex-assistant-surface);
+
+	h3 {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--base, medium);
+	}
+
+	input[type="text"],
+	input[type="tel"],
+	input[type="email"],
+	select {
+		box-sizing: border-box;
+		inline-size: 100%;
+		min-block-size: 2.5rem;
+		padding-inline: var(--corex-assistant-gap-sm);
+		border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+		border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */
+		background: var(--corex-assistant-surface);
+	}
+
+	[aria-invalid="true"] {
+		border-color: var(--corex-assistant-error);
+	}
+}
+
+.corex-assistant__sub {
+	margin: 0;
+	color: var(--corex-assistant-muted);
+	font-size: var(--wp--preset--font-size--sm, small);
+}
+
+.corex-assistant__row {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+
+	label {
+		font-size: var(--wp--preset--font-size--sm, small);
+		font-weight: 600;
+	}
+}
+
+.corex-assistant__phone {
+	display: flex;
+	gap: var(--corex-assistant-gap-sm);
+
+	select {
+		flex: 0 0 auto;
+		inline-size: 40%;
+	}
+}
+
+.corex-assistant__error,
+.corex-assistant__form-error {
+	margin: 0;
+	color: var(--corex-assistant-error);
+	font-size: var(--wp--preset--font-size--sm, small);
+}
+
+.corex-assistant__channels {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-assistant-gap-sm);
+	margin: 0;
+	padding: 0;
+	border: 0;
+
+	legend {
+		inline-size: 100%;
+		margin-block-end: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+		padding: 0;
+		font-size: var(--wp--preset--font-size--sm, small);
+		font-weight: 600;
+	}
+}
+
+.corex-assistant__seg {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--10, 0.25rem); /* corex-token-allow: fallback only */
+	min-block-size: 2rem;
+	padding-inline: var(--corex-assistant-gap-sm);
+	border: var(--corex-assistant-border) solid var(--corex-assistant-line);
+	border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */
+	cursor: pointer;
+
+	&:has(:checked) {
+		border-color: var(--corex-assistant-accent);
+		color: var(--corex-assistant-accent);
+	}
+}
+
+.corex-assistant__check {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-assistant-gap-sm);
+	font-size: var(--wp--preset--font-size--sm, small);
+
+	input {
+		flex: none;
+		inline-size: 1.25rem;
+		block-size: 1.25rem;
+		margin: 0;
+	}
+}
+
+/* Out of sight and out of reach: a person never fills it. */
+.corex-assistant__trap {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+.corex-assistant__submit {
+	min-block-size: 2.75rem;
+	border: 0;
+	border-radius: var(--wp--custom--radius--md, 0.5rem); /* corex-token-allow: fallback only */
+	background: var(--corex-assistant-accent);
+	color: var(--corex-assistant-on-accent);
+	font-weight: 600;
+	cursor: pointer;
+
+	&:disabled {
+		cursor: progress;
+		opacity: 0.6;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-assistant__panel,
+	.corex-assistant__typing i {
+		animation: none;
+	}
+}

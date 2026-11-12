@@ -14,6 +14,7 @@ use Corex\Provisioning\ApplyOutcome;
 use Corex\Provisioning\PageContent;
 use Corex\Provisioning\PageDisposition;
 use Corex\Provisioning\PagePlanner;
+use Corex\Provisioning\PageRecord;
 
 defined('ABSPATH') || exit;
 
@@ -26,14 +27,16 @@ defined('ABSPATH') || exit;
  * whose slug is absent is created; a pre-existing **empty** page (or an un-populated kit placeholder) is
  * **adopted** — populated in place; a page that already holds user content is skipped untouched. The front
  * page is set after the loop whenever the declared home was created or adopted, so a kit apply never leaves a
- * blank front page. Each page records its disposition in `_corex_kit_page` (`created` | `adopted`) so a reset
- * deletes created pages but only empties adopted ones (never a page the user owned). Returns an
- * {@see ApplyOutcome} the wizard renders as a summary (and spec 042 reuses).
+ * blank front page. Each page records its disposition in `_corex_kit_page` (`created` | `adopted` |
+ * `replaced` | `suffixed`), and a page the kit replaces or adopts first records what it was
+ * ({@see PageRecord}), as do the reading settings before the front page is set, so a reset can put the
+ * owner's pages back rather than delete them (spec 115). Returns an {@see ApplyOutcome} the wizard renders
+ * as a summary (and spec 042 reuses).
  */
 final class BlueprintActivator
 {
     public const SEEDED_OPTION = 'corex_kit_seeded_pages';
-    public const PAGE_META     = '_corex_kit_page';
+    public const PAGE_META     = PageDisposition::META;
 
     private const MODULE_FILES = [
         'corex-ui'          => 'corex-ui/corex-ui.php',
@@ -128,6 +131,7 @@ final class BlueprintActivator
         }
 
         if ($frontPageId !== null) {
+            $this->recordReading();
             update_option('show_on_front', 'page');
             update_option('page_on_front', $frontPageId);
         }
@@ -173,6 +177,10 @@ final class BlueprintActivator
                 return ['pageId' => null, 'persistedAs' => null];
             }
 
+            if ($disposition->reason !== 'kit_placeholder') {
+                $this->recordPage($existing);
+            }
+
             wp_update_post(['ID' => $existing->ID, 'post_content' => wp_slash($page['content'])]);
 
             // A kit placeholder stays Corex-owned (created → deleted on reset); a user's empty page becomes
@@ -186,7 +194,8 @@ final class BlueprintActivator
         }
 
         // Replace only runs from an explicit operator conflict choice (never a default), so existing
-        // content is never overwritten silently (FR-143); the apply flow requires a backup first (FR-140).
+        // content is never overwritten silently (FR-143). What the page was is recorded first, so a reset
+        // puts it back (spec 115).
         if ($disposition->action === PageDisposition::REPLACE) {
             $existing = get_page_by_path($disposition->slug);
 
@@ -194,6 +203,16 @@ final class BlueprintActivator
                 return ['pageId' => null, 'persistedAs' => null];
             }
 
+            // A page an earlier apply created stays the kit's: replacing its content records nothing,
+            // and a reset still removes it.
+            $earlier = (string) get_post_meta($existing->ID, self::PAGE_META, true);
+            if (in_array($earlier, [PageDisposition::PERSISTED_CREATED, PageDisposition::PERSISTED_SUFFIXED], true)) {
+                wp_update_post(['ID' => $existing->ID, 'post_content' => wp_slash($page['content'])]);
+
+                return ['pageId' => $existing->ID, 'persistedAs' => $earlier];
+            }
+
+            $this->recordPage($existing);
             wp_update_post(['ID' => $existing->ID, 'post_content' => wp_slash($page['content'])]);
             update_post_meta($existing->ID, self::PAGE_META, PageDisposition::PERSISTED_REPLACED);
 
@@ -220,6 +239,40 @@ final class BlueprintActivator
         }
 
         return ['pageId' => null, 'persistedAs' => null];
+    }
+
+    /**
+     * Record what a page was before the kit changes it, once: a second apply keeps the first record, so a
+     * reset returns the page to what the owner had before any kit.
+     */
+    private function recordPage(\WP_Post $page): void
+    {
+        if (PageRecord::isRecord(get_post_meta($page->ID, PageRecord::META, true))) {
+            return;
+        }
+
+        $template = (string) get_post_meta($page->ID, PageRecord::TEMPLATE_META, true);
+
+        // Post meta takes one level of slashes off on the way in, as a content does.
+        update_post_meta($page->ID, PageRecord::META, wp_slash(PageRecord::of($page, $template)));
+    }
+
+    /**
+     * Record the site's reading settings before the kit sets its front page, once.
+     */
+    private function recordReading(): void
+    {
+        if (PageRecord::isReadingRecord(get_option(PageRecord::READING_OPTION, null))) {
+            return;
+        }
+
+        $reading = [];
+        foreach (PageRecord::READING_KEYS as $key) {
+            $value         = get_option($key, '');
+            $reading[$key] = is_scalar($value) ? (string) $value : '';
+        }
+
+        update_option(PageRecord::READING_OPTION, $reading, false);
     }
 
     /**

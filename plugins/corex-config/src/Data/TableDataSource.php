@@ -27,12 +27,17 @@ use Corex\Data\DataSourceCapabilities;
  * to. Writes and migrations arrive through {@see WritableTableDataSource}, which is the subclass
  * the registry builds when — and only when — the declaration asks for them.
  */
-class TableDataSource implements ExportableDataSource, SchemaAwareDataSource, CapabilityAwareDataSource, CategorisedDataSource
+class TableDataSource implements ExportableDataSource, SchemaAwareDataSource, CapabilityAwareDataSource, CategorisedDataSource, RestrictedDataSource
 {
     public function __construct(
         protected readonly ManagedTable $table,
         private readonly TableDataReader $reader,
     ) {
+    }
+
+    public function ownerAbility(): ?string
+    {
+        return $this->table->ownerAbility;
     }
 
     public function key(): string

@@ -103,6 +103,23 @@ it('describes maintenance with what the guard actually does', function () {
         ->and($consequences)->toContain('Recovery');
 });
 
+it('says in the lines always shown what maintenance closes and what stays open', function () {
+    // Spec 112 FR-018: read without opening "More about this mode", so in consequences, not reference.
+    $shown = implode(' ', $this->disclosure->describe(OperationsMode::MAINTENANCE)['consequences']);
+
+    expect($shown)->toContain('form submissions are closed')
+        ->and($shown)->toContain('account registration')
+        ->and($shown)->toContain('nothing is stored or mailed')
+        ->and($shown)->toContain('sign-in and password reset stay open')
+        ->and($shown)->toContain('discussion settings');
+});
+
+it('no longer claims the REST API is never intercepted in maintenance', function () {
+    $reference = implode(' ', $this->disclosure->describe(OperationsMode::MAINTENANCE)['reference']);
+
+    expect($reference)->not->toContain('The REST API, AJAX, cron, and wp-admin are never intercepted.');
+});
+
 it('describes all five modes, so the screen draws a block for each', function () {
     expect(array_column($this->disclosure->describeAll(), 'mode'))->toBe([
         OperationsMode::DEVELOPMENT,

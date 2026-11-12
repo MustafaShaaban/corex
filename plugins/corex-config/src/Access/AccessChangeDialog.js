@@ -18,9 +18,27 @@ import { describeChanges } from './accessState.js';
  * @param {string} code The blocker's code.
  * @return {string} The reason, translated.
  */
-function blockerReason( code ) {
+export function blockerReason( code ) {
 	if ( code === 'ability_locked' ) {
 		return __( 'This ability is locked and cannot be changed.', 'corex' );
+	}
+	if ( code === 'site_administrator_role' ) {
+		return __(
+			'Site administrators always hold every CoreX ability, so this role cannot be denied it.',
+			'corex'
+		);
+	}
+	if ( code === 'own_access_needs_site_administrator' ) {
+		return __(
+			'This applies to you, and only a site administrator can change their own access.',
+			'corex'
+		);
+	}
+	if ( code === 'critical_needs_site_administrator' ) {
+		return __(
+			'This is a Critical ability: only a site administrator can allow it or set it to inherit.',
+			'corex'
+		);
 	}
 	if ( code === 'self_lockout' ) {
 		return __(

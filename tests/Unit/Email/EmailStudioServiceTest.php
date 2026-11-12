@@ -29,9 +29,11 @@ use Corex\Email\Studio\EmailStudioSubmissionGateway;
 use Corex\Email\Studio\EmailTemplateRepository;
 use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailBrandSource;
+use Corex\Email\Design\EmailFrame;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\StandardEmailDesign;
 use Corex\Tests\Support\LanguageOfTheRequest;
+use Corex\Tests\Support\StudioDelivery;
 use Corex\Mail\MessageId;
 use Corex\Mail\ReplyConversation;
 use Corex\Mail\UnavailableSubmissionEmailGateway;
@@ -91,6 +93,11 @@ function emailStudioServiceStore(): EmailStudioStore
             }
 
             return null;
+        }
+
+        public function latest(string $type, int $limit): array
+        {
+            return array_slice(array_reverse($this->all($type)), 0, max(1, $limit));
         }
 
         public function all(string $type, ?int $parentId = null): array
@@ -205,10 +212,12 @@ it('exposes only active Email Studio templates to cross-module binding controls'
     $repository->activate($active->id, $draft->versionNumber, 7, $now);
     $repository->create('draft-template', 'Draft template', 7, $now);
 
-    expect((new EmailTemplateCatalog($repository))->templates())->toBe([[
+    // With the variables its active version uses, for a flow to say which it lacks (spec 120).
+    expect((new EmailTemplateCatalog($repository, new EmailTemplateService([])))->templates())->toBe([[
         'id' => $active->id,
         'slug' => 'active-template',
         'name' => 'Active template',
+        'variables' => ['user.name'],
     ]]);
 });
 
@@ -257,7 +266,7 @@ it('renders and dispatches the active editable template selected by a route', fu
         new EmailRouteDispatcher(
             new EmailRouteMessageFactory($templates, $editor),
             $studio,
-            $config,
+            StudioDelivery::factory($config, $studio),
         ),
     );
 
@@ -433,12 +442,13 @@ function replyGateway(array $settings, ?array $studio = null): EmailStudioSubmis
         $service,
         new EmailTemplateService([]),
         $config,
-        new ReplyComposer(new StandardEmailDesign(), new class() implements EmailBrandSource {
+        new ReplyComposer(new EmailFrame(new StandardEmailDesign(), new class() implements EmailBrandSource {
             public function brand(): EmailBrand
             {
                 return EmailBrand::standard('Acme', 'https://acme.test/');
             }
-        }, new LanguageOfTheRequest()),
+        }), new LanguageOfTheRequest()),
+        StudioDelivery::factory($config, $service),
     );
 }
 
@@ -461,8 +471,12 @@ dataset('reply delivery settings', [
     'staging, live delivery off' => [
         ['app.env' => 'staging', 'mail.provider' => 'postmark'], 'capture', 'staging_capture', MailResult::STATE_CAPTURED,
     ],
-    'an environment CoreX does not know' => [
-        ['app.env' => 'mystery', 'mail.provider' => 'postmark', 'mail.live_delivery' => true], 'refuse', 'unknown_environment', MailResult::STATE_REJECTED,
+    // Spec 113, research R5: a value CoreX does not know is production, and follows its rule.
+    'an environment CoreX does not know, both set' => [
+        ['app.env' => 'mystery', 'mail.provider' => 'postmark', 'mail.live_delivery' => true], 'deliver', 'live', MailResult::STATE_SENT,
+    ],
+    'an environment CoreX does not know, live delivery off' => [
+        ['app.env' => 'mystery', 'mail.provider' => 'postmark'], 'refuse', 'live_off', MailResult::STATE_REJECTED,
     ],
 ]);
 

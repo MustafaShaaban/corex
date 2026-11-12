@@ -25,6 +25,10 @@ function workspaceRequest(string $method, string $route, array $payload = []): W
     $request = new WP_REST_Request($method, $route);
     $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
     $method === 'GET' ? $request->set_query_params($payload) : $request->set_body_params($payload);
+    // The id a route pattern captures, which the controller reads from the path only.
+    if (isset($payload['id'])) {
+        $request->set_url_params(['id' => $payload['id']]);
+    }
 
     return $request;
 }
@@ -170,16 +174,23 @@ it('tells a reader without the capability that they may not moderate', function 
 });
 
 it('closes the analytics route to an actor who cannot edit posts', function () {
+    // A login of its own each run: a fixed one left behind by a failed run made `wp_insert_user()`
+    // answer an error, and `(int)` of that is user 1, an administrator.
     $subscriber = wp_insert_user([
-        'user_login' => 'corex075_reader',
+        'user_login' => 'corex075_reader_' . wp_generate_password(6, false),
         'user_pass'  => wp_generate_password(),
         'role'       => 'subscriber',
     ]);
-    wp_set_current_user((int) $subscriber);
+    expect($subscriber)->toBeInt();
+    wp_set_current_user($subscriber);
 
-    expect($this->controller->allowed(
+    // Refused with a reason, which WordPress answers 403 (spec 112, FR-025).
+    $refusal = $this->controller->mayWorkOnPost(
         workspaceRequest('GET', '/corex/v1/blog/analytics', ['post_id' => $this->postId])
-    ))->toBeFalse();
+    );
+
+    expect($refusal)->toBeInstanceOf(WP_Error::class)
+        ->and($refusal->get_error_data()['status'])->toBe(403);
 
     wp_set_current_user($this->actorId);
     // WordPress loads this for an admin page and for nothing else.

@@ -1,0 +1,693 @@
+{
+    "description": "Contrast pairs of the CoreX admin tokens (plugins/corex-core/assets/css/corex-admin-tokens.css), dark and light (spec 116, US-NFR-01). A pair below its threshold fails unless it is a known failure; a known failure that passes fails too, so the list only shrinks.",
+    "pairs": [
+        {
+            "id": "admin-dark-text-on-canvas",
+            "mode": "dark",
+            "foreground": "text",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-on-surface-alt",
+            "mode": "dark",
+            "foreground": "text",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-on-surface-raised",
+            "mode": "dark",
+            "foreground": "text",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-on-shell",
+            "mode": "dark",
+            "foreground": "text",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-muted-on-canvas",
+            "mode": "dark",
+            "foreground": "text-muted",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-muted-on-surface-alt",
+            "mode": "dark",
+            "foreground": "text-muted",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-muted-on-surface-raised",
+            "mode": "dark",
+            "foreground": "text-muted",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-muted-on-shell",
+            "mode": "dark",
+            "foreground": "text-muted",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-subtle-on-canvas",
+            "mode": "dark",
+            "foreground": "text-subtle",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-subtle-on-surface-alt",
+            "mode": "dark",
+            "foreground": "text-subtle",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-subtle-on-surface-raised",
+            "mode": "dark",
+            "foreground": "text-subtle",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-text-subtle-on-shell",
+            "mode": "dark",
+            "foreground": "text-subtle",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-link-on-canvas",
+            "mode": "dark",
+            "foreground": "link",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-link-on-surface-alt",
+            "mode": "dark",
+            "foreground": "link",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-link-on-surface-raised",
+            "mode": "dark",
+            "foreground": "link",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-link-on-shell",
+            "mode": "dark",
+            "foreground": "link",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-success-on-canvas",
+            "mode": "dark",
+            "foreground": "success",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-success-on-surface-alt",
+            "mode": "dark",
+            "foreground": "success",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-success-on-surface-raised",
+            "mode": "dark",
+            "foreground": "success",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-success-on-shell",
+            "mode": "dark",
+            "foreground": "success",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-warning-on-canvas",
+            "mode": "dark",
+            "foreground": "warning",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-warning-on-surface-alt",
+            "mode": "dark",
+            "foreground": "warning",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-warning-on-surface-raised",
+            "mode": "dark",
+            "foreground": "warning",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-warning-on-shell",
+            "mode": "dark",
+            "foreground": "warning",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-error-on-canvas",
+            "mode": "dark",
+            "foreground": "error",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-error-on-surface-alt",
+            "mode": "dark",
+            "foreground": "error",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-error-on-surface-raised",
+            "mode": "dark",
+            "foreground": "error",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-error-on-shell",
+            "mode": "dark",
+            "foreground": "error",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-info-on-canvas",
+            "mode": "dark",
+            "foreground": "info",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-info-on-surface-alt",
+            "mode": "dark",
+            "foreground": "info",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-info-on-surface-raised",
+            "mode": "dark",
+            "foreground": "info",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-info-on-shell",
+            "mode": "dark",
+            "foreground": "info",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-action-ink-on-action",
+            "mode": "dark",
+            "foreground": "action-ink",
+            "background": "action",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-action-ink-on-action-hover",
+            "mode": "dark",
+            "foreground": "action-ink",
+            "background": "action-hover",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-dark-focus-on-canvas",
+            "mode": "dark",
+            "foreground": "focus",
+            "background": "canvas",
+            "kind": "focus",
+            "threshold": 3.0
+        },
+        {
+            "id": "admin-dark-focus-on-surface-alt",
+            "mode": "dark",
+            "foreground": "focus",
+            "background": "surface-alt",
+            "kind": "focus",
+            "threshold": 3.0
+        },
+        {
+            "id": "admin-dark-focus-on-surface-raised",
+            "mode": "dark",
+            "foreground": "focus",
+            "background": "surface-raised",
+            "kind": "focus",
+            "threshold": 3.0
+        },
+        {
+            "id": "admin-dark-focus-on-shell",
+            "mode": "dark",
+            "foreground": "focus",
+            "background": "shell",
+            "kind": "focus",
+            "threshold": 3.0
+        },
+        {
+            "id": "admin-light-text-on-canvas",
+            "mode": "light",
+            "foreground": "text",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-on-surface-alt",
+            "mode": "light",
+            "foreground": "text",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-on-surface-raised",
+            "mode": "light",
+            "foreground": "text",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-on-shell",
+            "mode": "light",
+            "foreground": "text",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-muted-on-canvas",
+            "mode": "light",
+            "foreground": "text-muted",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-muted-on-surface-alt",
+            "mode": "light",
+            "foreground": "text-muted",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-muted-on-surface-raised",
+            "mode": "light",
+            "foreground": "text-muted",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-muted-on-shell",
+            "mode": "light",
+            "foreground": "text-muted",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-subtle-on-canvas",
+            "mode": "light",
+            "foreground": "text-subtle",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-subtle-on-surface-alt",
+            "mode": "light",
+            "foreground": "text-subtle",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-subtle-on-surface-raised",
+            "mode": "light",
+            "foreground": "text-subtle",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-text-subtle-on-shell",
+            "mode": "light",
+            "foreground": "text-subtle",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-link-on-canvas",
+            "mode": "light",
+            "foreground": "link",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-link-on-surface-alt",
+            "mode": "light",
+            "foreground": "link",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-link-on-surface-raised",
+            "mode": "light",
+            "foreground": "link",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-link-on-shell",
+            "mode": "light",
+            "foreground": "link",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-success-on-canvas",
+            "mode": "light",
+            "foreground": "success",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-success-on-surface-alt",
+            "mode": "light",
+            "foreground": "success",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-success-on-surface-raised",
+            "mode": "light",
+            "foreground": "success",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-success-on-shell",
+            "mode": "light",
+            "foreground": "success",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-warning-on-canvas",
+            "mode": "light",
+            "foreground": "warning",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-warning-on-surface-alt",
+            "mode": "light",
+            "foreground": "warning",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-warning-on-surface-raised",
+            "mode": "light",
+            "foreground": "warning",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-warning-on-shell",
+            "mode": "light",
+            "foreground": "warning",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-error-on-canvas",
+            "mode": "light",
+            "foreground": "error",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-error-on-surface-alt",
+            "mode": "light",
+            "foreground": "error",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-error-on-surface-raised",
+            "mode": "light",
+            "foreground": "error",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-error-on-shell",
+            "mode": "light",
+            "foreground": "error",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-info-on-canvas",
+            "mode": "light",
+            "foreground": "info",
+            "background": "canvas",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-info-on-surface-alt",
+            "mode": "light",
+            "foreground": "info",
+            "background": "surface-alt",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-info-on-surface-raised",
+            "mode": "light",
+            "foreground": "info",
+            "background": "surface-raised",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-info-on-shell",
+            "mode": "light",
+            "foreground": "info",
+            "background": "shell",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-action-ink-on-action",
+            "mode": "light",
+            "foreground": "action-ink",
+            "background": "action",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-action-ink-on-action-hover",
+            "mode": "light",
+            "foreground": "action-ink",
+            "background": "action-hover",
+            "kind": "normal-text",
+            "threshold": 4.5
+        },
+        {
+            "id": "admin-light-focus-on-canvas",
+            "mode": "light",
+            "foreground": "focus",
+            "background": "canvas",
+            "kind": "focus",
+            "threshold": 3.0
+        },
+        {
+            "id": "admin-light-focus-on-surface-alt",
+            "mode": "light",
+            "foreground": "focus",
+            "background": "surface-alt",
+            "kind": "focus",
+            "threshold": 3.0
+        },
+        {
+            "id": "admin-light-focus-on-surface-raised",
+            "mode": "light",
+            "foreground": "focus",
+            "background": "surface-raised",
+            "kind": "focus",
+            "threshold": 3.0
+        },
+        {
+            "id": "admin-light-focus-on-shell",
+            "mode": "light",
+            "foreground": "focus",
+            "background": "shell",
+            "kind": "focus",
+            "threshold": 3.0
+        }
+    ],
+    "knownFailures": [
+        {
+            "id": "admin-dark-text-subtle-on-canvas",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-dark-text-subtle-on-surface-alt",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-dark-text-subtle-on-surface-raised",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-dark-text-subtle-on-shell",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-light-text-subtle-on-canvas",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-light-text-subtle-on-surface-alt",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-light-text-subtle-on-surface-raised",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-light-text-subtle-on-shell",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "text-subtle is used as a text colour (63 rules); it is below 4.5:1 on every admin surface."
+        },
+        {
+            "id": "admin-light-success-on-canvas",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "The light success colour is used for text and is below 4.5:1."
+        },
+        {
+            "id": "admin-light-success-on-surface-alt",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "The light success colour is used for text and is below 4.5:1."
+        },
+        {
+            "id": "admin-light-success-on-surface-raised",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "The light success colour is used for text and is below 4.5:1."
+        },
+        {
+            "id": "admin-light-success-on-shell",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "The light success colour is used for text and is below 4.5:1."
+        },
+        {
+            "id": "admin-light-action-ink-on-action",
+            "since": "2026-10-21",
+            "story": "US-BRD-02",
+            "note": "A primary button label in the light appearance: white on the light action colour is 3.35:1."
+        }
+    ]
+}

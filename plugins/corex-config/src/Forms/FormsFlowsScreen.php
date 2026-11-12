@@ -10,6 +10,7 @@ namespace Corex\Config\Forms;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Container\ContainerInterface;
@@ -48,7 +49,7 @@ final class FormsFlowsScreen
             'corex-settings',
             __('CoreX Forms & Flows', 'corex'),
             __('Forms & Flows', 'corex'),
-            'manage_options',
+            CorexAbility::MANAGE_FORMS,
             'corex-forms',
             [$this, 'render'],
             25,
@@ -90,13 +91,18 @@ final class FormsFlowsScreen
             // fixed at boot: a second round trip would add a loading state to a screen that already
             // has one, for data that cannot change while the page is open.
             'catalog' => $this->catalog(),
+            // The Availability tab takes dates in the site's time zone and says which (spec 122).
+            'timezone' => wp_timezone_string(),
+            // What the update did to flow submissions assigned to nobody, for the list to say
+            // (spec 122, FR-014). The forms engine writes it; absent without it.
+            'upgrade' => get_option('corex_flow_owner_upgrade', null),
         ]);
         wp_set_script_translations('corex-forms-builder', 'corex', $base . '/languages');
     }
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->guard->authorized(CorexAbility::MANAGE_FORMS)) {
             echo $this->page->permissionDenied('forms');
 
             return;

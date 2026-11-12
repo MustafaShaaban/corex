@@ -35,6 +35,7 @@ final class BlogProScreen
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly BlogProServices $services,
+        private readonly BlogProPermissions $permissions,
     ) {
     }
 
@@ -50,7 +51,8 @@ final class BlogProScreen
             'corex-settings',
             __('CoreX Blog Pro', 'corex'),
             __('Blog Pro', 'corex'),
-            'manage_options',
+            // Anyone WordPress lets edit posts (spec 112, FR-024); the routes check each post.
+            BlogProPermissions::BASE,
             'corex-blog-pro',
             [$this, 'render'],
             33,
@@ -86,7 +88,7 @@ final class BlogProScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->guard->authorized(BlogProPermissions::BASE)) {
             echo $this->page->permissionDenied('blog-pro');
 
             return;
@@ -95,7 +97,7 @@ final class BlogProScreen
         echo $this->page->open(
             'blog-pro',
             __('CoreX Blog Pro', 'corex'),
-            __('Native publishing, analytics, comments, authors, and sharing in one real workflow.', 'corex'),
+            __('Native publishing, comments and authors in one workflow.', 'corex'),
         );
         echo '<div id="corex-blog-pro-app" aria-live="polite"></div>';
         echo $this->page->close();
@@ -123,13 +125,6 @@ final class BlogProScreen
             'editorial' => $selectedPostId > 0 ? $this->editorial($selectedPostId) : null,
             'comments' => $selectedPostId > 0 ? array_map($this->comment(...), $this->services->comments->queue($selectedPostId)) : [],
             'authors' => $this->authors(),
-            'shareControls' => $selectedPostId > 0 ? $this->shareControls($selectedPostId) : [],
-            // What this actor may do, from the same capabilities the REST routes enforce, so a control
-            // is hidden rather than shown and refused (DECISIONS #159).
-            'can' => [
-                'moderate' => current_user_can('moderate_comments'),
-                'publish' => current_user_can('publish_posts'),
-            ],
         ];
     }
 
@@ -172,20 +167,25 @@ final class BlogProScreen
      */
     private function posts(): array
     {
-        $posts = get_posts([
-            'post_type' => 'post',
-            'post_status' => ['draft', 'pending', 'future', 'publish'],
-            'numberposts' => 20,
-            'orderby' => 'modified',
-            'order' => 'DESC',
-        ]);
+        // Only posts this person may work on (spec 112, FR-024): a writer sees their own.
+        $posts = array_filter(
+            (array) get_posts([
+                'post_type' => 'post',
+                'post_status' => ['draft', 'pending', 'future', 'publish'],
+                'numberposts' => 20,
+                'orderby' => 'modified',
+                'order' => 'DESC',
+                'author' => $this->permissions->seesEveryAuthor() ? '' : get_current_user_id(),
+            ]),
+            fn (\WP_Post $post): bool => $this->permissions->mayWorkOnPost((int) $post->ID),
+        );
 
         return array_map(static fn (\WP_Post $post): array => [
             'id' => (int) $post->ID,
             'title' => get_the_title($post),
             'status' => (string) $post->post_status,
             'permalink' => get_permalink($post) ?: '',
-        ], is_array($posts) ? $posts : []);
+        ], array_values($posts));
     }
 
     /**
@@ -218,7 +218,7 @@ final class BlogProScreen
             return [];
         }
 
-        return BlogProPresenter::editorialItem($item);
+        return BlogProPresenter::editorialItem($item, $this->permissions);
     }
 
     /**
@@ -226,19 +226,9 @@ final class BlogProScreen
      */
     private function authors(): array
     {
-        return $this->services->authors->authors(...$this->range());
-    }
-
-    /**
-     * @return list<array{target:string,label:string,url:string}>
-     */
-    private function shareControls(int $postId): array
-    {
-        return $this->services->sharing->controls(
-            $postId,
-            get_permalink($postId) ?: '',
-            get_the_title($postId),
-        );
+        return $this->permissions->seesEveryAuthor()
+            ? $this->services->authors->authors(...$this->range())
+            : $this->services->authors->authorsAmong([get_current_user_id()], ...$this->range());
     }
 
     /**
@@ -246,7 +236,7 @@ final class BlogProScreen
      */
     private function comment(CommentModerationItem $comment): array
     {
-        return BlogProPresenter::commentItem($comment);
+        return BlogProPresenter::commentItem($comment, $this->permissions);
     }
 
     /**

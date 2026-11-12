@@ -57,7 +57,6 @@ export function initialBlogState() {
 		editorial: null,
 		comments: [],
 		authors: [],
-		shareControls: [],
 		notice: null,
 		status: 'idle',
 	};
@@ -79,9 +78,6 @@ export function blogReducer( state, action ) {
 					: [],
 				authors: Array.isArray( action.payload?.authors )
 					? action.payload.authors
-					: [],
-				shareControls: Array.isArray( action.payload?.shareControls )
-					? action.payload.shareControls
 					: [],
 			};
 		case 'transitioned':

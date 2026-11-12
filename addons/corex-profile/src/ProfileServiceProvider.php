@@ -12,9 +12,9 @@ defined('ABSPATH') || exit;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
-use Corex\Captcha\Captcha;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Http\PublicSubmission;
 use Corex\Profile\Account\AccountResult;
 use Corex\Profile\Block\AccountRenderer;
 use Corex\Profile\Account\AccountService;
@@ -25,11 +25,16 @@ use Corex\Profile\Notification\AccountActivity;
 use Corex\Profile\Notification\NotificationService;
 use Corex\Profile\Reset\AccountPageMark;
 use Corex\Profile\Reset\ResetEmailLink;
+use Corex\Profile\Email\AccountEmails;
+use Corex\Profile\Email\AccountEmailTemplates;
+use Corex\Email\Studio\DefaultEmailTemplates;
+use Corex\Mail\DesignedEmails;
 use Corex\Profile\Reset\ResetLanding;
 use Corex\Profile\Reset\ResetLink;
 use Corex\Profile\Reset\ResetTicket;
 use Corex\Profile\Session\SessionService;
 use Corex\Profile\Support\SiteDate;
+use Corex\Security\FormChallenge;
 use Corex\Support\EmailAnswer;
 use DateTimeImmutable;
 use WP_REST_Request;
@@ -44,6 +49,9 @@ use WP_REST_Response;
  */
 final class ProfileServiceProvider extends ServiceProvider
 {
+    /** The action a registration's captcha token is asked for and judged against (spec 115). */
+    public const REGISTER_ACTION = 'corex_register';
+
     public function register(): void
     {
         $this->container->singleton(AuthGateway::class, static fn (): AuthGateway => new WordPressAuthGateway());
@@ -85,6 +93,15 @@ final class ProfileServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): ResetEmailLink => new ResetEmailLink($c->make(ResetLink::class)),
         );
 
+        // The reset and welcome emails drawn in Email Studio, where CoreX Mail is active (spec 120).
+        $this->container->singleton(
+            AccountEmails::class,
+            static fn (ContainerInterface $c): AccountEmails => new AccountEmails(
+                $c->make(ResetLink::class),
+                $c->has(DesignedEmails::class) ? $c->make(DesignedEmails::class) : null,
+            ),
+        );
+
         // One for the request: it reads the key before the template, and the block asks it after.
         $this->container->singleton(
             ResetLanding::class,
@@ -102,6 +119,11 @@ final class ProfileServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerBlock']);
 
         $this->container->make(ResetLanding::class)->register();
+
+        // Its two templates join CoreX Mail's defaults, installed on `init` (spec 120).
+        if ($this->container->has(DefaultEmailTemplates::class)) {
+            AccountEmailTemplates::addTo($this->container->make(DefaultEmailTemplates::class));
+        }
     }
 
     public function registerAssets(): void
@@ -176,6 +198,13 @@ final class ProfileServiceProvider extends ServiceProvider
             'instance'         => wp_unique_prefixed_id('corex-account-'),
         ];
 
+        // With a captcha provider on, registration carries its check (spec 115, US-AUT-02).
+        if ($userId === 0 && $ctx['registrationOpen']) {
+            $challenge                 = $this->container->make(FormChallenge::class);
+            $ctx['challenge']          = $challenge->fields(self::REGISTER_ACTION);
+            $ctx['challengeAttribute'] = $challenge->formAttribute();
+        }
+
         return (new AccountRenderer())->render($ctx);
     }
 
@@ -184,7 +213,12 @@ final class ProfileServiceProvider extends ServiceProvider
         $public = ['methods' => 'POST', 'permission_callback' => '__return_true'];
         $authed = ['permission_callback' => static fn (): bool => is_user_logged_in()];
 
-        register_rest_route('corex/v1', '/account/register', $public + ['callback' => [$this, 'register_account']]);
+        // Registration is closed while the site is in Maintenance (spec 112); sign-in and password
+        // reset stay open, so an administrator can still sign in through the account block.
+        register_rest_route('corex/v1', '/account/register', $public + [
+            'callback'               => [$this, 'register_account'],
+            PublicSubmission::MARKER => true,
+        ]);
         register_rest_route('corex/v1', '/account/login', $public + ['callback' => [$this, 'login']]);
         register_rest_route('corex/v1', '/account/reset-request', $public + ['callback' => [$this, 'requestReset']]);
         register_rest_route('corex/v1', '/account/reset', $public + ['callback' => [$this, 'resetPassword']]);
@@ -202,19 +236,26 @@ final class ProfileServiceProvider extends ServiceProvider
             return $this->respond(AccountResult::fail('spam', __('Request rejected.', 'corex')));
         }
 
-        if ($this->container->has(Captcha::class)
-            && ! $this->container->make(Captcha::class)->verify((string) $request['captcha_token'])) {
-            return $this->respond(AccountResult::fail('captcha', __('Please complete the captcha.', 'corex')));
+        $refusal = $this->container->make(FormChallenge::class)
+            ->refusal((string) $request['captcha_token'], self::REGISTER_ACTION);
+        if ($refusal !== null) {
+            return $this->respond(AccountResult::fail('captcha', $refusal));
         }
 
-        $result = $this->container->make(AccountService::class)->register(new RegistrationRequest(
+        $registration = new RegistrationRequest(
             EmailAnswer::address($request['email']),
             (string) $request['password'],
             (string) $request['password_confirm'],
             // As typed: a username that would be altered on its way into the account is refused.
             trim((string) $request['username']),
             (bool) $request['consent'],
-        ));
+        );
+        // The welcome links to the page the form was on, when that is a page of this site's.
+        $page = $this->container->make(AccountPageMark::class)->publishedPage((string) $request['page']);
+        $result = $this->container->make(AccountEmails::class)->welcomeDuring(
+            $page,
+            fn (): AccountResult => $this->container->make(AccountService::class)->register($registration),
+        );
 
         return $this->respond($result);
     }
@@ -238,7 +279,10 @@ final class ProfileServiceProvider extends ServiceProvider
         // The email links to the page the form was on, when that is a page of this site's.
         $result = $this->container->make(ResetEmailLink::class)->during(
             $page,
-            fn (): AccountResult => $this->container->make(AccountService::class)->requestPasswordReset($login),
+            fn (): AccountResult => $this->container->make(AccountEmails::class)->resetDuring(
+                $page,
+                fn (): AccountResult => $this->container->make(AccountService::class)->requestPasswordReset($login),
+            ),
         );
 
         return $this->respond($result);

@@ -11,6 +11,11 @@
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
+
+// The Contact column shows the details the brand settings hold; with none set it is left out.
+$corex_contact = array_filter(['email', 'phone', 'address'], static fn (string $key): bool => corex_pattern_brand($key) !== '');
 ?>
 <!-- wp:group {"tagName":"footer","className":"corex-footer corex-footer--corporate","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|50"},"blockGap":"var:preset|spacing|50"}}} -->
 <footer class="wp-block-group corex-footer corex-footer--corporate" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)">
@@ -32,9 +37,9 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('About', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Careers', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Contact', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('about', __('About', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('careers', __('Careers', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('contact', __('Contact', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>
@@ -47,23 +52,27 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Documentation', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Support', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('docs', __('Documentation', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('support', __('Support', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>
 		<!-- /wp:column -->
 
+		<?php if ($corex_contact !== []) : ?>
 		<!-- wp:column -->
 		<div class="wp-block-column">
 			<!-- wp:heading {"level":3,"fontSize":"sm"} -->
 			<h3 class="wp-block-heading has-sm-font-size"><?php echo esc_html__('Contact', 'corex'); ?></h3>
 			<!-- /wp:heading -->
+			<?php foreach ($corex_contact as $corex_key) : ?>
 			<!-- wp:paragraph -->
-			<p><?php echo esc_html__('hello@example.com', 'corex'); ?></p>
+			<p><?php echo corex_pattern_contact($corex_key); ?></p>
 			<!-- /wp:paragraph -->
+			<?php endforeach; ?>
 		</div>
 		<!-- /wp:column -->
+		<?php endif; ?>
 	</div>
 	<!-- /wp:columns -->
 

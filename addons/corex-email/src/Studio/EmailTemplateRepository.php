@@ -23,6 +23,9 @@ final class EmailTemplateRepository
     private const TYPE_TEMPLATE = 'email_template';
     private const TYPE_VERSION  = 'email_template_version';
 
+    /** A revision's `sender` when it leaves from Settings → Mail's sender ({@see keepSiteSender()}). */
+    private const SITE_SENDER = 'site';
+
     public function __construct(private readonly EmailStudioStore $store)
     {
     }
@@ -146,6 +149,31 @@ final class EmailTemplateRepository
         return null;
     }
 
+    /**
+     * Marks every revision stored now as one that leaves from Settings → Mail's sender, as every
+     * Studio email did before spec 120: run once, by the upgrade, so that no existing template
+     * starts sending from a From it stored and never sent. A revision saved later is not marked.
+     *
+     * @return int How many revisions were marked.
+     */
+    public function keepSiteSender(): int
+    {
+        $marked = 0;
+        foreach ($this->store->all(self::TYPE_TEMPLATE) as $template) {
+            foreach ($this->store->all(self::TYPE_VERSION, $template['id']) as $version) {
+                if (($version['payload']['sender'] ?? '') === self::SITE_SENDER) {
+                    continue;
+                }
+                $payload = [...$version['payload'], 'sender' => self::SITE_SENDER];
+                if ($this->store->update($version['id'], $version['name'], $payload)) {
+                    ++$marked;
+                }
+            }
+        }
+
+        return $marked;
+    }
+
     /** @return list<EmailTemplateVersion> */
     public function versions(int $templateId): array
     {
@@ -194,6 +222,7 @@ final class EmailTemplateRepository
             createdBy: (int) ($payload['created_by'] ?? 0),
             createdAt: new DateTimeImmutable((string) ($payload['created_at'] ?? '')),
             checksum: (string) ($payload['checksum'] ?? ''),
+            sentFromSite: ($payload['sender'] ?? '') === self::SITE_SENDER,
         );
     }
 

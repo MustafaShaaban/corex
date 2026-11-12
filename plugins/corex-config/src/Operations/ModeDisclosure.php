@@ -160,7 +160,9 @@ final class ModeDisclosure
             ],
             OperationsMode::MAINTENANCE => [
                 __('Visitors who are not signed in receive a maintenance page with a 503 status.', 'corex'),
-                __('Signed-in administrators continue to use the site normally.', 'corex'),
+                __('Public form submissions are closed: forms, flows, newsletter sign-ups, booking requests, job applications and account registration are refused, and nothing is stored or mailed.', 'corex'),
+                __('The admin, sign-in and password reset stay open. Signed-in administrators continue to use the site normally and can still submit a form to test it.', 'corex'),
+                __('WordPress’s own comment form is not closed: it follows the site’s discussion settings.', 'corex'),
             ],
             OperationsMode::COMING_SOON => [
                 __('Visitors receive the coming-soon page at the home address with a 200 status. Every other address answers with a temporary redirect to it.', 'corex'),
@@ -180,7 +182,7 @@ final class ModeDisclosure
                 __('The change is recorded in the mode history with your name against it.', 'corex'),
             ],
             OperationsMode::MAINTENANCE => [
-                __('The REST API, AJAX, cron, and wp-admin are never intercepted.', 'corex'),
+                __('Apart from public submissions, the REST API, AJAX, cron, and wp-admin are never intercepted.', 'corex'),
                 __('Recovery: change the mode back here, or run the recovery command if you cannot reach this screen.', 'corex'),
             ],
             OperationsMode::COMING_SOON => [

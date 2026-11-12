@@ -11,9 +11,10 @@ namespace Corex\Guides\Support;
 defined('ABSPATH') || exit;
 
 use Corex\Mail\AttemptingMailer;
+use Corex\Mail\Capture\MailPath;
 use Corex\Mail\EmailLanguage;
-use Corex\Mail\MailRequest;
 use Corex\Mail\Mailer;
+use Corex\Mail\MailRequest;
 use Throwable;
 use WP_Error;
 
@@ -53,6 +54,8 @@ final class SupportMailer
         private readonly EmailLanguage $language,
         private readonly ?Mailer $mailer = null,
         private readonly ?string $templateName = null,
+        /** Names the request for the Email Studio log (spec 113). */
+        private readonly ?MailPath $paths = null,
     ) {
     }
 
@@ -61,6 +64,13 @@ final class SupportMailer
      * @param SupportMessage $message   The message and the context that makes it answerable.
      */
     public function send(string $recipient, SupportMessage $message): SupportDelivery
+    {
+        $send = fn (): SupportDelivery => $this->deliver($recipient, $message);
+
+        return $this->paths === null ? $send() : $this->paths->during(__('Guides: support request', 'corex'), $send);
+    }
+
+    private function deliver(string $recipient, SupportMessage $message): SupportDelivery
     {
         if (! is_email($recipient)) {
             return SupportDelivery::failed(SupportDelivery::REASON_NO_RECIPIENT);

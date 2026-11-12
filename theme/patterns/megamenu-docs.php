@@ -10,6 +10,8 @@
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:details {"summary":"<?php echo esc_attr__('Resources', 'corex'); ?>","className":"corex-mega corex-mega--docs"} -->
 <details class="wp-block-details corex-mega corex-mega--docs"><summary><?php echo esc_html__('Resources', 'corex'); ?></summary>
@@ -22,8 +24,8 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Documentation', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Guides', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('docs', __('Documentation', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('guides', __('Guides', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>
@@ -36,8 +38,8 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('API reference', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('CLI', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('api', __('API reference', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('cli', __('CLI', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>
@@ -50,8 +52,8 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Support', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Changelog', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('support', __('Support', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('changelog', __('Changelog', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>

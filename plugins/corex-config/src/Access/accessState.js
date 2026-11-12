@@ -1,5 +1,29 @@
 export const EFFECTS = [ 'inherit', 'allow', 'deny' ];
 
+/** The five states a cell resolves to (spec 117, US-ACC-02), in the order the legend lists them. */
+export const STATES = [
+	'allowed_set',
+	'denied_set',
+	'allowed_admin',
+	'not_granted',
+	'locked',
+];
+
+/**
+ * What an editable cell resolves to once an effect is stored: only a cell that can be edited
+ * changes, and it belongs to a role that does not administer the site and an ability that is not
+ * locked, so its state follows its effect alone.
+ *
+ * @param {string} effect inherit, allow or deny.
+ * @return {string} The state.
+ */
+export function stateForEffect( effect ) {
+	if ( effect === 'allow' ) {
+		return 'allowed_set';
+	}
+	return effect === 'deny' ? 'denied_set' : 'not_granted';
+}
+
 export function accessEndpoint( root, path = '' ) {
 	const base = String( root || '' ).replace( /\/$/, '' );
 	const suffix = String( path || '' ).replace( /^\//, '' );
@@ -8,7 +32,13 @@ export function accessEndpoint( root, path = '' ) {
 
 export function normalizeAccessPayload( payload = {} ) {
 	return {
-		roles: Array.isArray( payload.roles ) ? payload.roles : [],
+		roles: Array.isArray( payload.roles )
+			? payload.roles.map( ( role ) => ( {
+					key: role?.key || '',
+					name: role?.name || role?.key || '',
+					administers: role?.administers === true,
+				} ) )
+			: [],
 		rows: Array.isArray( payload.rows )
 			? payload.rows.map( normalizeRow )
 			: [],
@@ -21,17 +51,27 @@ export function normalizeAccessPayload( payload = {} ) {
 export function normalizeRow( row ) {
 	const cells = {};
 	Object.entries( row?.cells || {} ).forEach( ( [ role, cell ] ) => {
+		const effect = EFFECTS.includes( cell?.effect )
+			? cell.effect
+			: 'inherit';
 		cells[ role ] = {
-			effect: EFFECTS.includes( cell?.effect ) ? cell.effect : 'inherit',
+			effect,
 			editable: cell?.editable === true,
 			reason: cell?.reason || null,
+			state: STATES.includes( cell?.state )
+				? cell.state
+				: stateForEffect( effect ),
+			ignoredDeny: cell?.ignoredDeny === true,
 		};
 	} );
 	return {
 		key: row?.key || '',
 		label: row?.label || row?.key || '',
+		description: row?.description || '',
 		group: row?.group || '',
+		groupLabel: row?.groupLabel || row?.group || '',
 		risk: row?.risk || 'normal',
+		riskLabel: row?.riskLabel || '',
 		locked: row?.locked === true,
 		cells,
 	};
@@ -45,6 +85,8 @@ export function initialAccessState() {
 		conflicts: [],
 		nativeCapabilitiesEditable: true,
 		selectedRole: '',
+		// The role whose editor is open; empty while the grid is shown.
+		editingRole: '',
 		draft: {},
 		preview: null,
 		notice: null,
@@ -70,7 +112,22 @@ export function accessReducer( state = initialAccessState(), action = {} ) {
 			};
 		}
 		case 'selectRole':
-			return { ...state, selectedRole: action.role || '', preview: null };
+			return {
+				...state,
+				selectedRole: action.role || '',
+				editingRole: state.editingRole ? action.role || '' : '',
+				preview: null,
+			};
+		case 'edit':
+			return {
+				...state,
+				selectedRole: action.role || '',
+				editingRole: action.role || '',
+				preview: null,
+				notice: null,
+			};
+		case 'grid':
+			return { ...state, editingRole: '', preview: null };
 		case 'setEffect':
 			return setEffect(
 				state,
@@ -156,6 +213,7 @@ function withEffects( rows, role, changes ) {
 						[ role ]: {
 							...row.cells[ role ],
 							effect: changes[ row.key ],
+							state: stateForEffect( changes[ row.key ] ),
 						},
 					},
 				}

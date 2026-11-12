@@ -70,6 +70,13 @@ final class ManagedTable
      *                                                            table in. Null (the default) is
      *                                                            records for a table that can be
      *                                                            written to, and a log otherwise.
+     * @param string|null                         $ownerAbility   The CoreX ability of the screen
+     *                                                            whose records these are; reading
+     *                                                            them on the Data screen needs it
+     *                                                            too (spec 112). Null (the
+     *                                                            default) for a table no other
+     *                                                            screen owns. Last, because a site
+     *                                                            builds tables of its own.
      */
     public function __construct(
         public readonly string $name,
@@ -82,6 +89,7 @@ final class ManagedTable
         public readonly array $insertDefaults = [],
         private readonly array $personalData = [],
         private readonly ?string $category = null,
+        public readonly ?string $ownerAbility = null,
     ) {
         if (! in_array($this->unknownColumns, self::UNKNOWN_POLICIES, true)) {
             throw new InvalidArgumentException('Managed table unknown-column policy is invalid.');

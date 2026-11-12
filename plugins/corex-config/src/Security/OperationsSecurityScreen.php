@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Security;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\Access\ScreenAccess;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Operations\ModeDisclosure;
 use Corex\Config\Operations\OperationsMode;
@@ -19,10 +20,16 @@ use Corex\Config\Operations\PreviewLinkController;
 use Corex\Config\Operations\PreviewLinkResult;
 use Corex\Config\Operations\PreviewLinkService;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
+use Corex\Config\Operations\ReadinessSnapshot;
+use Corex\Config\Readiness\ChecklistMarkup;
+use Corex\Config\Readiness\LaunchChecklist;
+use Corex\Config\Readiness\ReadinessWords;
 use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
+use Corex\Config\Security\LoginProtection\LoginAddressState;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\LoginRecovery;
 use Corex\Config\Security\LoginProtection\LoginUrl;
 use Corex\Security\Admin\AdminGuard;
 use Corex\Cache\Status\CacheStatusReport;
@@ -38,12 +45,13 @@ defined('ABSPATH') || exit;
  */
 final class OperationsSecurityScreen
 {
+    private const SLUG = 'corex-operations-security';
+
     private string $hook = '';
 
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
-        private readonly HardeningChecks $checks,
         private readonly OperationsMode $modes,
         private readonly OperationsModeStore $store,
         private readonly ProductionReadinessSnapshotFactory $readiness,
@@ -53,6 +61,10 @@ final class OperationsSecurityScreen
         private readonly ModeDisclosure $disclosure,
         private readonly CacheStatusReport $cacheStatus,
         private readonly PreviewAccess $preview,
+        private readonly LoginRecovery $recovery,
+        private readonly LaunchChecklist $checklist,
+        private readonly ChecklistMarkup $markup,
+        private readonly ScreenAccess $access = new ScreenAccess(),
     ) {
     }
 
@@ -68,7 +80,7 @@ final class OperationsSecurityScreen
             'corex-settings',
             __('CoreX Operations & Security', 'corex'),
             __('Operations & Security', 'corex'),
-            'manage_options',
+            $this->access->menuCapability(self::SLUG),
             'corex-operations-security',
             [$this, 'render'],
             30,
@@ -149,14 +161,14 @@ final class OperationsSecurityScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->access->opens(self::SLUG)) {
             echo $this->page->permissionDenied('operations-security');
 
             return;
         }
 
-        $checks   = $this->checks->checks($this->facts());
-        $warnings = $this->checks->warnings($checks);
+        // One evaluation per page (spec 118): every section reads the same snapshot.
+        $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
         $active   = $this->activeSection();
 
         echo $this->page->open(
@@ -178,7 +190,7 @@ final class OperationsSecurityScreen
 
         echo $this->statusNotice();
         echo '<div class="corex-opsec__sections">';
-        echo $this->section($active, $checks, $warnings);
+        echo $this->section($active, $snapshot);
         echo '</div>';
         echo $this->page->close();
     }
@@ -190,18 +202,17 @@ final class OperationsSecurityScreen
      * panels belong to three different sections now, so the mount node names the section and the
      * app renders only that section's panels. One app, one state module, three homes.
      *
-     * @param list<array<string,mixed>> $checks
      */
-    private function section(string $active, array $checks, int $warnings): string
+    private function section(string $active, ReadinessSnapshot $snapshot): string
     {
         return match ($active) {
-            'environment' => $this->securityApp('environment') . $this->modeCard()
+            'environment' => $this->securityApp('environment') . $this->modeCard($snapshot)
                 . $this->previewLinkCard() . $this->auditCard(),
             'login'       => $this->securityApp('login'),
-            'hardening'   => $this->checksCard($checks, $warnings),
+            'hardening'   => $this->checksCard($snapshot),
             'activity'    => $this->securityApp('activity'),
             'cache'       => $this->cacheCard(),
-            default       => $this->overviewCard($checks, $warnings),
+            default       => $this->overviewCard($snapshot),
         };
     }
 
@@ -241,7 +252,8 @@ final class OperationsSecurityScreen
                     : '')
                 . '<p class="corex-cache__layer-meta">'
                 . ($layer->provider !== ''
-                    ? '<span>' . esc_html($layer->provider) . '</span>'
+                    // A product's name (OPcache, LiteSpeed Cache): data, not a word to translate.
+                    ? '<span translate="no">' . esc_html($layer->provider) . '</span>'
                     : '')
                 . '<span>' . esc_html__('Checked', 'corex') . ' ' . $checked->toHtml() . '</span>'
                 . $action
@@ -274,14 +286,13 @@ final class OperationsSecurityScreen
      * this is the first place someone looks to answer "is this site live", and the two answers to
      * that question have to be visible at the same time.
      *
-     * @param list<array<string,mixed>> $checks
      */
-    private function overviewCard(array $checks, int $warnings): string
+    private function overviewCard(ReadinessSnapshot $snapshot): string
     {
         $current  = $this->store->current();
         $env      = $this->modes->describe($current);
-        $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
-        $blockers = count($snapshot->blockingKeys());
+        $launch   = $this->checklist->build($snapshot, ReadinessWords::GATE);
+        $warnings = $this->hardeningOpen($launch);
         $policy   = $this->loginSettings->current();
         $lockouts = $this->lockouts->recentLockouts(new DateTimeImmutable('now'));
         $active   = 0;
@@ -305,14 +316,9 @@ final class OperationsSecurityScreen
             ],
             [
                 __('Production readiness', 'corex'),
-                $blockers === 0
-                    ? __('No blockers', 'corex')
-                    : sprintf(
-                        /* translators: %d: number of blocking readiness checks. */
-                        _n('%d blocker', '%d blockers', $blockers, 'corex'),
-                        $blockers,
-                    ),
+                $launch['count'],
                 'environment',
+                $launch['blockingText'],
             ],
             [
                 __('Public site', 'corex'),
@@ -326,10 +332,7 @@ final class OperationsSecurityScreen
             ],
             [
                 __('Default login endpoints', 'corex'),
-                $policy->blockDefaultEndpoints
-                    ? __('Hidden', 'corex')
-                    : __('Reachable', 'corex'),
-                'login',
+                ...$this->defaultEndpointsState($policy),
             ],
             [
                 __('Active lockouts', 'corex'),
@@ -344,10 +347,14 @@ final class OperationsSecurityScreen
         ];
 
         $items = '';
-        foreach ($rows as [$label, $value, $section]) {
+        foreach ($rows as $row) {
+            [$label, $value, $section] = $row;
+            $note   = (string) ($row[3] ?? '');
             $items .= '<li class="corex-opsec__summary-item">'
                 . '<span class="corex-opsec__summary-label">' . esc_html($label) . '</span>'
-                . '<span class="corex-opsec__summary-value">' . esc_html($value) . '</span>'
+                . '<span class="corex-opsec__summary-value">' . esc_html($value)
+                . ($note === '' ? '' : '<span class="corex-opsec__summary-note">' . esc_html($note) . '</span>')
+                . '</span>'
                 . '<a class="corex-opsec__summary-link" href="' . esc_url($this->sectionUrl($section)) . '">'
                 . esc_html__('Open', 'corex') . '</a></li>';
         }
@@ -407,7 +414,10 @@ final class OperationsSecurityScreen
         $environment = $this->environmentType();
         $mode        = $this->store->current();
 
-        if (! $this->store->isDeclared() || $environment === '' || $environment === $mode) {
+        // WordPress's `local` is CoreX's development (spec 113): the two are the same answer.
+        $comparable = $environment === 'local' ? OperationsMode::DEVELOPMENT : $environment;
+
+        if (! $this->store->isDeclared() || $environment === '' || $comparable === $mode) {
             return '';
         }
 
@@ -421,6 +431,20 @@ final class OperationsSecurityScreen
                 $mode,
             ),
         );
+    }
+
+    /** The refusal of a mode a lock does not allow, naming the lock. */
+    private function lockedNotice(): string
+    {
+        $lock = $this->store->lock();
+
+        return $lock === null
+            ? __('That mode cannot be chosen on this site.', 'corex')
+            : sprintf(
+                /* translators: %s: where the environment is set. */
+                __('That mode cannot be chosen: %s sets this site\'s environment. Nothing was changed.', 'corex'),
+                $lock->source(),
+            );
     }
 
     /** A PRG success/error notice after a mode change (read-only query args; no state change here). */
@@ -446,6 +470,7 @@ final class OperationsSecurityScreen
             'production_confirm' => ['warning', __('Production mode needs typed confirmation. Type PRODUCTION and try again.', 'corex')],
             'confirm' => ['warning', __('That mode needs confirmation — tick the confirmation box and try again.', 'corex')],
             'invalid' => ['error', __('That is not a valid operations mode.', 'corex')],
+            'locked'  => ['error', $this->lockedNotice()],
             default   => ['', ''],
         };
 
@@ -496,7 +521,11 @@ final class OperationsSecurityScreen
 
             $state = '<p class="corex-opsec__detail">' . esc_html__('A preview link exists.', 'corex') . ' '
                 . esc_html__('Created by', 'corex') . ' '
-                . esc_html($user ? $user->display_name : __('system', 'corex')) . ' · ' . $when->toHtml() . '</p>'
+                // A person's name is data, not a word to translate, and keeps its own direction.
+                . ($user
+                    ? '<span translate="no"><bdi>' . esc_html($user->display_name) . '</bdi></span>'
+                    : esc_html__('system', 'corex'))
+                . ' · ' . $when->toHtml() . '</p>'
                 . '<p class="corex-opsec__detail">'
                 . esc_html__('The link was shown once, when it was made, and cannot be shown again. If it is lost, regenerate it: the old one stops working.', 'corex')
                 . '</p>';
@@ -534,12 +563,11 @@ final class OperationsSecurityScreen
      * confirmation box for production/maintenance, plus the mode-specific warnings. Persisted by
      * {@see OperationsModeStore}; applied by {@see OperationsModeController}. Never a fake switch.
      */
-    private function modeCard(): string
+    private function modeCard(ReadinessSnapshot $snapshot): string
     {
         $current  = $this->store->current();
         $env      = $this->modes->describe($current);
         $declared = $this->store->isDeclared();
-        $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
         $blockers = $snapshot->blockingKeys();
 
         // The mode the form is offering is the one selected, not the one the site is in. They
@@ -553,15 +581,26 @@ final class OperationsSecurityScreen
         foreach ($this->modes->all() as $mode) {
             $meta = $this->modes->describe($mode);
             $options .= sprintf(
-                '<option value="%1$s"%2$s>%3$s</option>',
+                '<option value="%1$s"%2$s%3$s>%4$s</option>',
                 esc_attr($mode),
                 selected($mode, $proposed, false),
+                disabled(! $this->store->allows($mode), true, false),
                 esc_html($meta['label']),
             );
         }
 
-        $inherited = $declared ? '' :
-            '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>';
+        $lock = $this->store->lock();
+        $inherited = match (true) {
+            $lock !== null => '<p class="corex-opsec__detail corex-opsec__mode-lock" data-corex-mode-lock>'
+                . esc_html(sprintf(
+                    /* translators: 1: where the environment is set, 2: environment name. */
+                    __('Locked: %1$s sets this site\'s environment to %2$s. Only the modes of that environment can be chosen here; change it where it is set.', 'corex'),
+                    $lock->source(),
+                    $lock->label(),
+                )) . '</p>',
+            ! $declared => '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>',
+            default => '',
+        };
 
         // Nothing is being proposed while the selection is the mode the site has declared. The
         // panel says so in one line and asks for nothing: it used to draw that mode's consequences
@@ -815,34 +854,49 @@ final class OperationsSecurityScreen
     }
 
     /**
-     * @param list<array{key:string,label:string,status:string,detail:string}> $checks
+     * The hardening checks: the "Security and hosting" group of the one launch checklist, in the
+     * same words as the Environment tab and the wizard's launch step (spec 118, US-SEC-09).
      */
-    private function checksCard(array $checks, int $warnings): string
+    private function checksCard(ReadinessSnapshot $snapshot): string
     {
-        $summary = $warnings === 0
-            ? '<span class="corex-opsec__ok">' . esc_html__('All hardening checks pass.', 'corex') . '</span>'
-            : '<span class="corex-opsec__warn">' . sprintf(
-                /* translators: %d: number of hardening checks needing attention */
-                esc_html(_n('%d check needs attention.', '%d checks need attention.', $warnings, 'corex')),
-                (int) $warnings,
-            ) . '</span>';
-
-        $rows = '';
-        foreach ($checks as $check) {
-            $rows .= '<li class="corex-opsec__check is-' . esc_attr($check['status']) . '">'
-                . '<span class="corex-opsec__check-label">' . esc_html($check['label']) . '</span>'
-                . '<span class="corex-opsec__check-status">' . esc_html($this->statusLabel($check['status'])) . '</span>'
-                . '<span class="corex-opsec__check-detail">' . esc_html($check['detail']) . '</span></li>';
-        }
+        $launch = $this->checklist->build($snapshot, ReadinessWords::GATE);
+        $group  = $this->group($launch, ReadinessSnapshot::GROUP_SECURITY);
 
         return '<section class="corex-surface corex-opsec__checks">'
             . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Hardening checks', 'corex') . '</h2>'
-            . $summary . '</header><ul class="corex-opsec__list">' . $rows . '</ul></section>';
+            . '<span class="corex-opsec__count">' . esc_html($group['count']) . '</span></header>'
+            . $this->markup->progress(__('Hardening checks', 'corex'), $group['done'], $group['total'], $group['count'])
+            . $this->markup->rows($group['rows']) . '</section>';
     }
 
-    private function statusLabel(string $status): string
+    /**
+     * One group of the checklist, or an empty one.
+     *
+     * @param array{groups:list<array<string,mixed>>} $launch
+     *
+     * @return array{key:string,title:string,done:int,total:int,count:string,rows:list<array<string,mixed>>}
+     */
+    private function group(array $launch, string $key): array
     {
-        return $status === HardeningChecks::PASS ? __('Pass', 'corex') : __('Review', 'corex');
+        foreach ($launch['groups'] as $group) {
+            if ($group['key'] === $key) {
+                return $group;
+            }
+        }
+
+        return ['key' => $key, 'title' => '', 'done' => 0, 'total' => 0, 'count' => '', 'rows' => []];
+    }
+
+    /**
+     * How many hardening checks are not ready, for the summary's own row.
+     *
+     * @param array{groups:list<array<string,mixed>>} $launch
+     */
+    private function hardeningOpen(array $launch): int
+    {
+        $group = $this->group($launch, ReadinessSnapshot::GROUP_SECURITY);
+
+        return $group['total'] - $group['done'];
     }
 
     /**
@@ -861,7 +915,29 @@ final class OperationsSecurityScreen
             'lockouts' => $this->lockoutsPayload(),
             'activity' => $this->activityPayload(),
             'recoveryCommand' => 'wp corex security reset-login',
+            'recoveryActive' => $this->recovery->active(),
         ];
+    }
+
+    /**
+     * What the overview says about wp-login.php and wp-admin: "Hidden" only when the login guard
+     * hides them (spec 114, US-SAFE-11), which needs protection on as well as hiding. It read the
+     * hiding setting alone, so a fresh install said "Hidden" while the login form was served.
+     * While recovery is on they answer whatever the settings say (spec 112, FR-022).
+     *
+     * @return array{0:string,1:string,2:string} the value, the section it links to, and a note
+     */
+    private function defaultEndpointsState(LoginProtectionSettings $policy): array
+    {
+        return match (LoginAddressState::of($policy, $this->recovery->active())) {
+            LoginAddressState::HIDDEN   => [__('Hidden', 'corex'), 'login', ''],
+            LoginAddressState::RECOVERY => [
+                __('Recovery active: the default login is reachable', 'corex'),
+                'login',
+                __('Recovery ends when the COREX_LOGIN_UNGUARD line is removed from wp-config.php.', 'corex'),
+            ],
+            default => [__('Reachable', 'corex'), 'login', ''],
+        };
     }
 
     /**
@@ -923,24 +999,19 @@ final class OperationsSecurityScreen
     }
 
     /**
-     * @return array{target_hash:string,blocking_keys:list<string>,checks:list<array<string,mixed>>}
+     * The one launch checklist for the Environment tab's panel, in the gate's words (spec 118), with
+     * the snapshot's hash and blockers the mode form already relied on.
+     *
+     * @return array<string,mixed>
      */
     private function readinessPayload(): array
     {
         $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
 
         return [
-            'target_hash' => $snapshot->targetHash(),
+            'target_hash'   => $snapshot->targetHash(),
             'blocking_keys' => $snapshot->blockingKeys(),
-            'checks' => array_map(static fn (array $check): array => [
-                'key' => $check['key'],
-                'label' => $check['label'],
-                'status' => $check['state'] === 'pass' ? 'pass' : 'review',
-                'detail' => $check['summary'],
-                'blocking' => $check['state'] === 'blocking',
-                'resolution_url' => $check['resolution_url'],
-            ], $snapshot->checks()),
-        ];
+        ] + $this->checklist->build($snapshot, ReadinessWords::GATE);
     }
 
     /**
@@ -1002,16 +1073,5 @@ final class OperationsSecurityScreen
                     : '',
             ];
         }, $this->store->history(8));
-    }
-
-    /**
-     * The REAL, locally-verified hardening facts, gathered by the shared {@see HardeningFacts} boundary
-     * so the Overview readiness panel and this screen never compute the same signal two ways.
-     *
-     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool}
-     */
-    private function facts(): array
-    {
-        return HardeningFacts::gather();
     }
 }

@@ -10,13 +10,16 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
+use Corex\Theme\GeneratorTag;
+
 /**
  * What the coming-soon page leaves out of its `<head>`.
  *
  * The page tells a visitor the site is not ready. WordPress's defaults would have it also say
  * which WordPress it runs, where its remote-editing endpoint is, and offer feeds whose addresses
  * the mode redirects straight back to the page. The emoji loader goes with them: an inline
- * script on a page that prints no emoji of its own.
+ * script on a page that prints no emoji of its own. CoreX's own generator tag goes too (spec 111
+ * FR-006): the page names no platform.
  *
  * Only for a request that is being served the page. A visitor let through to the real site, and
  * the real site after launch, get WordPress's head as the site has it.
@@ -37,6 +40,9 @@ final class ComingSoonHead
         foreach (self::LEFT_OUT as $callback => $priority) {
             remove_action('wp_head', $callback, $priority);
         }
+
+        // At the last priority, so a site that answers true at an ordinary one cannot put it back.
+        add_filter(GeneratorTag::FILTER, '__return_false', PHP_INT_MAX);
 
         // The emoji stylesheet is queued beside the loader it styles.
         remove_action('wp_enqueue_scripts', 'wp_enqueue_emoji_styles');

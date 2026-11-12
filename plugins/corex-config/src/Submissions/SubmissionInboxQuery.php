@@ -19,6 +19,15 @@ final readonly class SubmissionInboxQuery
 {
     public const STATUSES = ['new', 'in_progress', 'replied', 'closed', 'spam', 'archived'];
 
+    /**
+     * A filter, not a status a submission has: new or in progress, the work still open. The
+     * Overview's forms card counts it and links here with it (spec 118, US-OVR-05).
+     */
+    public const OPEN = 'open';
+
+    /** The statuses {@see OPEN} stands for. */
+    public const OPEN_STATUSES = ['new', 'in_progress'];
+
     /** Marks a `flow` value as a form slug rather than a flow id. */
     public const SLUG_PREFIX = 'slug:';
 
@@ -45,6 +54,8 @@ final readonly class SubmissionInboxQuery
         public int $perPage,
         /** The trash and not the inbox: a view of its own, beside the filters (spec 105). */
         public bool $trashed = false,
+        /** Only submissions nobody has read yet (spec 118). */
+        public bool $unread = false,
     ) {
     }
 
@@ -52,7 +63,7 @@ final readonly class SubmissionInboxQuery
     public static function from(array $input): self
     {
         $status = trim((string) ($input['status'] ?? ''));
-        if ($status !== '' && ! in_array($status, self::STATUSES, true)) {
+        if ($status !== '' && $status !== self::OPEN && ! in_array($status, self::STATUSES, true)) {
             throw new InvalidArgumentException('The submission status filter is invalid.');
         }
 
@@ -87,6 +98,7 @@ final readonly class SubmissionInboxQuery
             page: max(1, (int) ($input['page'] ?? 1)),
             perPage: min(self::MAX_PAGE_SIZE, max(1, (int) ($input['per_page'] ?? 20))),
             trashed: self::view((string) ($input['view'] ?? '')) === self::VIEW_TRASH,
+            unread: filter_var($input['unread'] ?? false, FILTER_VALIDATE_BOOL),
         );
     }
 

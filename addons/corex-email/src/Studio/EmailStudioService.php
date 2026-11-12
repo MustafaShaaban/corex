@@ -17,9 +17,13 @@ use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Delivery\EmailAttemptRepository;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Message\EmailMessage;
-use Corex\Mail\MessageId;
+use Corex\Email\Security\HeaderGuard;
 use Corex\Events\EventDispatcher;
+use Corex\Mail\Capture\CapturedMessage;
+use Corex\Mail\Capture\MailHold;
+use Corex\Mail\Capture\MailPath;
 use Corex\Mail\MailResult;
+use Corex\Mail\MessageId;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
 use DomainException;
@@ -30,6 +34,9 @@ use Throwable;
  */
 final class EmailStudioService
 {
+    /** The decision code of a send held by a flow's marked test. */
+    public const HELD_FOR_TEST = 'held_for_test';
+
     // Explicit PSR-11 boundaries stay visible here; a dependency bag would hide replaceable collaborators.
     public function __construct(
         private readonly DeliveryPolicy $policy,
@@ -44,6 +51,12 @@ final class EmailStudioService
          * id WordPress's mailer makes, which nothing can read back.
          */
         private readonly string $messageHost = '',
+        /** Names a captured email for the log (spec 113). */
+        private readonly ?MailPath $paths = null,
+        /** Holds every email of a flow's marked test, on any site (spec 113, US3). */
+        private readonly ?MailHold $hold = null,
+        /** The header checks every other CoreX email passes (spec 120). */
+        private readonly ?HeaderGuard $guard = null,
     ) {
     }
 
@@ -79,6 +92,15 @@ final class EmailStudioService
      */
     public function decide(EmailDeliveryContext $delivery): DeliveryDecision
     {
+        if ($this->hold?->active() === true) {
+            return new DeliveryDecision(
+                action: DeliveryDecision::ACTION_CAPTURE,
+                reason: __('A marked test holds its emails: they are kept here and never sent.', 'corex'),
+                providerRequired: false,
+                code: self::HELD_FOR_TEST,
+            );
+        }
+
         return $this->policy->evaluate(
             $delivery->environment,
             $delivery->providerConfigured,
@@ -155,6 +177,15 @@ final class EmailStudioService
         if ($recipients === []) {
             return $this->announce($this->missingRecipientResult($delivery, $metadata), $metadata);
         }
+        $unsafe = $this->guard?->inspect([
+            'subject'   => $message->subject,
+            'from'      => $message->from ?? '',
+            'from name' => $message->fromName ?? '',
+            'reply-to'  => $message->replyTo ?? '',
+        ]);
+        if ($unsafe !== null) {
+            return $this->announce($this->refusedResult($delivery, $metadata, $unsafe), $metadata);
+        }
 
         $decision = $this->decide($delivery);
         $attemptIds = array_map(static fn (): string => Uuid::v4(), $recipients);
@@ -164,7 +195,7 @@ final class EmailStudioService
         if ($messageId !== '') {
             $message = $message->withHeaders(['Message-ID' => $messageId]);
         }
-        $outcome    = $this->execute($decision, $message, $attemptIds[0]);
+        $outcome    = $this->execute($decision, $message, $attemptIds[0], $this->pathName($metadata));
         $attempt    = $this->recordAttempts(
             $recipients,
             $attemptIds,
@@ -213,6 +244,20 @@ final class EmailStudioService
             state: MailResult::STATE_REJECTED,
             provider: 'delivery-policy',
             message: __('No valid recipient was provided.', 'corex'),
+            occurredAt: new DateTimeImmutable('now'),
+            retryable: false,
+            parentAttemptId: $metadata->parentAttemptId,
+        );
+    }
+
+    private function refusedResult(EmailDeliveryContext $delivery, EmailDispatchMetadata $metadata, string $why): MailResult
+    {
+        return new MailResult(
+            attemptId: Uuid::v4(),
+            requestId: $delivery->requestId,
+            state: MailResult::STATE_REJECTED,
+            provider: 'delivery-policy',
+            message: $why,
             occurredAt: new DateTimeImmutable('now'),
             retryable: false,
             parentAttemptId: $metadata->parentAttemptId,
@@ -268,6 +313,7 @@ final class EmailStudioService
                 ? $context->message->headers['Message-ID']
                 : null,
             errorCode: $this->errorCode($outcome),
+            missingVariables: $metadata->template === null ? [] : $metadata->template->missingVariables,
         ));
     }
 
@@ -298,6 +344,16 @@ final class EmailStudioService
             : 'production';
     }
 
+    /** What the log calls a captured Email Studio send: what sent it, else the kind of send. */
+    private function pathName(EmailDispatchMetadata $metadata): string
+    {
+        return $this->paths?->current() ?? match ($metadata->source) {
+            'test'   => __('Email Studio: test send', 'corex'),
+            'resend' => __('Email Studio: sent again', 'corex'),
+            default  => __('Email Studio: routed email', 'corex'),
+        };
+    }
+
     private function mailResult(EmailAttempt $attempt, EmailDeliveryOutcome $outcome): MailResult
     {
         return new MailResult(
@@ -317,16 +373,33 @@ final class EmailStudioService
         DeliveryDecision $decision,
         EmailMessage $message,
         string $attemptId,
+        string $path,
     ): EmailDeliveryOutcome
     {
         if ($decision->action === DeliveryDecision::ACTION_BLOCK) {
-            return new EmailDeliveryOutcome(EmailAttempt::STATE_REJECTED, 'delivery-policy', $decision->reason, false);
+            // A site that has not chosen a provider or switched live delivery on is not set up
+            // to send: said apart, so that what asked can tell it from a failure (spec 120).
+            $notSetUp = in_array($decision->code, [DeliveryPolicy::NO_PROVIDER, DeliveryPolicy::LIVE_OFF], true);
+
+            return new EmailDeliveryOutcome(
+                EmailAttempt::STATE_REJECTED,
+                $notSetUp ? MailResult::PROVIDER_NOT_SET_UP : 'delivery-policy',
+                $decision->reason,
+                false,
+            );
         }
 
         if ($decision->action === DeliveryDecision::ACTION_CAPTURE) {
             // Persistence crosses WordPress drivers; converting failures to retryable attempts is the recovery contract.
             try {
-                $this->captures->capture($message, $attemptId);
+                $held = $decision->code === self::HELD_FOR_TEST;
+                $capture = $this->captures->capture(
+                    $message,
+                    $attemptId,
+                    path: $path,
+                    state: $held ? CapturedMessage::STATE_HELD_FOR_TEST : CapturedMessage::STATE_CAPTURED,
+                );
+                $this->hold?->note($message->to, $message->subject, $capture->captureId, $path);
 
                 return new EmailDeliveryOutcome(EmailAttempt::STATE_CAPTURED, 'corex-capture', $decision->reason, false);
             } catch (Throwable) {

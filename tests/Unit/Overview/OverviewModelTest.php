@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Unit tests for the pure Overview readiness model (spec 064). No WordPress.
- * Contract: compose the dashboard from real facts only — truthful readiness, integrations, tiles,
- * data sources; never fabricate a count, an integration, or a score.
+ * Unit tests for the Overview's analytics and security rows (spec 064, spec 114). No WordPress.
+ * Contract: each row is in the words of what is so, and a fact that could not be read is "Could not
+ * check", never a success. The launch checklist and the tiles have their own tests since spec 118.
  *
  * @package Corex\Tests\Unit\Overview
  */
@@ -12,90 +12,71 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Config\Overview\OverviewModel;
+use Corex\Config\Security\LoginProtection\LoginAddressState;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
-    Functions\when('_n')->alias(static fn (string $single, string $plural, int $number): string => $number === 1 ? $single : $plural);
 });
 
-/**
- * @return array{counts:array{posts:int,pages:int,submissions:int|null,addonsActive:int,addonsTotal:int},domains:array<string,bool>,frontPageSet:bool,kitApplied:bool,hardeningWarnings:int,dataSources:list<array{label:string,key:string,total:int}>,formsCount:int}
- */
-function overviewFacts(array $overrides = []): array
+/** A site with every state fact set, overridden per test. */
+function stateFacts(array $overrides = []): array
 {
     return array_merge([
-        'counts'            => ['posts' => 4, 'pages' => 6, 'submissions' => 12, 'addonsActive' => 3, 'addonsTotal' => 9],
-        'domains'           => ['brand' => true, 'mail' => true, 'captcha' => false, 'insights' => false, 'forms' => true],
-        'frontPageSet'      => true,
-        'kitApplied'        => true,
-        'hardeningWarnings' => 0,
-        'dataSources'       => [['label' => 'Submissions', 'key' => 'submissions', 'total' => 12]],
-        'formsCount'        => 1,
-        'flowsCount'        => 3,
+        'mailFrom' => true,
+        'insights' => ['key' => true, 'latest' => ['status' => 'good', 'score' => 95, 'summary' => 'Fast.']],
+        'captcha'  => ['active' => true, 'driver' => 'turnstile', 'keys' => true],
+        'login'    => LoginAddressState::HIDDEN,
     ], $overrides);
 }
 
-it('builds the five dashboard regions from real facts', function () {
-    $data = (new OverviewModel())->build(overviewFacts());
+/** @return array<string,array{label:string,note:string,tone:string}> */
+function integrationRows(array $facts): array
+{
+    return array_column((new OverviewModel())->integrations($facts), null, 'label');
+}
 
-    expect(array_keys($data))->toBe(['tiles', 'readiness', 'integrations', 'dataSources', 'forms'])
-        ->and($data['tiles'])->toHaveCount(4)
-        ->and($data['dataSources'][0]['count'])->toBe(12)
-        ->and($data['forms']['count'])->toBe(1);
+it('lists PageSpeed, the captcha, transactional email and login protection', function () {
+    expect(array_keys(integrationRows(stateFacts())))
+        ->toBe(['Insights / PageSpeed', 'Captcha', 'Transactional email', 'Login protection']);
 });
 
-it('projects real registered forms and versioned flows without a planned/read-only claim', function () {
-    $forms = (new OverviewModel())->build(overviewFacts())['forms'];
+it('says what the PageSpeed row is, in the words of what is so', function (bool $key, ?array $latest, string $note, string $tone) {
+    $row = integrationRows(stateFacts(['insights' => ['key' => $key, 'latest' => $latest]]))['Insights / PageSpeed'];
 
-    expect($forms['count'])->toBe(1)
-        ->and($forms['flows'])->toBe(3)
-        ->and($forms['note'])->not->toContain('planned')
-        ->and($forms['note'])->not->toContain('future')
-        ->and($forms['flows'])->toBe(max(0, $forms['flows']));
+    expect($row['note'])->toBe($note)
+        ->and($row['tone'])->toBe($tone);
+})->with([
+    'a key and a completed run' => [true, ['status' => 'good', 'score' => 95], 'Connected', OverviewModel::TONE_SUCCESS],
+    'a key, nothing run yet' => [true, null, 'Key saved, not checked yet', OverviewModel::TONE_NEUTRAL],
+    'no key' => [false, ['status' => 'good', 'score' => 95], 'Keyless (shared quota)', OverviewModel::TONE_NEUTRAL],
+    'a failed run' => [false, ['status' => 'failed', 'summary' => 'PageSpeed quota was exceeded.'], 'Error: PageSpeed quota was exceeded.', OverviewModel::TONE_WARNING],
+    'a key, then a failed run' => [true, ['status' => 'failed', 'summary' => 'The key was rejected.'], 'Error: The key was rejected.', OverviewModel::TONE_WARNING],
+]);
 
-    // Negative or absent flow counts never render as a fabricated negative.
-    $clamped = (new OverviewModel())->build(overviewFacts(['flowsCount' => -5]))['forms'];
-    expect($clamped['flows'])->toBe(0);
-});
+it('says the captcha is configured only with its add-on on, a provider and both keys', function (array $captcha, string $note) {
+    expect(integrationRows(stateFacts(['captcha' => $captcha]))['Captcha']['note'])->toBe($note);
+})->with([
+    'a provider with its keys' => [['active' => true, 'driver' => 'hcaptcha', 'keys' => true], 'hCaptcha configured'],
+    'keys saved, add-on off' => [['active' => false, 'driver' => 'recaptcha', 'keys' => true], 'Not configured (add-on inactive)'],
+    'driver None' => [['active' => true, 'driver' => 'none', 'keys' => false], 'Not configured'],
+    'driver Honeypot' => [['active' => true, 'driver' => 'honeypot', 'keys' => false], 'Not configured'],
+    'a provider with a key missing' => [['active' => true, 'driver' => 'recaptcha', 'keys' => false], 'Keys missing'],
+]);
 
-it('reports submissions as an em dash when the forms source is unavailable — never a fabricated zero', function () {
-    $data = (new OverviewModel())->build(overviewFacts(['counts' => ['posts' => 0, 'pages' => 0, 'submissions' => null, 'addonsActive' => 0, 'addonsTotal' => 0]]));
-    $submissionTile = $data['tiles'][2];
+it('reads the login protection row from the Security Center', function (string $state, string $note) {
+    expect(integrationRows(stateFacts(['login' => $state]))['Login protection']['note'])->toBe($note);
+})->with([
+    'protection off' => [LoginAddressState::OFF, 'Off'],
+    'on, hidden' => [LoginAddressState::HIDDEN, 'On, login address hidden'],
+    'on, not hidden' => [LoginAddressState::REACHABLE, 'On, login address reachable'],
+    'on, recovery' => [LoginAddressState::RECOVERY, 'On, recovery active: login address reachable'],
+]);
 
-    expect($submissionTile['value'])->toBe('—')
-        ->and($submissionTile['detail'])->toContain('inactive');
-});
+it('says "Could not check" for a fact that could not be read, never a success', function () {
+    $rows = integrationRows(stateFacts(['insights' => null, 'captcha' => null, 'login' => null]));
 
-it('counts readiness from real signals and never overstates it', function () {
-    $done = (new OverviewModel())->build(overviewFacts())['readiness'];
-    // brand + kit + frontPage + mail done; captcha off; hardening ok -> 5 of 6.
-    expect($done['total'])->toBe(6)
-        ->and($done['done'])->toBe(5);
-
-    $blank = (new OverviewModel())->build(overviewFacts([
-        'domains' => ['brand' => false, 'mail' => false, 'captcha' => false, 'insights' => false],
-        'frontPageSet' => false,
-        'kitApplied' => false,
-        'hardeningWarnings' => 2,
-    ]))['readiness'];
-    expect($blank['done'])->toBe(0);
-});
-
-it('shows honest connected / not-connected integration states, never a score', function () {
-    $data = (new OverviewModel())->build(overviewFacts(['domains' => ['insights' => false, 'captcha' => true, 'mail' => false], 'hardeningWarnings' => 1]));
-    $byLabel = [];
-    foreach ($data['integrations'] as $row) {
-        $byLabel[$row['label']] = $row;
+    foreach (['Insights / PageSpeed', 'Captcha', 'Login protection'] as $label) {
+        expect($rows[$label]['note'])->toBe('Could not check')
+            ->and($rows[$label]['tone'])->toBe(OverviewModel::TONE_WARNING);
     }
-
-    expect($byLabel['Insights / PageSpeed']['note'])->toBe('Not connected')
-        ->and($byLabel['Insights / PageSpeed']['tone'])->toBe(OverviewModel::TONE_NEUTRAL)
-        ->and($byLabel['Captcha']['tone'])->toBe(OverviewModel::TONE_SUCCESS)
-        ->and($byLabel['Login protection']['tone'])->toBe(OverviewModel::TONE_WARNING);
-});
-
-it('clamps negative counts and never renders a negative data-source total', function () {
-    $data = (new OverviewModel())->build(overviewFacts(['dataSources' => [['label' => 'X', 'key' => 'x', 'total' => -3]]]));
-
-    expect($data['dataSources'][0]['count'])->toBe(0);
 });

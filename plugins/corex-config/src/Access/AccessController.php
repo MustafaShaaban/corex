@@ -10,9 +10,12 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\AbilityNames;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\InvalidAccessInput;
+use Corex\Http\RouteParam;
 use Corex\Operations\Confirmation;
 use DateMalformedStringException;
 use DateTimeImmutable;
@@ -38,6 +41,9 @@ final class AccessController
         private readonly AccessService $service,
         private readonly CorexAbilityCatalog $catalog,
         private readonly PendingAccessRequests $pending,
+        private readonly AccessGrantService $grants,
+        private readonly AccessGrantPresenter $presenter,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -77,16 +83,33 @@ final class AccessController
                 'permission_callback' => [$this, 'requestAllowed'],
             ],
         ]);
+        register_rest_route(self::NAMESPACE, '/access/requests/(?P<id>\d+)/preview', [
+            'methods' => 'POST',
+            'callback' => [$this, 'previewDecision'],
+            'permission_callback' => [$this, 'allowed'],
+        ]);
         register_rest_route(self::NAMESPACE, '/access/requests/(?P<id>\d+)/decision', [
             'methods' => 'POST',
             'callback' => [$this, 'decideRequest'],
             'permission_callback' => [$this, 'allowed'],
         ]);
+        // Spec 112: the grants made by approval, with the request list's check (DECISIONS #346).
+        register_rest_route(self::NAMESPACE, '/access/grants', [
+            'methods' => 'GET',
+            'callback' => [$this, 'standingGrants'],
+            'permission_callback' => [$this, 'allowed'],
+        ]);
+        register_rest_route(self::NAMESPACE, '/access/grants/(?P<id>\d+)/revoke', [
+            'methods' => 'POST',
+            'callback' => [$this, 'revokeGrant'],
+            'permission_callback' => [$this, 'allowed'],
+        ]);
     }
 
+    /** The Access screen's own ability (spec 117, FR-002). */
     public function allowed(WP_REST_Request $request): bool
     {
-        return $this->hasNonce($request) && current_user_can('manage_options');
+        return $this->hasNonce($request) && $this->abilities->allows(CorexAbility::MANAGE_ACCESS, 'corex-access');
     }
 
     public function requestAllowed(WP_REST_Request $request): bool
@@ -166,15 +189,46 @@ final class AccessController
         });
     }
 
+    public function previewDecision(WP_REST_Request $request): WP_REST_Response
+    {
+        $preview = $this->service->previewApproval(get_current_user_id(), RouteParam::int($request));
+
+        return $this->ok(['preview' => $preview === null ? null : $this->presenter->preview($preview)]);
+    }
+
+    /**
+     * Approval needs a note, an expiry and a confirmation (spec 112, FR-002); a refusal does not.
+     */
     public function decideRequest(WP_REST_Request $request): WP_REST_Response
     {
-        $result = $this->service->decideRequest(
-            get_current_user_id(),
-            (int) $request->get_param('id'),
-            (bool) $request->get_param('approved'),
-            sanitize_textarea_field($this->text($request->get_param('note'))),
-            new DateTimeImmutable('now'),
-        );
+        return $this->answer(function () use ($request): array {
+            $id   = RouteParam::int($request);
+            $note = sanitize_textarea_field($this->text($request->get_param('note')));
+            $now  = new DateTimeImmutable('now');
+
+            $result = (bool) $request->get_param('approved')
+                ? $this->service->approveRequest(
+                    get_current_user_id(),
+                    $id,
+                    $note,
+                    (int) $this->text($request->get_param('expiry_days')),
+                    $this->confirmation((array) $request->get_param('confirmation')),
+                    $now,
+                )
+                : $this->service->denyRequest(get_current_user_id(), $id, $note, $now);
+
+            return ['result' => $result->toArray()];
+        });
+    }
+
+    public function standingGrants(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->ok(['grants' => $this->presenter->grants()]);
+    }
+
+    public function revokeGrant(WP_REST_Request $request): WP_REST_Response
+    {
+        $result = $this->grants->revoke(get_current_user_id(), RouteParam::int($request), new DateTimeImmutable('now'));
 
         return $this->ok(['result' => $result->toArray()]);
     }
@@ -238,6 +292,8 @@ final class AccessController
             InvalidAccessInput::TARGET_AMBIGUOUS => __('Name an ability or an area, not both.', 'corex'),
             InvalidAccessInput::ABILITY_UNKNOWN => __('That is not an ability CoreX has.', 'corex'),
             InvalidAccessInput::AREA_UNKNOWN => __('That is not an area CoreX has.', 'corex'),
+            InvalidAccessInput::ABILITY_NOT_REQUESTABLE => __('An administrator grants this ability through the role matrix. It cannot be requested.', 'corex'),
+            InvalidAccessInput::AREA_NOT_REQUESTABLE => __('This area holds an ability an administrator grants through the role matrix. It cannot be requested.', 'corex'),
             InvalidAccessInput::ROLE_INVALID => __('That is not a role key.', 'corex'),
             InvalidAccessInput::EFFECT_UNSUPPORTED => __('An ability is set to allow, deny or inherit.', 'corex'),
             InvalidAccessInput::CONFIRMATION_MALFORMED => __('The confirmation could not be read. Preview the change again, then apply it.', 'corex'),
@@ -326,10 +382,13 @@ final class AccessController
     /** @return array<string,mixed> */
     private function ability(CorexAbility $ability): array
     {
+        // Names in the site's language; the key stays for developers (spec 117, US-ACC-05).
         return [
             'key' => $ability->key,
-            'label' => $ability->label,
+            'label' => AbilityNames::labelOf($ability),
+            'description' => AbilityNames::descriptionOf($ability),
             'group' => $ability->group,
+            'group_label' => AbilityNames::area($ability->group),
             'risk' => $ability->risk,
             'locked' => $ability->locked,
         ];

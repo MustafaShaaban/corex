@@ -43,6 +43,15 @@ it('writes ACF fields with the ACF argument order', function () {
     (new AcfFieldDriver())->set(7, 'job_salary', 90000);
 });
 
+// ACF stores a post's value through `update_metadata()`, which takes one level of slashes off: with
+// ACF active, a submitted `C:\offers\new` was stored as `C:offersnew` (measured on corex.local,
+// ACF 6.8.10, 2026-10-21). SubmissionKeepsBackslashesTest covers it end to end where ACF is active.
+it('hands ACF text slashed once, so its backslashes are stored', function () {
+    Functions\expect('update_field')->once()->with('answer', 'C:\\\\offers\\\\new', 7);
+
+    (new AcfFieldDriver())->set(7, 'answer', 'C:\\offers\\new');
+});
+
 it('resolves to the ACF driver when ACF is available, native meta otherwise', function () {
     $meta = new MetaFieldDriver();
     $acf = new AcfFieldDriver();

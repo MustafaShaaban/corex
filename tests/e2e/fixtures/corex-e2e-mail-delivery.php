@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: CoreX E2E mail delivery
+ * Plugin Name: CoreX E2E mail delivery (test fixture)
  * Description: Lets the browser suite ask for a request as a site that keeps its email, or as one with live delivery off, whatever the install is set to.
  * Version: 1.0.0
  *

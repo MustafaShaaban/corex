@@ -80,6 +80,21 @@ test.afterAll( () => {
 	);
 } );
 
+/**
+ * The address in an email that carries the reset key: in WordPress's plain text, or in the
+ * markup of the email CoreX draws (spec 120), where it is written escaped.
+ *
+ * @param {string} email The email's body.
+ * @return {string} The address, or ''.
+ */
+function resetLinkIn( email ) {
+	const text = email.replace( /&amp;|&#0?38;/g, '&' );
+	const [ link ] = text.match( /https?:\/\/[^\s"<>]*key=[^\s"<>]*/ ) || [
+		'',
+	];
+	return link;
+}
+
 // In order: the second is about the link the first has used.
 test.describe.configure( { mode: 'serial' } );
 
@@ -96,7 +111,7 @@ test( 'a forgotten password is reset on the account page', async ( {
 
 	// The email names the page the reset was asked from, and no screen of WordPress's.
 	const email = keptEmail();
-	const [ link ] = email.match( /\S*key=\S*/ ) || [ '' ];
+	const link = resetLinkIn( email );
 	expect( link.startsWith( accountUrl ), `the link in: ${ email }` ).toBe(
 		true
 	);

@@ -10,6 +10,7 @@ namespace Corex\Config\Data;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AccessRefusalRecorder;
 use Corex\Access\CorexAbility;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
@@ -47,22 +48,51 @@ final readonly class DataSourceService
         DataSourceCapabilities::BULK_DELETE,
     ];
 
-    public function __construct(private DataRegistry $registry, private DataAccessPolicy $access)
-    {
+    public function __construct(
+        private DataRegistry $registry,
+        private DataAccessPolicy $access,
+        private ?AccessRefusalRecorder $refusals = null,
+    ) {
     }
 
-    /** @return list<array<string,mixed>> */
+    /**
+     * Every source this person may see. One whose records belong to a screen they may not open is
+     * not listed at all (spec 112, FR-029).
+     *
+     * @return list<array<string,mixed>>
+     */
     public function catalog(int $actorId): array
     {
-        return array_map(
+        return array_values(array_map(
             fn (DataSource $source): array => $this->describe($actorId, $source->key()),
-            $this->registry->all(),
-        );
+            array_filter(
+                $this->registry->all(),
+                fn (DataSource $source): bool => $this->withheldFrom($actorId, $source->key()) === null,
+            ),
+        ));
+    }
+
+    /**
+     * The ability this person lacks to read this source at all: the ability of the screen its
+     * records belong to. Null when nothing is withheld.
+     */
+    public function withheldFrom(int $actorId, string $sourceKey): ?string
+    {
+        $source = $this->source($sourceKey);
+        $owner  = $source instanceof RestrictedDataSource ? $source->ownerAbility() : null;
+
+        return $owner !== null && ! $this->access->allows($actorId, $owner) ? $owner : null;
+    }
+
+    public function label(string $sourceKey): string
+    {
+        return $this->source($sourceKey)->label();
     }
 
     /** @return array<string,mixed> */
     public function describe(int $actorId, string $sourceKey): array
     {
+        $this->assertNotWithheld($actorId, $sourceKey);
         $source = $this->source($sourceKey);
         $capabilities = $this->capabilities($sourceKey);
         $actions = [];
@@ -101,6 +131,7 @@ final readonly class DataSourceService
 
     public function authorize(int $actorId, string $sourceKey, string $operation): DataSource
     {
+        $this->assertNotWithheld($actorId, $sourceKey);
         $source = $this->source($sourceKey);
         $action = $this->action($actorId, $source, $this->capabilities($sourceKey), $operation);
         if (! $action['supported']) {
@@ -111,6 +142,24 @@ final readonly class DataSourceService
         }
 
         return $source;
+    }
+
+    /** Records in the access audit that this person was refused this source (FR-031). */
+    public function noteWithheld(int $actorId, string $sourceKey): void
+    {
+        $this->refusals?->refused($actorId, 'data', $sourceKey);
+    }
+
+    /** Refuses, and records the refusal of, what is withheld. */
+    private function assertNotWithheld(int $actorId, string $sourceKey): void
+    {
+        if ($this->withheldFrom($actorId, $sourceKey) === null) {
+            return;
+        }
+
+        $this->noteWithheld($actorId, $sourceKey);
+
+        throw DataAccessRestricted::forModel();
     }
 
     private function source(string $sourceKey): DataSource

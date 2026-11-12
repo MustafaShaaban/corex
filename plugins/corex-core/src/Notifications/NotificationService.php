@@ -28,6 +28,13 @@ interface NotificationService
     public function resolve(string $dedupKey, string $reason): int;
 
     /**
+     * Say an open condition in the words of the request that is evaluating it, without recording
+     * another occurrence (spec 118): a readiness blocker is raised once, and still reads in the
+     * language of the person who opens the screen that evaluates it.
+     */
+    public function reword(Notification $notification): int;
+
+    /**
      * The current actor's bounded, visibility-filtered notifications.
      *
      * @return array{items:list<array<string,mixed>>,total:int,page:int,per_page:int}

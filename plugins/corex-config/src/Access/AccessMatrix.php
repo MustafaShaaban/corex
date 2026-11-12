@@ -10,76 +10,120 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityNames;
 use Corex\Access\AccessPolicy;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
 
 /**
- * Pure model for Access & Abilities (spec 065 baseline, spec 067 tabs). It builds a truthful role ×
- * capability matrix, role summaries, and permissions-plugin conflict detection from the REAL WordPress
- * roles, native capability compatibility inputs, and editable CoreX-owned ability effects. It invents
- * no `corex_*` capability that does not exist (CoreX admin is gated on `manage_options`). WordPress-free,
- * so it is unit-testable.
+ * Pure model for Access & Abilities (spec 067 tabs; spec 117, US-ACC-02 and US-ACC-03): what each role
+ * can really do with each CoreX ability, how many it holds, and how the signed-in person holds theirs.
+ *
+ * It resolves every cell the way {@see AbilityCompatibility} answers WordPress: a role that can
+ * administer the site holds everything and is never denied (ACC-D11); the locked ability comes only
+ * with site administration; otherwise the role matrix's stored Allow or Deny, or nothing. Roles arrive
+ * with their WordPress capabilities, so this class needs no WordPress to be tested.
  */
 final class AccessMatrix
 {
+    public const STATE_ALLOWED_SET   = 'allowed_set';
+    public const STATE_DENIED_SET    = 'denied_set';
+    public const STATE_ALLOWED_ADMIN = 'allowed_admin';
+    public const STATE_NOT_GRANTED   = 'not_granted';
+    public const STATE_LOCKED        = 'locked';
+
+    /** How a person holds an ability, for "Your permissions". */
+    public const HELD_SITE_ADMINISTRATION = 'site_administration';
+    public const HELD_ROLE                = 'role';
+    public const HELD_GRANT               = 'grant';
+    public const HELD_ACCOUNT             = 'account';
+
     /**
-     * The roles WordPress ships with; anything else on the site is a custom role.
+     * The roles WordPress ships with; anything else on the site was added by a plugin or the site.
      */
     private const CORE_ROLES = ['administrator', 'editor', 'author', 'contributor', 'subscriber'];
 
+    private const ADMINISTRATION_CAPABILITY = 'manage_options';
+
     /**
-     * The capability groups shown, each mapped to the REAL WordPress capability it checks.
-     * `risk` marks capabilities that unlock site administration; `locked` marks requirements
-     * hard-coded in CoreX (the admin gate is `manage_options` in code — not editable anywhere).
+     * Whether a role's capabilities let it administer the site.
      *
-     * @return list<array{key:string,label:string,cap:string,risk:string,locked:bool}>
+     * @param array<string,bool> $capabilities
      */
-    public function groups(): array
+    public function administers(array $capabilities): bool
     {
-        return [
-            ['key' => 'corex_admin', 'label' => __('Access the CoreX admin', 'corex'), 'cap' => 'manage_options', 'risk' => 'high', 'locked' => true],
-            ['key' => 'content', 'label' => __('Publish posts & pages', 'corex'), 'cap' => 'publish_posts', 'risk' => 'standard', 'locked' => false],
-            ['key' => 'edit_others', 'label' => __('Edit others’ content', 'corex'), 'cap' => 'edit_others_posts', 'risk' => 'standard', 'locked' => false],
-            ['key' => 'media', 'label' => __('Upload media', 'corex'), 'cap' => 'upload_files', 'risk' => 'standard', 'locked' => false],
-            ['key' => 'taxonomy', 'label' => __('Manage categories & tags', 'corex'), 'cap' => 'manage_categories', 'risk' => 'standard', 'locked' => false],
-        ];
+        return ! empty($capabilities[self::ADMINISTRATION_CAPABILITY]);
+    }
+
+    /** One cell's state, the way WordPress will answer for the role's members. */
+    public function cellState(CorexAbility $ability, bool $administers, string $effect): string
+    {
+        return match (true) {
+            $administers                           => self::STATE_ALLOWED_ADMIN,
+            $ability->locked                       => self::STATE_LOCKED,
+            $effect === AccessPolicy::EFFECT_ALLOW => self::STATE_ALLOWED_SET,
+            $effect === AccessPolicy::EFFECT_DENY  => self::STATE_DENIED_SET,
+            default                                => self::STATE_NOT_GRANTED,
+        };
     }
 
     /**
-     * Role summary cards (design: Access overview) — per role, the REAL user count, whether the
-     * role is a WordPress core role or a custom one, and how many tracked abilities it holds.
+     * Role summary cards: the real user count, whether WordPress ships the role, and how many CoreX
+     * abilities it holds, counted as the matrix resolves them (US-ACC-03).
      *
      * @param list<array{key:string,name:string,caps:array<string,bool>}> $roles
-     * @param array<string,int>                                           $userCounts role key => users
+     * @param array<string,int>                                           $userCounts    role key => users
+     * @param array<string,array<string,string>>                          $effectsByRole role key => ability key => effect
      *
      * @return list<array{key:string,name:string,isCore:bool,users:int,granted:int,total:int}>
      */
-    public function roleSummaries(array $roles, array $userCounts): array
+    public function roleSummaries(array $roles, array $userCounts, array $effectsByRole = []): array
     {
-        $groups = $this->groups();
-        $total  = count($groups);
+        $abilities = $this->abilities();
 
-        $out = [];
-        foreach ($roles as $role) {
-            $granted = 0;
-            foreach ($groups as $group) {
-                if (! empty($role['caps'][$group['cap']])) {
+        return array_map(function (array $role) use ($abilities, $userCounts, $effectsByRole): array {
+            $administers = $this->administers($role['caps']);
+            $granted     = 0;
+            foreach ($abilities as $ability) {
+                $effect = $effectsByRole[$role['key']][$ability->key] ?? AccessPolicy::EFFECT_INHERIT;
+                $state  = $this->cellState($ability, $administers, $effect);
+                if ($state === self::STATE_ALLOWED_ADMIN || $state === self::STATE_ALLOWED_SET) {
                     $granted++;
                 }
             }
 
-            $out[] = [
+            return [
                 'key'     => $role['key'],
                 'name'    => $role['name'],
                 'isCore'  => in_array($role['key'], self::CORE_ROLES, true),
                 'users'   => max(0, (int) ($userCounts[$role['key']] ?? 0)),
                 'granted' => $granted,
-                'total'   => $total,
+                'total'   => count($abilities),
+            ];
+        }, $roles);
+    }
+
+    /**
+     * Every CoreX ability by area, in the site's language, with its risk in words and whether it is
+     * locked (US-ACC-03).
+     *
+     * @return array<string,list<array{key:string,label:string,description:string,risk:string,riskLabel:string,locked:bool}>>
+     */
+    public function abilityGroups(): array
+    {
+        $groups = [];
+        foreach ($this->abilities() as $ability) {
+            $groups[AbilityNames::area($ability->group)][] = [
+                'key'         => $ability->key,
+                'label'       => AbilityNames::labelOf($ability),
+                'description' => AbilityNames::descriptionOf($ability),
+                'risk'        => $ability->risk,
+                'riskLabel'   => AbilityNames::risk($ability->risk),
+                'locked'      => $ability->locked,
             ];
         }
 
-        return $out;
+        return $groups;
     }
 
     /**
@@ -96,53 +140,18 @@ final class AccessMatrix
     }
 
     /**
-     * Build the matrix: one row per capability group, one cell per role indicating whether that role
-     * really holds the capability.
+     * The role matrix grid (US-ACC-02): every CoreX ability, in area order, against every role, each
+     * cell with its stored effect, whether it can be edited here and why not, and its resolved state.
+     * A Deny stored for a role that administers the site is shown as the allowed state it resolves to
+     * and flagged, so the screen can say it is ignored (ACC-D11).
      *
-     * @param list<array{key:string,name:string,caps:array<string,bool>}> $roles
-     *
-     * @return array{
-     *   roles: list<array{key:string,name:string}>,
-     *   rows: list<array{key:string,label:string,cap:string,risk:string,locked:bool,cells:array<string,bool>}>
-     * }
-     */
-    public function build(array $roles): array
-    {
-        $roleHeads = array_map(
-            static fn (array $r): array => ['key' => $r['key'], 'name' => $r['name']],
-            $roles,
-        );
-
-        $rows = [];
-        foreach ($this->groups() as $group) {
-            $cells = [];
-            foreach ($roles as $role) {
-                $cells[$role['key']] = ! empty($role['caps'][$group['cap']]);
-            }
-            $rows[] = [
-                'key'    => $group['key'],
-                'label'  => $group['label'],
-                'cap'    => $group['cap'],
-                'risk'   => $group['risk'],
-                'locked' => $group['locked'],
-                'cells'  => $cells,
-            ];
-        }
-
-        return ['roles' => $roleHeads, 'rows' => $rows];
-    }
-
-    /**
-     * Build the editable CoreX-owned ability matrix. Native WordPress/platform capabilities stay
-     * outside this mutation model; external role plugins are surfaced as compatibility context only.
-     *
-     * @param list<array{key:string,name:string}> $roles
-     * @param array<string,array<string,string>>  $effectsByRole role key => ability key => effect
-     * @param list<string>                        $activePlugins
+     * @param list<array{key:string,name:string,caps?:array<string,bool>}> $roles
+     * @param array<string,array<string,string>>                           $effectsByRole role key => ability key => effect
+     * @param list<string>                                                 $activePlugins
      *
      * @return array{
-     *   roles:list<array{key:string,name:string}>,
-     *   rows:list<array{key:string,label:string,group:string,risk:string,locked:bool,cells:array<string,array{effect:string,editable:bool,reason:string|null}>>>,
+     *   roles:list<array{key:string,name:string,administers:bool}>,
+     *   rows:list<array<string,mixed>>,
      *   conflicts:list<string>,
      *   nativeCapabilitiesEditable:bool
      * }
@@ -150,60 +159,152 @@ final class AccessMatrix
     public function editableCorexMatrix(array $roles, array $effectsByRole, array $activePlugins): array
     {
         $conflicts = $this->conflicts($activePlugins);
+        $heads     = array_map(fn (array $role): array => [
+            'key'         => (string) $role['key'],
+            'name'        => (string) $role['name'],
+            'administers' => $this->administers($role['caps'] ?? []),
+        ], $roles);
+
         $rows = [];
-
-        foreach (CorexAbilityCatalog::defaults()->all() as $ability) {
-            $cells = [];
-            foreach ($roles as $role) {
-                $roleKey = (string) $role['key'];
-                $editable = ! $ability->locked;
-                $cells[$roleKey] = [
-                    'effect' => $this->effect($effectsByRole[$roleKey][$ability->key] ?? AccessPolicy::EFFECT_INHERIT),
-                    'editable' => $editable,
-                    'reason' => $editable ? null : 'locked_definition',
-                ];
-            }
-
+        foreach ($this->abilities() as $ability) {
             $rows[] = [
-                'key' => $ability->key,
-                'label' => $ability->label,
-                'group' => $ability->group,
-                'risk' => $ability->risk,
-                'locked' => $ability->locked,
-                'cells' => $cells,
+                'key'         => $ability->key,
+                'label'       => AbilityNames::labelOf($ability),
+                'description' => AbilityNames::descriptionOf($ability),
+                'group'       => $ability->group,
+                'groupLabel'  => AbilityNames::area($ability->group),
+                'risk'        => $ability->risk,
+                'riskLabel'   => AbilityNames::risk($ability->risk),
+                'locked'      => $ability->locked,
+                'cells'       => $this->cells($ability, $heads, $effectsByRole),
             ];
         }
 
         return [
-            'roles' => array_map(static fn (array $role): array => [
-                'key' => (string) $role['key'],
-                'name' => (string) $role['name'],
-            ], $roles),
-            'rows' => $rows,
-            'conflicts' => $conflicts,
+            'roles'                      => $heads,
+            'rows'                       => $rows,
+            'conflicts'                  => $conflicts,
             'nativeCapabilitiesEditable' => $conflicts === [],
         ];
     }
 
     /**
-     * Which of the tracked capabilities the current user holds — for the "your permissions" summary.
+     * Each Deny stored for a role that administers the site, which is kept and not applied (ACC-D11).
      *
-     * @param array<string,bool> $userCaps
+     * @param list<array{key:string,name:string,caps:array<string,bool>}> $roles
+     * @param array<string,array<string,string>>                          $effectsByRole
      *
-     * @return list<array{label:string,cap:string,granted:bool}>
+     * @return list<array{role:string,ability:string}>
      */
-    public function forUser(array $userCaps): array
+    public function ignoredDenies(array $roles, array $effectsByRole): array
     {
-        $out = [];
-        foreach ($this->groups() as $group) {
+        $ignored = [];
+        foreach ($roles as $role) {
+            if (! $this->administers($role['caps'])) {
+                continue;
+            }
+
+            foreach ($this->abilities() as $ability) {
+                if (($effectsByRole[$role['key']][$ability->key] ?? null) === AccessPolicy::EFFECT_DENY) {
+                    $ignored[] = ['role' => $role['name'], 'ability' => AbilityNames::labelOf($ability)];
+                }
+            }
+        }
+
+        return $ignored;
+    }
+
+    /**
+     * The CoreX abilities a person holds and how (US-ACC-03): site administration, one of their roles,
+     * a grant to them (with its end, when it has one), or their account otherwise.
+     *
+     * @param array<string,bool>                                          $held          ability key => whether WordPress says they hold it
+     * @param list<array{key:string,name:string,caps:array<string,bool>}> $roles         their roles
+     * @param array<string,array<string,string>>                          $effectsByRole
+     * @param array<string,string|null>                                   $grants        ability key => end of the grant (ISO 8601) or null
+     *
+     * @return list<array{key:string,label:string,how:string,role:string|null,until:string|null}>
+     */
+    public function forUser(array $held, array $roles, array $effectsByRole, array $grants): array
+    {
+        $administers = array_filter($roles, fn (array $role): bool => $this->administers($role['caps'])) !== [];
+        $out         = [];
+
+        foreach ($this->abilities() as $ability) {
+            if (empty($held[$ability->key])) {
+                continue;
+            }
+
+            $role = $this->allowingRole($ability->key, $roles, $effectsByRole);
+            $how  = match (true) {
+                $administers                             => self::HELD_SITE_ADMINISTRATION,
+                $role !== null                           => self::HELD_ROLE,
+                array_key_exists($ability->key, $grants) => self::HELD_GRANT,
+                default                                  => self::HELD_ACCOUNT,
+            };
+
             $out[] = [
-                'label'   => $group['label'],
-                'cap'     => $group['cap'],
-                'granted' => ! empty($userCaps[$group['cap']]),
+                'key'   => $ability->key,
+                'label' => AbilityNames::labelOf($ability),
+                'how'   => $how,
+                'role'  => $how === self::HELD_ROLE ? $role : null,
+                'until' => $how === self::HELD_GRANT ? $grants[$ability->key] : null,
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * @param list<array{key:string,name:string,administers:bool}> $heads
+     * @param array<string,array<string,string>>                  $effectsByRole
+     *
+     * @return array<string,array{effect:string,editable:bool,reason:string|null,state:string,ignoredDeny:bool}>
+     */
+    private function cells(CorexAbility $ability, array $heads, array $effectsByRole): array
+    {
+        $cells = [];
+        foreach ($heads as $role) {
+            $effect = $this->effect($effectsByRole[$role['key']][$ability->key] ?? AccessPolicy::EFFECT_INHERIT);
+            $reason = match (true) {
+                $role['administers'] => 'site_administrator',
+                $ability->locked     => 'locked_definition',
+                default              => null,
+            };
+
+            $cells[$role['key']] = [
+                'effect'      => $effect,
+                'editable'    => $reason === null,
+                'reason'      => $reason,
+                'state'       => $this->cellState($ability, $role['administers'], $effect),
+                'ignoredDeny' => $role['administers'] && $effect === AccessPolicy::EFFECT_DENY,
+            ];
+        }
+
+        return $cells;
+    }
+
+    /**
+     * The first of these roles the matrix allows the ability for, by name.
+     *
+     * @param list<array{key:string,name:string,caps:array<string,bool>}> $roles
+     * @param array<string,array<string,string>>                          $effectsByRole
+     */
+    private function allowingRole(string $abilityKey, array $roles, array $effectsByRole): ?string
+    {
+        foreach ($roles as $role) {
+            if (($effectsByRole[$role['key']][$abilityKey] ?? null) === AccessPolicy::EFFECT_ALLOW) {
+                return $role['name'];
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<CorexAbility> */
+    private function abilities(): array
+    {
+        return CorexAbilityCatalog::defaults()->all();
     }
 
     private function effect(string $effect): string

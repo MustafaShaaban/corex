@@ -68,18 +68,15 @@ test( 'renders launch checklist login policy lockouts recovery and activity with
 	// reviewed" button that flipped a label and did nothing else — and this spec asserted that it
 	// worked, which is how a control with no effect stayed shipped. Recovery runs from the CLI by
 	// necessity: it exists for when the admin is unreachable, so no button here could perform it.
-	// Scoped to the panel's own code block: the command also appears in the login-policy warning,
-	// so an unscoped text match is ambiguous.
+	// Since spec 112 the panel shows the command in a field it can be copied from, beside the
+	// wp-config.php line for a host with no command line; the field, not a text match, because the
+	// command also appears in the login-policy warning.
 	await page.goto(
 		'/wp-admin/admin.php?page=corex-operations-security&tab=login'
 	);
 	await expect(
-		page
-			.locator( '.corex-security__panel code', {
-				hasText: 'wp corex security reset-login',
-			} )
-			.first()
-	).toBeVisible();
+		page.locator( '.corex-security__recovery textarea[readonly]' ).nth( 1 )
+	).toHaveValue( 'wp corex security reset-login' );
 	await expect(
 		page.getByRole( 'button', { name: 'Mark command reviewed' } )
 	).toHaveCount( 0 );
@@ -202,17 +199,12 @@ test.describe( 'the role matrix', () => {
 	} ) => {
 		test.skip( ! before, 'WP-CLI is needed to put the role back.' );
 		const errors = collectConsoleErrors( page );
+		// The tab opens on the grid; "Edit" on a role opens its editor (spec 117).
 		const chooseEditor = async () => {
-			await page
-				.locator( '.corex-access__mode-label .corex-select__button' )
-				.click();
-			await page
-				.locator( '.corex-access__mode-label' )
-				.getByRole( 'option', { name: 'Editor', exact: true } )
-				.click();
+			await page.getByRole( 'button', { name: 'Edit Editor' } ).click();
 		};
 		const row = page.locator( '.corex-access__matrix tbody tr' ).filter( {
-			has: page.locator( 'code', { hasText: /^corex_manage_forms$/ } ),
+			has: page.locator( 'th[title="corex_manage_forms"]' ),
 		} );
 		const choice = row.locator( '.corex-select__button' );
 

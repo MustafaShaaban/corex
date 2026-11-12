@@ -1,0 +1,22 @@
+/**
+ * Sample content in the block editor (spec 115, US-SAFE-14): outlined,
+ * with its label above it. The label's text is the block's
+ * `data-corex-sample-label`, which the editor script sets translated.
+ * Colours, border and size fall back for a theme without CoreX's tokens.
+ */
+[data-corex-sample-label] {
+	outline:
+		var(--wp--custom--border--width--thin, thin) dashed
+		var(--wp--preset--color--border, GrayText);
+}
+
+[data-corex-sample-label]::before {
+	content: attr(data-corex-sample-label);
+	display: block;
+	margin-block-end: var(--wp--preset--spacing--20);
+	padding-block: var(--wp--preset--spacing--10);
+	padding-inline: var(--wp--preset--spacing--20);
+	color: var(--wp--preset--color--ink, CanvasText);
+	background: var(--wp--preset--color--surface-alt, Canvas);
+	font-size: var(--wp--preset--font-size--xs, smaller);
+}

@@ -17,7 +17,12 @@ use Corex\Access\RoleAbilityStore;
 use WP_User;
 
 /**
- * Maps legacy administrator access and explicit role effects into CoreX-only capabilities.
+ * Gives CoreX abilities to the people who hold them: everyone who can administer the site holds all of
+ * them, and the role matrix's effects apply to everyone else.
+ *
+ * A site administrator is given every ability and no role effect is applied to them, so a Deny stored
+ * on such a role before spec 117 is kept in the table and never takes anything away (ACC-D11). On a
+ * network a super administrator passes every check before this filter runs, as WordPress decides.
  */
 final class AbilityCompatibility
 {
@@ -48,6 +53,8 @@ final class AbilityCompatibility
             foreach ($this->catalog->expanded([CorexAbility::MANAGE_ADMIN]) as $abilityKey) {
                 $allCaps[$abilityKey] = true;
             }
+
+            return $allCaps;
         }
 
         foreach ($user->roles as $roleKey) {

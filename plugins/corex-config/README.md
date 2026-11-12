@@ -54,14 +54,34 @@ them.
 
 ## Settings dashboard
 
-A top-level **Corex** admin menu → a tabbed settings screen: **Brand / Mail / Forms / Captcha / Media / Insights
-/ Advanced**. Each field is a Config dot-key, so saving persists to the prefixed option the **Config engine reads**
-— the framework consumes settings with no extra wiring (e.g. saving `mail.from.address` is what `WpMailDriver`
-reads). Saving is nonce + `manage_options` gated and sanitized by the pure `SettingsSanitizer` (invalid
-email/URL/unknown-select values are rejected, not saved; empty write-only secrets are preserved). **Advanced** is a
-read-only system-diagnostics read-out (PHP/WordPress/environment/memory/multisite) — destructive resets live behind
-their own typed-confirmation surfaces (Operations & Security, Setup Wizard), and Operations, Data Sources, and
-Design Tokens keep their dedicated screens rather than being duplicated here.
+A top-level **Corex** admin menu → **Settings**, a set of pages listed under Settings in the CoreX rail (spec 119,
+`SettingsPages`): **General and appearance** (Brand, Dashboard widgets), **Email** (Mail, Forms), **Captcha**,
+**Media**, **Insights**, **Guides**, **Advanced**. Each page has its own address
+(`admin.php?page=corex-settings-config&section=<page>`; the older `&corex_tab=<section>` still resolves) and is a
+form of its own with a save bar: "No changes", "Unsaved changes" or "All changes saved", Discard without a reload,
+and a question before leaving with unsaved changes. Each field is a Config dot-key, so saving persists to the
+prefixed option the **Config engine reads** — the framework consumes settings with no extra wiring (e.g. saving
+`mail.from.address` is what `WpMailDriver` reads).
+
+- **Saving** (`SettingsSaver`) is nonce + `manage_options` gated (`AdminGuard`) and writes only the posted page,
+  only fields whose value changed, never a section whose add-on is off or absent. Invalid email/URL/unknown-select
+  values are refused and named, and the page opens again with what was typed. A save redirects to its page, so a
+  reload never sends it again.
+- **Locked values** (`Corex\Support\Config\SettingLocks`): a key set in the site's `.env` or locked by the network
+  shows the value in force, cannot be edited, says where it is set, and is never written.
+- **Secrets** are write-only; an empty field keeps the stored value, and a saved one can be removed (a confirmed
+  Remove, recorded as `settings.secret_removed` in the activity log, never with the value).
+- **Providers** (`ProviderSetup`, `ProviderTestService`): Captcha and Insights say which key is missing and what that
+  stops; PageSpeed and Cloudflare have **Test connection** (`POST corex/v1/settings/providers/{pagespeed|cloudflare}/test`),
+  and the latest test of each provider, the captcha one included, is remembered by a fingerprint of the values it
+  used, never the key.
+- **Add-on pages** (Captcha, Media, Guides) follow their add-on: absent, the page leaves the navigation; off, its
+  fields are read-only with **Open Add-ons** to its card.
+- An add-on draws a panel under its section through the `corex_settings_section_extra` filter (Media's
+  **Convert existing library**).
+
+**Advanced** is a read-only system-diagnostics read-out (PHP/WordPress/environment/memory/multisite); Operations,
+Data Sources, and Design Tokens keep their dedicated screens rather than being duplicated here.
 
 ```php
 $store = $container->make(Corex\Config\Settings\SettingsStore::class);
@@ -79,7 +99,9 @@ dependency) — so a toggle can never leave the site broken.
 
 The decisions are the pure, unit-tested `Corex\Config\Addons\AddonRegistry` + `AddonManager` (the kit add-ons
 require `corex-ui`, mirroring the blueprints); the `AddonsScreen` only renders + gates (via the shared
-`Corex\Security\Admin\AdminGuard`, cap + nonce) and delegates the plugin/flag writes to `AddonActivator`.
+`Corex\Security\Admin\AdminGuard`, cap + nonce) and hands each toggle to `AddonToggleService`, which refuses to
+switch off an add-on active for the network or installed as must-use, has `AddonActivator` make the plugin/flag
+writes, and reports WordPress's answer (spec 114).
 Companion to the setup wizard (which composes a whole kit at once).
 
 The truthful summary bar (active / installed / site-kit counts) is projected by the pure
@@ -169,8 +191,8 @@ the screen shows a direct Add-ons activation path and does not instantiate add-o
 ## Blog Pro (Corex → Blog Pro)
 
 Blog Pro is a functional workspace over **native WordPress posts**. Its REST-backed React client renders
-**Analytics / Native posts / Editorial workflow / Moderation queue / Authors / Sharing** from live state — no
-sample data. Analytics are **first-party and consent-aware**: visitor identity is hashed (no raw IP or user
+**Analytics / Native posts / Editorial workflow / Moderation queue / Authors / Sharing** from live state, with
+no invented figures. Analytics are **first-party and consent-aware**: visitor identity is hashed (no raw IP or user
 agent stored) and reading events are retained for 180 days. The editorial workflow maps explicit states
 (Draft, Ready for Review, Needs Changes, Approved, Scheduled, Published) onto native post statuses via
 `wp_update_post()`; comment moderation and author analytics use the native WordPress comment and user APIs.

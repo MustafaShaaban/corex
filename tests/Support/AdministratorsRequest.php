@@ -68,6 +68,9 @@ final class AdministratorsRequest
         $inArabic = static fn ($translation) => determine_locale() === 'ar' ? '[ar] ' . $translation : $translation;
         $hook('gettext_corex', $inArabic);
         $hook('ngettext_corex', $inArabic);
+        // Mail is decided as a production site decides it (spec 113 keeps a development site's
+        // mail on the site), so each email reaches wp_mail(), where it is answered below.
+        $hook('pre_option_corex_app_env', static fn () => 'production');
         // Nothing here sends, and nothing could. What WordPress was handed is kept to be read.
         $GLOBALS['corex_request_mail'] = [];
         $hook(

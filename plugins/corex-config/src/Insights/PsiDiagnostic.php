@@ -25,6 +25,7 @@ final class PsiDiagnostic
     public const QUOTA            = 'quota';
     public const INVALID_KEY      = 'invalid_key';
     public const INVALID_RESPONSE = 'invalid_response';
+    public const TRANSPORT        = 'transport';
 
     private function __construct(
         public readonly string $kind,
@@ -43,6 +44,14 @@ final class PsiDiagnostic
         $detail = self::scrub(sprintf('HTTP %d — %s', $httpStatus, self::bodyMessage($body)));
 
         return new self($kind, self::messageFor($kind, $httpStatus), $detail, 'recommended');
+    }
+
+    /**
+     * The service could not be reached from this server at all: no answer to classify.
+     */
+    public static function unreachable(): self
+    {
+        return new self(self::TRANSPORT, self::messageFor(self::TRANSPORT, 0), '', 'recommended');
     }
 
     /**
@@ -72,7 +81,10 @@ final class PsiDiagnostic
     private static function messageFor(string $kind, int $httpStatus): string
     {
         return match ($kind) {
-            self::LOCAL_URL        => __('PageSpeed cannot crawl a local or private URL. Test a public URL instead.', 'corex'),
+            // Said before anything is sent (spec 114, US-SAFE-12): the service measures only an
+            // address it can reach from the internet.
+            self::LOCAL_URL        => __('PageSpeed cannot reach a local site: it measures only an address that is public on the internet.', 'corex'),
+            self::TRANSPORT        => __('PageSpeed could not be reached from this server. Check its connection and try again.', 'corex'),
             self::QUOTA            => __('PageSpeed quota was exceeded. Add an API key, or wait and try again.', 'corex'),
             self::INVALID_KEY      => __('The PageSpeed API key was rejected. Check the key in Settings.', 'corex'),
             self::INVALID_RESPONSE => __('PageSpeed returned an unreadable response. Try again shortly.', 'corex'),

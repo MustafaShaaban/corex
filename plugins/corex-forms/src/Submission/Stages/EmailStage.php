@@ -10,7 +10,9 @@ namespace Corex\Forms\Submission\Stages;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Flow\EmailVariableValues;
 use Corex\Forms\Submission\FlowEmailAddressResolver;
+use Corex\Forms\Submission\FlowEmailVariables;
 use Corex\Forms\Submission\FlowEmailSender;
 use Corex\Forms\Submission\NotificationDelivery;
 use Corex\Forms\Submission\NotificationDispatcher;
@@ -20,6 +22,7 @@ use Corex\Forms\Submission\SubmissionStage;
 use Corex\Forms\Submission\SubmissionStageResult;
 use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
+use Corex\Mail\SubmissionAddress;
 
 /**
  * Delivers the submission notification and records a truthful outcome.
@@ -30,6 +33,9 @@ use Corex\Mail\MailResult;
  * single headline {@see NotificationDelivery} is projected to `corex_notification_delivery`, so an
  * administrator can see whether the notification was accepted, captured, queued, rejected, or
  * failed — never a saved submission with an unknown fate.
+ *
+ * It runs after the inbox assignment and the routing timeline, and a failure here does not stop the
+ * flow's actions (spec 122, FR-008, FR-022): the pipeline records it and goes on.
  */
 final readonly class EmailStage implements SubmissionStage
 {
@@ -38,6 +44,10 @@ final readonly class EmailStage implements SubmissionStage
         private SubmissionRepository $submissions,
         private NotificationDispatcher $dispatcher,
         private FlowEmailAddressResolver $addresses,
+        /** Every email variable a developer registers for flow emails (spec 122, FR-023). */
+        private EmailVariableValues $variables,
+        /** Where a stored submission is read, for the link a template gives (spec 120). */
+        private ?SubmissionAddress $submissionAddresses = null,
     ) {
     }
 
@@ -80,10 +90,32 @@ final readonly class EmailStage implements SubmissionStage
         $failed = null;
         $retryable = false;
         $headline = null;
+        $notSetUp = null;
         foreach ($primary as $binding) {
-            $result = $this->sender->send($binding, $context->flow->slug, $this->mailContext($context));
             $event = (string) ($binding['event'] ?? 'submitted');
-            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0));
+            $mailContext = $this->mailContext($context, $event);
+            $recipients = $this->sender->recipientsFor($binding, $mailContext);
+            // A confirmation for a submitter who left no address has nobody to go to: that is not
+            // an email that failed (spec 120).
+            if ($event === 'submitter_confirmation' && $recipients === [] && (int) ($binding['template_id'] ?? 0) > 0) {
+                $outcomes[$event] = ['template_id' => (int) $binding['template_id'], 'state' => 'no_recipient', 'attempt_id' => null, 'provider' => null, 'retryable' => false, 'recipients' => []];
+                continue;
+            }
+            $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
+            // The team is told of a submission even when its template cannot send it: the PHP
+            // notification goes in its place (spec 120, story 4). Only for a template: an email
+            // routed by its trigger with no route sends nothing, as before (DECISIONS #455.4).
+            if ($result === null && $event === 'team_notification' && $this->sender->sendsTemplate($binding)) {
+                $result = $this->teamFallback($context, $binding, $mailContext);
+            }
+            $outcomes[$event] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $recipients)
+                + $this->routedNote($binding, $context);
+            // A site not set up to send email has not failed to send one: it is recorded as a
+            // form with no email was, not configured (spec 120, SC-005).
+            if ($result?->notSetUp() === true) {
+                $notSetUp ??= $result;
+                continue;
+            }
             $headline = $this->promoteHeadline($headline, $this->deliveryFor($result));
             if ($result === null || ! $result->successful()) {
                 $failed ??= $result?->message ?? __('The enabled flow email binding could not be resolved.', 'corex');
@@ -95,19 +127,32 @@ final readonly class EmailStage implements SubmissionStage
         }
         $next = $context->withMetadata([
             'email' => [
-                'state' => $failed === null ? 'complete' : 'failed',
+                'state' => match (true) {
+                    $failed !== null => 'failed',
+                    $headline === null && $notSetUp !== null => 'not_configured',
+                    default => 'complete',
+                },
                 'bindings' => $outcomes,
             ],
-            'notification_delivery' => ($headline ?? NotificationDelivery::notAttempted(
-                'no_binding',
-                __('No notification is configured for this form.', 'corex'),
-            ))->toArray(),
+            'notification_delivery' => ($headline ?? $this->notSent($notSetUp))->toArray(),
         ]);
         $this->persist($next);
 
         return $failed === null
-            ? SubmissionStageResult::success($this->key(), $next, __('Flow email bindings completed.', 'corex'))
+            ? SubmissionStageResult::success($this->key(), $next, match (true) {
+                $context->isTest => __('The emails were held for the test and not sent. They are in the Email Studio log.', 'corex'),
+                $headline === null && $notSetUp !== null => __('Not sent: this site is not set up to send email yet.', 'corex'),
+                default => __('Flow email bindings completed.', 'corex'),
+            })
             : SubmissionStageResult::failure($this->key(), $next, $failed, $retryable);
+    }
+
+    /** The headline when no email was tried: none is configured, or the site cannot send yet. */
+    private function notSent(?MailResult $notSetUp): NotificationDelivery
+    {
+        return $notSetUp === null
+            ? NotificationDelivery::notAttempted('no_binding', __('No notification is configured for this form.', 'corex'))
+            : NotificationDelivery::notAttempted('delivery_not_set_up', $notSetUp->message);
     }
 
     /**
@@ -118,6 +163,25 @@ final readonly class EmailStage implements SubmissionStage
      */
     private function deliverViaFallback(SubmissionPipelineContext $context, array $primary): SubmissionStageResult
     {
+        // A marked test sends nothing, and without CoreX Mail there is nowhere to hold the email
+        // (spec 113, US3): it is not written at all.
+        if ($context->isTest) {
+            $next = $context->withMetadata([
+                'email' => ['state' => 'held', 'bindings' => []],
+                'notification_delivery' => NotificationDelivery::notAttempted(
+                    'test_not_sent',
+                    __('A marked test sends no email.', 'corex'),
+                )->toArray(),
+            ]);
+            $this->persist($next);
+
+            return SubmissionStageResult::success(
+                $this->key(),
+                $next,
+                __('Not sent: a marked test sends no email, and CoreX Mail is not active to keep a copy.', 'corex'),
+            );
+        }
+
         $mailContext = $this->mailContext($context);
         $recipients = $this->addresses->recipients((string) ($primary[0]['recipient'] ?? ''), $mailContext);
         if ($recipients === []) {
@@ -152,6 +216,7 @@ final readonly class EmailStage implements SubmissionStage
                     'attempt_id' => $delivery->attemptId,
                     'provider' => $delivery->provider,
                     'retryable' => $delivery->retryable,
+                    'recipients' => $recipients,
                 ]],
             ],
             'notification_delivery' => $delivery->toArray(),
@@ -181,23 +246,110 @@ final readonly class EmailStage implements SubmissionStage
         return (! $candidate->successful() && $current->successful()) ? $candidate : $current;
     }
 
-    /** @return array<string,mixed> */
-    private function mailContext(SubmissionPipelineContext $context): array
+    /**
+     * What a flow's email is drawn from: the answers, the flow, the routing, every registered email
+     * variable (spec 122, FR-023), and (spec 120) the form's title, every answer with its label, a
+     * link to the stored submission, and what kind of email it is.
+     *
+     * @return array<string,mixed>
+     */
+    private function mailContext(SubmissionPipelineContext $context, string $event = 'team_notification'): array
     {
-        return [
+        $address = $context->submissionId !== null && $this->submissionAddresses !== null
+            ? $this->submissionAddresses->of($context->submissionId)
+            : '';
+        $answers = FlowEmailVariables::answers($context->version->configuration, $context->values, $address);
+
+        return $this->variables->into([
             'submission' => $context->values,
             'flow' => [
                 'id' => $context->flow->id,
                 'slug' => $context->flow->slug,
                 'owner_id' => $context->flow->ownerId,
             ],
+            'form' => [
+                'slug' => $context->flow->slug,
+                'title' => $context->flow->name,
+                'answers' => $answers,
+            ],
+            'links' => ['submission' => $address],
+            'submission_url' => $address,
+            // What CoreX's own form notification lists, where it is sent in a template's place.
+            'answers' => $answers,
+            'email' => ['kind' => FlowEmailVariables::kindOf($event)],
             'routing' => $context->metadata['routing'] ?? [],
             'is_test' => $context->isTest,
-        ];
+        ]);
     }
 
-    /** @return array<string,mixed> */
-    private function outcome(?MailResult $result, int $templateId): array
+    /**
+     * "Routed owner had no address; sent to …", kept with the delivery of an email addressed to
+     * the routed owner whose routing had to use the fallback recipient (spec 122, FR-018).
+     *
+     * @param array<string,mixed> $binding
+     * @return array{note?:string}
+     */
+    private function routedNote(array $binding, SubmissionPipelineContext $context): array
+    {
+        $note = (string) ($context->metadata['routing']['recipients']['note'] ?? '');
+
+        return $note !== '' && FlowEmailAddressResolver::namesRoutedOwner((string) ($binding['recipient'] ?? ''))
+            ? ['note' => $note]
+            : [];
+    }
+
+    /**
+     * The PHP notification to the team, for a flow whose team email had nothing to send: its
+     * template has no active version, or none of its recipients is an address.
+     *
+     * @param array<string,mixed> $binding
+     * @param array<string,mixed> $mailContext
+     */
+    private function teamFallback(SubmissionPipelineContext $context, array $binding, array $mailContext): ?MailResult
+    {
+        $recipients = $this->addresses->recipients((string) ($binding['recipient'] ?? ''), $mailContext);
+        if ($recipients === []) {
+            $admin = (string) get_option('admin_email');
+            $recipients = $admin !== '' ? [$admin] : [];
+        }
+        $delivery = $this->dispatcher->dispatch(
+            'forms.' . $context->flow->slug . '.submitted',
+            $mailContext,
+            fn (): MailRequest => new MailRequest(
+                to: $recipients,
+                templateName: 'form-notification',
+                context: $mailContext,
+                subject: sprintf(
+                    /* translators: %s: form slug */
+                    __('New "%s" form submission', 'corex'),
+                    $context->flow->slug,
+                ),
+                body: NotificationDispatcher::plainTextBody($context->values),
+                replyTo: $this->addresses->replyTo((string) ($binding['reply_to'] ?? ''), $mailContext),
+            ),
+        );
+
+        return $delivery->attemptId === null ? null : new MailResult(
+            attemptId: $delivery->attemptId,
+            requestId: \Corex\Support\Uuid::v4(),
+            state: $delivery->status,
+            provider: (string) ($delivery->provider ?? 'mailer'),
+            message: $delivery->safeReason,
+            occurredAt: new \DateTimeImmutable('now'),
+            retryable: $delivery->retryable,
+        );
+    }
+
+    /**
+     * What is kept of one email of the flow. Its recipients are kept with the submission, so they
+     * follow its retention, trash, delete and personal-data export, and a resend reaches them
+     * (spec 112, FR-032).
+     *
+     * @param list<string> $recipients
+     *
+     * @return array<string,mixed>
+     */
+    private function outcome(?MailResult $result, int $templateId, array $recipients): array
     {
         return [
             'template_id' => $templateId,
@@ -205,6 +357,7 @@ final readonly class EmailStage implements SubmissionStage
             'attempt_id' => $result?->attemptId,
             'provider' => $result?->provider,
             'retryable' => $result?->retryable ?? false,
+            'recipients' => $result === null ? [] : $recipients,
         ];
     }
 
@@ -222,16 +375,57 @@ final readonly class EmailStage implements SubmissionStage
             $mailContext = $this->mailContext($context);
             $mailContext['failure'] = ['message' => $message];
             $result = $this->sender->send($binding, $context->flow->slug, $mailContext);
-            $outcomes['admin_failure'] = $this->outcome($result, (int) ($binding['template_id'] ?? 0));
+            $outcomes['admin_failure'] = $this->outcome($result, (int) ($binding['template_id'] ?? 0), $this->sender->recipientsFor($binding, $mailContext));
         }
 
         return $outcomes;
     }
 
+    /**
+     * Keeps the outcome with the submission and records it as its own timeline event, so an
+     * administrator sees whether the notification was accepted, captured, queued or failed, with
+     * the routed owner's note when the email had to go to the fallback recipient (FR-018).
+     */
     private function persist(SubmissionPipelineContext $context): void
     {
-        if ($context->submissionId !== null) {
-            $this->submissions->updatePipelineMetadata($context->submissionId, $context->metadata);
+        if ($context->submissionId === null) {
+            return;
         }
+        $this->submissions->updatePipelineMetadata($context->submissionId, $context->metadata);
+        $delivery = $context->metadata['notification_delivery'] ?? null;
+        if (! is_array($delivery) || ! isset($delivery['status'])) {
+            return;
+        }
+        $status = (string) $delivery['status'];
+        $this->submissions->appendTimeline($context->submissionId, 'notification', $this->timelineOutcome($status), [
+            'delivery_status' => $status,
+            'provider' => $delivery['provider'] ?? null,
+            'attempt_id' => $delivery['attempt_id'] ?? null,
+            'reason' => $delivery['safe_reason'] ?? '',
+            'note' => $this->deliveredNote($context),
+        ]);
+    }
+
+    /** The routed owner's note, when an enabled email went to "Routed owner" (DECISIONS #475). */
+    private function deliveredNote(SubmissionPipelineContext $context): string
+    {
+        foreach ((array) ($context->metadata['email']['bindings'] ?? []) as $binding) {
+            if (is_array($binding) && ($binding['note'] ?? '') !== '') {
+                return (string) $binding['note'];
+            }
+        }
+
+        return '';
+    }
+
+    /** Coarse timeline outcome for a delivery status, so tone-based rendering stays predictable. */
+    private function timelineOutcome(string $status): string
+    {
+        return match ($status) {
+            MailResult::STATE_ACCEPTED, MailResult::STATE_CAPTURED, MailResult::STATE_SENT, MailResult::STATE_OPENED => 'success',
+            MailResult::STATE_QUEUED, MailResult::STATE_SENDING => 'pending',
+            MailResult::STATE_FAILED, MailResult::STATE_REJECTED, MailResult::STATE_BOUNCED => 'failure',
+            default => 'info', // not_attempted / unavailable
+        };
     }
 }

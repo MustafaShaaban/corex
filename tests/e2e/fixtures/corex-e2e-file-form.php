@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: CoreX E2E file form
+ * Plugin Name: CoreX E2E file form (test fixture)
  * Description: Registers a form that asks for a file, so the browser suite can upload one and open it from the Submissions inbox.
  * Version: 1.0.0
  *

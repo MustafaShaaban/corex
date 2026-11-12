@@ -68,21 +68,33 @@ final readonly class DataExportAbout
     }
 
     /**
-     * The models that could not be read when their turn came. Named by key: a model that is
-     * gone has nobody left to say its name.
+     * The models not written, by why. One that could not be read when its turn came is named by
+     * key: a model that is gone has nobody left to say its name. One that belongs to a screen the
+     * person may not open is named as it was when the export was asked for (spec 112, FR-030).
      *
-     * @return list<array{0:string,1:string}> One fact, or none when every model was written.
+     * @return list<array{0:string,1:string}> A fact for each reason, or none when every model was written.
      */
     private function leftOut(DataExportRun $run): array
     {
-        $keys = [];
+        $unreadable = [];
+        $restricted = [];
         foreach ($run->parts as $part) {
-            if ($part->leftOut) {
-                $keys[] = $part->sourceKey;
+            if ($part->leftOutBecause === DataExportPart::BECAUSE_RESTRICTED) {
+                $restricted[] = $part->label !== '' ? $part->label : $part->sourceKey;
+            } elseif ($part->leftOut) {
+                $unreadable[] = $part->sourceKey;
             }
         }
 
-        return $keys === [] ? [] : [[__('Left out, because it could not be read', 'corex'), implode(', ', $keys)]];
+        $facts = [];
+        if ($unreadable !== []) {
+            $facts[] = [__('Left out, because it could not be read', 'corex'), implode(', ', $unreadable)];
+        }
+        if ($restricted !== []) {
+            $facts[] = [__('Left out, because it belongs to a screen you do not have access to', 'corex'), implode(', ', $restricted)];
+        }
+
+        return $facts;
     }
 
     /** @param list<DataField> $fields */

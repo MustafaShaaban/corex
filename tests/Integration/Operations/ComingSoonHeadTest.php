@@ -15,6 +15,7 @@
 declare(strict_types=1);
 
 use Corex\Config\Operations\ComingSoonHead;
+use Corex\Theme\GeneratorTag;
 
 const HEAD_DISCLOSURES = [
     'the generator tag'  => '/<meta[^>]+name=["\']generator["\']/',
@@ -46,6 +47,7 @@ afterEach(function () {
     $GLOBALS['wp_filter']['wp_head'] = $this->before;
     $GLOBALS['wp_filter']['wp_enqueue_scripts'] = $this->beforeEnqueue;
     $GLOBALS['wp_filter']['wp_print_styles'] = $this->beforePrint;
+    remove_filter(GeneratorTag::FILTER, '__return_false', PHP_INT_MAX);
 });
 
 it('prints each of them on an ordinary page, which is what makes the next test mean something', function () {
@@ -54,6 +56,9 @@ it('prints each of them on an ordinary page, which is what makes the next test m
     foreach (HEAD_DISCLOSURES as $what => $pattern) {
         expect(preg_match($pattern, $head))->toBe(1, 'WordPress no longer prints ' . $what . ' by default');
     }
+    // CoreX's own generator tag (spec 111) is printed beside WordPress's, so the generator pattern
+    // below also covers it.
+    expect($head)->toContain('<meta name="generator" content="CoreX" />');
     // The emoji loader is queued from the head and printed with the footer's scripts, once per
     // process, so it is read off the hook it is queued on.
     expect(has_action('wp_head', 'print_emoji_detection_script'))->toBe(7);

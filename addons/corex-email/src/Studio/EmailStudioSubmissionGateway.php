@@ -13,22 +13,23 @@ defined('ABSPATH') || exit;
 use Corex\Email\Delivery\DeliveryDecision;
 use Corex\Email\Delivery\DeliveryPolicy;
 use Corex\Email\Delivery\EmailAttempt;
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Design\ReplyComposer;
+use Corex\Email\Routing\EmailRouteMessageFactory;
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Message\SenderName;
 use Corex\Mail\MessageId;
 use Corex\Mail\MailResult;
 use Corex\Mail\ReplyConversation;
+use Corex\Mail\RecipientAwareSubmissionEmailGateway;
 use Corex\Mail\ReplyReadiness;
-use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\Config\ConfigInterface;
-use Corex\Support\Uuid;
 use DomainException;
 
 /**
  * Email Studio adapter for permission-scoped submission reply, resend, and log actions.
  */
-final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGateway
+final readonly class EmailStudioSubmissionGateway implements RecipientAwareSubmissionEmailGateway
 {
     private const AN_ATTEMPT_ID = '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i';
 
@@ -38,12 +39,13 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
         private EmailTemplateService $templates,
         private ConfigInterface $config,
         private ReplyComposer $composer,
+        private EmailDeliveryContextFactory $delivery,
     ) {
     }
 
     public function readiness(): ReplyReadiness
     {
-        $decision = $this->studio->decide($this->deliveryContext());
+        $decision = $this->studio->decide($this->delivery->make());
         $mode = match ($decision->action) {
             DeliveryDecision::ACTION_DELIVER => ReplyReadiness::DELIVER,
             DeliveryDecision::ACTION_CAPTURE => ReplyReadiness::CAPTURE,
@@ -118,7 +120,7 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
                 plainText: $email->text,
                 fromName: $this->replySenderName(),
             ),
-            $this->deliveryContext(),
+            $this->delivery->make(),
         );
     }
 
@@ -202,6 +204,12 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
 
     public function resend(string $attemptId, string $recipient, array $context): MailResult
     {
+        return $this->resendTo($attemptId, [$recipient], $context);
+    }
+
+    /** One email to all of them, rendered from the template version the attempt was sent with. */
+    public function resendTo(string $attemptId, array $recipients, array $context): MailResult
+    {
         $attempt = $this->repositories->attempts->findByAttemptId($attemptId);
         if ($attempt === null || $attempt->templateId === null || $attempt->templateVersion === null) {
             throw new DomainException(__('The related email cannot be safely reconstructed.', 'corex'));
@@ -211,13 +219,23 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
             throw new DomainException(__('The related email template version is unavailable.', 'corex'));
         }
         $layout = $this->repositories->layouts->findVersion($version->layoutId, $version->layoutVersion);
-        $rendered = $this->templates->render($version, $context, $layout);
+        $context = EmailRouteMessageFactory::withSiteContext($context, array_values($recipients));
+        $rendered = $this->templates->render($version, $context, $layout, EmailKind::of($context['email']['kind'] ?? null));
 
+        // From the template's own sender and with its plain text, as the email it resends was
+        // (spec 120, story 2).
         return $this->studio->resend(
             $attemptId,
-            new EmailMessage([$recipient], [], [], null, $rendered['subject'], $rendered['html']),
-            $this->deliveryContext(),
+            EmailRouteMessageFactory::message($version, array_values($recipients), null, $rendered),
+            $this->delivery->make(),
         );
+    }
+
+    public function wasSentTo(string $attemptId, string $address): bool
+    {
+        $attempt = $this->repositories->attempts->findByAttemptId($attemptId);
+
+        return $attempt !== null && $this->repositories->attempts->wasSentTo($attempt, $address);
     }
 
     public function log(string $attemptId): ?array
@@ -240,18 +258,5 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
             'template_id' => $attempt->templateId,
             'template_version' => $attempt->templateVersion,
         ];
-    }
-
-    private function deliveryContext(): EmailDeliveryContext
-    {
-        $environment = trim((string) $this->config->get('app.env', ''));
-        $provider = sanitize_key((string) $this->config->get('mail.provider', ''));
-
-        return new EmailDeliveryContext(
-            $environment !== '' ? $environment : wp_get_environment_type(),
-            $this->studio->supportsProvider($provider),
-            filter_var($this->config->get('mail.live_delivery', false), FILTER_VALIDATE_BOOL),
-            Uuid::v4(),
-        );
     }
 }

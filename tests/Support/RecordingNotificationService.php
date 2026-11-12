@@ -42,6 +42,16 @@ final class RecordingNotificationService implements NotificationService
         return 0;
     }
 
+    /** @var list<Notification> notifications passed to reword() */
+    public array $reworded = [];
+
+    public function reword(Notification $notification): int
+    {
+        $this->reworded[] = $notification;
+
+        return 0;
+    }
+
     public function forCurrentActor(NotificationQuery $query): array
     {
         return ['items' => [], 'total' => 0, 'page' => 1, 'per_page' => 20];

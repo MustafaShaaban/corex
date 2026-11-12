@@ -11,15 +11,6 @@
   },
   "documentation_references": [
     {
-      "path": "addons/corex-email/README.md",
-      "lines": [
-        103
-      ],
-      "topics": [
-        "theme-authority"
-      ]
-    },
-    {
       "path": "addons/corex-kit-company/README.md",
       "lines": [
         19,
@@ -169,6 +160,17 @@
       ]
     },
     {
+      "path": "docs-app/src/content/docs/guides/assistant.md",
+      "lines": [
+        250,
+        251,
+        252
+      ],
+      "topics": [
+        "generated-properties"
+      ]
+    },
+    {
       "path": "docs-app/src/content/docs/guides/branding.md",
       "lines": [
         3,
@@ -242,16 +244,6 @@
         111
       ],
       "topics": [
-        "theme-authority"
-      ]
-    },
-    {
-      "path": "docs-app/src/content/docs/guides/mail.md",
-      "lines": [
-        34
-      ],
-      "topics": [
-        "brand.json",
         "theme-authority"
       ]
     },

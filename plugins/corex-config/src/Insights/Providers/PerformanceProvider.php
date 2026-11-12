@@ -19,8 +19,8 @@ use Corex\Config\Insights\SiteUrlReachability;
 /**
  * The Performance provider: fetches Google PageSpeed Insights (Lighthouse) for the site URL and
  * hands the JSON to the pure {@see PsiNormalizer}. The API key is optional (PSI allows low-volume
- * keyless use); a transport error or unreadable body degrades to a graceful recommended result
- * (Principle IX) — `run()` never throws. Thin boundary: all judgement lives in the normaliser.
+ * keyless use); a transport error or unreadable body is a failed result with its reason and no
+ * score (Principle IX) — `run()` never throws. Thin boundary: all judgement lives in the normaliser.
  */
 final class PerformanceProvider implements InsightProvider
 {
@@ -60,7 +60,7 @@ final class PerformanceProvider implements InsightProvider
         $response = wp_remote_get(add_query_arg($query, self::ENDPOINT), ['timeout' => 30]);
 
         if (is_wp_error($response)) {
-            return $this->diagnostic(PsiDiagnostic::classify(true, 0, null));
+            return $this->diagnostic(PsiDiagnostic::unreachable());
         }
 
         $status = (int) wp_remote_retrieve_response_code($response);
@@ -77,20 +77,11 @@ final class PerformanceProvider implements InsightProvider
     }
 
     /**
-     * Build a graceful "recommended" result whose summary is the classified, actionable
-     * message (Principle IX — never a fatal). The admin-only raw detail rides in the
-     * recommendations for an administrator to act on.
+     * A run that could not complete: the classified, actionable reason and no score (spec 114,
+     * US-SAFE-12). It was a score of 50, graded D. Still never a fatal (Principle IX).
      */
     private function diagnostic(PsiDiagnostic $diagnostic): InsightResult
     {
-        return new InsightResult(
-            $this->id(),
-            $this->label(),
-            50,
-            $diagnostic->message,
-            [],
-            [$diagnostic->message],
-            time(),
-        );
+        return InsightResult::failed($this->id(), $this->label(), $diagnostic->kind, $diagnostic->message, time());
     }
 }

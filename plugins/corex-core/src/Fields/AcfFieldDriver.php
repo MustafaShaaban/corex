@@ -24,8 +24,13 @@ final class AcfFieldDriver implements FieldDriver
         return $value === null ? $default : $value;
     }
 
+    /**
+     * ACF hands a post's value to `update_metadata()`, which takes one level of slashes off, as
+     * WordPress does for its own forms. The value is slashed first so a backslash is stored as it
+     * was given, the same as {@see MetaFieldDriver::set()} (DECISIONS #331).
+     */
     public function set(int $entityId, string $key, mixed $value): void
     {
-        update_field($key, $value, $entityId);
+        update_field($key, wp_slash($value), $entityId);
     }
 }

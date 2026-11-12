@@ -19,6 +19,7 @@ use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\InvalidAccessInput;
+use Corex\Access\RequestableAbilities;
 use Corex\Access\RoleAbilityStore;
 use Corex\Activity\ActivityRepository;
 use Corex\Activity\ActivityService;
@@ -38,6 +39,7 @@ beforeEach(function () {
         requests: Mockery::mock(AccessRequestStore::class),
         users: Mockery::mock(AccessUserDirectory::class),
         activity: new ActivityService(Mockery::mock(ActivityRepository::class)),
+        requestable: new RequestableAbilities($catalog),
         notifications: Mockery::mock(RoutedMailer::class),
     );
 

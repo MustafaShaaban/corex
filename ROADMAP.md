@@ -1,6 +1,6 @@
 # Corex Product and Engineering Roadmap
 
-**Currently released: v0.46.1.** This roadmap is the durable, owner-friendly view of where Corex is,
+**Currently released: v0.48.1.** This roadmap is the durable, owner-friendly view of where Corex is,
 what must happen next, and what is intentionally deferred. It tracks milestones and dependencies
 rather than repeating completed Spec Kit history.
 
@@ -37,7 +37,7 @@ Two rules that live here and nowhere else:
 | M7 - Forms and Email Experience | Planned | Medium-high | M2 and existing forms/mail foundations |
 | M8 - Portfolio Kit Completion | Planned | Medium | M2, M3, reusable M5 blocks |
 | M9 - WooCommerce Kit Completion | Waiting for Woo design and stable gating | Medium | M0, M2, M3, WooCommerce gating |
-| M10 - Docs and Marketing Productization | Later; before public/commercial launch | Medium | Stable product surfaces and visual system |
+| M10 - Docs and Marketing Productization | Later; before public/commercial launch. Public hosts planned (DECISIONS #620); spec 130, the docs move, is a draft | Medium | Stable product surfaces and visual system |
 | M11 - Pro and Commercial Layer | Future | Low until Core/Core kits are stable | Stable Free/Core product |
 
 ## Current focus and execution order
@@ -328,6 +328,22 @@ The kit must retain dual gating: WooCommerce availability and Corex add-on activ
 - Release cards.
 
 Keep generated API reference separate from curated product documentation.
+
+### Public hosts (DECISIONS #620)
+
+CoreX's public addresses are on the owner's domain, one host for each kind of thing that runs. Each step is
+its own spec, in this order, and none is authorized by appearing here (§16):
+
+| Order | Host | What it is | Spec |
+|---|---|---|---|
+| 1 | `corex-docs.mustafashaaban.com` | The docs site, moved from `mustafashaaban.github.io/corex/`, still on GitHub Pages | 130 (draft) |
+| 2 | `corex-staging.mustafashaaban.com` | Private install, password and `noindex`; the owed watched installation from CoreX → Releases (spec 107) runs here | Not written |
+| 3 | `corex.mustafashaaban.com` | Product site built with CoreX, `sites/corex-site/`, after the revamp's screens land | Not written |
+| 4 | `corex-updates.mustafashaaban.com` | Static manifest, packages and SHA-256 for the in-admin updater (`updates.endpoint`) | Not written |
+| 5 | `corex-demo.mustafashaaban.com` | The kits with demo content, reset on a schedule | Not written |
+| 6 | (the updates host) | Spec 123's "a site downloads its release", with signed packages | Not written |
+
+`mustafashaaban.com` itself is the owner's personal site, in its own repository, not part of this roadmap.
 
 ## 14. M11 - Pro and Commercial Layer
 

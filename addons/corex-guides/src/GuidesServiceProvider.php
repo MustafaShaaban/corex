@@ -52,6 +52,7 @@ final class GuidesServiceProvider extends ServiceProvider
                 // long after boot — so this reflects whether the template was actually registered
                 // below rather than the order two providers happened to register in.
                 self::supportsTemplate($c) ? SupportRequestTemplate::NAME : null,
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
         );
     }

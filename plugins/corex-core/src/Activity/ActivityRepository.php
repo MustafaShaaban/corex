@@ -19,6 +19,9 @@ interface ActivityRepository
     public function find(int $id): ?ActivityEvent;
 
     /**
+     * Events newest first. `area` may be one area or a list of them, any of which matches
+     * (spec 114: the Insights security card asks for three).
+     *
      * @param array<string,mixed> $filters
      *
      * @return list<ActivityEvent>

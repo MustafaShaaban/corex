@@ -10,14 +10,18 @@ namespace Corex\Email;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\SiteAdministration;
 use Corex\Container\ContainerInterface;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Driver\WpMailDriver;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\DeliveryPolicy;
 use Corex\Email\Delivery\EmailAttemptRepository;
+use Corex\Email\Delivery\MailOutcome;
 use Corex\Email\Design\EmailBrandSource;
 use Corex\Email\Design\EmailDesign;
+use Corex\Email\Design\EmailFrame;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\SiteEmailBrand;
 use Corex\Email\Design\SiteEmailDesign;
@@ -32,6 +36,7 @@ use Corex\Email\Routing\EmailRouteDispatcher;
 use Corex\Email\Routing\EmailRouteMessageFactory;
 use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Email\Routing\EmailRouteService;
+use Corex\Email\Studio\EmailDeliveryContextFactory;
 use Corex\Email\Studio\EmailLayoutRepository;
 use Corex\Email\Studio\EmailPartialRepository;
 use Corex\Email\Studio\EmailStudioController;
@@ -42,8 +47,9 @@ use Corex\Email\Studio\EmailStudioStore;
 use Corex\Email\Studio\EmailTemplateRepository;
 use Corex\Email\Studio\EmailTemplateCatalog;
 use Corex\Email\Studio\EmailTemplateService;
+use Corex\Email\Studio\EmailSampleValues;
+use Corex\Email\Studio\EmailVariableCatalog;
 use Corex\Email\Studio\WpEmailStudioStore;
-use Corex\Email\Template\Layout;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Email\Template\TemplateRenderer;
 use Corex\Email\Templates\ContactNotificationTemplate;
@@ -77,7 +83,10 @@ final class MailServiceProvider extends ServiceProvider
      */
     public const STUDIO_DEFAULTS_OPTION = 'corex_email_studio_defaults_version';
 
-    private const STUDIO_DEFAULTS_VERSION = '3';
+    private const STUDIO_DEFAULTS_VERSION = '4';
+
+    /** The defaults version from which a template's own From is sent (spec 120). */
+    private const STUDIO_SENDERS_VERSION = '4';
 
     public function register(): void
     {
@@ -101,21 +110,34 @@ final class MailServiceProvider extends ServiceProvider
         $this->container->singleton(CapturedEmailRepository::class);
         $this->container->singleton(EmailAttemptRepository::class);
         $this->container->singleton(EmailRouteRepository::class);
+        // Every variable a template can use, by the emails that supply it (spec 120).
+        $this->container->singleton(
+            EmailVariableCatalog::class,
+            static function (ContainerInterface $c): EmailVariableCatalog {
+                $defaults = self::defaultMailConfig();
+                $schema = $c->make(ConfigInterface::class)->get('mail.variables', $defaults['variables'] ?? []);
+
+                // Another plugin may declare variables of its own: the forms engine declares the
+                // email variables developers register for flow emails (spec 122, FR-023). They are
+                // registered on `init`, and this catalog is built before it, so the list is asked
+                // for when a template is first checked or drawn.
+                return new EmailVariableCatalog(static function () use ($schema): array {
+                    $declared = apply_filters('corex_email_variable_schema', is_array($schema) ? $schema : []);
+
+                    return is_array($declared) ? $declared : [];
+                });
+            },
+        );
+        $this->container->singleton(EmailSampleValues::class);
         $this->container->singleton(
             EmailTemplateService::class,
-            static function (ContainerInterface $c): EmailTemplateService {
-                $defaults = self::defaultMailConfig();
-                $schema = $c->make(ConfigInterface::class)->get(
-                    'mail.variables',
-                    $defaults['variables'] ?? [],
-                );
-
-                return new EmailTemplateService(
-                    is_array($schema) ? $schema : [],
-                    $c->make(EmailPartialRepository::class),
-                    $c->make(Layout::class),
-                );
-            },
+            static fn (ContainerInterface $c): EmailTemplateService => new EmailTemplateService(
+                $c->make(EmailVariableCatalog::class),
+                $c->make(EmailPartialRepository::class),
+                $c->make(EmailFrame::class),
+                $c->make(EmailLanguage::class),
+                $c->make(\Corex\Email\Security\AddressGuard::class),
+            ),
         );
 
         // What an email is drawn from, and in. One design and one source of the site's brand,
@@ -134,25 +156,23 @@ final class MailServiceProvider extends ServiceProvider
         );
         $this->container->singleton(ReplyComposer::class);
 
-        // The brand is asked for when an email is drawn. Read here, it was read whenever the
-        // layout was made, which is during `plugins_loaded` if anything booting needs the mail
-        // stack: the theme's settings were translated before `init`, and an email on a
-        // right-to-left site was drawn left to right (DECISIONS #351).
+        // The one frame every email CoreX draws is in (spec 120). The brand is asked for when an
+        // email is drawn, never when the frame is made: the container can make it during
+        // `plugins_loaded`, before WordPress knows which way the site's text runs (DECISIONS #351).
         $this->container->singleton(
-            Layout::class,
-            // Asked in the email's language as well: an Email Studio template is wrapped by
-            // this layout with nothing else around it to say which way the site's text runs.
-            static fn (ContainerInterface $c): Layout => new Layout(
-                static fn (): array => $c->make(EmailLanguage::class)->during(
-                    static fn (): array => self::brand($c->make(SiteEmailBrand::class)->logo()),
-                ),
+            EmailFrame::class,
+            static fn (ContainerInterface $c): EmailFrame => new EmailFrame(
+                $c->make(EmailDesign::class),
+                $c->make(EmailBrandSource::class),
+                static fn (): string => (string) get_privacy_policy_url(),
+                $c->make(EmailLanguage::class),
             ),
         );
 
         $this->container->singleton(
             TemplateRenderer::class,
             static fn (ContainerInterface $c): TemplateRenderer => new TemplateRenderer(
-                $c->make(Layout::class),
+                $c->make(EmailFrame::class),
                 $c->make(EmailLanguage::class),
             ),
         );
@@ -179,7 +199,29 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(EmailLogStore::class),
                 $c->make(HeaderGuard::class),
                 $c->make(BootLogger::class),
+                $c->make(\Corex\Mail\Capture\MailGate::class),
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
+        );
+
+        $this->container->singleton(
+            \Corex\Email\Capture\CaptureRetention::class,
+            static fn (ContainerInterface $c): \Corex\Email\Capture\CaptureRetention =>
+                new \Corex\Email\Capture\CaptureRetention($c->make(WpEmailStudioStore::class)),
+        );
+
+        // The gate asks the provider question as Email Studio asks it (spec 113, FR-011).
+        $this->container->singleton(
+            \Corex\Mail\Capture\MailProviderCheck::class,
+            static fn (ContainerInterface $c): \Corex\Mail\Capture\MailProviderCheck =>
+                $c->make(\Corex\Email\Studio\EmailDeliveryContextFactory::class),
+        );
+
+        // What the mail gate captures or holds is kept in Email Studio's capture log (spec 113).
+        $this->container->singleton(
+            \Corex\Mail\Capture\MailCaptureStore::class,
+            static fn (ContainerInterface $c): \Corex\Mail\Capture\MailCaptureStore =>
+                new \Corex\Email\Capture\CaptureStoreAdapter($c->make(CapturedEmailRepository::class)),
         );
 
         // The immediate engine (sends inline). The queue worker also uses this.
@@ -191,6 +233,7 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(RecipientResolver::class),
                 $c->make(MailService::class),
                 \Corex\Mail\MessageId::hostOf((string) home_url('/')),
+                $c->make(\Corex\Mail\Capture\MailPath::class),
             ),
         );
 
@@ -229,6 +272,9 @@ final class MailServiceProvider extends ServiceProvider
                     'wp-mail',
                     $c->make(\Corex\Events\EventDispatcher::class),
                     \Corex\Mail\MessageId::hostOf((string) home_url('/')),
+                    $c->make(\Corex\Mail\Capture\MailPath::class),
+                    $c->make(\Corex\Mail\Capture\MailHold::class),
+                    $c->make(HeaderGuard::class),
                 );
             },
         );
@@ -243,7 +289,7 @@ final class MailServiceProvider extends ServiceProvider
                         $c->make(EmailLayoutRepository::class),
                     ),
                     $c->make(EmailStudioService::class),
-                    $c->make(ConfigInterface::class),
+                    $c->make(\Corex\Email\Studio\EmailDeliveryContextFactory::class),
                 ),
             ),
         );
@@ -252,6 +298,32 @@ final class MailServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): RoutedMailer => $c->make(EmailRouteService::class),
         );
         $this->container->singleton(EmailStudioRepositories::class);
+        // The templates CoreX ships, and the ones CoreX code sends by slug (spec 120).
+        $this->container->singleton(\Corex\Email\Studio\DefaultEmailTemplates::class);
+        $this->container->singleton(
+            \Corex\Email\Studio\EmailTemplateWarnings::class,
+            static fn (ContainerInterface $c): \Corex\Email\Studio\EmailTemplateWarnings => new \Corex\Email\Studio\EmailTemplateWarnings(
+                $c->make(EmailTemplateService::class),
+                $c->make(\Corex\Email\Studio\DefaultEmailTemplates::class),
+                $c->make(EmailRouteRepository::class),
+                // Bound by corex-forms, whose flows bind templates; asked only where it is active.
+                $c->has(\Corex\Mail\MailTemplateUsage::class) ? $c->make(\Corex\Mail\MailTemplateUsage::class) : null,
+            ),
+        );
+        $this->container->singleton(\Corex\Email\Studio\EmailTemplatePreview::class);
+        $this->container->singleton(
+            \Corex\Mail\DesignedEmails::class,
+            static fn (ContainerInterface $c): \Corex\Mail\DesignedEmails => new \Corex\Email\Studio\StudioDesignedEmails(
+                $c->make(EmailStudioRepositories::class),
+                $c->make(EmailTemplateService::class),
+                $c->make(\Corex\Email\Studio\DefaultEmailTemplates::class),
+                $c->make(MailService::class),
+                $c->make(\Corex\Mail\Capture\MailPath::class),
+                $c->make(\Corex\Events\EventDispatcher::class),
+                // corex-config keeps the activity log; without it, the failure is still announced.
+                $c->has(\Corex\Activity\ActivityRepository::class) ? $c->make(\Corex\Activity\ActivityService::class) : null,
+            ),
+        );
         $this->container->singleton(EmailStudioSubmissionGateway::class);
         $this->container->singleton(
             SubmissionEmailGateway::class,
@@ -263,7 +335,24 @@ final class MailServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Email\Studio\EmailStudioSubmissionRecords =>
                 new \Corex\Email\Studio\EmailStudioSubmissionRecords($c->make(WpEmailStudioStore::class)),
         );
-        $this->container->singleton(EmailStudioController::class);
+        // Built here rather than wired by type, because who administers the site is answered by
+        // corex-config, which may not be there (Principle IX).
+        $this->container->singleton(
+            EmailStudioController::class,
+            static fn (ContainerInterface $c): EmailStudioController => new EmailStudioController(
+                $c->make(EmailStudioRepositories::class),
+                $c->make(EmailStudioService::class),
+                $c->make(EmailTemplateService::class),
+                $c->make(EmailDeliveryContextFactory::class),
+                $c->make(MailOutcome::class),
+                $c->make(AbilityCheck::class),
+                $c->has(SiteAdministration::class) ? $c->make(SiteAdministration::class) : null,
+                // Spec 120: the preview and test send, the defaults' reset, the save warnings.
+                preview: $c->make(\Corex\Email\Studio\EmailTemplatePreview::class),
+                defaults: $c->make(\Corex\Email\Studio\DefaultEmailTemplates::class),
+                warnings: $c->make(\Corex\Email\Studio\EmailTemplateWarnings::class),
+            ),
+        );
     }
 
     public function boot(): void
@@ -272,17 +361,25 @@ final class MailServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerEmailStudio']);
         add_action('rest_api_init', [$this, 'registerEmailStudioRoutes']);
         $this->container->make(LoadedOptions::class)->register(self::STUDIO_DEFAULTS_OPTION, '');
+        $this->container->make(LoadedOptions::class)->register(\Corex\Email\Studio\DefaultEmailTemplates::STATE_OPTION, '');
+        $this->container->make(LoadedOptions::class)->register(\Corex\Email\Studio\DefaultEmailTemplates::INSTALLED_OPTION, []);
 
         $this->container->make(TemplateRegistry::class)->register(
             $this->container->make(ContactNotificationTemplate::class),
         );
+        $this->container->make(TemplateRegistry::class)->register(
+            $this->container->make(\Corex\Email\Templates\FormNotificationTemplate::class),
+        );
 
         // Hook the queue worker LAZILY. Resolving the dispatcher here (plugins_loaded)
-        // would eagerly build the mail stack (RequestMailer → TemplateRenderer → Layout
-        // → wp_get_global_settings) and load the `corex` textdomain before `init` — the
+        // would eagerly build the mail stack (RequestMailer → TemplateRenderer → EmailFrame
+        // → the site's design) and load the `corex` textdomain before `init`, the
         // "translation triggered too early" notice. The handler resolves the dispatcher
         // only when a queued send actually fires (during queue processing, after init).
         add_action(MailQueueDispatcher::HOOK, [$this, 'runQueuedSend'], 10, 1);
+
+        // Captured and held emails are deleted after their 30 days (spec 113, FR-020).
+        $this->container->make(\Corex\Email\Capture\CaptureRetention::class)->register();
     }
 
     /**
@@ -311,65 +408,61 @@ final class MailServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register private Studio persistence and idempotently install available layouts.
+     * Register private Studio persistence and idempotently install the layouts, partials and
+     * templates CoreX ships.
      */
     public function registerEmailStudio(): void
     {
         $this->container->make(WpEmailStudioStore::class)->registerPostType();
-        if (get_option(self::STUDIO_DEFAULTS_OPTION) === self::STUDIO_DEFAULTS_VERSION) {
+        $templates = $this->container->make(\Corex\Email\Studio\DefaultEmailTemplates::class);
+        $installedVersion = (string) get_option(self::STUDIO_DEFAULTS_OPTION, '');
+        if ($installedVersion === self::STUDIO_DEFAULTS_VERSION && $templates->installed()) {
             return;
         }
 
         // What is stored here is named, and in three partials worded, by CoreX, and the words go
         // out in the site's emails. They are written in the site's language, not in that of
         // whoever's request happens to be the first to reach `init` (DECISIONS #362).
-        $this->container->make(EmailLanguage::class)->during(function (): void {
+        // A site that had Email Studio before spec 120 never sent a template's From: its
+        // templates keep the site's sender until they are saved again (DECISIONS #453, amended
+        // 2026-11-11). Before the defaults go in, which use their own.
+        if ($installedVersion !== '' && version_compare($installedVersion, self::STUDIO_SENDERS_VERSION, '<')) {
+            $this->container->make(EmailTemplateRepository::class)->keepSiteSender();
+        }
+
+        $this->container->make(EmailLanguage::class)->during(function () use ($templates, $installedVersion): void {
+            $now = new \DateTimeImmutable('now');
             $this->container->make(EmailLayoutRepository::class)->installDefaults(
                 class_exists('WooCommerce'),
                 get_current_user_id(),
-                new \DateTimeImmutable('now'),
+                $now,
             );
-            $this->container->make(EmailPartialRepository::class)->installDefaults(
-                get_current_user_id(),
-                new \DateTimeImmutable('now'),
-            );
+            $this->container->make(EmailPartialRepository::class)->installDefaults(get_current_user_id(), $now);
+            // Active on a site that had no Email Studio defaults before; drafts on one upgraded
+            // to this release, so that nothing it sends changes (spec 120, story 4).
+            $templates->install($installedVersion === '', self::templateAuthor(), $now);
         });
         LoadedOptions::store(self::STUDIO_DEFAULTS_OPTION, self::STUDIO_DEFAULTS_VERSION);
+    }
+
+    /**
+     * Who a shipped template is recorded as made by: whoever is signed in, otherwise the site's
+     * first administrator. `init` can run with nobody signed in, and a template needs a person.
+     */
+    private static function templateAuthor(): int
+    {
+        $current = get_current_user_id();
+        if ($current > 0) {
+            return $current;
+        }
+        $administrators = get_users(['role' => 'administrator', 'number' => 1, 'orderby' => 'ID', 'order' => 'ASC', 'fields' => 'ID']);
+
+        return max(1, (int) ($administrators[0] ?? 1));
     }
 
     public function registerEmailStudioRoutes(): void
     {
         $this->container->make(EmailStudioController::class)->register();
-    }
-
-    /**
-     * The brand values for the email layout, read at runtime from the resolved
-     * theme.json (which already includes any brand.json override via spec 006) — so
-     * a rebrand flows into mail with no code change (FR-005).
-     *
-     * @param string $logo An absolute address of the site's mark, or ''.
-     *
-     * @return array{name:string,color:string,logo:string,dir:string}
-     */
-    private static function brand(string $logo): array
-    {
-        $palette = (array) wp_get_global_settings(['color', 'palette']);
-        $entries = $palette['theme'] ?? $palette['default'] ?? [];
-        $color   = '';
-
-        foreach ((array) $entries as $entry) {
-            if (is_array($entry) && ($entry['slug'] ?? '') === 'primary') {
-                $color = (string) ($entry['color'] ?? '');
-                break;
-            }
-        }
-
-        return [
-            'name'  => (string) get_bloginfo('name'),
-            'color' => $color,
-            'logo'  => $logo,
-            'dir'   => is_rtl() ? 'rtl' : 'ltr',
-        ];
     }
 
     /** @return array<string,mixed> */

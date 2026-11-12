@@ -316,3 +316,26 @@ it('tells the browser what each field is for', function (array $ctx, array $expe
         ],
     ],
 ]);
+
+it('puts the captcha check in the registration form, above its button, when a provider is on (spec 115)', function () {
+    $html = (new AccountRenderer())->render([
+        'loggedIn'           => false,
+        'registrationOpen'   => true,
+        'challenge'          => '<div class="corex-form__challenge" data-corex-challenge="turnstile"></div>',
+        'challengeAttribute' => 'data-corex-captcha',
+    ]);
+
+    preg_match('~<form[^>]*data-corex-account-form="register"[^>]*>.*?</form>~s', $html, $register);
+
+    expect($register[0])->toContain('data-corex-captcha')
+        ->and(strpos($register[0], 'corex-form__challenge'))->toBeLessThan(strpos($register[0], 'corex-account__submit'))
+        ->and(substr_count($html, 'corex-form__challenge'))->toBe(1);
+});
+
+it('prints no check and no captcha attribute without a provider', function () {
+    $html = (new AccountRenderer())->render(['loggedIn' => false, 'registrationOpen' => true]);
+
+    expect($html)->not->toContain('corex-form__challenge')
+        ->and($html)->not->toContain('data-corex-captcha ')
+        ->and($html)->not->toContain('data-corex-captcha>');
+});

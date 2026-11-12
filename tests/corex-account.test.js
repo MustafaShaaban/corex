@@ -795,3 +795,46 @@ it.each( [
 		} ).toEqual( expected );
 	}
 );
+
+describe( 'the captcha provider’s check on registration (spec 115)', () => {
+	it( 'sends the token the provider wrote into the form', async () => {
+		mountGuest();
+		document
+			.querySelector( '[data-corex-account-form="register"]' )
+			.insertAdjacentHTML(
+				'afterbegin',
+				'<input type="hidden" name="captcha_token" value="tok-9" />'
+			);
+		serverAnswers( 'Account created.', true );
+		loadScript();
+
+		submit( 'register' );
+		await flush();
+
+		expect(
+			JSON.parse( window.fetch.mock.calls[ 0 ][ 1 ].body )
+		).toMatchObject( { captcha_token: 'tok-9' } );
+	} );
+
+	it.each( [
+		[ 'refused', false, 'corex:form:error' ],
+		[ 'taken', true, 'corex:form:success' ],
+	] )(
+		'tells the page the form was %s, so the check resets',
+		async ( _what, ok, name ) => {
+			mountGuest();
+			serverAnswers( 'An answer.', ok );
+			loadScript();
+			const heard = jest.fn();
+			document
+				.querySelector( '[data-corex-account-form="register"]' )
+				.addEventListener( name, heard );
+
+			submit( 'register' );
+			await flush();
+
+			expect( heard ).toHaveBeenCalledTimes( 1 );
+			expect( heard.mock.calls[ 0 ][ 0 ].detail.envelope.ok ).toBe( ok );
+		}
+	);
+} );

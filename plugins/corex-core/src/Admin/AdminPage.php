@@ -10,8 +10,10 @@ namespace Corex\Admin;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityNames;
 use Corex\Access\AccessRequestSurfaceState;
-use Corex\Access\CorexAbility;
+use Corex\Access\RequestableAbilities;
+use Corex\Access\ScreenAbilities;
 use Corex\Support\Facades\AdminDate;
 
 /**
@@ -32,12 +34,36 @@ final class AdminPage
      * Null on a CoreX install without the config plugin, and in unit tests. The surface then
      * renders exactly what it rendered before spec 079 — the plain form — rather than failing.
      */
-    public function __construct(private readonly ?AccessRequestSurfaceState $requestState = null)
-    {
+    /**
+     * @param RequestableAbilities|null $requestable Which abilities a request may ask for (spec 112).
+     *                                               Without it every screen offers the form, as
+     *                                               before spec 112.
+     */
+    public function __construct(
+        private readonly ?AccessRequestSurfaceState $requestState = null,
+        private readonly ?RequestableAbilities $requestable = null,
+    ) {
     }
 
-    public function open(string $section, string $title, string $description = '', string $crumbSuffix = ''): string
-    {
+    /**
+     * @param list<array{label:string,url:string,current:bool}> $subnav   the pages of this screen, drawn
+     *                                                                  under its entry in the rail
+     *                                                                  (spec 119: the Settings pages)
+     * @param bool                                              $readOnly the screen opens without its controls for
+     *                                                                  the holder of the view ability (spec 117,
+     *                                                                  US-SHL-06): a "Read only" chip in the
+     *                                                                  header, a sentence saying which ability
+     *                                                                  makes changes and how to ask for it, and
+     *                                                                  the content marked for the read-only script
+     */
+    public function open(
+        string $section,
+        string $title,
+        string $description = '',
+        string $crumbSuffix = '',
+        array $subnav = [],
+        bool $readOnly = false,
+    ): string {
         $descriptionHtml = $description === ''
             ? ''
             : '<p class="corex-admin__description">' . esc_html($description) . '</p>';
@@ -74,18 +100,61 @@ final class AdminPage
             '<div class="wrap corex-admin corex-admin--%1$s"' . $themeAttr . '><div class="corex-admin__shell">%2$s'
             . '<main class="corex-admin__main" aria-labelledby="corex-page-title">'
             . '<header class="corex-admin__header"><div class="corex-admin__heading">'
-            . '<p class="corex-admin__eyebrow">%3$s</p><h1 id="corex-page-title">%4$s</h1>%5$s'
+            . '<p class="corex-admin__eyebrow">%3$s</p><h1 id="corex-page-title">%4$s%8$s</h1>%5$s'
             . '</div>%6$s</header>'
-            . '<div class="corex-admin__notices">%7$s<hr class="wp-header-end" /></div>'
-            . '<div class="corex-admin__content">',
+            . '<div class="corex-admin__notices">%7$s<hr class="wp-header-end" /></div>%9$s'
+            . '<div class="corex-admin__content"%10$s>',
             esc_attr($section),
-            $this->rail($section),
+            $this->rail($section, $subnav),
             esc_html($breadcrumb),
             esc_html($title),
             $descriptionHtml,
             $actionsHtml,
             $notices,
+            $readOnly ? ' <span class="corex-admin__chip corex-admin__chip--readonly">' . esc_html__('Read only', 'corex') . '</span>' : '',
+            $readOnly ? $this->readOnlyNote($section) : '',
+            $readOnly ? ' data-corex-readonly="corex-readonly-note"' : '',
         );
+    }
+
+    /**
+     * What a read-only screen says under its header (spec 117, FR-013): that it can be read and not
+     * changed, which ability makes changes and who holds it, and how to ask for it. Controls point
+     * at this sentence when focused, so its id is fixed.
+     */
+    private function readOnlyNote(string $section): string
+    {
+        $ability = ScreenAbilities::abilityFor($section);
+        $name    = AbilityNames::label($ability);
+
+        // A locked ability, "Access CoreX admin" on Overview and Insights, is held by site
+        // administrators alone: no role can be given it and nobody can ask for it.
+        if ($this->requestable?->isLocked($ability) ?? false) {
+            return '<section class="corex-readonly-note corex-surface" aria-label="' . esc_attr__('Read only', 'corex') . '">'
+                . '<p class="corex-readonly-note__text" id="corex-readonly-note">'
+                . sprintf(
+                    /* translators: %s: the name of a CoreX ability only site administrators hold, e.g. "Access CoreX admin". */
+                    esc_html__('You can read this screen but not change it. Changes need “%s”, which only site administrators hold: it cannot be given to a role or requested.', 'corex'),
+                    esc_html($name),
+                )
+                . '</p></section>';
+        }
+
+        $ask = $this->canBeRequested($section)
+            ? '<details class="corex-readonly-note__request"><summary>'
+                . esc_html__('Request access', 'corex') . '</summary>'
+                . $this->requestState($section) . '</details>'
+            : '<p class="corex-readonly-note__text">'
+                . esc_html__('An administrator grants access to this area through the role matrix.', 'corex') . '</p>';
+
+        return '<section class="corex-readonly-note corex-surface" aria-label="' . esc_attr__('Read only', 'corex') . '">'
+            . '<p class="corex-readonly-note__text" id="corex-readonly-note">'
+            . sprintf(
+                /* translators: %s: the name of the CoreX ability that makes changes, e.g. "Manage settings". */
+                esc_html__('You can read this screen but not change it. Changes need “%s”, which site administrators hold and an owner can give in Access & Abilities.', 'corex'),
+                esc_html($name),
+            )
+            . '</p>' . $ask . '</section>';
     }
 
     public function close(): string
@@ -99,19 +168,30 @@ final class AdminPage
      * icon and an explicit active state. It is CoreX-owned chrome inside the framed
      * surface — the generic wp-admin menu outside it is never restyled.
      */
-    private function rail(string $active): string
+    /**
+     * @param list<array{label:string,url:string,current:bool}> $subnav
+     */
+    private function rail(string $active, array $subnav = []): string
     {
         $nav = '';
         foreach ($this->railItems($active) as [$slug, $icon, $label, $isActive]) {
-            $nav .= sprintf(
+            // With pages of its own, the screen's entry is the current place (`true`) and the open
+            // page under it is the current page: one element in a page says `page`.
+            $hasPages = $isActive && $subnav !== [];
+            $current  = $hasPages ? ' aria-current="true"' : ' aria-current="page"';
+            $nav     .= sprintf(
                 '<a class="corex-admin__nav-item%1$s" href="%2$s"%3$s>'
                 . '<span class="corex-admin__nav-icon corex-admin__nav-icon--%4$s" aria-hidden="true"></span>%5$s</a>',
                 $isActive ? ' is-active' : '',
                 esc_url(admin_url('admin.php?page=' . $slug)),
-                $isActive ? ' aria-current="page"' : '',
+                $isActive ? $current : '',
                 esc_attr($icon),
                 esc_html($label),
             );
+
+            if ($hasPages) {
+                $nav .= $this->subnav($label, $subnav);
+            }
         }
 
         return '<aside class="corex-admin__rail">'
@@ -119,6 +199,30 @@ final class AdminPage
             . '<p class="corex-admin__rail-group">' . esc_html__('COREX FRAMEWORK', 'corex') . '</p>'
             . '<nav class="corex-admin__nav" aria-label="' . esc_attr__('CoreX framework', 'corex') . '">'
             . $nav . '</nav></aside>';
+    }
+
+    /**
+     * A screen's own pages, nested under its rail entry as the design draws the Settings pages.
+     *
+     * @param list<array{label:string,url:string,current:bool}> $pages
+     */
+    private function subnav(string $screen, array $pages): string
+    {
+        $items = '';
+        foreach ($pages as $page) {
+            $items .= sprintf(
+                '<li><a class="corex-admin__subnav-item%1$s" href="%2$s"%3$s>%4$s</a></li>',
+                $page['current'] ? ' is-active' : '',
+                esc_url($page['url']),
+                $page['current'] ? ' aria-current="page"' : '',
+                esc_html($page['label']),
+            );
+        }
+
+        /* translators: %s: the name of a CoreX screen, such as Settings. */
+        $name = sprintf(__('%s pages', 'corex'), $screen);
+
+        return '<ul class="corex-admin__subnav" aria-label="' . esc_attr($name) . '">' . $items . '</ul>';
     }
 
     /**
@@ -152,6 +256,7 @@ final class AdminPage
             'corex-insights'            => ['insights', 'insights'],
             'corex-setup'               => ['setup', 'setup'],
             'corex-guides'              => ['guides', 'guides'],
+            'corex-assistant'           => ['assistant', 'assistant'],
             'corex-settings-config'     => ['settings', 'settings'],
         ];
     }
@@ -191,8 +296,12 @@ final class AdminPage
         $items = [];
         global $submenu;
 
-        if (isset($submenu['corex-settings']) && is_array($submenu['corex-settings'])) {
-            foreach ($submenu['corex-settings'] as $entry) {
+        // WordPress moves the CoreX submenu under the first screen a person may open when they may
+        // not open the Overview, and notes where it went (spec 117, FR-006).
+        $parent = (string) ($GLOBALS['_wp_real_parent_file']['corex-settings'] ?? 'corex-settings');
+
+        if (isset($submenu[$parent]) && is_array($submenu[$parent])) {
+            foreach ($submenu[$parent] as $entry) {
                 $slug  = (string) ($entry[2] ?? '');
                 $label = wp_strip_all_tags((string) ($entry[0] ?? ''));
                 [$icon, $section] = $meta[$slug] ?? ['option-page', 'option-page'];
@@ -259,6 +368,7 @@ final class AdminPage
             // browser route matrix to every CoreX route, which is exactly the kind of gap a matrix
             // that lists twelve of fourteen screens cannot find.
             'guides' => __('Guides', 'corex'),
+            'assistant' => __('Assistant', 'corex'),
             'option-page' => __('Options', 'corex'),
         ];
 
@@ -339,7 +449,7 @@ final class AdminPage
         return $this->open(
             $section,
             __('Access denied', 'corex'),
-            __('This CoreX screen requires site-administration access.', 'corex'),
+            __('This CoreX screen needs a CoreX ability you do not hold.', 'corex'),
         ) . $this->deniedSurface($section) . $this->close();
     }
 
@@ -395,12 +505,7 @@ final class AdminPage
             . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
             . '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>'
             . '<h2 class="corex-denied__title">' . esc_html__('You don’t have access to this area', 'corex') . '</h2>'
-            . '<p class="corex-denied__text">'
-            . sprintf(
-                /* translators: %s: the CoreX ability an access request from this screen asks for. */
-                esc_html__('Your role doesn’t include the access this screen requires. A request from here asks a site administrator for %s.', 'corex'),
-                '<code>' . esc_html(self::requestAbilityFor($section)) . '</code>',
-            )
+            . '<p class="corex-denied__text">' . $this->deniedExplanation($section)
             . '</p><div class="corex-denied__actions">'
             . '<a class="button button-primary" href="' . esc_url(admin_url()) . '">'
             . esc_html__('Back to Dashboard', 'corex') . '</a>'
@@ -412,14 +517,55 @@ final class AdminPage
     }
 
     /**
-     * One of four: the request already sent, or the form — plain, with a validation error, or with
-     * a failure notice.
+     * What the screen requires, named as the ability a request from here asks for, or, where it
+     * cannot be requested, as the ability an administrator grants (spec 112, FR-008a).
+     */
+    private function deniedExplanation(string $section): string
+    {
+        // The ability by its name in the site's language; the key is for developers and stays in
+        // the tooltip (spec 117, US-ACC-05).
+        $key     = self::requestAbilityFor($section);
+        $ability = '<strong title="' . esc_attr($key) . '">“' . esc_html(AbilityNames::label($key)) . '”</strong>';
+
+        if (! $this->canBeRequested($section)) {
+            return sprintf(
+                /* translators: %s: the CoreX ability this screen requires. */
+                esc_html__('Your role doesn’t include the access this screen requires, %s.', 'corex'),
+                $ability,
+            );
+        }
+
+        return sprintf(
+            /* translators: %s: the CoreX ability an access request from this screen asks for. */
+            esc_html__('Your role doesn’t include the access this screen requires. A request from here asks a site administrator for %s.', 'corex'),
+            $ability,
+        );
+    }
+
+    private function canBeRequested(string $section): bool
+    {
+        return $this->requestable?->isRequestable(self::requestAbilityFor($section)) ?? true;
+    }
+
+    /**
+     * One of five: no form, where the screen's ability is granted only through the role matrix
+     * (spec 112, FR-008a); the request already sent; or the form — plain, with a validation error,
+     * or with a failure notice.
+     *
+     * The first comes before "already sent": a request made before spec 112 for an ability that can
+     * no longer be requested is cancelled, so it is not shown as waiting.
      *
      * "Already sent" is read from stored state rather than from a redirect flag, so it survives a
      * refresh, a bookmark and tomorrow, and cannot be conjured by editing the URL.
      */
     private function requestState(string $section): string
     {
+        if (! $this->canBeRequested($section)) {
+            return '<p class="corex-denied__reason">'
+                . esc_html__('An administrator grants access to this area through the role matrix.', 'corex')
+                . '</p>';
+        }
+
         $pending = $this->requestState?->pendingForCurrentUser(self::requestAbilityFor($section));
 
         if ($pending !== null) {
@@ -515,36 +661,7 @@ final class AdminPage
      */
     public static function requestAbilityFor(string $section): string
     {
-        return [
-            'overview'                  => CorexAbility::MANAGE_ADMIN,
-            'corex-settings'            => CorexAbility::MANAGE_ADMIN,
-            'addons'                    => CorexAbility::MANAGE_ADMIN,
-            'corex-addons'              => CorexAbility::MANAGE_ADMIN,
-            'forms'                     => CorexAbility::MANAGE_FORMS,
-            'corex-forms'               => CorexAbility::MANAGE_FORMS,
-            'submissions'               => CorexAbility::MANAGE_SUBMISSIONS,
-            'corex-submissions'         => CorexAbility::MANAGE_SUBMISSIONS,
-            'email'                     => CorexAbility::MANAGE_EMAIL,
-            'corex-email-studio'        => CorexAbility::MANAGE_EMAIL,
-            // Records browsing needs MANAGE_DATA and everything else on the screen needs
-            // MANAGE_DATA_MODELS; either one opens it. Someone seeing the denied surface holds
-            // neither, and records is the common need, so that is what they are offered.
-            'data-models'               => CorexAbility::MANAGE_DATA,
-            'corex-data-models'         => CorexAbility::MANAGE_DATA,
-            'operations-security'       => CorexAbility::MANAGE_OPERATIONS,
-            'corex-operations-security' => CorexAbility::MANAGE_OPERATIONS,
-            'notifications'             => CorexAbility::MANAGE_NOTIFICATIONS,
-            'corex-notifications'       => CorexAbility::MANAGE_NOTIFICATIONS,
-            'releases'                  => CorexAbility::MANAGE_RELEASES,
-            'corex-releases'            => CorexAbility::MANAGE_RELEASES,
-            'access'                    => CorexAbility::MANAGE_ACCESS,
-            'corex-access'              => CorexAbility::MANAGE_ACCESS,
-            'blog-pro'                  => CorexAbility::MANAGE_BLOG,
-            'corex-blog-pro'            => CorexAbility::MANAGE_BLOG,
-            'settings'                  => CorexAbility::MANAGE_SETTINGS,
-            'corex-settings-config'     => CorexAbility::MANAGE_SETTINGS,
-            'setup'                     => CorexAbility::MANAGE_SETUP,
-            'corex-setup'               => CorexAbility::MANAGE_SETUP,
-        ][$section] ?? CorexAbility::MANAGE_ADMIN;
+        // The screen's own ability, from the one map every check reads (spec 117, FR-001).
+        return ScreenAbilities::abilityFor($section);
     }
 }

@@ -62,6 +62,7 @@ export function InboxApp() {
 		dateFrom: '',
 		dateTo: '',
 		includeTest: false,
+		unread: false,
 		view: VIEW_INBOX,
 		page: 1,
 		perPage: 25,
@@ -455,6 +456,13 @@ function Filters( { filters, update, flows } ) {
 						value={ filters.status }
 						options={ [
 							{ value: '', label: __( 'All statuses', 'corex' ) },
+							{
+								value: 'open',
+								label: __(
+									'Open (new or in progress)',
+									'corex'
+								),
+							},
 							...STATUSES.map( ( status ) => ( {
 								value: status,
 								label: STATUS_LABELS[ status ],
@@ -478,7 +486,7 @@ function Filters( { filters, update, flows } ) {
 						placeholder="team:sales"
 					/>
 				</label>
-				{ /* A range is one thing: its two ends stay side by side at every width. */ }
+				{ /* A range is one thing: its two ends stay together, side by side while both fit. */ }
 				<div className="corex-inbox__dates">
 					<label htmlFor={ `${ fieldId }-date-from` }>
 						<span>{ __( 'From', 'corex' ) }</span>
@@ -516,6 +524,17 @@ function Filters( { filters, update, flows } ) {
 						}
 					/>
 					<span>{ __( 'Include marked tests', 'corex' ) }</span>
+				</label>
+				<label className="is-check" htmlFor={ `${ fieldId }-unread` }>
+					<input
+						id={ `${ fieldId }-unread` }
+						type="checkbox"
+						checked={ Boolean( filters.unread ) }
+						onChange={ ( event ) =>
+							update( 'unread', event.target.checked )
+						}
+					/>
+					<span>{ __( 'Unread only', 'corex' ) }</span>
 				</label>
 			</div>
 		</section>

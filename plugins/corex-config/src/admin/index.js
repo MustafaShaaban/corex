@@ -78,7 +78,6 @@ if ( blogMount ) {
 		analytics: {},
 		comments: [],
 		authors: [],
-		shareControls: [],
 	};
 	const app = <BlogProApp config={ config } />;
 	if ( typeof createRoot === 'function' ) {

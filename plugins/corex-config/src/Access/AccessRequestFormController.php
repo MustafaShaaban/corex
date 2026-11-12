@@ -11,6 +11,7 @@ namespace Corex\Config\Access;
 defined('ABSPATH') || exit;
 
 use Corex\Access\AccessRequestSurfaceState;
+use Corex\Access\InvalidAccessInput;
 use Corex\Admin\AdminPage;
 use Corex\Admin\StandalonePage;
 use Corex\Security\Admin\AdminGuard;
@@ -120,6 +121,13 @@ final class AccessRequestFormController
             // them. The answer is not read: created or already waiting, the screen shows the
             // request that stands.
             $this->service->requestAccess($userId, $ability, null, $reason, $now, $now->modify('+7 days'));
+        } catch (InvalidAccessInput $refused) {
+            // A screen whose ability is granted only through the role matrix shows no form, so a
+            // post from one was not made from the page. Nothing is stored and the screen says how
+            // access is given (spec 112, FR-008a); anything else refused comes back with the form.
+            if ($refused->refusal !== InvalidAccessInput::ABILITY_NOT_REQUESTABLE) {
+                $this->flash->store($userId, AccessRequestSurfaceState::PROBLEM_INVALID, $reason);
+            }
         } catch (InvalidArgumentException) {
             // The service refused the details themselves — an over-long reason is the reachable
             // case. The typed text comes back with the form so it is not lost.

@@ -1,6 +1,6 @@
 {
     "name": "corex-framework",
-    "version": "0.46.1",
+    "version": "0.48.1",
     "private": true,
     "description": "Corex — WordPress framework monorepo (npm workspaces root).",
     "license": "GPL-2.0-or-later",
@@ -13,6 +13,7 @@
         "plugins/corex-forms",
         "addons/corex-ui",
         "addons/corex-careers",
+        "addons/corex-assistant",
         "addons/corex-kit-portfolio",
         "plugins/corex-config"
     ],
@@ -23,8 +24,11 @@
         "lint:css": "wp-scripts lint-style",
         "test:js": "wp-scripts test-unit-jest",
         "test:e2e": "playwright test --config=tests/e2e/playwright.config.js",
+        "test:quality": "playwright test --config=tests/e2e/quality/playwright.quality.config.js",
         "verify:dependencies": "node scripts/verify-dependency-security.mjs",
+        "audit:completion": "node scripts/audit-product-completion.mjs",
         "build:dist": "node scripts/build-shared-host-dist.mjs",
+        "release:push": "node scripts/release-push.mjs",
         "verify:dist": "node scripts/verify-shared-host-dist.mjs",
         "verify:framework": "node scripts/verify-framework.mjs",
         "format": "wp-scripts format",
@@ -32,6 +36,7 @@
         "env:stop": "wp-env stop"
     },
     "devDependencies": {
+        "@axe-core/playwright": "4.13.0",
         "@babel/core": "^7.25.7",
         "@playwright/test": "^1.63.0",
         "@wordpress/babel-preset-default": "9.0.0",
@@ -50,12 +55,12 @@
     "overrides": {
         "brace-expansion": "^5.0.12",
         "fast-uri": "^3.1.8",
-        "qs": "^6.16.0",
+        "qs": "^6.16.1",
         "serialize-javascript": "^7.0.7",
         "uuid": "^14.0.1",
         "webpack-dev-server": "^6.0.0",
         "@opentelemetry/core": "^2.10.0",
-        "markdown-it": "^14.3.2",
+        "markdown-it": "^14.3.3",
         "linkify-it": "^6.1.0",
         "adm-zip": "^0.6.1",
         "basic-ftp": "^6.2.2",
@@ -64,6 +69,9 @@
             "smol-toml": "^1.9.0"
         },
         "katex": "^0.18.2",
-        "postcss-selector-parser": "^7.1.6"
+        "postcss-selector-parser": "^7.1.6",
+        "glob@>=9.0.0 <15.0.0": "^14.0.2",
+        "minimatch@>=7.0.0 <12.0.0": "^11.0.1",
+        "isomorphic-git": "^1.38.6"
     }
 }

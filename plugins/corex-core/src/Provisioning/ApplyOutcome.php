@@ -38,6 +38,21 @@ final class ApplyOutcome
         return $this->pages;
     }
 
+    /**
+     * Whether every page the apply was to write was written: a page it was to create or fill that
+     * has no id is one it failed on (spec 118, US-OVR-09). A kit is recorded as applied only then.
+     */
+    public function isComplete(): bool
+    {
+        foreach ($this->pages as $page) {
+            if ($page['disposition']->action !== PageDisposition::SKIP && $page['pageId'] === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /** @return list<array{disposition:PageDisposition,pageId:?int,isFront:bool,persistedAs:?string}> */
     public function created(): array
     {

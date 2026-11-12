@@ -21,6 +21,9 @@ final class EmailAttemptRepository
 {
     private const TYPE = 'email_attempt';
 
+    /** How many of the newest attempts the launch checklist reads for a test email (spec 118). */
+    public const TEST_LOOKBACK = 500;
+
     public function __construct(private readonly EmailStudioStore $store)
     {
     }
@@ -52,6 +55,7 @@ final class EmailAttemptRepository
             'provider_event'    => $attempt->providerEvent,
             'provider_message_id' => $attempt->providerMessageId,
             'error_code'        => $attempt->errorCode,
+            'missing_variables' => $attempt->missingVariables,
             'retryable'         => $attempt->retryable,
             'occurred_at'       => $attempt->occurredAt->format(DATE_ATOM),
             'created_at'        => $attempt->occurredAt->format(DATE_ATOM),
@@ -74,9 +78,33 @@ final class EmailAttemptRepository
     public function latest(int $limit = 50): array
     {
         $limit   = max(1, min(100, $limit));
-        $records = array_slice(array_reverse($this->store->all(self::TYPE)), 0, $limit);
 
-        return array_map($this->attempt(...), $records);
+        return array_map($this->attempt(...), $this->store->latest(self::TYPE, $limit));
+    }
+
+    /**
+     * The newest test from Email Studio that the mail transport accepted since a moment, or null.
+     *
+     * Accepted means sent or opened: a captured test never left the site, and a failed one was
+     * refused. The launch checklist's "Test email sent" asks this (spec 118, US-OVR-03). It reads
+     * the newest attempts first and stops at the first older than `$since`; it looks no further
+     * back than the newest {@see self::TEST_LOOKBACK}, so a site that sent more email than that
+     * since its test is told to send another.
+     */
+    public function latestAcceptedTest(DateTimeImmutable $since): ?EmailAttempt
+    {
+        foreach ($this->store->latest(self::TYPE, self::TEST_LOOKBACK) as $record) {
+            $attempt = $this->attempt($record);
+            if ($attempt->occurredAt < $since) {
+                return null;
+            }
+
+            if ($attempt->source === 'test' && in_array($attempt->state, [EmailAttempt::STATE_SENT, EmailAttempt::STATE_OPENED], true)) {
+                return $attempt;
+            }
+        }
+
+        return null;
     }
 
     /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */
@@ -105,6 +133,7 @@ final class EmailAttemptRepository
             routeId: is_int($payload['route_id'] ?? null) ? $payload['route_id'] : null,
             providerMessageId: is_string($payload['provider_message_id'] ?? null) ? $payload['provider_message_id'] : null,
             errorCode: is_string($payload['error_code'] ?? null) ? $payload['error_code'] : null,
+            missingVariables: array_values(array_filter((array) ($payload['missing_variables'] ?? []), 'is_string')),
         );
     }
 

@@ -9,7 +9,7 @@ stability: stable
 CoreX is built by people *and* AI agents, and it is now used to build real client sites. To keep framework work
 and client work from colliding, every session runs through four gates in order:
 
-> **Role Gate** decides *where* you work · **Spec Kit** decides *what* to build · **Guard Gate** decides
+> **Role Gate** decides *where* you work · **the spec** decides *what* to build · **Guard Gate** decides
 > *whether* code/docs are safe to ship · **UI/UX ProMax** decides *whether* visible UI/design is good enough.
 
 Classify the session into exactly one mode **before editing**. Copy/paste prompts for each mode are in

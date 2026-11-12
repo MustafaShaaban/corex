@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Closure;
 use Corex\Mail\AttemptingMailer;
+use Corex\Mail\Capture\MailPath;
 use Corex\Mail\EmailLanguage;
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
@@ -43,6 +44,8 @@ final readonly class NotificationDispatcher
         private EmailLanguage $language,
         private ?RoutedMailer $routed = null,
         private ?Mailer $mailer = null,
+        /** Names the notification for the Email Studio log (spec 113). */
+        private ?MailPath $paths = null,
     ) {
     }
 
@@ -53,6 +56,17 @@ final readonly class NotificationDispatcher
      *                                       in the email's language.
      */
     public function dispatch(string $trigger, array $context, Closure $write): NotificationDelivery
+    {
+        $send = fn (): NotificationDelivery => $this->send($trigger, $context, $write);
+
+        return $this->paths === null ? $send() : $this->paths->during(__('Form notification', 'corex'), $send);
+    }
+
+    /**
+     * @param array<string,mixed>   $context
+     * @param Closure():MailRequest $write
+     */
+    private function send(string $trigger, array $context, Closure $write): NotificationDelivery
     {
         // Rung 1 — CoreX Mail's trigger router. A null return means "no route matched"; fall through.
         if ($this->routed !== null) {
@@ -127,7 +141,8 @@ final readonly class NotificationDispatcher
             $lines[] = sprintf('%s: %s', $name, self::scalarize($value));
         }
 
-        return implode("\n", $lines);
+        // An email with no words in it reads as a fault; it says what it is (spec 120).
+        return $lines === [] ? __('The submission contained no fields.', 'corex') : implode("\n", $lines);
     }
 
     /**
@@ -159,6 +174,24 @@ final readonly class NotificationDispatcher
         return $rows === ''
             ? '<p>' . esc_html__('The submission contained no fields.', 'corex') . '</p>'
             : '<table role="presentation" cellpadding="0" cellspacing="0">' . $rows . '</table>';
+    }
+
+    /**
+     * Every answer with a label made from its field's name, in the order given: what a
+     * notification's table and a template's "All answers" block list (spec 120).
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return list<array{label:string,value:string}>
+     */
+    public static function answers(array $values): array
+    {
+        $answers = [];
+        foreach ($values as $name => $value) {
+            $answers[] = ['label' => self::humanize((string) $name), 'value' => self::scalarize($value)];
+        }
+
+        return $answers;
     }
 
     private static function humanize(string $name): string

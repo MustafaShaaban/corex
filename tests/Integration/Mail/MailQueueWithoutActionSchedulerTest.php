@@ -21,8 +21,12 @@ use Corex\Email\Queue\MailQueueDispatcher;
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\MailDelivery;
 
 beforeEach(function () {
+    // Spec 113: these emails are sent the way a production site sends them. MailDelivery stops
+    // each one before the transport.
+    $this->productionMail = MailDelivery::answerAs(MailDelivery::DELIVER);
     $this->emailLogs    = CreatedPosts::watch('corex_email_log');
     $this->flagBefore   = get_option('corex_features_mail_queue', null);
     $this->handedToMail = 0;
@@ -45,6 +49,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    MailDelivery::stop($this->productionMail);
     remove_all_filters('pre_wp_mail');
     remove_all_filters('pre_schedule_event');
     remove_action('shutdown', 'wp_cron');

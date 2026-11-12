@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityNames;
 use Corex\Access\AccessChangePreview;
 use Corex\Access\AccessPolicy;
 use Corex\Access\AccessRequestedEvent;
@@ -18,7 +19,9 @@ use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\InvalidAccessInput;
+use Corex\Access\RequestableAbilities;
 use Corex\Access\RoleAbilityStore;
+use Corex\Access\SiteAdministration;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Events\EventDispatcher;
@@ -37,8 +40,17 @@ final class AccessService
 {
     public const ROLE_CHANGE_OPERATION = 'access.role.change';
 
+    /** What an approval's confirmation is for (spec 112, FR-002). */
+    public const APPROVAL_OPERATION = 'access.request.approve';
+
+    /** The expiries an approver chooses from, in days; 30 is offered first (spec 112, FR-002). */
+    public const GRANT_EXPIRY_DAYS = [7, 30, 90];
+
     /** The longest reason a request is stored with, in characters. */
     public const MAX_REASON_LENGTH = 2000;
+
+    /** Refusal: a request decided by the person who made it, who does not administer the site (DECISIONS #428). */
+    public const OWN_REQUEST = 'own_request_needs_site_administrator';
 
     public function __construct(
         private readonly CorexAbilityCatalog $catalog,
@@ -47,8 +59,10 @@ final class AccessService
         private readonly AccessRequestStore $requests,
         private readonly AccessUserDirectory $users,
         private readonly ActivityService $activity,
+        private readonly RequestableAbilities $requestable,
         private readonly ?RoutedMailer $notifications = null,
         private readonly ?EventDispatcher $events = null,
+        private readonly ?SiteAdministration $siteAdministration = null,
     ) {
     }
 
@@ -62,7 +76,18 @@ final class AccessService
             changes: $changes,
             affectedUserIds: $this->users->userIdsForRole($roleKey),
             fullAccessAdminIds: $this->users->fullAccessAdministratorIds(),
+            administersSite: $this->siteAdministration?->roleAdministersSite($roleKey) ?? false,
+            actorAdministersSite: $this->administersSite($actorId),
         );
+    }
+
+    /**
+     * Whether this person administers the site. Without the answer to ask, the narrower one: no
+     * (DECISIONS #428).
+     */
+    private function administersSite(int $userId): bool
+    {
+        return $this->siteAdministration?->userAdministersSite($userId) ?? false;
     }
 
     /** @param array<string,string> $changes */
@@ -88,6 +113,8 @@ final class AccessService
         $preview = $this->previewRoleChanges($actorId, $roleKey, $changes);
 
         if (! $preview->allowed) {
+            $this->recordRefusedChange($actorId, $roleKey, $changes, $preview->blockers, $now);
+
             return $this->blocked(
                 'access_change_blocked',
                 __('The role ability change was blocked by the access safety policy.', 'corex'),
@@ -231,13 +258,101 @@ final class AccessService
         );
     }
 
-    public function decideRequest(
+    /**
+     * What approving this request would grant, for the approver to read before confirming
+     * (spec 112, FR-002, FR-003). Null when the request is no longer pending.
+     */
+    public function previewApproval(int $actorId, int $requestId): ?AccessApprovalPreview
+    {
+        $request = $this->requests->find($requestId);
+        if ($request === null || ($request['state'] ?? null) !== 'pending') {
+            return null;
+        }
+
+        $keys      = $this->requestedAbilities($request);
+        $abilities = array_values(array_filter(array_map($this->catalog->find(...), $keys)));
+        $policy    = $this->policy->preview(
+            actorId: $actorId,
+            changes: array_fill_keys($keys, AccessPolicy::EFFECT_ALLOW),
+            affectedUserIds: [(int) $request['requesterId']],
+            fullAccessAdminIds: $this->users->fullAccessAdministratorIds(),
+            actorAdministersSite: $this->administersSite($actorId),
+        );
+
+        return new AccessApprovalPreview(
+            requestId: $requestId,
+            requesterId: (int) $request['requesterId'],
+            reason: (string) $request['reason'],
+            areaKey: $request['areaKey'] ?? null,
+            abilities: $abilities,
+            blockers: $policy->blockers,
+            typedName: $this->typedName($abilities),
+            targetHash: $this->approvalHash($requestId, $keys),
+        );
+    }
+
+    /**
+     * Grants what a pending request asks for, until the chosen expiry (spec 112, FR-002, FR-003).
+     *
+     * Refused, and nothing granted, without a note, with an expiry it does not offer, with a
+     * confirmation for anything else (or without the dangerous ability's name typed), or when the
+     * access policy refuses what a role change would refuse. A request for an ability a request may
+     * no longer ask for is cancelled instead (FR-008).
+     */
+    public function approveRequest(
         int $actorId,
         int $requestId,
-        bool $approved,
         string $note,
+        int $expiryDays,
+        Confirmation $confirmation,
         DateTimeImmutable $now,
     ): OperationResult {
+        $refusal = $this->notPending($requestId, $actorId, $now) ?? $this->ownRequest($requestId, $actorId, $now);
+        $preview = $refusal === null ? $this->previewApproval($actorId, $requestId) : null;
+        $refusal ??= $this->approvalRefusal($preview, $actorId, $note, $expiryDays, $confirmation, $now);
+        if ($refusal !== null) {
+            return $refusal;
+        }
+
+        if (! $this->requests->approve($requestId, $actorId, trim($note), $now, $now->modify(sprintf('+%d days', $expiryDays)))) {
+            return $this->blocked('request_not_pending', __('The access request is no longer pending.', 'corex'), $now);
+        }
+
+        foreach ($preview->abilities as $ability) {
+            $this->users->grantUserAbility($preview->requesterId, $ability->key);
+        }
+
+        return $this->decided($actorId, $requestId, 'approved', $note, $now, ['expiry_days' => $expiryDays]);
+    }
+
+    public function denyRequest(int $actorId, int $requestId, string $note, DateTimeImmutable $now): OperationResult
+    {
+        $refusal = $this->notPending($requestId, $actorId, $now) ?? $this->ownRequest($requestId, $actorId, $now);
+        if ($refusal !== null) {
+            return $refusal;
+        }
+
+        if (! $this->requests->transition($requestId, 'denied', $actorId, trim($note), $now)) {
+            return $this->blocked('request_not_pending', __('The access request is no longer pending.', 'corex'), $now);
+        }
+
+        return $this->decided($actorId, $requestId, 'denied', $note, $now);
+    }
+
+    /** What a confirmation for approving this request is bound to: the request and what it grants. */
+    public function approvalHash(int $requestId, array $abilityKeys): string
+    {
+        sort($abilityKeys);
+
+        return hash('sha256', json_encode([
+            'request'   => $requestId,
+            'abilities' => $abilityKeys,
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    /** Why this pending request cannot be decided now, or null when it can. Expires it if its time ran out. */
+    private function notPending(int $requestId, int $actorId, DateTimeImmutable $now): ?OperationResult
+    {
         $request = $this->requests->find($requestId);
 
         if ($request === null || ($request['state'] ?? null) !== 'pending') {
@@ -245,24 +360,218 @@ final class AccessService
         }
 
         if (($request['expiresAt'] ?? null) instanceof DateTimeImmutable && $request['expiresAt'] <= $now) {
-            $this->requests->transition($requestId, 'expired', $actorId, $note, $now);
+            if ($this->requests->transition($requestId, 'expired', $actorId, '', $now)) {
+                $this->recordExpiredRequest($actorId, $request, $now);
+            }
 
             return $this->blocked('request_expired', __('The access request has expired.', 'corex'), $now);
         }
 
-        $state = $approved ? 'approved' : 'denied';
-        if (! $this->requests->transition($requestId, $state, $actorId, trim($note), $now)) {
-            return $this->blocked('request_not_pending', __('The access request is no longer pending.', 'corex'), $now);
+        return null;
+    }
+
+    /**
+     * A refusal when the person deciding a request is the one who made it and does not administer
+     * the site (DECISIONS #428), recorded in the access history; null otherwise.
+     */
+    private function ownRequest(int $requestId, int $actorId, DateTimeImmutable $now): ?OperationResult
+    {
+        $request = (array) $this->requests->find($requestId);
+        if ((int) ($request['requesterId'] ?? 0) !== $actorId || $this->administersSite($actorId)) {
+            return null;
         }
 
-        if ($approved) {
-            foreach ($this->requestedAbilities($request) as $abilityKey) {
-                $this->users->grantUserAbility((int) $request['requesterId'], $abilityKey);
+        $this->recordRefusedDecision($actorId, $request, [], $now);
+
+        return $this->blocked(
+            self::OWN_REQUEST,
+            __('Only a site administrator can decide their own access request. Another person who manages access, or a site administrator, decides it.', 'corex'),
+            $now,
+        );
+    }
+
+    /**
+     * A decision on a request that the safety rules refused, for the access history: who tried, on
+     * which request, and why.
+     *
+     * @param array<string,mixed>                     $request
+     * @param list<array{code:string,ability:string}> $blockers None when the request is the decider's own.
+     */
+    private function recordRefusedDecision(int $actorId, array $request, array $blockers, DateTimeImmutable $now): void
+    {
+        $requestId = (int) ($request['id'] ?? 0);
+
+        $this->activity->record(
+            actorId: $actorId,
+            actorKind: ActivityEvent::ACTOR_USER,
+            actorLabel: $this->users->displayName($actorId),
+            area: ActivityEvent::AREA_ACCESS,
+            kind: 'access.request.refused',
+            targetType: 'access_request',
+            targetId: (string) $requestId,
+            targetLabel: sprintf(
+                /* translators: %d: access request ID. */
+                __('Access request %d', 'corex'),
+                $requestId,
+            ),
+            outcome: ActivityEvent::OUTCOME_DENIED,
+            summary: ['key' => 'access.request.refused', 'args' => ['request' => $requestId]],
+            context: [
+                'request_id'   => $requestId,
+                'requester_id' => (int) ($request['requesterId'] ?? 0),
+                'abilities'    => $this->requestedAbilities($request),
+                'blockers'     => $blockers,
+            ],
+            sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
+            retentionUntil: $now->modify('+180 days'),
+            occurredAt: $now,
+        );
+    }
+
+    /**
+     * A role change the safety rules refused, for the access history (spec 117, FR-020): who tried,
+     * on which role, what they asked for and why it was refused.
+     *
+     * @param array<string,string>                    $changes
+     * @param list<array{code:string,ability:string}> $blockers
+     */
+    private function recordRefusedChange(int $actorId, string $roleKey, array $changes, array $blockers, DateTimeImmutable $now): void
+    {
+        $this->activity->record(
+            actorId: $actorId,
+            actorKind: ActivityEvent::ACTOR_USER,
+            actorLabel: $this->users->displayName($actorId),
+            area: ActivityEvent::AREA_ACCESS,
+            kind: 'access.role.refused',
+            targetType: 'role',
+            targetId: $roleKey,
+            targetLabel: $roleKey,
+            outcome: ActivityEvent::OUTCOME_DENIED,
+            summary: ['key' => 'access.role.refused', 'args' => ['role' => $roleKey]],
+            context: ['changes' => $changes, 'blockers' => $blockers],
+            sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
+            retentionUntil: $now->modify('+180 days'),
+            occurredAt: $now,
+        );
+    }
+
+    /**
+     * A request that ran out before anybody decided it, found when somebody tried to (spec 117, FR-020).
+     *
+     * @param array<string,mixed> $request
+     */
+    private function recordExpiredRequest(int $actorId, array $request, DateTimeImmutable $now): void
+    {
+        $requestId = (int) ($request['id'] ?? 0);
+
+        $this->activity->record(
+            actorId: $actorId,
+            actorKind: ActivityEvent::ACTOR_USER,
+            actorLabel: $this->users->displayName($actorId),
+            area: ActivityEvent::AREA_ACCESS,
+            kind: 'access.request.expired',
+            targetType: 'access_request',
+            targetId: (string) $requestId,
+            targetLabel: sprintf(
+                /* translators: %d: access request ID. */
+                __('Access request %d', 'corex'),
+                $requestId,
+            ),
+            outcome: ActivityEvent::OUTCOME_WARNING,
+            summary: ['key' => 'access.request.expired', 'args' => ['request' => $requestId]],
+            context: [
+                'request_id'   => $requestId,
+                'requester_id' => (int) ($request['requesterId'] ?? 0),
+                'abilities'    => $this->requestedAbilities($request),
+            ],
+            sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
+            retentionUntil: $now->modify('+180 days'),
+            occurredAt: $now,
+        );
+    }
+
+    private function approvalRefusal(
+        AccessApprovalPreview $preview,
+        int $actorId,
+        string $note,
+        int $expiryDays,
+        Confirmation $confirmation,
+        DateTimeImmutable $now,
+    ): ?OperationResult {
+        if (! $this->stillRequestable($preview)) {
+            $this->requests->cancel($preview->requestId, AccessRequestStore::CANCELLED_NOT_REQUESTABLE, $now);
+
+            return $this->blocked('request_not_requestable', __('An administrator grants this through the role matrix, so the request was cancelled.', 'corex'), $now);
+        }
+
+        // Before the note and the confirmation: what the rules refuse is refused whatever is typed.
+        if ($preview->blockers !== []) {
+            $this->recordRefusedDecision($actorId, (array) $this->requests->find($preview->requestId), $preview->blockers, $now);
+
+            return $this->blocked('access_change_blocked', __('The approval was blocked by the access safety policy.', 'corex'), $now, $preview->blockers);
+        }
+
+        if (trim($note) === '') {
+            return $this->blocked('note_required', __('Write a note saying why access is approved.', 'corex'), $now);
+        }
+
+        if (! in_array($expiryDays, self::GRANT_EXPIRY_DAYS, true)) {
+            return $this->blocked('expiry_invalid', __('Choose an expiry of 7, 30 or 90 days.', 'corex'), $now);
+        }
+
+        if (! $confirmation->verify(self::APPROVAL_OPERATION, $preview->targetHash, $actorId, $preview->typedName, $now)) {
+            return $this->blocked('confirmation_invalid', __('The approval confirmation is invalid or expired.', 'corex'), $now);
+        }
+
+        return null;
+    }
+
+    private function stillRequestable(AccessApprovalPreview $preview): bool
+    {
+        foreach ($preview->abilities as $ability) {
+            if (! $this->requestable->isRequestable($ability->key)) {
+                return false;
             }
         }
 
-        $kind  = 'access.request.' . $state;
-        $event = $this->activity->record(
+        return true;
+    }
+
+    /**
+     * The name an approver types to grant a dangerous ability: its key, which is the same in every
+     * language and is what the denied page names.
+     *
+     * @param list<CorexAbility> $abilities
+     */
+    private function typedName(array $abilities): ?string
+    {
+        foreach ($abilities as $ability) {
+            if ($ability->risk === CorexAbility::RISK_DANGEROUS) {
+                return $ability->key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Records a decision and tells the requester.
+     *
+     * @param array<string,mixed> $context
+     */
+    private function decided(
+        int $actorId,
+        int $requestId,
+        string $state,
+        string $note,
+        DateTimeImmutable $now,
+        array $context = [],
+    ): OperationResult {
+        $request     = (array) $this->requests->find($requestId);
+        $requesterId = (int) ($request['requesterId'] ?? 0);
+        $kind        = 'access.request.' . $state;
+        $approved    = $state === 'approved';
+        $event       = $this->activity->record(
             actorId: $actorId,
             actorKind: ActivityEvent::ACTOR_USER,
             actorLabel: $this->users->displayName($actorId),
@@ -277,13 +586,12 @@ final class AccessService
             ),
             outcome: $approved ? ActivityEvent::OUTCOME_SUCCESS : ActivityEvent::OUTCOME_DENIED,
             summary: ['key' => $kind, 'args' => ['request' => $requestId]],
-            context: ['requester_id' => (int) $request['requesterId'], 'decision' => $state],
+            context: ['requester_id' => $requesterId, 'decision' => $state, 'abilities' => $this->requestedAbilities($request)] + $context,
             sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
             retentionUntil: $now->modify('+180 days'),
             occurredAt: $now,
         );
 
-        $requesterId = (int) $request['requesterId'];
         $this->notify($kind, [
             'request' => [
                 'id'       => $requestId,
@@ -325,13 +633,9 @@ final class AccessService
         $errors = $blockers === []
             ? [['code' => $code, 'message' => $message]]
             : array_map(
-                static fn (array $blocker): array => [
+                fn (array $blocker): array => [
                     'code'    => $blocker['code'],
-                    'message' => sprintf(
-                        /* translators: %s: CoreX ability key. */
-                        __('Ability %s cannot be changed.', 'corex'),
-                        $blocker['ability'],
-                    ),
+                    'message' => $this->refusalReason($blocker),
                 ],
                 $blockers,
             );
@@ -347,8 +651,45 @@ final class AccessService
         );
     }
 
-    /** @param array<string,mixed> $request @return list<string> */
-    private function requestedAbilities(array $request): array
+    /**
+     * Why a change was refused, naming the ability as people know it and the reason in words
+     * (spec 117, US-ACC-05).
+     *
+     * @param array{code:string,ability:string} $blocker
+     */
+    public function refusalReason(array $blocker): string
+    {
+        $ability = $this->catalog->find($blocker['ability']);
+        $name    = $ability !== null ? AbilityNames::labelOf($ability) : $blocker['ability'];
+
+        return sprintf(
+            match ($blocker['code']) {
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'ability_locked'             => __('“%s” cannot be changed: it comes only with site administration.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'self_lockout'               => __('“%s” cannot be denied here: you would lose it yourself.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'last_full_access_admin'     => __('“%s” cannot be denied here: no administrator with full access would keep it.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                'site_administrator_role'    => __('“%s” cannot be denied to this role: site administrators always hold every CoreX ability.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                AccessPolicy::OWN_ACCESS     => __('“%s” cannot be changed here: it applies to you, and only a site administrator can change their own access.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                AccessPolicy::CRITICAL_ALLOW => __('“%s” is a Critical ability: only a site administrator can allow it or set it to inherit.', 'corex'),
+                /* translators: %s: the name of a CoreX ability, e.g. "Manage access". */
+                default                      => __('“%s” cannot be changed.', 'corex'),
+            },
+            $name,
+        );
+    }
+
+    /**
+     * What a request grants: its ability, or every ability of its area.
+     *
+     * @param array<string,mixed> $request
+     * @return list<string>
+     */
+    public function requestedAbilities(array $request): array
     {
         if (is_string($request['abilityKey'] ?? null)) {
             return [(string) $request['abilityKey']];
@@ -387,7 +728,10 @@ final class AccessService
         $this->assertTarget($abilityKey, $areaKey);
     }
 
-    /** A request is for one ability or for one area, and CoreX has to have it. */
+    /**
+     * A request is for one ability or for one area, CoreX has to have it, and it must be one a
+     * request may ask for (spec 112, FR-001).
+     */
     private function assertTarget(?string $abilityKey, ?string $areaKey): void
     {
         if ($abilityKey === null && $areaKey === null) {
@@ -404,6 +748,14 @@ final class AccessService
 
         if ($areaKey !== null && ! array_key_exists($areaKey, $this->catalog->grouped())) {
             throw new InvalidAccessInput('area', InvalidAccessInput::AREA_UNKNOWN, 'The requested CoreX area is unknown.');
+        }
+
+        if ($abilityKey !== null && ! $this->requestable->isRequestable($abilityKey)) {
+            throw new InvalidAccessInput('ability', InvalidAccessInput::ABILITY_NOT_REQUESTABLE, 'The requested CoreX ability is granted only through the role matrix.');
+        }
+
+        if ($areaKey !== null && ! $this->requestable->isAreaRequestable($areaKey)) {
+            throw new InvalidAccessInput('area', InvalidAccessInput::AREA_NOT_REQUESTABLE, 'The requested CoreX area holds an ability granted only through the role matrix.');
         }
     }
 

@@ -64,9 +64,6 @@ export default function BlogProApp( { config = {} } ) {
 		editorial: config.editorial || null,
 		comments: Array.isArray( config.comments ) ? config.comments : [],
 		authors: Array.isArray( config.authors ) ? config.authors : [],
-		shareControls: Array.isArray( config.shareControls )
-			? config.shareControls
-			: [],
 	} );
 	// Which request is out. It was one flag, set by all three, so "Refresh" read
 	// "Refreshing…" while a post was being moved and "Apply" read "Applying…" during a refresh.
@@ -182,17 +179,20 @@ export default function BlogProApp( { config = {} } ) {
 				</div>
 				<p className="corex-blog-pro__subject-meta">
 					{ selectedPost?.status_label }
-					{ ' · ' }
-					{ sprintf(
-						/* translators: %d: number of days the figures cover. */
-						_n(
-							'Figures cover the last %d day',
-							'Figures cover the last %d days',
-							config.periodDays || 30,
-							'corex'
-						),
-						config.periodDays || 30
-					) }
+					{ /* The period only where there are figures for it (spec 114, US-BLG-05). */ }
+					{ hasAnalytics ? ' · ' : null }
+					{ hasAnalytics
+						? sprintf(
+								/* translators: %d: number of days the figures cover. */
+								_n(
+									'Figures cover the last %d day',
+									'Figures cover the last %d days',
+									config.periodDays || 30,
+									'corex'
+								),
+								config.periodDays || 30
+							)
+						: null }
 				</p>
 				<button
 					type="button"
@@ -216,16 +216,21 @@ export default function BlogProApp( { config = {} } ) {
 				</p>
 			) : null }
 
-			<section className="corex-blog-pro__panel">
-				<h2>
-					{ sprintf(
-						/* translators: %s: the post title. */
-						__( 'Reading signals for “%s”', 'corex' ),
-						selectedPost?.title || __( 'this post', 'corex' )
-					) }
-				</h2>
-
-				{ hasAnalytics ? (
+			{ /*
+			 * Spec 114, US-BLG-05: CoreX does not record reading views yet, so a panel of
+			 * "reading signals" and the line under it ("CoreX has not recorded a visit to this
+			 * post") implied a recorder that saw nobody. Until a post has figures, one line says
+			 * plainly that none are collected; with figures, the panel is as spec 075 drew it.
+			 */ }
+			{ hasAnalytics ? (
+				<section className="corex-blog-pro__panel">
+					<h2>
+						{ sprintf(
+							/* translators: %s: the post title. */
+							__( 'Reading signals for “%s”', 'corex' ),
+							selectedPost?.title || __( 'this post', 'corex' )
+						) }
+					</h2>
 					<div className="corex-blog-pro__stats">
 						<Metric
 							label={ __( 'Views', 'corex' ) }
@@ -258,17 +263,18 @@ export default function BlogProApp( { config = {} } ) {
 							) }
 						/>
 					</div>
-				) : (
-					// Not the same as zero: a zero says nobody read it, this says nothing has been
-					// recorded at all. The old panel showed four large zeros for both (FR-4).
-					<p className="corex-blog-pro__empty">
-						{ __(
-							'No reading data yet — CoreX has not recorded a visit to this post in this period.',
-							'corex'
-						) }
-					</p>
-				) }
-			</section>
+				</section>
+			) : (
+				<p
+					className="corex-blog-pro__empty"
+					data-corex-blog-no-reading-data
+				>
+					{ __(
+						'CoreX does not collect reading data yet. Figures appear here once it does.',
+						'corex'
+					) }
+				</p>
+			) }
 
 			<section className="corex-blog-pro__grid">
 				<Card title={ __( 'Editorial workflow', 'corex' ) }>
@@ -325,16 +331,6 @@ export default function BlogProApp( { config = {} } ) {
 										Number( author.post_count ) || 0
 									) }
 								</span>
-							</li>
-						) ) }
-					</ul>
-				</Card>
-
-				<Card title={ __( 'Sharing', 'corex' ) }>
-					<ul className="corex-blog-pro__list">
-						{ state.shareControls.map( ( control ) => (
-							<li key={ control.target }>
-								<strong>{ control.label }</strong>
 							</li>
 						) ) }
 					</ul>

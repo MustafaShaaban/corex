@@ -2,6 +2,7 @@ import {
 	initialInboxState,
 	inboxReducer,
 	buildInboxUrl,
+	inboxFiltersFromUrl,
 	inboxSubmissionFromUrl,
 	toggleSubmission,
 	normalizeInboxPage,
@@ -170,5 +171,37 @@ describe( 'opening the inbox on one submission', () => {
 		const url = `${ base }&corex_form=7&corex_submission=42`;
 
 		expect( inboxSubmissionFromUrl( url ) ).toBe( 42 );
+	} );
+} );
+
+describe( 'the filters an Overview number opens the inbox with (spec 118, US-OVR-05)', () => {
+	const at = ( query ) =>
+		inboxFiltersFromUrl(
+			`https://acme.test/wp-admin/admin.php?page=corex-submissions&${ query }`
+		);
+
+	it( 'opens on open work, open work owned by the viewer, and open unread work', () => {
+		expect( at( 'status=open' ) ).toEqual( { status: 'open' } );
+		expect( at( 'status=open&owner=user:7' ) ).toEqual( {
+			status: 'open',
+			owner: 'user:7',
+		} );
+		expect( at( 'status=open&unread=1' ) ).toEqual( {
+			status: 'open',
+			unread: true,
+		} );
+	} );
+
+	it( 'ignores a filter the server would refuse', () => {
+		expect( at( 'status=whatever&owner=nobody' ) ).toEqual( {} );
+	} );
+
+	it( 'sends the unread filter on to the server', () => {
+		expect(
+			buildInboxUrl( '/corex/v1/submissions', {
+				status: 'open',
+				unread: true,
+			} )
+		).toBe( '/corex/v1/submissions?status=open&unread=1' );
 	} );
 } );

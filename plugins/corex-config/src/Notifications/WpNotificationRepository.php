@@ -39,8 +39,10 @@ final class WpNotificationRepository implements NotificationRepository
     /** Upper bound on rows scanned for visibility before pagination — keeps reads bounded (FR-026). */
     private const MAX_CANDIDATES = 500;
 
-    public function __construct(private readonly Migrator $migrator)
-    {
+    public function __construct(
+        private readonly Migrator $migrator,
+        private readonly NotificationGroups $groups = new NotificationGroups(),
+    ) {
     }
 
     public function upsertByDedupKey(Notification $notification): Notification
@@ -140,42 +142,100 @@ final class WpNotificationRepository implements NotificationRepository
         // Status and view are both per-user, so neither can be a WHERE clause on the shared record —
         // they need this actor's state row. Applied before pagination so `total` and the page agree;
         // the state read is bounded by the same MAX_CANDIDATES cap the candidate scan enforces.
-        if ($query->status !== null || $query->view !== null) {
-            $allState = $this->stateFor(
-                array_map(static fn (Notification $n): int => (int) $n->id, $visible),
-                $actorId,
-            );
+        $state = $this->stateFor(array_map(static fn (Notification $n): int => (int) $n->id, $visible), $actorId);
 
-            if ($query->status !== null) {
-                $visible = array_values(array_filter(
-                    $visible,
-                    fn (Notification $n): bool => $this->statusOf($n, $allState) === $query->status,
-                ));
-            }
-
-            if ($query->view !== null) {
-                $visible = array_values(array_filter(
-                    $visible,
-                    fn (Notification $n): bool => NotificationView::of(
-                        $this->statusOf($n, $allState),
-                        $n->severity,
-                        $n->action !== null,
-                    ) === $query->view,
-                ));
-            }
+        if ($query->status !== null) {
+            $visible = array_values(array_filter(
+                $visible,
+                fn (Notification $n): bool => $this->statusOf($n, $state) === $query->status,
+            ));
         }
 
-        $total = count($visible);
+        if ($query->view !== null) {
+            $visible = array_values(array_filter(
+                $visible,
+                fn (Notification $n): bool => NotificationView::of(
+                    $this->statusOf($n, $state),
+                    $n->severity,
+                    $n->action !== null,
+                ) === $query->view,
+            ));
+        }
+
+        // Repeated unread notices of one kind are one item (spec 118, US-SHL-09). Grouped before
+        // pagination, so `total` counts a group once, as the bell does.
+        $entries = $this->grouped($visible, $state);
+
+        $total = count($entries);
         $offset = ($query->page - 1) * $query->perPage;
-        $pageItems = array_slice($visible, $offset, $query->perPage);
-        $state = $this->stateFor(array_map(static fn (Notification $n): int => (int) $n->id, $pageItems), $actorId);
+        $pageItems = array_slice($entries, $offset, $query->perPage);
 
         return [
-            'items' => array_map(fn (Notification $n): array => $this->present($n, $state), $pageItems),
+            'items' => array_map(fn (array $members): array => $this->presentEntry($members, $state), $pageItems),
             'total' => $total,
             'page' => $query->page,
             'per_page' => $query->perPage,
         ];
+    }
+
+    /**
+     * The list as it is shown: each notification on its own, except unread ones of a grouped kind,
+     * which stand together where the newest of them stands. Nothing stored changes.
+     *
+     * @param list<Notification>                $visible newest first
+     * @param array<int,array<string,mixed>>    $state
+     *
+     * @return list<list<Notification>> each entry's members, newest first
+     */
+    private function grouped(array $visible, array $state): array
+    {
+        $entries = [];
+        $at      = [];
+
+        foreach ($visible as $notification) {
+            $key = $this->statusOf($notification, $state) === NotificationStatus::UNREAD
+                ? $this->groups->keyOf($notification)
+                : null;
+
+            if ($key !== null && isset($at[$key])) {
+                $entries[$at[$key]][] = $notification;
+
+                continue;
+            }
+
+            if ($key !== null) {
+                $at[$key] = count($entries);
+            }
+
+            $entries[] = [$notification];
+        }
+
+        return $entries;
+    }
+
+    /**
+     * One entry: a notification, or a group drawn as its newest member with the count in its title
+     * and every member listed with its own link.
+     *
+     * @param list<Notification>             $members
+     * @param array<int,array<string,mixed>> $state
+     *
+     * @return array<string,mixed>
+     */
+    private function presentEntry(array $members, array $state): array
+    {
+        $item = $this->present($members[0], $state);
+        if (count($members) === 1) {
+            return $item;
+        }
+
+        $item['rendered']['title'] = $this->groups->title($members[0]->type, count($members));
+        $item['group'] = [
+            'count'   => count($members),
+            'members' => array_map(fn (Notification $member): array => $this->present($member, $state), $members),
+        ];
+
+        return $item;
     }
 
     public function unreadCountForActor(int $actorId, callable $userCan): int
@@ -188,12 +248,20 @@ final class WpNotificationRepository implements NotificationRepository
         $ids = array_map(static fn (Notification $n): int => (int) $n->id, $candidates);
         $state = $this->stateFor($ids, $actorId);
 
-        $count = 0;
+        // A group of repeated notices is one unread item, on the bell and on the Overview alike
+        // (spec 118, US-SHL-09).
+        $count  = 0;
+        $groups = [];
         foreach ($candidates as $n) {
-            if (! $n->recipient->canBeSeenBy($actorId, $userCan)) {
+            if (! $n->recipient->canBeSeenBy($actorId, $userCan) || $this->statusOf($n, $state) !== NotificationStatus::UNREAD) {
                 continue;
             }
-            if ($this->statusOf($n, $state) === NotificationStatus::UNREAD) {
+
+            $key = $this->groups->keyOf($n);
+            if ($key === null) {
+                $count++;
+            } elseif (! isset($groups[$key])) {
+                $groups[$key] = true;
                 $count++;
             }
         }
@@ -266,6 +334,27 @@ final class WpNotificationRepository implements NotificationRepository
             'UPDATE ' . $this->table() . ' SET resolved_at = NULL, resolution_reason = NULL, updated_at = %s WHERE dedup_key = %s',
             $this->date(new DateTimeImmutable('now')),
             $dedupKey,
+        ));
+    }
+
+    public function rewordByDedupKey(Notification $notification): int
+    {
+        global $wpdb;
+
+        $words  = $this->json($notification->rendered);
+        $action = $notification->action !== null ? $this->json($notification->action->toArray()) : '';
+
+        // One statement that changes nothing when the words are already these, so an evaluation that
+        // finds the same condition in the same language writes nothing.
+        return (int) $wpdb->query($wpdb->prepare(
+            'UPDATE ' . $this->table() . ' SET rendered_json = %s, action_json = NULLIF(%s, \'\')'
+            . ' WHERE dedup_key = %s AND resolved_at IS NULL'
+            . ' AND (rendered_json <> %s OR COALESCE(action_json, \'\') <> %s)',
+            $words,
+            $action,
+            $notification->dedupKey,
+            $words,
+            $action,
         ));
     }
 

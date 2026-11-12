@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Plugin Name: CoreX E2E client guide
- * Description: Stands in for a client plugin registering a guide, so the browser suite proves the public seam rather than a CoreX guide.
+ * Plugin Name: CoreX E2E client guide (test fixture)
+ * Description: Test fixture. Stands in for a client plugin registering a guide, so the browser suite proves the public seam rather than a CoreX guide.
  * Version: 1.0.0
  *
  * @package Corex\Tests\E2E
@@ -34,8 +34,8 @@ add_filter('corex_guides', static function (array $guides): array {
         return $guides;
     }
 
-    $guides[] = \Corex\Guides\Guide::for('e2e-client-guide', 'Client plugin guide')
-        ->withSummary('Registered by a plugin CoreX has never heard of.')
+    $guides[] = \Corex\Guides\Guide::for('e2e-client-guide', 'Test fixture: Client plugin guide')
+        ->withSummary('Test fixture. Registered by a plugin CoreX has never heard of.')
         ->inSection('content')
         // A native screen, on purpose: it proves the declared address is rendered as a link to
         // wherever the guide says, not merely to CoreX's own pages.

@@ -115,3 +115,69 @@ it('skips a home that already has user content and does not change the front pag
         ->and($outcome->frontPageId)->toBeNull()
         ->and($frontSet)->toBeFalse();
 });
+
+it('records what an adopted page and the reading settings were before changing them, once', function () {
+    Functions\when('get_page_by_path')->alias(fn (string $slug) => $slug === 'home'
+        ? new WP_Post(['ID' => 2511, 'post_title' => 'Welcome', 'post_content' => '', 'post_status' => 'publish'])
+        : null);
+    Functions\when('get_post_field')->justReturn('');
+    Functions\when('wp_update_post')->justReturn(2511);
+    Functions\when('wp_insert_post')->justReturn(900);
+    Functions\when('wp_slash')->returnArg();
+    Functions\when('get_option')->alias(fn (string $key, $default = false) => match ($key) {
+        'show_on_front' => 'page',
+        'page_on_front' => '77',
+        'page_for_posts' => '0',
+        default => $default,
+    });
+    Functions\when('get_post_meta')->alias(fn (int $id, string $key) => $key === '_wp_page_template' ? 'page-wide' : '');
+
+    $meta = [];
+    Functions\when('update_post_meta')->alias(function (int $id, string $key, $value) use (&$meta): bool {
+        $meta[$key] = $value;
+
+        return true;
+    });
+    $options = [];
+    Functions\when('update_option')->alias(function (string $key, $value) use (&$options): bool {
+        $options[$key] = $value;
+
+        return true;
+    });
+
+    (new BlueprintActivator(new WpPluginActivationInspector(new SingleSiteMultisiteContext())))->seedPages(kitPages());
+
+    expect($meta['_corex_kit_before'])->toBe(['title' => 'Welcome', 'content' => '', 'template' => 'page-wide', 'status' => 'publish'])
+        ->and($options['corex_kit_reading_before'])->toBe(['show_on_front' => 'page', 'page_on_front' => '77', 'page_for_posts' => '0']);
+});
+
+it('does not record again what an earlier apply recorded', function () {
+    $record = ['title' => 'Welcome', 'content' => '', 'template' => '', 'status' => 'publish'];
+    Functions\when('get_page_by_path')->alias(fn (string $slug) => $slug === 'home'
+        ? new WP_Post(['ID' => 2511, 'post_title' => 'Kit home', 'post_content' => '', 'post_status' => 'publish'])
+        : null);
+    Functions\when('get_post_field')->justReturn('');
+    Functions\when('wp_update_post')->justReturn(2511);
+    Functions\when('wp_insert_post')->justReturn(900);
+    Functions\when('get_option')->alias(fn (string $key, $default = false) => $key === 'corex_kit_reading_before'
+        ? ['show_on_front' => 'posts', 'page_on_front' => '0', 'page_for_posts' => '0']
+        : $default);
+    Functions\when('get_post_meta')->alias(fn (int $id, string $key) => $key === '_corex_kit_before' ? $record : '');
+
+    $written = [];
+    Functions\when('update_post_meta')->alias(function (int $id, string $key) use (&$written): bool {
+        $written[] = $key;
+
+        return true;
+    });
+    Functions\when('update_option')->alias(function (string $key) use (&$written): bool {
+        $written[] = $key;
+
+        return true;
+    });
+
+    (new BlueprintActivator(new WpPluginActivationInspector(new SingleSiteMultisiteContext())))->seedPages(kitPages());
+
+    expect($written)->not->toContain('_corex_kit_before')
+        ->and($written)->not->toContain('corex_kit_reading_before');
+});

@@ -44,7 +44,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          tools: composer:v2
+          tools: composer:v2, wp-cli
           coverage: none
 
       - name: Validate composer.json
@@ -56,8 +56,36 @@ jobs:
       - name: Lint PHP source
         run: find plugins packages addons -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
 
+      # The steps after this one run even when it fails (spec 116), so a translation finding does
+      # not hide a failing unit test.
+      #
+      # Words a PHP file prints without a translation, and translation calls outside the `corex`
+      # text domain (spec 116, US-NFR-06). JavaScript has had the same rule through ESLint for
+      # long; PHP had nothing. What was found when the lint was written is in
+      # tests/Fixtures/i18n-lint-baseline.json, and that list only shrinks.
+      - name: PHP translation lint
+        run: php scripts/i18n-lint.php
+
       - name: Headless unit tests (Pest)
+        if: ${{ !cancelled() }}
         run: composer test
+
+      # The translation template, generated from the source on every pull request so that a
+      # translator always has the current strings (spec 116, US-NFR-06). `make-pot` reads files
+      # and needs no WordPress. A published release gets the same file attached by
+      # .github/workflows/release-assets.yml.
+      - name: Generate the translation template
+        if: ${{ !cancelled() }}
+        run: composer i18n:pot
+
+      - name: Upload the translation template
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: corex-pot
+          path: plugins/corex-core/languages/corex.pot
+          retention-days: 30
+          if-no-files-found: error
 
   js:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
@@ -84,11 +112,20 @@ jobs:
       # to be found by hand, and how `lint:js` accumulated 2589 problems: `wp-scripts lint-js` with
       # no project config walked `wp/` and `dist/` — tens of thousands of files that are not ours —
       # and never finished, so it could not be gated at all until eslint.config.js scoped it.
+      # From here, each step runs even when one before it failed (spec 116): a linter's failure
+      # used to stop the audit and Jest, so a pull request learned of one problem per push.
       - name: Lint styles
         run: npm run lint:css
 
       - name: Lint JavaScript
+        if: ${{ !cancelled() }}
         run: npm run lint:js
+
+      # No "planned", "coming soon", "sample data" or "reference only" in shipped source (spec 116,
+      # US-NFR-06; spec 068 wrote the audit and nothing ran it).
+      - name: Product completion audit
+        if: ${{ !cancelled() }}
+        run: npm run audit:completion
 
       # The docs site is built here so `tests/docs-links.test.js` has something to check. That test
       # skips itself when `docs-app/dist` is absent — right for a developer who has never built the
@@ -102,6 +139,7 @@ jobs:
       # check sampling only the half that works. It needs PHP, which this job otherwise does not
       # have, and that is the whole reason it was missing.
       - name: Set up PHP for the reference generator
+        if: ${{ !cancelled() }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -111,12 +149,15 @@ jobs:
       # `scripts/generate-docs.php` requires `vendor/autoload.php` — it reflects over the real
       # classes rather than parsing the files as text, which is what makes the reference accurate.
       - name: Install PHP dependencies
+        if: ${{ !cancelled() }}
         run: composer install --prefer-dist --no-progress
 
       - name: Generate the class reference
+        if: ${{ !cancelled() }}
         run: composer docs:generate
 
       - name: Build the docs site
+        if: ${{ !cancelled() }}
         working-directory: docs-app
         run: |
           npm ci
@@ -127,6 +168,7 @@ jobs:
       # this suite before, which is how a stale inventory survived spec 072's CSS additions
       # unnoticed while the gate reported every suite green.
       - name: JS unit tests (Jest)
+        if: ${{ !cancelled() }}
         run: npm run test:js
 
   # The integration suite boots the framework inside a real WordPress (tests/bootstrap-integration
@@ -155,6 +197,11 @@ jobs:
 
       - name: Integration tests (Pest, real WordPress)
         run: composer test:integration
+
+      # The admin read and form acceptance budgets (spec 068 T230). They need a booted WordPress
+      # and sit outside tests/Integration, so no job ran them until spec 116 (US-NFR-07).
+      - name: Performance budgets (Pest, real WordPress)
+        run: composer test:performance
 
   integration-multisite:
     if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
@@ -330,102 +377,10 @@ jobs:
       - name: Install the browser
         run: npx playwright install --with-deps chromium
 
-      # nginx + php-fpm rather than `php -S`. The built-in server could not bring the block editor
-      # up at all — the editor element never appeared, with no console error and nothing 404ing, so
-      # it was not a missing asset or a starved worker pool. A real server also gives proper rewrite
-      # routing instead of the built-in server's blanket index.php fallback.
+      # nginx + php-fpm, PHP's error log in a known file and the JIT off: the reasons for each are
+      # in the action, which the quality job uses too (spec 116).
       - name: Serve WordPress
-        run: |
-          sudo apt-get update -qq
-          # PHP-FPM is asked of apt only where it is not already here. Once setup-php has set up
-          # PHP 8.3 the runner has one: /usr/sbin/php-fpm8.3, /etc/php/8.3/fpm and a php8.3-fpm
-          # service that is running, on Ubuntu 24.04 and on 26.04 alike. Ubuntu 26.04's
-          # archive has php8.5-fpm and no php8.3-fpm, so asking for the package there
-          # stopped this job on "Unable to locate package php8.3-fpm" before a spec had run
-          # (pull request #406). `ubuntu-latest` is 24.04 on one run and 26.04 on the next
-          # while GitHub moves the label, and is followed on purpose (DECISIONS #367).
-          if command -v php-fpm8.3 > /dev/null; then
-            echo "php-fpm8.3 is here: $(command -v php-fpm8.3)"
-            sudo apt-get install -y -qq nginx
-          else
-            sudo apt-get install -y -qq nginx php8.3-fpm
-          fi
-          sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
-          server {
-            listen 8080 default_server;
-            root ${GITHUB_WORKSPACE}/wp;
-            index index.php;
-            location / { try_files \$uri \$uri/ /index.php?\$args; }
-            location ~ \.php\$ {
-              include snippets/fastcgi-php.conf;
-              fastcgi_pass unix:/run/php/php8.3-fpm.sock;
-              fastcgi_read_timeout 120;
-            }
-          }
-          NGINX
-          # nginx runs as www-data and has to traverse the runner's home to reach the workspace.
-          chmod o+x /home/runner /home/runner/work "${GITHUB_WORKSPACE}" || true
-          # Tell PHP where its error log is, rather than leave it to the image. The first run that
-          # collected the server logs found nginx's error log empty, which proves nothing either
-          # way about where a message would have gone.
-          sudo touch /var/log/corex-php-error.log
-          sudo chown www-data:www-data /var/log/corex-php-error.log
-          echo 'php_admin_flag[log_errors] = on' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
-          echo 'php_admin_value[error_log] = /var/log/corex-php-error.log' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
-          # No JIT. The runner's php-fpm came with the tracing JIT on and a 256 MB buffer, which
-          # this job never asked for and PHP does not do by default. On 2026-10-08 a method that
-          # had answered twenty-eight times began refusing a correct argument, for every worker,
-          # until the run ended (see the step that prints the opcode cache's state, below). A JIT
-          # is the part of PHP that rewrites a method once it has run often enough, and it is
-          # the one thing in that state a default PHP does not have. That it was the cause is
-          # not proved. Off, the job serves what a site serves, and the fault has one place fewer
-          # to come from.
-          #
-          # Named to be read last. PHP reads a directory of settings in name order and the last
-          # file to set a value wins. The runner's `99-pecl.ini` is where the JIT is switched on:
-          # the first attempt, `99-corex-no-jit.ini`, is read just before it and was overruled,
-          # which the step below is there to catch.
-          echo 'opcache.jit=disable' | sudo tee /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
-          echo 'opcache.jit_buffer_size=0' | sudo tee -a /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
-          # restart, not start: it is already running, with the old pool.
-          sudo systemctl restart php8.3-fpm
-          sudo nginx -t
-          sudo systemctl restart nginx
-          for _ in $(seq 1 30); do
-            if curl -sf -o /dev/null http://127.0.0.1:8080/; then echo "site up"; exit 0; fi
-            sleep 1
-          done
-          echo "site never came up"
-          sudo tail -50 /var/log/nginx/error.log || true
-          exit 1
-
-      # A log nobody has seen written to is a guess. One request through php-fpm writes a known
-      # line, and the job stops here if it is not in the file the failure artifact will carry —
-      # better to learn that on a green run than on the next 500.
-      - name: Prove where PHP's error log goes
-        run: |
-          echo "<?php error_log( 'corex-ci-log-probe' );" > wp/corex-log-probe.php
-          curl -sf -o /dev/null http://127.0.0.1:8080/corex-log-probe.php
-          rm wp/corex-log-probe.php
-          if ! sudo grep -q 'corex-ci-log-probe' /var/log/corex-php-error.log; then
-            echo "PHP's error log is not reaching /var/log/corex-php-error.log"
-            exit 1
-          fi
-
-      # The same rule for the JIT: asked of php-fpm itself, on every run, before a spec depends
-      # on the answer. A file in a directory the next runner image does not read would otherwise
-      # be a setting nobody has.
-      - name: Prove the JIT is off
-        run: |
-          echo '<?php echo json_encode( array( "jit_on" => opcache_get_status( false )["jit"]["on"] ?? null, "opcache.jit" => ini_get( "opcache.jit" ), "opcache.jit_buffer_size" => ini_get( "opcache.jit_buffer_size" ), "settings_file" => php_ini_loaded_file(), "settings_read_after_it" => php_ini_scanned_files() ) );' > wp/corex-jit-probe.php
-          answer=$(curl -sf http://127.0.0.1:8080/corex-jit-probe.php)
-          rm wp/corex-jit-probe.php
-          # Printed whatever the answer, so that where php-fpm reads its settings from is on record.
-          echo "$answer" | jq . || echo "$answer"
-          if [ "$(echo "$answer" | jq '.jit_on')" != "false" ]; then
-            echo "php-fpm says the JIT is not off."
-            exit 1
-          fi
+        uses: ./.github/actions/serve-wordpress
 
       # COREX_E2E_FRESH_INSTALL skips the specs that assume a site with content already in it —
       # published posts, built forms, stored submissions. See the list in tests/e2e/playwright.config.js;
@@ -522,6 +477,189 @@ jobs:
             test-results
           retention-days: 7
           if-no-files-found: ignore
+
+  # The quality checks every release is measured by (spec 116, R1.1): every CoreX admin screen and
+  # theme template in eight cells (375 and 1280px, light and dark, left to right and right to
+  # left) for sideways scroll, WCAG 2.2 AA, phone width, focus, motion, the four states, raw keys
+  # and untranslated words, and a front-end budget. tests/e2e/quality/playwright.quality.config.js
+  # says what each spec checks.
+  #
+  # A WordPress of its own, beside the browser job rather than after it: the other specs leave
+  # submissions and settings behind, and what these measure must not depend on the order a run
+  # took. The site gets the browser job's seed and the Company kit at Full (seed-quality-site.php).
+  #
+  # A finding that is not in tests/e2e/quality/known-failures.json fails the job; the list holds
+  # what main showed when the checks were written, each entry with the story that fixes it. The
+  # findings, four screenshots per screen and the measured bytes are uploaded on every run.
+  #
+  # Not confined to the framework's repository: a client repository runs it too, against its own
+  # CI's WordPress, which links the framework's plugins and add-ons and not the client's site.
+  quality:
+    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
+    name: Quality checks (screens, accessibility, states, words, budget)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corex
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/provision-wordpress
+        with:
+          site-url: http://127.0.0.1:8080
+
+      - name: Install the browser-test mu-plugin fixtures
+        run: |
+          mkdir -p wp/wp-content/mu-plugins
+          cp tests/e2e/fixtures/corex-e2e-*.php wp/wp-content/mu-plugins/
+
+      - name: Prepare the site the checks measure
+        run: |
+          set -euo pipefail
+          # Three stored submissions, as the browser job seeds them, so the inbox and the Data
+          # screen show rows.
+          for i in 1 2 3; do
+            id=$(wp post create --path=wp --post_type=corex_submission --post_status=private \
+              --post_title="Contact submission ${i}" --porcelain)
+            wp post meta set "$id" corex_form_slug contact --path=wp
+            wp post meta set "$id" corex_field_name "Fixture ${i}" --path=wp
+            wp post meta set "$id" corex_field_email "fixture${i}@example.com" --path=wp
+            wp post meta set "$id" corex_field_message "Seeded for CI run ${i}." --path=wp
+          done
+          # The Company kit at Full, a page or post for every theme template, and a subscriber.
+          wp eval-file tests/e2e/quality/seed-quality-site.php --path=wp
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build the admin bundles
+        run: npm run build
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Serve WordPress
+        uses: ./.github/actions/serve-wordpress
+
+      - name: Quality checks
+        env:
+          COREX_BASE_URL: http://127.0.0.1:8080
+          COREX_ADMIN_USER: admin
+          COREX_ADMIN_PASS: changeme
+        run: npm run test:quality
+
+      - name: Upload the findings, the screenshots and the measured bytes
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: quality-findings
+          path: test-results/quality
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload the report when a check fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: quality-report
+          path: |
+            playwright-report
+            test-results
+            !test-results/quality
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # A release candidate merged into a client repository, and that client's suites run on the
+  # result (spec 116, US-NFR-08). Before a tag, the person cutting the release runs
+  # scripts/client-merge-check.mjs against Muva's and Perego's repositories; this job proves the
+  # script on every pull request, against a client repository made the way a client's is: the
+  # base branch, with a site generated by `make:site` and committed. The candidate is what this
+  # run checks out.
+  #
+  # Confined to the framework's repository, as the generated-site job below is: in a client
+  # repository it would generate a second site beside the real one.
+  # Not on the nightly run either: it has no base to merge into (no pull request, no push before
+  # it), and the job would go red every night on an empty commit.
+  client-merge:
+    if: github.repository == 'MustafaShaaban/corex' && github.event_name != 'schedule'
+    name: A release candidate merges into a client repository
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corex
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/provision-wordpress
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Make a client repository at the base, with a generated site
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          git config --global user.email ci@example.com
+          git config --global user.name CI
+          git branch candidate HEAD
+          client="$RUNNER_TEMP/client"
+          git worktree add --quiet --detach "$client" "$BASE"
+          wp corex make:site Acme --starter --dir=sites/acme --path="$GITHUB_WORKSPACE/wp"
+          cp -r sites "$client/"
+          mkdir -p "$client/.github/workflows"
+          cp .github/workflows/site-acme.yml "$client/.github/workflows/"
+          rm -rf sites .github/workflows/site-acme.yml
+          # The site records the base as the framework release it took.
+          node scripts/client-merge-check.mjs --record-baseline "$client/sites/acme/corex-baseline.json" "$BASE"
+          cd "$client"
+          git checkout --quiet -b client
+          git add sites .github/workflows/site-acme.yml
+          git commit --quiet --message 'Add the client site'
+
+      # The suites a client repository runs: the framework reported unmodified (always first) and
+      # the client plugin's own tests, with this checkout's vendor/ where a client has its own.
+      - name: Merge the candidate into it and run the client's suites
+        env:
+          COREX_REPOSITORY_ROLE: client
+        run: |
+          set -euo pipefail
+          node scripts/client-merge-check.mjs \
+            --client "$RUNNER_TEMP/client" \
+            --candidate candidate \
+            --suite "ln -s $GITHUB_WORKSPACE/vendor vendor && cd sites/acme/acme-site && ../../../vendor/bin/pest" \
+            --report "$RUNNER_TEMP/client-merge.md"
+          cat "$RUNNER_TEMP/client-merge.md" >> "$GITHUB_STEP_SUMMARY"
 
   # The framework tells a team to put a client site under `sites/<client>/`, and for a long time
   # its own checks rejected exactly that: repository hygiene forbade the directory and the root

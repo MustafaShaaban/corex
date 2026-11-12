@@ -25,6 +25,10 @@ third-party plugins older than the ones updated in the site's admin since it was
 installing it would have put all six back without a word. FR-029 is what was added; the
 clarification of that date says how it was decided.
 
+**Amended 2026-10-25** (spec 123, DECISIONS #506): an agent installing a release through MCP cannot
+add a header or an address argument to its calls, so FR-024a also accepts the installation's key
+from a small JSON request body.
+
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
 hosting. That session sent the outline in full after the first draft was written; this draft
@@ -489,7 +493,8 @@ to the release that caused it.
   maintenance answer.
 - **FR-024a**: A request of the installation MUST get through that maintenance answer on a host
   that does not hand PHP the request's headers: the installation's key MUST be accepted from the
-  request's header, from the headers as the web server holds them, and from its address, and the
+  request's header, from the headers as the web server holds them, from its address, and (spec 123)
+  from a JSON request body of at most 64 KB, which is where an agent's call carries it. The
   installation's record MUST say which one a finishing request's key came from.
 - **FR-024b**: While visitors are held off, an installation MUST do no work whose length grows
   with the size of a release, other than moving folders. What it removes of the release kept

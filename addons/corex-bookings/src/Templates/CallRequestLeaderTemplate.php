@@ -11,6 +11,7 @@ namespace Corex\Bookings\Templates;
 defined('ABSPATH') || exit;
 
 use Corex\Email\Template\EmailTemplate;
+use Corex\Email\Design\EmailKind;
 use Corex\Email\Template\MailContext;
 
 /**
@@ -36,5 +37,11 @@ final class CallRequestLeaderTemplate extends EmailTemplate
             . '<tr><th style="text-align:start">' . esc_html__('Phone', 'corex') . '</th><td>{{ phone }}</td></tr>'
             . '<tr><th style="text-align:start">' . esc_html__('Preferred time', 'corex') . '</th><td>{{ preferred_time }}</td></tr>'
             . '</table>';
+    }
+
+    /** What the frame's footer says about why the person receives it (spec 120). */
+    public function kind(): string
+    {
+        return EmailKind::NOTIFICATION;
     }
 }

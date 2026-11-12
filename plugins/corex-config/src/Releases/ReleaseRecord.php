@@ -39,12 +39,15 @@ final class ReleaseRecord
     private const SHOWN = 20;
 
     /**
-     * @param Closure(int):string $nameOf The name an administrator goes by, for the activity log. Never empty.
+     * @param Closure(int):string            $nameOf       The name an administrator goes by, for the activity log. Never empty.
+     * @param (Closure():(string|null))|null $signedInWith The name of the Application Password the request in hand was signed in
+     *                                                     with, or null for one signed in another way (spec 123, FR-014a).
      */
     public function __construct(
         private readonly ReleaseStore $store,
         private readonly ActivityService $activity,
         private readonly Closure $nameOf,
+        private readonly ?Closure $signedInWith = null,
     ) {
     }
 
@@ -66,13 +69,15 @@ final class ReleaseRecord
      */
     public function write(ReleaseEvent $event, int $actorId, DateTimeImmutable $at): void
     {
+        $details = $this->withHowSignedIn($event->details);
+
         $this->store->record([
             'event'   => $event->kind,
             'version' => $event->version,
             'from'    => $event->from,
             'by'      => $actorId,
             'at'      => $at->format(DATE_ATOM),
-            ...$event->details,
+            ...$details,
         ]);
 
         try {
@@ -87,7 +92,7 @@ final class ReleaseRecord
                 targetLabel: $event->version,
                 outcome: self::OUTCOMES[$event->kind],
                 summary: ['key' => 'release.' . $event->kind, 'args' => ['from' => (string) $event->from, 'to' => $event->version]],
-                context: $event->details,
+                context: $details,
                 sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
                 retentionUntil: $at->modify('+365 days'),
                 occurredAt: $at,
@@ -97,5 +102,19 @@ final class ReleaseRecord
             // one of the release being installed, so its own change may be the one that
             // failed. The installer's log, written above, has the event either way.
         }
+    }
+
+    /**
+     * An event's details, and the Application Password it was done with when it was one: the
+     * history then says how a release was installed as well as who installed it.
+     *
+     * @param array<string,scalar> $details
+     * @return array<string,scalar>
+     */
+    private function withHowSignedIn(array $details): array
+    {
+        $password = $this->signedInWith === null ? null : ($this->signedInWith)();
+
+        return $password === null ? $details : [...$details, 'signed_in_with' => $password];
     }
 }

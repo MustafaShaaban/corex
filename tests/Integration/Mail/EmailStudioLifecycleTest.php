@@ -72,7 +72,7 @@ function emailLifecycleRouter(
         new EmailRouteDispatcher(
             new EmailRouteMessageFactory($templates, $editor),
             $studio,
-            $config,
+            \Corex\Tests\Support\StudioDelivery::factory($config, $studio),
         ),
     );
 }
@@ -198,12 +198,17 @@ it('captures a routed Development notification and persists its exact active tem
     ]);
     $attempt = $this->attempts->latest()[0];
     $route = $this->routes->findByTrigger('access.request.approved.integration');
+    // A development site keeps what it captures: only this dispatch's capture is this test's.
+    $newCaptures = array_values(array_filter(
+        $this->captures->latest(),
+        fn ($capture): bool => ! in_array($capture->id, $this->baselineAssetIds, true),
+    ));
 
     expect($result?->state)->toBe(MailResult::STATE_CAPTURED)
         ->and($this->driver->calls)->toBe(0)
-        ->and($this->captures->latest())->toHaveCount(1)
-        ->and($this->captures->latest()[0]->subject)->toBe('Access approved for Sam')
-        ->and($this->captures->latest()[0]->attemptId)->toBe($attempt->attemptId)
+        ->and($newCaptures)->toHaveCount(1)
+        ->and($newCaptures[0]->subject)->toBe('Access approved for Sam')
+        ->and($newCaptures[0]->attemptId)->toBe($attempt->attemptId)
         ->and($attempt->templateSlug)->toBe('access-approved-integration')
         ->and($attempt->templateId)->not->toBeNull()
         ->and($attempt->templateVersion)->toBe(1)
@@ -344,6 +349,7 @@ it('sends a template\'s email again under the subject as written', function () {
         $this->editor,
         emailLifecycleConfig('development', 'postmark', true),
         Corex\Boot::app()->container()->make(ReplyComposer::class),
+        \Corex\Tests\Support\StudioDelivery::factory(emailLifecycleConfig('development', 'postmark', true), $this->studio),
     );
 
     $again = $gateway->resend($failed->attemptId, 'sam@example.com', ['user' => ['name' => 'Tom & "Jerry"']]);

@@ -8,6 +8,13 @@
  * status + message, and this UI renders only ok + message — never any key value.
  */
 ( function () {
+	/*
+	 * The id the Settings form gives the secret key field: it writes each key with its dots
+	 * as underscores. The script looked for `captcha.secret`, which no page has, so the button
+	 * never appeared (spec 114, US-SAFE-16). A PHP test holds this to the form's own id.
+	 */
+	const SECRET_FIELD_ID = 'captcha_secret';
+
 	/**
 	 * The captcha test endpoint for a REST base (tolerant of a trailing slash).
 	 *
@@ -26,10 +33,30 @@
 	 * @return {{ok: boolean, message: string}} what the UI may render
 	 */
 	function resultFromEnvelope( envelope ) {
+		const extra =
+			( envelope &&
+				( envelope.ok ? envelope.data : envelope.details ) ) ||
+			{};
+
 		return {
 			ok: Boolean( envelope && envelope.ok ),
 			message: ( envelope && envelope.message ) || '',
+			// The line Settings keeps for the latest test (spec 119, US-SET-03).
+			status: typeof extra.status === 'string' ? extra.status : '',
 		};
+	}
+
+	/*
+	 * The remembered-test line Settings draws for this provider, brought up to date without a
+	 * reload. Absent on an older Settings screen, where nothing else changes.
+	 */
+	function showStatus( status ) {
+		const line = document.querySelector(
+			'[data-corex-provider-status="captcha"]'
+		);
+		if ( line && status ) {
+			line.textContent = status;
+		}
 	}
 
 	/*
@@ -47,9 +74,23 @@
 
 	function init() {
 		const config = window.corexCaptcha;
-		const anchor = document.getElementById( 'captcha.secret' );
+		const anchor = document.getElementById( SECRET_FIELD_ID );
 
 		if ( ! config || ! anchor || ! window.Corex || ! window.Corex.api ) {
+			return;
+		}
+
+		const cell = anchor.closest( 'td' ) || anchor.parentNode;
+
+		// Nothing to test until a provider and both of its keys are saved: say what is needed.
+		if ( ! config.ready ) {
+			const needed = document.createElement( 'p' );
+			needed.className = 'corex-field-help corex-captcha-test__needed';
+			needed.textContent = __(
+				'Save a site key and a secret key for this provider, then test them here.',
+				'corex'
+			);
+			cell.appendChild( needed );
 			return;
 		}
 
@@ -68,7 +109,7 @@
 
 		wrap.appendChild( button );
 		wrap.appendChild( result );
-		( anchor.closest( 'td' ) || anchor.parentNode ).appendChild( wrap );
+		cell.appendChild( wrap );
 
 		button.addEventListener( 'click', function () {
 			// The admin's one working state (spec 108). The sentence beside the button stays:
@@ -93,6 +134,7 @@
 					result.className =
 						'corex-captcha-test__result is-' +
 						( view.ok ? 'ok' : 'error' );
+					showStatus( view.status );
 				} )
 				.catch( function () {
 					result.textContent = __(
@@ -120,6 +162,7 @@
 	// Exported for unit tests (no effect in the browser, where there is no CommonJS module).
 	if ( typeof module !== 'undefined' && module.exports ) {
 		module.exports = {
+			SECRET_FIELD_ID,
 			testEndpoint,
 			resultFromEnvelope,
 		};

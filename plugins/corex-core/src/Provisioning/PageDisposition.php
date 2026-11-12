@@ -29,6 +29,9 @@ final class PageDisposition
     public const REPLACE = 'replace';
     public const SUFFIX  = 'suffix';
 
+    /** The page meta that holds how a kit persisted a page. */
+    public const META = '_corex_kit_page';
+
     /** How a page was persisted, recorded in `_corex_kit_page` so a reset can tell Corex-created from adopted. */
     public const PERSISTED_CREATED  = 'created';
     public const PERSISTED_ADOPTED  = 'adopted';

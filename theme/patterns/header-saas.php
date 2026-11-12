@@ -11,6 +11,8 @@
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"header","className":"corex-header corex-header--saas","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|30","bottom":"var:preset|spacing|30"}}}} -->
 <header class="wp-block-group corex-header corex-header--saas" style="padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30)">
@@ -28,9 +30,9 @@ defined('ABSPATH') || exit;
 				<div class="wp-block-group corex-mega__panel">
 					<!-- wp:list -->
 					<ul class="wp-block-list">
-						<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Features', 'corex'); ?></a></li><!-- /wp:list-item -->
-						<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Integrations', 'corex'); ?></a></li><!-- /wp:list-item -->
-						<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Pricing', 'corex'); ?></a></li><!-- /wp:list-item -->
+						<!-- wp:list-item --><li><?php echo corex_pattern_link('features', __('Features', 'corex')); ?></li><!-- /wp:list-item -->
+						<!-- wp:list-item --><li><?php echo corex_pattern_link('integrations', __('Integrations', 'corex')); ?></li><!-- /wp:list-item -->
+						<!-- wp:list-item --><li><?php echo corex_pattern_link('pricing', __('Pricing', 'corex')); ?></li><!-- /wp:list-item -->
 					</ul>
 					<!-- /wp:list -->
 				</div>
@@ -54,15 +56,15 @@ defined('ABSPATH') || exit;
 			</div>
 			<!-- /wp:html -->
 
+			<?php
+			$corex_sign_in_url = corex_pattern_page_url('account');
+			$corex_cta_url     = corex_pattern_action_url();
+			?>
+			<?php if ($corex_sign_in_url !== '' || $corex_cta_url !== '') : ?>
 			<!-- wp:buttons {"className":"corex-header__cta","layout":{"type":"flex","verticalAlignment":"center"}} -->
-			<div class="wp-block-buttons corex-header__cta"><!-- wp:button {"className":"is-style-outline"} -->
-			<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="#"><?php echo esc_html__('Sign in', 'corex'); ?></a></div>
-			<!-- /wp:button -->
-
-			<!-- wp:button -->
-			<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="#"><?php echo esc_html__('Start free', 'corex'); ?></a></div>
-			<!-- /wp:button --></div>
+			<div class="wp-block-buttons corex-header__cta"><?php echo corex_pattern_button($corex_sign_in_url, __('Sign in', 'corex'), ['className' => 'is-style-outline']) . corex_pattern_button($corex_cta_url, __('Start free', 'corex')); ?></div>
 			<!-- /wp:buttons -->
+			<?php endif; ?>
 		</div>
 		<!-- /wp:group -->
 	</div>

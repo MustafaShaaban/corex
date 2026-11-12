@@ -17181,3 +17181,3309 @@ pixels and passed on the next run; that test was not changed).
 **Client impact.** A package built with `--with-plugin` from plugin copies older than the
 site's asks for one more box to be ticked, and names them. The installation that brings this
 release is run by the release it replaces, so it is not yet asked.
+
+## #372 — A CoreX site says it runs CoreX: a generator tag naming CoreX, with no version, in every front-end page head
+
+**Date:** 2026-10-19. **Branch:** `spec/111-generator-tag`. **Spec:** 111. **Mode:** CoreX
+Framework.
+
+**Why.** The owner asked whether CoreX could appear in Wappalyzer, which listed WordPress, MySQL,
+Rank Math and React on a CoreX site and not CoreX. A scanner recognises a platform by a mark the
+platform leaves in its pages, and CoreX left none: no generator tag, no header. The only thing a
+rule could match was the path of CoreX's assets, which a page without a CoreX block does not load
+and a bundled or CDN-served site hides.
+
+**Decided.**
+
+1. **Name only, no version** (the owner's answer, 2026-10-19). A version tells anyone looking for
+   a vulnerable site which release to try; that is why spec 101's Coming soon page already hides
+   WordPress's tag. The name alone says what the asset paths already say.
+2. **The standard generator meta tag**, in the form WordPress prints its own
+   (`<meta name="generator" content="CoreX" />`), because every scanner reads it. WordPress,
+   WooCommerce and Elementor each print one.
+3. **A `wp_head` callback of its own, not a filter on WordPress's tag.** WooCommerce appends its
+   tag to `get_the_generator_*`, so removing WordPress's removes WooCommerce's. Security plugins
+   remove WordPress's tag to hide its version; CoreX's has none, so it stays.
+4. **Printed from `corex-core`'s `ThemeServiceProvider`**, whose job widens from brand overrides to
+   what the framework puts into the theme layer. A provider of its own would add an entry to
+   `Boot::CORE_PROVIDERS` and the add-on resolver for one hook. The theme gains nothing
+   (Principle I).
+5. **Turned off by a filter, `corex_generator_tag`**, read when the head is printed so a theme's
+   callback counts. No admin setting until a client asks for one.
+6. **The Coming soon page a visitor sees carries none.** `ComingSoonHead::quiet()` answers the
+   filter false at `PHP_INT_MAX`, through the same public filter, so a site callback at an
+   ordinary priority cannot bring it back onto that page. The real site served through the mode
+   carries it.
+7. **The detection rule is prepared, not sent.** `specs/111-generator-tag/contracts/detection-rule.md`
+   holds it in the format of `enthec/webappanalyzer`, the open continuation of Wappalyzer's list
+   (Wappalyzer's went private in August 2023). Sending it is the owner's: that list asks for ten
+   or more public sites using the technology, and Wappalyzer takes suggestions through its site.
+
+**Not chosen.**
+
+- *The version, with a setting to hide it.* Declined by the owner.
+- *An `X-Powered-By` header.* A second mark scanners would need a second rule for, and page caches
+  and CDNs often drop or rewrite headers.
+- *Relying on asset paths.* Kept in the rule as a second signal for older releases only.
+
+**Verified.** Pest unit `GeneratorTagTest` (four cases: the markup, no digit, escaped, off) and the
+whole unit suite. Pest integration `GeneratorTagTest` on a real WordPress (once beside WordPress's
+tag; still once with WordPress's removed; gone with the filter off and back without it; hooked on
+`wp_head` and on no other hook) and `ComingSoonHeadTest`, which failed with the `quiet()` change
+taken out ("the page still prints the generator tag") and passes with it. The whole integration
+suite, 1285 passing: run whole, it first failed the new test, because `ComingSoonModeTest` left
+`quiet()`'s changes (WordPress's head callbacks and now the generator filter) to every later file.
+Its `afterEach` now puts both back. Playwright on a scratch WordPress served by `php -S`: `generator-tag.spec.js` (one
+mark naming exactly CoreX on the front page and the not-found page, signed out) and all 11 tests of
+`coming-soon.spec.js`, whose administrator test now also asserts the mark on the real site.
+
+**Client impact.** None to act on. Every page of a client site gains one line in its head after the
+update. A client that wants none adds the one-line filter.
+
+## #373 — Maintenance closes public submissions: a route that takes them declares it, and one REST filter answers 503 before any handler runs
+
+**Date:** 2026-10-20. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 3. **Mode:**
+CoreX Framework.
+
+**Why.** An owner puts the site into Maintenance so that no visitor data arrives until it is back.
+CoreX's public forms post to REST routes, which the maintenance page guard leaves alone by design,
+so closing submissions needs a guard of its own on those routes.
+
+**Decided.**
+
+1. **A route declares that it takes a public submission**, with `Corex\Http\PublicSubmission::MARKER
+   => true` in its own `register_rest_route()` arguments. WordPress keeps the key in the matched
+   handler. Six routes declare it: `forms/{slug}`, `flows/{id}/submit`, `newsletter/subscribe`,
+   `bookings/request`, `careers/apply` and `account/register`. Sign-in, password reset and every
+   read leave it out, so an administrator can still sign in through the account block.
+2. **One filter on `rest_request_before_callbacks`** (`MaintenanceSubmissionGuard`, corex-config)
+   answers `site_in_maintenance` with HTTP 503 before the permission callback and the handler run,
+   so nothing is stored, mailed or counted against a throttle. A second filter on
+   `rest_request_after_callbacks` turns that one error into a response carrying `Retry-After: 3600`,
+   as the maintenance page has; an error cannot carry a header.
+3. **One decision for both guards.** `MaintenanceDecision::closedToCurrentVisitor()` holds the mode,
+   the `corex_maintenance_bypass` filter (#123) and the signed-in administrator rule.
+   `MaintenanceGuard` adds its own "never the admin, cron, AJAX or REST" rule on top and calls it,
+   so the page guard and the submission guard cannot disagree about who passes.
+4. **Coming soon is untouched** (spec 101 FR-006): the guard acts only on Maintenance.
+5. **The panel says it.** `ModeDisclosure`'s always-shown Maintenance lines name what is closed and
+   what stays open, and that WordPress's own comment form follows the discussion settings. The
+   reference line that said the REST API is never intercepted now says "apart from public
+   submissions".
+
+**Not chosen.**
+
+- *A middleware alias.* The add-ons depend only on corex-core and do not run the middleware
+  pipeline, so it would reach two of the six routes.
+- *A list of route patterns kept in corex-config.* A new public route would stay open silently; a
+  declaration travels with the route.
+- *Closing `account/login`.* It stores no visitor data and mails nothing, and closing it could stop
+  an administrator signing in through the account block.
+
+**Verified.** Pest unit `MaintenanceDecisionTest` (9) and the updated `MaintenanceGuardTest` and
+`ModeDisclosureTest`; the whole unit suite, 3228 passing. Pest integration
+`MaintenanceClosesSubmissionsTest` through the real REST server, with a `rest_dispatch_request`
+stand-in for every handler and the mode answered by a `pre_option_` filter, so no run writes
+anything to the install: each marked route answers 503 with `Retry-After` and no database write or
+mail; sign-in and both password reset routes, a signed-in administrator, the bypass filter, Coming
+soon and Production pass; exactly the six routes carry the marker. The refusal test fails with the
+guard unregistered and passes with it. `MaintenanceModeTest` and the route suites of forms,
+newsletter, bookings, careers and profile (238 passing). Playwright: the Maintenance panel shows
+its lines without opening anything.
+
+**Client impact.** Muva and Perego: while a site is in Maintenance, its CoreX forms and sign-ups
+answer 503 and store nothing; Coming soon, which Muva uses, is unchanged. A client route of its own
+that takes public submissions can declare the marker to close with them.
+
+## #374 — Login recovery without a command line: one LoginRecovery value, both ways back as code to copy, and the Security Center says while recovery is on
+
+**Date:** 2026-10-20. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 4. **Mode:**
+CoreX Framework.
+
+**Why.** The Recovery panel gave only `wp corex security reset-login`, and both client sites run on
+hosts with no command line. The `COREX_LOGIN_UNGUARD` constant (#125) works from a host's file
+manager, but the panel did not say how, and nothing said while it was on.
+
+**Decided.**
+
+1. **`LoginRecovery`** (corex-config, `Security/LoginProtection`) holds whether the constant is on,
+   read once in the container where it was read before. `LoginRouteGuard` keeps its boolean argument,
+   now taken from it; `OperationsSecurityScreen` takes it and passes `recoveryActive` to the Security
+   Center. Nothing else reads the constant.
+2. **The Recovery panel gives both ways**, in order: without a command line (file manager, the line
+   to add above WordPress's "That's all, stop editing" line, sign in at `/wp-login.php`, remove the
+   line), then with one; each says what it does and does not do. The bookmark warning names both.
+3. **"Recovery is on"** shows in the Login protection section while the constant is set, whether or
+   not protection is on, and the overview's "Default login endpoints" row reads "Reachable (recovery
+   is on)" when the settings would hide them.
+4. **`CorexCopyField`**, a React copy field in `admin/components`, the admin form of
+   `StandalonePage::copyField()`: the same fallback (Clipboard API, then selecting and copying, then
+   saying to copy from the keyboard). It is a read-only text area set left to right that wraps, so
+   the whole line can be read before it is copied: a single-line field cut the constant's line off
+   at the panel's width. Where field and button do not fit on one line, the button goes under it.
+   Its styles are in `corex-admin-shell.css` with the other shared components.
+
+**Verified.** Jest `corexCopyField.test.js` (4) and `securityCenterRecovery.test.js` (6); the whole
+Jest suite. Pest integration `RecoveryOnTest` (the screen built with a chosen `LoginRecovery`, the
+login settings answered by a filter) and the Security integration suite, 85 passing. Playwright: the
+panel's two headings and two values, and at 1280px and 375px each value whole in its field with
+nothing scrolled out of view.
+
+**Client impact.** None to act on. Both clients' owners get a recovery route that works on their
+hosts.
+
+## #375 — The ACF field driver slashes what it hands to ACF, as the native one does
+
+**Date:** 2026-10-21. **Branch:** `fix/acf-field-driver-keeps-backslashes`. **Mode:** CoreX
+Framework. **Found by:** 14 failures of `SubmissionKeepsBackslashesTest` on corex.local, where
+ACF 6.8.10 is active.
+
+**Why.** #331 gave `MetaFieldDriver::set()` a `wp_slash()` and left `AcfFieldDriver` alone, because
+ACF was not on the install to measure. It is now. `FieldResolver` picks the ACF driver whenever
+`get_field()` and `update_field()` exist, and ACF's `update_field()` reaches
+`acf_update_metadata()`, which hands a post's value to `update_metadata()`; that takes one level of
+slashes off, as it does for WordPress's own forms. On a site with ACF active, every submission
+answer, the sender's name, the hidden fields, the UTM values, the consent snapshot and the
+pipeline's timeline lost their backslashes: `C:\offers\new` was read in the inbox as
+`C:offersnew`, and a timeline event, written again whole with each new event, lost a level more
+each time (`\\server\share`, then `\servershare`, then `servershare`).
+
+**Decided.** `AcfFieldDriver::set()` hands `update_field()` `wp_slash($value)`. Every caller of a
+field driver hands it the value as given, so the two drivers now store the same thing. ACF's
+options path also unslashes before `update_option()`, so it is right there too. What is not text
+is not changed.
+
+**Not chosen.** *Writing submissions through `update_post_meta()` whatever the driver.* The data
+layer chooses the driver on purpose (spec FR-009), so ACF field types and return formats are
+honoured.
+
+**Verified.** Pest unit `FieldDriverTest` fails with the change taken out and passes with it. Pest
+integration on corex.local with ACF active: `SubmissionKeepsBackslashesTest` went from 14 failed to
+19 passing with only this class swapped in, and the whole integration suite was run with it: 1251 passed; the only 4 failures were `MaintenanceModeTest`, main's copy run against the shared root checkout's unpushed spec 112 `MaintenanceGuard`, unrelated.
+
+**Client impact.** A site with ACF active keeps backslashes in what is submitted from the update
+on. Records stored before it are not repaired: what was dropped is not in the database.
+
+## #376 — Access requests ask only for what a request may give; approval shows what it grants and needs a note, an expiry and, for a dangerous ability, its key typed; grants are listed, revoked and ended on time
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 1. **Mode:**
+CoreX Framework. (#375 is held by open PR #428.)
+
+**Why.** Every CoreX screen will check its own ability (stage 3), so who holds an ability has to be
+deliberate first: an administrator should see what an approval grants, say why, choose when it ends,
+find it again and take it back, and the abilities that control the whole site should be granted
+through the role matrix alone.
+
+**Decided.**
+
+1. **`RequestableAbilities`** (corex-core): a request may ask for an ability when neither it nor
+   anything it implies is locked or critical, and for an area when every ability in it can be asked
+   for. `AccessService::assertTarget()` refuses the rest (`ability_not_requestable`,
+   `area_not_requestable`, in the route's 400 shape), so the REST route and the denied page's form
+   answer the same. `AdminPage` takes it as an optional second argument: on Overview, Add-ons,
+   Access, Operations & Security and Releases the denied page says an administrator grants access
+   through the role matrix and offers no form; a post from one of them stores nothing.
+2. **Approval in two steps.** `POST access/requests/{id}/preview` answers what would be granted
+   (each ability with its risk, the area, the reason, any `AccessPolicy::preview()` blocker), the
+   name to type and a hash over the request id and its abilities. `approveRequest()` needs a
+   non-empty note, an expiry of 7, 30 or 90 days, and a `Confirmation` of kind
+   `access.request.approve` bound to that hash; for a dangerous ability its phrase is the ability's
+   key, checked on the server. The key, not the label: it is the same in every language, it is what
+   the denied page shows, and it survives `sanitize_key()`. `denyRequest()` keeps the old refusal.
+   A request for something no longer requestable is cancelled instead of approved.
+3. **The approved row is the grant.** Foundation schema 4 adds five nullable columns to the access
+   requests table (`grant_expires_at`, `ended_at`, `ended_by`, `ended_reason`, `cancel_reason`); the
+   migration runner adds them and nothing is backfilled. A row approved before them has no expiry and
+   is listed as "No expiry (granted before expiries existed)".
+4. **`AccessGrantService`** lists the standing grants (not those of deleted accounts), revokes one
+   (`POST access/grants/{id}/revoke`), ends expired ones and cancels pending requests for what can no
+   longer be asked for. An ability is taken back only when no other standing grant gives it to the
+   same person. `AccessGrantScheduler` runs it daily, on the retention sweep's pattern
+   (`corex_access_grants_daily`), so a grant can outlive its expiry by up to a day. `GET
+   access/grants` and revoking keep the request list's check, `manage_options` (#346).
+5. **`AccessGrantEndedEvent`** on every end; `AccessGrantEndedNotificationProducer` tells the person
+   and the approver when an expiry ends one (the approver is skipped when the account is gone).
+   Activity kinds `access.grant.revoked`, `access.grant.expired`, `access.request.cancelled`.
+6. **The Access screen**: Approve opens `AccessApprovalDialog` from the preview; the panel reads the
+   result's `state`, because a refused decision is answered 200 with `blocked`; `AccessGrantsPanel`
+   lists the grants beside the requests and is read again after an approval.
+
+**Not chosen.**
+
+- *A separate grants table, one row per ability.* It needs a backfill the migration runner cannot
+  run; revoking an area grant as a whole is enough for FR-005.
+- *Showing a grant "overridden by a role".* FR-005 does not ask for it, and it needs the effective
+  capabilities of every listed person.
+
+**Verified.** Pest unit: `RequestableAbilitiesTest` (every ability and area, and an ability that
+implies a critical one), `AccessServiceTest` (preview, note, each expiry, typed key, another
+request's confirmation, a request no longer requestable), `AccessGrantEndedNotificationProducerTest`;
+the whole unit suite, 3264 passing. Pest integration: `AccessGrantStoreTest` (columns, approve, list,
+end once, expired, cancel), `AccessGrantsTest` through the REST server with accounts of its own
+(preview, four refusals, approve and revoke, no expiry, removed outside CoreX, a deleted account, two
+grants for one ability, the daily end with both people told, the daily cancel, administrators only),
+the refusal and denied-page tests; the whole integration suite: 1295 passing, and the 16 failures
+that fail the same way without these changes (being fixed by open PRs #428 and #429). Jest
+`accessGrantsPanel.test.js` (4) and the whole Jest suite. Playwright `access-request.spec.js` (6),
+including approving with a note and 7 days through the dialog, the grant listed, and revoking it.
+
+**Client impact.** Muva and Perego: administrators approve with a note and an expiry; grants made
+before this release are listed with no expiry and can be revoked. A client repository carrying
+copies of CoreX's own tests takes the updated `tests/Unit/Access/AccessServiceTest.php` with this
+release (its fakes implement the widened `AccessRequestStore` and `AccessUserDirectory`).
+
+## #377 — The access audit log counts refusals: one entry per person, section and hour, a per-person cap, and the object cache where the host has one
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 2. **Mode:**
+CoreX Framework.
+
+**Why.** The audit log keeps a bounded history of who was refused what. Counting repeated refusals
+of one screen by one person as one line keeps that history readable and keeps every person's lines
+in it, and spares the database a write for each repeat where the host can.
+
+**Decided.**
+
+1. **Entries are `{user, kind, section, first, last, count}`**, merged while user, kind and section
+   match and the refusal is within an hour of `first`: a window anchored at the first refusal, not a
+   clock hour, so one across midnight stays one entry.
+2. **A screen is one section.** `recordDenied()` records under `AdminPage::pageSlugForSection()`, so
+   the section key from `AdminPage::permissionDenied()` and the page slug from `AccessDeniedGate` are
+   counted together. Entries stored before spec 112 (`time` instead of a range, either key) are read
+   as one refusal each and folded by the same rule, so existing history reads counted at once.
+3. **Each person keeps at most 20 entries** before the log's own cap of 100 applies; the 30-day
+   prune (by the last refusal) stays (#114).
+4. **With a persistent object cache** (`wp_using_ext_object_cache()`), a repeat within the window is
+   counted in the cache (`corex_access_audit` group) and the database is written once for the
+   window: when it starts, and when the next refusal after it closes it or `settle()` runs from the
+   daily access event (`AccessGrantScheduler`). Reads add the cached count in. **Without one**, a
+   repeat updates that person's entry in place (the owner's answer of 2026-10-20, spec 112
+   clarifications).
+5. **The audit tab and the Access workspace say it in words**: who, which screen, how many times,
+   from when to when, with dates through `AdminDate` (spec 076), not raw keys or "2 hours ago".
+
+**Not chosen.** *A counter file under uploads* to meet "one write per hour" on hosts without an
+object cache: more moving parts on shared hosts than a single in-place update is worth.
+
+**Verified.** Pest unit `AccessAuditLogTest` (16: once, fifty in an hour, the window's end, across
+midnight, apart by person/section/kind, a thousand sections for one person, writes without and with
+a cache, the closing window, `settle()`, prune, order, the old shape, folding, both keys of a
+screen) and the whole unit suite. Pest integration `AccessAuditLogWritesTest` on a real WordPress
+counting the option's writes (10 without a cache, 1 with), a thousand refusals keeping two other
+people's entries, the audit tab saying "3 times, from … to …" in one row; `AccessDeniedGateTest` and
+`EveryRequestOptionQueriesTest` unchanged and passing; the whole integration suite. Jest, whole
+suite.
+
+**Client impact.** None to act on. Both admins' audit tabs read as counted lines from the update on.
+
+## #378 — Security records on the Data screen need the ability of the screen they belong to
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 6. **Mode:**
+CoreX Framework.
+
+**Why.** The role ability grants, the access requests and the sign-in attempts belong to Access &
+Abilities and Operations & Security. An owner who delegates data work with "Manage data" should not
+be delegating those records with it.
+
+**Decided.**
+
+1. **A table says which screen owns it.** `ManagedTable` takes an optional last argument,
+   `ownerAbility` (last and defaulted, because a site builds tables of its own; Perego does).
+   `corex_manage_access` for the two access tables, `corex_manage_operations` for sign-in attempts.
+   `TableDataSource` exposes it through `RestrictedDataSource`.
+2. **`DataSourceService` is where it is enforced**, being where every read is decided:
+   `withheldFrom()` names the ability a person lacks; `catalog()` leaves such a source out
+   entirely (not listed as denied); `describe()` and `authorize()` refuse it with
+   `DataAccessRestricted`, which the gateway answers `403` `data_forbidden` by its type, as it does
+   `PersonalDataNotAllowed`, not by reading the words of a translated message. Administrators pass,
+   as `WpDataAccessPolicy` passes `manage_options` for every ability.
+3. **Each refusal is recorded** in the access audit as kind `data` with the model's key, through
+   `Corex\Access\AccessRefusalRecorder` (implemented by `AccessAuditLog`, bound in the container), so
+   the Data layer does not depend on the Access screen's classes; it is counted by #377's rule.
+4. **Exports.** An export of several keeps a restricted model as a part left out
+   (`left_out_because: restricted`, with its label) and never reads it; its summary says why. An
+   export of nothing but restricted models is refused with their names, since CoreX makes no file
+   for an export that would give nothing. Downloading an earlier export that holds a model the
+   person may no longer read is refused.
+5. **Delete stays unavailable** for these three: they are read-only table sources with no writable
+   adapter, so the service's adapter check refuses it before any ability is asked.
+
+**Verified.** Pest unit `ManagedTableTest` (no owner by default; the three shipped owners) and the
+whole unit suite, 3274 passing. Pest integration `RestrictedDataSourcesTest` through the REST server
+as a person holding only "Manage data", with two models of its own and the three shipped tables:
+not listed; list, record and export preview answer 403 `data_forbidden`; two refusals are one
+counted audit entry of kind `data`; an export of a restricted and an open model leaves the first out
+with its reason and label; an export of only the restricted model is refused naming it; a holder of
+both abilities and an administrator read them. The Data, export and Access integration suites (225
+passing) and the whole suite.
+
+**Client impact.** Muva and Perego: a person given "Manage data" who is not an administrator no
+longer sees the three security models. A site's own `ManagedTable` keeps working unchanged.
+
+## #379 — Blog Pro asks one policy, WordPress's own permission for the post or comment in question, and never allows more
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 5. **Mode:**
+CoreX Framework.
+
+**Why.** Blog Pro is for the people who write and edit a site's posts, so it should open for them and
+let each do exactly what WordPress lets them do with the post or comment in front of them. The
+screen and its routes should answer that from one place (#159: a control follows the capability the
+route enforces).
+
+**Decided.**
+
+1. **`BlogProPermissions`** (corex-config) is the one policy the screen, the presenter and every
+   route's `permission_callback` ask. Base: `edit_posts` (stage 3 replaces it with
+   `corex_manage_blog`, CX-ACC-01). A post's figures, share controls and held comments, and moving
+   it, need `edit_post` on it; moving it to Published or Scheduled also needs `publish_post`.
+   Approving, marking as spam, trashing and replying need `moderate_comments`, stricter than
+   WordPress for an Author's own posts, as the owner chose (spec 112 clarifications); editing a
+   comment needs `edit_comment`. The authors table lists every author for `edit_others_posts` and
+   only the person's own line otherwise (`AuthorAnalyticsService::authorsAmong()`).
+2. **A refusal names what is not allowed:** the callbacks answer a `WP_Error` (`rest_forbidden`,
+   403) with a translated sentence; a missing nonce is refused as before.
+3. **The routes read the post or comment from the path** (`RouteParam`), so the id the check is made
+   on is the id acted on; `post_id` is read only where the path has none.
+4. **The screen opens for `edit_posts`**, lists only posts the person may work on (their own for
+   anybody who may not edit others'), offers only the moves the policy allows, and shows
+   moderation buttons only where it allows them. The unused `can` flags are gone. The Blog Pro guide
+   now requires `edit_posts`, as the screen does.
+5. **`POST blog/share-click` records nothing** and answers `recorded: false` (FR-027): nothing calls
+   it, and an open address that writes a row per call is a cost with no reader.
+
+**Known and left.** The denied page of Blog Pro offers to request `corex_manage_blog`, which does not
+open the screen until stage 3 makes the screen check it.
+
+**Verified.** Pest integration `BlogProPermissionMatrixTest` through the REST server, with a
+stand-in for every handler so nothing is changed: Contributor, Author, Editor and Administrator ×
+own and others' drafts and published posts × analytics, share controls and comments; moves to
+review, Published, Scheduled and Draft; approve, spam, trash and reply on a held comment of another's
+post and of the Author's own post; edit on both; the authors route; a subscriber refused; post id 0
+refused; share-click recording nothing; and the screen as an Author (own posts, own line) and a
+Contributor (no Published or Scheduled offered). The other Blog integration tests (46) and the whole
+suite; Jest Blog (27); Playwright `blog-pro.spec.js` (6).
+
+**Client impact.** Muva and Perego: editors and writers can now open Blog Pro and act on what
+WordPress lets them; nothing changes for administrators. Writers no longer reach others' posts or
+comments through its routes.
+
+## #380 — A flow email keeps who it was sent to; an inbox resend goes to them, or to the one recipient its attempt confirms
+
+**Date:** 2026-10-21. **Branch:** `spec/112-access-and-logs`. **Spec:** 112, User Story 7. **Mode:**
+CoreX Framework.
+
+**Why.** Sending one of a submission's emails again from the inbox should reach the people that email
+was for: the team for a team notification, the sender for a confirmation. CoreX had not kept who an
+email went to; the attempt store keeps a masked address and a keyed hash of it.
+
+**Decided** (the owner's answer of 2026-10-20, spec 112 clarifications).
+
+1. **The email stage records each email's resolved recipients** in the submission's email record
+   (`recipients` on the binding, from `FlowEmailSender::recipientsFor()`), so they live and die with
+   the submission. Anonymising takes them out of the email record and of the resend history.
+2. **A resend goes to the recorded recipients** (`basis: recorded`). For an email sent before they
+   were recorded, the flow's recipients are worked out again from the version the submission was
+   made with (`Corex\Mail\SubmissionEmailRecipients`, implemented by corex-forms) and the email is
+   sent only if they are **one** address that the email's own attempt was sent to
+   (`basis: rechecked`): an attempt names one address, and the other recipients of the same email are
+   attempts of their own that it does not name. Otherwise nothing is sent and the drawer says why.
+3. **`SubmissionEmailGateway` is unchanged**, because a client site implements it (Perego). An
+   optional `Corex\Mail\RecipientAwareSubmissionEmailGateway` adds `resendTo()` (one email to all the
+   recipients) and `wasSentTo()`; Email Studio's gateway implements it. Through a gateway that does
+   not, CoreX sends once per recipient and confirms nobody.
+4. **The detail route describes each email**: `kind` (confirmation, team notification, failure
+   notice), `resendable` and `not_resendable_reason`. The resend answer and the history carry who it
+   went to; the drawer says so.
+
+**Not chosen.** *Storing the full address on the attempt*: it reverses the attempt store's
+redaction, a privacy decision of its own.
+
+**Verified.** Pest unit `ResendRecipientsTest` (12: the team and never the submitter, the
+submitter for a confirmation, one email or one each by gateway, an older email confirmed, four
+refusals that send nothing, the description of four emails) and the updated
+`SubmissionEmailServiceTest`; the whole unit suite, 3288 passing. Pest integration
+`ResendRecipientsTest` end to end on a real Email Studio template and published flow, mail captured
+and `wp_mail()` stopped: the binding records `team@example.com`, the resend reaches only the team,
+an older email is resent after its attempt confirms, one that cannot be worked out again is refused
+and described as such, anonymising removes the recipients; the whole integration suite, 1329
+passing. Jest `replyState.test.js` and the whole Jest suite (1428). Playwright
+`submissions-inbox.spec.js` (15).
+
+**Client impact.** Muva and Perego send no flow emails from code-defined forms, so the change is not
+visible to them. Perego's own `SubmissionEmailGateway` keeps working unchanged.
+
+## #381 — One answer to "is this a development site": a lock, then the operations mode, then WordPress
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 1. **Mode:** CoreX
+Framework.
+
+**Why.** Mail capture has to follow what the owner chose in the admin (shared hosts have no command
+line), and every screen has to give the same answer. Email Studio read `app.env`, which the defaults
+layer answers with "production" on every site; the screens read the operations mode or WordPress's
+environment type. Three inputs, three answers.
+
+**Decided** (the owner's SAFE-D1, 2026-10-19; the two gaps below under the owner's 2026-10-21 mandate).
+
+1. `Corex\Environment\SiteEnvironment` (corex-core) answers Development, Staging or Production, with
+   what decided it: `APP_ENV` in `.env`, then the network lock, then the `corex_app_env` option (each
+   a **lock**), then the operations mode, then WordPress's type (`local`/`development` →
+   Development, `staging` → Staging, anything else → Production). It reads the three lock layers one
+   by one, as `Boot` does, because the repository's defaults layer would answer every site.
+2. **The `corex_app_env` option is a lock.** The story names `.env` and the network; no screen or
+   command writes the option, but site code and CoreX's own test helper do, and whatever set it
+   keeps deciding, named on the screen.
+3. **A lock fixes the mode to its own environment, except Coming soon and Maintenance**, which only
+   change what visitors see: they stay available, and in force, under any lock, so a site put in
+   Coming soon stays closed to visitors whatever `APP_ENV` says (its mail follows the lock).
+   `OperationsModeStore::set()` is reached only for a mode the lock allows: `ModeChangeService`
+   answers `ModeChangeResult::LOCKED` otherwise, on the screen and from `wp corex mode set`.
+4. Email Studio's three private `environment()` copies became one `EmailDeliveryContextFactory`. An
+   `APP_ENV` value the delivery policy did not know (it blocked) is now Production and follows the
+   production rule.
+
+**Verified.** Pest unit `SiteEnvironmentTest` (12-row precedence matrix, locks, `local`); integration
+`Environment/SiteEnvironmentTest` (the mode reaches Email Studio, Insights and the store; a lock
+refuses a mode and writes nothing; the Operations screen shows the lock).
+
+**Client impact.** Their local checkouts set no `APP_ENV`; the production hosts' `.env` files were
+not read. A live site whose `.env` says `local`, `development` or `staging` (`.env.example` ships
+`local`) starts keeping its mail: the release notes say to check it before updating.
+
+## #382 — A mail gate where mail meets the transport keeps a development or staging site's mail
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 2. **Mode:** CoreX
+Framework.
+
+**Why.** A developer testing a client site must not mail its customers, subscribers or applicants.
+Only Email Studio's own sends asked whether a site was a development site; every other path went
+straight to `wp_mail()`.
+
+**Decided** (the owner's SAFE-D2 and EML-D6).
+
+1. `Corex\Mail\Capture\MailGate` (corex-core) decides deliver, capture, hold or refuse. A production
+   site answers "deliver" before anything else is read (SAFE-D2). Staging delivers with live
+   delivery on and a provider CoreX Mail sends through, asked through the `MailProviderCheck`
+   contract CoreX Mail binds, so Email Studio and every other path answer the same.
+2. It is asked at two points: CoreX Mail's `MailService::deliver()` before its driver (every path on
+   the `Mailer` seam and the queue worker; a capture returns `captured`, a terminal success, so no
+   retry sends it), and WordPress's `pre_wp_mail` at priority 999 (the floors, WordPress core, other
+   plugins). An earlier `pre_wp_mail` answer is left alone.
+3. Captures go to Email Studio through the `MailCaptureStore` contract, with a path name from a
+   `MailPath` scope set by what sends (form notifications, guides support, `RequestMailer` by
+   template) or left by the WordPress filter that built the email; anything else is
+   "Other: wp_mail".
+4. All mail is captured by default; config `mail.capture_scope = corex` captures only mail sent
+   inside a CoreX path (EML-D6).
+5. Without CoreX Mail there is no store: the email is refused (`wp_mail()` returns false) and an
+   activity event `mail.refused` records recipients, subject and path.
+6. Tests that exercise production sending say so: `MailDelivery::DELIVER` pins production with a
+   provider and live delivery, and stops every email before the transport.
+
+**Verified.** Pest unit `MailGateTest` (decision table, hold, interceptor, names); integration
+`Mail/MailCaptureTest` (Mailer, WordPress password reset and a plugin's mail captured with their
+names; the switch; production sends; refusal recorded); the whole integration suite.
+
+**Client impact.** Production unchanged. Local and staging copies keep their mail in Email Studio.
+
+## #383 — A flow's marked test holds its emails on every site
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 3. **Mode:** CoreX
+Framework.
+
+**Why.** Testing a form on a live site must never mail the client's team or a stranger (SAFE-D3).
+
+**Decided.** `FlowTestService` runs the pipeline inside `MailHold::during()`. While a hold is active
+the gate answers "hold" and `EmailStudioService::decide()` captures with state `held_for_test`; the
+run's result lists what was held (`held_emails`). With CoreX Mail inactive, a test writes no email at
+all and says so. CoreX has no "clear test entries" action: a held email goes with its test
+submission's permanent delete (its attempt id is recorded like any flow email's) or after 30 days
+(decided under the owner's 2026-10-21 mandate: no new bulk action in a patch).
+
+**Verified.** Integration `Forms/FlowTestHoldsMailTest` (production with live delivery: nothing
+reaches the transport, one held email listed, the next real submission sends, the delete removes it);
+Jest `testTab.test.js`.
+
+## #384 — Email Studio states what happens to mail, from the decisions the sends take
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 4. **Mode:** CoreX
+Framework.
+
+**Why.** An owner must never be surprised that mail went out, or that it did not. The overview
+printed the raw environment and a sentence that was false on most sites.
+
+**Decided.** `MailOutcome` (corex-email) reads Email Studio's own decision for its sends and the mail
+gate's for every other path, so the statement cannot be more reassuring than the site: on a
+production site with no provider it says Email Studio's sends are blocked and names what still goes
+out. The banner shows on every tab. The capture-only switch is saved by
+`POST corex/v1/email-studio/capture-scope`. A daily event, `corex_email_capture_retention`, deletes
+captured and held emails older than 30 days by date, 200 at a time for at most 20 seconds a run, so
+every record is reached. Email Studio's column now shrinks (`minmax(0, 1fr)`), so the delivery log
+no longer widens every tab past the page.
+
+**Verified.** Pest unit `MailOutcomeTest`; integration `Email/CaptureRetentionTest` (550 of 600
+deleted, newer kept, other records untouched; the route); Jest `mailOutcomeBanner.test.js`;
+Playwright `email-studio-outcome.spec.js` (the same statement on all eleven tabs, the switch saved
+and restored, 375px) and `email-studio.spec.js`.
+
+## #385 — Email Studio reads its records newest first
+
+**Date:** 2026-10-21. **Branch:** `spec/113-mail-capture`. **Spec:** 113, User Story 5 (CR-012).
+**Mode:** CoreX Framework.
+
+**Why.** The store read the first 500 records of a kind ever made, so past 500 emails the log and the
+overview counts stopped changing.
+
+**Decided.** `EmailStudioStore::latest($type, $limit)` reads by id descending in one query (meta
+primed with it); attempts and captures use it; `all()` keeps its order for templates, layouts,
+partials and routes. The only other implementation is the test suite's in-memory store. The overview
+counts say they are of the last 100 emails.
+
+**Verified.** Integration `Email/StudioNewestFirstTest` (600 attempts: the newest first, a new one at
+the top; the same query count for 10 rows or 100).
+
+## #390 — The Overview reads each fact it names, and says "Could not check" for one it cannot read
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 1
+(US-SAFE-10). **Mode:** CoreX Framework. Open choices were decided under the owner's 2026-10-21 mandate.
+
+**Why.** The Overview's rows came from `ControlPanelStatus`, which called branding, forms and PageSpeed configured
+by default and a captcha driver of None configured, and its Login protection row counted WordPress hardening
+warnings. A fresh install read "Brand configured: Done", "Provider connected" and "Captcha: Configured".
+
+**Decided.**
+
+1. **`OverviewFacts`** reads each fact where it lives: the brand from the saved Company name and Admin logo, the
+   PageSpeed key through Config (so a key in the environment counts) and the latest performance run from the
+   Insights store, the captcha add-on's activation and its driver and keys, and the login address from
+   `LoginAddressState` (#391). A fact from another part of CoreX that throws comes back as `null`, and its row
+   reads **"Could not check"**, never a success.
+2. **Rows.** Brand is done only with a name **and** a logo, otherwise "Not set" linked to the Brand tab. PageSpeed
+   reads "Error: <reason>" after a failed run, "Connected" with a saved key whose last run completed, "Key saved,
+   not checked yet", or "Keyless (shared quota)". Captcha reads "Not configured" for None and Honeypot, "Not
+   configured (add-on inactive)", "Keys missing", or "<provider> configured". Spam protection is always done,
+   since every CoreX form carries a honeypot, and says "Honeypot only" or "Honeypot and <provider>". Login
+   protection reads the Security Center; hardening has its own row, "Hardening checks".
+3. **`ControlPanelStatus` and `DomainStatus` are removed.** The Overview was their only reader; their rule
+   ("optional means configured") was the defect. "Site name" means the Company name in Brand settings: WordPress
+   always has a site title, so it cannot tell whether the brand was set.
+
+**Verified.** Pest unit `OverviewModelTest` (29: every row's states, "Could not check" for each unreadable fact);
+integration `OverviewTruthTest` (login state from stored settings, an old failed PageSpeed row read as failed,
+the rendered Brand link); Playwright `truthful-screens.spec.js` (the Overview's login row agrees with the
+Security Center; no "Provider connected").
+
+**Client impact.** Owners of both client sites read different, accurate rows. No behaviour change.
+
+## #391 — One rule decides whether the default login is hidden, and the guard, the Security Center and the Overview all ask it
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 2
+(US-SAFE-11). **Mode:** CoreX Framework.
+
+**Why.** The Security Center's "Default login endpoints" row printed the hiding setting alone, which is on by
+default, while the login guard hides only with protection on, hiding on and recovery off. A fresh install read
+"Hidden" while `/wp-login.php` served its form.
+
+**Decided.**
+
+1. **`LoginAddressState::of(settings, recoveryActive)`** answers `off`, `reachable`, `hidden` or `recovery`.
+   `LoginRouteGuard::hidesDefaults()` is that answer being `hidden`, so the screen cannot say what the guard does
+   not do.
+2. **The row** reads "Hidden" only for `hidden`; "Reachable" with protection or hiding off; and, with
+   `COREX_LOGIN_UNGUARD` set while the settings would hide, "Recovery active: the default login is reachable",
+   with a line under it saying recovery ends when that line is removed from `wp-config.php`. This replaces #374's
+   "Reachable (recovery is on)".
+
+**Verified.** Pest unit `LoginAddressStateTest` (every combination); integration `RecoveryOnTest` (5, one new:
+protection off reads "Reachable"); Playwright: whatever the site's settings, the row says "Hidden" exactly when
+an anonymous request to `/wp-login.php` gets no login form.
+
+**Client impact.** Both owners read the true state. No behaviour change.
+
+## #392 — A PageSpeed run that could not complete is a failure with its reason and no score, and old 50/D failures are read as failures
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 3
+(US-SAFE-12). **Mode:** CoreX Framework.
+
+**Why.** A run that never reached the service (a local address, a quota, a refused key, a transport error, an
+answer with no result) was stored with a score of 50 and drawn as a D.
+
+**Decided.**
+
+1. **`InsightResult::failed()`**: no score, no grade, status `failed`, the failure's kind, the reason as the
+   summary and no recommendations, so the recommendations list skips it. `PerformanceProvider` returns one for
+   every non-OK classification (a local address is still caught before any request; its reason now reads
+   "PageSpeed cannot reach a local site: …"), plus a new `transport` kind; `PsiNormalizer` returns one for an
+   answer without a performance result.
+2. **Old rows are recognised when read, never rewritten.** `InsightFailure` reads a stored row with score 50, no
+   measures and a summary that is one of the old failure sentences (in English, or in the site's language,
+   translated only when first needed; the HTTP sentence with any number) as `failed` with that message.
+   `InsightStore::latest()` and `history()` read through it; the option keeps every row.
+3. **The card** says "Could not run" where the grade was, the reason, and **Retry**. The Insights widget's chip
+   reads "Could not run". No trend or average exists yet; failed rows carry no score, so one built later skips
+   them by construction. Decided under the owner's mandate: recognise old rows by their shape and message.
+
+**Verified.** Pest unit `FailedRunTest` (12: the shape, a local address making no request, each old sentence,
+the translated one, a real 50 kept, history read and the stored row untouched), `PsiNormalizerTest`; Jest
+`insights-failed-run.test.js`; Playwright: Run performance on the suite's local site.
+
+**Client impact.** Muva has no PageSpeed key and often meets the shared quota: its Insights shows "Could not run"
+with the reason instead of a D. Its stored runs are not deleted.
+
+## #393 — Mode changes, counted refusals and sign-in lockouts reach the activity log, and the Security events card asks for those areas only
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 4
+(US-SAFE-13). **Mode:** CoreX Framework.
+
+**Why.** The card read the twenty newest activity events of every area and kept the security ones, and mode
+changes, refusals and lockouts were never written to the activity log at all: it said "No security events
+recorded" on a site that had them.
+
+**Decided.**
+
+1. **`SecurityActivityRecorder`** writes `operations.mode.changed` (on `corex_operations_mode_changed`, fired by
+   `OperationsModeStore::set()` after a real change, from any route), `access.denied` (on
+   `corex_access_refusal_counted`, fired by `AccessAuditLog::record()` only when it opens a new counted entry, so
+   spec 112's one-entry-per-person-screen-and-hour holds here too) and `security.login.locked` (on the
+   `LoginLockoutEvent` login protection already dispatches; it keeps when the lock ends, not the typed username
+   nor the visitor's address). Access-request decisions were already written. A write that fails is let go: a
+   mode change or a refusal never fails because its record could not be kept.
+2. **`ActivityRepository::query()`** takes a list for `area` (`area IN (…)`, one placeholder each); the card asks
+   for the five newest in security, access and operations, and says each as one translatable sentence with
+   the person as a placeholder, so a translation can order it as its language needs. A refused screen is named
+   by `ScreenNames` (the map the access audit tab already used, moved out of `AccessScreen` and shared), never
+   by its page slug.
+3. **`SecurityEventsSince`** stamps `corex_security_events_since` once (`add_option`) at the first write or the
+   first read of the card; the card says "Recorded since <date>", and its empty message names only what is
+   recorded. Earlier events stay in their own logs and are not copied.
+
+**Verified.** Pest integration `SecurityEventsTest` (the four kinds on the card after thirty unrelated events,
+the refused screen by its name; a translation that puts the person last is drawn that way;
+the lockout keeps neither the username nor the address; five repeats in an hour make one event; the start is
+written once); the Insights unit tests; `BootTranslationsTest` (nothing translated before `init`).
+
+**Client impact.** Both owners start seeing security events, from the day they take the release.
+
+## #394 — The captcha test button loads on the Settings screen, finds the secret field by its real id, and is offered only with keys to test
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 5
+(US-SAFE-16). **Mode:** CoreX Framework.
+
+**Why.** The button never appeared, for two reasons. The script looked for `captcha.secret`, while the form gives
+the field `captcha_secret` (its Jest test drew the wrong id itself), and the script was enqueued only on a
+`corex_page_corex-settings-config` hook, while WordPress names the hook from the menu title,
+`corex-framework_page_corex-settings-config`.
+
+**Decided.**
+
+1. **The enqueue matches the hook's end**, `_page_corex-settings-config`. **The id is one constant**,
+   `SECRET_FIELD_ID = 'captcha_secret'`, and a PHP test holds the form's id and the script's to each other.
+2. **`ready`** (a provider that needs keys, with both keys present through Config) decides whether the button is
+   offered; without it the field says "Save a site key and a secret key for this provider, then test them here."
+3. **The answers start with the outcome**: "Works: …" (adding that the site key is checked when the widget loads
+   for a visitor, since only the secret can be probed from the server), "Wrong key: …", "A key is missing: …",
+   "Cannot reach the provider: …", in the existing polite live region. Decided under the owner's mandate: the
+   four answers the server can give, rather than a separate "widget missing" answer it cannot know.
+4. **A test fixture**, `tests/e2e/fixtures/corex-e2e-captcha-keys.php`, answers the captcha settings for one
+   signed-in request carrying `X-Corex-E2E-Captcha`, so the browser test never saves keys on the suite's site.
+
+**Verified.** Jest `captcha-admin.test.js` (8, with the real id); Pest `SettingsTabsTest` (the id); Playwright:
+the button under the secret field, reached and pressed from the keyboard, its answer in the live region; with a
+provider and no keys, the hint and no button.
+
+**Client impact.** Muva (reCAPTCHA v3 with saved keys) gains a working button.
+
+## #395 — The Add-ons screen says what WordPress did, locks network and must-use add-ons, and logs every toggle
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 6
+(US-SAFE-08, spec 068 FR-022). **Mode:** CoreX Framework.
+
+**Why.** The screen reported "Enabled" whatever activation answered, wrote the feature flag and queued the kit
+prompt anyway, and offered a usable switch for add-ons whose activation this site does not control.
+
+**Decided.**
+
+1. **`AddonActivator`** returns an `AddonToggleResult`. Enabling takes `activate_plugins()`'s answer and its
+   inner reason ("Plugin file does not exist.", "The plugin generated unexpected output."); a plugin WordPress
+   refused for printing output, which it has already added to the active list, is switched off again. The flag
+   is written only on success. Disabling is for this site only (`$network_wide = false`) and fails if the plugin
+   is still active; the flag is deleted only on success.
+2. **`AddonToggleService`** refuses to disable an add-on whose scope is Network ("Managed by the network
+   administrator") or MustUse ("Must-use: always on"), and records `addon.enabled` / `addon.disabled` in the
+   addons area with the person and the result (a failed record is let go).
+3. **The screen** draws those switches locked with the reason, shows WordPress's reason on failure, and queues
+   the kit prompt only after a successful enable.
+
+**Verified.** Pest integration `AddonActivatorTest` (5, with two throwaway plugins: a real toggle and its flag
+and log; a missing file; printed output; network and must-use refused); unit `AddonToggleTest` (locked
+switches); multisite `NetworkAddonToggleTest` (a sub-site's request leaves corex-ui network-active; runs in CI).
+
+**Client impact.** Both clients are single sites with no CoreX add-on as must-use: they see a correct message if
+an activation fails.
+
+## #396 — The login screen draws no single sign-on control, and Settings no longer offers the switch
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 7
+(US-SET-10; decision SET-D4, "hide until a provider is chosen"). **Mode:** CoreX Framework.
+
+**Why.** CoreX has no single sign-on provider; with a Brand box ticked, the login screen drew a disabled "SSO is
+not configured yet." button and an "or" divider.
+
+**Decided.** `AdminBranding::loginMessage()` keeps the subtitle only. The SSO glyph,
+`BrandingService::loginSsoEnabled()`, the Brand field and the slot's login styles are removed. The stored
+`corex_brand_login_sso_enabled` option is neither read nor deleted, and with its field gone no save touches it,
+so a later provider story can decide what to do with it.
+
+**Verified.** Pest unit `LoginSsoTest` (no control besides the form for a stored "1", "" or "0"),
+`SettingsTabsTest`, `AdminAppearanceTest`; Playwright: the signed-out login page has no SSO control and no
+button outside a form.
+
+**Client impact.** Both login screens. The setting is off by default; where an owner ticked it, a dead button
+disappears. Both client repositories carry `tests/Unit/Config/LoginSsoTest.php`, which arrives changed.
+
+## #397 — Blog Pro says it does not collect reading data yet, and the Sharing card is gone
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 8
+(US-BLG-05; decision BLG-D9, "hide the analytics cards now; build events later"). **Mode:** CoreX Framework.
+
+**Why.** No CoreX code records a reading view, yet Blog Pro drew a "Reading signals" panel, a "Figures cover the
+last 30 days" line and "CoreX has not recorded a visit to this post", which implied a recorder that saw nobody;
+its Sharing card listed networks from a setting no screen changes and the share block does not read.
+
+**Decided.** Without reading data the panel and the period line are not drawn; one line says "CoreX does not
+collect reading data yet. Figures appear here once it does." With data, the panel is as spec 075 drew it. The
+Sharing card is removed (decided under the owner's mandate: remove rather than relist), and the screen no longer
+requests `blog/share-controls`; the route stays. The screen's subtitle no longer names analytics or sharing.
+
+**Verified.** Jest `blogProApp.test.js` (the line, no panel, no period, no Sharing card, the other panels kept,
+the figures with data), `blogPro.test.js`, `restAddress.test.js`; Playwright `blog-pro.spec.js`.
+
+**Client impact.** Blog Pro is in both admins, for administrators: untrue text disappears; nothing public changes.
+
+## #398 — Saving Settings writes only the fields whose value changed, and never a section whose add-on is off
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-114-truthful-screens-43137f`. **Spec:** 114, User Story 9
+(US-SET-14, change request CR-024). **Mode:** CoreX Framework.
+
+**Why.** One save walked every field of every section and read a checkbox missing from the post as off. A section
+whose add-on is inactive draws its fields disabled (a browser sends none), and a not-installed one draws none, so
+saving Brand with Corex Media off switched WebP conversion off.
+
+**Decided.**
+
+1. **A section whose state is Hidden or Disabled is skipped**, asked again on the server, never read from the post.
+2. **A field is written only when the posted value differs from the value the form drew** (`settingDisplay()`): a
+   checkbox compares on and off, a text the string as typed. So a Media switch drawn as on while nothing is
+   stored stays unstored and its default keeps applying; a switch turned off is saved as off; the saved toast and
+   the refused-field alert are unchanged.
+3. **Not chosen:** saving only the tab whose button was pressed. The form is one form with one button, so an edit
+   on another tab would be lost silently; per-section save bars are US-SET-01 (stage 3).
+4. **Not repaired:** values already switched off by the old behaviour are left as they are; the release notes say
+   how an owner checks the image conversion switches.
+
+**Verified.** Pest integration `SettingsSaveChangedOnlyTest` (5, the screen built with chosen add-on activation:
+Media off keeps the conversion switches and draws them on again; Captcha off keeps its settings; a save as drawn
+writes nothing; a switch turned off is saved; a refused value changes nothing else); three of them fail on the old
+save. `SettingsSaveRefusalTest` unchanged and passing.
+
+**Client impact.** Muva and Perego both have Corex Media on, so their values were not hit; nothing they see changes.
+
+## #400 — A kit records what it replaces or adopts, and a reset puts it back instead of deleting it
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-115-kit-safety-88dd45`. **Spec:** 115, User Story 1
+(US-SAFE-07). **Mode:** CoreX Framework.
+
+**Why.** Choosing Replace for a page when applying a kit changed the owner's page in place, and a
+later `wp corex reset` deleted that page with all its revisions. It also left the front page on the
+latest posts whatever the site had shown before. DECISIONS #75 says a reset never deletes a page the
+owner had.
+
+**Decided** (the owner's answer WIZ-D2 of 2026-10-19: a page-level record of every touched page).
+
+1. **Apply records before it changes anything, once.** For each page it replaces or adopts, the
+   page's title, content, template and status go into the page's own meta
+   (`Corex\Provisioning\PageRecord::META`, `_corex_kit_before`). The site's `show_on_front`,
+   `page_on_front` and `page_for_posts` go into `corex_kit_reading_before` before the kit sets its
+   front page. A second apply keeps the first record, so a reset returns what the owner had before
+   any kit.
+2. **Reset reads the records** (`Corex\Cli\Reset\KitPageReader`) and plans one action per page:
+   - a page the kit created is removed, as before;
+   - a replaced or adopted page with a record is restored with the same ID and address;
+   - an adopted page without a record is emptied, as before;
+   - a replaced page without a record (applied before this release) is kept as it is and listed as
+     "kept: no earlier version recorded".
+   The front-page settings are then put back. A recorded front page that no longer exists falls back
+   to the latest posts.
+3. **The executor never deletes a page the owner had**, even when asked to remove it. This is a
+   second guard behind the planner.
+   - A page an earlier apply created stays the kit's when a later apply replaces it: nothing is
+     recorded, and a reset still removes it.
+   - A restore writes the recorded markup unfiltered, and puts WordPress's filters back as it found
+     them. Without this, a reset run by somebody without unfiltered HTML would strip an embed or a
+     form from the owner's page.
+4. **The dry run lists each page** as created (will be removed), replaced (will be restored) or
+   adopted (will be emptied).
+
+**Not chosen.** *Restoring from WordPress revisions.* A site can switch revisions off, a page made
+by code may have none, and the record is what the owner chose to trust.
+
+**Verified.**
+- Pest unit `ResetPlannerPagesTest`, the extended `ResetDispositionTest` and
+  `BlueprintActivatorApplyTest`.
+- Pest integration `KitResetRestoresTest`, apply then reset on a real install: the replaced page
+  comes back with ID, title, content (an iframe included, with WordPress's filters on) and template,
+  the adopted draft stays a draft and empty, the created page is removed, the front page is the
+  owner's again, a second apply keeps both first records, a replaced kit page stays the kit's, and an
+  older replace is kept and named.
+
+**Client impact.** Neither client can run reset (no shell). Perego runs the Company kit, so a
+later apply there records what it replaces. This must land before any later story puts reset or undo
+in the admin.
+
+## #401 — The setup wizard says what it records and takes no backup
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 2 (US-SAFE-09).
+
+**Why.** The wizard said it "applies it safely with a backup" and that a backup was required. No
+backup was taken or checked.
+
+**Decided.**
+- The welcome and the Backup step say: "Before applying, CoreX records the pages this plan replaces
+  or adopts and your front-page settings, so a reset can put them back. It does not back up anything
+  else."
+- The Backup step lists, by their present titles, the owner's pages the plan will adopt and the
+  conflicts the person chose to replace. The plan preview gains `adopted`, and each conflict gains
+  `pageTitle`.
+- The step recommends a full backup with the host or a backup plugin. Apply stays disabled until the
+  person ticks "I have a full backup of this site."
+- The server's refusal says the same.
+- The code comment that claimed a backup was taken is gone.
+
+**Not chosen.** *Taking a backup.* A full site backup is the host's or a backup plugin's job, and
+CoreX must not depend on one (Principle IX).
+
+**Verified.** Jest `setup-wizard.test.js`: the sentence, the list, a kept conflict left out, Apply
+disabled until confirmed. Pest integration `SetupWizardControllerTest`: the refusal's wording, and
+an owner's empty page listed by its own title.
+
+## #402 — Sample content in shipped patterns is hidden from visitors until someone changes it
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 3 (US-SAFE-14).
+
+**Why.** The stats and testimonial patterns printed "98% Client satisfaction" and a quote from "A
+happy client" on sites that had written neither. The theme's logo cloud said "Trusted by teams
+everywhere". Kit pages hold these patterns as live references, so every such page showed them.
+
+**Decided** (the owner's answer KIT-D6 of 2026-10-19: mark as sample and hide until edited).
+
+1. **A sample is a block whose class list holds `is-corex-sample`.** `Corex\Blocks\SampleBlocks`, in
+   corex-blocks, which every site loads, renders it as nothing for a visitor. For someone who can edit
+   posts it renders with a "Sample: replace before publishing" label, so the owner sees what to
+   replace. A block without the class returns at once.
+2. **The block editor removes the marker on the first change to the block's content**
+   (`assets/sample-editor.js`): the attributes of the block and of every block inside it, leaving out
+   the class list, metadata and lock. The editor shows a marked block outlined, with the label.
+3. **Marked:** the corex-ui stats and testimonial patterns, and the theme's logo cloud.
+
+**Decided under the owner's 2026-10-21 mandate.** The approved story says hidden "until an editor
+changes its content". The first change in the editor is that moment. A page that was opened and
+saved in the editor before this release no longer holds the marker, so it is not changed by this
+release.
+
+**Not chosen.**
+- *Comparing the content with the shipped sample on every render.* It depends on the language the
+  page was saved in.
+- *Bracketed placeholders.* Visitors would still see them.
+
+**Verified.**
+- Pest unit `SampleBlocksTest`.
+- Jest `sample-editor.test.js`: the label, the marker removed on a changed figure and on a changed
+  word, and kept on a class or metadata change.
+- Pest integration `PatternsClaimNothingTest`: a visitor sees neither sample on a page that
+  references them, an editor sees both labelled, an edited stats section shows.
+- Playwright `front-page-hero.spec.js`: the front page as a visitor shows no sample.
+
+**Client impact.**
+- Sites whose kit pages still reference the stats or testimonial patterns stop showing those
+  sections to visitors until someone edits them.
+- Perego runs corex-ui and the Company kit: a page of its that still references these patterns
+  stops showing those sections to visitors until edited. Its own theme is unchanged.
+- Muva does not run corex-ui.
+
+## #403 — Theme patterns link to real pages and take contact details from Brand settings
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 3 (US-SAFE-14).
+
+**Why.** Fifteen theme patterns held 46 links to `#`, and four showed `hello@example.com`, a 555
+number or three invented offices.
+
+**Decided.**
+- **`theme/inc/pattern-links.php`** is a presentational helper the pattern files include. A link
+  points to a published page of the site by its path, the blog page or the home page, or is shown as
+  text when the page does not exist. A button with nowhere to go is left out.
+- **Contact details come from the Brand settings** (`brand.email`, `brand.phone`, `brand.address`,
+  `brand.social_links`), and a detail with no setting is left out.
+- **The locations footer** shows the one address the site has, in place of three invented offices.
+- **The corporate header** loses the language link, which pointed nowhere.
+- **A Pest check** (`ShippedPatternsClaimNothingTest`) fails, naming the pattern, on `href="#"`, an
+  example address, a 555 number, a percentage, a "100+" figure or invented social proof outside a
+  sample.
+
+**Not chosen.** *A `functions.php` in the theme.* The helper is included only by the pattern files
+that need it, and the theme stays without bootstrap code (SkinDisciplineTest).
+
+**Client impact.** None: both clients run their own themes.
+
+## #404 — The front-page hero and call to action can be read and their buttons used
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 4 (US-SAFE-15).
+
+**Why.** The hero's H1 took the theme's heading colour, navy on the navy section (1:1). Its button had
+the section's own background and no address, so a keyboard could not reach it. The call-to-action
+button had no address either.
+
+**Decided.**
+1. **Colours set in the patterns, not in `theme.json`**, so headings elsewhere are unchanged:
+   - the hero heading is `surface` on `primary`;
+   - the call-to-action section and heading are `surface` on `accent`;
+   - each button has its own background and text: `surface` and `primary` in the hero, `surface` and
+     `accent-dark` in the call to action.
+   Measured in both palettes: heading at least 4.5:1, button against its section at least 3:1, label
+   against its button at least 4.5:1.
+2. **The buttons carry `corex-action-link` and no address.** `Corex\Ui\Patterns\ActionLinks` fills it
+   when the button is drawn: the brand's primary action link, else the published contact page. With
+   neither, the button is not drawn. An address given in the editor is kept. The lookup runs only
+   when such a button is drawn.
+3. **The buttons' focus ring is the section's text colour** (`surface`, `addons/corex-ui/assets/action-link.css`,
+   loaded only where a button block is drawn). The ring sits on the section, where the browser's own
+   ring measured 1.15:1 against the hero; `surface` is at least 4.9:1 against both sections in both
+   palettes. Found by spec 116's keyboard check once the button could take focus.
+
+**Verified.**
+- Pest unit `HeroContrastTest`: four pairs, light and dark palettes.
+- Pest integration `PatternsClaimNothingTest`: brand link, contact page, neither, an editor's own
+  address.
+- Playwright `front-page-hero.spec.js` on the front page: heading contrast, button contrast and
+  address, each button reached by Tab with a visible focus ring.
+
+**Client impact.** Neither client uses the CoreX theme. Perego runs corex-ui: a page of its that
+references the hero or call-to-action pattern gets readable colours, and its buttons are hidden
+unless Perego sets a Brand primary action link or has a published `/contact/` page.
+
+## #405 — The flow editor asks before anything throws edits away
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 5 (US-FLW-02).
+
+**Why.** Back to flows dropped the edits on screen without a word. Publish, Move to draft, Close and
+Run marked test acted on the saved draft, so what was published or tested was not what was on screen.
+Leaving the page lost the edits too.
+
+**Decided.**
+- **Dirty state.** The reducer keeps the saved configuration, and `isDirty()` compares by content, so
+  an edit typed back reads as saved. The header says "Unsaved changes" or "All changes saved".
+- **One question for every action.** Back, Publish, Move to draft, Close and Run marked test ask
+  "Save your changes before leaving?" in a `CorexDialog`:
+  - Back offers Save, Discard and Cancel;
+  - the others offer Save and Cancel, and after a successful save act on the new version;
+  - a failed save stops the action and keeps the edits.
+- **Leave warning.** The browser's own warning is on while there are unsaved changes.
+- **Test tab.** It says which version it tests.
+
+**Verified.**
+- Jest `unsavedChanges.test.js` (16) and `flowEditor.test.js`.
+- Playwright `flow-unsaved-changes.spec.js` in Chromium: focus in the question, Escape keeps the edit
+  and returns focus to Back, Discard, the browser's warning on reload only with edits, the Test tab's
+  version.
+- Measured once in dark and right to left: light text on the dark dialog, and the buttons mirrored.
+
+**Client impact.** None: neither client edits builder flows.
+
+## #406 — Every public CoreX form carries the captcha provider's check, through one core interface
+
+**Date:** 2026-10-21. **Spec:** 115, User Stories 6 and 7 (US-AUT-02, US-VIS-11, change request
+CR-004).
+
+**Why.** With Turnstile, hCaptcha or reCAPTCHA v3 set up, account registration, the newsletter
+sign-up, the call request and the job application routes refused every visitor, for a check no form
+showed. The check needed a token and nothing produced one. The provider's script loaded only for
+corex-forms' own forms. A reCAPTCHA v3 token judged without the site's hostname would have been
+refused anyway.
+
+**Decided.**
+1. **`Corex\Security\FormChallenge`** (core) is what a form asks for: `fields($action)`,
+   `formAttribute()` and `refusal($token, $action)`. Core binds `NoFormChallenge` (no check, every
+   request passes); corex-captcha replaces it with `Corex\Captcha\CaptchaChallenge`.
+2. **One markup and one set of settings** are shared with corex-forms and moved to core:
+   - `Corex\Security\ChallengeFields` prints the token field and the widget's place, byte for byte as
+     before;
+   - `Corex\Security\ChallengeSettings` holds the provider, the score threshold and the allowed
+     hostnames.
+   A reCAPTCHA v3 token on these routes is judged like a flow's: this site's hostname, the form's
+   action, the configured score.
+3. **Printing the check declares the page needs the provider's script.** The loader runs whether or
+   not corex-forms is active, and binds only to `.corex-form` forms and forms with
+   `data-corex-captcha`. A form of a site's own that is neither is not touched.
+4. **The four routes answer a missing token** with "Please complete the check before sending." and a
+   refused one with "The check failed. Please try again." (`422`, `error: captcha`), and store and
+   send nothing. A reCAPTCHA v3 token is now judged like a flow's: it must have been requested under the route's action (`corex_register`, `corex_newsletter`, `corex_call_request`, `corex_job_application`), come from the site's own hostname (or `captcha.allowed_hostnames`) and reach the configured score. A site's own form posting to one of them requests its token under
+   that action.
+5. **Account and newsletter forms** print the check above their button. Their scripts send the token,
+   and dispatch `corex:form:success` / `corex:form:error` so the check resets. The provider's script
+   writes its messages to the element marked `data-corex-captcha-message`.
+
+**Decided under the owner's 2026-10-21 mandate.** CoreX ships no visitor form for call requests or
+job applications: those add-ons are routes a site's form posts to. The approved story is met by the
+routes refusing and answering like the others, and by their READMEs showing the markup a site's form
+uses. New visitor blocks for them are not part of a patch release.
+
+**Verified.**
+- Pest unit `CaptchaChallengeTest` (10), the newsletter renderer and account renderer tests.
+- Jest: the widget and v3 scripts on a declared form and an undeclared one, the account and
+  newsletter scripts' token and events.
+- Pest integration `ProtectedRoutesTest` (13, all four routes: missing, refused, passed; an account
+  created once passed).
+- By hand on a scratch site with Turnstile's published test keys:
+  - the widget is drawn above "Create account", the server checks the token with Cloudflare, and the
+    account is created;
+  - with the always-failing test secret, "The check failed. Please try again." is shown and no
+    account is made;
+  - the home page loads no provider script.
+
+**Client impact.**
+- Muva runs corex-captcha with reCAPTCHA v3 and draws its own forms. They are neither `.corex-form`
+  nor declared, so its pages load nothing new and its forms keep their own token handling.
+- Perego does not run corex-captcha.
+- Neither runs the account, newsletter, bookings or careers add-ons.
+
+## #407 — The captcha provider's script is queued before WordPress prints the footer
+
+**Date:** 2026-10-21. **Spec:** 115, User Story 6 (US-AUT-02, FR-029).
+
+**Why.** The loader decided on `wp_footer` at priority 20. WordPress prints the footer's scripts on
+`wp_footer` at 20 too, and was hooked first. So a script queued by the loader was never printed, for
+corex-forms' own protected forms as well. Found while measuring the registration check in a browser.
+
+**Decided.** The loader runs at priority 5 (`CaptchaAssetController::PRIORITY`). Every block on a
+block-theme page has rendered by then, and a classic theme's content and footer template have too.
+
+**Verified.** Pest integration `CaptchaScriptPrintedTest`: the loader runs before
+`wp_print_footer_scripts`, and the widget and provider scripts are in what it prints only when a form
+printed the check. The Turnstile run of #406.
+
+**Client impact.** None for Muva, whose pages declare no CoreX form. On a site that uses a protected
+corex-forms form, the provider's check now appears where it never did.
+
+## #410 — The quality checks run in a CI job of their own, on a WordPress prepared for them
+
+**Date:** 2026-10-21. **Branch:** `claude/spec-116-quality-checks-a779c0`. **Spec:** 116 (R1.1), US-NFR-01 to
+US-NFR-07. **Mode:** CoreX Framework. Decided under the owner's 2026-10-21 mandate (the workspace's
+recommendation, NFR-D1).
+
+**Why.** The definition of done asks every release for dark and light, both directions, phone width, WCAG 2.2
+AA, four states, translatable words and a performance budget. Before this, the right-to-left check opened 6 of
+16 screens in light at 375px, and nothing else was checked on a rendered screen.
+
+**Decided.**
+
+1. **One `quality` job in `ci.yml`, beside the browser job.** It provisions its own WordPress, gets the browser
+   job's three seeded submissions, and is prepared by `tests/e2e/quality/seed-quality-site.php`: the Company kit
+   at Full through the wizard's own route, a page for each theme template the kit does not reach, the posts
+   page, and a subscriber. Its specs have their own config (`playwright.quality.config.js`); the main browser
+   config ignores `tests/e2e/quality/`. On its own site, what it measures does not depend on what the other
+   specs left or the order they ran.
+2. **A screen is loaded once per width.** The four cells of a width are switched in the page: the appearance
+   through the browser's colour scheme (the admin's `system` appearance follows it), the direction through `dir`
+   on the document, as `rtl-overflow.spec.js` did. That is 98 loads for the matrix instead of 392.
+3. **The nginx and php-fpm steps moved into `.github/actions/serve-wordpress`**, used by both browser jobs,
+   unchanged.
+4. **It runs in a client repository's CI too.** The provisioning action links only `plugins/` and `addons/`,
+   so a client's CI checks the framework's screens against the same known failures.
+
+**Not chosen.** *A step at the end of the browser job*: the job is the longest in CI (about 8 minutes), and its
+specs leave rows behind that would change what is measured. *Loading each cell*: four times the time, for
+cells whose only differences are a media query and an attribute.
+
+**Verified.** On CI (run 39637260114), three workers on nginx and php-fpm: the 299 quality tests ran in 7.3
+minutes and the job in 9.6, beside the browser job's 9.0, so a pull request waits about half a minute longer. The
+first run recorded 3,612 findings, the known-failures list (#412). On a scratch site with one worker and PHP's
+built-in server, the matrix alone took 6.2 minutes.
+
+## #411 — The accessibility scan is axe-core, a development dependency only (NFR-D2)
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-03. Decided under the owner's 2026-10-21 mandate (the workspace's
+recommendation, NFR-D2).
+
+**Decided.** `@axe-core/playwright` 4.13.0, pinned exactly, in the root `devDependencies`. The `axe-core` it
+needs (4.13.0) was already in the lockfile. The scan runs the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`
+and `wcag22aa` over CoreX's markup: inside `.corex-admin` on an admin screen, the whole document on a page.
+axe's `target-size` rule is WCAG 2.2's 2.5.8 with its spacing exception, so CoreX writes no target check of its
+own at 24px. CoreX adds what axe does not do: the 44px primary controls at 375px, the keyboard walk, Escape,
+reduced motion and the public form's error summary.
+
+**Not chosen.** *CoreX's own rule checks*: contrast over real backgrounds, names and roles are what axe is
+maintained for. *4.14.0*: published six days before; pinned so that a new axe does not change the findings
+under the known-failures list. Moving it is a decision that re-records the list.
+
+**Verified.** `npm run verify:dependencies` passes; the shared-host package ships no root `node_modules`.
+
+## #412 — Known failures are a dated list that only shrinks, keyed by what an element is
+
+**Date:** 2026-10-21. **Spec:** 116, all stories. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** Every check finds defects on `main` today, owned by stories in other epics. A check that fails on them
+cannot run on every pull request; a check that reports only fails nobody.
+
+**Decided.**
+
+1. **`tests/e2e/quality/known-failures.json`**: check, screen (or `*`), rule, signature, `since`, story, note.
+   A finding no entry covers fails its test, with screen, cell, check, rule and element.
+2. **A signature is what the element is, never where it sits**: tag, type, role and up to three class names
+   without digits (an element without classes takes its parent's). Text checks sign with the text, digits
+   replaced by `#`. Twenty row checkboxes are one entry, and a list that grows by a row does not grow the list.
+3. **A defect on five screens or more is recorded once, for every screen (`*`)**: it is in the shared shell.
+4. **The story** is the screen's own where one exists (contrast US-BRD-02, rail US-SHL-04, wording on Access,
+   Add-ons, Forms and Settings US-ACC-05, US-ADD-08, US-FLW-14, US-SET-08, a failed Settings save US-SET-01, the
+   form's error summary US-VIS-05, images US-BLK-14), else the check's own NFR story.
+   `scripts/quality-known-failures.mjs` chooses it when recording and prints the list for the release notes.
+5. **A stale entry is reported, not a failure, in the browser checks.** A screen can stop showing a defect
+   because of code a pull request did not touch, and a partial run matches part of the list. The job writes
+   `stale-known-failures.json`; the pull request that fixes a screen removes its entries. **In the static checks
+   a stale entry fails**: admin contrast and the PHP lint read one file, which only the pull request changing it
+   can make stale.
+
+**Recorded.** 371 entries from CI's first two runs, owned by 13 stories: the most are untranslated text on
+Add-ons (US-ADD-08, 126) and Settings (US-SET-08, 65), and low-contrast muted text (US-BRD-02, 73). The second
+run found one unstable source, Hello Dolly, which WordPress bundles and CI's install activates: it prints a
+random lyric among the admin notices. The quality site deactivates the bundled plug-ins, and the 31 lyric
+entries were removed. Spec 114 (#433) then fixed three (the SSO setting's two strings and an Overview note's
+contrast); with main merged in, the list holds 368, removed the way any fixing change removes its own.
+
+**Not chosen.** *Counts per screen*: the number of rows differs run to run. *Selectors from axe*: they carry
+`nth-child` positions.
+
+## #413 — The screens are read from WordPress's menu; the templates from the theme, with a committed map
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-01, FR-001. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** `tests/e2e/quality/discover.js` signs in over HTTP before any test is listed. It reads every
+`admin.php?page=corex…` link in `#adminmenu`, and each screen's tabs: the `&tab=` links of its tab bar (the one
+marked `aria-current` is the screen's own address) and the in-page tabs of Settings, which take `&corex_tab=`.
+The theme's templates are the files in `theme/templates/`, each with its address in `templates.json`. A
+template the map does not name fails with "no address", so a new template cannot go unchecked. Published pages
+are read too, for the front-end budget. On main: 15 screens and 19 tabs, 34 addresses, and 15 templates.
+
+**Not chosen.** *Discovery inside a test*: Playwright lists tests before any runs, so a list read at run time
+cannot be a test per screen. *Template addresses guessed from the hierarchy*: `page-account` is chosen by a
+page's slug that the kit does not create, and the seed creates it.
+
+## #414 — The state table of every screen is one file, and a missing entry fails
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-05, FR-011. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** `tests/e2e/quality/screen-states.json` holds, for each screen, its panels and what each shows when
+empty, loading, failed and refused. `states.spec.js` fails a screen in the menu that has no entry, then forces
+each state. It learns which CoreX `GET` requests a screen makes on load, up to four, and in turn holds each back,
+answers it 500 with a code it then looks for on screen, and answers it with its lists emptied. It signs in as a
+subscriber for the refusal (a screen a subscriber may open, Guides, passes by opening). It answers the Settings
+save with a 500 and looks for the typed value. A screen's own spec may point at its entry.
+
+**Not chosen.** *A state table in each screen's spec*: fifteen specs predate the rule, and a check cannot read a
+table out of Markdown reliably. *Empty answers written by hand per route*: emptying the arrays of the real
+answer keeps every other field the screen reads.
+
+**Found when written.** Email Studio shows `corex_quality_failure`, the raw code, when its request fails; an
+empty Notifications list says nothing; a failed Settings save loses what was typed (a full-page POST). Each is a
+known failure with its story.
+
+## #415 — PHP strings are linted with PHP's own tokenizer; the product completion audit runs in CI
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-06, FR-017 to FR-019. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **`scripts/i18n-lint.php`**, run in the `test` job. With `token_get_all`, it fails on a translation call with
+   no `corex` domain (missing, a variable, or another literal), and on a literal with words that is echoed,
+   printed, given first to `printf`, `esc_html`, `esc_attr` or `wp_kses_post`, or written as HTML outside the PHP
+   tags. Only at the statement's own level, so a literal inside `__()` inside `esc_html()` is translated.
+   Markup, placeholders and one lowercase word (`checked`, a class) are not words a person reads. It found two
+   things on `main`, both on purpose (a managed table translates its own label in the domain its model
+   declares); they are the baseline, which fails when stale.
+2. **The translation template** is generated in the `test` job (`composer i18n:pot`) and uploaded as
+   `corex-pot`; `.github/workflows/release-assets.yml` attaches it to a published release.
+3. **`npm run audit:completion`** runs the existing audit in the `js` job. On `main` it reported 45 lines, every
+   one the name of the Coming soon mode (spec 101), a shipped feature. The `coming-soon` rule now matches the
+   phrase as a promise ("(coming soon)", "is coming soon", "features coming soon"), not as the mode's name ("in
+   Coming soon", "the mode is Coming soon"), and test files are left out. It reports nothing now, so it
+   fails on any new hit; Jest holds both sides of the rule. Its runner read a list of folders that left
+   most add-ons out, which the planted run found ("Planned" on the Guides screen passed); it reads
+   `plugins/`, `addons/`, `packages/`, `theme/` and `docs-app/src/` now. In the `test` and `js` jobs the steps
+   after a linter run even when it fails (`if: !cancelled()`), which the same run found: one failure per
+   job hid the next.
+4. **The pseudo-locale run** marks every `corex` string `⟦…⟧`, through the gettext filters and the filters
+   `@wordpress/i18n` runs for the domain, for a request with the cookie `corex_pseudo_locale=1` only
+   (`tests/e2e/fixtures/corex-e2e-pseudo-locale.php`). Visible text in the CoreX shell without a mark fails,
+   except numbers, dates, addresses, the site's name and the user's name. The front end is left out: what a
+   visitor reads there is the owner's content.
+
+**Not chosen.** *WPCS's I18n sniff*: a Composer dependency for half the rule; it checks domains and
+placeholders and not untranslated output.
+
+## #416 — The front-end budget: still, sized, lazy below the fold, and bytes per page
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-07, FR-020 to FR-024. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** `front-end-budget.spec.js` opens every published page and template address signed out, at 375 and
+1280px. It adds up layout shifts from the first frame to the end of a scroll to the bottom, and fails over 0.05.
+It reads each image before anything scrolls: no width and height and no aspect ratio fails; below the first
+screen and not lazy fails; the first screen's largest image lazy fails. It counts CoreX's scripts and styles,
+files (decoded size) and inline `corex*` elements, against `byte-budget.json`, and fails more than 10% over;
+raising a budget is a decision recorded here. A block's built script or inline style (`build/blocks/<name>/`,
+`#corex-<name>-style-inline-css`) on a page with no element of that block fails. `tests/Performance/` (the admin
+read and form budgets of spec 068) ran in no CI job; `composer test:performance` now runs it in the
+integration job.
+
+## #417 — The client merge check merges a candidate into a throwaway clone and runs the client's suites
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-08, FR-025 to FR-027. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **`scripts/client-merge-check.mjs`** clones the client repository with `--no-local` into a new temporary
+   folder, fetches the candidate from the framework repository and merges it. It lists every conflict and marks
+   a conflict in a file a `corex-baseline.json` records as a local edit (`exceptions`). On a clean merge it
+   moves each baseline to the candidate, as a client does once it has taken a release. It then runs
+   `verify-framework` and each `--suite`, and writes a Markdown report. It exits 1 on a conflict or a failing
+   suite and never writes to the repository it was given.
+2. **CI's `client-merge` job proves it on every pull request**: a client repository made from the base branch
+   with a site generated by `make:site` and committed, the pull request's merge commit as the candidate, and the
+   client plugin's Pest suite. The report is in the job's summary.
+3. **The real clients are checked before a tag**, by the person cutting it, with each client's own suites
+   (CONTRIBUTING, "Before a tag"). Muva's and Perego's repositories are private and CoreX's CI has no access to
+   them; a token-backed job in `release-assets.yml` can come later.
+4. **Each Client impact section names Muva, Perego and Mizzey**, or says that no client site is affected, from
+   the release after 0.47.0 (`tests/repo-hygiene.test.js`). Earlier sections stand as written.
+
+**Verified.** Jest `client-merge-check.test.js` on throwaway repositories: a clean merge with the baseline
+moved and the suites run; a conflict in a recorded local edit, named, with no suite run; a failing client suite
+with its output in the report; the source repository left as it was.
+
+## #418 — A browser run removes what it made, fails on what it left, and refuses a production site
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-09, FR-028 to FR-032. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+0. **There is no default site.** `COREX_BASE_URL` used to fall back to `http://corex.local`, the
+   developer's working site. A run that writes, and removes test-marked submissions, only starts against a
+   site named on purpose: the global setup and the quality checks' discovery refuse to start without it
+   (the orchestrator's review of PR #434).
+1. **The global setup prints the site the run writes to** and refuses one whose CoreX operations mode is
+   **declared** Production, read over HTTP from the Operations screen's mode form (`data-current-mode`,
+   `data-mode-declared`) of the site under test. A mode nobody declared reads as the environment type, and
+   WordPress answers `production` for every install that sets none, CI's and every fresh scratch site
+   included, so an undeclared mode is not refused. **Nor is a site on a local development host**
+   (localhost, a loopback address, a name under `.localhost`, `.test` or `.local`): the suite's own specs
+   switch the mode, and the first CI run of this rule refused its own site at the release-install step,
+   which runs after them. A production site someone could lose is served from a real host name. There is no
+   override.
+2. **A marker** is what only a test puts on a submission: a flow whose slug contains `e2e`, a `utm_source` of
+   `playwright`, or a sender at `example.com` or `example.test`. The last one counts only for a submission the
+   run made, because CI seeds the inbox with such rows before the run. The setup removes earlier runs' marked
+   submissions and notes the highest post id. The teardown removes this run's marked submissions and fails,
+   naming each, on any submission above that id still on the site (`tests/e2e/residue.js`,
+   `global-teardown.js`). It needs WP-CLI on the install `COREX_BASE_URL` serves, and does nothing where WP-CLI
+   answers for another one.
+3. **`scripts/clean-test-residue.php`** (`wp eval-file`) removes the residue already on a development site with
+   the same markers. It lists by form, asks (or takes `yes`), and refuses a declared Production mode or
+   `WP_ENVIRONMENT_TYPE=production`.
+4. **The fixture plug-ins say "Test fixture"**: the Guides entry, its summary, the notices, the plug-in names.
+5. **Submissions only, in this release.** They are what the inbox, Data, Insights, Overview and Settings counts
+   read. The Releases history entry for the refused test package is in the installer's log file and the
+   activity log, which no test helper should edit; it is left, and listed as owed in PROGRESS.
+
+**Verified.** On a scratch site: the smoke spec's contact submission is removed at the end; a planted spec that
+inserts an unmarked submission fails the run with "This run left 1 submission(s) … #41 Left by a planted test";
+the clean-up lists 2, removes nothing on "n", removes the 2 and keeps a person's row on `yes`, and refuses once
+the mode is Production.
+
+## #419 — What a person does before a tag stays a written release step
+
+**Date:** 2026-10-21. **Spec:** 116, US-NFR-03, US-NFR-01, US-NFR-08. Decided under the owner's 2026-10-21
+mandate.
+
+**Decided.** Four things the stories ask for need a person or access CI does not have, and are steps of
+"Before a tag" in CONTRIBUTING: the client merge check against Muva's and Perego's repositories with their
+suites (#417); printing the known failures into the release notes (`node scripts/quality-known-failures.mjs`);
+looking through the matrix's four screenshots per screen (the `quality-findings` artifact) and a screen-reader
+pass with NVDA and Chrome on each screen the release changed, recorded in the release record; and checking that
+the published release carries `corex.pot`. The machine half of each is built here. A screen with no recorded
+screen-reader pass is not called accessible in the release notes.
+
+**Not chosen.** *A CI check that a release record exists*: there is no release record file to check yet, and
+inventing one belongs to the release that first needs it.
+
+## #420 — Every CoreX screen, route and save action asks for the CoreX ability that names it, read from one map
+
+**Date:** 2026-10-23. **Branch:** `spec/117-abilities`. **Spec:** 117, User Story 1 (US-ACC-01). **Mode:** CoreX
+Framework. Decided under the owner's 2026-10-21 mandate (ACC-D7: move them).
+
+**Why.** An Allow in the role matrix or an approved request should open the screen it names. Ten CoreX screens asked
+for site administration instead, so the matrix promised what it did not do.
+
+**Decided.**
+
+1. **`Corex\Access\ScreenAbilities`** (corex-core) maps each CoreX page slug to its section, its ability and whether
+   it opens read-only (#422). The menus, the render checks, `AdminPage::requestAbilityFor()` and the Access screen's
+   requirements card read it. Overview, Add-ons and Insights: `corex_manage_admin`; Settings and the captcha test:
+   `corex_manage_settings`; Forms & Flows (screen, the flow gateway and its middleware): `corex_manage_forms`; Email
+   Studio: `corex_manage_email` (#423); Operations & Security, its login protection route, the mode and preview link
+   handlers and the Coming soon toolbar link: `corex_manage_operations`; Access & Abilities and every access route:
+   `corex_manage_access`; Blog Pro: `corex_manage_blog` (`BlogProPermissions::BASE`, as #379 said stage 3 would);
+   Setup Wizard, its routes and its apply: `corex_manage_setup`; the activity routes and the kit notice:
+   `corex_manage_admin`. The two Data handlers nothing posts to ask for the Data abilities. Guides for Overview,
+   Add-ons, Performance and Insights require `corex_manage_admin`; Blog Pro's guide `corex_manage_blog`.
+2. **Production and Maintenance also need `corex_run_dangerous_actions`**, checked in `OperationsModeController`
+   before the service runs; the command line has no person and keeps its rules.
+3. **The inbox's retention forms** appear only to people their handler accepts: saving needs
+   `corex_manage_settings`, applying `corex_run_dangerous_actions`.
+4. **Refusals are recorded.** `Corex\Access\AbilityCheck::allows()` (routes) and `AdminGuard::verifiedPost()` given
+   a section (forms) publish `corex_access_refused` with kind `action` and the screen; `AccessAuditLog` counts it
+   under the screen's slug by #377's rule. An action keeps the add-ons and corex-forms free of the Access classes.
+5. **The rail** reads the CoreX submenu under its real parent (`$_wp_real_parent_file`), so a person without
+   "Access CoreX admin", whose CoreX menu WordPress points at their first screen, sees only their screens.
+6. **The denied page** names the ability by its translated name and no longer says the screen needs site
+   administration.
+
+**Not chosen.** *Removing the `ability || manage_options` checks of Data, Submissions and the widgets*: with #421 the
+ability alone answers the same, and the change would touch screens this release does not otherwise change.
+
+**Verified (for #420 to #427).** Pest unit: `ScreenAbilitiesTest`, `AbilityNamesTest`, `AccessMatrixTest`
+(rewritten), `AccessPolicyTest` and `AccessServiceTest` additions; the whole unit suite, 3357 passing. Pest
+integration on a WordPress of the branch's own: `ScreenAbilitiesAccessTest` (an editor allowed one ability reaches
+its routes and is refused the others with 403, the refusal counted under the screen, a granted person opens Email
+Studio, an administrator with a stored Deny keeps all sixteen, the view ability reads and is refused a change, Blog
+Pro needs its ability, a Settings save by a non-administrator leaves the delivery fields), `AccessHistoryTest`, the
+updated `BlogProPermissionMatrixTest` and `AccessAuditLogWritesTest`; the whole suite, all passing but
+`LoginSlugAvailabilityTest`'s rewrite-route case, which fails on a fresh install without these changes too. Jest
+`accessMatrixGrid.test.js`, `emailStudioDelivery.test.js`, the updated `accessChanges.test.js`, and the whole suite
+(1440). Playwright `abilities.spec.js` (5: the one-ability menu and 403, read-only Settings, the Maintenance refusal,
+the grid at 400px with Edit, the history filter) and the touched specs.
+
+**Client impact.** Administrators see no change. Past grants and matrix Allows start opening their screens. Editors
+and writers who used Blog Pro since v0.47.0 need "Manage Blog Pro" allowed for their role.
+
+**Amended 2026-11-11 (merge of main into spec 117, review of PR #438).** Main brought three things that asked for
+site administration, and they now follow the map like every other screen. Decided by the orchestrator under the
+owner's delegation.
+
+1. **The Assistant (spec 129)** is in `ScreenAbilities` as `corex-assistant`, needing "Access CoreX admin", not
+   read-only, and in `ScreenNames`. Its menu, its render check, its save (`verifiedPost` with the screen, so a refused
+   save is counted) and `POST corex/v1/assistant/check` (through `AbilityCheck`, and the route's `auth:` middleware)
+   read it. No new ability. Only site administrators hold "Access CoreX admin" (it is locked), so administrators see
+   no change and nobody else gains the screen.
+2. **Settings' provider test and Corex Media's library conversion routes** (`settings/providers/{provider}/test`,
+   `media/conversion`, `media/conversion/advance`, `media/conversion/cancel`, spec 119) ask for "Manage settings"
+   through `AbilityCheck` under `corex-settings-config`, as the captcha test does, and record a refusal under
+   Settings.
+3. **A refusal is recorded once.** WordPress asks every permission callback of a matched route again, once per
+   method, to build the `Allow` header (`rest_send_allow_header()` on `rest_post_dispatch`). `AbilityCheck` publishes
+   nothing during that filter, so a refused call is no longer counted twice and a reader who opened a read route is
+   not recorded as refused its write method. `AccessAuditLog` also counts a refusal of one screen and ability once
+   per request (a REST dispatch starts a request of its own, on `rest_pre_dispatch`). `AdminGuard` names the kind
+   with `AbilityCheck::KIND_ACTION`.
+
+## #421 — Site administrators hold every CoreX ability, and the matrix cannot deny a role that administers the site
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 1. Decided under the owner's 2026-10-21 mandate (ACC-D11).
+
+**Why.** Once screens ask for abilities, a Deny on the Administrator role would hide screens from every
+administrator. Owners must keep everything they have.
+
+**Decided.**
+
+1. `AbilityCompatibility` gives anyone holding `manage_options` every ability and returns before applying any role
+   effect. A super administrator passes every check before the filter, as WordPress decides.
+2. `AccessPolicy::preview()` takes `administersSite`; a Deny on such a role is refused with blocker
+   `site_administrator_role`. `AccessService` asks the new `Corex\Access\SiteAdministration` (implemented by
+   `WpSiteAdministration`: the role has `manage_options`), an optional last constructor argument.
+3. A Deny stored before is kept in the table, not applied, and listed once on the Access screen's Overview
+   (`AccessMatrix::ignoredDenies()`); the grid shows such a cell as "Allowed through site administration".
+
+**Not chosen.** *Deleting stored Denies on upgrade*: nobody chose that.
+
+## #422 — "See CoreX screens without changing them" opens four screens read-only
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 6 (US-SHL-06). Decided under the owner's 2026-10-21 mandate (SHL-D3).
+
+**Decided.**
+
+1. **`corex_view_screens`**, group CoreX admin, sensitive, implied by `corex_manage_admin`, requestable, held by no
+   role. `ScreenAccess::mode()` answers manage, view or none; `menuCapability()` registers the menu entry with the
+   ability this person holds, because WordPress takes one capability per entry and checks it again on opening.
+2. **Overview, Settings, Operations & Security and Insights** render for it with `AdminPage::open(..., readOnly:
+   true)`: a "Read only" chip in the title, a sentence (`#corex-readonly-note`) naming the ability that makes changes,
+   and the request form in a disclosure, or the matrix sentence where the ability cannot be requested.
+3. **`corex-read-only.js`** (corex-core, enqueued on CoreX screens, inert elsewhere) marks every input, select,
+   textarea and button of the content `aria-disabled`, `readonly` where it applies and described by the sentence,
+   and stops presses, value-changing keys and submits; it watches the content, so the React islands are covered.
+   Links and tabs keep working. Controls stay focusable, so their reason is announced.
+4. **Read routes accept it, writes do not**: `AbilityCheck::allowsReading()` for `GET insights*` and
+   `GET security/login-protection`; runs, saves and the Settings form refuse and are recorded. A read-only Settings
+   page carries no nonce, and a save posted anyway is refused with the standard refusal (`wp_die`, 403).
+
+**Not chosen.** *`disabled` on every control*: not focusable, so nothing could say why.
+
+**Amended 2026-11-11 (review of PR #438).** Decided by the orchestrator under the owner's delegation.
+
+1. **Operations & Security is no longer read-only.** Its read-only view still printed its forms and their nonces,
+   and the screen shows the login policy, the trusted proxies and locked-out accounts by name, which a reader of
+   CoreX screens has no need of. "See CoreX screens without changing them" now opens **Overview, Settings and
+   Insights**; whoever lacks "Manage operations and security" is refused Operations & Security and
+   `GET security/login-protection` as before spec 117. The catalogue's description says so.
+2. **A locked ability has a sentence of its own.** Overview and Insights need "Access CoreX admin", which only site
+   administrators hold and nobody can be given or ask for: their read-only sentence says that
+   (`RequestableAbilities::isLocked()`), with no request form and no mention of the role matrix.
+3. **Settings drawn read-only** passes `viewOnly` to `SettingsPageRenderer::render()`, which draws the page as it
+   draws a page whose add-on is off (fields read-only, no save bar, provider tests or add-on panels) without the
+   add-on's "is off" notice, and with no nonce.
+4. **`corex-read-only.js` leaves alone what only moves around the screen**: a form with `method="get"`, anything
+   inside `data-corex-readonly-skip` (filters, pagers, navigation), and the browser's own keys (Tab, reload, copy,
+   anything held with Ctrl, Alt or Cmd, the caret in a read-only text box). It stops Enter, Space, value-changing keys
+   and `cut` as well as `paste`.
+5. **The Overview and Insights guides** ask for the view ability, which "Access CoreX admin" implies, so they open for
+   whoever can open those screens.
+
+## #423 — Email Studio opens for "Manage Email Studio"; how the whole site delivers mail stays with site administration
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 7 (US-EML-20, CR-014). Reverses #116 (5) under the owner's
+2026-10-21 mandate.
+
+**Decided.** The screen and its twelve routes ask for `corex_manage_email`. The delivery provider and live delivery
+(Settings → Mail) carry `site_admin: true`: `SettingsForm` draws them disabled with a sentence for anyone without
+`manage_options`, and `AdminDashboard::maybeSave()` leaves them as they were for such a person. Email Studio's
+"Configure delivery" is replaced for them by a sentence (`canConfigureDelivery`). The failure notification's link
+already carries `corex_manage_email` and is withheld from anyone without it. CoreX stores no mail provider secret.
+
+**Amended 2026-11-11 (merge of main's spec 119 Settings).** The rule moved with the code that saves: main's
+`SettingsSaver::save()` takes `siteAdministrator`, and for anyone else its editable fields leave out those marked
+`site_admin`. The skip is required, not tidy: the saver reads an unposted switch as off, so without it a save by a
+holder of "Manage settings" would turn live delivery off. A post made by hand that sends `mail_provider` changes
+nothing either. `SettingsForm::rows()` draws the two fields read-only with the sentence; `SettingsForm::render()`
+(option pages) is unchanged. `AdminDashboard::maybeSave()` refuses a save from anyone without "Manage settings"
+with the standard refusal (`wp_die`, 403) and records it before the nonce is checked.
+
+## #424 — The role matrix is a grid of resolved states, with today's editor behind "Edit"
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 2 (US-ACC-02).
+
+**Decided.** `AccessMatrix::editableCorexMatrix()` sends each role's `administers`, and per cell its `state`
+(`allowed_set`, `denied_set`, `allowed_admin`, `not_granted`, `locked`), `reason` (`site_administrator`,
+`locked_definition`) and `ignoredDeny`, with translated row, area and risk names. `AccessMatrixGrid.js` draws the grid
+by area with the ability column sticky inside a frame that scrolls on its own; each cell is a mark (hidden from
+screen readers) and its words; a cell that cannot be set is focusable and described by a tooltip. "Edit" opens the
+editor for that role; an applied change updates the grid. The WordPress capability grid and the tab's own audit list
+are gone.
+
+**Amended 2026-10-23 (quality checks).** At 600px and narrower the grid folds into one list per ability: the roles and
+their Edit buttons first, then each ability with every role's state, each cell carrying its role's name
+(`.corex-access__cell-role`, hidden at wider widths, where the column header names it). Spec 116's checks count any
+table wider than a 375px screen, and a frame that scrolled on its own was one. The grid's secondary text, the
+history's times and the matrix headers use `--corex-admin-text-muted`, which meets AA in both themes;
+`--corex-admin-text-subtle` does not. US-ACC-02 scenario 8, FR-017 and SC-003 are amended to match.
+
+## #425 — The overview counts CoreX abilities as the matrix resolves them
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 3 (US-ACC-03).
+
+**Decided.** Role cards count the abilities in an allowed state out of all sixteen, with `number_format_i18n` and
+plural forms; roles WordPress does not ship read "Added by a plugin or the site". The groups card lists every ability
+by area with its risk in words and Locked. "Your permissions" lists what you hold and how: site administration, your
+role (the first whose matrix Allow gives it), granted to you until a date (a standing grant), or your account. The
+requirements card is built from `ScreenAbilities`. The capability groups of #114 point 4 are gone.
+
+## #426 — One access history on the Audit log tab
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 4 (US-ACC-04).
+
+**Decided.** `AccessHistory` reads the activity stream's access area (the newest thousand events) and the counted
+refusals, turns each into who, whom or what, when, a kind label and a sentence, sorts newest first, filters by kind
+and person, and pages by 25. The tab is drawn on the server with a GET filter form and day headings. Two new activity
+kinds: `access.role.refused` (with the blockers) and `access.request.expired` (when somebody tries to decide a request
+that ran out). The empty state names what is recorded and how long (180 and 30 days).
+
+**Not chosen.** *A new history table*: both sources already exist and are pruned on their own terms.
+
+## #427 — Ability, area and risk names are given in the site's language by one lookup
+
+**Date:** 2026-10-23. **Spec:** 117, User Story 5 (US-ACC-05).
+
+**Decided.** `Corex\Access\AbilityNames` translates each shipped ability's name and description, each area and each
+risk at the moment it is shown, with literal strings; an ability registered by someone else keeps its own text. The
+matrix, overview, grants, requests, approval dialog, denied page and refusal messages use it; a key appears only as a
+`title`. A refused role change says why in words (`AccessService::refusalReason()`). The approval phrase stays the key
+(#376).
+
+## #428 — What only a site administrator may change in Access & Abilities
+
+**Date:** 2026-10-23. **Branch:** `spec/117-abilities`. **Spec:** 117, FR-011a (added with this decision). **Mode:**
+CoreX Framework. Decided under the owner's 2026-10-21 mandate, on review of PR #438.
+
+**Why.** Spec 117 opened the Access screen to holders of "Manage access". Some changes there decide who controls the
+site, and they stay with the people who already control it.
+
+**Decided.**
+
+1. **Four changes need site administration** (`manage_options`; on a network a super administrator holds it):
+   allowing a Critical ability for a role or setting one to Inherit (blocker `critical_needs_site_administrator`);
+   approving a request for a Critical ability (the same blocker, in the approval's preview); any change to a role the
+   person making it holds (`own_access_needs_site_administrator`); and deciding, approving or denying, one's own
+   access request (`own_request_needs_site_administrator`). Denying a Critical ability for a role one does not hold
+   stays open to a holder of "Manage access": it narrows. Locked abilities stay refused to everyone (#421).
+2. **`AccessPolicy::preview()`** takes `actorAdministersSite`, false unless said, so a caller that does not ask gets
+   the narrower answer. `AccessService` asks `SiteAdministration::userAdministersSite()` (new;
+   `WpSiteAdministration` answers with `user_can($id, 'manage_options')`) and, with no `SiteAdministration` given,
+   treats nobody as a site administrator.
+3. **A refused decision is recorded** in the activity stream's access area as `access.request.refused`, with the
+   reasons, and the Audit log tab lists it as "Decision refused". A refused role change was recorded already
+   (`access.role.refused`, #426). The rules are checked before the note and the confirmation, so the refusal says what
+   the rules say whatever was typed.
+4. **The dialogs say why** in words: the role editor's preview and the approval dialog list each blocker's reason.
+
+**Stored Allows.** Critical abilities Allowed for a role before this release stay Allowed and are applied, as before
+(`AbilityCompatibility`). Only a site administrator could store them (the Access routes asked for `manage_options`
+until spec 117), and they are now the only way such a role holds one. The release notes ask owners to review them.
+
+**Not chosen.** *Ignoring stored Critical Allows until a site administrator confirms them again*: it would take away
+access owners chose on purpose, with no screen yet to confirm it from.
+
+**Verified.** Pest unit `AccessPolicyTest` (Critical Allow and Inherit refused, Critical Deny allowed, own role
+refused, administrator allowed) and `AccessServiceTest` (each refusal recorded; own request refused for approve and
+deny; someone else's request decided; administrator decides their own; no `SiteAdministration` means no); Pest
+integration `ScreenAbilitiesAccessTest` (the same through the routes, as a holder of "Manage access" who is not a
+site administrator, and as an administrator) and `AccessHistoryTest` (the history's sentence).
+
+## #429 — Three loose ends of spec 117: the old CSV export, refusals of three more routes, and the capture switch
+
+**Date:** 2026-10-23. **Spec:** 117, FR-005, US-EML-20. Decided under the owner's 2026-10-21 mandate, on review of PR
+#438.
+
+**Decided.**
+
+1. **The `admin_post_corex_data_export` handler is removed** with `DataExportController` and `CsvWriter`. Nothing
+   linked to it since the Data screen's exports became runs (spec 109), and it read a source without the checks those
+   runs make for withheld models and personal data. The Data screen's export is the only one.
+2. **The flow gateway, the activity routes and Blog Pro record their refusals** through `AbilityCheck`, under Forms &
+   Flows, Overview and Blog Pro. Blog Pro records only a refusal for want of "Manage Blog Pro"; one WordPress's own
+   permission for a post or comment decides is not an access refusal.
+3. **Email Studio's "Capture only CoreX mail" switch** (spec 113, merged into this branch) stays with site
+   administration like live delivery (#423): its route asks for "Manage Email Studio" and `manage_options`, and the
+   overview shows the switch unavailable, with the sentence, to anyone else. It decides whether other plugins' mail
+   leaves a development or staging site.
+4. **The guide names what two abilities reach**: "Manage setup" runs a kit that activates plugins and can set the
+   front page; "Manage Email Studio" lists captured emails and sends test mail from the site's address.
+5. **A captured email's content is shown only to site administrators** (amended 2026-10-26). `GET
+   corex/v1/email-studio` sends a capture's body, plain text and headers only to someone with `manage_options`;
+   anyone else gets its subject, recipients, path, state and time, with `content_withheld: true`, and the log says
+   "Only a site administrator can open a captured email." No other route sends a capture's content. Verified by
+   `ScreenAbilitiesAccessTest` (a holder of the ability who is not a site administrator gets no content and a 403 on
+   the capture switch; an administrator gets the body) and Jest `emailStudioDelivery.test.js`.
+
+## #440 — Settings is seven pages, each a form of its own that redirects after a save
+
+**Date:** 2026-10-23. **Branch:** `spec/119-settings-save`. **Spec:** 119, US-SET-01 (SET-D1). **Mode:** CoreX
+Framework. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** One form of nine tabs with one button: no unsaved state, no Discard, edits lost on leaving, and a reload
+offered to resend the form. SET-D1 chose the design's grouped sub-navigation with a save bar per section.
+
+**Decided.**
+
+1. **Seven pages** (`SettingsPages`): General and appearance (Brand, Dashboard widgets), Email (Mail, Forms),
+   Captcha, Media, Insights, Guides, Advanced. Each add-on's section is a page of its own, so it can leave the
+   navigation when the add-on is not installed and still be answered at its address. Data retention joins with R3.5.
+2. **The pages are nested under Settings in the CoreX rail** (`AdminPage::open()` gains an optional `$subnav`); on a
+   phone they are a row of their own. Address `&section=<page>`; `&corex_tab=<section>` still resolves.
+3. **A save writes only the posted page** (`SettingsSaver`), keeps its result in a per-user transient for two
+   minutes and redirects (303) to the page, which says what happened once. A refused value is drawn in its field
+   with the stored value in `data-corex-saved`, so the page opens at "Unsaved changes".
+4. **The bar is a reset and a submit button**, so both work without scripts; the script adds the state, Discard to
+   the stored values, the `beforeunload` question, and sends the save itself so that a save that does not go
+   through (a server error) says so and keeps the edits. A successful save is answered by the redirect, which the
+   script follows.
+5. **On a phone the bar is not sticky**: held to the bottom of a small window it covered the field being typed into
+   (the quality checks' 200% text test).
+
+**Not chosen.** Nine pages (two one-field pages in the rail); a bar per section on one long page (two bars on
+screen); answering the post in place (reload resends).
+
+**Verified.** `SettingsSaveChangedOnlyTest` (13), `SettingsSaveRefusalTest` (9), `SettingsPagesUnitTest`,
+`settings-savebar.test.js` (10), `settings-pages.spec.js` (13), the quality checks on every page (37 pass).
+
+## #441 — Locked values are read from the config engine's own `.env` and network-lock layers
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-02.
+
+**Decided.** `Corex\Support\Config\SettingLocks` asks the `.env` source, then the network-lock source, the same
+instances the config repository and spec 113's `SiteEnvironment` read (bound once in `CoreServiceProvider`, as
+spec 113 binds them). A locked field shows the value in force, `readonly`, described by "Set in the site's .env
+file" or "Locked by the network administrator"; a locked secret is a line "Set in .env" with no input and no
+Remove. The saver skips a locked key whatever is posted. Captcha and Insights states read `ConfigInterface`, so keys
+in `.env` count. **Not chosen:** a "which source answered" method on `Repository` (it changes an interface clients
+build around for one screen's question).
+
+## #442 — Provider tests: one short probe each, remembered by a fingerprint, never the key
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-03.
+
+**Decided.**
+
+1. **What a missing key means is said as the code does it** (`ProviderSetup`): no secret → `NullCaptcha`, honeypot
+   only; no site key → no widget, no token, protected forms refused; no PageSpeed key → Google's shared keyless
+   quota. The story's "performance checks cannot run" was replaced: `PerformanceProvider` runs keyless, and the
+   Overview says "Keyless (shared quota)".
+2. **PageSpeed "Test connection"** asks `runPagespeed?key=` with no page: Google rejects a bad key (`API_KEY_INVALID`,
+   read from the live API) before reading the request, so another 400 means the key was accepted. No measurement
+   runs. **Cloudflare** asks `/user/tokens/verify`, then `/accounts/<id>/tokens/verify` for account tokens; the
+   account ID is checked when a scan runs, and the page says so.
+3. **The latest test per provider** is kept in `corex_provider_tests` (not autoloaded) with an HMAC-SHA256 of the
+   values it used, keyed with `wp_salt('auth')`. Any change to those values, here or in `.env`, reads "Not tested
+   yet". The captcha add-on's own route reports through `corex_provider_tested` and reads the line back through
+   `corex_provider_test_status`, so corex-config does not depend on it.
+
+## #443 — The Media library is converted by the existing bounded job, driven from the page
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-06.
+
+**Decided.** corex-media starts `media-webp-regeneration` (spec 068) through `JobService` with a fixed input hash,
+so one run at a time. The open page polls `POST corex/v1/media/conversion/advance`, which fires the runner's own
+action (`corex_run_bounded_job`) for one step; WP-Cron continues when the page is closed. The batch source now
+reports failures by file (missing, unreadable, refused by the image library) and records `WebpMeta` for what it
+converts, as the CLI does — the job wrote WebP files that delivery's gate did not know. Failures (at most 100) and
+the run's job id live in `corex_media_conversion`; start, cancel and end are in the activity log (area settings).
+Counts are clamped to what was processed. The panel reaches Settings through `corex_settings_section_extra`.
+
+**After review (PR #440).** Cancel sticks: `JobRunner` reads the stored job again before it saves a step and keeps
+an end the job reached meanwhile (cancelled, failed or completed) instead of writing the step's own running copy
+over it, and schedules no further step; the page drops an advance answer that arrives after Cancel. A step
+converts at most ten images (`MediaRegenerationJob::MOST_PER_STEP`), so a shared host's 30-second limit does not
+stop one midway; and an image whose tracked WebP was written after the run started counts as converted, not
+skipped, when a stopped step is taken again.
+
+## #444 — Media, Captcha and Guides follow their add-on; an add-on card has an anchor
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-07.
+
+**Decided.** `SettingsSectionStates` gives the three add-on pages their add-on's state: not installed → not in the
+navigation, and the address shows `AdminPage::state()` "This page is not available"; off → "<Name> is off. These
+settings apply when it is on." with **Open Add-ons** to `#corex-addon-<slug>` (each card gains that id), read-only
+fields and no save bar. Guides had no add-on state and saved an address nothing read.
+
+## #445 — Translation is checked twice; on/off settings are the Add-ons switch
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-08 and US-SET-09.
+
+**Decided.** Every Settings string goes through `__()`; brand names (reCAPTCHA, Cloudflare Turnstile, hCaptcha) stay
+literal. `SettingsTranslationTest` marks what `__()` is given and fails on any unmarked title, label, help, link
+text, choice or page name, and proves it would fail. The quality checks' pseudo-locale run now reaches every
+Settings page (`discover.js` follows `&section=` links), in both directions. The switch is a real checkbox with
+`role="switch"` drawn as the track (`appearance: none`) with the knob over it, so focus is drawn on the control
+the quality checks measure; On and Off are both written and CSS shows the one that matches. The `.corex-toggle`
+styles moved from `addons.css` to the shell stylesheet. Saved values stay "1"/"0".
+
+## #446 — A saved secret is removed by a confirmed save, and the captcha card says when a key is missing
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-15 (CR-019).
+
+**Decided.** A saved, unlocked secret draws a box `corex_remove_secret[]`, "Remove the saved value when I save", with
+what stops working beside it; the script turns it into **Remove** with `window.confirm` (read by every screen
+reader) and **Keep it**. The saver deletes the option only for a password field of the posted page whose add-on is
+on, and records `settings.secret_removed` (area settings, the setting's key and label, never the value). The Add-ons
+captcha card gains one line from `ProviderSetup` when a key is missing; R3.6 (US-ADD-02) makes it its badge.
+
+## #447 — "Login logo link" in Brand, and a web address field refuses a bare word
+
+**Date:** 2026-10-23. **Spec:** 119, US-SET-13.
+
+**Decided.** `brand.login_url`, already read by `AdminBranding::loginUrl()`, gets a field, its help saying it is the
+logo's link and not the sign-in address. A `url` or `media` field now takes a value only with a scheme or from the
+site's root (`/contact`, `#`): `esc_url_raw('example')` was `http://example` and was saved.
+
+## #430 — One readiness evaluation, in two groups, that every screen reads
+
+**Date:** 2026-10-23. **Branch:** `claude/spec-118-launch-checklist`. **Spec:** 118, US-OVR-01, US-OVR-03,
+US-WIZ-06 (OVR-D1, OPS-D4, OVR-D4). **Mode:** CoreX Framework. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** Four lists answered "is the site ready": the Overview's own six rows, the Operations snapshot, the readiness
+notifications (from the same snapshot, published again each time a page was opened) and an unused checklist in the
+kit add-on. They disagreed on what they counted.
+
+**Decided.**
+
+1. **`ProductionReadinessSnapshotFactory` is the one evaluation.** It returns the hardening checks in the group
+   `security` and seven site checks (`SiteChecks`, from facts `SiteReadinessFacts` reads, each guarded) in the group
+   `site`. Every check carries the admin path where it is fixed.
+2. **Only `security` checks can be `blocking`.** Site checks are `warning` (Pending) and never block Production, so
+   no site that can launch today is stopped by the upgrade. A check whose facts throw is `unavailable` ("Could not
+   check"): never counted done, never blocking (the rule US-SEC-06 will keep).
+3. **`LaunchChecklist` (pure) is the only way a screen draws it**: groups in a fixed order (security first), rows
+   with state, chip, word, what is missing, and a link only while open, and "N of M" over every check that applies.
+   The Overview card, the Hardening tab and the Environment panel, the Dashboard widget and `GET corex/v1/readiness`
+   (for the wizard) all go through it, so the counts agree by construction.
+4. **Operations evaluates once per render** and hands the snapshot to its sections.
+5. **The kit's `Corex\Kit\Setup\LaunchChecklist` is deleted**: nothing used it.
+
+**Not chosen.** *A second evaluation for the site checks* beside the snapshot: the launch confirmation binds to the
+snapshot's hash, and two evaluations are how the screens drifted.
+
+**Verified.** Pest unit `LaunchChecklistTest` (20); integration `LaunchChecklistTest` (7: both groups, theme
+front page, privacy draft, terms page, no Corex Mail, facts that throw, Overview count equals Operations count);
+Playwright `launch-checklist.spec.js` (the same checks and states on the Overview, Operations and the wizard).
+
+## #431 — One set of states, two voices
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-02, US-SEC-09. Decided under the owner's 2026-10-21 mandate.
+
+**Why.** US-OVR-02 asks the Overview for Done, Pending, Blocked; US-SEC-09 asks Operations and the wizard for Ready
+and "Blocks going live", with "4 of 6 ready". Both test cases are explicit.
+
+**Decided.** `ReadinessWords` holds both voices for the same states: the to-do voice on the Overview (Done, Pending,
+Blocked, Could not check, "N of M") and the gate voice where going live is decided (Ready, Pending, Blocks going
+live, Could not check, "N of M ready"). A check's state and chip are the same in both; only the word changes.
+"Needs Corex Mail" is the state `not_applicable`: shown, left out of both numbers. Plural forms through `_n()` with
+the total as the number; numbers through `number_format_i18n()`.
+
+## #432 — A readiness notification is raised on a change of state, not on each evaluation
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-01 (TC-OVR-01-02, 03).
+
+**Decided.** `RaisedReadinessChecks` (option `corex_readiness_raised`, not autoloaded, written only when it
+changes) remembers which checks are raised. A check that becomes blocking is published once; one that passes is
+resolved; one that cannot be read keeps what it had. A notification resolved by hand while its check still fails is
+raised again only after the check has passed and failed again. On the first evaluation after the upgrade nothing is
+remembered: blockers are published once more (one more occurrence on an open notice) and every other check is
+resolved, as before. A raised check evaluated again is **reworded**, not published: `NotificationService::reword()`
+(through `NotificationRepository::rewordByDedupKey()`) rewrites an open notice's title, body and action label in the evaluating
+request's language without adding an occurrence, in one `UPDATE` that changes nothing when the words are the same.
+Without it a notice raised in one language stayed in it for an owner reading another (the pseudo-locale check
+found it).
+
+**Not chosen.** *Asking the notification table whether an open notice exists*: `NotificationService` has no such
+read, and adding one to a contract other modules implement was not needed.
+
+## #433 — What each "Site and content" check reads
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-03. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **Brand set:** the saved company name and admin logo (as spec 114 decided).
+2. **Kit applied:** the kit provisioner (#438); no row while no kit add-on is active.
+3. **Front page:** a static front page chosen, or a `front-page` block template (block theme) or `front-page.php`
+   (classic theme).
+4. **Privacy page:** WordPress's privacy policy page, published. A draft links to its edit screen.
+5. **Terms page:** a new select on Settings → Brand, `brand.terms_page`, listing the site's pages (drafts too, so a
+   draft can be chosen and published later). Unchosen reads "Choose a terms page" and links there. The Company kit
+   creates no terms page, so no apply sets it.
+6. **Test email sent:** `EmailAttemptRepository::latestAcceptedTest()`: an attempt with source `test` in state
+   `sent` or `opened` in the last 90 days, read from the newest 500 attempts (`EmailStudioStore::latest()`) and
+   stopping at the first older than 90 days. A captured or failed test does not count. A site that sent more
+   than 500 emails since its test is told to send another, which is true enough to act on. With Corex Mail
+   inactive: "Needs Corex Mail", not counted.
+7. **Login protection on:** the Security Center's saved setting.
+
+## #434 — Four state tiles, and PHP fatal errors recorded by corex-core
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-04 (OVR-D2, OVR-D3). Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **The tiles** (`OverviewTiles`, pure; facts from `OverviewTileFacts`): Site health, Environment, Login
+   protection, Add-ons, each a state word, a tone, an icon from the admin's own set, one line of detail and a link.
+   A fact that throws reads "Could not check".
+2. **Site health** reads `HealthModule::report()` and ignores the advisory probes `brand_present` and
+   `theme_active`. A fatal error in the last 7 days makes it "Needs attention".
+3. **`FatalErrorRecorder`** registers a shutdown function in corex-core. WordPress's own handler runs first and
+   does not exit, so this runs after it. It asks `error_get_last()` and writes only for a fatal type. It keeps the
+   time, the type and `FatalErrorSource::of()` (`plugin`, `mu-plugin`, `theme`, `core` or `unknown`, and the
+   folder's name): never the message or the path. `FatalErrorLog` keeps 30 days and at most 50 entries, in option
+   `corex_php_fatal_errors`, not autoloaded.
+4. **The plugin or theme name** is resolved when drawn, and only for `manage_options`.
+5. **Environment** shows the mode and, when a declared mode differs, "WordPress environment: <type>", by the same
+   rule as the Operations notice. **The mode bar and version** above the tiles stay.
+6. **The mode's sentence says what happens to mail** since spec 113: Development "Not a live site. Email is kept in
+   Email Studio instead of being sent."; Staging "Pre-production. Email is kept in Email Studio unless a mail
+   provider and live delivery are set." It promised analytics were off, which nothing in CoreX does. The unused
+   `Overview\EnvironmentMode` resolver, which carried the old sentence, is deleted.
+7. **A notification's primary action** is drawn in the action's deeper shade (`--corex-admin-action-hover`), which
+   its ink reads on at 4.5:1 in both themes: every readiness notice now carries "Fix this check", and the brass
+   itself does not hold white text in the light theme (US-BRD-02 owns the brass everywhere else).
+
+**Verified.** Integration `FatalErrorRecordTest` (3): a separate PHP process ends in a fatal error in a probe
+plugin; the record has exactly `time`, `type`, `kind`, `slug`; a process without one writes nothing; an
+administrator reads the plugin's name, someone else the date only.
+
+## #435 — Each Overview card is drawn on its own
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-06.
+
+**Decided.** The Overview is cards (`OverviewCard`: tiles, readiness, forms, data, attention, integrations,
+activity), built by the container and laid out by `OverviewRenderer`, which draws each inside its own try. A card
+that throws is replaced by `OverviewCardFailure`: its heading, a "Could not load" chip, "Try again" (the Overview
+again) and, for `manage_options`, an 8-character reference that `error_log()` also receives with the card's key and
+the exception. A card never catches its own failure to draw a 0: the readers that returned 0 on an exception
+(forms count, flows count, data source totals) are gone or say "Could not load". A data source whose total throws
+is listed with "Could not load". Insights' forms widget does the same ("Could not load" state).
+
+**Verified.** Integration `OverviewCardsTest` (5): the submissions count, the activity service and the
+notification service each made to throw; the card says "Could not load", no 0 and no other cause, the other cards
+render, and the reference is in the PHP error log.
+
+## #436 — The forms card counts through the inbox's own query
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-05. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Open = new or in progress; Assigned to you = open and owned by `user:<viewer>`; Unread = open and not
+read. All three are `SubmissionQueryService::query()` totals, so tests, the trash and spam are left out exactly as the
+inbox leaves them out, and a person sees only what their scope allows. `SubmissionInboxQuery` gains the filter
+status `open` (not a status a submission has) and `unread`; the inbox reads `status`, `owner` and `unread` from its
+address and offers both in its filters. Without the Submissions ability the card shows no numbers and says why;
+with the forms add-on off it says "Forms are off" and links to Add-ons; with nothing received, "No submissions yet".
+
+**Verified.** Integration `OverviewFormsCardTest`: ten submissions read Open 6, Assigned 2, Unread 3, and each
+number's link asked of the inbox gives the same total.
+
+## #437 — Activity is said by one class
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-07.
+
+**Decided.** `ActivitySentences` says an event as a sentence with the person's display name read now ("A deleted
+user" when gone), with plural forms, and a link where its object can be opened (the trash, the inbox, Operations,
+Add-ons, the Access screen, a data model). A kind with no sentence reads "Something changed in <area>". The
+Overview's activity card, the Insights security card and the Access audit log (`refused()`, `refusedRecords()`)
+use it. The card's "Audit log" link is gone: it led to refusals only, and there is no list of all activity yet.
+
+## #438 — The data card lists the owner's data; a wizard apply is recorded as applied
+
+**Date:** 2026-10-23. **Spec:** 118, US-OVR-08, US-OVR-09.
+
+**Decided.**
+
+1. **Owner's data = the records group** (`CategorisedDataSource::RECORDS`, or a source that does not say), as the
+   Data screen groups them. Each row: name, count, "Can edit" (update or create supported) or "Read only", linking
+   to `corex-data-models&tab=records&source=<key>`; the Data explorer opens on that source. The card's own link
+   goes straight to the Data Models screen, with no redirect.
+2. **`KitAppliedRecord`** is the one rule: `record()` writes `corex_kit_applied` only when
+   `ApplyOutcome::isComplete()` (every page to create or fill has an id); `isApplied()` is true for a recorded kit,
+   or, only on a site that has never recorded an apply, for a kit whose **every** declared page carries
+   `_corex_kit_page`, so a site whose wizard applied the kit before is recognised without applying anything. The
+   activator records each page it writes, so an apply that failed on a page leaves one without the record and is
+   never read as applied. The Add-ons prompt (`BlueprintKitProvisioner`), the wizard's REST apply and its form
+   apply all record through it. A reset removes the option and the page records, so it reads as not applied.
+
+## #439 — Repeated notices are grouped when read, and states share one chip
+
+**Date:** 2026-10-23. **Spec:** 118, US-SHL-09, US-INS-02. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+
+1. **`NotificationGroups`** groups unread `export.ready` and `job.failed` notices by `metadata.job_kind` (the job
+   event does not name the data model, so "the same thing" is the kind of export). Anything else, including every
+   notice that asks for a decision, is never grouped. `WpNotificationRepository` groups in its reads: the list shows
+   a group where its newest member stands, titled "3 exports finished", with every member; the unread count counts a
+   group once (the bell and the Attention card). Marking read, dismissing and resolving a group act on each member
+   from the client. Nothing stored changes.
+2. **`.corex-state-chip`** in the admin shell: an icon (a mask from `assets/icons/state-*.svg`, one per state) and
+   the word in the text colour, the edge and icon in the state's tone, so text holds 4.5:1 and the edge 3:1 in both
+   themes. The launch checklist rows and the Insights widgets use it; `.corex-badge` on Add-ons and the Overview's
+   analytics rows are unchanged. Insights widgets carry a decorative subject icon; the screen is titled "Insights"
+   and the agent card "AI and agent readiness".
+
+**Verified.** Integration `NotificationGroupsTest` (3); Jest `notificationItem.test.js` (members and their links;
+a group marked read marks each member); Playwright: Insights chips differ by icon and word and meet 4.5:1 and 3:1,
+light and dark.
+
+## #500 -- CoreX agent abilities are public to MCP, and to MCP only
+
+**Date:** 2026-10-25. **Spec:** 123, FR-001, FR-002.
+
+**Numbering.** Open branches had claimed decisions up to #479 when this was written (spec 122's plan), so spec
+123 starts at #500 to stay clear of them. Renumber at merge only if a later branch took the same numbers.
+
+**Found.** The two abilities DECISIONS #53 registered (`corex/list-blocks`, `corex/site-info`) never reached an
+agent: the MCP Adapter default server on mu-va.com listed only WordPress's three `core/*` abilities. The MCP
+Adapter (v0.7.1) treats an ability as public only when `meta.mcp.public` is true, or `meta.public` is true
+and `meta.mcp.public` is unset (`McpAbilityExposure::is_public`). CoreX set `meta.show_in_rest` and
+`meta.annotations.readonly` and neither key, so both stayed private.
+
+**Decided.** Every CoreX agent ability sets `meta.mcp.public` to true and leaves `meta.public` unset, so it is
+offered to MCP without opting into every other client channel WordPress may add. Every one carries the
+`readonly`, `destructive` and `idempotent` annotations that apply, which the adapter passes to the agent's
+client as MCP hints.
+
+**Not chosen.** *`meta.public`*: from WordPress 7.1 it also opens the ability to REST and future channels, which
+an agent ability that installs releases has no reason to join.
+
+## #501 -- The MCP Adapter stays a separate plugin
+
+**Date:** 2026-10-25. **Spec:** 123, FR-003. Answered by the owner.
+
+**Decided.** CoreX does not bundle, copy or install the MCP Adapter. A site that wants agents installs the
+official plugin. CoreX registers its agent abilities with the Abilities API, which is part of WordPress 7.0,
+whether or not the adapter is there, and runs unchanged without it (Principle IX).
+
+**Not chosen.** *Bundling `wordpress/mcp-adapter` through Composer*: CoreX would own its updates and would have
+to avoid loading twice on a site that also has the plugin. *Bundling a copy loaded only when the plugin is
+absent*: two paths to test and keep current.
+
+## #502 -- An Application Password stands in for the nonce on the three upload routes only
+
+**Superseded by #512** (2026-10-25): every release route accepts an Application Password behind `COREX_ALLOW_RELEASE_PUSH`.
+
+**Date:** 2026-10-25. **Spec:** 123, FR-014. Answered by the owner.
+
+**Decided.** `ReleaseRestGateway::answer()` refuses any request without a valid `X-WP-Nonce`. The routes that
+report how much of a package is received, append a part and complete an upload accept, in place of the nonce,
+a request WordPress signed in with an Application Password, only while agent changes are on and only for an
+account that passes `mayManage()`. Every other release route keeps the nonce: an agent inspects, installs and
+goes back through agent abilities that call spec 107's services directly and never use those routes.
+
+**Not chosen.** *All release routes*: the whole installation could then be driven by plain REST calls, outside
+MCP and its destructive hints. *A new upload route for the command*: more surface to secure for the same
+result.
+
+## #503 -- A package reaches the site through a Node script; the site never fetches it
+
+**Date:** 2026-10-25. **Spec:** 123, FR-012, FR-013, FR-015. Answered by the owner.
+
+**Decided.** A package's bytes never pass through an MCP call. A Node script in CoreX, run on the owner's
+machine with no WordPress around it, sends the package through spec 107's resumable upload (keyed by SHA-256),
+reading the site's address, the account and its Application Password from a file outside the repository. The
+agent then installs it by SHA-256 through agent abilities.
+
+**Not chosen.** *`wp corex release:push`*: a WP-CLI command must run inside a WordPress install, although it only
+talks to the remote site. *The site pulls the package from a URL*: rejected for now, because the packages live
+only on the owner's machine (`C:\Users\pc\.muva\packages` for Muva) and a site that fetches code from an
+address it is handed is a larger risk than one that receives an upload it already checks. *The package through
+MCP, in parts or as base64*: every byte would pass through the model.
+
+## #504 -- CoreX ships a "CoreX agent" role; the owner makes the user and its password
+
+**Date:** 2026-10-25. **Spec:** 123, FR-005 to FR-008. Answered by the owner.
+
+**Decided.** CoreX registers a "CoreX agent" role holding WordPress's `read` capability and no CoreX ability of
+its own; the owner allows it what it needs in spec 117's role matrix (for releases, `corex_manage_releases`).
+The owner creates the user in the Users screen and makes its Application Password; CoreX never creates a user
+or a password. Agent abilities that change the site are off by default behind one feature flag that no agent
+ability can turn on. On a network, installing still needs a super administrator on the main site
+(`mayManage()`), and this spec does not widen that.
+
+**Not chosen.** *No role, only a written guide*: less code, easier to get wrong. *A `wp corex` command that
+creates the role and the user*: shared hosts such as Muva's have no command line.
+
+## #505 -- The first settings agent abilities: clear the page cache, coming-soon on and off, read the flags
+
+**Date:** 2026-10-25. **Spec:** 123, FR-020. Answered by the owner.
+
+**Decided.** Three settings agent abilities and no more: clear the page cache, only through a page-cache plugin
+CoreX detects (LiteSpeed Cache first) and never as a dependency; turn coming-soon on or off through the service
+the Operations screen uses; and read the feature flags. No agent ability changes a flag.
+
+**Not chosen.** *Writable flags*: an agent could reach switches whose effect it cannot see. *Cache clearing
+only*, and *no settings yet*: both leave the owner opening the admin for the two jobs that follow most
+releases.
+
+## #506 -- The maintenance gate also reads the installation key from a small JSON body
+
+**Date:** 2026-10-25. **Spec:** 123, FR-018; amends spec 107 FR-024a. Plan research R3.
+
+**Found.**
+- An installation swaps folders inside the `step` request made at step `swap`, and that request raises
+  maintenance before it moves anything (`ReleaseSteps::putInPlace`).
+- The `finish` request comes next, while `.maintenance` holds visitors off. It gets through only with the
+  installation's key, read from a header, the server's headers or the address (`ReleaseMaintenance::GATE`).
+- An MCP client can add none of those per call. An agent's `finish` would wait out WordPress's ten minutes
+  (#301), and on a network each batch could wait again.
+
+**Decided.**
+- The gate gains a fourth source. On a `POST` with a JSON content type and a body of at most 64 KB, it decodes
+  the body (depth 16), walks at most 64 nodes for `corex_release_key`, and checks it with the same `hash_equals`
+  as the others.
+- `key_from` gains `body`.
+- The step, finish and cancel agent abilities take the key as input, and refuse one that is not their
+  installation's.
+
+**Not chosen.**
+- *Swap and finish in one call*: that is the request length spec 107 split for shared hosts, and it still
+  leaves a network's later batches stuck.
+- *A loopback request carrying the header*: loopbacks are unreliable on shared hosts.
+- *Letting visitors back in before the database step*.
+- *The push script driving the installation*: it would need #502's rule on every release route.
+
+**Cost.** The key passes through the agent's conversation. It opens the gate and the recovery link for that one
+installation, and is never journaled.
+
+## #507 -- Every CoreX agent ability is one `WP_Ability` subclass that checks once, answers in the gateway's shape, and journals once
+
+**Date:** 2026-10-25. **Spec:** 123, FR-002, FR-005, FR-007, FR-021, FR-022. Plan research R1, R6; plan D1 to D7.
+
+**Found.**
+- The MCP Adapter runs a target ability's permission callback about three times per call.
+- It returns a `WP_Error` to the client as text, without its code.
+- WordPress 7.0 has no hook that fires when an ability is refused or fails; 7.1 does.
+- Both accept `ability_class`.
+
+**Decided.**
+- `Corex\Abilities\AgentAbility extends WP_Ability`:
+  - It decides the permission once per request, through spec 117's `AbilityCheck`, so a refusal is counted
+    once.
+  - It refuses agent changes while the switch is off.
+  - It writes one `agent.call` event (new activity area `agents`, 180 days) holding only the input fields the
+    ability names as safe to keep.
+- Every answer is the release gateway's shape: `{ok, data}` or `{ok:false, reason, message}`. A missing CoreX
+  ability is the only `WP_Error`.
+
+**Not chosen.**
+- *Core's 7.1 hooks*: they miss 7.0.
+- *The adapter's observability handler*: it replaces the server's handler and sees only tool names.
+- *The adapter's result filter*: it ties the journal to the adapter.
+
+## #508 -- New agent abilities are MCP only; the two older ones keep REST and `edit_posts`
+
+**Date:** 2026-10-25. **Spec:** 123, FR-001 (amended), FR-007. Plan research R2, R7.
+
+**Decided.**
+- New agent abilities set `meta.mcp.public` and `show_in_rest = false`. Otherwise core's
+  `wp-abilities/v1/.../run` route would let plain REST calls drive an installation, which #502 rules out.
+- `corex/site-info` and `corex/list-blocks` keep `show_in_rest` for existing callers.
+- Their permission stays `edit_posts`. `corex/site-info` carries the CoreX version, which spec 111 keeps from
+  anyone looking for a vulnerable release, and `read` would show it to every subscriber (on a site with open
+  registration, to anyone). The plan first said `read`; wp-guard caught it while User Story 1 was built, and
+  this entry was corrected then. An agent reads the version through `corex/release-overview` and
+  `corex/release-installed`, which ask for `corex_manage_releases`.
+- Each other agent ability asks for one CoreX ability:
+  - releases: `corex_manage_releases`, plus `mayManage()`'s network rule;
+  - activity log, mode, page cache and flags: `corex_manage_operations`;
+  - submissions: `corex_manage_submissions`.
+- The owner allows the role these in the role matrix. It never needs `corex_manage_admin`.
+
+## #509 -- The agent-changes switch lives in an "Agent access" panel on Operations & Security
+
+**Date:** 2026-10-25. **Spec:** 123, FR-005, FR-006. Plan research R8.
+
+**Found.** Only the add-on activator writes a feature flag today, and no screen toggles one. A shared host has no
+command line for `FEATURES_AGENT_CHANGES`.
+
+**Decided.**
+- Flag `agent_changes`, default off.
+- A panel on Operations & Security shows:
+  - the switch;
+  - whether the MCP Adapter is active;
+  - how many users hold the CoreX agent role;
+  - the last ten agent calls.
+- Only a site administrator can change the switch, through `AdminGuard`.
+- The environment still wins, and the panel says so when it does.
+- Each change writes `agent.switch.changed`.
+
+**Not chosen.** *Environment or option only*: the owner could not turn it on from the admin.
+
+## #510 -- Going back and removing leftovers become prepare and confirm pairs for an agent
+
+**Date:** 2026-10-25. **Spec:** 123, FR-017 and User Story 5 scenario 6 (amended). Plan research R10.
+
+**Found.** The screen goes back with one call that checks the typed version, and removes leftovers with one
+click and no confirmation.
+
+**Decided.**
+- Going back: `corex/release-return-prepare` changes nothing and gives the phrase, and `corex/release-return`
+  calls spec 107's return with it.
+- Leftovers: `corex/release-leftovers-prepare` lists them with a fingerprint (SHA-256 of the sorted `what:where`
+  lines), and `corex/release-leftovers-remove` refuses `leftovers_changed` unless the fingerprint still matches.
+- The screen is unchanged.
+
+## #511 -- A page-cache provider may carry its purge; CoreX ships one for LiteSpeed Cache
+
+**Date:** 2026-10-25. **Spec:** 123, FR-020. Plan research R9.
+
+**Found.** `corex_page_cache_provider` returns only a name and a state, and `CacheManager` answers "unsupported"
+for the page scope. LiteSpeed Cache documents `do_action( 'litespeed_purge_all', $reason )`, safe to call
+whether or not it is active.
+
+**Decided.**
+- A provider's array may carry `purge`, a callable, and `CacheManager` uses it for the page scope.
+- `LiteSpeedPageCache` registers itself only when `has_action( 'litespeed_purge_all' )` is true, that is, when
+  something is listening.
+- With no provider, the agent hears `nothing_to_clear`.
+- LiteSpeed is detected, never required (Principle IX).
+
+## #512 -- Every release route accepts an Application Password, behind `COREX_ALLOW_RELEASE_PUSH`; supersedes #502
+
+**Date:** 2026-10-25. **Spec:** 123, FR-014 and FR-014a (amended), User Story 4 (amended). Answered by the owner,
+relayed by the Muva session: "A: all release routes accept an Application Password behind a separate wp-config
+opt-in, superseding DECISIONS #502; one command builds, uploads and installs."
+
+**Found.** #502 opened only the three upload routes, so a command could send a package but an installation still
+needed the admin screen or an MCP client driving agent abilities that are not built. Muva's host has no command
+line and GitHub Actions does not run on the owner's account, so every release is installed by hand.
+
+**Decided.**
+- `ReleaseRestGateway::answer()` lets a request through when its nonce is valid, as before, or when **all** of
+  these hold:
+  1. WordPress signed it in with an Application Password (`rest_get_authenticated_app_password()` is not null);
+  2. the site's `wp-config.php` defines `COREX_ALLOW_RELEASE_PUSH` as `true`;
+  3. the request came over HTTPS, or the site's environment type is `local`;
+  4. `mayManage()` holds (the route's permission callback has already asked; asked again for the same reason the
+     nonce is).
+- This holds for every release route. A request signed in by cookie still needs the nonce exactly as before:
+  WordPress signs a request in by Application Password only when no cookie has already signed it in.
+- The refusals say which condition failed: `push_off` (the constant), `push_needs_https`, `not_allowed` (the
+  account may not install releases). With neither a nonce nor
+  an Application Password the answer stays `403 not_signed`.
+- `COREX_ALLOW_RELEASE_INSTALL`, the host facts and every refusal of spec 107 are unchanged.
+- The release record and the activity entry of an event name the Application Password the request was signed in
+  with (`signed_in_with`), so the history says who installed and how.
+- Spec 123's `agent_changes` switch no longer governs these routes. It governs agent abilities only.
+
+**Why a second opt-in, and why a constant.** A nonce ties an installation to a person signed in to the admin at
+that moment. An Application Password is a long-lived secret that may already exist for other tools (the mobile
+app, an MCP client), and once these routes accept one, anyone holding one for an account that may manage releases
+can replace the site's code. So it must be switched on deliberately, per site, by whoever controls the server's
+files, and a credential the routes accept must not be able to switch it on: an option or a setting could be
+changed over REST by the same account, a line in `wp-config.php` cannot. It is off on every site until written.
+
+**Why HTTPS is required here too.** WordPress already refuses Application Passwords over plain HTTP unless the
+environment type is `local`, but a plugin can turn that rule off with the `wp_is_application_passwords_available`
+filter. A release replaces code, so these routes keep the rule whatever a filter says. The script refuses
+`http://` to a public host before it sends anything.
+
+**Cost, said plainly.** With both this constant and spec 123's agent role on, an agent account that may manage
+releases can drive the routes with plain REST calls, outside MCP and its destructive hints, which is what #502
+avoided. The documentation recommends that the release push use its own account and its own Application Password,
+and that a site that does not push leaves the constant out.
+
+**Not chosen.** *Only the upload routes* (#502): no one-command install. *A feature flag or a setting*: could be
+turned on over REST by the credential it governs. *A new set of routes for the command*: more surface for the same
+work; the screen's routes, answers and refusals are already built and tested.
+
+## #513 -- `npm run release:push` builds, uploads, installs and checks, through the screen's own client
+
+**Date:** 2026-10-25. **Spec:** 123, FR-013, FR-015, FR-015a to FR-015d (amended). Extends #503 from "sends a
+package" to the whole installation.
+
+**Decided.**
+- `scripts/release-push.mjs` (`npm run release:push`) builds the package with `build:dist --zip` when given
+  `--client` (and passes `--with-plugin` and `--pdf-fonts` through), or takes one already built with `--package`.
+  Then it reads the Releases overview, uploads, inspects, prepares, confirms with the version, runs the steps and
+  the finish, and checks that the site answers and reports the new version.
+- It drives the site with `createReleaseClient()` and `runInstallation()` from the Releases screen's own code
+  (`plugins/corex-config/src/Releases/`), so the screen and the script cannot disagree about the protocol: the
+  installer's mark, waiting past a host's challenge pages, carrying the installation's key past the maintenance
+  answer, and how long to keep asking. The client gains two options, `key` (an installation's key from an earlier
+  run) and a nonce that may be left out.
+- Settings come from `--settings <file>`, `COREX_PUSH_SETTINGS`, the three `COREX_PUSH_SITE`, `COREX_PUSH_USER`
+  and `COREX_PUSH_APP_PASSWORD` variables, or `~/.corex/release-push/<client>.json`, in that order. A settings file
+  inside a git checkout is refused. The password goes only into the `Authorization` header and is never printed.
+- What the screen asks a person to accept, the script asks for as flags: `--accept-older`,
+  `--accept-downgrades`. A site that cannot say whose it is gets the `--client` given.
+- The installation's key and recovery link are written to `~/.corex/release-push/state/<host>.json` (owner-only
+  permissions) at prepare, and removed when the installation finishes. A run that died can be taken up with
+  `--resume`, which carries the saved key past the maintenance answer; without it the script says WordPress lets
+  requests in again by itself within about ten minutes of the swap, and keeps asking for that long.
+- On a failure after the swap it prints the recovery link and the way back (`Releases`, "Go back"), as the screen
+  does.
+- The first release that contains this must be installed from the screen: the release running on the site
+  decides who may use its routes, and older ones accept only the nonce.
+
+**Not chosen.** *A client written again for Node*: two clients of one protocol drift apart. *Printing the recovery
+link at prepare*: it would stay in terminal scrollback and agent transcripts on every successful run; it is printed
+only when it is needed.
+
+## #450 -- One frame, `EmailFrame`, draws every email CoreX draws; `Layout` is removed
+
+**Date:** 2026-10-26. **Branch:** `spec/120-designed-emails`. **Spec:** 120, story 3 (US-EML-05). **Mode:** CoreX
+Framework.
+
+**Why.** CoreX drew its emails in two frames: `Layout` for Studio and code templates, `StandardEmailDesign` for
+replies, which was the only one the Mail settings reached. `Layout` never showed the logo when a layout filled its
+header region (the shipped ones do) and never applied an empty accent (`??` does not fall back from `''`). A
+non-contact form notification had no frame at all.
+
+**Decided** (EML-D4, under the owner's 2026-10-21 mandate).
+
+1. `Corex\Email\Design\EmailFrame` takes an `EmailContent` (which gains `kind` and `links`, last and optional) and
+   draws it in the site's design with the site's brand, in the email's language. `TemplateRenderer` and
+   `EmailTemplateService` draw through it; `ReplyComposer` too. `Layout` is removed.
+2. Kinds (`EmailKind`): reply, notification, confirmation, newsletter, account, message. Each but message has a
+   footer line saying why the person receives the email. The footer links to the site's privacy page where one is
+   published, and to what the sender adds (a newsletter's Unsubscribe).
+3. The accent: a Studio layout's own accent, else Settings → Mail's, else the theme's `primary` when it is
+   `#rrggbb`, else CoreX's. The logo is always the band's. A Studio layout arranges the body inside the card; a
+   header or footer line that only says the site's name is dropped (the shipped partials say exactly that).
+4. **"Manage preferences"** is linked only where a site gives an address through
+   `corex_newsletter_preferences_url`: corex-newsletter has no preferences page, and the owner's no-dead-UI rule
+   rules out a link to one that does not exist. Decided under the owner's 2026-10-21 mandate.
+5. The standard design styles a template's `<h1>`, `<h2>` and `<a class="button">` (the text's colours turned
+   round, so a button keeps its contrast whatever the accent), and the message cell carries the type, so a table
+   in a template reads in it.
+
+**Verified.** Pest unit `EmailFrameTest`, `TemplateRendererTest`, `EmailTemplateEditorTest`, `EmailDesignGeneratorTest`
+(the generated design still equals the standard one); integration `EmailLanguageTest`, `ReplyEmailDesignTest`,
+`SiteEmailBrandTest`, `EmailWordsLanguageTest`.
+
+**Client impact.** Every CoreX-drawn email looks different; finished messages do not change (#451).
+
+**Amended 2026-11-11** (review of PR #447). (a) Point 4 is kept in the drawing, not only in the partial: a link
+whose address is made only of variables that are all empty is left out with its words, and the paragraph, item or
+heading it leaves empty with it (`EmailTemplateService::links()`; only an element the left-out link emptied, and a
+table cell is kept, empty, so a layout's spacer cells stay), so the newsletter layout's `{{> preferences }}` no
+longer drew `<a href="">Preferences</a>` and `Preferences ()` in every Double opt-in and Newsletter welcome; a
+hand-written plain-text line that is only a label for empty values goes the same way. (b) A code template's plain text
+ends with its footer links, label and address, as its HTML footer has them (`EmailFrame::plainFooter($kind, $links)`):
+the newsletter's Unsubscribe. (c) A reply's plain text ends as it did before this release, with the footer's line only
+(`EmailFrame::plainSignature()`, FR-016); its HTML keeps the reason line of point 2. Verified: `EmailTemplateLinksTest`,
+`TemplateRendererTest`, `EmailDesignTest`.
+
+## #451 -- A site's design draws replies unless it says it accepts a kind; finished messages are never framed
+
+**Date:** 2026-10-26. **Spec:** 120, story 3.
+
+**Why.** Muva's design says on its band that the email is a reply. Given a lead or a newsletter it would mislabel
+it. Both clients hand finished messages to the shared mailer, with their own From; Perego's FluentSMTP routes on it.
+
+**Decided.**
+
+1. `KindAwareEmailDesign extends EmailDesign` adds `accepts(string $kind)`. A design implementing only
+   `EmailDesign` is a reply design; any other kind is drawn in the standard design, with no failure reported.
+2. A `MailRequest` without a template name is a finished message: no frame, no added plain text, its own From.
+3. Code templates gain `kind()` and `links()`. The non-contact code-defined form notification becomes the code
+   template `form-notification`, drawn from the answers; the body it hands the `wp_mail()` floor is plain text,
+   one answer per line (it was HTML sent as plain text).
+
+**Verified.** `SiteEmailDesignTest` (two new cases), `SendEmailListenerTest`, `NotificationFileLinkTest`,
+`DesignedEmailsTest` (a finished message captured unchanged).
+
+**Amended 2026-11-11** (review of PR #447). Point 3 is for a new site. FR-023 keeps an upgraded site's code-defined
+form notifications as they were: the contact form through its template, every other form as a finished HTML message
+(no template), and the same HTML body on the `wp_mail()` floor. Which a site is, is decided once, the first time this
+release runs, and stored (`corex_forms_notification_style`, `Corex\Forms\Listeners\NotificationStyle`): `as_before`
+where the site has a stored form submission, `designed` where it has none (it has sent no form notification, so none
+changes); a site with nothing stored yet sends as before. Verified: `SendEmailListenerTest`,
+`CodeFormNotificationStyleTest`.
+
+## #452 -- The preview and the test send are drawn by the code that sends
+
+**Date:** 2026-10-26. **Spec:** 120, story 1 (US-EML-02).
+
+**Why.** The preview was put together in the browser with "Sample key" values and no frame; the test send posted
+the typed HTML, so `{{ site.name }}` arrived literally.
+
+**Decided.**
+
+1. `POST /email-studio/templates/{id}/preview` draws the draft being edited (saved or not) with
+   `EmailTemplateService::render()`, with samples from `EmailSampleValues` (real site name and address, "Jane
+   Cooper", "jane@example.com") that the request may override for that draw only, and an optional `rtl` direction.
+2. `POST /email-studio/test` with `template_id` draws the same email, puts "[Test] " before its subject and sends it
+   with the template's From and plain text. The answer says what happened in words built from the attempt's state
+   and the delivery decision's code, with the reason and `&tab=logs#corex-attempt-<id>`. The old free-body test is
+   kept for a caller that posts one.
+3. A template that cannot be drawn answers 422 with each field's sentence naming the variable or partial; the
+   client shows them in place of the email and offers no test. An invalid address is refused before drawing.
+4. The preview's widths (600 and 375 pixels) are the email's, written in the component, not screen tokens.
+
+**Verified.** Integration `DesignedEmailsTest` (captured HTML and plain text equal the preview); Jest
+`emailStudioPreview.test.js`, `emailStudio.test.js`; Playwright `email-studio-preview.spec.js`.
+
+**Amended 2026-11-11** (review of PR #447). (a) The preview samples the variables of the draft's layout as well as
+its own, so a newsletter footer's links are drawn with a sample (FR-002). Verified: `DesignedEmailsTest`. (b) Test send
+asserts in the browser on a production-type site through the suite's `X-Corex-E2E-Mail: capture` header; a test send
+on a development or staging site is captured by `EmailStudioService::decide()`, with no way round it.
+
+## #453 -- A Studio email leaves from its template's sender, with its plain text, after the header checks
+
+**Date:** 2026-10-26. **Spec:** 120, story 2 (US-EML-03).
+
+**Decided.**
+
+1. `EmailRouteMessageFactory::message()` builds every Studio send (routes and flow bindings, the inbox resend, the
+   test send, designed emails) with the template's From address and From name when set, and its plain text. The
+   log's resend takes the From of the template version its attempt names and the plain text of the typed body.
+2. The From address is optional; an invalid one, or a From name with a line break, is refused with a sentence that
+   names it. A From address on another domain answers the transport warning's sentence as a save warning.
+3. `EmailStudioService` runs the `HeaderGuard` over subject, From, From name and Reply-To before deciding, as
+   `MailService` does.
+4. The automatic plain text is `PlainText::of()` of the arranged body (headings, tables and rows now read as
+   lines) with the frame's footer; a hand-written one merges values as they are, so "under <500 EGP" is whole.
+
+**Verified.** `EmailTemplateVariablesTest`, `DesignedEmailsTest` (From header on a delivered send).
+
+**Amended 2026-11-11** (review of PR #447). No template's From changes with the update. Before spec 120 a template's
+stored From was validated and never sent; point 1 would have started sending it, so a placeholder address or a mailbox
+the site's SMTP plugin has no connection for would have been used from the first email after the update. Each
+revision stored when a site that had Email Studio before (`corex_email_studio_defaults_version` set and below 4)
+updates is marked `sender: site` by `EmailTemplateRepository::keepSiteSender()`, once, before the defaults go in;
+`EmailTemplateVersion::sentFrom()` and `sentFromName()` answer null for a marked revision, so it leaves from Settings →
+Mail's sender as before, for a route, a flow binding, a designed email and the log's resend. A revision saved after
+the update (the owner saving the template, a reset, a new template, a default) is not marked and leaves from its own
+From. Decided under the owner's 2026-10-21 mandate and SAFE-D2. Verified: `DesignedEmailsTest` (an upgraded template
+sends from the site's sender, a new one from its own, the upgraded one from its own once saved again).
+
+**Client impact** (amended). Muva and Perego: a template made in Email Studio before the update keeps its sender until
+it is saved; check its From before saving it.
+
+## #454 -- Variables: one catalog by the emails that supply them; any form field; missing ones left out and named
+
+**Date:** 2026-10-26. **Spec:** 120, story 5 (US-EML-07; EML-D10).
+
+**Decided.**
+
+1. `EmailVariableCatalog` lists the configured `mail.variables` plus what each kind of email supplies (every email,
+   form emails, newsletter, account, access requests); a key no email supplies is listed apart. A placeholder is
+   known when it is in the catalog or is `submission.<field>`; an unknown one is refused, named. The declared keys
+   are read from the content: the comma-separated field is gone.
+2. `{{ form.answers }}` is drawn by CoreX from the context's answers (label, value, a file's link to the
+   submission), escaped. A paragraph, list item or heading whose values are all empty and that holds nothing but
+   a label, or a table row whose values are all empty, is left out; any other empty value is written as nothing.
+   The keys are stored on the attempt (`missing_variables`) and the log says "Sent without: …".
+3. Save warnings name each variable the template's emails do not supply: its default kind, its routes' triggers,
+   and flows that bind it, asked through a new corex-core contract `MailTemplateUsage` that corex-forms binds.
+4. `MailTemplateCatalog` entries gain `variables`. A flow refuses to publish a binding whose template uses a
+   variable the flow does not supply (a field it lacks counts) unless the binding has `accept_missing`, which the
+   Emails tab sets with "Send it without them".
+
+**Verified.** `EmailTemplateVariablesTest`, `FlowEmailDefaultsTest`, Jest `emailsTab.test.js`, `DesignedEmailsTest`.
+
+**Amended 2026-11-11** (review of PR #447). (a) After the values are merged, `Corex\Email\Security\AddressGuard`
+reads every tag with WordPress's `WP_HTML_Tag_Processor`, as a browser reads it (unquoted attributes, a link never
+closed, another attribute before `href`, an `<area>`, an `<img src>`), and takes off an `href` that is not http,
+https, mailto or tel, or a `src` that is not http or https, spaces and control characters in the scheme ignored; the
+element keeps its words (FR-030). A pattern over the markup was bypassed by each of those shapes. The container
+gives the guard to `EmailTemplateService`; a service built without WordPress (a unit test) has none, so the check is
+proven in integration (`MergedAddressTest`). (b) A variable a designed
+email (newsletter, account) was sent without is named on its row of the shared mailer's log
+(`corex_mail_missing_variables`), as Email Studio's rows name it (FR-028). Verified: `EmailTemplateLinksTest`,
+`DesignedEmailsTest`.
+
+**Amended 2026-11-11** (merge with spec 122). The email variables a developer registers for flow emails (spec 122,
+FR-023, declared on `corex_email_variable_schema`) are read by `EmailVariableCatalog` when it is first asked, and
+are supplied by form emails: the declaration says which emails supply a variable (`emails`), so the Variables tab
+lists them with the form emails, a save gives no warning for them, and a flow publishes a binding that uses them
+without "Send it without them" (`FlowEmailVariables::missing()` and the Emails tab count them). Verified:
+`EmailTemplateVariablesTest`, `FlowEmailDefaultsTest`, Jest `emailsTab.test.js`.
+
+## #455 -- Default templates: active on a new site, drafts on an upgraded one, reset as a new version
+
+**Date:** 2026-10-26. **Spec:** 120, story 4 (US-EML-01; EML-D5).
+
+**Decided** (two gaps under the owner's 2026-10-21 mandate).
+
+1. `DefaultEmailTemplates` holds each default's shipped content, written in the site's language when installed.
+   Active where the site had no Email Studio defaults before (`corex_email_studio_defaults_version` empty), drafts
+   on an upgraded site; the choice is kept (`corex_email_default_templates_state`) so a default an add-on adds
+   later follows it, and installed slugs are kept (`corex_email_default_templates`). A slug a site's own template
+   uses is left alone. Records are made under the signed-in user or the first administrator.
+2. Reset saves the shipped content as a new version, activated when the template is active.
+3. A new flow with no bindings of its own gets "Admin notification" (to the admin address, Reply-To `email`) and
+   "Contact confirmation" (to `email`) when both are active. The contact confirmation has no name in it: a form
+   need not ask for one.
+4. **Gap: "a site that turns the defaults off still notifies its admin".** Read as: when a flow's team
+   notification has nothing to send (its template has no active version, or no recipient resolves), CoreX's own
+   `form-notification` goes to the admin. A binding switched off sends nothing, as today, so no upgraded site gains
+   an email.
+5. A submitter confirmation with no address is recorded `no_recipient`, not a failed email.
+6. TC-EML-01-06's "the same notification as before" is read as the same recipient, subject and words: the
+   contact notification is in the one frame from this release (#450).
+
+**Verified.** `DefaultEmailTemplatesTest`, `DefaultEmailsSentTest`, `FlowEmailDefaultsTest`.
+
+**Amended 2026-11-11** (review of PR #447). (a) Point 3: only a flow made from nothing gets the two emails, when
+the New flow form asks for them (`default_emails`); a flow created through the API from a configuration of its own (a
+copy, an import) keeps the emails it has. (b) Point 4 applies to a team email bound to a template: one routed by its
+trigger that no route matches sends nothing, as before, so no upgraded site gains an email. (c) SC-005 on a site that
+is not set up to send: Email Studio's own rule refuses a flow's emails on a production site with no provider or with
+live delivery off, which is how a new site starts. That refusal is not a failed email: the result says so
+(`MailResult::PROVIDER_NOT_SET_UP`, `notSetUp()`), and the email stage records it as a flow with no email was recorded,
+`not_configured`, with the reason, instead of failing the submission's email stage and sending the failure alerts. A
+new site sends the two emails once a provider is chosen and live delivery is on, or on a development or staging site,
+where they are captured. Sending them through the shared mailer instead was left for the owner (a flow email that
+leaves without the site's provider is a new rule). Verified: `FlowEmailStageOutcomeTest`, `DefaultEmailsSentTest`
+(which now switches on the defaults it needs, so it runs on an upgraded install too), Jest `newFlowEmails.test.js`.
+
+**Amended 2026-11-11** (two-model review of PR #447). Point 2's reset is written in the site's language, as the
+install is (DECISIONS #362): `DefaultEmailTemplates` is given `EmailLanguage` and draws the shipped words inside
+`during()`, so an Arabic site whose administrator reads the admin in English keeps Arabic emails after a reset.
+Verified: `DefaultResetLanguageTest`.
+
+## #456 -- Designed emails code sends go through the shared mailer (`DesignedEmails`)
+
+**Date:** 2026-10-26. **Spec:** 120, stories 4 and 6.
+
+**Why.** Email Studio's own sending rule blocks a production site with no provider set, which is how both clients
+run. A designed password reset or subscription confirmation must not stop being sent where WordPress's own is.
+Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** A corex-core contract `DesignedEmails::send(slug, to, context, path): ?MailResult`, bound by corex-email
+(`StudioDesignedEmails`): the active version is drawn and sent through `MailService`, so production delivers and a
+development or staging site captures (spec 113's gate). `null` when no active template has the slug or it cannot be
+drawn; the latter dispatches `EmailDesignFailedEvent::TEMPLATE_FAILED` (a notification) and records
+`email.template.fell_back` in the activity log. The newsletter sends Double opt-in (else its own confirmation) and
+Newsletter welcome (else nothing).
+
+**Verified.** `DefaultEmailsSentTest` (opt-in, welcome, fallback).
+
+**Amended 2026-11-11** (review of PR #447). The drawing's `missing` is no longer dropped: `StudioDesignedEmails` hands
+it to `MailService::deliver($message, $missingVariables)`, which keeps it on the log row (#454, amended).
+
+## #457 -- The account emails: reset asked on the account page, and the welcome, in the frame
+
+**Date:** 2026-10-26. **Spec:** 120, story 6 (US-EML-15; EML-D11; DECISIONS #341).
+
+**Decided.**
+
+1. While a reset asked through the account block is answered, `send_retrieve_password_email` answers false when
+   "Password reset" was sent: CoreX makes the key with `get_password_reset_key()` and sends the template with the
+   account page's reset link, the account, the time it was asked and how long the link works
+   (`password_reset_expiration`, "1 day" by default, in WordPress's words). A reset asked on the login screen stays
+   WordPress's, as #341 set.
+2. Registration sends "Welcome to your account" through `wp_send_new_user_notification_to_user`, linking to the
+   page the form was on (its signed page mark is now sent by the register form too) or the home page.
+3. Either one that is not active or cannot be drawn leaves WordPress's own email to be sent.
+
+**Verified.** `DefaultEmailsSentTest`, `ResetOnTheAccountPageTest` (the designed email links to the page and never
+to `wp-login.php` or the hidden address).
+
+**Amended 2026-11-11** (two-model review of PR #447). Point 3 also covers a designed email that was drawn and did not
+go: only a result that `MailResult::successful()` calls sent (delivered, accepted, queued, or captured on a
+development or staging site, which then sends no real one) stands in for WordPress's email. A failed or refused one
+leaves WordPress to send its own, through the same mail gate; WordPress makes its reset key after the filter is
+asked, so the link in its email works. Verified: `AccountEmailFallbackTest`.
+
+## #458 -- `MailRequest` takes an optional plain text, last
+
+**Date:** 2026-10-26. **Spec:** 120, story 7 (US-EML-19; CR-013).
+
+**Decided.** `MailRequest(..., ?string $plainText = null)`, last; blank is null. `RequestMailer` hands it to the
+message of a finished request only (a template makes its own), the queue payload carries it, and the capture keeps
+it. Email Studio's log shows a kept email's HTML and plain text.
+
+**Verified.** `MailRequestPlainTextTest`, `DesignedEmailsTest`.
+
+**Client impact.** Perego may pass its renderer's text; nothing changes until it does.
+
+## #470 -- A live flow is republished in place; a visitor is judged by the version their page carried
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-01, FR-001 to FR-007. Decided under the owner's 2026-10-21 mandate
+(FLW-D4: yes, versioned).
+
+**Why.** Saving a draft of a live flow already kept the live version untouched; only publishing the draft was
+refused (`published` to `published`), so the owner moved the flow to draft and back, and the form left every page in
+between.
+
+**Decided.**
+- `Flow::publish()` accepts a draft, or a published flow whose saved draft is not its live version, and stays
+  published. Each publication is recorded on the flow (`publications`: version, author, time). A flow published
+  before this release lists its live version with no author. Saving a draft no longer moves `published_at`.
+- A stale editor is refused with "This flow changed since you opened it. Reload to see the latest draft." (409).
+- `POST /flows/{id}/versions/{n}/copy` makes a version the saved draft as a new version; it never publishes.
+  "Move to draft" is "Unpublish" and asks first.
+- The visitor form carries `corex_flow_version`. The submission is judged by that version when it was live at some
+  moment in the last 24 hours (a page's security token lives that long), with the live version's spam protection, and
+  records it. Any other number means the live version.
+
+**Not chosen.** *Always the live version*: a visitor's answer to a question the new version removed would be refused.
+*Any old version*: an old page could bring back a weaker captcha.
+
+**Client impact.** None: Muva and Perego have no builder flow.
+
+**Amended 2026-11-11 (PR #446 review).** A flow published before this release has no stored publications, and its
+first "Publish changes" saved a history holding only the new version: the old live version was gone, so a page
+printed with it was judged by the new one (FR-007) and the Versions tab lost its row. `Flow::publish()` now builds on
+`publicationHistory()`, which lists that old live version with no author, so it stays in the stored history.
+
+## #471 -- Page owner reads a page the site signed into the form
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-03, FR-010. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** The flow block prints `corex_page` as `{page id}.{first 16 hex of wp_hash(flow, page)}`. A missing,
+altered or borrowed value reads as "the page is not known", and the fallback applies. The stored "Post author"
+target resolves the same way. "Department" and "Email" targets are no longer offered and, where stored, name nobody
+so the fallback applies.
+
+**Not chosen.** *The referrer*: absent or forged. *The page address*: needs a lookup and can name any page.
+
+**Amended 2026-11-11 (PR #446 review).** Without a block context, the page is the main query's only when it shows
+one post or page (`is_singular()`): on an archive the queried object is a term or a person, whose ID named a page
+that was never there.
+
+## #472 -- Teams live in one option and are managed on a Teams view in Forms & Flows
+
+**Date:** 2026-10-26. **Spec:** 122, FR-012. FLW-D5 (teams get a screen).
+
+**Decided.** `corex_flow_teams` holds `{key, name, members}`; the key is made from the first name and never changes,
+so a renamed team keeps its submissions. `GET|POST /corex/v1/teams` and `PATCH|DELETE /corex/v1/teams/{key}` go
+through the flow gateway (the forms ability, nonce on writes). A removed team keeps the submissions already assigned
+to it; new ones routed to it fall back. corex-forms adds each person's teams to the existing
+`corex_submission_actor_teams` filter.
+
+**Not chosen.** *A post type or taxonomy*: a site has a handful of teams, read whole on every routing.
+
+**Amended 2026-11-11 (PR #446 review).** A removed team's key is never given out again: its submissions keep the
+key, and a new team of the same name would have inherited them. `TeamService::delete()` records the key in
+`corex_flow_teams_retired` (not autoloaded, read only when a team is made), and `freeKey()` treats it as taken. The
+key is retired before the team is removed, and a failed retire write refuses the removal ("The team could not be
+removed. Try again."): a removal cut short leaves a team whose key is taken, never a free key.
+
+## #473 -- Someone routing gave work to sees an inbox of exactly that work
+
+**Date:** 2026-10-26. **Spec:** 122, FR-013. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Holders of "Manage submissions" keep seeing everything, as before. Someone without it opens the inbox
+when `corex_submission_assigned_access` says so: corex-forms answers yes for a member of a team, or a person with a
+submission assigned to them or to one of their roles. Their scope is not "manage all": it shows only what
+`SubmissionAccessScope::allows()` passes (their user, their teams, their roles), with no personal-data export, no
+permanent delete and no restricted notes. The Submissions menu asks such a person for `read`, and the retention panel
+is for managers only.
+
+**Not chosen.** *A "view submissions" ability*: that split is US-ACC-06 (R4.7).
+
+**Client impact.** None today: no one on Muva or Perego is in a team, and no flow submission is assigned to a role.
+
+**Amended 2026-11-11 (PR #446 review).** "Assigned" means a **flow** submission. The inbox already let a manager
+assign any submission, a code form's included, to a user, team or role, so on an updated site a person once given a
+code-form submission would suddenly have had the Submissions menu and could read, reply to and trash it.
+`SubmissionRepository::hasAssigned()` now counts only submissions with a `corex_flow_id`, and the assigned-only scope
+carries `flowsOnly`, which `SubmissionAccessScope::allows()` and the inbox query both apply. The inbox's form filter
+lists, for such a person, only the flows they have work in (`SubmissionInboxReader::flowIdsIn()`, one `SELECT
+DISTINCT` of the flow IDs joined on the scope's owners), not every flow's name. A manager whose scope a site narrows
+with `corex_submission_manage_all` is unchanged.
+
+## #474 -- Old flow submissions assigned to nobody are given to their flow's owner, once
+
+**Date:** 2026-10-26. **Spec:** 122, FR-014.
+
+**Decided.** On `init`, behind the autoloaded option `corex_flow_owner_upgrade` (claimed with `add_option` before it
+runs), every flow submission whose owner type is a route's own type (flow_owner, page_owner, post_author, department,
+field_value, email, extension) is assigned to its flow's owner, with a timeline line. Nothing is deleted. A submission
+whose flow or owner is gone is left. The count is kept, and the Forms & Flows list states it for 30 days. The lookups
+are SQL, since `WP_Query` hides private posts from the visitor whose request may run it.
+
+**Client impact.** Muva and Perego store no flow submissions: the step finds none.
+
+**Amended 2026-11-11 (PR #446 review).** The step no longer runs on `init` of any request, and its record is no
+longer claimed before the work: a request that timed out midway left it marked as done for good. It now runs from
+`admin_init` for a signed-in person (not admin-ajax) and from the WP-Cron event `corex_flow_owner_upgrade`, one batch
+of 200 per run under a MySQL named lock, oldest first. Between batches the option holds `{after, moved}`; the first
+batch schedules the cron event so the rest goes on without anyone opening the admin. Only after the last batch is
+`{ran_at, moved}` written and the event cleared, and only then does the list state the count. A submission moved by a
+run that died is a user's and is not picked again. A run that finds the lock held by another moves nothing and
+schedules the next step a minute later, so a cron run that met a busy lock is never the last one. The lock is named
+after the site's table prefix (`{prefix}corex_flow_owner_upgrade`), so sites sharing a database server never wait on
+each other.
+
+## #475 -- "Routed owner" is a recipient token worked out at routing time
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-04, FR-017 to FR-020. FLW-D5.
+
+**Decided.** The recipient mapping `routed_owner` sends to the assignee: a user's address, each member of a team, or
+each holder of a role up to `routing.recipient_limit` (default 20, at most 100). Over the limit, or with no address,
+the email goes to `routing.fallback_recipient`, else the site administrator, and the binding's delivery record and
+the timeline's notification event carry "Routed owner had no address; sent to ..." (or the role-limit reason). The
+addresses are stored with the routing metadata, so the inbox's "Send again" reaches the same people. The Emails tab
+shows who it would be for each rule and for no match (`POST /flows/{id}/routing-preview`).
+
+**Not chosen.** *Resolving in the email stage*: "Send again" would work it out again, maybe differently.
+
+**Amended 2026-11-11 (PR #446 review).** The Emails tab's preview names each person with their address, as FR-019
+says (it showed names only), and follows a target that names nobody as a submission does (FR-009): the flow's
+fallback, then the flow's owner, with each reason and "Assigned to {name} instead.". The addresses are shown to
+whoever may edit the flow. The preview and the routing stage take that order from one place, `RoutingChain`.
+
+## #476 -- Flow actions, email variables and routing targets register through three filters
+
+**Date:** 2026-10-26. **Spec:** 122, US-FLW-07, FR-021 to FR-025. FLW-D11 (finish them as documented hooks).
+
+**Decided.**
+- `corex_flow_actions`, `corex_flow_email_variables` and `corex_flow_routing_targets` return
+  `key => ['label', 'callback']`, read once on `init` (priority 20) into the registries; a bad entry is logged and
+  skipped. The container registries still work. A routing target is stored as `extension` with its key.
+- A new last stage, `actions`, runs the flow's chosen actions (configuration `actions`, in the checksum only when not
+  empty) once per stored submission, records done or failed on the timeline, and always succeeds. A marked test runs
+  them with `is_test` and "This is a test.". Publishing refuses an action the site no longer has.
+- Email variables join Email Studio's list through `corex_email_variable_schema`. `EmailTemplateService` now takes
+  its list as a closure, asked on first use: the service is built on `plugins_loaded`, before `init` registers the
+  variables. Their values are placed in the flow email's context at their dotted path; a failure is left empty and
+  logged.
+
+**Amended 2026-11-11 (PR #446 review).** The pipeline stopped at its first failed stage, and `email` ran before
+`inbox`, `timeline` and `actions`: an email that could not be sent (a confirmation bound to an optional email
+question left empty) left the submission stored but assigned to nobody, its routing off the history and its actions
+unrun. The order is now validation, protection, storage, routing, inbox, timeline, email, actions, and
+`FormSubmissionPipeline` takes the keys of stages whose failure is recorded rather than fatal: `email`. The run still
+reports not completed (spec 068, FR-044), with the failed stage found by `failedStage()`. The email stage writes its
+own "notification" history event, which the timeline stage used to write.
+
+When the submission was stored and the email stage is the only one that failed
+(`SubmissionPipelineResult::storedFailingOnlyAt('email')`), the flow's submit route answers the visitor with its
+normal success (200, the flow's success state), so the form shows its message and clears; it answered 502. The
+response's `completed` and `stages` still say the email failed, the failure stays on the submission's email record
+and history, and the flow's `admin_failure` alert still goes to the site. Decided by the orchestrator: told to send
+again, the visitor would store a second submission and run every action again. Code-defined forms (Muva, Perego) are
+stored by `FormSubmissionService`, which never runs this pipeline: nothing changes for them.
+
+## #477 -- Availability belongs to the flow; the state a visitor meets is worked out, not stored
+
+**Date:** 2026-10-26. **Spec:** 122, US-VIS-01, US-VIS-02, FR-026 to FR-031. FLW-D1 (dates and a cap).
+
+**Decided.**
+- `availability` on the flow record (open and close instants in UTC, a cap, the closed message, the alternative),
+  saved by `PATCH /flows/{id}/availability` from its own Availability tab, without publishing. The editor shows and
+  takes the site's local time.
+- `FlowStatusResolver` works out draft, scheduled, open, closed or expired from the stored state, the dates and,
+  for a capped flow only, the response count, when a page is served and when a submission arrives. The list files a
+  flow expired by date or cap under "Expired" with its reason.
+- A response counts while stored, not in the trash and not a marked test. A capped flow's check and store run under
+  a MySQL named lock (`corex_flow_cap_{id}`), counted again inside it.
+
+**Not chosen.** *A cron job that flips the state*: it fails on a site whose cron does not run, and clearing a date
+would not reopen a flow.
+
+**Amended 2026-11-11 (PR #446 review).** The lock covered the whole pipeline, emails and actions included, and a
+ten-second wait ended in an uncaught exception, a 500 for the visitor. `FormSubmissionPipeline::run()` takes a
+wrapper for one stage, and a capped flow wraps only `storage` (the count is checked again inside it). A wait over ten
+seconds throws `SubmissionBusyException`, answered 503 `flow_busy` with a translatable message; nothing is stored. A
+cap below 1, or anything not a whole number ("2.5", "1e3"), is refused with "The response cap must be a whole number
+of at least 1." instead of being saved as no cap or as a cap nobody typed (`FILTER_VALIDATE_INT`; the Availability tab
+sends such text as typed), and saving availability on a closed flow no longer moves the date it was closed. The lock
+is named after the site's table prefix (`{prefix}corex_flow_cap_{id}`), and the wait is the visitor service's
+`capLockWait` (10 seconds by default).
+
+## #478 -- The owner's closed message is translated through the WPML string hooks
+
+**Date:** 2026-10-26. **Spec:** 122, FR-032. Decided under the owner's 2026-10-21 mandate.
+
+**Decided.** Saving availability calls `wpml_register_single_string` for the message and the alternative's label
+(context `corex`, names `flow-{slug}-closed-message` and `flow-{slug}-alternative-label`); the block shows
+`wpml_translate_single_string`. WPML defines these and Polylang answers them; with neither, the owner's words show as
+written. CoreX's default wording is an ordinary translatable string.
+
+**Not chosen.** *A CoreX translation driver*: none exists, and Principle IX keeps both plugins optional.
+
+## #479 -- A closed flow answers 409 `flow_closed` with its notice, drawn by the runtime from text
+
+**Date:** 2026-10-26. **Spec:** 122, FR-028, FR-029.
+
+**Decided.** The block renders the flow's heading and a titled notice (`.corex-flow-notice`: title, message, the
+alternative as a link or `mailto:`); a draft or missing flow renders nothing for visitors and an editors-only note
+with a link to the flow (`&corex_flow={id}` opens it in the editor). The block editor lists every flow ever
+published, naming one that is closed, expired or scheduled. The submit route answers 409 with
+`details.notice`; `corex-runtime.js` draws it above the form with `textContent`, links only `http`, `https` and
+`mailto`, and leaves the answers in place.
+
+**Client impact.** Muva's and Perego's code forms never get this answer; the runtime branch is idle for them.
+
+## #514 -- The 2026-11-09 dependency advisories: four overrides and one bounded exception
+
+**Date:** 2026-11-10. **Policy:** `SECURITY.md`, "Dependency advisories"; spec 056's order (fix what is
+compatible, bound the rest, keep major migrations separate).
+
+**Why now.** "Validate dependency advisories" failed on every pull request from 2026-11-09, PR #449 among them,
+with nothing changed in the tree: seven advisories had no policy entry. Four (glob, minimatch, qs, deepmerge)
+were reported first; three more for `isomorphic-git` were published on the evening of 2026-11-09 and showed up
+when the gate was run here. `main`'s weekly run would have failed the same way.
+
+**Decided.** Root `package.json` `overrides`:
+
+| Override | Advisory | Before | After | Consumers |
+|---|---|---|---|---|
+| `qs` `^6.16.0` to `^6.16.1` | GHSA-6pq8-jhm2-2vcw (moderate) | 6.16.0 | 6.17.1 | `express` 4 and `body-parser` 1 under `@wp-playground/cli`, `express` 5 and `body-parser` 2 under `webpack-dev-server` |
+| `glob@>=9.0.0 <15.0.0`: `^14.0.2` | GHSA-3g3m-2fjr-6pw4 (moderate) | 13.0.6, 10.5.0 | 14.0.4 | `jest-config`, `jest-runtime`, `@jest/reporters`, `test-exclude`, `rimraf` (under `@wordpress/env`) |
+| `minimatch@>=7.0.0 <12.0.0`: `^11.0.1` | GHSA-g3hv-75wg-m249 (moderate) | 10.2.6, 9.0.9 | 11.0.5 | glob 14, `test-exclude`, `markdownlint-cli`, `@typescript-eslint/typescript-estree`, ESLint 10 under `@wordpress/scripts` |
+| `isomorphic-git` `^1.38.6` | GHSA-9qw7-j9xw-fv9c (high), GHSA-cw2g-2vwq-88w6, GHSA-96wc-2m84-2cj7 (moderate) | 1.37.6 | 1.44.12 | `@wp-playground/storage`, under `@wordpress/env` |
+
+One bounded exception in `.github/dependency-security-policy.json`: `deepmerge` 4.3.1, GHSA-gcqx-w48m-w2h4 (low),
+exposure `build-test-transitive`, review by 2027-01-31. 4.3.1 is the latest release and the advisory names no
+patched version. Jest merges its configuration, written in this repository, with it; `@svgr/plugin-svgo` declares
+it but its built code does not load it. `@wordpress/components` and `@wordpress/data` also ask for it, but the build maps both to WordPress's own scripts and no built file contains
+it. The gate passes: five findings in the root, five exceptions (the four `simple-git` ones of #244 and this one).
+
+**Three things that are easy to get wrong.**
+- **glob and minimatch are major bumps, so the overrides are scoped by version.** A plain `minimatch` override
+  would also replace the 3.x copies ESLint 9 and its plugins ask for. 3.x carries no advisory and exports a
+  different shape (the trap #272 records for `markdownlint-cli`). The keys name only the affected majors.
+- **The key's range must contain the replacement.** With `minimatch@>=7.0.0 <11.0.1` npm 10 flip-flopped: once
+  a copy became 11.0.5 the key no longer matched it, so the next `npm install --package-lock-only` put 10.2.6
+  back for some consumers, and the run after that undid it again. With the upper bound above the replacement
+  (`<12.0.0`, and `<15.0.0` for glob) three runs in a row wrote the same lockfile.
+- **The `isomorphic-git` override changes what the audit reads, not what runs.** No file in the tree loads the
+  installed `isomorphic-git` package: `@wp-playground/storage` 3.1.47 ships its own bundled isomorphic-git code
+  and its own sparse checkout, and its `package.json` pins 1.37.6. It is reached through wp-env's Playground
+  runtime. `npm run env:start` runs `wp-env start`, whose `--runtime` defaults to `docker`, and no file in this
+  repository names a git resource for a Playground blueprint. The real fix is an
+  `@wp-playground/storage` release built on isomorphic-git 1.38.6 or later (the latest, 3.1.63, still pins
+  1.37.6) reaching `@wordpress/env`.
+
+**Checked** (Node 24.21, npm 10.9.10 for the lockfile and installs, as CI):
+- `npx npm@10 ci` installs the new lockfile; the lockfile diff changes only the packages above, `path-scurry`
+  (glob 14's own), and removes 31 packages that the older glob copies and isomorphic-git 1.37 used.
+- `npm run build`: the 169 files under the workspaces' `build/` directories are byte-identical to a build from
+  `main`'s lockfile.
+- `wp-scripts test-unit-jest --coverage`: 121 suites, 1549 passed, 2 skipped, the same as on `main`, and the
+  coverage totals are identical (5793 of 7248 statements), so glob 14 and minimatch 11 select the same files in
+  Jest and `test-exclude`.
+- `npm run lint:js`: 0 errors, 76 warnings (not run on `main` for comparison). `wp-scripts lint-md-docs` loads minimatch 11 and
+  prints the same report as on `main`, line for line (its table-style errors are already there).
+- Playwright loads its configuration and all 541 tests in 41 files (`--list`). `@playwright/test` depends on
+  none of the changed packages; no site was reachable for a browser run.
+- `@wordpress/env` itself (rimraf with glob 14, express with qs 6.17) was not started.
+
+**Not chosen.** *Bounded exceptions for glob and minimatch*: both have fixed releases and every consumer uses
+only the calls glob 14 and minimatch 11 keep (`glob()`, `glob.sync`, `globSync`, `minimatch()`, `new Minimatch().match()`); the
+checks above found no difference. *Pinning `isomorphic-git` to 1.38.x*: nothing loads it, so the latest 1.x is
+as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the policy refuses a high finding
+with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
+choice even where the copy is unused.
+
+## #515 -- CoreX draws the admin's checkboxes and radios, in brass, with a clip-path mark
+
+**Date:** 2026-11-10. **Spec:** none (a shell fix the owner asked for while reviewing CoreX → Assistant, PR #449).
+
+**Found.** `.corex-admin input[type="checkbox"], input[type="radio"] { accent-color: … }` had no effect: wp-admin's
+`forms.css` gives both `appearance: none` and paints them itself, checked in `--wp-admin-theme-color` with a white
+SVG tick as `::before` content. On CoreX → Assistant a checked box measured `rgb(56, 88, 233)`.
+
+**Decided.**
+- The shell takes over the drawing for every checkbox and radio inside `.corex-admin`, except `.corex-switch__input`,
+  which draws its own track. The input stays the browser's: `appearance: none` on the real `<input>`, so Space,
+  arrow keys, labels, focus order and the posted value are unchanged. Sizes and margins stay wp-admin's (1rem, and
+  1.5625rem at phone width), so no layout moves and no target-size finding changes.
+- Checked, and a checkbox's indeterminate: background and border `--corex-admin-action`, mark in
+  `--corex-admin-action-ink`. Unchecked: `--corex-admin-surface` with a `--corex-admin-text-muted` edge. Disabled:
+  the same colours at `--corex-admin-disabled-opacity`. Keyboard focus: `--corex-admin-focus` outline; wp-admin's
+  `:focus` box-shadow is removed, so a click leaves no blue ring.
+- The tick, the dash and the radio dot are a `::before` filled with the ink colour and cut with `clip-path` (the dot
+  is a circle). A colour in an SVG data URL cannot read a custom property, so wp-admin's approach would have frozen
+  one appearance's colour. The polygon is physical, so the tick is not mirrored in right-to-left, where it reads the
+  same.
+- In a forced-colours mode the system repaints backgrounds, which would hide a mark drawn as one, so the mark takes
+  `CanvasText` (`GrayText` when disabled) with `forced-color-adjust: none`.
+- `tests/e2e/admin-checkboxes.spec.js` measures the Notifications screen's Preferences checkboxes (checked, unchecked,
+  indeterminate, disabled, keyboard and click focus) and two radios placed in that panel, in both appearances and
+  both directions. It fails on the stylesheet before this change.
+
+**Not chosen.** *`--corex-admin-border-strong` for the unchecked edge*, which the request named: it is 1.6:1 against
+the surface in both appearances, under the 3:1 WCAG 1.4.11 asks of the only thing that shows a box is there.
+`--corex-admin-text-muted` is 5.8:1 (light) and 6.8:1 (dark). *Larger boxes*: WordPress's size, with the label as
+part of the target, is what every other admin screen uses. *A per-screen fix*: the owner asked for one rule for all
+of CoreX.
+
+## #516 -- Activity times are drawn in the muted text colour, with a line height of their own, and the quality seed records activity
+
+**Date:** 2026-11-10. **Spec:** 116 (US-NFR-03, US-NFR-04, US-NFR-06), spec 076 (FR-002). Found by a local run of
+`tests/e2e/quality` against a scratch site that had activity records.
+
+**Found.** Three lists of activity draw each event's time in `--corex-admin-text-subtle`: the Overview's recent
+activity (`.corex-overview__event-time`), the Access audit log (`.corex-access__event-meta`, which holds its `time`
+elements) and the Insights security card (`.corex-insight-widget__event time`). Subtle is 2.99 to 3.31:1 on the
+surfaces these sit on, in both appearances, under the 4.5:1 WCAG 2.2 AA asks of text (axe `color-contrast`). The
+Insights card also wrote the time as `Y-m-d H:i` in UTC (`2026-11-10 07:36`, the `machine-timestamp` rule), where the
+Overview writes the same event as `10 November 2026 at 7:36 AM` in the site's timezone. At 200% text on a phone, the
+Overview's event summary ran onto its time (`text-overlaps-at-200`): no CoreX rule sets a unitless line height, so
+the rows inherit wp-admin's `body { line-height: 1.4em }` as a fixed 18.2px, shorter than 28px letters. CI did not
+report any of it: `seed-quality-site.php` recorded no activity, and the only activity a run makes is the refusals of
+the refused-state checks (`states.spec.js`), which a screen's own check may or may not come after.
+
+**Decided.**
+- The three times use `--corex-admin-text-muted`: 5.80:1 on the light surface and 6.22:1 on the light raised
+  surface, 6.76:1 and 6.28:1 in dark. They stay smaller than the line they belong to, which is what tells them
+  apart.
+- The three rows (`.corex-overview__event`, `.corex-access__event-body`, `.corex-insight-widget__event`) set
+  `line-height: var(--corex-admin-line-normal)`, a unitless 1.6, so their lines grow with their text.
+- `InsightWidgetFacts` dates each security event through `AdminDateTime::FULL`, as the Overview does, and hands the
+  card the words (`meta`) and the ISO value (`datetime`); `insights.js` writes `<time datetime="…">`.
+- `seed-quality-site.php` has the quality subscriber refused the Access screen twice and the Overview once, through
+  `AccessAuditLog::record()`: one audit entry counted "2 times, from … to …", one entry of one refusal, and the two
+  `access.denied` activity events they write. The Overview, the Access audit tab and the Insights security card are
+  measured with rows in CI from now on.
+
+**Not chosen.** *A unitless line height on `.corex-admin` itself*: it is the likely cause of the two other
+`text-overlaps-at-200` entries in `known-failures.json` (Blog Pro, the inbox's dates; read, not measured), but it
+changes the vertical rhythm of every CoreX screen and wants its own pull request with the screens measured. Left as a follow-up. *Seeding rows into
+the activity table directly*: the seed would then pass whatever the table holds; through the audit log it writes what
+a real refusal writes. *Recording the findings in `known-failures.json`*: each has a fix of a few lines.
+
+## #517 -- The admin shell sets a unitless line height, 1.4, and headings 1.2
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), spec 116's `text-overlaps-at-200`. Follows #516
+(PR #453), which fixed three activity rows one by one and left the shell to this.
+
+**Why.** `.corex-admin` set no `line-height`, so every CoreX screen inherited wp-admin's
+`body { font-size: 13px; line-height: 1.4em }`. An `em` line height is computed once, on `body`, and inherited as
+a length: 18.2px for every line on every screen, whatever its font size. At 200% text a 14px line becomes 28px
+letters on an 18.2px line, and the letters run onto the next line. Measured on all 32 CoreX screens at 375 and
+1280px, light and dark, left to right and right to left (4,500 text boxes per pass): 3,184 of them sat on the
+inherited 18.2px, among them headings of 16 to 24px and display numbers of 24 to 38px.
+
+**Decided.**
+- A new token `--corex-admin-line-base: 1.4` in `corex-admin-tokens.css`, set on `.corex-admin`. A number is
+  inherited as a number, so each element's line is 1.4 times its own font size and grows with it.
+- `:where(.corex-admin) :where(h1, ..., h6)` gets `--corex-admin-line-tight` (1.2). Zero specificity: any
+  component rule for a heading still wins.
+- The three display numbers that had no line height of their own (Email Studio's metrics, the Overview's number
+  tiles, the Insights grade) get the tight token too.
+- Blog Pro's two-part rows (the authors list and the card lists) stay flex rows at phone width and wrap, instead
+  of turning into a block. As a block the name and the count ran together ("admin1 published post"), and the
+  wrapped count's box lay over the name, which is what the 200% check reported there.
+
+**Why 1.4 and not an existing token.** At the base size the old rhythm was 1.4 for 13px text (758 boxes), 1.3 for
+14px (1,690) and 1.52 for 12px (482). 1.4 keeps 13px text exactly where it was, moves 14px lines by +1.4px and 12px
+lines by -1.4px, and is the ratio wp-admin itself uses, so CoreX's text sits on the same rhythm as WordPress's
+around it. `--corex-admin-line-tight` (1.2) is below the height of the text's own box in Segoe UI (about 1.33 of
+the font size): inline runs on consecutive lines would still overlap at 200%. `--corex-admin-line-normal` (1.6)
+would grow every line on every screen by 1 to 4.2px for no reported defect.
+
+**What it changes.** Page heights move by -43 to +168px per screen (at most about 3%): most screens gain 10 to
+40px, the Add-ons and Access matrix screens lose up to 43px (their 12px chips and badges are 1.4px shorter per
+line), Guides gains the most (17 guide titles of 20px, from 18.2 to 24px lines). Left to right and right to left differ in height
+where they did before, by the same amounts (Operations' Environment tab, 106px before and 107px after, at 375px).
+Two loads at 1280px have one cell 24px off the other three after the change (Add-ons' Inactive tab light right to
+left, Operations' Overview dark right to left); a rule with no colour or direction in it cannot move one cell alone,
+and cells of other loads wobbled the same way before it.
+
+**Not fixed here.** The inbox's From and To dates still overlap at 200% and stay in `known-failures.json`
+(US-NFR-04), with the cause in the entry: each date field is 192px wide in a 95px column at that size, so its label
+spills into the other date's. That is the filter panel's layout, not line height.
+
+## #518 -- The inbox's date range wraps on its own content
+
+**Date:** 2026-11-10. **Story:** US-NFR-04 (text at 200%), quality rule `text-overlaps-at-200` on `corex-submissions`.
+
+**Why.** `.corex-inbox__dates` was a grid of two `minmax(0, 1fr)` columns at every width. Each label is a
+one-column grid whose `auto` track grows to its date field's own width, so a field wider than its half spilled
+out of it, and the label's text went with it. Measured on the quality site before the change:
+
+| Cell | Half of the range | Date field | What showed |
+|---|---|---|---|
+| 375px, 100% | 141px | 168px | the From field runs 15px under the To field; "From" lies over "To" (the check reads only 200%) |
+| 375px, 200% | 95px | 192px | "From" over "To", the quality finding; the calendar icons cut off |
+| 375px, 200%, right to left | 95px | 198px | the From field runs to -23px, past the screen's edge |
+| 1280px, 100% | 147px | 152px | the To field ends 5px past the panel's content box |
+
+Line height was not it (#517 fixed that).
+
+**Decided.**
+- The range is a wrapping flex row, each date `flex: 1 1 0`. A flex item's automatic minimum is its content, so
+  the two dates share a line while both fit and "To" goes under "From" when they do not. No width is written down.
+- The wide filter grid is `repeat(3, minmax(0, 1fr)) minmax(max-content, 2fr)`: form, status and owner, then the
+  range as one item two fifths wide, as two of five columns were, and never narrower than its two dates side by
+  side. At 1280px the range is 316px where it was 306, and the other three are 143px where they were 147. Wider
+  panels are unchanged.
+- The 44rem container query puts the range on a row of its own (`1 / -1`, as the owner field); the 24rem query no
+  longer needs a rule for it.
+
+**Measured after,** off the rendered page at 375 and 1280px, light and dark, left to right and right to left, at
+100% and 200%: no date's text lies over the other's; every field is as wide as its label (WordPress's 1px input
+margin aside). On a phone the dates stack: the filter panel is 541px tall where it was 467 at 100%, 971 where it
+was 841 at 200%. At 1280px the panel keeps its height (231px at 100%, 805 at 200%) and the dates stay side by side.
+
+**Not chosen.** *`repeat(auto-fit, minmax(min(100%, <em>), 1fr))`*: no one unit measures a date field here. Its
+date is drawn at WordPress's 14px (16px on a phone) and its padding is in rem, so it needs 152px on the desktop,
+168 on a phone and 192 on a phone at 200%; the range's own font is a fixed 13px, so an em width is one fixed
+number of pixels. Any one value either wraps dates that fit or leaves a field wider than its column at some width
+and text size. *Letting the
+field shrink to its half* (`min-inline-size: 0`): it cuts the date and its calendar button. *Stacking only below a
+breakpoint*: the panel's width, the text size and the field's width move separately; the content decides better.
+
+## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
+
+**Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions
+(124 to 128 and the open pull requests), which had not yet numbered their decisions when this was written.
+
+**Decided.** The owner decided (relayed from the Perego session, 2026-11-09) that the support-style assistant
+Perego built inside its client plugin is a CoreX feature. It becomes `addons/corex-assistant` (namespace
+`Corex\Assistant`), off until activated, then off until switched on and keyed. Perego's behaviour and the four
+fixes of its security review are kept as they were approved: a refused request rests no service; one question
+at a time per visitor through an `add_option()` lock; an IPv6 visitor counts by its /64; a body over 16 KB is
+refused unread and only `user` and `assistant` messages are taken. What was Perego's own becomes a CoreX seam
+(#601 to #607).
+
+**Not chosen.** *Keeping it in Perego and copying it to the next client*: every copy would drift, and none would
+be under CoreX's tests and guards. *Part of corex-forms*: the chat is not a form, and most sites will not want it.
+
+## #601 -- The assistant's settings are a page of the Settings screen, read through the Config engine
+
+**Date:** 2026-11-09. **Spec:** 129, FR-006, FR-014.
+
+**Decided.** Perego drew its own screen under WordPress's Settings menu with `register_setting()`, and let a
+`wp-config.php` constant win over each key. In CoreX the fields are declared in `SettingsRegistry` (section
+`assistant`) on a Settings page of their own (`SettingsPages`, page `assistant`, tied to the add-on like Captcha
+and Media), so they get the save bar, write-only password fields with Remove, read-only display while the add-on
+is off, and locks from the site's `.env` (`ASSISTANT_GROQ_KEY`) in place of constants. The add-on reads them
+through `ConfigInterface`. Its status table, today's count and "Check services" are drawn under the section by
+the `corex_settings_section_extra` filter. "Check services" is a button calling `POST corex/v1/assistant/check`
+(the `auth:manage_options` and `nonce` middleware), not a second form: the Settings page is one form, and its
+script takes every submit of it.
+
+**Not chosen.** *Perego's own screen*: a second way to edit settings, with none of the Settings screen's
+behaviour. *`wp-config.php` constants*: CoreX already has one place a host locks a value, the `.env`.
+
+## #602 -- A password-typed Settings value is saved with autoload off (withdrawn before release)
+
+**Date:** 2026-11-09. **Spec:** 129, FR-006. **Withdrawn** the same day, in slice 2 (#615); never released.
+
+**Was decided.** `SettingsStore::save()` took `$secret`, and `SettingsSaver` passed it for a `password` field,
+so every secret on Settings was written with autoload off.
+
+**Why withdrawn.** The Config engine reads an option only when WordPress loads it with every request (#361), so a
+secret saved that way was never read: the captcha secret, the PageSpeed and Cloudflare keys and the assistant's
+keys would each have stopped working the next time they were saved. The guards found it in slice 2; a test
+supplied its keys through `pre_option_` filters, which the engine does read, so nothing failed. `SettingsStore`
+and `SettingsSaver` are back as they are on `main`.
+
+## #603 -- Knowledge comes from a `KnowledgeProvider`; CoreX's own reads the site's pages
+
+**Date:** 2026-11-09. **Spec:** 129, FR-012, User Story 6.
+
+**Decided.** Perego's knowledge was its `AgentProfile` (the lines its `llms.txt` is written from) and its service
+pages, built per language with Polylang. CoreX has no profile of a site and no language service, so the knowledge
+is a contract, `Corex\Assistant\Knowledge\KnowledgeProvider::for(string $locale): Knowledge`, which a site returns
+from the `corex_assistant_knowledge_provider` filter. CoreX's default, `SiteKnowledge`, is the site's name,
+tagline and up to 40 published pages with the first 400 characters of their text, at most 24 KB, kept six hours
+per language. Saving a page moves its cache to a new generation number instead of deleting transients by a
+`LIKE` query. Only the pages a `Knowledge` names can become link chips.
+
+**Not chosen.** *A search index or embeddings*: Perego's profile was 17 KB, small enough to send whole, and a
+site's knowledge should be its own words, not a crawl. *Sorting the default's pages by language*: that needs a
+language plugin behind an interface CoreX does not have yet; the model answers in the visitor's language.
+
+## #604 -- Visitor strings are CoreX's English, replaced per language by a filter; no vendor name anywhere
+
+**Date:** 2026-11-09. **Spec:** 129, FR-013.
+
+**Decided.** Every string has an English default in the `corex` domain, named after **Assistant name** from
+Settings (else "<site> Assistant"), and the `corex_assistant_strings` filter (`$strings`, `$locale`) replaces any
+of them. The filter cannot add keys or change a string into a list. Perego's Arabic and English copy moves into
+that filter on its side. A unit test fails if a default names a model or its maker; the instructions tell the
+model never to name the company or model behind it, and OpenRouter's `X-Title` is the site's name.
+
+## #605 -- The chat route declares its middleware; the limits are a middleware of the add-on
+
+**Date:** 2026-11-09. **Spec:** 129, FR-007, FR-008.
+
+**Decided.** Perego's controller checked the nonce, the lock and the counts by hand. In CoreX the route runs the
+`Pipeline` with the `nonce` middleware and `AssistantLimitsMiddleware` (the lock, then the hourly, daily and
+site-wide counts; released in `finally`), with the salted visitor key as the request's throttle key, and carries
+`PublicSubmission::MARKER` so Maintenance closes it. The controller only refuses an oversized body, reads the
+conversation's shape and maps the outcome: a limit is a 200 "busy" answer, so the chat offers the team. The
+site-wide cap is the `assistant.daily_cap` setting (600 by default) in place of Perego's constant.
+
+## #606 -- The hand-off is a CoreX form with the engine's own listeners; country names come from the browser
+
+**Date:** 2026-11-09. **Spec:** 129, FR-011, User Story 2.
+
+**Decided.** Perego's callback form stored only and was mailed by Perego's own listener and renderer, with a
+`perego_phone` rule. The CoreX form `corex-assistant-callback` keeps the default listeners: storage, and
+`SendEmailListener`, which tells the team whether or not the visitor gave an email (Reply-To only when they did).
+The phone is checked by the engine's `phone` rule. It is registered only while corex-forms is active; without it
+the chat offers no form. Perego fetched its country list (with Arabic names) from a GET route on the chat
+endpoint; here the ISO-to-dial-code and timezone-to-country tables ship in the lazily loaded chat code, the names
+come from `Intl.DisplayNames` in the page's language, and a site sets its default country and first countries
+with `corex_assistant_phone_countries`. No route, and no country name to translate. A site that sends its own
+designed emails (Perego) swaps the notification for its own listener with `corex_assistant_callback_listeners`,
+because the forms engine runs only the listeners a form declares.
+
+## #607 -- A component may read theme tokens into `--corex-<component>-*` properties of its own
+
+**Date:** 2026-11-09. **Spec:** 129, FR-015.
+
+**Decided.** The chat reads the theme's tokens once, into `--corex-assistant-*` properties on `.corex-assistant`
+(with system colours such as `Canvas` and `LinkText` as the fallback), and its rules read those. A theme whose
+colours are named differently (Perego's) restyles the chat by setting a few properties. The token inventory
+(`scripts/generate-token-inventory.mjs`) resolves a `--corex-*` reference when a stylesheet of the same package
+declares it; from any other package it stays undefined, so the contract still catches a property nobody defines.
+The `--corex-admin-*` adapter keeps its own rule.
+
+**Not chosen.** *Theme tokens directly in every rule*: a client theme without CoreX's slugs could not restyle the
+chat without overriding every rule.
+
+**Also fixed while porting.** Perego's reply shaper turned a colon at the end of a line into a full stop with
+`(:)\s*$`, and `\s` took the line breaks after it, joining two paragraphs. It is `:[ \t]*$` here; Perego's copy
+still has it.
+
+## #608 -- What the guards found, and Perego's revision 2 split into a next slice
+
+**Date:** 2026-11-09. **Spec:** 129.
+
+**Decided.**
+- **Perego's revision 2 is the next slice.** Perego's assistant gained a revision 2 the same day, while this slice
+  was built (`36950af8`, `0bbc9a28` on `feature/058-perego-assistant`). Its generic fixes are taken here: the
+  reply's language decided from the visitor's own words (an English question on an Arabic page was answered in
+  Arabic), reading misspelled and mixed-language questions generously, recommending a service from a stated goal,
+  dropping the colon left before a removed address, and a service's rest ending when it answers. Its Gulf Arabic
+  rules become a site's voice through the new `corex_assistant_voice` filter. The rest (paid OpenAI and Claude
+  fallbacks, owner-set order and switches, booking time slots, channel-led required fields, limits and branding on
+  the screen) is owed to a second slice; Perego keeps its copy until then.
+- **The visitor lock is claimed in the database** (`INSERT IGNORE`, and a takeover that names the old time), not
+  with `add_option()`, which upserts and would hand two racing requests the same lock. A request releases only
+  the lock it holds, by its time, so one that ran past the 45 seconds cannot release the lock a later request took
+  over. Perego's copy has the same race.
+- **A message a service will not answer rests no service**: a 200 whose `finish_reason` is `content_filter` or
+  `length` is a refusal, like a 400; only an unreadable answer is the service's fault. A 400 or 422 that names the
+  key or a missing model is a configuration error and rests the service an hour (Gemini answers a wrong key with
+  a 400).
+- **An IPv4 visitor reported as `::ffff:a.b.c.d`** is that IPv4 visitor, not the /64 every such address shares.
+- **The browser sends a bounded history** (the newest 12 messages, each cut to 600 characters, fewer while the
+  body would pass 15,000 bytes): a long chat would otherwise pass the server's 16,000-byte limit and be refused on
+  every question after.
+- **Replies lose email addresses and international phone numbers** as well as off-site links; a bare domain written
+  as a word is kept, as it cannot be told from a product name and is not a link.
+- **"Asked for a language" means a request**: a whole verb of speaking or writing followed by "in English" or
+  "بالعربي". Perego's looser pattern took "Can you write Arabic content?" as a request for Arabic replies, and
+  "مورد" (which contains "رد") as a verb.
+- **The browser cuts a message by character**, as the server's `mb_substr` does, so an emoji is never cut in half
+  (a half character broke the request and jammed the chat).
+- **A visitor's text keeps its `<`**: tags were stripped from it, which cut "price < 500" short; only control
+  characters are removed, since every reply is shown as text.
+
+**Not chosen.** *Keying the limits by a browser id as well as the address*, so visitors behind one office or
+carrier address do not share a lock and an hourly count: a browser id is the visitor's to change, and Perego's
+approved design counts by address. Recorded as a trade-off in the guide.
+
+## #609 -- The assistant's settings are a CoreX screen of their own, not a page of Settings
+
+**Date:** 2026-11-09. **Spec:** 129, FR-019. **Supersedes** the screen part of #601; the keys still go through the
+Config engine, so `.env` still locks them.
+
+**Decided.** On the owner's requirement relayed by the Perego session (2026-11-09), the settings are CoreX →
+Assistant (`corex-assistant`), a screen in the CoreX rail drawn with `AdminPage` and `.corex-surface` cards, as
+Guides is: Assistant, Services, Booking, Limits, Check services. The Settings registry cannot draw rows the owner
+reorders, a switch per row, or a booking card, and a second place to edit the same values would drift, so slice 1's
+section, page and guide topic under Settings are removed again (they were never released). The save posts to
+`admin-post.php` and goes through `AdminGuard::verifiedPost()` with its own nonce. The rows move with a script,
+and without one the same buttons save the page with the move.
+
+**Not chosen.** *New field types for the Settings registry*: a row of five controls with an order is not a field.
+
+## #610 -- The owner writes the assistant's words per language on the screen; code still has the last word
+
+**Date:** 2026-11-09. **Spec:** 129, FR-019.
+
+**Decided.** The Assistant card holds the button image and, for each language, a name, a welcome line and up to
+three suggested questions; a blank field keeps the built-in words. The languages are the site's and English, and
+a site adds others with `corex_assistant_languages` (Perego adds `ar`). Precedence for every string: CoreX's
+English (or a `corex-<locale>.po`), then the screen, then the `corex_assistant_strings` filter. The booking
+card's preview zones are the site's own and UTC unless a site names them (`corex_assistant_preview_zones`;
+Perego: Riyadh, Dubai, Cairo). Slice 1's single "Assistant name" and "Assistant image" settings, never released,
+are gone.
+
+## #611 -- Paid services are the last resort: off until turned on, capped, Claude through its own API
+
+**Date:** 2026-11-09. **Spec:** 129, FR-016.
+
+**Decided.** The catalogue gains OpenAI (`gpt-5-mini`, chat completions, `max_completion_tokens`, no `temperature`,
+`reasoning_effort: low`) and Anthropic Claude (`claude-haiku-5-5`, the Messages API with `x-api-key` and
+`anthropic-version: 2026-10-21`, the instructions as `system`, `output_config: {effort: "low"}`, no sampling
+settings; the answer is its `text` blocks). They come last in the default order and are off until the owner
+switches them on, whatever key is saved: a key alone never spends money. A paid service is skipped once today's
+paid requests are spent (50 by default, the owner's to change); every request sent counts, answered or not (#615). For Claude,
+`stop_reason: refusal`, or room spent before any text, is a refusal that rests nothing; 529 is a server error.
+
+**Not chosen.** *Claude through an OpenAI-compatible shim*: the owner asked for the native API, which is the one
+Anthropic documents and versions.
+
+## #612 -- A visitor picks a time from the owner's hours; the assistant, not CoreX Bookings, holds them
+
+**Date:** 2026-11-09. **Spec:** 129, FR-017.
+
+**Decided.** The owner sets the hours in the business's own time zone (days, opening and closing, a closing time at
+or before the opening time closing the next day, slot length, notice, days ahead); off by default. The hand-off
+asks `GET corex/v1/assistant/slots` (public, `no-store`, because the slots move with the clock) when it opens, and
+lists the times by the visitor's day in their own zone, with "any time". The request carries `time`, the line the
+team reads in both zones, written by the visitor's browser with `Intl`; `slot`, the moment in UTC; and `zone`. It
+is a requested time the team confirms: nothing reserves it or checks it against another request.
+
+**Not chosen.** *CoreX Bookings as the home of the slot logic*: CoreX add-ons may not depend on one another, and
+Bookings is a request to call one of several leaders, kept in its own table, with no hours. If Bookings later
+gains working hours, `BookingHours` is the piece to move there. *The server writing the two-zone line*: it would
+need the visitor's zone anyway, which only the browser knows, and the line is the visitor's own request.
+
+## #613 -- The way to be reached decides which detail is required
+
+**Date:** 2026-11-09. **Spec:** 129, FR-018.
+
+**Decided.** A call or WhatsApp needs a number, an email needs an address, and the other is optional. The browser
+marks the field required and the other "(optional)" as the channel changes; the server checks the same with a
+`required_for:<channels>` rule the add-on registers with the forms engine. It is a `RuleForAbsentValue`, so
+leaving the field out of the request does not get around it.
+
+## #614 -- What the screen saves reads back the same; Check services asks a real question
+
+**Date:** 2026-11-09. **Spec:** 129, FR-020, User Story 3.
+
+**Decided.**
+- The services, limits, words and hours the screen writes are stored with autoload off. The switch, the keys and
+  the models are stored as every CoreX setting is (#615).
+- Every cleaning step reads its own output back unchanged. Perego found that WordPress runs a setting's
+  sanitize callback twice when the settings API first creates the option; this screen does not use the settings
+  API, and a test saves what it saved once again and expects the same.
+- "Check services" asks each service that is on a visitor's question with the full instructions and knowledge,
+  times it, clears a rest when it answers and records the failure when it does not, so the services card shows
+  why. A small test question passed while real ones were refused at Perego.
+- Each service's last failure is kept a week with its rest, for the card.
+
+
+## #615 -- What the slice 2 guards found: saved keys unread, Claude's first message, paid requests counted
+
+**Date:** 2026-11-09. **Spec:** 129, FR-006, FR-016, FR-019.
+
+**Decided.**
+- **A key saved on the screen is stored as every CoreX setting is.** Slice 2 first stored the keys and models with
+  autoload off, and the Config engine reads only options WordPress loads (#361), so a saved key was never used:
+  the row said "No key" and the chat never showed. The switch, the keys and the models are now written with
+  autoload on; the arrays only the assistant reads (services, limits, words, hours) stay off. An integration test
+  saves a key through the screen with no filter in place and asks the chain for it. The same defect is why #602 is
+  withdrawn.
+- **Claude is sent the conversation from the visitor's first message on.** The history is cut to its last twelve
+  messages, which then opens with an assistant message, and the Messages API refuses that; from the sixth question
+  Claude would have failed every time.
+- **Every request sent to a paid service counts against its daily limit**, answered or not: a refusal, an answer
+  cut short by its room and an empty answer are billed too. "Check services" counts the same way. The limit's label
+  says "questions sent to paid services".
+- **A paid service the owner never saw on the screen is off.** The saved switches list the services known when the
+  owner saved; one a later release adds now takes its catalogue default (free on, paid off) instead of on.
+- **A switch `.env` locks is not written** by the screen, as the keys and models are not.
+
+**Not chosen.** *Reading the keys past the Config engine*: the engine is where `.env` wins, and every other CoreX
+secret is stored the same way. *Checking the visitor's time line on the server*: the browser writes it; `slot`,
+the moment in UTC, is what the team can trust, and the form's docblock says so.
+
+## #616 -- Knowledge refreshes when it changes; Check services tries every key; what slice 2 leaves for slice 3
+
+**Date:** 2026-11-10. **Spec:** 129, FR-012, FR-020.
+
+**Decided.**
+- **The default knowledge is built again as soon as what it reads changes**: a page saved, published,
+  unpublished, binned or deleted, the site's name or tagline, a finished update (`upgrader_process_complete`).
+  Slice 1 listened to a page's save only, so a page binned or a new tagline waited up to six hours. Perego's
+  own assistant refreshes when a project changes or a release lands; the generic form is two hooks:
+  `corex_assistant_forget_knowledge`, which a site fires when its own content changes, and
+  `corex_assistant_knowledge_forgotten`, which the add-on fires so a site's provider drops its own cache.
+- **"Check services" asks every service with a key, on or off**, and says which are off, so the owner can try a
+  paid key before switching it on. The question is charged and counts against the paid limit; the card says so.
+- **The hand-off's fields fit the form**: they were `inline-size: 100%` without `box-sizing: border-box`, so their
+  padding and border ran past the form's edge (found by the parallel slice 2 build).
+
+**Left for slice 3** (each its own story, not built here):
+- *A booked time hidden from other visitors* (Perego: a `slot_taken` rule and a fresh list of times). It needs a
+  store of requested times and a rule that refuses one already asked for.
+- *The team's time line written on the server* from `slot` and the visitor's zone, through a forms-engine hook
+  that runs after validation, so a hand-written request cannot put a made-up line in the inbox. Today `slot`, the
+  UTC moment, is the part to trust (#615).
+- *`required_if` as a forms-engine rule* in PHP and the runtime script, replacing the add-on's own
+  `required_for`.
+
+**Not chosen.** *One conversation across browser tabs*: the chat already keeps its conversation across pages for
+as long as the tab is open (`sessionStorage`); keeping it beyond the tab would store a visitor's words in their
+browser after they leave, which the owner has not asked for.
+
+## #620 -- CoreX gets public hosts on the owner's domain, one host for each kind of thing that runs
+
+**Date:** 2026-11-11. **Branch:** `docs/public-hosts`. **Mode:** Docs/Planning. **Asked by:** the owner, who
+bought `mustafashaaban.com` and pointed a `corex` subdomain at his server.
+
+**Why.** CoreX has no public address of its own. The docs are on GitHub's `mustafashaaban.github.io/corex/`,
+the in-admin updater has no source to read (`updates.endpoint` ships empty), a watched installation from
+CoreX → Releases on a shared host, on v0.46.1 or later, is still owed (spec 107) and has no site to run on that
+is not a client's, and spec 123 left
+"a site downloads its release" out until packages are published "somewhere a site can trust".
+
+**Decided.** Six hosts, split by what runs on them, so each has its own deploy, its own security level and
+its own failure, and a problem on one leaves the others up:
+
+| Host | What it is | Served by | Public |
+|---|---|---|---|
+| `mustafashaaban.com` | The owner's personal site, on the portfolio kit, in its own repository | The owner's server | Yes |
+| `corex.mustafashaaban.com` | CoreX's product site, built with CoreX (`sites/corex-site/`, Client Site Mode) | The owner's server | Yes |
+| `corex-docs.mustafashaaban.com` | The Starlight docs site, moved from `github.io` | GitHub Pages (a CNAME to `mustafashaaban.github.io`) | Yes |
+| `corex-updates.mustafashaaban.com` | Update manifest, packages and their SHA-256, as static files | The owner's server, no PHP | Machines |
+| `corex-demo.mustafashaaban.com` | The kits with their demo content, reset on a schedule | The owner's server | Later |
+| `corex-staging.mustafashaaban.com` | A private install for release checks, the shared-host installation first | The owner's server, password and `noindex` | No |
+
+- **One level of names** (`corex-docs`, not `docs.corex`): one `*.mustafashaaban.com` certificate covers
+  every host. The owner chose the names.
+- **The order** is one spec at a time: the docs move (spec 130), the staging install, the product site, the
+  update channel, the demo, and then spec 123's download-from-a-URL, with signed packages from the updates host.
+- **Nothing in a released site changes by this decision alone.** A site keeps every link it has until a
+  release carries the docs move, and GitHub redirects the old `github.io/corex/` addresses to the custom
+  domain once it is set.
+- **The revamp is not affected.** No open revamp pull request touches the docs links (`DocsUrl`), the docs
+  build or the update source, and the hosts sit outside the framework's code. The product site and the
+  demo show the revamp's screens, so they come after it, not before.
+
+**Not chosen.** *Two-level names* (`docs.corex.mustafashaaban.com`): a wildcard certificate does not cover
+them. *The docs on the owner's server*: GitHub Pages already builds and serves them, costs the server nothing
+and stays up when the server does not. *One WordPress serving every host*: a failed update or a demo reset
+would take the product site down with it. *A CoreX-only domain now*: nothing is lost by waiting, since every
+host keeps canonical links and redirects and moves with one redirect each.
+
+## #621 -- The CoreX loop replaces Spec Kit's commands; models and effort are routed by a table (constitution v2.0.0)
+
+**Date:** 2026-11-11. **Branch:** `docs/workflow-matt-and-agents`. **Mode:** Docs/Planning. **Asked by:** the
+owner: "if spec kit doesn't fit with matt's flow we can stop using it, i need the best workflow", with
+delegation and switching models and effort.
+
+**Why.** Spec Kit's chain (`specify → clarify → plan → tasks → implement`) asks its questions after the spec is
+drafted, so specs 107 and 110 stopped on owner questions after writing; it produces a plan, a task list and
+checklists that slices already cover; and it owns the process, which made its own side effects hard to see
+(#251: it rewrote a tracked state file and a section of `CLAUDE.md`). Matt Pocock's engineering skills fix
+the first two: `grill-with-docs` finds the open questions before the spec, and building in slices is what
+CoreX already did. They do not replace the spec file: tests, docs and 620 DECISIONS entries point at spec
+numbers and requirement IDs.
+
+**Decided.**
+- **The loop** (constitution v2.0.0, Pre-Implementation Confirmation Rule step 2; `AGENTS.md`): grill →
+  research when needed → `specs/NNN-name/spec.md` with requirement IDs and slices → `wizard` for owner-only
+  steps → one slice at a time with `tdd` (`diagnosing-bugs` first for a bug) → Guard Gate → `debate-review`
+  → PR (`pr`, `babysit-pr`) → `retro` after a release. Principle X is unchanged.
+- **Retired:** the `/speckit-*` commands. A spec with a `tasks.md` may finish from it. The skill files and
+  `.specify/` stay for those specs and are not used for new ones.
+- **Not used:** Matt's `to-spec`, `to-tickets`, `implement-spec`, `implement` and `wayfinder`, which would
+  write a second plan into GitHub issues next to `specs/` and `ROADMAP.md`.
+- **Matt's setup for this repository:** GitHub Issues, the five default triage labels (four created today),
+  and the glossary and decisions in CoreX's own `docs/_glossary.md` and `DECISIONS.md`, never a new
+  `GLOSSARY.md` or `docs/adr/` (`docs/agents/`).
+- **Models and effort** (`CLAUDE.md`, "Models, effort and agents"): Fable at high effort for grilling, specs
+  and final judgment; `corex-builder` on Opus, medium (high for a bug); `corex-tester` on Sonnet, medium;
+  `corex-scout` on Haiku, low; `corex-reviewer` on Fable, high; Codex at high effort as the second reviewer.
+  Max effort only when the owner asks, for one task. The five agents are `.claude/agents/`, with
+  `corex-ui-reviewer` (Fable, high) for what a person sees.
+- **One lever per job:** the main session for judgment, in-app agents for Claude models, delegate lanes only
+  for Codex. `claude-delegate` lanes would duplicate the in-app agents and are not configured.
+- **Agents never commit**, and builders work in the root checkout one at a time per set of files (§A.7's
+  single-workspace rule still holds).
+- **The handoff format** says `SPEC STATUS` with slices instead of `SPEC KIT STATUS` with task IDs.
+- **UI is a required part of the loop**, because CoreX has no designer (the owner: "this is not an option as we
+  have no designer"). A slice a person sees is designed first in Claude Design on the CoreX design system, in
+  every state, at 1280px and 375px, light and dark, left to right and right to left; approved by the owner and
+  handed off in `design/handoffs/`; built with `ui-ux-pro-max`; measured in the browser and run through
+  `npm run test:quality`; reviewed by `corex-ui-reviewer`, `design:accessibility-review` and `design:ux-copy`.
+  A change to the look starts in the design system. Claude Design now lives in Claude as the Design and Design
+  System artifact types (both available in the desktop app's Code tab); standalone claude.ai/design closes on
+  2026-12-14. No CoreX design system exists in Claude yet: making it is its own task.
+- **One recorded round per UI slice for the owner** (`ui-review-loop`, amElnagdy, installed 2026-11-11 with
+  `agent-browser` 0.32.4): the owner watches a short video of the flow and comments on moments in it. The
+  video and timeline never reach the model; each browser step does, so steps return diffs, the round runs on
+  `corex-tester` (Sonnet), and full coverage audits run only on request. Scratch sites with test data only.
+  `.agent-review/` is ignored. Kept only if the first UI slice shows it saves more review rounds than it costs.
+  **On this Windows machine** it needed three things, checked with a recorded round of corex.local's home page
+  (timeline, network capture and a WebM video): `agent-browser.exe` copied beside npm's wrapper in the nvm Node
+  folder, because the skill starts `agent-browser` without a shell and Node then finds only an `.exe` (redo it
+  after an nvm switch); `ffmpeg` from winget (`Gyan.FFmpeg`) for the video, on PATH in new shells; and Developer
+  Mode for the one self-test check that creates a symbolic link (the other 19 pass). With the agent-browser
+  backend a step is a verb (`run -- snapshot`, `run -- click @e12`); the script form is the other backend's.
+
+**Not changed, and owed.** The CoreX design system in Claude (from `theme.json` and the approved admin
+designs), and moving anything still in standalone Claude Design before 2026-12-14. `wp corex make:site` still writes a client `AGENTS.md` that tells a client site
+to run Spec Kit with `SPECIFY_FEATURE_DIRECTORY` (`SiteScaffolder` and its test, #251). That is framework
+code with a test and a client impact, so it is its own slice.
+
+**Not chosen.** *Keeping Spec Kit and adding Matt's skills beside it*: two processes for one change, and the
+questions still come after the spec. *Dropping the spec file for GitHub issues*, as Matt's own flow does: it
+would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
+in-app agents already carry a model and effort each, and their results come back to the session that checks
+them.

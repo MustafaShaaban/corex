@@ -5,7 +5,7 @@
  *
  * Verifies the five header variants ship, register under the CoreX + core header
  * categories, carry their variant class, and expose accessible action slots
- * (labelled language link, native search, mega menu). Sticky/transparent rendering
+ * (a top bar of real contact details, native search, mega menu). Sticky/transparent rendering
  * is browser-gated. Raw-literal freedom is covered by NavigationPatternsTest.
  *
  * @package Corex\Tests\Unit\Theme
@@ -44,9 +44,10 @@ it('exposes accessible, labelled action slots in the relevant variants', functio
     $docs = (string) file_get_contents(ThemeContract::root() . '/theme/patterns/header-docs.php');
     $saas = (string) file_get_contents(ThemeContract::root() . '/theme/patterns/header-saas.php');
 
-    // Language link carries an accessible name; docs uses the native search block;
-    // the SaaS header offers a mega-menu disclosure.
-    expect($corporate)->toContain('aria-label=')
+    // The corporate top bar holds the brand settings' contact details, never a link to nowhere (spec 115
+    // FR-015, FR-016); docs uses the native search block; the SaaS header offers a mega-menu disclosure.
+    expect($corporate)->toContain('corex_pattern_contact')
+        ->and($corporate)->not->toContain('href="#"')
         ->and($docs)->toContain('wp:search')
         ->and($saas)->toContain('corex-mega');
 });

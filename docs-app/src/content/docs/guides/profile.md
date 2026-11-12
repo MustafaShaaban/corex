@@ -222,8 +222,19 @@ kept again WordPress's way, which signs that member out of their other browsers 
 
 ## A forgotten password
 
-A member who asks for a reset link on the account page gets WordPress's password-reset
-email, with one difference: its link comes back to the page they asked from.
+A member who asks for a reset link on the account page gets an email whose link comes back
+to the page they asked from. Which email it is depends on the site:
+
+- **With CoreX Mail active and its "Password reset" template active**, the member gets that
+  template, drawn in the site's email frame and sent from the template's sender (Settings →
+  Mail's when the template names none). It says which account and when, how long the link
+  works and what to do if they did not ask.
+- **Otherwise**, or when that email fails or is refused, WordPress sends its own reset email,
+  with its link changed to the account page.
+
+A member who registers on the account page with a password of their own gets the "Welcome to
+your account" template the same way, linking to the account page with no set-password link;
+otherwise WordPress's new-user email.
 
 1. The link opens that page with a **Choose a new password** form and nothing else on the
    block.
@@ -238,9 +249,15 @@ address. On a site whose login is moved by the Security Center, that is the move
 
 What to know when you build on it:
 
-- The email is still sent by WordPress (`retrieve_password()`), so its wording and its
-  sender are WordPress's, and a plugin that filters `retrieve_password_title`,
-  `retrieve_password_message` or `retrieve_password_notification_email` still does.
+- The request still goes through WordPress (`retrieve_password()`). Where the designed email
+  is sent, WordPress sends none of its own, so `retrieve_password_title`,
+  `retrieve_password_message` and `retrieve_password_notification_email` do not run, and
+  for a new member `wp_new_user_notification_email` does not either. Where WordPress sends
+  its own (no CoreX Mail, the template not active or not drawable, or the designed email
+  failed or was refused), those filters apply as always. A designed email kept on a
+  development or staging site counts as sent, so WordPress sends no real one there.
+- Change the designed emails' words in Email Studio → Templates; **Reset to shipped
+  version** puts one back.
 - A reset asked for at `wp-login.php` itself is not changed.
 - The link's address ends in `?corex_reset_login=…&corex_reset_key=…`. The page takes both
   out of the address at once, into a cookie of that browser's session, and continues at

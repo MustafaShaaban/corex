@@ -8,7 +8,7 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
 - **License:** GPL-2.0-or-later.
 
-## Status: v0.46.1, actively developed, honest about its gaps
+## Status: v0.48.1, actively developed, honest about its gaps
 
 The foundation is stable and used: the engine, the block/forms/config layers, the admin product, the
 CLI generators, Corex Mail, and the docs site. Every pull request runs the PHP unit suite, the
@@ -43,6 +43,7 @@ addons/              optional, self-disabling packages (never hard dependencies)
   corex-newsletter/  double-opt-in subscriber capture.
   corex-careers/     jobs CPT + application flow.
   corex-bookings/    booking/call-request flow.
+  corex-assistant/   site chat that answers from the site's own content and hands visitors to the team.
   corex-kit-company/ corex-kit-portfolio/ corex-kit-woo/   site kits (blueprints + content).
 packages/
   cli/               wp corex commands (make:*, make:site, reset, docs:generate, routes:list, …) + stubs.
@@ -50,7 +51,7 @@ packages/
 theme/               parent FSE block theme — presentation only (theme.json tokens, templates, parts).
 docs-app/            Astro + Starlight documentation site (guides + generated class reference).
 docs/               bilingual (EN/AR) getting-started, team-workflow, deployment, and cookbook docs.
-specs/              Spec Kit specs (constitution pointer → .specify/memory/).
+specs/              One spec per feature (constitution pointer → .specify/memory/).
 tests/              Pest (Unit, Integration), Jest, Playwright (e2e).
 ```
 
@@ -174,7 +175,7 @@ into one mode before editing — **CoreX Framework / Client Site / Deployment / 
   GitHub Actions runs PR gates; Azure Pipelines (`azure-pipelines.yml`) builds + deploys. See
   [shared-host dist](docs/en/05-deployment/shared-host-dist.md) and [Azure Pipelines](docs/en/05-deployment/azure-pipelines.md).
 
-The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Gate** (safe to ship) → **UI/UX ProMax**
+The rule hierarchy: **Role Gate** (where) → **the spec** (what) → **Guard Gate** (safe to ship) → **UI/UX ProMax**
 (UI good enough).
 
 ## Client readiness
@@ -182,7 +183,7 @@ The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Ga
 Before starting a real client site, run the Spec 055 readiness report:
 
 ```bash
-wp corex readiness 0.46.1
+wp corex readiness 0.48.1
 ```
 
 It reports runtime gating, release metadata, CI/security controls, `make:site` validation, deployment profiles,
@@ -209,7 +210,7 @@ see [PROJECT-STATUS.md](PROJECT-STATUS.md), under *Known open items*, for how.
 
 ## Contributing
 
-Corex is built **spec-first** (Spec Kit) under a strict constitution, with guard skills as the quality gate
+Corex is built **spec-first** (the CoreX loop) under a strict constitution, with guard skills as the quality gate
 and a NEXT STEP handoff on every change. See `CONTRIBUTING.md` and `docs/internal/COREX-WORKING-GUIDE.md` before opening a PR
 — including the rule that every feature PR updates its documentation in the same change.
 

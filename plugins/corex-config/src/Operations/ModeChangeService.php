@@ -24,6 +24,7 @@ use Corex\Operations\OperationResult;
  * The rules are the ones the controller already had, moved here unaltered:
  *
  * - an unknown mode is refused;
+ * - a mode a lock does not allow is refused (spec 113);
  * - production is a launch — it needs its typed phrase and goes through
  *   {@see ProductionLaunchService}, which evaluates readiness and records the override;
  * - a mode that needs an acknowledgement is not applied without one;
@@ -64,6 +65,10 @@ final class ModeChangeService
     {
         if (! $this->modes->isValid($request->mode)) {
             return ModeChangeResult::invalid();
+        }
+
+        if (! $this->store->allows($request->mode)) {
+            return ModeChangeResult::locked($request->mode);
         }
 
         if ($request->mode === OperationsMode::PRODUCTION) {

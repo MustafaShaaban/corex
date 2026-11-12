@@ -14,6 +14,7 @@ use Corex\Boot;
 use Corex\Forms\Submission\SubmitController;
 use Corex\Tests\Support\NotificationRows;
 use Corex\Tests\Support\WatchedTransients;
+use Corex\Tests\Support\MailDelivery;
 
 function submitController(): SubmitController
 {
@@ -59,6 +60,9 @@ $valid = ['name' => 'Mustafa', 'email' => 'm@example.com', 'message' => 'Hello f
  * Without this every run left one `contact` submission and one logged email on the install.
  */
 beforeEach(function () {
+    // Spec 113: these emails are sent the way a production site sends them. MailDelivery stops
+    // each one before the transport.
+    $this->productionMail = MailDelivery::answerAs(MailDelivery::DELIVER);
     $this->createdPosts = [];
     $this->rememberCreatedPost = function (int $postId, WP_Post $post, bool $update): void {
         if (! $update && in_array($post->post_type, ['corex_submission', 'corex_email_log'], true)) {
@@ -76,6 +80,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    MailDelivery::stop($this->productionMail);
     remove_action('wp_insert_post', $this->rememberCreatedPost, 10);
     NotificationRows::restorePrefixed('submission.', $this->submissionNotifications);
 

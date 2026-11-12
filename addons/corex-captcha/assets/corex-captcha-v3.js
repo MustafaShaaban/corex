@@ -28,8 +28,15 @@
 		return;
 	}
 
-	// Read the safe recoverable-error channel corex-runtime exposes, degrading if it is absent.
+	// A form that is not corex-runtime's names its own message line (spec 115); otherwise read the
+	// safe recoverable-error channel corex-runtime exposes, degrading if it is absent.
 	function announce( form, message ) {
+		const own = form.querySelector( '[data-corex-captcha-message]' );
+		if ( own ) {
+			own.textContent = message;
+			own.setAttribute( 'data-state', 'error' );
+			return;
+		}
 		if (
 			window.Corex &&
 			window.Corex.notices &&
@@ -112,7 +119,7 @@
 
 	function init() {
 		const fields = document.querySelectorAll(
-			'.corex-form input[name="captcha_token"][data-corex-captcha-action]'
+			'.corex-form input[name="captcha_token"][data-corex-captcha-action], form[data-corex-captcha] input[name="captcha_token"][data-corex-captcha-action]'
 		);
 		Array.prototype.forEach.call( fields, function ( field ) {
 			guard( field.form, field );

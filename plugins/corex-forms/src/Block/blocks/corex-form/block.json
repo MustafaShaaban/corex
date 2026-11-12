@@ -13,6 +13,7 @@
 		"flowId": { "type": "integer", "default": 0 },
 		"flowSlug": { "type": "string", "default": "" }
 	},
+	"usesContext": [ "postId" ],
 	"supports": { "html": false },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",

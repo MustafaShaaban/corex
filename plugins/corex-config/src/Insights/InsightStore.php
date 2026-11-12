@@ -15,10 +15,17 @@ defined('ABSPATH') || exit;
  * (`provider => {latest, history[]}`) — adding a run, reading the latest, or mapping every
  * provider to its latest for the dashboard. The controller owns the actual option read/write, so
  * this stays headless-testable and free of WordPress.
+ *
+ * Every row is read through {@see InsightFailure}, so a failed run stored by an earlier release as
+ * a score of 50 is read as the failure it was (spec 114, US-SAFE-12).
  */
 final class InsightStore
 {
     private const DEFAULT_HISTORY = 5;
+
+    public function __construct(private readonly InsightFailure $failures = new InsightFailure())
+    {
+    }
 
     /**
      * Record a result, returning the new state. History is newest-first and bounded.
@@ -51,7 +58,7 @@ final class InsightStore
     {
         $entry = $state[$providerId]['latest'] ?? null;
 
-        return is_array($entry) ? $entry : null;
+        return is_array($entry) ? $this->failures->read($entry) : null;
     }
 
     /**
@@ -63,7 +70,9 @@ final class InsightStore
     {
         $history = $state[$providerId]['history'] ?? [];
 
-        return is_array($history) ? array_values($history) : [];
+        return is_array($history)
+            ? array_values(array_map(fn (mixed $row): mixed => is_array($row) ? $this->failures->read($row) : $row, $history))
+            : [];
     }
 
     /**

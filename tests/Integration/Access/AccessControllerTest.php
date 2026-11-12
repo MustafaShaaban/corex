@@ -212,11 +212,21 @@ it('creates and approves an access request without using the protected login rou
 
     $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($admins[0] ?? 0));
+    $previewRequest = accessRequest('POST', '/corex/v1/access/requests/' . $requestId . '/preview');
+    $previewRequest->set_url_params(['id' => $requestId]);
+    $preview = $this->controller->previewDecision($previewRequest)->get_data()['data']['preview'];
     $decision = accessRequest('POST', '/corex/v1/access/requests/' . $requestId . '/decision', [
         'approved' => true,
         'note' => 'Approved for support rotation.',
+        'expiry_days' => 30,
+        'confirmation' => [
+            'operation_kind' => 'access.request.approve',
+            'target_hash' => $preview['target_hash'],
+            'actor_id' => get_current_user_id(),
+            'expires_at' => gmdate('c', time() + 600),
+        ],
     ]);
-    $decision->set_param('id', $requestId);
+    $decision->set_url_params(['id' => $requestId]);
     $decided = $this->controller->decideRequest($decision);
     $stored = $this->container->make(AccessRequestRepository::class)->find((int) $requestId);
 

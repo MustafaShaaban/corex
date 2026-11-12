@@ -20,6 +20,7 @@
 declare(strict_types=1);
 
 use Corex\Tests\Support\AdministratorsRequest;
+use Corex\Tests\Support\MailDelivery;
 
 const COREX_MAIL = 'corex-email/corex-email.php';
 
@@ -45,6 +46,16 @@ function sitesAndTheirAdministrators(): array
         ],
     ];
 }
+
+beforeEach(function () {
+    // Spec 113: these emails are sent the way a production site sends them. MailDelivery stops
+    // each one before the transport.
+    $this->productionMail = MailDelivery::answerAs(MailDelivery::DELIVER);
+});
+
+afterEach(function () {
+    MailDelivery::stop($this->productionMail);
+});
 
 it('writes the notification of a form defined in code in the language of the site', function (
     string $siteLanguage,
@@ -90,10 +101,10 @@ it('writes the notification of a form defined in code in the language of the sit
             ->toContain('>' . $inTheSitesLanguage('Open the submission') . '</a>')
         ->and($withNothing['subject'])->toBe($inTheSitesLanguage('New "corex-words-probe" form submission'))
         ->and($withNothing['message'])->toContain($inTheSitesLanguage('The submission contained no fields.'))
-        // Those five strings are all of CoreX's there is in the two emails: on the Arabic site
-        // there is no sixth, and on the English one not one of them is in Arabic.
+        // Drawn in the one frame (spec 120), the emails carry its footer's words too: every one in
+        // the site's language, so on the English site not one of them is in Arabic.
         ->and(substr_count(implode('', [...array_values($withAFile), ...array_values($withNothing)]), '[ar] '))
-            ->toBe($siteLanguage === 'ar' ? 5 : 0)
+            ->toBe($siteLanguage === 'ar' ? 13 : 0)
         ->and($request['afterwards'])->toBe($theRequest);
 })->with(sitesAndTheirAdministrators());
 
@@ -132,9 +143,10 @@ it('writes the notification of a flow in the language of the site where CoreX Ma
             placementSnapshot: [],
         ), 1, $now);
 
-        // A flow's test send, which is made from the admin. Not stored: there is no submission.
+        // A flow's notification, written in an admin request. Not a marked test: a test sends no
+        // email at all (spec 113). Not stored: there is no submission.
         $container->make(\Corex\Forms\Submission\Stages\EmailStage::class)->execute(
-            new \Corex\Forms\Submission\SubmissionPipelineContext($flow, $version, ['name' => 'Salma'], true),
+            new \Corex\Forms\Submission\SubmissionPipelineContext($flow, $version, ['name' => 'Salma'], false),
         );
 
         return ['corex_mail' => $container->has(\Corex\Mail\Mailer::class)];

@@ -8,6 +8,7 @@
 
 declare(strict_types=1);
 
+use Corex\Config\Operations\MaintenanceDecision;
 use Corex\Config\Operations\MaintenanceGuard;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
@@ -19,7 +20,7 @@ beforeEach(function () {
     update_option(COREX_TEST_OPERATIONS_MODE_OPTION, OperationsMode::MAINTENANCE);
     wp_set_current_user(0);
 
-    $this->guard = new MaintenanceGuard(new OperationsModeStore(new OperationsMode()));
+    $this->guard = new MaintenanceGuard(new MaintenanceDecision(new OperationsModeStore(new OperationsMode())));
 });
 
 afterEach(function () {

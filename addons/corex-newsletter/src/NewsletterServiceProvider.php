@@ -10,13 +10,15 @@ namespace Corex\Newsletter;
 
 defined('ABSPATH') || exit;
 
-use Corex\Captcha\Captcha;
+use Corex\Blocks\NewsletterSignupRenderer;
+use Corex\Security\FormChallenge;
 use Corex\Container\ContainerInterface;
 use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaRegistry;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
+use Corex\Http\PublicSubmission;
 use Corex\Mail\Mailer;
 use Corex\Newsletter\Subscriber\SubscriberRepository;
 use Corex\Newsletter\Subscriber\SubscriberTable;
@@ -66,6 +68,7 @@ final class NewsletterServiceProvider extends ServiceProvider
                 $c->make(SubscriberStore::class),
                 $c->make(TokenSigner::class),
                 $c->make(Mailer::class),
+                $c->has(\Corex\Mail\DesignedEmails::class) ? $c->make(\Corex\Mail\DesignedEmails::class) : null,
             ),
         );
 
@@ -151,6 +154,8 @@ final class NewsletterServiceProvider extends ServiceProvider
             'methods'             => 'POST',
             'permission_callback' => '__return_true', // public; honeypot + captcha + throttle gate it
             'callback'            => [$this, 'subscribe'],
+            // Closed while the site is in Maintenance (spec 112).
+            PublicSubmission::MARKER => true,
         ]);
     }
 
@@ -160,9 +165,11 @@ final class NewsletterServiceProvider extends ServiceProvider
             return new WP_REST_Response(['ok' => false], 422); // honeypot
         }
 
-        if ($this->container->has(Captcha::class)
-            && ! $this->container->make(Captcha::class)->verify((string) $request['captcha_token'])) {
-            return new WP_REST_Response(['ok' => false, 'error' => 'captcha'], 422);
+        // With a captcha provider on, nothing is stored or sent without its check (spec 115).
+        $refusal = $this->container->make(FormChallenge::class)
+            ->refusal((string) $request['captcha_token'], NewsletterSignupRenderer::CAPTCHA_ACTION);
+        if ($refusal !== null) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'captcha', 'message' => $refusal], 422);
         }
 
         $email   = EmailAnswer::address($request['email']);

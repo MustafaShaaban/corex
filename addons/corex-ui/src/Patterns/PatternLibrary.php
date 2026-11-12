@@ -10,15 +10,34 @@ namespace Corex\Ui\Patterns;
 
 defined('ABSPATH') || exit;
 
+use Corex\Blocks\SampleBlocks;
+
 /**
  * The Corex section patterns — compositions of core blocks, styled only with
  * theme.json presets (color slugs + `var:preset` spacing), accessible, and
  * translation-ready. Pure: it returns the catalog; registration is the registrar's
  * job. The contact pattern composes the spec-007 `corex/form` block.
+ *
+ * They make no claim for the site (spec 115): the figures and the quote are marked as samples, and the
+ * hero and call-to-action buttons go to a real address or are not drawn. Their colours are chosen for
+ * contrast in the light and the dark palette: text on the section at least 4.5:1, a button against its
+ * section at least 3:1.
  */
 final class PatternLibrary
 {
     public const CATEGORY = 'corex';
+
+    /**
+     * The class that marks a section as sample content: hidden from visitors, labelled for editors,
+     * until someone changes it in the editor (corex-blocks' `SampleBlocks`, spec 115).
+     */
+    public const SAMPLE = SampleBlocks::MARKER;
+
+    /**
+     * The class of a button that takes its address when it is drawn: the brand's primary action link or
+     * the contact page ({@see ActionLinks}, spec 115). With neither, it is not drawn.
+     */
+    public const ACTION_LINK = 'corex-action-link';
 
     /**
      * @return list<array{name:string,title:string,content:string}>
@@ -44,14 +63,30 @@ final class PatternLibrary
         return sprintf(
             '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"primary","textColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
             . '<section class="wp-block-group alignfull has-surface-color has-primary-background-color has-text-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
-            . '<!-- wp:heading {"textAlign":"center","level":1} --><h1 class="wp-block-heading has-text-align-center">%1$s</h1><!-- /wp:heading -->'
+            . '<!-- wp:heading {"textAlign":"center","level":1,"textColor":"surface"} --><h1 class="wp-block-heading has-text-align-center has-surface-color has-text-color">%1$s</h1><!-- /wp:heading -->'
             . '<!-- wp:paragraph {"align":"center"} --><p class="has-text-align-center">%2$s</p><!-- /wp:paragraph -->'
             . '<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} --><div class="wp-block-buttons">'
-            . '<!-- wp:button --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button">%3$s</a></div><!-- /wp:button -->'
+            . self::actionButton('surface', 'primary', '%3$s')
             . '</div><!-- /wp:buttons --></section><!-- /wp:group -->',
             esc_html__('Build something great', 'corex'),
             esc_html__('A clear, confident sentence about what your company does and who it helps.', 'corex'),
             esc_html__('Get started', 'corex')
+        );
+    }
+
+    /**
+     * A button with no address of its own: {@see ActionLinks} gives it one when it is drawn. Its colours
+     * are its own, so it stands apart from the section behind it.
+     */
+    private static function actionButton(string $background, string $text, string $label): string
+    {
+        return sprintf(
+            '<!-- wp:button {"backgroundColor":"%1$s","textColor":"%2$s","className":"%4$s"} -->'
+            . '<div class="wp-block-button %4$s"><a class="wp-block-button__link has-%2$s-color has-%1$s-background-color has-text-color has-background wp-element-button">%3$s</a></div><!-- /wp:button -->',
+            $background,
+            $text,
+            $label,
+            self::ACTION_LINK,
         );
     }
 
@@ -78,11 +113,11 @@ final class PatternLibrary
     private function cta(): string
     {
         return sprintf(
-            '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"accent","textColor":"ink","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
-            . '<section class="wp-block-group alignfull has-ink-color has-accent-background-color has-text-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
-            . '<!-- wp:heading {"textAlign":"center"} --><h2 class="wp-block-heading has-text-align-center">%1$s</h2><!-- /wp:heading -->'
+            '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"accent","textColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull has-surface-color has-accent-background-color has-text-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:heading {"textAlign":"center","textColor":"surface"} --><h2 class="wp-block-heading has-text-align-center has-surface-color has-text-color">%1$s</h2><!-- /wp:heading -->'
             . '<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} --><div class="wp-block-buttons">'
-            . '<!-- wp:button --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button">%2$s</a></div><!-- /wp:button -->'
+            . self::actionButton('surface', 'accent-dark', '%2$s')
             . '</div><!-- /wp:buttons --></section><!-- /wp:group -->',
             esc_html__('Ready to talk?', 'corex'),
             esc_html__('Contact us', 'corex')
@@ -92,8 +127,8 @@ final class PatternLibrary
     private function testimonial(): string
     {
         return sprintf(
-            '<!-- wp:group {"tagName":"section","align":"full","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
-            . '<section class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            '<!-- wp:group {"tagName":"section","align":"full","className":"' . self::SAMPLE . '","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull ' . self::SAMPLE . '" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
             . '<!-- wp:quote {"textAlign":"center"} --><blockquote class="wp-block-quote has-text-align-center">'
             . '<!-- wp:paragraph --><p>%1$s</p><!-- /wp:paragraph --><cite>%2$s</cite></blockquote><!-- /wp:quote -->'
             . '</section><!-- /wp:group -->',
@@ -150,8 +185,8 @@ final class PatternLibrary
             $label
         );
 
-        return '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"surface-alt","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
-            . '<section class="wp-block-group alignfull has-surface-alt-background-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+        return '<!-- wp:group {"tagName":"section","align":"full","className":"' . self::SAMPLE . '","backgroundColor":"surface-alt","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull ' . self::SAMPLE . ' has-surface-alt-background-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
             . '<!-- wp:columns --><div class="wp-block-columns">'
             . $stat(esc_html__('100+', 'corex'), esc_html__('Projects delivered', 'corex'))
             . $stat(esc_html__('15', 'corex'), esc_html__('Years of experience', 'corex'))

@@ -11,6 +11,8 @@
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"footer","className":"corex-footer corex-footer--legal","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|40","bottom":"var:preset|spacing|40"}}}} -->
 <footer class="wp-block-group corex-footer corex-footer--legal" style="padding-top:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40)">
@@ -20,9 +22,9 @@ defined('ABSPATH') || exit;
 
 		<!-- wp:list {"className":"corex-footer__legal-links"} -->
 		<ul class="wp-block-list corex-footer__legal-links">
-			<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Privacy', 'corex'); ?></a></li><!-- /wp:list-item -->
-			<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Terms', 'corex'); ?></a></li><!-- /wp:list-item -->
-			<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Cookies', 'corex'); ?></a></li><!-- /wp:list-item -->
+			<!-- wp:list-item --><li><?php echo corex_pattern_anchor(get_privacy_policy_url(), __('Privacy', 'corex')); ?></li><!-- /wp:list-item -->
+			<!-- wp:list-item --><li><?php echo corex_pattern_link('terms', __('Terms', 'corex')); ?></li><!-- /wp:list-item -->
+			<!-- wp:list-item --><li><?php echo corex_pattern_link('cookies', __('Cookies', 'corex')); ?></li><!-- /wp:list-item -->
 		</ul>
 		<!-- /wp:list -->
 	</div>

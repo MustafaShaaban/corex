@@ -51,6 +51,7 @@ use Corex\Config\Branding\BrandingService;
 use Corex\Config\Data\DataAdminScreen;
 use Corex\Config\Data\DataManagementController;
 use Corex\Config\Releases\InstalledRelease;
+use Corex\Config\Releases\ReleaseCaller;
 use Corex\Config\Releases\ReleaseCompletion;
 use Corex\Config\Releases\ReleaseContentHash;
 use Corex\Config\Releases\ReleaseDesk;
@@ -194,7 +195,8 @@ use Corex\Mail\UnavailableSubmissionEmailGateway;
 final class ConfigServiceProvider extends ServiceProvider
 {
     private const FOUNDATION_SCHEMA_OPTION  = 'corex_product_foundation_schema_version';
-    private const FOUNDATION_SCHEMA_VERSION = '3';
+    // 4: the access requests table keeps a grant's expiry and how it ended (spec 112).
+    private const FOUNDATION_SCHEMA_VERSION = '4';
 
     public function register(): void
     {
@@ -301,6 +303,12 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(CorexAbilityCatalog::class),
             ),
         );
+        $this->container->singleton(
+            \Corex\Access\RequestableAbilities::class,
+            static fn (ContainerInterface $c): \Corex\Access\RequestableAbilities => new \Corex\Access\RequestableAbilities(
+                $c->make(CorexAbilityCatalog::class),
+            ),
+        );
         $this->container->singleton(AccessTables::class);
         $this->container->singleton(RoleAbilityRepository::class);
         $this->container->singleton(
@@ -326,13 +334,33 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(AccessRequestStore::class),
                 $c->make(AccessUserDirectory::class),
                 $c->make(ActivityService::class),
+                $c->make(\Corex\Access\RequestableAbilities::class),
                 $c->has(\Corex\Mail\RoutedMailer::class) ? $c->make(\Corex\Mail\RoutedMailer::class) : null,
                 $c->make(\Corex\Events\EventDispatcher::class),
+                $c->make(\Corex\Access\SiteAdministration::class),
             ),
+        );
+        // Which roles administer the site: their members hold every CoreX ability (spec 117, ACC-D11).
+        $this->container->singleton(
+            \Corex\Access\SiteAdministration::class,
+            static fn (): \Corex\Access\SiteAdministration => new \Corex\Config\Access\WpSiteAdministration(),
         );
         $this->container->singleton(AbilityCompatibility::class);
         $this->container->singleton(RolePluginCompatibility::class);
         $this->container->singleton(\Corex\Config\Access\PendingAccessRequests::class);
+        $this->container->singleton(
+            \Corex\Config\Access\AccessGrantService::class,
+            static fn (ContainerInterface $c): \Corex\Config\Access\AccessGrantService => new \Corex\Config\Access\AccessGrantService(
+                $c->make(AccessRequestStore::class),
+                $c->make(AccessUserDirectory::class),
+                $c->make(AccessService::class),
+                $c->make(\Corex\Access\RequestableAbilities::class),
+                $c->make(ActivityService::class),
+                $c->make(\Corex\Events\EventDispatcher::class),
+            ),
+        );
+        $this->container->singleton(\Corex\Config\Access\AccessGrantPresenter::class);
+        $this->container->singleton(\Corex\Config\Access\AccessGrantScheduler::class);
         $this->container->singleton(AccessController::class);
 
         // Spec 079: the denied surface renders its own state — already requested, or the form,
@@ -352,6 +380,7 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Admin\AdminPage::class,
             static fn (ContainerInterface $c): \Corex\Admin\AdminPage => new \Corex\Admin\AdminPage(
                 $c->make(\Corex\Access\AccessRequestSurfaceState::class),
+                $c->make(\Corex\Access\RequestableAbilities::class),
             ),
         );
         $this->container->singleton(\Corex\Config\Access\AccessRequestFormController::class);
@@ -385,21 +414,24 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(JobRunner::class);
         $this->container->singleton(JobController::class);
 
-        // The Overview dashboard renderer (spec 064): the single cohesive readiness grid built from real
-        // state. Optional forms/provisioning deps resolve lazily via the container (Principle IX).
+        // The Overview (spec 064, cards since spec 118): each card reads its own facts and is drawn on
+        // its own. Optional forms/provisioning deps resolve lazily inside the cards (Principle IX).
+        // Built when the Overview is drawn, so a card that cannot even be built fails as its card.
         $this->container->singleton(
             \Corex\Config\Overview\OverviewRenderer::class,
             static fn (ContainerInterface $c): \Corex\Config\Overview\OverviewRenderer => new \Corex\Config\Overview\OverviewRenderer(
-                new \Corex\Config\Overview\OverviewModel(),
                 $c->make(\Corex\Config\Operations\OperationsMode::class),
                 $c->make(\Corex\Config\Operations\OperationsModeStore::class),
-                $c->make(\Corex\Config\ControlPanel\ControlPanelStatus::class),
-                $c->make(\Corex\Config\Security\HardeningChecks::class),
-                $c->make(\Corex\Config\Data\SubmissionsReader::class),
-                $c->make(\Corex\Config\Data\DataRegistry::class),
-                $c->make(\Corex\Config\Addons\AddonRegistry::class),
-                $c,
-                $c->make(\Corex\Multisite\PluginActivationInspector::class),
+                $c->make(\Corex\Config\Overview\OverviewCardFailure::class),
+                [
+                    'tiles'        => $c->make(\Corex\Config\Overview\Cards\TilesCard::class),
+                    'readiness'    => $c->make(\Corex\Config\Overview\Cards\ReadinessCard::class),
+                    'forms'        => $c->make(\Corex\Config\Overview\Cards\FormsCard::class),
+                    'data'         => $c->make(\Corex\Config\Overview\Cards\DataSourcesCard::class),
+                    'attention'    => $c->make(\Corex\Config\Overview\Cards\AttentionCard::class),
+                    'integrations' => $c->make(\Corex\Config\Overview\Cards\IntegrationsCard::class),
+                    'activity'     => $c->make(\Corex\Config\Overview\Cards\ActivityCard::class),
+                ],
             ),
         );
 
@@ -409,7 +441,10 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(
             \Corex\Config\Operations\OperationsModeStore::class,
             static fn (ContainerInterface $c): \Corex\Config\Operations\OperationsModeStore =>
-                new \Corex\Config\Operations\OperationsModeStore($c->make(\Corex\Config\Operations\OperationsMode::class)),
+                new \Corex\Config\Operations\OperationsModeStore(
+                    $c->make(\Corex\Config\Operations\OperationsMode::class),
+                    $c->make(\Corex\Environment\SiteEnvironment::class),
+                ),
         );
         $this->container->singleton(\Corex\Config\Security\HardeningChecks::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionReadinessSnapshotFactory::class);
@@ -466,14 +501,21 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Http\ClientAddress::class,
             \Corex\Config\Security\LoginProtection\TrustedProxyClientAddress::class,
         );
+        // The wp-config break-glass. Fixed before WordPress loads, so reading it once here is safe;
+        // the guard acts on it and the Security Center says it is on (spec 112).
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginRecovery::class,
+            static fn (): \Corex\Config\Security\LoginProtection\LoginRecovery =>
+                new \Corex\Config\Security\LoginProtection\LoginRecovery(
+                    defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
+                ),
+        );
         $this->container->singleton(
             \Corex\Config\Security\LoginProtection\LoginRouteGuard::class,
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\LoginRouteGuard =>
                 new \Corex\Config\Security\LoginProtection\LoginRouteGuard(
                     $c->make(\Corex\Config\Security\LoginProtection\LoginProtectionSettings::class),
-                    // The wp-config break-glass. Fixed before WordPress loads, so reading it once here
-                    // is safe, and injecting it keeps the recovery path testable.
-                    defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
+                    $c->make(\Corex\Config\Security\LoginProtection\LoginRecovery::class)->active(),
                 ),
         );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class);
@@ -496,6 +538,15 @@ final class ConfigServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(AdminDashboard::class);
+        // The Settings pages and what they read and write (spec 119): one of each per request, so
+        // a page, its save and the provider states all read the same answers.
+        $this->container->singleton(\Corex\Config\Settings\SettingsPages::class);
+        $this->container->singleton(\Corex\Config\Settings\SettingsSectionStates::class);
+        $this->container->singleton(\Corex\Config\Settings\SettingsFieldValues::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderSetup::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestLog::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestService::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestController::class);
         $this->container->singleton(AddonsScreen::class);
 
         // Forms & Flows client mount; runtime activation remains dependency-gated.
@@ -563,7 +614,19 @@ final class ConfigServiceProvider extends ServiceProvider
             return $registry;
         });
         $this->container->singleton(DataAccessPolicy::class, static fn (): WpDataAccessPolicy => new WpDataAccessPolicy());
-        $this->container->singleton(DataSourceService::class);
+        // The Data screen records a refused security model in the access audit (spec 112, FR-031).
+        $this->container->singleton(
+            \Corex\Access\AccessRefusalRecorder::class,
+            static fn (ContainerInterface $c): \Corex\Config\Access\AccessAuditLog => $c->make(\Corex\Config\Access\AccessAuditLog::class),
+        );
+        $this->container->singleton(
+            DataSourceService::class,
+            static fn (ContainerInterface $c): DataSourceService => new DataSourceService(
+                $c->make(DataRegistry::class),
+                $c->make(DataAccessPolicy::class),
+                $c->make(\Corex\Access\AccessRefusalRecorder::class),
+            ),
+        );
         $this->container->singleton(DataQueryService::class);
         $this->container->singleton(WpDataMutationPreviewStore::class);
         $this->container->singleton(
@@ -671,6 +734,7 @@ final class ConfigServiceProvider extends ServiceProvider
 
                 return $user instanceof \WP_User && $user->display_name !== '' ? $user->display_name : '#' . $userId;
             },
+            $c->make(ReleaseCaller::class)->applicationPassword(...),
         ));
         $this->container->singleton(ReleaseFinisher::class);
         $this->container->singleton(ReleaseInstallation::class, static fn (ContainerInterface $c): ReleaseInstallation => new ReleaseInstallation(
@@ -687,6 +751,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(ReleaseUpkeep::class);
         $this->container->singleton(ReleaseLeftovers::class);
         $this->container->singleton(ReleaseOverview::class);
+        $this->container->singleton(ReleaseCaller::class, static fn (): ReleaseCaller => ReleaseCaller::ofThisSite());
         $this->container->singleton(ReleaseRestGateway::class);
         $this->container->singleton(ReleasesController::class);
         $this->container->singleton(ReleasesScreen::class);
@@ -694,7 +759,10 @@ final class ConfigServiceProvider extends ServiceProvider
         // Insights: the provider registry (Performance over PSI + Readiness over native signals
         // and an optional Cloudflare scan), the cache, the REST controller, and the screen (spec
         // 037). Secrets come from config (settings/.env) and are never returned in a response.
-        $this->container->singleton(InsightStore::class);
+        $this->container->singleton(
+            InsightStore::class,
+            static fn (): InsightStore => new InsightStore(\Corex\Config\Insights\InsightFailure::inSiteLanguage()),
+        );
         $this->container->singleton(InsightRegistry::class, function (ContainerInterface $c): InsightRegistry {
             $config   = $c->make(ConfigInterface::class);
             $registry = new InsightRegistry();
@@ -721,6 +789,11 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(OperationsModeStore::class),
                 $c->make(SubmissionsReader::class),
                 $c,
+                $c->make(\Corex\Config\Operations\OperationsMode::class),
+                $c->make(\Corex\Config\Activity\SecurityEventsSince::class),
+                $c->make(\Corex\Config\Activity\ActivitySentences::class),
+                $c->make(\Corex\Support\DateTime\AdminDateTime::class),
+                environment: $c->make(\Corex\Environment\SiteEnvironment::class),
             ));
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>
             new InsightsController(
@@ -820,7 +893,22 @@ final class ConfigServiceProvider extends ServiceProvider
             SubmissionEmailGateway::class,
             static fn (): UnavailableSubmissionEmailGateway => new UnavailableSubmissionEmailGateway(),
         );
-        $this->container->singleton(SubmissionEmailService::class);
+        $this->container->singleton(
+            SubmissionEmailService::class,
+            static fn (ContainerInterface $c): SubmissionEmailService => new SubmissionEmailService(
+                $c->make(SubmissionWorkflowStore::class),
+                $c->make(SubmissionEmailGateway::class),
+                $c->make(SubmissionTimelineStore::class),
+                $c->make(\Corex\Config\Submissions\SubmissionReplyStore::class),
+                $c->make(\Corex\Config\Submissions\SubmissionReplyDraftStore::class),
+                $c->make(\Corex\Config\Submissions\SubmissionConversation::class),
+                // The forms plugin works out a flow email's recipients again, for an email sent
+                // before they were recorded (spec 112). Without it such an email is not resent.
+                $c->has(\Corex\Mail\SubmissionEmailRecipients::class)
+                    ? $c->make(\Corex\Mail\SubmissionEmailRecipients::class)
+                    : null,
+            ),
+        );
         $this->container->singleton(WpSubmissionBulkPreviewStore::class);
         $this->container->singleton(
             SubmissionBulkPreviewStore::class,
@@ -1076,6 +1164,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Admin\AdminPage::class),
                 $c->make(\Corex\Config\Email\TransportAdvisory::class),
                 $c->make(\Corex\Multisite\PluginActivationInspector::class),
+                $c->make(\Corex\Access\SiteAdministration::class),
             ),
         );
     }
@@ -1124,6 +1213,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
         $this->container->make(\Corex\Config\Notifications\NotificationToolbar::class)->register();
         $this->container->make(\Corex\Config\Retention\RetentionScheduler::class)->register();
+        $this->container->make(\Corex\Config\Access\AccessGrantScheduler::class)->register();
         // On every request, cron and command line included: that is where a submission is deleted
         // by something other than the inbox.
         $this->container->make(\Corex\Config\Submissions\SubmissionDeletionGuard::class)->register();
@@ -1178,6 +1268,8 @@ final class ConfigServiceProvider extends ServiceProvider
         // first among them. They are printed under the page header instead.
         $this->container->make(ScreenNotices::class)->register();
         $this->container->make(AdminDashboard::class)->register();
+        $this->container->make(\Corex\Config\Settings\ProviderTestController::class)->register();
+        $this->container->make(\Corex\Config\Settings\ProviderTestService::class)->listen();
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();
         $this->container->make(SubmissionsInboxScreen::class)->register();
@@ -1186,6 +1278,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\DataModels\DataModelsImportController::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(\Corex\Config\Access\AccessAuditLog::class)->register();
+        // Spec 114: mode changes, counted refusals and lockouts reach the activity log.
+        $this->container->make(\Corex\Config\Activity\SecurityActivityRecorder::class)->register();
         $this->container->make(\Corex\Config\Access\AccessDeniedGate::class)->register();
         // Registered after the gate so that, on a CoreX page, the gate's richer surface — which has
         // the access-request form in it — is the one that answers. Everywhere else this catches the
@@ -1206,6 +1300,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
+        $this->container->make(\Corex\Config\Operations\MaintenanceSubmissionGuard::class)->register();
         // The default page is registered in every mode, so it can be designed in the Site Editor
         // before the site is put into Coming soon. The guard acts only while it is.
         $this->container->make(\Corex\Config\Operations\ComingSoonTemplate::class)->register();
@@ -1222,7 +1317,6 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Notifications\NotificationsScreen::class)->register();
         $this->container->make(ReleasesScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
-        $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 
         add_action('rest_api_init', function (): void {
             $this->container->make(ActivityController::class)->register();
@@ -1233,6 +1327,8 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
             $this->container->make(\Corex\Config\Notifications\NotificationController::class)->register();
+            // The one launch checklist, for the Setup Wizard's launch step (spec 118).
+            $this->container->make(\Corex\Config\Readiness\ReadinessController::class)->register();
         });
     }
 
@@ -1246,6 +1342,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $registry = $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class);
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\SubmissionNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\AccessRequestNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\AccessGrantEndedNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\JobFailureNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ExportReadyNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\LoginLockoutNotificationProducer::class));

@@ -313,6 +313,23 @@
 		return data;
 	}
 
+	/**
+	 * Tells the rest of the page that the form was answered, in the events CoreX forms send: the
+	 * captcha provider's script resets its check on either, since a token is spent by one request
+	 * (spec 115).
+	 *
+	 * @param {HTMLFormElement}                form The form that was sent.
+	 * @param {{ok: boolean, message: string}} out  What the server answered.
+	 */
+	function answered( form, out ) {
+		form.dispatchEvent(
+			new window.CustomEvent(
+				out.ok ? 'corex:form:success' : 'corex:form:error',
+				{ detail: { envelope: out } }
+			)
+		);
+	}
+
 	function onSubmit( form, token ) {
 		form.addEventListener( 'submit', function ( event ) {
 			event.preventDefault();
@@ -324,6 +341,7 @@
 			clearMessages();
 			post( path, serialize( form ), token ).then( function ( out ) {
 				answer( form, out );
+				answered( form, out );
 				if ( out.ok && kind === 'profile' ) {
 					loadLists( token );
 				}

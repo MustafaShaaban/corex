@@ -12,6 +12,7 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
 use Corex\Tests\Support\ThemeContract;
 
 /** @return array<int, string> */
@@ -46,10 +47,23 @@ it('escapes every dynamic value in the section patterns', function () {
     foreach (corexSectionPatterns() as $pattern) {
         $php = (string) file_get_contents(ThemeContract::root() . "/theme/patterns/section-{$pattern}.php");
 
-        // Every `echo` in the pattern body goes through an escaping function.
+        // Every `echo` in the pattern body goes through an escaping function, or through one of the theme's
+        // pattern-link helpers, which escape what they return (proven by the test below).
         preg_match_all('/echo\s+([^;]+);/', $php, $matches);
         foreach ($matches[1] as $expression) {
-            expect($expression)->toMatch('/esc_html|esc_attr|esc_url/');
+            expect($expression)->toMatch('/esc_html|esc_attr|esc_url|corex_pattern_(anchor|link|contact)\(/');
         }
     }
+});
+
+it('escapes the label and the address in the pattern-link helpers', function () {
+    require_once ThemeContract::root() . '/theme/inc/pattern-links.php';
+    Functions\when('esc_html')->alias(static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES));
+    Functions\expect('esc_url')->once()->with('https://site.test/about/')->andReturn('ESCAPED-URL');
+    Functions\when('get_page_by_path')->justReturn(null);
+
+    expect(corex_pattern_anchor('https://site.test/about/', '<b>About</b>'))
+        ->toBe('<a href="ESCAPED-URL">&lt;b&gt;About&lt;/b&gt;</a>')
+        // A page that is not published leaves the label as escaped text, with no link.
+        ->and(corex_pattern_link('about', '<b>About</b>'))->toBe('&lt;b&gt;About&lt;/b&gt;');
 });

@@ -65,7 +65,7 @@ final readonly class DataRestGateway
     {
         try {
             return $handler($request);
-        } catch (PersonalDataNotAllowed $exception) {
+        } catch (PersonalDataNotAllowed|DataAccessRestricted $exception) {
             return Response::reject($exception->getMessage(), 403);
         } catch (DomainException $exception) {
             $message = strtolower($exception->getMessage());

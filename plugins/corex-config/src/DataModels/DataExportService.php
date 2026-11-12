@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
 
+use Corex\Config\Data\DataAccessRestricted;
 use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataQueryService;
 use Corex\Config\Data\DataSourceService;
@@ -45,19 +46,27 @@ final readonly class DataExportService
      * One export of several models, every record of each (spec 109, slice 2).
      *
      * A model that holds no records, or of which this person may export no column, is left out
-     * of the run; an export in which that is every model makes no file.
+     * of the run; an export in which that is every model makes no file. A model that belongs to a
+     * screen this person may not open is kept in the run as left out, with why, and never read
+     * (spec 112, FR-030); an export of nothing but such models is refused, naming them.
      */
     public function requestSeveral(DataExportSetRequest $request): DataExportRun
     {
-        $parts = [];
+        $parts    = [];
+        $readable = 0;
         foreach ($request->parts as $asked) {
-            $part = $this->partOf($request, $asked['source'], $asked['columns']);
+            $part = $this->sources->withheldFrom($request->actorId, $asked['source']) === null
+                ? $this->partOf($request, $asked['source'], $asked['columns'])
+                : $this->withheld($request->actorId, $asked['source']);
             if ($part !== null) {
-                $parts[] = $part;
+                $parts[]   = $part;
+                $readable += $part->leftOut ? 0 : 1;
             }
         }
-        if ($parts === []) {
-            throw new DomainException('There is nothing to export.');
+        if ($readable === 0) {
+            throw $parts === []
+                ? new DomainException('There is nothing to export.')
+                : DataAccessRestricted::forEveryModelOf(array_map(static fn (DataExportPart $part): string => $part->label, $parts));
         }
         $run = DataExportRun::queuedSeveral($request, $parts);
         $this->assertMayTakeOut($request->actorId, $run->personalDataClasses, $request->personalDataAcknowledged);
@@ -142,6 +151,15 @@ final readonly class DataExportService
             || ($sourceKey !== '' && ! $run->holds($sourceKey))) {
             throw new DomainException('The data export artifact is unavailable.');
         }
+        // An export made before a model was restricted, or before this person lost the ability
+        // its records need, is not handed out again (spec 112).
+        foreach ($run->parts as $part) {
+            if (! $part->leftOut && $this->sources->withheldFrom($actorId, $part->sourceKey) !== null) {
+                $this->sources->noteWithheld($actorId, $part->sourceKey);
+
+                throw DataAccessRestricted::forModel();
+            }
+        }
 
         $file = $this->exports->file($runId);
         // Named for what it holds: the model, or how many models.
@@ -188,6 +206,14 @@ final readonly class DataExportService
         }
 
         return $source;
+    }
+
+    /** A model this person may not read, kept in the run as left out; the refusal is recorded. */
+    private function withheld(int $actorId, string $sourceKey): DataExportPart
+    {
+        $this->sources->noteWithheld($actorId, $sourceKey);
+
+        return DataExportPart::restricted($sourceKey, $this->sources->label($sourceKey));
     }
 
     /**

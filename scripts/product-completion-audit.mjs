@@ -27,13 +27,22 @@ const rules = [
 		id: 'read-only-surface',
 		pattern: /\bread-only (?:surface|inventory)\b/i,
 	},
-	{ id: 'coming-soon', pattern: /\bcoming soon\b/i },
+	// A feature promised for later: "(coming soon)", "is coming soon", "features coming soon". Not
+	// the name of the Coming soon operations mode (spec 101), a shipped feature written as a name:
+	// "the site is in Coming soon", "while the mode is Coming soon".
+	{
+		id: 'coming-soon',
+		pattern:
+			/(?:[(—–-]\s*|(?<!mode )\b(?:is|are) |\b(?:features?|support) )coming soon\b/i,
+	},
 ];
 
 const ignoredPath = ( file ) => {
 	const normalized = file.replaceAll( '\\', '/' );
 	return (
 		normalized.startsWith( 'specs/' ) ||
+		// Tests describe the copy they forbid; they are not a shipped surface.
+		/(^|\/)__tests__(\/|$)/.test( normalized ) ||
 		/(^|\/)(?:build|dist|node_modules|vendor|wp|test-results)(?:\/|$)/.test(
 			normalized
 		) ||

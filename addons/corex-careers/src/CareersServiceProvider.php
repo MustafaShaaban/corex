@@ -12,7 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockMap;
 use Corex\Blocks\DynamicBlockRegistrar;
-use Corex\Captcha\Captcha;
+use Corex\Security\FormChallenge;
 use Corex\Careers\Application\ApplicationRepository;
 use Corex\Careers\Application\ApplicationService;
 use Corex\Careers\Application\ApplicationStore;
@@ -28,6 +28,7 @@ use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaRegistry;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
+use Corex\Http\PublicSubmission;
 use Corex\Mail\Mailer;
 use Corex\Security\Upload\AttachmentStore;
 use Corex\Security\Upload\UploadValidator;
@@ -46,6 +47,9 @@ use WP_REST_Response;
  */
 final class CareersServiceProvider extends ServiceProvider
 {
+    /** The action the captcha token of a job application is asked for and judged against (spec 115). */
+    public const APPLY_ACTION = 'corex_job_application';
+
     private const SCHEMA_OPTION = 'corex_careers_schema_version';
     private const SCHEMA_VERSION = '1';
 
@@ -141,6 +145,8 @@ final class CareersServiceProvider extends ServiceProvider
             'methods'             => 'POST',
             'permission_callback' => '__return_true', // public; honeypot + captcha gate it
             'callback'            => [$this, 'apply'],
+            // Closed while the site is in Maintenance (spec 112).
+            PublicSubmission::MARKER => true,
         ]);
     }
 
@@ -150,9 +156,11 @@ final class CareersServiceProvider extends ServiceProvider
             return new WP_REST_Response(['ok' => false], 422);
         }
 
-        if ($this->container->has(Captcha::class)
-            && ! $this->container->make(Captcha::class)->verify((string) $request['captcha_token'])) {
-            return new WP_REST_Response(['ok' => false, 'error' => 'captcha'], 422);
+        // With a captcha provider on, nothing is stored or sent without its check (spec 115).
+        $refusal = $this->container->make(FormChallenge::class)
+            ->refusal((string) $request['captcha_token'], self::APPLY_ACTION);
+        if ($refusal !== null) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'captcha', 'message' => $refusal], 422);
         }
 
         $fields = [

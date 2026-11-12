@@ -523,6 +523,90 @@ describe( 'what each release says to a client site', () => {
 
 		expect( says && ! unreleased.body.includes( HEADING ) ).toBe( false );
 	} );
+
+	/**
+	 * A heading proves somebody wrote under it, not that they thought of each site (spec 116,
+	 * US-NFR-08). "Client impact: none" reads the same whether every site was considered or none
+	 * was, so from the release after 0.47.0 the section names each running client site, or says
+	 * in one sentence that none is affected.
+	 */
+	const CLIENT_SITES = [ 'Muva', 'Perego', 'Mizzey' ];
+	const NONE_AFFECTED = /no client site is affected/i;
+	const LAST_RELEASE_BEFORE_THE_RULE = [ 0, 47, 0 ];
+
+	const clientImpactOf = ( body ) => {
+		const start = body.indexOf( HEADING );
+
+		if ( start === -1 ) {
+			return null;
+		}
+
+		const after = body.slice( start + HEADING.length );
+		const next = after.search( /^###? /m );
+
+		return next === -1 ? after : after.slice( 0, next );
+	};
+
+	const isAfterTheRule = ( name ) => {
+		if ( name === 'Unreleased' ) {
+			return true;
+		}
+
+		const version = name.split( '.' ).map( Number );
+
+		for ( let part = 0; part < version.length; part++ ) {
+			if ( version[ part ] !== LAST_RELEASE_BEFORE_THE_RULE[ part ] ) {
+				return version[ part ] > LAST_RELEASE_BEFORE_THE_RULE[ part ];
+			}
+		}
+
+		return false;
+	};
+
+	const sitesNotNamed = ( impact ) =>
+		NONE_AFFECTED.test( impact )
+			? []
+			: CLIENT_SITES.filter( ( site ) => ! impact.includes( site ) );
+
+	it( 'names Muva, Perego and Mizzey in every Client impact section after 0.47.0', () => {
+		const unnamed = sections
+			.filter( ( { name } ) => isAfterTheRule( name ) )
+			.map( ( { name, body } ) => ( {
+				name,
+				impact: clientImpactOf( body ),
+			} ) )
+			.filter( ( { impact } ) => impact !== null )
+			.map( ( { name, impact } ) => ( {
+				name,
+				missing: sitesNotNamed( impact ),
+			} ) )
+			.filter( ( { missing } ) => missing.length > 0 )
+			.map(
+				( { name, missing } ) =>
+					`[${ name }] Client impact does not name ${ missing.join(
+						', '
+					) }`
+			);
+
+		expect( unnamed ).toEqual( [] );
+	} );
+
+	it( 'reads a Client impact section that names nobody as a failure', () => {
+		expect( isAfterTheRule( '0.47.0' ) ).toBe( false );
+		expect( isAfterTheRule( '0.47.1' ) ).toBe( true );
+		expect( sitesNotNamed( '\n- Nothing changes.\n' ) ).toEqual(
+			CLIENT_SITES
+		);
+		expect(
+			sitesNotNamed( '\n- **Muva**: nothing changes. **Perego**: ...\n' )
+		).toEqual( [ 'Mizzey' ] );
+		expect(
+			sitesNotNamed( '\nNo client site is affected: tests only.\n' )
+		).toEqual( [] );
+		expect(
+			clientImpactOf( '### Client impact\n\nMuva\n\n## next' )
+		).toContain( 'Muva' );
+	} );
 } );
 
 /**

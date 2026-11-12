@@ -183,3 +183,60 @@ it( 'leaves a form with no token field alone', async () => {
 	expect( executeCalls ).toHaveLength( 0 );
 	expect( submitted.defaultPrevented ).toBe( false );
 } );
+
+describe( 'a form an add-on draws (spec 115)', () => {
+	function mountAccount( declared ) {
+		document.body.innerHTML = `
+			<form class="corex-account__form"${ declared ? ' data-corex-captcha' : '' }>
+				<input type="hidden" name="captcha_token" value="" data-corex-captcha-action="corex_register" />
+				<button type="submit">Create account</button>
+				<p class="corex-account__status" data-corex-captcha-message></p>
+			</form>
+		`;
+		return document.querySelector( 'form' );
+	}
+
+	it( 'fetches a token for the form’s own action when it declares itself protected', async () => {
+		const form = mountAccount( true );
+		loadScript();
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+
+		expect( executeCalls ).toEqual( [ 'corex_register' ] );
+		expect(
+			form.querySelector( 'input[name="captcha_token"]' ).value
+		).toBe( 'fresh-token-1' );
+	} );
+
+	it( 'leaves alone a form that is neither a CoreX form nor declared', async () => {
+		const form = mountAccount( false );
+		loadScript();
+
+		const event = new Event( 'submit', { cancelable: true } );
+		form.dispatchEvent( event );
+		await flush();
+
+		expect( event.defaultPrevented ).toBe( false );
+		expect( executeCalls ).toEqual( [] );
+	} );
+
+	it( 'says the check failed on the form’s own message line when the provider cannot be reached', async () => {
+		const form = mountAccount( true );
+		window.corexCaptchaV3 = {
+			siteKey: 'site-key',
+			i18n: { error: 'The check failed. Try again.' },
+		};
+		window.grecaptcha.execute = jest.fn( () =>
+			Promise.reject( new Error( 'offline' ) )
+		);
+		loadScript();
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+
+		expect(
+			form.querySelector( '[data-corex-captcha-message]' ).textContent
+		).toBe( 'The check failed. Try again.' );
+	} );
+} );

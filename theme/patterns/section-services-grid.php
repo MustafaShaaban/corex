@@ -4,12 +4,14 @@
  * Title: Services — Grid
  * Slug: corex/section-services-grid
  * Categories: corex
- * Description: A section header and a responsive three-column grid of service cards — each with a title, description, and a link. Built on core blocks and CoreX brand tokens; neutral placeholder content.
+ * Description: A section header and a responsive three-column grid of service cards — each with a title, a description, and a link to the site's Services page when it has one. Built on core blocks and CoreX brand tokens; neutral placeholder content.
  *
  * @package Corex
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"section","className":"corex-services","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|70","bottom":"var:preset|spacing|70"},"blockGap":"var:preset|spacing|50"}}} -->
 <section class="wp-block-group corex-services" style="padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)">
@@ -35,6 +37,9 @@ defined('ABSPATH') || exit;
 			[ __('Design', 'corex'), __('Accessible, on-brand interfaces that work in light, dark, and RTL.', 'corex') ],
 			[ __('Delivery', 'corex'), __('Build and ship with tested, maintainable, standards-based code.', 'corex') ],
 		];
+		// Each card links to the published Services page; with none, or on that page itself, the link is
+		// left out.
+		$corex_services_url = is_page('services') ? '' : corex_pattern_page_url('services');
 		foreach ($cards as $card) :
 			?>
 		<!-- wp:column {"className":"corex-service-card","style":{"spacing":{"padding":{"top":"var:preset|spacing|40","bottom":"var:preset|spacing|40","left":"var:preset|spacing|40","right":"var:preset|spacing|40"}},"border":{"radius":"var:custom|radius|md","width":"var:custom|border|width|thin"}},"borderColor":"border","backgroundColor":"surface-alt"} -->
@@ -45,9 +50,11 @@ defined('ABSPATH') || exit;
 			<!-- wp:paragraph {"textColor":"ink-soft"} -->
 			<p class="has-ink-soft-color has-text-color"><?php echo esc_html($card[1]); ?></p>
 			<!-- /wp:paragraph -->
+			<?php if ($corex_services_url !== '') : ?>
 			<!-- wp:paragraph -->
-			<p><a href="#"><?php echo esc_html__('Learn more', 'corex'); ?></a></p>
+			<p><a href="<?php echo esc_url($corex_services_url); ?>"><?php echo esc_html__('Learn more', 'corex'); ?></a></p>
 			<!-- /wp:paragraph -->
+			<?php endif; ?>
 		</div>
 		<!-- /wp:column -->
 		<?php endforeach; ?>

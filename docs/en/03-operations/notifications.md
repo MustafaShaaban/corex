@@ -90,6 +90,7 @@ present simply produces nothing. The shipped producers are:
 | Submission notification email failed | `submission.email_failed` | Submissions managers |
 | Submission assigned to a person | `submission.assigned` | The assignee |
 | Access request filed | `access.request` | Access managers |
+| Access granted by approval ended at its expiry | `access.grant.expired` | The person, and the administrator who approved it |
 | Background job failed | `job.failed` | Operations managers |
 | Export finished | `export.ready` | The person who ran it |
 | Sign-in lockout triggered | `security.lockout` (merged per identity) | Operations managers |
@@ -98,6 +99,16 @@ present simply produces nothing. The shipped producers are:
 
 Repeated occurrences of the same condition merge into one growing notification (an occurrence count) rather than a
 flood. Condition-based notifications — a readiness blocker, a lockout — clear themselves when the condition ends.
+
+A readiness blocker is raised once, when the check starts to fail, and resolved when it passes. Opening the screens
+that show the launch checklist does not raise it again or add to its count; it is raised again only if the check
+fails again later.
+
+Unread **Export finished** and **Background job failed** notifications of the same kind of job are shown as one item,
+"3 exports finished", with the time of the latest and each member listed with its own link. The bell and the
+Overview count the group once, and marking it read, dismissing it or resolving it applies to every member. Grouping
+is a way of showing: each notification is still stored and kept on its own. A notification that asks for a decision
+(an access request, an assignment, a failed email to a person, a readiness blocker) is never grouped.
 
 ### New submissions, for both kinds of form
 
@@ -167,7 +178,8 @@ summary of three things, each a navigation-only link into CoreX — never an act
 
 - **Site state** — the current operating mode.
 - **Attention** — your unread notification count.
-- **Readiness** — the number of blocking readiness checks.
+- **Readiness** — the launch checklist's "N of M ready", what still blocks going live, and each check that is not
+  ready, by name and in words, linked to its fix.
 
 It runs only local checks: rendering the widget never makes an outbound network request.
 

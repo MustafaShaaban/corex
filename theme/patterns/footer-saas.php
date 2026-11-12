@@ -5,12 +5,14 @@
  * Slug: corex/footer-saas
  * Categories: corex, footer
  * Block Types: core/template-part/footer
- * Description: A product footer — Product, Company, and Resources link columns plus social links, then a legal/utility row.
+ * Description: A product footer — Product, Company, and Resources link columns plus the brand settings' social links, then a legal/utility row.
  *
  * @package Corex
  */
 
 defined('ABSPATH') || exit;
+
+require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"footer","className":"corex-footer corex-footer--saas","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|50"},"blockGap":"var:preset|spacing|50"}}} -->
 <footer class="wp-block-group corex-footer corex-footer--saas" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)">
@@ -23,9 +25,9 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Features', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Pricing', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Changelog', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('features', __('Features', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('pricing', __('Pricing', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('changelog', __('Changelog', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>
@@ -38,8 +40,8 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('About', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Blog', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('about', __('About', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_anchor(corex_pattern_posts_url(), __('Blog', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>
@@ -52,8 +54,8 @@ defined('ABSPATH') || exit;
 			<!-- /wp:heading -->
 			<!-- wp:list -->
 			<ul class="wp-block-list">
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('Documentation', 'corex'); ?></a></li><!-- /wp:list-item -->
-				<!-- wp:list-item --><li><a href="#"><?php echo esc_html__('API', 'corex'); ?></a></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('docs', __('Documentation', 'corex')); ?></li><!-- /wp:list-item -->
+				<!-- wp:list-item --><li><?php echo corex_pattern_link('api', __('API', 'corex')); ?></li><!-- /wp:list-item -->
 			</ul>
 			<!-- /wp:list -->
 		</div>
@@ -65,10 +67,11 @@ defined('ABSPATH') || exit;
 	<div class="wp-block-group corex-footer__legal">
 		<!-- wp:corex/copyright /-->
 
+		<?php if (corex_pattern_social_links() !== '') : ?>
 		<!-- wp:social-links {"className":"corex-footer__social"} -->
-		<ul class="wp-block-social-links corex-footer__social"><!-- wp:social-link {"url":"#","service":"github"} /-->
-		<!-- wp:social-link {"url":"#","service":"x"} /--></ul>
+		<ul class="wp-block-social-links corex-footer__social"><?php echo corex_pattern_social_links(); ?></ul>
 		<!-- /wp:social-links -->
+		<?php endif; ?>
 	</div>
 	<!-- /wp:group -->
 </footer>

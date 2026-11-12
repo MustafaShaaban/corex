@@ -11,6 +11,7 @@ namespace Corex\Config\Insights\Normalizers;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Insights\InsightResult;
+use Corex\Config\Insights\PsiDiagnostic;
 
 /**
  * Turns a PageSpeed Insights (Lighthouse v5) payload into a scored {@see InsightResult} — purely.
@@ -40,13 +41,12 @@ final class PsiNormalizer
         $rawScore   = $lighthouse['categories']['performance']['score'] ?? null;
 
         if (! is_array($lighthouse) || ! is_numeric($rawScore)) {
-            return new InsightResult(
+            // Not a measurement, so no score (spec 114, US-SAFE-12).
+            return InsightResult::failed(
                 self::PROVIDER,
                 'Performance',
-                50,
-                __('The performance result could not be read.', 'corex'),
-                [],
-                [__('Check the site URL and (optionally) the PageSpeed Insights API key, then run the check again.', 'corex')],
+                PsiDiagnostic::INVALID_RESPONSE,
+                __('PageSpeed answered without a performance result. Run the check again.', 'corex'),
                 $now,
             );
         }

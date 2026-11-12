@@ -5,7 +5,15 @@
 import { withQuery } from '../admin/restAddress.js';
 import { generateUuid } from './uuid.js';
 
-const FLOW_ACTIONS = [ 'preview', 'publish', 'unpublish', 'close', 'test' ];
+const FLOW_ACTIONS = [
+	'preview',
+	'publish',
+	'unpublish',
+	'close',
+	'test',
+	'availability',
+	'routing-preview',
+];
 
 export const initialFlowState = {
 	status: 'idle',
@@ -15,6 +23,8 @@ export const initialFlowState = {
 	flows: [],
 	selected: null,
 	draft: null,
+	// The configuration of the draft as it was loaded, in `stableJson()`, for `isDirty()`.
+	saved: null,
 	extensions: null,
 	testResult: null,
 	message: '',
@@ -49,17 +59,38 @@ export function flowReducer( state, action ) {
 				status: 'ready',
 				selected: action.payload.flow.id,
 				draft: action.payload,
+				saved: stableJson( action.payload.configuration ),
 				message: '',
 			};
 		case 'draft_changed':
 			return { ...state, draft: action.payload, message: '' };
+		// The flow record changed without a new draft version (its availability): the edits on
+		// screen stay as they are.
+		case 'flow_changed':
+			return {
+				...state,
+				status: 'ready',
+				draft: state.draft
+					? { ...state.draft, flow: action.payload }
+					: state.draft,
+				message: action.message || '',
+			};
 		case 'cleared':
 			return {
 				...state,
 				selected: null,
 				draft: null,
+				saved: null,
 				testResult: null,
 				message: '',
+			};
+		// The Teams view changed a team: routing offers the new list without a reload.
+		case 'teams_changed':
+			return {
+				...state,
+				extensions: state.extensions
+					? { ...state.extensions, teams: action.payload }
+					: state.extensions,
 			};
 		case 'mutating':
 			return { ...state, status: 'mutating', message: '' };
@@ -75,6 +106,23 @@ export function flowReducer( state, action ) {
 		default:
 			return state;
 	}
+}
+
+/**
+ * Whether the flow on screen differs from its saved draft (spec 115, FR-022).
+ *
+ * Compared by content, not by identity: an edit undone, an old value typed back, reads as no
+ * change at all.
+ *
+ * @param {Object} state The flow editor's state.
+ * @return {boolean} True while there is something to save.
+ */
+export function isDirty( state ) {
+	return (
+		state.draft !== null &&
+		state.saved !== null &&
+		stableJson( state.draft.configuration ) !== state.saved
+	);
 }
 
 export function addField( draft, type ) {
@@ -150,6 +198,67 @@ export function stageStatus( draft ) {
 	};
 }
 
+/**
+ * What the editor offers to publish (spec 122, US-FLW-01).
+ *
+ * @param {Object} draft The draft on screen: `flow` and the saved `version`.
+ * @return {string} `publish` for a draft, `changes` for a live flow whose saved draft is newer
+ *                  than its live version, `current` for a live flow with nothing new, and ''
+ *                  for a closed or expired flow, which goes back to draft first.
+ */
+export function publishState( draft ) {
+	const flow = draft?.flow || {};
+	if ( flow.state === 'draft' ) {
+		return 'publish';
+	}
+	if ( flow.state !== 'published' ) {
+		return '';
+	}
+	return draft.version?.version_number !== flow.published_version
+		? 'changes'
+		: 'current';
+}
+
+/**
+ * The state the editor header and the list show, from what the flow does now: a published flow
+ * whose dates or cap closed it reads Expired, one not open yet reads Scheduled (spec 122).
+ *
+ * @param {Object} flow A flow from the REST client, with its `status`.
+ * @return {string} `draft`, `published`, `scheduled`, `closed` or `expired`.
+ */
+export function displayState( flow ) {
+	const status = flow?.status?.state;
+	if ( status === 'scheduled' || status === 'expired' ) {
+		return status;
+	}
+	return flow?.state || 'draft';
+}
+
+/**
+ * The address that copies a saved version into the draft (spec 122, FR-005).
+ *
+ * @param {string}        base    The flows route.
+ * @param {number|string} id      The flow.
+ * @param {number}        version The version to copy.
+ * @return {string} The address.
+ */
+export function copyVersionEndpoint( base, id, version ) {
+	return `${ flowEndpoint( base, id ) }/versions/${ encodeURIComponent(
+		version
+	) }/copy`;
+}
+
+/**
+ * The flow an address asks to open (`&corex_flow=12`), as a link from a block's editor note does.
+ *
+ * @param {string} search The page's query string.
+ * @return {number} The flow's id, or 0.
+ */
+export function requestedFlow( search ) {
+	const id = Number( new URLSearchParams( search ).get( 'corex_flow' ) );
+	return Number.isInteger( id ) && id > 0 ? id : 0;
+}
+
 export function flowEndpoint( base, id = '', action = '' ) {
 	if ( action && ! FLOW_ACTIONS.includes( action ) ) {
 		throw new Error( `Unknown flow action: ${ action }` );
@@ -181,8 +290,28 @@ export function draftFromDetail( detail ) {
 				flow: detail.flow,
 				version: current,
 				configuration: current.configuration,
+				// Every saved version, for the Versions tab to open (spec 122, FR-005).
+				versions,
 			}
 		: null;
+}
+
+/**
+ * JSON with every object's keys in order, so two equal values always give the same text.
+ *
+ * @param {unknown} value A JSON-able value.
+ * @return {string} Its JSON.
+ */
+function stableJson( value ) {
+	return JSON.stringify( value, ( key, item ) =>
+		item && typeof item === 'object' && ! Array.isArray( item )
+			? Object.fromEntries(
+					Object.keys( item )
+						.sort()
+						.map( ( name ) => [ name, item[ name ] ] )
+				)
+			: item
+	);
 }
 
 function withSchema( draft, schema ) {
