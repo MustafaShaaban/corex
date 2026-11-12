@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Activity\ActivityEvent;
 use Corex\Config\Access\ScreenNames;
 use Corex\Config\Operations\OperationsMode;
+use Corex\Config\Operations\PageCachePurge;
 
 /**
  * What happened, in a sentence a site owner reads (spec 118, US-OVR-07). The one source of activity
@@ -78,12 +79,7 @@ final class ActivitySentences
                 $who,
             )),
             SecurityActivityRecorder::MODE_CHANGED => $this->said(
-                sprintf(
-                    /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
-                    __('%1$s changed the mode to %2$s', 'corex'),
-                    $who,
-                    $this->modes->describe((string) ($event->context['to'] ?? $event->targetId))['label'],
-                ),
+                $this->modeChanged($event, $who),
                 'admin.php?page=corex-operations-security&tab=environment',
             ),
             SecurityActivityRecorder::ACCESS_DENIED => $this->said(
@@ -163,6 +159,65 @@ final class ActivitySentences
             ActivityEvent::ACTOR_CRON => __('A scheduled task', 'corex'),
             default                   => __('CoreX', 'corex'),
         };
+    }
+
+    /**
+     * A change of mode, and the page caches it cleared (spec 124, FR-004b). A change recorded
+     * before caches were cleared on one has no `page_caches` and reads as it did then.
+     */
+    private function modeChanged(ActivityEvent $event, string $who): string
+    {
+        $mode   = $this->modes->describe((string) ($event->context['to'] ?? $event->targetId))['label'];
+        $caches = $event->context['page_caches'] ?? null;
+
+        if (! is_array($caches)) {
+            /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
+            return sprintf(__('%1$s changed the mode to %2$s', 'corex'), $who, $mode);
+        }
+
+        $cleared = $this->pageCaches($caches['cleared'] ?? []);
+        $failed  = $this->pageCaches($caches['failed'] ?? []);
+
+        return match (true) {
+            $cleared !== '' && $failed !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins cleared, e.g. "WP Rocket". 4: the ones that could not be. */
+                __('%1$s changed the mode to %2$s and cleared the page cache of %3$s. The page cache of %4$s could not be cleared', 'corex'),
+                $who,
+                $mode,
+                $cleared,
+                $failed,
+            ),
+            $cleared !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins cleared, e.g. "WP Rocket and LiteSpeed Cache". */
+                __('%1$s changed the mode to %2$s and cleared the page cache of %3$s', 'corex'),
+                $who,
+                $mode,
+                $cleared,
+            ),
+            $failed !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins that could not be cleared, e.g. "WP Rocket". */
+                __('%1$s changed the mode to %2$s. The page cache of %3$s could not be cleared', 'corex'),
+                $who,
+                $mode,
+                $failed,
+            ),
+            default => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
+                __('%1$s changed the mode to %2$s. There was no page cache to clear', 'corex'),
+                $who,
+                $mode,
+            ),
+        };
+    }
+
+    /** Cache plugins by their product names, as a list in the reader's language; empty for none. */
+    private function pageCaches(mixed $keys): string
+    {
+        $names = is_array($keys)
+            ? array_map(static fn (mixed $key): string => PageCachePurge::label((string) $key), array_values($keys))
+            : [];
+
+        return $names === [] ? '' : wp_sprintf_l('%l', $names);
     }
 
     private function addon(ActivityEvent $event, string $who): string

@@ -15,6 +15,7 @@ use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Config\Access\ScreenNames;
 use Corex\Config\Operations\OperationsMode;
+use Corex\Config\Operations\PageCachePurge;
 use Corex\Events\ListenerProvider;
 use Corex\Security\LoginLockoutEvent;
 use DateTimeImmutable;
@@ -27,7 +28,9 @@ use DateTimeImmutable;
  * that had them. Each now adds one activity event:
  *
  * - `operations.mode.changed` (operations), when the mode store records a real change, from any
- *   route: the screen, the command line, a production launch;
+ *   route: the screen, the command line, a production launch. Since spec 124 (FR-004b) it also
+ *   keeps, as `page_caches`, which page caches the change cleared and which could not be: the
+ *   purge listens to the same change just before this does ({@see PageCachePurge::PRIORITY});
  * - `access.denied` (access), when the access log opens a new counted entry: a page reloaded a
  *   thousand times in an hour is one entry there (spec 112) and one event here;
  * - `security.login.locked` (security), when login protection locks a sign-in out. It keeps when
@@ -59,6 +62,7 @@ final class SecurityActivityRecorder
         private readonly ListenerProvider $listeners,
         private readonly SecurityEventsSince $since,
         private readonly OperationsMode $modes,
+        private readonly PageCachePurge $pageCaches,
     ) {
     }
 
@@ -75,7 +79,13 @@ final class SecurityActivityRecorder
 
     public function modeChanged(string $from, string $to, int $userId): void
     {
-        $this->write($userId, self::MODE_CHANGED, ['mode', $to, $this->modeLabel($to)], ['from' => $from, 'to' => $to]);
+        $context  = ['from' => $from, 'to' => $to];
+        $clearing = $this->pageCaches->lastClearing();
+        if ($clearing !== null) {
+            $context['page_caches'] = $clearing;
+        }
+
+        $this->write($userId, self::MODE_CHANGED, ['mode', $to, $this->modeLabel($to)], $context);
     }
 
     /** The access log's new entry: recorded as it is opened, in the request that was refused. */

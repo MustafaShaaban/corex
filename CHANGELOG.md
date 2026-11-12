@@ -6,7 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #520 to #526).
+Modes that do what they say (spec 124, revamp release R3.8, slices 1 and 2; DECISIONS #520 to #526, #625).
 
 ### Added
 
@@ -21,6 +21,19 @@ Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #
   offered in the mode chooser until the mode cards are drawn (slice 8). The Assistant's chat
   (`POST corex/v1/assistant`) is no longer a public submission: it keeps its token and limits and answers in
   Forms paused and Maintenance; only its hand-off is refused (DECISIONS #522).
+- **Development and Staging keep search engines out** (spec 124, FR-002). In either mode, declared or inherited from
+  WordPress's environment type, every front-end response (pages, feeds, sitemaps, 404s) carries a robots `noindex`
+  in the page and an `X-Robots-Tag: noindex` header (`Corex\Config\Operations\ModeRobots`, on `wp_robots` and
+  `wp_headers`). Production, Coming soon, Forms paused and Maintenance add neither. Settings > Reading
+  (`blog_public`) is never written, so going live removes the `noindex` with no other step.
+- **A mode change clears page caches** (spec 124, FR-004b, DECISIONS #524). Every change of mode, from the screen,
+  the command line or a launch, asks each active page-cache plugin to clear its pages through its own purge:
+  WP Rocket (`rocket_clean_domain()`), W3 Total Cache (`w3tc_flush_posts()`), LiteSpeed Cache
+  (`do_action('litespeed_purge', '*')`), WP Super Cache (`wp_cache_clear_cache()`, this site only on a network),
+  WP Fastest Cache (`wpfc_clear_all_cache()`) and SiteGround Optimizer (`sg_cachepress_purge_cache()`); none of them
+  flushes an object cache (`Corex\Config\Operations\PageCachePurge`). CoreX keeps no page cache of its own.
+  Cloudflare's plugin offers no purge CoreX can call and is not cleared. The activity log's mode-changed event
+  says which caches were cleared and which could not be; a purge that fails never fails or undoes the change.
 
 ### Client impact
 
@@ -33,6 +46,15 @@ Modes that do what they say (spec 124, revamp release R3.8, slice 1; DECISIONS #
   (both modes; the chat route is no longer one they close), and `MaintenanceDecisionTest`, `MaintenanceGuardTest`
   and `MaintenanceModeTest` (`MaintenanceDecision` now takes `Corex\Http\PublicSubmissionPause`), plus
   `OperationsModeTest` and `ModeCommandTest` (the mode order).
+- **Muva and Perego, before taking this release** (DECISIONS #526): read `corex_operations_mode` on the live site
+  (`wp option get corex_operations_mode`, or the mode shown on Operations & Security). A live site stored as
+  `development` or `staging`, or with no mode stored on a host whose WordPress environment type is `staging`,
+  `development` or `local`, answers every page with `noindex` after the update and leaves search results. Set it to
+  Production first. On a staging copy that is the intended result.
+- **Muva and Perego, after taking it**: a mode change now clears the page cache of WP Rocket, W3 Total Cache,
+  LiteSpeed Cache, WP Super Cache, WP Fastest Cache or SiteGround Optimizer when one is active (DECISIONS #625). A
+  client repository that carries copies of CoreX's tests takes `ActivitySentencesTest` (the mode-changed sentence
+  can now say what was cleared).
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves.
 
 Flows that stay live and route to people (spec 122, revamp release R3.9, DECISIONS #470 to #479).

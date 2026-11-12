@@ -20567,3 +20567,32 @@ questions still come after the spec. *Dropping the spec file for GitHub issues*,
 would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
 in-app agents already carry a model and effort each, and their results come back to the session that checks
 them.
+
+## #625 -- How Development and Staging say noindex, and which page caches a mode change clears
+
+**Date:** 2026-11-12. **Spec:** 124, slice 2 (FR-002, FR-004b). **Branch:** `spec/124-slice-2-noindex-and-caches`.
+**Decided:** under the owner's delegation of the revamp.
+
+**The header goes through `wp_headers`.** WordPress applies it in `WP::send_headers()` to every request answered by
+its front-end pipeline: pages, feeds, sitemaps, `robots.txt` and 404s. The admin (behind a sign-in) and the REST API
+(JSON for scripts, not a page a search engine is sent to) do not pass through it, and are left out on purpose. A
+header already set keeps its value and gets `, noindex` once. The page's own `noindex` is on `wp_robots` at priority
+20, after WordPress's callbacks, so nothing they set is lost.
+
+**A purge clears pages, never an object cache.** W3 Total Cache through `w3tc_flush_posts()`, not `w3tc_flush_all()`;
+LiteSpeed through `do_action('litespeed_purge', '*')`, not `litespeed_purge_all`; SiteGround through
+`sg_cachepress_purge_cache()`, not its purge of everything. The "all" versions also empty the object cache, where
+CoreX's rate limits and spent captcha tokens can live, which `CacheManager` already refuses for the same reason
+(spec 078). WP Rocket (`rocket_clean_domain()`), WP Super Cache (`wp_cache_clear_cache()`, this site only on a
+network) and WP Fastest Cache (`wpfc_clear_all_cache()`, minified files kept) complete the list. Each name was read in
+the plugin's source on 2026-11-12. CoreX keeps no page cache of its own, so there is nothing of its own to clear.
+
+**The purge listens to the store's `corex_operations_mode_changed`, at priority 5.** Every route that changes the
+mode ends there, including a launch through `ProductionLaunchService`, which does not go through
+`ModeChangeService`; the activity recorder, at 10, reads what was cleared. A purge that throws is recorded as not
+cleared and never fails or undoes the change: the mode is stored before the store announces it.
+
+**Not chosen.** *Cloudflare's plugin*: it offers no purge function, and its "purge everything" is tied to a list of
+other plugins' actions it reads while loading, before CoreX; reaching it would mean firing those actions or calling
+its global object. *`send_headers` with `header()`*, as the code of 2026-10-26 did: the header could not be read in
+process, so no test could hold it.
