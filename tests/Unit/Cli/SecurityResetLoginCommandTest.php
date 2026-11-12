@@ -48,6 +48,34 @@ it('disables protected login settings and releases active lockouts without touch
         ->and($store->calledAt?->format(DATE_ATOM))->toBe('2026-07-07T12:00:00+00:00');
 });
 
+it('spec 124 scenario 7: turns all three switches off, in both stored shapes', function (array $stored) {
+    $options = [
+        'siteurl' => 'https://corex.test',
+        'corex_login_protection_settings' => $stored + ['custom_slug' => 'team-login', 'threshold' => 7],
+    ];
+    corexRecoveryOptions($options);
+
+    (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0)))
+        ->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
+    $after = $options['corex_login_protection_settings'];
+
+    expect([$after['hide_wp_login'], $after['hide_admin'], $after['limit_attempts']])->toBe([false, false, false])
+        ->and($after['enabled'])->toBeFalse()
+        ->and($after['block_default_endpoints'])->toBeFalse()
+        ->and($after['threshold'])->toBe(7);
+
+    // What the store reads back is all three off, whichever release reads it. (The stub reads
+    // the options as they were when it was made, so it is made again.)
+    corexRecoveryOptions($options);
+    Functions\when('sanitize_title')->returnArg();
+    $settings = (new \Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore())->current();
+    expect([$settings->hideWpLogin, $settings->hideAdmin, $settings->limitAttempts])->toBe([false, false, false]);
+})->with([
+    'stored by the previous release' => [['enabled' => true, 'block_default_endpoints' => true]],
+    'stored by this release' => [['hide_wp_login' => true, 'hide_admin' => true, 'limit_attempts' => true, 'enabled' => true, 'block_default_endpoints' => true]],
+    'one switch on' => [['hide_wp_login' => false, 'hide_admin' => true, 'limit_attempts' => false, 'enabled' => true, 'block_default_endpoints' => false]],
+]);
+
 it('resets the custom slug so re-enabling cannot walk back into the same lockout', function () {
     $options = [
         'siteurl' => 'https://corex.test',

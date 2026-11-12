@@ -22,6 +22,7 @@ use Corex\Config\Security\LoginProtection\WpLoginAccounts;
 use Corex\Config\Security\LoginProtection\WpLoginAttemptStore;
 use Corex\Config\Security\LoginProtection\WpLoginHashKey;
 use Corex\Database\Schema\Migrator;
+use Corex\Tests\Support\OptionRow;
 
 /**
  * The address every attempt here is made from. It is in a range reserved for documentation, so no
@@ -52,7 +53,7 @@ beforeEach(function () {
 
     // The tests start from "nothing saved"; the install's own policy is put back afterwards. It
     // used to be deleted and left deleted.
-    $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
+    $this->previousLoginSettings = OptionRow::capture(LoginProtectionSettingsStore::OPTION);
     delete_option(LoginProtectionSettingsStore::OPTION);
     forgetLoginEnforcementAttempts($this->migrator);
     $this->previousServer = $_SERVER;
@@ -61,12 +62,9 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    delete_option(LoginProtectionSettingsStore::OPTION);
-    if ($this->previousLoginSettings !== null) {
-        // Re-added rather than updated, so it comes back not autoloaded — which is how the
-        // settings store writes it — whatever the tests saved in between.
-        update_option(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings, false);
-    }
+    // The row as it was found, its autoload included: it came back unloaded, which the store has not
+    // written since it moved to loaded options (DECISIONS #366).
+    OptionRow::restore(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings);
     forgetLoginEnforcementAttempts($this->migrator);
     $_SERVER = $this->previousServer;
 });
@@ -127,3 +125,36 @@ it('does not enforce or record when login protection is disabled', function () {
     // No lockout is possible while disabled; the authenticate result passes through untouched.
     expect($enforcer->blockLockedOut(null, 'owner', 'secret'))->toBeNull();
 });
+
+/** This test's attempts, found by the keyed address they were made from. */
+function loginEnforcementOutcomes(): array
+{
+    global $wpdb;
+
+    return $wpdb->get_col($wpdb->prepare(
+        'SELECT outcome FROM ' . (new Migrator())->fullName(LoginAttemptTable::NAME) . ' WHERE network_hash = %s ORDER BY id ASC',
+        \Corex\Boot::app()->container()->make(LoginProtectionPolicy::class)->networkHashOf(LOGIN_ENFORCEMENT_TEST_IP),
+    ));
+}
+
+// Spec 124 slice 4 review: recording successful sign-ins keeps its meaning. It records whenever its
+// own setting and any switch are on, as it did while protection was on; only failures need limits.
+it('records a successful sign-in whenever a switch is on and recording is on, and a failure only with limits', function (array $switches, bool $logging, array $outcomes) {
+    $settings = \Corex\Config\Security\LoginProtection\LoginProtectionSettings::of(
+        new \Corex\Config\Security\LoginProtection\LoginSwitches(...$switches),
+        successfulLoginLogging: $logging,
+    );
+    $enforcer = loginEnforcer($this->attempts, $settings);
+    $user = get_user_by('id', (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0]);
+
+    $enforcer->recordFailure('owner');
+    $enforcer->recordSuccess('owner', $user);
+
+    expect(loginEnforcementOutcomes())->toBe($outcomes);
+})->with([
+    'the admin hidden alone' => [[false, true, false], true, ['success']],
+    'wp-login.php hidden alone' => [[true, false, false], true, ['success']],
+    'limits alone' => [[false, false, true], true, ['failed', 'success']],
+    'every switch off' => [[false, false, false], true, []],
+    'the admin hidden, recording off' => [[false, true, false], false, []],
+]);

@@ -47,7 +47,7 @@ final class LoginProtectionEnforcer
      */
     public function blockLockedOut(mixed $user, string $username, string $password): mixed
     {
-        if (! $this->settings->enabled || $username === '') {
+        if (! $this->settings->limitAttempts || $username === '') {
             return $user;
         }
 
@@ -68,7 +68,7 @@ final class LoginProtectionEnforcer
 
     public function recordFailure(string $username): void
     {
-        if (! $this->settings->enabled || $username === '') {
+        if (! $this->settings->limitAttempts || $username === '') {
             return;
         }
 
@@ -89,6 +89,7 @@ final class LoginProtectionEnforcer
 
     public function recordSuccess(string $username, mixed $user = null): void
     {
+        // Recording successful sign-ins keeps its meaning: its own setting, with any switch on.
         if (! $this->settings->enabled || ! $user instanceof WP_User) {
             return;
         }

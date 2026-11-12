@@ -219,3 +219,20 @@ it('keeps one notification for a blocked check however often readiness is evalua
     expect($before)->toHaveCount(1)
         ->and($occurrences($blocked[0]))->toBe($before);
 });
+
+// Spec 124 slice 4 (review): limits are the defence and hiding is obscurity, so the readiness check
+// passes only when failed sign-ins are limited, in either stored shape.
+it('passes "Login protection on" only when failed sign-ins are limited', function (array $stored, bool $passes) {
+    ($this->answer)(\Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore::OPTION, $stored + ['custom_slug' => 'team-login']);
+
+    $facts = $this->container->make(SiteReadinessFacts::class)->gather(new DateTimeImmutable('now'));
+
+    expect($facts['login'])->toBe($passes);
+})->with([
+    'previous release, protection on, hiding on' => [['enabled' => true, 'block_default_endpoints' => true], true],
+    'previous release, protection on, hiding off' => [['enabled' => true, 'block_default_endpoints' => false], true],
+    'previous release, protection off' => [['enabled' => false, 'block_default_endpoints' => true], false],
+    'both addresses hidden, no limits' => [['hide_wp_login' => true, 'hide_admin' => true, 'limit_attempts' => false, 'enabled' => true, 'block_default_endpoints' => true], false],
+    'the admin hidden alone' => [['hide_wp_login' => false, 'hide_admin' => true, 'limit_attempts' => false, 'enabled' => true, 'block_default_endpoints' => false], false],
+    'limits alone' => [['hide_wp_login' => false, 'hide_admin' => false, 'limit_attempts' => true, 'enabled' => true, 'block_default_endpoints' => false], true],
+]);

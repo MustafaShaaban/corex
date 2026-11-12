@@ -49,7 +49,8 @@ final class OverviewFacts
      *   mailFrom: bool,
      *   insights: array{key:bool,latest:array<string,mixed>|null}|null,
      *   captcha: array{active:bool,driver:string,keys:bool}|null,
-     *   login: string|null
+     *   login: string|null,
+     *   loginSwitches: array{hideWpLogin:bool,hideAdmin:bool,limitAttempts:bool,recovery:bool}|null
      * }
      */
     public function gather(array $settingValues): array
@@ -70,6 +71,25 @@ final class OverviewFacts
                 $this->loginSettings->current(),
                 $this->recovery->active(),
             )),
+            // Each login switch as it is stored (spec 124, FR-013), for the rows that name them;
+            // `login` above stays the one answer about wp-login.php.
+            'loginSwitches' => $this->guarded(fn (): array => $this->loginSwitches()),
+        ];
+    }
+
+    /**
+     * @return array{hideWpLogin:bool,hideAdmin:bool,limitAttempts:bool,recovery:bool}
+     */
+    private function loginSwitches(): array
+    {
+        $settings = $this->loginSettings->current();
+
+        return [
+            'hideWpLogin'   => $settings->hideWpLogin,
+            'hideAdmin'     => $settings->hideAdmin,
+            'limitAttempts' => $settings->limitAttempts,
+            // While it is on, wp-login.php and the admin answer whatever the first two say.
+            'recovery'      => $this->recovery->active(),
         ];
     }
 

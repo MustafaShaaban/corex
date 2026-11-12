@@ -216,22 +216,26 @@ final class SiteChecks
     }
 
     /**
+     * Passes only while failed sign-ins are limited: hiding an address is obscurity, the limits are
+     * what defend the accounts (spec 124, DECISIONS #628). The sentences say so, since a site that
+     * only hides its login does have login protection on in some sense.
+     *
      * @return array{key:string,label:string,state:string,summary:string,resolution_url:string}
      */
-    private function login(?bool $enabled): array
+    private function login(?bool $limited): array
     {
         $label = __('Login protection on', 'corex');
         $fix   = 'admin.php?page=corex-operations-security&tab=login';
 
-        if ($enabled === null) {
+        if ($limited === null) {
             return $this->unchecked('login_protection', $label, $fix);
         }
 
         return $this->row(
             'login_protection',
             $label,
-            $enabled ? '' : __('Login protection is off', 'corex'),
-            __('Login protection is on', 'corex'),
+            $limited ? '' : __('Failed sign-ins are not limited', 'corex'),
+            __('Failed sign-ins are limited', 'corex'),
             $fix,
         );
     }

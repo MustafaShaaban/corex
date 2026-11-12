@@ -43,6 +43,22 @@ it('reads the login address from the Security Center settings', function (array 
 })->with([
     'protection off, hiding on (a fresh install)' => [['enabled' => false, 'block_default_endpoints' => true], LoginAddressState::OFF],
     'protection on, hiding on' => [['enabled' => true, 'custom_slug' => 'team-login', 'block_default_endpoints' => true], LoginAddressState::HIDDEN],
+    'spec 124: the admin hidden alone' => [['hide_wp_login' => false, 'hide_admin' => true, 'limit_attempts' => false, 'enabled' => true, 'block_default_endpoints' => false], LoginAddressState::REACHABLE],
+    'spec 124: wp-login.php hidden alone' => [['hide_wp_login' => true, 'hide_admin' => false, 'limit_attempts' => false, 'enabled' => true, 'block_default_endpoints' => false], LoginAddressState::HIDDEN],
+]);
+
+it('spec 124 FR-013, scenario 7: reports each login switch as it is in force, in either stored shape', function (array $stored, array $switches) {
+    ($this->answer)(LoginProtectionSettingsStore::OPTION, $stored);
+
+    $facts = Boot::app()->container()->make(OverviewFacts::class)->gather([]);
+
+    expect($facts['loginSwitches'])->toBe($switches + ['recovery' => defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true]);
+})->with([
+    'previous release, protection on, hiding on' => [['enabled' => true, 'block_default_endpoints' => true], ['hideWpLogin' => true, 'hideAdmin' => true, 'limitAttempts' => true]],
+    'previous release, protection on, hiding off' => [['enabled' => true, 'block_default_endpoints' => false], ['hideWpLogin' => false, 'hideAdmin' => false, 'limitAttempts' => true]],
+    'previous release, protection off, hiding on' => [['enabled' => false, 'block_default_endpoints' => true], ['hideWpLogin' => false, 'hideAdmin' => false, 'limitAttempts' => false]],
+    'this release, the admin hidden alone' => [['hide_wp_login' => false, 'hide_admin' => true, 'limit_attempts' => false, 'enabled' => true, 'block_default_endpoints' => false], ['hideWpLogin' => false, 'hideAdmin' => true, 'limitAttempts' => false]],
+    'this release, wp-login.php hidden and limits' => [['hide_wp_login' => true, 'hide_admin' => false, 'limit_attempts' => true, 'enabled' => true, 'block_default_endpoints' => false], ['hideWpLogin' => true, 'hideAdmin' => false, 'limitAttempts' => true]],
 ]);
 
 it('reads the latest PageSpeed run, a failed one stored by an earlier release included', function () {

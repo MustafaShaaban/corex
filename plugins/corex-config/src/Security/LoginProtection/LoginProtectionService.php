@@ -31,7 +31,7 @@ final class LoginProtectionService
 
     public function assess(LoginProtectionContext $context, DateTimeImmutable $now): LoginProtectionDecision
     {
-        if (! $this->policy->settings->enabled) {
+        if (! $this->policy->settings->limitAttempts) {
             return new LoginProtectionDecision(false, 'disabled');
         }
 
@@ -46,7 +46,7 @@ final class LoginProtectionService
 
     public function recordFailure(LoginProtectionContext $context, DateTimeImmutable $now): LoginProtectionDecision
     {
-        if (! $this->policy->settings->enabled) {
+        if (! $this->policy->settings->limitAttempts) {
             return new LoginProtectionDecision(false, 'disabled');
         }
 
@@ -98,6 +98,7 @@ final class LoginProtectionService
 
     public function recordSuccess(LoginProtectionContext $context, int $userId, DateTimeImmutable $now): LoginProtectionDecision
     {
+        // Its own setting, with any switch on: a successful sign-in is not a limit (spec 124).
         if (! $this->policy->settings->enabled || ! $this->policy->settings->successfulLoginLogging) {
             return new LoginProtectionDecision(false, 'success_not_logged');
         }
