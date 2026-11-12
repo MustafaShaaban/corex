@@ -29,7 +29,7 @@ use DateTimeImmutable;
  *
  * - `operations.mode.changed` (operations), when the mode store records a real change, from any
  *   route: the screen, the command line, a production launch. Since spec 124 (FR-004b) it also
- *   keeps, as `page_caches`, which page caches the change cleared and which could not be: the
+ *   keeps, as `page_caches`, which page-cache plugins the change asked to clear and which failed: the
  *   purge listens to the same change just before this does ({@see PageCachePurge::PRIORITY});
  * - `access.denied` (access), when the access log opens a new counted entry: a page reloaded a
  *   thousand times in an hour is one entry there (spec 112) and one event here;

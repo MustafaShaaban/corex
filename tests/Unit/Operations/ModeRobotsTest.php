@@ -1,12 +1,14 @@
 <?php
 
 /**
- * Development and Staging keep search engines out (spec 124, FR-002, User Story 1 scenarios 3 to 5).
+ * Development and Staging sites keep search engines out (spec 124, FR-002 as amended 2026-11-12,
+ * User Story 1 scenarios 3 to 5, DECISIONS #625).
  *
- * Contract: in Development and Staging the page's robots meta says `noindex` and the response
- * carries `X-Robots-Tag: noindex`; every other mode adds neither; the Reading setting is never
- * written, so switching to Production needs no other step. The mode is the one in force, so a
- * mode inherited from WordPress's environment type counts as much as a declared one.
+ * Contract: a site whose environment is development or staging carries `noindex` in the page's
+ * robots meta and an `X-Robots-Tag: noindex` header in every mode, Coming soon, Forms paused and
+ * Maintenance included, whether that environment is declared by the mode, locked (`APP_ENV`, the
+ * network, the `corex_app_env` option) or inherited from WordPress's environment type. A
+ * production site adds neither. The Reading setting is never written.
  *
  * @package Corex\Tests\Unit\Operations
  */
@@ -16,10 +18,36 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Config\Operations\ModeRobots;
 use Corex\Config\Operations\OperationsMode;
-use Corex\Config\Operations\OperationsModeStore;
+use Corex\Environment\SiteEnvironment;
+use Corex\Support\Config\Source;
 
-/** A robots class reading a site whose stored mode is `$stored` and whose environment type is `$environment`. */
-function modeRobots(string $stored, string $environment = 'production'): ModeRobots
+/** A lock layer that answers `app.env` with the given value, or does not answer when it is null. */
+function robotsLock(?string $value): Source
+{
+    return new class ($value) implements Source {
+        public function __construct(private readonly ?string $value)
+        {
+        }
+
+        public function has(string $key): bool
+        {
+            return $key === 'app.env' && $this->value !== null;
+        }
+
+        public function get(string $key): mixed
+        {
+            return $this->value;
+        }
+    };
+}
+
+/**
+ * A robots class for a site whose stored mode is `$stored`, whose WordPress environment type is
+ * `$environment`, and whose locks say what `$locks` says.
+ *
+ * @param array{dotenv?:string,network?:string,option?:string} $locks
+ */
+function modeRobots(string $stored, string $environment = 'production', array $locks = []): ModeRobots
 {
     $GLOBALS['corex_test_options'] = ['corex_operations_mode' => $stored, 'blog_public' => '1'];
     Functions\when('get_option')->alias(static fn (string $key, $default = false) => $GLOBALS['corex_test_options'][$key] ?? $default);
@@ -27,7 +55,11 @@ function modeRobots(string $stored, string $environment = 'production'): ModeRob
     // The Reading setting is never written, by anything here.
     Functions\expect('update_option')->never();
 
-    return new ModeRobots(new OperationsModeStore(new OperationsMode()));
+    return new ModeRobots(new SiteEnvironment([
+        [SiteEnvironment::BY_DOTENV, robotsLock($locks['dotenv'] ?? null)],
+        [SiteEnvironment::BY_NETWORK, robotsLock($locks['network'] ?? null)],
+        [SiteEnvironment::BY_OPTION, robotsLock($locks['option'] ?? null)],
+    ]));
 }
 
 /** @return array<string,array{0:string}> */
@@ -65,10 +97,11 @@ it('FR-002: adds noindex to an X-Robots-Tag another part of the site already set
         ->and($robots->headers(['X-Robots-Tag' => 'noindex, nofollow'])['X-Robots-Tag'])->toBe('noindex, nofollow');
 });
 
-it('FR-002: adds neither the meta nor the header in any other mode', function (string $mode) {
+it('FR-002: adds neither the meta nor the header on an unlocked production site, in any mode', function (string $mode) {
     $robots = modeRobots($mode);
 
-    expect($robots->robots(['max-image-preview' => 'large']))->toBe(['max-image-preview' => 'large'])
+    expect($robots->keepsOut())->toBeFalse()
+        ->and($robots->robots(['max-image-preview' => 'large']))->toBe(['max-image-preview' => 'large'])
         ->and($robots->headers(['Content-Type' => 'text/html']))->toBe(['Content-Type' => 'text/html']);
 })->with(indexedModes());
 
@@ -87,7 +120,34 @@ it('FR-002: keeps a local copy out, which WordPress calls local and CoreX calls 
     expect(modeRobots('', 'local')->headers([]))->toBe(['X-Robots-Tag' => 'noindex']);
 });
 
-it('FR-002: reads the mode on every response, so a change applies to the next page without a reload of CoreX', function () {
+it('FR-002 (amended): keeps a staging copy locked by APP_ENV out while it is in Maintenance', function () {
+    $robots = modeRobots(OperationsMode::MAINTENANCE, 'production', ['dotenv' => 'staging']);
+
+    expect($robots->keepsOut())->toBeTrue()
+        ->and($robots->robots([]))->toBe(['noindex' => true])
+        ->and($robots->headers([]))->toBe(['X-Robots-Tag' => 'noindex']);
+});
+
+it('FR-002 (amended): keeps a development copy locked by the network out while it is in Coming soon', function () {
+    $robots = modeRobots(OperationsMode::COMING_SOON, 'production', ['network' => 'development']);
+
+    expect($robots->robots([]))->toBe(['noindex' => true])
+        ->and($robots->headers([]))->toBe(['X-Robots-Tag' => 'noindex']);
+});
+
+it('FR-002 (amended): keeps a staging copy locked by the corex_app_env option out in Forms paused', function () {
+    expect(modeRobots(OperationsMode::FORMS_PAUSED, 'production', ['option' => 'staging'])->headers([]))
+        ->toBe(['X-Robots-Tag' => 'noindex']);
+});
+
+it('FR-002 (amended): lets search engines into a site locked to production, whatever mode it stores', function () {
+    $robots = modeRobots(OperationsMode::STAGING, 'staging', ['dotenv' => 'production']);
+
+    expect($robots->keepsOut())->toBeFalse()
+        ->and($robots->headers([]))->toBe([]);
+});
+
+it('FR-002: reads the environment on every response, so a change applies to the next page without a reload of CoreX', function () {
     $robots = modeRobots(OperationsMode::DEVELOPMENT);
     expect($robots->headers([]))->toHaveKey('X-Robots-Tag');
 
@@ -103,11 +163,4 @@ it('FR-002: hooks the page robots and the front-end headers, and nothing in the 
     Functions\expect('add_action')->never();
 
     $robots->register();
-});
-
-it('FR-002: names the two modes that keep search engines out', function () {
-    expect(ModeRobots::keepsOut(OperationsMode::DEVELOPMENT))->toBeTrue()
-        ->and(ModeRobots::keepsOut(OperationsMode::STAGING))->toBeTrue()
-        ->and(ModeRobots::keepsOut(OperationsMode::PRODUCTION))->toBeFalse()
-        ->and(ModeRobots::keepsOut('anything else'))->toBeFalse();
 });

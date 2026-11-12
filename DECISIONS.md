@@ -20596,3 +20596,48 @@ cleared and never fails or undoes the change: the mode is stored before the stor
 other plugins' actions it reads while loading, before CoreX; reaching it would mean firing those actions or calling
 its global object. *`send_headers` with `header()`*, as the code of 2026-10-26 did: the header could not be read in
 process, so no test could hold it.
+
+**Amended 2026-11-12, after the slice's review (decided under the owner's delegation).**
+
+*`noindex` follows the environment, not the mode.* `ModeRobots` asks `SiteEnvironment::current()`, the answer the
+mail gate uses (spec 113, #526), instead of `OperationsModeStore::current()`, which returns a declared visitor mode
+before it reads a lock: a staging copy locked by `APP_ENV=staging` lost `noindex` in Coming soon while its mail was
+still captured. A development or staging site, declared, locked (`APP_ENV`, the network's lock, `corex_app_env`) or
+inherited from WordPress, now keeps `noindex` in every mode, Coming soon, Forms paused and Maintenance included; a
+production site carries none. Without a lock the answer is today's: a visitor mode is production there, an inherited
+`local` is development. `ComingSoonTemplate`'s page for a theme with no block templates, which never runs `wp_head`,
+reads the same rule beside `blog_public`. FR-002 is amended to match. Not chosen: keeping the mode as the question,
+which gives a site two answers to "what kind of site is this".
+
+*The record says what CoreX knows.* `PageCachePurge` records `asked` and `failed`, not `cleared`. A purge that throws,
+answers `false`, or answers WP Fastest Cache's `['success' => false]` is failed; anything else is asked, and the
+activity sentence says "asked WP Rocket to clear its page cache", because a plugin can return early without saying
+so: SiteGround with its caches off, WP Rocket during an import or on a second purge in one request. SiteGround's
+`false` is not counted: with its file cache on, `sg_cachepress_purge_cache()` clears everything and then answers
+`false`, because its last step looks for the cache directory its first step removed (`File_Cacher::purge_cache_request()`
+returns `false` when the directory is gone). Events recorded before this release keep their sentence.
+
+*SiteGround is given this site's address.* With no argument `sg_cachepress_purge_cache()` purges
+`get_home_url('/')`, which on a network is the main site, from any subsite. It is given `home_url('/')`: its dynamic
+cache then purges that path and everything below it (`Supercacher::purge_cache_request()`, child paths on), and an
+address equal to `get_home_url(null, '/')` empties its file cache, so this site's whole cache is cleared and no other
+site's dynamic cache is touched.
+
+*A purge that ends the request is accepted as rare.* The purge runs inside `OperationsModeStore::set()`, at priority 5
+of `corex_operations_mode_changed`, after the new mode is stored. A purge that ends the request without throwing (a
+time limit, memory, an `exit` in the plugin) loses what comes after it in that request: the activity event of the
+change and, when the site left Coming soon, `ModeChangeService`'s removal of the preview link. The owner then sees the
+new mode on the screen and in the mode history (written before the announcement), no mode-changed line in the
+activity log, an error page or a blank response instead of the screen's confirmation, and, leaving Coming soon, a
+preview link that is not removed: it opens the site again the next time it is put in Coming soon, unless it is
+revoked or regenerated first. Not changed: it needs a plugin to end the request
+during a purge, and moving the purge after the record would make the record unable to say what was asked.
+
+*Attachment pages, not files.* An attachment page is a front-end response and gets both. A file the web server serves
+straight from `wp-content/uploads` never reaches WordPress and gets neither; a site that must keep its files out of
+search needs a server rule.
+
+*No test defines a real plugin's function.* Brain Monkey defines a stubbed function for the rest of the process, so a
+test that stubbed `rocket_clean_domain` left every later `PageCachePurge` built with the real table believing WP Rocket
+active. `PageCachePurgeTest` checks the real table by its names and arguments, and runs it with every function renamed
+`corex_test_real_...`; it asserts no real name is defined after it.

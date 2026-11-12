@@ -162,8 +162,10 @@ final class ActivitySentences
     }
 
     /**
-     * A change of mode, and the page caches it cleared (spec 124, FR-004b). A change recorded
-     * before caches were cleared on one has no `page_caches` and reads as it did then.
+     * A change of mode, and the page-cache plugins it asked to clear (spec 124, FR-004b). It says
+     * what CoreX knows: that it asked, not that the pages are gone, since a plugin can return early
+     * without saying so (DECISIONS #625). A change recorded before caches were cleared on one has
+     * no `page_caches` and reads as it did then.
      */
     private function modeChanged(ActivityEvent $event, string $who): string
     {
@@ -175,27 +177,38 @@ final class ActivitySentences
             return sprintf(__('%1$s changed the mode to %2$s', 'corex'), $who, $mode);
         }
 
-        $cleared = $this->pageCaches($caches['cleared'] ?? []);
-        $failed  = $this->pageCaches($caches['failed'] ?? []);
+        $askedKeys = is_array($caches['asked'] ?? null) ? $caches['asked'] : [];
+        $asked     = $this->pageCaches($askedKeys);
+        $failed    = $this->pageCaches($caches['failed'] ?? []);
 
         return match (true) {
-            $cleared !== '' && $failed !== '' => sprintf(
-                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins cleared, e.g. "WP Rocket". 4: the ones that could not be. */
-                __('%1$s changed the mode to %2$s and cleared the page cache of %3$s. The page cache of %4$s could not be cleared', 'corex'),
+            $asked !== '' && $failed !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket". 4: the ones whose cache could not be cleared. */
+                _n(
+                    '%1$s changed the mode to %2$s and asked %3$s to clear its page cache. The page cache of %4$s could not be cleared',
+                    '%1$s changed the mode to %2$s and asked %3$s to clear their page caches. The page cache of %4$s could not be cleared',
+                    count($askedKeys),
+                    'corex',
+                ),
                 $who,
                 $mode,
-                $cleared,
+                $asked,
                 $failed,
             ),
-            $cleared !== '' => sprintf(
-                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins cleared, e.g. "WP Rocket and LiteSpeed Cache". */
-                __('%1$s changed the mode to %2$s and cleared the page cache of %3$s', 'corex'),
+            $asked !== '' => sprintf(
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket and LiteSpeed Cache". */
+                _n(
+                    '%1$s changed the mode to %2$s and asked %3$s to clear its page cache',
+                    '%1$s changed the mode to %2$s and asked %3$s to clear their page caches',
+                    count($askedKeys),
+                    'corex',
+                ),
                 $who,
                 $mode,
-                $cleared,
+                $asked,
             ),
             $failed !== '' => sprintf(
-                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins that could not be cleared, e.g. "WP Rocket". */
+                /* translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins whose cache could not be cleared, e.g. "WP Rocket". */
                 __('%1$s changed the mode to %2$s. The page cache of %3$s could not be cleared', 'corex'),
                 $who,
                 $mode,
@@ -203,7 +216,7 @@ final class ActivitySentences
             ),
             default => sprintf(
                 /* translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production. */
-                __('%1$s changed the mode to %2$s. There was no page cache to clear', 'corex'),
+                __('%1$s changed the mode to %2$s. No page-cache plugin CoreX can ask was active', 'corex'),
                 $who,
                 $mode,
             ),

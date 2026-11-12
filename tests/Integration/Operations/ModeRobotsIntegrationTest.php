@@ -1,14 +1,17 @@
 <?php
 
 /**
- * Development and Staging keep search engines out, on real WordPress (spec 124, FR-002, User
- * Story 1 scenarios 3 and 4).
+ * Development and staging sites keep search engines out, on real WordPress (spec 124, FR-002 as
+ * amended 2026-11-12, User Story 1 scenarios 3 and 4, DECISIONS #625).
  *
  * Each mode is answered by a `pre_option_` filter, as the other tests of this folder do, so the
  * stored mode of the install this runs against is never written. Through that filter the page's
  * robots meta is what `wp_robots()` prints, and the header is what WordPress's front-end pipeline
  * sends (`wp_headers`, applied by `WP::send_headers()`). One test then asks the running site over
  * HTTP for its home page and its feed, in the mode it is really in, and reads both.
+ *
+ * A lock is stood in for the same way: the `corex_app_env` option, the lowest of the three, is
+ * answered by `pre_option_corex_app_env`, and nothing is stored.
  *
  * Scenario 5 (a mode inherited from WordPress's environment type) needs the environment type
  * changed, which WordPress fixes for the whole process, so it is proved by the unit test.
@@ -19,6 +22,7 @@
 declare(strict_types=1);
 
 use Corex\Boot;
+use Corex\Config\Operations\ComingSoonTemplate;
 use Corex\Config\Operations\ModeRobots;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
@@ -113,9 +117,9 @@ it('FR-002, scenario 4: takes the noindex away when Development becomes Producti
 
 it('FR-002, scenario 3: answers a signed-out visitor\'s page and feed with noindex, over HTTP, in the mode the site is in', function (string $path) {
     remove_filter('pre_option_' . OperationsModeStore::OPTION, $this->answerMode);
-    $mode = Boot::app()->container()->make(OperationsModeStore::class)->current();
-    if (! ModeRobots::keepsOut($mode)) {
-        $this->markTestSkipped("This site is in {$mode}; the per-mode test above covers the modes that add nothing.");
+    if (! Boot::app()->container()->make(ModeRobots::class)->keepsOut()) {
+        $mode = Boot::app()->container()->make(OperationsModeStore::class)->current();
+        $this->markTestSkipped("This site is a production site, in {$mode}; the per-mode test above covers what adds nothing.");
     }
 
     $response = wp_remote_get(home_url($path), ['timeout' => 30, 'sslverify' => false]);
@@ -128,3 +132,25 @@ it('FR-002, scenario 3: answers a signed-out visitor\'s page and feed with noind
         expect(wp_remote_retrieve_body($response))->toMatch("/<meta name='robots' content='[^']*\\bnoindex\\b/");
     }
 })->with(['home page' => '/', 'feed' => '/feed/']);
+
+it('FR-002 (amended): keeps a staging copy locked by the corex_app_env option out in every mode, visitor modes included', function (string $mode) {
+    $this->mode = $mode;
+    $lock = static fn (): string => 'staging';
+    add_filter('pre_option_corex_app_env', $lock);
+
+    $meta    = corexRobotsMeta();
+    $headers = corexFrontEndHeaders();
+    $page    = Boot::app()->container()->make(ComingSoonTemplate::class)->standalone();
+    remove_filter('pre_option_corex_app_env', $lock);
+
+    expect($meta)->toMatch("/<meta name='robots' content='[^']*\bnoindex\b/")
+        ->and($headers['X-Robots-Tag'] ?? '')->toBe('noindex')
+        // The Coming soon page of a theme with no block templates never runs wp_head.
+        ->and($page)->toContain('<meta name="robots" content="noindex, nofollow"')
+        ->and($this->readingWrites)->toBe(0);
+})->with([
+    'production'   => [OperationsMode::PRODUCTION],
+    'coming soon'  => [OperationsMode::COMING_SOON],
+    'forms paused' => [OperationsMode::FORMS_PAUSED],
+    'maintenance'  => [OperationsMode::MAINTENANCE],
+]);

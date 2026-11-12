@@ -33,22 +33,34 @@ use Throwable;
  * here: it offers no purge function, and its "purge everything" is bound to a list of other
  * plugins' actions it reads before CoreX loads.
  *
- * A purge that throws is reported as not cleared and never stops the other purges. It cannot undo
- * the change either: the new mode is stored before the store announces it.
+ * What is recorded is what CoreX knows: which plugins it asked, and which of them said no. A purge
+ * that throws, answers `false`, or answers WP Fastest Cache's `['success' => false]` is reported as
+ * failed; anything else is reported as asked, not as cleared, because a plugin can return early
+ * without saying so (SiteGround with its caches off, WP Rocket during an import or on a second
+ * purge in one request). SiteGround's `false` is left out of the failures: with its file cache on,
+ * it answers `false` after clearing, because its last step looks for the directory its first step
+ * removed. A failed purge never stops the other purges, and cannot undo the change: the new mode is
+ * stored before the store announces it (DECISIONS #625).
  */
 final class PageCachePurge
 {
-    /** Before the activity record of the change (WordPress's default, 10), so the record can say what was cleared. */
+    /** Before the activity record of the change (WordPress's default, 10), so the record can say what was asked. */
     public const PRIORITY = 5;
 
     /** Stands for this site's id on a network (each site has its own mode), and 0, the whole cache, on a single site. */
     public const THIS_SITE = '{this-site}';
 
     /**
+     * Stands for this site's home address, `home_url('/')`. SiteGround purges that address and
+     * everything below it; with no address it purges `get_home_url('/')`, the main site of a network.
+     */
+    public const THIS_SITE_URL = '{this-site-url}';
+
+    /**
      * Each plugin's key (its directory on WordPress.org), product name, and purge: a function to
-     * call or an action to fire, with its arguments.
+     * call or an action to fire, with its arguments, and whether its `false` means it failed.
      *
-     * @var array<string,array{label:string,function?:string,action?:string,args?:list<mixed>}>
+     * @var array<string,array{label:string,function?:string,action?:string,args?:list<mixed>,falseIsFailure?:bool}>
      */
     public const PLUGINS = [
         'wp-rocket'        => ['label' => 'WP Rocket', 'function' => 'rocket_clean_domain'],
@@ -56,20 +68,20 @@ final class PageCachePurge
         'litespeed-cache'  => ['label' => 'LiteSpeed Cache', 'action' => 'litespeed_purge', 'args' => ['*']],
         'wp-super-cache'   => ['label' => 'WP Super Cache', 'function' => 'wp_cache_clear_cache', 'args' => [self::THIS_SITE]],
         'wp-fastest-cache' => ['label' => 'WP Fastest Cache', 'function' => 'wpfc_clear_all_cache'],
-        'sg-cachepress'    => ['label' => 'SiteGround Optimizer', 'function' => 'sg_cachepress_purge_cache'],
+        'sg-cachepress'    => ['label' => 'SiteGround Optimizer', 'function' => 'sg_cachepress_purge_cache', 'args' => [self::THIS_SITE_URL], 'falseIsFailure' => false],
     ];
 
-    /** @var array{cleared:list<string>,failed:list<string>}|null */
+    /** @var array{asked:list<string>,failed:list<string>}|null */
     private ?array $last = null;
 
     /**
-     * @param array<string,array{label:string,function?:string,action?:string,args?:list<mixed>}> $plugins
+     * @param array<string,array{label:string,function?:string,action?:string,args?:list<mixed>,falseIsFailure?:bool}> $plugins
      */
     public function __construct(private readonly array $plugins = self::PLUGINS)
     {
     }
 
-    /** A plugin's product name, for the sentence that says what was cleared. */
+    /** A plugin's product name, for the sentence that says what was asked. */
     public static function label(string $key): string
     {
         return self::PLUGINS[$key]['label'] ?? $key;
@@ -86,9 +98,10 @@ final class PageCachePurge
     }
 
     /**
-     * What the last change of mode in this request cleared; null when there was none.
+     * Which plugins the last change of mode in this request asked, and which failed; null when
+     * there was none.
      *
-     * @return array{cleared:list<string>,failed:list<string>}|null
+     * @return array{asked:list<string>,failed:list<string>}|null
      */
     public function lastClearing(): ?array
     {
@@ -98,12 +111,12 @@ final class PageCachePurge
     /**
      * Ask every active page-cache plugin to clear its pages.
      *
-     * @return array{cleared:list<string>,failed:list<string>}
+     * @return array{asked:list<string>,failed:list<string>}
      */
     public function clear(): array
     {
-        $cleared = [];
-        $failed  = [];
+        $asked  = [];
+        $failed = [];
 
         foreach ($this->plugins as $key => $plugin) {
             if (! $this->isActive($plugin)) {
@@ -111,18 +124,37 @@ final class PageCachePurge
             }
 
             try {
-                $this->purge($plugin);
-                $cleared[] = (string) $key;
+                $refused = $this->refused($plugin, $this->purge($plugin));
             } catch (Throwable) {
+                $refused = true;
+            }
+
+            if ($refused) {
                 $failed[] = (string) $key;
+            } else {
+                $asked[] = (string) $key;
             }
         }
 
-        return ['cleared' => $cleared, 'failed' => $failed];
+        return ['asked' => $asked, 'failed' => $failed];
     }
 
     /**
-     * @param array{label:string,function?:string,action?:string,args?:list<mixed>} $plugin
+     * Whether a purge's answer says it failed.
+     *
+     * @param array{label:string,function?:string,action?:string,args?:list<mixed>,falseIsFailure?:bool} $plugin
+     */
+    private function refused(array $plugin, mixed $answer): bool
+    {
+        if ($answer === false) {
+            return $plugin['falseIsFailure'] ?? true;
+        }
+
+        return is_array($answer) && array_key_exists('success', $answer) && $answer['success'] === false;
+    }
+
+    /**
+     * @param array{label:string,function?:string,action?:string,args?:list<mixed>,falseIsFailure?:bool} $plugin
      */
     private function isActive(array $plugin): bool
     {
@@ -134,23 +166,27 @@ final class PageCachePurge
     }
 
     /**
-     * @param array{label:string,function?:string,action?:string,args?:list<mixed>} $plugin
+     * The purge's answer; null for an action, which answers nothing.
+     *
+     * @param array{label:string,function?:string,action?:string,args?:list<mixed>,falseIsFailure?:bool} $plugin
      */
-    private function purge(array $plugin): void
+    private function purge(array $plugin): mixed
     {
         $args = array_map(
-            static fn (mixed $arg): mixed => $arg === self::THIS_SITE
-                ? (is_multisite() ? get_current_blog_id() : 0)
-                : $arg,
+            static fn (mixed $arg): mixed => match ($arg) {
+                self::THIS_SITE     => is_multisite() ? get_current_blog_id() : 0,
+                self::THIS_SITE_URL => home_url('/'),
+                default             => $arg,
+            },
             $plugin['args'] ?? [],
         );
 
         if (isset($plugin['function'])) {
-            ($plugin['function'])(...$args);
-
-            return;
+            return ($plugin['function'])(...$args);
         }
 
         do_action((string) $plugin['action'], ...$args);
+
+        return null;
     }
 }

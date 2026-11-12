@@ -103,24 +103,26 @@ function modeChangedEvent(?array $pageCaches): ActivityEvent
     ]);
 }
 
-it('FR-004b: says which page caches a mode change cleared, by their product names', function () {
+it('FR-004b: says which page-cache plugins a mode change asked to clear, by their product names', function () {
     Functions\when('wp_sprintf_l')->alias(static fn (string $pattern, array $items): string => implode(' and ', $items));
 
-    expect(sentences()->of(modeChangedEvent(['cleared' => ['wp-rocket', 'litespeed-cache'], 'failed' => []]))['text'])
-        ->toBe('Mustafa changed the mode to Production and cleared the page cache of WP Rocket and LiteSpeed Cache');
+    expect(sentences()->of(modeChangedEvent(['asked' => ['wp-rocket', 'litespeed-cache'], 'failed' => []]))['text'])
+        ->toBe('Mustafa changed the mode to Production and asked WP Rocket and LiteSpeed Cache to clear their page caches')
+        ->and(sentences()->of(modeChangedEvent(['asked' => ['wp-rocket'], 'failed' => []]))['text'])
+        ->toBe('Mustafa changed the mode to Production and asked WP Rocket to clear its page cache');
 });
 
-it('FR-004b: says so when a mode change found no page cache to clear', function () {
-    expect(sentences()->of(modeChangedEvent(['cleared' => [], 'failed' => []]))['text'])
-        ->toBe('Mustafa changed the mode to Production. There was no page cache to clear');
+it('FR-004b: says so when a mode change found no page-cache plugin it could ask', function () {
+    expect(sentences()->of(modeChangedEvent(['asked' => [], 'failed' => []]))['text'])
+        ->toBe('Mustafa changed the mode to Production. No page-cache plugin CoreX can ask was active');
 });
 
-it('FR-004b: says which page cache could not be cleared, beside the ones that were', function () {
+it('FR-004b: says which page cache could not be cleared, beside the plugins that were asked', function () {
     Functions\when('wp_sprintf_l')->alias(static fn (string $pattern, array $items): string => implode(' and ', $items));
 
-    expect(sentences()->of(modeChangedEvent(['cleared' => ['wp-rocket'], 'failed' => ['w3-total-cache']]))['text'])
-        ->toBe('Mustafa changed the mode to Production and cleared the page cache of WP Rocket. The page cache of W3 Total Cache could not be cleared')
-        ->and(sentences()->of(modeChangedEvent(['cleared' => [], 'failed' => ['w3-total-cache']]))['text'])
+    expect(sentences()->of(modeChangedEvent(['asked' => ['wp-rocket'], 'failed' => ['w3-total-cache']]))['text'])
+        ->toBe('Mustafa changed the mode to Production and asked WP Rocket to clear its page cache. The page cache of W3 Total Cache could not be cleared')
+        ->and(sentences()->of(modeChangedEvent(['asked' => [], 'failed' => ['w3-total-cache']]))['text'])
         ->toBe('Mustafa changed the mode to Production. The page cache of W3 Total Cache could not be cleared');
 });
 

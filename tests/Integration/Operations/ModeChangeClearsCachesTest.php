@@ -99,15 +99,15 @@ it('FR-004b: asks an active page-cache plugin to clear every page when the mode 
         ->and($this->purges)->toBe([['*']]);
 });
 
-it('FR-004b: says in the activity log which page caches the change cleared', function () {
+it('FR-004b: says in the activity log which page-cache plugins the change asked to clear', function () {
     corexChangeMode(OperationsMode::STAGING, $this->admin);
 
     $event = corexNewestModeChange();
     expect($event)->not->toBeNull()
         ->and($event->id)->toBeGreaterThan($this->newestWas)
-        ->and($event->context['page_caches'])->toBe(['cleared' => ['litespeed-cache'], 'failed' => []])
+        ->and($event->context['page_caches'])->toBe(['asked' => ['litespeed-cache'], 'failed' => []])
         ->and(Boot::app()->container()->make(ActivitySentences::class)->of($event)['text'])
-        ->toEndWith('changed the mode to Staging and cleared the page cache of LiteSpeed Cache');
+        ->toEndWith('changed the mode to Staging and asked LiteSpeed Cache to clear its page cache');
 });
 
 it('FR-004b: changes the mode, and records that the cache could not be cleared, when a purge throws', function () {
@@ -122,7 +122,7 @@ it('FR-004b: changes the mode, and records that the cache could not be cleared, 
 
     expect($result->status)->toBe(ModeChangeResult::SAVED)
         ->and(did_action('corex_operations_mode_changed'))->toBe($announced + 1)
-        ->and(corexNewestModeChange()?->context['page_caches'])->toBe(['cleared' => [], 'failed' => ['litespeed-cache']]);
+        ->and(corexNewestModeChange()?->context['page_caches'])->toBe(['asked' => [], 'failed' => ['litespeed-cache']]);
 });
 
 it('FR-004b: clears nothing when the mode asked for is already in force', function () {
