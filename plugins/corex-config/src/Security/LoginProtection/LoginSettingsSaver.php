@@ -31,30 +31,18 @@ final class LoginSettingsSaver
      */
     public function save(array $body): LoginSettingsSaveOutcome
     {
-        $current = $this->store->current();
-        $input = LoginSettingsInput::read($body, $current);
-        $problems = $input->problems;
-
-        // `LoginSlug` says whether the address is well-formed and not one WordPress reserves;
-        // availability says whether a published page or a route already answers there. `about` passes
-        // the first and is a common page.
-        $slug = $input->changes['custom_slug'] ?? null;
-        $taken = is_string($slug) ? $this->availability->rejectionReason($slug) : null;
-        if ($taken !== null) {
-            $hiding = ($input->switches ?? $current->switches())->hideWpLogin;
-            $problems['custom_slug'] = new LoginSettingsProblem(
-                'custom_slug',
-                $hiding ? LoginSettingsProblem::REASON_ADDRESS_NEEDED_TO_HIDE : LoginSettingsProblem::REASON_ADDRESS,
-                detail: $taken,
-            );
-        }
-
-        if ($problems !== []) {
-            return LoginSettingsSaveOutcome::refused($problems);
-        }
+        $problems = [];
 
         try {
-            return LoginSettingsSaveOutcome::saved($this->store->update($input->changes, $input->switches));
+            // Decided from the settings as read under the lock, not before it: a switch the request
+            // did not send keeps what another save wrote meanwhile, and "a value equal to the one in
+            // force is no change" is judged against what is in force when this one writes.
+            $saved = $this->store->updateWith(function (LoginProtectionSettings $fresh) use ($body, &$problems): ?array {
+                $input = LoginSettingsInput::read($body, $fresh);
+                $problems = $input->problems + $this->taken($input, $fresh);
+
+                return $problems === [] ? [$input->changes, $input->switches] : null;
+            });
         } catch (LoginSettingsRefused $refused) {
             return LoginSettingsSaveOutcome::refused([$refused->field => LoginSettingsProblem::fromRefusal($refused)]);
         } catch (LoginSettingsBusy) {
@@ -62,5 +50,32 @@ final class LoginSettingsSaver
                 'request' => new LoginSettingsProblem('request', LoginSettingsProblem::REASON_BUSY),
             ]);
         }
+
+        return $problems === [] ? LoginSettingsSaveOutcome::saved($saved) : LoginSettingsSaveOutcome::refused($problems);
+    }
+
+    /**
+     * A new address that a published page or a route already answers at. `LoginSlug` says whether
+     * the address is well-formed and not one WordPress reserves; this says whether anything on the
+     * site has it. `about` passes the first and is a common page.
+     *
+     * @return array<string,LoginSettingsProblem>
+     */
+    private function taken(LoginSettingsInput $input, LoginProtectionSettings $fresh): array
+    {
+        $slug = $input->changes['custom_slug'] ?? null;
+        $taken = is_string($slug) && ! isset($input->problems['custom_slug']) ? $this->availability->rejectionReason($slug) : null;
+
+        if ($taken === null) {
+            return [];
+        }
+
+        return ['custom_slug' => new LoginSettingsProblem(
+            'custom_slug',
+            ($input->switches ?? $fresh->switches())->hideWpLogin
+                ? LoginSettingsProblem::REASON_ADDRESS_NEEDED_TO_HIDE
+                : LoginSettingsProblem::REASON_ADDRESS,
+            detail: $taken,
+        )];
     }
 }

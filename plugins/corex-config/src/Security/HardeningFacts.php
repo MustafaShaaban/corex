@@ -22,7 +22,7 @@ use Corex\Config\Security\LoginProtection\TrustedProxyRange;
 final class HardeningFacts
 {
     /**
-     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool,trustedProxiesNarrow:bool}
+     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool,trustedProxiesNarrow:bool,trustedProxiesWellFormed:bool}
      */
     public static function gather(): array
     {
@@ -42,21 +42,27 @@ final class HardeningFacts
             'defaultAdminAbsent' => username_exists('admin') === false,
             'indexingAllowed'    => (string) get_option('blog_public', '1') !== '0',
             'authSaltsConfigured' => self::authSaltsConfigured(),
-            'trustedProxiesNarrow' => self::trustedProxiesNarrow(),
+            'trustedProxiesNarrow' => ! TrustedProxyRange::trustsEveryAddress(self::trustedProxiesInForce()),
+            'trustedProxiesWellFormed' => ! TrustedProxyRange::holdsMalformed(self::trustedProxiesInForce()),
         ];
     }
 
     /**
-     * Whether no trusted proxy range covers every address (spec 124, FR-015). A list is in force
-     * only while proxies are trusted, so one left behind with that off is no finding.
+     * The trusted proxy lines in force (spec 124, FR-015). A list is in force only while proxies are
+     * trusted, so one left behind with that off is no finding.
+     *
+     * @return list<string>
      */
-    private static function trustedProxiesNarrow(): bool
+    private static function trustedProxiesInForce(): array
     {
         $stored = get_option(LoginProtectionSettingsStore::OPTION, []);
         $stored = is_array($stored) ? $stored : [];
 
-        return ! ((bool) ($stored['trusted_proxy_mode'] ?? false)
-            && TrustedProxyRange::trustsEveryAddress(array_map('strval', (array) ($stored['trusted_proxy_ranges'] ?? []))));
+        if (! (bool) ($stored['trusted_proxy_mode'] ?? false)) {
+            return [];
+        }
+
+        return array_values(array_map('strval', (array) ($stored['trusted_proxy_ranges'] ?? [])));
     }
 
     private static function authSaltsConfigured(): bool

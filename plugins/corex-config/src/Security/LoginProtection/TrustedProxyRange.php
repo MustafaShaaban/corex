@@ -74,6 +74,23 @@ final class TrustedProxyRange
         return false;
     }
 
+    /**
+     * Whether a stored list holds a line that is not an address or range. The resolver ignores such
+     * a line, and Hardening says so (DECISIONS #629, amended 2026-11-13).
+     *
+     * @param list<string> $ranges
+     */
+    public static function holdsMalformed(array $ranges): bool
+    {
+        foreach ($ranges as $range) {
+            if (self::rejectionReason(trim((string) $range)) === self::REASON_FORMAT) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function isValid(string $line): bool
     {
         return self::rejectionReason($line) === null;

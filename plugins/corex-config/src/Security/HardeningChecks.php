@@ -30,9 +30,10 @@ final class HardeningChecks
      *   defaultAdminAbsent:bool,
      *   indexingAllowed:bool,
      *   authSaltsConfigured:bool,
-     *   trustedProxiesNarrow?:bool
-     * } $facts `trustedProxiesNarrow` passes when left out, as facts gathered before it existed are
-     *          (spec 124, FR-015).
+     *   trustedProxiesNarrow?:bool,
+     *   trustedProxiesWellFormed?:bool
+     * } $facts `trustedProxiesNarrow` and `trustedProxiesWellFormed` pass when left out, as facts
+     *          gathered before they existed are (spec 124, FR-015).
      *
      * @return list<array{key:string,label:string,status:string,detail:string}>
      */
@@ -81,16 +82,32 @@ final class HardeningChecks
                 __('WordPress authentication unique keys and salts are configured.', 'corex'),
                 __('Set unique WordPress authentication unique keys and salts in wp-config.php.', 'corex'),
             ),
-            // A list stored before the route and the command refused `/0` is still used as stored:
-            // ignoring it would count every visitor behind a CDN as the CDN (DECISIONS #629).
-            $this->check(
-                'trusted_proxies',
-                __('Trusted proxies name only your proxies', 'corex'),
-                $facts['trustedProxiesNarrow'] ?? true,
-                __('No trusted proxy range covers every address.', 'corex'),
-                __('A trusted proxy range covers every address (/0), so any visitor can choose the address their failed sign-ins are counted by and get around the limit. List only your own proxies with wp corex security trusted-proxies, or clear the list with --clear.', 'corex'),
-            ),
+            $this->trustedProxies($facts['trustedProxiesNarrow'] ?? true, $facts['trustedProxiesWellFormed'] ?? true),
         ];
+    }
+
+    /**
+     * One row for the trusted proxy list, warning with the sentence for its worse problem (spec 124,
+     * FR-015; DECISIONS #629).
+     *
+     * A list stored before the route and the command refused `/0` is still used as stored: ignoring it
+     * would count every visitor behind a CDN as the CDN. A stored line that is not an address or range
+     * is ignored by the resolver, so its proxy is not trusted and its visitors are counted as the
+     * proxy; the owner is told which kind of line to fix.
+     *
+     * @return array{key:string,label:string,status:string,detail:string}
+     */
+    private function trustedProxies(bool $narrow, bool $wellFormed): array
+    {
+        return $this->check(
+            'trusted_proxies',
+            __('Trusted proxies name only your proxies', 'corex'),
+            $narrow && $wellFormed,
+            __('No trusted proxy range covers every address, and every line is an address or a range.', 'corex'),
+            ! $narrow
+                ? __('A trusted proxy range covers every address (/0), so any visitor can choose the address their failed sign-ins are counted by and get around the limit. List only your own proxies with wp corex security trusted-proxies, or clear the list with --clear.', 'corex')
+                : __('A trusted proxy line is not an address or a range, so CoreX ignores it and does not trust that proxy: its visitors are counted as the proxy. List your proxies again with wp corex security trusted-proxies.', 'corex'),
+        );
     }
 
     /**

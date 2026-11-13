@@ -60,7 +60,14 @@ final readonly class ClientIpResolver
     private function trusted(string $ip): bool
     {
         foreach ($this->settings->trustedProxyRanges as $range) {
-            if ($this->inCidr($ip, $range)) {
+            // A stored line that is not an address or range trusts nobody. Read as it is, `10.0.0.0/`
+            // or `10.0.0.0/x` has prefix 0 and trusts every IPv4 peer; the release before could store
+            // such a line. A well-formed `/0` is honoured, and Hardening reports both.
+            if (TrustedProxyRange::rejectionReason(trim($range)) === TrustedProxyRange::REASON_FORMAT) {
+                continue;
+            }
+
+            if ($this->inCidr($ip, trim($range))) {
                 return true;
             }
         }

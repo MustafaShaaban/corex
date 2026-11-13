@@ -126,7 +126,8 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 5; DECIS
   the REST nonce. `LoginProtectionSettingsStore` gains `update()` and `rewrite()`.
 - **One write of the login settings at a time** (spec 124 slice 5, FR-015). The route, `wp corex security
   trusted-proxies` and `wp corex security reset-login` change the settings under one MySQL named lock per site
-  (`LoginSettingsLock`), reading the row as it is when the lock is had, so two saves at once no longer lose one's
+  (`LoginSettingsLock`), reading the row as it is when the lock is had and deciding what a request changes from
+  that read (`LoginProtectionSettingsStore::updateWith()`), so two saves at once no longer lose one's
   change. A save that waits more than two seconds writes nothing: the route answers 409 `login_settings_busy` with a
   translated "try again", and `trusted-proxies` exits 1. `reset-login` is how a locked-out owner gets back in, so it
   writes anyway, without the lock, releases the lockouts, and prints a line saying the other save may have been
@@ -139,7 +140,10 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 5; DECIS
   until fixed or overridden.
 - **A trusted proxy address is compared as an address.** A single trusted address is matched by its bytes, so one
   stored as `2001:DB8::1` or written in full trusts `2001:db8::1`. An IPv4-mapped address (`::ffff:10.0.0.1`) is not
-  taken for the IPv4 address it carries, either way: list the spelling the server reports.
+  taken for the IPv4 address it carries, either way: list the spelling the server reports. A stored line that is
+  not an address or range (`10.0.0.0/`, `10.0.0.0/x`, which the release before could store) trusts nobody; it was
+  read as prefix 0 and trusted every IPv4 peer. Hardening's trusted proxy check now warns about such a line too,
+  with its own sentence. A well-formed `/0` is still honoured, and still reported.
 - **The launch checklist's "Login protection on" passes only while failed sign-ins are limited** (limits are the
   defence, hiding is obscurity). Its sentences are now "Failed sign-ins are limited" and "Failed sign-ins are not
   limited" (they were "Login protection is on" and "Login protection is off"); the check's key and label are

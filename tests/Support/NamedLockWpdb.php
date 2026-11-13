@@ -28,6 +28,14 @@ final class NamedLockWpdb
     /** @var list<string> Every lock statement, in order. */
     public array $statements = [];
 
+    /**
+     * Run once, the first time a lock is granted: what another request did while this one waited
+     * for the lock, after anything this one read before asking for it.
+     *
+     * @var (callable(): void)|null
+     */
+    public $onGranted = null;
+
     public function prepare(string $query, mixed ...$args): string
     {
         return vsprintf(str_replace(['%s', '%d'], ["'%s'", '%d'], $query), $args);
@@ -42,6 +50,12 @@ final class NamedLockWpdb
                 return '0';
             }
             $this->held = $found[1];
+
+            if ($this->onGranted !== null) {
+                $meanwhile = $this->onGranted;
+                $this->onGranted = null;
+                $meanwhile();
+            }
 
             return '1';
         }

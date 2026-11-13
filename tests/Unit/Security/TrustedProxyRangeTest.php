@@ -40,6 +40,13 @@ it('FR-015: says a /0 range trusts every address, apart from a malformed line', 
         ->and(TrustedProxyRange::rejectionReason('10.0.0.0/8'))->toBeNull();
 });
 
+it('says whether a stored list holds a line that is not an address or range, which Hardening reports', function () {
+    expect(TrustedProxyRange::holdsMalformed(['203.0.113.0/24', '10.0.0.0/']))->toBeTrue()
+        ->and(TrustedProxyRange::holdsMalformed(['10.0.0.0/x']))->toBeTrue()
+        ->and(TrustedProxyRange::holdsMalformed(['203.0.113.0/24', '0.0.0.0/0']))->toBeFalse()
+        ->and(TrustedProxyRange::holdsMalformed([]))->toBeFalse();
+});
+
 it('says whether a stored list trusts every address, which Hardening reports', function () {
     expect(TrustedProxyRange::trustsEveryAddress(['203.0.113.0/24', '0.0.0.0/0']))->toBeTrue()
         ->and(TrustedProxyRange::trustsEveryAddress(['203.0.113.0/24', '2001:db8::/32']))->toBeFalse()

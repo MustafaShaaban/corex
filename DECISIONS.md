@@ -20865,6 +20865,18 @@ the proxy field has no text yet; slice 10's design writes it. This slice is not 
   (`rewriteForRecovery()`, named so no screen calls it), releases the lockouts, exits 0 and prints that a concurrent
   save may have been overwritten. *Not chosen:* refusing recovery while busy, which leaves the owner locked out
   behind a save that may have hung.
+- *What a request changes is decided under the lock* (two-model review of slice 5). The saver hands the store a
+  plan (`updateWith()`) that reads the request against the settings as read once the lock is had, so a switch
+  the request did not send keeps what another save wrote meanwhile, and the no-change and agreeing-pair rules are
+  judged against that read. Deciding from a read before the lock let two overlapping saves undo each other's
+  switch: stored (off, off, on), A sends `hide_admin: true`, B sends `limit_attempts: false`, and A wrote the
+  limits back on.
+- *A malformed stored line trusts nobody* (two-model review of slice 5). The release before could store
+  `10.0.0.0/` or `10.0.0.0/x`, which the resolver read as prefix 0, trusting every IPv4 peer, while Hardening
+  called the list narrow. `ClientIpResolver` now skips any line `TrustedProxyRange` reports as `format`. A
+  well-formed `/0` is still honoured, as decided above. Hardening reports a malformed line in the same
+  `trusted_proxies` row, with a sentence of its own (fact `trustedProxiesWellFormed`), the `/0` sentence first
+  when a list has both; one row rather than an eighth, because the fix for both is the same command.
 - *Smaller rules.* A switch value of `''` is refused as "must be on or off" (`filter_var()` reads it as off). A
   refused proxy line is repeated up to 64 bytes cut on a character boundary (`mb_strcut()`). A request that names no
   setting answers 422 with `errors.request` and the reason `nothing_to_save`, rather than a 200 that reads as saved.

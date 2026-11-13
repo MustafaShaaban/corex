@@ -113,10 +113,64 @@ final class LoginProtectionSettingsStore
      */
     public function update(array $changes, ?LoginSwitches $switches = null): LoginProtectionSettings
     {
+        if (array_intersect_key($changes, array_flip(self::CHANGEABLE_KEYS)) === [] && $switches === null) {
+            return $this->current();
+        }
+
+        return $this->updateWith(static fn (): array => [$changes, $switches]);
+    }
+
+    /**
+     * Decide what to change from the settings as they are once the lock is had, and write it
+     * (spec 124, FR-015).
+     *
+     * A save that decided from what it read before the lock would write back the old value of each
+     * switch it did not send, over the change another save made meanwhile. Here `$plan` is handed the
+     * settings read under the lock and answers the stored keys to change and the switches to write
+     * (null for none), or null to write nothing; the merge is {@see self::update()}'s.
+     *
+     * @param callable(LoginProtectionSettings): (array{0: array<string,mixed>, 1: ?LoginSwitches}|null) $plan
+     *
+     * @throws LoginSettingsRefused when wp-login.php would be hidden behind no usable address
+     * @throws LoginSettingsBusy    when another save holds the lock past the wait
+     */
+    public function updateWith(callable $plan): LoginProtectionSettings
+    {
+        $this->rewrite(function (array $stored) use ($plan): array {
+            $fresh = $this->settingsFrom($stored);
+            $planned = $plan($fresh);
+
+            if ($planned === null) {
+                return $stored;
+            }
+
+            [$changes, $switches] = $planned;
+
+            return $this->merged($stored, $changes, $switches, $fresh);
+        });
+
+        return $this->current();
+    }
+
+    /**
+     * The stored option with the changes over it, the switches in both shapes when given.
+     *
+     * @param array<string,mixed> $stored
+     * @param array<string,mixed> $changes
+     *
+     * @return array<string,mixed>
+     *
+     * @throws LoginSettingsRefused when wp-login.php would be hidden behind no usable address
+     */
+    private function merged(array $stored, array $changes, ?LoginSwitches $switches, LoginProtectionSettings $fresh): array
+    {
         $changes = array_intersect_key($changes, array_flip(self::CHANGEABLE_KEYS));
 
-        if ($changes === [] && $switches === null) {
-            return $this->current();
+        if (($switches ?? $fresh->switches())->hideWpLogin && array_key_exists('custom_slug', $changes)) {
+            $reason = LoginSlug::rejectionReason(sanitize_title(trim((string) $changes['custom_slug'])));
+            if ($reason !== null) {
+                throw LoginSettingsRefused::addressNeededToHide($reason);
+            }
         }
 
         if ($switches !== null) {
@@ -129,19 +183,7 @@ final class LoginProtectionSettingsStore
             ];
         }
 
-        $this->rewrite(function (array $stored) use ($changes, $switches): array {
-            $hiding = ($switches ?? $this->current()->switches())->hideWpLogin;
-            if ($hiding && array_key_exists('custom_slug', $changes)) {
-                $reason = LoginSlug::rejectionReason(sanitize_title(trim((string) $changes['custom_slug'])));
-                if ($reason !== null) {
-                    throw LoginSettingsRefused::addressNeededToHide($reason);
-                }
-            }
-
-            return array_replace($stored, $changes);
-        });
-
-        return $this->current();
+        return array_replace($stored, $changes);
     }
 
     /**
@@ -214,8 +256,17 @@ final class LoginProtectionSettingsStore
     public function current(): LoginProtectionSettings
     {
         $stored = get_option(self::OPTION, []);
-        $stored = is_array($stored) ? $stored : [];
 
+        return $this->settingsFrom(is_array($stored) ? $stored : []);
+    }
+
+    /**
+     * The settings a stored option holds, read as {@see self::current()} reads them.
+     *
+     * @param array<string,mixed> $stored
+     */
+    private function settingsFrom(array $stored): LoginProtectionSettings
+    {
         $enabled = (bool) ($stored['enabled'] ?? false);
         $blockDefaultEndpoints = (bool) ($stored['block_default_endpoints'] ?? true);
         $switches = $this->storedSwitches($stored, $enabled, $blockDefaultEndpoints);

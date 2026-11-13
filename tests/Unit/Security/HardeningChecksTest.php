@@ -29,6 +29,7 @@ function hardeningFacts(array $overrides = []): array
         'indexingAllowed'    => true,
         'authSaltsConfigured' => true,
         'trustedProxiesNarrow' => true,
+        'trustedProxiesWellFormed' => true,
     ], $overrides);
 }
 
@@ -56,9 +57,26 @@ it('spec 124 FR-015: warns when the trusted proxies include a range that trusts 
         ->and($checks['trusted_proxies']['detail'])->toContain('wp corex security trusted-proxies');
 });
 
+it('spec 124 FR-015: warns, with its own sentence, when a trusted proxy line is not an address or range', function () {
+    $checks = array_column((new HardeningChecks())->checks(hardeningFacts(['trustedProxiesWellFormed' => false])), null, 'key');
+
+    expect($checks['trusted_proxies']['status'])->toBe(HardeningChecks::WARN)
+        ->and($checks['trusted_proxies']['detail'])->toContain('not an address or a range')
+        ->and($checks['trusted_proxies']['detail'])->toContain('ignores');
+});
+
+it('spec 124 FR-015: names the range that trusts every address first when a list has both problems', function () {
+    $checks = array_column((new HardeningChecks())->checks(hardeningFacts([
+        'trustedProxiesNarrow'     => false,
+        'trustedProxiesWellFormed' => false,
+    ])), null, 'key');
+
+    expect($checks['trusted_proxies']['detail'])->toContain('every address');
+});
+
 it('passes the trusted proxy check for facts gathered before it existed', function () {
     $facts = hardeningFacts();
-    unset($facts['trustedProxiesNarrow']);
+    unset($facts['trustedProxiesNarrow'], $facts['trustedProxiesWellFormed']);
 
     $checks = array_column((new HardeningChecks())->checks($facts), null, 'key');
 
