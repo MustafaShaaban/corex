@@ -83,9 +83,9 @@ final class LoginSettingsMessages
             LoginSettingsProblem::REASON_NOTHING_TO_SAVE => __('The request names no login protection setting, so there is nothing to save.', 'corex'),
             LoginSettingsProblem::REASON_BUSY => __('The login settings are being saved by another request. Nothing was saved; try again in a moment.', 'corex'),
             LoginSettingsProblem::REASON_TWO_UNITS => $problem->field === 'lockout_minutes'
-                ? __('Send the lockout length in minutes or in seconds, not both.', 'corex')
-                : __('Send the counting window in minutes or in seconds, not both.', 'corex'),
-            LoginSettingsProblem::REASON_TWO_SHAPES => __('Send the three login switches or the older "enabled" and "block default endpoints" settings, not both.', 'corex'),
+                ? __('The lockout length in minutes and in seconds disagree. Send one, or the same length in both.', 'corex')
+                : __('The counting window in minutes and in seconds disagree. Send one, or the same length in both.', 'corex'),
+            LoginSettingsProblem::REASON_TWO_SHAPES => __('The login switches and the older "enabled" and "block default endpoints" settings disagree. Send one shape, or both with the same meaning.', 'corex'),
             LoginSettingsProblem::REASON_ADDRESS_NEEDED_TO_HIDE => sprintf(
                 /* translators: %s: why the login address cannot be used. */
                 __('wp-login.php can only be hidden behind a login address of your own. %s', 'corex'),

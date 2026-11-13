@@ -45,10 +45,10 @@ final readonly class LoginSettingsProblem
     /** Trusted proxies sent as something other than text or a list of text. */
     public const REASON_NOT_A_LIST = 'not_a_list';
 
-    /** A length sent in minutes and in seconds in one request. */
+    /** A length sent in minutes and in seconds in one request, where the two disagree. */
     public const REASON_TWO_UNITS = 'two_units';
 
-    /** The three switches and the previous screen's `enabled`/`block_default_endpoints` in one request. */
+    /** The switches and the previous screen's `enabled`/`block_default_endpoints` in one request, where they disagree. */
     public const REASON_TWO_SHAPES = 'two_shapes';
 
     /** An unusable login address: `detail` is a LoginSlug or LoginSlugAvailability reason. */
