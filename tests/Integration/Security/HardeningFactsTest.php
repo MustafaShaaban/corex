@@ -20,6 +20,45 @@
 declare(strict_types=1);
 
 use Corex\Config\Security\HardeningFacts;
+use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Support\Options\LoadedOptions;
+use Corex\Tests\Support\OptionRow;
+
+it('spec 124 FR-015: reports a stored trusted proxy list that trusts every address, while proxies are trusted', function (bool $mode, array $ranges, bool $narrow) {
+    $row = OptionRow::capture(LoginProtectionSettingsStore::OPTION);
+
+    try {
+        LoadedOptions::store(LoginProtectionSettingsStore::OPTION, ['trusted_proxy_mode' => $mode, 'trusted_proxy_ranges' => $ranges]);
+
+        expect(HardeningFacts::gather()['trustedProxiesNarrow'])->toBe($narrow);
+    } finally {
+        OptionRow::restore(LoginProtectionSettingsStore::OPTION, $row);
+    }
+})->with([
+    'a /0 range, trusted'         => [true, ['203.0.113.0/24', '0.0.0.0/0'], false],
+    'an IPv6 /0 range, trusted'   => [true, ['::/0'], false],
+    'a /0 range left with mode off' => [false, ['0.0.0.0/0'], true],
+    'narrow ranges'               => [true, ['203.0.113.0/24'], true],
+    'nothing trusted'             => [false, [], true],
+]);
+
+it('spec 124 FR-015: reports a stored trusted proxy line that is not an address or range, while proxies are trusted', function (bool $mode, array $ranges, bool $wellFormed) {
+    $row = OptionRow::capture(LoginProtectionSettingsStore::OPTION);
+
+    try {
+        LoadedOptions::store(LoginProtectionSettingsStore::OPTION, ['trusted_proxy_mode' => $mode, 'trusted_proxy_ranges' => $ranges]);
+
+        expect(HardeningFacts::gather()['trustedProxiesWellFormed'])->toBe($wellFormed);
+    } finally {
+        OptionRow::restore(LoginProtectionSettingsStore::OPTION, $row);
+    }
+})->with([
+    'an empty prefix, trusted'      => [true, ['203.0.113.0/24', '10.0.0.0/'], false],
+    'a prefix that is not a number' => [true, ['10.0.0.0/x'], false],
+    'left with mode off'            => [false, ['10.0.0.0/x'], true],
+    'a /0 range is well-formed'     => [true, ['0.0.0.0/0'], true],
+    'narrow ranges'                 => [true, ['203.0.113.0/24'], true],
+]);
 
 /**
  * Make WordPress answer about the `admin` login as it does about `$as`, until the test ends.

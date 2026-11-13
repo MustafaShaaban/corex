@@ -13,28 +13,22 @@
 
 declare(strict_types=1);
 
+use Corex\Boot;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
-use Corex\Config\Security\LoginProtection\LoginSlug;
 use Corex\Config\Security\SecuritySettingsController;
+use Corex\Tests\Support\OptionRow;
 
 beforeEach(function () {
-    $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
+    $this->settingsRow = OptionRow::capture(LoginProtectionSettingsStore::OPTION);
     $this->store = new LoginProtectionSettingsStore();
-    $this->controller = new SecuritySettingsController($this->store);
+    $this->controller = Boot::app()->container()->make(SecuritySettingsController::class);
 
     wp_set_current_user((int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0]);
 });
 
 afterEach(function () {
     wp_set_current_user(0);
-
-    if ($this->previousLoginSettings === null) {
-        delete_option(LoginProtectionSettingsStore::OPTION);
-
-        return;
-    }
-
-    update_option(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings);
+    OptionRow::restore(LoginProtectionSettingsStore::OPTION, $this->settingsRow);
 });
 
 function corexSaveRequest(array $body): WP_REST_Request
@@ -67,8 +61,9 @@ it('refuses an unusable login address with a reason, and changes nothing', funct
         'block_default_endpoints' => true,
     ]));
 
-    expect($response->get_status())->toBe(400)
-        ->and($response->get_data()['message'])->toBeString()->not->toBe('')
+    // Spec 124, FR-015: the refusal is keyed by field, in spec 043's validation answer.
+    expect($response->get_status())->toBe(422)
+        ->and($response->get_data()['errors']['custom_slug'])->toBeString()->not->toBe('')
         // The previous working configuration survives a refused save.
         ->and($this->store->current()->customSlug)->toBe('team-entry');
 })->with([
@@ -86,7 +81,7 @@ it('explains the refusal differently depending on what is wrong', function () {
     $tooShort = $this->controller->save(corexSaveRequest(['enabled' => true, 'custom_slug' => 'ab']));
     $reserved = $this->controller->save(corexSaveRequest(['enabled' => true, 'custom_slug' => 'wp-admin']));
 
-    expect($tooShort->get_data()['message'])->not->toBe($reserved->get_data()['message']);
+    expect($tooShort->get_data()['errors']['custom_slug'])->not->toBe($reserved->get_data()['errors']['custom_slug']);
 });
 
 it('normalises an address the owner could reasonably type', function (string $typed, string $stored) {
@@ -100,9 +95,11 @@ it('normalises an address the owner could reasonably type', function (string $ty
     'surrounding slashes' => ['/team-entry/', 'team-entry'],
 ]);
 
-it('defaults the address when none is supplied rather than refusing', function () {
+it('keeps the stored address when a save sends none (spec 124, FR-015)', function () {
+    $this->store->save(['enabled' => true, 'custom_slug' => 'team-entry']);
+
     $response = $this->controller->save(corexSaveRequest(['enabled' => true]));
 
     expect($response->get_status())->toBe(200)
-        ->and($this->store->current()->customSlug)->toBe(LoginSlug::DEFAULT);
+        ->and($this->store->current()->customSlug)->toBe('team-entry');
 });

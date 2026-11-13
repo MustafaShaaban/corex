@@ -61,10 +61,13 @@ and approved first, a spec ends in slices, and nothing merges without the review
   rather than the mode; a mode change asks page-cache plugins to clear their pages) is merged (#465, `f6b45eb0`,
   DECISIONS #625). Slice 3 (sign-in privacy: values keyed with the site's secret, old ones counted until they age
   out, the account or "unknown username", one fingerprint on the panel and the notice, old lockout notices rewritten
-  by the first schema data step; DECISIONS #626, #627) is PR #466, green, waiting for the owner's merge. Slice 4 (the
-  three login switches, read from and written to the previous release's two keys; recovery without a command line;
-  DECISIONS #628) is on `spec/124-slice-4-login-switches`, in review. Next: slice 4's pull request, then slices 5
-  and 6. Slice 5 may not be released before slice 10 (DECISIONS #628). Held: `OperationsMode.php:189`
+  by the first schema data step; DECISIONS #626, #627) is merged (#466). Slice 4 (the three login switches, read
+  from and written to the previous release's two keys; recovery without a command line; DECISIONS #628) is merged
+  (#467, `c83fa394`). Slice 5 (the login settings route saves only what a request changes and refuses with the range;
+  one shared trusted-proxy rule with the command line, no `/0`, at most 100, one spelling; writes one at a time under
+  a named lock; a stored `/0` list reported by Hardening; DECISIONS #629 and its 2026-11-13 amendment) is on
+  `spec/124-slice-5-login-settings-route`, in review, and is not to be released before slice 10 (DECISIONS #628).
+  Next: slice 6, the lockout release route. Held: `OperationsMode.php:189`
   and `ModeDisclosure.php:157` still tell a Staging owner that search engines "should be discouraged", which is no
   longer true once slice 2 ships; the wording is held for slice 8's screen copy, but a release cut before slice 8
   would ship it.

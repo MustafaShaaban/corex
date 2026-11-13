@@ -15,7 +15,6 @@ use Corex\Config\Security\LoginProtection\LoginLockoutStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
 use Corex\Config\Security\LoginProtection\LoginSwitches;
 use Corex\Config\Security\LoginProtection\LoginUrl;
-use Corex\Support\Options\LoadedOptions;
 use DateTimeImmutable;
 
 /**
@@ -27,33 +26,63 @@ use DateTimeImmutable;
  */
 final class SecurityResetLoginCommand
 {
-    public function __construct(private readonly LoginLockoutStore $attempts)
-    {
+    public function __construct(
+        private readonly LoginLockoutStore $attempts,
+        private readonly LoginProtectionSettingsStore $settings,
+    ) {
     }
 
     /**
-     * @return array{restored_login_url:string,released_lockouts:int,unguard_constant_active:bool}
+     * The settings are written under their lock, so a save from the screen at the same moment is not
+     * lost. When another save holds them past the wait they are written anyway, without it, because
+     * this is how a locked-out owner gets back in; `written_without_lock` says so, and so does the
+     * command's output.
+     *
+     * @return array{restored_login_url:string,released_lockouts:int,unguard_constant_active:bool,written_without_lock:bool}
      */
     public function restore(DateTimeImmutable $now): array
     {
         $off = LoginSwitches::off();
-        $settings = get_option(LoginProtectionSettingsStore::OPTION, []);
-        $settings = is_array($settings) ? $settings : [];
-        $settings[LoginProtectionSettingsStore::HIDE_WP_LOGIN] = $off->hideWpLogin;
-        $settings[LoginProtectionSettingsStore::HIDE_ADMIN] = $off->hideAdmin;
-        $settings[LoginProtectionSettingsStore::LIMIT_ATTEMPTS] = $off->limitAttempts;
-        $settings['enabled'] = $off->previousEnabled();
-        $settings['block_default_endpoints'] = $off->previousBlockDefaultEndpoints();
-        // Reset the slug too: recovery exists for owners locked out by a bad one, and leaving it
-        // in place means re-enabling protection walks straight back into the same lockout.
-        $settings['custom_slug'] = LoginSlug::DEFAULT;
-        LoadedOptions::store(LoginProtectionSettingsStore::OPTION, $settings);
+        $locked = $this->settings->rewriteForRecovery(static fn (array $settings): array => array_replace($settings, [
+            LoginProtectionSettingsStore::HIDE_WP_LOGIN  => $off->hideWpLogin,
+            LoginProtectionSettingsStore::HIDE_ADMIN     => $off->hideAdmin,
+            LoginProtectionSettingsStore::LIMIT_ATTEMPTS => $off->limitAttempts,
+            'enabled'                                    => $off->previousEnabled(),
+            'block_default_endpoints'                    => $off->previousBlockDefaultEndpoints(),
+            // Reset the slug too: recovery exists for owners locked out by a bad one, and leaving
+            // it in place means re-enabling protection walks straight back into the same lockout.
+            'custom_slug'                                => LoginSlug::DEFAULT,
+        ]));
 
         return [
             'restored_login_url' => $this->restoredLoginUrl(),
             'released_lockouts' => $this->attempts->releaseActiveLockouts($now),
             'unguard_constant_active' => defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
+            'written_without_lock' => ! $locked,
         ];
+    }
+
+    /**
+     * What the command prints after a reset, one line each.
+     *
+     * @param array{restored_login_url:string,released_lockouts:int,unguard_constant_active:bool,written_without_lock:bool} $result
+     *
+     * @return list<string>
+     */
+    public function report(array $result): array
+    {
+        $lines = [
+            'Login switches: hide wp-login.php off, hide the admin off, limit failed sign-ins off.',
+            sprintf('Restored login URL: %s', $result['restored_login_url']),
+            sprintf('Released active lockouts: %d', $result['released_lockouts']),
+            sprintf('COREX_LOGIN_UNGUARD active: %s', $result['unguard_constant_active'] ? 'yes' : 'no'),
+        ];
+
+        if ($result['written_without_lock']) {
+            $lines[] = 'Another save of the login settings was in progress; it may have been overwritten. Check the settings once you are signed in.';
+        }
+
+        return $lines;
     }
 
     /**
@@ -70,15 +99,10 @@ final class SecurityResetLoginCommand
 
     public function run(): void
     {
-        $result = $this->restore(new DateTimeImmutable('now'));
+        foreach ($this->report($this->restore(new DateTimeImmutable('now'))) as $line) {
+            \WP_CLI::log($line);
+        }
 
-        \WP_CLI::log('Login switches: hide wp-login.php off, hide the admin off, limit failed sign-ins off.');
-        \WP_CLI::log(sprintf('Restored login URL: %s', $result['restored_login_url']));
-        \WP_CLI::log(sprintf('Released active lockouts: %d', $result['released_lockouts']));
-        \WP_CLI::log(sprintf(
-            'COREX_LOGIN_UNGUARD active: %s',
-            $result['unguard_constant_active'] ? 'yes' : 'no',
-        ));
         \WP_CLI::success('CoreX login protection reset.');
     }
 }
