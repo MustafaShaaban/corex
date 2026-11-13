@@ -73,7 +73,8 @@ test( 'each check says its state in words, and an open one links to its fix', as
 	await page.goto( HARDENING );
 
 	const rows = page.locator( '.corex-checklist__row' );
-	await expect( rows ).toHaveCount( 6 );
+	// Seven since spec 124 slice 5 added "Trusted proxies name only your proxies" (DECISIONS #629).
+	await expect( rows ).toHaveCount( 7 );
 	for ( const row of await rows.all() ) {
 		const chip = (
 			await row.locator( '.corex-state-chip' ).innerText()
@@ -87,11 +88,11 @@ test( 'each check says its state in words, and an open one links to its fix', as
 		);
 	}
 	await expect( page.locator( '.corex-opsec__count' ) ).toHaveText(
-		/^\d+ of 6 ready$/
+		/^\d+ of 7 ready$/
 	);
 	await expect( page.getByRole( 'progressbar' ) ).toHaveAttribute(
 		'aria-valuemax',
-		'6'
+		'7'
 	);
 } );
 
