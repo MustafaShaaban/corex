@@ -58,8 +58,9 @@ and approved first, a spec ends in slices, and nothing merges without the review
   2026-11-15 (US-BRD-01, US-BRD-05, US-BRD-07; DECISIONS #633 to #638). The theme moves from navy and cyan to
   white, graphite and brass, bound to the brand contract; the logo set gains its missing files and the login shows
   the whole mark; the theme's preview becomes a capture of the theme. Four slices, none built. Slices 1 to 3 wait
-  for the owner's approval of the design, drawn in Claude Design on the token values (no CoreX design system on
-  the new look exists yet: DT-0 follows this release).
+  for the owner's approval: first of the look in the CoreX design system in Claude Design (its visitor colours and
+  shadows were moved to graphite and brass on 2026-11-15), then of the screens drawn on it. `theme.json` follows
+  the design system. Remaking the whole design system is DT-0, after this release.
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).
   Slice 1 (Forms paused as a mode, one gate for Maintenance and Forms paused, the Assistant's chat kept open and its

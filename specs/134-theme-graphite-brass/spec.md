@@ -7,10 +7,19 @@ slices, and there is no separate plan or task file.
 
 **Status**: Draft. Slices 1, 2 and 3 each wait for the owner's approval of the design (`design/handoffs/spec-134-theme-graphite-brass.md`, written once he approves).
 
-**Design**: drawn on 2026-11-15 in Claude Design, 32 artboards, canvas Version 7, private to the owner:
-https://claude.ai/artifact/RgpHR931N7vqqnF6whkNyz . Not approved yet. It is drawn on the token values of "The
-palette" below, because no CoreX design system on the new look exists (DT-0 follows this release). It keeps today's
-layout and today's shapes and changes colours only.
+**The design system is the source.** A change to the look starts in the CoreX design system in Claude Design, then
+reaches the code through `theme.json` (`AGENTS.md`, "UI, UX and front end", step 7). So this release runs in that
+order:
+
+1. The design system's visitor colours and shadows were moved to graphite and brass on 2026-11-15 (its Version 5,
+   private to the owner): https://claude.ai/artifact/DExY8maEuxwM6JwdZ1jw5c . They hold the values of "The palette"
+   below. **The owner's approval of the look is given there first.**
+2. The screens are drawn on that design system: 32 artboards, canvas Version 7,
+   https://claude.ai/artifact/RgpHR931N7vqqnF6whkNyz . They were drawn on the same values before the design system
+   was updated; once the look is approved the design system is installed on the canvas and each artboard is checked
+   against it. Not approved yet. The screens keep today's layout and shapes and change colours only.
+3. `theme/theme.json` and `theme/styles/dark.json` follow the design system (slice 1). Where they would differ, the
+   design system is changed first.
 
 **Input**: Release R2.2 of the CoreX revamp, three stories approved under the owner's 2026-10-21 mandate: US-BRD-01
 (the CoreX theme wears the CoreX brand), US-BRD-05 (the logo set is complete and reads on every background) and
@@ -235,8 +244,8 @@ change one palette value and run the tests.
 
 **Palette and contract (US-BRD-01)**
 
-- **FR-001**: `theme/theme.json` and `theme/styles/dark.json` MUST hold the values of "The palette" above, and every
-  existing slug MUST keep its name.
+- **FR-001**: `theme/theme.json` and `theme/styles/dark.json` MUST hold the values of "The palette" above, which are
+  the values of the CoreX design system as the owner approves them, and every existing slug MUST keep its name.
 - **FR-002**: The theme's three shadows MUST be the contract's, in light (`theme.json`) and in dark (`dark.json`).
 - **FR-003**: `design/tokens/brand-contract.json` MUST list every theme palette slug, the `onAccent` token and the
   three shadows with their light and dark values, and `tests/Unit/Theme/BrandContractTest.php` MUST fail, naming the
@@ -360,8 +369,10 @@ change one palette value and run the tests.
 - R2.1's scales, faces and Arabic rules are unchanged: this release touches colours and shadows only.
 - The capture in slice 3 shows the front page as R2.2 leaves it. R2.3 and R2.4 change what that page holds and each
   takes a new capture as part of its own work; the fingerprint covers the palette only, as the story asks.
-- There is no CoreX design system in Claude Design on the new look yet (DT-0 follows this release). The design for
-  this spec is drawn on the token values above, and DT-0 takes its tokens from the files this spec ships.
+- The CoreX design system in Claude Design was made on 2026-11-15 from the code as it was before R2.1. This spec
+  moves its visitor colours and shadows to the new look and nothing else: its visitor scales (spacing, radius,
+  motion, sizes, the heading weight, the Arabic face) still record the state before R2.1 and say so on their first
+  page. Remaking the whole system is DT-0, after this release.
 - The native Arabic review of R2.1's catalogue is still owed before R2.1 is tagged. The neutral example colour
   changes six catalogue entries; they join that review.
 
