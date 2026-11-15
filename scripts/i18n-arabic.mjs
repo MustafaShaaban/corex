@@ -137,6 +137,15 @@ export function parsePo( text ) {
 	);
 	const header =
 		headerIndex >= 0 ? entries.splice( headerIndex, 1 )[ 0 ].str[ 0 ] : '';
+	// How many forms a plural entry must have: the header's Plural-Forms, read once.
+	const nplurals = Number(
+		( header.match( /nplurals\s*=\s*(\d+)/ ) || [] )[ 1 ] || 2
+	);
+	for ( const item of entries ) {
+		if ( item.plural !== null ) {
+			item.forms = nplurals;
+		}
+	}
 
 	return { header, entries: entries.filter( ( item ) => item.id !== null ) };
 }
@@ -196,14 +205,19 @@ export const keyOf = ( entry ) =>
 		: `${ entry.ctx }${ CONTEXT_GLUE }${ entry.id }`;
 
 /**
- * Whether an entry carries a translation for every form it has.
+ * Whether an entry carries a translation for every form it must have: one, or for a plural entry
+ * as many as its catalogue's Plural-Forms. A form left out counts as empty (`Array.from` turns a
+ * hole into `undefined`, which `every()` alone would skip).
  *
  * @param {Object} entry A parsed entry.
  * @return {boolean} Whether it does.
  */
 export const isTranslated = ( entry ) =>
 	entry.str.length > 0 &&
-	entry.str.every( ( form ) => typeof form === 'string' && form !== '' );
+	( entry.forms === undefined || entry.str.length === entry.forms ) &&
+	Array.from( entry.str ).every(
+		( form ) => typeof form === 'string' && form !== ''
+	);
 
 /* ------------------------------------------------------------------ placeholders */
 

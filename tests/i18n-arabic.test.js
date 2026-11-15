@@ -95,6 +95,34 @@ describe( 'The Arabic catalogue tools', () => {
 		).toEqual( [] );
 	} );
 
+	test( 'count a plural entry as translated only with every form the catalogue has', () => {
+		const forms = ( indexes ) =>
+			indexes.map( ( index ) => `msgstr[${ index }] "${ index } ملف"` );
+		const catalog = ( lines ) =>
+			tools.parsePo(
+				[
+					'msgid ""',
+					'msgstr "Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\\n"',
+					'',
+					'msgid "%d file"',
+					'msgid_plural "%d files"',
+					...lines,
+					'',
+				].join( '\n' )
+			).entries[ 0 ];
+
+		expect(
+			tools.isTranslated( catalog( forms( [ 0, 1, 2, 3, 4, 5 ] ) ) )
+		).toBe( true );
+		// A form left out in the middle, and a list cut short.
+		expect(
+			tools.isTranslated( catalog( forms( [ 0, 1, 3, 4, 5 ] ) ) )
+		).toBe( false );
+		expect( tools.isTranslated( catalog( forms( [ 0, 1 ] ) ) ) ).toBe(
+			false
+		);
+	} );
+
 	test( 'let a plural form for one leave the number out, never add one', () => {
 		const plural = ( forms ) =>
 			tools.problemsOf(
