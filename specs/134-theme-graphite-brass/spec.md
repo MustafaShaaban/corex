@@ -313,8 +313,9 @@ change one palette value and run the tests.
 - R2.1's scales, faces and Arabic rules are unchanged: this release adds colour tokens and section styles only.
 - The capture in slice 4 shows the front page as this release leaves it: the kit's colours on today's layout. The
   releases that build the kit's blocks each take a new capture.
-- The kit's components, blocks and templates need their own specs. Six blocks are new to CoreX and have no story
-  yet (the hand-over lists them); they enter through the planning workspace's change control.
+- The kit's components, blocks and templates need their own specs. Six blocks have no CoreX block or pattern yet
+  (the hand-over lists them, and which of them may already have a story); any that has none enters through the
+  planning workspace's change control.
 - The native Arabic review of R2.1's catalogue is still owed before R2.1 is tagged. The neutral example colour
   changes six catalogue entries; they join that review.
 

@@ -21286,8 +21286,9 @@ release could show it.
 - Not approved by this decision: the admin's tokens and components (spec 133), and the logo set's new files, which
   need their own approval.
 
-**Limit.** Six blocks of the kit have no story in the plan (Timeline, Location, VideoFeature, FilterBar, PageRating,
-CookieNotice). They enter through the planning workspace's change control before they are built.
+**Limit.** Six blocks of the kit have no CoreX block or pattern yet (Timeline, Location, VideoFeature, FilterBar,
+PageRating, CookieNotice). Four may be the designs of stories the plan already has; Timeline and CookieNotice have
+none. Any block without a story enters through the planning workspace's change control before it is built.
 
 ## #640 -- A dark section is the dark band: dark in both themes, re-pointing tokens for what is inside it
 

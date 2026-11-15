@@ -183,8 +183,11 @@ Each component's guidelines list its states. The ones every build must meet:
 ## Open questions
 
 1. **The logo set** needs its own approval (see Exclusions).
-2. **Six blocks are new to CoreX** and have no story in the plan: Timeline, Location, VideoFeature, FilterBar,
-   PageRating, CookieNotice. Each needs a row and a story before it is built.
+2. **Six blocks have no CoreX block or pattern yet**: Timeline, Location, VideoFeature, FilterBar, PageRating,
+   CookieNotice. Four of them look like the designs of stories the plan already has (a map on request, a video in
+   a dialog, filtering an archive, saying whether a page helped); that was read from the story titles only and
+   must be checked against their criteria. Timeline and CookieNotice have no story. Each needs one before it is
+   built.
 3. **Form patterns** are owed.
 4. **A `brand.json` whose `accent` is dark** needs a light `on-accent`: the branding guide must say so.
 5. **The docs site's design-system pages** and `ApprovedComponentInventory` should be brought into step with this
