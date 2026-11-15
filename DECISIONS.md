@@ -21186,6 +21186,12 @@ answer taken.
 - One theme value is not in the admin set: `success` in light is `#287a4e` (5.27:1 on white), because the admin's
   `#2f8f5b` is 4.04:1 as text on white. The contract records it with that reason.
 
+**Amended 2026-11-15.** The owner approved the visitor kit (#639), whose main button is brass with a graphite
+label, as his October design package drew it. So the button is `accent` behind and `custom.color.onAccent` on it,
+not `primary` and `inverse`. A `brand.json` that sets only the palette gets its `accent` as the button; a brand
+whose `accent` is dark sets `onAccent` light. The contract also lists the kit's custom colour tokens (a brass
+hover, a brass tint, four status tints, ten band tokens), each a brand value.
+
 ## #635 -- Text on brass is graphite in both modes; headings and plain buttons follow their section
 
 **Date:** 2026-11-15. **Spec:** 134 (FR-011 to FR-015). **Decided:** under the owner's mandate.
@@ -21207,6 +21213,12 @@ background); moving the band to `surface-alt` (the page would show brass only in
 
 **Limit.** Under a client's own theme, a newly inserted call-to-action band takes that theme's text and heading
 colours on its accent. Bands already on a page do not change.
+
+**Amended 2026-11-15.** Replaced by #640 for sections: the dark band and the brass band are section styles that
+re-point tokens, so the rule that a plain button becomes an outline is not needed and is dropped. What stands:
+text on brass is graphite in both modes through `custom.color.onAccent`, and a heading with no colour of its own
+takes its section's text colour. The limit above is replaced too: under a client theme a band falls back to the
+palette slugs and draws as it did.
 
 ## #636 -- The Editorial variation is removed; Dark stays a choice the site owner makes
 
@@ -21250,3 +21262,56 @@ beside the image, and a test fails, naming the command, when the hash differs fr
 
 *Not chosen:* comparing file dates (a checkout sets every file's date to now); a fingerprint that also covers the
 templates (the story asks for the palette; R2.3 and R2.4 change the page and each takes its own capture).
+
+## #639 -- The design system is a component kit in four layers, and it comes before the code
+
+**Date:** 2026-11-15. **Spec:** 134, and every later spec with a visible part. **Decided:** by the owner, in session.
+
+**Why.** A first design for R2.2 redrew today's theme layout in new colours. The owner rejected it: "the whole design
+needs to be revamped and modernized, it must be a real components thing", in the manner of a public design system
+with components, patterns and blocks, "to create a full website in a consistent identity and nothing is missing".
+His own design package of 2026-10-19 already listed that library (33 content blocks, 23 core components), and
+`ApprovedComponentInventory` holds the same list in code; the plan had spread it over many releases, so no single
+release could show it.
+
+**What.**
+- The CoreX design system in Claude Design holds the public side as a kit in four layers: foundations, 30
+  components, 28 blocks (page sections built only from components) and 13 templates (pages built only from blocks),
+  in light and dark, in English and Arabic. The owner approved it on 2026-11-15 at its Version 8. The record in the
+  repository is `design/handoffs/visitor-kit.md`.
+- The design system is the source. A change to the look starts there and reaches the code through `theme.json`.
+  A screen is drawn from the kit's parts; a part the kit lacks is added to the kit first.
+- Spec 134 builds the kit's first layer (tokens, base elements, section styles, logo set, preview). The components,
+  blocks and templates are built by later specs, one per release, from the same hand-over.
+- Not approved by this decision: the admin's tokens and components (spec 133), and the logo set's new files, which
+  need their own approval.
+
+**Limit.** Six blocks of the kit have no story in the plan (Timeline, Location, VideoFeature, FilterBar, PageRating,
+CookieNotice). They enter through the planning workspace's change control before they are built.
+
+## #640 -- A dark section is the dark band: dark in both themes, re-pointing tokens for what is inside it
+
+**Date:** 2026-11-15. **Spec:** 134 (FR-002, FR-013 to FR-016). **Decided:** under the owner's mandate, and shown in
+the kit he approved.
+
+**Why.** A section filled with `primary` is graphite in light, but `primary` is also the heading colour, so it is
+light in the Dark variation and the hero turned into a light slab there. Brass on that slab was 2.18:1. And every
+component placed in a dark section needed its own second set of colours.
+
+**What.**
+- Ten custom colour tokens, `settings.custom.color.band*`: the band's ground (graphite in light, the deepest
+  graphite in dark), a raised ground, text, soft text, a hairline, a control edge, brass, brass on hover, a brass
+  tint and a link colour.
+- The dark band is a section style of the Group block. It sets the band's ground and text, and re-points the
+  palette custom properties (`surface`, `ink`, `primary`, `accent`, `accent-dark`, `border` and the rest) to the
+  band tokens for its descendants. A button, a link, a card or a field inside it is drawn by its ordinary rules and
+  comes out right. Only tokens are named: no raw value (constitution V).
+- The brass band is a second section style: `accent` behind, text re-pointed to `onAccent`, a graphite button. Once
+  a page at most.
+- The hero pattern uses the dark band and the call-to-action pattern the brass band. Filling a section with
+  `primary` is retired in new work.
+- Under a theme with no band tokens the rules fall back to the palette slugs, so a band draws as today's `primary`
+  section (constitution IX).
+
+*Not chosen:* a second set of colour rules per component for dark sections (every component would carry it, and a
+new one could forget it); keeping the `primary` fill and accepting a light hero in the Dark variation.
