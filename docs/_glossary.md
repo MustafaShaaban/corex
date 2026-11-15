@@ -29,3 +29,8 @@ future translation phase (spec 028, phase 2). Code identifiers are **never** tra
 | **Field driver (ACF-optional)** | The abstraction that reads custom fields through ACF when present and native post meta otherwise — so ACF is never a hard dependency. | _TODO_ |
 | **Monorepo mapping** | Mapping the repo's `plugins/`, `theme/`, and `addons/` into WordPress's `wp-content/` (via junctions on Windows, symlinks on Linux/macOS, or bind-mounts in Docker) so one source tree runs the site. | _TODO_ |
 | **docs-app** | The published documentation **website** (Astro + Starlight) — product/API docs + the generated class reference. Distinct from this in-repo handbook. | _TODO_ |
+| **Visitor kit** | The design of CoreX's public side in four layers: foundations, components, blocks and templates. It lives in the CoreX design system; `design/handoffs/visitor-kit.md` records its approval. | _TODO_ |
+| **Block (kit)** | In the visitor kit, a page section built only from components: a hero, a pricing table, a footer. Not the same word as a WordPress block, which is one unit in the editor; a kit block usually ships as a pattern of several. | _TODO_ |
+| **Section style** | A named look of the WordPress Group block that a section takes: quiet band, dark band or brass band. | _TODO_ |
+| **Dark band** | A section that is dark in both the light and the dark theme. It hands its own colours to everything inside it, so a component needs no second set of rules. | _TODO_ |
+| **Brass band** | A section with the brass accent behind it, graphite text and a graphite button. One on a page at most. | _TODO_ |

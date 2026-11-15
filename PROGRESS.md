@@ -54,6 +54,14 @@ and approved first, a spec ends in slices, and nothing merges without the review
   (825 entries on 2026-11-11, 67 more on 2026-11-15, each marked `# Drafted`); the right-to-left line height that
   #454 introduced and the review's test gaps are done. The native Arabic
   review of the catalogue (`specs/121-tokens-and-type/arabic-review.md`) is the owner's and gates the tag.
+- **Spec 134, the CoreX theme in CoreX colours (R2.2)**, branch `spec/134-theme-graphite-brass`, draft pull
+  request #471: rewritten 2026-11-15. The owner rejected a recolour of today's layout and approved a **visitor
+  kit** in the CoreX design system: foundations, 30 components, 28 blocks, 13 page templates, light and dark,
+  English and Arabic (DECISIONS #639; `design/handoffs/visitor-kit.md`). Spec 134 builds its first layer in five
+  slices: tokens; base elements and section styles (the brass button, the dark band and the brass band,
+  DECISIONS #640); the logo set; the theme preview; release notes. Nothing is built. Slices 1 and 2 are ready;
+  slice 3 waits for the logo set's own design approval. The kit's components, blocks and templates need later
+  specs, and the release order in the planning workspace needs a change request (not written from here).
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).
   Slice 1 (Forms paused as a mode, one gate for Maintenance and Forms paused, the Assistant's chat kept open and its
