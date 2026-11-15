@@ -9,7 +9,7 @@ Captured: 2026-06-20 EEST
 | Readable fallback stacks | PASS | System body, sans-serif heading/Arabic, and monospace technical fallbacks |
 | `font-display: swap` | PASS | All four WordPress font faces and manifest records use `swap` |
 | Provenance/checksums/licenses/subsets | PASS | Pinned Google Fonts commit, local OFL files, subset ranges, and SHA-256 records verified |
-| Preloads | PASS | None added; no measured-benefit record exists |
+| Preloads | PASS | Space Grotesk only, from spec 121 (DECISIONS #631), evidence `spec-121-T031-heading-face-preload` in `specs/121-tokens-and-type/evidence/heading-face-preload.md` |
 | Browser font network requests | ENVIRONMENT-GATED | Chromium cannot resolve the local `corex-spec057.local` hostname (`ERR_NAME_NOT_RESOLVED`); no rendered-network PASS is claimed |
 | Built WordPress font integration | PASS | WordPress 7.0 `WP_Font_Face_Resolver` resolves all base and style-variation faces to the four local CoreX theme URLs with the approved weights and `swap` |
 

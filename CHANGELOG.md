@@ -55,6 +55,9 @@ CoreX now speaks Arabic wherever a site or a user runs WordPress in Arabic.
 - **Headings and interface labels in Space Grotesk, long text in the system font** (US-BRD-09, #464): buttons,
   tabs, navigation and form labels on the CoreX theme, in the CoreX admin and on the login. Emails keep the system
   font.
+- **The CoreX theme preloads its heading face** on left-to-right pages (#631), so a page is drawn in Space Grotesk
+  from the first frame and nothing moves when the face arrives. Arabic pages do not preload it.
+- **Avatars load lazily on the CoreX theme** (#632): a comment avatar is never the page's main image.
 - **The admin's Light and System modes are one** (#461). Choosing Light now gives the light shadows, overlay, login
   card and backdrop (it kept the dark ones); System on a light computer draws graphite shadows, not navy. The admin's
   motion follows the design: entrances take 320ms (900ms before), spinners keep their speed. In Arabic (right to

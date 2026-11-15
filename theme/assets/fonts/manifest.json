@@ -16,7 +16,8 @@
       "license_source": "theme/assets/fonts/licenses/space-grotesk-OFL.txt",
       "checksum": "sha256:c0955a80b5e390fb2b2114db858eba79d1c56d7e75574490e99c97e9af298a95",
       "font_display": "swap",
-      "preload": false
+      "preload": true,
+      "evidence_id": "spec-121-T031-heading-face-preload"
     },
     {
       "family": "JetBrains Mono",

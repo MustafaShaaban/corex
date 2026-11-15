@@ -21105,3 +21105,47 @@ from the URL only, so an `id` in the body cannot name another lockout. 409 and n
 because the request asked for a change the lockout's state no longer allows, which is how the job routes answer a
 cancel of a job that cannot be cancelled; and not 422, because nothing in the request is malformed. *Not chosen:*
 a 200 with a status field, which a client reading `ok` would show as "released".
+
+## #631 -- The CoreX theme preloads its heading face, left to right only, and keeps swap
+
+**Date:** 2026-11-15. **Spec:** 121, T031 (US-BRD-09, FR-016; spec 116 FR-020). **Branch:**
+`spec/121-tokens-and-type`. **Decided:** under the owner's 2026-10-21 mandate for the revamp.
+
+**Why.** With the heading scale of #462 the h1 is 40px at 375px. In the first frame the page is drawn in the system
+font, because the theme's CSS is inline and Space Grotesk (`font-display: swap`) is asked for only after layout. On
+Linux that fallback is wider, so "Build something great" wraps onto three lines instead of two, and when the face
+arrives everything below moves up by one line: CI's front-end budget measured 0.065 to 0.129 layout shift on six
+pages (limit 0.05). Windows passes because Segoe UI is close to Space Grotesk.
+
+**What.** `ThemeFontPreload` adds the heading family's first theme WOFF2 face to `wp_preload_resources`, read from
+the merged font settings so a `brand.json` heading face is followed. Only on the CoreX theme and only on a page that
+is not right to left (an Arabic page sets headings in the Arabic face, and spec 057 forbids an unused preload). The
+font manifest marks Space Grotesk `preload: true` with evidence `spec-121-T031-heading-face-preload`
+(`specs/121-tokens-and-type/evidence/heading-face-preload.md`), the first evidence-backed exception to spec 057's
+"no preload by default". `font-display` stays `swap`.
+
+*Not chosen:* a metric-matched fallback (`size-adjust`), which fixed the front page but not "Archives: Projects",
+3px too wide in the fallback; `font-display: optional`, which kept first visits in the system font.
+
+**Limits.** Chrome holds the first frame for a preloaded font about 100ms; on a slower first visit the swap still
+moves the page, as before. Without corex-core active there is no preload, since the theme has no PHP.
+
+## #632 -- Avatars load lazily on the CoreX theme, and the budget's main image is at least 50,000 px²
+
+**Date:** 2026-11-15. **Spec:** 121, T031 (spec 116 FR-020). **Branch:** `spec/121-tokens-and-type`.
+**Decided:** under the owner's 2026-10-21 mandate for the revamp.
+
+**Why.** With the heading scale of #462 the comment avatar of a single post sits below the 812px fold at 375px, and
+WordPress loads it at once, because it is among the first three images of the main loop. The front-end budget calls
+that `image-below-fold-not-lazy`. At 1280px the same avatar is the only image on the first screen, and the budget
+took the largest image in view as the page's main image whatever its size, so a lazy avatar there was
+`first-image-lazy`. The server cannot know the width it draws for, so no single `loading` value passed both.
+
+**What.** `AvatarLazyLoading` answers `wp_get_loading_optimization_attributes` for the `get_avatar` context: on the
+CoreX theme, when the caller gave no `loading` and lazy loading is on, the avatar is `lazy` and loses
+`fetchpriority`. A client site's own theme keeps WordPress's answer. The budget
+(`tests/e2e/quality/front-end-budget.spec.js`) counts an image as the first screen's main image only from 50,000 px²,
+the default of WordPress's own `wp_min_priority_img_pixels`: an avatar or an icon is never a page's main image.
+
+**Limit.** WordPress still counts the avatar toward its first three eager images before the filter runs. In the
+CoreX templates comments come after the content, so no content image is affected.
