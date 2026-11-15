@@ -1075,6 +1075,12 @@
 	font-weight: 600;
 }
 
+/* The label and the box measure one line alike, the row's: right to left
+   gives a label its own line height, which the box would not share. */
+.corex-admin .corex-inbox__acknowledge :is(label, .corex-inbox__acknowledge-box) {
+	line-height: inherit;
+}
+
 /* How long the trash keeps a submission, said once above its table. */
 .corex-admin .corex-inbox__trash-keeps {
 	margin: 0;

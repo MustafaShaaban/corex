@@ -80,7 +80,7 @@ it('loads nothing for a language CoreX has no catalogue in', function () {
 it('answers a CoreX script with the translations CoreX ships when WordPress has none', function () {
     $name = 'corex-ar-' . md5('build/inbox.js') . '.json';
     touch($this->folder . '/shipped/' . $name);
-    $translations = new ScriptTranslations($this->folder . '/shipped');
+    $translations = new ScriptTranslations($this->folder . '/shipped', '/wp-content/languages/plugins');
 
     expect($translations->locate('/wp-content/languages/plugins/' . $name, 'corex-inbox', 'corex'))
         ->toBe($this->folder . '/shipped/' . $name)
@@ -95,8 +95,21 @@ it('keeps a translation file the site installed for a CoreX script', function ()
     touch($this->folder . '/packs/' . $name);
     touch($this->folder . '/shipped/' . $name);
 
-    expect((new ScriptTranslations($this->folder . '/shipped'))->locate($this->folder . '/packs/' . $name, 'corex-inbox', 'corex'))
+    expect((new ScriptTranslations($this->folder . '/shipped', $this->folder . '/packs'))->locate($this->folder . '/packs/' . $name, 'corex-inbox', 'corex'))
         ->toBe($this->folder . '/packs/' . $name);
+});
+
+it('answers only in the WordPress languages folder, so a pack the site installed is still read after a screen path', function () {
+    // wp_set_script_translations() with a path asks for the file there first, then in WordPress's
+    // folder (spec 121 review, finding 4).
+    $name = 'corex-ar-' . md5('build/inbox.js') . '.json';
+    touch($this->folder . '/shipped/' . $name);
+    $translations = new ScriptTranslations($this->folder . '/shipped', $this->folder . '/packs');
+
+    expect($translations->locate('/plugins/corex-config/languages/' . $name, 'corex-inbox', 'corex'))
+        ->toBe('/plugins/corex-config/languages/' . $name)
+        ->and($translations->locate($this->folder . '/packs/' . $name, 'corex-inbox', 'corex'))
+        ->toBe($this->folder . '/shipped/' . $name);
 });
 
 it('ships an Arabic catalogue compiled from its source', function () {

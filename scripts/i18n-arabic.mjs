@@ -526,13 +526,9 @@ export const scriptFileName = ( relative ) =>
  * @return {Map<string, {data: object, scripts: string[]}>} Each file's Jed data and the scripts it answers.
  */
 export function scriptTranslationFiles( catalog, scripts ) {
-	const entries = catalog.entries.filter(
-		( entry ) =>
-			isTranslated( entry ) &&
-			entry.refs.some( ( ref ) =>
-				/\.(?:js|jsx|ts|tsx)(?::|$)/.test( ref )
-			)
-	);
+	// Every translated entry: a string a script asks for is found in the script itself
+	// (`scriptTranslationsOf()`), and the catalogue's own references can lag the template.
+	const entries = catalog.entries.filter( isTranslated );
 	const byName = new Map();
 
 	for ( const { file, plugin, relative } of scripts ) {

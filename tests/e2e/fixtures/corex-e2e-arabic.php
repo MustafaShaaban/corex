@@ -40,6 +40,8 @@ const COREX_E2E_ARABIC_KEEP = [
     'Gutenberg', 'reCAPTCHA', 'hCaptcha', 'Turnstile', 'Cloudflare', 'Google', 'Gmail', 'Outlook', 'GitHub', 'Azure',
     'cron', 'OPcache', 'UTF-8', 'SSO', 'OAuth', 'IP', 'Space Grotesk', 'JetBrains Mono', 'IBM Plex Sans Arabic',
     'Facebook', 'LinkedIn', 'WhatsApp', 'Honeypot', 'Blog Pro', 'Pro', 'HTTPS', 'HTTP', 'CDN', 'CV', 'WP-Cron', 'SSL',
+    'Corex Captcha', 'Corex Media', 'GD', 'Imagick', 'AVIF', 'Google Gemini', 'Groq', 'OpenRouter', 'Mistral', 'OpenAI',
+    'Anthropic Claude', 'UTC',
 ];
 
 /** Whether a string that came back unchanged still holds an English word. */

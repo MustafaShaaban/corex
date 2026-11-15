@@ -17,14 +17,20 @@ defined('ABSPATH') || exit;
  * the md5 of the script's path inside its plug-in. CoreX's are written into corex-core's
  * `languages/` folder under that same name when the bundles are built. When WordPress's folder has
  * no file for a CoreX script, this answers with CoreX's; a language pack a site installs itself
- * still wins, because its file exists first.
+ * still wins, because its file exists first. Only a file asked for in WordPress's folder is
+ * answered: a screen that names a path of its own is asked there first, and answering that would
+ * hide the site's pack.
  */
 final class ScriptTranslations
 {
     /** `corex-<locale>-<md5>.json`, the name WordPress gives a script's translations. */
     private const FILE_NAME = '/^corex-[A-Za-z_]+-[0-9a-f]{32}\.json$/';
 
-    public function __construct(private readonly string $directory)
+    /**
+     * @param string $directory CoreX's shipped script translations.
+     * @param string $packs     WordPress's folder for plug-in language packs (`WP_LANG_DIR/plugins`).
+     */
+    public function __construct(private readonly string $directory, private readonly string $packs)
     {
     }
 
@@ -41,12 +47,20 @@ final class ScriptTranslations
         }
 
         $name = basename($file);
-        if (preg_match(self::FILE_NAME, $name) !== 1) {
+        if (preg_match(self::FILE_NAME, $name) !== 1 || ! $this->inPacks($file)) {
             return $file;
         }
 
         $shipped = $this->directory . '/' . $name;
 
         return is_readable($shipped) ? $shipped : $file;
+    }
+
+    /** Whether WordPress is asking in its own language pack folder. */
+    private function inPacks(string $file): bool
+    {
+        $folder = static fn (string $path): string => rtrim(strtr($path, '\\', '/'), '/');
+
+        return $folder(dirname($file)) === $folder($this->packs);
     }
 }

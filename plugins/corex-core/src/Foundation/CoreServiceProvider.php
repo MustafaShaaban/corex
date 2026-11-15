@@ -102,7 +102,7 @@ final class CoreServiceProvider extends ServiceProvider
         );
         $this->container->singleton(
             ScriptTranslations::class,
-            static fn (): ScriptTranslations => new ScriptTranslations(COREX_CORE_PATH . 'languages'),
+            static fn (): ScriptTranslations => new ScriptTranslations(COREX_CORE_PATH . 'languages', WP_LANG_DIR . '/plugins'),
         );
         $this->container->singleton(MailPath::class);
         $this->container->singleton(MailHold::class);

@@ -21020,3 +21020,392 @@ msgstr "مساعد CoreX"
 msgctxt "block description"
 msgid "The assistant's button and chat (spec 129). Printed on every public page by the footer when the assistant is on; not for placing in content."
 msgstr "زر المساعد ومحادثته (spec 129). يطبعه التذييل على كل صفحة عامة حين يكون المساعد مفعّلًا؛ ولا يُوضع داخل المحتوى."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: who released them, 2: how many sign-in lockouts were active.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:105
+msgid "%1$s released the %2$s active sign-in lockout"
+msgid_plural "%1$s released all %2$s active sign-in lockouts"
+msgstr[0] "رفع %1$s جميع حالات حظر تسجيل الدخول النشطة، وعددها %2$s"
+msgstr[1] "رفع %1$s حظر تسجيل الدخول النشط"
+msgstr[2] "رفع %1$s حظري تسجيل الدخول النشطين"
+msgstr[3] "رفع %1$s جميع حالات حظر تسجيل الدخول النشطة، وعددها %2$s"
+msgstr[4] "رفع %1$s جميع حالات حظر تسجيل الدخول النشطة، وعددها %2$s"
+msgstr[5] "رفع %1$s جميع حالات حظر تسجيل الدخول النشطة، وعددها %2$s"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: who released it, 2: a short fingerprint of the username that was typed, e.g. 0123456789ab.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:192
+msgid "%1$s released the sign-in lockout of an unknown username (fingerprint %2$s)"
+msgstr "رفع %1$s الحظر عن تسجيل الدخول باسم مستخدم غير معروف (البصمة %2$s)"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: who released it, 2: the account that was locked out, e.g. "Sara Adel (sara)".
+#: plugins/corex-config/src/Activity/ActivitySentences.php:200
+msgid "%1$s released the sign-in lockout of %2$s"
+msgstr "رفع %1$s الحظر عن تسجيل الدخول لـ %2$s"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket". 4: the ones whose cache could not be cleared.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:229
+msgid "%1$s changed the mode to %2$s and asked %3$s to clear its page cache. The page cache of %4$s could not be cleared"
+msgid_plural "%1$s changed the mode to %2$s and asked %3$s to clear their page caches. The page cache of %4$s could not be cleared"
+msgstr[0] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات. تعذّر مسح ذاكرة التخزين المؤقت للصفحات لدى %4$s"
+msgstr[1] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرة التخزين المؤقت للصفحات. تعذّر مسح ذاكرة التخزين المؤقت للصفحات لدى %4$s"
+msgstr[2] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرتي التخزين المؤقت للصفحات. تعذّر مسح ذاكرة التخزين المؤقت للصفحات لدى %4$s"
+msgstr[3] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات. تعذّر مسح ذاكرة التخزين المؤقت للصفحات لدى %4$s"
+msgstr[4] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات. تعذّر مسح ذاكرة التخزين المؤقت للصفحات لدى %4$s"
+msgstr[5] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات. تعذّر مسح ذاكرة التخزين المؤقت للصفحات لدى %4$s"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket and LiteSpeed Cache".
+#: plugins/corex-config/src/Activity/ActivitySentences.php:242
+msgid "%1$s changed the mode to %2$s and asked %3$s to clear its page cache"
+msgid_plural "%1$s changed the mode to %2$s and asked %3$s to clear their page caches"
+msgstr[0] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات"
+msgstr[1] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرة التخزين المؤقت للصفحات"
+msgstr[2] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرتي التخزين المؤقت للصفحات"
+msgstr[3] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات"
+msgstr[4] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات"
+msgstr[5] "غيّر %1$s الوضع إلى %2$s وطلب من %3$s مسح ذاكرات التخزين المؤقت للصفحات"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins whose cache could not be cleared, e.g. "WP Rocket".
+#: plugins/corex-config/src/Activity/ActivitySentences.php:254
+msgid "%1$s changed the mode to %2$s. The page cache of %3$s could not be cleared"
+msgstr "غيّر %1$s الوضع إلى %2$s. تعذّر مسح ذاكرة التخزين المؤقت للصفحات لدى %3$s"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:261
+msgid "%1$s changed the mode to %2$s. No page-cache plugin CoreX can ask was active"
+msgstr "غيّر %1$s الوضع إلى %2$s. لم تكن هناك إضافة لذاكرة التخزين المؤقت للصفحات يستطيع CoreX أن يطلب منها شيئًا"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:99
+msgid "Repeated login failures locked out an unknown username"
+msgstr "أدّت محاولات تسجيل دخول فاشلة متكررة إلى حظر اسم مستخدم غير معروف"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:124
+msgid "Review the attempts in Operations & Security."
+msgstr "راجع المحاولات في التشغيل والأمان."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: %s: a short fingerprint of the network the attempts came from, never its address.
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:129
+msgid "The attempts came from the network with fingerprint %s. Review them in Operations & Security."
+msgstr "جاءت المحاولات من الشبكة ذات البصمة %s. راجعها في التشغيل والأمان."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: %s: a short fingerprint of the username that was typed, never the username.
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:139
+msgid "Username fingerprint %s. Review the attempts in Operations & Security."
+msgstr "بصمة اسم المستخدم %s. راجع المحاولات في التشغيل والأمان."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: a short fingerprint of the username that was typed, never the username. 2: a short fingerprint of the network the attempts came from, never its address.
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:146
+msgid "Username fingerprint %1$s, from the network with fingerprint %2$s. Review the attempts in Operations & Security."
+msgstr "بصمة اسم المستخدم %1$s، من الشبكة ذات البصمة %2$s. راجع المحاولات في التشغيل والأمان."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Operations/OperationsMode.php:120
+msgid "Forms paused"
+msgstr "النماذج متوقفة مؤقتًا"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Operations/OperationsMode.php:122
+msgid "The site stays open; every form refuses new submissions until you switch back. Signed-in administrators can still submit."
+msgstr "يبقى الموقع مفتوحًا؛ وترفض كل النماذج الإرسالات الجديدة إلى أن تعود إلى الوضع السابق. ويظل بإمكان المسؤولين المسجَّلين دخولهم الإرسال."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Operations/OperationsMode.php:170
+msgid "Forms, flows, newsletter sign-ups, booking requests, job applications, registration and the assistant's callback form are refused. Switch back to reopen them."
+msgstr "تُرفض النماذج والمسارات والاشتراكات في النشرة البريدية وطلبات الحجز وطلبات التوظيف والتسجيل ونموذج طلب الاتصال في المساعد. عُد إلى الوضع السابق لإعادة فتحها."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Readiness/SiteChecks.php:237
+msgid "Failed sign-ins are not limited"
+msgstr "محاولات تسجيل الدخول الفاشلة غير محدودة"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Readiness/SiteChecks.php:238
+msgid "Failed sign-ins are limited"
+msgstr "محاولات تسجيل الدخول الفاشلة محدودة"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/HardeningChecks.php:104
+msgid "Trusted proxies name only your proxies"
+msgstr "الوكلاء الموثوقون هم وكلاؤك أنت فقط"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/HardeningChecks.php:106
+msgid "No trusted proxy range covers every address, and every line is an address or a range."
+msgstr "لا يشمل أي نطاق وكيل موثوق كل العناوين، وكل سطر هو عنوان أو نطاق."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/HardeningChecks.php:108
+msgid "A trusted proxy range covers every address (/0), so any visitor can choose the address their failed sign-ins are counted by and get around the limit. List only your own proxies with wp corex security trusted-proxies, or clear the list with --clear."
+msgstr "يشمل نطاق وكيل موثوق كل العناوين (/0)، فيستطيع أي زائر أن يختار العنوان الذي تُحتسب عليه محاولات تسجيل دخوله الفاشلة ويتحايل على الحد. اذكر وكلاءك أنت فقط بالأمر wp corex security trusted-proxies، أو امسح القائمة بالخيار --clear."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/HardeningChecks.php:109
+msgid "A trusted proxy line is not an address or a range, so CoreX ignores it and does not trust that proxy: its visitors are counted as the proxy. List your proxies again with wp corex security trusted-proxies."
+msgstr "سطر وكيل موثوق ليس عنوانًا ولا نطاقًا، لذا يتجاهله CoreX ولا يثق بذلك الوكيل، فيُحتسب زواره على أنهم الوكيل نفسه. اذكر وكلاءك من جديد بالأمر wp corex security trusted-proxies."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:58
+msgid "The lockout to release: the id of its row on the Lockouts panel."
+msgstr "الحظر المراد رفعه: معرّف صفّه في لوحة حالات الحظر."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:85
+msgid "The lockout was released. That username can sign in again from that network now."
+msgstr "رُفع الحظر. يستطيع اسم المستخدم هذا تسجيل الدخول الآن من تلك الشبكة."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: %s: how many lockouts were released.
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:99
+msgid "%s active lockout was released."
+msgid_plural "%s active lockouts were released."
+msgstr[0] "رُفعت %s حالة حظر نشطة."
+msgstr[1] "رُفع حظر نشط واحد."
+msgstr[2] "رُفع حظران نشطان."
+msgstr[3] "رُفعت %s حالات حظر نشطة."
+msgstr[4] "رُفعت %s حالة حظر نشطة."
+msgstr[5] "رُفعت %s حالة حظر نشطة."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:119
+msgid "This lockout has already ended. Nothing was changed."
+msgstr "انتهى هذا الحظر بالفعل. لم يتغير شيء."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:124
+msgid "There is no active lockout to release. Nothing was changed."
+msgstr "لا يوجد حظر نشط لرفعه. لم يتغير شيء."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:129
+msgid "That lockout was not found. It may have been removed when old sign-in records were cleared."
+msgstr "لم يُعثر على ذلك الحظر. ربما أُزيل عند مسح سجلات تسجيل الدخول القديمة."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginProtection/LoginAttemptRetention.php:42
+msgid "Sign-in records"
+msgstr "سجلات تسجيل الدخول"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:64
+msgid "This setting must be on or off."
+msgstr "يجب أن يكون هذا الإعداد مفعّلًا أو معطّلًا."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: line number in the trusted proxies box, 2: the text on that line.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:67
+msgid "Line %1$s, \"%2$s\", is not an IPv4 or IPv6 address or range. Write one per line, for example 203.0.113.7 or 203.0.113.0/24."
+msgstr "السطر %1$s، \"%2$s\"، ليس عنوان IPv4 أو IPv6 ولا نطاقًا. اكتب واحدًا في كل سطر، مثل 203.0.113.7 أو 203.0.113.0/24."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: line number in the trusted proxies box, 2: the range on that line.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:73
+msgid "Line %1$s, \"%2$s\", trusts every address. A range that trusts every address would let anyone choose the address their sign-in attempts are counted by. List only your own proxies."
+msgstr "السطر %1$s، \"%2$s\"، يثق بكل العناوين. فالنطاق الذي يثق بكل العناوين يتيح لأي شخص أن يختار العنوان الذي تُحتسب عليه محاولات تسجيل دخوله. اذكر وكلاءك أنت فقط."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: %s: the most trusted proxy lines kept.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:79
+msgid "List at most %s trusted proxies."
+msgstr "اذكر %s وكيلًا موثوقًا على الأكثر."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:82
+msgid "Write the trusted proxies as text, one address or range per line."
+msgstr "اكتب الوكلاء الموثوقين نصًّا، بعنوان أو نطاق واحد في كل سطر."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:83
+msgid "The request names no login protection setting, so there is nothing to save."
+msgstr "لا يذكر الطلب أي إعداد من إعدادات حماية تسجيل الدخول، فلا شيء يُحفظ."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:84
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:134
+msgid "The login settings are being saved by another request. Nothing was saved; try again in a moment."
+msgstr "يحفظ طلب آخر إعدادات تسجيل الدخول الآن. لم يُحفظ شيء؛ أعد المحاولة بعد لحظات."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:86
+msgid "The lockout length in minutes and in seconds disagree. Send one, or the same length in both."
+msgstr "مدة الحظر بالدقائق وبالثواني غير متطابقتين. أرسل إحداهما، أو المدة نفسها في كليهما."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:87
+msgid "The counting window in minutes and in seconds disagree. Send one, or the same length in both."
+msgstr "نافذة الاحتساب بالدقائق وبالثواني غير متطابقتين. أرسل إحداهما، أو المدة نفسها في كليهما."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:88
+msgid "The login switches and the older \"enabled\" and \"block default endpoints\" settings disagree. Send one shape, or both with the same meaning."
+msgstr "مفاتيح تسجيل الدخول وإعدادَا \"enabled\" و\"block default endpoints\" الأقدم غير متطابقة. أرسل صيغة واحدة، أو الصيغتين بالمعنى نفسه."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: %s: why the login address cannot be used.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:91
+msgid "wp-login.php can only be hidden behind a login address of your own. %s"
+msgstr "لا يمكن إخفاء wp-login.php إلا خلف عنوان تسجيل دخول خاص بك. %s"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the fewest attempts allowed, 2: the most.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:105
+msgid "Maximum failed attempts must be a whole number from %1$s to %2$s."
+msgstr "يجب أن يكون الحد الأقصى للمحاولات الفاشلة عددًا صحيحًا من %1$s إلى %2$s."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest counting window in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:107
+msgid "The counting window must be a whole number of minutes from %1$s to %2$s."
+msgstr "يجب أن تكون نافذة الاحتساب عددًا صحيحًا من الدقائق، من %1$s إلى %2$s."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest lockout in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:109
+msgid "The lockout length must be a whole number of minutes from %1$s to %2$s."
+msgstr "يجب أن تكون مدة الحظر عددًا صحيحًا من الدقائق، من %1$s إلى %2$s."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest counting window in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:111
+msgid "The counting window must be a whole number of seconds from %1$s to %2$s."
+msgstr "يجب أن تكون نافذة الاحتساب عددًا صحيحًا من الثواني، من %1$s إلى %2$s."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest lockout in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:113
+msgid "The lockout length must be a whole number of seconds from %1$s to %2$s."
+msgstr "يجب أن تكون مدة الحظر عددًا صحيحًا من الثواني، من %1$s إلى %2$s."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the fewest days sign-in records are kept, 2: the most.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:115
+msgid "Keep sign-in records for a whole number of days from %1$s to %2$s."
+msgstr "احتفظ بسجلات تسجيل الدخول لعدد صحيح من الأيام، من %1$s إلى %2$s."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:134
+msgid "Something on this site already routes that address: a post type archive, a category base or another plugin. Choose a different one."
+msgstr "هناك ما يوجّه هذا العنوان في الموقع بالفعل: أرشيف نوع محتوى، أو أساس تصنيف، أو إضافة أخرى. اختر عنوانًا آخر."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:951
+msgid "wp-login.php hidden, wp-admin reachable"
+msgstr "wp-login.php مخفي، وwp-admin متاح"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:953
+msgid "A signed-out visit to wp-admin is sent to the login address, so the address is not private. Hide the admin as well to keep it private."
+msgstr "تُحوَّل زيارة wp-admin من غير تسجيل دخول إلى عنوان تسجيل الدخول، فلا يبقى العنوان خاصًّا. أخفِ لوحة الإدارة أيضًا ليبقى خاصًّا."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:955
+msgid "wp-login.php reachable, wp-admin hidden"
+msgstr "wp-login.php متاح، وwp-admin مخفي"
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:80
+msgid "Hide wp-login.php (on or off)."
+msgstr "إخفاء wp-login.php (تفعيل أو تعطيل)."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:81
+msgid "Hide the admin from visitors who are not signed in (on or off)."
+msgstr "إخفاء لوحة الإدارة عن الزوار غير المسجَّلين دخولهم (تفعيل أو تعطيل)."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:82
+msgid "Limit failed sign-ins (on or off)."
+msgstr "تحديد محاولات تسجيل الدخول الفاشلة (تفعيل أو تعطيل)."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:83
+msgid "The protection switch of the previous screen, read in its old meaning. Beside the three switches it must agree with them."
+msgstr "مفتاح الحماية في الشاشة السابقة، يُقرأ بمعناه القديم. وإذا أُرسل مع المفاتيح الثلاثة فيجب أن يتفق معها."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:84
+msgid "The hide switch of the previous screen, read in its old meaning. Beside the three switches it must agree with them."
+msgstr "مفتاح الإخفاء في الشاشة السابقة، يُقرأ بمعناه القديم. وإذا أُرسل مع المفاتيح الثلاثة فيجب أن يتفق معها."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:85
+msgid "The login address."
+msgstr "عنوان تسجيل الدخول."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the fewest attempts, 2: the most.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:87
+msgid "Failed attempts before a lockout, from %1$d to %2$d."
+msgstr "عدد المحاولات الفاشلة قبل الحظر، من %1$d إلى %2$d."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest window in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:89
+msgid "The counting window in whole minutes, from %1$d to %2$d; null when it is not a whole minute."
+msgstr "نافذة الاحتساب بالدقائق الكاملة، من %1$d إلى %2$d؛ وتكون null إذا لم تكن دقائق كاملة."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest lockout in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:91
+msgid "The lockout length in whole minutes, from %1$d to %2$d; null when it is not a whole minute."
+msgstr "مدة الحظر بالدقائق الكاملة، من %1$d إلى %2$d؛ وتكون null إذا لم تكن دقائق كاملة."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest window in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:93
+msgid "The counting window in seconds, from %1$d to %2$d. Beside window_minutes it must say the same."
+msgstr "نافذة الاحتساب بالثواني، من %1$d إلى %2$d. وإذا أُرسلت مع window_minutes فيجب أن تدلّ على المدة نفسها."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the shortest lockout in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:95
+msgid "The lockout length in seconds, from %1$d to %2$d. Beside lockout_minutes it must say the same."
+msgstr "مدة الحظر بالثواني، من %1$d إلى %2$d. وإذا أُرسلت مع lockout_minutes فيجب أن تدلّ على المدة نفسها."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: %d: the most trusted proxy lines kept.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:97
+msgid "Trusted proxies: text with one IPv4 or IPv6 address or CIDR range per line, or a list of them, at most %d. A range that trusts every address is refused."
+msgstr "الوكلاء الموثوقون: نص فيه عنوان IPv4 أو IPv6 أو نطاق CIDR واحد في كل سطر، أو قائمة بها، بحد أقصى %d. ويُرفض النطاق الذي يثق بكل العناوين."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:98
+msgid "Trust the proxies (on or off). When it is not sent, it follows the list."
+msgstr "الوثوق بالوكلاء (تفعيل أو تعطيل). وإذا لم يُرسل فإنه يتبع القائمة."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: the fewest days, 2: the most.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:100
+msgid "Days sign-in records are kept, from %1$d to %2$d."
+msgstr "عدد أيام الاحتفاظ بسجلات تسجيل الدخول، من %1$d إلى %2$d."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:101
+msgid "Record successful sign-ins (on or off)."
+msgstr "تسجيل عمليات تسجيل الدخول الناجحة (تفعيل أو تعطيل)."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:141
+msgid "Nothing was saved. Correct the settings named below and save again."
+msgstr "لم يُحفظ شيء. صحّح الإعدادات المذكورة أدناه ثم احفظ من جديد."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-core/src/Http/PublicSubmissionPause.php:66
+msgid "Forms are paused for a short while. Please try again later."
+msgstr "النماذج متوقفة مؤقتًا لفترة قصيرة. يرجى المحاولة لاحقًا."
+
+# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: a score from 0 to 100, 2: its letter grade.
+#: plugins/corex-config/assets/insights.js:248
+msgid "Score %1$d / 100, grade %2$s"
+msgstr "النتيجة %1$d / 100، الدرجة %2$s"
