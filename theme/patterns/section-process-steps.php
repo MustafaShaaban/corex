@@ -36,8 +36,8 @@ defined('ABSPATH') || exit;
 			?>
 		<!-- wp:column {"className":"corex-process__step"} -->
 		<div class="wp-block-column corex-process__step">
-			<!-- wp:paragraph {"className":"corex-process__num","textColor":"accent","fontSize":"xl"} -->
-			<p class="corex-process__num has-accent-color has-text-color has-xl-font-size"><?php echo esc_html($step[0]); ?></p>
+			<!-- wp:paragraph {"className":"corex-process__num","textColor":"accent-dark","fontSize":"xl"} -->
+			<p class="corex-process__num has-accent-dark-color has-text-color has-xl-font-size"><?php echo esc_html($step[0]); ?></p>
 			<!-- /wp:paragraph -->
 			<!-- wp:heading {"level":3,"fontSize":"lg"} -->
 			<h3 class="wp-block-heading has-lg-font-size"><?php echo esc_html($step[1]); ?></h3>

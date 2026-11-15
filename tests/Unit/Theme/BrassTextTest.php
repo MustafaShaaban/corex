@@ -72,9 +72,9 @@ it('draws the newsletter button\'s label and the mega menu badge in the on-accen
         ->and((string) file_get_contents(ThemeContract::root() . '/theme/assets/css/corex-navigation.css'))->toContain($onAccent);
 });
 
-// FR-007: a theme pattern gives small text the darker brass; brass passes only as large text (3:1).
-it('draws no small text in brass in a theme pattern', function () {
-    $large = ['xl', '2xl', '3xl', 'hero', 'display'];
+// FR-007: a theme pattern gives text the darker brass at every size. The type scale is fluid, so a size
+// that is large text at desktop width (the process steps' `xl`) is under it at 375px, where brass fails AA.
+it('draws no text in brass in a theme pattern', function () {
     $found = [];
 
     foreach ((array) glob(ThemeContract::root() . '/theme/patterns/*.php') as $file) {
@@ -82,7 +82,7 @@ it('draws no small text in brass in a theme pattern', function () {
 
         foreach ($blocks[1] as $json) {
             $attributes = (array) json_decode($json, true);
-            if (($attributes['textColor'] ?? '') === 'accent' && ! in_array($attributes['fontSize'] ?? '', $large, true)) {
+            if (($attributes['textColor'] ?? '') === 'accent') {
                 $found[] = basename((string) $file) . ': ' . $json;
             }
         }
