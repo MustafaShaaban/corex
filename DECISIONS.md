@@ -20906,14 +20906,18 @@ stop counting toward the next lockout of the pair, otherwise one mistyped passwo
 person out again. It is recorded once in the activity log (`security.login.released`, with the account's id or 0
 and the fingerprints; `security.login.released_all` with the count), never a stored hash, a typed username or an
 address. The entry names the account through `LoginAccounts::nameOf()`, the rule the lockout notice uses (#626), so a
-deleted account reads "User 99" there as everywhere else. `wp corex security reset-login` changes the same way: its
+deleted account reads "User 99" in the log as it does in the notice; the panel (`LockoutRows`) shows no login for a
+deleted account, so its row reads as an unknown username. An activity write that fails does not undo the release
+(the recorder's standing policy: it lets a failed write go), so the log can miss a release when its own write
+fails. `wp corex security reset-login` changes the same way: its
 release is marked `released_by_recovery`, and the attempts before it stop counting too, so one mistyped password
 after a recovery no longer locks the owner out again.
 
 **Answers.** Spec 043's envelope. Released: 200, `data.released` (rows ended) and `data.lockouts` (the redrawn
 rows). Nothing to end: 409, `lockout_already_ended` for one lockout that had ended (or that another release ended
 first) and `no_active_lockouts` for release all with none active, each with a translated "Nothing was changed" and
-the rows in `details.lockouts`. A row that is not a lockout, or is gone: 404 `lockout_not_found`. 409 and not 200,
+the rows in `details.lockouts`. A row that is not a lockout, or is gone: 404 `lockout_not_found`. The id is read
+from the URL only, so an `id` in the body cannot name another lockout. 409 and not 200,
 because the request asked for a change the lockout's state no longer allows, which is how the job routes answer a
 cancel of a job that cannot be cancelled; and not 422, because nothing in the request is malformed. *Not chosen:*
 a 200 with a status field, which a client reading `ok` would show as "released".

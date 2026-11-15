@@ -95,8 +95,8 @@ username belonged to one (otherwise empty, read as "unknown username"), a short 
 of the network, when the lockout ends (`locked_until`), whether it is still `active`, and whether it was `released`
 and why (`reason`). What was typed is never stored, so it is never shown.
 
-Each release is recorded in the activity log with who released whose lockout (the account, or the fingerprint of an
-unknown username). The answers use the standard response envelope, and each carries the panel's rows so the screen
+Releasing one lockout is recorded in the activity log with who released whose lockout (the account, or the
+fingerprint of an unknown username); releasing all records who did it and how many lockouts ended. The answers use the standard response envelope, and each carries the panel's rows so the screen
 redraws from it:
 
 | Status | Code | When |
@@ -105,7 +105,9 @@ redraws from it:
 | 409 | `lockout_already_ended` | The lockout had already ended, or another release ended it first. Nothing changed. |
 | 409 | `no_active_lockouts` | Release all found no active lockout. Nothing changed. |
 | 404 | `lockout_not_found` | The id names no lockout, for example one removed with old sign-in records. |
-| 403 | `rest_forbidden` | The person may not manage Operations & Security, or the nonce is missing. |
+| 403 | `rest_forbidden` | The person is signed in but may not manage Operations & Security. |
+| 401 | `rest_forbidden` | The REST nonce is missing: WordPress then treats the request as signed out. |
+| 403 | `rest_cookie_invalid_nonce` | The REST nonce is wrong or has expired. |
 
 Where nothing changed, the rows are in `details.lockouts`.
 

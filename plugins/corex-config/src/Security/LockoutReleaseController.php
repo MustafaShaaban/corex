@@ -76,9 +76,11 @@ final class LockoutReleaseController
     public function releaseOne(WP_REST_Request $request): WP_REST_Response
     {
         $now = new DateTimeImmutable('now');
+        // The URL's id, never `get_param()`: an `id` in the body would win over it there.
+        $id = (string) ($request->get_url_params()['id'] ?? '');
 
         return $this->answer(
-            $this->releaser->releaseOne((string) $request->get_param('id'), get_current_user_id(), $now),
+            $this->releaser->releaseOne($id, get_current_user_id(), $now),
             $now,
             __('The lockout was released. That username can sign in again from that network now.', 'corex'),
         );

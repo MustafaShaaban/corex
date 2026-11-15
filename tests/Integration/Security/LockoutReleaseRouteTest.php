@@ -7,10 +7,11 @@
  * Every request goes through `rest_do_request()` with the REST nonce, so the routes' permission check
  * and their answers are the ones the screen gets. The lockouts are started through WordPress's own
  * sign-in path, by a login guard with this test's limits from a documentation address, and every row
- * the tests write is removed afterwards: the attempts by that address, lockout notices and activity events by id. A
- * lockout of the site's own that a "release all" or the recovery command ends is put back as it was
- * found, and so are the login settings and the access audit log. No email leaves the machine:
- * `pre_wp_mail` keeps each one here.
+ * the tests write is removed afterwards: the attempts by that address (keyed and plain), the lockout
+ * notices, the lockout and release activity events by id, and the access-denied events of the people
+ * the tests create. A lockout of the site's own that a "release all" or the recovery command ends is
+ * put back as it was found, and so are the login settings and the access audit log. No email leaves
+ * the machine: `pre_wp_mail` keeps each one here.
  *
  * @package Corex\Tests\Integration\Security
  */
@@ -60,12 +61,16 @@ function lockoutReleasePolicy(): LoginProtectionPolicy
     return Boot::app()->container()->make(LoginProtectionPolicy::class);
 }
 
-/** A release route, asked as the current user with their REST nonce. */
-function lockoutReleaseRoute(string $path, bool $nonce = true): WP_REST_Response
+/** A release route, asked as the current user with their REST nonce, with a JSON body when given. */
+function lockoutReleaseRoute(string $path, bool $nonce = true, ?array $body = null): WP_REST_Response
 {
     $request = new WP_REST_Request('POST', '/corex/v1/security/lockouts/' . $path);
     if ($nonce) {
         $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    }
+    if ($body !== null) {
+        $request->set_header('Content-Type', 'application/json');
+        $request->set_body((string) wp_json_encode($body));
     }
 
     return rest_ensure_response(rest_do_request($request));
@@ -112,24 +117,69 @@ function lockoutReleaseEvents(int $since, string $kind): array
 }
 
 /** A lockout row stored directly, for the states the sign-in path cannot reach on demand. */
-function storeLockoutRow(string $username, DateTimeImmutable $lockedUntil): int
+function storeLockoutRow(string $username, DateTimeImmutable $lockedUntil, string $reason = 'threshold_exceeded'): int
 {
-    global $wpdb;
     $policy = lockoutReleasePolicy();
-    $now = new DateTimeImmutable('now');
+
+    return storeAttemptRow(
+        $policy->identityHashOf($username),
+        $policy->networkHashOf(LOCKOUT_RELEASE_IP),
+        LoginAttemptRecord::LOCKED,
+        new DateTimeImmutable('-1 hour'),
+        $lockedUntil,
+        $reason,
+    );
+}
+
+/** One attempt row stored directly under these hashes, keyed or plain, through the real store. */
+function storeAttemptRow(
+    string $identityHash,
+    string $networkHash,
+    string $outcome,
+    DateTimeImmutable $occurredAt,
+    ?DateTimeImmutable $lockedUntil = null,
+    string $reason = 'threshold_exceeded',
+): int {
+    global $wpdb;
 
     Boot::app()->container()->make(WpLoginAttemptStore::class)->record(new LoginAttemptRecord(
-        identityHash: $policy->identityHashOf($username),
-        networkHash: $policy->networkHashOf(LOCKOUT_RELEASE_IP),
-        outcome: LoginAttemptRecord::LOCKED,
-        reasonCode: 'threshold_exceeded',
+        identityHash: $identityHash,
+        networkHash: $networkHash,
+        outcome: $outcome,
+        reasonCode: $outcome === LoginAttemptRecord::LOCKED ? $reason : 'invalid_credentials',
         userId: null,
-        occurredAt: $now->modify('-1 hour'),
-        retentionUntil: $now->modify('+30 days'),
+        occurredAt: $occurredAt,
+        retentionUntil: $occurredAt->modify('+30 days'),
         lockedUntil: $lockedUntil,
     ));
 
     return (int) $wpdb->insert_id;
+}
+
+/** How many lockout rows the table holds for this username from the test network, keyed. */
+function lockoutRowsOf(string $username): int
+{
+    global $wpdb;
+    $policy = lockoutReleasePolicy();
+
+    return (int) $wpdb->get_var($wpdb->prepare(
+        'SELECT COUNT(*) FROM ' . lockoutReleaseTable(LoginAttemptTable::NAME) . ' WHERE identity_hash = %s AND network_hash = %s AND outcome = %s',
+        $policy->identityHashOf($username),
+        $policy->networkHashOf(LOCKOUT_RELEASE_IP),
+        LoginAttemptRecord::LOCKED,
+    ));
+}
+
+/** An account the tests create, with the password it signs in with. */
+function lockoutReleaseAccount(object $test, string $prefix, array $fields = []): array
+{
+    $login = $prefix . wp_generate_password(6, false);
+    $password = wp_generate_password(20);
+    $id = wp_insert_user(['user_login' => $login, 'user_pass' => $password, 'role' => 'subscriber'] + $fields);
+    expect($id)->toBeInt();
+    $test->users[] = $id;
+
+    return [$login, $password, $id];
 }
 
 /** The stored lockout row as the table holds it. */
@@ -222,7 +272,9 @@ afterEach(function () {
     }
     remove_filter('pre_wp_mail', $this->keepMail, PHP_INT_MAX);
 
-    $wpdb->delete(lockoutReleaseTable(LoginAttemptTable::NAME), ['network_hash' => lockoutReleasePolicy()->networkHashOf(LOCKOUT_RELEASE_IP)]);
+    foreach ([lockoutReleasePolicy()->networkHashOf(LOCKOUT_RELEASE_IP), lockoutReleasePolicy()->legacyNetworkHashOf(LOCKOUT_RELEASE_IP)] as $network) {
+        $wpdb->delete(lockoutReleaseTable(LoginAttemptTable::NAME), ['network_hash' => $network]);
+    }
     foreach ($this->siteLockouts as $row) {
         $wpdb->update(
             lockoutReleaseTable(LoginAttemptTable::NAME),
@@ -246,6 +298,15 @@ afterEach(function () {
         SecurityActivityRecorder::LOGIN_RELEASED,
         SecurityActivityRecorder::LOGIN_RELEASED_ALL,
     ));
+    // A refused request writes an access.denied event for the person refused: only this test's people.
+    foreach ($this->users as $userId) {
+        $wpdb->query($wpdb->prepare(
+            'DELETE FROM ' . lockoutReleaseTable('activity_events') . ' WHERE id > %d AND kind = %s AND actor_id = %d',
+            $this->activityBefore,
+            SecurityActivityRecorder::ACCESS_DENIED,
+            $userId,
+        ));
+    }
 
     require_once ABSPATH . 'wp-admin/includes/user.php';
     foreach ($this->users as $userId) {
@@ -320,21 +381,36 @@ it('FR-017, User Story 8 scenario 2, SC-004: a released account signs in at once
 });
 
 it('FR-017: after a release, one more mistyped password does not lock the person out again', function () {
-    $login = 'corex-release-typo-' . wp_generate_password(6, false);
-    $this->users[] = (int) wp_insert_user(['user_login' => $login, 'user_pass' => wp_generate_password(), 'role' => 'subscriber']);
+    [$login, $password] = lockoutReleaseAccount($this, 'corex-release-typo-');
+
+    lockOutFromTheTestNetwork($login);
+    lockoutReleaseRoute(lockoutReleaseRow($login)['id'] . '/release');
+    // A failure in the second of the release is not after it, so the typo waits for the next one.
+    sleep(1);
+    wp_authenticate($login, 'one-typo');
+
+    // The attempt that would start a lockout is answered as a wrong password too, so the answer to
+    // the typo proves nothing: what the typo left behind does.
+    expect(lockoutRowsOf($login))->toBe(1)
+        ->and(wp_authenticate($login, $password))->toBeInstanceOf(WP_User::class);
+});
+
+it('FR-017: after a release the count starts again, so as many failures as the limit lock the person out again', function () {
+    [$login, $password] = lockoutReleaseAccount($this, 'corex-release-again-');
 
     lockOutFromTheTestNetwork($login);
     lockoutReleaseRoute(lockoutReleaseRow($login)['id'] . '/release');
     sleep(1);
-    $typo = wp_authenticate($login, 'one-typo');
+    lockOutFromTheTestNetwork($login);
+    $refused = wp_authenticate($login, $password);
 
-    expect($typo)->toBeInstanceOf(WP_Error::class)
-        ->and($typo->get_error_codes())->not->toContain('corex_login_locked');
+    expect(lockoutRowsOf($login))->toBe(2)
+        ->and($refused)->toBeInstanceOf(WP_Error::class)
+        ->and($refused->get_error_codes())->toContain('corex_login_locked');
 });
 
 it('FR-017: after wp corex security reset-login, one more mistyped password does not lock the person out again', function () {
-    $login = 'corex-recovery-typo-' . wp_generate_password(6, false);
-    $this->users[] = (int) wp_insert_user(['user_login' => $login, 'user_pass' => wp_generate_password(), 'role' => 'subscriber']);
+    [$login, $password] = lockoutReleaseAccount($this, 'corex-recovery-typo-');
 
     lockOutFromTheTestNetwork($login);
     $id = (int) lockoutReleaseRow($login)['id'];
@@ -344,12 +420,101 @@ it('FR-017: after wp corex security reset-login, one more mistyped password does
         $container->make(LoginProtectionSettingsStore::class),
     ))->restore(new DateTimeImmutable('now'));
     sleep(1);
-    $typo = wp_authenticate($login, 'one-typo');
+    wp_authenticate($login, 'one-typo');
 
     expect($result['released_lockouts'])->toBe(1 + count($this->siteLockouts))
         ->and(lockoutReleaseStoredRow($id)['reason_code'])->toBe(LoginAttemptRecord::RELEASED_BY_RECOVERY)
-        ->and($typo)->toBeInstanceOf(WP_Error::class)
-        ->and($typo->get_error_codes())->not->toContain('corex_login_locked');
+        ->and(lockoutRowsOf($login))->toBe(1)
+        ->and(wp_authenticate($login, $password))->toBeInstanceOf(WP_User::class);
+});
+
+it('FR-017: after wp corex security reset-login the count starts again, so as many failures as the limit lock again', function () {
+    [$login, $password] = lockoutReleaseAccount($this, 'corex-recovery-again-');
+    $container = Boot::app()->container();
+
+    lockOutFromTheTestNetwork($login);
+    (new SecurityResetLoginCommand(
+        $container->make(LoginLockoutStore::class),
+        $container->make(LoginProtectionSettingsStore::class),
+    ))->restore(new DateTimeImmutable('now'));
+    sleep(1);
+    lockOutFromTheTestNetwork($login);
+    $refused = wp_authenticate($login, $password);
+
+    expect(lockoutRowsOf($login))->toBe(2)
+        ->and($refused)->toBeInstanceOf(WP_Error::class)
+        ->and($refused->get_error_codes())->toContain('corex_login_locked');
+});
+
+it('FR-017: releasing one lockout leaves another username from the same network locked', function () {
+    [$released, $releasedPassword] = lockoutReleaseAccount($this, 'corex-release-one-');
+    [$kept, $keptPassword] = lockoutReleaseAccount($this, 'corex-release-kept-');
+
+    lockOutFromTheTestNetwork($released);
+    lockOutFromTheTestNetwork($kept);
+    $keptId = (int) lockoutReleaseRow($kept)['id'];
+    $keptBefore = lockoutReleaseStoredRow($keptId);
+
+    $response = lockoutReleaseRoute(lockoutReleaseRow($released)['id'] . '/release');
+    $refused = wp_authenticate($kept, $keptPassword);
+
+    expect($response->get_status())->toBe(200)
+        ->and($response->get_data()['data']['released'])->toBe(1)
+        ->and(wp_authenticate($released, $releasedPassword))->toBeInstanceOf(WP_User::class)
+        ->and(lockoutReleaseStoredRow($keptId))->toBe($keptBefore)
+        ->and($refused)->toBeInstanceOf(WP_Error::class)
+        ->and($refused->get_error_codes())->toContain('corex_login_locked');
+});
+
+it('FR-017: releases the lockout the URL names, not one a body id names', function () {
+    $named = 'corex-release-url-' . wp_generate_password(6, false);
+    $other = 'corex-release-body-' . wp_generate_password(6, false);
+    lockOutFromTheTestNetwork($named);
+    lockOutFromTheTestNetwork($other);
+    $otherId = (int) lockoutReleaseRow($other)['id'];
+    $otherBefore = lockoutReleaseStoredRow($otherId);
+
+    $response = lockoutReleaseRoute(lockoutReleaseRow($named)['id'] . '/release', body: ['id' => $otherId]);
+
+    expect($response->get_status())->toBe(200)
+        ->and(lockoutReleaseRow($named)['released'])->toBeTrue()
+        ->and(lockoutReleaseStoredRow($otherId))->toBe($otherBefore);
+});
+
+it('FR-017: a lockout released already, though its first end is still ahead, says it has ended and is not changed', function () {
+    $id = storeLockoutRow('corex-release-owner-' . wp_generate_password(6, false), new DateTimeImmutable('+10 minutes'), LoginAttemptRecord::RELEASED_BY_OWNER);
+    $before = lockoutReleaseStoredRow($id);
+
+    $response = lockoutReleaseRoute($id . '/release');
+
+    expect($response->get_status())->toBe(409)
+        ->and($response->get_data()['code'])->toBe('lockout_already_ended')
+        ->and(lockoutReleaseStoredRow($id))->toBe($before)
+        ->and(lockoutReleaseEvents($this->activityBefore, SecurityActivityRecorder::LOGIN_RELEASED))->toBe([]);
+});
+
+it('FR-017, FR-019: a lockout stored before the update under the plain pair is released by its id, and its failures stop counting', function () {
+    [$login, $password] = lockoutReleaseAccount($this, 'corex-release-legacy-');
+    $policy = lockoutReleasePolicy();
+    $identity = $policy->legacyIdentityHashOf($login);
+    $network = $policy->legacyNetworkHashOf(LOCKOUT_RELEASE_IP);
+    for ($attempt = 0; $attempt < LOCKOUT_RELEASE_THRESHOLD; $attempt++) {
+        storeAttemptRow($identity, $network, LoginAttemptRecord::FAILED, new DateTimeImmutable('-2 minutes'));
+    }
+    $id = storeAttemptRow($identity, $network, LoginAttemptRecord::LOCKED, new DateTimeImmutable('-2 minutes'), new DateTimeImmutable('+20 minutes'));
+    expect(wp_authenticate($login, $password))->toBeInstanceOf(WP_Error::class);
+
+    $response = lockoutReleaseRoute($id . '/release');
+    $signedIn = wp_authenticate($login, $password);
+    sleep(1);
+    wp_authenticate($login, 'one-typo');
+
+    expect($response->get_status())->toBe(200)
+        ->and(lockoutReleaseStoredRow($id)['reason_code'])->toBe(LoginAttemptRecord::RELEASED_BY_OWNER)
+        ->and($signedIn)->toBeInstanceOf(WP_User::class)
+        // The plain pair's three failures no longer count beside the keyed typo.
+        ->and(lockoutRowsOf($login))->toBe(0)
+        ->and(wp_authenticate($login, $password))->toBeInstanceOf(WP_User::class);
 });
 
 it('FR-016, User Story 8 scenario 3: an unknown username reads by its fingerprint, in the panel and the activity log, never as typed', function () {

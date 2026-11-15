@@ -155,7 +155,8 @@ WordPress login URL. It is intentionally narrow:
 - puts the custom login address back to `corex-login`, so turning protection on again does not walk back into an
   address that locked the owner out;
 - keeps every other login-protection setting (limits, trusted proxies, retention);
-- releases active lockouts through the login-attempt store;
+- releases active lockouts through the login-attempt store; the failed attempts before the release stay recorded but
+  no longer count, so one more mistyped password afterwards does not lock the person out again;
 - prints the restored `wp-login.php` URL and whether `COREX_LOGIN_UNGUARD` is active;
 - never changes users, roles, passwords, content, or WordPress core files.
 

@@ -6,7 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 5; DECISIONS #520 to #526, #625 to #629).
+Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 6; DECISIONS #520 to #526, #625 to #630).
 
 ### Added
 
@@ -138,6 +138,31 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 5; DECIS
   every visitor behind a CDN as the CDN; the Hardening tab's new "Trusted proxies name only your proxies" check warns
   and says how to fix it. Like the other hardening checks it is in the launch checklist, so it blocks Production
   until fixed or overridden.
+- **A lockout, or every active one, is released through the REST API** (spec 124 slice 6, FR-017, DECISIONS #630).
+  `POST corex/v1/security/lockouts/{id}/release` ends the lockout of a Lockouts panel row, and every active lockout of
+  the same username from the same network (two failures at once can each start one); the same username from another
+  network stays locked. `POST corex/v1/security/lockouts/release-all` ends every active lockout and changes no setting
+  and no lockout that had ended on its own. Both need "Manage operations" and the REST nonce. A release answers 200 in
+  spec 043's envelope with `data.released` (stored rows ended) and `data.lockouts` (the panel's rows, redrawn); a
+  release with nothing to end answers 409, `lockout_already_ended` (the lockout had ended, or another release ended it
+  first) or `no_active_lockouts`, and an id that names no lockout 404 `lockout_not_found`, each with a translated
+  sentence and the rows in `details.lockouts`. The released account signs in at once from the same network. Each
+  release is published once, on `corex_login_lockout_released` (the actor's id, rows ended, the account's id or 0, the
+  identity and network fingerprints) or `corex_login_lockouts_released` (the actor's id, rows ended), and recorded in
+  the activity log as `security.login.released` (who released whose lockout: the account as the lockout notice names
+  it, or an unknown username's fingerprint) or `security.login.released_all` (who, and how many). No stored hash, typed
+  username or address is published or recorded. The panel's Release controls come with its redesign; the routes are
+  there for them and for anyone calling the REST API.
+- **The Lockouts panel's rows name a lockout by its stored row** (FR-017). A row's `id` was
+  `<identity fingerprint>-<unix time of its end>`; it is now the stored row's number, which the release route takes,
+  so two networks locking out one username in the same second no longer share one. Rows gain `released` (true for a
+  lockout released from the screen or by `reset-login`, with `reason` `released_by_owner` or `released_by_recovery`).
+  The screen draws the panel on load from the same rows a release answers with (`Corex\Config\Security\LockoutRows`).
+- **A release restarts the count of failed sign-ins** (FR-017). The failed attempts before a release stay recorded
+  and no longer count toward the next lockout of the same username and network, so one mistyped password after a
+  release does not lock the person out again; as many failures as the limit do. This holds for
+  `wp corex security reset-login` too: before, its release left the earlier failures counting, and the next failure
+  in the window locked the person out again at once.
 - **A trusted proxy address is compared as an address.** A single trusted address is matched by its bytes, so one
   stored as `2001:DB8::1` or written in full trusts `2001:db8::1`. An IPv4-mapped address (`::ffff:10.0.0.1`) is not
   taken for the IPv4 address it carries, either way: list the spelling the server reports. A stored line that is
@@ -258,6 +283,14 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 5; DECIS
   own ranges; a list of more than 100 entries keeps working and cannot be saved again as it is. A deploy script that
   passes a `/0` range or a 101st entry to the command now exits 1 and changes nothing. This slice is not released
   before slice 10 (DECISIONS #628).
+- **Muva and Perego, the lockout release routes (slice 6)**: nothing a visitor or an owner sees changes; the panel
+  gains no button until its redesign. After `wp corex security reset-login`, one more mistyped password no longer
+  locks the person out again. A client script that read a Lockouts row's `id` as `<fingerprint>-<time>` reads the row
+  number instead (neither client does today). `ActivitySentences` now takes a `LoginAccounts`,
+  `OperationsSecurityScreen` takes `LockoutRows` where it took `LoginProtectionPolicy`, and
+  `WpLoginAttemptStore` also implements `LoginLockoutReleases`; all come from the container. A client repository that
+  carries copies of CoreX's tests takes the updated `ActivitySentencesTest` (a `LoginAccounts` beside
+  `OperationsMode`) and the new `LockoutReleaseTest` and `LockoutReleaseRouteTest`.
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves. When it moves, its own listener
   `StaffActivityLog::lockedOut()` (`platform/mizzey-site/src/Security/StaffActivityLog.php`) stops recording who was
   locked out: it reads `$event->identity` and `$event->clientIp` behind `isset`, which are gone, so it silently writes
