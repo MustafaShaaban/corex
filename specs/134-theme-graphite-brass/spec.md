@@ -5,7 +5,12 @@
 **Created**: 2026-11-15, under the CoreX loop (constitution v2.0.0). This file is the whole spec: it ends in
 slices, and there is no separate plan or task file.
 
-**Status**: Draft. Slices 1, 2 and 3 each wait for the owner's approval of the design (`design/handoffs/spec-134-theme-graphite-brass.md`, written once he approves).
+**Status**: Draft, **on hold since 2026-11-15**. The owner rejected a design that only recolours today's layout and
+asked for the design system to become a real component kit first (foundations, components, patterns, blocks,
+templates), enough to build a whole site in one identity. That work is under way in the design system (its Version 6
+holds the foundations and 30 visitor components). This spec is revised once the kit is approved. Two things below
+are already superseded by the design system: the main button is brass with a graphite label, not graphite; and the
+theme gains more custom colour tokens than `onAccent` (a brass hover, a brass tint and four status tints). Slices 1, 2 and 3 each wait for the owner's approval of the design (`design/handoffs/spec-134-theme-graphite-brass.md`, written once he approves).
 
 **The design system is the source.** A change to the look starts in the CoreX design system in Claude Design, then
 reaches the code through `theme.json` (`AGENTS.md`, "UI, UX and front end", step 7). So this release runs in that
