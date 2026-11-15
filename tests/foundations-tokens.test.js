@@ -38,9 +38,9 @@ describe( 'The Foundations docs page', () => {
 		const theme = JSON.parse( JSON.stringify( files.theme ) );
 		theme.settings.custom.radius.sm = '0.5rem\\|x';
 
-		expect( () =>
-			generator.tablesFrom( { ...files, theme } )
-		).toThrow( 'A token value holds a backslash' );
+		expect( () => generator.tablesFrom( { ...files, theme } ) ).toThrow(
+			'A token value holds a backslash'
+		);
 	} );
 
 	test( 'describes the admin adapter as it ships, and no navy-era scope', () => {

@@ -4806,7 +4806,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 63, 152, 523, 551, 717, 794, 851, 990, 1045, 1072: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 63, 152, 523, 551, 717, 794, 851, 990, 1045, 1088: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xl",
@@ -4988,7 +4988,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 34, 245, 353, 437, 451, 522, 550, 596, 612, 650, 660, 714, 747, 793, 1044, 1071: color: var(--corex-admin-text-muted);"
+      "context": "lines 34, 245, 353, 437, 451, 522, 550, 596, 612, 650, 660, 714, 747, 793, 1044, 1087: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-warning",
@@ -5079,7 +5079,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.scss",
-      "context": "lines 63, 152, 498, 526, 684, 768, 795: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 63, 152, 498, 526, 684, 768, 811: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xl",
@@ -5254,7 +5254,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.scss",
-      "context": "lines 34, 245, 333, 417, 431, 466, 497, 525, 571, 617, 627, 681, 714, 767, 794: color: var(--corex-admin-text-muted);"
+      "context": "lines 34, 245, 333, 417, 431, 466, 497, 525, 571, 617, 627, 681, 714, 767, 810: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-warning",
