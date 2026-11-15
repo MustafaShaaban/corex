@@ -13,7 +13,9 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
 use Corex\Tests\Support\ThemeContract;
+use Corex\Ui\Patterns\PatternLibrary;
 
 /**
  * Every rule of a stylesheet with its own declarations, the ones written directly inside its braces.
@@ -53,7 +55,7 @@ function brass_text_rules(string $css): array
     return $rules;
 }
 
-/** The files whose block markup may name a text colour: theme patterns, templates and parts, and corex-ui's patterns. */
+/** The files whose block markup may name a text colour: theme patterns, templates and parts. */
 function brass_text_markup_files(): array
 {
     $root = ThemeContract::root();
@@ -62,8 +64,32 @@ function brass_text_markup_files(): array
         (array) glob($root . '/theme/patterns/*.php'),
         (array) glob($root . '/theme/templates/*.html'),
         (array) glob($root . '/theme/parts/*.html'),
-        [$root . '/addons/corex-ui/src/Patterns/PatternLibrary.php'],
     );
+}
+
+/** The blocks of a piece of markup whose text colour is brass, as their attribute JSON. */
+function brass_text_blocks(string $markup): array
+{
+    preg_match_all('/<!-- wp:[a-z\/-]+ (\{.*?\}) \/?-->/', $markup, $blocks);
+
+    return array_values(array_filter(
+        $blocks[1],
+        static fn (string $json): bool => (((array) json_decode($json, true))['textColor'] ?? '') === 'accent',
+    ));
+}
+
+/**
+ * corex-ui's patterns as they render: their buttons are built from a template whose colours are
+ * placeholders in the source, so the source alone cannot show a brass label (two-model review, F1).
+ *
+ * @return array<string,string> Pattern name to markup.
+ */
+function brass_text_rendered_patterns(): array
+{
+    Functions\when('__')->returnArg();
+    Functions\when('esc_html__')->returnArg();
+
+    return array_column((new PatternLibrary())->patterns(), 'content', 'name');
 }
 
 it('draws no text in brass in any CoreX stylesheet', function () {
@@ -140,21 +166,30 @@ it('draws the newsletter button\'s label and the mega menu badge in the on-accen
 // that is large text at desktop width (the process steps' `xl`) is under it at 375px, where brass fails AA.
 it('draws no text in brass in a theme pattern, template or part, or a corex-ui pattern', function () {
     $files = brass_text_markup_files();
+    $patterns = brass_text_rendered_patterns();
     $found = [];
 
     foreach ($files as $file) {
-        preg_match_all('/<!-- wp:[a-z\/-]+ (\{.*?\}) \/?-->/', (string) file_get_contents((string) $file), $blocks);
-
-        foreach ($blocks[1] as $json) {
-            $attributes = (array) json_decode($json, true);
-            if (($attributes['textColor'] ?? '') === 'accent') {
-                $found[] = basename((string) $file) . ': ' . $json;
-            }
+        foreach (brass_text_blocks((string) file_get_contents((string) $file)) as $json) {
+            $found[] = basename((string) $file) . ': ' . $json;
+        }
+    }
+    foreach ($patterns as $name => $markup) {
+        foreach (brass_text_blocks((string) $markup) as $json) {
+            $found[] = $name . ': ' . $json;
         }
     }
 
-    expect(array_map('basename', $files))->toContain('front-page.html', 'header.html', 'PatternLibrary.php')
+    expect(array_map('basename', $files))->toContain('front-page.html', 'header.html')
+        ->and($patterns)->toHaveKey('corex/cta')
         ->and($found)->toBe([]);
+});
+
+it('finds a brass label in a rendered button whose colours are placeholders in its source', function () {
+    $template = '<!-- wp:button {"backgroundColor":"%1$s","textColor":"%2$s"} -->';
+
+    expect(brass_text_blocks($template))->toBe([])
+        ->and(brass_text_blocks(sprintf($template, 'surface', 'accent')))->toHaveCount(1);
 });
 
 // The corporate header's top bar is `surface-strong`, where brass is 2.65:1 in light: its links ring in
