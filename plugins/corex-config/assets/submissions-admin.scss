@@ -784,6 +784,16 @@
 	flex: none;
 }
 
+/* The box stands in a box one line of its label tall, centred in it,
+   so it is level with the first line at any line height (right to left
+   reads at 1.8, spec 121) and any box size. */
+.corex-admin .corex-inbox__acknowledge-box {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	block-size: 1lh;
+}
+
 .corex-admin .corex-inbox__acknowledge label {
 	font-weight: 600;
 }
