@@ -16,6 +16,7 @@ use Corex\Activity\ActivityService;
 use Corex\Config\Access\ScreenNames;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\PageCachePurge;
+use Corex\Config\Security\LoginProtection\LockoutReleaser;
 use Corex\Events\ListenerProvider;
 use Corex\Security\LoginLockoutEvent;
 use DateTimeImmutable;
@@ -34,7 +35,12 @@ use DateTimeImmutable;
  * - `access.denied` (access), when the access log opens a new counted entry: a page reloaded a
  *   thousand times in an hour is one entry there (spec 112) and one event here;
  * - `security.login.locked` (security), when login protection locks a sign-in out. It keeps when
- *   the lock ends, not the username that was typed nor the visitor's address.
+ *   the lock ends, not the username that was typed nor the visitor's address;
+ * - `security.login.released` (security), when someone releases one lockout from the screen
+ *   (spec 124, FR-017). It keeps who released it, how many rows ended, the account's id (0 for an
+ *   unknown username) and the identity and network fingerprints, never a stored value;
+ * - `security.login.released_all` (security), once when someone releases every active lockout, with
+ *   how many rows ended.
  *
  * Access-request decisions were already written by the access service.
  *
@@ -46,12 +52,16 @@ final class SecurityActivityRecorder
     public const MODE_CHANGED  = 'operations.mode.changed';
     public const ACCESS_DENIED = 'access.denied';
     public const LOGIN_LOCKED  = 'security.login.locked';
+    public const LOGIN_RELEASED = 'security.login.released';
+    public const LOGIN_RELEASED_ALL = 'security.login.released_all';
 
     /** Each kind's area and outcome. */
     private const KINDS = [
         self::MODE_CHANGED  => [ActivityEvent::AREA_OPERATIONS, ActivityEvent::OUTCOME_SUCCESS],
         self::ACCESS_DENIED => [ActivityEvent::AREA_ACCESS, ActivityEvent::OUTCOME_DENIED],
         self::LOGIN_LOCKED  => [ActivityEvent::AREA_SECURITY, ActivityEvent::OUTCOME_DENIED],
+        self::LOGIN_RELEASED => [ActivityEvent::AREA_SECURITY, ActivityEvent::OUTCOME_SUCCESS],
+        self::LOGIN_RELEASED_ALL => [ActivityEvent::AREA_SECURITY, ActivityEvent::OUTCOME_SUCCESS],
     ];
 
     private const RETENTION = '+180 days';
@@ -70,6 +80,8 @@ final class SecurityActivityRecorder
     {
         add_action('corex_operations_mode_changed', [$this, 'modeChanged'], 10, 3);
         add_action('corex_access_refusal_counted', [$this, 'refused'], 10, 3);
+        add_action(LockoutReleaser::RELEASED, [$this, 'lockoutReleased'], 10, 5);
+        add_action(LockoutReleaser::RELEASED_ALL, [$this, 'lockoutsReleased'], 10, 2);
         $this->listeners->listen(LoginLockoutEvent::class, function (object $event): void {
             if ($event instanceof LoginLockoutEvent) {
                 $this->lockedOut($event);
@@ -102,6 +114,23 @@ final class SecurityActivityRecorder
             ['login', 'sign-in', __('Sign-in', 'corex')],
             ['locked_until' => $event->lockedUntil->format(DATE_ATOM)],
         );
+    }
+
+    /** One lockout released from the screen: who, how many rows, whose (spec 124, FR-017). */
+    public function lockoutReleased(int $actorId, int $count, int $accountId, string $identity, string $network): void
+    {
+        $this->write(
+            $actorId,
+            self::LOGIN_RELEASED,
+            ['login', 'sign-in', __('Sign-in', 'corex')],
+            ['count' => $count, 'account_id' => $accountId, 'identity' => $identity, 'network' => $network],
+        );
+    }
+
+    /** Every active lockout released from the screen, recorded once with how many rows ended. */
+    public function lockoutsReleased(int $actorId, int $count): void
+    {
+        $this->write($actorId, self::LOGIN_RELEASED_ALL, ['login', 'sign-in', __('Sign-in', 'corex')], ['count' => $count]);
     }
 
     /**

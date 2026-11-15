@@ -20881,3 +20881,43 @@ the proxy field has no text yet; slice 10's design writes it. This slice is not 
   refused proxy line is repeated up to 64 bytes cut on a character boundary (`mb_strcut()`). A request that names no
   setting answers 422 with `errors.request` and the reason `nothing_to_save`, rather than a 200 that reads as saved.
   The route's argument descriptions are translated.
+
+## #630 -- A lockout is released by its stored row, and a release with nothing to end answers 409
+
+**Date:** 2026-11-15. **Spec:** 124, slice 6 (FR-016, FR-017 server half, SC-004). **Branch:**
+`spec/124-slice-6-lockout-release`. **Decided:** under the owner's delegation of the revamp.
+
+**Routes.** `POST corex/v1/security/lockouts/{id}/release` ends one lockout; `POST
+corex/v1/security/lockouts/release-all` ends every active one and writes nothing else (no setting, no mode, no
+lockout that had ended on its own). Both ask "Manage operations" and the REST nonce, as the login settings route
+does (spec 117, FR-004c); an Editor gets WordPress's `rest_forbidden` 403. The
+person releasing is the current user (`LockoutReleaseController`, thin; the work is `LockoutReleaser`).
+
+**What names a lockout.** The panel row's `id` is the stored row's number (`LockoutRows`). It was the identity
+fingerprint and the end time, which the server could only map back by fingerprinting every row, and which two
+networks locking out one username in the same second shared. The release ends every active row of that row's
+identity and network pair, since two failures at once can each start one; the same username from another network
+is another lockout and is left alone. The screen draws the panel on load from the same `LockoutRows`, so load and
+release share one shape (`released` is new beside the old keys; the admin script reads `id` as an opaque key).
+
+**What a release does.** One `UPDATE` sets the end to now with the reason `released_by_owner`, only on rows still
+active and not released already, so two releases at once end each row once. The failed attempts stay recorded and
+stop counting toward the next lockout of the pair, otherwise one mistyped password after a release would lock the
+person out again. It is recorded once in the activity log (`security.login.released`, with the account's id or 0
+and the fingerprints; `security.login.released_all` with the count), never a stored hash, a typed username or an
+address. The entry names the account through `LoginAccounts::nameOf()`, the rule the lockout notice uses (#626), so a
+deleted account reads "User 99" in the log as it does in the notice; the panel (`LockoutRows`) shows no login for a
+deleted account, so its row reads as an unknown username. An activity write that fails does not undo the release
+(the recorder's standing policy: it lets a failed write go), so the log can miss a release when its own write
+fails. `wp corex security reset-login` changes the same way: its
+release is marked `released_by_recovery`, and the attempts before it stop counting too, so one mistyped password
+after a recovery no longer locks the owner out again.
+
+**Answers.** Spec 043's envelope. Released: 200, `data.released` (rows ended) and `data.lockouts` (the redrawn
+rows). Nothing to end: 409, `lockout_already_ended` for one lockout that had ended (or that another release ended
+first) and `no_active_lockouts` for release all with none active, each with a translated "Nothing was changed" and
+the rows in `details.lockouts`. A row that is not a lockout, or is gone: 404 `lockout_not_found`. The id is read
+from the URL only, so an `id` in the body cannot name another lockout. 409 and not 200,
+because the request asked for a change the lockout's state no longer allows, which is how the job routes answer a
+cancel of a job that cannot be cancelled; and not 422, because nothing in the request is malformed. *Not chosen:*
+a 200 with a status field, which a client reading `ok` would show as "released".

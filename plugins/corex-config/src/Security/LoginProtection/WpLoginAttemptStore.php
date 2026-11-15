@@ -17,8 +17,12 @@ use RuntimeException;
 
 /**
  * WordPress persistence adapter for keyed login attempt and lockout evidence.
+ *
+ * A release, from the screen or from the recovery command, is one `UPDATE` whose condition is "still
+ * active and not released already", so it needs no lock of its own: two releases at once end each
+ * row once, and the one that ends nothing learns it from its count (spec 124, FR-017).
  */
-final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore, LoginLockoutReader
+final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore, LoginLockoutReader, LoginLockoutReleases
 {
     private const MAX_PRUNE_SIZE = 5000;
 
@@ -48,14 +52,34 @@ final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore,
         }
     }
 
+    /**
+     * Failures since `$since` that still count: those after the latest release of a lockout stored
+     * under any of the attempt's pairs are the only ones that do (spec 124, FR-017). A released
+     * lockout's end is the moment of its release, so the attempts that led to it stay recorded and
+     * no longer count toward the next one. A lockout that ended on its own does not reset the count,
+     * as before.
+     */
     public function failures(LoginAttemptKeys $keys, DateTimeImmutable $since): array
     {
         global $wpdb;
 
         [$pairs, $values] = $this->pairsClause($keys);
+        $released = implode(', ', array_fill(0, count(LoginAttemptRecord::RELEASED), '%s'));
+        // The inner pairs clause names the inner table's columns: unqualified, they resolve there first.
         $rows = $wpdb->get_results($wpdb->prepare(
-            'SELECT * FROM ' . $this->table() . ' WHERE ' . $pairs . ' AND outcome = %s AND occurred_at >= %s ORDER BY occurred_at ASC, id ASC',
-            [...$values, LoginAttemptRecord::FAILED, $this->date($since)],
+            'SELECT * FROM ' . $this->table() . ' WHERE ' . $pairs . ' AND outcome = %s AND occurred_at >= %s'
+            . ' AND occurred_at > COALESCE((SELECT MAX(locked_until) FROM ' . $this->table() . ' WHERE ' . $pairs
+            . ' AND outcome = %s AND reason_code IN (' . $released . ')), %s)'
+            . ' ORDER BY occurred_at ASC, id ASC',
+            [
+                ...$values,
+                LoginAttemptRecord::FAILED,
+                $this->date($since),
+                ...$values,
+                LoginAttemptRecord::LOCKED,
+                ...LoginAttemptRecord::RELEASED,
+                '1000-01-01 00:00:00',
+            ],
         ), ARRAY_A);
 
         return array_map($this->hydrate(...), is_array($rows) ? $rows : []);
@@ -126,21 +150,66 @@ final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore,
 
     public function releaseActiveLockouts(DateTimeImmutable $now): int
     {
+        return $this->release(LoginAttemptRecord::RELEASED_BY_RECOVERY, $now);
+    }
+
+    public function lockoutById(int $id): ?LoginAttemptRecord
+    {
         global $wpdb;
 
-        $released = $wpdb->query($wpdb->prepare(
-            'UPDATE ' . $this->table() . ' SET locked_until = %s, reason_code = %s WHERE outcome = %s AND locked_until > %s',
-            $this->date($now),
-            'released_by_recovery',
+        $row = $wpdb->get_row($wpdb->prepare(
+            'SELECT * FROM ' . $this->table() . ' WHERE id = %d AND outcome = %s',
+            $id,
             LoginAttemptRecord::LOCKED,
-            $this->date($now),
+        ), ARRAY_A);
+
+        return is_array($row) ? $this->hydrate($row) : null;
+    }
+
+    public function releasePair(string $identityHash, string $networkHash, DateTimeImmutable $now): int
+    {
+        return $this->release(
+            LoginAttemptRecord::RELEASED_BY_OWNER,
+            $now,
+            ' AND identity_hash = %s AND network_hash = %s',
+            [$identityHash, $networkHash],
+        );
+    }
+
+    public function releaseAllActive(DateTimeImmutable $now): int
+    {
+        return $this->release(LoginAttemptRecord::RELEASED_BY_OWNER, $now);
+    }
+
+    /**
+     * Ends the lockouts still active at `$now` (and narrowed by `$where`), as released for `$reason`.
+     * A row released already is never ended again, so its reason and its end stay the first ones.
+     *
+     * @param list<string> $values the placeholders' values of `$where`
+     */
+    private function release(string $reason, DateTimeImmutable $now, string $where = '', array $values = []): int
+    {
+        global $wpdb;
+
+        $released = implode(', ', array_fill(0, count(LoginAttemptRecord::RELEASED), '%s'));
+        $count = $wpdb->query($wpdb->prepare(
+            'UPDATE ' . $this->table() . ' SET locked_until = %s, reason_code = %s'
+            . ' WHERE outcome = %s AND locked_until > %s AND reason_code NOT IN (' . $released . ')' . $where,
+            [
+                $this->date($now),
+                $reason,
+                LoginAttemptRecord::LOCKED,
+                $this->date($now),
+                ...LoginAttemptRecord::RELEASED,
+                ...$values,
+            ],
         ));
 
-        if ($released === false) {
+        if ($count === false) {
             throw new RuntimeException('CoreX could not release active login lockouts.');
         }
 
-        return (int) $released;
+        return (int) $count;
     }
 
     /**
@@ -175,6 +244,7 @@ final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore,
             occurredAt: $this->fromDate((string) $row['occurred_at']),
             retentionUntil: $this->fromDate((string) $row['retention_until']),
             lockedUntil: empty($row['locked_until']) ? null : $this->fromDate((string) $row['locked_until']),
+            id: isset($row['id']) ? (int) $row['id'] : null,
         );
     }
 

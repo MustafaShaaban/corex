@@ -372,6 +372,12 @@ Production: gone, and Settings > Reading unchanged.
 - **FR-017**: A lockout, or every active lockout, MUST be releasable from the screen, at once, recorded in the
   activity log, for people who may manage Operations & Security only; a lockout that has already ended MUST be
   reported as such and change nothing.
+  *Amended 2026-11-15 (DECISIONS #630):* a lockout is named by its stored row, and its release ends every active
+  lockout of the same username and network, leaving the same username from another network locked. The failed
+  attempts before a release stay recorded and stop counting toward the next lockout, for a release from the screen
+  and for `wp corex security reset-login` alike, so one mistyped password afterwards does not lock the person out
+  again; as many failures as the limit after it do. A release that has nothing to end (the lockout had ended, or
+  release all finds none active) answers 409 and changes nothing; an id that names no lockout answers 404.
 - **FR-018**: In Development and Staging, HTTPS, debug output and search engines MUST be shown under "Before going
   live" with their state and left out of the counts on the Overview, the Operations Overview tab and Insights; the
   launch gate MUST still evaluate every check; no check text may call the site "production" outside Production.
