@@ -2,9 +2,9 @@
   "generated_at": "source-controlled",
   "authority": "theme/theme.json",
   "summary": {
-    "definitions": 88,
-    "consumer_records": 1334,
-    "retained": 67,
+    "definitions": 105,
+    "consumer_records": 1337,
+    "retained": 84,
     "added": 10,
     "aliased": 11,
     "migration_batches": 4,
@@ -24,6 +24,78 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "color.accentHover",
+      "generated_property": "--wp--custom--color--accent-hover",
+      "source_path": "theme/theme.json#settings.custom.color.accentHover",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.accentSubtle",
+      "generated_property": "--wp--custom--color--accent-subtle",
+      "source_path": "theme/theme.json#settings.custom.color.accentSubtle",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.band",
+      "generated_property": "--wp--custom--color--band",
+      "source_path": "theme/theme.json#settings.custom.color.band",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandAccent",
+      "generated_property": "--wp--custom--color--band-accent",
+      "source_path": "theme/theme.json#settings.custom.color.bandAccent",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandAccentHover",
+      "generated_property": "--wp--custom--color--band-accent-hover",
+      "source_path": "theme/theme.json#settings.custom.color.bandAccentHover",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandAccentSubtle",
+      "generated_property": "--wp--custom--color--band-accent-subtle",
+      "source_path": "theme/theme.json#settings.custom.color.bandAccentSubtle",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandBorder",
+      "generated_property": "--wp--custom--color--band-border",
+      "source_path": "theme/theme.json#settings.custom.color.bandBorder",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandInk",
+      "generated_property": "--wp--custom--color--band-ink",
+      "source_path": "theme/theme.json#settings.custom.color.bandInk",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandInkSoft",
+      "generated_property": "--wp--custom--color--band-ink-soft",
+      "source_path": "theme/theme.json#settings.custom.color.bandInkSoft",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandLine",
+      "generated_property": "--wp--custom--color--band-line",
+      "source_path": "theme/theme.json#settings.custom.color.bandLine",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandLink",
+      "generated_property": "--wp--custom--color--band-link",
+      "source_path": "theme/theme.json#settings.custom.color.bandLink",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.bandRaised",
+      "generated_property": "--wp--custom--color--band-raised",
+      "source_path": "theme/theme.json#settings.custom.color.bandRaised",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "color.border",
       "generated_property": "--wp--preset--color--border",
       "source_path": "theme/theme.json#settings.color.palette[6]",
@@ -36,9 +108,21 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "color.errorSoft",
+      "generated_property": "--wp--custom--color--error-soft",
+      "source_path": "theme/theme.json#settings.custom.color.errorSoft",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "color.info",
       "generated_property": "--wp--preset--color--info",
       "source_path": "theme/theme.json#settings.color.palette[12]",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.infoSoft",
+      "generated_property": "--wp--custom--color--info-soft",
+      "source_path": "theme/theme.json#settings.custom.color.infoSoft",
       "status": "retained-pending-contract-tests"
     },
     {
@@ -51,6 +135,12 @@
       "id": "color.ink-soft",
       "generated_property": "--wp--preset--color--ink-soft",
       "source_path": "theme/theme.json#settings.color.palette[8]",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.onAccent",
+      "generated_property": "--wp--custom--color--on-accent",
+      "source_path": "theme/theme.json#settings.custom.color.onAccent",
       "status": "retained-pending-contract-tests"
     },
     {
@@ -72,6 +162,12 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "color.successSoft",
+      "generated_property": "--wp--custom--color--success-soft",
+      "source_path": "theme/theme.json#settings.custom.color.successSoft",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "color.surface",
       "generated_property": "--wp--preset--color--surface",
       "source_path": "theme/theme.json#settings.color.palette[4]",
@@ -87,6 +183,12 @@
       "id": "color.warning",
       "generated_property": "--wp--preset--color--warning",
       "source_path": "theme/theme.json#settings.color.palette[10]",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "color.warningSoft",
+      "generated_property": "--wp--custom--color--warning-soft",
+      "source_path": "theme/theme.json#settings.custom.color.warningSoft",
       "status": "retained-pending-contract-tests"
     },
     {

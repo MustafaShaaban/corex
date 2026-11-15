@@ -1,5 +1,5 @@
 {
-	"description": "The CoreX brand, written once (spec 121, US-BRD-02, DECISIONS #460). Every colour, shadow, radius and motion value with the copies that hold it: `admin` is a custom property of plugins/corex-core/assets/css/corex-admin-tokens.css, `email` a member of Corex\\Email\\Design\\EmailPalette or a constant of EmailBrand, `theme` a key of theme/theme.json. tests/Unit/Theme/BrandContractTest.php fails, naming the token, when a copy holds another value. The values are the shipped admin set (decision BRD-D3). The theme's colours and shadows are bound when the theme moves to graphite and brass (US-BRD-01, R2.2); until then they have no `theme` key.",
+	"description": "The CoreX brand, written once (spec 121, US-BRD-02, DECISIONS #460). Every colour, shadow, radius and motion value with the copies that hold it: `admin` is a custom property of plugins/corex-core/assets/css/corex-admin-tokens.css, `email` a member of Corex\\Email\\Design\\EmailPalette or a constant of EmailBrand, `theme` a key of theme/theme.json. tests/Unit/Theme/BrandContractTest.php fails, naming the token, when a copy holds another value. The values are the shipped admin set (decision BRD-D3). A shadow's `theme` is its preset slug in theme/theme.json (light) and theme/styles/dark.json (dark). `theme` lists the CoreX theme's palette slugs and its custom colour tokens (settings.custom.color) with their light and dark values, as the visitor kit gives them (spec 134, US-BRD-01, design/handoffs/visitor-kit.md, DECISIONS #634, #640); every one is a colour listed under `colors`, apart from a value with an `exception` that says why. A compatibility slug names the role it `follows`.",
 	"colors": {
 		"shell": { "dark": "#0d0e11", "light": "#eceef1", "admin": "--corex-admin-shell" },
 		"canvas": { "dark": "#16181d", "light": "#f6f7f9", "admin": "--corex-admin-canvas", "email": "canvas" },
@@ -38,10 +38,65 @@
 		"skeleton": { "dark": "#262a32", "light": "#e2e5ea", "admin": "--corex-admin-skeleton" },
 		"skeleton-shine": { "dark": "#343b47", "light": "#eef0f3", "admin": "--corex-admin-skeleton-shine" }
 	},
+	"theme": {
+		"palette": {
+			"primary": { "light": "#14151a", "dark": "#f4f5f7" },
+			"primary-dark": { "light": "#0d0e11", "dark": "#c2c8d1" },
+			"accent": { "light": "#ad8643", "dark": "#c9a25e" },
+			"accent-dark": { "light": "#76521d", "dark": "#e2c188" },
+			"surface": { "light": "#ffffff", "dark": "#16181d" },
+			"surface-alt": { "light": "#f3f4f6", "dark": "#1a1d23" },
+			"border": { "light": "#8b9099", "dark": "#646b78" },
+			"ink": { "light": "#14151a", "dark": "#f4f5f7" },
+			"ink-soft": { "light": "#5b616d", "dark": "#9aa0ab" },
+			"success": {
+				"light": "#287a4e",
+				"dark": "#5fb787",
+				"exception": { "light": "The admin's #2f8f5b is 4.04:1 as text on white; #287a4e is 5.27:1 (DECISIONS #634)." }
+			},
+			"warning": { "light": "#8a5b13", "dark": "#e0a33a" },
+			"error": { "light": "#b23530", "dark": "#e0645c" },
+			"info": { "light": "#176b96", "dark": "#6e9be6" },
+			"inverse": { "light": "#ffffff", "dark": "#14151a" },
+			"overlay": { "light": "rgba(15, 17, 22, 0.54)", "dark": "rgba(7, 9, 12, 0.72)" },
+			"selection": { "light": "#ad8643", "dark": "#c9a25e" },
+			"selection-text": { "light": "#14151a", "dark": "#14151a" },
+			"surface-raised": { "light": "#ffffff", "dark": "#1c1f26" },
+			"surface-strong": { "light": "#e2e5ea", "dark": "#262a32" },
+			"background": { "light": "#ffffff", "dark": "#16181d", "follows": "surface" },
+			"foreground": { "light": "#14151a", "dark": "#f4f5f7", "follows": "ink" },
+			"danger": { "light": "#b23530", "dark": "#e0645c", "follows": "error" },
+			"corex-danger": { "light": "#b23530", "dark": "#e0645c", "follows": "error" },
+			"corex-info": { "light": "#176b96", "dark": "#6e9be6", "follows": "info" },
+			"corex-primary": { "light": "#14151a", "dark": "#f4f5f7", "follows": "primary" },
+			"corex-success": { "light": "#287a4e", "dark": "#5fb787", "follows": "success" },
+			"corex-warning": { "light": "#8a5b13", "dark": "#e0a33a", "follows": "warning" },
+			"white": { "light": "#ffffff", "dark": "#14151a", "follows": "inverse" }
+		},
+		"custom": {
+			"onAccent": { "light": "#14151a", "dark": "#14151a" },
+			"accentHover": { "light": "#c9a25e", "dark": "#e6cf9f" },
+			"accentSubtle": { "light": "rgba(173, 134, 67, 0.12)", "dark": "rgba(201, 162, 94, 0.14)" },
+			"successSoft": { "light": "rgba(47, 143, 91, 0.12)", "dark": "rgba(95, 183, 135, 0.13)" },
+			"warningSoft": { "light": "rgba(181, 120, 31, 0.12)", "dark": "rgba(224, 163, 58, 0.13)" },
+			"errorSoft": { "light": "rgba(194, 67, 59, 0.12)", "dark": "rgba(224, 100, 92, 0.13)" },
+			"infoSoft": { "light": "rgba(23, 107, 150, 0.12)", "dark": "rgba(110, 155, 230, 0.13)" },
+			"band": { "light": "#14151a", "dark": "#0d0e11" },
+			"bandRaised": { "light": "#1c1f26", "dark": "#16181d" },
+			"bandInk": { "light": "#f4f5f7", "dark": "#f4f5f7" },
+			"bandInkSoft": { "light": "#9aa0ab", "dark": "#9aa0ab" },
+			"bandLine": { "light": "#262a32", "dark": "#262a32" },
+			"bandBorder": { "light": "#646b78", "dark": "#646b78" },
+			"bandAccent": { "light": "#c9a25e", "dark": "#c9a25e" },
+			"bandAccentHover": { "light": "#e6cf9f", "dark": "#e6cf9f" },
+			"bandAccentSubtle": { "light": "rgba(201, 162, 94, 0.14)", "dark": "rgba(201, 162, 94, 0.14)" },
+			"bandLink": { "light": "#e2c188", "dark": "#e2c188" }
+		}
+	},
 	"shadows": {
-		"sm": { "dark": "0 1px 2px rgb(0 0 0 / 20%)", "light": "0 1px 2px rgb(20 21 26 / 8%)", "admin": "--corex-admin-shadow-sm" },
-		"md": { "dark": "0 8px 24px rgb(0 0 0 / 24%)", "light": "0 8px 24px rgb(20 21 26 / 10%)", "admin": "--corex-admin-shadow-md" },
-		"lg": { "dark": "0 18px 48px rgb(0 0 0 / 28%)", "light": "0 18px 48px rgb(20 21 26 / 14%)", "admin": "--corex-admin-shadow-lg" }
+		"sm": { "dark": "0 1px 2px rgb(0 0 0 / 20%)", "light": "0 1px 2px rgb(20 21 26 / 8%)", "admin": "--corex-admin-shadow-sm", "theme": "sm" },
+		"md": { "dark": "0 8px 24px rgb(0 0 0 / 24%)", "light": "0 8px 24px rgb(20 21 26 / 10%)", "admin": "--corex-admin-shadow-md", "theme": "md" },
+		"lg": { "dark": "0 18px 48px rgb(0 0 0 / 28%)", "light": "0 18px 48px rgb(20 21 26 / 14%)", "admin": "--corex-admin-shadow-lg", "theme": "lg" }
 	},
 	"radius": {
 		"xs": { "value": "0.1875rem", "admin": "--corex-admin-radius-xs", "theme": "settings.custom.radius.xs" },

@@ -33,10 +33,10 @@ it('rejects an invalid email, URL, and unknown select option (never saved)', fun
 it('takes a colour only as six-digit hex, and keeps it in one case', function (string $written, ?string $saved) {
     expect((new SettingsSanitizer())->sanitize($written, 'hex-colour'))->toBe($saved);
 })->with([
-    ['#0B1F3B', '#0b1f3b'],
+    ['#7A7A7A', '#7a7a7a'],
     [' #ad8643 ', '#ad8643'],
     ['#abc', null],
-    ['0B1F3B', null],
+    ['7A7A7A', null],
     ['red', null],
     ['rgb(1, 2, 3)', null],
     ['#ad8643;background:url(x)', null],

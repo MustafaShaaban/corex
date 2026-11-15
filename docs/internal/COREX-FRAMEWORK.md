@@ -481,8 +481,8 @@ From the designer, collect: color palette (with named roles, not just hex), type
   "settings": {
     "color": {
       "palette": [
-        { "slug": "primary",   "color": "#0B1F3B", "name": "Primary" },
-        { "slug": "accent",    "color": "#00C2FF", "name": "Accent" },
+        { "slug": "primary",   "color": "#14151A", "name": "Primary" },
+        { "slug": "accent",    "color": "#AD8643", "name": "Accent" },
         { "slug": "surface",   "color": "#FFFFFF", "name": "Surface" }
       ]
     },
@@ -519,8 +519,8 @@ For multisite or per-client variants (the HHEO reality: each site its own colors
 {
   "name": "Blackstone eIT",
   "tokens": {
-    "color.primary": "#0B1F3B",
-    "color.accent":  "#00C2FF",
+    "color.primary": "#333333",
+    "color.accent":  "#7A7A7A",
     "font.heading":  "Montserrat",
     "font.arabic":   "Cairo"
   },

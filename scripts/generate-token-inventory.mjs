@@ -780,16 +780,10 @@ const collectClassifications = ( definitions, consumers, root ) => {
 export function buildInventory( root ) {
 	const theme = readJson( root, 'theme/theme.json' );
 	const dark = readJson( root, 'theme/styles/dark.json' );
-	const editorial = readJson( root, 'theme/styles/editorial.json' );
 	const definitions = collectDefinitions( theme, dark );
 	const consumers = collectConsumers( root, definitions );
 	const variations = collectVariations( theme, [
 		{ mode: 'dark', file: 'theme/styles/dark.json', json: dark },
-		{
-			mode: 'editorial',
-			file: 'theme/styles/editorial.json',
-			json: editorial,
-		},
 	] );
 
 	return {

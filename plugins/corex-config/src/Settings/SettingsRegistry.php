@@ -139,7 +139,7 @@ final class SettingsRegistry implements FieldSections
                     'mail.brand.accent' => [
                         'label' => __('Email accent colour', 'corex'),
                         'type'  => 'hex-colour',
-                        'help'  => __('The edge along the top of an email. Six-digit hex, such as #0B1F3B. Leave blank for CoreX\'s.', 'corex'),
+                        'help'  => __('The edge along the top of an email. Six-digit hex, such as #7A7A7A. Leave blank for CoreX\'s.', 'corex'),
                     ],
                     'mail.brand.logo' => [
                         'label' => __('Email logo', 'corex'),

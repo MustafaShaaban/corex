@@ -15,8 +15,8 @@ require_once get_template_directory() . '/inc/pattern-links.php';
 ?>
 <!-- wp:group {"tagName":"section","className":"corex-maintenance","align":"full","layout":{"type":"constrained","contentSize":"560px"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"},"blockGap":"var:preset|spacing|30"},"dimensions":{"minHeight":"70vh"}}} -->
 <section class="wp-block-group alignfull corex-maintenance" style="min-height:70vh;padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">
-	<!-- wp:paragraph {"align":"center","className":"corex-eyebrow","textColor":"accent","fontSize":"sm"} -->
-	<p class="has-text-align-center corex-eyebrow has-accent-color has-text-color has-sm-font-size"><?php echo esc_html__('SCHEDULED MAINTENANCE', 'corex'); ?></p>
+	<!-- wp:paragraph {"align":"center","className":"corex-eyebrow","textColor":"accent-dark","fontSize":"sm"} -->
+	<p class="has-text-align-center corex-eyebrow has-accent-dark-color has-text-color has-sm-font-size"><?php echo esc_html__('SCHEDULED MAINTENANCE', 'corex'); ?></p>
 	<!-- /wp:paragraph -->
 
 	<!-- wp:heading {"textAlign":"center","level":1,"fontSize":"3xl"} -->

@@ -171,7 +171,7 @@ final class SettingsGuide
                 new GuideStep(
                     __('Email accent colour, Email logo and Email footer line — how an email from this site looks.', 'corex'),
                     __('A reply sent from Submissions is drawn with these: the colour of the edge along the top, the mark above the message, and the line under it. Leave any of them blank for CoreX\'s colour, the site\'s own logo, and a line naming the site.', 'corex'),
-                    warning: __('The colour has to be six-digit hex, such as #0B1F3B. Anything else is not saved: the field keeps what it had, and the screen says which field it did not change and why.', 'corex'),
+                    warning: __('The colour has to be six-digit hex, such as #7A7A7A. Anything else is not saved: the field keeps what it had, and the screen says which field it did not change and why.', 'corex'),
                 ),
             ],
         );

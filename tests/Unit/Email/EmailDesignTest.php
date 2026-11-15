@@ -120,9 +120,9 @@ it('links and loads the web only, whatever it is handed', function () {
 });
 
 it('takes a site its own colours and keeps the rest', function () {
-    $own = EmailPalette::light()->with(['accent' => '#0B1F3B']);
+    $own = EmailPalette::light()->with(['accent' => '#7A7A7A']);
 
-    expect($own->accent)->toBe('#0b1f3b')
+    expect($own->accent)->toBe('#7a7a7a')
         ->and($own->text)->toBe(EmailPalette::light()->text);
 });
 

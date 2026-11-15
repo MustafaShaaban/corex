@@ -107,13 +107,13 @@ it('passes over a stored accent that is not a colour an email can carry', functi
 
 it('takes the brand a site plugin returns from the filter', function () {
     ($this->answer)(SiteEmailBrand::FILTER, static fn (EmailBrand $brand): EmailBrand => $brand->withPalettes(
-        $brand->light->with(['link' => '#0b1f3b']),
+        $brand->light->with(['link' => '#7a7a7a']),
         $brand->dark,
     )->withFooter('From the filter'));
 
     $brand = siteEmailBrand();
 
-    expect($brand->light->link)->toBe('#0b1f3b')
+    expect($brand->light->link)->toBe('#7a7a7a')
         ->and($brand->footer)->toBe('From the filter');
 });
 

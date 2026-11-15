@@ -116,6 +116,23 @@ final class ThemeContract
     }
 
     /**
+     * The palette with the custom colour tokens beside it, each written `custom.<key>` as
+     * `settings.custom.color` keys it (spec 134, FR-002, FR-006).
+     *
+     * @return array<string, string>
+     */
+    public static function colours(array $themeJson): array
+    {
+        $colours = self::palette($themeJson);
+
+        foreach ($themeJson['settings']['custom']['color'] ?? [] as $key => $value) {
+            $colours['custom.' . $key] = (string) $value;
+        }
+
+        return $colours;
+    }
+
+    /**
      * The admin's colour tokens, read from the stylesheet that defines them (spec 116, US-NFR-01).
      *
      * Three blocks: the dark default, the light block applied by the system appearance inside

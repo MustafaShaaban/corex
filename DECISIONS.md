@@ -21316,3 +21316,26 @@ component placed in a dark section needed its own second set of colours.
 
 *Not chosen:* a second set of colour rules per component for dark sections (every component would carry it, and a
 new one could forget it); keeping the `primary` fill and accepting a light hero in the Dark variation.
+
+## #641 -- Spec 134 slice 1: the theme's colours are bound to the contract, and no text on brass is white
+
+**Date:** 2026-11-15. **Spec:** 134, slice 1 (FR-001 to FR-010). **Branch:** `spec/134-slice-1-tokens`.
+**Decided:** under the owner's mandate for the revamp, from the approved visitor kit (`design/handoffs/visitor-kit.md`).
+
+**The contract.** `design/tokens/brand-contract.json` gains a `theme` section: every palette slug and the 17 custom
+colour tokens, light and dark. A value the brand does not list carries `exception` with its reason (one: `success`
+in light); a compatibility slug says which role it `follows` and inherits that role's exception.
+`BrandContractTest` names the token, the mode and the file on a mismatch.
+
+**White on brass.** In light, white on `#ad8643` is 3.35:1, under AA. Slice 1 changes the palette, so it also moves
+the four places that drew text in white on `accent` to the kit's `on-accent` token (graphite), falling back to
+`inverse` under a theme without it: the call-to-action pattern's text, the newsletter submit, the menu badge. Brass
+text on a page surface takes `accent-dark` (the form's required mark, the share links' hover, the maintenance
+eyebrow). The brass band, section styles and the button itself stay slice 2's. *Not chosen:* holding slice 1 until
+slice 2, which leaves the branch red; keeping white text, which ships an AA failure.
+
+**Example colour.** Copy and sample data that showed a navy value show `#7A7A7A`, a neutral grey with letters (for
+the case-folding test) that reads about 4.5:1 on near-black.
+
+**Docs.** The Foundations page lists the custom colours and the shadows with their default and dark values, which
+completes spec 121's FR-025, TC-DOC-07-04 and SC-007.

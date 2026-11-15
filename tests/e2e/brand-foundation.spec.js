@@ -14,7 +14,7 @@ test( 'supports complete light and dark surfaces', async ( { page } ) => {
 	await page
 		.locator( 'html' )
 		.evaluate( ( root ) => root.setAttribute( 'data-mode', 'dark' ) );
-	await expect( surface ).toHaveCSS( 'background-color', 'rgb(16, 42, 76)' );
+	await expect( surface ).toHaveCSS( 'background-color', 'rgb(28, 31, 38)' );
 } );
 
 test( 'keeps focus visible and content usable at 200 percent zoom', async ( {

@@ -240,7 +240,7 @@
 	padding-inline: var(--wp--preset--spacing--20);
 	border-radius: var(--wp--custom--radius--sm);
 	background-color: var(--wp--preset--color--accent);
-	color: var(--wp--preset--color--inverse);
+	color: var(--wp--custom--color--on-accent, var(--wp--preset--color--inverse));
 }
 
 .corex-mega__desc {

@@ -3,7 +3,7 @@
 /**
  * Tests the expanded design-token system (spec 033): a richer palette, type scale, spacing
  * scale, shadow presets, and radius tokens — all additive (existing slugs preserved) — plus
- * valid style variations.
+ * a valid Dark style variation (spec 134 removed Editorial).
  *
  * @package Corex\Tests\Unit\Theme
  */
@@ -58,11 +58,18 @@ it('styles the button/link/heading elements with tokens', function () use ($them
         ->and($elements['button']['border']['radius'])->toContain('--wp--custom--radius');
 });
 
-it('ships valid style variations (dark + editorial), token-only', function () use ($themeDir) {
-    foreach (['dark', 'editorial'] as $variation) {
-        $json = corex_tokens($themeDir . '/styles/' . $variation . '.json');
-        expect($json['version'])->toBe(3)
-            ->and($json['title'])->toBeString()->not->toBeEmpty()
-            ->and($json['settings']['color']['palette'])->toBeArray()->not->toBeEmpty();
-    }
+it('ships a valid Dark style variation, token-only', function () use ($themeDir) {
+    $json = corex_tokens($themeDir . '/styles/dark.json');
+    expect($json['version'])->toBe(3)
+        ->and($json['title'])->toBe('Dark')
+        ->and($json['settings']['color']['palette'])->toBeArray()->not->toBeEmpty();
+});
+
+// Spec 134, FR-008 (DECISIONS #636): one look, so the Editorial variation and the guide's mention of it are gone.
+it('ships Dark as its only style variation, and the branding guide names no other', function () use ($themeDir) {
+    $variations = array_map('basename', (array) glob($themeDir . '/styles/*.json'));
+    $guide = (string) file_get_contents(dirname($themeDir) . '/docs-app/src/content/docs/guides/branding.md');
+
+    expect($variations)->toBe(['dark.json'])
+        ->and($guide)->not->toMatch('/\bEditorial\b/');
 });

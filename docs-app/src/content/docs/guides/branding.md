@@ -140,5 +140,5 @@ production path for a client's brand fonts is still source-controlled fonts regi
 `theme.json` ships a real token system: an expanded palette (surface/border/ink-soft + state colours), a
 multi-step type scale, a full spacing scale, **shadow** presets (`--wp--preset--shadow--sm|md|lg`), and **radius**
 tokens (`--wp--custom--radius--sm|md|lg|full`). Buttons/links/headings are styled from tokens, and the card
-blocks use shadow + radius for depth. Switch the whole look with a **style variation** (Dark or Editorial) in
-the Site Editor. Everything stays token-only — no hardcoded colours or sizes.
+blocks use shadow + radius for depth. Switch the whole look to the **Dark** style variation in the Site
+Editor. Everything stays token-only: no hardcoded colours or sizes.

@@ -15,12 +15,46 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Ui\Patterns\PatternLibrary;
 
-/** @return array<string,string> slug => hex colour */
+/**
+ * The palette and the custom colours, a custom colour keyed `custom.<key>` as
+ * `settings.custom.color` writes it (spec 134, FR-002).
+ *
+ * @return array<string,string> slug => hex colour
+ */
 function themePalette(string $file): array
 {
     $json = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/theme/' . $file), true);
+    $colours = array_column($json['settings']['color']['palette'], 'color', 'slug');
 
-    return array_column($json['settings']['color']['palette'], 'color', 'slug');
+    foreach ($json['settings']['custom']['color'] ?? [] as $key => $value) {
+        $colours['custom.' . $key] = $value;
+    }
+
+    return $colours;
+}
+
+/**
+ * The colour a block's own `style.color.text` names, as a key of {@see themePalette()}: the first
+ * custom property in it the palette defines, so `var(--wp--custom--color--on-accent,
+ * var(--wp--preset--color--inverse))` is `custom.onAccent` where the theme has it and `inverse`
+ * where it does not.
+ *
+ * @param array<string,string> $palette
+ */
+function styleColour(string $value, array $palette): string
+{
+    preg_match_all('/--wp--(preset|custom)--color--([a-z0-9-]+)/', $value, $names, PREG_SET_ORDER);
+
+    foreach ($names as [, $origin, $name]) {
+        $key = $origin === 'custom'
+            ? 'custom.' . lcfirst(str_replace(' ', '', ucwords(str_replace('-', ' ', $name))))
+            : $name;
+        if (isset($palette[$key])) {
+            return $key;
+        }
+    }
+
+    return $value;
 }
 
 function relativeLuminance(string $hex): float
@@ -45,25 +79,33 @@ function contrastOf(string $a, string $b): float
 }
 
 /**
- * The colour slugs a pattern sets: its section's background, its heading's text, its button's
- * background and text.
+ * The colours a pattern sets: its section's background and text, its heading's text, its button's
+ * background and text. A text colour is a palette slug or the block's own `style.color.text`.
  *
- * @return array{section:string,heading:string,button:string,label:string}
+ * @param array<string,string> $palette
+ * @return array{section:string,text:string,heading:string,button:string,label:string}
  */
-function patternColours(string $content): array
+function patternColours(string $content, array $palette): array
 {
-    $attribute = static function (string $block, string $key) use ($content): string {
+    $attributes = static function (string $block) use ($content): array {
         preg_match('~<!-- wp:' . $block . ' (\{.*?\}) -->~', $content, $match);
-        $attributes = json_decode($match[1] ?? '{}', true);
 
-        return (string) ($attributes[$key] ?? '');
+        return (array) json_decode($match[1] ?? '{}', true);
+    };
+    $text = static function (string $block) use ($attributes, $palette): string {
+        $found = $attributes($block);
+
+        return isset($found['textColor'])
+            ? (string) $found['textColor']
+            : styleColour((string) ($found['style']['color']['text'] ?? ''), $palette);
     };
 
     return [
-        'section' => $attribute('group', 'backgroundColor'),
-        'heading' => $attribute('heading', 'textColor'),
-        'button'  => $attribute('button', 'backgroundColor'),
-        'label'   => $attribute('button', 'textColor'),
+        'section' => (string) ($attributes('group')['backgroundColor'] ?? ''),
+        'text'    => $text('group'),
+        'heading' => $text('heading'),
+        'button'  => (string) ($attributes('button')['backgroundColor'] ?? ''),
+        'label'   => (string) ($attributes('button')['textColor'] ?? ''),
     ];
 }
 
@@ -75,13 +117,28 @@ beforeEach(function () {
 it('reads in the light and the dark palette', function (string $pattern, string $paletteFile) {
     $palette = themePalette($paletteFile);
     $content = array_column((new PatternLibrary())->patterns(), 'content', 'name')[$pattern];
-    $slugs   = patternColours($content);
+    $slugs   = patternColours($content, $palette);
 
     foreach ($slugs as $role => $slug) {
         expect(array_key_exists($slug, $palette))->toBeTrue("{$pattern}: its {$role} colour is a palette slug");
     }
 
-    expect(contrastOf($palette[$slugs['heading']], $palette[$slugs['section']]))->toBeGreaterThanOrEqual(4.5)
+    expect(contrastOf($palette[$slugs['text']], $palette[$slugs['section']]))->toBeGreaterThanOrEqual(4.5)
+        ->and(contrastOf($palette[$slugs['heading']], $palette[$slugs['section']]))->toBeGreaterThanOrEqual(4.5)
         ->and(contrastOf($palette[$slugs['button']], $palette[$slugs['section']]))->toBeGreaterThanOrEqual(3.0)
         ->and(contrastOf($palette[$slugs['label']], $palette[$slugs['button']]))->toBeGreaterThanOrEqual(4.5);
 })->with(['corex/hero', 'corex/cta'])->with(['light' => 'theme.json', 'dark' => 'styles/dark.json']);
+
+// Spec 134 (DECISIONS #635): text on brass is graphite through `onAccent`, and `inverse` where a theme has no such token.
+it('draws the call-to-action\'s text in the on-accent colour, falling back to inverse', function () {
+    $content = array_column((new PatternLibrary())->patterns(), 'content', 'name')['corex/cta'];
+    $withToken = patternColours($content, themePalette('theme.json'));
+    $withoutToken = patternColours($content, array_filter(
+        themePalette('theme.json'),
+        static fn (string $key): bool => ! str_starts_with($key, 'custom.'),
+        ARRAY_FILTER_USE_KEY,
+    ));
+
+    expect([$withToken['text'], $withToken['heading']])->toBe(['custom.onAccent', 'custom.onAccent'])
+        ->and([$withoutToken['text'], $withoutToken['heading']])->toBe(['inverse', 'inverse']);
+});

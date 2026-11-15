@@ -34,6 +34,43 @@ describe( 'The Foundations docs page', () => {
 		).toEqual( [ 'theme: radius--sm differs from what CoreX ships' ] );
 	} );
 
+	// Spec 134, FR-010 (spec 121, FR-025): the kit's custom colours and the shadows, light and dark.
+	test( 'lists each custom colour and each shadow with its default and its dark value', () => {
+		const rows = generator
+			.tablesFrom( files )
+			.theme.flatMap( ( { rows: list } ) => list );
+		const row = ( token ) =>
+			rows.find( ( [ name ] ) => name === token )?.[ 1 ];
+
+		expect( row( 'custom--color--band-ink' ) ).toEqual( [
+			'`--wp--custom--color--band-ink`',
+			'`#f4f5f7`',
+			'`#f4f5f7`',
+		] );
+		expect( row( 'custom--color--on-accent' ) ).toEqual( [
+			'`--wp--custom--color--on-accent`',
+			'`#14151a`',
+			'`#14151a`',
+		] );
+		expect( row( 'shadow--md' ) ).toEqual( [
+			'`md`',
+			'`--wp--preset--shadow--md`',
+			'`0 8px 24px rgb(20 21 26 / 10%)`',
+			'`0 8px 24px rgb(0 0 0 / 24%)`',
+		] );
+
+		const dark = JSON.parse( JSON.stringify( files.dark ) );
+		dark.settings.custom.color.bandInk = '#ffffff';
+		expect(
+			generator.differences(
+				page,
+				generator.tablesFrom( { ...files, dark } )
+			)
+		).toEqual( [
+			'theme: custom--color--band-ink differs from what CoreX ships',
+		] );
+	} );
+
 	test( 'refuses a token value that holds a backslash', () => {
 		const theme = JSON.parse( JSON.stringify( files.theme ) );
 		theme.settings.custom.radius.sm = '0.5rem\\|x';

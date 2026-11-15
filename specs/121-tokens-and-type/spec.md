@@ -6,7 +6,7 @@
 
 **Status**: Implemented, in review for R2.1 (2026-11-11). Owed before R2.1 ships: the native Arabic review
 (NFR-D3, `arabic-review.md`). Completed in R2.2, not here: the no-navy criteria FR-025, TC-DOC-07-04 and SC-007
-(DECISIONS #468; notes under each).
+(DECISIONS #468; notes under each), **complete** since spec 134's slice 1 (2026-11-15).
 
 **Input**: The owner approved the brand, quality and docs stories of the CoreX revamp on 2026-10-20 and 2026-10-21. This
 spec is release R2.1, the first release of stage 2. It carries seven of them as its acceptance criteria: US-BRD-02,
@@ -217,6 +217,9 @@ I do not build on a scope or a palette that no longer exists.
    > **Note, 2026-11-11.** Not met in R2.1, by design. The theme colour table is written from `theme.json`, which
    > stays navy until US-BRD-01 (R2.2), so the page still shows `#0B1F3B` and `#00C2FF`; the check makes R2.2
    > regenerate it, and this scenario completes then (DECISIONS #468).
+   >
+   > **Complete, 2026-11-15** (spec 134, slice 1, FR-009 and FR-010). The theme moved to graphite and brass, the
+   > page was written again from it, and `tests/Unit/Theme/NavyEraValuesTest.php` finds no navy-era value on it.
 
 ### Edge Cases
 
@@ -310,6 +313,9 @@ I do not build on a scope or a palette that no longer exists.
   > value" is not: the Foundations page's theme colour rows and spec 057's generated inventories
   > (`inventories/definitions.json`, `inventories/variations.json`) are written from `theme.json` and
   > `theme/styles/dark.json`, which keep the navy palette until US-BRD-01. Those rows go in R2.2 (DECISIONS #468).
+  >
+  > **Complete, 2026-11-15** (spec 134, slice 1, FR-010). The page and spec 057's inventories were written again
+  > from the graphite and brass theme; the page also lists the custom colours and the shadows light and dark.
 
 ### Key Entities
 
@@ -333,6 +339,10 @@ I do not build on a scope or a palette that no longer exists.
   > `theme/styles/dark.json`, in the Foundations page and spec 057's inventories generated from them, and in
   > `docs/internal/COREX-FRAMEWORK.md`'s example; `tests/Unit/Config/BrandingTest.php` names them only to assert
   > that the login lockup does not use them. The generated rows go in R2.2 (DECISIONS #468).
+  >
+  > **Complete, 2026-11-15** (spec 134, slice 1, FR-009). The theme, the Foundations page, the inventories and
+  > the framework guide's example no longer hold them; `BrandingTest` no longer names them, and
+  > `tests/Unit/Theme/NavyEraValuesTest.php` holds every shipped file, test, fixture and docs page to that.
 
 ## Assumptions
 

@@ -137,8 +137,8 @@ it('draws the login with the Core X lockup, and the retired navy and cyan logo i
     $assets = dirname(__DIR__, 3) . '/plugins/corex-config/assets';
     $lockup = (string) file_get_contents($assets . '/brand/corex-lockup.svg');
 
-    // Spec 121, US-BRD-08 (DECISIONS #465): the old file is removed, not kept as evidence.
+    // Spec 121, US-BRD-08 (DECISIONS #465): the old file is removed, not kept as evidence. That no
+    // logo file holds the old colours is NavyEraValuesTest's (spec 134, FR-009).
     expect($assets . '/corex-logo.svg')->not->toBeFile()
-        ->and($lockup)->toContain('<svg')->toContain('#c9a25e')
-        ->and(strtolower($lockup))->not->toContain('#0b1f3b')->not->toContain('#00c2ff');
+        ->and($lockup)->toContain('<svg')->toContain('#c9a25e');
 });

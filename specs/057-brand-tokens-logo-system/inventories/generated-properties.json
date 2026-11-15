@@ -1,6 +1,6 @@
 {
   "generated_at": "source-controlled",
-  "count": 88,
+  "count": 105,
   "properties": [
     {
       "id": "border.width.strong",
@@ -31,9 +31,93 @@
       "status": "observed"
     },
     {
+      "id": "color.accentHover",
+      "source_path": "theme/theme.json#settings.custom.color.accentHover",
+      "generated_property": "--wp--custom--color--accent-hover",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.accentSubtle",
+      "source_path": "theme/theme.json#settings.custom.color.accentSubtle",
+      "generated_property": "--wp--custom--color--accent-subtle",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "color.background",
       "source_path": "theme/theme.json#settings.color.palette[19]",
       "generated_property": "--wp--preset--color--background",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.band",
+      "source_path": "theme/theme.json#settings.custom.color.band",
+      "generated_property": "--wp--custom--color--band",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandAccent",
+      "source_path": "theme/theme.json#settings.custom.color.bandAccent",
+      "generated_property": "--wp--custom--color--band-accent",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandAccentHover",
+      "source_path": "theme/theme.json#settings.custom.color.bandAccentHover",
+      "generated_property": "--wp--custom--color--band-accent-hover",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandAccentSubtle",
+      "source_path": "theme/theme.json#settings.custom.color.bandAccentSubtle",
+      "generated_property": "--wp--custom--color--band-accent-subtle",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandBorder",
+      "source_path": "theme/theme.json#settings.custom.color.bandBorder",
+      "generated_property": "--wp--custom--color--band-border",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandInk",
+      "source_path": "theme/theme.json#settings.custom.color.bandInk",
+      "generated_property": "--wp--custom--color--band-ink",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandInkSoft",
+      "source_path": "theme/theme.json#settings.custom.color.bandInkSoft",
+      "generated_property": "--wp--custom--color--band-ink-soft",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandLine",
+      "source_path": "theme/theme.json#settings.custom.color.bandLine",
+      "generated_property": "--wp--custom--color--band-line",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandLink",
+      "source_path": "theme/theme.json#settings.custom.color.bandLink",
+      "generated_property": "--wp--custom--color--band-link",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.bandRaised",
+      "source_path": "theme/theme.json#settings.custom.color.bandRaised",
+      "generated_property": "--wp--custom--color--band-raised",
       "unique": true,
       "status": "observed"
     },
@@ -94,6 +178,13 @@
       "status": "observed"
     },
     {
+      "id": "color.errorSoft",
+      "source_path": "theme/theme.json#settings.custom.color.errorSoft",
+      "generated_property": "--wp--custom--color--error-soft",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "color.foreground",
       "source_path": "theme/theme.json#settings.color.palette[20]",
       "generated_property": "--wp--preset--color--foreground",
@@ -104,6 +195,13 @@
       "id": "color.info",
       "source_path": "theme/theme.json#settings.color.palette[12]",
       "generated_property": "--wp--preset--color--info",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.infoSoft",
+      "source_path": "theme/theme.json#settings.custom.color.infoSoft",
+      "generated_property": "--wp--custom--color--info-soft",
       "unique": true,
       "status": "observed"
     },
@@ -125,6 +223,13 @@
       "id": "color.inverse",
       "source_path": "theme/theme.json#settings.color.palette[13]",
       "generated_property": "--wp--preset--color--inverse",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.onAccent",
+      "source_path": "theme/theme.json#settings.custom.color.onAccent",
+      "generated_property": "--wp--custom--color--on-accent",
       "unique": true,
       "status": "observed"
     },
@@ -171,6 +276,13 @@
       "status": "observed"
     },
     {
+      "id": "color.successSoft",
+      "source_path": "theme/theme.json#settings.custom.color.successSoft",
+      "generated_property": "--wp--custom--color--success-soft",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "color.surface",
       "source_path": "theme/theme.json#settings.color.palette[4]",
       "generated_property": "--wp--preset--color--surface",
@@ -202,6 +314,13 @@
       "id": "color.warning",
       "source_path": "theme/theme.json#settings.color.palette[10]",
       "generated_property": "--wp--preset--color--warning",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.warningSoft",
+      "source_path": "theme/theme.json#settings.custom.color.warningSoft",
+      "generated_property": "--wp--custom--color--warning-soft",
       "unique": true,
       "status": "observed"
     },

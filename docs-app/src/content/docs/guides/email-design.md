@@ -19,7 +19,7 @@ No code. In **CoreX → Settings → Mail**:
 
 | Setting | What it changes | Left blank |
 |---|---|---|
-| **Email accent colour** | The edge along the top of the email's card, in light and dark mail clients alike: choose one that shows on both white and near-black. Six-digit hex, such as `#0B1F3B`. An Email Studio layout's own accent wins for the templates it arranges. | The theme's `primary` colour, when it is six-digit hex; CoreX's brass otherwise |
+| **Email accent colour** | The edge along the top of the email's card, in light and dark mail clients alike: choose one that shows on both white and near-black. Six-digit hex, such as `#7A7A7A`. An Email Studio layout's own accent wins for the templates it arranges. | The theme's `primary` colour, when it is six-digit hex; CoreX's brass otherwise |
 | **Email logo** | The mark at the top of the email. A whole web address (`https://…`) of a PNG or JPEG image; anything else, a vector image included, is passed over. It is drawn inside a box of 180 by 48 pixels with its proportions kept, so a square, a wide or a tall logo all fit; an image about twice that size stays sharp on a dense screen. A square logo has the site's name beside it; one at least twice as wide as it is tall is read as the name and stands alone. Choose an image from this site's media library: CoreX reads its size and writes the fitted one into the email, which is what Outlook on Windows goes by. For an image at an address elsewhere CoreX knows no size, and Outlook on Windows draws it as large as it is. | The site's logo, then its icon, then its name |
 | **Email footer line** | The line under the card. | "This message was sent by" and the site's name, linked to the site |
 
@@ -33,7 +33,7 @@ use Corex\Email\Design\EmailBrand;
 
 add_filter('corex_email_brand', static function (EmailBrand $brand): EmailBrand {
     return $brand->withPalettes(
-        $brand->light->with(['accent' => '#0b1f3b', 'link' => '#0b1f3b']),
+        $brand->light->with(['accent' => '#7a7a7a', 'link' => '#7a7a7a']),
         $brand->dark->with(['accent' => '#8fb4e8', 'link' => '#8fb4e8']),
     );
 });

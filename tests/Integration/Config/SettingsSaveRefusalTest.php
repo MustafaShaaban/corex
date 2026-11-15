@@ -78,7 +78,7 @@ it('refuses a value its field does not take, says which field and why, and leave
     'an address with nothing after the @' => ['mail.reply.from_address', 'before@example.com', 'answers@', 'Reply sender address', 'is not an email address.'],
     // WordPress could "repair" this one into another address, and it was saved as that.
     'an address in letters an address cannot hold' => ['mail.reply.reply_to', 'before@example.com', 'sales@münchen.de', 'Replies are answered to', 'is not an email address.'],
-    'a colour that is not six-digit hex' => ['mail.brand.accent', '#0b1f3b', 'navy', 'Email accent colour', 'is not a six-digit colour such as #0B1F3B.'],
+    'a colour that is not six-digit hex' => ['mail.brand.accent', '#7a7a7a', 'navy', 'Email accent colour', 'is not a six-digit colour such as #7A7A7A.'],
     'a web address that is not one' => ['mail.brand.logo', '', 'javascript:alert(1)', 'Email logo', 'is not a web address.'],
     'a choice that is not offered' => ['mail.provider', '', 'postmark', 'Delivery provider', 'is not one of its choices.'],
 ]);

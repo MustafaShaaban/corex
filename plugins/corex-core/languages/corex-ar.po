@@ -1763,8 +1763,8 @@ msgid "A reply sent from Submissions is drawn with these: the colour of the edge
 msgstr "يُرسم الرد المرسل من الإرسالات بهذه القيم: لون الحافة في الأعلى، والشعار فوق الرسالة، والسطر تحتها. اترك أيًّا منها فارغًا ليُستخدم لون CoreX، وشعار الموقع نفسه، وسطر يذكر اسم الموقع."
 
 #: addons/corex-guides/src/Corex/Guides/SettingsGuide.php
-msgid "The colour has to be six-digit hex, such as #0B1F3B. Anything else is not saved: the field keeps what it had, and the screen says which field it did not change and why."
-msgstr "يجب أن يكون اللون بصيغة hex من ست خانات، مثل #0B1F3B. أي قيمة أخرى لا تُحفظ: يحتفظ الحقل بقيمته السابقة، وتذكر الشاشة الحقل الذي لم تغيّره والسبب."
+msgid "The colour has to be six-digit hex, such as #7A7A7A. Anything else is not saved: the field keeps what it had, and the screen says which field it did not change and why."
+msgstr "يجب أن يكون اللون بصيغة hex من ست خانات، مثل #7A7A7A. أي قيمة أخرى لا تُحفظ: يحتفظ الحقل بقيمته السابقة، وتذكر الشاشة الحقل الذي لم تغيّره والسبب."
 
 #: addons/corex-guides/src/Corex/Guides/SettingsGuide.php
 msgid "Forms and Captcha — where messages go, and keeping spam out"
@@ -7396,8 +7396,8 @@ msgstr "لم يتغير %1$s: «%2$s» ليس عنوان ويب."
 #. translators: 1: a setting's label. 2: what was typed into it.
 #: plugins/corex-config/src/Settings/AdminDashboard.php
 #, php-format
-msgid "%1$s was not changed: \"%2$s\" is not a six-digit colour such as #0B1F3B."
-msgstr "لم يُغيَّر %1$s: «%2$s» ليس لونًا من ست خانات مثل #0B1F3B."
+msgid "%1$s was not changed: \"%2$s\" is not a six-digit colour such as #7A7A7A."
+msgstr "لم يُغيَّر %1$s: «%2$s» ليس لونًا من ست خانات مثل #7A7A7A."
 
 #. translators: 1: a setting's label. 2: what was chosen for it.
 #: plugins/corex-config/src/Settings/AdminDashboard.php
@@ -7560,8 +7560,8 @@ msgid "Email accent colour"
 msgstr "لون تمييز البريد الإلكتروني"
 
 #: plugins/corex-config/src/Settings/SettingsRegistry.php
-msgid "The edge along the top of an email. Six-digit hex, such as #0B1F3B. Leave blank for CoreX's."
-msgstr "الحافة الممتدة على أعلى رسالة البريد. لون سداسي عشري من ست خانات، مثل #0B1F3B. اتركه فارغًا لاستخدام لون CoreX."
+msgid "The edge along the top of an email. Six-digit hex, such as #7A7A7A. Leave blank for CoreX's."
+msgstr "الحافة الممتدة على أعلى رسالة البريد. لون سداسي عشري من ست خانات، مثل #7A7A7A. اتركه فارغًا لاستخدام لون CoreX."
 
 #: plugins/corex-config/src/Settings/SettingsRegistry.php
 msgid "Email logo"
@@ -15682,11 +15682,6 @@ msgstr "رأس للقسم وشبكة متجاوبة من ثلاثة أعمدة �
 msgctxt "Style variation name"
 msgid "Dark"
 msgstr "داكن"
-
-#: theme/styles/editorial.json
-msgctxt "Style variation name"
-msgid "Editorial"
-msgstr "تحريري"
 
 
 # Drafted 2026-11-11 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md

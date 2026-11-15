@@ -31,6 +31,9 @@ const cell = ( value ) => {
 };
 // WordPress's name for a slug: a letter after a digit starts a word (`2xl` is printed `2-xl`).
 const kebab = ( value ) => value.replace( /(\d)([a-z])/g, '$1-$2' );
+// WordPress's name for a custom key: a capital starts a word (`bandInk` is printed `band-ink`).
+const customName = ( value ) =>
+	value.replace( /[A-Z]/g, ( letter ) => `-${ letter.toLowerCase() }` );
 
 /**
  * One table: a header and a row per token, each row keyed by the token it describes.
@@ -79,6 +82,13 @@ export function tablesFrom( { theme, dark, adminCss } ) {
 			entry.color,
 		] )
 	);
+	const darkShadows = Object.fromEntries(
+		( dark.settings.shadow?.presets ?? [] ).map( ( entry ) => [
+			entry.slug,
+			entry.shadow,
+		] )
+	);
+	const darkCustomColours = dark.settings.custom?.color ?? {};
 	const custom = ( group, prefix ) =>
 		Object.entries( settings.custom[ group ] ).map( ( [ key, value ] ) => [
 			`${ prefix }--${ key }`,
@@ -162,13 +172,29 @@ export function tablesFrom( { theme, dark, adminCss } ) {
 				] )
 			),
 			table(
-				[ 'Shadow', 'Custom property', 'Value' ],
+				[ 'Custom colour', 'Default', 'Dark variation' ],
+				Object.entries( settings.custom.color ?? {} ).map(
+					( [ key, value ] ) => [
+						`custom--color--${ customName( key ) }`,
+						[
+							cell(
+								`--wp--custom--color--${ customName( key ) }`
+							),
+							cell( value ),
+							cell( darkCustomColours[ key ] ?? value ),
+						],
+					]
+				)
+			),
+			table(
+				[ 'Shadow', 'Custom property', 'Default', 'Dark variation' ],
 				settings.shadow.presets.map( ( entry ) => [
 					`shadow--${ entry.slug }`,
 					[
 						cell( entry.slug ),
 						cell( `--wp--preset--shadow--${ entry.slug }` ),
 						cell( entry.shadow ),
+						cell( darkShadows[ entry.slug ] ?? entry.shadow ),
 					],
 				] )
 			),

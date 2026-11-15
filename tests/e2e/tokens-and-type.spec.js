@@ -366,7 +366,8 @@ test.describe( 'the CoreX admin', () => {
 		} );
 
 		expect( tokens.system ).toEqual( tokens.light );
-		expect( tokens.light[ 0 ] ).not.toContain( '11 31 59' );
+		// The light shadow is drawn in graphite (spec 121; spec 134 moved the theme off navy).
+		expect( tokens.light[ 0 ] ).toContain( '20 21 26' );
 	} );
 
 	test( 'reads Arabic at Arabic line height', async ( {

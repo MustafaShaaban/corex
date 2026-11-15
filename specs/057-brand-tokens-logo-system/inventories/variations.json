@@ -78,115 +78,115 @@
           "mappings": [
             {
               "slug": "primary",
-              "value": "#00C2FF"
+              "value": "#f4f5f7"
             },
             {
               "slug": "primary-dark",
-              "value": "#7DD3FC"
+              "value": "#c2c8d1"
             },
             {
               "slug": "accent",
-              "value": "#7DD3FC"
+              "value": "#c9a25e"
             },
             {
               "slug": "accent-dark",
-              "value": "#38BDF8"
+              "value": "#e2c188"
             },
             {
               "slug": "surface",
-              "value": "#0B1F3B"
+              "value": "#16181d"
             },
             {
               "slug": "surface-alt",
-              "value": "#102A4C"
+              "value": "#1a1d23"
             },
             {
               "slug": "border",
-              "value": "#71869C"
+              "value": "#646b78"
             },
             {
               "slug": "ink",
-              "value": "#F1F5F9"
+              "value": "#f4f5f7"
             },
             {
               "slug": "ink-soft",
-              "value": "#C3CEDA"
+              "value": "#9aa0ab"
             },
             {
               "slug": "success",
-              "value": "#4ADE80"
+              "value": "#5fb787"
             },
             {
               "slug": "warning",
-              "value": "#FACC15"
+              "value": "#e0a33a"
             },
             {
               "slug": "error",
-              "value": "#F87171"
+              "value": "#e0645c"
             },
             {
               "slug": "info",
-              "value": "#60A5FA"
+              "value": "#6e9be6"
             },
             {
               "slug": "inverse",
-              "value": "#06121F"
+              "value": "#14151a"
             },
             {
               "slug": "overlay",
-              "value": "rgba(0, 0, 0, 0.78)"
+              "value": "rgba(7, 9, 12, 0.72)"
             },
             {
               "slug": "selection",
-              "value": "#075985"
+              "value": "#c9a25e"
             },
             {
               "slug": "selection-text",
-              "value": "#F0F9FF"
+              "value": "#14151a"
             },
             {
               "slug": "surface-raised",
-              "value": "#102A4C"
+              "value": "#1c1f26"
             },
             {
               "slug": "surface-strong",
-              "value": "#183B61"
+              "value": "#262a32"
             },
             {
               "slug": "background",
-              "value": "#0B1F3B"
+              "value": "#16181d"
             },
             {
               "slug": "foreground",
-              "value": "#F1F5F9"
+              "value": "#f4f5f7"
             },
             {
               "slug": "danger",
-              "value": "#F87171"
+              "value": "#e0645c"
             },
             {
               "slug": "corex-danger",
-              "value": "#F87171"
+              "value": "#e0645c"
             },
             {
               "slug": "corex-info",
-              "value": "#60A5FA"
+              "value": "#6e9be6"
             },
             {
               "slug": "corex-primary",
-              "value": "#00C2FF"
+              "value": "#f4f5f7"
             },
             {
               "slug": "corex-success",
-              "value": "#4ADE80"
+              "value": "#5fb787"
             },
             {
               "slug": "corex-warning",
-              "value": "#FACC15"
+              "value": "#e0a33a"
             },
             {
               "slug": "white",
-              "value": "#06121F"
+              "value": "#14151a"
             }
           ]
         },
@@ -203,193 +203,6 @@
             {
               "slug": "heading",
               "value": "'Space Grotesk', system-ui, sans-serif"
-            },
-            {
-              "slug": "arabic",
-              "value": "'IBM Plex Sans Arabic', system-ui, sans-serif"
-            },
-            {
-              "slug": "body",
-              "value": "system-ui, sans-serif"
-            },
-            {
-              "slug": "mono",
-              "value": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
-            }
-          ]
-        }
-      },
-      "style_references": [
-        "--wp--preset--color--ink",
-        "--wp--preset--color--surface"
-      ],
-      "status": "planned"
-    },
-    {
-      "mode": "editorial",
-      "source_path": "theme/styles/editorial.json",
-      "replacement_arrays": {
-        "palette": {
-          "declared_slugs": [
-            "primary",
-            "primary-dark",
-            "accent",
-            "accent-dark",
-            "surface",
-            "surface-alt",
-            "border",
-            "ink",
-            "ink-soft",
-            "success",
-            "warning",
-            "error",
-            "info",
-            "inverse",
-            "overlay",
-            "selection",
-            "selection-text",
-            "surface-raised",
-            "surface-strong",
-            "background",
-            "foreground",
-            "danger",
-            "corex-danger",
-            "corex-info",
-            "corex-primary",
-            "corex-success",
-            "corex-warning",
-            "white"
-          ],
-          "missing_required_slugs": [],
-          "complete": true,
-          "mappings": [
-            {
-              "slug": "primary",
-              "value": "#1A1A1A"
-            },
-            {
-              "slug": "primary-dark",
-              "value": "#000000"
-            },
-            {
-              "slug": "accent",
-              "value": "#C8553D"
-            },
-            {
-              "slug": "accent-dark",
-              "value": "#A33E2A"
-            },
-            {
-              "slug": "surface",
-              "value": "#FBF8F1"
-            },
-            {
-              "slug": "surface-alt",
-              "value": "#F2ECDF"
-            },
-            {
-              "slug": "border",
-              "value": "#E0D8C8"
-            },
-            {
-              "slug": "ink",
-              "value": "#1A1A1A"
-            },
-            {
-              "slug": "ink-soft",
-              "value": "#5C564C"
-            },
-            {
-              "slug": "success",
-              "value": "#286C3C"
-            },
-            {
-              "slug": "warning",
-              "value": "#8A5A00"
-            },
-            {
-              "slug": "error",
-              "value": "#A33E2A"
-            },
-            {
-              "slug": "info",
-              "value": "#345D8C"
-            },
-            {
-              "slug": "inverse",
-              "value": "#FFFFFF"
-            },
-            {
-              "slug": "overlay",
-              "value": "rgba(26, 26, 26, 0.72)"
-            },
-            {
-              "slug": "selection",
-              "value": "#F1C9BE"
-            },
-            {
-              "slug": "selection-text",
-              "value": "#1A1A1A"
-            },
-            {
-              "slug": "surface-raised",
-              "value": "#FFFDF8"
-            },
-            {
-              "slug": "surface-strong",
-              "value": "#E8DFCF"
-            },
-            {
-              "slug": "background",
-              "value": "#FBF8F1"
-            },
-            {
-              "slug": "foreground",
-              "value": "#1A1A1A"
-            },
-            {
-              "slug": "danger",
-              "value": "#A33E2A"
-            },
-            {
-              "slug": "corex-danger",
-              "value": "#A33E2A"
-            },
-            {
-              "slug": "corex-info",
-              "value": "#345D8C"
-            },
-            {
-              "slug": "corex-primary",
-              "value": "#1A1A1A"
-            },
-            {
-              "slug": "corex-success",
-              "value": "#286C3C"
-            },
-            {
-              "slug": "corex-warning",
-              "value": "#8A5A00"
-            },
-            {
-              "slug": "white",
-              "value": "#FFFFFF"
-            }
-          ]
-        },
-        "font_families": {
-          "declared_slugs": [
-            "heading",
-            "arabic",
-            "body",
-            "mono"
-          ],
-          "missing_required_slugs": [],
-          "complete": true,
-          "mappings": [
-            {
-              "slug": "heading",
-              "value": "'Space Grotesk', Georgia, 'Times New Roman', serif"
             },
             {
               "slug": "arabic",
