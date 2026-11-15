@@ -18653,11 +18653,20 @@ it. Spec 111's detection contract sends `brand/corex-symbol.svg`, which reads at
   (`languages/runtime-strings.php`, held to the tables by `RuntimeStringsTest`). The Insights screen and the setup
   wizard now load their script translations.
 - CI checks the catalogue on every pull request against the generated template; a missing Arabic string is listed,
-  a broken one fails.
+  a broken one fails. On a `release/*` branch the check runs strict (`CATALOGUE_STRICT` in
+  `.github/workflows/ci.yml`) and a missing Arabic string fails too.
+- `Catalogue` also accepts a site's language pack that is WordPress's `.l10n.php` file with no `.mo`.
+- `ScriptTranslations` answers only a lookup in WordPress's plug-in pack folder, so a pack the site installed wins
+  (amended 2026-11-15).
+- `verifyDist` (`scripts/build-shared-host-dist.mjs`) refuses a package without the Arabic script translations, so
+  `npm run build:dist` and `release:push` exit 1 on a checkout where `npm run build` was not run.
+- The admin's base line height is 1.8 right to left (`corex-admin-tokens.css`).
+- The fonts' OFL licences are kept in `plugins/corex-core/assets/fonts/licenses/`.
 
 **Client impact.** Both clients run corex-core. On Perego's Arabic pages CoreX strings it does not translate
 itself turn Arabic; its `gettext_corex` wording still wins where it has some. An Arabic-language admin user sees
-CoreX in Arabic on both. Muva changes only for such a user.
+CoreX in Arabic on both. Muva changes only for such a user. A client pipeline that packages with
+`npm run build:dist` must run `npm run build` first, or the package is refused.
 
 ## #467 -- The Arabic proof asks the translation functions, per request, by a cookie
 

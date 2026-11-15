@@ -196,7 +196,9 @@ request. The `client-site-layout` job builds the package for a generated client 
 database and runs `wp eval` and `wp corex routes:list` from the package.
 
 > **Build the assets first.** Before `npm run build:dist`, run `npm ci && npm run build` at the repository root
-> (the admin and block bundles are git-ignored build output, and the builder copies what is there), and build each
+> (the admin and block bundles are git-ignored build output, and the builder copies what is there; the same
+> build writes the Arabic script translations, and `build:dist` and `release:push` exit 1 on a package without
+> them), and build each
 > client theme that has an asset pipeline: `cd sites/<client>/<client>-theme && npm ci && npm run build`. In CI,
 > run these as steps before the `build:dist` step (the Azure pipeline's build stage is the place for it).
 

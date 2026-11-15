@@ -313,5 +313,9 @@ read can make it stale.
    release candidate's run. Use the screens the release changed with a screen reader (NVDA with Chrome) and
    record what was heard in the release record. A screen with no recorded pass is not called accessible in the
    release notes.
-4. **The translation template.** A published release gets `corex.pot` attached by
+4. **The Arabic catalogue.** A new CoreX string needs its Arabic in `plugins/corex-core/languages/corex-ar.po`.
+   Update the catalogue before the tag and check it strict against a fresh template (`composer i18n:pot`, then
+   `node scripts/i18n-arabic.mjs check plugins/corex-core/languages/corex.pot --strict`). CI runs that strict
+   check on a `release/*` branch.
+5. **The translation template.** A published release gets `corex.pot` attached by
    `.github/workflows/release-assets.yml`; check that it is there.

@@ -56,7 +56,7 @@ only where Arabic is drawn.
    `full` 999px (the admin's names). Motion keys `instant`, `fast`, `base`, `slow`.
 4. **Arabic face (#463).** theme.json `styles.css` holds `:lang(ar|fa|ur|ps|ckb|ug)` rules for body (Plex Arabic, 1.8)
    and headings (Plex Arabic then Space Grotesk, 1.3); the Arabic `fontFace` entries declare
-   `unicodeRange: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF`, so Latin in Arabic text falls to
+   `unicodeRange: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF`, so Latin in Arabic text falls to
    the next family and an English page downloads nothing. Admin: the RTL block adds body and heading line heights.
 5. **Typeface roles (#464).** `--corex-admin-font-ui` = the display face; buttons, tabs, navigation and labels use it
    in the admin shell, the settings tabs and the login; theme.json sets the button element, the navigation block and
@@ -91,7 +91,7 @@ plugins/corex-core/src/I18n/ScriptTranslations.php    script translations lookup
 plugins/corex-core/languages/corex-ar.po|.mo          catalogue (new)
 scripts/i18n-arabic.mjs, scripts/foundations-tokens.mjs
 tests/Unit/Theme/BrandContractTest.php, ThemeScalesTest.php, FontAssetContractTest.php (changed)
-tests/Unit/I18n/ArabicCatalogueTest.php, ScriptTranslationsTest.php
+tests/Unit/I18n/CatalogueTest.php
 tests/e2e/fixtures/corex-e2e-arabic.php, tests/e2e/quality/arabic-proof.spec.js, tests/e2e/tokens-and-type.spec.js
 tests/foundations-tokens.test.js, tests/i18n-arabic.test.js
 docs-app/src/content/docs/design-system/foundations.md

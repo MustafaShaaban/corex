@@ -34,6 +34,15 @@ describe( 'The Foundations docs page', () => {
 		).toEqual( [ 'theme: radius--sm differs from what CoreX ships' ] );
 	} );
 
+	test( 'refuses a token value that holds a backslash', () => {
+		const theme = JSON.parse( JSON.stringify( files.theme ) );
+		theme.settings.custom.radius.sm = '0.5rem\\|x';
+
+		expect( () =>
+			generator.tablesFrom( { ...files, theme } )
+		).toThrow( 'A token value holds a backslash' );
+	} );
+
 	test( 'describes the admin adapter as it ships, and no navy-era scope', () => {
 		expect( page ).toContain( '`.corex-admin`' );
 		expect( page ).toContain( '**Dark by default.**' );

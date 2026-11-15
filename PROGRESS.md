@@ -49,9 +49,10 @@ Codex) until both agreed nothing was left, brought up to date with each other, a
 reviews changed is in each spec's DECISIONS entries, as dated "Amended 2026-11-11" paragraphs (#420, #422, #423,
 #450 to #457, #470 to #477). The release plan now follows the CoreX loop: a visible story is designed in Claude Design
 and approved first, a spec ends in slices, and nothing merges without the review steps.
-- **Spec 121, tokens and type (R2.1)**, branch `spec/121-tokens-and-type`: built 2026-10-23 to 26, never run on
-  CI, no pull request yet. Being finished: main merged in, the Arabic catalogue completed for the strings main
-  added since, the right-to-left line height that #454 introduced, and the review's test gaps. The native Arabic
+- **Spec 121, tokens and type (R2.1)**, branch `spec/121-tokens-and-type`: built 2026-10-23 to 26, finished to
+  2026-11-15, pull request #470. Main was merged in; the catalogue was drafted for the strings main added
+  (825 entries on 2026-11-11, 67 more on 2026-11-15, each marked `# Drafted`); the right-to-left line height that
+  #454 introduced and the review's test gaps are done. The native Arabic
   review of the catalogue (`specs/121-tokens-and-type/arabic-review.md`) is the owner's and gates the tag.
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).
@@ -266,7 +267,7 @@ send theirs through `DesignedEmails` on the shared mailer. `MailRequest` takes a
 R3.12: the rich editor, the five-section navigation, the log viewer, named-event routing. A newsletter preferences
 page does not exist, so the preferences link appears only where a site gives one.
 
-**Spec 121, tokens and type** (2026-10-23 to 2026-10-26, branch `spec/121-tokens-and-type`, DECISIONS #460 to
+**Spec 121, tokens and type** (2026-10-23 to 2026-11-15, branch `spec/121-tokens-and-type`, DECISIONS #460 to
 #468): revamp release R2.1, seven stories (US-BRD-02, 03, 04, 08, 09, US-NFR-02, US-DOC-07), built under the
 owner's 2026-10-21 mandate. One brand contract with a test over the admin, email and theme copies; Light and
 System-light one admin; the theme draws its own spacing, type scale, radius and motion (every template moves,
