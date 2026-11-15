@@ -18,7 +18,9 @@ use Throwable;
 
 /**
  * Runs idempotent per-site schema work through SiteScope, preserving partial-create
- * retry semantics and returning failures that ProviderRepository would only log.
+ * retry semantics and returning failures that ProviderRepository would only log. A component's
+ * data steps run after its tables exist and before its version is stored, so a step that fails
+ * leaves the component behind and is run again (spec 124, FR-020).
  * Prefix handling deliberately stays in Migrator::fullName(): global $wpdb is read
  * per call, so switch_to_blog() already selects the correct site prefix (FR-031,
  * FR-034).
@@ -35,13 +37,17 @@ final class SiteMigrationRunner
     ) {
     }
 
-    public function runForSite(int $siteId): SiteMigrationResult
+    /**
+     * @param list<string> $skip component ids left alone this time: the self-heal's backoff after a
+     *                           failure. The explicit paths pass none.
+     */
+    public function runForSite(int $siteId, array $skip = []): SiteMigrationResult
     {
         $started = microtime(true);
 
         return $this->scope->run(
             $siteId,
-            fn (): SiteMigrationResult => $this->runCurrentSite($siteId, $started),
+            fn (): SiteMigrationResult => $this->runCurrentSite($siteId, $started, $skip),
         );
     }
 
@@ -52,9 +58,10 @@ final class SiteMigrationRunner
      * It answers from what the request has read, which is enough to decide that a site
      * needs no run. A run that follows reads again (see runCurrentSite()).
      */
-    public function isDueForSite(int $siteId): bool
+    /** @param list<string> $skip component ids not to count */
+    public function isDueForSite(int $siteId, array $skip = []): bool
     {
-        return $this->scope->run($siteId, fn (): bool => $this->isDue($this->storedVersions()));
+        return $this->scope->run($siteId, fn (): bool => $this->isDue($this->storedVersions(), $skip));
     }
 
     /**
@@ -130,10 +137,17 @@ final class SiteMigrationRunner
         );
     }
 
-    /** @param array<string, string> $stored */
-    private function isDue(array $stored): bool
+    /**
+     * @param array<string, string> $stored
+     * @param list<string>          $skip
+     */
+    private function isDue(array $stored, array $skip = []): bool
     {
         foreach ($this->schemas->all() as $component) {
+            if (in_array($component->id, $skip, true)) {
+                continue;
+            }
+
             if ($stored[$component->optionName] !== $component->version) {
                 return true;
             }
@@ -147,7 +161,8 @@ final class SiteMigrationRunner
         return (microtime(true) - $started) * 1000;
     }
 
-    private function runCurrentSite(int $siteId, float $started): SiteMigrationResult
+    /** @param list<string> $skip */
+    private function runCurrentSite(int $siteId, float $started, array $skip = []): SiteMigrationResult
     {
         if (! is_file(ABSPATH . 'wp-admin/includes/upgrade.php')) {
             return new SiteMigrationResult(
@@ -165,14 +180,20 @@ final class SiteMigrationRunner
         $stored = $this->storedVersions();
 
         $componentsMigrated = [];
+        $componentsFailed = [];
         $tablesCreated = [];
         $errors = [];
 
         foreach ($this->schemas->all() as $component) {
+            if (in_array($component->id, $skip, true)) {
+                continue;
+            }
+
             $componentResult = $this->migrateComponent($siteId, $component, $stored[$component->optionName]);
 
             if ($componentResult['error'] !== null) {
                 $errors[] = $componentResult['error'];
+                $componentsFailed[] = $component->id;
             } elseif ($componentResult['migrated']) {
                 $componentsMigrated[] = $component->id;
                 array_push($tablesCreated, ...$componentResult['tables']);
@@ -186,6 +207,7 @@ final class SiteMigrationRunner
             $tablesCreated,
             $errors === [] ? null : implode(' ', $errors),
             $this->durationSince($started),
+            $componentsFailed,
         );
     }
 
@@ -202,7 +224,25 @@ final class SiteMigrationRunner
 
         foreach ($component->tables as $table) {
             if (! $this->migrator->exists($table->name)) {
-                return $this->failedComponent($siteId, $component, $fromVersion, $table->name);
+                return $this->failedComponent(
+                    $siteId,
+                    $component,
+                    $fromVersion,
+                    sprintf('Schema component [%s] did not create table [%s].', $component->id, $table->name),
+                );
+            }
+        }
+
+        foreach ($component->steps as $step) {
+            try {
+                $step->run();
+            } catch (Throwable $e) {
+                return $this->failedComponent(
+                    $siteId,
+                    $component,
+                    $fromVersion,
+                    sprintf('Schema component [%s] step [%s] failed: %s', $component->id, $step->id(), $e->getMessage()),
+                );
             }
         }
 
@@ -220,13 +260,8 @@ final class SiteMigrationRunner
         int $siteId,
         SchemaComponent $component,
         string $fromVersion,
-        string $missingTable,
+        string $error,
     ): array {
-        $error = sprintf(
-            'Schema component [%s] did not create table [%s].',
-            $component->id,
-            $missingTable,
-        );
         // The runner owns failure dispatch because the component/version detail is
         // not recoverable from the aggregate SiteMigrationResult returned to callers.
         $this->events->dispatch(new SiteMigrationFailed(

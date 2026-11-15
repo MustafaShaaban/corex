@@ -13,7 +13,7 @@ use Brain\Monkey\Functions;
 use Corex\Config\Operations\MaintenanceDecision;
 use Corex\Config\Operations\MaintenanceGuard;
 use Corex\Config\Operations\OperationsMode;
-use Corex\Config\Operations\OperationsModeStore;
+use Corex\Http\PublicSubmissionPause;
 
 function maintenanceGuard(string $mode): MaintenanceGuard
 {
@@ -22,7 +22,7 @@ function maintenanceGuard(string $mode): MaintenanceGuard
     Functions\when('get_option')->alias(static fn (string $key, $default = false) => $GLOBALS['corex_test_options'][$key] ?? $default);
     Functions\when('wp_get_environment_type')->justReturn('production');
 
-    return new MaintenanceGuard(new MaintenanceDecision(new OperationsModeStore(new OperationsMode())));
+    return new MaintenanceGuard(new MaintenanceDecision(new PublicSubmissionPause()));
 }
 
 function maintenanceContext(bool $isAdmin, bool $loggedIn, bool $canManage): void

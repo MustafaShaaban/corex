@@ -13,7 +13,7 @@ use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
 use Corex\Config\Operations\MaintenanceDecision;
 use Corex\Config\Operations\OperationsMode;
-use Corex\Config\Operations\OperationsModeStore;
+use Corex\Http\PublicSubmissionPause;
 
 function maintenanceDecision(string $mode, bool $loggedIn = false, bool $canManage = false): MaintenanceDecision
 {
@@ -23,7 +23,7 @@ function maintenanceDecision(string $mode, bool $loggedIn = false, bool $canMana
     Functions\when('is_user_logged_in')->justReturn($loggedIn);
     Functions\when('current_user_can')->justReturn($canManage);
 
-    return new MaintenanceDecision(new OperationsModeStore(new OperationsMode()));
+    return new MaintenanceDecision(new PublicSubmissionPause());
 }
 
 it('closes the site in maintenance to everyone but an administrator', function (bool $loggedIn) {
@@ -44,6 +44,8 @@ it('keeps the site open in every other mode', function (string $mode) {
     OperationsMode::STAGING,
     OperationsMode::PRODUCTION,
     OperationsMode::COMING_SOON,
+    // Forms paused closes the forms, not the site: no visitor is sent the maintenance page.
+    OperationsMode::FORMS_PAUSED,
 ]);
 
 it('honours the emergency bypass filter (DECISIONS #123)', function () {

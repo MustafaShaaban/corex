@@ -441,6 +441,36 @@ describe( 'the hand-off', () => {
 		expect( panel.querySelector( '.corex-assistant__handoff' ) ).toBeNull();
 	} );
 
+	it( 'shows the site’s own sentence when it refuses the request without naming a field, as in Forms paused', async () => {
+		const panel = await openHandoff();
+		const form = panel.querySelector( '.corex-assistant__handoff' );
+		window.fetch.mockReturnValue(
+			reply( 503, {
+				code: 'forms_paused',
+				message:
+					'Forms are paused for a short while. Please try again later.',
+				data: { status: 503 },
+			} )
+		);
+		form.querySelector( '#corex-assistant-name' ).value = 'Sara';
+		form.querySelector( '#corex-assistant-phone' ).value = '50 123 4567';
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true } ) );
+		await flush();
+		await flush();
+
+		const error = form.querySelector( '.corex-assistant__form-error' );
+		expect( error.hidden ).toBe( false );
+		expect( error.textContent ).toBe(
+			'Forms are paused for a short while. Please try again later.'
+		);
+		expect(
+			[ ...form.querySelectorAll( '.corex-assistant__error' ) ].every(
+				( node ) => node.textContent === ''
+			)
+		).toBe( true );
+	} );
+
 	it( 'sends no chat when the visitor unticks it', async () => {
 		const panel = await openHandoff();
 		const form = panel.querySelector( '.corex-assistant__handoff' );

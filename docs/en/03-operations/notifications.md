@@ -93,7 +93,7 @@ present simply produces nothing. The shipped producers are:
 | Access granted by approval ended at its expiry | `access.grant.expired` | The person, and the administrator who approved it |
 | Background job failed | `job.failed` | Operations managers |
 | Export finished | `export.ready` | The person who ran it |
-| Sign-in lockout triggered | `security.lockout` (merged per identity) | Operations managers |
+| Sign-in lockout triggered | `security.lockout` (merged per account, or per username fingerprint when the username is no account's; never by the typed username or the address) | Operations managers |
 | Email Studio delivery failed | `email.delivery_failed` (merged per provider) | Email managers |
 | Readiness blocker appears / clears | `readiness.blocker` | Operations managers |
 

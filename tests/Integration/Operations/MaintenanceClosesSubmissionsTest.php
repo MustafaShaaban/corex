@@ -1,10 +1,11 @@
 <?php
 
 /**
- * Maintenance closes public submissions (spec 112, User Story 3, FR-014 to FR-019, SC-004).
+ * Maintenance and Forms paused close public submissions through one gate (spec 112, User Story 3,
+ * FR-014 to FR-019, SC-004; spec 124, FR-004 and FR-004a).
  *
  * Every request goes through the real REST server. The route's own handler never runs: a
- * `rest_dispatch_request` filter answers in its place, so a request that the guard lets through
+ * `rest_dispatch_request` filter answers in its place, so a request that the gate lets through
  * reaches that stand-in and stores nothing, and no run of this file writes a submission, a
  * subscriber or an account, or sends mail, on the install it runs against. The mode is answered
  * by a `pre_option_` filter, so the install's stored mode is never written either.
@@ -14,12 +15,19 @@
 
 declare(strict_types=1);
 
+use Corex\Assistant\Forms\AssistantCallbackForm;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 
 const COREX_TEST_HANDLER_REACHED = 'corex_test_handler_reached';
 
-/** @return array<string,string> the public submission routes, by what they submit */
+/**
+ * The public submission routes, by what they submit. The Assistant's hand-off is its callback
+ * form, a code-defined form posted to the forms route (spec 129), so it is here whether or not the
+ * add-on is active.
+ *
+ * @return array<string,string>
+ */
 function corexMarkedSubmissionRoutes(): array
 {
     return [
@@ -29,7 +37,24 @@ function corexMarkedSubmissionRoutes(): array
         'booking request'      => '/corex/v1/bookings/request',
         'job application'      => '/corex/v1/careers/apply',
         'account registration' => '/corex/v1/account/register',
-        'assistant question'   => '/corex/v1/assistant',
+        'assistant hand-off'   => '/corex/v1/forms/' . AssistantCallbackForm::SLUG,
+    ];
+}
+
+/** Each mode's refusal: its code and its sentence (Maintenance's exactly as spec 112 left it). */
+function corexClosingModes(): array
+{
+    return [
+        'maintenance' => [
+            OperationsMode::MAINTENANCE,
+            'site_in_maintenance',
+            'The site is closed for maintenance and is not taking submissions. Please try again later.',
+        ],
+        'forms paused' => [
+            OperationsMode::FORMS_PAUSED,
+            'forms_paused',
+            'Forms are paused for a short while. Please try again later.',
+        ],
     ];
 }
 
@@ -60,7 +85,15 @@ beforeEach(function () {
         return $query;
     };
 
-    add_filter('rest_dispatch_request', static fn () => new WP_REST_Response(COREX_TEST_HANDLER_REACHED, 200));
+    $this->withoutManageOptions = static fn (array $allcaps): array => ['manage_options' => false] + $allcaps;
+
+    // Counted, so a refusal that came after the handler had run (and stored and mailed) would fail.
+    $this->handlerCalls = 0;
+    add_filter('rest_dispatch_request', function () {
+        $this->handlerCalls++;
+
+        return new WP_REST_Response(COREX_TEST_HANDLER_REACHED, 200);
+    });
     wp_set_current_user(0);
 });
 
@@ -70,54 +103,109 @@ afterEach(function () {
     remove_filter('query', $this->spyQueries);
     remove_all_filters('rest_dispatch_request');
     remove_all_filters('corex_maintenance_bypass');
+    remove_filter('user_has_cap', $this->withoutManageOptions);
     wp_set_current_user(0);
 });
 
-it('refuses each public submission in maintenance with 503, and stores and mails nothing', function (string $route) {
+it('refuses each public submission with 503, the mode\'s sentence and no errors, and stores and mails nothing (FR-004)', function (string $mode, string $code, string $message) {
+    $this->mode = $mode;
     rest_get_server();
-    add_filter('query', $this->spyQueries);
 
-    $response = corexSubmit($route);
+    foreach (corexMarkedSubmissionRoutes() as $route) {
+        $this->writes = [];
+        add_filter('query', $this->spyQueries);
+        $response = corexSubmit($route);
+        remove_filter('query', $this->spyQueries);
+        $data = $response->get_data();
 
-    remove_filter('query', $this->spyQueries);
-    expect($response->get_status())->toBe(503)
-        ->and($response->get_data()['code'] ?? null)->toBe('site_in_maintenance')
-        ->and($response->get_data()['message'] ?? '')->not->toBe('')
-        ->and($response->get_headers()['Retry-After'] ?? null)->toBe('3600')
-        ->and($this->writes)->toBe([])
-        ->and($this->mailed)->toBe([]);
-})->with(corexMarkedSubmissionRoutes());
+        expect($response->get_status())->toBe(503, $route)
+            ->and($data['code'] ?? null)->toBe($code, $route)
+            ->and($data['message'] ?? null)->toBe($message, $route)
+            ->and($data)->not->toHaveKey('errors')
+            ->and($data['data'] ?? [])->not->toHaveKey('errors')
+            ->and($response->get_headers()['Retry-After'] ?? null)->toBe('3600', $route)
+            // Nothing written: no submission, no subscriber, no account, and no flow's own state.
+            ->and($this->writes)->toBe([], $route)
+            ->and($this->mailed)->toBe([], $route);
+    }
 
-it('keeps sign-in and password reset open in maintenance', function (string $route) {
-    expect(corexSubmit($route)->get_data())->toBe(COREX_TEST_HANDLER_REACHED);
-})->with([
-    'sign-in'                => '/corex/v1/account/login',
-    'password reset request' => '/corex/v1/account/reset-request',
-    'password reset'         => '/corex/v1/account/reset',
-]);
+    expect($this->handlerCalls)->toBe(0);
+})->with(corexClosingModes());
 
-it('lets a signed-in administrator submit in maintenance', function (string $route) {
+it('refuses exactly the same routes in Maintenance and in Forms paused (spec 124, US-OPS-02 scenario 6)', function () {
+    $refusedIn = function (string $mode): array {
+        $this->mode = $mode;
+        $refused = [];
+        foreach (array_keys(rest_get_server()->get_routes('corex/v1')) as $route) {
+            $path = preg_replace(['/\(\?P<id>[^)]+\)/', '/\(\?P<slug>[^)]+\)/', '/\(\?P<[a-z_]+>[^)]+\)/'], ['1', 'contact', 'x'], $route);
+            if (corexSubmit((string) $path)->get_status() === 503) {
+                $refused[] = $route;
+            }
+        }
+
+        return $refused;
+    };
+
+    $maintenance = $refusedIn(OperationsMode::MAINTENANCE);
+
+    expect($maintenance)->not->toBe([])
+        ->and($refusedIn(OperationsMode::FORMS_PAUSED))->toBe($maintenance);
+});
+
+it('keeps sign-in and password reset open in both modes', function (string $mode) {
+    $this->mode = $mode;
+
+    foreach (['/corex/v1/account/login', '/corex/v1/account/reset-request', '/corex/v1/account/reset'] as $route) {
+        expect(corexSubmit($route)->get_data())->toBe(COREX_TEST_HANDLER_REACHED, $route);
+    }
+})->with([OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED]);
+
+it('lets a signed-in administrator submit in both modes (FR-004)', function (string $mode) {
+    $this->mode = $mode;
     $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
     wp_set_current_user($adminId);
 
-    expect(corexSubmit($route)->get_data())->toBe(COREX_TEST_HANDLER_REACHED);
-})->with(corexMarkedSubmissionRoutes());
+    foreach (corexMarkedSubmissionRoutes() as $route) {
+        expect(corexSubmit($route)->get_data())->toBe(COREX_TEST_HANDLER_REACHED, $route);
+    }
+})->with([OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED]);
 
-it('lets a submission through when the emergency bypass filter passes it', function () {
+it('refuses a signed-in person who may not manage options in both modes (FR-004)', function (string $mode) {
+    $this->mode = $mode;
+    // A real signed-in account with only the administrator's ability taken away, so the test runs
+    // on every install and asks the gate's own question, not whether the install has an editor.
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    add_filter('user_has_cap', $this->withoutManageOptions);
+
+    expect(corexSubmit('/corex/v1/forms/contact')->get_status())->toBe(503);
+})->with([OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED]);
+
+it('lets a submission through when the emergency bypass filter passes it in Maintenance', function () {
     add_filter('corex_maintenance_bypass', '__return_true');
 
     expect(corexSubmit('/corex/v1/forms/contact')->get_data())->toBe(COREX_TEST_HANDLER_REACHED);
 });
 
-it('accepts every submission in coming soon and in production, and again once maintenance ends', function (string $mode) {
+it('accepts every submission in every other mode, and again once the closing mode ends (FR-004)', function (string $mode) {
     $this->mode = $mode;
 
     foreach (corexMarkedSubmissionRoutes() as $route) {
         expect(corexSubmit($route)->get_data())->toBe(COREX_TEST_HANDLER_REACHED, $route);
     }
-})->with([OperationsMode::COMING_SOON, OperationsMode::PRODUCTION]);
+})->with([OperationsMode::DEVELOPMENT, OperationsMode::STAGING, OperationsMode::COMING_SOON, OperationsMode::PRODUCTION]);
 
-it('does not mark any other CoreX route as a public submission', function () {
+// The chat's own token and limits run inside its handler; AssistantRouteTest proves them.
+it('lets the Assistant\'s chat through the gate in both modes (FR-004a)', function (string $mode) {
+    if (! isset(rest_get_server()->get_routes()['/corex/v1/assistant'])) {
+        $this->markTestSkipped('The corex-assistant add-on is not active on this install.');
+    }
+    $this->mode = $mode;
+
+    expect(corexSubmit('/corex/v1/assistant')->get_data())->toBe(COREX_TEST_HANDLER_REACHED);
+})->with([OperationsMode::MAINTENANCE, OperationsMode::FORMS_PAUSED]);
+
+it('does not mark any other CoreX route as a public submission, and not the Assistant\'s chat (FR-004a)', function () {
     $marked = [];
     foreach (rest_get_server()->get_routes('corex/v1') as $route => $handlers) {
         foreach ($handlers as $handler) {
@@ -135,6 +223,5 @@ it('does not mark any other CoreX route as a public submission', function () {
         '/corex/v1/bookings/request',
         '/corex/v1/careers/apply',
         '/corex/v1/account/register',
-        '/corex/v1/assistant',
     ]);
 });

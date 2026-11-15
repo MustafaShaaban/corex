@@ -26,6 +26,7 @@ use Corex\Config\Notifications\Producers\EmailStudioFailureNotificationProducer;
 use Corex\Config\Notifications\Producers\ExportReadyNotificationProducer;
 use Corex\Config\Notifications\Producers\JobFailureNotificationProducer;
 use Corex\Config\Notifications\Producers\LoginLockoutNotificationProducer;
+use Corex\Config\Security\LoginProtection\LoginAccounts;
 use Corex\Config\Notifications\Producers\SubmissionAssignedNotificationProducer;
 use Corex\Config\Notifications\Producers\SubmissionNotificationProducer;
 use Corex\Config\Submissions\SubmissionAssignedEvent;
@@ -120,8 +121,18 @@ it('sends an access request to the screen that decides it', function () {
 
 it('sends a lockout to Operations, where the attempts are', function () {
     $action = actionsFrom(
-        static fn ($s, $l) => new LoginLockoutNotificationProducer($s, $l),
-        new LoginLockoutEvent('editor@example.com', '203.0.113.9', new DateTimeImmutable('2026-07-21T10:00:00Z')),
+        static fn ($s, $l) => new LoginLockoutNotificationProducer($s, $l, new class () implements LoginAccounts {
+            public function idFor(string $typed): ?int
+            {
+                return null;
+            }
+
+            public function nameOf(int $userId): string
+            {
+                return '';
+            }
+        }),
+        new LoginLockoutEvent(null, 'a1b2c3d4e5f6', '0f1e2d3c4b5a', new DateTimeImmutable('2026-07-21T10:00:00Z')),
     )[0]->action;
 
     expect($action)->not->toBeNull()

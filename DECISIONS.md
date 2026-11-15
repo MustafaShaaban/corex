@@ -20264,6 +20264,86 @@ and text size. *Letting the
 field shrink to its half* (`min-inline-size: 0`): it cuts the date and its calendar button. *Stacking only below a
 breakpoint*: the panel's width, the text size and the field's width move separately; the content decides better.
 
+## #520 -- Spec 124 asks for spec 117's abilities; Forms paused is a dangerous mode
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Mode:** Docs/Planning. **Decided:** under the
+owner's delegation of the revamp, on a read of the spec against `main`.
+
+Spec 124 was written on 2026-10-26, before spec 117 made every screen ask for its own ability. Changing the mode
+needs "Manage operations"; Production and Maintenance already need "Run dangerous actions" as well
+(`OperationsModeController`), and so does **Forms paused**, because like Maintenance it closes every public form on a
+site that stays open. The messages for visitors, the maintenance preview and the lockout release need "Manage
+operations". Operations & Security has no read-only view (DECISIONS #422, amended 2026-11-11).
+
+**Not chosen.** *Forms paused as an ordinary mode*: a paused site loses every lead until someone notices; that is the
+same harm Maintenance can do.
+
+## #521 -- A closed or scheduled flow keeps its own notice on a site in Forms paused
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+When the site is in Forms paused and a flow is closed or not yet open, the visitor sees the flow's own notice. A
+closed flow stays closed after the pause, so "Forms are paused, try again later" would be untrue there. The paused
+panel is drawn through spec 122's notice panel (`FlowBlockRenderer::unavailable()`, `.corex-flow-notice`) and the
+runtime draws it from the 503 as it draws `flow_closed`: one panel, one stylesheet.
+
+## #522 -- Forms paused closes the Assistant's hand-off, not its chat
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+Spec 129's chat route declares itself a public submission, so the gate of FR-004 would close the chat. The chat
+answers questions and stores nothing a person sent in a form; the callback form it opens does. In Forms paused the
+chat keeps answering and its hand-off is refused with the paused message (FR-004a). The route that takes the
+hand-off keeps the marker; the chat route stops counting as a public submission without losing the middleware it
+declares (nonce, throttle, limits).
+
+The chat is open in Maintenance too, as it is not a public submission in any mode. Nobody loses by it: a visitor
+in Maintenance gets the maintenance page, which draws no chat button, and a direct request still needs the page's
+token and passes the limits. The hand-off stays closed in both modes.
+
+## #523 -- The test-site notice says what the mail gate decides
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+FR-021 gave the flow block's test-site notice a fixed sentence saying no email is delivered. On staging the mail gate
+delivers when a provider and live delivery are both on, and under CoreX-only capture other plugins' mail leaves
+(`MailGate`), so the sentence would be untrue there. The notice says the site is a test copy, and adds that its emails
+are kept on the site only when the gate keeps them. The same correction applies to the mode cards' Email row
+("Captured, nothing leaves" only where that is so). The revamp story US-VIS-04 carries the fixed sentence; its
+correction goes through the planning workspace's change control.
+
+## #524 -- A mode change clears the page caches CoreX can clear
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+`noindex` (FR-002) and the paused panel (FR-021) are in the page. A page cache would keep serving the old page after a
+mode change: a launched site still saying `noindex`, or a paused site still showing its forms. A mode change clears
+CoreX's own caches and the page cache of a cache plugin through the purge it offers, and the activity log's
+mode-changed event says what was cleared (FR-004b).
+
+## #525 -- Spec 124 is built in twelve slices, server first, from the spec and not from the code of 2026-10-26
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+The code a session left uncommitted on 2026-10-26 covers about a quarter of the tasks and its launch path calls
+methods it removed, so going live would fail. It is kept, as found, on `spec/124-modes-and-login` (34294b63) and
+ported from where it reads right, never merged as it is. The spec now ends in twelve slices (CoreX loop, constitution
+v2.0.0): slices 1 to 6 change no screen and are built now; slices 7 to 11 change what a person sees and each starts
+only when its screens are drawn in Claude Design on the CoreX design system and approved by the owner; slice 12 is
+the docs and the client impact.
+
+## #526 -- A live site whose stored mode is Development or Staging is de-indexed on update
+
+**Date:** 2026-11-11. **Branch:** `spec/124-modes-and-login-slices`. **Decided:** under the owner's delegation.
+
+FR-002 makes Development and Staging answer `noindex`. A live site whose stored mode wrongly says one of them is
+de-indexed by the update. That is what the mode says, and such a site has captured its mail since spec 113, so the
+mode would already have been noticed. The release's client impact tells the Muva and Perego sessions to read
+`corex_operations_mode` on their live sites before taking it.
+
+**Not chosen.** *Skip `noindex` on sites whose WordPress environment type says production*: two answers to "what kind
+of site is this" is what spec 113 removed.
+
 ## #600 -- The site assistant is a CoreX add-on, generalised from Perego's spec 058
 
 **Date:** 2026-11-09. **Spec:** 129. **Numbering:** #514 to #599 are left to the specs open in other sessions
@@ -20662,3 +20742,357 @@ questions still come after the spec. *Dropping the spec file for GitHub issues*,
 would cut the line from a requirement ID to its tests and decisions. *A Claude delegate lane per model*: the
 in-app agents already carry a model and effort each, and their results come back to the session that checks
 them.
+
+## #625 -- How Development and Staging say noindex, and which page caches a mode change clears
+
+**Date:** 2026-11-12. **Spec:** 124, slice 2 (FR-002, FR-004b). **Branch:** `spec/124-slice-2-noindex-and-caches`.
+**Decided:** under the owner's delegation of the revamp.
+
+**The header goes through `wp_headers`.** WordPress applies it in `WP::send_headers()` to every request answered by
+its front-end pipeline: pages, feeds, sitemaps, `robots.txt` and 404s. The admin (behind a sign-in) and the REST API
+(JSON for scripts, not a page a search engine is sent to) do not pass through it, and are left out on purpose. A
+header already set keeps its value and gets `, noindex` once. The page's own `noindex` is on `wp_robots` at priority
+20, after WordPress's callbacks, so nothing they set is lost.
+
+**A purge clears pages, never an object cache.** W3 Total Cache through `w3tc_flush_posts()`, not `w3tc_flush_all()`;
+LiteSpeed through `do_action('litespeed_purge', '*')`, not `litespeed_purge_all`; SiteGround through
+`sg_cachepress_purge_cache()`, not its purge of everything. The "all" versions also empty the object cache, where
+CoreX's rate limits and spent captcha tokens can live, which `CacheManager` already refuses for the same reason
+(spec 078). WP Rocket (`rocket_clean_domain()`), WP Super Cache (`wp_cache_clear_cache()`, this site only on a
+network) and WP Fastest Cache (`wpfc_clear_all_cache()`, minified files kept) complete the list. Each name was read in
+the plugin's source on 2026-11-12. CoreX keeps no page cache of its own, so there is nothing of its own to clear.
+
+**The purge listens to the store's `corex_operations_mode_changed`, at priority 5.** Every route that changes the
+mode ends there, including a launch through `ProductionLaunchService`, which does not go through
+`ModeChangeService`; the activity recorder, at 10, reads what was cleared. A purge that throws is recorded as not
+cleared and never fails or undoes the change: the mode is stored before the store announces it.
+
+**Not chosen.** *Cloudflare's plugin*: it offers no purge function, and its "purge everything" is tied to a list of
+other plugins' actions it reads while loading, before CoreX; reaching it would mean firing those actions or calling
+its global object. *`send_headers` with `header()`*, as the code of 2026-10-26 did: the header could not be read in
+process, so no test could hold it.
+
+**Amended 2026-11-12, after the slice's review (decided under the owner's delegation).**
+
+*`noindex` follows the environment, not the mode.* `ModeRobots` asks `SiteEnvironment::current()`, the answer the
+mail gate uses (spec 113, #526), instead of `OperationsModeStore::current()`, which returns a declared visitor mode
+before it reads a lock: a staging copy locked by `APP_ENV=staging` lost `noindex` in Coming soon while its mail was
+still captured. A site locked to development or staging (`APP_ENV`, the network's lock, `corex_app_env`) now keeps
+`noindex` in every mode, Coming soon, Forms paused and Maintenance included; a production site carries none. Without
+a lock the answer is today's: a declared Development or Staging keeps it, a visitor mode is production, and an
+environment inherited from WordPress (`local` is development) keeps it only while no mode is stored. `ComingSoonTemplate`'s page for a theme with no block templates, which never runs `wp_head`,
+reads the same rule beside `blog_public`. FR-002 is amended to match. Not chosen: keeping the mode as the question,
+which gives a site two answers to "what kind of site is this".
+
+*The record says what CoreX knows.* `PageCachePurge` records `asked` and `failed`, not `cleared`. A purge that throws,
+answers `false`, or answers WP Fastest Cache's `['success' => false]` is failed; anything else is asked, and the
+activity sentence says "asked WP Rocket to clear its page cache", because a plugin can return early without saying
+so: SiteGround with its caches off, WP Rocket during an import or on a second purge in one request. SiteGround's
+`false` is not counted: with its file cache on, `sg_cachepress_purge_cache()` clears everything and then answers
+`false`, because its last step looks for the cache directory its first step removed (`File_Cacher::purge_cache_request()`
+returns `false` when the directory is gone). Events recorded before this release keep their sentence.
+
+*SiteGround is given this site's address.* With no argument `sg_cachepress_purge_cache()` purges
+`get_home_url('/')`, which on a network is the main site, from any subsite. It is given `home_url('/')`: its dynamic
+cache then purges that path and everything below it (`Supercacher::purge_cache_request()`, child paths on), and an
+address equal to `get_home_url(null, '/')` empties its file cache, so this site's whole cache is cleared and no other
+site's dynamic cache is touched.
+
+*A purge that ends the request is accepted as rare.* The purge runs inside `OperationsModeStore::set()`, at priority 5
+of `corex_operations_mode_changed`, after the new mode is stored. A purge that ends the request without throwing (a
+time limit, memory, an `exit` in the plugin) loses what comes after it in that request: the activity event of the
+change and, when the site left Coming soon, `ModeChangeService`'s removal of the preview link. The owner then sees the
+new mode on the screen and in the mode history (written before the announcement), no mode-changed line in the
+activity log, an error page or a blank response instead of the screen's confirmation, and, leaving Coming soon, a
+preview link that is not removed: it opens the site again the next time it is put in Coming soon, unless it is
+revoked or regenerated first. Not changed: it needs a plugin to end the request
+during a purge, and moving the purge after the record would make the record unable to say what was asked.
+
+*Attachment pages, not files.* An attachment page is a front-end response and gets both. A file the web server serves
+straight from `wp-content/uploads` never reaches WordPress and gets neither; a site that must keep its files out of
+search needs a server rule.
+
+*No test defines a real plugin's function.* Brain Monkey defines a stubbed function for the rest of the process, so a
+test that stubbed `rocket_clean_domain` left every later `PageCachePurge` built with the real table believing WP Rocket
+active. `PageCachePurgeTest` checks the real table by its names and arguments, and runs it with every function renamed
+`corex_test_real_...`; it asserts no real name is defined after it.
+## #626 -- Sign-in values are keyed with the site's own secret, and old ones count until they age out
+
+**Date:** 2026-11-12. **Spec:** 124, slice 3 (FR-019, FR-020). **Branch:** `spec/124-slice-3-sign-in-privacy`.
+**Decided:** under the owner's delegation of the revamp.
+
+**The key.** A sign-in attempt's username and address are stored as `hash_hmac('sha256', ...)` with a key derived
+from `wp_salt('auth')` and the site's id (`WpLoginHashKey`). The salt lives in `wp-config.php`, so a copy of the
+database alone does not carry the key to the hashes in it; the site's id makes each site of a network store
+different values (scenario 4). A site whose salts are changed gets a new key: attempts under the old one stop
+counting, which can end a lockout early and never starts one.
+
+**The old values.** The release before this one stored plain SHA-256 hashes. Counting and the latest-lockout check
+read the plain pair beside the keyed one, so failures and an active lockout stored before the update are counted
+until they leave the window, deleted within the retention period (30 days by default) (scenario 5; see the
+amendment below); nothing is ever written under the plain pair. The plain lookup can be removed once
+every client has run this release for longer than its longest counting window and lockout; removed too early, an old
+lockout ends early.
+
+**One fingerprint wherever a lockout is shown.** The Lockouts panel, the lockout notice and `LoginLockoutEvent` show
+the first 12 hex characters of `HMAC(site key, stored hash)`. The panel used to show a 12-character prefix of the
+stored hash itself, which for a plain hash gives an IPv4 address back in seconds. The derivation is the same for
+keyed and plain rows, so a notice lines up with its row on the panel either way.
+
+**The account.** On the attempt that starts a lockout (and only then) the typed username is looked up as a login,
+then as an email. A lockout of an account records its user id and the notice names it by display name; any other
+reads "unknown username" and its fingerprint. A display name that is the account's own login or email is shown, on
+purpose (FR-016); only people who manage operations see notices. The visitor's refusal is the same either way, so
+no username-enumeration channel is added.
+
+**Not chosen.** *A key stored in an option*: it would sit in the database beside the hashes it protects. *Deleting
+rows stored before the update*: FR-019 says they keep counting.
+
+**Amended 2026-11-12 (security review of slice 3).** Decided by the orchestrator under the owner's delegation.
+
+- *Old rows are deleted, not only left to age.* `WpLoginAttemptStore` had a prune with no caller, so no sign-in
+  record was ever deleted and "Keep sign-in records" did nothing; a plain row such as `sha256('::1')` reads back with
+  one guess. The attempts table is now a `PrunableStore` of the daily retention sweep (`LoginAttemptRetention`),
+  with the login settings' window read when the sweep runs, by when each attempt happened, in batches, on each site's
+  own cron and table. A lockout still in force is kept however old. So attempts stored before the update are counted
+  until they leave the window, deleted within the retention period (30 days by default). *Not chosen:* a key-version
+  column, so a data step could re-key plain rows. A plain row cannot be re-keyed without the username and address it
+  hides, and deleting it within the retention period ends it without a schema change.
+- *A username and an address are hashed in separate domains.* Hashed alike, `identityHashOf(x)` equalled
+  `networkHashOf(x)`, so a suspected address typed as the username confirmed itself through the fingerprints. Each
+  HMAC message now starts with its domain and a NUL byte (`identity`, `network`, and for a fingerprint
+  `identity-fingerprint` or `network-fingerprint`). A prefix was chosen over two keys derived from the site key: it
+  separates the domains as surely, with one key and no extra derivation per attempt. Done now, while no keyed row
+  exists on a client site; the plain values of the release before keep their old form, since they are only compared
+  with rows it stored.
+- *The account is named by display name and login.* A display name is the account holder's to choose, so a
+  subscriber could take a colleague's and lock themselves out, and the notice would read as an attack on the
+  colleague while the panel showed `user_login`. The notice reads "<display name> (<login>)", or the login alone when
+  the two are the same.
+- *Where the key lives.* The salt is in `wp-config.php` only while the salts are defined there. When they are not,
+  WordPress makes them and keeps them in the `auth_key` and `auth_salt` options, and a copy of the database then
+  carries the key. `HardeningFacts` already reports that state (`authSaltsConfigured`).
+
+## #627 -- A schema component can carry data steps; old lockout notices are rewritten by one
+
+**Date:** 2026-11-12. **Spec:** 124, slice 3 (FR-020, scenario 5). **Branch:** `spec/124-slice-3-sign-in-privacy`.
+**Decided:** under the owner's delegation of the revamp.
+
+`SchemaComponent` takes an optional list of `DataMigrationStep`s. `SiteMigrationRunner` runs them after the
+component's tables exist and before its version is stored, in each site's scope; a step that fails leaves the version
+unwritten and runs again next time. That reaches every path a site is migrated by (the self-heal, `wp corex migrate`,
+`ReleaseFinisher`, `SiteLifecycleSubscriber`). Product foundation's schema becomes version 5.
+
+`LockoutNoticeRewrite` is the first step. Lockout notices stored before the update held the typed username and the
+full address in their title, body, merge key, source and details. Each is rewritten once, in batches of 100: "unknown
+username" (old rows have no account), the fingerprints its own old plain-hash rows show on the panel (the raw values
+are read in memory, hashed the old way, fingerprinted, and dropped), the merge key `security.lockout:legacy:<id>`,
+and no address in its details. A resolved notice stays resolved and keeps its count. A rewritten row has a new
+source type and is never selected again, so a second run changes nothing. New notices merge by
+`security.lockout:account:<id>` or `security.lockout:identity:<fingerprint>`, so the next lockout of a name an old
+notice held opens a new notice.
+
+**Not chosen.** *Listening for `SiteMigrated`*: only the self-heal and `wp corex migrate` send it. *A version bump
+alone*: it runs `dbDelta` and changes no stored row.
+
+**Amended 2026-11-12 (security review of slice 3).** Decided by the orchestrator under the owner's delegation.
+
+- *Merge keys outside the old key space.* The old producer wrote `security.lockout:` and the typed username, so a
+  visitor who had locked out the username `legacy:12` made the key the rewrite gives row 12, and the rewrite failed
+  on the unique `dedup_key` for good; `account:1` would have absorbed account 1's first new notice. New keys start
+  `security.lockout.` (a dot): `security.lockout.account:<id>`, `security.lockout.identity:<fingerprint>`,
+  `security.lockout.legacy:<id>`. No old key can start that way. The producer's merge goes through the repository's
+  generic `upsertByDedupKey()`; no other reader parses these keys.
+- *A notice the rewrite cannot write is skipped.* The rest are rewritten, and the step then fails with the count and
+  the ids. The skipped notices keep their old shape, so the next run takes them again.
+- *A failing step is logged and backed off.* Nothing listened for `SiteMigrationFailed` and the self-heal returned
+  quietly, so a failing step reran with `dbDelta` on every admin page, admin-ajax call and cron run, with no record.
+  The self-heal now writes the failure once through `BootLogger` (the debug log, and an admin notice in debug mode)
+  and holds that component back on that site for 15 minutes (a site-scoped transient, `corex_schema_backoff`, by
+  component). `SiteMigrationResult::$componentsFailed` names them; the runner takes an optional list of components to
+  leave out. `wp corex migrate` and `ReleaseFinisher` pass none and still try at once.
+- *Rewritten notices may be stored in English on a translated site.* On the self-heal path the rewrite calls `__()`
+  as early as `MultisiteServiceProvider::boot()`, before `init`, when the site's translations may not be loaded. No
+  translation of these strings ships today, so nothing changes yet. When one does, the notice should keep its words
+  as message keys with arguments (its `title_key` and `message_key` are already stored) and be rendered when read,
+  or the rewrite should run on `init` or later; either keeps a stored notice in the reader's language.
+
+## #628 -- Login protection is three switches, read from and written to the previous release's two keys
+
+**Date:** 2026-11-12. **Spec:** 124, slice 4 (FR-013, FR-014, SC-002). **Branch:** `spec/124-slice-4-login-switches`.
+**Decided:** under the owner's delegation of the revamp.
+
+**The switches.** Hide `wp-login.php`, hide the admin from visitors who are not signed in, limit failed sign-ins
+(`LoginSwitches`). Each acts alone; the site's own login address works whenever any is on. The previous release's
+`enabled` and `block_default_endpoints` read in their meaning: on with hiding is all three, on without hiding is
+limits with the own address beside `wp-login.php`, off is all three off whatever "hide" says.
+
+**Both shapes are written.** A save writes the switches and the two old keys: `enabled` whenever any switch is on (an
+older CoreX then still serves the address the owner signs in at, and adds limits, which hide nothing), and
+`block_default_endpoints` only when both addresses are hidden, because an older CoreX can hide them only together. So
+an older CoreX never hides what the owner did not ask to hide. The switches are trusted on read only while the stored
+old keys agree with what they would write; otherwise the old keys win, so an older recovery command that turned
+protection off is not undone by updating again.
+
+**Refusals.** Hiding `wp-login.php` with an address that is cleared or unusable is refused in the store, with a field
+and a reason code (`LoginSettingsRefused`), and nothing is written; a save with no address takes `corex-login` as
+before. Slice 5's route turns the code into a sentence.
+
+**Recovery.** `define( 'COREX_LOGIN_UNGUARD', true );` in `wp-config.php` reopens `wp-login.php` and the admin's
+redirect to sign-in whatever the switches say; `wp corex security reset-login` turns all three off in both shapes and
+releases lockouts.
+
+**Proof.** SC-002 is held by one HTTP test per shape the previous release could store, with the answers read from
+the old code first. Neither client records its stored value; both record behaviour only produced by "on, hiding on,
+`corex-login`". CI's integration job has no web server, so these tests skip there and the unit tests hold FR-013 on
+CI.
+
+**Until slices 5 and 10.** The current screen still sends only the two old keys, so a combination it cannot express
+(made by code or by hand) is turned into its old-key meaning on its next save. The Overview's login tile and row
+keep their words until slice 10, because they are screen copy: with limits off and `wp-login.php` hidden they read
+"On" and "Login address hidden" (`OverviewTiles.php`, `OverviewModel.php`), which says nothing about the limits being
+off. So **slice 5 may not be released before slice 10**: once the route saves the switches, a site can be in a
+combination those words do not describe.
+
+**Amended 2026-11-12 (review of slice 4).** Decided by the orchestrator under the owner's delegation.
+
+- *Hiding `wp-login.php` alone leaves the own address public.* With it on and the admin not hidden, a signed-out
+  request for `/wp-admin/` is redirected to the own address (`Location: /team-entry/...`), as scenario 1 asks. So 2
+  of the 8 combinations (`wp-login.php` hidden, admin not, with or without limits) give no obscurity for the login
+  address. Only hiding the admin as well keeps it private. Slice 10 must say so beside the first switch; until then
+  the Security Center's "Default login endpoints" row says it in its note. No code change.
+- *What a person reads is true, server side.* The launch checklist's "Login protection on" passes only while
+  failed sign-ins are limited (`SiteReadinessFacts`): limits are the defence, hiding is obscurity. Its sentences
+  say "Failed sign-ins are limited" and "Failed sign-ins are not limited"; its key and label are unchanged.
+  `LoginAddressState` answers `recovery` whenever the recovery constant is set and any switch is on, before it
+  would answer `reachable`, so a forgotten constant that reopens a hidden admin is reported. "Default login
+  endpoints" says what each address does: "Hidden" (both), "wp-login.php hidden, wp-admin reachable" (with the note
+  above), "wp-login.php reachable, wp-admin hidden", or "Reachable"; only the value and the note it reads changed,
+  not the markup.
+- *Recording successful sign-ins keeps its meaning.* It records while its own setting is on and any switch is on,
+  as it did while protection was on (`LoginProtectionEnforcer::recordSuccess()`, `LoginProtectionService::recordSuccess()`).
+  Only failed attempts need the limits switch.
+- *`/admin` and `/dashboard` are not found while `wp-login.php` is hidden.* `wp_redirect_admin_locations` is taken
+  off whole, so `/login`, `/admin` and `/dashboard` all reach the 404. Putting back only its admin half would send
+  `/admin` and `/dashboard` to `/wp-admin/`, which with the admin not hidden reveals the address anyway (the first
+  point). No code change.
+
+## #629 -- The login settings route saves only what it is sent, and refuses with the range
+
+**Date:** 2026-11-13. **Spec:** 124, slice 5 (FR-015 server half, FR-004c). **Branch:**
+`spec/124-slice-5-login-settings-route`. **Decided:** under the owner's delegation of the revamp.
+
+**What a save writes.** `corex/v1/security/login-protection` takes any subset of the settings and writes only the
+fields it is sent (`LoginSettingsInput`, `LoginProtectionSettingsStore::update()`); the switches and both old keys
+are written only when a switch is sent (#628), so a save of other fields leaves all five stored keys as they are.
+Lengths are sent in minutes and stored as seconds (minutes x 60); a stored length that is not a whole minute is
+answered as `null` minutes beside its exact seconds, and kept unless that field is sent.
+
+**Ranges.** Attempts 1 to 50; counting window 1 to 1,440 minutes; lockout 1 to 10,080 minutes (the previous
+release's seconds bounds); retention 1 to 365 days; at most 100 trusted-proxy lines, each an IPv4 or IPv6 address or
+CIDR range. A `/0` range is refused, by the route and by `wp corex security trusted-proxies` through one rule
+(`TrustedProxyRange`): it would make every client a trusted proxy, free to set in `X-Forwarded-For` the address the
+attempt limit counts by.
+
+**Refusals.** Spec 043's validation envelope: 422, `errors` keyed by field with a translated sentence, and
+`details.fields` with the reason code, the range or the refused lines. Nothing is written, not even the valid fields
+of the same request. The route's arguments carry descriptions only, so WordPress's own `rest_invalid_param` does not
+answer first. "Manage operations" is required (spec 117); the nonce stays.
+
+**Until slice 10.** The previous screen's fields (`enabled`, `block_default_endpoints`, `window_seconds`,
+`lockout_seconds`) are still taken; mixing them with their new equivalents is refused. The previous screen clamps a
+window to at least 60 seconds and sends every field, so its save turns a 30-second window into 60. A warning beside
+the proxy field has no text yet; slice 10's design writes it. This slice is not released before slice 10 (#628).
+
+**Amended 2026-11-13 (review of slice 5).** Decided by the orchestrator under the owner's delegation.
+
+- *A value equal to the one in force is no change.* A field is checked and written only when its value differs from
+  the one in force: the address after normalising, a number in its stored unit, a switch, and the trusted proxy list
+  compared line by line in its stored spelling. So the route's own answer posted back with one field changed answers
+  200 and writes that field, and a value stored before a rule existed (a 30-second window, a `/0` range, a list of 101)
+  is kept while a request does not change it. `trusted_proxy_mode` follows the list when it is not sent.
+- *Pairs that agree are taken.* Beside the switches, an old key equal to the one in force says nothing, and one that
+  differs must equal what the switches write; otherwise it is refused (`two_shapes`) under the old field sent. Beside
+  its seconds, `window_minutes` or `lockout_minutes` must be the seconds / 60, or `null`, which the route answers for
+  a length that is not a whole minute. Alone, the old pair equal to the pair in force changes no switch, so the
+  previous screen saving Max attempts does not fold `wp-login.php` hidden with limits off into a combination it can
+  show. This replaces "mixing them with their new equivalents is refused" above.
+- *The proxy rule is one, and shared* (`TrustedProxyRange`): each line an IPv4 or IPv6 address or CIDR range, at most
+  100 lines, no `/0`, each stored as `inet_ntop(inet_pton(address))` plus `/prefix`. The route and
+  `wp corex security trusted-proxies` ask it, so the command refuses a `/0` range and a 101st entry (exit 1) and
+  stores the same spelling. The literal `/0` check guards against a slip and is not a boundary: `0.0.0.0/1` with
+  `128.0.0.0/1` still trusts every IPv4 address, and is accepted.
+- *A stored `/0` is used as stored and reported.* The resolver does not ignore it: a site behind a CDN that relies on
+  it would suddenly count every visitor as the CDN's address, and one lockout would shut everyone out. Hardening's
+  "Trusted proxies name only your proxies" check warns while proxies are trusted and the list has a `/0` range, and
+  says how to fix it; like every hardening check it is in the launch checklist.
+- *Addresses are compared as addresses.* `ClientIpResolver` matches a single trusted address by its packed bytes, so
+  `2001:DB8::1` or the address written in full trusts `2001:db8::1`. An IPv4-mapped address (`::ffff:10.0.0.1`) and
+  the IPv4 address it carries are 16 and 4 bytes and are not taken for each other: the owner lists the spelling the
+  server reports. *Not chosen:* unmapping, which would widen a list without the owner's word.
+- *One write at a time.* `LoginProtectionSettingsStore::rewrite()` reads the row as it is (the options cache
+  forgotten) and writes under a MySQL named lock per site (`LoginSettingsLock`, named for the database and the site's
+  options table, as spec 079's FR-008a lock is), with a 2-second wait. The route and both commands that write the
+  option (`trusted-proxies`, `reset-login`) go through it, each given the container's store. A save that cannot have
+  the lock writes nothing: the route answers 409 `login_settings_busy` with a translated "try again", and
+  `trusted-proxies` exits 1. 409 and not 422, because nothing in the request is wrong. Recovery is the exception:
+  `reset-login` is how a locked-out owner gets back in, so when the lock cannot be had it writes without it
+  (`rewriteForRecovery()`, named so no screen calls it), releases the lockouts, exits 0 and prints that a concurrent
+  save may have been overwritten. *Not chosen:* refusing recovery while busy, which leaves the owner locked out
+  behind a save that may have hung.
+- *What a request changes is decided under the lock* (two-model review of slice 5). The saver hands the store a
+  plan (`updateWith()`) that reads the request against the settings as read once the lock is had, so a switch
+  the request did not send keeps what another save wrote meanwhile, and the no-change and agreeing-pair rules are
+  judged against that read. Deciding from a read before the lock let two overlapping saves undo each other's
+  switch: stored (off, off, on), A sends `hide_admin: true`, B sends `limit_attempts: false`, and A wrote the
+  limits back on.
+- *A malformed stored line trusts nobody* (two-model review of slice 5). The release before could store
+  `10.0.0.0/` or `10.0.0.0/x`, which the resolver read as prefix 0, trusting every IPv4 peer, while Hardening
+  called the list narrow. `ClientIpResolver` now skips any line `TrustedProxyRange` reports as `format`. A
+  well-formed `/0` is still honoured, as decided above. Hardening reports a malformed line in the same
+  `trusted_proxies` row, with a sentence of its own (fact `trustedProxiesWellFormed`), the `/0` sentence first
+  when a list has both; one row rather than an eighth, because the fix for both is the same command.
+- *Smaller rules.* A switch value of `''` is refused as "must be on or off" (`filter_var()` reads it as off). A
+  refused proxy line is repeated up to 64 bytes cut on a character boundary (`mb_strcut()`). A request that names no
+  setting answers 422 with `errors.request` and the reason `nothing_to_save`, rather than a 200 that reads as saved.
+  The route's argument descriptions are translated.
+
+## #630 -- A lockout is released by its stored row, and a release with nothing to end answers 409
+
+**Date:** 2026-11-15. **Spec:** 124, slice 6 (FR-016, FR-017 server half, SC-004). **Branch:**
+`spec/124-slice-6-lockout-release`. **Decided:** under the owner's delegation of the revamp.
+
+**Routes.** `POST corex/v1/security/lockouts/{id}/release` ends one lockout; `POST
+corex/v1/security/lockouts/release-all` ends every active one and writes nothing else (no setting, no mode, no
+lockout that had ended on its own). Both ask "Manage operations" and the REST nonce, as the login settings route
+does (spec 117, FR-004c); an Editor gets WordPress's `rest_forbidden` 403. The
+person releasing is the current user (`LockoutReleaseController`, thin; the work is `LockoutReleaser`).
+
+**What names a lockout.** The panel row's `id` is the stored row's number (`LockoutRows`). It was the identity
+fingerprint and the end time, which the server could only map back by fingerprinting every row, and which two
+networks locking out one username in the same second shared. The release ends every active row of that row's
+identity and network pair, since two failures at once can each start one; the same username from another network
+is another lockout and is left alone. The screen draws the panel on load from the same `LockoutRows`, so load and
+release share one shape (`released` is new beside the old keys; the admin script reads `id` as an opaque key).
+
+**What a release does.** One `UPDATE` sets the end to now with the reason `released_by_owner`, only on rows still
+active and not released already, so two releases at once end each row once. The failed attempts stay recorded and
+stop counting toward the next lockout of the pair, otherwise one mistyped password after a release would lock the
+person out again. It is recorded once in the activity log (`security.login.released`, with the account's id or 0
+and the fingerprints; `security.login.released_all` with the count), never a stored hash, a typed username or an
+address. The entry names the account through `LoginAccounts::nameOf()`, the rule the lockout notice uses (#626), so a
+deleted account reads "User 99" in the log as it does in the notice; the panel (`LockoutRows`) shows no login for a
+deleted account, so its row reads as an unknown username. An activity write that fails does not undo the release
+(the recorder's standing policy: it lets a failed write go), so the log can miss a release when its own write
+fails. `wp corex security reset-login` changes the same way: its
+release is marked `released_by_recovery`, and the attempts before it stop counting too, so one mistyped password
+after a recovery no longer locks the owner out again.
+
+**Answers.** Spec 043's envelope. Released: 200, `data.released` (rows ended) and `data.lockouts` (the redrawn
+rows). Nothing to end: 409, `lockout_already_ended` for one lockout that had ended (or that another release ended
+first) and `no_active_lockouts` for release all with none active, each with a translated "Nothing was changed" and
+the rows in `details.lockouts`. A row that is not a lockout, or is gone: 404 `lockout_not_found`. The id is read
+from the URL only, so an `id` in the body cannot name another lockout. 409 and not 200,
+because the request asked for a change the lockout's state no longer allows, which is how the job routes answer a
+cancel of a job that cannot be cancelled; and not 422, because nothing in the request is malformed. *Not chosen:*
+a 200 with a status field, which a client reading `ok` would show as "released".

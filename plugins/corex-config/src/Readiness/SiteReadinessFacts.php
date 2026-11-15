@@ -69,7 +69,8 @@ final class SiteReadinessFacts
             'privacy'   => $this->guarded(fn (): array => $this->page((int) get_option('wp_page_for_privacy_policy'))),
             'terms'     => $this->guarded(fn (): array => $this->page((int) $this->settings->get(self::TERMS_PAGE_KEY))),
             'testEmail' => $this->guarded(fn (): array => $this->testEmail($now)),
-            'login'     => $this->guarded(fn (): bool => $this->login->current()->enabled),
+            // Limits are the defence; hiding an address is obscurity (spec 124, DECISIONS #628).
+            'login'     => $this->guarded(fn (): bool => $this->login->current()->limitAttempts),
         ];
     }
 

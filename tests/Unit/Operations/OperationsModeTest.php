@@ -19,8 +19,10 @@ beforeEach(function () {
     $this->modes = new OperationsMode();
 });
 
-it('lists the five real modes, coming soon after maintenance, and validates them', function () {
-    expect($this->modes->all())->toBe(['development', 'staging', 'production', 'maintenance', 'coming-soon'])
+it('lists the six real modes in the order spec 124 gives them, and validates them (FR-003)', function () {
+    expect($this->modes->all())->toBe(['development', 'staging', 'production', 'coming-soon', 'forms-paused', 'maintenance'])
+        ->and($this->modes->isValid('forms-paused'))->toBeTrue()
+        ->and(OperationsMode::FORMS_PAUSED)->toBe('forms-paused')
         ->and($this->modes->isValid('production'))->toBeTrue()
         // Until spec 101 this line asserted the opposite: spec 063 named coming soon as a mode and
         // spec 065 shipped without it. It is replaced rather than deleted (FR-022) so the history
@@ -40,12 +42,14 @@ it('requires confirmation for production and for the two modes that close the si
     expect($this->modes->requiresConfirmation('production'))->toBeTrue()
         ->and($this->modes->requiresConfirmation('maintenance'))->toBeTrue()
         ->and($this->modes->requiresConfirmation('coming-soon'))->toBeTrue()
+        ->and($this->modes->requiresConfirmation('forms-paused'))->toBeTrue()
         ->and($this->modes->requiresConfirmation('development'))->toBeFalse()
         ->and($this->modes->requiresConfirmation('staging'))->toBeFalse();
 });
 
-it('marks maintenance and coming soon, and nothing else, as changing public behaviour', function () {
+it('marks maintenance, coming soon and forms paused, and nothing else, as changing public behaviour', function () {
     expect($this->modes->affectsPublic('maintenance'))->toBeTrue()
+        ->and($this->modes->affectsPublic('forms-paused'))->toBeTrue()
         ->and($this->modes->affectsPublic('coming-soon'))->toBeTrue()
         ->and($this->modes->affectsPublic('staging'))->toBeFalse()
         ->and($this->modes->affectsPublic('production'))->toBeFalse()
@@ -110,4 +114,28 @@ it('keeps as cautions only what the description of the mode does not already say
 
 it('counts every caution among the warnings of its mode, so the two lists cannot drift apart', function (string $mode) {
     expect(array_diff($this->modes->cautions($mode), $this->modes->warnings($mode)))->toBe([]);
-})->with(['development', 'staging', 'production', 'maintenance', 'coming-soon']);
+})->with(['development', 'staging', 'production', 'maintenance', 'coming-soon', 'forms-paused']);
+
+it('describes forms paused as itself, not as the production it would otherwise fall back to (FR-003)', function () {
+    $described = $this->modes->describe('forms-paused');
+
+    expect($described['mode'])->toBe('forms-paused')
+        ->and($described['label'])->toBe('Forms paused')
+        ->and($described['tone'])->toBe(OperationsMode::TONE_WARNING)
+        ->and($described['detail'])->toContain('stays open')
+        ->and($this->modes->warnings('forms-paused'))->not->toBe($this->modes->warnings('production'));
+});
+
+/*
+ * Spec 124 slice 1 holds Forms paused back from the mode chooser until slice 8 draws the mode
+ * cards: the chooser keeps the five modes it has, in the order it has them.
+ */
+it('leaves forms paused out of the modes the chooser offers, in the order the chooser has today (FR-003, slice 1)', function () {
+    expect($this->modes->offered())->toBe(['development', 'staging', 'production', 'maintenance', 'coming-soon'])
+        ->and($this->modes->offered('production'))->not->toContain('forms-paused');
+});
+
+it('offers forms paused only to a site already in it, so the chooser never proposes another mode in its place', function () {
+    expect($this->modes->offered('forms-paused'))
+        ->toBe(['development', 'staging', 'production', 'maintenance', 'coming-soon', 'forms-paused']);
+});

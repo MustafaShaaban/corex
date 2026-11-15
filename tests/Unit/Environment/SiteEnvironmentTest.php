@@ -70,6 +70,7 @@ it('answers by the first setting that holds a value', function (array $locks, st
     'the mode, with no lock' => [[], 'staging', 'production', 'staging', 'mode'],
     'coming soon is production' => [[], 'coming-soon', 'local', 'production', 'mode'],
     'maintenance is production' => [[], 'maintenance', 'development', 'production', 'mode'],
+    'forms paused is production (spec 124, FR-003)' => [[], 'forms-paused', 'local', 'production', 'mode'],
     'WordPress local, no mode' => [[], '', 'local', 'development', 'wordpress'],
     'WordPress development, no mode' => [[], '', 'development', 'development', 'wordpress'],
     'WordPress staging, no mode' => [[], '', 'staging', 'staging', 'wordpress'],
@@ -92,6 +93,8 @@ it('allows only the modes of a locked environment', function () {
         ->and($development->allowsMode(OperationsMode::STAGING))->toBeFalse()
         ->and($development->allowsMode(OperationsMode::COMING_SOON))->toBeTrue()
         ->and($development->allowsMode(OperationsMode::MAINTENANCE))->toBeTrue()
+        ->and($development->allowsMode(OperationsMode::FORMS_PAUSED))->toBeTrue()
+        ->and($production->allowsMode(OperationsMode::FORMS_PAUSED))->toBeTrue()
         ->and(siteEnvironment()->allowsMode(OperationsMode::STAGING))->toBeTrue();
 });
 
@@ -104,7 +107,17 @@ it('keeps a declared Coming soon or Maintenance under any lock, closed to visito
     'development, maintenance' => ['development', OperationsMode::MAINTENANCE],
     'staging, coming soon' => ['staging', OperationsMode::COMING_SOON],
     'production, maintenance' => ['production', OperationsMode::MAINTENANCE],
+    'local, forms paused (spec 124, FR-003)' => ['local', OperationsMode::FORMS_PAUSED],
+    'staging, forms paused (spec 124, FR-003)' => ['staging', OperationsMode::FORMS_PAUSED],
 ]);
+
+it('answers production for forms paused, and lets a lock decide its mail (spec 124, FR-003)', function () {
+    $GLOBALS['corex_test_options'][SiteEnvironment::MODE_OPTION] = OperationsMode::FORMS_PAUSED;
+
+    expect(siteEnvironment()->fromMode(OperationsMode::FORMS_PAUSED))->toBe(SiteEnvironment::PRODUCTION)
+        ->and(siteEnvironment()->current()->environment)->toBe(SiteEnvironment::PRODUCTION)
+        ->and(siteEnvironment(['dotenv' => 'staging'])->current()->environment)->toBe(SiteEnvironment::STAGING);
+});
 
 it('gives the mode a lock fixes, and keeps Coming soon under a production lock', function () {
     $GLOBALS['corex_test_options'][OperationsModeStore::OPTION] = OperationsMode::COMING_SOON;

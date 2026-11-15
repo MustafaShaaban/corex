@@ -24,7 +24,7 @@ Login protection can:
 - rate-limit failed login attempts by hashed identity and network evidence;
 - block default login endpoints behind a custom login slug;
 - retain only bounded login-attempt evidence;
-- release lockouts through the recovery command.
+- release one lockout, or every active one, through the REST API, or all of them through the recovery command.
 
 ### What a hidden endpoint looks like from outside
 
@@ -71,7 +71,45 @@ wp corex security reset-login
 ```
 
 The command disables the protected login gates, releases active lockouts, and prints the restored `wp-login.php` URL.
-It does not change users, roles, passwords, content, or unrelated CoreX settings.
+The failed attempts before the release stay recorded but no longer count, so one more mistyped password afterwards
+does not lock the person out again. It does not change users, roles, passwords, content, or unrelated CoreX settings. It runs even while a save of the
+login settings is in progress: it waits two seconds for that save to finish, then writes anyway. When it had to, it
+prints a line saying the other save may have been overwritten; check the login settings once you are signed in.
+
+### Releasing a lockout
+
+A lockout blocks one username from one network, not the whole site. Two routes in `corex/v1` end a lockout at
+once, without waiting for its lockout length and without a command line. The Lockouts panel does not have Release
+controls yet; they are coming, and will call these routes. Until then, someone who may manage Operations & Security
+can call them through the REST API while signed in, with the REST nonce. The person whose lockout ends can then sign
+in from the same network straight away, and one more mistyped password does not lock them out again: the failed
+attempts before the release stay recorded but no longer count.
+
+| Route | What it does |
+|---|---|
+| `POST security/lockouts/{id}/release` | Ends the lockout of the panel row `id` (the stored row's number). |
+| `POST security/lockouts/release-all` | Ends every active lockout. It changes no setting and no lockout that has ended. |
+
+Each row of the Lockouts panel's data has an `id` (what the release route takes), the account's login when the
+username belonged to one (otherwise empty, read as "unknown username"), a short fingerprint of the username and one
+of the network, when the lockout ends (`locked_until`), whether it is still `active`, and whether it was `released`
+and why (`reason`). What was typed is never stored, so it is never shown.
+
+Releasing one lockout is recorded in the activity log with who released whose lockout (the account, or the
+fingerprint of an unknown username); releasing all records who did it and how many lockouts ended. The answers use the standard response envelope, and each carries the panel's rows so the screen
+redraws from it:
+
+| Status | Code | When |
+|---|---|---|
+| 200 | | Released: `data.released` is how many stored rows ended, `data.lockouts` the rows. |
+| 409 | `lockout_already_ended` | The lockout had already ended, or another release ended it first. Nothing changed. |
+| 409 | `no_active_lockouts` | Release all found no active lockout. Nothing changed. |
+| 404 | `lockout_not_found` | The id names no lockout, for example one removed with old sign-in records. |
+| 403 | `rest_forbidden` | The person is signed in but may not manage Operations & Security. |
+| 401 | `rest_forbidden` | The REST nonce is missing: WordPress then treats the request as signed out. |
+| 403 | `rest_cookie_invalid_nonce` | The REST nonce is wrong or has expired. |
+
+Where nothing changed, the rows are in `details.lockouts`.
 
 ## What every page says the site runs
 
@@ -109,7 +147,11 @@ Name the proxies:
 wp corex security trusted-proxies 127.0.0.1 ::1
 ```
 
-Each argument is an address or a CIDR range, and the list given replaces the saved one. With no
+Each argument is an address or a CIDR range, and the list given replaces the saved one. A `/0` range
+(`0.0.0.0/0`, `::/0`) is refused: it would make every visitor a trusted proxy, free to choose the address
+their sign-in attempts are counted by. At most 100 entries are kept; a longer list is refused whole. Each
+address is stored in one spelling, so `2001:DB8::1` and `2001:0db8:0000:0000:0000:0000:0000:0001` are both
+stored as `2001:db8::1`. With no
 argument the command prints the list. `--clear` trusts no proxy. The Security screen has no field for
 this list; the command is how it is set.
 
@@ -166,7 +208,7 @@ applied, and listed on the Access screen's Overview.
 | Releases | Install releases |
 | Guides | Anyone signed in; each guide follows its screen |
 
-Switching the operating mode to Production or Maintenance also needs **Run dangerous actions**. In Settings → Mail,
+Switching the operating mode to Production, Maintenance or Forms paused also needs **Run dangerous actions**. In Settings → Mail,
 the delivery provider and live delivery stay with site administration: anyone else sees them read-only. So does
 Email Studio's **Capture only CoreX mail** switch.
 

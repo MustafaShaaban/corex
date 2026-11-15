@@ -146,16 +146,32 @@ logic (the plan + the safety gate) is the pure, unit-tested `Corex\Cli\Reset\Res
 wp corex security reset-login
 ```
 
-Disables CoreX login-protection gates and releases active lockouts so an owner can regain access through the standard
+Turns every CoreX login switch off and releases active lockouts, so an owner can sign in again at the standard
 WordPress login URL. It is intentionally narrow:
 
-- disables `enabled` and `block_default_endpoints` in the login-protection settings;
-- preserves unrelated settings such as the custom login slug;
-- releases active lockouts through the login-attempt store;
+- turns off all three login switches: hide `wp-login.php`, hide the admin from visitors who are not signed in, and
+  limit failed sign-ins (`hide_wp_login`, `hide_admin`, `limit_attempts`), and writes the previous release's
+  `enabled` and `block_default_endpoints` off too, so an older CoreX reads them off as well;
+- puts the custom login address back to `corex-login`, so turning protection on again does not walk back into an
+  address that locked the owner out;
+- keeps every other login-protection setting (limits, trusted proxies, retention);
+- releases active lockouts through the login-attempt store; the failed attempts before the release stay recorded but
+  no longer count, so one more mistyped password afterwards does not lock the person out again;
 - prints the restored `wp-login.php` URL and whether `COREX_LOGIN_UNGUARD` is active;
 - never changes users, roles, passwords, content, or WordPress core files.
 
-Use it when a custom login route, default-endpoint protection, or active lockout blocks owner access.
+Use it when a custom login address, a hidden login or admin, or an active lockout blocks owner access.
+
+**Without a command line**, add this line to `wp-config.php` with the host's file manager, above the line that says
+"That's all, stop editing":
+
+```php
+define( 'COREX_LOGIN_UNGUARD', true );
+```
+
+While it is there, `wp-login.php` and the admin's redirect to sign in answer whatever the switches say, and the
+custom address keeps working. Nothing is saved: remove the line once you are in, and the switches apply again. It
+does not end a lockout; a lockout ends when its length has passed, or when this command releases it.
 
 ### `security trusted-proxies` — say which proxies report a visitor's address
 
@@ -167,7 +183,8 @@ wp corex security trusted-proxies --clear            # trust no proxy
 
 Behind a proxy, a load balancer or a CDN, a request connects from the proxy. Naming the proxy here is
 what lets login protection and form rate limits count the visitor instead. Each argument is an address
-or a CIDR range; one that is neither refuses the whole list and saves nothing. It writes
+or a CIDR range; one that is neither, or a `/0` range that would trust every address (`0.0.0.0/0`,
+`::/0`), refuses the whole list and saves nothing. It writes
 `trusted_proxy_mode` and `trusted_proxy_ranges` in the login-protection settings and leaves the rest.
 [Security operations](../../docs/en/03-operations/security.md#behind-a-proxy-a-load-balancer-or-a-cdn)
 says which addresses to list.
@@ -179,6 +196,7 @@ wp corex mode get                                  # the mode, and whether it wa
 wp corex mode get --porcelain                      # the mode and nothing else, for a script
 wp corex mode set staging                          # a mode that needs no confirmation
 wp corex mode set coming-soon --acknowledge        # a mode that changes what visitors get
+wp corex mode set forms-paused --acknowledge       # the site stays open, every public form refuses
 wp corex mode set maintenance --acknowledge
 wp corex mode set production --phrase=PRODUCTION --user=<login>
 ```
@@ -189,7 +207,7 @@ The same change the Operations & Security screen makes, by the same rules: both 
 | The mode | Needs | Without it |
 |---|---|---|
 | `development`, `staging` | nothing | — |
-| `coming-soon`, `maintenance` | `--acknowledge` | nothing changes, exit 1 |
+| `coming-soon`, `forms-paused`, `maintenance` | `--acknowledge` | nothing changes, exit 1 |
 | `production` | `--phrase=PRODUCTION` and `--user=<login>` | nothing changes, exit 1 |
 
 - **Exit codes.** 0 when the site is in the mode asked for afterwards, including when it already

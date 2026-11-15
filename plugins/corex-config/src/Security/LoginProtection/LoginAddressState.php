@@ -11,25 +11,32 @@ namespace Corex\Config\Security\LoginProtection;
 defined('ABSPATH') || exit;
 
 /**
- * Whether the default login address (`/wp-login.php`, and `/wp-admin` for a visitor) is hidden,
- * decided once (spec 114, US-SAFE-11).
+ * Whether the default login address (`/wp-login.php`) is hidden, decided once (spec 114,
+ * US-SAFE-11).
  *
  * The guard hid it only with protection on, hiding on and recovery off, while the Security
  * Center printed the hiding setting alone: every fresh install read "Hidden" with the login form
  * one request away. The guard, the Security Center and the Overview now all ask this.
+ *
+ * Since spec 124 (FR-013) it follows the "hide wp-login.php" switch; hiding the admin is a switch
+ * of its own, which {@see LoginProtectionSettings::$hideAdmin} and the Overview's facts report.
  */
 final class LoginAddressState
 {
-    /** Login protection is off: the default address answers as WordPress's own. */
+    /** Every login switch is off: the default address answers as WordPress's own. */
     public const OFF = 'off';
 
-    /** Protection is on and does not hide the default address. */
+    /** A switch is on, and wp-login.php is not hidden. */
     public const REACHABLE = 'reachable';
 
-    /** Protection is on and hides the default address. */
+    /** wp-login.php is hidden. */
     public const HIDDEN = 'hidden';
 
-    /** The settings would hide it, and the recovery constant keeps it reachable. */
+    /**
+     * The recovery constant is set while a switch is on: wp-login.php and the admin answer whatever the
+     * switches say. Reported whatever the switches are, so a forgotten line that reopens a hidden admin,
+     * or will reopen whatever is hidden next, is never read as an ordinary state.
+     */
     public const RECOVERY = 'recovery';
 
     public static function of(LoginProtectionSettings $settings, bool $recoveryActive): string
@@ -38,10 +45,10 @@ final class LoginAddressState
             return self::OFF;
         }
 
-        if (! $settings->blockDefaultEndpoints) {
-            return self::REACHABLE;
+        if ($recoveryActive) {
+            return self::RECOVERY;
         }
 
-        return $recoveryActive ? self::RECOVERY : self::HIDDEN;
+        return $settings->hideWpLogin ? self::HIDDEN : self::REACHABLE;
     }
 }

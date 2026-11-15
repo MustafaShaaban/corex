@@ -17,7 +17,7 @@ use Corex\Admin\StandalonePage;
  * `maintenance`, anonymous front-end visitors receive an accessible 503 maintenance notice — but any
  * signed-in administrator (or admin/login/cron/AJAX/REST context) passes straight through, so the
  * operator can never lock themselves out. It renames no WordPress core files. Public form
- * submissions, which arrive over REST, are closed by {@see MaintenanceSubmissionGuard} (spec 112).
+ * submissions, which arrive over REST, are closed by {@see PublicSubmissionGuard} (spec 112).
  */
 final class MaintenanceGuard
 {
@@ -88,7 +88,7 @@ final class MaintenanceGuard
     public function shouldBlock(): bool
     {
         // Never intercept admin, cron, AJAX, or REST contexts. Public submissions over REST are
-        // closed by MaintenanceSubmissionGuard instead, which answers them as an API should.
+        // closed by PublicSubmissionGuard instead, which answers them as an API should.
         if (is_admin() || wp_doing_cron() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) {
             return false;
         }

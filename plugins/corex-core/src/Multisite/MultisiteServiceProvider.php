@@ -18,6 +18,7 @@ use Corex\Database\Schema\SiteMigrationRunner;
 use Corex\Database\Schema\WpOptionSchemaVersionStore;
 use Corex\Events\EventDispatcher;
 use Corex\Foundation\ServiceProvider;
+use Corex\Support\BootLogger;
 
 /**
  * Binds schema orchestration during the register pass, then enables only the
@@ -46,6 +47,7 @@ final class MultisiteServiceProvider extends ServiceProvider
                 $c->make(SiteContext::class),
                 $c->make(MultisiteContext::class),
                 $c->make(EventDispatcher::class),
+                $c->make(BootLogger::class),
             ),
         );
     }

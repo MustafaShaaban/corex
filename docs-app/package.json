@@ -11,8 +11,9 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.9",
     "@astrojs/starlight": "^0.41.5",
-    "astro": "^7.3.3",
+    "astro": "^7.4.12",
     "corex-framework": "file:..",
     "sharp": "^0.35.3"
   },

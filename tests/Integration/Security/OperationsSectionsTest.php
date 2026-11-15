@@ -124,6 +124,35 @@ it('offers Coming soon on the mode form, after Maintenance', function () {
         ->and($form)->toContain('>Coming soon</option>');
 });
 
+// Spec 124, slice 1: Forms paused is a mode, held back from the chooser until slice 8 draws it.
+
+it('does not offer Forms paused on the mode form, nor draw a block for it, even when a link asks for it (spec 124, FR-003)', function () {
+    $_GET['mode'] = 'forms-paused';
+    $form         = invokeScreen($this->screen, 'modeCard', launchSnapshot());
+    unset($_GET['mode']);
+
+    preg_match_all('/<option value="([a-z-]+)"/', $form, $options);
+
+    expect($options[1])->not->toContain('forms-paused')
+        ->and($form)->not->toContain('data-mode="forms-paused"')
+        ->and($form)->not->toContain('Forms paused');
+});
+
+it('shows Forms paused as the selected mode of a site the command line put in it, so Apply cannot propose another (spec 124, FR-012)', function () {
+    $inFormsPaused = static fn (): string => 'forms-paused';
+    add_filter('pre_option_corex_operations_mode', $inFormsPaused);
+
+    try {
+        $form = invokeScreen($this->screen, 'modeCard', launchSnapshot());
+    } finally {
+        remove_filter('pre_option_corex_operations_mode', $inFormsPaused);
+    }
+
+    preg_match_all('/<option value="([a-z-]+)"[^>]*\bselected\b/', $form, $selected);
+
+    expect($selected[1])->toBe(['forms-paused']);
+});
+
 it('draws a block for Coming soon that says what the mode does and asks for its own acknowledgement', function () {
     $_GET['mode'] = 'coming-soon';
     $form         = invokeScreen($this->screen, 'modeCard', launchSnapshot());

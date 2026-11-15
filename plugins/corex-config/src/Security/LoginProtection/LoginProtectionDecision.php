@@ -10,6 +10,7 @@ namespace Corex\Config\Security\LoginProtection;
 
 defined('ABSPATH') || exit;
 
+use Corex\Security\LoginLockoutEvent;
 use DateTimeImmutable;
 
 /**
@@ -21,6 +22,8 @@ final readonly class LoginProtectionDecision
         public bool $locked,
         public string $reasonCode,
         public ?DateTimeImmutable $lockedUntil = null,
+        // The lockout this decision started, as it is announced; on the way into a lockout only.
+        public ?LoginLockoutEvent $lockout = null,
     ) {
     }
 }

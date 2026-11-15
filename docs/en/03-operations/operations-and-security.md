@@ -58,7 +58,7 @@ screen and every email follows it. In this order:
 |---|---|
 | **Development** | Every email is captured: kept in `CoreX → Email Studio → Delivery logs`, named by what sent it, and nobody receives it. |
 | **Staging** | Captured, unless live delivery is on with a provider CoreX Mail sends through; then sent for real. |
-| **Production, Coming soon, Maintenance** | Sent exactly as before. |
+| **Production, Coming soon, Forms paused, Maintenance** | Sent exactly as before. |
 
 Captured mail includes WordPress's own emails (a password reset, a new user) and other plugins'
 mail. Email Studio's Overview has a switch, **Capture only CoreX mail**, that lets those through
@@ -107,7 +107,11 @@ confirmation ready — one extra step, and the right question either way.
 - Apart from those submissions, the REST API, AJAX, cron and `wp-admin` are **never** intercepted,
   so scheduled work and integrations keep running.
 - A REST route of your own that takes public submissions closes with them when it declares
-  `Corex\Http\PublicSubmission::MARKER => true` in its `register_rest_route()` arguments.
+  `Corex\Http\PublicSubmission::MARKER => true` in its `register_rest_route()` arguments. It also
+  closes in **Forms paused**, which keeps the site open and refuses every such route with **503**,
+  the code `forms_paused` and "Forms are paused for a short while. Please try again later." Until
+  the mode cards are on this screen, Forms paused is chosen with
+  `wp corex mode set forms-paused --acknowledge`.
 - To come back: change the mode here. If you cannot reach this screen, the recovery command in the
   Login Protection section works from the command line.
 
@@ -134,7 +138,7 @@ It has two groups:
 | Group | Checks | Can it block going live? |
 |---|---|---|
 | **Security and hosting** | HTTPS, file editing disabled, debug output hidden, no default `admin` account, search indexing allowed, authentication salts configured | Yes: a failing one **Blocks going live** |
-| **Site and content** | Brand set (company name and admin logo), Kit applied (only while a kit add-on is active), Front page (a static front page, or a theme with its own front-page template), Privacy page published, Terms page published (chosen in Settings → Brand), Test email sent (a test from Email Studio the mail transport accepted in the last 90 days), Login protection on | No: these say **Pending** and advise |
+| **Site and content** | Brand set (company name and admin logo), Kit applied (only while a kit add-on is active), Front page (a static front page, or a theme with its own front-page template), Privacy page published, Terms page published (chosen in Settings → Brand), Test email sent (a test from Email Studio the mail transport accepted in the last 90 days), Login protection on (failed sign-ins are limited; hiding the login or the admin alone does not count) | No: these say **Pending** and advise |
 
 Each check says its state in a word beside an icon: **Ready** (on the Overview, **Done**), **Pending**,
 **Blocks going live** (on the Overview, **Blocked**), or **Could not check** when its facts could not be

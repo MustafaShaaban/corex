@@ -17,9 +17,12 @@ interface LoginAttemptStore
     public function record(LoginAttemptRecord $record): void;
 
     /**
+     * Failures since a moment, stored under any of the attempt's pairs.
+     *
      * @return list<LoginAttemptRecord>
      */
-    public function failures(string $identityHash, string $networkHash, DateTimeImmutable $since): array;
+    public function failures(LoginAttemptKeys $keys, DateTimeImmutable $since): array;
 
-    public function latestLockout(string $identityHash, string $networkHash, DateTimeImmutable $now): ?LoginAttemptRecord;
+    /** The lockout that ends last among those still active, stored under any of the attempt's pairs. */
+    public function latestLockout(LoginAttemptKeys $keys, DateTimeImmutable $now): ?LoginAttemptRecord;
 }

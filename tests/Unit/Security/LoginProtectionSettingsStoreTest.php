@@ -105,8 +105,10 @@ it('does not throw when the stored settings are unusable', function () {
 it('falls back to the default slug when none was supplied', function () {
     $store = new LoginProtectionSettingsStore();
 
+    // An unusable address falls back too, but only where nothing is hidden behind it: hiding
+    // wp-login.php needs an address the owner chose (spec 124, FR-013, LoginSettingsShapesTest).
     expect($store->save(['enabled' => true])->customSlug)->toBe(LoginSlug::DEFAULT)
-        ->and($store->save(['enabled' => true, 'custom_slug' => '!!!'])->customSlug)->toBe(LoginSlug::DEFAULT);
+        ->and($store->save(['enabled' => true, 'block_default_endpoints' => false, 'custom_slug' => '!!!'])->customSlug)->toBe(LoginSlug::DEFAULT);
 });
 
 it('survives a stored option that is not an array', function () {

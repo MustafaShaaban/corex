@@ -19,6 +19,9 @@ defined('ABSPATH') || exit;
  * and coming soon do). WordPress-free, so it is unit-testable. It NEVER changes site behaviour itself
  * — the boundary does, safely and reversibly.
  *
+ * Forms paused (spec 124) is the sixth: the site stays open and every public submission is refused,
+ * by the same gate that refuses them in Maintenance ({@see PublicSubmissionGuard}).
+ *
  * Coming soon (spec 101) is the fifth mode. Spec 063 named it and spec 065 shipped without it; what
  * each of the two closed modes does to a visitor is {@see MaintenanceGuard} and
  * {@see ComingSoonGuard}, and they are deliberately not the same thing.
@@ -30,6 +33,7 @@ final class OperationsMode
     public const PRODUCTION  = 'production';
     public const MAINTENANCE = 'maintenance';
     public const COMING_SOON = 'coming-soon';
+    public const FORMS_PAUSED = 'forms-paused';
 
     public const TONE_INFO    = 'info';
     public const TONE_WARNING = 'warning';
@@ -37,13 +41,30 @@ final class OperationsMode
     public const TONE_DANGER  = 'danger';
 
     /**
-     * The selectable modes, in display order.
+     * Every mode, in the order spec 124 gives them (US-OPS-07, scenario 7).
      *
      * @return list<string>
      */
     public function all(): array
     {
-        return [self::DEVELOPMENT, self::STAGING, self::PRODUCTION, self::MAINTENANCE, self::COMING_SOON];
+        return [self::DEVELOPMENT, self::STAGING, self::PRODUCTION, self::COMING_SOON, self::FORMS_PAUSED, self::MAINTENANCE];
+    }
+
+    /**
+     * The modes the mode chooser offers, in the order it has offered them since spec 101.
+     *
+     * Forms paused is held back until spec 124's slice 8 draws the mode cards, so the screen does not
+     * change before its design is approved; it can be chosen from the command line meanwhile. A site
+     * already in it is offered it, so the chooser shows the mode in force and never proposes another
+     * in its place.
+     *
+     * @return list<string>
+     */
+    public function offered(string $current = ''): array
+    {
+        $offered = [self::DEVELOPMENT, self::STAGING, self::PRODUCTION, self::MAINTENANCE, self::COMING_SOON];
+
+        return $current === self::FORMS_PAUSED ? [...$offered, self::FORMS_PAUSED] : $offered;
     }
 
     public function isValid(string $mode): bool
@@ -60,19 +81,19 @@ final class OperationsMode
         return $this->isValid($mode) ? $mode : self::PRODUCTION;
     }
 
-    /** Changing to production, maintenance or coming soon requires an explicit confirmation step. */
+    /** Changing to production, maintenance, coming soon or forms paused requires an explicit confirmation step. */
     public function requiresConfirmation(string $mode): bool
     {
-        return in_array($mode, [self::PRODUCTION, self::MAINTENANCE, self::COMING_SOON], true);
+        return in_array($mode, [self::PRODUCTION, self::MAINTENANCE, self::COMING_SOON, self::FORMS_PAUSED], true);
     }
 
     /**
-     * Maintenance and coming soon change public behaviour: a 503 notice in one, the coming-soon
-     * page and a redirect to it in the other.
+     * Maintenance, coming soon and forms paused change public behaviour: a 503 notice in one, the
+     * coming-soon page and a redirect to it in another, refused submissions in the third.
      */
     public function affectsPublic(string $mode): bool
     {
-        return in_array($mode, [self::MAINTENANCE, self::COMING_SOON], true);
+        return in_array($mode, [self::MAINTENANCE, self::COMING_SOON, self::FORMS_PAUSED], true);
     }
 
     /**
@@ -93,6 +114,12 @@ final class OperationsMode
                 'label'  => __('Staging', 'corex'),
                 'tone'   => self::TONE_WARNING,
                 'detail' => __('Pre-production. Email is kept in Email Studio unless a mail provider and live delivery are set.', 'corex'),
+            ],
+            self::FORMS_PAUSED => [
+                'mode'   => self::FORMS_PAUSED,
+                'label'  => __('Forms paused', 'corex'),
+                'tone'   => self::TONE_WARNING,
+                'detail' => __('The site stays open; every form refuses new submissions until you switch back. Signed-in administrators can still submit.', 'corex'),
             ],
             self::MAINTENANCE => [
                 'mode'   => self::MAINTENANCE,
@@ -138,6 +165,9 @@ final class OperationsMode
             self::COMING_SOON => [
                 __('The public site shows the coming-soon page, and every other address is redirected to it. Switch to production to open the site.', 'corex'),
                 ...$this->cautions(self::COMING_SOON),
+            ],
+            self::FORMS_PAUSED => [
+                __('Forms, flows, newsletter sign-ups, booking requests, job applications, registration and the assistant\'s callback form are refused. Switch back to reopen them.', 'corex'),
             ],
             default => [
                 __('Changes take effect for real visitors. Review dangerous actions before applying them.', 'corex'),

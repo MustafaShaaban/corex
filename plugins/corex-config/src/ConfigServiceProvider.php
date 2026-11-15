@@ -196,7 +196,9 @@ final class ConfigServiceProvider extends ServiceProvider
 {
     private const FOUNDATION_SCHEMA_OPTION  = 'corex_product_foundation_schema_version';
     // 4: the access requests table keeps a grant's expiry and how it ended (spec 112).
-    private const FOUNDATION_SCHEMA_VERSION = '4';
+    // 5: lockout notices stored before keep no typed username or address (spec 124, FR-020): no
+    //    table changes, one data step.
+    private const FOUNDATION_SCHEMA_VERSION = '5';
 
     public function register(): void
     {
@@ -256,6 +258,13 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Notifications\NotificationRepository::class,
             static fn (ContainerInterface $c): \Corex\Notifications\NotificationRepository => $c->make(\Corex\Config\Notifications\WpNotificationRepository::class),
         );
+        // The one-time rewrite of lockout notices stored before spec 124 (FR-020): a data step of
+        // the product foundation's schema, version 5.
+        $this->container->singleton(
+            \Corex\Config\Notifications\Lockouts\LockoutNoticeStore::class,
+            \Corex\Config\Notifications\Lockouts\WpLockoutNoticeStore::class,
+        );
+        $this->container->singleton(\Corex\Config\Notifications\Lockouts\LockoutNoticeRewrite::class);
         $this->container->singleton(
             \Corex\Notifications\NotificationService::class,
             static fn (ContainerInterface $c): \Corex\Notifications\NotificationService => new \Corex\Config\Notifications\NotificationServiceImpl(
@@ -289,9 +298,12 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Submissions\SubmissionExportRetention::class),
                 $c->make(\Corex\Config\DataModels\DataExportRetention::class),
                 $c->make(\Corex\Config\Submissions\SubmissionTrashRetention::class),
+                // Sign-in records, with the login settings' window (spec 124, FR-019).
+                $c->make(\Corex\Config\Security\LoginProtection\LoginAttemptRetention::class),
             ]),
         );
         $this->container->singleton(\Corex\Config\Retention\RetentionScheduler::class);
+        $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginAttemptRetention::class);
 
         $this->container->singleton(
             CorexAbilityCatalog::class,
@@ -451,6 +463,10 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Operations\ProductionLaunchService::class);
         // spec 101: one holder of the mode-change rules, for the screen and the command line alike.
         $this->container->singleton(\Corex\Config\Operations\ModeChangeService::class);
+        // Spec 124 (FR-002, FR-004b). Singletons: each holds a hook, and the purge keeps what the
+        // last mode change cleared for the activity record of that change to read.
+        $this->container->singleton(\Corex\Config\Operations\ModeRobots::class);
+        $this->container->singleton(\Corex\Config\Operations\PageCachePurge::class);
         // spec 101: Coming soon mode. Singletons because each holds a hook: a second instance
         // would register the default page, or answer the request, twice.
         $this->container->singleton(
@@ -491,6 +507,16 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Security\LoginProtection\LoginProtectionSettings::class,
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\LoginProtectionSettings =>
                 $c->make(\Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore::class)->current(),
+        );
+        // A sign-in record's values are keyed with the site's own secret, read when it is asked for
+        // so a run across a network's sites gets each site's key (spec 124, FR-019).
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginHashKey::class,
+            \Corex\Config\Security\LoginProtection\WpLoginHashKey::class,
+        );
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginAccounts::class,
+            \Corex\Config\Security\LoginProtection\WpLoginAccounts::class,
         );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionPolicy::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionService::class);
@@ -536,6 +562,15 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
                 $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
         );
+        // Spec 124, FR-017: a lockout released from the screen, through the same table.
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginLockoutReleases::class,
+            static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
+                $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
+        );
+        $this->container->singleton(\Corex\Config\Security\LoginProtection\LockoutReleaser::class);
+        $this->container->singleton(\Corex\Config\Security\LockoutRows::class);
+        $this->container->singleton(\Corex\Config\Security\LockoutReleaseController::class);
 
         $this->container->singleton(AdminDashboard::class);
         // The Settings pages and what they read and write (spec 119): one of each per request, so
@@ -1207,6 +1242,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $notificationUserStateTable->schema(),
             ],
             self::FOUNDATION_SCHEMA_OPTION,
+            [$this->container->make(\Corex\Config\Notifications\Lockouts\LockoutNoticeRewrite::class)],
         ));
         $this->container->make(AbilityCompatibility::class)->register();
         $this->registerNotificationProducers();
@@ -1300,7 +1336,10 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
-        $this->container->make(\Corex\Config\Operations\MaintenanceSubmissionGuard::class)->register();
+        $this->container->make(\Corex\Config\Operations\PublicSubmissionGuard::class)->register();
+        // Spec 124: Development and Staging say noindex (FR-002); a mode change clears page caches (FR-004b).
+        $this->container->make(\Corex\Config\Operations\ModeRobots::class)->register();
+        $this->container->make(\Corex\Config\Operations\PageCachePurge::class)->register();
         // The default page is registered in every mode, so it can be designed in the Site Editor
         // before the site is put into Coming soon. The guard acts only while it is.
         $this->container->make(\Corex\Config\Operations\ComingSoonTemplate::class)->register();
@@ -1310,6 +1349,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class)->register();
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class)->register();
         $this->container->make(\Corex\Config\Security\SecuritySettingsController::class)->register();
+        $this->container->make(\Corex\Config\Security\LockoutReleaseController::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();

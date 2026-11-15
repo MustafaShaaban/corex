@@ -7,6 +7,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Database\Schema\DataMigrationStep;
 use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaMigrator;
 use Corex\Database\Schema\SchemaRegistry;
@@ -30,7 +31,7 @@ use Corex\Support\BootLogger;
  *
  * @return array{0: SchemaSelfHeal, 1: object, 2: ListenerProvider} The second is the migrator, whose `$created` lists the tables a run made.
  */
-function schemaSelfHeal100(bool $throws = false, string $storedVersion = ''): array
+function schemaSelfHeal100(bool $throws = false, string $storedVersion = '', ?DataMigrationStep $step = null, ?BootLogger $logger = null): array
 {
     $scope = new class implements SiteScope {
         public function currentSiteId(): int
@@ -53,6 +54,7 @@ function schemaSelfHeal100(bool $throws = false, string $storedVersion = ''): ar
         '3',
         [new Table('activity')],
         'corex_product_foundation_schema_version',
+        $step === null ? [] : [$step],
     ));
     $migrator = new class($throws) implements SchemaMigrator {
         /** @var list<string> */
@@ -174,14 +176,17 @@ function schemaSelfHeal100(bool $throws = false, string $storedVersion = ''): ar
             $site,
             new SingleSiteMultisiteContext(),
             $events,
+            $logger ?? new BootLogger(false),
         ),
         $migrator,
         $listeners,
+        $runner,
     ];
 }
 
 function expectSchemaSelfHealLock100(): void
 {
+    Functions\expect('get_transient')->once()->with('corex_schema_backoff')->andReturn(false);
     Functions\expect('get_transient')->once()->with('corex_schema_migrating')->andReturn(false);
     Functions\expect('set_transient')->once()->with('corex_schema_migrating', 1, 60);
     Functions\expect('delete_transient')->once()->with('corex_schema_migrating');
@@ -265,6 +270,7 @@ it('announces a successful self-heal as an existing-site migration', function ()
 
 it('does not start a second migration while the site lock exists', function () {
     Functions\expect('is_admin')->once()->andReturn(true);
+    Functions\expect('get_transient')->once()->with('corex_schema_backoff')->andReturn(false);
     Functions\expect('get_transient')->once()->with('corex_schema_migrating')->andReturn(1);
     Functions\expect('set_transient')->never();
     [$heal, $migrator] = schemaSelfHeal100();
@@ -280,4 +286,79 @@ it('releases the lock when the migration runner throws', function () {
     [$heal] = schemaSelfHeal100(throws: true);
 
     expect(fn () => $heal->run())->toThrow(RuntimeException::class, 'migration exploded');
+});
+
+/** A data step that fails every time it runs, and counts its runs. */
+final class AlwaysFailingStep100 implements DataMigrationStep
+{
+    public int $runs = 0;
+
+    public function id(): string
+    {
+        return 'lockout-notice-privacy';
+    }
+
+    public function run(): void
+    {
+        $this->runs++;
+
+        throw new RuntimeException('2 lockout notices could not be rewritten (ids 4, 9).');
+    }
+}
+
+/**
+ * A data step that kept failing ran again, with `dbDelta`, on every admin page, every admin-ajax
+ * call and every cron run, and nothing said so: nothing listens for `SiteMigrationFailed` and the
+ * self-heal returned quietly. The failure is now logged, and the self-heal leaves that component
+ * alone on that site for fifteen minutes. `wp corex migrate` is not held back (spec 124 slice 3).
+ */
+it('spec 124: logs a failing data step once and leaves it for the backoff, while an explicit run still tries it', function () {
+    Functions\when('Corex\Support\error_log')->justReturn(true);
+    Functions\when('is_admin')->justReturn(true);
+    $transients = [];
+    Functions\when('get_transient')->alias(static function (string $key) use (&$transients): mixed {
+        return $transients[$key] ?? false;
+    });
+    Functions\when('set_transient')->alias(static function (string $key, mixed $value, int $ttl) use (&$transients): bool {
+        $transients[$key] = $value;
+
+        return $ttl > 0;
+    });
+    Functions\when('delete_transient')->alias(static function (string $key) use (&$transients): bool {
+        unset($transients[$key]);
+
+        return true;
+    });
+    $step = new AlwaysFailingStep100();
+    $logger = new BootLogger(false);
+    [$heal, , , $runner] = schemaSelfHeal100(step: $step, logger: $logger);
+
+    $heal->run();
+    $heal->run();
+    $heal->run();
+    $explicit = $runner->runForSite(7);
+
+    expect($step->runs)->toBe(2)
+        ->and($logger->messages())->toHaveCount(1)
+        ->and($logger->messages()[0]['level'])->toBe('error')
+        ->and($logger->messages()[0]['message'])->toContain('product-foundation')
+        ->and($logger->messages()[0]['message'])->toContain('2 lockout notices could not be rewritten (ids 4, 9).')
+        ->and($logger->messages()[0]['message'])->toContain('wp corex migrate')
+        ->and(array_keys($transients['corex_schema_backoff']))->toBe(['product-foundation'])
+        ->and($explicit->componentsFailed)->toBe(['product-foundation']);
+});
+
+it('spec 124: tries a backed-off component again once its backoff has passed', function () {
+    Functions\when('Corex\Support\error_log')->justReturn(true);
+    Functions\when('is_admin')->justReturn(true);
+    $transients = ['corex_schema_backoff' => ['product-foundation' => time() - 1]];
+    Functions\when('get_transient')->alias(static fn (string $key): mixed => $transients[$key] ?? false);
+    Functions\when('set_transient')->justReturn(true);
+    Functions\when('delete_transient')->justReturn(true);
+    $step = new AlwaysFailingStep100();
+    [$heal] = schemaSelfHeal100(step: $step);
+
+    $heal->run();
+
+    expect($step->runs)->toBe(1);
 });

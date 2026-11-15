@@ -23,8 +23,8 @@ defined('ABSPATH') || exit;
  *         PublicSubmission::MARKER => true,
  *     ]);
  *
- * WordPress keeps the key in the route's handler, so whatever closes the public site (Maintenance,
- * spec 112) reads it there before any handler runs. A route that does not declare it is never
+ * WordPress keeps the key in the route's handler, so whatever closes public submissions
+ * (Maintenance, spec 112; Forms paused, spec 124) reads it there before any handler runs. A route that does not declare it is never
  * closed by it; sign-in and password reset leave it out on purpose.
  */
 final class PublicSubmission

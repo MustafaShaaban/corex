@@ -60,7 +60,14 @@ final readonly class ClientIpResolver
     private function trusted(string $ip): bool
     {
         foreach ($this->settings->trustedProxyRanges as $range) {
-            if ($this->inCidr($ip, $range)) {
+            // A stored line that is not an address or range trusts nobody. Read as it is, `10.0.0.0/`
+            // or `10.0.0.0/x` has prefix 0 and trusts every IPv4 peer; the release before could store
+            // such a line. A well-formed `/0` is honoured, and Hardening reports both.
+            if (TrustedProxyRange::rejectionReason(trim($range)) === TrustedProxyRange::REASON_FORMAT) {
+                continue;
+            }
+
+            if ($this->inCidr($ip, trim($range))) {
                 return true;
             }
         }
@@ -71,7 +78,13 @@ final readonly class ClientIpResolver
     private function inCidr(string $ip, string $range): bool
     {
         if (! str_contains($range, '/')) {
-            return $ip === $range;
+            // As the address it is, not as text: a list stored before CoreX wrote one spelling may
+            // hold `2001:DB8::1` for `2001:db8::1`. An IPv4-mapped IPv6 address is 16 bytes and an
+            // IPv4 address 4, so the two are not taken for each other.
+            $ipBytes = inet_pton($ip);
+            $rangeBytes = filter_var($range, FILTER_VALIDATE_IP) === false ? false : inet_pton($range);
+
+            return $ipBytes !== false && $ipBytes === $rangeBytes;
         }
 
         [$subnet, $bits] = explode('/', $range, 2);

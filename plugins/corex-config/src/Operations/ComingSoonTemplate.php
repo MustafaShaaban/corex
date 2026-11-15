@@ -34,8 +34,10 @@ final class ComingSoonTemplate
 
     private const DEFAULT_FILE = '/templates/coming-soon.php';
 
-    public function __construct(private readonly StandalonePage $page)
-    {
+    public function __construct(
+        private readonly StandalonePage $page,
+        private readonly ModeRobots $robots,
+    ) {
     }
 
     public function register(): void
@@ -83,13 +85,15 @@ final class ComingSoonTemplate
      * The page as one self-contained document, for a theme with no block templates (FR-009).
      *
      * A whole document that never runs `wp_head`, so WordPress's "discourage search engines"
-     * setting would not reach it. It is read here instead: the page is indexable unless that
-     * setting says otherwise, which is the same rule the block template gets for free (FR-010).
+     * setting would not reach it, nor would the `noindex` a development or staging site gets
+     * through `wp_robots` ({@see ModeRobots}, spec 124 FR-002). Both are read here instead: the
+     * page is indexable unless that setting says otherwise or the site is a development or
+     * staging copy, which is the rule the block template gets through `wp_head` (FR-010).
      */
     public function standalone(): string
     {
         $siteName  = (string) get_bloginfo('name');
-        $indexable = (string) get_option('blog_public') !== '0';
+        $indexable = (string) get_option('blog_public') !== '0' && ! $this->robots->keepsOut();
 
         $body = '<main class="corex-standalone__card" role="main">'
             . ($siteName !== '' ? '<p class="corex-standalone__eyebrow">' . esc_html($siteName) . '</p>' : '')

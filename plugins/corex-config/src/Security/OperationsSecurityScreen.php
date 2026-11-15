@@ -24,7 +24,6 @@ use Corex\Config\Operations\ReadinessSnapshot;
 use Corex\Config\Readiness\ChecklistMarkup;
 use Corex\Config\Readiness\LaunchChecklist;
 use Corex\Config\Readiness\ReadinessWords;
-use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
 use Corex\Config\Security\LoginProtection\LoginAddressState;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
@@ -57,6 +56,7 @@ final class OperationsSecurityScreen
         private readonly ProductionReadinessSnapshotFactory $readiness,
         private readonly LoginProtectionSettingsStore $loginSettings,
         private readonly LoginLockoutReader $lockouts,
+        private readonly LockoutRows $lockoutRows,
         private readonly AdminDateTime $dateTime,
         private readonly ModeDisclosure $disclosure,
         private readonly CacheStatusReport $cacheStatus,
@@ -578,7 +578,7 @@ final class OperationsSecurityScreen
         $proposed = $this->proposedMode($current);
 
         $options = '';
-        foreach ($this->modes->all() as $mode) {
+        foreach ($this->modes->offered($current) as $mode) {
             $meta = $this->modes->describe($mode);
             $options .= sprintf(
                 '<option value="%1$s"%2$s%3$s>%4$s</option>',
@@ -673,7 +673,7 @@ final class OperationsSecurityScreen
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
         $requested = isset($_GET['mode']) ? sanitize_key(wp_unslash($_GET['mode'])) : '';
 
-        return $this->modes->isValid($requested) ? $requested : $current;
+        return in_array($requested, $this->modes->offered($current), true) ? $requested : $current;
     }
 
     /**
@@ -925,77 +925,53 @@ final class OperationsSecurityScreen
      * hiding setting alone, so a fresh install said "Hidden" while the login form was served.
      * While recovery is on they answer whatever the settings say (spec 112, FR-022).
      *
+     * Since spec 124 (FR-013) each address has its own switch, so the value says what each does when
+     * only one is hidden. With wp-login.php hidden and the admin not, a signed-out visit to the admin
+     * is redirected to the own address, which the note says (DECISIONS #628, amended).
+     *
      * @return array{0:string,1:string,2:string} the value, the section it links to, and a note
      */
     private function defaultEndpointsState(LoginProtectionSettings $policy): array
     {
-        return match (LoginAddressState::of($policy, $this->recovery->active())) {
-            LoginAddressState::HIDDEN   => [__('Hidden', 'corex'), 'login', ''],
-            LoginAddressState::RECOVERY => [
+        $state = LoginAddressState::of($policy, $this->recovery->active());
+
+        if ($state === LoginAddressState::RECOVERY) {
+            return [
                 __('Recovery active: the default login is reachable', 'corex'),
                 'login',
                 __('Recovery ends when the COREX_LOGIN_UNGUARD line is removed from wp-config.php.', 'corex'),
+            ];
+        }
+
+        $loginHidden = $state === LoginAddressState::HIDDEN;
+
+        return match (true) {
+            $loginHidden && $policy->hideAdmin => [__('Hidden', 'corex'), 'login', ''],
+            $loginHidden => [
+                __('wp-login.php hidden, wp-admin reachable', 'corex'),
+                'login',
+                __('A signed-out visit to wp-admin is sent to the login address, so the address is not private. Hide the admin as well to keep it private.', 'corex'),
             ],
+            $policy->hideAdmin => [__('wp-login.php reachable, wp-admin hidden', 'corex'), 'login', ''],
             default => [__('Reachable', 'corex'), 'login', ''],
         };
     }
 
     /**
-     * Real lockouts from the evidence table.
+     * Real lockouts from the evidence table, in the rows a release answers with (spec 124, FR-017), so
+     * the panel is drawn on load and redrawn after a release from one shape. What each row holds,
+     * and why a fingerprint and not a name, is {@see LockoutRows}'.
      *
      * This was hardcoded to an empty array, so the panel reported "no lockouts" no matter what had
-     * actually been recorded — a control that always says the same thing tells the operator nothing.
-     *
-     * Identities are stored as SHA-256 by design (LoginAttemptRecord), so there is no name to show.
-     * A short fingerprint is enough to tell two lockouts apart and to line one up with the audit
-     * log, and the account is named only when the attempt matched a real user, which is already
-     * recorded. Nothing here is reconstructed or guessed.
+     * actually been recorded: a control that always says the same thing tells the operator nothing.
+     * `locked_until` is the canonical machine value, which `CorexTime` presents, so one formatter
+     * decides how a date looks (FR-015).
      *
      * @return list<array<string,mixed>>
      */
     private function lockoutsPayload(): array
     {
-        $now = new DateTimeImmutable('now');
-
-        return array_map(function (LoginAttemptRecord $record) use ($now): array {
-            $lockedUntil = $record->lockedUntil;
-
-            return [
-                'id' => substr($record->identityHash, 0, 12) . '-' . ($lockedUntil?->format('U') ?? '0'),
-                'identity' => substr($record->identityHash, 0, 12),
-                'network' => substr($record->networkHash, 0, 12),
-                'account' => $this->accountName($record->userId),
-                'reason' => $record->reasonCode,
-                'active' => $lockedUntil !== null && $lockedUntil > $now,
-                'locked_until' => $lockedUntil === null ? '' : $this->machineDate($lockedUntil),
-            ];
-        }, $this->lockouts->recentLockouts($now));
-    }
-
-    /** The account a lockout hit, when the attempt matched a real user. */
-    private function accountName(?int $userId): string
-    {
-        if ($userId === null || $userId < 1) {
-            return '';
-        }
-
-        $user = get_userdata($userId);
-
-        return $user === false ? '' : $user->user_login;
-    }
-
-    /**
-     * The canonical machine value for a lockout expiry, for the React app to present.
-     *
-     * This used to return a *display* string built from the site's date/time options, with
-     * `$date->format('c')` as its fallback — so when `wp_date()` returned an empty string the
-     * screen showed a raw ISO timestamp to the operator. Sending the canonical value and letting
-     * `CorexTime` render it means one formatter decides how a date looks, and the fallback path
-     * cannot produce a different answer from the happy path (FR-015).
-     */
-    private function machineDate(DateTimeImmutable $date): string
-    {
-        return gmdate(DATE_ATOM, $date->getTimestamp());
+        return $this->lockoutRows->rows(new DateTimeImmutable('now'));
     }
 
     /**
@@ -1023,6 +999,12 @@ final class OperationsSecurityScreen
         $storedSlug = is_array($stored) ? (string) ($stored['custom_slug'] ?? '') : '';
 
         return [
+            // The three switches as they are in force (spec 124, FR-013). The two keys after them
+            // are the previous release's, which this release's screen still reads until it is
+            // redrawn with the switches (spec 124, slice 10).
+            'hide_wp_login' => $settings->hideWpLogin,
+            'hide_admin' => $settings->hideAdmin,
+            'limit_attempts' => $settings->limitAttempts,
             'enabled' => $settings->enabled,
             'block_default_endpoints' => $settings->blockDefaultEndpoints,
             'custom_slug' => $settings->customSlug,
@@ -1064,8 +1046,8 @@ final class OperationsSecurityScreen
                 'label' => $label,
                 'tone' => 'info',
                 // `gmdate`, not `wp_date`: both name the same instant, but `wp_date(DATE_ATOM)`
-                // writes it with the site's offset while every other machine value in CoreX —
-                // including `machineDate()` two methods up, and the whole persistence layer — is
+                // writes it with the site's offset while every other machine value in CoreX
+                // (the lockout rows' `locked_until` included, and the whole persistence layer) is
                 // UTC. Two conventions in one payload is a question a future reader has to answer
                 // before they can trust either.
                 'occurred_at' => $entry['time'] > 0

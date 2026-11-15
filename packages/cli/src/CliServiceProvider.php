@@ -426,13 +426,11 @@ final class CliServiceProvider extends ServiceProvider
 
         $registrations['corex security reset-login'] = [
             'handler' => function (): void {
-                $securityReset = new SecurityResetLoginCommand(
-                    $this->container->make(\Corex\Config\Security\LoginProtection\LoginLockoutStore::class),
-                );
-
-                $securityReset->run();
+                // Built by the container, with the login settings store the screen's route writes
+                // through, so both take the same lock (spec 124, FR-015).
+                $this->container->make(SecurityResetLoginCommand::class)->run();
             },
-            'definition' => [],
+            'definition' => $this->resetLoginCommandDefinition(),
         ];
 
         $registrations['corex security trusted-proxies'] = [
@@ -525,6 +523,19 @@ final class CliServiceProvider extends ServiceProvider
     }
 
     /**
+     * What `wp corex security reset-login --help` says (spec 124, User Story 6 scenario 7).
+     *
+     * @return array{shortdesc: string, longdesc: string}
+     */
+    private function resetLoginCommandDefinition(): array
+    {
+        return [
+            'shortdesc' => __('Turn every CoreX login switch off and release active lockouts.', 'corex'),
+            'longdesc'  => __('Turns off hiding wp-login.php, hiding the admin from visitors who are not signed in, and limiting failed sign-ins, and puts the login address back to corex-login. Releases every lockout still in force and prints the wp-login.php address that works now. Users, passwords, roles and other settings are not changed. Without a command line, add define( \'COREX_LOGIN_UNGUARD\', true ); to wp-config.php instead: wp-login.php and the admin open again while the line is there, and nothing is saved. The line does not end a lockout; this command does.', 'corex'),
+        ];
+    }
+
+    /**
      * @return array{shortdesc: string, synopsis: list<array{type: string, name: string, optional: bool, description: string}>}
      */
     private function resetCommandDefinition(): array
@@ -568,11 +579,11 @@ final class CliServiceProvider extends ServiceProvider
                     'type'        => 'positional',
                     'name'        => 'mode',
                     'optional'    => false,
-                    'description' => __('development, staging, production, maintenance or coming-soon.', 'corex'),
+                    'description' => __('development, staging, production, coming-soon, forms-paused or maintenance.', 'corex'),
                 ],
                 $this->resetFlag(
                     'acknowledge',
-                    __('Confirm a mode that changes what visitors get: maintenance or coming-soon.', 'corex'),
+                    __('Confirm a mode that changes what visitors get: coming-soon, forms-paused or maintenance.', 'corex'),
                 ),
                 [
                     'type'        => 'assoc',

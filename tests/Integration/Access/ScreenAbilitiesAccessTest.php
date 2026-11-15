@@ -727,9 +727,9 @@ it('shows the retention save form only with "Manage settings" and the prune form
  * operations and security" (FR-003). Through the real handler: its refusal and its redirect both end
  * in `exit`, so a `status_header` filter and a `wp_redirect` filter stop it first.
  */
-function modeSwitchAnswer(string $mode): string
+function modeSwitchAnswer(string $mode, array $fields = []): string
 {
-    $_POST      = [OperationsModeController::NONCE => wp_create_nonce(OperationsModeController::ACTION), 'corex_mode' => $mode];
+    $_POST      = [OperationsModeController::NONCE => wp_create_nonce(OperationsModeController::ACTION), 'corex_mode' => $mode] + $fields;
     $refused    = static fn (string $header, int $code): never => throw new RuntimeException('refused ' . $code);
     $redirected = static fn (): never => throw new RuntimeException('redirected');
     add_filter('status_header', $refused, 10, 2);
@@ -773,6 +773,51 @@ it('switches to Staging with "Manage operations and security" alone, and refuses
     } finally {
         $keptMode === null ? delete_option(OperationsModeStore::OPTION) : update_option(OperationsModeStore::OPTION, $keptMode);
         $keptLog === null ? delete_option('corex_operations_mode_log') : update_option('corex_operations_mode_log', $keptLog, false);
+    }
+});
+
+/*
+ * Forms paused closes every public form, so it is a dangerous mode as Maintenance is (spec 124,
+ * FR-004c, DECISIONS #520).
+ */
+it('refuses Forms paused without "Run dangerous actions", records it once, and changes nothing (spec 124, FR-004c)', function () {
+    $keptMode = get_option(OperationsModeStore::OPTION, null);
+    $keptLog  = get_option('corex_operations_mode_log', null);
+    (new WP_User($this->people['subscriber']))->add_cap(CorexAbility::MANAGE_OPERATIONS);
+    wp_set_current_user($this->people['subscriber']);
+
+    try {
+        $answer = modeSwitchAnswer(OperationsMode::FORMS_PAUSED);
+
+        expect($answer)->toBe('refused 403')
+            ->and(get_option(OperationsModeStore::OPTION, null))->toBe($keptMode)
+            ->and(get_option('corex_operations_mode_log', null))->toBe($keptLog)
+            ->and(array_column(refusalsOf($this->people['subscriber']), 'count', 'section'))->toBe(['corex-operations-security' => 1]);
+    } finally {
+        $keptMode === null ? delete_option(OperationsModeStore::OPTION) : update_option(OperationsModeStore::OPTION, $keptMode);
+        $keptLog === null ? delete_option('corex_operations_mode_log') : update_option('corex_operations_mode_log', $keptLog, false);
+    }
+});
+
+it('lets someone with both abilities pause forms, once acknowledged (spec 124, FR-004c)', function () {
+    $keptLog = get_option('corex_operations_mode_log', null);
+    $person  = new WP_User($this->people['subscriber']);
+    $person->add_cap(CorexAbility::MANAGE_OPERATIONS);
+    $person->add_cap(CorexAbility::RUN_DANGEROUS_ACTIONS);
+    wp_set_current_user($this->people['subscriber']);
+    // The site is held in Forms paused, so the handler's answer is "unchanged" and the dev site's
+    // mode and its history are not written.
+    $inFormsPaused = static fn (): string => OperationsMode::FORMS_PAUSED;
+    add_filter('pre_option_' . OperationsModeStore::OPTION, $inFormsPaused);
+
+    try {
+        $answer = modeSwitchAnswer(OperationsMode::FORMS_PAUSED, ['corex_confirm' => '1']);
+
+        expect($answer)->toBe('redirected')
+            ->and(refusalsOf($this->people['subscriber']))->toBe([])
+            ->and(get_option('corex_operations_mode_log', null))->toBe($keptLog);
+    } finally {
+        remove_filter('pre_option_' . OperationsModeStore::OPTION, $inFormsPaused);
     }
 });
 

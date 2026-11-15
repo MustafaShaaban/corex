@@ -18,6 +18,7 @@ declare(strict_types=1);
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginRouteGuard;
 use Corex\Tests\Support\AdminScreen;
+use Corex\Tests\Support\OptionRow;
 
 /**
  * Detach exactly this guard's filters.
@@ -65,7 +66,7 @@ function corexAskForCustomizer(LoginRouteGuard $guard, int $userId): object
 }
 
 beforeEach(function () {
-    $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
+    $this->previousLoginSettings = OptionRow::capture(LoginProtectionSettingsStore::OPTION);
     $this->previousRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 
     update_option(LoginProtectionSettingsStore::OPTION, [
@@ -89,13 +90,8 @@ afterEach(function () {
     $_SERVER['REQUEST_URI'] = $this->previousRequestUri;
     wp_set_current_user(0);
 
-    if ($this->previousLoginSettings === null) {
-        delete_option(LoginProtectionSettingsStore::OPTION);
-
-        return;
-    }
-
-    update_option(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings);
+    // The row as it was found, its autoload included: the save above writes it unloaded.
+    OptionRow::restore(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings);
 });
 
 it('rewrites the login URL core hands to visitors', function () {

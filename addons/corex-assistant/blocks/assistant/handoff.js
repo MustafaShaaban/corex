@@ -230,10 +230,12 @@ function clearProblems( form ) {
 
 /**
  * Posts the request; answers whether it was taken and, if not, which fields the engine refused.
+ * A refusal that names no field (the site in Forms paused or Maintenance, spec 124) brings the
+ * site's own sentence, which is what the visitor is shown instead of "check the fields".
  *
  * @param {Object} config the chat's settings
  * @param {Object} body   the answers
- * @return {Promise<{ok: boolean, fields: string[]}>} the outcome
+ * @return {Promise<{ok: boolean, fields: string[], message: string}>} the outcome
  */
 async function post( config, body ) {
 	try {
@@ -247,12 +249,17 @@ async function post( config, body ) {
 			body: JSON.stringify( body ),
 		} );
 		const reply = await response.json().catch( () => ( {} ) );
+		const fields = Object.keys( reply.errors || {} );
 		return {
 			ok: response.ok && reply.ok !== false,
-			fields: Object.keys( reply.errors || {} ),
+			fields,
+			message:
+				fields.length === 0 && typeof reply.message === 'string'
+					? reply.message
+					: '',
 		};
 	} catch {
-		return { ok: false, fields: [] };
+		return { ok: false, fields: [], message: '' };
 	}
 }
 
@@ -398,7 +405,7 @@ export function handoffForm( { config, t, transcript, onSent } ) {
 				result.fields.map( ( field ) => [ field, t( 'formError' ) ] )
 			)
 		);
-		formError.textContent = t( 'formError' );
+		formError.textContent = result.message || t( 'formError' );
 		formError.hidden = false;
 	} );
 

@@ -53,7 +53,8 @@ final class ModeDisclosure
         return match ($this->modes->normalize($mode)) {
             OperationsMode::PRODUCTION  => self::CONFIRM_PHRASE,
             OperationsMode::MAINTENANCE,
-            OperationsMode::COMING_SOON => self::CONFIRM_ACKNOWLEDGEMENT,
+            OperationsMode::COMING_SOON,
+            OperationsMode::FORMS_PAUSED => self::CONFIRM_ACKNOWLEDGEMENT,
             default                     => self::CONFIRM_NONE,
         };
     }
@@ -102,7 +103,8 @@ final class ModeDisclosure
     }
 
     /**
-     * Every mode's description, for the renderer that draws all of them and hides the inactive ones.
+     * The description of every mode the chooser offers ({@see OperationsMode::offered()}), for the
+     * renderer that draws all of them and hides the inactive ones.
      *
      * @return list<array{mode:string,confirmation:string,summary:string,consequences:list<string>,reference:list<string>}>
      */
@@ -110,7 +112,7 @@ final class ModeDisclosure
     {
         return array_map(
             fn (string $mode): array => $this->describe($mode),
-            $this->modes->all(),
+            $this->modes->offered(),
         );
     }
 
