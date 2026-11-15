@@ -116,7 +116,7 @@ it('resets protected login settings and releases active lockouts without changin
     $guard->register();
 
     try {
-        $result = (new SecurityResetLoginCommand($store))->restore($now);
+        $result = (new SecurityResetLoginCommand($store, new LoginProtectionSettingsStore()))->restore($now);
     } finally {
         // Detach before asserting: these filters are global, and leaving them attached rewrites
         // site_url() for every test that runs after this one.

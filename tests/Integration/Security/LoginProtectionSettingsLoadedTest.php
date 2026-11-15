@@ -86,7 +86,10 @@ it('stores the settings loaded when the reset-login command writes them', functi
 
     // Every lockout still active at this moment is released, on the whole install. Decades away,
     // none is, so a developer's real lockouts are not released by running the suite.
-    $command = new SecurityResetLoginCommand(\Corex\Boot::app()->container()->make(LoginLockoutStore::class));
+    $command = new SecurityResetLoginCommand(
+        \Corex\Boot::app()->container()->make(LoginLockoutStore::class),
+        \Corex\Boot::app()->container()->make(LoginProtectionSettingsStore::class),
+    );
     $command->restore(new DateTimeImmutable('2099-01-01T12:00:00+00:00'));
 
     expect(OptionRow::autoload(LoginProtectionSettingsStore::OPTION))->toBe('on')

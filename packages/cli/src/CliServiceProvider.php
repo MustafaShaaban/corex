@@ -426,11 +426,9 @@ final class CliServiceProvider extends ServiceProvider
 
         $registrations['corex security reset-login'] = [
             'handler' => function (): void {
-                $securityReset = new SecurityResetLoginCommand(
-                    $this->container->make(\Corex\Config\Security\LoginProtection\LoginLockoutStore::class),
-                );
-
-                $securityReset->run();
+                // Built by the container, with the login settings store the screen's route writes
+                // through, so both take the same lock (spec 124, FR-015).
+                $this->container->make(SecurityResetLoginCommand::class)->run();
             },
             'definition' => $this->resetLoginCommandDefinition(),
         ];

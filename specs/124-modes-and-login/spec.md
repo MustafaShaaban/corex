@@ -357,6 +357,16 @@ Production: gone, and Settings > Reading unchanged.
   proxies (one per line, each a valid IPv4/IPv6 address or range), retention (days) and recording of successful
   sign-ins; a save MUST change only the fields that were changed, MUST refuse an out-of-range value with the range and
   MUST never rewrite a value it was not given.
+  *Amended 2026-11-13 (DECISIONS #629):* the ranges are maximum attempts 1 to 50, counting window 1 to 1,440 minutes,
+  lockout 1 to 10,080 minutes and retention 1 to 365 days; at most 100 trusted proxy lines, and a `/0` range (one that
+  trusts every address) is refused, by the route and by `wp corex security trusted-proxies` alike. A field sent with
+  the value in force is no change: it is neither checked nor written, so a value stored before a rule existed is kept
+  until it is changed. A stored list with a `/0` range is still used, and Hardening reports it. The route's own answer
+  can be posted back: the switches beside old keys that agree with them, and minutes beside seconds that agree (or
+  `null` minutes beside the seconds of a length that is not a whole minute), are taken, and a pair that disagrees is
+  refused. The previous screen's two old keys sent as they are in force change no switch. Saves of the login
+  settings, from the route and from the command line, are written one at a time; one that cannot wait its turn writes
+  nothing and says to try again.
 - **FR-016**: A lockout of a username that belongs to an account MUST record and show that account; others MUST show
   "unknown username" and a short fingerprint.
 - **FR-017**: A lockout, or every active lockout, MUST be releasable from the screen, at once, recorded in the

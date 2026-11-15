@@ -35,6 +35,22 @@ final class LoginProtectionSettingsStore
 
     private const SWITCH_KEYS = [self::HIDE_WP_LOGIN, self::HIDE_ADMIN, self::LIMIT_ATTEMPTS];
 
+    /** The stored keys {@see self::update()} changes one by one; the switches come as one value. */
+    private const CHANGEABLE_KEYS = [
+        'custom_slug',
+        'threshold',
+        'window_seconds',
+        'lockout_seconds',
+        'trusted_proxy_mode',
+        'trusted_proxy_ranges',
+        'retain_days',
+        'successful_login_logging',
+    ];
+
+    public function __construct(private readonly LoginSettingsLock $lock = new LoginSettingsLock())
+    {
+    }
+
     /**
      * Persist a sanitized login-protection payload and return the stored settings. The custom login
      * URL is served by {@see LoginRouteGuard} via request interception, so no rewrite flush is needed.
@@ -81,11 +97,176 @@ final class LoginProtectionSettingsStore
         return $this->current();
     }
 
-    public function current(): LoginProtectionSettings
+    /**
+     * Change only the keys given, and leave every other stored key as it is (spec 124, FR-015).
+     *
+     * `save()` writes every setting, with a default for each one it is not given; this writes over
+     * the option as stored, so a value no request sent (a 30-second window set from the command line,
+     * a key another release wrote) is not rewritten. The switches are written, with the previous
+     * release's two keys beside them (FR-014), only when they are given; otherwise all five stay as
+     * stored and are read as {@see self::current()} reads them. Nothing is written when nothing is
+     * given.
+     *
+     * @param array<string,mixed> $changes stored key => value; keys this store does not keep are ignored
+     *
+     * @throws LoginSettingsRefused when wp-login.php would be hidden behind no usable address
+     */
+    public function update(array $changes, ?LoginSwitches $switches = null): LoginProtectionSettings
     {
+        if (array_intersect_key($changes, array_flip(self::CHANGEABLE_KEYS)) === [] && $switches === null) {
+            return $this->current();
+        }
+
+        return $this->updateWith(static fn (): array => [$changes, $switches]);
+    }
+
+    /**
+     * Decide what to change from the settings as they are once the lock is had, and write it
+     * (spec 124, FR-015).
+     *
+     * A save that decided from what it read before the lock would write back the old value of each
+     * switch it did not send, over the change another save made meanwhile. Here `$plan` is handed the
+     * settings read under the lock and answers the stored keys to change and the switches to write
+     * (null for none), or null to write nothing; the merge is {@see self::update()}'s.
+     *
+     * @param callable(LoginProtectionSettings): (array{0: array<string,mixed>, 1: ?LoginSwitches}|null) $plan
+     *
+     * @throws LoginSettingsRefused when wp-login.php would be hidden behind no usable address
+     * @throws LoginSettingsBusy    when another save holds the lock past the wait
+     */
+    public function updateWith(callable $plan): LoginProtectionSettings
+    {
+        $this->rewrite(function (array $stored) use ($plan): array {
+            $fresh = $this->settingsFrom($stored);
+            $planned = $plan($fresh);
+
+            if ($planned === null) {
+                return $stored;
+            }
+
+            [$changes, $switches] = $planned;
+
+            return $this->merged($stored, $changes, $switches, $fresh);
+        });
+
+        return $this->current();
+    }
+
+    /**
+     * The stored option with the changes over it, the switches in both shapes when given.
+     *
+     * @param array<string,mixed> $stored
+     * @param array<string,mixed> $changes
+     *
+     * @return array<string,mixed>
+     *
+     * @throws LoginSettingsRefused when wp-login.php would be hidden behind no usable address
+     */
+    private function merged(array $stored, array $changes, ?LoginSwitches $switches, LoginProtectionSettings $fresh): array
+    {
+        $changes = array_intersect_key($changes, array_flip(self::CHANGEABLE_KEYS));
+
+        if (($switches ?? $fresh->switches())->hideWpLogin && array_key_exists('custom_slug', $changes)) {
+            $reason = LoginSlug::rejectionReason(sanitize_title(trim((string) $changes['custom_slug'])));
+            if ($reason !== null) {
+                throw LoginSettingsRefused::addressNeededToHide($reason);
+            }
+        }
+
+        if ($switches !== null) {
+            $changes += [
+                'enabled'                 => $switches->previousEnabled(),
+                'block_default_endpoints' => $switches->previousBlockDefaultEndpoints(),
+                self::HIDE_WP_LOGIN       => $switches->hideWpLogin,
+                self::HIDE_ADMIN          => $switches->hideAdmin,
+                self::LIMIT_ATTEMPTS      => $switches->limitAttempts,
+            ];
+        }
+
+        return array_replace($stored, $changes);
+    }
+
+    /**
+     * Change the stored option under the settings' lock ({@see LoginSettingsLock}): read it as the
+     * database holds it now, hand it to `$edit`, and write what comes back when it differs. Every
+     * writer of this option goes through here or through {@see self::rewriteForRecovery()} (this
+     * store, `wp corex security trusted-proxies`, `wp corex security reset-login`), so two of them
+     * never lose each other's change.
+     *
+     * @param callable(array<string,mixed>): array<string,mixed> $edit
+     *
+     * @return array<string,mixed> the option as written
+     *
+     * @throws LoginSettingsBusy when another save holds the lock past the wait
+     */
+    public function rewrite(callable $edit): array
+    {
+        return $this->lock->hold(fn (): array => $this->writeFresh($edit));
+    }
+
+    /**
+     * For `wp corex security reset-login` only: change the option under the lock when it can be had
+     * within the wait, and without it when it cannot.
+     *
+     * Recovery is how a locked-out owner gets back in, so it must not give up because a save is in
+     * progress or has hung. Written without the lock, that save may be overwritten, or may overwrite
+     * this; the command says so. Nothing a person drives from a screen may call this: it gives up the
+     * one guarantee {@see self::rewrite()} makes.
+     *
+     * @param callable(array<string,mixed>): array<string,mixed> $edit
+     *
+     * @return bool whether the lock was held while it wrote
+     */
+    public function rewriteForRecovery(callable $edit): bool
+    {
+        try {
+            $this->rewrite($edit);
+
+            return true;
+        } catch (LoginSettingsBusy) {
+            $this->writeFresh($edit);
+
+            return false;
+        }
+    }
+
+    /**
+     * @param callable(array<string,mixed>): array<string,mixed> $edit
+     *
+     * @return array<string,mixed>
+     */
+    private function writeFresh(callable $edit): array
+    {
+        // What this request read when it began may be older than the row now: forget it.
+        wp_cache_delete(self::OPTION, 'options');
+        wp_cache_delete('alloptions', 'options');
+        wp_cache_delete('notoptions', 'options');
+
         $stored = get_option(self::OPTION, []);
         $stored = is_array($stored) ? $stored : [];
 
+        $next = $edit($stored);
+        if ($next !== $stored) {
+            LoadedOptions::store(self::OPTION, $next);
+        }
+
+        return $next;
+    }
+
+    public function current(): LoginProtectionSettings
+    {
+        $stored = get_option(self::OPTION, []);
+
+        return $this->settingsFrom(is_array($stored) ? $stored : []);
+    }
+
+    /**
+     * The settings a stored option holds, read as {@see self::current()} reads them.
+     *
+     * @param array<string,mixed> $stored
+     */
+    private function settingsFrom(array $stored): LoginProtectionSettings
+    {
         $enabled = (bool) ($stored['enabled'] ?? false);
         $blockDefaultEndpoints = (bool) ($stored['block_default_endpoints'] ?? true);
         $switches = $this->storedSwitches($stored, $enabled, $blockDefaultEndpoints);

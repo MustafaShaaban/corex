@@ -6,7 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECISIONS #520 to #526, #625 to #627).
+Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 5; DECISIONS #520 to #526, #625 to #629).
 
 ### Added
 
@@ -99,6 +99,51 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECIS
   `wp-login.php` is hidden, so a forgotten line that reopens a hidden admin is reported.
 - **Successful sign-ins are recorded as before**: whenever "Record successful sign-ins" is on and any switch is on.
   Only failed sign-ins need the limits switch.
+- **The login settings route saves only what a request changes** (spec 124 slice 5, FR-015, DECISIONS #629).
+  `POST corex/v1/security/login-protection` takes any subset of the settings and leaves every other stored value as it
+  is, so a 30-second window set from the command line stays 30 seconds when only Max attempts is saved; before, a
+  field left out was reset to its default. A field sent with the value in force is no change either: it is neither
+  checked nor written, so the route's own answer can be posted back with one field changed. It takes the three
+  switches (`hide_wp_login`, `hide_admin`, `limit_attempts`; one sent alone leaves the other two as they are), the
+  counting window and the lockout in whole minutes (`window_minutes` 1 to 1,440, `lockout_minutes` 1 to 10,080), and
+  the previous screen's `enabled`, `block_default_endpoints`, `window_seconds` (60 to 86,400) and `lockout_seconds`
+  (60 to 604,800) until slice 10. Beside their new equivalents they must agree (the old keys what the switches
+  write, minutes x 60 the seconds, or `null` minutes beside the seconds of a length that is not a whole minute); a
+  pair that disagrees is refused under the old field sent. The previous screen's two old keys sent as they are in
+  force change no switch. `max_attempts` is 1 to 50 and `retention_days` 1 to 365. A switch is true or false (an
+  empty string is refused). `trusted_proxies` is text with one IPv4 or IPv6 address or CIDR range per line, or a
+  list of them, at most 100, each stored in one spelling (`2001:DB8::1` is stored as `2001:db8::1`). A `/0` range
+  (`0.0.0.0/0`, `::/0`) is refused: it would make every client a trusted proxy, free to choose the address its
+  sign-in attempts are counted by. `wp corex security trusted-proxies` asks the same rule (`TrustedProxyRange`): it
+  refuses a `/0` range and a 101st entry with an error and exit 1, and stores the same spelling.
+  `trusted_proxy_mode` follows the list when it is not sent. A refusal answers 422 in spec 043's validation shape
+  (`ok: false`, `code: validation_failed`, `message`, `errors` keyed by field with a translated sentence that names
+  the range or the bad proxy line, and `details.fields` with the reason, `min`, `max` and the refused `lines`), and
+  nothing is saved, not even the valid fields of the same request. A request that names no setting answers 422 with
+  `errors.request` (reason `nothing_to_save`). A save answers with the settings as stored: the switches, the two old
+  keys, `window_minutes` and `lockout_minutes` (`null` when the length is not a whole minute) beside `window_seconds`
+  and `lockout_seconds`, the trusted proxies and `trusted_proxy_mode`. The route still needs "Manage operations" and
+  the REST nonce. `LoginProtectionSettingsStore` gains `update()` and `rewrite()`.
+- **One write of the login settings at a time** (spec 124 slice 5, FR-015). The route, `wp corex security
+  trusted-proxies` and `wp corex security reset-login` change the settings under one MySQL named lock per site
+  (`LoginSettingsLock`), reading the row as it is when the lock is had and deciding what a request changes from
+  that read (`LoginProtectionSettingsStore::updateWith()`), so two saves at once no longer lose one's
+  change. A save that waits more than two seconds writes nothing: the route answers 409 `login_settings_busy` with a
+  translated "try again", and `trusted-proxies` exits 1. `reset-login` is how a locked-out owner gets back in, so it
+  writes anyway, without the lock, releases the lockouts, and prints a line saying the other save may have been
+  overwritten (`LoginProtectionSettingsStore::rewriteForRecovery()`). Both commands now take the store from the
+  container.
+- **A trusted proxy list that trusts every address is a Hardening finding** (spec 124 slice 5, FR-015). A list stored
+  before the rule (a `/0` range, while proxies are trusted) is still used as stored, since ignoring it would count
+  every visitor behind a CDN as the CDN; the Hardening tab's new "Trusted proxies name only your proxies" check warns
+  and says how to fix it. Like the other hardening checks it is in the launch checklist, so it blocks Production
+  until fixed or overridden.
+- **A trusted proxy address is compared as an address.** A single trusted address is matched by its bytes, so one
+  stored as `2001:DB8::1` or written in full trusts `2001:db8::1`. An IPv4-mapped address (`::ffff:10.0.0.1`) is not
+  taken for the IPv4 address it carries, either way: list the spelling the server reports. A stored line that is
+  not an address or range (`10.0.0.0/`, `10.0.0.0/x`, which the release before could store) trusts nobody; it was
+  read as prefix 0 and trusted every IPv4 peer. Hardening's trusted proxy check now warns about such a line too,
+  with its own sentence. A well-formed `/0` is still honoured, and still reported.
 - **The launch checklist's "Login protection on" passes only while failed sign-ins are limited** (limits are the
   defence, hiding is obscurity). Its sentences are now "Failed sign-ins are limited" and "Failed sign-ins are not
   limited" (they were "Login protection is on" and "Login protection is off"); the check's key and label are
@@ -199,6 +244,20 @@ Modes that do what they say (spec 124, revamp release R3.8, slices 1 to 4; DECIS
   reported with any switch on), `OverviewTruthTest`, `RecoveryOnTest`, `LaunchChecklistTest` (the login check's
   sentences) and `LoginProtectionEnforcementTest`. Both sites limit failed sign-ins, so their launch checklist's
   login check still passes.
+- **Muva and Perego, the login settings route (slice 5)**: a script that posts to
+  `corex/v1/security/login-protection` and leaves a field out no longer resets that field to its default; it stays as
+  stored, the login address included. A refused save now answers 422 with `code: validation_failed` and an `errors`
+  object keyed by field, where an unusable login address answered 400 with `code: corex_invalid_login_slug` and a
+  `message`; read `errors.custom_slug`. Out-of-range numbers, which WordPress refused with `rest_invalid_param` and
+  400, now answer the same way. Neither client's own code calls the route today. A client repository that carries
+  copies of CoreX's tests takes the updated `LoginPolicySaveTest` (the controller comes from the container),
+  `SecurityTrustedProxiesCommandTest`, `SecurityResetLoginCommandTest` (both commands write under the settings' lock)
+  and `HardeningChecksTest` (seven checks). On each site, before taking this release, read the stored trusted
+  proxies with `wp corex security trusted-proxies` (it prints the list). A `/0` range keeps working as before, but
+  is now a Hardening finding and blocks Production in the launch checklist until it is replaced with the proxies'
+  own ranges; a list of more than 100 entries keeps working and cannot be saved again as it is. A deploy script that
+  passes a `/0` range or a 101st entry to the command now exits 1 and changes nothing. This slice is not released
+  before slice 10 (DECISIONS #628).
 - **Mizzey** is pinned to v0.42.0 and is not affected until it moves. When it moves, its own listener
   `StaffActivityLog::lockedOut()` (`platform/mizzey-site/src/Security/StaffActivityLog.php`) stops recording who was
   locked out: it reads `$event->identity` and `$event->clientIp` behind `isset`, which are gone, so it silently writes

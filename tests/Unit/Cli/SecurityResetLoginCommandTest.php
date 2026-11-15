@@ -11,18 +11,72 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Cli\Commands\SecurityResetLoginCommand;
 use Corex\Config\Security\LoginProtection\LoginLockoutStore;
+use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
+use Corex\Tests\Support\NamedLockWpdb;
 
-function corexRecoveryOptions(array &$options): void
+function corexRecoveryOptions(array &$options): NamedLockWpdb
 {
+    $wpdb = new NamedLockWpdb();
+    $GLOBALS['wpdb'] = $wpdb;
+    $GLOBALS['corex_recovery_lock_at_write'] = null;
     Functions\when('get_option')->alias(static fn (string $key, $default = false) => $options[$key] ?? $default);
     Functions\when('wp_set_option_autoload')->justReturn(true);
-    Functions\when('update_option')->alias(static function (string $key, mixed $value) use (&$options): bool {
+    Functions\when('wp_cache_delete')->justReturn(true);
+    Functions\when('update_option')->alias(static function (string $key, mixed $value) use (&$options, $wpdb): bool {
         $options[$key] = $value;
+        $GLOBALS['corex_recovery_lock_at_write'] = $wpdb->held;
 
         return true;
     });
+
+    return $wpdb;
 }
+
+it('spec 124 FR-015: writes the login settings under their lock and lets it go', function () {
+    $options = ['siteurl' => 'https://corex.test', 'corex_login_protection_settings' => ['enabled' => true]];
+    $wpdb = corexRecoveryOptions($options);
+
+    (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0), new LoginProtectionSettingsStore()))->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
+
+    expect($GLOBALS['corex_recovery_lock_at_write'])->toStartWith('corex_login_settings_')
+        ->and($wpdb->held)->toBeNull();
+});
+
+it('spec 124 FR-015: recovers even while another save holds the lock, and says that save may be overwritten', function () {
+    $options = ['siteurl' => 'https://corex.test', 'corex_login_protection_settings' => [
+        'hide_wp_login' => true, 'hide_admin' => true, 'limit_attempts' => true, 'enabled' => true, 'block_default_endpoints' => true,
+    ]];
+    $wpdb = corexRecoveryOptions($options);
+    $wpdb->grants = false;
+    $lockouts = new CorexTestLoginLockoutStore(2);
+    $command = new SecurityResetLoginCommand($lockouts, new LoginProtectionSettingsStore());
+
+    $result = $command->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
+    $after = $options['corex_login_protection_settings'];
+
+    expect([$after['hide_wp_login'], $after['hide_admin'], $after['limit_attempts'], $after['enabled'], $after['block_default_endpoints']])
+        ->toBe([false, false, false, false, false])
+        ->and($result['released_lockouts'])->toBe(2)
+        ->and($result['written_without_lock'])->toBeTrue()
+        // Written without the lock, so none was taken and none is left held.
+        ->and($GLOBALS['corex_recovery_lock_at_write'])->toBeNull()
+        ->and($wpdb->held)->toBeNull()
+        ->and($command->report($result))->toContain(
+            'Another save of the login settings was in progress; it may have been overwritten. Check the settings once you are signed in.',
+        );
+});
+
+it('spec 124 FR-015: says nothing about a concurrent save when it had the lock', function () {
+    $options = ['siteurl' => 'https://corex.test', 'corex_login_protection_settings' => ['enabled' => true]];
+    corexRecoveryOptions($options);
+    $command = new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0), new LoginProtectionSettingsStore());
+
+    $result = $command->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
+
+    expect($result['written_without_lock'])->toBeFalse()
+        ->and(implode("\n", $command->report($result)))->not->toContain('overwritten');
+});
 
 it('disables protected login settings and releases active lockouts without touching unrelated settings', function () {
     $options = [
@@ -37,7 +91,7 @@ it('disables protected login settings and releases active lockouts without touch
     corexRecoveryOptions($options);
 
     $store = new CorexTestLoginLockoutStore(3);
-    $result = (new SecurityResetLoginCommand($store))->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
+    $result = (new SecurityResetLoginCommand($store, new LoginProtectionSettingsStore()))->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
 
     expect($result['restored_login_url'])->toBe('https://corex.test/wp-login.php')
         ->and($result['released_lockouts'])->toBe(3)
@@ -55,7 +109,7 @@ it('spec 124 scenario 7: turns all three switches off, in both stored shapes', f
     ];
     corexRecoveryOptions($options);
 
-    (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0)))
+    (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0), new LoginProtectionSettingsStore()))
         ->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
     $after = $options['corex_login_protection_settings'];
 
@@ -83,7 +137,7 @@ it('resets the custom slug so re-enabling cannot walk back into the same lockout
     ];
     corexRecoveryOptions($options);
 
-    (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0)))
+    (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0), new LoginProtectionSettingsStore()))
         ->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
 
     expect($options['corex_login_protection_settings']['custom_slug'])->toBe(LoginSlug::DEFAULT);
@@ -101,7 +155,7 @@ it('reports the default login URL without asking wp_login_url', function () {
     corexRecoveryOptions($options);
     Functions\expect('wp_login_url')->never();
 
-    $result = (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0)))
+    $result = (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0), new LoginProtectionSettingsStore()))
         ->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
 
     expect($result['restored_login_url'])->toBe('https://corex.test/wp-login.php')
@@ -115,7 +169,7 @@ it('does not double the slash when the site URL has a trailing one', function ()
     ];
     corexRecoveryOptions($options);
 
-    $result = (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0)))
+    $result = (new SecurityResetLoginCommand(new CorexTestLoginLockoutStore(0), new LoginProtectionSettingsStore()))
         ->restore(new DateTimeImmutable('2026-07-07T12:00:00+00:00'));
 
     expect($result['restored_login_url'])->toBe('https://corex.test/wp-login.php');
