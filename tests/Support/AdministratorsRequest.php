@@ -65,6 +65,13 @@ final class AdministratorsRequest
                 && determine_locale() === 'ar' ? 'rtl' : $translation,
             3,
         );
+        // CoreX ships an Arabic catalogue (spec 121): it is not loaded here, so a string of
+        // CoreX's in Arabic is the marked English one and a test still reads where it was made.
+        $hook(
+            'pre_load_textdomain',
+            static fn ($loaded, $domain) => $domain === 'corex' ? true : $loaded,
+            2,
+        );
         $inArabic = static fn ($translation) => determine_locale() === 'ar' ? '[ar] ' . $translation : $translation;
         $hook('gettext_corex', $inArabic);
         $hook('ngettext_corex', $inArabic);

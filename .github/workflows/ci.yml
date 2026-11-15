@@ -810,6 +810,9 @@ jobs:
       - name: The shared-host package of the generated site boots, and `wp corex` runs from it
         run: |
           set -euo pipefail
+          # The Arabic script translations `npm run build` writes (spec 121, FR-019), which
+          # verify:dist requires; the script needs nothing beyond Node, as this job has no root install.
+          node scripts/i18n-arabic.mjs scripts
           npm run build:dist -- --client=acme
           npm run verify:dist
           test ! -e dist/.htaccess

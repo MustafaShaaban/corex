@@ -20,7 +20,15 @@ const THEME = 'theme/theme.json';
 const DARK = 'theme/styles/dark.json';
 const ADMIN = 'plugins/corex-core/assets/css/corex-admin-tokens.css';
 
-const cell = ( value ) => `\`${ String( value ).replace( /\|/g, '\\|' ) }\``;
+// A table cell in code: a pipe is written `\|`, which GitHub-flavoured tables read inside code too.
+// A backslash would be printed as it is and could pair with a pipe, so no token may hold one.
+const cell = ( value ) => {
+	const text = String( value );
+	if ( text.includes( '\\' ) ) {
+		throw new Error( `A token value holds a backslash: ${ text }` );
+	}
+	return `\`${ text.replace( /[\\|]/g, '\\$&' ) }\``;
+};
 // WordPress's name for a slug: a letter after a digit starts a word (`2xl` is printed `2-xl`).
 const kebab = ( value ) => value.replace( /(\d)([a-z])/g, '$1-$2' );
 
