@@ -7,6 +7,11 @@ slices, and there is no separate plan or task file.
 
 **Status**: Draft. Slices 1, 2 and 3 each wait for the owner's approval of the design (`design/handoffs/spec-134-theme-graphite-brass.md`, written once he approves).
 
+**Design**: drawn on 2026-11-15 in Claude Design, 32 artboards, canvas Version 7, private to the owner:
+https://claude.ai/artifact/RgpHR931N7vqqnF6whkNyz . Not approved yet. It is drawn on the token values of "The
+palette" below, because no CoreX design system on the new look exists (DT-0 follows this release). It keeps today's
+layout and today's shapes and changes colours only.
+
 **Input**: Release R2.2 of the CoreX revamp, three stories approved under the owner's 2026-10-21 mandate: US-BRD-01
 (the CoreX theme wears the CoreX brand), US-BRD-05 (the logo set is complete and reads on every background) and
 US-BRD-07 (the theme's preview shows the theme). The stories, their sixteen test cases and the reading of the code
@@ -217,6 +222,10 @@ change one palette value and run the tests.
   the contrast matrix records the pair as not for use.
 - **A field on a `surface-alt` band.** `border` is 3.21:1 on white and 2.91:1 on `surface-alt` in light, as today's
   grey is. A field's own background is white, so its outline is read against white.
+- **The form's shapes.** The form block sets no outline, corner or typeface on its fields and its button, so they
+  are the browser's own today (measured on the development site: square fields with a grey inset line, a square
+  button in the browser's font). This release changes their colours only and the design draws them as they are.
+  Their shape belongs to the visitor forms release, unless the owner asks for it here.
 - **System admin appearance on the login.** The lockup follows the computer, as the card does.
 - **A site icon is set, then removed.** The CoreX favicon returns under the CoreX theme only.
 
@@ -237,6 +246,10 @@ change one palette value and run the tests.
 - **FR-005**: The contrast matrix MUST hold the pairs the theme draws in both modes, including text on brass
   (`onAccent` on `accent`), selected text, the call-to-action button and its label, and `border` on `surface`, and
   MUST record pairs that are not for use (`accent` on `primary` in dark). Every pair for use MUST pass AA.
+- **FR-005a**: Where a CoreX block draws text, or a mark that carries meaning, in `accent` on a page surface, it
+  MUST draw it in `accent-dark`. Brass `#ad8643` is 3.35:1 on white: enough for a focus ring or a band, not for
+  text. One place is known, the required mark of the form block (`.corex-form__required`, corex-forms); slice 1
+  lists the rest from the built stylesheets before it changes a value.
 - **FR-006**: Selected text MUST be drawn with `selection` behind and `selection-text` on it, on every surface.
 - **FR-007**: The "editorial" variation MUST be removed, with the sentence in the branding guide that names it.
 - **FR-008**: No shipped file, test, fixture or docs page MUST name `#0B1F3B`, `#007A9E`, `#00C2FF` or the other
@@ -360,7 +373,7 @@ then checked by `corex-ui-reviewer` against it, with one recorded round for the 
 
 | Slice | What | FRs | Waits on | Design |
 |---|---|---|---|---|
-| 1 | The palette and shadows in both files, bound to the contract; the contrast matrix; coloured sections and the call-to-action band; selection; Editorial removed; navy values and example copy gone; Foundations and inventories regenerated | FR-001 to FR-015 | the approved design | Design first |
+| 1 | The palette and shadows in both files, bound to the contract; the contrast matrix; brass text moved to `accent-dark`; coloured sections and the call-to-action band; selection; Editorial removed; navy values and example copy gone; Foundations and inventories regenerated | FR-001 to FR-015, FR-005a | the approved design | Design first |
 | 2 | The logo set: the corrected lockup, the fixed-colour and stacked lockups, the knockout, the favicon set, the manifest; the login's lockup by appearance; the theme's favicon | FR-016 to FR-022 | the approved design | Design first |
 | 3 | The theme preview: the capture command, the fingerprint and its test, the new image | FR-023 to FR-025 | 1 | Design first |
 | 4 | Release notes with before and after captures, the branding guide, the client impact, PROGRESS | FR-026 | 1, 2, 3 | no |
