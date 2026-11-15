@@ -1191,8 +1191,9 @@ body.corex-admin-screen .corex-admin__shell {
 	transition: background-color var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease;
 }
 
+/* The admin's smallest radius, 3px (spec 121, DECISIONS #462). */
 .corex-admin input[type="checkbox"]:not(.corex-switch__input) {
-	border-radius: calc(var(--corex-admin-radius-sm) / 2);
+	border-radius: var(--corex-admin-radius-xs);
 }
 
 .corex-admin input:is([type="checkbox"], [type="radio"]):not(.corex-switch__input):hover {

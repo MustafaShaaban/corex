@@ -268,3 +268,91 @@ for ( const theme of [ 'dark', 'light' ] ) {
 		expect( look.outline ).toBe( `solid ${ look.focus }` );
 	} );
 }
+
+/*
+ * In Arabic the shell's text reads at line height 1.8 (spec 121, FR-015), so a label's line is
+ * taller than the box beside it. The box stays on its label's first line, at the start of the
+ * line in either direction, and keeps the admin's 3px radius token (DECISIONS #462). Arabic is
+ * asked for per request by the `corex-e2e-arabic.php` fixture; without it the page is English
+ * and the test says so.
+ */
+for ( const arabic of [ false, true ] ) {
+	test( `a box sits on its label's first line, at the line's start, with the 3px radius (${
+		arabic ? 'Arabic, right to left' : 'English, left to right'
+	})`, async ( { page, context, baseURL } ) => {
+		if ( arabic ) {
+			await context.addCookies( [
+				{ name: 'corex_e2e_locale', value: 'ar', url: baseURL },
+			] );
+		}
+		await page.goto( NOTIFICATIONS );
+		// The fourth view is Preferences, in any language.
+		await page
+			.locator( '.corex-notifications-screen__view' )
+			.nth( 3 )
+			.click();
+		const first = page
+			.locator( '.corex-notifications-prefs input[type="checkbox"]' )
+			.first();
+		await expect( first ).toBeVisible();
+
+		const rows = await page.evaluate( () => {
+			const shell = document.querySelector( '.corex-admin' );
+			const probe = document.createElement( 'span' );
+			probe.style.borderRadius = 'var(--corex-admin-radius-xs)';
+			shell.append( probe );
+			const token = window.getComputedStyle( probe ).borderTopLeftRadius;
+			probe.remove();
+
+			return [
+				...document.querySelectorAll(
+					'.corex-notifications-prefs input[type="checkbox"]'
+				),
+			].map( ( input ) => {
+				const label = input.closest( 'label' );
+				const box = input.getBoundingClientRect();
+				const style = window.getComputedStyle( label );
+				// The label's words, not the box: the first text with something in it.
+				const walker = document.createTreeWalker(
+					label,
+					window.NodeFilter.SHOW_TEXT
+				);
+				let text = walker.nextNode();
+				while ( text && ! text.nodeValue.trim() ) {
+					text = walker.nextNode();
+				}
+				const range = document.createRange();
+				range.selectNodeContents( text );
+				const line = range.getClientRects()[ 0 ];
+				const lineHeight = parseFloat( style.lineHeight );
+				const lineTop = line.top - ( lineHeight - line.height ) / 2;
+
+				return {
+					direction: style.direction,
+					ratio: lineHeight / parseFloat( style.fontSize ),
+					radius: window.getComputedStyle( input )
+						.borderTopLeftRadius,
+					token,
+					top: box.top - lineTop,
+					bottom: lineTop + lineHeight - box.bottom,
+					start:
+						style.direction === 'rtl'
+							? label.getBoundingClientRect().right - box.right
+							: box.left - label.getBoundingClientRect().left,
+				};
+			} );
+		} );
+
+		expect( rows.length ).toBeGreaterThan( 0 );
+		for ( const row of rows ) {
+			expect( row.direction ).toBe( arabic ? 'rtl' : 'ltr' );
+			expect( row.ratio ).toBeCloseTo( arabic ? 1.8 : 1.4, 1 );
+			expect( row.radius ).toBe( '3px' );
+			expect( row.radius ).toBe( row.token );
+			// Inside its label's first line box, a pixel's rounding allowed.
+			expect( row.top ).toBeGreaterThanOrEqual( -1 );
+			expect( row.bottom ).toBeGreaterThanOrEqual( -1 );
+			expect( Math.abs( row.start ) ).toBeLessThanOrEqual( 1 );
+		}
+	} );
+}

@@ -25,6 +25,18 @@ it('ships the same four font files in the theme and the core plug-in, and no mor
         ->and($digest($plugin))->toEqual($digest($theme));
 });
 
+it('keeps the OFL licence of each family beside both copies of its files (FR-017)', function () {
+    // The plug-in's copy ships alone where the theme is not installed (a client's own theme), and
+    // the SIL Open Font License asks that the licence travel with the fonts.
+    $licences = static fn (string $folder): array => array_map(
+        static fn (string $file): string => basename($file) . ':' . hash_file('sha256', $file),
+        glob(ThemeContract::root() . '/' . $folder . '/licenses/*-OFL.txt') ?: [],
+    );
+
+    expect($licences('theme/assets/fonts'))->toHaveCount(3)
+        ->and($licences('plugins/corex-core/assets/fonts'))->toEqual($licences('theme/assets/fonts'));
+});
+
 it('loads no font from an external font CDN', function () {
     $themeFiles = array_merge(
         [ThemeContract::root() . '/theme/theme.json'],

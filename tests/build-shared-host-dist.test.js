@@ -611,6 +611,79 @@ it.each( [
 	expect( mod.verifyDist( distDir ) ).toEqual( { ok: false, errors } );
 } );
 
+describe( 'the Arabic script translations (spec 121, FR-019)', () => {
+	const CATALOGUE = [
+		'msgid ""',
+		'msgstr ""',
+		'"Language: ar\\n"',
+		'"Plural-Forms: nplurals=6; plural=(n == 0 ? 0 : n == 1 ? 1 : n == 2 ? 2 : n % 100 >= 3 && n % 100 <= 10 ? 3 : n % 100 >= 11 ? 4 : 5);\\n"',
+		'',
+		'#: addons/corex-ui/build/index.js:1',
+		'msgid "Save"',
+		'msgstr "حفظ"',
+		'',
+	].join( '\n' );
+
+	/**
+	 * A built package whose CoreX add-on has a bundle that asks for a translated string.
+	 *
+	 * @return {{distDir: string, file: string}} The package and the translation file it needs.
+	 */
+	function packageWithArabic() {
+		const { distDir } = buildFixture();
+		const plugins = join( distDir, 'wp-content', 'plugins' );
+		mkdirSync( join( plugins, 'corex-core', 'languages' ), {
+			recursive: true,
+		} );
+		writeFileSync(
+			join( plugins, 'corex-core', 'languages', 'corex-ar.po' ),
+			CATALOGUE
+		);
+		mkdirSync( join( plugins, 'corex-ui', 'build' ), { recursive: true } );
+		writeFileSync(
+			join( plugins, 'corex-ui', 'build', 'index.js' ),
+			'wp.i18n.__("Save","corex");'
+		);
+		const file = join(
+			plugins,
+			'corex-core',
+			'languages',
+			'corex-ar-' +
+				require( 'node:crypto' )
+					.createHash( 'md5' )
+					.update( 'build/index.js' )
+					.digest( 'hex' ) +
+				'.json'
+		);
+
+		return { distDir, file };
+	}
+
+	it( 'refuses a package built without them', () => {
+		const { distDir, file } = packageWithArabic();
+		describedAgain( distDir );
+
+		const { ok, errors } = mod.verifyDist( distDir );
+
+		expect( ok ).toBe( false );
+		expect( errors ).toEqual( [
+			expect.stringContaining(
+				`missing Arabic script translations: corex-core/languages/${ file
+					.split( /[\\/]/ )
+					.pop() } (for corex-ui/build/index.js`
+			),
+		] );
+	} );
+
+	it( 'accepts a package that has them', () => {
+		const { distDir, file } = packageWithArabic();
+		writeFileSync( file, '{}' );
+		describedAgain( distDir );
+
+		expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+	} );
+} );
+
 it( 'fails verification when a client theme ships SCSS/JS source but no compiled output', () => {
 	const root = mkdtempSync( join( tmpdir(), 'corex-dist-assets-' ) );
 	roots.push( root );

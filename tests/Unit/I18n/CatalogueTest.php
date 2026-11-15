@@ -59,6 +59,17 @@ it('prefers a language pack the site installed over the one CoreX ships', functi
     corex_catalogue($this)->load();
 });
 
+it('loads a language pack the site installed as WordPress\'s PHP translation file only (FR-019)', function () {
+    // WordPress 6.5+ packs may hold `corex-ar.l10n.php` and no `.mo`; `load_textdomain()` is
+    // given the `.mo` name and reads the PHP file beside it.
+    touch($this->folder . '/packs/corex-ar.l10n.php');
+    touch($this->folder . '/shipped/corex-ar.mo');
+    Functions\when('is_textdomain_loaded')->justReturn(false);
+    Functions\expect('load_textdomain')->once()->with('corex', $this->folder . '/packs/corex-ar.mo', 'ar')->andReturn(true);
+
+    corex_catalogue($this)->load();
+});
+
 it('loads nothing for a language CoreX has no catalogue in', function () {
     Functions\when('is_textdomain_loaded')->justReturn(false);
     Functions\expect('load_textdomain')->never();

@@ -43,6 +43,7 @@ import {
 } from 'node:fs';
 import { join, basename, relative, resolve, sep } from 'node:path';
 import { describeFolder } from './release-content-hash.mjs';
+import { missingScriptTranslations } from './i18n-arabic.mjs';
 import {
 	PACKAGE_ROOT,
 	planAutoload,
@@ -702,6 +703,13 @@ export function verifyDist( distDir ) {
 	// Client-asset completeness (spec 062): a theme that ships SCSS/JS sources must also ship the COMPILED
 	// output — otherwise the deploy would serve a half-built client theme. Catches "packaged without building".
 	errors.push( ...verifyClientAssets( distDir ) );
+
+	// The Arabic script translations are written by `npm run build` and ignored by git: a package
+	// built without them has an Arabic catalogue and English admin scripts (spec 121, FR-019).
+	const plugins = join( distDir, 'wp-content', 'plugins' );
+	if ( existsSync( plugins ) ) {
+		errors.push( ...missingScriptTranslations( plugins ) );
+	}
 
 	// Bootability: the packaged core plugin finds the packaged autoloader, and every namespace loads.
 	errors.push( ...verifyPackagedAutoload( distDir, probeScript ) );

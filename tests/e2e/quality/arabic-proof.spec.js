@@ -1,8 +1,9 @@
 /**
  * The Arabic proof (spec 121, US-NFR-02; Definition of Done items 5 and 9 in real Arabic).
  *
- * Every CoreX admin screen and tab, every theme template with the Company kit, and the Contact
- * page's form submitted empty, run in Arabic through the `corex-e2e-arabic.php` fixture: the
+ * Every CoreX admin screen and tab, every theme template with the Company kit, the Contact page's
+ * form submitted empty, and the preview of each Email Studio template (FR-021), run in Arabic
+ * through the `corex-e2e-arabic.php` fixture: the
  * request's language is Arabic and its direction right to left, and every CoreX string a PHP or
  * JavaScript call asked for and the catalogue did not answer is recorded. A screen fails naming
  * each such string; names the glossary keeps in English are not counted
@@ -22,6 +23,11 @@ const { site, PHONE, DESKTOP, APPEARANCES, fileNameOf } = require( './site' );
 
 const FOLDER = path.join( OUTPUT, 'arabic' );
 const CONTACT = '/contact/';
+const EMAIL_STUDIO =
+	'/wp-admin/admin.php?page=corex-email-studio&tab=templates';
+// Email Studio's tabs, in the order `TABS` of plugins/corex-config/src/Email/emailStudioClient.js
+// draws them: the preview is found by its place, since its name is in Arabic here.
+const PREVIEW_TAB = 6;
 
 const ADMIN = site.screens.map( ( screen ) => ( {
 	id: screen.id,
@@ -206,4 +212,59 @@ test( 'the Contact form answers an empty submit in Arabic', async ( {
 		state.errors.join( ' ' ),
 		'the error messages are not in Arabic'
 	).toMatch( /[؀-ۿ]{3,}/ );
+} );
+
+test( 'each Email Studio template previews in Arabic', async ( {
+	page,
+	context,
+	baseURL,
+} ) => {
+	const state = await openInArabic( page, context, baseURL, EMAIL_STUDIO );
+	const missing = new Set( state.missing );
+	page.on( 'response', ( response ) => {
+		const header = response.headers()[ 'x-corex-arabic-missing' ];
+
+		if ( header ) {
+			JSON.parse( decodeURIComponent( header ) ).forEach( ( text ) =>
+				missing.add( text )
+			);
+		}
+	} );
+	await expect(
+		page.locator( '.corex-email-app > .corex-loadable' )
+	).toHaveAttribute( 'data-corex-state', 'ready' );
+
+	const templates = page.locator( '.corex-email-app__list button' );
+	const count = await templates.count();
+	expect( count, 'Email Studio lists no template' ).toBeGreaterThan( 0 );
+
+	for ( let index = 0; index < count; index++ ) {
+		const name = ( await templates.nth( index ).innerText() ).trim();
+		await templates.nth( index ).click();
+		await page
+			.locator( '.corex-email-app__tabs button' )
+			.nth( PREVIEW_TAB )
+			.click();
+		const frame = page.frameLocator( '.corex-email-app iframe' );
+		await expect(
+			frame.locator( 'body' ),
+			`${ name }: the preview did not draw`
+		).not.toBeEmpty();
+		await page
+			.waitForLoadState( 'networkidle', { timeout: 10_000 } )
+			.catch( () => {} );
+
+		const inPage = await page.evaluate(
+			() => window.__corexArabicMissing || []
+		);
+		inPage.forEach( ( text ) => missing.add( text ) );
+		await keepScreenshots( page, `email:${ index }-${ name }` );
+		assertArabic(
+			{ id: `email:${ name }` },
+			{ ...state, missing: [ ...missing ] },
+			null
+		);
+
+		await page.locator( '.corex-email-app__tabs button' ).nth( 1 ).click();
+	}
 } );

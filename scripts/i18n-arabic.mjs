@@ -392,35 +392,49 @@ function* walk( directory ) {
 }
 
 /**
- * The scripts a page can load: built bundles and hand-written assets, each with its path inside its
- * plug-in, which is what WordPress hashes to name a script's translation file.
+ * The scripts a page can load from some plug-in folders: built bundles and hand-written assets, each
+ * with its path inside its plug-in, which is what WordPress hashes to name a script's translation file.
  *
- * @param {string} root The repository.
- * @return {Array<{file: string, relative: string}>} Every candidate script.
+ * @param {string[]} plugins Plug-in folders.
+ * @return {Array<{file: string, plugin: string, relative: string}>} Every candidate script.
  */
-export function scriptsOf( root ) {
+export function scriptsIn( plugins ) {
 	const found = [];
 
-	for ( const packages of PACKAGE_ROOTS ) {
-		for ( const plugin of readdirSync( path.join( root, packages ) ) ) {
-			for ( const folder of [ 'build', 'assets' ] ) {
-				const base = path.join( root, packages, plugin, folder );
-				if ( ! existsSync( base ) ) {
-					continue;
-				}
-				for ( const file of walk( base ) ) {
-					const relative = path
-						.relative( path.join( root, packages, plugin ), file )
-						.split( path.sep )
-						.join( '/' )
-						.replace( /\.min\.js$/, '.js' );
-					found.push( { file, relative } );
-				}
+	for ( const plugin of plugins ) {
+		for ( const folder of [ 'build', 'assets' ] ) {
+			const base = path.join( plugin, folder );
+			if ( ! existsSync( base ) ) {
+				continue;
+			}
+			for ( const file of walk( base ) ) {
+				const relative = path
+					.relative( plugin, file )
+					.split( path.sep )
+					.join( '/' )
+					.replace( /\.min\.js$/, '.js' );
+				found.push( { file, plugin: path.basename( plugin ), relative } );
 			}
 		}
 	}
 
 	return found;
+}
+
+/**
+ * The scripts of every CoreX plug-in and add-on in the repository.
+ *
+ * @param {string} root The repository.
+ * @return {Array<{file: string, plugin: string, relative: string}>} Every candidate script.
+ */
+export function scriptsOf( root ) {
+	return scriptsIn(
+		PACKAGE_ROOTS.flatMap( ( packages ) =>
+			readdirSync( path.join( root, packages ) ).map( ( plugin ) =>
+				path.join( root, packages, plugin )
+			)
+		)
+	);
 }
 
 /**
@@ -500,8 +514,14 @@ export function scriptTranslationsOf( source, entries, header ) {
 export const scriptFileName = ( relative ) =>
 	`corex-${ LOCALE }-${ createHash( 'md5' ).update( relative ).digest( 'hex' ) }.json`;
 
-function writeScripts( root ) {
-	const catalog = parsePo( readFileSync( path.join( root, PO ), 'utf8' ) );
+/**
+ * The script translation files a catalogue gives some scripts, by WordPress's file name.
+ *
+ * @param {{header: string, entries: Array<object>}} catalog The parsed catalogue.
+ * @param {Array<{file: string, relative: string}>}  scripts What `scriptsIn()` found.
+ * @return {Map<string, {data: object, scripts: string[]}>} Each file's Jed data and the scripts it answers.
+ */
+export function scriptTranslationFiles( catalog, scripts ) {
 	const entries = catalog.entries.filter(
 		( entry ) =>
 			isTranslated( entry ) &&
@@ -509,16 +529,9 @@ function writeScripts( root ) {
 				/\.(?:js|jsx|ts|tsx)(?::|$)/.test( ref )
 			)
 	);
-	const languages = path.join( root, LANGUAGES );
-
-	for ( const stale of readdirSync( languages ).filter( ( name ) =>
-		/^corex-ar-[0-9a-f]{32}\.json$/.test( name )
-	) ) {
-		unlinkSync( path.join( languages, stale ) );
-	}
-
 	const byName = new Map();
-	for ( const { file, relative } of scriptsOf( root ) ) {
+
+	for ( const { file, plugin, relative } of scripts ) {
 		const data = scriptTranslationsOf(
 			readFileSync( file, 'utf8' ),
 			entries,
@@ -528,23 +541,75 @@ function writeScripts( root ) {
 			continue;
 		}
 		const name = scriptFileName( relative );
+		const script = `${ plugin }/${ relative }`;
 		// Two plug-ins with a bundle at the same path share a name; one file answers both.
 		const earlier = byName.get( name );
 		if ( earlier ) {
 			Object.assign(
-				earlier.locale_data.messages,
+				earlier.data.locale_data.messages,
 				data.locale_data.messages
 			);
+			earlier.scripts.push( script );
 		} else {
-			byName.set( name, data );
+			byName.set( name, { data, scripts: [ script ] } );
 		}
 	}
 
-	for ( const [ name, data ] of byName ) {
+	return byName;
+}
+
+function writeScripts( root ) {
+	const catalog = parsePo( readFileSync( path.join( root, PO ), 'utf8' ) );
+	const languages = path.join( root, LANGUAGES );
+
+	for ( const stale of readdirSync( languages ).filter( ( name ) =>
+		/^corex-ar-[0-9a-f]{32}\.json$/.test( name )
+	) ) {
+		unlinkSync( path.join( languages, stale ) );
+	}
+
+	const files = scriptTranslationFiles( catalog, scriptsOf( root ) );
+	for ( const [ name, { data } ] of files ) {
 		writeFileSync( path.join( languages, name ), JSON.stringify( data ) );
 	}
 
-	return byName.size;
+	return files.size;
+}
+
+/**
+ * What a built package lacks of its Arabic script translations: every file `npm run build` writes
+ * for the CoreX plug-ins the package holds and the package does not have (spec 121, FR-019). A
+ * package built from a checkout whose bundles were never built, or copied without the ignored
+ * files, has an Arabic catalogue and English admin scripts; this names each missing file.
+ *
+ * @param {string} pluginsDir The package's `wp-content/plugins`.
+ * @return {string[]} One line per missing file; none when the package ships no Arabic catalogue.
+ */
+export function missingScriptTranslations( pluginsDir ) {
+	const languages = path.join( pluginsDir, 'corex-core', 'languages' );
+	const po = path.join( languages, 'corex-ar.po' );
+	if ( ! existsSync( po ) ) {
+		return [];
+	}
+
+	// CoreX's own plug-ins and add-ons; a client's plug-in is not given translations by the build.
+	const plugins = readdirSync( pluginsDir )
+		.filter( ( name ) => name.startsWith( 'corex-' ) )
+		.map( ( name ) => path.join( pluginsDir, name ) )
+		.filter( ( folder ) => statSync( folder ).isDirectory() );
+	const files = scriptTranslationFiles(
+		parsePo( readFileSync( po, 'utf8' ) ),
+		scriptsIn( plugins )
+	);
+
+	return [ ...files ]
+		.filter( ( [ name ] ) => ! existsSync( path.join( languages, name ) ) )
+		.map(
+			( [ name, { scripts } ] ) =>
+				`missing Arabic script translations: corex-core/languages/${ name } (for ${ scripts.join(
+					', '
+				) }; run npm run build before packaging)`
+		);
 }
 
 /* ------------------------------------------------------------------ check */

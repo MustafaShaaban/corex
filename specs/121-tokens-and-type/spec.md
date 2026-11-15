@@ -4,7 +4,9 @@
 
 **Created**: 2026-10-23
 
-**Status**: Draft
+**Status**: Implemented, in review for R2.1 (2026-11-11). Owed before R2.1 ships: the native Arabic review
+(NFR-D3, `arabic-review.md`). Completed in R2.2, not here: the no-navy criteria FR-025, TC-DOC-07-04 and SC-007
+(DECISIONS #468; notes under each).
 
 **Input**: The owner approved the brand, quality and docs stories of the CoreX revamp on 2026-10-20 and 2026-10-21. This
 spec is release R2.1, the first release of stage 2. It carries seven of them as its acceptance criteria: US-BRD-02,
@@ -212,6 +214,10 @@ I do not build on a scope or a palette that no longer exists.
 4. **Given** the page, **When** it is searched for the old navy values and names, **Then** none is found
    (TC-DOC-07-04).
 
+   > **Note, 2026-11-11.** Not met in R2.1, by design. The theme colour table is written from `theme.json`, which
+   > stays navy until US-BRD-01 (R2.2), so the page still shows `#0B1F3B` and `#00C2FF`; the check makes R2.2
+   > regenerate it, and this scenario completes then (DECISIONS #468).
+
 ### Edge Cases
 
 - A `brand.json` overlay keeps overriding the theme only; it never reaches the admin, the login or the emails, and the
@@ -300,6 +306,11 @@ I do not build on a scope or a palette that no longer exists.
 - **FR-025**: The page MUST hold no navy-era token or value, show light and dark values, and use only
   direction-neutral wording and logical properties.
 
+  > **Note, 2026-11-11.** The light and dark values and the direction-neutral wording are met in R2.1. "No navy-era
+  > value" is not: the Foundations page's theme colour rows and spec 057's generated inventories
+  > (`inventories/definitions.json`, `inventories/variations.json`) are written from `theme.json` and
+  > `theme/styles/dark.json`, which keep the navy palette until US-BRD-01. Those rows go in R2.2 (DECISIONS #468).
+
 ### Key Entities
 
 - **Token contract**: the brand's values, by role and mode, and which copy holds each.
@@ -316,6 +327,12 @@ I do not build on a scope or a palette that no longer exists.
   with it removed, the proof fails.
 - **SC-006**: The Foundations page and the shipped files agree, checked on every pull request.
 - **SC-007**: No test, spec or plugin file names the retired logo or its colours, apart from the decision record.
+
+  > **Note, 2026-11-11.** The retired logo file and every mention of it are gone (US-BRD-08). Its colours,
+  > `#0B1F3B` with `#00C2FF`, are still the theme's palette until US-BRD-01, so they remain in `theme.json` and
+  > `theme/styles/dark.json`, in the Foundations page and spec 057's inventories generated from them, and in
+  > `docs/internal/COREX-FRAMEWORK.md`'s example; `tests/Unit/Config/BrandingTest.php` names them only to assert
+  > that the login lockup does not use them. The generated rows go in R2.2 (DECISIONS #468).
 
 ## Assumptions
 

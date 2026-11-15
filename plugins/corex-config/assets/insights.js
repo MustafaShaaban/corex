@@ -25,6 +25,11 @@
 	const __ = ( text, domain ) =>
 		wp.i18n ? wp.i18n.__( text, domain ) : text;
 	/* eslint-enable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
+	// Fills `%1$d`, `%2$s` … in a translated sentence; without wp-i18n, in order of number.
+	const sprintf = ( format, ...values ) =>
+		wp.i18n
+			? wp.i18n.sprintf( format, ...values )
+			: format.replace( /%(\d+)\$[ds]/g, ( _, at ) => values[ at - 1 ] );
 
 	/*
 	 * The admin's loading states (spec 108), written as markup: this screen is not React, and
@@ -238,11 +243,12 @@
 		return score === null
 			? __( 'No score yet', 'corex' )
 			: escape(
-					__( 'Score', 'corex' ) +
-						' ' +
-						score +
-						' / 100, grade ' +
+					sprintf(
+						/* translators: 1: a score from 0 to 100, 2: its letter grade. */
+						__( 'Score %1$d / 100, grade %2$s', 'corex' ),
+						score,
 						grade
+					)
 				);
 	}
 
@@ -490,7 +496,7 @@
 		el.className = 'corex-insight-widget';
 		el.innerHTML =
 			'<div class="corex-error-state corex-error-state--panel" role="status" aria-live="polite">' +
-			stateChip( 'unavailable', t( 'Could not load' ) ) +
+			stateChip( 'unavailable', __( 'Could not load', 'corex' ) ) +
 			'<p class="corex-error-state__message">' +
 			escape(
 				__( 'The rest of the insights could not be loaded.', 'corex' )

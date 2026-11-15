@@ -224,6 +224,7 @@ CoreX's own admin screens, its login screen and the Coming soon bar read a scope
 | `--corex-admin-font-xl` | `1.5rem` | `1.5rem` |
 | `--corex-admin-font-2xl` | `clamp(1.75rem, 3vw, 2.5rem)` | `clamp(1.75rem, 3vw, 2.5rem)` |
 | `--corex-admin-line-tight` | `1.2` | `1.2` |
+| `--corex-admin-line-base` | `1.4` | `1.4` |
 | `--corex-admin-line-normal` | `1.6` | `1.6` |
 | `--corex-admin-letter-wide` | `0.12em` | `0.12em` |
 | `--corex-admin-space-2xs` | `0.25rem` | `0.25rem` |

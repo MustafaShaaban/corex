@@ -176,4 +176,24 @@ describe( 'The Arabic catalogue tools', () => {
 	test( 'find no broken translation in the shipped catalogue, and a .mo compiled from it', () => {
 		expect( tools.checkCatalogue( root, null ).problems ).toEqual( [] );
 	} );
+
+	// A string drawn only in an email, a dialog or a REST error is never seen by the Arabic proof,
+	// so a release branch's CI refuses any template string with no Arabic (spec 121, FR-020).
+	test( 'are run strict on a release branch, so no untranslated string reaches a tag', () => {
+		const ci = require( 'node:fs' ).readFileSync(
+			path.join( root, '.github/workflows/ci.yml' ),
+			'utf8'
+		);
+		const step = ci.slice(
+			ci.indexOf( '- name: Check the Arabic catalogue' ),
+			ci.indexOf( '- name: Upload the translation template' )
+		);
+
+		expect( step ).toContain(
+			"startsWith(github.head_ref, 'release/') && '--strict'"
+		);
+		expect( step ).toMatch(
+			/node scripts\/i18n-arabic\.mjs check plugins\/corex-core\/languages\/corex\.pot "?\$CATALOGUE_STRICT"?/
+		);
+	} );
 } );

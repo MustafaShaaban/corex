@@ -19,7 +19,8 @@ defined('ABSPATH') || exit;
  * asked first, so on an Arabic site with the CoreX theme every CoreX string stayed English. This
  * names the folder as before and then, when the domain is still not loaded, loads the catalogue
  * itself: a language pack the site installed in `wp-content/languages/plugins` first, the one
- * CoreX ships second.
+ * CoreX ships second. A pack may hold WordPress's PHP translation file (`.l10n.php`) and no `.mo`;
+ * `load_textdomain()` is given the `.mo` name either way and reads the PHP file beside it.
  */
 final class Catalogue
 {
@@ -49,9 +50,15 @@ final class Catalogue
         $name = self::DOMAIN . '-' . $locale . '.mo';
 
         foreach ([$this->packs . '/' . $name, $this->directory . '/' . $name] as $file) {
-            if (is_readable($file) && load_textdomain(self::DOMAIN, $file, $locale)) {
+            if (self::exists($file) && load_textdomain(self::DOMAIN, $file, $locale)) {
                 return;
             }
         }
+    }
+
+    /** Whether a catalogue is at this `.mo` name, as the `.mo` or as WordPress's `.l10n.php`. */
+    private static function exists(string $mo): bool
+    {
+        return is_readable($mo) || is_readable(substr($mo, 0, -strlen('.mo')) . '.l10n.php');
     }
 }
