@@ -44,6 +44,7 @@ it('holds the brass button, both bands, selected text and the field edge, in bot
         'custom.onAccent on custom.bandAccent',     // the brass button on the dark band
         'selection-text on selection',              // selected text
         'border on surface',                        // a field's edge
+        'primary on surface-strong',                // the focus ring on the corporate header's top bar
     ];
     $missing = [];
 

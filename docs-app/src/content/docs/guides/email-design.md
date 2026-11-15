@@ -33,7 +33,7 @@ use Corex\Email\Design\EmailBrand;
 
 add_filter('corex_email_brand', static function (EmailBrand $brand): EmailBrand {
     return $brand->withPalettes(
-        $brand->light->with(['accent' => '#7a7a7a', 'link' => '#7a7a7a']),
+        $brand->light->with(['accent' => '#7a7a7a', 'link' => '#595959']),
         $brand->dark->with(['accent' => '#8fb4e8', 'link' => '#8fb4e8']),
     );
 });

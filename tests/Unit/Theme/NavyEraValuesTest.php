@@ -52,27 +52,68 @@ function navy_era_history(string $path): bool
 }
 
 /**
- * The files git tracks or would track, with the ones that keep history and the images left out.
+ * A file the search passes over: history, a client's own site (`sites/`, spec 102), a file gone from
+ * the disk, one over 2 MB, and a binary one (a NUL in its first 8000 bytes, as git decides). A client
+ * repository holds gigabytes of its own media, which this test must never read.
+ */
+function navy_era_skipped(string $path, string $root): bool
+{
+    $file = $root . '/' . $path;
+
+    if (navy_era_history($path) || str_starts_with($path, 'sites/') || ! is_file($file) || filesize($file) > 2 * 1024 * 1024) {
+        return true;
+    }
+
+    $handle = fopen($file, 'rb');
+    $head = $handle === false ? '' : (string) fread($handle, 8000);
+    if ($handle !== false) {
+        fclose($handle);
+    }
+
+    return $handle === false || str_contains($head, "\0");
+}
+
+/**
+ * The files git tracks or would track, less the ones {@see navy_era_skipped()} passes over.
  *
  * @return list<string>
  */
 function navy_era_files(): array
 {
-    $listed = (string) shell_exec(sprintf('git -C %s ls-files -z --cached --others --exclude-standard', escapeshellarg(ThemeContract::root())));
-    $files = [];
+    $root = ThemeContract::root();
+    $listed = (string) shell_exec(sprintf('git -C %s ls-files -z --cached --others --exclude-standard', escapeshellarg($root)));
 
-    foreach (array_filter(explode("\0", $listed)) as $path) {
-        if (navy_era_history($path)
-            || preg_match('/\.(?:png|jpe?g|gif|webp|ico|woff2?|ttf|zip|pdf)$/i', $path)
-            || ! is_file(ThemeContract::root() . '/' . $path)
-        ) {
-            continue;
-        }
-        $files[] = $path;
-    }
-
-    return $files;
+    return array_values(array_filter(
+        explode("\0", $listed),
+        static fn (string $path): bool => $path !== '' && ! navy_era_skipped($path, $root),
+    ));
 }
+
+// A client repository holds its own site and its media: the search reads only CoreX's text files.
+it('passes over a client\'s site, a binary file and a file over 2 MB', function () {
+    $root = sys_get_temp_dir() . '/corex-navy-era-' . bin2hex(random_bytes(4));
+    mkdir($root . '/sites/acme', 0777, true);
+    file_put_contents($root . '/sites/acme/style.css', 'a {}');
+    file_put_contents($root . '/media.bin', "GIF89a\0\0\1");
+    file_put_contents($root . '/large.txt', str_repeat('a', 2 * 1024 * 1024 + 1));
+    file_put_contents($root . '/theme.json', '{}');
+
+    try {
+        expect(navy_era_skipped('sites/acme/style.css', $root))->toBeTrue()
+            ->and(navy_era_skipped('media.bin', $root))->toBeTrue()
+            ->and(navy_era_skipped('large.txt', $root))->toBeTrue()
+            ->and(navy_era_skipped('missing.css', $root))->toBeTrue()
+            ->and(navy_era_skipped('DECISIONS.md', $root))->toBeTrue()
+            ->and(navy_era_skipped('theme.json', $root))->toBeFalse();
+    } finally {
+        foreach (['sites/acme/style.css', 'media.bin', 'large.txt', 'theme.json'] as $file) {
+            unlink($root . '/' . $file);
+        }
+        rmdir($root . '/sites/acme');
+        rmdir($root . '/sites');
+        rmdir($root);
+    }
+});
 
 it('finds the navy-era colours in every way a file can write them', function () {
     $pattern = navy_era_pattern();

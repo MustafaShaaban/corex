@@ -21328,10 +21328,11 @@ in light); a compatibility slug says which role it `follows` and inherits that r
 `BrandContractTest` names the token, the mode and the file on a mismatch.
 
 **White on brass.** In light, white on `#ad8643` is 3.35:1, under AA. Slice 1 changes the palette, so it also moves
-the four places that drew text in white on `accent` to the kit's `on-accent` token (graphite), falling back to
+the three places that drew text in white on `accent` to the kit's `on-accent` token (graphite), falling back to
 `inverse` under a theme without it: the call-to-action pattern's text, the newsletter submit, the menu badge. Brass
 text on a page surface takes `accent-dark` (the form's required mark, the share links' hover, the maintenance
-eyebrow). The brass band, section styles and the button itself stay slice 2's. *Not chosen:* holding slice 1 until
+eyebrow, the process steps' numbers), at every size: the type scale is fluid, so a large size at desktop width
+is small text at 375px. The brass band, section styles and the button itself stay slice 2's. *Not chosen:* holding slice 1 until
 slice 2, which leaves the branch red; keeping white text, which ships an AA failure.
 
 **Example colour.** Copy and sample data that showed a navy value show `#7A7A7A`, a neutral grey with letters (for

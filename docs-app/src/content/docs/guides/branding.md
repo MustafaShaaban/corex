@@ -73,8 +73,10 @@ Give both sides the same value: `theme.json` has no logical side, and a page rea
 left is correct only while the two are equal.
 
 To recolor just one role without restating the list, override the **scalar** instead (e.g. a
-single `settings.custom` value), which merges. Point the resolver at the file with
-`config('theme.brand_path')`, or place it at the active theme root. A **missing or malformed**
+single `settings.custom` value), which merges. Text drawn on `accent` takes
+`settings.custom.color.onAccent`, graphite by default, so a brand whose `accent` is dark sets it to a light value
+in its `brand.json` (`{ "settings": { "custom": { "color": { "onAccent": "#FFFFFF" } } } }`). Point the resolver
+at the file with `config('theme.brand_path')`, or place it at the active theme root. A **missing or malformed**
 `brand.json` leaves the defaults intact (logged), so removing the file is a clean rollback.
 Style variations (e.g. `theme/styles/dark.json`) override tokens only — the theme stays a skin.
 

@@ -15,6 +15,57 @@ declare(strict_types=1);
 
 use Corex\Tests\Support\ThemeContract;
 
+/**
+ * Every rule of a stylesheet with its own declarations, the ones written directly inside its braces.
+ * A SCSS rule that also holds nested rules (`&:hover { ... }`) keeps the declarations around them.
+ *
+ * @return list<array{selector: string, declarations: string}>
+ */
+function brass_text_rules(string $css): array
+{
+    $css = (string) preg_replace('#/\*.*?\*/#s', '', $css);
+    $rules = [];
+    $stack = [];
+    $text = '';
+
+    foreach (str_split($css) as $character) {
+        if ($character === '{') {
+            // The text since the last `;` is this rule's selector; what came before it is the parent's.
+            $cut = strrpos($text, ';');
+            $selector = $cut === false ? $text : substr($text, $cut + 1);
+            if ($stack !== []) {
+                $stack[count($stack) - 1]['declarations'] .= $cut === false ? '' : substr($text, 0, $cut + 1);
+            }
+            $stack[] = ['selector' => trim($selector), 'declarations' => ''];
+            $text = '';
+        } elseif ($character === '}') {
+            $rule = array_pop($stack);
+            if ($rule !== null) {
+                $rule['declarations'] .= $text;
+                $rules[] = $rule;
+            }
+            $text = '';
+        } else {
+            $text .= $character;
+        }
+    }
+
+    return $rules;
+}
+
+/** The files whose block markup may name a text colour: theme patterns, templates and parts, and corex-ui's patterns. */
+function brass_text_markup_files(): array
+{
+    $root = ThemeContract::root();
+
+    return array_merge(
+        (array) glob($root . '/theme/patterns/*.php'),
+        (array) glob($root . '/theme/templates/*.html'),
+        (array) glob($root . '/theme/parts/*.html'),
+        [$root . '/addons/corex-ui/src/Patterns/PatternLibrary.php'],
+    );
+}
+
 it('draws no text in brass in any CoreX stylesheet', function () {
     $found = [];
 
@@ -33,10 +84,24 @@ it('draws no text in brass in any CoreX stylesheet', function () {
     expect($found)->toBe([]);
 });
 
-it('draws the form\'s required mark in the darker brass', function () {
-    $css = (string) file_get_contents(ThemeContract::root() . '/plugins/corex-forms/src/Block/blocks/corex-form/style.scss');
+// The darker brass, and the brass where a client theme has no `accent-dark` (Perego has `accent` only).
+it('draws the form\'s required mark and the share links\' hover in the darker brass, with a fallback', function () {
+    $darker = 'color: var(--wp--preset--color--accent-dark, var(--wp--preset--color--accent));';
+    $form = (string) file_get_contents(ThemeContract::root() . '/plugins/corex-forms/src/Block/blocks/corex-form/style.scss');
+    $share = (string) file_get_contents(ThemeContract::root() . '/plugins/corex-blocks/src/blocks/social-share/style.scss');
 
-    expect($css)->toMatch('/\.corex-form__required\s*\{\s*color:\s*var\(--wp--preset--color--accent-dark\);/');
+    expect($form)->toMatch('/\.corex-form__required\s*\{\s*' . preg_quote($darker, '/') . '/')
+        ->and($share)->toContain($darker);
+});
+
+it('reads the declarations of a rule that also holds nested rules', function () {
+    $rules = array_column(brass_text_rules(
+        ".a {\n\tcolor: red;\n\t&:hover { color: blue; }\n\tbackground: green;\n}\n.b { margin: 0; }",
+    ), 'declarations', 'selector');
+
+    expect(array_keys($rules))->toBe(['&:hover', '.a', '.b'])
+        ->and($rules['.a'])->toContain('color: red;')->toContain('background: green;')->not->toContain('blue')
+        ->and($rules['&:hover'])->toContain('color: blue;');
 });
 
 // Spec 134 (DECISIONS #635): white on the light brass is 3.35:1, so text on a brass ground is `onAccent`.
@@ -47,17 +112,16 @@ it('draws the text of every rule with a brass ground in the on-accent colour', f
         if (! preg_match('/\.(?:css|scss)$/', $path)) {
             continue;
         }
-        $css = (string) preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(ThemeContract::root() . '/' . $path));
-        preg_match_all('/([^{};]+)\{([^{}]*)\}/', $css, $rules, PREG_SET_ORDER);
 
-        foreach ($rules as [, $selector, $body]) {
+        foreach (brass_text_rules((string) file_get_contents(ThemeContract::root() . '/' . $path)) as $rule) {
+            $body = $rule['declarations'];
             if (preg_match('/(?<![\w-])background(?:-color)?\s*:\s*var\(\s*--wp--preset--color--accent\s*[,)]/', $body) !== 1) {
                 continue;
             }
             if (preg_match('/(?<![\w-])color\s*:\s*([^;]+)/', $body, $colour) === 1
                 && ! str_starts_with(trim($colour[1]), 'var(--wp--custom--color--on-accent,')
             ) {
-                $found[] = sprintf('%s: %s draws %s on brass', $path, trim($selector), trim($colour[1]));
+                $found[] = sprintf('%s: %s draws %s on brass', $path, $rule['selector'], trim($colour[1]));
             }
         }
     }
@@ -72,12 +136,13 @@ it('draws the newsletter button\'s label and the mega menu badge in the on-accen
         ->and((string) file_get_contents(ThemeContract::root() . '/theme/assets/css/corex-navigation.css'))->toContain($onAccent);
 });
 
-// FR-007: a theme pattern gives text the darker brass at every size. The type scale is fluid, so a size
+// FR-007: block markup gives text the darker brass at every size. The type scale is fluid, so a size
 // that is large text at desktop width (the process steps' `xl`) is under it at 375px, where brass fails AA.
-it('draws no text in brass in a theme pattern', function () {
+it('draws no text in brass in a theme pattern, template or part, or a corex-ui pattern', function () {
+    $files = brass_text_markup_files();
     $found = [];
 
-    foreach ((array) glob(ThemeContract::root() . '/theme/patterns/*.php') as $file) {
+    foreach ($files as $file) {
         preg_match_all('/<!-- wp:[a-z\/-]+ (\{.*?\}) \/?-->/', (string) file_get_contents((string) $file), $blocks);
 
         foreach ($blocks[1] as $json) {
@@ -88,5 +153,19 @@ it('draws no text in brass in a theme pattern', function () {
         }
     }
 
-    expect($found)->toBe([]);
+    expect(array_map('basename', $files))->toContain('front-page.html', 'header.html', 'PatternLibrary.php')
+        ->and($found)->toBe([]);
+});
+
+// The corporate header's top bar is `surface-strong`, where brass is 2.65:1 in light: its links ring in
+// `primary` (tests/Fixtures/Theme/contrast-focus-matrix.json, `light-focus-topbar`).
+it('rings the links of the corporate header\'s top bar in primary', function () {
+    $rules = brass_text_rules((string) file_get_contents(ThemeContract::root() . '/theme/assets/css/corex-navigation.css'));
+    $ring = array_values(array_filter(
+        $rules,
+        static fn (array $rule): bool => str_contains($rule['selector'], '.corex-header__topbar a:focus-visible'),
+    ));
+
+    expect($ring)->toHaveCount(1)
+        ->and($ring[0]['declarations'])->toContain('outline-color: var(--wp--preset--color--primary);');
 });
