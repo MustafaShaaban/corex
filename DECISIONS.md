@@ -21149,3 +21149,104 @@ the default of WordPress's own `wp_min_priority_img_pixels`: an avatar or an ico
 
 **Limit.** WordPress still counts the avatar toward its first three eager images before the filter runs. In the
 CoreX templates comments come after the content, so no content image is affected.
+
+## #633 -- The CoreX theme's identity is graphite and brass; #41's navy and cyan is superseded for the theme
+
+**Date:** 2026-11-15. **Spec:** 134 (US-BRD-01, FR-001, FR-010). **Branch:** `spec/134-theme-graphite-brass`.
+**Decided:** by the owner on 2026-11-15 (direction A, white, graphite and brass, for the public theme as for the
+admin; workspace decision BRD-D1), and written down under his mandate.
+
+**Why.** #41 (2026-06-10) named navy `#0B1F3B` and cyan `#00C2FF` as CoreX's identity. The admin, the login and the
+emails moved to graphite and brass, the navy logo went in #465, and the theme alone kept the old palette, so CoreX
+and its own theme read as two products.
+
+**What.** The CoreX theme's light palette is a white page, graphite text and headings, and brass `#ad8643` as the
+accent; its Dark variation is the dark graphite surfaces with brass `#c9a25e`. Every slug keeps its name, so a
+`brand.json` and a client theme that follow the slug list keep working. #41 stands for what it said about client
+sites: CoreX's identity is the product's, and a client's site carries the client's brand.
+
+**Status.** The values are in spec 134; what a person sees waits for the owner's approval of the design.
+
+## #634 -- Each theme slug takes a brand-contract value, and the contract lists the theme's palette
+
+**Date:** 2026-11-15. **Spec:** 134 (FR-001 to FR-005). **Decided:** under the owner's mandate, the recommended
+answer taken.
+
+**What.**
+- `design/tokens/brand-contract.json` lists every theme palette slug, the `onAccent` token and the three shadows
+  with their light and dark values. `BrandContractTest` holds `theme/theme.json` (light) and
+  `theme/styles/dark.json` (dark) to it, and holds every theme colour to be a value the contract lists for the
+  brand. This completes #460, which left the theme's colours and shadows unbound until the theme moved.
+- The pairing is the theme's own where a public page differs from an admin screen: the page is white in light
+  (`surface-raised`) and the canvas in dark; `border` takes `text-subtle`, the lightest grey that reaches 3:1 for a
+  field's outline; `primary` and `ink` take `text`.
+- The main button stays `primary` behind and `inverse` on it. *Not chosen:* a brass main button. White on `#ad8643`
+  is 3.35:1, so it would need graphite text, and a `brand.json` that sets `primary` would stop reaching buttons.
+- The theme's shadows are the contract's whole (geometry and colour), light and dark.
+- One theme value is not in the admin set: `success` in light is `#287a4e` (5.27:1 on white), because the admin's
+  `#2f8f5b` is 4.04:1 as text on white. The contract records it with that reason.
+
+## #635 -- Text on brass is graphite in both modes; headings and plain buttons follow their section
+
+**Date:** 2026-11-15. **Spec:** 134 (FR-011 to FR-015). **Decided:** under the owner's mandate.
+
+**Why.** White on the light brass is 3.35:1, and light text on the dark brass is 2.18:1: brass carries dark text in
+both modes, and no palette slug is dark in both. The theme also gives every heading the `primary` colour, which is
+how a heading came to be the colour of its section (US-SAFE-15).
+
+**What.**
+- The theme gains one custom token, `settings.custom.color.onAccent` (`#14151a` in both modes). A block on the
+  `accent` background with no text colour of its own takes it.
+- A heading with no colour of its own takes its section's text colour. A button with no colours of its own inside a
+  section that sets a text colour is an outline in that colour.
+- The call-to-action pattern stops naming `surface` for its band and heading; its button keeps `surface` behind and
+  `accent-dark` on it. `HeroContrastTest` keeps its thresholds.
+
+*Not chosen:* a new palette slug named by the pattern (a client theme without it would draw a button with no
+background); moving the band to `surface-alt` (the page would show brass only in its links).
+
+**Limit.** Under a client's own theme, a newly inserted call-to-action band takes that theme's text and heading
+colours on its accent. Bands already on a page do not change.
+
+## #636 -- The Editorial variation is removed; Dark stays a choice the site owner makes
+
+**Date:** 2026-11-15. **Spec:** 134 (FR-007). **Decided:** under the owner's mandate (US-BRD-01 asks that the
+choice be recorded).
+
+**What.** `theme/styles/editorial.json` is removed with the sentence in the branding guide that names it. The Dark
+variation stays, chosen in the Site Editor as today; following the visitor's computer is not in this release.
+
+**Why.** The owner chose one look. Editorial is a terracotta palette that nothing documents beyond one sentence and
+no test loads, and every variation kept is a palette to hold to AA on every release.
+
+**Limit.** WordPress stores a chosen variation's values with the site's own styles. A site that chose Editorial
+keeps its colours; a site that chose Dark keeps the navy dark values until Dark is chosen again. The release notes
+say so.
+
+## #637 -- The logo set gains fixed-colour and stacked lockups, a knockout and a favicon set; the login draws the lockup that suits its card
+
+**Date:** 2026-11-15. **Spec:** 134 (US-BRD-05, FR-016 to FR-022). **Decided:** under the owner's mandate
+(workspace decision BRD-D7: favicons and lockups now, marketing exports with the docs stage).
+
+**What.**
+- The lockup draws "Core" in the neutral colour and only the terminal "x" in brass.
+- The set gains a lockup with fixed colours for dark backgrounds and one for light, a stacked lockup in both, and a
+  single-ink knockout on a brass tile. Files that use `currentColor` are for drawing inline only.
+- The login draws the fixed-colour lockup for its card: dark for the Dark appearance, light for Light, by the
+  computer for System. As a background image a `currentColor` file drew its modules black.
+- A favicon set: SVG, and PNG at 16, 32, 180 and 512px, written by the logo generator. The PNG sizes are an explicit
+  exception to the "no raster set" rule: browsers and phones ask for them.
+- The favicon files are written into the logo folder and into the theme, and a test holds the copies equal. The
+  CoreX theme links them when the site has no site icon. No plugin adds a favicon under another theme.
+- `corex-mark.svg`, a copy of the symbol that nothing draws, is removed.
+
+## #638 -- The theme's preview is a capture taken by one command, with a fingerprint of the palette beside it
+
+**Date:** 2026-11-15. **Spec:** 134 (US-BRD-07, FR-023 to FR-025). **Decided:** under the owner's mandate.
+
+**What.** `theme/screenshot.png` is a 1200 by 900 capture of the front page in the default style with the Company
+kit applied. The command that takes it writes a hash of the palettes and shadows of `theme.json` and `dark.json`
+beside the image, and a test fails, naming the command, when the hash differs from the files.
+
+*Not chosen:* comparing file dates (a checkout sets every file's date to now); a fingerprint that also covers the
+templates (the story asks for the palette; R2.3 and R2.4 change the page and each takes its own capture).
