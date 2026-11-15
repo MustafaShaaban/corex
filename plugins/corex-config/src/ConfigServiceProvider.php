@@ -562,6 +562,15 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
                 $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
         );
+        // Spec 124, FR-017: a lockout released from the screen, through the same table.
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginLockoutReleases::class,
+            static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
+                $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
+        );
+        $this->container->singleton(\Corex\Config\Security\LoginProtection\LockoutReleaser::class);
+        $this->container->singleton(\Corex\Config\Security\LockoutRows::class);
+        $this->container->singleton(\Corex\Config\Security\LockoutReleaseController::class);
 
         $this->container->singleton(AdminDashboard::class);
         // The Settings pages and what they read and write (spec 119): one of each per request, so
@@ -1340,6 +1349,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class)->register();
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class)->register();
         $this->container->make(\Corex\Config\Security\SecuritySettingsController::class)->register();
+        $this->container->make(\Corex\Config\Security\LockoutReleaseController::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();

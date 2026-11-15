@@ -14,6 +14,7 @@ use Corex\Activity\ActivityEvent;
 use Corex\Config\Access\ScreenNames;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\PageCachePurge;
+use Corex\Config\Security\LoginProtection\LoginAccounts;
 
 /**
  * What happened, in a sentence a site owner reads (spec 118, US-OVR-07). The one source of activity
@@ -27,8 +28,10 @@ use Corex\Config\Operations\PageCachePurge;
  */
 final class ActivitySentences
 {
-    public function __construct(private readonly OperationsMode $modes)
-    {
+    public function __construct(
+        private readonly OperationsMode $modes,
+        private readonly LoginAccounts $accounts,
+    ) {
     }
 
     /**
@@ -90,6 +93,19 @@ final class ActivitySentences
             ),
             SecurityActivityRecorder::LOGIN_LOCKED => $this->said(
                 __('A sign-in was locked out after too many failed attempts', 'corex'),
+                'admin.php?page=corex-operations-security&tab=login',
+            ),
+            SecurityActivityRecorder::LOGIN_RELEASED => $this->said(
+                $this->lockoutReleased($event, $who),
+                'admin.php?page=corex-operations-security&tab=login',
+            ),
+            SecurityActivityRecorder::LOGIN_RELEASED_ALL => $this->said(
+                sprintf(
+                    /* translators: 1: who released them, 2: how many sign-in lockouts were active. */
+                    _n('%1$s released the %2$s active sign-in lockout', '%1$s released all %2$s active sign-in lockouts', $count, 'corex'),
+                    $who,
+                    number_format_i18n($count),
+                ),
                 'admin.php?page=corex-operations-security&tab=login',
             ),
             'access.request.created' => $this->access(sprintf(/* translators: %s: who asked. */ __('%s asked for access', 'corex'), $who)),
@@ -159,6 +175,32 @@ final class ActivitySentences
             ActivityEvent::ACTOR_CRON => __('A scheduled task', 'corex'),
             default                   => __('CoreX', 'corex'),
         };
+    }
+
+    /**
+     * One lockout released from the screen (spec 124, FR-017): the account named as the lockout
+     * notice names it ({@see LoginAccounts::nameOf()}, DECISIONS #626); a username that is no account
+     * by its fingerprint, never what was typed.
+     */
+    private function lockoutReleased(ActivityEvent $event, string $who): string
+    {
+        $accountId = (int) ($event->context['account_id'] ?? 0);
+
+        if ($accountId < 1) {
+            return sprintf(
+                /* translators: 1: who released it, 2: a short fingerprint of the username that was typed, e.g. 0123456789ab. */
+                __('%1$s released the sign-in lockout of an unknown username (fingerprint %2$s)', 'corex'),
+                $who,
+                (string) ($event->context['identity'] ?? ''),
+            );
+        }
+
+        return sprintf(
+            /* translators: 1: who released it, 2: the account that was locked out, e.g. "Sara Adel (sara)". */
+            __('%1$s released the sign-in lockout of %2$s', 'corex'),
+            $who,
+            $this->accounts->nameOf($accountId),
+        );
     }
 
     /**

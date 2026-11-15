@@ -66,8 +66,12 @@ and approved first, a spec ends in slices, and nothing merges without the review
   (#467, `c83fa394`). Slice 5 (the login settings route saves only what a request changes and refuses with the range;
   one shared trusted-proxy rule with the command line, no `/0`, at most 100, one spelling; writes one at a time under
   a named lock; a stored `/0` list reported by Hardening; DECISIONS #629 and its 2026-11-13 amendment) is on
-  `spec/124-slice-5-login-settings-route`, in review, and is not to be released before slice 10 (DECISIONS #628).
-  Next: slice 6, the lockout release route. Held: `OperationsMode.php:189`
+  `spec/124-slice-5-login-settings-route`, merged (#468), and is not to be released before slice 10 (DECISIONS #628).
+  Slice 6 (the lockout release routes, `POST corex/v1/security/lockouts/{id}/release` and `.../release-all`: a
+  lockout named by its stored row, every active row of its username and network ended, its failures no longer
+  counted, recorded in the activity log by account or fingerprint; 409 when nothing is left to end; the panel drawn
+  on load from the same rows; DECISIONS #630) is on `spec/124-slice-6-lockout-release`, in review. Next: slice 7
+  (design first). Held: `OperationsMode.php:189`
   and `ModeDisclosure.php:157` still tell a Staging owner that search engines "should be discouraged", which is no
   longer true once slice 2 ships; the wording is held for slice 8's screen copy, but a release cut before slice 8
   would ship it.

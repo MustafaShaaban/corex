@@ -24,9 +24,7 @@ use Corex\Config\Operations\ReadinessSnapshot;
 use Corex\Config\Readiness\ChecklistMarkup;
 use Corex\Config\Readiness\LaunchChecklist;
 use Corex\Config\Readiness\ReadinessWords;
-use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
-use Corex\Config\Security\LoginProtection\LoginProtectionPolicy;
 use Corex\Config\Security\LoginProtection\LoginAddressState;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
@@ -58,7 +56,7 @@ final class OperationsSecurityScreen
         private readonly ProductionReadinessSnapshotFactory $readiness,
         private readonly LoginProtectionSettingsStore $loginSettings,
         private readonly LoginLockoutReader $lockouts,
-        private readonly LoginProtectionPolicy $loginPolicy,
+        private readonly LockoutRows $lockoutRows,
         private readonly AdminDateTime $dateTime,
         private readonly ModeDisclosure $disclosure,
         private readonly CacheStatusReport $cacheStatus,
@@ -960,65 +958,20 @@ final class OperationsSecurityScreen
     }
 
     /**
-     * Real lockouts from the evidence table.
+     * Real lockouts from the evidence table, in the rows a release answers with (spec 124, FR-017), so
+     * the panel is drawn on load and redrawn after a release from one shape. What each row holds,
+     * and why a fingerprint and not a name, is {@see LockoutRows}'.
      *
      * This was hardcoded to an empty array, so the panel reported "no lockouts" no matter what had
-     * actually been recorded — a control that always says the same thing tells the operator nothing.
-     *
-     * Identities are stored as hashes by design (LoginAttemptRecord), so there is no name to show.
-     * A short fingerprint is enough to tell two lockouts apart and to line one up with its lockout
-     * notice, and the account is named only when the attempt matched a real user, which is already
-     * recorded. Nothing here is reconstructed or guessed.
-     *
-     * The fingerprint is the policy's, keyed again with the site key, never a prefix of the stored
-     * value: a row stored before spec 124 holds a plain SHA-256, and twelve characters of a plain
-     * hash of an address give the address back to anyone who hashes the IPv4 range (FR-020).
+     * actually been recorded: a control that always says the same thing tells the operator nothing.
+     * `locked_until` is the canonical machine value, which `CorexTime` presents, so one formatter
+     * decides how a date looks (FR-015).
      *
      * @return list<array<string,mixed>>
      */
     private function lockoutsPayload(): array
     {
-        $now = new DateTimeImmutable('now');
-
-        return array_map(function (LoginAttemptRecord $record) use ($now): array {
-            $lockedUntil = $record->lockedUntil;
-
-            return [
-                'id' => $this->loginPolicy->identityFingerprint($record->identityHash) . '-' . ($lockedUntil?->format('U') ?? '0'),
-                'identity' => $this->loginPolicy->identityFingerprint($record->identityHash),
-                'network' => $this->loginPolicy->networkFingerprint($record->networkHash),
-                'account' => $this->accountName($record->userId),
-                'reason' => $record->reasonCode,
-                'active' => $lockedUntil !== null && $lockedUntil > $now,
-                'locked_until' => $lockedUntil === null ? '' : $this->machineDate($lockedUntil),
-            ];
-        }, $this->lockouts->recentLockouts($now));
-    }
-
-    /** The account a lockout hit, when the attempt matched a real user. */
-    private function accountName(?int $userId): string
-    {
-        if ($userId === null || $userId < 1) {
-            return '';
-        }
-
-        $user = get_userdata($userId);
-
-        return $user === false ? '' : $user->user_login;
-    }
-
-    /**
-     * The canonical machine value for a lockout expiry, for the React app to present.
-     *
-     * This used to return a *display* string built from the site's date/time options, with
-     * `$date->format('c')` as its fallback — so when `wp_date()` returned an empty string the
-     * screen showed a raw ISO timestamp to the operator. Sending the canonical value and letting
-     * `CorexTime` render it means one formatter decides how a date looks, and the fallback path
-     * cannot produce a different answer from the happy path (FR-015).
-     */
-    private function machineDate(DateTimeImmutable $date): string
-    {
-        return gmdate(DATE_ATOM, $date->getTimestamp());
+        return $this->lockoutRows->rows(new DateTimeImmutable('now'));
     }
 
     /**
@@ -1093,8 +1046,8 @@ final class OperationsSecurityScreen
                 'label' => $label,
                 'tone' => 'info',
                 // `gmdate`, not `wp_date`: both name the same instant, but `wp_date(DATE_ATOM)`
-                // writes it with the site's offset while every other machine value in CoreX —
-                // including `machineDate()` two methods up, and the whole persistence layer — is
+                // writes it with the site's offset while every other machine value in CoreX
+                // (the lockout rows' `locked_until` included, and the whole persistence layer) is
                 // UTC. Two conventions in one payload is a question a future reader has to answer
                 // before they can trust either.
                 'occurred_at' => $entry['time'] > 0
