@@ -27,13 +27,13 @@ const { test, expect } = require( '@playwright/test' );
 const { STORAGE_STATE } = require( './global-setup' );
 
 /**
- * The theme's root padding in pixels: spacing preset 40 as a page has it, which is 1rem.
+ * The theme's root padding in pixels: spacing preset 40, which theme.json writes as 1.5rem.
  *
- * theme.json writes that preset as 1.5rem. WordPress keeps its own sizes for the slugs 20 to 80
- * until a theme sets `defaultSpacingSizes` to false, and this theme does not, so the number here
- * is the one measured and not the one written (DECISIONS #344).
+ * Until spec 121 WordPress kept its own sizes for the slugs 20 to 80 and the gutter measured 16px
+ * (DECISIONS #344). The theme now turns those sizes off, so the value written is the value drawn
+ * (DECISIONS #462).
  */
-const GUTTER = 16;
+const GUTTER = 24;
 
 /** `settings.layout` in theme.json: the content column and a wide block. */
 const CONTENT_SIZE = 768;

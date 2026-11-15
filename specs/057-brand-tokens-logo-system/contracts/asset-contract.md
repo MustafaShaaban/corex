@@ -15,7 +15,7 @@ Logo implementation is blocked until the owner supplies or approves a package th
 - rollback mapping from the current default asset.
 
 All variants are optimized SVG. No embedded raster image, unapproved external URL, executable script, or required
-font text element is allowed. The existing navy/cyan `plugins/corex-config/assets/corex-logo.svg` is migration
+font text element is allowed. The retired navy/cyan logo (removed by spec 121) was migration
 evidence only and cannot satisfy this gate.
 
 ## Font package

@@ -946,14 +946,16 @@ function ConfirmDelete( { count, loadExports, close, apply } ) {
 					</p>
 				) }
 				<div className="corex-inbox__acknowledge">
-					<input
-						id={ acknowledgeId }
-						type="checkbox"
-						checked={ acknowledged }
-						onChange={ ( event ) =>
-							setAcknowledged( event.target.checked )
-						}
-					/>
+					<span className="corex-inbox__acknowledge-box">
+						<input
+							id={ acknowledgeId }
+							type="checkbox"
+							checked={ acknowledged }
+							onChange={ ( event ) =>
+								setAcknowledged( event.target.checked )
+							}
+						/>
+					</span>
 					<label htmlFor={ acknowledgeId }>
 						{ words.acknowledge }
 					</label>

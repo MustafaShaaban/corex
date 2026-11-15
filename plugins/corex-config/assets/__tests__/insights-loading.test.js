@@ -146,3 +146,62 @@ it( 'says the widgets could not be loaded, and asks again when told to', async (
 		'The rest of the insights could not be loaded.'
 	);
 } );
+
+it( 'names a score in one translatable sentence, so a translation can order it (spec 121, FR-019)', async () => {
+	const asked = [];
+	const { sprintf } = jest.requireActual( '@wordpress/i18n' );
+	window.wp.i18n = {
+		__: ( text ) => {
+			asked.push( text );
+			return text === 'Score %1$d / 100, grade %2$s'
+				? 'الدرجة %2$s، النتيجة %1$d من 100'
+				: text;
+		},
+		sprintf,
+	};
+
+	await answer(
+		'/insights',
+		ok( {
+			results: [
+				{
+					provider: 'performance',
+					score: 91,
+					grade: 'A',
+					status: 'good',
+					summary: 'Fast.',
+				},
+			],
+		} )
+	);
+
+	expect(
+		cards()[ 0 ]
+			.querySelector( '.corex-insight-card__score' )
+			.getAttribute( 'aria-label' )
+	).toBe( 'الدرجة A، النتيجة 91 من 100' );
+	expect( asked ).not.toContain( 'Score' );
+} );
+
+it( 'names a score in English on a page without wp-i18n', async () => {
+	await answer(
+		'/insights',
+		ok( {
+			results: [
+				{
+					provider: 'performance',
+					score: 91,
+					grade: 'A',
+					status: 'good',
+					summary: 'Fast.',
+				},
+			],
+		} )
+	);
+
+	expect(
+		cards()[ 0 ]
+			.querySelector( '.corex-insight-card__score' )
+			.getAttribute( 'aria-label' )
+	).toBe( 'Score 91 / 100, grade A' );
+} );

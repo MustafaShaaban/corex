@@ -13,7 +13,7 @@ gutters, 2.5u corner radius, four corner modules `currentColor`, center module b
 - `Corex Logo System.dc.html` — exact rect geometry, color variants (full/mono/knockout), app icons, clearspace.
 - `Corex Brand System.dc.html` — `theme.json` tokens and the brass `#c9a25e` / AA `#ad8643` accents.
 
-The legacy navy/cyan `corex-logo.svg` is **not** approved production artwork; it is retained only as
+The legacy navy/cyan logo (removed by spec 121) is **not** approved production artwork; it was retained only as
 rollback/migration evidence. No `.dc.html` prototype runtime files were shipped.
 
 ## Production assets (T059, T060)

@@ -18520,6 +18520,190 @@ screen-reader pass is not called accessible in the release notes.
 **Not chosen.** *A CI check that a release record exists*: there is no release record file to check yet, and
 inventing one belongs to the release that first needs it.
 
+## #460 -- The brand is written once, as the shipped admin set, and a test holds every copy to it
+
+**Date:** 2026-10-23. **Spec:** 121, US-BRD-02 (FR-001, FR-002). Decided under the owner's 2026-10-21 mandate
+(workspace decision BRD-D3, the recommended answer: the shipped admin set).
+
+**Decided.**
+- `design/tokens/brand-contract.json` lists every brand colour (dark and light), shadow (dark and light), radius
+  and motion value, with the copies that hold it: the admin custom property in `corex-admin-tokens.css`, the
+  `EmailPalette` member or `EmailBrand` constant, and the theme.json key.
+- `tests/Unit/Theme/BrandContractTest.php` fails, naming the token, the mode and the copy, when a copy holds
+  another value.
+- The theme's radius and motion are bound now. The theme's colours and shadows are bound by US-BRD-01 (R2.2), which
+  moves the theme to graphite and brass; until then the contract gives them no theme key, so the test does not
+  compare the navy palette with brass.
+- The contract stays a test fixture: nothing is generated from it (DECISIONS #5, spec 057's scoped adapter).
+
+**Not chosen.** *Generating the admin stylesheet from theme.json*: spec 057 chose a scoped adapter, and #5 forbids
+build-time tokens. *Binding the theme's colours now*: every comparison would fail until R2.2 changes the palette.
+
+## #461 -- Light and System on a light computer are one list; light shadows are graphite; the admin shares the theme's motion
+
+**Date:** 2026-10-23. **Spec:** 121, US-BRD-02 (FR-003, FR-004), US-BRD-03 (FR-010). Decided under the owner's
+2026-10-21 mandate.
+
+**Decided.**
+- The explicit Light block and the `prefers-color-scheme: light` block of `corex-admin-tokens.css` carry the same
+  declarations, shadows, overlay, login card, login field and login backdrop included. Before, Light kept the dark
+  shadows, overlay and backdrop, and System drew navy shadows and a different login card. The test compares the two
+  blocks.
+- Light shadows use the design's graphite, `rgb(20 21 26 / 8%, 10%, 14%)`, at the shipped geometry, not navy.
+- The right-to-left swap covers `body.corex-admin-screen` as well.
+- The admin's motion scale is the theme's: `--corex-admin-motion-instant|fast|base|slow` at 80, 140, 200 and 320ms,
+  `--corex-admin-ease` the standard curve and `--corex-admin-ease-emphasized`. A spinner's turn is not a transition
+  and keeps 900ms in `--corex-admin-motion-spin`. The login's entrance, which read the old 900ms "slow", now takes
+  320ms.
+
+**Not chosen.** *The dark shadows in Light*: the design gives light shadows. *The navy tint*: retired with the navy
+brand.
+
+## #462 -- The CoreX theme draws its own scales: WordPress's sizes off, slugs kept, a 12px step added
+
+**Date:** 2026-10-23. **Spec:** 121, US-BRD-03 (FR-007 to FR-011). Decided under the owner's 2026-10-21 mandate.
+Supersedes the measured 16px gutter of #344.
+
+**Decided.**
+- theme.json sets `defaultSpacingSizes` and `defaultFontSizes` to false, and `ThemeDefaultPresets` removes
+  WordPress's default font sizes and shadows from its default layer while the CoreX theme (or a child of it) is
+  active. WordPress kept printing them as custom properties though the editor hid them. A client's own theme is
+  never touched. The two custom properties `wp-block-library` prints for old content (`normal`, `huge`) are
+  WordPress's, not presets, and stay.
+- Spacing slugs keep their names and written values; a new slug `25` adds 12px. The page now draws 4, 8, 12, 16,
+  24, 32, 48, 64 and 96px. The root gutter (slug 40) becomes 24px.
+- Font size slugs keep their names, take the design's sizes and are named by its roles: Caption, Small, Body, Lead,
+  Title, Heading 3 (`2xl`), Heading 2 (new `3xl`), Heading 1 (`hero`) and Display (new). Large sizes are fluid
+  between a 375px and a 1200px window and reach the design's size at the wide size.
+- h1 to h6 use Heading 1, Heading 2, Heading 3, Title, Lead and Body, at weight 600 (700 before), with line heights
+  1.05 to 1.5 and tracking tokens (`--wp--custom--tracking--*`, -0.03em to -0.01em).
+- Radius keys are the admin's: `xs` 3px, `sm` 6px (the CoreX radius, used by buttons), `md` 10px, `lg` 16px,
+  `full` 999px. Motion keys are `instant`, `fast`, `base`, `slow`. Buttons change their colours over the fast token.
+- `--wp--preset--font-size--2xl`, written by the call to action block, was never a property WordPress prints (it
+  prints `2-xl`); it is corrected, and the token inventory names slugs the way WordPress does.
+
+**Not chosen.** *Re-slugging spacing 10 to 90 one step apart*: every page and every pattern that names a slug would
+change meaning. *Turning the defaults off in a client's theme too*: their content may use them.
+
+## #463 -- A page in a language written in Arabic script is drawn in IBM Plex Sans Arabic, by its language
+
+**Date:** 2026-10-23. **Spec:** 121, US-BRD-04 (FR-012 to FR-015). Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+- theme.json `styles.css` sets body text, headings, labels, buttons and navigation to the `arabic` family on
+  `:root:is(:lang(ar), :lang(fa), :lang(ur), :lang(ps), :lang(ckb), :lang(ug))`, at line height 1.8 for body and 1.3
+  for headings.
+- Every Arabic face, in the theme, its variations and the admin, declares the Arabic character range. A page
+  downloads the files only when it draws Arabic text, and the Latin words in an Arabic sentence fall to the Latin
+  face.
+- The admin's right-to-left rule sets its line tokens to 1.8 and 1.3, running text takes the normal one, and its
+  mono stack falls to the Arabic face for Arabic letters.
+
+**Not chosen.** *`[dir="rtl"]` on the site*: Hebrew is right to left and is not Arabic script. *An extra font
+family preset for Arabic headings*: one more entry in the editor's font picker for a rule the theme can say.
+
+## #464 -- Space Grotesk for headings and interface labels, the system font for long text; both font copies stay
+
+**Date:** 2026-10-23. **Spec:** 121, US-BRD-09 (FR-016, FR-017). Records workspace decision BRD-D2 (the owner, 20
+October 2026).
+
+**Decided.**
+- Buttons, tabs, navigation and form labels use Space Grotesk on the site (theme.json `button` element,
+  `core/navigation`, `label` and `legend`), in the admin (`--corex-admin-font-ui`) and on the login. Long body text
+  stays in the system font there and in emails.
+- The four font files stay in both the theme and corex-core: the theme must work without the plug-in. The font
+  test counts both folders against the limit of four and requires the copies to be identical. No file is added;
+  Space Grotesk 400 is not shipped, so labels draw at 500 and above.
+
+**Not chosen.** *Space Grotesk for body text*: a fifth file, and kinder to Arabic as decided.
+
+## #465 -- The navy and cyan logo is removed; spec 111's detection rule sends the Core X symbol
+
+**Date:** 2026-10-23. **Spec:** 121, US-BRD-08 (FR-018). Decided under the owner's 2026-10-21 mandate. Supersedes
+#102 item 4 (the old file kept as rollback evidence) and #41 as far as the logo goes.
+
+**Decided.** `plugins/corex-config/assets/corex-logo.svg` is deleted. `BrandingTest` checks that it is gone and that
+the login's lockup is the brass Core X. The logo manifest, the plugin README and spec 057's notes no longer name
+it. Spec 111's detection contract sends `brand/corex-symbol.svg`, which reads at 16 to 32px.
+
+## #466 -- CoreX ships an Arabic catalogue in corex-core, loaded even where WordPress would keep an empty one
+
+**Date:** 2026-10-23. **Spec:** 121, US-NFR-02 (FR-019, FR-020). Decided under the owner's 2026-10-21 mandate
+(workspace decision NFR-D3, the recommended answer).
+
+**Decided.**
+- `plugins/corex-core/languages/corex-ar.po` is the source, with its compiled `corex-ar.mo` committed beside it.
+  It covers every string of the template CI generates, every theme pattern title and description, and the style
+  variation names; command-line help (`packages/cli`) stays English. Its glossary and style rules are
+  `languages/glossary-ar.md`.
+- The first catalogue was drafted in this release from the template, by machine, following the glossary. Its
+  review by the native Arabic speaker the owner names is owed before R2.1 ships (NFR-D3) and is recorded in
+  `specs/121-tokens-and-type/arabic-review.md`.
+- `scripts/i18n-arabic.mjs` compiles the `.mo`, refuses a translation whose placeholders, markup or named slots
+  differ from its original, reports template strings with no Arabic, and, as the last step of `npm run build`,
+  writes the script translations for every built or hand-written CoreX script under WordPress's own file names.
+  `ScriptTranslations` answers WordPress's lookup with them when WordPress's languages folder has none; a pack a
+  site installs still wins.
+- `Catalogue` loads the domain on `init` (priority 1). WordPress keeps an empty catalogue for a domain asked for
+  before its file is known, and the CoreX theme shares the `corex` domain and is asked first, so every CoreX string
+  stayed English on an Arabic site. When WordPress has not loaded the domain, `Catalogue` loads the site's pack or
+  the shipped file itself.
+- Strings WordPress could not find to extract are now extractable: two admin scripts named their translation
+  helper `t()`, and managed tables translate their names at run time
+  (`languages/runtime-strings.php`, held to the tables by `RuntimeStringsTest`). The Insights screen and the setup
+  wizard now load their script translations.
+- CI checks the catalogue on every pull request against the generated template; a missing Arabic string is listed,
+  a broken one fails. On a `release/*` branch the check runs strict (`CATALOGUE_STRICT` in
+  `.github/workflows/ci.yml`) and a missing Arabic string fails too.
+- `Catalogue` also accepts a site's language pack that is WordPress's `.l10n.php` file with no `.mo`.
+- `ScriptTranslations` answers only a lookup in WordPress's plug-in pack folder, so a pack the site installed wins
+  (amended 2026-11-15).
+- `verifyDist` (`scripts/build-shared-host-dist.mjs`) refuses a package without the Arabic script translations, so
+  `npm run build:dist` and `release:push` exit 1 on a checkout where `npm run build` was not run.
+- The admin's base line height is 1.8 right to left (`corex-admin-tokens.css`).
+- The fonts' OFL licences are kept in `plugins/corex-core/assets/fonts/licenses/`.
+
+**Client impact.** Both clients run corex-core. On Perego's Arabic pages CoreX strings it does not translate
+itself turn Arabic; its `gettext_corex` wording still wins where it has some. An Arabic-language admin user sees
+CoreX in Arabic on both. Muva changes only for such a user. A client pipeline that packages with
+`npm run build:dist` must run `npm run build` first, or the package is refused.
+
+## #467 -- The Arabic proof asks the translation functions, per request, by a cookie
+
+**Date:** 2026-10-23. **Spec:** 121, US-NFR-02 (FR-021, FR-022). Decided under the owner's 2026-10-21 mandate.
+
+**Decided.**
+- Fixture `tests/e2e/fixtures/corex-e2e-arabic.php`: a request with the cookie `corex_e2e_locale=ar` runs in Arabic
+  and right to left, without changing the site's language, and records every `corex` string a PHP or JavaScript
+  call asked for that came back unchanged, unless all its words are names the glossary keeps in English. The page
+  reports them, and a REST answer reports them in a header. The page also says whether the catalogue loaded.
+- `tests/e2e/quality/arabic-proof.spec.js`, in the quality job: every discovered admin screen and tab, every theme
+  template with the Company kit, and the Contact form submitted empty. It fails naming each string and its screen,
+  or saying the catalogue is not loaded, and checks that Arabic text is drawn in the Arabic face. Four screenshots
+  per target (375 and 1280px, light and dark) are kept for the reader.
+- The quality job installs WordPress's Arabic pack so the screenshots show a whole Arabic admin; the proof does not
+  depend on it.
+
+**Not chosen.** *Reading the page for English words*: the site's own data (names, titles, addresses) is English and
+is not a CoreX string. *Switching the site's language*: the other checks run on the same site at the same time.
+
+## #468 -- The Foundations page's token tables are written from the shipped files and checked on every pull request
+
+**Date:** 2026-10-23. **Spec:** 121, US-DOC-07 (FR-023 to FR-025). Change request CR-010, decided under the owner's
+2026-10-21 mandate.
+
+**Decided.**
+- `scripts/foundations-tokens.mjs --write` writes the theme's and the admin's token tables between markers in
+  `docs-app/src/content/docs/design-system/foundations.md`; `--check` fails naming each token whose row differs.
+  The docs build runs the check before it builds, and `tests/foundations-tokens.test.js` runs it on every pull
+  request.
+- The page describes the adapter as it ships: scoped to `.corex-admin`, the login body and the full-width admin
+  body, dark by default, Light and System-light one set.
+- The theme colour table shows theme.json as shipped, which is navy until US-BRD-01 (R2.2); the check makes R2.2
+  regenerate it, and TC-DOC-07-04 (no navy value on the page) completes then.
+- The page is direction-neutral (logical properties, no left or right in its words). Reading it right to left in
+  Arabic is proven when the docs site gains its Arabic locale (US-DOC-02).
+
 ## #420 — Every CoreX screen, route and save action asks for the CoreX ability that names it, read from one map
 
 **Date:** 2026-10-23. **Branch:** `spec/117-abilities`. **Spec:** 117, User Story 1 (US-ACC-01). **Mode:** CoreX
@@ -20921,3 +21105,47 @@ from the URL only, so an `id` in the body cannot name another lockout. 409 and n
 because the request asked for a change the lockout's state no longer allows, which is how the job routes answer a
 cancel of a job that cannot be cancelled; and not 422, because nothing in the request is malformed. *Not chosen:*
 a 200 with a status field, which a client reading `ok` would show as "released".
+
+## #631 -- The CoreX theme preloads its heading face, left to right only, and keeps swap
+
+**Date:** 2026-11-15. **Spec:** 121, T031 (US-BRD-09, FR-016; spec 116 FR-020). **Branch:**
+`spec/121-tokens-and-type`. **Decided:** under the owner's 2026-10-21 mandate for the revamp.
+
+**Why.** With the heading scale of #462 the h1 is 40px at 375px. In the first frame the page is drawn in the system
+font, because the theme's CSS is inline and Space Grotesk (`font-display: swap`) is asked for only after layout. On
+Linux that fallback is wider, so "Build something great" wraps onto three lines instead of two, and when the face
+arrives everything below moves up by one line: CI's front-end budget measured 0.065 to 0.129 layout shift on six
+pages (limit 0.05). Windows passes because Segoe UI is close to Space Grotesk.
+
+**What.** `ThemeFontPreload` adds the heading family's first theme WOFF2 face to `wp_preload_resources`, read from
+the merged font settings so a `brand.json` heading face is followed. Only on the CoreX theme and only on a page that
+is not right to left (an Arabic page sets headings in the Arabic face, and spec 057 forbids an unused preload). The
+font manifest marks Space Grotesk `preload: true` with evidence `spec-121-T031-heading-face-preload`
+(`specs/121-tokens-and-type/evidence/heading-face-preload.md`), the first evidence-backed exception to spec 057's
+"no preload by default". `font-display` stays `swap`.
+
+*Not chosen:* a metric-matched fallback (`size-adjust`), which fixed the front page but not "Archives: Projects",
+3px too wide in the fallback; `font-display: optional`, which kept first visits in the system font.
+
+**Limits.** Chrome holds the first frame for a preloaded font about 100ms; on a slower first visit the swap still
+moves the page, as before. Without corex-core active there is no preload, since the theme has no PHP.
+
+## #632 -- Avatars load lazily on the CoreX theme, and the budget's main image is at least 50,000 px²
+
+**Date:** 2026-11-15. **Spec:** 121, T031 (spec 116 FR-020). **Branch:** `spec/121-tokens-and-type`.
+**Decided:** under the owner's 2026-10-21 mandate for the revamp.
+
+**Why.** With the heading scale of #462 the comment avatar of a single post sits below the 812px fold at 375px, and
+WordPress loads it at once, because it is among the first three images of the main loop. The front-end budget calls
+that `image-below-fold-not-lazy`. At 1280px the same avatar is the only image on the first screen, and the budget
+took the largest image in view as the page's main image whatever its size, so a lazy avatar there was
+`first-image-lazy`. The server cannot know the width it draws for, so no single `loading` value passed both.
+
+**What.** `AvatarLazyLoading` answers `wp_get_loading_optimization_attributes` for the `get_avatar` context: on the
+CoreX theme, when the caller gave no `loading` and lazy loading is on, the avatar is `lazy` and loses
+`fetchpriority`. A client site's own theme keeps WordPress's answer. The budget
+(`tests/e2e/quality/front-end-budget.spec.js`) counts an image as the first screen's main image only from 50,000 px²,
+the default of WordPress's own `wp_min_priority_img_pixels`: an avatar or an icon is never a page's main image.
+
+**Limit.** WordPress still counts the avatar toward its first three eager images before the filter runs. In the
+CoreX templates comments come after the content, so no content image is affected.

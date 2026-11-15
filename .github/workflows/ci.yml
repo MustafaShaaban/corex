@@ -78,6 +78,18 @@ jobs:
         if: ${{ !cancelled() }}
         run: composer i18n:pot
 
+      # The Arabic catalogue against that template (spec 121, US-NFR-02): a translation whose
+      # placeholders or markup differ from its original, or a .mo not compiled from the .po, fails
+      # here. A string with no Arabic yet is listed and does not fail a feature pull request; the
+      # Arabic proof in the quality job names it with its screen. A release branch (`release/*`)
+      # runs the check strict: a string the proof never draws (an email, a dialog, a REST error)
+      # cannot reach a tag untranslated.
+      - name: Check the Arabic catalogue
+        if: ${{ !cancelled() }}
+        env:
+          CATALOGUE_STRICT: ${{ startsWith(github.head_ref, 'release/') && '--strict' || '' }}
+        run: node scripts/i18n-arabic.mjs check plugins/corex-core/languages/corex.pot $CATALOGUE_STRICT
+
       - name: Upload the translation template
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -539,6 +551,12 @@ jobs:
           # The Company kit at Full, a page or post for every theme template, and a subscriber.
           wp eval-file tests/e2e/quality/seed-quality-site.php --path=wp
 
+      # WordPress's own Arabic, so the Arabic proof (spec 121) shows a whole admin in Arabic. The
+      # proof checks CoreX's strings only and sets the direction itself, so a download that fails
+      # does not fail the job.
+      - name: Install WordPress's Arabic language pack
+        run: wp language core install ar --path=wp || echo "::warning::WordPress's Arabic pack was not installed"
+
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
@@ -792,6 +810,9 @@ jobs:
       - name: The shared-host package of the generated site boots, and `wp corex` runs from it
         run: |
           set -euo pipefail
+          # The Arabic script translations `npm run build` writes (spec 121, FR-019), which
+          # verify:dist requires; the script needs nothing beyond Node, as this job has no root install.
+          node scripts/i18n-arabic.mjs scripts
           npm run build:dist -- --client=acme
           npm run verify:dist
           test ! -e dist/.htaccess

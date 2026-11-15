@@ -16,7 +16,7 @@ describe( 'Spec 057 token inventory generator', () => {
 	test.each( [
 		[ 'color', [ 'primary' ], '--wp--preset--color--primary' ],
 		[ 'font-family', [ 'heading' ], '--wp--preset--font-family--heading' ],
-		[ 'font-size', [ '2xl' ], '--wp--preset--font-size--2xl' ],
+		[ 'font-size', [ '2xl' ], '--wp--preset--font-size--2-xl' ],
 		[ 'spacing', [ '40' ], '--wp--preset--spacing--40' ],
 		[ 'shadow', [ 'md' ], '--wp--preset--shadow--md' ],
 		[

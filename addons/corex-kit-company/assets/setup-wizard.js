@@ -17,8 +17,12 @@
 
 	const api = window.Corex.api;
 	const { restUrl, readinessUrl, nonce, adminUrl } = data;
-	// eslint-disable-next-line @wordpress/i18n-no-variables -- runtime translate helper; string literals are passed at every call site so extraction still works.
-	const t = ( s ) => ( wp.i18n ? wp.i18n.__( s, 'corex' ) : s );
+	// Named `__` so the translation template reads the literal of every call (spec 121); a page
+	// without wp-i18n shows the English.
+	/* eslint-disable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
+	const __ = ( text, domain ) =>
+		wp.i18n ? wp.i18n.__( text, domain ) : text;
+	/* eslint-enable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
 
 	const STEPS = [
 		'welcome',
@@ -94,7 +98,7 @@
 		const pct = Math.round( ( state.index / ( STEPS.length - 1 ) ) * 100 );
 		return (
 			`<ol class="corex-setup__stepper" aria-label="${ escape(
-				t( 'Setup steps' )
+				__( 'Setup steps', 'corex' )
 			) }">${ items }</ol>` +
 			`<div class="corex-setup__progress" role="progressbar" aria-valuenow="${ pct }" aria-valuemin="0" aria-valuemax="100"><span style="inline-size:${ pct }%"></span></div>`
 		);
@@ -134,7 +138,10 @@
 		const conflicts = ( state.plan && state.plan.conflicts ) || [];
 		if ( conflicts.length === 0 ) {
 			return `<p class="corex-setup__muted">${ escape(
-				t( 'No conflicts — no existing page will be changed.' )
+				__(
+					'No conflicts — no existing page will be changed.',
+					'corex'
+				)
 			) }</p>`;
 		}
 		const choices = state.config.conflictChoices || [];
@@ -166,8 +173,9 @@
 	 * @return {string} The sentence, translated.
 	 */
 	function recordedSentence() {
-		return t(
-			'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.'
+		return __(
+			'Before applying, CoreX records the pages this plan replaces or adopts and your front-page settings, so a reset can put them back. It does not back up anything else.',
+			'corex'
 		);
 	}
 
@@ -197,24 +205,28 @@
 		const list =
 			titles.length > 0
 				? `<p>${ escape(
-						t( 'The pages that will be recorded:' )
+						__( 'The pages that will be recorded:', 'corex' )
 					) }</p><ul class="corex-setup__recorded">${ titles
 						.map( ( title ) => `<li>${ escape( title ) }</li>` )
 						.join( '' ) }</ul>`
 				: `<p class="corex-setup__muted">${ escape(
-						t( 'This plan changes none of your existing pages.' )
+						__(
+							'This plan changes none of your existing pages.',
+							'corex'
+						)
 					) }</p>`;
 		return (
 			`<p>${ escape( recordedSentence() ) }</p>` +
 			list +
 			`<p>${ escape(
-				t(
-					'Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one.'
+				__(
+					'Take a full backup with your host or a backup plugin before you apply. Apply stays off until you confirm you have one.',
+					'corex'
 				)
 			) }</p>` +
 			`<label class="corex-setup__confirm"><input type="checkbox" id="corex-setup-backup"${
 				state.backupConfirmed ? ' checked' : ''
-			} /> ${ escape( t( 'I have a full backup of this site.' ) ) }</label>`
+			} /> ${ escape( __( 'I have a full backup of this site.', 'corex' ) ) }</label>`
 		);
 	}
 
@@ -223,8 +235,9 @@
 		if ( key === 'welcome' ) {
 			return (
 				`<p>${ escape(
-					t(
-						'This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it.'
+					__(
+						'This wizard configures your brand, chooses a starter kit and demo level, and shows you the plan before it applies it.',
+						'corex'
 					)
 				) }</p>` + `<p>${ escape( recordedSentence() ) }</p>`
 			);
@@ -235,24 +248,25 @@
 				.join( '' );
 			return (
 				`<p>${ escape(
-					t(
-						'Set your company brand details — these save to CoreX Settings and are read across the site.'
+					__(
+						'Set your company brand details — these save to CoreX Settings and are read across the site.',
+						'corex'
 					)
 				) }</p>` +
 				`<ul class="corex-setup__fields">${ rows }</ul>` +
 				`<p><a class="button" href="${ escape(
 					sectionUrl( 'corex-settings-config' )
-				) }">${ escape( t( 'Open Brand settings' ) ) }</a></p>`
+				) }">${ escape( __( 'Open Brand settings', 'corex' ) ) }</a></p>`
 			);
 		}
 		if ( key === 'kit' ) {
 			return `<p>${ escape(
-				t( 'Choose the starter kit for this site.' )
+				__( 'Choose the starter kit for this site.', 'corex' )
 			) }</p><div class="corex-setup__options">${ kitOptions() }</div>`;
 		}
 		if ( key === 'demo' ) {
 			return `<p>${ escape(
-				t( 'Choose how much demo content to seed.' )
+				__( 'Choose how much demo content to seed.', 'corex' )
 			) }</p><div class="corex-setup__options">${ levelOptions() }</div>`;
 		}
 		if ( key === 'plan' ) {
@@ -262,12 +276,13 @@
 			const pages = state.plan ? state.plan.plan.pages.length : 0;
 			return (
 				`<p>${ escape(
-					t(
-						'Review what will be applied. Existing pages are never overwritten unless you choose Replace.'
+					__(
+						'Review what will be applied. Existing pages are never overwritten unless you choose Replace.',
+						'corex'
 					)
 				) }</p>` +
 				`<p class="corex-setup__muted">${ pages } ${ escape(
-					t( 'pages will be created or adopted.' )
+					__( 'pages will be created or adopted.', 'corex' )
 				) }</p>` +
 				`<div class="corex-setup__conflicts">${ conflictControls() }</div>`
 			);
@@ -279,26 +294,27 @@
 			if ( state.applied && ! state.applied.applied ) {
 				// Some page could not be written: the kit is not recorded as applied (spec 118).
 				return failure(
-					t(
-						'The plan was applied in part: some pages could not be written, so the kit is not marked applied. Check the pages, then apply again.'
+					__(
+						'The plan was applied in part: some pages could not be written, so the kit is not marked applied. Check the pages, then apply again.',
+						'corex'
 					)
 				);
 			}
 			if ( state.applied ) {
 				return `<p class="corex-setup__ok">${ escape(
-					t( 'Applied.' )
+					__( 'Applied.', 'corex' )
 				) } ${ escape( String( state.applied.pages ) ) } ${ escape(
-					t( 'pages processed.' )
+					__( 'pages processed.', 'corex' )
 				) }</p>`;
 			}
 			return (
 				( state.applyError ? failure( state.applyError ) : '' ) +
 				`<p>${ escape(
-					t( 'Apply the plan now with your choices.' )
+					__( 'Apply the plan now with your choices.', 'corex' )
 				) }</p>` +
 				`<p><button type="button" class="button button-primary" id="corex-setup-apply"${
 					state.backupConfirmed ? '' : ' disabled'
-				}>${ escape( t( 'Apply plan' ) ) }</button></p>`
+				}>${ escape( __( 'Apply plan', 'corex' ) ) }</button></p>`
 			);
 		}
 		if ( key === 'launch' ) {
@@ -314,13 +330,15 @@
 	 */
 	function launchNotice() {
 		const messages = {
-			saved: t( 'The site is now in Production.' ),
-			unchanged: t( 'The site was already in Production.' ),
-			production_confirm: t(
-				'Going live needs the confirmation phrase. Type it and try again.'
+			saved: __( 'The site is now in Production.', 'corex' ),
+			unchanged: __( 'The site was already in Production.', 'corex' ),
+			production_confirm: __(
+				'Going live needs the confirmation phrase. Type it and try again.',
+				'corex'
 			),
-			blocked: t(
-				'Going live was refused: checks still block it. Resolve them, or confirm the override.'
+			blocked: __(
+				'Going live was refused: checks still block it. Resolve them, or confirm the override.',
+				'corex'
 			),
 		};
 		const message = messages[ state.launchStatus ];
@@ -345,14 +363,16 @@
 	function launchStep() {
 		if ( state.readiness === null ) {
 			return `<p class="corex-setup__muted" role="status">${ escape(
-				t( 'Reading the launch checklist…' )
+				__( 'Reading the launch checklist…', 'corex' )
 			) }</p>`;
 		}
 		if ( state.readiness === false ) {
 			return (
-				failure( t( 'The launch checklist could not be read.' ) ) +
+				failure(
+					__( 'The launch checklist could not be read.', 'corex' )
+				) +
 				`<p><button type="button" class="button" id="corex-setup-readiness-retry">${ escape(
-					t( 'Retry' )
+					__( 'Retry', 'corex' )
 				) }</button></p>`
 			);
 		}
@@ -416,7 +436,7 @@
 		const { mode, goLive: form } = state.readiness;
 		if ( mode.production ) {
 			return `<p class="corex-setup__ok">${ escape(
-				t( 'The site is live.' )
+				__( 'The site is live.', 'corex' )
 			) }</p>`;
 		}
 		return (
@@ -436,11 +456,11 @@
 				form.return
 			) }" />` +
 			`<label for="corex-setup-golive-phrase">${ escape(
-				t( 'To go live, type the confirmation phrase' )
+				__( 'To go live, type the confirmation phrase', 'corex' )
 			) } <code>${ escape( form.phrase ) }</code></label>` +
 			`<input type="text" id="corex-setup-golive-phrase" name="corex_confirm_phrase" autocomplete="off" />` +
 			`<p><button type="submit" class="button button-primary">${ escape(
-				t( 'Go live' )
+				__( 'Go live', 'corex' )
 			) }</button></p></form>`
 		);
 	}
@@ -456,8 +476,9 @@
 			return (
 				launchNotice() +
 				`<p class="corex-setup__muted">${ escape(
-					t(
-						'Setup is done. Open the launch checklist to see what is left before going live.'
+					__(
+						'Setup is done. Open the launch checklist to see what is left before going live.',
+						'corex'
 					)
 				) }</p>`
 			);
@@ -465,7 +486,7 @@
 		const { checklist, mode } = state.readiness;
 		let text = checklist.blockingText;
 		if ( mode.production ) {
-			text = t( 'Setup is done and the site is live.' );
+			text = __( 'Setup is done and the site is live.', 'corex' );
 		}
 		return (
 			launchNotice() +
@@ -475,7 +496,7 @@
 			`<p><a class="button" href="${ escape(
 				sectionUrl( 'corex-operations-security' )
 			) }&amp;tab=environment">${ escape(
-				t( 'Open Operations & Security' )
+				__( 'Open Operations & Security', 'corex' )
 			) }</a></p>`
 		);
 	}
@@ -502,12 +523,12 @@
 			`<footer class="corex-setup__nav">` +
 			( canBack
 				? `<button type="button" class="button" id="corex-setup-back">${ escape(
-						t( 'Back' )
+						__( 'Back', 'corex' )
 					) }</button>`
 				: '' ) +
 			( canNext
 				? `<button type="button" class="button button-primary" id="corex-setup-next">${ escape(
-						t( 'Next' )
+						__( 'Next', 'corex' )
 					) }</button>`
 				: '' ) +
 			`</footer></section>`;
@@ -598,7 +619,10 @@
 			state.planError = res.envelope.ok
 				? ''
 				: res.envelope.message ||
-					t( 'The plan could not be read. Go back and try again.' );
+					__(
+						'The plan could not be read. Go back and try again.',
+						'corex'
+					);
 		}
 		state.index = Math.max( 0, Math.min( STEPS.length - 1, index ) );
 		render();
@@ -628,7 +652,7 @@
 			state.applyError = res.envelope.ok
 				? ''
 				: res.envelope.message ||
-					t( 'The plan could not be applied. Try again.' );
+					__( 'The plan could not be applied. Try again.', 'corex' );
 			render();
 		} );
 	}

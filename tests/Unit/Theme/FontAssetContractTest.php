@@ -10,8 +10,34 @@ declare(strict_types=1);
 
 use Corex\Tests\Support\ThemeContract;
 
-it('ships no more than four self hosted woff2 files and no external font CDN', function () {
-    $fontFiles = glob(ThemeContract::root() . '/theme/assets/fonts/*.woff2') ?: [];
+it('ships the same four font files in the theme and the core plug-in, and no more', function () {
+    // Spec 121, US-BRD-09 (DECISIONS #464): the theme must work without the plug-in, so both keep
+    // a copy, and the four-file limit counts both.
+    $theme = glob(ThemeContract::root() . '/theme/assets/fonts/*.woff2') ?: [];
+    $plugin = glob(ThemeContract::root() . '/plugins/corex-core/assets/fonts/*.woff2') ?: [];
+    $digest = static fn (array $files): array => array_combine(
+        array_map('basename', $files),
+        array_map(static fn (string $file): string => (string) hash_file('sha256', $file), $files),
+    );
+
+    expect(count($theme))->toBeLessThanOrEqual(4)
+        ->and(count($plugin))->toBeLessThanOrEqual(4)
+        ->and($digest($plugin))->toEqual($digest($theme));
+});
+
+it('keeps the OFL licence of each family beside both copies of its files (FR-017)', function () {
+    // The plug-in's copy ships alone where the theme is not installed (a client's own theme), and
+    // the SIL Open Font License asks that the licence travel with the fonts.
+    $licences = static fn (string $folder): array => array_map(
+        static fn (string $file): string => basename($file) . ':' . hash_file('sha256', $file),
+        glob(ThemeContract::root() . '/' . $folder . '/licenses/*-OFL.txt') ?: [],
+    );
+
+    expect($licences('theme/assets/fonts'))->toHaveCount(3)
+        ->and($licences('plugins/corex-core/assets/fonts'))->toEqual($licences('theme/assets/fonts'));
+});
+
+it('loads no font from an external font CDN', function () {
     $themeFiles = array_merge(
         [ThemeContract::root() . '/theme/theme.json'],
         glob(ThemeContract::root() . '/theme/styles/*.json') ?: [],
@@ -24,8 +50,7 @@ it('ships no more than four self hosted woff2 files and no external font CDN', f
         }
     }
 
-    expect(count($fontFiles))->toBeLessThanOrEqual(4)
-        ->and($external)->toBe([]);
+    expect($external)->toBe([]);
 });
 
 it('records provenance roles subsets weights and swap behavior for every font file', function () {

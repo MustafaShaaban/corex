@@ -80,6 +80,8 @@ final class SetupWizardScreen
             '1.0.0',
             true,
         );
+        // Its words come from the catalogue in Arabic and every other language (spec 121).
+        wp_set_script_translations('corex-setup-wizard', 'corex');
         wp_localize_script('corex-setup-wizard', 'corexSetup', [
             'restUrl'  => esc_url_raw(rest_url('corex/v1/setup')),
             // The one launch checklist the launch step shows (spec 118).

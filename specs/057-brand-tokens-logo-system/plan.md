@@ -120,7 +120,7 @@ plugins/corex-config/
 ├── assets/control-panel.css
 ├── assets/data.css
 ├── assets/insights.css
-├── assets/corex-logo.svg            # legacy migration reference; replace only after asset approval
+├── assets/(retired navy/cyan logo)  # legacy migration reference; removed by spec 121
 ├── src/Branding/BrandingService.php
 ├── src/Branding/AdminBranding.php
 ├── src/ConfigServiceProvider.php
@@ -250,7 +250,7 @@ front-end Global Styles, and must not leak to unrelated admin screens.
 
 ### Logo
 
-The existing navy/cyan `plugins/corex-config/assets/corex-logo.svg` is migration evidence only. Before logo tasks can
+The existing navy/cyan logo (removed by spec 121) is migration evidence only. Before logo tasks can
 move from blocked to ready, the owner must supply or explicitly approve a vector package containing the required
 symbol, wordmark, lockup, and monochrome/contrast variants plus source/author, license/usage rights, approval date,
 viewBox/variant naming, and accessible-name guidance. The package is validated against

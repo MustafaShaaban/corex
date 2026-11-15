@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "prebuild": "node ../scripts/sync-project-status.mjs",
+    "prebuild": "node ../scripts/sync-project-status.mjs && node ../scripts/foundations-tokens.mjs --check",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"

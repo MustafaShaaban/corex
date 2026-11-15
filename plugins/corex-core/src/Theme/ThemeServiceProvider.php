@@ -24,6 +24,11 @@ defined('ABSPATH') || exit;
  *   WordPress moment that owns theme data, the `wp_theme_json_data_theme` filter.
  *   All merge/read logic lives in the headless {@see BrandResolver}.
  * - the {@see GeneratorTag} in every page head (spec 111).
+ * - WordPress's own font sizes and shadows kept off the CoreX theme's pages
+ *   ({@see ThemeDefaultPresets}, spec 121).
+ * - the CoreX theme's heading face preloaded, so nothing moves when it arrives
+ *   ({@see ThemeFontPreload}, spec 121).
+ * - avatars loaded lazily on the CoreX theme's pages ({@see AvatarLazyLoading}, spec 121).
  */
 final class ThemeServiceProvider extends ServiceProvider
 {
@@ -43,11 +48,29 @@ final class ThemeServiceProvider extends ServiceProvider
             GeneratorTag::class,
             static fn (ContainerInterface $c): GeneratorTag => new GeneratorTag(),
         );
+
+        $this->container->singleton(
+            ThemeDefaultPresets::class,
+            static fn (ContainerInterface $c): ThemeDefaultPresets => new ThemeDefaultPresets(),
+        );
+
+        $this->container->singleton(
+            ThemeFontPreload::class,
+            static fn (ContainerInterface $c): ThemeFontPreload => new ThemeFontPreload(),
+        );
+
+        $this->container->singleton(
+            AvatarLazyLoading::class,
+            static fn (ContainerInterface $c): AvatarLazyLoading => new AvatarLazyLoading(),
+        );
     }
 
     public function boot(): void
     {
         add_action('wp_head', [$this->container->make(GeneratorTag::class), 'print']);
+        add_filter('wp_theme_json_data_default', [$this->container->make(ThemeDefaultPresets::class), 'filter']);
+        add_filter('wp_preload_resources', [$this->container->make(ThemeFontPreload::class), 'add']);
+        add_filter('wp_get_loading_optimization_attributes', [$this->container->make(AvatarLazyLoading::class), 'filter'], 10, 4);
 
         $config = $this->container->make(ConfigInterface::class);
         $configured = (string) $config->get('theme.brand_path', '');

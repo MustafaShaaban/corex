@@ -52,7 +52,7 @@ body.login.corex-login #login {
 	z-index: 1;
 	inline-size: var(--corex-admin-login-inline-size);
 	padding-block: var(--corex-admin-space-2xl);
-	animation: corex-login-in var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) both;
+	animation: corex-login-in var(--corex-admin-motion-slow) var(--corex-admin-ease) both;
 }
 
 /* Brand logo (header reveal). */
@@ -63,7 +63,7 @@ body.login.corex-login #login h1 a {
 	background-image: var(--corex-admin-login-logo);
 	background-position: center;
 	background-size: contain;
-	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) both;
+	animation: corex-login-rise var(--corex-admin-motion-slow) var(--corex-admin-ease) both;
 }
 
 /* The form card. */
@@ -82,7 +82,7 @@ body.login.corex-login #login_error {
 }
 
 body.login.corex-login #loginform {
-	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) 80ms both;
+	animation: corex-login-rise var(--corex-admin-motion-slow) var(--corex-admin-ease) 80ms both;
 }
 
 body.login.corex-login #login_error {
@@ -97,6 +97,12 @@ body.login.corex-login label,
 body.login.corex-login .forgetmenot label {
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
+}
+
+/* Interface labels in the display face; long text stays in the system font
+   (decision BRD-D2, DECISIONS #464). */
+body.login.corex-login :is(label, .button, #nav a, #backtonav a, .privacy-policy-link) {
+	font-family: var(--corex-admin-font-ui);
 }
 
 /* Inputs + leading icons (username wrapped by corex-login.js). */
@@ -357,7 +363,7 @@ body.login.corex-login .corex-login__subtitle {
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-md);
 	text-align: center;
-	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) 40ms both;
+	animation: corex-login-rise var(--corex-admin-motion-slow) var(--corex-admin-ease) 40ms both;
 }
 
 @keyframes corex-login-in {

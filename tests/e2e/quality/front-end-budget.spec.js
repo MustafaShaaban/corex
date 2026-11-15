@@ -7,7 +7,8 @@
  * - cumulative layout shift, from the first frame to the end of a scroll to the bottom, at most
  *   0.05;
  * - every image has a width and a height, or an aspect ratio;
- * - an image below the first screen loads lazily, and the first screen's main image does not;
+ * - an image below the first screen loads lazily, and the first screen's main image (its largest,
+ *   of at least 50,000 px²) does not;
  * - the bytes of CoreX's scripts and styles on the page, files and inline, within 10% of its
  *   budget in `byte-budget.json` (raising a budget is a recorded decision);
  * - a CoreX block's script or style loads only on a page that shows that block (principle VI).
@@ -26,6 +27,10 @@ const BUDGET = require( './byte-budget.json' ).pages;
 
 const MAX_SHIFT = 0.05;
 const OVER_BUDGET = 1.1;
+// The smallest rendered area, in px², of an image that can be the first screen's main image:
+// WordPress's own `wp_min_priority_img_pixels` default, below which it never gives an image a high
+// fetch priority. A 40px avatar alone in the first screen is not its main image (DECISIONS #632).
+const MAIN_IMAGE_MIN_PIXELS = 50_000;
 
 const ADDRESSES = [
 	...new Map(
@@ -62,9 +67,17 @@ function watchShifts() {
 	} ).observe( { type: 'layout-shift', buffered: true } );
 }
 
-/** Images as the first screen shows them, before anything scrolls. */
-function images() {
+/**
+ * Images as the first screen shows them, before anything scrolls.
+ *
+ * @param {number} minMainPixels The smallest rendered area of the first screen's main image.
+ */
+function images( minMainPixels ) {
 	const fold = window.innerHeight;
+	const area = ( image ) => {
+		const rect = image.getBoundingClientRect();
+		return rect.width * rect.height;
+	};
 	const all = [ ...document.images ].filter(
 		( image ) =>
 			image.getBoundingClientRect().width > 0 || image.loading === 'lazy'
@@ -72,9 +85,9 @@ function images() {
 	const inView = all.filter(
 		( image ) => image.getBoundingClientRect().top < fold
 	);
-	const main = inView.sort(
-		( a, b ) => b.width * b.height - a.width * a.height
-	)[ 0 ];
+	const main = inView
+		.filter( ( image ) => area( image ) >= minMainPixels )
+		.sort( ( a, b ) => area( b ) - area( a ) )[ 0 ];
 
 	return all.map( ( image ) => {
 		const style = window.getComputedStyle( image );
@@ -186,7 +199,10 @@ test.describe( 'front-end pages, as a visitor sees them', () => {
 					.waitForLoadState( 'networkidle', { timeout: 10_000 } )
 					.catch( () => {} );
 
-				const pictured = await page.evaluate( images );
+				const pictured = await page.evaluate(
+					images,
+					MAIN_IMAGE_MIN_PIXELS
+				);
 
 				await page.evaluate( async () => {
 					for (

@@ -10,7 +10,7 @@
     "geometry": "Five rounded 12u modules on a 48x48 grid, 3u gutters, 2.5u corner radius; four corner modules use currentColor, the center module uses CoreX brass #c9a25e — verbatim from the approved Core X locked winner.",
     "wordmark_extraction": "Glyph outlines for 'Corex' mechanically extracted (not traced or redrawn) from theme/assets/fonts/space-grotesk-latin-500-700.woff2 instanced at wght=600, letter-spacing -0.035em, with the terminal 'x' in brass.",
     "generator": "scripts/generate-logo-assets.py (deterministic); optimized with scripts/svgo-logo.config.mjs.",
-    "excluded": "The legacy navy/cyan corex-logo.svg is NOT approved production artwork; it is retained only as rollback/migration evidence. No .dc.html prototype runtime files are shipped.",
+    "excluded": "The retired navy and cyan logo was removed in spec 121 (DECISIONS #465) and is never shipped. No .dc.html prototype runtime files are shipped.",
     "colors": {
       "brass": "#c9a25e",
       "brass_aa_on_light": "#ad8643"

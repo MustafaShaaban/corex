@@ -15,7 +15,7 @@ the visual admin result needs a browser.
 
 ### User Story 1 - Corex has an identity (Priority: P1) 🎯 MVP
 
-Corex ships a scalable SVG logo (navy `#0B1F3B` + cyan `#00C2FF`, a layered-core mark) used across the admin.
+Corex ships a scalable SVG logo used across the admin. (The navy and cyan mark this spec first shipped is retired; the Core X set of spec 057 replaced it, and spec 121 removed the file.)
 
 **Independent Test**: The bundled SVG exists, is valid, and uses the Corex palette; the branding service
 resolves the logo URL (config override or the bundled default).
