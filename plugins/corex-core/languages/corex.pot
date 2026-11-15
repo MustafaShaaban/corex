@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-11T19:38:50+00:00\n"
+"POT-Creation-Date: 2026-11-15T15:16:31+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: corex\n"
@@ -3509,7 +3509,7 @@ msgstr ""
 #: plugins/corex-config/src/Access/AccessScreen.php:642
 #: plugins/corex-config/src/Access/ScreenNames.php:61
 #: plugins/corex-config/src/Access/ScreenNames.php:62
-#: plugins/corex-config/src/Activity/ActivitySentences.php:243
+#: plugins/corex-config/src/Activity/ActivitySentences.php:353
 #: plugins/corex-config/src/Settings/SettingsPages.php:114
 #: plugins/corex-config/src/Settings/SettingsRegistry.php:331
 #: plugins/corex-core/src/Admin/AdminPage.php:327
@@ -3863,7 +3863,7 @@ msgid "How this site uses cookies."
 msgstr ""
 
 #: addons/corex-kit-company/src/Company/CompanyBlueprint.php:183
-#: plugins/corex-config/src/Operations/OperationsMode.php:99
+#: plugins/corex-config/src/Operations/OperationsMode.php:126
 msgid "Maintenance"
 msgstr ""
 
@@ -4930,58 +4930,66 @@ msgid "Frequently asked questions"
 msgstr ""
 
 #: packages/cli/src/CliServiceProvider.php:533
+msgid "Turn every CoreX login switch off and release active lockouts."
+msgstr ""
+
+#: packages/cli/src/CliServiceProvider.php:534
+msgid "Turns off hiding wp-login.php, hiding the admin from visitors who are not signed in, and limiting failed sign-ins, and puts the login address back to corex-login. Releases every lockout still in force and prints the wp-login.php address that works now. Users, passwords, roles and other settings are not changed. Without a command line, add define( 'COREX_LOGIN_UNGUARD', true ); to wp-config.php instead: wp-login.php and the admin open again while the line is there, and nothing is saved. The line does not end a lockout; this command does."
+msgstr ""
+
+#: packages/cli/src/CliServiceProvider.php:544
 msgid "Reset Corex site state, with explicit safeguards for destructive and network scope."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:535
+#: packages/cli/src/CliServiceProvider.php:546
 msgid "Wipe and rebuild the WordPress database."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:536
+#: packages/cli/src/CliServiceProvider.php:547
 msgid "Preview the reset plan without changing anything."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:539
+#: packages/cli/src/CliServiceProvider.php:550
 msgid "Supply the typed safeguard required for a hard reset."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:541
+#: packages/cli/src/CliServiceProvider.php:552
 msgid "Permit network-scoped reset actions."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:557
+#: packages/cli/src/CliServiceProvider.php:568
 msgid "Show the CoreX operations mode, and whether it was declared or inherited."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:559
+#: packages/cli/src/CliServiceProvider.php:570
 msgid "Print the mode and nothing else."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:565
+#: packages/cli/src/CliServiceProvider.php:576
 msgid "Change the CoreX operations mode, with the confirmation the mode needs."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:571
-msgid "development, staging, production, maintenance or coming-soon."
+#: packages/cli/src/CliServiceProvider.php:582
+msgid "development, staging, production, coming-soon, forms-paused or maintenance."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:575
-msgid "Confirm a mode that changes what visitors get: maintenance or coming-soon."
+#: packages/cli/src/CliServiceProvider.php:586
+msgid "Confirm a mode that changes what visitors get: coming-soon, forms-paused or maintenance."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:581
+#: packages/cli/src/CliServiceProvider.php:592
 msgid "The typed confirmation for going live: PRODUCTION."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:593
+#: packages/cli/src/CliServiceProvider.php:604
 msgid "Show or set the proxies trusted to report a visitor’s address."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:600
+#: packages/cli/src/CliServiceProvider.php:611
 msgid "An address or CIDR range to trust. The list given replaces the saved one."
 msgstr ""
 
-#: packages/cli/src/CliServiceProvider.php:602
+#: packages/cli/src/CliServiceProvider.php:613
 msgid "Trust no proxy."
 msgstr ""
 
@@ -5303,8 +5311,8 @@ msgid "Refused"
 msgstr ""
 
 #: plugins/corex-config/src/Access/AccessHistory.php:174
-#: plugins/corex-config/src/Activity/ActivitySentences.php:164
-#: plugins/corex-config/src/Activity/ActivitySentences.php:244
+#: plugins/corex-config/src/Activity/ActivitySentences.php:176
+#: plugins/corex-config/src/Activity/ActivitySentences.php:354
 #: plugins/corex-core/src/Assets/FontCollection.php:49
 #: plugins/corex-core/src/Theme/NavigationServiceProvider.php:61
 #: plugins/corex-config/src/admin/notifications/NotificationItem.js:51
@@ -5427,7 +5435,7 @@ msgstr ""
 #: plugins/corex-config/src/Access/AccessScreen.php:65
 #: plugins/corex-config/src/Access/ScreenNames.php:49
 #: plugins/corex-config/src/Access/ScreenNames.php:50
-#: plugins/corex-config/src/Activity/ActivitySentences.php:241
+#: plugins/corex-config/src/Activity/ActivitySentences.php:351
 #: plugins/corex-core/src/Admin/AdminPage.php:324
 #: plugins/corex-core/src/Admin/AdminPage.php:360
 msgid "Access & Abilities"
@@ -5462,7 +5470,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/AccessScreen.php:147
 #: plugins/corex-config/src/DataModels/DataModelsImportController.php:56
-#: plugins/corex-config/src/Operations/OperationsModeController.php:102
+#: plugins/corex-config/src/Operations/OperationsModeController.php:103
 #: plugins/corex-config/src/Operations/PreviewLinkController.php:59
 #: plugins/corex-config/src/Retention/RetentionController.php:107
 #: plugins/corex-config/src/Settings/AdminDashboard.php:212
@@ -5831,7 +5839,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:33
 #: plugins/corex-config/src/Access/ScreenNames.php:34
-#: plugins/corex-config/src/Activity/ActivitySentences.php:229
+#: plugins/corex-config/src/Activity/ActivitySentences.php:339
 #: plugins/corex-config/src/Addons/AddonsScreen.php:59
 #: plugins/corex-config/src/Overview/OverviewTiles.php:151
 #: plugins/corex-core/src/Admin/AdminPage.php:316
@@ -5842,7 +5850,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:35
 #: plugins/corex-config/src/Access/ScreenNames.php:36
-#: plugins/corex-config/src/Activity/ActivitySentences.php:230
+#: plugins/corex-config/src/Activity/ActivitySentences.php:340
 #: plugins/corex-config/src/Forms/FormsFlowsScreen.php:51
 #: plugins/corex-config/src/Overview/Cards/FormsCard.php:51
 #: plugins/corex-core/src/Access/AbilityNames.php:54
@@ -5854,7 +5862,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:37
 #: plugins/corex-config/src/Access/ScreenNames.php:38
-#: plugins/corex-config/src/Activity/ActivitySentences.php:231
+#: plugins/corex-config/src/Activity/ActivitySentences.php:341
 #: plugins/corex-config/src/Submissions/SubmissionExportAbout.php:36
 #: plugins/corex-config/src/Submissions/SubmissionsInboxScreen.php:51
 #: plugins/corex-core/src/Access/AbilityNames.php:55
@@ -5866,7 +5874,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:39
 #: plugins/corex-config/src/Access/ScreenNames.php:40
-#: plugins/corex-config/src/Activity/ActivitySentences.php:233
+#: plugins/corex-config/src/Activity/ActivitySentences.php:343
 #: plugins/corex-config/src/Email/EmailStudioScreen.php:49
 #: plugins/corex-core/src/Access/AbilityNames.php:58
 #: plugins/corex-core/src/Admin/AdminPage.php:319
@@ -5877,7 +5885,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:41
 #: plugins/corex-config/src/Access/ScreenNames.php:42
-#: plugins/corex-config/src/Activity/ActivitySentences.php:232
+#: plugins/corex-config/src/Activity/ActivitySentences.php:342
 #: plugins/corex-config/src/DataModels/DataModelsScreen.php:61
 #: plugins/corex-core/src/Access/AbilityNames.php:56
 #: plugins/corex-core/src/Admin/AdminPage.php:320
@@ -5904,7 +5912,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:47
 #: plugins/corex-config/src/Access/ScreenNames.php:48
-#: plugins/corex-config/src/Activity/ActivitySentences.php:240
+#: plugins/corex-config/src/Activity/ActivitySentences.php:350
 #: plugins/corex-config/src/Notifications/NotificationBell.php:59
 #: plugins/corex-config/src/Notifications/NotificationsScreen.php:43
 #: plugins/corex-config/src/Notifications/NotificationsScreen.php:61
@@ -5922,7 +5930,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:51
 #: plugins/corex-config/src/Access/ScreenNames.php:52
-#: plugins/corex-config/src/Activity/ActivitySentences.php:234
+#: plugins/corex-config/src/Activity/ActivitySentences.php:344
 #: plugins/corex-config/src/Blog/BlogProScreen.php:53
 #: plugins/corex-core/src/Access/AbilityNames.php:59
 #: plugins/corex-core/src/Admin/AdminPage.php:325
@@ -5932,7 +5940,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:53
 #: plugins/corex-config/src/Access/ScreenNames.php:54
-#: plugins/corex-config/src/Activity/ActivitySentences.php:237
+#: plugins/corex-config/src/Activity/ActivitySentences.php:347
 #: plugins/corex-config/src/Settings/AdminDashboard.php:87
 #: plugins/corex-config/src/Settings/AdminDashboard.php:171
 #: plugins/corex-core/src/Access/AbilityNames.php:63
@@ -5943,7 +5951,7 @@ msgstr ""
 
 #: plugins/corex-config/src/Access/ScreenNames.php:55
 #: plugins/corex-config/src/Access/ScreenNames.php:56
-#: plugins/corex-config/src/Activity/ActivitySentences.php:235
+#: plugins/corex-config/src/Activity/ActivitySentences.php:345
 #: plugins/corex-config/src/Insights/InsightsScreen.php:47
 #: plugins/corex-config/src/Insights/InsightsScreen.php:65
 #: plugins/corex-config/src/Settings/SettingsPages.php:108
@@ -5969,6 +5977,7 @@ msgstr ""
 #. translators: %d: WordPress user ID.
 #. translators: %d: a user's number on the site.
 #: plugins/corex-config/src/Access/WpAccessUserDirectory.php:66
+#: plugins/corex-config/src/Security/LoginProtection/WpLoginAccounts.php:42
 #: plugins/corex-config/src/Releases/ReleaseHistory.js:93
 msgid "User %d"
 msgstr ""
@@ -5978,181 +5987,224 @@ msgid "That activity event was not found."
 msgstr ""
 
 #. translators: 1: who, 2: how many submissions.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:45
+#: plugins/corex-config/src/Activity/ActivitySentences.php:49
 msgid "%1$s moved %2$s submission to the trash"
 msgid_plural "%1$s moved %2$s submissions to the trash"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: 1: who, 2: how many submissions.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:54
+#: plugins/corex-config/src/Activity/ActivitySentences.php:58
 msgid "%1$s restored %2$s submission from the trash"
 msgid_plural "%1$s restored %2$s submissions from the trash"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: 1: who, 2: how many submissions.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:62
+#: plugins/corex-config/src/Activity/ActivitySentences.php:66
 msgid "%1$s deleted %2$s submission for good"
 msgid_plural "%1$s deleted %2$s submissions for good"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: 1: who, 2: how many submissions.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:69
+#: plugins/corex-config/src/Activity/ActivitySentences.php:73
 msgid "%1$s exported %2$s submission"
 msgid_plural "%1$s exported %2$s submissions"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: who.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:77
+#: plugins/corex-config/src/Activity/ActivitySentences.php:81
 msgid "%s deleted an export"
 msgstr ""
 
-#. translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:83
-msgid "%1$s changed the mode to %2$s"
-msgstr ""
-
-#: plugins/corex-config/src/Activity/ActivitySentences.php:96
+#: plugins/corex-config/src/Activity/ActivitySentences.php:95
 msgid "A sign-in was locked out after too many failed attempts"
 msgstr ""
 
+#. translators: 1: who released them, 2: how many sign-in lockouts were active.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:105
+msgid "%1$s released the %2$s active sign-in lockout"
+msgid_plural "%1$s released all %2$s active sign-in lockouts"
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %s: who asked.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:99
+#: plugins/corex-config/src/Activity/ActivitySentences.php:111
 msgid "%s asked for access"
 msgstr ""
 
 #. translators: %s: who approved.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:100
+#: plugins/corex-config/src/Activity/ActivitySentences.php:112
 msgid "%s approved an access request"
 msgstr ""
 
 #. translators: %s: who denied.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:101
+#: plugins/corex-config/src/Activity/ActivitySentences.php:113
 msgid "%s denied an access request"
 msgstr ""
 
 #. translators: %s: who cancelled.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:102
+#: plugins/corex-config/src/Activity/ActivitySentences.php:114
 msgid "%s cancelled an access request"
 msgstr ""
 
 #. translators: %s: who changed them.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:103
+#: plugins/corex-config/src/Activity/ActivitySentences.php:115
 msgid "%s changed the abilities of a role"
 msgstr ""
 
 #. translators: %s: who revoked it.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:104
+#: plugins/corex-config/src/Activity/ActivitySentences.php:116
 msgid "%s revoked an access grant"
 msgstr ""
 
 #. translators: %s: who revoked it.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:105
+#: plugins/corex-config/src/Activity/ActivitySentences.php:117
 msgid "An access grant ended"
 msgstr ""
 
 #. translators: %s: who.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:111
+#: plugins/corex-config/src/Activity/ActivitySentences.php:123
 msgid "%s imported records"
 msgstr ""
 
 #. translators: %s: who.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:112
+#: plugins/corex-config/src/Activity/ActivitySentences.php:124
 msgid "%s exported records"
 msgstr ""
 
 #. translators: %s: the part of CoreX where something changed, e.g. "Submissions".
-#: plugins/corex-config/src/Activity/ActivitySentences.php:115
+#: plugins/corex-config/src/Activity/ActivitySentences.php:127
 msgid "Something changed in %s"
 msgstr ""
 
 #. translators: 1: who was refused. 2: the CoreX screen, e.g. Settings.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:126
+#: plugins/corex-config/src/Activity/ActivitySentences.php:138
 msgid "%1$s was refused access to %2$s"
 msgstr ""
 
 #. translators: 1: who was refused. 2: the key of a data model, e.g. "table-access-requests".
-#: plugins/corex-config/src/Activity/ActivitySentences.php:137
+#: plugins/corex-config/src/Activity/ActivitySentences.php:149
 msgid "%1$s was refused the records of %2$s on the Data screen"
 msgstr ""
 
-#: plugins/corex-config/src/Activity/ActivitySentences.php:152
+#: plugins/corex-config/src/Activity/ActivitySentences.php:164
 msgid "A deleted user"
 msgstr ""
 
-#: plugins/corex-config/src/Activity/ActivitySentences.php:162
+#: plugins/corex-config/src/Activity/ActivitySentences.php:174
 msgid "The command line"
 msgstr ""
 
-#: plugins/corex-config/src/Activity/ActivitySentences.php:163
+#: plugins/corex-config/src/Activity/ActivitySentences.php:175
 msgid "A scheduled task"
 msgstr ""
 
+#. translators: 1: who released it, 2: a short fingerprint of the username that was typed, e.g. 0123456789ab.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:192
+msgid "%1$s released the sign-in lockout of an unknown username (fingerprint %2$s)"
+msgstr ""
+
+#. translators: 1: who released it, 2: the account that was locked out, e.g. "Sara Adel (sara)".
+#: plugins/corex-config/src/Activity/ActivitySentences.php:200
+msgid "%1$s released the sign-in lockout of %2$s"
+msgstr ""
+
+#. translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:219
+msgid "%1$s changed the mode to %2$s"
+msgstr ""
+
+#. translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket". 4: the ones whose cache could not be cleared.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:229
+msgid "%1$s changed the mode to %2$s and asked %3$s to clear its page cache. The page cache of %4$s could not be cleared"
+msgid_plural "%1$s changed the mode to %2$s and asked %3$s to clear their page caches. The page cache of %4$s could not be cleared"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins asked, e.g. "WP Rocket and LiteSpeed Cache".
+#: plugins/corex-config/src/Activity/ActivitySentences.php:242
+msgid "%1$s changed the mode to %2$s and asked %3$s to clear its page cache"
+msgid_plural "%1$s changed the mode to %2$s and asked %3$s to clear their page caches"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: who changed the mode. 2: the mode, e.g. Production. 3: the cache plugins whose cache could not be cleared, e.g. "WP Rocket".
+#: plugins/corex-config/src/Activity/ActivitySentences.php:254
+msgid "%1$s changed the mode to %2$s. The page cache of %3$s could not be cleared"
+msgstr ""
+
+#. translators: 1: who changed the mode. 2: the mode the site moved to, e.g. Production.
+#: plugins/corex-config/src/Activity/ActivitySentences.php:261
+msgid "%1$s changed the mode to %2$s. No page-cache plugin CoreX can ask was active"
+msgstr ""
+
 #. translators: 1: who, 2: an add-on's name.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:175
+#: plugins/corex-config/src/Activity/ActivitySentences.php:285
 msgid "%1$s tried to turn on %2$s, and it did not turn on"
 msgstr ""
 
 #. translators: 1: who, 2: an add-on's name.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:177
+#: plugins/corex-config/src/Activity/ActivitySentences.php:287
 msgid "%1$s turned on %2$s"
 msgstr ""
 
 #. translators: 1: who, 2: an add-on's name.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:182
+#: plugins/corex-config/src/Activity/ActivitySentences.php:292
 msgid "%1$s tried to turn off %2$s, and it did not turn off"
 msgstr ""
 
 #. translators: 1: who, 2: an add-on's name.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:184
+#: plugins/corex-config/src/Activity/ActivitySentences.php:294
 msgid "%1$s turned off %2$s"
 msgstr ""
 
 #. translators: 1: who, 2: how many records.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:194
+#: plugins/corex-config/src/Activity/ActivitySentences.php:304
 msgid "%1$s added %2$s record"
 msgid_plural "%1$s added %2$s records"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: 1: who, 2: how many records.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:200
+#: plugins/corex-config/src/Activity/ActivitySentences.php:310
 msgid "%1$s deleted %2$s record"
 msgid_plural "%1$s deleted %2$s records"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: 1: who, 2: how many records.
-#: plugins/corex-config/src/Activity/ActivitySentences.php:206
+#: plugins/corex-config/src/Activity/ActivitySentences.php:316
 msgid "%1$s changed %2$s record"
 msgid_plural "%1$s changed %2$s records"
 msgstr[0] ""
 msgstr[1] ""
 
-#: plugins/corex-config/src/Activity/ActivitySentences.php:236
+#: plugins/corex-config/src/Activity/ActivitySentences.php:346
 #: plugins/corex-config/src/admin/notifications/NotificationsApp.js:85
 msgid "Setup"
 msgstr ""
 
-#: plugins/corex-config/src/Activity/ActivitySentences.php:238
+#: plugins/corex-config/src/Activity/ActivitySentences.php:348
 #: plugins/corex-config/src/admin/notifications/NotificationsApp.js:81
 msgid "Operations"
 msgstr ""
 
-#: plugins/corex-config/src/Activity/ActivitySentences.php:239
+#: plugins/corex-config/src/Activity/ActivitySentences.php:349
 #: theme/patterns/megamenu-product.php:26
 #: plugins/corex-config/src/admin/notifications/NotificationsApp.js:79
 msgid "Security"
 msgstr ""
 
-#: plugins/corex-config/src/Activity/ActivitySentences.php:242
+#: plugins/corex-config/src/Activity/ActivitySentences.php:352
 msgid "Theme"
 msgstr ""
 
-#: plugins/corex-config/src/Activity/SecurityActivityRecorder.php:92
+#: plugins/corex-config/src/Activity/SecurityActivityRecorder.php:114
+#: plugins/corex-config/src/Activity/SecurityActivityRecorder.php:125
+#: plugins/corex-config/src/Activity/SecurityActivityRecorder.php:133
 msgid "Sign-in"
 msgstr ""
 
@@ -6878,7 +6930,7 @@ msgid "This is a production site — transactional emails are delivered to real 
 msgstr ""
 
 #: plugins/corex-config/src/Email/EmailStudio.php:87
-#: plugins/corex-config/src/Operations/OperationsMode.php:93
+#: plugins/corex-config/src/Operations/OperationsMode.php:114
 #: plugins/corex-core/src/Environment/SiteEnvironmentAnswer.php:51
 msgid "Staging"
 msgstr ""
@@ -6888,7 +6940,7 @@ msgid "Staging environment — verify recipients before sending to avoid mailing
 msgstr ""
 
 #: plugins/corex-config/src/Email/EmailStudio.php:92
-#: plugins/corex-config/src/Operations/OperationsMode.php:86
+#: plugins/corex-config/src/Operations/OperationsMode.php:107
 #: plugins/corex-core/src/Environment/SiteEnvironmentAnswer.php:50
 msgid "Development"
 msgstr ""
@@ -7219,6 +7271,7 @@ msgstr ""
 #: plugins/corex-config/src/Insights/InsightWidgets.php:442
 #: plugins/corex-config/src/Overview/Cards/DataSourcesCard.php:82
 #: plugins/corex-config/src/Overview/OverviewCardFailure.php:55
+#: plugins/corex-config/assets/insights.js:499
 msgid "Could not load"
 msgstr ""
 
@@ -7280,7 +7333,7 @@ msgid "No data yet"
 msgstr ""
 
 #: plugins/corex-config/src/Insights/InsightWidgets.php:441
-#: plugins/corex-config/assets/insights.js:148
+#: plugins/corex-config/assets/insights.js:153
 msgid "Could not run"
 msgstr ""
 
@@ -7420,6 +7473,34 @@ msgstr ""
 
 #: plugins/corex-config/src/Notifications/CommandCenterWidget.php:86
 msgid "Review readiness"
+msgstr ""
+
+#. translators: %s: the name of the account that was locked out.
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:85
+msgid "Repeated login failures locked out “%s”"
+msgstr ""
+
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:99
+msgid "Repeated login failures locked out an unknown username"
+msgstr ""
+
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:124
+msgid "Review the attempts in Operations & Security."
+msgstr ""
+
+#. translators: %s: a short fingerprint of the network the attempts came from, never its address.
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:129
+msgid "The attempts came from the network with fingerprint %s. Review them in Operations & Security."
+msgstr ""
+
+#. translators: %s: a short fingerprint of the username that was typed, never the username.
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:139
+msgid "Username fingerprint %s. Review the attempts in Operations & Security."
+msgstr ""
+
+#. translators: 1: a short fingerprint of the username that was typed, never the username. 2: a short fingerprint of the network the attempts came from, never its address.
+#: plugins/corex-config/src/Notifications/Lockouts/LoginLockoutNotice.php:146
+msgid "Username fingerprint %1$s, from the network with fingerprint %2$s. Review the attempts in Operations & Security."
 msgstr ""
 
 #. translators: %d: number of unread notifications.
@@ -7605,17 +7686,7 @@ msgstr ""
 msgid "Open Operations to see what happened and retry it."
 msgstr ""
 
-#. translators: %s: the locked account identity.
-#: plugins/corex-config/src/Notifications/Producers/LoginLockoutNotificationProducer.php:70
-msgid "Repeated login failures locked out “%s”"
-msgstr ""
-
-#. translators: %s: the client IP address.
-#: plugins/corex-config/src/Notifications/Producers/LoginLockoutNotificationProducer.php:75
-msgid "The attempts came from %s. Review them in Operations & Security."
-msgstr ""
-
-#: plugins/corex-config/src/Notifications/Producers/LoginLockoutNotificationProducer.php:89
+#: plugins/corex-config/src/Notifications/Producers/LoginLockoutNotificationProducer.php:92
 msgid "Review in Operations & Security"
 msgstr ""
 
@@ -7693,19 +7764,19 @@ msgstr ""
 msgid "Coming soon is on"
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:52
-#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:96
-#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:102
-#: plugins/corex-config/src/Operations/OperationsMode.php:105
+#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:54
+#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:100
+#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:106
+#: plugins/corex-config/src/Operations/OperationsMode.php:132
 #: plugins/corex-config/templates/coming-soon.php:32
 msgid "Coming soon"
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:53
+#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:55
 msgid "The page visitors see while the site is in Coming soon mode."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:98
+#: plugins/corex-config/src/Operations/ComingSoonTemplate.php:102
 #: plugins/corex-config/templates/coming-soon.php:36
 msgid "We are getting things ready. Please check back soon."
 msgstr ""
@@ -7723,152 +7794,160 @@ msgstr ""
 msgid "Scheduled maintenance"
 msgstr ""
 
-#: plugins/corex-config/src/Operations/MaintenanceSubmissionGuard.php:52
-msgid "The site is closed for maintenance and is not taking submissions. Please try again later."
-msgstr ""
-
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:120
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:122
 msgid "For building. Debugging aids may be visible, and the site is not presented as finished."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:124
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:126
 msgid "For review. The site behaves like production but is not the live one."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:128
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:130
 msgid "Live. Real visitors, real data, and real consequences for mistakes."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:132
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:134
 msgid "Closed to visitors while you work. Administrators keep working normally."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:136
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:138
 msgid "Not open yet. Visitors see the coming-soon page while the site is built behind it."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:151
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:153
 msgid "The site remains publicly reachable — this mode does not hide it."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:152
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:154
 msgid "Readiness blockers are reported but not enforced."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:155
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:157
 msgid "Search engines should be discouraged from indexing this site."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:156
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:158
 msgid "External services still receive real requests unless you have pointed them elsewhere."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:159
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:161
 msgid "Readiness blockers must be resolved, or overridden deliberately by typing the confirmation phrase."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:162
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:164
 msgid "Visitors who are not signed in receive a maintenance page with a 503 status."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:163
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:165
 msgid "Public form submissions are closed: forms, flows, newsletter sign-ups, booking requests, job applications and account registration are refused, and nothing is stored or mailed."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:164
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:166
 msgid "The admin, sign-in and password reset stay open. Signed-in administrators continue to use the site normally and can still submit a form to test it."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:165
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:167
 msgid "WordPress’s own comment form is not closed: it follows the site’s discussion settings."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:168
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:170
 msgid "Visitors receive the coming-soon page at the home address with a 200 status. Every other address answers with a temporary redirect to it."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:169
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:171
 msgid "Anyone signed in who can edit posts is served the real site. Signed-in users who cannot are treated as visitors."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:182
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:184
 msgid "The change is recorded in the mode history with your name against it."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:185
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:187
 msgid "Apart from public submissions, the REST API, AJAX, cron, and wp-admin are never intercepted."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:186
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:188
 msgid "Recovery: change the mode back here, or run the recovery command if you cannot reach this screen."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:189
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:191
 msgid "The admin, the login page, the REST API, AJAX and cron are never intercepted, and robots.txt is served normally."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:190
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:192
 msgid "A preview link, if you create one, shows the real site to whoever opens it, with no access to the admin. It is removed when the site leaves this mode."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/ModeDisclosure.php:191
+#: plugins/corex-config/src/Operations/ModeDisclosure.php:193
 msgid "To leave: change the mode here, or run wp corex mode set if you cannot reach this screen. Opening the site to the public is the Production switch, with its own confirmation."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:89
+#: plugins/corex-config/src/Operations/OperationsMode.php:110
 msgid "Not a live site. Email is kept in Email Studio instead of being sent."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:95
+#: plugins/corex-config/src/Operations/OperationsMode.php:116
 msgid "Pre-production. Email is kept in Email Studio unless a mail provider and live delivery are set."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:101
+#: plugins/corex-config/src/Operations/OperationsMode.php:120
+msgid "Forms paused"
+msgstr ""
+
+#: plugins/corex-config/src/Operations/OperationsMode.php:122
+msgid "The site stays open; every form refuses new submissions until you switch back. Signed-in administrators can still submit."
+msgstr ""
+
+#: plugins/corex-config/src/Operations/OperationsMode.php:128
 msgid "Visitors see a maintenance notice; signed-in administrators keep full access."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:107
+#: plugins/corex-config/src/Operations/OperationsMode.php:134
 msgid "Visitors see the coming-soon page; anyone signed in who can edit posts sees the real site."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:111
+#: plugins/corex-config/src/Operations/OperationsMode.php:138
 #: plugins/corex-core/src/Environment/SiteEnvironmentAnswer.php:52
 msgid "Production"
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:113
+#: plugins/corex-config/src/Operations/OperationsMode.php:140
 msgid "Live environment — changes affect real visitors."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:128
+#: plugins/corex-config/src/Operations/OperationsMode.php:155
 msgid "Transactional email and analytics should be suppressed or pointed at test accounts."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:131
+#: plugins/corex-config/src/Operations/OperationsMode.php:158
 msgid "Double-check email recipients and third-party integrations before any test send."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:135
+#: plugins/corex-config/src/Operations/OperationsMode.php:162
 msgid "The public site shows a maintenance notice. Switch back to production to restore it."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:136
+#: plugins/corex-config/src/Operations/OperationsMode.php:163
 msgid "You keep full admin access while signed in — you cannot lock yourself out."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:139
+#: plugins/corex-config/src/Operations/OperationsMode.php:166
 msgid "The public site shows the coming-soon page, and every other address is redirected to it. Switch to production to open the site."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:143
+#: plugins/corex-config/src/Operations/OperationsMode.php:170
+msgid "Forms, flows, newsletter sign-ups, booking requests, job applications, registration and the assistant's callback form are refused. Switch back to reopen them."
+msgstr ""
+
+#: plugins/corex-config/src/Operations/OperationsMode.php:173
 msgid "Changes take effect for real visitors. Review dangerous actions before applying them."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:159
+#: plugins/corex-config/src/Operations/OperationsMode.php:189
 msgid "Search engines should be discouraged from indexing this environment."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsMode.php:162
+#: plugins/corex-config/src/Operations/OperationsMode.php:192
 msgid "Published content can still be read through the REST API. Keep anything that must stay private in draft."
 msgstr ""
 
@@ -7877,11 +7956,11 @@ msgid "You are not allowed to change the operations mode, or your link expired."
 msgstr ""
 
 #. translators: %s: the name of a CoreX ability, "Run dangerous actions".
-#: plugins/corex-config/src/Operations/OperationsModeController.php:64
+#: plugins/corex-config/src/Operations/OperationsModeController.php:65
 msgid "Switching to this mode also needs “%s”."
 msgstr ""
 
-#: plugins/corex-config/src/Operations/OperationsModeController.php:105
+#: plugins/corex-config/src/Operations/OperationsModeController.php:106
 #: plugins/corex-config/src/Operations/PreviewLinkController.php:62
 #: plugins/corex-config/src/Operations/PreviewLinkController.php:108
 msgid "Back to Operations & Security"
@@ -7931,7 +8010,7 @@ msgid "Resolve blocking readiness checks or type PRODUCTION to override."
 msgstr ""
 
 #: plugins/corex-config/src/Operations/ProductionReadinessSnapshotFactory.php:110
-#: plugins/corex-config/src/Readiness/SiteChecks.php:264
+#: plugins/corex-config/src/Readiness/SiteChecks.php:268
 msgid "This could not be checked."
 msgstr ""
 
@@ -8064,7 +8143,7 @@ msgid "This card's information could not be read."
 msgstr ""
 
 #: plugins/corex-config/src/Overview/OverviewCardFailure.php:59
-#: plugins/corex-config/assets/insights.js:501
+#: plugins/corex-config/assets/insights.js:507
 #: plugins/corex-config/src/admin/components/CorexErrorState.js:72
 msgid "Try again"
 msgstr ""
@@ -8363,16 +8442,16 @@ msgid_plural "A test email was sent in the last %d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: plugins/corex-config/src/Readiness/SiteChecks.php:223
+#: plugins/corex-config/src/Readiness/SiteChecks.php:227
 msgid "Login protection on"
 msgstr ""
 
-#: plugins/corex-config/src/Readiness/SiteChecks.php:233
-msgid "Login protection is off"
+#: plugins/corex-config/src/Readiness/SiteChecks.php:237
+msgid "Failed sign-ins are not limited"
 msgstr ""
 
-#: plugins/corex-config/src/Readiness/SiteChecks.php:234
-msgid "Login protection is on"
+#: plugins/corex-config/src/Readiness/SiteChecks.php:238
+msgid "Failed sign-ins are limited"
 msgstr ""
 
 #: plugins/corex-config/src/Releases/ReleaseCompletion.php:94
@@ -8689,80 +8768,233 @@ msgstr ""
 msgid "Back to Submissions"
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:42
+#: plugins/corex-config/src/Security/HardeningChecks.php:45
 msgid "HTTPS"
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:44
+#: plugins/corex-config/src/Security/HardeningChecks.php:47
 msgid "The site is served over HTTPS."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:45
+#: plugins/corex-config/src/Security/HardeningChecks.php:48
 msgid "Serve the site over HTTPS — install an SSL certificate and force it for admin."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:49
+#: plugins/corex-config/src/Security/HardeningChecks.php:52
 msgid "File editing disabled"
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:51
+#: plugins/corex-config/src/Security/HardeningChecks.php:54
 msgid "The theme/plugin file editor is disabled in wp-admin."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:52
+#: plugins/corex-config/src/Security/HardeningChecks.php:55
 msgid "Set DISALLOW_FILE_EDIT to true in wp-config.php to disable the in-admin code editor."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:56
+#: plugins/corex-config/src/Security/HardeningChecks.php:59
 msgid "Debug output hidden"
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:58
+#: plugins/corex-config/src/Security/HardeningChecks.php:61
 msgid "PHP errors are not displayed to visitors."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:59
+#: plugins/corex-config/src/Security/HardeningChecks.php:62
 msgid "Set WP_DEBUG_DISPLAY to false so errors are logged, not shown to visitors."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:63
+#: plugins/corex-config/src/Security/HardeningChecks.php:66
 msgid "No default \"admin\" account"
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:65
+#: plugins/corex-config/src/Security/HardeningChecks.php:68
 msgid "There is no user literally named \"admin\"."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:66
+#: plugins/corex-config/src/Security/HardeningChecks.php:69
 msgid "Avoid a user named \"admin\" — it is the first username brute-force bots try."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:70
+#: plugins/corex-config/src/Security/HardeningChecks.php:73
 msgid "Search indexing allowed"
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:72
+#: plugins/corex-config/src/Security/HardeningChecks.php:75
 msgid "Search engines are not discouraged from indexing this production site."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:73
+#: plugins/corex-config/src/Security/HardeningChecks.php:76
 msgid "Review Settings → Reading → Search Engine Visibility before Production launch."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:77
+#: plugins/corex-config/src/Security/HardeningChecks.php:80
 msgid "Authentication salts configured"
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:79
+#: plugins/corex-config/src/Security/HardeningChecks.php:82
 msgid "WordPress authentication unique keys and salts are configured."
 msgstr ""
 
-#: plugins/corex-config/src/Security/HardeningChecks.php:80
+#: plugins/corex-config/src/Security/HardeningChecks.php:83
 msgid "Set unique WordPress authentication unique keys and salts in wp-config.php."
 msgstr ""
 
-#: plugins/corex-config/src/Security/LoginProtection/LoginProtectionEnforcer.php:63
+#: plugins/corex-config/src/Security/HardeningChecks.php:104
+msgid "Trusted proxies name only your proxies"
+msgstr ""
+
+#: plugins/corex-config/src/Security/HardeningChecks.php:106
+msgid "No trusted proxy range covers every address, and every line is an address or a range."
+msgstr ""
+
+#: plugins/corex-config/src/Security/HardeningChecks.php:108
+msgid "A trusted proxy range covers every address (/0), so any visitor can choose the address their failed sign-ins are counted by and get around the limit. List only your own proxies with wp corex security trusted-proxies, or clear the list with --clear."
+msgstr ""
+
+#: plugins/corex-config/src/Security/HardeningChecks.php:109
+msgid "A trusted proxy line is not an address or a range, so CoreX ignores it and does not trust that proxy: its visitors are counted as the proxy. List your proxies again with wp corex security trusted-proxies."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:58
+msgid "The lockout to release: the id of its row on the Lockouts panel."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:85
+msgid "The lockout was released. That username can sign in again from that network now."
+msgstr ""
+
+#. translators: %s: how many lockouts were released.
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:99
+msgid "%s active lockout was released."
+msgid_plural "%s active lockouts were released."
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:119
+msgid "This lockout has already ended. Nothing was changed."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:124
+msgid "There is no active lockout to release. Nothing was changed."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LockoutReleaseController.php:129
+msgid "That lockout was not found. It may have been removed when old sign-in records were cleared."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginProtection/LoginAttemptRetention.php:42
+msgid "Sign-in records"
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginProtection/LoginProtectionEnforcer.php:62
 msgid "Too many failed sign-in attempts. Please wait before trying again."
+msgstr ""
+
+#. translators: 1: the account's display name, 2: its login.
+#. translators: 1: what a formatting button does, such as "Bold". 2: its keyboard shortcut, such as "Ctrl+B".
+#. translators: 1: a person's name, 2: their email address.
+#. translators: 1: a form's name, 2: why it takes no answers (Closed, Expired, Scheduled).
+#: plugins/corex-config/src/Security/LoginProtection/WpLoginAccounts.php:55
+#: plugins/corex-config/src/admin/components/CorexRichText.js:511
+#: plugins/corex-config/src/Forms/tabs/EmailsTab.js:359
+#: plugins/corex-forms/src/Block/blocks/flowBlockEditor.js:58
+msgid "%1$s (%2$s)"
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:64
+msgid "This setting must be on or off."
+msgstr ""
+
+#. translators: 1: line number in the trusted proxies box, 2: the text on that line.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:67
+msgid "Line %1$s, \"%2$s\", is not an IPv4 or IPv6 address or range. Write one per line, for example 203.0.113.7 or 203.0.113.0/24."
+msgstr ""
+
+#. translators: 1: line number in the trusted proxies box, 2: the range on that line.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:73
+msgid "Line %1$s, \"%2$s\", trusts every address. A range that trusts every address would let anyone choose the address their sign-in attempts are counted by. List only your own proxies."
+msgstr ""
+
+#. translators: %s: the most trusted proxy lines kept.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:79
+msgid "List at most %s trusted proxies."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:82
+msgid "Write the trusted proxies as text, one address or range per line."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:83
+msgid "The request names no login protection setting, so there is nothing to save."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:84
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:134
+msgid "The login settings are being saved by another request. Nothing was saved; try again in a moment."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:86
+msgid "The lockout length in minutes and in seconds disagree. Send one, or the same length in both."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:87
+msgid "The counting window in minutes and in seconds disagree. Send one, or the same length in both."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:88
+msgid "The login switches and the older \"enabled\" and \"block default endpoints\" settings disagree. Send one shape, or both with the same meaning."
+msgstr ""
+
+#. translators: %s: why the login address cannot be used.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:91
+msgid "wp-login.php can only be hidden behind a login address of your own. %s"
+msgstr ""
+
+#. translators: 1: the fewest attempts allowed, 2: the most.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:105
+msgid "Maximum failed attempts must be a whole number from %1$s to %2$s."
+msgstr ""
+
+#. translators: 1: the shortest counting window in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:107
+msgid "The counting window must be a whole number of minutes from %1$s to %2$s."
+msgstr ""
+
+#. translators: 1: the shortest lockout in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:109
+msgid "The lockout length must be a whole number of minutes from %1$s to %2$s."
+msgstr ""
+
+#. translators: 1: the shortest counting window in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:111
+msgid "The counting window must be a whole number of seconds from %1$s to %2$s."
+msgstr ""
+
+#. translators: 1: the shortest lockout in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:113
+msgid "The lockout length must be a whole number of seconds from %1$s to %2$s."
+msgstr ""
+
+#. translators: 1: the fewest days sign-in records are kept, 2: the most.
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:115
+msgid "Keep sign-in records for a whole number of days from %1$s to %2$s."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:126
+msgid "That login address is reserved by WordPress. Choose a different one."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:130
+msgid "A published page already uses that address. Choose a different one, or the login and that page would compete for the same URL."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:134
+msgid "Something on this site already routes that address: a post type archive, a category base or another plugin. Choose a different one."
+msgstr ""
+
+#: plugins/corex-config/src/Security/LoginSettingsMessages.php:138
+msgid "Use 3 to 81 characters for the login address: lowercase letters, numbers, and hyphens, starting with a letter or number."
 msgstr ""
 
 #: plugins/corex-config/src/Security/OperationsSecurityScreen.php:81
@@ -9078,46 +9310,113 @@ msgstr ""
 msgid "Hardening checks"
 msgstr ""
 
-#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:933
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:940
+msgid "Recovery active: the default login is reachable"
+msgstr ""
+
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:942
+msgid "Recovery ends when the COREX_LOGIN_UNGUARD line is removed from wp-config.php."
+msgstr ""
+
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:949
 #: plugins/corex-config/src/Submissions/SubmissionExportTable.php:189
 msgid "Hidden"
 msgstr ""
 
-#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:935
-msgid "Recovery active: the default login is reachable"
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:951
+msgid "wp-login.php hidden, wp-admin reachable"
 msgstr ""
 
-#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:937
-msgid "Recovery ends when the COREX_LOGIN_UNGUARD line is removed from wp-config.php."
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:953
+msgid "A signed-out visit to wp-admin is sent to the login address, so the address is not private. Hide the admin as well to keep it private."
 msgstr ""
 
-#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:939
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:955
+msgid "wp-login.php reachable, wp-admin hidden"
+msgstr ""
+
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:956
 msgid "Reachable"
 msgstr ""
 
 #. translators: 1: old operations mode, 2: new operations mode.
-#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:1056
+#: plugins/corex-config/src/Security/OperationsSecurityScreen.php:1038
 msgid "Operations mode changed from %1$s to %2$s"
 msgstr ""
 
-#: plugins/corex-config/src/Security/SecuritySettingsController.php:180
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:80
+msgid "Hide wp-login.php (on or off)."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:81
+msgid "Hide the admin from visitors who are not signed in (on or off)."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:82
+msgid "Limit failed sign-ins (on or off)."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:83
+msgid "The protection switch of the previous screen, read in its old meaning. Beside the three switches it must agree with them."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:84
+msgid "The hide switch of the previous screen, read in its old meaning. Beside the three switches it must agree with them."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:85
+msgid "The login address."
+msgstr ""
+
+#. translators: 1: the fewest attempts, 2: the most.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:87
+msgid "Failed attempts before a lockout, from %1$d to %2$d."
+msgstr ""
+
+#. translators: 1: the shortest window in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:89
+msgid "The counting window in whole minutes, from %1$d to %2$d; null when it is not a whole minute."
+msgstr ""
+
+#. translators: 1: the shortest lockout in minutes, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:91
+msgid "The lockout length in whole minutes, from %1$d to %2$d; null when it is not a whole minute."
+msgstr ""
+
+#. translators: 1: the shortest window in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:93
+msgid "The counting window in seconds, from %1$d to %2$d. Beside window_minutes it must say the same."
+msgstr ""
+
+#. translators: 1: the shortest lockout in seconds, 2: the longest.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:95
+msgid "The lockout length in seconds, from %1$d to %2$d. Beside lockout_minutes it must say the same."
+msgstr ""
+
+#. translators: %d: the most trusted proxy lines kept.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:97
+msgid "Trusted proxies: text with one IPv4 or IPv6 address or CIDR range per line, or a list of them, at most %d. A range that trusts every address is refused."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:98
+msgid "Trust the proxies (on or off). When it is not sent, it follows the list."
+msgstr ""
+
+#. translators: 1: the fewest days, 2: the most.
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:100
+msgid "Days sign-in records are kept, from %1$d to %2$d."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:101
+msgid "Record successful sign-ins (on or off)."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:141
+msgid "Nothing was saved. Correct the settings named below and save again."
+msgstr ""
+
+#: plugins/corex-config/src/Security/SecuritySettingsController.php:149
 msgid "Login protection settings saved."
-msgstr ""
-
-#: plugins/corex-config/src/Security/SecuritySettingsController.php:214
-msgid "That login address is reserved by WordPress. Choose a different one."
-msgstr ""
-
-#: plugins/corex-config/src/Security/SecuritySettingsController.php:218
-msgid "A published page already uses that address. Choose a different one, or the login and that page would compete for the same URL."
-msgstr ""
-
-#: plugins/corex-config/src/Security/SecuritySettingsController.php:222
-msgid "Something on this site already routes that address — a post type archive, a category base, or another plugin. Choose a different one."
-msgstr ""
-
-#: plugins/corex-config/src/Security/SecuritySettingsController.php:226
-msgid "Use 3 to 81 characters for the login address: lowercase letters, numbers, and hyphens, starting with a letter or number."
 msgstr ""
 
 #: plugins/corex-config/src/Settings/AdminDashboard.php:65
@@ -11271,6 +11570,14 @@ msgstr ""
 msgid "Update WordPress to 7.0 or newer."
 msgstr ""
 
+#: plugins/corex-core/src/Http/PublicSubmissionPause.php:65
+msgid "The site is closed for maintenance and is not taking submissions. Please try again later."
+msgstr ""
+
+#: plugins/corex-core/src/Http/PublicSubmissionPause.php:66
+msgid "Forms are paused for a short while. Please try again later."
+msgstr ""
+
 #: plugins/corex-core/src/Mail/Capture/WordPressMailNames.php:42
 msgid "WordPress: password reset"
 msgstr ""
@@ -12470,7 +12777,7 @@ msgid "The launch checklist could not be read."
 msgstr ""
 
 #: addons/corex-kit-company/assets/setup-wizard.js:375
-#: plugins/corex-config/assets/insights.js:193
+#: plugins/corex-config/assets/insights.js:198
 msgid "Retry"
 msgstr ""
 
@@ -12844,44 +13151,45 @@ msgstr ""
 msgid "Networks"
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:61
+#: plugins/corex-config/assets/insights.js:66
 msgid "Loading insights…"
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:75
+#: plugins/corex-config/assets/insights.js:80
 #: plugins/corex-config/src/admin/components/CorexLoadable.js:54
 msgid "Loaded."
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:134
+#: plugins/corex-config/assets/insights.js:139
 msgid "Not run yet"
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:193
+#: plugins/corex-config/assets/insights.js:198
 msgid "Run check"
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:236
+#: plugins/corex-config/assets/insights.js:241
 msgid "Loading the last result"
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:239
+#: plugins/corex-config/assets/insights.js:244
 msgid "No score yet"
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:241
-msgid "Score"
+#. translators: 1: a score from 0 to 100, 2: its letter grade.
+#: plugins/corex-config/assets/insights.js:248
+msgid "Score %1$d / 100, grade %2$s"
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:280
+#: plugins/corex-config/assets/insights.js:286
 msgid "The check could not be completed. Try again."
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:311
+#: plugins/corex-config/assets/insights.js:317
 msgid "The last results could not be loaded. Run a check to get new ones."
 msgstr ""
 
-#: plugins/corex-config/assets/insights.js:496
+#: plugins/corex-config/assets/insights.js:502
 msgid "The rest of the insights could not be loaded."
 msgstr ""
 
@@ -13131,15 +13439,6 @@ msgstr ""
 
 #: plugins/corex-config/src/admin/components/CorexRichText.js:495
 msgid "Formatting"
-msgstr ""
-
-#. translators: 1: what a formatting button does, such as "Bold". 2: its keyboard shortcut, such as "Ctrl+B".
-#. translators: 1: a person's name, 2: their email address.
-#. translators: 1: a form's name, 2: why it takes no answers (Closed, Expired, Scheduled).
-#: plugins/corex-config/src/admin/components/CorexRichText.js:511
-#: plugins/corex-config/src/Forms/tabs/EmailsTab.js:359
-#: plugins/corex-forms/src/Block/blocks/flowBlockEditor.js:58
-msgid "%1$s (%2$s)"
 msgstr ""
 
 #: plugins/corex-config/src/admin/components/CorexRichText.js:567

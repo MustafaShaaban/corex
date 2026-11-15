@@ -413,7 +413,11 @@ export function scriptsIn( plugins ) {
 					.split( path.sep )
 					.join( '/' )
 					.replace( /\.min\.js$/, '.js' );
-				found.push( { file, plugin: path.basename( plugin ), relative } );
+				found.push( {
+					file,
+					plugin: path.basename( plugin ),
+					relative,
+				} );
 			}
 		}
 	}
