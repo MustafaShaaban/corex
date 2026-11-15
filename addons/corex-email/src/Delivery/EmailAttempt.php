@@ -59,6 +59,13 @@ final class EmailAttempt
         public readonly ?int $routeId = null,
         public readonly ?string $providerMessageId = null,
         public readonly ?string $errorCode = null,
+        /**
+         * The variables the email was sent without, because they had no value (spec 120): the
+         * log names them.
+         *
+         * @var list<string>
+         */
+        public readonly array $missingVariables = [],
     ) {
         if ($this->id < 0) {
             throw new InvalidArgumentException(__('Email attempt ID cannot be negative.', 'corex'));
@@ -115,53 +122,11 @@ final class EmailAttempt
 
     public function withId(int $id): self
     {
-        return new self(
-            id: $id,
-            attemptId: $this->attemptId,
-            requestId: $this->requestId,
-            parentAttemptId: $this->parentAttemptId,
-            recipient: $this->recipient,
-            subject: $this->subject,
-            templateSlug: $this->templateSlug,
-            state: $this->state,
-            provider: $this->provider,
-            providerEvent: $this->providerEvent,
-            retryable: $this->retryable,
-            occurredAt: $this->occurredAt,
-            source: $this->source,
-            recipientHash: $this->recipientHash,
-            environment: $this->environment,
-            templateId: $this->templateId,
-            templateVersion: $this->templateVersion,
-            routeId: $this->routeId,
-            providerMessageId: $this->providerMessageId,
-            errorCode: $this->errorCode,
-        );
+        return new self(...[...get_object_vars($this), 'id' => $id]);
     }
 
     public function withRecipientEvidence(string $redactedRecipient, string $recipientHash): self
     {
-        return new self(
-            id: $this->id,
-            attemptId: $this->attemptId,
-            requestId: $this->requestId,
-            parentAttemptId: $this->parentAttemptId,
-            recipient: $redactedRecipient,
-            subject: $this->subject,
-            templateSlug: $this->templateSlug,
-            state: $this->state,
-            provider: $this->provider,
-            providerEvent: $this->providerEvent,
-            retryable: $this->retryable,
-            occurredAt: $this->occurredAt,
-            source: $this->source,
-            recipientHash: $recipientHash,
-            environment: $this->environment,
-            templateId: $this->templateId,
-            templateVersion: $this->templateVersion,
-            routeId: $this->routeId,
-            providerMessageId: $this->providerMessageId,
-            errorCode: $this->errorCode,
-        );
+        return new self(...[...get_object_vars($this), 'recipient' => $redactedRecipient, 'recipientHash' => $recipientHash]);
     }
 }

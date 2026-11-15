@@ -106,6 +106,14 @@ export default function NotificationItem( {
 	const closed = [ 'resolved', 'dismissed', 'expired' ].includes(
 		state.status
 	);
+	// A group of repeated notices is acted on as a whole: marking it read marks every member
+	// (spec 118, US-SHL-09). Its members are listed, each with its own link.
+	const members = Array.isArray( item.group?.members )
+		? item.group.members
+		: [];
+	const target = members.length
+		? members.map( ( member ) => member.id )
+		: item.id;
 
 	return (
 		<article
@@ -144,6 +152,31 @@ export default function NotificationItem( {
 				<p className="corex-notification__text">
 					{ item.rendered?.body ?? '' }
 				</p>
+				{ members.length ? (
+					<ul className="corex-notification__members">
+						{ members.map( ( member ) => (
+							<li key={ member.id }>
+								{ member.action?.url ? (
+									<a href={ member.action.url }>
+										{ member.action.label ||
+											member.rendered?.title ||
+											__( 'Open', 'corex' ) }
+									</a>
+								) : (
+									( member.rendered?.title ?? '' )
+								) }{ ' ' }
+								<CorexRelativeTime
+									value={ member.latest_occurred_at }
+									className="corex-notification__time"
+									absent={ __(
+										'Time not recorded',
+										'corex'
+									) }
+								/>
+							</li>
+						) ) }
+					</ul>
+				) : null }
 
 				<p className="corex-notification__meta">
 					<span
@@ -214,7 +247,7 @@ export default function NotificationItem( {
 				{ ! compact && actions.markRead && ! state.read ? (
 					<button
 						type="button"
-						onClick={ () => actions.markRead( item.id ) }
+						onClick={ () => actions.markRead( target ) }
 						{ ...controlProps( 'markRead' ) }
 					>
 						{ __( 'Mark read', 'corex' ) }
@@ -223,7 +256,7 @@ export default function NotificationItem( {
 				{ ! compact && actions.markUnread && state.read && ! closed ? (
 					<button
 						type="button"
-						onClick={ () => actions.markUnread( item.id ) }
+						onClick={ () => actions.markUnread( target ) }
 						{ ...controlProps( 'markUnread' ) }
 					>
 						{ __( 'Mark unread', 'corex' ) }
@@ -232,7 +265,7 @@ export default function NotificationItem( {
 				{ ! compact && actions.snooze && ! closed ? (
 					<button
 						type="button"
-						onClick={ () => actions.snooze( item.id ) }
+						onClick={ () => actions.snooze( target ) }
 						{ ...controlProps( 'snooze' ) }
 					>
 						{ __( 'Snooze for a day', 'corex' ) }
@@ -241,7 +274,7 @@ export default function NotificationItem( {
 				{ ! compact && actions.dismiss && ! closed ? (
 					<button
 						type="button"
-						onClick={ () => actions.dismiss( item.id ) }
+						onClick={ () => actions.dismiss( target ) }
 						{ ...controlProps( 'dismiss' ) }
 					>
 						{ __( 'Dismiss', 'corex' ) }
@@ -253,7 +286,7 @@ export default function NotificationItem( {
 					<button
 						type="button"
 						className="is-destructive"
-						onClick={ () => actions.resolve( item.id ) }
+						onClick={ () => actions.resolve( target ) }
 						{ ...controlProps( 'resolve' ) }
 					>
 						{ __( 'Mark resolved', 'corex' ) }

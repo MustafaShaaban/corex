@@ -1,0 +1,153 @@
+/*
+ * CoreX → Assistant (spec 129): the cards' rows, the services table and
+ * the day boxes. The cards and the switches are the CoreX shell's own; only
+ * the layout inside them is here. Admin tokens only.
+ */
+
+.corex-assistant-screen {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-assistant-row {
+	display: grid;
+	grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr);
+	gap: var(--corex-admin-space-sm) var(--corex-admin-space-lg);
+	align-items: start;
+	margin: 0;
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: 0;
+	border: 0;
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-assistant-row__control :is(input, select, textarea) {
+	max-inline-size: 100%;
+}
+
+.corex-assistant-row__label {
+	padding: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-assistant-copy {
+	margin-block: var(--corex-admin-space-md) 0;
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-assistant-copy__suggestions {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-assistant-services-wrap {
+	overflow-x: auto;
+}
+
+/* A table of the shell's own colours: wp-admin's `.widefat` paints it
+   white in the dark appearance. */
+.corex-assistant-services {
+	inline-size: 100%;
+	border-collapse: collapse;
+	color: var(--corex-admin-text);
+}
+
+.corex-assistant-services td,
+.corex-assistant-services th {
+	padding: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	text-align: start;
+	vertical-align: middle;
+}
+
+.corex-assistant-services th {
+	color: var(--corex-admin-text-muted);
+	font-weight: 600;
+}
+
+.corex-assistant-screen .description {
+	color: var(--corex-admin-text-muted);
+}
+
+/* wp-admin rings a focused field with a box shadow too faint on these
+   surfaces; the shell's outline answers. */
+.corex-assistant-screen :is(input, select, textarea):focus {
+	box-shadow: none;
+}
+
+.corex-assistant-services input[type="text"],
+.corex-assistant-services input[type="password"] {
+	inline-size: 100%;
+}
+
+.corex-assistant-services__move {
+	white-space: nowrap;
+}
+
+.corex-assistant-services__move .button-link {
+	display: inline-grid;
+	place-items: center;
+	min-inline-size: 1.75rem;
+	min-block-size: 1.75rem;
+	text-decoration: none;
+}
+
+/* Each day a target of 24px or more (WCAG 2.2, 2.5.8): the box and its name. */
+.corex-assistant-day {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	min-block-size: 2rem;
+	margin-inline-end: var(--corex-admin-space-md);
+}
+
+.corex-assistant-day input[type="checkbox"] {
+	inline-size: 1.5rem;
+	block-size: 1.5rem;
+	margin: 0;
+}
+
+.corex-assistant-preview {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+}
+
+@media (max-width: 782px) { /* corex-token-allow: WordPress's own admin breakpoint */
+
+	.corex-assistant-row {
+		grid-template-columns: 1fr;
+	}
+
+	/* On a phone each service is a block of its own: every field carries
+	   its service's name. */
+	.corex-assistant-services,
+	.corex-assistant-services tbody,
+	.corex-assistant-services tr,
+	.corex-assistant-services td {
+		display: block;
+	}
+
+	.corex-assistant-services thead {
+		display: none;
+	}
+
+	.corex-assistant-services tr {
+		padding-block: var(--corex-admin-space-sm);
+		border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	}
+
+	.corex-assistant-services td {
+		padding-block: var(--corex-admin-space-xs);
+		padding-inline: 0;
+		border: 0;
+	}
+
+	/* A finger's target on a phone (spec 116, 44px). */
+	.corex-assistant-services__move .button-link {
+		min-inline-size: 2.75rem;
+		min-block-size: 2.75rem;
+	}
+}

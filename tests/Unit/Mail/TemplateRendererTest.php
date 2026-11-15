@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 use Corex\Email\Security\HeaderGuard;
 use Corex\Email\Template\EmailTemplate;
-use Corex\Email\Template\Layout;
 use Corex\Email\Template\MailContext;
 use Corex\Email\Template\TemplateRenderer;
+use Corex\Tests\Support\FixedEmailFrame;
 use Corex\Tests\Support\LanguageOfTheRequest;
 
 final class GreetingTemplate extends EmailTemplate
@@ -36,12 +36,14 @@ final class GreetingTemplate extends EmailTemplate
     }
 }
 
+beforeEach(function () {
+    // The frame's footer is in translated sentences.
+    Brain\Monkey\Functions\when('__')->returnArg();
+});
+
 function mailRenderer(): TemplateRenderer
 {
-    return new TemplateRenderer(
-        new Layout(['name' => 'Acme', 'color' => '#0B1F3B', 'logo' => '']),
-        new LanguageOfTheRequest(),
-    );
+    return new TemplateRenderer(FixedEmailFrame::named('Acme'), new LanguageOfTheRequest());
 }
 
 it('merges whitelisted context into subject and body', function () {
@@ -94,7 +96,7 @@ it('leaves a break in a merged value for the guard of this path to refuse', func
         ->toBe('Illegal characters in the subject field.');
 });
 
-it('wraps the body in the brand layout (RTL-aware full document)', function () {
+it('draws the body in the one frame (RTL-aware full document)', function () {
     $rendered = mailRenderer()->render(new GreetingTemplate(), new MailContext([
         'user' => ['name' => 'X'], 'site' => ['name' => 'Y'],
     ]));
@@ -102,4 +104,51 @@ it('wraps the body in the brand layout (RTL-aware full document)', function () {
     expect($rendered->body)->toContain('<!DOCTYPE html')
         ->toContain('Acme')      // brand name from the layout
         ->toContain('dir=');     // direction attribute for RTL correctness
+});
+
+final class FooterLinksTemplate extends EmailTemplate
+{
+    public function name(): string
+    {
+        return 'footer-links';
+    }
+
+    public function subject(MailContext $context): string
+    {
+        return 'News';
+    }
+
+    public function body(MailContext $context): string
+    {
+        return '<p>This week.</p>';
+    }
+
+    public function links(MailContext $context): array
+    {
+        return [
+            ['label' => 'Unsubscribe', 'url' => 'https://acme.test/?corex_newsletter=unsubscribe&token=t'],
+            ['label' => 'Manage preferences', 'url' => 'https://acme.test/newsletter/'],
+        ];
+    }
+
+    public function kind(): string
+    {
+        return \Corex\Email\Design\EmailKind::NEWSLETTER;
+    }
+}
+
+// Spec 120, FR-012: the plain-text version carries the links its HTML footer does, so a
+// newsletter email read as text can still be unsubscribed from (newsletter-notify, -confirm).
+it('ends the plain text with the links the footer gives, each with its address', function () {
+    $rendered = mailRenderer()->render(new FooterLinksTemplate(), new MailContext([]));
+
+    expect($rendered->plainText)->toContain("Unsubscribe: https://acme.test/?corex_newsletter=unsubscribe&token=t\nManage preferences: https://acme.test/newsletter/")
+        ->and($rendered->plainText)->toEndWith('Manage preferences: https://acme.test/newsletter/');
+});
+
+it('writes no footer link into the plain text of an email that has none', function () {
+    $rendered = mailRenderer()->render(new GreetingTemplate(), new MailContext([]));
+
+    expect($rendered->plainText)->not->toContain('http://')
+        ->and($rendered->plainText)->not->toContain(': https://');
 });

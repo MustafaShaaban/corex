@@ -239,7 +239,7 @@ corex-framework/
 │                                   #   deployment, team workflow, cookbooks (Markdown + Mermaid).
 │                                   #   Product docs + the GENERATED class reference live in docs-app/.
 ├── docs-app/                       # published documentation website (Astro + Starlight, spec 022)
-├── specs/                          # Spec Kit specs + constitution
+├── specs/                          # one spec per feature + constitution
 ├── tests/                          # Pest, Jest, Playwright
 ├── .github/workflows/              # or azure-pipelines.yml
 ├── composer.json                   # root, PSR-4 autoload
@@ -749,7 +749,7 @@ On first activation, a wizard (built with DataViews/React) runs: pick a starter 
 
 Corex is built *with* AI agents and usable *by* any LLM — so the structure is AI-first.
 
-- **Spec-Driven Development (Spec Kit):** the spec, not the code, is the source of truth. Workflow: `/constitution` → `/specify` → `/clarify` → `/plan` → `/tasks` → `/implement`, reviewing between each task. Model-agnostic — works with Claude Code, Codex, Cursor, Gemini.
+- **Spec-Driven Development (the CoreX loop):** the spec, not the code, is the source of truth. Workflow: grill → spec with slices → one slice at a time, test first → guards → two-model review → PR (constitution v2.0.0; `AGENTS.md` has each step). Model-agnostic: works with Claude Code, Codex, Cursor, Gemini.
 - **`specs/constitution.md`** — the rules in §1, formalized. Every agent reads it first.
 - **Per-module specs** — write the spec before generating code. This conversation's decisions *are* the spec material.
 - **Agent entry files** at repo root: `CLAUDE.md` / `AGENTS.md`, `ARCHITECTURE.md` (this file), `HOOKS.md`, `MODES.md`.
@@ -773,7 +773,7 @@ Corex is built *with* AI agents and usable *by* any LLM — so the structure is 
 | RTL | postcss-rtlcss + logical properties | Edge cases only |
 | Testing | **Pest**, Jest, Playwright, Brain Monkey | §18 |
 | Local dev | **wp-env** (Docker) | Cross-platform parity |
-| Spec/AI | **Spec Kit** + Claude Code / Codex | Model-agnostic |
+| Spec/AI | **The CoreX loop** (Matt Pocock's engineering skills) + Claude Code / Codex | Model-agnostic |
 | Standards | PHPCS (WordPress-Extra), ESLint (@wordpress) | CI-enforced |
 | Avoid | Bootstrap, Crocoblock as core deps | Conflict with token system + clean architecture |
 
@@ -815,10 +815,9 @@ wp corex health:check
 Worked example — a "Careers" feature:
 
 ```bash
-# 1. Spec first (Spec Kit)
-/specify  "Careers: list/filter job openings, single job page, apply form"
-/plan
-/tasks
+# 1. Spec first (the CoreX loop)
+/grill-with-docs  "Careers: list/filter job openings, single job page, apply form"
+#   then write specs/NNN-careers/spec.md: requirements + slices
 
 # 2. Generate the layers
 wp corex make:model Career --cpt --rest --ability

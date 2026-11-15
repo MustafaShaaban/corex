@@ -12,6 +12,7 @@ import CorexDialog from '../admin/components/CorexDialog.js';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
 import { usePending, workingProps } from '../admin/components/working.js';
 import { approveRequest, refusalOf } from './accessClient.js';
+import { blockerReason } from './AccessChangeDialog.js';
 
 /**
  * An ability's risk, in words.
@@ -100,12 +101,12 @@ export default function AccessApprovalDialog( {
 			{ preview.area && (
 				<p>
 					{ sprintf(
-						/* translators: %s: a CoreX area's key, e.g. "data". */
+						/* translators: %s: the name of a CoreX area, e.g. "Forms & Flows". */
 						__(
 							'They asked for the %s area, which grants:',
 							'corex'
 						),
-						preview.area
+						preview.area_label || preview.area
 					) }
 				</p>
 			) }
@@ -132,7 +133,25 @@ export default function AccessApprovalDialog( {
 						'The access safety policy refuses this approval.',
 						'corex'
 					) }
-				/>
+				>
+					<ul>
+						{ preview.blockers.map( ( blocker ) => (
+							<li
+								key={ `${ blocker.code }:${ blocker.ability }` }
+							>
+								{ sprintf(
+									/* translators: 1: an ability's name, 2: why it cannot be granted. */
+									__( '%1$s: %2$s', 'corex' ),
+									preview.abilities.find(
+										( ability ) =>
+											ability.key === blocker.ability
+									)?.label || blocker.ability,
+									blockerReason( blocker.code )
+								) }
+							</li>
+						) ) }
+					</ul>
+				</CorexErrorState>
 			) }
 			<div className="corex-access__approval-field">
 				<label htmlFor={ `${ id }-note` }>

@@ -41,7 +41,7 @@ final class ReadinessProvider implements InsightProvider
 
     public function label(): string
     {
-        return __('Readiness', 'corex');
+        return __('AI and agent readiness', 'corex');
     }
 
     public function run(string $url): InsightResult

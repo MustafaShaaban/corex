@@ -1,6 +1,6 @@
 ---
 title: Team workflow
-description: How the team works — onboarding, branching, commits, PR review, Spec Kit, and the quality gates.
+description: How the team works: onboarding, branching, commits, PR review, the CoreX loop, and the quality gates.
 audience: contributor
 stability: stable
 last_verified: null

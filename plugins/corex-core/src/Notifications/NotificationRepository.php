@@ -63,6 +63,13 @@ interface NotificationRepository
 
     public function reopenByDedupKey(string $dedupKey): int;
 
+    /**
+     * Rewrite what an open notification says, its title, body and action label, without recording
+     * another occurrence (spec 118). Returns how many rows changed: none when the words are already
+     * these.
+     */
+    public function rewordByDedupKey(Notification $notification): int;
+
     /** Bounded prune of expired/resolved notifications older than the cutoff; returns the count removed. */
     public function pruneOlderThan(DateTimeImmutable $cutoff, int $limit = 500): int;
 }

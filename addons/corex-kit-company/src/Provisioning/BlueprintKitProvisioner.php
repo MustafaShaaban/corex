@@ -22,12 +22,13 @@ defined('ABSPATH') || exit;
  * The kit framework's implementation of the corex-core {@see KitProvisioner} seam (spec 042): it maps the
  * registered blueprints to applicable kits, computes a read-only apply preview via the shared classifier, and
  * runs apply through the one shared {@see BlueprintActivator}. Bound to the interface in the container so
- * corex-config can drive activation without depending on this add-on. "Applied" state is tracked in an option;
- * the transient prompt ("pending") state is owned by the Add-ons screen, not here.
+ * corex-config can drive activation without depending on this add-on. "Applied" is kept by {@see KitAppliedRecord},
+ * the one rule the Setup Wizard records its applies through too (spec 118); the transient prompt ("pending")
+ * state is owned by the Add-ons screen, not here.
  */
 final class BlueprintKitProvisioner implements KitProvisioner
 {
-    public const APPLIED_OPTION = 'corex_kit_applied';
+    public const APPLIED_OPTION = KitAppliedRecord::OPTION;
 
     private const MODULE_PREFIX = 'corex-kit-';
 
@@ -35,6 +36,7 @@ final class BlueprintKitProvisioner implements KitProvisioner
         private readonly BlueprintRegistry $registry,
         private readonly SetupWizard $wizard,
         private readonly BlueprintActivator $activator,
+        private readonly KitAppliedRecord $applied = new KitAppliedRecord(),
     ) {
     }
 
@@ -43,8 +45,7 @@ final class BlueprintKitProvisioner implements KitProvisioner
      */
     public function applicableKits(): array
     {
-        $applied = $this->appliedNames();
-        $kits    = [];
+        $kits = [];
 
         foreach ($this->registry->all() as $blueprint) {
             $pages = $blueprint->pages();
@@ -57,7 +58,7 @@ final class BlueprintKitProvisioner implements KitProvisioner
             $kits[]   = new KitSummary(
                 $name,
                 ucfirst($name),
-                in_array($name, $applied, true),
+                $this->applied->isApplied($name, array_column($pages, 'slug')),
                 count($pages),
                 $blueprint->requiredModules(),
             );
@@ -109,26 +110,8 @@ final class BlueprintKitProvisioner implements KitProvisioner
     {
         $outcome = $this->activator->apply($this->wizard->plan($kit));
 
-        $this->markApplied($kit);
+        $this->applied->record($kit, $outcome);
 
         return $outcome;
-    }
-
-    private function markApplied(string $kit): void
-    {
-        $applied = $this->appliedNames();
-
-        if (! in_array($kit, $applied, true)) {
-            $applied[] = $kit;
-            update_option(self::APPLIED_OPTION, array_values($applied));
-        }
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function appliedNames(): array
-    {
-        return array_values(array_map('strval', (array) get_option(self::APPLIED_OPTION, [])));
     }
 }

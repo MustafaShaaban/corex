@@ -212,3 +212,29 @@ it('records a screen refusal under the screen\'s page address, whichever key the
         ->and($entries[0]['section'])->toBe('corex-forms')
         ->and($entries[0]['count'])->toBe(2);
 });
+
+it('records a refused action once per request for each screen and ability, and again in the next REST dispatch (spec 117, FR-005)', function () {
+    Functions\when('get_current_user_id')->justReturn(7);
+
+    $this->log->recordRefusedAction('action', 'corex-email-studio', 'corex_manage_email');
+    $this->log->recordRefusedAction('action', 'email', 'corex_manage_email');
+    $this->log->recordRefusedAction('action', 'corex-email-studio', 'corex_manage_email');
+    $once = $this->log->entries()[0]['count'] ?? 0;
+
+    // A REST dispatch is a request of its own.
+    expect($this->log->startRequest(null))->toBeNull();
+    $this->log->recordRefusedAction('action', 'corex-email-studio', 'corex_manage_email');
+
+    expect($once)->toBe(1)
+        ->and($this->log->entries())->toHaveCount(1)
+        ->and($this->log->entries()[0]['count'])->toBe(2);
+});
+
+it('counts refusals of two abilities of one screen in one request apart', function () {
+    Functions\when('get_current_user_id')->justReturn(7);
+
+    $this->log->recordRefusedAction('action', 'corex-operations-security', 'corex_manage_operations');
+    $this->log->recordRefusedAction('action', 'corex-operations-security', 'corex_run_dangerous_actions');
+
+    expect($this->log->entries()[0]['count'])->toBe(2);
+});

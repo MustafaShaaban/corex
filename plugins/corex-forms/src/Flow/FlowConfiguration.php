@@ -28,6 +28,7 @@ final readonly class FlowConfiguration
      * @param array<string,mixed>       $placementSnapshot
      * @param array<string,mixed>       $protection Spam-protection expectations: captcha (inherit|on|off),
      *                                              action (?string), threshold (?float). Empty = inherit all.
+     * @param list<string>              $actions    Registered flow actions run after storage (spec 122, FR-022).
      */
     public function __construct(
         public array $schema,
@@ -37,7 +38,25 @@ final readonly class FlowConfiguration
         public array $success,
         public array $placementSnapshot,
         public array $protection = [],
+        public array $actions = [],
     ) {
+    }
+
+    /**
+     * The action keys a stored or sent configuration lists, each once, in the order given.
+     *
+     * @return list<string>
+     */
+    public static function actionKeys(mixed $actions): array
+    {
+        $keys = [];
+        foreach (is_array($actions) ? $actions : [] as $key) {
+            if (is_string($key) && preg_match('/^[a-z][a-z0-9_]*$/', $key) === 1) {
+                $keys[] = $key;
+            }
+        }
+
+        return array_values(array_unique($keys));
     }
 
     /** @throws JsonException */
@@ -57,6 +76,10 @@ final readonly class FlowConfiguration
         // canonical document would otherwise re-hash every version on every live site at once.
         if ($this->protection !== []) {
             $document['protection'] = $this->protection;
+        }
+        // The same for the actions a flow runs (spec 122): absent from every version before them.
+        if ($this->actions !== []) {
+            $document['actions'] = $this->actions;
         }
 
         return hash('sha256', json_encode($this->canonical($document), JSON_THROW_ON_ERROR));

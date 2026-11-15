@@ -116,6 +116,12 @@ final readonly class EmailBrand
         return $this->logoWidth >= 2 * $this->logoHeight && $this->logoHeight > 0;
     }
 
+    /** This brand read in the other direction: the preview's right-to-left view (spec 120). */
+    public function withDirection(string $direction): self
+    {
+        return new self($this->name, $this->homeUrl, $this->logo, $direction === 'rtl' ? 'rtl' : 'ltr', $this->language, $this->footer, $this->light, $this->dark, $this->logoWidth, $this->logoHeight);
+    }
+
     /** This brand in other colours. */
     public function withPalettes(EmailPalette $light, EmailPalette $dark): self
     {

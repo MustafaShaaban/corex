@@ -43,9 +43,21 @@ jest.mock(
 	() => jest.fn( () => Promise.resolve( { data: { flows: [] } } ) ),
 	{ virtual: true }
 );
-jest.mock( '@wordpress/i18n', () => ( { __: ( value ) => value } ), {
-	virtual: true,
-} );
+jest.mock(
+	'@wordpress/i18n',
+	() => ( {
+		__: ( value ) => value,
+		sprintf: ( format, ...args ) =>
+			args.reduce(
+				( text, arg, index ) =>
+					text.replace( `%${ index + 1 }$s`, arg ),
+				format
+			),
+	} ),
+	{
+		virtual: true,
+	}
+);
 
 import {
 	flowOptions,
@@ -56,21 +68,39 @@ import {
 describe( 'persisted flow blocks', () => {
 	beforeEach( () => registerBlockType.mockClear() );
 
-	test( 'normalizes only published flow records from the REST envelope', () => {
-		expect(
-			normalizePublishedFlows( {
-				data: {
-					flows: [
-						{ id: 1, name: 'Draft', state: 'draft' },
-						{ id: 2, name: 'Live', state: 'published' },
-					],
-				},
-			} )
-		).toEqual( [ { id: 2, name: 'Live', state: 'published' } ] );
-		expect( flowOptions( [ { id: 2, name: 'Live' } ] )[ 1 ] ).toEqual( {
-			label: 'Live',
-			value: '2',
+	test( 'lists every flow that was published, and names one that takes no answers', () => {
+		const flows = normalizePublishedFlows( {
+			data: {
+				flows: [
+					{ id: 1, name: 'Draft', state: 'draft' },
+					{
+						id: 2,
+						name: 'Live',
+						state: 'published',
+						status: { state: 'open' },
+					},
+					{
+						id: 3,
+						name: 'Jobs',
+						state: 'closed',
+						status: { state: 'closed' },
+					},
+					{
+						id: 4,
+						name: 'Survey',
+						state: 'published',
+						status: { state: 'expired' },
+					},
+				],
+			},
 		} );
+
+		expect( flows.map( ( flow ) => flow.id ) ).toEqual( [ 2, 3, 4 ] );
+		expect( flowOptions( flows ).slice( 1 ) ).toEqual( [
+			{ label: 'Live', value: '2' },
+			{ label: 'Jobs (Closed)', value: '3' },
+			{ label: 'Survey (Expired)', value: '4' },
+		] );
 	} );
 
 	test.each( [
@@ -89,7 +119,7 @@ describe( 'persisted flow blocks', () => {
 			expect( settings.save() ).toBeNull();
 			settings.edit( { attributes: {}, setAttributes: jest.fn() } );
 			expect( apiFetch ).toHaveBeenCalledWith( {
-				path: '/corex/v1/flows?state=published',
+				path: '/corex/v1/flows',
 			} );
 		}
 	);

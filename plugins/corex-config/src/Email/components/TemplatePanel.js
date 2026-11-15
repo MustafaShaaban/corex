@@ -1,7 +1,8 @@
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 import CorexTime from '../../admin/components/CorexTime.js';
-import { useContext } from '@wordpress/element';
+import { useContext, useState } from '@wordpress/element';
+import CorexDialog from '../../admin/components/CorexDialog.js';
 import {
 	PendingControl,
 	workingProps,
@@ -9,7 +10,7 @@ import {
 import CorexSkeleton, {
 	SkeletonBar,
 } from '../../admin/components/CorexSkeleton.js';
-import { Field } from './shared.js';
+import { Field, Notice } from './shared.js';
 
 function TemplateRail( {
 	templates,
@@ -157,25 +158,26 @@ function DraftFields( { layouts, draft, errors, onChange } ) {
 				onChange={ onChange }
 			/>
 			<Field
-				label={ __( 'From name', 'corex' ) }
+				label={ __( 'From name (optional)', 'corex' ) }
 				name="from_name"
 				value={ draft.from_name }
+				error={ errors.from_name }
 				onChange={ onChange }
 			/>
 			<Field
-				label={ __( 'From address', 'corex' ) }
+				label={ __( 'From address (optional)', 'corex' ) }
 				name="from_address"
 				type="email"
 				value={ draft.from_address }
 				error={ errors.from_address }
 				onChange={ onChange }
 			/>
-			<Field
-				label={ __( 'Variables (comma separated)', 'corex' ) }
-				name="variable_keys"
-				value={ draft.variable_keys.join( ', ' ) }
-				onChange={ onChange }
-			/>
+			<p className="corex-email-app__field-note is-wide">
+				{ __(
+					'Left empty, the email leaves from the sender in Settings → Mail. The variables a template uses are read from its subject and body.',
+					'corex'
+				) }
+			</p>
 			<Field
 				label={ __( 'HTML body', 'corex' ) }
 				name="html_body"
@@ -252,18 +254,89 @@ function TemplateEditorSkeleton() {
 	);
 }
 
+/**
+ * Asks before a template CoreX ships is put back as it was shipped (spec 120, story 4).
+ *
+ * @param {Object}   props
+ * @param {string}   props.name      The template's name.
+ * @param {boolean}  props.busy      Whether a request is out.
+ * @param {Function} props.onConfirm Resets it.
+ * @param {Function} props.onClose   Leaves it as it is.
+ * @return {Element} The dialog.
+ */
+function ResetDialog( { name, busy, onConfirm, onClose } ) {
+	return (
+		<CorexDialog
+			title={ __( 'Reset to the shipped version?', 'corex' ) }
+			onClose={ onClose }
+			busy={ busy }
+			footer={
+				<>
+					<button
+						type="button"
+						className="button button-primary"
+						disabled={ busy }
+						onClick={ onConfirm }
+					>
+						{ __( 'Reset to shipped version', 'corex' ) }
+					</button>
+					<button
+						type="button"
+						className="button"
+						onClick={ onClose }
+					>
+						{ __( 'Keep my version', 'corex' ) }
+					</button>
+				</>
+			}
+		>
+			<p>
+				{ sprintf(
+					/* translators: %s: an email template's name. */
+					__(
+						'%s goes back to the words CoreX ships, as a new version. Your edited versions stay in its history.',
+						'corex'
+					),
+					name
+				) }
+			</p>
+		</CorexDialog>
+	);
+}
+
+function SaveWarnings( { warnings } ) {
+	const said = Object.values( warnings || {} ).filter( Boolean );
+	if ( said.length === 0 ) {
+		return null;
+	}
+
+	return (
+		<Notice>
+			<strong>{ __( 'Saved, with something to check', 'corex' ) }</strong>
+			<ul>
+				{ said.map( ( warning ) => (
+					<li key={ warning }>{ warning }</li>
+				) ) }
+			</ul>
+		</Notice>
+	);
+}
+
 function TemplateEditor( {
 	layouts,
 	detail,
 	draft,
 	errors,
+	warnings,
 	selecting = null,
 	busy,
 	onChange,
 	onSave,
 	onActivate,
+	onReset,
 } ) {
 	const pending = useContext( PendingControl );
+	const [ resetting, setResetting ] = useState( false );
 	if ( selecting !== null ) {
 		return <TemplateEditorSkeleton />;
 	}
@@ -285,6 +358,7 @@ function TemplateEditor( {
 					{ detail.template.status }
 				</span>
 			</header>
+			<SaveWarnings warnings={ warnings } />
 			<DraftFields
 				layouts={ layouts }
 				draft={ draft }
@@ -312,7 +386,29 @@ function TemplateEditor( {
 						{ __( 'Activate latest draft', 'corex' ) }
 					</button>
 				) }
+				{ detail.template.is_default && (
+					<button
+						type="button"
+						className="button"
+						disabled={ busy }
+						onClick={ () => setResetting( true ) }
+						{ ...workingProps( pending === 'reset' ) }
+					>
+						{ __( 'Reset to shipped version', 'corex' ) }
+					</button>
+				) }
 			</div>
+			{ resetting && (
+				<ResetDialog
+					name={ detail.template.name }
+					busy={ busy }
+					onClose={ () => setResetting( false ) }
+					onConfirm={ async () => {
+						await onReset();
+						setResetting( false );
+					} }
+				/>
+			) }
 		</form>
 	);
 }
@@ -334,11 +430,13 @@ export function TemplatePanel( props ) {
 					detail={ props.detail }
 					draft={ props.draft }
 					errors={ props.errors }
+					warnings={ props.warnings }
 					selecting={ props.selecting }
 					busy={ props.busy }
 					onChange={ props.onDraftChange }
 					onSave={ props.onSaveDraft }
 					onActivate={ props.onActivate }
+					onReset={ props.onReset }
 				/>
 			</section>
 		</div>

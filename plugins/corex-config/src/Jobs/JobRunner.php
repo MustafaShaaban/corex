@@ -128,8 +128,7 @@ final class JobRunner
         }
 
         try {
-            $job = $handler->handle($job, self::BATCH_SIZE);
-            $this->persist($job);
+            $job = $this->persist($handler->handle($job, self::BATCH_SIZE));
 
             if (! $job->terminal()) {
                 $this->dispatcher->dispatch($job);
@@ -143,9 +142,22 @@ final class JobRunner
         }
     }
 
-    /** Save the job and, if it has reached a terminal state, announce it for downstream reactions. */
-    private function persist(BoundedJob $job): void
+    /**
+     * Save the job and, if it has reached a terminal state, announce it for downstream reactions;
+     * answers the job as it now stands.
+     *
+     * A step takes time, and the job may end while it runs: someone presses Cancel on the screen
+     * waiting for it (spec 119). The stored job is read again first, and an end it reached is
+     * kept: the step's own copy, still running, would otherwise write "cancelled" back to
+     * "running", and the work would go on.
+     */
+    private function persist(BoundedJob $job): BoundedJob
     {
+        $stored = $this->jobs->find($job->id);
+        if ($stored !== null && $stored->terminal()) {
+            return $stored;
+        }
+
         $this->jobs->save($job);
 
         if ($job->terminal()) {
@@ -157,5 +169,7 @@ final class JobRunner
                 errorSummary: $job->errorSummary,
             ));
         }
+
+        return $job;
     }
 }

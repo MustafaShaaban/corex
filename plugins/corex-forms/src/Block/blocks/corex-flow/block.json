@@ -14,6 +14,7 @@
 		"intro": { "type": "string", "default": "" },
 		"submitLabel": { "type": "string", "default": "" }
 	},
+	"usesContext": [ "postId" ],
 	"supports": { "html": false },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",

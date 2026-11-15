@@ -42,6 +42,9 @@ final class SendEmailListener
 
     private const CONTACT_TEMPLATE = 'contact-notification';
 
+    /** The notification every other code-defined form sends (spec 120). */
+    private const FORM_TEMPLATE = 'form-notification';
+
     /**
      * @param UploadedFileNames|null $files     Asked what each file sent with the form is called.
      * @param SubmissionAddress|null $addresses Asked where the stored submission is read. Null on
@@ -52,6 +55,11 @@ final class SendEmailListener
         private readonly ConfigInterface $config,
         private readonly ?UploadedFileNames $files = null,
         private readonly ?SubmissionAddress $addresses = null,
+        /**
+         * Whether this site's notifications are designed or as before (FR-023). The container
+         * always gives it; a listener built without one (a unit test) sends designed.
+         */
+        private readonly ?NotificationStyle $style = null,
     ) {
     }
 
@@ -68,7 +76,14 @@ final class SendEmailListener
         $context = [
             'submission'     => $answers,
             'submission_url' => $address,
-            'form'           => ['slug' => $event->formSlug],
+            // Every answer with its label, for the notification's table and a template's
+            // "All answers" block; the submission's address under the name a template uses
+            // (spec 120).
+            'answers'        => NotificationDispatcher::answers($answers),
+            'file_count'     => count($files),
+            'form'           => ['slug' => $event->formSlug, 'answers' => NotificationDispatcher::answers($answers)],
+            'links'          => ['submission' => $address],
+            'email'          => ['kind' => 'notification'],
             'site'           => ['name' => get_bloginfo('name')],
         ];
 
@@ -77,20 +92,29 @@ final class SendEmailListener
             $recipient = (string) get_option('admin_email');
         }
 
+        $designed = $this->style?->designed() ?? true;
         // Handed over as what writes it: the dispatcher asks in the email's language, so the
         // subject and the lines CoreX adds to the body are the site's and not the request's.
         $write = static fn (): MailRequest => new MailRequest(
             to: $recipient !== '' ? [$recipient] : [],
-            templateName: $event->formSlug === self::CONTACT_FORM ? self::CONTACT_TEMPLATE : null,
+            // Designed (a new site, spec 120): drawn in the one frame through a template, the
+            // contact form's own or the one for every other form, and the body the `wp_mail()`
+            // floor sends is plain text, one answer per line. As before (an upgraded site,
+            // FR-023): only the contact form has a template, and the body is HTML (issue #138).
+            templateName: match (true) {
+                $event->formSlug === self::CONTACT_FORM => self::CONTACT_TEMPLATE,
+                $designed => self::FORM_TEMPLATE,
+                default => null,
+            },
             context: $context,
             subject: sprintf(
                 /* translators: %s: form slug */
                 __('New "%s" form submission', 'corex'),
                 $event->formSlug,
             ),
-            // HTML, because every CoreX transport sends `Content-Type: text/html` — the plain-text
-            // form arrived as one collapsed run (issue #138, item 4).
-            body: NotificationDispatcher::htmlBody($answers) . self::whereFilesAreOpened(count($files), $address),
+            body: $designed
+                ? NotificationDispatcher::plainTextBody($answers) . self::whereFilesAreOpened(count($files), $address)
+                : NotificationDispatcher::htmlBody($answers) . self::whereFilesAreOpenedHtml(count($files), $address),
             // So the recipient can just hit Reply. The submitter's address was only readable inside
             // the body, which makes answering a contact form a copy-and-paste job.
             replyTo: self::submitterAddress($event->values),
@@ -111,10 +135,28 @@ final class SendEmailListener
     }
 
     /**
-     * The line under the answers that says where a file named among them is opened. Nothing
-     * for a submission with no file, or with nowhere to point.
+     * The line under the answers, in the plain text the `wp_mail()` floor sends, that says where
+     * a file named among them is opened. Nothing for a submission with no file, or with nowhere
+     * to point. The template says it in the framed email (spec 120).
      */
     private static function whereFilesAreOpened(int $files, string $address): string
+    {
+        if ($files === 0 || $address === '') {
+            return '';
+        }
+
+        return "\n\n" . _n(
+            'The file is opened from the submission, after signing in to the site.',
+            'The files are opened from the submission, after signing in to the site.',
+            $files,
+            'corex',
+        ) . ' ' . $address;
+    }
+
+    /**
+     * The same line in the HTML body an upgraded site sends, as it was before spec 120.
+     */
+    private static function whereFilesAreOpenedHtml(int $files, string $address): string
     {
         if ($files === 0 || $address === '') {
             return '';

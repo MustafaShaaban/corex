@@ -46,7 +46,6 @@ final class OverviewFacts
      * @param array<string,mixed> $settingValues settings values keyed by Config dot-key
      *
      * @return array{
-     *   brand: array{name:bool,logo:bool},
      *   mailFrom: bool,
      *   insights: array{key:bool,latest:array<string,mixed>|null}|null,
      *   captcha: array{active:bool,driver:string,keys:bool}|null,
@@ -56,10 +55,6 @@ final class OverviewFacts
     public function gather(array $settingValues): array
     {
         return [
-            'brand'    => [
-                'name' => $this->filled($settingValues['brand.company_name'] ?? ''),
-                'logo' => $this->filled($settingValues['brand.logo_url'] ?? ''),
-            ],
             'mailFrom' => $this->filled($settingValues['mail.from.address'] ?? ''),
             'insights' => $this->guarded(fn (): array => [
                 'key'    => $this->filled($this->config->get('insights.psi.key', '')),

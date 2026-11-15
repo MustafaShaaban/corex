@@ -116,5 +116,5 @@ git tag -a v0.20.0 -m "Corex v0.20.0" && git push origin main v0.20.0
 
 ## See also
 
-- [The Spec Kit loop](./spec-kit.md) · [Quality gates](./quality-gates.md) ·
+- [The CoreX loop](./spec-kit.md) · [Quality gates](./quality-gates.md) ·
   [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)

@@ -330,25 +330,38 @@ describe( 'actions on the saved version', () => {
 		expect( sent[ 5 ].body ).toEqual( { expected_version: 4 } );
 	} );
 
-	it.each( [
-		[ 'Move to draft', 'unpublish' ],
-		[ 'Close', 'close' ],
-	] )(
-		'saves first and runs %s on the new version',
-		async ( label, action ) => {
-			await open( 'published' );
-			await typeLabel( 'Full name' );
+	it( 'saves first and runs Close on the new version', async () => {
+		await open( 'published' );
+		await typeLabel( 'Full name' );
 
-			await press( button( label ) );
-			await press( button( 'Save', question() ) );
+		await press( button( 'Close' ) );
+		await press( button( 'Save', question() ) );
 
-			expect( sent[ 5 ] ).toMatchObject( {
-				method: 'POST',
-				url: `${ config.restUrl }/7/${ action }`,
-				body: { expected_version: 4 },
-			} );
-		}
-	);
+		expect( sent[ 5 ] ).toMatchObject( {
+			method: 'POST',
+			url: `${ config.restUrl }/7/close`,
+			body: { expected_version: 4 },
+		} );
+	} );
+
+	// Spec 122, FR-006: "Unpublish" then asks its own question, about the pages it leaves.
+	it( 'saves first, then asks before it unpublishes the new version', async () => {
+		await open( 'published' );
+		await typeLabel( 'Full name' );
+
+		await press( button( 'Unpublish' ) );
+		await press( button( 'Save', question() ) );
+		const asked = question().textContent;
+		await press( button( 'Unpublish', question() ) );
+
+		expect( asked ).toContain( 'Unpublish this flow?' );
+		expect( asked ).toContain( 'disappear from every page' );
+		expect( sent[ 5 ] ).toMatchObject( {
+			method: 'POST',
+			url: `${ config.restUrl }/7/unpublish`,
+			body: { expected_version: 4 },
+		} );
+	} );
 
 	it( 'does nothing on Cancel', async () => {
 		await open();

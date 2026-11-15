@@ -45,6 +45,31 @@ final readonly class FlowRestMapper
         return $this->input->testShape();
     }
 
+    public function copyShape(): array
+    {
+        return $this->input->copyShape();
+    }
+
+    public function availabilityShape(): array
+    {
+        return $this->input->availabilityShape();
+    }
+
+    public function routingPreviewShape(): array
+    {
+        return $this->input->routingPreviewShape();
+    }
+
+    public function availability(array $input): FlowAvailability
+    {
+        return $this->input->availability($input);
+    }
+
+    public function routingPreview(array $lines): array
+    {
+        return $this->presenter->routingPreview($lines);
+    }
+
     public function listFilters(WP_REST_Request $request): array
     {
         return $this->input->listFilters($request);

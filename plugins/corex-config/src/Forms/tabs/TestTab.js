@@ -57,7 +57,7 @@ export function TestTab( { busy, result, version, onRun } ) {
 			<h2>{ __( 'Marked test submission', 'corex' ) }</h2>
 			<p>
 				{ __(
-					'Runs validation, protection, storage, routing, email, inbox, and timeline stages without entering ordinary metrics.',
+					'Runs validation, protection, storage, routing, inbox, timeline, email and actions stages without entering ordinary metrics.',
 					'corex'
 				) }
 			</p>

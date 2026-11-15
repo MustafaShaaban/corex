@@ -90,16 +90,18 @@ export default function SecurityCenter( { config = {}, section = 'all' } ) {
  * OperationsSecurityScreen::modeCard() further down the same page. Two identical sets of controls,
  * one inert, sat one above the other.
  *
- * Removing them also fixes what they hid. The blocker badge read its count from `modeActionState`,
- * which reports zero for every mode except production — so the header claimed "Ready" while real
- * blockers were listed directly beneath it, unless you happened to pick Production in the preview.
- * It now reads the readiness snapshot itself, which is what it was always describing.
+ * It is the one launch checklist (spec 118), in the words of the gate: each group with its own "N
+ * of M ready", each row with its state in a word beside an icon, and a link to the fix on every row
+ * that is not ready (US-SEC-09).
  *
  * @param {Object} root0       Props.
  * @param {Object} root0.state The security-center state.
  */
 function LaunchChecklist( { state } ) {
-	const blockingCount = state.readiness?.blockingCount || 0;
+	const readiness = state.readiness;
+	const groups = readiness.groups.length
+		? readiness.groups
+		: [ { key: 'security', title: '', count: '', rows: readiness.checks } ];
 
 	return (
 		<section className="corex-surface corex-security__panel">
@@ -110,27 +112,62 @@ function LaunchChecklist( { state } ) {
 					</p>
 					<h2>{ __( 'Production readiness', 'corex' ) }</h2>
 				</div>
-				<span
-					className={ blockingCount > 0 ? 'is-warning' : 'is-ready' }
-				>
-					{ blockingCount > 0
-						? sprintf(
-								/* translators: %d: number of blocking readiness checks. */
-								__( '%d blocker(s)', 'corex' ),
-								blockingCount
-							)
-						: __( 'Ready', 'corex' ) }
+				<span className="corex-security__count">
+					{ readiness.count }
 				</span>
 			</header>
-			<ul className="corex-security__checks">
-				{ state.readiness.checks.map( ( check ) => (
-					<li key={ check.key } className={ `is-${ check.status }` }>
-						<span>{ check.label }</span>
-						<small>{ check.detail }</small>
-					</li>
-				) ) }
-			</ul>
+			{ readiness.blockingText ? (
+				<p className="corex-security__blocking">
+					{ readiness.blockingText }
+				</p>
+			) : null }
+			{ groups.map( ( group ) => (
+				<div className="corex-checklist__group" key={ group.key }>
+					{ group.title ? (
+						<h3 className="corex-checklist__group-head">
+							<span>{ group.title }</span>
+							<span className="corex-checklist__group-count">
+								{ group.count }
+							</span>
+						</h3>
+					) : null }
+					<ul className="corex-checklist">
+						{ group.rows.map( ( check ) => (
+							<ChecklistRow key={ check.key } check={ check } />
+						) ) }
+					</ul>
+				</div>
+			) ) }
 		</section>
+	);
+}
+
+/**
+ * One check: its name (the link to its fix while it is not ready), its state in a word beside an
+ * icon, and what is missing. The same markup the server draws on the Hardening tab.
+ *
+ * @param {Object} root0       Props.
+ * @param {Object} root0.check One normalized check.
+ */
+function ChecklistRow( { check } ) {
+	return (
+		<li
+			className={ `corex-checklist__row is-${ check.chip }` }
+			data-check={ check.key }
+		>
+			<span className="corex-checklist__label">
+				{ check.resolutionUrl && check.state !== 'pass' ? (
+					<a href={ check.resolutionUrl }>{ check.label }</a>
+				) : (
+					check.label
+				) }
+			</span>
+			<span className={ `corex-state-chip is-${ check.chip }` }>
+				<span className="corex-state-chip__icon" aria-hidden="true" />
+				{ check.word }
+			</span>
+			<span className="corex-checklist__note">{ check.detail }</span>
+		</li>
 	);
 }
 

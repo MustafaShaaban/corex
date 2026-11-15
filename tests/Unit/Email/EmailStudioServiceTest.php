@@ -29,6 +29,7 @@ use Corex\Email\Studio\EmailStudioSubmissionGateway;
 use Corex\Email\Studio\EmailTemplateRepository;
 use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailBrandSource;
+use Corex\Email\Design\EmailFrame;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\StandardEmailDesign;
 use Corex\Tests\Support\LanguageOfTheRequest;
@@ -211,10 +212,12 @@ it('exposes only active Email Studio templates to cross-module binding controls'
     $repository->activate($active->id, $draft->versionNumber, 7, $now);
     $repository->create('draft-template', 'Draft template', 7, $now);
 
-    expect((new EmailTemplateCatalog($repository))->templates())->toBe([[
+    // With the variables its active version uses, for a flow to say which it lacks (spec 120).
+    expect((new EmailTemplateCatalog($repository, new EmailTemplateService([])))->templates())->toBe([[
         'id' => $active->id,
         'slug' => 'active-template',
         'name' => 'Active template',
+        'variables' => ['user.name'],
     ]]);
 });
 
@@ -439,12 +442,12 @@ function replyGateway(array $settings, ?array $studio = null): EmailStudioSubmis
         $service,
         new EmailTemplateService([]),
         $config,
-        new ReplyComposer(new StandardEmailDesign(), new class() implements EmailBrandSource {
+        new ReplyComposer(new EmailFrame(new StandardEmailDesign(), new class() implements EmailBrandSource {
             public function brand(): EmailBrand
             {
                 return EmailBrand::standard('Acme', 'https://acme.test/');
             }
-        }, new LanguageOfTheRequest()),
+        }), new LanguageOfTheRequest()),
         StudioDelivery::factory($config, $service),
     );
 }

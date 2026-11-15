@@ -8,47 +8,31 @@ declare(strict_types=1);
 
 namespace Corex\Config\Overview;
 
-use Corex\Config\Addons\AddonRegistry;
-use Corex\Config\Data\DataRegistry;
-use Corex\Config\Data\SubmissionsReader;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
-use Corex\Config\Security\HardeningChecks;
-use Corex\Config\Security\HardeningFacts;
-use Corex\Activity\ActivityEvent;
-use Corex\Activity\ActivityService;
-use Corex\Support\DateTime\AdminDateTime;
-use Corex\Container\ContainerInterface;
-use Corex\Forms\Catalog\FormCatalog;
-use Corex\Forms\Flow\FlowRepository;
-use Corex\Multisite\PluginActivationInspector;
-use Corex\Provisioning\KitProvisioner;
 
 defined('ABSPATH') || exit;
 
 /**
- * Renders the CoreX Overview (spec 064) as the approved dense two-column readiness dashboard. This is
- * the boundary: it reads live, REAL WordPress state (environment, post/page/submission/add-on counts,
- * control-panel domain configuration, hardening, data sources, applied kits, front page, registered
- * forms), hands the facts to the pure {@see OverviewModel}, then escapes and lays out the grid — stat
- * tiles, launch readiness, analytics & security, data sources, forms summary, and an honest
- * recent-activity empty state. It never fabricates a value; absent facts render as honest states.
- * Status is conveyed by text + tone (never colour alone). Optional deps (forms/provisioning) resolve
- * lazily so corex-config never hard-depends on them (Principle IX).
+ * Lays out the CoreX Overview (spec 064, rebuilt by spec 118): the mode bar, the four state tiles,
+ * then the launch readiness card beside the forms and data cards, then attention, analytics and
+ * security, and recent activity.
+ *
+ * Each card is drawn on its own (US-OVR-06). A card that throws is replaced by a "Could not load"
+ * card from {@see OverviewCardFailure}, which logs a reference; every other card still renders and
+ * the page never becomes a critical error. A failed card never shows a 0 or an empty state.
  */
 final class OverviewRenderer
 {
+    /**
+     * @param array<string,OverviewCard> $cards keyed by place: tiles, readiness, forms, data,
+     *                                          attention, integrations, activity
+     */
     public function __construct(
-        private readonly OverviewModel $model,
         private readonly OperationsMode $mode,
         private readonly OperationsModeStore $modeStore,
-        private readonly OverviewFacts $overviewFacts,
-        private readonly HardeningChecks $hardening,
-        private readonly SubmissionsReader $submissions,
-        private readonly DataRegistry $data,
-        private readonly AddonRegistry $addons,
-        private readonly ContainerInterface $container,
-        private readonly PluginActivationInspector $pluginActivationInspector,
+        private readonly OverviewCardFailure $failure,
+        private readonly array $cards,
     ) {
     }
 
@@ -57,50 +41,32 @@ final class OverviewRenderer
      */
     public function render(array $settingValues): string
     {
-        // The badge shows the real declared operations mode (defaults to the WP environment type).
-        $env  = $this->mode->describe($this->modeStore->current());
-        $data = $this->model->build($this->facts($settingValues));
+        $card = fn (string $place): string => $this->drawn($place, $settingValues);
 
         return '<div class="corex-overview">'
-            . $this->envBar($env)
-            . $this->tiles($data['tiles'])
+            . $this->envBar($this->mode->describe($this->modeStore->current()))
+            . $card('tiles')
             . '<div class="corex-overview__grid corex-overview__grid--primary">'
-            . $this->readinessCard($data['readiness'])
-            . '<div class="corex-overview__col">'
-            . $this->formsCard($data['forms'])
-            . $this->dataSourcesCard($data['dataSources'])
-            . '</div></div>'
+            . $card('readiness')
+            . '<div class="corex-overview__col">' . $card('forms') . $card('data') . '</div></div>'
             . '<div class="corex-overview__grid corex-overview__grid--secondary">'
-            . $this->attentionCard()
-            . $this->integrationsCard($data['integrations'])
-            . $this->activityCard()
+            . $card('attention') . $card('integrations') . $card('activity')
             . '</div></div>';
     }
 
-    /**
-     * A compact "Attention required" summary of the actor's unread notifications, linking to the
-     * center (spec 072 FR-019). It sits alongside Recent Activity, never replacing it, and reads the
-     * one bounded count the Notification Center already exposes — no new query of its own.
-     */
-    private function attentionCard(): string
+    /** @param array<string,mixed> $settingValues */
+    private function drawn(string $place, array $settingValues): string
     {
-        $count = $this->container->make(\Corex\Notifications\NotificationService::class)
-            ->unreadCountForCurrentActor();
-        $note  = $count > 0
-            ? _n(
-                'unread notification needs your attention.',
-                'unread notifications need your attention.',
-                $count,
-                'corex',
-            )
-            : __('Nothing needs your attention right now.', 'corex');
+        $card = $this->cards[$place] ?? null;
+        if ($card === null) {
+            return '';
+        }
 
-        return '<section class="corex-surface corex-overview__card corex-overview__card--compact">'
-            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Attention required', 'corex') . '</h2></header>'
-            . '<p class="corex-overview__big">' . esc_html((string) $count) . '</p>'
-            . '<p class="corex-overview__muted">' . esc_html($note) . '</p>'
-            . '<p><a href="' . esc_url(admin_url('admin.php?page=corex-notifications')) . '">'
-            . esc_html__('Open Notifications', 'corex') . '</a></p></section>';
+        try {
+            return $card->render($settingValues);
+        } catch (\Throwable $error) {
+            return $this->failure->report($card, $error);
+        }
     }
 
     /**
@@ -130,331 +96,5 @@ final class OverviewRenderer
             __('CoreX v%s', 'corex'),
             $version,
         )) . '</span>';
-    }
-
-    /**
-     * @param list<array{label:string,value:string,detail:string}> $tiles
-     */
-    private function tiles(array $tiles): string
-    {
-        $cells = '';
-        foreach ($tiles as $tile) {
-            $cells .= '<article class="corex-overview__tile"><p class="corex-overview__tile-label">'
-                . esc_html($tile['label']) . '</p><p class="corex-overview__tile-value">'
-                . esc_html($tile['value']) . '</p><p class="corex-overview__tile-detail">'
-                . esc_html($tile['detail']) . '</p></article>';
-        }
-
-        return '<div class="corex-overview__tiles">' . $cells . '</div>';
-    }
-
-    /**
-     * @param array{rows:list<array{label:string,note:string,done:bool,tone:string,href?:string}>,done:int,total:int} $readiness
-     */
-    private function readinessCard(array $readiness): string
-    {
-        $rows = '';
-        foreach ($readiness['rows'] as $row) {
-            $mark = $row['done'] ? '&#10003;' : '&#8226;';
-            // A row that is not done and says where to fix it links there (spec 114, FR-001).
-            $note  = isset($row['href'])
-                ? '<a href="' . esc_url(admin_url($row['href'])) . '">' . esc_html($row['note']) . '</a>'
-                : esc_html($row['note']);
-            $rows .= '<li class="corex-overview__check is-' . esc_attr($row['tone']) . '">'
-                . '<span class="corex-overview__check-mark" aria-hidden="true">' . $mark . '</span>'
-                . '<span class="corex-overview__check-label">' . esc_html($row['label']) . '</span>'
-                . '<span class="corex-overview__check-note">' . $note . '</span></li>';
-        }
-
-        $badge = sprintf(
-            /* translators: 1: completed readiness items, 2: total readiness items */
-            esc_html__('%1$d of %2$d', 'corex'),
-            (int) $readiness['done'],
-            (int) $readiness['total'],
-        );
-
-        return '<section class="corex-surface corex-overview__card">'
-            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Launch readiness', 'corex') . '</h2>'
-            . '<span class="corex-overview__count">' . $badge . '</span></header>'
-            . '<ul class="corex-overview__checks">' . $rows . '</ul></section>';
-    }
-
-    /**
-     * @param array{count:int,flows:int,note:string} $forms
-     */
-    private function formsCard(array $forms): string
-    {
-        $flowsLabel = sprintf(
-            /* translators: %d: number of versioned visitor flows */
-            _n('%d flow', '%d flows', (int) $forms['flows'], 'corex'),
-            (int) $forms['flows'],
-        );
-
-        return '<section class="corex-surface corex-overview__card corex-overview__card--compact">'
-            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Forms & Flows', 'corex') . '</h2>'
-            . '<span class="corex-overview__pill">' . esc_html($flowsLabel) . '</span></header>'
-            . '<p class="corex-overview__big">' . esc_html((string) $forms['count']) . '</p>'
-            . '<p class="corex-overview__muted">' . esc_html($forms['note']) . '</p>'
-            . '<p><a href="' . esc_url(admin_url('admin.php?page=corex-forms')) . '">'
-            . esc_html__('Open Forms & Flows', 'corex') . '</a></p></section>';
-    }
-
-    /**
-     * @param list<array{label:string,key:string,count:int}> $sources
-     */
-    private function dataSourcesCard(array $sources): string
-    {
-        if ($sources === []) {
-            return '<section class="corex-surface corex-overview__card corex-overview__card--compact">'
-                . '<header class="corex-overview__card-head"><h2>' . esc_html__('Data sources', 'corex') . '</h2></header>'
-                . '<p class="corex-overview__muted">' . esc_html__('No data sources registered yet.', 'corex')
-                . '</p></section>';
-        }
-
-        $rows = '';
-        foreach ($sources as $source) {
-            $rows .= '<li><span class="corex-overview__src-name">' . esc_html($source['label']) . '</span>'
-                . '<span class="corex-overview__src-count">' . esc_html((string) $source['count']) . '</span></li>';
-        }
-
-        return '<section class="corex-surface corex-overview__card corex-overview__card--compact">'
-            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Data sources', 'corex') . '</h2>'
-            . '<a class="corex-overview__link" href="' . esc_url(admin_url('admin.php?page=corex-data')) . '">'
-            . esc_html__('Explorer', 'corex') . ' &rarr;</a></header>'
-            . '<ul class="corex-overview__sources">' . $rows . '</ul></section>';
-    }
-
-    /**
-     * @param list<array{label:string,note:string,tone:string}> $integrations
-     */
-    private function integrationsCard(array $integrations): string
-    {
-        $rows = '';
-        foreach ($integrations as $row) {
-            $rows .= '<li class="corex-overview__integration is-' . esc_attr($row['tone']) . '">'
-                . '<span class="corex-overview__integration-label">' . esc_html($row['label']) . '</span>'
-                . '<span class="corex-overview__integration-note">' . esc_html($row['note']) . '</span></li>';
-        }
-
-        return '<section class="corex-surface corex-overview__card">'
-            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Analytics & security', 'corex') . '</h2>'
-            . '<a class="corex-overview__link" href="' . esc_url(admin_url('admin.php?page=corex-operations-security')) . '">'
-            . esc_html__('Details', 'corex') . ' &rarr;</a></header>'
-            . '<ul class="corex-overview__integrations">' . $rows . '</ul></section>';
-    }
-
-    private function activityCard(): string
-    {
-        $events = $this->recentActivity();
-        $head   = '<section class="corex-surface corex-overview__card corex-overview__activity">'
-            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Recent activity', 'corex') . '</h2>';
-
-        if ($events === []) {
-            return $head . '</header><div class="corex-overview__empty"><p>'
-                . esc_html__('No recent framework events yet.', 'corex') . '</p><p class="corex-overview__muted">'
-                . esc_html__('Activity appears here as forms, data, access, and security events occur.', 'corex')
-                . '</p></div></section>';
-        }
-
-        // Resolved from the injected container, like every other collaborator this renderer uses
-        // (NotificationService, FormCatalog, FlowRepository, ActivityService above).
-        $dateTime = $this->container->make(AdminDateTime::class);
-
-        $rows = '';
-        foreach ($events as $event) {
-            // Was `wp_date(get_option('date_format') . ' ' . get_option('time_format'), …)`, which
-            // rendered whatever the site's settings happened to say — "July 27, 2026 8:53 am" here
-            // — and wrapped it in a <time> element carrying no `datetime` attribute at all. The
-            // presenter supplies both halves, so the markup is finally valid as well as legible.
-            $when = $dateTime->format(
-                $event->occurredAt->getTimestamp(),
-                AdminDateTime::FULL,
-                __('Not recorded', 'corex'),
-            );
-            /* translators: 1: actor label, 2: activity area, 3: activity kind */
-            $summary = sprintf(__('%1$s · %2$s %3$s', 'corex'), $event->actorLabel, $event->area, $event->kind);
-            $rows   .= '<li class="corex-overview__event is-' . esc_attr($this->outcomeTone($event->outcome)) . '">'
-                . '<span class="corex-overview__event-summary">' . esc_html($summary) . '</span>'
-                . '<span class="corex-overview__event-target">' . esc_html($event->targetLabel) . '</span>'
-                . $when->toHtml('corex-overview__event-time') . '</li>';
-        }
-
-        return $head
-            . '<a class="corex-overview__link" href="' . esc_url(admin_url('admin.php?page=corex-access&tab=audit')) . '">'
-            . esc_html__('Audit log', 'corex') . ' &rarr;</a></header>'
-            . '<ul class="corex-overview__events">' . $rows . '</ul></section>';
-    }
-
-    private function outcomeTone(string $outcome): string
-    {
-        return match ($outcome) {
-            ActivityEvent::OUTCOME_FAILURE, ActivityEvent::OUTCOME_DENIED => OverviewModel::TONE_WARNING,
-            default => OverviewModel::TONE_NEUTRAL,
-        };
-    }
-
-    /**
-     * @param array<string,mixed> $settingValues
-     *
-     * @return array{
-     *   counts: array{posts:int,pages:int,submissions:int|null,addonsActive:int,addonsTotal:int},
-     *   facts: array<string,mixed>,
-     *   frontPageSet: bool,
-     *   kitApplied: bool,
-     *   hardeningWarnings: int|null,
-     *   dataSources: list<array{label:string,key:string,total:int}>,
-     *   formsCount: int,
-     *   flowsCount: int
-     * }
-     */
-    private function facts(array $settingValues): array
-    {
-        [$active, $total] = $this->addonCounts();
-
-        return [
-            'counts' => [
-                'posts'        => $this->publishedCount('post'),
-                'pages'        => $this->publishedCount('page'),
-                'submissions'  => $this->submissionCount(),
-                'addonsActive' => $active,
-                'addonsTotal'  => $total,
-            ],
-            'facts'             => $this->overviewFacts->gather($settingValues),
-            'frontPageSet'      => get_option('show_on_front') === 'page',
-            'kitApplied'        => $this->kitApplied(),
-            'hardeningWarnings' => $this->hardeningWarnings(),
-            'dataSources'       => $this->dataSources(),
-            'formsCount'        => $this->formsCount(),
-            'flowsCount'        => $this->flowsCount(),
-        ];
-    }
-
-    /** How many hardening checks need attention, or null when they could not be run. */
-    private function hardeningWarnings(): ?int
-    {
-        try {
-            return $this->hardening->warnings($this->hardening->checks(HardeningFacts::gather()));
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    private function publishedCount(string $type): int
-    {
-        $counts = wp_count_posts($type);
-
-        return (int) ($counts->publish ?? 0);
-    }
-
-    private function submissionCount(): ?int
-    {
-        try {
-            return $this->submissions->total();
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    /**
-     * @return array{0:int,1:int} [active, total]
-     */
-    private function addonCounts(): array
-    {
-        $addons  = $this->addons->all();
-        $running = 0;
-        foreach ($addons as $addon) {
-            if ($this->pluginActivationInspector->isActive($addon->pluginFile)) {
-                $running++;
-            }
-        }
-
-        return [$running, count($addons)];
-    }
-
-    /**
-     * @return list<array{label:string,key:string,total:int}>
-     */
-    private function dataSources(): array
-    {
-        $sources = [];
-        foreach ($this->data->all() as $source) {
-            try {
-                $sources[] = ['label' => $source->label(), 'key' => $source->key(), 'total' => $source->total()];
-            } catch (\Throwable) {
-                continue;
-            }
-        }
-
-        return $sources;
-    }
-
-    private function kitApplied(): bool
-    {
-        try {
-            /** @var KitProvisioner $provisioner */
-            $provisioner = $this->container->make(KitProvisioner::class);
-            foreach ($provisioner->applicableKits() as $kit) {
-                if ($kit->applied) {
-                    return true;
-                }
-            }
-        } catch (\Throwable) {
-            return false;
-        }
-
-        return false;
-    }
-
-    /**
-     * Every form CoreX knows about, not just the ones registered in code.
-     *
-     * This counted `FormRegistry` alone, so a site whose forms were all visual flows saw a Forms &
-     * Flows card reading zero next to a pill saying it had flows. The catalog is the one list, so
-     * the headline number and the screen it links to now agree.
-     */
-    private function formsCount(): int
-    {
-        try {
-            /** @var FormCatalog $catalog */
-            $catalog = $this->container->make(FormCatalog::class);
-
-            return count($catalog->all());
-        } catch (\Throwable) {
-            return 0;
-        }
-    }
-
-    /**
-     * Real count of persisted visitor flows. Resolves lazily so corex-config never
-     * hard-depends on the Forms plugin (Principle IX); absent Forms renders as zero.
-     */
-    private function flowsCount(): int
-    {
-        try {
-            /** @var FlowRepository $flows */
-            $flows = $this->container->make(FlowRepository::class);
-
-            return count($flows->all());
-        } catch (\Throwable) {
-            return 0;
-        }
-    }
-
-    /**
-     * The most recent real framework activity events. Resolves the core Activity
-     * service lazily; an unavailable service or empty log yields an honest empty list.
-     *
-     * @return list<ActivityEvent>
-     */
-    private function recentActivity(): array
-    {
-        try {
-            /** @var ActivityService $activity */
-            $activity = $this->container->make(ActivityService::class);
-
-            return $activity->query([], 1, 5);
-        } catch (\Throwable) {
-            return [];
-        }
     }
 }

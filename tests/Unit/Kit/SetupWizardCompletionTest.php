@@ -3,7 +3,8 @@
 /**
  * Unit tests for the nine-step setup wizard progress state machine (spec 068: T192, FR-134).
  * Contract: real completion drives status/percentage/resume; blockers make the site unsafe to
- * launch; optional steps can be skipped and do not lower the percentage. No WordPress.
+ * launch; optional steps can be skipped and do not lower the percentage. No WordPress. The launch
+ * step's own checklist was removed by spec 118: the wizard reads the one launch checklist.
  *
  * @package Corex\Tests\Unit\Kit
  */
@@ -12,7 +13,6 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Kit\Setup\ConflictResolver;
-use Corex\Kit\Setup\LaunchChecklist;
 use Corex\Kit\Setup\SetupProgress;
 use Corex\Provisioning\PageDisposition;
 
@@ -20,24 +20,6 @@ beforeEach(function () {
     Functions\when('__')->returnArg();
     Functions\when('_n')->alias(static fn (string $s, string $p, int $n): string => $n === 1 ? $s : $p);
 });
-
-/**
- * @return array<string,mixed>
- */
-function launchFacts(array $overrides = []): array
-{
-    return array_merge([
-        'searchIndexable'   => true,
-        'debugDisplayOff'   => true,
-        'isProduction'      => true,
-        'mailConfigured'    => true,
-        'captchaConfigured' => true,
-        'hardeningWarnings' => 0,
-        'legalPagesPresent' => true,
-        'formsTested'       => true,
-        'readinessRun'      => true,
-    ], $overrides);
-}
 
 function conflictPage(string $slug): PageDisposition
 {
@@ -125,44 +107,4 @@ it('never rewrites non-conflict dispositions and lists only real conflicts', fun
     expect($resolved[0]->action)->toBe(PageDisposition::CREATE);
 
     expect($resolver->conflicts($dispositions))->toBe([['slug' => 'about', 'title' => 'About']]);
-});
-
-it('reports an all-clear launch checklist as ready with no blockers (FR-142)', function () {
-    $checklist = (new LaunchChecklist())->build(launchFacts());
-
-    expect($checklist['items'])->toHaveCount(8)
-        ->and(array_column($checklist['items'], 'key'))->toBe([
-            'indexing', 'debug', 'environment', 'email', 'security', 'legal', 'forms', 'performance',
-        ])
-        ->and($checklist['blockers'])->toBe(0)
-        ->and($checklist['ready'])->toBeTrue()
-        ->and(array_column($checklist['items'], 'status'))->each->toBe('pass');
-});
-
-it('marks discouraged indexing and visible debug as launch blockers (FR-134/142)', function () {
-    $checklist = (new LaunchChecklist())->build(launchFacts([
-        'searchIndexable' => false,
-        'debugDisplayOff' => false,
-    ]));
-
-    $byKey = array_column($checklist['items'], null, 'key');
-
-    expect($byKey['indexing']['status'])->toBe(LaunchChecklist::BLOCKER)
-        ->and($byKey['debug']['status'])->toBe(LaunchChecklist::BLOCKER)
-        ->and($checklist['blockers'])->toBe(2)
-        ->and($checklist['ready'])->toBeFalse();
-});
-
-it('treats missing email, captcha, legal, forms, and readiness as warnings, not blockers', function () {
-    $checklist = (new LaunchChecklist())->build(launchFacts([
-        'mailConfigured'    => false,
-        'captchaConfigured' => false,
-        'legalPagesPresent' => false,
-        'formsTested'       => false,
-        'readinessRun'      => false,
-    ]));
-
-    expect($checklist['blockers'])->toBe(0)
-        ->and($checklist['ready'])->toBeTrue()
-        ->and($checklist['warnings'])->toBe(5);
 });

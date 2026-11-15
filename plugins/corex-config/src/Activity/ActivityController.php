@@ -10,6 +10,8 @@ namespace Corex\Config\Activity;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Http\ResponseEnvelope;
@@ -23,8 +25,10 @@ use WP_REST_Response;
  */
 final class ActivityController
 {
-    public function __construct(private readonly ActivityService $activity)
-    {
+    public function __construct(
+        private readonly ActivityService $activity,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
+    ) {
     }
 
     public function register(): void
@@ -42,9 +46,10 @@ final class ActivityController
         ]);
     }
 
+    /** The activity routes follow "Access CoreX admin"; a refusal is recorded under Overview (spec 117, FR-005). */
     public function canManage(): bool
     {
-        return current_user_can('manage_options');
+        return $this->abilities->allows(CorexAbility::MANAGE_ADMIN, 'corex-settings');
     }
 
     public function index(WP_REST_Request $request): WP_REST_Response

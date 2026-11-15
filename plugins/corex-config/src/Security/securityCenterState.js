@@ -36,10 +36,22 @@ export function initialSecurityState() {
 	};
 }
 
+/**
+ * The one launch checklist as the server drew it (spec 118): its two groups, each row's state and
+ * its words, and the counts every screen shows. A payload from before groups existed (a flat list
+ * of checks) is read as one group, so the panel never draws nothing.
+ *
+ * @param {Object} snapshot The localized readiness payload.
+ * @return {Object} The checklist for the panel.
+ */
 export function normalizeReadiness( snapshot = {} ) {
-	const checks = Array.isArray( snapshot.checks )
-		? snapshot.checks.map( normalizeCheck )
+	const groups = Array.isArray( snapshot.groups )
+		? snapshot.groups.map( normalizeGroup )
 		: [];
+	const flat = Array.isArray( snapshot.checks ) ? snapshot.checks : [];
+	const checks = groups.length
+		? groups.flatMap( ( group ) => group.rows )
+		: flat.map( normalizeCheck );
 	const blockingKeys = Array.isArray( snapshot.blocking_keys )
 		? snapshot.blocking_keys.map( String )
 		: checks
@@ -47,10 +59,28 @@ export function normalizeReadiness( snapshot = {} ) {
 				.map( ( check ) => check.key );
 
 	return {
+		groups,
 		checks,
 		blockingKeys,
 		blockingCount: blockingKeys.length,
+		done: Number( snapshot.done ) || 0,
+		total: Number( snapshot.total ) || 0,
+		count: snapshot.count || '',
+		blockingText: snapshot.blockingText || '',
 		targetHash: snapshot.target_hash || '',
+	};
+}
+
+function normalizeGroup( group = {} ) {
+	return {
+		key: group.key || '',
+		title: group.title || '',
+		done: Number( group.done ) || 0,
+		total: Number( group.total ) || 0,
+		count: group.count || '',
+		rows: Array.isArray( group.rows )
+			? group.rows.map( normalizeCheck )
+			: [],
 	};
 }
 
@@ -198,13 +228,23 @@ export function lockoutSummary( lockouts = [] ) {
 }
 
 function normalizeCheck( check = {} ) {
+	// A row of the checklist carries its state; a check from before spec 118 carried pass/review.
+	const legacy = check.status === 'pass' ? 'pass' : 'blocking';
+	const state = check.state || legacy;
+
 	return {
 		key: check.key || '',
 		label: check.label || check.key || '',
-		status: check.status === 'pass' ? 'pass' : 'review',
-		detail: check.detail || '',
-		blocking: check.blocking === true || check.status === 'review',
-		resolutionUrl: check.resolution_url || '',
+		state,
+		status: state === 'pass' ? 'pass' : 'review',
+		chip: check.chip || ( state === 'pass' ? 'done' : 'blocked' ),
+		word: check.word || '',
+		detail: check.note || check.detail || '',
+		blocking:
+			check.blocks === true ||
+			check.blocking === true ||
+			( ! check.state && check.status === 'review' ),
+		resolutionUrl: check.href || check.resolution_url || '',
 	};
 }
 

@@ -44,7 +44,7 @@ function fakeLogStore(): EmailLogStore
     return new class implements EmailLogStore {
         public array $records = [];
 
-        public function record(string $status, EmailMessage $message): ?int
+        public function record(string $status, EmailMessage $message, array $missingVariables = []): ?int
         {
             $this->records[] = $status;
 

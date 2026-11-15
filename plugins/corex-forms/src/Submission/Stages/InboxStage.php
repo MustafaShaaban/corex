@@ -35,11 +35,13 @@ final readonly class InboxStage implements SubmissionStage
                 __('A stored submission is required before Inbox assignment.', 'corex'),
             );
         }
-        $routing = (array) ($context->metadata['routing'] ?? []);
+        // The routing stage's assignee: a user, a team or a role the inbox's scope can match, or
+        // none. Never the route's own type, which named nobody the inbox could show it to (spec 122).
+        $assignee = (array) ($context->metadata['routing']['assignee'] ?? []);
         $next = $context->withMetadata(['inbox' => [
             'status' => 'new',
-            'owner_type' => (string) ($routing['target_type'] ?? 'none'),
-            'owner_key' => $routing['target_config']['value'] ?? null,
+            'owner_type' => (string) ($assignee['type'] ?? 'none'),
+            'owner_key' => (string) ($assignee['key'] ?? ''),
         ]]);
         $this->submissions->updatePipelineMetadata($context->submissionId, $next->metadata);
 

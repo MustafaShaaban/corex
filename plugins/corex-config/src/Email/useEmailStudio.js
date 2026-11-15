@@ -1,19 +1,20 @@
 import {
 	useCallback,
 	useEffect,
-	useMemo,
 	useReducer,
+	useRef,
 	useState,
 } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	buildEndpoint,
 	buildHealthUrl,
-	composePreviewHtml,
+	drawingErrors,
 	emailStudioReducer,
 	initialEmailStudioState,
-	plainTextFromHtml,
-	previewDocument,
+	isEmailAddress,
+	previewRequest,
+	testSendRequest,
 	validateDraftForm,
 } from './emailStudioClient.js';
 
@@ -26,7 +27,6 @@ const EMPTY_DRAFT = {
 	plain_text_mode: 'auto',
 	layout_id: 0,
 	layout_version: 0,
-	variable_keys: [],
 };
 
 const emptyDraft = ( layouts ) =>
@@ -205,18 +205,14 @@ function draftChangeHandler( setDraft ) {
 			} ) );
 			return;
 		}
-		let nextValue = value;
-		if ( name === 'variable_keys' ) {
-			nextValue = value
-				.split( ',' )
-				.map( ( key ) => key.trim() )
-				.filter( Boolean );
-		}
-		setDraft( ( current ) => ( { ...current, [ name ]: nextValue } ) );
+		setDraft( ( current ) => ( { ...current, [ name ]: value } ) );
 	};
 }
 
 function useTemplateCommands( { post, selection } ) {
+	// What a saved draft is told about: a variable its emails do not supply, a From address on
+	// another domain (spec 120).
+	const [ warnings, setWarnings ] = useState( {} );
 	const createTemplate = async ( event ) => {
 		const data = await post(
 			'templates',
@@ -242,6 +238,20 @@ function useTemplateCommands( { post, selection } ) {
 			__( 'Draft revision saved.', 'corex' )
 		);
 		if ( data ) {
+			setWarnings( data.warnings || {} );
+			await selection.selectTemplate( selection.detail.template );
+		}
+	};
+	// Puts a template CoreX ships back as it was shipped (spec 120).
+	const reset = async () => {
+		const data = await post(
+			'reset',
+			{},
+			selection.detail.template.id,
+			__( 'The shipped version is back, as a new version.', 'corex' )
+		);
+		if ( data ) {
+			setWarnings( {} );
 			await selection.selectTemplate( selection.detail.template );
 		}
 	};
@@ -257,7 +267,7 @@ function useTemplateCommands( { post, selection } ) {
 		}
 	};
 
-	return { createTemplate, saveDraft, activate };
+	return { createTemplate, saveDraft, activate, reset, warnings };
 }
 
 function useInsertions( { selection, dispatch, setTab } ) {
@@ -273,10 +283,6 @@ function useInsertions( { selection, dispatch, setTab } ) {
 				);
 	const token = ( kind, value ) =>
 		kind === 'variable' ? `{{ ${ value } }}` : `{{> ${ value } }}`;
-	const variableKeys = ( current, kind, value ) =>
-		kind === 'variable'
-			? Array.from( new Set( [ ...current.variable_keys, value ] ) )
-			: current.variable_keys;
 	const insert = ( kind, value ) => {
 		if ( ! selection.detail ) {
 			dispatch( {
@@ -289,7 +295,6 @@ function useInsertions( { selection, dispatch, setTab } ) {
 		selection.setDraft( ( current ) => ( {
 			...current,
 			html_body: `${ current.html_body }${ token( kind, value ) }`,
-			variable_keys: variableKeys( current, kind, value ),
 		} ) );
 		setTab( 'templates' );
 	};
@@ -373,24 +378,50 @@ function useAssetCommands( post ) {
 	return { saveLayout, savePartial, saveRoute };
 }
 
-function useDeliveryCommands( { post, selection } ) {
+function useDeliveryCommands( { api, config, selection, preview } ) {
+	const { post, dispatch, load } = api;
 	const [ lastResult, setLastResult ] = useState( null );
+	const [ testError, setTestError ] = useState( '' );
+	// The email the preview shows, sent to one address: the server draws it again with the
+	// same samples (spec 120, story 1).
 	const testSend = async ( event ) => {
-		const values = formValues( event );
-		const data = await post(
-			'test',
-			{
-				to: [ values.to ],
-				subject: values.subject,
-				body: values.body,
-				template_slug: selection.detail?.template?.slug || null,
-			},
-			'',
-			__( 'Test completed.', 'corex' )
-		);
-		if ( data?.result ) {
-			setLastResult( data.result );
+		event.preventDefault();
+		const to = String(
+			new FormData( event.currentTarget ).get( 'to' ) || ''
+		).trim();
+		setLastResult( null );
+		if ( ! isEmailAddress( to ) ) {
+			setTestError(
+				sprintf(
+					/* translators: %s: what was typed as the test address. */
+					__(
+						'Enter a valid email address: %s is not one.',
+						'corex'
+					),
+					to === '' ? __( 'an empty field', 'corex' ) : to
+				)
+			);
+			return;
 		}
+		setTestError( '' );
+		dispatch( { type: 'mutating', control: 'test' } );
+		const result = await window.Corex.api.post(
+			buildEndpoint( config.restUrl, 'test' ),
+			testSendRequest(
+				selection.detail.template.id,
+				selection.draft,
+				preview.overrides,
+				to
+			),
+			{ nonce: config.nonce }
+		);
+		if ( ! result.envelope.ok ) {
+			setTestError( drawingErrors( result.envelope ).join( ' ' ) );
+			dispatch( { type: 'notice' } );
+			return;
+		}
+		setLastResult( result.envelope.data );
+		await load();
 	};
 	const resend = ( attempt, message ) =>
 		post(
@@ -411,7 +442,7 @@ function useDeliveryCommands( { post, selection } ) {
 				: __( 'All mail from this site is captured now.', 'corex' )
 		);
 
-	return { lastResult, testSend, resend, saveScope };
+	return { lastResult, testError, testSend, resend, saveScope };
 }
 
 function useHealth( { config, dispatch, selection } ) {
@@ -446,33 +477,86 @@ function useHealth( { config, dispatch, selection } ) {
 	return { health, runHealth };
 }
 
-function usePreview( draft, data ) {
+/** How long the editor is left still before the preview is drawn again. */
+const PREVIEW_PAUSE = 400;
+
+/**
+ * The preview the server draws of the draft being edited (spec 120, story 1): asked again a
+ * moment after the draft, a sample value or the direction changes, while a tab that shows it
+ * is open.
+ *
+ * @param {Object}  config    Email Studio's routes and nonce.
+ * @param {Object}  selection The template and draft in the editor.
+ * @param {boolean} wanted    Whether a tab that shows the preview is open.
+ * @return {Object} The drawing, its state, and its controls.
+ */
+function usePreview( config, selection, wanted ) {
 	const [ direction, setDirection ] = useState( 'ltr' );
 	const [ device, setDevice ] = useState( 'desktop' );
-	const samples = useMemo(
-		() =>
-			Object.fromEntries(
-				draft.variable_keys.map( ( key ) => [ key, `Sample ${ key }` ] )
-			),
-		[ draft.variable_keys ]
-	);
-	const html = useMemo(
-		() => composePreviewHtml( draft, data.layouts, data.partials ),
-		[ draft, data.layouts, data.partials ]
-	);
-	const document = useMemo(
-		() => previewDocument( html, samples, direction ),
-		[ html, samples, direction ]
-	);
-	const plain =
-		draft.plain_text_mode === 'auto'
-			? plainTextFromHtml( draft.html_body )
-			: draft.plain_text;
+	const [ overrides, setOverrides ] = useState( {} );
+	const [ drawn, setDrawn ] = useState( { status: 'idle' } );
+	const asked = useRef( 0 );
+	const templateId = selection.detail?.template?.id;
 
-	return { direction, device, document, plain, setDirection, setDevice };
+	useEffect( () => {
+		setOverrides( {} );
+	}, [ templateId ] );
+
+	useEffect( () => {
+		if ( ! wanted || ! templateId ) {
+			return undefined;
+		}
+		const request = ++asked.current;
+		setDrawn( ( current ) => ( { ...current, status: 'loading' } ) );
+		const timer = setTimeout( async () => {
+			const result = await window.Corex.api.post(
+				buildEndpoint( config.restUrl, 'preview', templateId ),
+				previewRequest( selection.draft, overrides, direction ),
+				{ nonce: config.nonce }
+			);
+			// Only the answer to the latest question is shown.
+			if ( request !== asked.current ) {
+				return;
+			}
+			setDrawn(
+				result.envelope.ok
+					? { status: 'ready', ...result.envelope.data }
+					: {
+							status: 'error',
+							errors: drawingErrors( result.envelope ),
+						}
+			);
+		}, PREVIEW_PAUSE );
+
+		return () => clearTimeout( timer );
+	}, [
+		wanted,
+		templateId,
+		selection.draft,
+		overrides,
+		direction,
+		config.restUrl,
+		config.nonce,
+	] );
+
+	const setSample = ( key, value ) =>
+		setOverrides( ( current ) => ( { ...current, [ key ]: value } ) );
+
+	return {
+		direction,
+		device,
+		drawn,
+		overrides,
+		setDirection,
+		setDevice,
+		setSample,
+	};
 }
 
-export function useEmailStudio( config, setTab ) {
+/** The tabs that show the drawn email. */
+const DRAWN_TABS = [ 'preview', 'plain', 'test' ];
+
+export function useEmailStudio( config, setTab, tab = '' ) {
 	const api = useStudioApi( config );
 	const selection = useTemplateSelection( {
 		config,
@@ -486,14 +570,18 @@ export function useEmailStudio( config, setTab ) {
 		setTab,
 	} );
 	const assets = useAssetCommands( api.post );
-	const delivery = useDeliveryCommands( { post: api.post, selection } );
+	const preview = usePreview( config, selection, DRAWN_TABS.includes( tab ) );
+	const delivery = useDeliveryCommands( {
+		api,
+		config,
+		selection,
+		preview,
+	} );
 	const health = useHealth( {
 		config,
 		dispatch: api.dispatch,
 		selection,
 	} );
-	const preview = usePreview( selection.draft, api.state.data );
-
 	const onDraftChange = draftChangeHandler( selection.setDraft );
 
 	return {

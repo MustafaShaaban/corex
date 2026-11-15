@@ -15,6 +15,11 @@ use InvalidArgumentException;
 
 /**
  * Immutable template content revision.
+ *
+ * `sentFromSite` marks a revision saved before spec 120, when a template's From was stored and
+ * never sent: the upgrade sets it ({@see EmailTemplateRepository::keepSiteSender()}) so that such a
+ * revision goes on leaving from Settings → Mail's sender. A revision saved since leaves from its
+ * own From (DECISIONS #453, amended 2026-11-11).
  */
 final class EmailTemplateVersion
 {
@@ -38,6 +43,7 @@ final class EmailTemplateVersion
         public readonly int $createdBy,
         public readonly DateTimeImmutable $createdAt,
         public readonly string $checksum,
+        public readonly bool $sentFromSite = false,
     ) {
         if ($this->id < 1 || $this->templateId < 1 || $this->versionNumber < 1 || $this->layoutId < 1 || $this->layoutVersion < 1 || $this->createdBy < 1) {
             throw new InvalidArgumentException(__('Email template version identifiers are invalid.', 'corex'));
@@ -56,5 +62,17 @@ final class EmailTemplateVersion
                 throw new InvalidArgumentException(__('Email template variable key is invalid.', 'corex'));
             }
         }
+    }
+
+    /** The From address an email of this revision leaves from, or null for Settings → Mail's sender. */
+    public function sentFrom(): ?string
+    {
+        return $this->sentFromSite || $this->fromAddress === '' ? null : $this->fromAddress;
+    }
+
+    /** The From name an email of this revision leaves with, or null for Settings → Mail's. */
+    public function sentFromName(): ?string
+    {
+        return $this->sentFromSite || trim($this->fromName) === '' ? null : $this->fromName;
     }
 }

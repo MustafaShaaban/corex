@@ -178,6 +178,52 @@ it('runs queued work and its capability check under the recorded site', function
     'legacy payload without site id' => [3, null, 3],
 ]);
 
+/**
+ * A handler whose step is overtaken by the person waiting for it: Cancel is pressed while the
+ * batch runs (spec 119, US-SET-06).
+ */
+final class CancelledDuringStepHandler implements JobHandler
+{
+    public function __construct(private readonly PhaseSevenJobRepository $repository)
+    {
+    }
+
+    public function kind(): string
+    {
+        return 'media-webp-regeneration';
+    }
+
+    public function handle(BoundedJob $job, int $batchSize): BoundedJob
+    {
+        $this->repository->save($job->cancel(new DateTimeImmutable('now')));
+
+        return $job->advance('1', 1, 1, 0, null, new DateTimeImmutable('now'));
+    }
+}
+
+it('keeps a job cancelled during a step cancelled, and schedules no further step', function () {
+    Functions\when('get_current_user_id')->justReturn(7);
+    Functions\when('wp_set_current_user')->justReturn(null);
+    $repository = new PhaseSevenJobRepository();
+    $repository->jobs[21] = BoundedJob::queued(
+        'media-webp-regeneration',
+        7,
+        2,
+        hash('sha256', 'cancelled-mid-step'),
+        new DateTimeImmutable('now'),
+    )->withId(21);
+    $handlers = new JobHandlerRegistry();
+    $handlers->register(new CancelledDuringStepHandler($repository));
+    $dispatcher = new PhaseSevenJobDispatcher(static fn (): int => 1);
+    $environment = new SiteScopeEnvironment(1);
+
+    (new JobRunner($repository, $handlers, $dispatcher, $environment->scope))->run(21, 1);
+
+    expect($repository->jobs[21]->state)->toBe(BoundedJob::STATE_CANCELLED)
+        ->and($repository->jobs[21]->processed)->toBe(0)
+        ->and($dispatcher->siteIds)->toBe([]);
+});
+
 it('accepts both the job and site ids from the scheduler payload', function () {
     Functions\expect('add_action')
         ->once()

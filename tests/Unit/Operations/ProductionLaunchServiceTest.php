@@ -21,6 +21,8 @@ use Corex\Operations\OperationResult;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
+    // The checklist names where each check is fixed (spec 118).
+    \Corex\Tests\Support\AdminUrlStubs::install();
 
     $GLOBALS['corex_test_options'] = ['corex_operations_mode' => OperationsMode::STAGING];
     Functions\when('get_option')->alias(static fn (string $key, $default = false) => $GLOBALS['corex_test_options'][$key] ?? $default);

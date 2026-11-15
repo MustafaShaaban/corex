@@ -1,6 +1,6 @@
 ---
-title: Working with Claude Code + Spec Kit
-description: The spec-first loop the team uses to build Corex with an AI agent.
+title: The CoreX loop
+description: The spec-first loop the team uses to build CoreX with AI agents, which skills run each step, and on which model.
 audience: contributor
 stability: stable
 last_verified: null

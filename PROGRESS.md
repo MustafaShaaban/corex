@@ -40,6 +40,118 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Public hosts and spec 130, the docs site on its own host** (2026-11-11, branch `docs/public-hosts`, DECISIONS
+#620): the owner bought `mustafashaaban.com` and made six hosts for CoreX (`corex`, `corex-docs`,
+`corex-updates`, `corex-demo`, `corex-staging`, plus the root for his own site). The plan and its order are in
+`ROADMAP.md` §13, "Public hosts". Spec 130 is a draft for step 1, moving the docs from
+`mustafashaaban.github.io/corex/` to `corex-docs.mustafashaaban.com`. Measured: all six hosts resolve through
+Cloudflare's proxy; `corex-docs` still reaches the owner's server, not GitHub Pages; the repository's Pages
+site has no custom domain. Planning only, no runtime code. Next: spec 130's slices (the CoreX loop), and the owner's
+three steps outside the repository (verify the domain on GitHub, point `corex-docs` at
+`mustafashaaban.github.io` as DNS only, then set the custom domain).
+
+**The CoreX loop, constitution v2.0.0** (2026-11-11, branch `docs/workflow-matt-and-agents`, DECISIONS #621): Spec
+Kit's commands are retired for Matt Pocock's engineering skills around one spec file per feature (grill, spec with
+slices, test first, guards, two-model review); `CLAUDE.md` routes each step to a model and effort, and five agents
+are in `.claude/agents/`. Anything a person sees is designed first in Claude Design, measured and reviewed against it. Matt's setup: `docs/agents/`, four triage labels created on GitHub. Docs/Planning only.
+Owed: the client scaffold (`wp corex make:site`) still tells client sites to use Spec Kit, its own slice.
+
+**CoreX checkboxes and radios** (2026-11-10, branch `fix/admin-checkbox-radio-look`, DECISIONS #515): the shell
+draws every CoreX admin screen's checkboxes and radios in brass instead of WordPress blue, in
+`plugins/corex-core/assets/css/corex-admin-shell.css`, measured by `tests/e2e/admin-checkboxes.spec.js`. One pull
+request, not merged by its session, not tagged.
+
+**Activity times that pass contrast** (2026-11-10, branch `fix/activity-time-contrast`, DECISIONS #516): the
+Overview, Access audit log and Insights security card draw event times in `--corex-admin-text-muted`, the Insights
+card dates events through `AdminDateTime`, the three rows get a unitless line height, and `seed-quality-site.php`
+records three refusals so CI's quality job sees these lists with rows. One pull request (#453), not tagged. The
+shell-wide unitless line height it left out is PR #454 (DECISIONS #517).
+
+**The admin shell's line height** (2026-11-10, branch `fix/admin-shell-line-height`, DECISIONS #517): `.corex-admin`
+sets `--corex-admin-line-base` (1.4, new) and headings `--corex-admin-line-tight`, so text at 200% stays on its
+lines on every CoreX screen; Blog Pro's rows wrap instead of running together at phone width. Blog Pro's
+`text-overlaps-at-200` entry is gone from `known-failures.json`. The inbox dates entry stays (US-NFR-04): at 200%
+each date field is 192px wide in a 95px column, a filter-panel layout fix not yet made. PR #453 (DECISIONS #516)
+sets the normal token on three activity rows; it still stands after this, those rows choosing 1.6 over the base.
+
+**The inbox's date filters** (2026-11-10, branch `fix/inbox-dates-fit-200`, DECISIONS #518): the Submissions
+inbox's From and To dates wrap, "To" under "From", when the two do not fit side by side, and on the wide layout the
+range is never narrower than its two dates. The `text-overlaps-at-200` entry for `corex-submissions` is gone from
+`known-failures.json`. Measured at 375 and 1280px, light and dark, both directions, at 100% and 200%.
+
+**Spec 129, the CoreX Assistant add-on** (2026-11-09, branch `spec/129-corex-assistant`, DECISIONS #600 to
+#616): the support-style chat Perego built as its spec 058, made a CoreX add-on on the owner's decision.
+`addons/corex-assistant`: a chat button on public pages that answers from the site's own content through free
+model tiers in turn (Gemini, Groq, OpenRouter, Mistral), with a callback form in the chat that lands in
+Submissions, with a time the visitor picks. CoreX → Assistant holds the switch, the look per language, the
+services in the owner's order (free tiers first, paid OpenAI and Claude last and off until turned on), the
+booking hours, the limits and "Check services". A site
+plugs in its knowledge (`corex_assistant_knowledge_provider`), strings (`corex_assistant_strings`) and colours
+(`--corex-assistant-*`). Framework edits: the add-on catalogue and the CoreX rail entry; the token inventory resolves a
+package's own `--corex-*` properties (#607). The slice-1 change that saved Settings secrets unloaded is
+withdrawn (#602): the Config engine reads only loaded options, so a saved secret went unread.
+- Verified (slices 1 and 2, 2026-11-10): Pest unit 3,645 green (the whole suite); integration 1,530 green, 1
+  skipped and 1 red that is this scratch site's own (`LoginSlugAvailabilityTest`: Git Bash wrote its permalink
+  setting as `/C:/Program Files/Git/%postname%/`; the branch changes no login code); Jest 25; Playwright 4
+  (Chromium, axe WCAG 2.2 AA on the open chat and the owner's screen); the quality suite's 33 checks on
+  CoreX → Assistant, Add-ons and Data, all green; by hand on a scratch WordPress (port 8929, database
+  `corex_wassistant`) with a stubbed model: off by default, lazy chat, chips, fallback on a 429, the callback
+  stored, RTL, phone width, a key saved on the screen used by the chain.
+- Not done: no real model was asked (no key in this session); not run on a live site.
+- Slice 2 (same branch, same PR) built Perego's revision 2 and the owner's additions: paid fallbacks, the
+  time picker, channel-led fields, the CoreX → Assistant screen (T014 to T019). Perego can switch once a
+  release carries it.
+- Next: the owner's word on merging this slice.
+
+**Spec 122, flows that stay live and route to people** (2026-10-26, branch `spec/122-live-flows`, DECISIONS #470
+to #479): revamp release R3.9, six stories (US-FLW-01, 03, 04, 07, US-VIS-01, 02), built under the owner's
+2026-10-21 mandate. A live flow takes "Publish changes" without leaving the page, keeps its publications and a
+Versions tab, and asks before Unpublish; routing assigns a user, team (new Teams view) or role, falls back with a
+reason, and a person routed work sees it in their inbox; "Routed owner" is an email recipient; flow actions, email
+variables and routing targets register through three filters and run; an Availability tab sets dates, a cap and the
+closed message, and a closed or scheduled flow shows its notice instead of vanishing. Spec, plan and tasks written,
+every task built; unit, integration (the cap race in two processes), Jest and four new Playwright tests pass locally.
+Open: one pull request, not merged by this session. Owed: `forms-flow.spec.js` still fails on a fresh local install
+(the field-type option reads `email`, as before), read it off CI; the plain-word condition editor is R3.10's.
+
+**Spec 119, Settings that save what you changed** (2026-10-23, branch `spec/119-settings-save`, DECISIONS #440 to
+#447): revamp release R3.4, nine stories (US-SET-01, 02, 03, 06, 07, 08, 09, 13, 15), open choices decided under the
+owner's 2026-10-21 mandate. Settings is seven pages under Settings in the CoreX rail, each a form with a save bar
+(unsaved state, Discard, a question before leaving, a redirect after a save, a refused value kept in its field, a
+failed save said with the edits kept); values set in `.env` or by the network show as locked and are never written;
+provider sections say which key is missing and remember their last test (PageSpeed and Cloudflare gain Test
+connection); a saved secret can be removed with a confirmation; Media, Captcha and Guides follow their add-on;
+every string is translated and on/off settings are switches; Brand gains the login logo link; Corex Media gains
+"Convert existing library". One pull request, not merged by its session, not tagged. Not built: Guides' shipped
+defaults are still drawn as empty and Off while the add-on reads its own config (a lead, not a story here); Data
+retention (R3.5), the Advanced reset (R4.x) and option pages (US-SET-11) are later releases.
+
+**Spec 117, abilities that mean something** (2026-10-23, branch `spec/117-abilities`, DECISIONS #420 to
+#427): revamp release R3.1, seven stories (US-ACC-01 to 05, US-SHL-06, US-EML-20), open choices decided under
+the owner's 2026-10-21 mandate. Every CoreX screen, route and save asks for its own ability from one map
+(`ScreenAbilities`); site administrators hold every ability and cannot be denied one; "See CoreX screens without
+changing them" opens Overview, Settings, Operations & Security and Insights read-only; the role matrix is a grid of
+resolved states; the overview counts CoreX abilities; the Audit log tab is one access history; ability names are
+translated; Email Studio opens for "Manage Email Studio" while mail delivery stays with site administration. Spec,
+plan and 33 tasks written; all built, PR #438, not merged by its session, not tagged. Review fixes of 2026-10-23:
+only a site administrator may allow a Critical ability, change a role they hold or decide their own request
+(DECISIONS #428); the matrix and audit tabs pass the quality checks; three more routes record refusals, the old CSV
+export is gone, the capture switch stays with site administration (#429); `main` (v0.48.0) merged in. Left: the Data,
+Submissions and widget checks that also accept site administration (the same answer now), and a screen-reader pass
+of the grid by a person.
+
+**Spec 120, emails that send what was designed** (2026-10-26, branch `spec/120-designed-emails`, DECISIONS #450 to
+#458): revamp release R3.11, seven stories (US-EML-01, 02, 03, 05, 07, 15, 19) under the owner's 2026-10-21
+mandate. One frame (`EmailFrame`) draws every CoreX email with the Mail settings' logo, accent and footer, a reason
+line and links; a site's own design keeps replies unless it accepts a kind. Email Studio's preview and test send are
+drawn by the server with sample values; a template's From and plain text are sent; variables are known from one
+catalog (any form field, `{{ form.answers }}`), a missing one is left out and named on the log row, and a flow will
+not publish a binding that uses one unconfirmed. Six default templates (four, plus two with the account add-on) are
+active on a new site and drafts on an upgraded one; new flows are bound to two; the newsletter and the account add-on
+send theirs through `DesignedEmails` on the shared mailer. `MailRequest` takes an optional `plainText`. Left for
+R3.12: the rich editor, the five-section navigation, the log viewer, named-event routing. A newsletter preferences
+page does not exist, so the preferences link appears only where a site gives one.
+
 **Spec 121, tokens and type** (2026-10-23 to 2026-10-26, branch `spec/121-tokens-and-type`, DECISIONS #460 to
 #468): revamp release R2.1, seven stories (US-BRD-02, 03, 04, 08, 09, US-NFR-02, US-DOC-07), built under the
 owner's 2026-10-21 mandate. One brand contract with a test over the admin, email and theme copies; Light and
@@ -121,8 +233,7 @@ DECISIONS #400 to #407): the revamp's R0.4. It carries seven stories approved by
 - Registration, the newsletter signup, call requests and job applications work with a captcha
   provider on, and the provider's script now reaches the page (it was queued too late to be printed).
 
-Spec, plan and tasks are written and every task is built. Open: one pull request against `main`,
-not merged by this session and not tagged. Not built, by decision: visitor blocks for call requests
+Spec, plan and tasks are written and every task is built. Merged to `main` as 09a72e8c (PR #436), not tagged. Not built, by decision: visitor blocks for call requests
 and job applications (#406). Owed:
 - the older `forms-flow.spec.js`, which fails on a fresh local install because the field-type option
   reads `email`, not `Email`. Read it off CI.
@@ -133,7 +244,7 @@ and job applications (#406). Owed:
 development, staging or production; a mail gate in corex-core, asked by CoreX Mail's service and by
 `pre_wp_mail`, captures every email on development and staging, holds a flow test's emails everywhere,
 and leaves production alone; Email Studio states the outcome on every tab, offers a capture-only switch,
-lists the newest mail first and deletes captures after 30 days. R0.3 (spec 114), R0.4 (spec 115) and
+lists the newest mail first and deletes captures after 30 days. Merged to `main` as 180a40a6 (PR #437), not tagged. R0.3 (spec 114), R0.4 (spec 115) and
 R1.1 (spec 116) are built in parallel sessions with DECISIONS #390-#399, #400-#409 and #410-#419.
 
 **Spec 114, screens that tell the truth** (2026-10-21, branch `claude/spec-114-truthful-screens-43137f`,
@@ -162,6 +273,19 @@ Perego's repositories, the NVDA pass, the screenshot review). Also owed: removin
 refused test package, which lives in the installer's log and the activity log, not in submissions. And the private
 workspace's story builder should check the Client impact line (TC-NFR-08-05), a change in that workspace and not
 here.
+
+**Spec 118, one launch checklist and an honest Overview** (2026-10-23, branch `claude/spec-118-launch-checklist`,
+DECISIONS #430 to #439): revamp release R3.2, thirteen stories (US-OVR-01 to 09, US-WIZ-06, US-SEC-09, US-INS-02,
+US-SHL-09), open choices decided under the owner's 2026-10-21 mandate. One readiness evaluation in two groups
+(Security and hosting, which can block; Site and content, which advise) is read by the Overview, every tab of
+Operations & Security, the readiness notifications (raised once per failure now), the Dashboard widget and the Setup
+Wizard's launch step, which goes live through the Operations mode form. The Overview opens with four state tiles
+(Site health with a PHP fatal error record kept by corex-core, Environment, Login protection, Add-ons), draws each
+card on its own with "Could not load" and a logged reference, counts open, assigned and unread submissions through
+the inbox's own query, says activity as sentences from one source shared with Insights and the Access audit log, and
+lists only the owner's data. A wizard apply is recorded as applied. Insights chips are a shared state chip; finished
+exports and failed jobs are grouped in the bell. Built, one pull request, not merged by its session, not tagged.
+Owed: TC-WIZ-06-02 (the override phrase) arrives with US-OPS-05; the rail count of US-SHL-09 with US-SHL-08.
 
 **Spec 112, access and logs** (2026-10-20, #430, in v0.47.0): the first release (R0.1) of the
 CoreX revamp's stage 0, approved by the owner as seven stories the same day. Access requests can no longer hand out
@@ -266,6 +390,8 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**Merged, not released.** The advisories of 2026-11-09 (DECISIONS #514): overrides for `qs`, `glob` 14, `minimatch` 11 and `isomorphic-git`, and a bounded exception for `deepmerge`, which has no fixed release. The built files are byte-identical; the notes are under `[Unreleased]` → Security in `CHANGELOG.md`.
 
 **In v0.48.1, 2026-10-25.** Spec 123 User Stories 1 and 4 (#442): CoreX abilities public to MCP, and `npm run release:push`, which installs a release with an Application Password on a site that defines `COREX_ALLOW_RELEASE_PUSH` (DECISIONS #512, #513). Its "In flight" paragraph above describes it; the release notes are under `[0.48.1]` in `CHANGELOG.md`. Filed from its verification: #443 (`build:dist` under a `.claude` folder) and #444 (a fresh site's capability checks before the migration runner).
 
@@ -976,11 +1102,13 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`
   before its own filter runs. Measured in DECISIONS #222.
-- Four bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244),
-  all on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
+- Five bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244, #514). Four are
+  on `simple-git` and its argument parser, two of them rated critical: it runs when a developer
   starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is given comes
   from `wp-env.json` in this repository. They are reviewed on 2026-11-30. The `sprintf-js` and
   `braces` exceptions were removed when GitHub withdrew their advisories (2026-10-22, 2026-10-23).
+  The fifth is `deepmerge` 4.3.1 (low, no fixed release; Jest merges its configuration with it), reviewed
+  on 2027-01-31.
 - **One override holds a package above what its parents ask for**: `postcss-selector-parser` at
   7.1.6, in the root and in `docs-app`. `@wordpress/scripts` 36 did not retire it as expected:
   `cssnano` 6 still asks for 6.x. Three more hold `js-yaml`, `smol-toml` and `katex` at patched

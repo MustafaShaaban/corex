@@ -103,8 +103,10 @@ it('names the file a form was sent with, in place of the number it is stored und
 it('links to the submission in the inbox, where the file is opened', function () {
     $request = notificationFor(['name' => 'Salma', 'cv' => 224]);
 
-    expect($request->body)->toContain('href="' . INBOX_OF_41 . '"')
+    // The floor's plain text names the address; the framed email links to it (spec 120).
+    expect($request->body)->toContain(INBOX_OF_41)
         ->and($request->context['submission_url'])->toBe(INBOX_OF_41)
+        ->and($request->context['links']['submission'])->toBe(INBOX_OF_41)
         // Nothing is attached: a file sent to a mailbox cannot be taken back.
         ->and($request->attachments)->toBe([]);
 });
@@ -112,7 +114,7 @@ it('links to the submission in the inbox, where the file is opened', function ()
 it('says nothing of a file in the email of a submission that has none', function () {
     $request = notificationFor(['name' => 'Salma']);
 
-    expect($request->body)->not->toContain('href=')
+    expect($request->body)->not->toContain(INBOX_OF_41)
         ->and($request->context['submission'])->toBe(['name' => 'Salma']);
 });
 
@@ -120,7 +122,7 @@ it('names the file and offers no link when the submission was not stored', funct
     $request = notificationFor(['name' => 'Salma', 'cv' => 224], storedAs: null);
 
     expect($request->body)->toContain('salma-cv.pdf')
-        ->and($request->body)->not->toContain('href=')
+        ->and($request->body)->not->toContain('http')
         ->and($request->context['submission_url'])->toBe('');
 });
 

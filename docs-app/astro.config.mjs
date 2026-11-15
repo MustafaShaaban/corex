@@ -172,6 +172,7 @@ export default defineConfig( {
 							slug: 'guides/assets',
 						},
 						{ label: 'Image optimization', slug: 'guides/media' },
+						{ label: 'Site assistant', slug: 'guides/assistant' },
 						{
 							label: 'Build a client site',
 							slug: 'guides/client-site',

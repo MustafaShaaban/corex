@@ -84,7 +84,17 @@ test( 'every CoreX route highlights the correct rail item and breadcrumb', async
 		await page.goto( `/wp-admin/admin.php?page=${ slug }` );
 		const active = page.locator( '.corex-admin__nav-item.is-active' );
 		await expect( active, `${ slug } active rail item` ).toHaveCount( 1 );
-		await expect( active ).toHaveAttribute( 'aria-current', 'page' );
+		// A screen with pages of its own (Settings, spec 119) marks its entry as the current
+		// place and the open page under it as the current page.
+		const pages = page.locator( '.corex-admin__subnav' );
+		if ( ( await pages.count() ) > 0 ) {
+			await expect( active ).toHaveAttribute( 'aria-current', 'true' );
+			await expect(
+				pages.locator( '[aria-current="page"]' )
+			).toHaveCount( 1 );
+		} else {
+			await expect( active ).toHaveAttribute( 'aria-current', 'page' );
+		}
 		await expect( active ).toContainText( label );
 		await expect(
 			page.locator( '.corex-admin__eyebrow' ).first()

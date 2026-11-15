@@ -49,6 +49,11 @@ function exportReader(array $records): SubmissionInboxReader
             return ['items' => array_slice($items, 0, $query->perPage), 'total' => count($items)];
         }
 
+        public function flowIdsIn(SubmissionAccessScope $scope): array
+        {
+            return [];
+        }
+
         public function findInbox(int $id, SubmissionAccessScope $scope): ?array
         {
             $record = $this->records[$id] ?? null;
@@ -294,6 +299,11 @@ function submissionExportSource(array $records): SubmissionExportSource
                 'items' => array_slice($items, ($query->page - 1) * $query->perPage, $query->perPage),
                 'total' => count($items),
             ];
+        }
+
+        public function flowIdsIn(SubmissionAccessScope $scope): array
+        {
+            return [];
         }
 
         public function findInbox(int $id, SubmissionAccessScope $scope): ?array

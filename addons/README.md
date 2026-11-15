@@ -4,7 +4,7 @@ Optional, installable domain features. Each add-on is a **Composer package** tha
 with the service container (../docs/internal/COREX-FRAMEWORK.md §14) — loosely coupled, never depending on
 another add-on, and installable via `wp corex install corex/<addon>`.
 
-Planned add-ons (each gets its own Spec Kit spec when its turn comes):
+Planned add-ons (each gets its own spec when its turn comes):
 
 - `corex-profile-manager` — frontend accounts; detect-and-defer to WooCommerce My Account.
 - `corex-forms` — forms engine (reuses security middleware + event bus).

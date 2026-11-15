@@ -35,6 +35,12 @@ final class EmailDesignFailedEvent implements Event
     public const BRAND_THREW = 'brand_threw';
 
     /**
+     * An Email Studio template code sends by its slug could not be drawn, and the email that code
+     * keeps for that case was sent in its place (spec 120). `$design` is the template's slug.
+     */
+    public const TEMPLATE_FAILED = 'template_failed';
+
+    /**
      * @param string $design The class of what the site gave, or the filter that failed, to find it by.
      * @param string $reason One of this class's constants.
      * @param string $detail One short line of what a thrown error said, or ''. Never the message of the email.

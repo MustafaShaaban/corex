@@ -25,6 +25,10 @@ use Corex\Profile\Notification\AccountActivity;
 use Corex\Profile\Notification\NotificationService;
 use Corex\Profile\Reset\AccountPageMark;
 use Corex\Profile\Reset\ResetEmailLink;
+use Corex\Profile\Email\AccountEmails;
+use Corex\Profile\Email\AccountEmailTemplates;
+use Corex\Email\Studio\DefaultEmailTemplates;
+use Corex\Mail\DesignedEmails;
 use Corex\Profile\Reset\ResetLanding;
 use Corex\Profile\Reset\ResetLink;
 use Corex\Profile\Reset\ResetTicket;
@@ -89,6 +93,15 @@ final class ProfileServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): ResetEmailLink => new ResetEmailLink($c->make(ResetLink::class)),
         );
 
+        // The reset and welcome emails drawn in Email Studio, where CoreX Mail is active (spec 120).
+        $this->container->singleton(
+            AccountEmails::class,
+            static fn (ContainerInterface $c): AccountEmails => new AccountEmails(
+                $c->make(ResetLink::class),
+                $c->has(DesignedEmails::class) ? $c->make(DesignedEmails::class) : null,
+            ),
+        );
+
         // One for the request: it reads the key before the template, and the block asks it after.
         $this->container->singleton(
             ResetLanding::class,
@@ -106,6 +119,11 @@ final class ProfileServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerBlock']);
 
         $this->container->make(ResetLanding::class)->register();
+
+        // Its two templates join CoreX Mail's defaults, installed on `init` (spec 120).
+        if ($this->container->has(DefaultEmailTemplates::class)) {
+            AccountEmailTemplates::addTo($this->container->make(DefaultEmailTemplates::class));
+        }
     }
 
     public function registerAssets(): void
@@ -224,14 +242,20 @@ final class ProfileServiceProvider extends ServiceProvider
             return $this->respond(AccountResult::fail('captcha', $refusal));
         }
 
-        $result = $this->container->make(AccountService::class)->register(new RegistrationRequest(
+        $registration = new RegistrationRequest(
             EmailAnswer::address($request['email']),
             (string) $request['password'],
             (string) $request['password_confirm'],
             // As typed: a username that would be altered on its way into the account is refused.
             trim((string) $request['username']),
             (bool) $request['consent'],
-        ));
+        );
+        // The welcome links to the page the form was on, when that is a page of this site's.
+        $page = $this->container->make(AccountPageMark::class)->publishedPage((string) $request['page']);
+        $result = $this->container->make(AccountEmails::class)->welcomeDuring(
+            $page,
+            fn (): AccountResult => $this->container->make(AccountService::class)->register($registration),
+        );
 
         return $this->respond($result);
     }
@@ -255,7 +279,10 @@ final class ProfileServiceProvider extends ServiceProvider
         // The email links to the page the form was on, when that is a page of this site's.
         $result = $this->container->make(ResetEmailLink::class)->during(
             $page,
-            fn (): AccountResult => $this->container->make(AccountService::class)->requestPasswordReset($login),
+            fn (): AccountResult => $this->container->make(AccountEmails::class)->resetDuring(
+                $page,
+                fn (): AccountResult => $this->container->make(AccountService::class)->requestPasswordReset($login),
+            ),
         );
 
         return $this->respond($result);

@@ -14,7 +14,7 @@ last_verified: null
   and published in docs-app. This stub exists only to (a) give the handbook a stable place to
   link a class by name, and (b) point at the generated page. Keep it to a few lines.
 
-  If the class is not built yet, set stability: planned and link to the Spec Kit module that
+  If the class is not built yet, set stability: planned and link to the spec that
   will produce it (specs/NNN-…) instead of a docs-app page. Never invent methods or signatures.
 -->
 

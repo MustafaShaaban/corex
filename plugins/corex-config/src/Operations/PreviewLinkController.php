@@ -10,6 +10,7 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\StandalonePage;
 use Corex\Security\Admin\AdminGuard;
 use DateTimeImmutable;
@@ -52,7 +53,7 @@ final class PreviewLinkController
     {
         nocache_headers();
 
-        if (! $this->guard->verifiedPost(self::NONCE, self::ACTION)) {
+        if (! $this->guard->verifiedPost(self::NONCE, self::ACTION, CorexAbility::MANAGE_OPERATIONS, 'corex-operations-security')) {
             status_header(403);
             $this->send($this->page->notice(
                 __('Access denied', 'corex'),

@@ -15,6 +15,9 @@ defined('ABSPATH') || exit;
  */
 interface MailTemplateCatalog
 {
-    /** @return list<array{id:int,slug:string,name:string}> */
+    /**
+     * @return list<array{id:int,slug:string,name:string,variables?:list<string>}> `variables`:
+     *         the keys the template's active version uses (spec 120), where the catalog knows them.
+     */
     public function templates(): array;
 }

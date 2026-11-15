@@ -7,7 +7,7 @@ stability: stable
 # AI agent start prompts
 
 Copy/paste these at the start of an AI session (any model). They force the agent to check the repo, classify its
-[mode](./agent-roles.md), read the right source-of-truth files, stay in scope, follow Spec Kit, run the relevant
+[mode](./agent-roles.md), read the right source-of-truth files, stay in scope, follow the CoreX loop, run the relevant
 guards, apply UI/UX ProMax to UI work, update `PROGRESS.md`/`DECISIONS.md`, and end with a SUMMARY + NEXT STEP.
 
 Keep all examples neutral — use **Acme** placeholders (`sites/acme/`, `acme-site`, `acme-theme`, `http://acme.local`).
@@ -22,7 +22,7 @@ You are working in the CoreX monorepo. Before doing anything:
    (see docs/en/04-team-workflow/agent-roles.md). State the mode and the files you may edit.
 3. Read the source-of-truth files for that mode. Never work from main except inspection/allowed merge/release.
    Use a focused branch. Do not create .worktrees without owner approval.
-4. Follow Spec Kit before implementation. Run the relevant Guard Gate before shipping any diff. Apply UI/UX ProMax
+4. Follow the CoreX loop (AGENTS.md) before implementation. Run the relevant Guard Gate before shipping any diff. Apply UI/UX ProMax
    to any UI-facing work.
 5. Never edit wp/wp-content/ or dist/ as source. Never commit dist/. Use Acme placeholders only.
 6. Update PROGRESS.md and DECISIONS.md. End with the SUMMARY/…/NEXT STEP handoff format (AGENTS.md / WORKING-GUIDE §G.5).
@@ -35,7 +35,7 @@ Mode: CoreX Framework. You may edit plugins/, addons/, packages/, root theme/, r
 ROADMAP.md, root PROGRESS.md, framework admin/login/docs UI, release/versioning.
 Read: root AGENTS.md/CLAUDE.md, specs/constitution.md, ../../internal/COREX-WORKING-GUIDE.md, ../../internal/COREX-FRAMEWORK.md, root PROGRESS.md,
 ROADMAP.md, the active root spec. Do NOT edit sites/<client>/ unless explicitly authorized.
-Follow Spec Kit (root specs/), run clean-code-guard + wp-guard (+ test-guard/docs-guard as relevant), apply UI/UX
+Follow the CoreX loop (root specs/), run clean-code-guard + wp-guard (+ test-guard/docs-guard as relevant), apply UI/UX
 ProMax to framework UI. End with the required handoff format.
 ```
 
@@ -48,7 +48,7 @@ Read: root AGENTS.md/CLAUDE.md (global safety only), sites/<client>/AGENTS.md, C
 sites/<client>/specs/, and the client brand/design docs.
 Do NOT continue the CoreX framework roadmap. Do NOT edit plugins/, addons/, packages/, root theme/, root specs/,
 ROADMAP.md, or root PROGRESS.md. For a framework bug, STOP and open a CoreX Framework Mode task.
-Follow Spec Kit (sites/<client>/specs/), run the relevant guards, apply UI/UX ProMax to all client UI (homepage,
+Follow the CoreX loop (sites/<client>/specs/), run the relevant guards, apply UI/UX ProMax to all client UI (homepage,
 inner pages, header/footer, blocks, templates, mobile, RTL, accessibility, SEO, performance, keyboard, 200% zoom,
 brand consistency). End with the required handoff format.
 ```

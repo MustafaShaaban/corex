@@ -137,8 +137,15 @@ The reset begins and ends on the page the account block is on.
    id of the page the block is rendered on and a signature of it made with the site's salt
    (`Reset\AccountPageMark`). The block signs the page because the page cannot be asked: the
    Account template places the block, and the page's own content is empty.
-2. **The email is WordPress's, with one address changed.** `reset-request` still calls
-   `retrieve_password()`. While it does, `Reset\ResetEmailLink` filters
+2. **The email: the designed one, else WordPress's with one address changed.** With CoreX
+   Mail active and its "Password reset" template active, `Email\AccountEmails` sends that
+   template (in the site's frame, from the template's sender) and answers
+   `send_retrieve_password_email` false, so WordPress sends nothing and its
+   `retrieve_password_*` filters do not run. A designed email that failed or was refused
+   (anything `MailResult::successful()` does not call sent) leaves WordPress to send its own;
+   one kept on a development or staging site counts as sent. Registration does the same with
+   "Welcome to your account" on `wp_send_new_user_notification_to_user`. Where WordPress
+   sends its own, `reset-request` still calls `retrieve_password()`, and `Reset\ResetEmailLink` filters
    `retrieve_password_message` and replaces the address that carries the key with the page's:
    `…/account/?corex_reset_login=…&corex_reset_key=…`. It runs only when the request named a
    published page with a mark this site made. Without one (an older cached page, a client of
@@ -188,7 +195,8 @@ and, in a browser, `tests/e2e/account-reset.spec.js`.
 - A reset asked for at the block is finished at the block: its email links to the account
   page, not to `wp-login.php`, so it does not carry the address login protection gives the
   login. A signed-in member still reads that address in the **Sign out** link, which is
-  WordPress's own, and the new member's email still carries WordPress's link.
+  WordPress's own. The new member's email carries WordPress's link only where WordPress
+  sends its own (no active "Welcome to your account" template, or the designed one failed).
 
 ## Testing
 

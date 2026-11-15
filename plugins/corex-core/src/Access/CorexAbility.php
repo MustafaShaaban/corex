@@ -32,6 +32,7 @@ final class CorexAbility
     public const MANAGE_SETUP          = 'corex_manage_setup';
     public const MANAGE_SETTINGS       = 'corex_manage_settings';
     public const MANAGE_RELEASES       = 'corex_manage_releases';
+    public const VIEW_SCREENS          = 'corex_view_screens';
 
     public const GROUP_ADMIN       = 'corex-admin';
     public const GROUP_FORMS       = 'forms-flows';

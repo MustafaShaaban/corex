@@ -5,6 +5,17 @@ import { withQuery } from '../admin/restAddress.js';
 export const VIEW_INBOX = 'inbox';
 export const VIEW_TRASH = 'trash';
 
+/** The status filters the server accepts: `open` is new or in progress (spec 118). */
+const FILTER_STATUSES = [
+	'open',
+	'new',
+	'in_progress',
+	'replied',
+	'closed',
+	'spam',
+	'archived',
+];
+
 export const initialInboxState = {
 	status: 'idle',
 	// Whether the view shown has been answered at all. Until it has, nothing is known of it:
@@ -151,21 +162,35 @@ export function listStatus( state ) {
  * @return {Object} Filter overrides to merge into the initial state.
  */
 export function inboxFiltersFromUrl( url ) {
-	let form = '';
+	let params;
 	try {
-		form =
-			new URL( String( url ), 'http://localhost' ).searchParams.get(
-				'corex_form'
-			) || '';
+		params = new URL( String( url ), 'http://localhost' ).searchParams;
 	} catch {
 		return {};
 	}
 
-	if ( ! /^(\d+|slug:[a-z0-9_-]+)$/i.test( form ) ) {
-		return {};
+	const filters = {};
+	const form = params.get( 'corex_form' ) || '';
+	if ( /^(\d+|slug:[a-z0-9_-]+)$/i.test( form ) ) {
+		filters.flow = form;
 	}
 
-	return { flow: form };
+	// The Overview's forms card links here with the filter its number counted (spec 118): open
+	// work, open work owned by the viewer, and open work nobody has read. Anything else is ignored
+	// rather than sent on to be refused.
+	const status = params.get( 'status' ) || '';
+	if ( FILTER_STATUSES.includes( status ) ) {
+		filters.status = status;
+	}
+	const owner = params.get( 'owner' ) || '';
+	if ( /^(user|team|role):[a-z0-9_-]+$/.test( owner ) ) {
+		filters.owner = owner;
+	}
+	if ( params.get( 'unread' ) === '1' ) {
+		filters.unread = true;
+	}
+
+	return filters;
 }
 
 /**
@@ -205,6 +230,7 @@ export function buildInboxUrl( base, filters ) {
 		[ 'date_from', filters.dateFrom ],
 		[ 'date_to', filters.dateTo ],
 		[ 'include_test', filters.includeTest ? '1' : '' ],
+		[ 'unread', filters.unread ? '1' : '' ],
 		[ 'view', filters.view === VIEW_TRASH ? VIEW_TRASH : '' ],
 		[ 'page', filters.page ],
 		[ 'per_page', filters.perPage ],

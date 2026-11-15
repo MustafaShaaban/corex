@@ -31,6 +31,11 @@ function queryReader(array $items = [], int $total = 0): SubmissionInboxReader
             return ['items' => $this->items, 'total' => $this->total];
         }
 
+        public function flowIdsIn(SubmissionAccessScope $scope): array
+        {
+            return [];
+        }
+
         public function findInbox(int $id, SubmissionAccessScope $scope): ?array
         {
             foreach ($this->items as $item) {

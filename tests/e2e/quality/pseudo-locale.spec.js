@@ -5,7 +5,8 @@
  * as `⟦…⟧`. Each admin screen is opened that way in both directions, and every visible text
  * inside the CoreX shell that has words but no mark is a string that never went through a
  * translation function. Not counted: numbers, dates, addresses, and what the site holds (its
- * name, the signed-in user's name), which no catalogue translates.
+ * name, the signed-in user's name, a person's login or name marked `translate="no"`), which no
+ * catalogue translates.
  *
  * Front-end pages are left out: what a visitor reads there is the site's content, written by its
  * owner, not CoreX's strings.
@@ -34,6 +35,34 @@ function unmarkedTexts() {
 		window.NodeFilter.SHOW_TEXT
 	);
 
+	/*
+	 * How many marks are open where this node starts in the ancestor's text. Counted from this
+	 * node's own place, by walking the ancestor's text nodes up to it: the first equal substring
+	 * may be another node's, and a translation can hold others ("from ⟦date⟧ to ⟦date⟧").
+	 */
+	function openMarksBefore( ancestor, target ) {
+		const texts = document.createTreeWalker(
+			ancestor,
+			window.NodeFilter.SHOW_TEXT
+		);
+		let depth = 0;
+		for (
+			let at = texts.nextNode();
+			at && at !== target;
+			at = texts.nextNode()
+		) {
+			for ( const character of at.nodeValue ) {
+				if ( character === '⟦' ) {
+					depth++;
+				} else if ( character === '⟧' ) {
+					depth--;
+				}
+			}
+		}
+
+		return depth;
+	}
+
 	for ( let node = walker.nextNode(); node; node = walker.nextNode() ) {
 		const text = node.nodeValue.replace( /\s+/g, ' ' ).trim();
 		const parent = node.parentElement;
@@ -41,7 +70,9 @@ function unmarkedTexts() {
 		if (
 			! /\p{L}{2,}/u.test( text ) ||
 			! parent ||
-			parent.closest( 'code, kbd, samp, pre, script, style, textarea' )
+			parent.closest( 'code, kbd, samp, pre, script, style, textarea' ) ||
+			// Data, not words: a person's login or name, marked by HTML's own attribute.
+			parent.closest( '[translate="no"]' )
 		) {
 			continue;
 		}
@@ -51,20 +82,15 @@ function unmarkedTexts() {
 		}
 
 		// A translated string with markup in it ("Read <a>the guide</a> first") reaches the page
-		// as several text nodes, and only the outer ones carry a mark. A node that sits between an
-		// opening and a closing mark in an ancestor's text is part of a translation.
+		// as several text nodes, and only the outer ones carry a mark. A node that sits inside a
+		// mark opened earlier in an ancestor's text is part of a translation.
 		let inside = false;
 		for (
 			let ancestor = parent, level = 0;
 			ancestor && level < 4 && ! inside;
 			ancestor = ancestor.parentElement, level++
 		) {
-			const all = ancestor.textContent;
-			const at = all.indexOf( node.nodeValue );
-			inside =
-				at >= 0 &&
-				all.lastIndexOf( '⟦', at ) > all.lastIndexOf( '⟧', at - 1 ) &&
-				all.indexOf( '⟧', at ) >= 0;
+			inside = openMarksBefore( ancestor, node ) > 0;
 		}
 
 		if ( inside ) {

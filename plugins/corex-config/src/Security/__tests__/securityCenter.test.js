@@ -45,6 +45,53 @@ describe( 'Operations & Security client state', () => {
 		expect( normalized.checks[ 0 ].blocking ).toBe( false );
 	} );
 
+	it( 'reads the one launch checklist in its groups and words (spec 118)', () => {
+		const normalized = normalizeReadiness( {
+			target_hash: 'h',
+			blocking_keys: [ 'ssl' ],
+			count: '1 of 2 ready',
+			blockingText: '1 check still blocks going live',
+			groups: [
+				{
+					key: 'security',
+					title: 'Security and hosting',
+					count: '1 of 2 ready',
+					rows: [
+						{
+							key: 'ssl',
+							label: 'HTTPS',
+							state: 'blocking',
+							chip: 'blocked',
+							word: 'Blocks going live',
+							note: 'Serve the site over HTTPS.',
+							href: '/wp-admin/options-general.php',
+							blocks: true,
+						},
+						{
+							key: 'debug_display',
+							label: 'Debug output hidden',
+							state: 'pass',
+							chip: 'done',
+							word: 'Ready',
+							note: 'Hidden.',
+							href: '',
+							blocks: false,
+						},
+					],
+				},
+			],
+		} );
+
+		expect( normalized.count ).toBe( '1 of 2 ready' );
+		expect( normalized.groups[ 0 ].rows[ 0 ] ).toMatchObject( {
+			word: 'Blocks going live',
+			chip: 'blocked',
+			blocking: true,
+			resolutionUrl: '/wp-admin/options-general.php',
+		} );
+		expect( normalized.checks[ 1 ].blocking ).toBe( false );
+	} );
+
 	it( 'normalizes and serializes login policy edits without raw credential fields', () => {
 		const policy = normalizeLoginPolicy( {
 			enabled: true,

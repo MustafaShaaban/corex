@@ -10,6 +10,7 @@ namespace Corex\Forms\Flow;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Routing\RoutingPreview;
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
 use Corex\Http\RouteParam;
@@ -27,6 +28,7 @@ final readonly class FlowController
         private FlowExtensionCatalog $extensions,
         private FlowRestGateway $gateway,
         private FlowRestMapper $mapper,
+        private RoutingPreview $routingPreview,
     ) {
     }
 
@@ -41,6 +43,9 @@ final readonly class FlowController
         $this->route('/flows/(?P<id>\d+)/unpublish', 'POST', 'unpublish');
         $this->route('/flows/(?P<id>\d+)/close', 'POST', 'close');
         $this->route('/flows/(?P<id>\d+)/test', 'POST', 'test');
+        $this->route('/flows/(?P<id>\d+)/versions/(?P<version>\d+)/copy', 'POST', 'copyVersion');
+        $this->route('/flows/(?P<id>\d+)/availability', 'PATCH', 'availability');
+        $this->route('/flows/(?P<id>\d+)/routing-preview', 'POST', 'previewRouting');
         $this->route('/flows/extensions', 'GET', 'extensions');
     }
 
@@ -143,6 +148,52 @@ final readonly class FlowController
         });
     }
 
+    /** An earlier version made the saved draft, as a new version; nothing is published (FR-005). */
+    public function copyVersion(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, $this->mapper->copyShape(), function (Request $safe) use ($request): Response {
+            $flowId = RouteParam::int($request);
+            $version = $this->services->flows->copyIntoDraft(
+                absint($request->get_param('version')),
+                $this->mapper->draftUpdate($flowId, $safe->input, get_current_user_id(), new DateTimeImmutable('now')),
+            );
+
+            return Response::ok([
+                'flow' => $this->mapper->flow($this->services->flows->get($flowId)),
+                'version' => $this->mapper->version($version),
+            ]);
+        });
+    }
+
+    /** When the flow takes answers and what it says when it does not, saved without publishing. */
+    public function availability(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, $this->mapper->availabilityShape(), function (Request $safe) use ($request): Response {
+            $flow = $this->services->flows->saveAvailability(
+                RouteParam::int($request),
+                $this->mapper->availability($safe->input),
+                get_current_user_id(),
+                new DateTimeImmutable('now'),
+            );
+
+            return Response::ok(['flow' => $this->mapper->flow($flow)]);
+        });
+    }
+
+    /** Who "Routed owner" would be for the routing on screen, saved or not (FR-019). */
+    public function previewRouting(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, $this->mapper->routingPreviewShape(), function (Request $safe) use ($request): Response {
+            $lines = $this->routingPreview->lines(
+                $this->services->flows->get(RouteParam::int($request)),
+                (array) ($safe->input['routing'] ?? []),
+                array_values(array_filter((array) ($safe->input['schema'] ?? []), 'is_array')),
+            );
+
+            return Response::ok($this->mapper->routingPreview($lines));
+        });
+    }
+
     public function extensions(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, fn (): Response => Response::ok($this->extensions->all()));
@@ -169,7 +220,7 @@ final readonly class FlowController
             'methods' => $methods,
             'callback' => [$this, $callback],
             'permission_callback' => [$this->gateway, 'permits'],
-            'args' => ['id' => ['sanitize_callback' => 'absint']],
+            'args' => ['id' => ['sanitize_callback' => 'absint'], 'version' => ['sanitize_callback' => 'absint']],
         ]);
     }
 }

@@ -81,5 +81,5 @@ docs · updated `PROGRESS.md` · ended with a `NEXT STEP` block.
 
 ## See also
 
-- [The Spec Kit loop](./spec-kit.md) · [Branching & commits](./branching-and-commits.md) ·
+- [The CoreX loop](./spec-kit.md) · [Branching & commits](./branching-and-commits.md) ·
   [`../../internal/COREX-WORKING-GUIDE.md` Part D.4](../../../COREX-WORKING-GUIDE.md)

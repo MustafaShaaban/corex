@@ -35,17 +35,22 @@ open **CoreX → Settings → Mail**, select `wp-mail`, verify the site's WordPr
 
 CoreX → Email Studio provides:
 
-- template identities with immutable numbered drafts and explicit activation;
-- Transactional, Minimal, Newsletter, and dependency-gated WooCommerce layouts;
+- template identities with immutable numbered drafts and explicit activation, and six templates CoreX ships
+  (active on a new site, drafts on an upgraded one, each resettable to its shipped version);
+- Transactional, Minimal, Newsletter, and dependency-gated WooCommerce layouts, arranging the body inside the one
+  frame every CoreX email is drawn in;
 - append-only reusable partial revisions;
-- schema-declared `{{ variable.path }}` placeholders with escaped values;
-- desktop, mobile, and RTL previews in a script-disabled iframe;
-- generated or manual plain text, routing, test sends, health checks, captures, attempts, and retry lineage;
+- `{{ variable.path }}` placeholders with escaped values, from one catalog grouped by the emails that supply them,
+  plus any `submission.<field>` and `{{ form.answers }}`; a missing value is left out and named on the log row;
+- a preview drawn on the server by the code that sends, with sample values, at 600 and 375 pixels and right to left,
+  in a script-disabled iframe, and a test send of exactly that email;
+- the template's own From and plain text on every send, routing, health checks, captures, attempts, and retry
+  lineage;
 - capability-gated reads and capability + REST-nonce-gated mutations under `corex/v1/email-studio`.
 
 Saving content appends a version; it never overwrites history. Activation moves only the active-version pointer.
-Scripts, event handlers, executable URLs, PHP, header control characters, unknown placeholders, and undeclared
-variables are rejected before persistence.
+Scripts, event handlers, executable URLs, PHP, header control characters and unknown variables are rejected before
+persistence, each named.
 
 ## Route a notification
 
@@ -99,8 +104,9 @@ $result = Mail::to('owner@example.com')
 header injection, catches driver failures, and records the real outcome.
 
 A code template extends `Corex\Email\Template\EmailTemplate`; its HTML may contain `{{ path }}` placeholders.
-The renderer reads scalar values only from `MailContext`, escapes body values, and wraps output in the brand layout
-resolved from `theme.json`.
+The renderer reads scalar values only from `MailContext`, escapes body values, and draws the output in the one frame
+(`Corex\Email\Design\EmailFrame`) with the site's brand and Mail settings. A template says its `kind()` (the
+footer's reason line) and its footer `links()`.
 
 ## Attempts, capture, and queue
 
@@ -129,7 +135,7 @@ with the hook's first argument.
 
 - Email Studio REST reads require `manage_options`; mutations also require a valid WordPress REST nonce.
 - Private Studio assets use the non-public `corex_email_asset` post type.
-- Preview iframes have no script permission and include a restrictive content security policy.
+- Preview iframes have no script permission: the email is the server's document, shown in a sandbox.
 - The driver interface is the extension point for provider APIs.
 - Attachments, credentials for additional providers, provider webhooks, suppression processing, and per-language
   variants require dedicated provider/locale contracts and are not simulated by `wp-mail`.

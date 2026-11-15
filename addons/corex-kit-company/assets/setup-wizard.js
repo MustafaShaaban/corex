@@ -16,7 +16,7 @@
 	}
 
 	const api = window.Corex.api;
-	const { restUrl, nonce, adminUrl } = data;
+	const { restUrl, readinessUrl, nonce, adminUrl } = data;
 	// Named `__` so the translation template reads the literal of every call (spec 121); a page
 	// without wp-i18n shows the English.
 	/* eslint-disable @wordpress/i18n-no-variables, @wordpress/i18n-text-domain */
@@ -50,12 +50,17 @@
 		planError: '',
 		applied: null,
 		applyError: '',
+		// The one launch checklist (spec 118): null until read, `false` when it could not be.
+		readiness: null,
+		// What the mode form answered, when the launch step's Go live came back here.
+		launchStatus: '',
 	};
 
 	function escape( s ) {
 		const d = document.createElement( 'div' );
 		d.textContent = s === null || s === undefined ? '' : String( s );
-		return d.innerHTML;
+		// It writes attribute values too, where a quote would end the attribute.
+		return d.innerHTML.replace( /"/g, '&quot;' ).replace( /'/g, '&#39;' );
 	}
 
 	/**
@@ -286,6 +291,15 @@
 			return backupStep();
 		}
 		if ( key === 'apply' ) {
+			if ( state.applied && ! state.applied.applied ) {
+				// Some page could not be written: the kit is not recorded as applied (spec 118).
+				return failure(
+					__(
+						'The plan was applied in part: some pages could not be written, so the kit is not marked applied. Check the pages, then apply again.',
+						'corex'
+					)
+				);
+			}
 			if ( state.applied ) {
 				return `<p class="corex-setup__ok">${ escape(
 					__( 'Applied.', 'corex' )
@@ -304,24 +318,196 @@
 			);
 		}
 		if ( key === 'launch' ) {
+			return launchStep();
+		}
+		return doneStep();
+	}
+
+	/**
+	 * What the mode form answered, said on the step it came back to.
+	 *
+	 * @return {string} The notice's HTML, or ''.
+	 */
+	function launchNotice() {
+		const messages = {
+			saved: __( 'The site is now in Production.', 'corex' ),
+			unchanged: __( 'The site was already in Production.', 'corex' ),
+			production_confirm: __(
+				'Going live needs the confirmation phrase. Type it and try again.',
+				'corex'
+			),
+			blocked: __(
+				'Going live was refused: checks still block it. Resolve them, or confirm the override.',
+				'corex'
+			),
+		};
+		const message = messages[ state.launchStatus ];
+		if ( ! message ) {
+			return '';
+		}
+		return [ 'saved', 'unchanged' ].includes( state.launchStatus )
+			? `<p class="corex-setup__ok" role="status">${ escape(
+					message
+				) }</p>`
+			: failure( message );
+	}
+
+	/**
+	 * The launch step (spec 118, US-WIZ-06): the one launch checklist, in its two groups, each check
+	 * in the same words as the Operations screen; and, while the site is not live, Go live through
+	 * the Operations screen's own mode form, so it asks the same confirmation and writes the same
+	 * history row.
+	 *
+	 * @return {string} The step's HTML.
+	 */
+	function launchStep() {
+		if ( state.readiness === null ) {
+			return `<p class="corex-setup__muted" role="status">${ escape(
+				__( 'Reading the launch checklist…', 'corex' )
+			) }</p>`;
+		}
+		if ( state.readiness === false ) {
 			return (
-				`<p>${ escape(
-					__(
-						'Resolve launch blockers — indexing, debug output, email, security, and readiness — before going live.',
-						'corex'
-					)
-				) }</p>` +
-				`<p><a class="button" href="${ escape(
-					sectionUrl( 'corex-operations-security' )
-				) }">${ escape( __( 'Open Operations & Security', 'corex' ) ) }</a> ` +
-				`<a class="button" href="${ escape(
-					sectionUrl( 'corex-insights' )
-				) }">${ escape( __( 'Open Insights', 'corex' ) ) }</a></p>`
+				failure(
+					__( 'The launch checklist could not be read.', 'corex' )
+				) +
+				`<p><button type="button" class="button" id="corex-setup-readiness-retry">${ escape(
+					__( 'Retry', 'corex' )
+				) }</button></p>`
 			);
 		}
-		return `<p class="corex-setup__ok">${ escape(
-			__( 'Setup complete. Your site is ready to review.', 'corex' )
-		) }</p>`;
+		const list = state.readiness.checklist;
+		const groups = ( list.groups || [] )
+			.map(
+				( group ) =>
+					`<h3 class="corex-checklist__group-head"><span>${ escape(
+						group.title
+					) }</span><span class="corex-checklist__group-count">${ escape(
+						group.count
+					) }</span></h3>` +
+					`<ul class="corex-checklist">${ group.rows
+						.map( checklistRow )
+						.join( '' ) }</ul>`
+			)
+			.join( '' );
+
+		return (
+			launchNotice() +
+			`<p class="corex-setup__summary"><strong>${ escape(
+				list.count
+			) }</strong> · ${ escape( list.blockingText ) }</p>` +
+			groups +
+			goLive()
+		);
+	}
+
+	/**
+	 * One check, as the server draws it on the Hardening tab.
+	 *
+	 * @param {Object} row A checklist row.
+	 * @return {string} The row's HTML.
+	 */
+	function checklistRow( row ) {
+		const label = row.href
+			? `<a href="${ escape( row.href ) }">${ escape( row.label ) }</a>`
+			: escape( row.label );
+		return (
+			`<li class="corex-checklist__row is-${ escape(
+				row.chip
+			) }" data-check="${ escape( row.key ) }">` +
+			`<span class="corex-checklist__label">${ label }</span>` +
+			`<span class="corex-state-chip is-${ escape(
+				row.chip
+			) }"><span class="corex-state-chip__icon" aria-hidden="true"></span>${ escape(
+				row.word
+			) }</span>` +
+			`<span class="corex-checklist__note">${ escape(
+				row.note
+			) }</span></li>`
+		);
+	}
+
+	/**
+	 * Go live: the Operations screen's mode form, proposing Production with its phrase field.
+	 *
+	 * @return {string} The form's HTML, or '' once the site is live.
+	 */
+	function goLive() {
+		const { mode, goLive: form } = state.readiness;
+		if ( mode.production ) {
+			return `<p class="corex-setup__ok">${ escape(
+				__( 'The site is live.', 'corex' )
+			) }</p>`;
+		}
+		return (
+			`<form class="corex-setup__golive" method="post" action="${ escape(
+				form.url
+			) }">` +
+			`<input type="hidden" name="action" value="${ escape(
+				form.action
+			) }" />` +
+			`<input type="hidden" name="${ escape(
+				form.nonceField
+			) }" value="${ escape( form.nonce ) }" />` +
+			`<input type="hidden" name="corex_mode" value="${ escape(
+				form.mode
+			) }" />` +
+			`<input type="hidden" name="corex_return" value="${ escape(
+				form.return
+			) }" />` +
+			`<label for="corex-setup-golive-phrase">${ escape(
+				__( 'To go live, type the confirmation phrase', 'corex' )
+			) } <code>${ escape( form.phrase ) }</code></label>` +
+			`<input type="text" id="corex-setup-golive-phrase" name="corex_confirm_phrase" autocomplete="off" />` +
+			`<p><button type="submit" class="button button-primary">${ escape(
+				__( 'Go live', 'corex' )
+			) }</button></p></form>`
+		);
+	}
+
+	/**
+	 * The Done step says what is left, or that the site is live; never "ready" while a check
+	 * blocks going live (spec 118, US-WIZ-06).
+	 *
+	 * @return {string} The step's HTML.
+	 */
+	function doneStep() {
+		if ( ! state.readiness ) {
+			return (
+				launchNotice() +
+				`<p class="corex-setup__muted">${ escape(
+					__(
+						'Setup is done. Open the launch checklist to see what is left before going live.',
+						'corex'
+					)
+				) }</p>`
+			);
+		}
+		const { checklist, mode } = state.readiness;
+		let text = checklist.blockingText;
+		if ( mode.production ) {
+			text = __( 'Setup is done and the site is live.', 'corex' );
+		}
+		return (
+			launchNotice() +
+			`<p class="${
+				checklist.blocking > 0 ? 'corex-setup__warn' : 'corex-setup__ok'
+			}">${ escape( text ) }</p>` +
+			`<p><a class="button" href="${ escape(
+				sectionUrl( 'corex-operations-security' )
+			) }&amp;tab=environment">${ escape(
+				__( 'Open Operations & Security', 'corex' )
+			) }</a></p>`
+		);
+	}
+
+	/** Reads the launch checklist, then draws the step again. */
+	function loadReadiness() {
+		state.readiness = null;
+		return api.get( readinessUrl, { nonce } ).then( ( res ) => {
+			state.readiness = res.envelope.ok ? res.envelope.data : false;
+			render();
+		} );
 	}
 
 	function render() {
@@ -385,6 +571,13 @@
 		if ( apply ) {
 			apply.addEventListener( 'click', doApply );
 		}
+		const retry = root.querySelector( '#corex-setup-readiness-retry' );
+		if ( retry ) {
+			retry.addEventListener( 'click', () => {
+				showWorking( retry );
+				loadReadiness();
+			} );
+		}
 	}
 
 	/**
@@ -433,6 +626,14 @@
 		}
 		state.index = Math.max( 0, Math.min( STEPS.length - 1, index ) );
 		render();
+		if ( needsReadiness() ) {
+			loadReadiness();
+		}
+	}
+
+	/** The launch and Done steps read the checklist each time they are entered. */
+	function needsReadiness() {
+		return [ 'launch', 'done' ].includes( STEPS[ state.index ] );
 	}
 
 	function doApply() {
@@ -494,6 +695,17 @@
 		state.config = res.envelope.data.config;
 		state.progress = res.envelope.data.progress;
 		state.kit = ( state.config.kits[ 0 ] || {} ).name || '';
+		// Back from the launch step's Go live: open on the step the mode form sent it to, with
+		// what it answered (spec 118).
+		const back = new URL( window.location.href ).searchParams;
+		const step = STEPS.indexOf( back.get( 'corex_step' ) || '' );
+		if ( step >= 0 ) {
+			state.index = step;
+			state.launchStatus = back.get( 'corex_status' ) || '';
+		}
 		render();
+		if ( needsReadiness() ) {
+			loadReadiness();
+		}
 	} );
 } )( window.wp, window.corexSetup );

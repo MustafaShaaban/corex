@@ -10,6 +10,8 @@ namespace Corex\Captcha;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
 use Corex\Support\Config\ConfigInterface;
 use WP_REST_Request;
@@ -18,15 +20,17 @@ use WP_REST_Response;
 /**
  * The "Test verification" REST action for the captcha card (spec 044, US2). Runs a probe
  * against the configured provider and answers with the spec-043 envelope classified by
- * {@see CaptchaDiagnostic}. `manage_options` + a REST nonce gate it (Principle VII); the
+ * {@see CaptchaDiagnostic}. "Manage settings" + a REST nonce gate it (Principle VII); the
  * secret is used only in the outbound probe and **never** appears in the response (FR-008).
  */
 final class CaptchaTestController
 {
     private const PROBE_TOKEN = 'corex-captcha-test-token';
 
-    public function __construct(private readonly ConfigInterface $config)
-    {
+    public function __construct(
+        private readonly ConfigInterface $config,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
+    ) {
     }
 
     public function register(): void
@@ -45,7 +49,8 @@ final class CaptchaTestController
 
     public function canRun(WP_REST_Request $request): bool
     {
-        return current_user_can('manage_options')
+        // The test belongs to Settings, so it asks for Settings' ability (spec 117, FR-002).
+        return $this->abilities->allows(CorexAbility::MANAGE_SETTINGS, 'corex-settings-config')
             && wp_verify_nonce((string) $request->get_header('X-WP-Nonce'), 'wp_rest') !== false;
     }
 
@@ -53,9 +58,18 @@ final class CaptchaTestController
     {
         $diagnostic = $this->diagnose();
 
+        // Remembered by Settings, which says "Last test failed on <date>: <reason>" until a later
+        // test passes or a key changes (spec 119, US-SET-03). Only whether it worked and why not
+        // are handed over; no key is.
+        $status = '';
+        if ($diagnostic->kind !== CaptchaDiagnostic::NOT_APPLICABLE) {
+            do_action('corex_provider_tested', 'captcha', $diagnostic->worked(), $diagnostic->reason());
+            $status = (string) apply_filters('corex_provider_test_status', '', 'captcha');
+        }
+
         $envelope = $diagnostic->kind === CaptchaDiagnostic::OK || $diagnostic->kind === CaptchaDiagnostic::NOT_APPLICABLE
-            ? ResponseEnvelope::success(['kind' => $diagnostic->kind], $diagnostic->message)
-            : ResponseEnvelope::error($diagnostic->kind, $diagnostic->message);
+            ? ResponseEnvelope::success(['kind' => $diagnostic->kind, 'status' => $status], $diagnostic->message)
+            : ResponseEnvelope::error($diagnostic->kind, $diagnostic->message, ['status' => $status]);
 
         return new WP_REST_Response($envelope->toArray(), $envelope->ok ? 200 : 400);
     }

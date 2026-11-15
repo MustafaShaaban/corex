@@ -38,16 +38,16 @@ authoritative documents rather than restating their rules — read those; this p
 ## How work flows here (the one-paragraph version)
 
 Corex is **spec-first**: nothing is built without a spec. You pick up the next item from `PROGRESS.md`, open a
-spec with Spec Kit, build it test-first, run the Guard Gate on your diff, and open a PR into `develop` that must
-pass CI. The full loop is in [The Spec Kit loop](./spec-kit.md); the rules each step enforces are in
+spec through the CoreX loop, build it test-first, run the Guard Gate on your diff, and open a PR into `develop` that must
+pass CI. The full loop is in [The CoreX loop](./spec-kit.md); the rules each step enforces are in
 [Branching & commits](./branching-and-commits.md) and [Quality gates](./quality-gates.md).
 
 ## Your first change
 
 1. Read [Branching & commits](./branching-and-commits.md) and [Quality gates](./quality-gates.md).
 2. Start from the smallest real task in [`PROGRESS.md`](../../../PROGRESS.md) → "Next".
-3. If it touches new behaviour, open a spec first (see [The Spec Kit loop](./spec-kit.md)).
-4. Run `git status --short --branch`, branch off `develop`, and claim your spec path, task IDs, and files owned.
+3. If it touches new behaviour, open a spec first (see [The CoreX loop](./spec-kit.md)).
+4. Run `git status --short --branch`, branch off `develop`, and claim your spec path, slice, and files owned.
 5. Build it test-first, run the guard, record the handoff evidence, and open a PR.
 
 ## See also

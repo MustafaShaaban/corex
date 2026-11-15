@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\DataModels;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\StandalonePage;
 use Corex\Config\Data\DataRegistry;
 use Corex\Security\Admin\AdminGuard;
@@ -47,7 +48,7 @@ final class DataModelsImportController
 
     public function handle(): void
     {
-        if (! $this->guard->verifiedPost(self::NONCE, self::ACTION)) {
+        if (! $this->guard->verifiedPost(self::NONCE, self::ACTION, CorexAbility::MANAGE_DATA_MODELS, 'corex-data-models')) {
             status_header(403);
             nocache_headers();
             header('Content-Type: text/html; charset=' . get_bloginfo('charset'));

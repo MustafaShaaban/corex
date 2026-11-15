@@ -15,6 +15,12 @@ panel, a regeneration command, and an optimized `<picture>` helper.
   the minimum-saving threshold — default 5%, configurable); otherwise the original is delivered. Tracked per
   attachment in `_corex_webp` meta (paths/bytes/saving/dimensions/quality/source-hash/generated-at +
   `active_for_delivery` + `inactive_reason`).
+- **Convert existing library** (spec 119) — on **Corex → Settings → Media**, for sites with no command line: starts
+  the bounded job below, shows converted / skipped / failed of the total while the page is open and again when it is
+  reopened (WP-Cron carries on when it is closed), can be cancelled, runs one at a time, lists the files that failed
+  with the reason, and records its start, cancellation and end in the activity log. Routes: `GET`/`POST
+  corex/v1/media/conversion`, `POST …/advance`, `POST …/cancel` (`manage_options` + REST nonce). Unavailable, with
+  the reason, while conversion is off or the server cannot write WebP.
 - **Regeneration** — `wp corex media regenerate-webp [--dry-run] [--limit=<n>] [--attachment=<id>]` backfills WebP
   siblings for existing uploads (also tracked + gated). It never deletes/overwrites originals, skips attachments
   that already have a sibling, respects the current settings, and reports convert/skipped/converted/failed counts.

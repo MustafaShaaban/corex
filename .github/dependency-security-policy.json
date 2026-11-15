@@ -68,6 +68,23 @@
       "upstreamTrigger": "Remove together with the three simple-git exceptions: it leaves the tree with simple-git 3. Remove when @wordpress/env publishes a release that depends on simple-git 4.0.1 or later; a lockfile update then takes it with no override. Re-argue instead of renewing if wp-env.json gains a source whose URL or ref is not written in this repository, or if a CI workflow starts using wp-env: either would end the reasoning above.",
       "range": "<2.0.1",
       "url": "https://github.com/advisories/GHSA-v5rq-49vh-5v5c"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-gcqx-w48m-w2h4",
+      "package": "deepmerge",
+      "paths": [
+        "node_modules/deepmerge"
+      ],
+      "severityCeiling": "low",
+      "exposure": "build-test-transitive",
+      "reason": "Published 2026-09-18: mergeObject() does not check the keys it writes, so a source object with a `__proto__` key can set properties on the prototype of the object deepmerge returns (not on Object.prototype). deepmerge 4.3.1 is installed, it is the latest release, and the advisory names no patched version, so there is nothing to override to. Four packages ask for ^4.3.1: jest-config 30.5.2 (merging Jest configuration), @svgr/plugin-svgo 8.1.0 (it declares deepmerge, but its built code does not load it), @wordpress/components 42.0.0 (a dependency of plugins/corex-config) and @wordpress/data 10.57.0 (through @wordpress/rich-text).",
+      "control": "The defect needs a source object somebody else chose. The one consumer that calls it in this tree is Jest, which merges configuration written in this repository with its defaults (jest-config `mergeConfig`), so the only way to feed it a hostile object is a commit to this repository, which can already run any code in the same job. @wordpress/components and @wordpress/data are never bundled: the build maps them to WordPress's own `wp-components` and `wp-data` scripts (plugins/corex-config/build declares `wp-components` in its asset file), and none of the 169 files under the workspaces' build/ directories contains deepmerge (checked 2026-11-10). What a site runs is the copy WordPress itself ships, which this lockfile does not choose. No file in plugins/, addons/, packages/, theme/, scripts/ or tests/ imports deepmerge.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2027-01-31",
+      "upstreamTrigger": "Remove when deepmerge publishes a fixed release (every parent asks for ^4.3.1, so a lockfile update takes it with no override), or when GitHub withdraws the advisory. Re-argue instead of renewing if any file under a build/ directory comes to contain deepmerge, or if code in this repository starts calling deepmerge, or a package that wraps it, with input from a request, an upload or a stored option.",
+      "range": ">=4.2.0 <=4.3.1",
+      "url": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4"
     }
   ]
 }

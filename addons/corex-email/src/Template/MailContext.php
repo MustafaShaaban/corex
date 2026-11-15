@@ -40,4 +40,30 @@ final class MailContext
 
         return is_scalar($value) ? (string) $value : $default;
     }
+
+    /**
+     * A list of records under a path, each with its scalar fields as text: a submission's answers
+     * (spec 120). Anything that is not such a list answers none.
+     *
+     * @return list<array<string,string>>
+     */
+    public function rows(string $path): array
+    {
+        $value = $this->data;
+        foreach (explode('.', $path) as $segment) {
+            if (! is_array($value) || ! array_key_exists($segment, $value)) {
+                return [];
+            }
+            $value = $value[$segment];
+        }
+
+        $rows = [];
+        foreach (is_array($value) ? $value : [] as $row) {
+            if (is_array($row)) {
+                $rows[] = array_map('strval', array_filter($row, 'is_scalar'));
+            }
+        }
+
+        return $rows;
+    }
 }

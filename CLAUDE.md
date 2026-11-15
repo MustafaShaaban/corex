@@ -2,7 +2,7 @@
 
 You are working on **Corex**, a professional, Laravel-inspired WordPress framework.
 Namespace `Corex\`, CLI `wp corex`, CSS prefix `--corex-`. Target: WordPress 7.0+,
-PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
+PHP 8.3+, FSE block themes. Built spec-first (the CoreX loop, below).
 
 ## BEFORE doing anything
 1. Read `specs/constitution.md` — the non-negotiable rules. They override everything.
@@ -22,7 +22,7 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Claude Code-flavoured mirror and must not diverge from it on anything but tooling.
 
 ## Role Gate — classify the session BEFORE editing (spec 061)
-> Role Gate decides **where** you work · Spec Kit decides **what** · Guard Gate decides **whether it is safe to
+> Role Gate decides **where** you work · the spec decides **what** · Guard Gate decides **whether it is safe to
 > ship** · UI/UX ProMax decides **whether visible UI is good enough**.
 
 Pick one mode and stay in it (full detail: docs/internal/COREX-WORKING-GUIDE.md §F; copy/paste prompts:
@@ -43,7 +43,7 @@ End every response with the required SUMMARY/…/NEXT STEP handoff format (see A
   **stop and report** if you are on the wrong branch, in the wrong checkout, or see uncommitted changes you did not
   create. The active PR branch is the working source of truth — continue from its latest pushed commit; never
   recreate completed work. Push only to that branch while its PR is open.
-- Claim branch, spec path, task IDs, and owned files before changing code. Do not edit files owned by another
+- Claim branch, spec path, slice, and owned files before changing code. Do not edit files owned by another
   active agent unless the handoff explicitly transfers them.
 - Follow the constitution exactly. If a request conflicts with it, say so rather than comply.
 - Use the `wp corex make:*` generators (once built) rather than hand-writing boilerplate.
@@ -61,11 +61,50 @@ End every response with the required SUMMARY/…/NEXT STEP handoff format (see A
   - test code → `test-guard`   ·   docs/README/docstrings → `docs-guard`
 - Write tests (Pest unit, Jest for JS blocks, Playwright E2E). i18n-ready, RTL-verified, WCAG 2.2 AA.
 - Update `PROGRESS.md`; log any non-trivial decision in `DECISIONS.md`.
-- For multi-agent work, final reports and handoffs must name the branch, spec path, completed task IDs,
+- For multi-agent work, final reports and handoffs must name the branch, spec path, completed slices,
   files owned, verification commands/results, guard status, and any files being released for another agent.
 - **End every response with a NEXT STEP block** (format in docs/internal/COREX-WORKING-GUIDE.md §A.3 / constitution).
 
-## Spec Kit workflow (commands are namespaced `speckit-*`)
-`/speckit-constitution` → `/speckit-specify` → `/speckit-clarify` → `/speckit-plan`
-→ `/speckit-tasks` → `/speckit-implement`. Write the spec before the code; review between tasks.
-Module build order: see `docs/internal/COREX-SPECKIT-START.md` ("The rhythm from here").
+## The CoreX loop (constitution v2.0.0, DECISIONS #621)
+Grill (`grill-with-docs`) → research if needed (`research`) → spec with slices in `specs/NNN-name/spec.md`
+→ owner-only steps as a checked script (`wizard`) → one slice at a time, test first (`tdd`; bugs start
+with `diagnosing-bugs`) → Guard Gate → two-model review (`debate-review --local`) → PR (`pr`, then
+`babysit-pr` for review rounds) → `retro` after a release. Anything a person sees is also designed first in
+Claude Design on the CoreX design system, approved, built with `ui-ux-pro-max`, measured in the browser and
+reviewed against the design (`AGENTS.md`, "UI, UX and front end"): required, not optional. Each step in full: `AGENTS.md`, "The CoreX
+loop". The `/speckit-*` commands are retired; a spec that already has a `tasks.md` may finish from it.
+What to build next: `PROGRESS.md` ("Next") and `ROADMAP.md`.
+
+## Models, effort and agents (Claude Code tooling)
+This table is the instruction the Agent tool's `model` and `effort` settings need: use it, do not pick
+by feel. Max effort only when the owner asks for it, for one task.
+
+| Work | Who | Model | Effort |
+|---|---|---|---|
+| Grilling, specs, architecture, final judgment on a diff | the main session | Fable | high |
+| Designs and the CoreX design system in Claude Design | the main session | Fable | high |
+| Building a slice (`tdd`), fixing a diagnosed bug | `corex-builder` agent | Opus | medium (high for a bug or a UI slice) |
+| Tests, fixtures, lockfile and docs chores | `corex-tester` agent | Sonnet | medium |
+| Searching and reading across the repo | `corex-scout` agent | Haiku | low |
+| Reviewing a diff against its spec and the constitution | `corex-reviewer` agent | Fable | high |
+| Comparing a rendered screen with its approved design, measured | `corex-ui-reviewer` agent | Fable | high |
+| The recorded round for the owner (`ui-review-loop`), one per UI slice | `corex-tester` agent | Sonnet | medium |
+| The second, other-vendor review | `debate-review`'s `review-debate` lane | Codex | high |
+
+- The five agents are in `.claude/agents/`. Each brief names the spec, the slice, the files the agent
+  owns, and the gate commands, because an agent does not see this conversation.
+- **Builders work in the root checkout, one at a time per set of files.** Two builders run together only
+  when their files do not overlap. No worktrees without the owner's approval (§A.7 still holds).
+- The orchestrator reads every diff an agent leaves, runs the guards, and commits. Agents never commit.
+- The main session can be switched between Fable and Opus from the app's model picker; long routine
+  stretches (merging main into branches, release chores) run on Opus.
+
+## Agent skills
+### Issue tracker
+GitHub Issues on `MustafaShaaban/corex`. See `docs/agents/issue-tracker.md`.
+### Triage labels
+The five default roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`).
+See `docs/agents/triage-labels.md`.
+### Domain docs
+Single-context, in CoreX's own files: `docs/_glossary.md` and `DECISIONS.md`, never a new
+`GLOSSARY.md` or `docs/adr/`. See `docs/agents/domain.md`.

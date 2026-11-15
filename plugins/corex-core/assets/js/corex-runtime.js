@@ -735,6 +735,42 @@
 		return body;
 	}
 
+	/**
+	 * A flow that stopped taking answers after the page was loaded (spec 122, US-VIS-01): the
+	 * notice the page would now show, drawn above the form, whose answers stay as they are.
+	 * Built from text, never from markup the server sent.
+	 *
+	 * @param {HTMLFormElement} form   The form that was sent.
+	 * @param {Object}          notice `{ title, message, alternative: { type, label, url } }`.
+	 */
+	function showClosedNotice( form, notice ) {
+		const holder = form.parentNode;
+		if ( ! holder || holder.querySelector( '.corex-flow-notice' ) ) {
+			return;
+		}
+		const panel = document.createElement( 'div' );
+		panel.className = 'corex-flow-notice';
+		const title = document.createElement( 'p' );
+		title.className = 'corex-flow-notice__title';
+		title.textContent = notice.title || '';
+		const message = document.createElement( 'p' );
+		message.className = 'corex-flow-notice__message';
+		message.textContent = notice.message || '';
+		panel.appendChild( title );
+		panel.appendChild( message );
+		const alternative = notice.alternative || {};
+		if ( /^(https?:|mailto:)/i.test( alternative.url || '' ) ) {
+			const line = document.createElement( 'p' );
+			line.className = 'corex-flow-notice__alternative';
+			const link = document.createElement( 'a' );
+			link.href = alternative.url;
+			link.textContent = alternative.label || alternative.url;
+			line.appendChild( link );
+			panel.appendChild( line );
+		}
+		holder.insertBefore( panel, form );
+	}
+
 	function submit( form ) {
 		if ( form.dataset.corexBusy === '1' ) {
 			return; // dedupe concurrent submits
@@ -759,6 +795,13 @@
 			}
 			if ( envelope.errors ) {
 				showErrors( form, envelope.errors );
+			}
+			if (
+				envelope.code === 'flow_closed' &&
+				envelope.details &&
+				envelope.details.notice
+			) {
+				showClosedNotice( form, envelope.details.notice );
 			}
 			notices.status(
 				form,

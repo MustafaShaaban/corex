@@ -27,10 +27,27 @@ defined('ABSPATH') || exit;
  * An mu-plugin so it is active with no activation step. How the fixtures reach an install is in
  * tests/e2e/playwright.config.js.
  */
-add_filter('pre_wp_mail', static function (mixed $answered, mixed $email): mixed {
-    $asked = isset($_SERVER['HTTP_X_COREX_E2E_RESET_MAIL'])
+/**
+ * The header asked for, or ''.
+ */
+function corex_e2e_reset_mail_tag(): string
+{
+    return isset($_SERVER['HTTP_X_COREX_E2E_RESET_MAIL'])
         ? sanitize_key(wp_unslash((string) $_SERVER['HTTP_X_COREX_E2E_RESET_MAIL']))
         : '';
+}
+
+/*
+ * The account emails CoreX draws (spec 120) go through CoreX's mailer, which keeps them on a
+ * development site before they reach `wp_mail()`. For such a request the site answers as
+ * production, so that they reach `wp_mail()` and are kept here; nothing leaves all the same.
+ */
+if (corex_e2e_reset_mail_tag() !== '') {
+    add_filter('pre_option_corex_app_env', static fn (): string => 'production');
+}
+
+add_filter('pre_wp_mail', static function (mixed $answered, mixed $email): mixed {
+    $asked = corex_e2e_reset_mail_tag();
     if ($asked === '' || ! is_array($email)) {
         return $answered;
     }

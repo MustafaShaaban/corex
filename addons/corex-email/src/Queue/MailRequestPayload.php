@@ -36,6 +36,7 @@ final class MailRequestPayload
             'attachments'  => $request->attachments,
             'requestId'    => $request->requestId,
             'parentAttemptId' => $request->parentAttemptId,
+            'plainText'    => $request->plainText,
         ];
     }
 
@@ -55,6 +56,7 @@ final class MailRequestPayload
             attachments: is_array($payload['attachments'] ?? null) ? $payload['attachments'] : [],
             requestId: isset($payload['requestId']) ? (string) $payload['requestId'] : null,
             parentAttemptId: isset($payload['parentAttemptId']) ? (string) $payload['parentAttemptId'] : null,
+            plainText: isset($payload['plainText']) ? (string) $payload['plainText'] : null,
         );
     }
 }

@@ -284,10 +284,17 @@
 }
 
 @media (max-width: 720px) { /* corex-token-allow: responsive breakpoint */
-	.corex-admin .corex-blog-pro__card li,
-	.corex-admin .corex-blog-pro__list li,
 	.corex-admin .corex-blog-pro__card dl {
 		display: block;
+	}
+
+	/* A row keeps its two parts apart and moves the second to a line of
+	   its own when they do not fit. As a block, the parts ran together
+	   ("admin1 published post") and, at 200% text, the count's wrapped
+	   lines lay over the name. */
+	.corex-admin .corex-blog-pro__card li,
+	.corex-admin .corex-blog-pro__list li {
+		flex-wrap: wrap;
 	}
 
 	.corex-admin .corex-blog-pro__refresh {

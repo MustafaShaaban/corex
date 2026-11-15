@@ -58,7 +58,7 @@ These are valid commercial candidates because they are advanced, vertical, or au
 ## Deferred and out of scope
 
 Deferred items are valid ideas that are not required before the first company sites. Out-of-scope items are not part
-of the current readiness spec. Do not convert either into product code without a new or updated Spec Kit feature.
+of the current readiness spec. Do not convert either into product code without a new or updated spec.
 
 ## Verification
 

@@ -19,4 +19,11 @@ interface SubmissionInboxReader
 
     /** @return array<string,mixed>|null */
     public function findInbox(int $id, SubmissionAccessScope $scope): ?array;
+
+    /**
+     * The IDs of the flows whose submissions the scope reaches (spec 122, FR-013).
+     *
+     * @return list<int>
+     */
+    public function flowIdsIn(SubmissionAccessScope $scope): array;
 }

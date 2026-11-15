@@ -207,8 +207,17 @@ export function PartialPanel( { partials, busy, onSave, onInsert } ) {
 	);
 }
 
-export function VariablesPanel( { catalog, onInsert } ) {
-	if ( Object.keys( catalog ).length === 0 ) {
+/**
+ * The variables a template can use, by the emails that supply them, each with the sample the
+ * preview fills it with (spec 120, story 5).
+ *
+ * @param {Object}   props
+ * @param {Object[]} props.groups   Each `{ key, label, variables: [{ key, label, sample }] }`.
+ * @param {Function} props.onInsert Puts one in the template.
+ * @return {Element} The panel.
+ */
+export function VariablesPanel( { groups, onInsert } ) {
+	if ( groups.length === 0 ) {
 		return (
 			<section className="corex-surface corex-email-app__table-card">
 				<h2>{ __( 'Variables', 'corex' ) }</h2>
@@ -221,37 +230,51 @@ export function VariablesPanel( { catalog, onInsert } ) {
 
 	return (
 		<div className="corex-email-app__stack">
-			{ Object.entries( catalog ).map( ( [ group, variables ] ) => (
+			<p className="corex-email-app__variables-note">
+				{ __(
+					'A form email also has each of its fields as {{ submission.<field> }}, by the field’s key. A variable an email does not supply is left out when it is sent, and named in its log entry.',
+					'corex'
+				) }
+			</p>
+			{ groups.map( ( group ) => (
 				<section
-					key={ group }
+					key={ group.key }
 					className="corex-surface corex-email-app__table-card"
+					aria-labelledby={ `corex-email-variables-${ group.key }` }
 				>
-					<h2>{ group }</h2>
+					<h2 id={ `corex-email-variables-${ group.key }` }>
+						{ group.label }
+					</h2>
 					<ul className="corex-email-app__variables">
-						{ Object.entries( variables ).map(
-							( [ key, definition ] ) => (
-								<li key={ key }>
-									<div>
-										<strong>{ definition.label }</strong>
-										<code>{ `{{ ${ key } }}` }</code>
-									</div>
-									<button
-										type="button"
-										className="button"
-										aria-label={ sprintf(
-											/* translators: %s: Email variable key. */ __(
-												'Insert %s in template',
-												'corex'
-											),
-											key
+						{ group.variables.map( ( variable ) => (
+							<li key={ variable.key }>
+								<div>
+									<strong>{ variable.label }</strong>
+									<code>{ `{{ ${ variable.key } }}` }</code>
+									<span className="corex-email-app__variable-sample">
+										{ sprintf(
+											/* translators: %s: the value the preview fills a variable with. */
+											__( 'Sample: %s', 'corex' ),
+											variable.sample
 										) }
-										onClick={ () => onInsert( key ) }
-									>
-										{ __( 'Insert in template', 'corex' ) }
-									</button>
-								</li>
-							)
-						) }
+									</span>
+								</div>
+								<button
+									type="button"
+									className="button"
+									aria-label={ sprintf(
+										/* translators: %s: Email variable key. */ __(
+											'Insert %s in template',
+											'corex'
+										),
+										variable.key
+									) }
+									onClick={ () => onInsert( variable.key ) }
+								>
+									{ __( 'Insert in template', 'corex' ) }
+								</button>
+							</li>
+						) ) }
 					</ul>
 				</section>
 			) ) }

@@ -22,10 +22,12 @@ interface MediaRegenerationSource
     public function total(): int;
 
     /**
-     * Convert one bounded batch and report how many succeeded and failed. Skipped attachments
-     * (already have a sibling, or unsupported) count as neither — they are not failures.
+     * Convert one bounded batch and report how many succeeded and failed, and each failure by file
+     * name with the reason (spec 119). Skipped attachments (already have a sibling, or
+     * unsupported) count as neither — they are not failures, except a sibling this run wrote
+     * since `$since` in a step that was stopped before it could count it, which counts as converted.
      *
-     * @return array{succeeded:int,failed:int}
+     * @return array{succeeded:int,failed:int,failures?:list<array{file:string,reason:string}>}
      */
-    public function convertBatch(int $offset, int $limit): array;
+    public function convertBatch(int $offset, int $limit, ?\DateTimeImmutable $since = null): array;
 }

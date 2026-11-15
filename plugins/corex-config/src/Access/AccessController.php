@@ -10,6 +10,8 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AbilityCheck;
+use Corex\Access\AbilityNames;
 use Corex\Access\CorexAbility;
 use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\InvalidAccessInput;
@@ -41,6 +43,7 @@ final class AccessController
         private readonly PendingAccessRequests $pending,
         private readonly AccessGrantService $grants,
         private readonly AccessGrantPresenter $presenter,
+        private readonly AbilityCheck $abilities = new AbilityCheck(),
     ) {
     }
 
@@ -103,9 +106,10 @@ final class AccessController
         ]);
     }
 
+    /** The Access screen's own ability (spec 117, FR-002). */
     public function allowed(WP_REST_Request $request): bool
     {
-        return $this->hasNonce($request) && current_user_can('manage_options');
+        return $this->hasNonce($request) && $this->abilities->allows(CorexAbility::MANAGE_ACCESS, 'corex-access');
     }
 
     public function requestAllowed(WP_REST_Request $request): bool
@@ -378,10 +382,13 @@ final class AccessController
     /** @return array<string,mixed> */
     private function ability(CorexAbility $ability): array
     {
+        // Names in the site's language; the key stays for developers (spec 117, US-ACC-05).
         return [
             'key' => $ability->key,
-            'label' => $ability->label,
+            'label' => AbilityNames::labelOf($ability),
+            'description' => AbilityNames::descriptionOf($ability),
             'group' => $ability->group,
+            'group_label' => AbilityNames::area($ability->group),
             'risk' => $ability->risk,
             'locked' => $ability->locked,
         ];

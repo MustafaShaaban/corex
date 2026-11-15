@@ -337,7 +337,13 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Access\RequestableAbilities::class),
                 $c->has(\Corex\Mail\RoutedMailer::class) ? $c->make(\Corex\Mail\RoutedMailer::class) : null,
                 $c->make(\Corex\Events\EventDispatcher::class),
+                $c->make(\Corex\Access\SiteAdministration::class),
             ),
+        );
+        // Which roles administer the site: their members hold every CoreX ability (spec 117, ACC-D11).
+        $this->container->singleton(
+            \Corex\Access\SiteAdministration::class,
+            static fn (): \Corex\Access\SiteAdministration => new \Corex\Config\Access\WpSiteAdministration(),
         );
         $this->container->singleton(AbilityCompatibility::class);
         $this->container->singleton(RolePluginCompatibility::class);
@@ -408,21 +414,24 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(JobRunner::class);
         $this->container->singleton(JobController::class);
 
-        // The Overview dashboard renderer (spec 064): the single cohesive readiness grid built from real
-        // state. Optional forms/provisioning deps resolve lazily via the container (Principle IX).
+        // The Overview (spec 064, cards since spec 118): each card reads its own facts and is drawn on
+        // its own. Optional forms/provisioning deps resolve lazily inside the cards (Principle IX).
+        // Built when the Overview is drawn, so a card that cannot even be built fails as its card.
         $this->container->singleton(
             \Corex\Config\Overview\OverviewRenderer::class,
             static fn (ContainerInterface $c): \Corex\Config\Overview\OverviewRenderer => new \Corex\Config\Overview\OverviewRenderer(
-                new \Corex\Config\Overview\OverviewModel(),
                 $c->make(\Corex\Config\Operations\OperationsMode::class),
                 $c->make(\Corex\Config\Operations\OperationsModeStore::class),
-                $c->make(\Corex\Config\Overview\OverviewFacts::class),
-                $c->make(\Corex\Config\Security\HardeningChecks::class),
-                $c->make(\Corex\Config\Data\SubmissionsReader::class),
-                $c->make(\Corex\Config\Data\DataRegistry::class),
-                $c->make(\Corex\Config\Addons\AddonRegistry::class),
-                $c,
-                $c->make(\Corex\Multisite\PluginActivationInspector::class),
+                $c->make(\Corex\Config\Overview\OverviewCardFailure::class),
+                [
+                    'tiles'        => $c->make(\Corex\Config\Overview\Cards\TilesCard::class),
+                    'readiness'    => $c->make(\Corex\Config\Overview\Cards\ReadinessCard::class),
+                    'forms'        => $c->make(\Corex\Config\Overview\Cards\FormsCard::class),
+                    'data'         => $c->make(\Corex\Config\Overview\Cards\DataSourcesCard::class),
+                    'attention'    => $c->make(\Corex\Config\Overview\Cards\AttentionCard::class),
+                    'integrations' => $c->make(\Corex\Config\Overview\Cards\IntegrationsCard::class),
+                    'activity'     => $c->make(\Corex\Config\Overview\Cards\ActivityCard::class),
+                ],
             ),
         );
 
@@ -529,6 +538,15 @@ final class ConfigServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(AdminDashboard::class);
+        // The Settings pages and what they read and write (spec 119): one of each per request, so
+        // a page, its save and the provider states all read the same answers.
+        $this->container->singleton(\Corex\Config\Settings\SettingsPages::class);
+        $this->container->singleton(\Corex\Config\Settings\SettingsSectionStates::class);
+        $this->container->singleton(\Corex\Config\Settings\SettingsFieldValues::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderSetup::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestLog::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestService::class);
+        $this->container->singleton(\Corex\Config\Settings\ProviderTestController::class);
         $this->container->singleton(AddonsScreen::class);
 
         // Forms & Flows client mount; runtime activation remains dependency-gated.
@@ -773,6 +791,8 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c,
                 $c->make(\Corex\Config\Operations\OperationsMode::class),
                 $c->make(\Corex\Config\Activity\SecurityEventsSince::class),
+                $c->make(\Corex\Config\Activity\ActivitySentences::class),
+                $c->make(\Corex\Support\DateTime\AdminDateTime::class),
                 environment: $c->make(\Corex\Environment\SiteEnvironment::class),
             ));
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>
@@ -1144,6 +1164,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Admin\AdminPage::class),
                 $c->make(\Corex\Config\Email\TransportAdvisory::class),
                 $c->make(\Corex\Multisite\PluginActivationInspector::class),
+                $c->make(\Corex\Access\SiteAdministration::class),
             ),
         );
     }
@@ -1247,6 +1268,8 @@ final class ConfigServiceProvider extends ServiceProvider
         // first among them. They are printed under the page header instead.
         $this->container->make(ScreenNotices::class)->register();
         $this->container->make(AdminDashboard::class)->register();
+        $this->container->make(\Corex\Config\Settings\ProviderTestController::class)->register();
+        $this->container->make(\Corex\Config\Settings\ProviderTestService::class)->listen();
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();
         $this->container->make(SubmissionsInboxScreen::class)->register();
@@ -1294,7 +1317,6 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Notifications\NotificationsScreen::class)->register();
         $this->container->make(ReleasesScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
-        $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 
         add_action('rest_api_init', function (): void {
             $this->container->make(ActivityController::class)->register();
@@ -1305,6 +1327,8 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
             $this->container->make(\Corex\Config\Notifications\NotificationController::class)->register();
+            // The one launch checklist, for the Setup Wizard's launch step (spec 118).
+            $this->container->make(\Corex\Config\Readiness\ReadinessController::class)->register();
         });
     }
 

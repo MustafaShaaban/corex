@@ -11,10 +11,19 @@ namespace Corex\Forms\Submission;
 defined('ABSPATH') || exit;
 
 /**
- * Resolves comma-separated literal addresses or whitelisted context paths.
+ * Resolves comma-separated literal addresses, whitelisted context paths, and `routed_owner`.
  */
 final class FlowEmailAddressResolver
 {
+    /** The recipient "Routed owner": whoever the submission was routed to (spec 122, FR-017). */
+    public const ROUTED_OWNER = 'routed_owner';
+
+    /** Whether a mapping names the routed owner, so its delivery can carry the routing's note. */
+    public static function namesRoutedOwner(string $mapping): bool
+    {
+        return in_array(self::ROUTED_OWNER, array_map('trim', explode(',', $mapping)), true);
+    }
+
     /**
      * @param array<string,mixed> $context
      * @return list<string>
@@ -23,6 +32,10 @@ final class FlowEmailAddressResolver
     {
         $recipients = [];
         foreach (array_filter(array_map('trim', explode(',', $mapping))) as $token) {
+            if ($token === self::ROUTED_OWNER) {
+                array_push($recipients, ...$this->routedOwner($context));
+                continue;
+            }
             $address = $this->address($token, $context);
             if ($address !== null) {
                 $recipients[] = $address;
@@ -36,6 +49,22 @@ final class FlowEmailAddressResolver
     public function replyTo(string $mapping, array $context): ?string
     {
         return $this->recipients($mapping, $context)[0] ?? null;
+    }
+
+    /**
+     * The addresses the routing stage worked out for the routed owner.
+     *
+     * @param array<string,mixed> $context
+     * @return list<string>
+     */
+    private function routedOwner(array $context): array
+    {
+        $addresses = $context['routing']['recipients']['addresses'] ?? [];
+
+        return array_values(array_filter(
+            is_array($addresses) ? $addresses : [],
+            static fn (mixed $address): bool => is_string($address) && filter_var($address, FILTER_VALIDATE_EMAIL) !== false,
+        ));
     }
 
     /** @param array<string,mixed> $context */

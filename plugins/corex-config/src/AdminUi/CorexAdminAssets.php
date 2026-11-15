@@ -100,6 +100,9 @@ final class CorexAdminAssets
         // alongside the shell so a screen only has to mark the control, not wire up a script.
         wp_enqueue_script('corex-select');
 
+        // A screen opened read-only marks its content; this script marks the controls in it.
+        wp_enqueue_script('corex-read-only');
+
         // Enhances the shell header's notification bell with its drawer on every CoreX screen, in
         // its own small bundle so it mounts exactly once — independent of the per-screen product
         // apps that also load build/admin/index.js (spec 072 FR-016).

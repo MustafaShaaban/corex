@@ -45,6 +45,7 @@ final class PublishNotifier
                 to: [$subscriber['email']],
                 templateName: 'newsletter-notify',
                 context: [
+                    'email'             => $subscriber['email'],
                     'title'             => $title,
                     'url'               => $url,
                     'unsubscribe_token' => $this->subscriptions->unsubscribeToken($subscriber['email']),

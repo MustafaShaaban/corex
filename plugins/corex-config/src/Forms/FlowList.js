@@ -31,6 +31,7 @@ function stateLabel( state ) {
 	const labels = {
 		draft: __( 'Draft', 'corex' ),
 		published: __( 'Published', 'corex' ),
+		scheduled: __( 'Scheduled', 'corex' ),
 		closed: __( 'Closed', 'corex' ),
 		expired: __( 'Expired', 'corex' ),
 		registered: __( 'Registered', 'corex' ),
@@ -135,8 +136,12 @@ function RowSummary( { row } ) {
 					{ sourceLabel( row.source ) }
 				</span>
 			</span>
-			<span className={ `corex-flow-list__state is-${ row.state }` }>
-				{ stateLabel( row.state ) }
+			<span className="corex-flow-list__status">
+				<span className={ `corex-flow-list__state is-${ row.state }` }>
+					{ stateLabel( row.state ) }
+				</span>
+				{ /* Why a flow is not taking answers, in words (spec 122, FR-031). */ }
+				{ row.reason ? <small>{ row.reason }</small> : null }
 			</span>
 			<span>
 				{ sprintf(
@@ -159,7 +164,7 @@ function FlowRow( { row, busy, onSelect } ) {
 			>
 				<RowSummary row={ row } />
 				<span>
-					{ row.routingTarget || __( 'No fallback', 'corex' ) }
+					{ row.routingOwner || __( 'No fallback', 'corex' ) }
 				</span>
 				<CorexTime
 					value={ row.updatedAt }
@@ -297,6 +302,41 @@ function CodeFormRow( { row, submissionsUrl } ) {
 	);
 }
 
+/**
+ * What the update did to submissions that were assigned to nobody (spec 122, FR-014), said on the
+ * screen for a month after it ran.
+ *
+ * @param {Object}      props
+ * @param {Object|null} props.upgrade `{ moved, ran_at }`, or null.
+ * @return {import('react').ReactElement|null} The note.
+ */
+function UpgradeNote( { upgrade } ) {
+	const moved = Number( upgrade?.moved ) || 0;
+	const ranAt = Date.parse( upgrade?.ran_at || '' );
+	const month = 30 * 24 * 60 * 60 * 1000;
+	if ( moved < 1 || ! ranAt || Date.now() - ranAt > month ) {
+		return null;
+	}
+
+	return (
+		<p
+			className="corex-flows-app__notice corex-flow-list__upgrade"
+			role="status"
+		>
+			{ sprintf(
+				/* translators: %d: how many submissions were given to their form's owner. */
+				_n(
+					'%d submission that was assigned to nobody was given to its form’s owner when CoreX was updated. Nothing was deleted.',
+					'%d submissions that were assigned to nobody were given to their form’s owner when CoreX was updated. Nothing was deleted.',
+					moved,
+					'corex'
+				),
+				moved
+			) }
+		</p>
+	);
+}
+
 export function FlowList( {
 	flows,
 	catalog = [],
@@ -304,6 +344,7 @@ export function FlowList( {
 	status,
 	listed,
 	ownerId,
+	upgrade = null,
 	onLoad,
 	onCreate,
 	onSelect,
@@ -331,6 +372,7 @@ export function FlowList( {
 
 	return (
 		<div className="corex-flow-list">
+			<UpgradeNote upgrade={ upgrade } />
 			<NewFlowForm
 				busy={ busy }
 				ownerId={ ownerId }

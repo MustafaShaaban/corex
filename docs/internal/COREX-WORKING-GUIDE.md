@@ -135,7 +135,7 @@ Status: Final.
 
 So that Claude, Codex, Cursor, Gemini, and any future agent all work from the same source of truth and never
 recreate or overwrite each other's work. This **extends, never replaces**, the source-of-truth hierarchy (§A.1),
-the Spec Kit flow (§D.2), and the multi-agent ownership rules (§D.3a).
+the CoreX loop (§D.2), and the multi-agent ownership rules (§D.3a).
 
 - **The active PR branch is the working source of truth.** While a feature PR is open, its branch is where all
   work continues. Read `PROGRESS.md` for the latest pushed state and continue from the **latest commit on that
@@ -163,7 +163,7 @@ the Spec Kit flow (§D.2), and the multi-agent ownership rules (§D.3a).
 - **Push discipline.** Commit and push only to the active PR branch while its PR is open. Never push to `main`;
   never merge or mark a PR ready while blockers remain.
 - **End-of-session handoff (mandatory).** Every session ends with a handoff containing, in order: **SUMMARY**,
-  **WORKSPACE**, **SPEC KIT STATUS**, **VERIFICATION**, **BLOCKERS / DECISIONS NEEDED**, **RECOMMENDED NEXT STEP**,
+  **WORKSPACE**, **SPEC STATUS**, **VERIFICATION**, **BLOCKERS / DECISIONS NEEDED**, **RECOMMENDED NEXT STEP**,
   and the **NEXT STEP** block (§A.3, unchanged and still mandatory as the final element). This makes the workspace
   state and the resume point explicit for the next human or agent.
 
@@ -257,19 +257,23 @@ For working *on* Corex itself.
 - Never write a security check by hand — declare middleware.
 - Never make an optional plugin (ACF, Woo, WPML) a hard dependency.
 
-### D.2 — The spec-first loop (Spec Kit)
+### D.2 - The spec-first loop (the CoreX loop, constitution v2.0.0)
 ```
-/constitution   → write/update the rules
-/specify        → describe the module's behavior
-/clarify        → resolve ambiguities
-/plan           → technical plan
-/tasks          → break into tasks
-/implement      → build one task, review, repeat
+grill-with-docs   → one question at a time until nothing is open; terms to docs/_glossary.md,
+                    decisions to DECISIONS.md
+research          → only when the spec depends on outside facts (specs/NNN/research.md)
+spec.md           → requirements with IDs, then slices: one PR each, each naming what it waits on
+wizard            → the steps only the owner can do, as a script that checks each one
+tdd               → build one slice, test first (bugs: diagnosing-bugs first)
+guards + review   → the Guard Gate, then debate-review (a second model tries to disprove the first)
+pr, babysit-pr    → the pull request and its review rounds; retro after a release
 ```
-Write the spec before the code. The spec is the durable artifact.
+Write the spec before the code. The spec is the durable artifact. Who runs each step, on which model and
+effort, is in `CLAUDE.md` ("Models, effort and agents"). The `/speckit-*` commands are retired; a spec that
+already has a `tasks.md` may finish from it (DECISIONS #621).
 
 ### D.3 — Per-task cycle
-1. Pick the next task from `PROGRESS.md`.
+1. Pick the next slice from `PROGRESS.md` or the active spec.
 2. Generate scaffolding with `wp corex make:*`.
 3. Implement following the constitution.
 4. Write tests (Pest unit, Playwright E2E).
@@ -284,10 +288,10 @@ When more than one agent or human can touch the repo, every work unit starts wit
 
 1. Run `git status --short --branch` before editing.
 2. Confirm the work branch is a feature branch, never `main`.
-3. Record the active spec path, task IDs, and files owned for the work unit.
+3. Record the active spec path, the slice, and the files owned for the work unit.
 4. Do not overlap owned files with another active work unit unless a handoff explicitly transfers ownership.
 5. Before marking a work unit complete, attach verification evidence and the relevant guard results.
-6. Handoffs and final reports name branch, spec path, completed task IDs, files owned, verification,
+6. Handoffs and final reports name branch, spec path, completed slices, files owned, verification,
    guard status, and any files released for another agent.
 
 The release readiness gate models this as an agent work unit: `main` is invalid for active work, overlapping
@@ -342,7 +346,7 @@ This is the answer to "make sure any LLM can continue working on this."
 
 1. **Cold start sequence** for a fresh agent (state this in `AGENTS.md`):
    read `constitution.md` → `PROGRESS.md` → active spec → continue from "Next."
-2. **Model-agnostic by design** — Spec Kit, the guard skills, and the entry files all work across Claude Code, Codex, Cursor, Gemini. Nothing is Claude-only.
+2. **Model-agnostic by design**: the loop, the guard skills, and the entry files all work across Claude Code, Codex, Cursor, Gemini. Only the model routing in `CLAUDE.md` is Claude Code's.
 3. **Durable memory lives in files, not chat** — `PROGRESS.md`, `DECISIONS.md`, and the specs are the project's memory. Chat history is disposable; these files are not.
 4. **The NEXT STEP block** at the end of every response means the handoff point is always explicit.
 5. **The guards** mean a different LLM can't quietly violate the standards — the gate catches it.
@@ -364,7 +368,7 @@ The test of success: a brand-new LLM, given only the repo, can read four files a
 CoreX is now used to build real client sites. To keep framework work and client work from colliding, every
 session — human or AI — runs through four gates in order:
 
-> **Role Gate** decides *where* you work · **Spec Kit** decides *what* to build · **Guard Gate** decides
+> **Role Gate** decides *where* you work · **the spec** decides *what* to build · **Guard Gate** decides
 > *whether* code/docs are safe to ship · **UI/UX ProMax** decides *whether* visible UI/design is good enough.
 
 ### G.1 — Source layout (where things live)
@@ -417,7 +421,7 @@ End every working response with:
 SUMMARY            - What was done.
 WORKSPACE          - Branch: / Repo root: / Git status: / Files changed:
 MODE               - Framework / Client Site / Deployment / Docs-Planning
-SPEC KIT STATUS    - Spec path: / Task IDs: / Completed: / Remaining:
+SPEC STATUS        - Spec path: / Slices: / Completed: / Remaining:
 VERIFICATION       - Commands run: / Results: / Guards run:
 PRs / RELEASE      - PR numbers: / Merge status: / Release/tag status:
 BLOCKERS / DECISIONS NEEDED

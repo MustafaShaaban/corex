@@ -24,7 +24,7 @@ last_verified: null        # set to YYYY-MM-DD by the verification pass (phase D
   5. LINK, never duplicate: for architecture or class-reference content, link to docs-app
      (the published site) — do not copy it here. See docs/README.md → "What lives where".
   6. If you reference a class / command / hook / flag that is NOT yet built, set this page's
-     stability to `planned` (or mark the line) and link to the Spec Kit module that will
+     stability to `planned` (or mark the line) and link to the spec that will
      produce it. Never invent names.
   7. Every architecture / lifecycle / deployment-topology page has at least one Mermaid
      diagram (```mermaid) — GitHub renders it natively, no image build.

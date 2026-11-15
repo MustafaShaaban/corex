@@ -13,7 +13,9 @@ defined('ABSPATH') || exit;
 use Corex\Forms\Routing\RoutingCondition;
 use Corex\Forms\Routing\RoutingTarget;
 use Corex\Forms\Schema\FieldTypeRegistry;
+use Corex\Forms\Submission\FlowEmailVariables;
 use Corex\Forms\Success\SuccessStateRegistry;
+use Corex\Mail\MailTemplateCatalog;
 use Corex\Forms\Validation\RuleRegistry;
 use DomainException;
 use InvalidArgumentException;
@@ -27,6 +29,12 @@ final readonly class FlowConfigurationValidator
         private FieldTypeRegistry $fieldTypes,
         private RuleRegistry $rules,
         private SuccessStateRegistry $successStates,
+        /** What each Email Studio template uses, where CoreX Mail is active (spec 120). */
+        private ?MailTemplateCatalog $templates = null,
+        /** The actions the site has (spec 122, FR-022). */
+        private ?FlowActionRegistry $actions = null,
+        /** The email variables a developer registered for flows (spec 122, FR-023). */
+        private ?EmailVariableRegistry $registeredVariables = null,
     ) {
     }
 
@@ -38,6 +46,7 @@ final readonly class FlowConfigurationValidator
             $this->validateRouting($configuration, $fieldKeys);
             $this->validateEmails($configuration);
             $this->validateSuccess($configuration);
+            $this->validateActions($configuration);
         } catch (InvalidArgumentException $exception) {
             throw new DomainException($exception->getMessage(), 0, $exception);
         }
@@ -101,6 +110,21 @@ final readonly class FlowConfigurationValidator
             new RoutingCondition($field, (string) ($condition['operator'] ?? ''), $condition['value'] ?? null);
             $this->validateTarget((array) ($rule['target'] ?? []), $fieldKeys);
         }
+        $fallbackRecipient = trim((string) ($configuration->routing['fallback_recipient'] ?? ''));
+        if ($fallbackRecipient !== '' && filter_var($fallbackRecipient, FILTER_VALIDATE_EMAIL) === false) {
+            throw new DomainException(__('"If Routed owner has no address" must be an email address.', 'corex'));
+        }
+    }
+
+    /** A flow runs only actions the site has; one that is gone fails the publication (FR-022). */
+    private function validateActions(FlowConfiguration $configuration): void
+    {
+        foreach ($configuration->actions as $key) {
+            if ($this->actions !== null && ! $this->actions->has($key)) {
+                /* translators: %s: the key of a flow action. */
+                throw new DomainException(sprintf(__('The action "%s" is not available on this site.', 'corex'), $key));
+            }
+        }
     }
 
     /**
@@ -135,6 +159,39 @@ final readonly class FlowConfigurationValidator
                 || trim((string) ($binding['recipient'] ?? '')) === ''
             ) {
                 throw new DomainException(__('An enabled flow email binding is incomplete.', 'corex'));
+            }
+            $this->refuseUnsuppliedVariables($binding, $configuration);
+        }
+    }
+
+    /**
+     * A template bound to a flow's email may use only what that email supplies, unless whoever
+     * bound it confirmed sending it without the rest (spec 120, story 5).
+     *
+     * @param array<string,mixed> $binding
+     */
+    private function refuseUnsuppliedVariables(array $binding, FlowConfiguration $configuration): void
+    {
+        if ($this->templates === null || ($binding['accept_missing'] ?? false) === true) {
+            return;
+        }
+        foreach ($this->templates->templates() as $template) {
+            if ((int) ($template['id'] ?? 0) !== (int) $binding['template_id']) {
+                continue;
+            }
+            $missing = FlowEmailVariables::missing(
+                array_values(array_filter((array) ($template['variables'] ?? []), 'is_string')),
+                $configuration,
+                (string) $binding['event'],
+                array_column($this->registeredVariables?->definitions() ?? [], 'key'),
+            );
+            if ($missing !== []) {
+                throw new DomainException(sprintf(
+                    /* translators: 1: an Email Studio template's name. 2: variable keys, comma separated. */
+                    __('The template %1$s uses %2$s, which this form does not supply. Remove it from the template, or confirm sending the email without it in the Emails tab.', 'corex'),
+                    (string) ($template['name'] ?? ''),
+                    implode(', ', $missing),
+                ));
             }
         }
     }

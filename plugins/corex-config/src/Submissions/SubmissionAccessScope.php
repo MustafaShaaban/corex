@@ -28,6 +28,12 @@ final readonly class SubmissionAccessScope
         public bool $canExportPersonalData = false,
         /** Deleting a submission for good: apart from managing the inbox (spec 105, FR-010). */
         public bool $canDeletePermanently = false,
+        /**
+         * Only flow submissions: the assigned-only inbox of someone who does not manage
+         * submissions is the work routing gave them, never a code form's submission a manager
+         * once assigned to them (spec 122, FR-013; DECISIONS #473).
+         */
+        public bool $flowsOnly = false,
     ) {
         if ($this->actorId < 1) {
             throw new \InvalidArgumentException('A submission access scope requires an actor.');
@@ -39,6 +45,9 @@ final readonly class SubmissionAccessScope
     {
         if ($this->manageAll) {
             return true;
+        }
+        if ($this->flowsOnly && (int) ($record['flow_id'] ?? 0) < 1) {
+            return false;
         }
 
         $type = (string) ($record['owner_type'] ?? 'none');

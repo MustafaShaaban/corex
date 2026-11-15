@@ -18,10 +18,10 @@ config, a block, the CLI, the theme tokens).
 
 Other approaches you weighed, and why this one is better.
 
-## Spec Kit note
+## Spec note
 
-Non-trivial features go through the Spec Kit flow (specify → clarify → plan → tasks → implement).
-If you can sketch the user story and acceptance criteria here, it speeds that up.
+Non-trivial features go through the CoreX loop (grill → spec with slices → build test-first → review).
+If you can sketch the user story and acceptance criteria here, it speeds up the grilling.
 
 ## Additional context
 

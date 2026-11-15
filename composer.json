@@ -28,6 +28,7 @@
             "Corex\\Newsletter\\": "addons/corex-newsletter/src/",
             "Corex\\Careers\\": "addons/corex-careers/src/",
             "Corex\\Bookings\\": "addons/corex-bookings/src/",
+            "Corex\\Assistant\\": "addons/corex-assistant/src/",
             "Corex\\Portfolio\\": "addons/corex-kit-portfolio/src/",
             "Corex\\Woo\\": "addons/corex-kit-woo/src/",
             "Corex\\Media\\": "addons/corex-media/src/",

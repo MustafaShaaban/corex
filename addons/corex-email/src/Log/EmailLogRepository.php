@@ -26,7 +26,8 @@ final class EmailLogRepository extends PostRepository implements EmailLogStore
         return EmailLog::class;
     }
 
-    public function record(string $status, EmailMessage $message): ?int
+    /** @param list<string> $missingVariables */
+    public function record(string $status, EmailMessage $message, array $missingVariables = []): ?int
     {
         $subject = $message->subject !== '' ? $message->subject : '(no subject)';
 
@@ -36,6 +37,7 @@ final class EmailLogRepository extends PostRepository implements EmailLogStore
             'mail_status'  => $status,
             'recipients'   => implode(', ', $message->to),
             'mail_subject' => $message->subject,
+            'missing_variables' => implode(', ', $missingVariables),
         ]);
 
         return $log->id();

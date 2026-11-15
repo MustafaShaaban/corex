@@ -15,6 +15,8 @@ use Corex\Email\Design\EmailBrand;
 use Corex\Email\Design\EmailContent;
 use Corex\Email\Design\EmailDesign;
 use Corex\Email\Design\EmailDesignFailedEvent;
+use Corex\Email\Design\EmailKind;
+use Corex\Email\Design\KindAwareEmailDesign;
 use Corex\Email\Design\SiteEmailDesign;
 use Corex\Email\Design\StandardEmailDesign;
 use Corex\Events\EventDispatcher;
@@ -202,4 +204,37 @@ it('passes over something that is not a design', function () {
     expect($html)->toBe((new StandardEmailDesign())->render($this->content, $this->brand))
         ->and($this->failures)->toHaveCount(1)
         ->and($this->failures[0]->reason)->toBe(EmailDesignFailedEvent::NOT_A_DESIGN);
+});
+
+// Spec 120, story 3: a design made for replies is never put on another kind of email.
+it('gives a site design that says nothing about kinds the replies only', function () {
+    Filters\expectApplied('corex_email_design')->andReturn(siteDesign(
+        fn (EmailContent $content): string => '<html><body><b>Reply band</b>' . $content->bodyHtml . '</body></html>',
+    ));
+    $notification = new EmailContent('New submission', '<p>Thanks, Sam.</p>', 'team@example.com', EmailKind::NOTIFICATION);
+
+    expect($this->design->render($this->content, $this->brand))->toContain('Reply band')
+        ->and($this->design->render($notification, $this->brand))
+        ->toBe((new StandardEmailDesign())->render($notification, $this->brand))
+        // Not drawing another kind is what the design is for, not a failure.
+        ->and($this->failures)->toBe([]);
+});
+
+it('gives a site design every kind it says it accepts, and no other', function () {
+    Filters\expectApplied('corex_email_design')->andReturn(new class() implements KindAwareEmailDesign {
+        public function accepts(string $kind): bool
+        {
+            return $kind === EmailKind::NEWSLETTER;
+        }
+
+        public function render(EmailContent $content, EmailBrand $brand): string
+        {
+            return '<html><body><b>Own newsletter</b>' . $content->bodyHtml . '</body></html>';
+        }
+    });
+    $newsletter = new EmailContent('New article', '<p>Thanks, Sam.</p>', 'sam@example.com', EmailKind::NEWSLETTER);
+
+    expect($this->design->render($newsletter, $this->brand))->toContain('Own newsletter')
+        ->and($this->design->render($this->content, $this->brand))->not->toContain('Own newsletter')
+        ->and($this->failures)->toBe([]);
 });

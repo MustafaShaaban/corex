@@ -14,6 +14,8 @@ use Corex\Access\CorexAbility;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
+use Corex\Config\Readiness\LaunchChecklist;
+use Corex\Config\Readiness\ReadinessWords;
 use Corex\Notifications\NotificationService;
 use DateTimeImmutable;
 
@@ -23,6 +25,9 @@ use DateTimeImmutable;
  * and the current readiness/security snapshot — each a navigation-only link into CoreX, never an
  * action. It runs only local checks (no remote calls, FR-015) and reuses the bounded counts the
  * Notification Center and readiness factory already expose.
+ *
+ * Its readiness row is the one launch checklist (spec 118): the same "N of M ready" as Operations,
+ * what still blocks going live, and each open check by name in the gate's words.
  */
 final class CommandCenterWidget
 {
@@ -31,6 +36,7 @@ final class CommandCenterWidget
         private readonly OperationsModeStore $modeStore,
         private readonly NotificationService $notifications,
         private readonly ProductionReadinessSnapshotFactory $readiness,
+        private readonly LaunchChecklist $checklist,
     ) {
     }
 
@@ -52,7 +58,10 @@ final class CommandCenterWidget
     {
         $state    = $this->mode->describe($this->modeStore->current());
         $unread   = $this->notifications->unreadCountForCurrentActor();
-        $blockers = count($this->readiness->fromCurrentSite(new DateTimeImmutable('now'))->blockingKeys());
+        $launch   = $this->checklist->build(
+            $this->readiness->fromCurrentSite(new DateTimeImmutable('now')),
+            ReadinessWords::GATE,
+        );
 
         echo '<div class="corex-command-center">' // phpcs:ignore WordPress.Security.EscapeOutput -- each field is escaped below.
             . $this->row(
@@ -71,12 +80,35 @@ final class CommandCenterWidget
             )
             . $this->row(
                 esc_html__('Readiness', 'corex'),
-                esc_html($this->countLabel($blockers, __('no blockers', 'corex'))),
-                '',
-                admin_url('admin.php?page=corex-operations-security'),
+                esc_html($launch['count']),
+                esc_html($launch['blockingText']),
+                admin_url('admin.php?page=corex-operations-security&tab=environment'),
                 esc_html__('Review readiness', 'corex'),
             )
+            . $this->openChecks($launch['groups'])
             . '</div>';
+    }
+
+    /**
+     * The checks that are not ready, each linked to its fix and said in words.
+     *
+     * @param list<array{rows:list<array{label:string,word:string,href:string,state:string}>}> $groups
+     */
+    private function openChecks(array $groups): string
+    {
+        $items = '';
+        foreach ($groups as $group) {
+            foreach ($group['rows'] as $row) {
+                if ($row['href'] === '') {
+                    continue;
+                }
+
+                $items .= '<li><a href="' . esc_url($row['href']) . '">' . esc_html($row['label']) . '</a>: '
+                    . esc_html($row['word']) . '</li>';
+            }
+        }
+
+        return $items === '' ? '' : '<ul class="corex-command-center__checks">' . $items . '</ul>';
     }
 
     private function countLabel(int $count, string $none): string

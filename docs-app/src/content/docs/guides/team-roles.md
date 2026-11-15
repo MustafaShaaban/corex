@@ -6,7 +6,7 @@ description: The Role Gate — how a team (and AI agents) work safely across the
 CoreX is built by people and AI agents, and it is used to build real client sites. Four gates keep framework work
 and client work from colliding:
 
-> **Role Gate** decides *where* you work · **Spec Kit** decides *what* to build · **Guard Gate** decides *whether*
+> **Role Gate** decides *where* you work · **the spec** decides *what* to build · **Guard Gate** decides *whether*
 > code/docs are safe to ship · **UI/UX ProMax** decides *whether* visible UI is good enough.
 
 Classify the session into one mode **before editing**. Copy/paste start prompts for each mode live in the handbook:

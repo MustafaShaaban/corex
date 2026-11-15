@@ -97,6 +97,24 @@ final class CaptchaDiagnostic
         return self::ofKind(self::OK);
     }
 
+    /** Whether the keys worked: the answer a remembered test keeps (spec 119, US-SET-03). */
+    public function worked(): bool
+    {
+        return $this->kind === self::OK;
+    }
+
+    /** Why the test failed, in a few words said after "Last test failed on <date>:"; empty when it worked. */
+    public function reason(): string
+    {
+        return match ($this->kind) {
+            self::OK             => '',
+            self::MISSING_KEYS   => __('a key is missing', 'corex'),
+            self::INVALID_KEYS   => __('the provider refused the secret key', 'corex'),
+            self::NETWORK_ERROR  => __('the provider could not be reached', 'corex'),
+            default              => __('this driver needs no keys', 'corex'),
+        };
+    }
+
     private static function messageFor(string $kind): string
     {
         return match ($kind) {

@@ -10,12 +10,15 @@ namespace Corex\Config\Blog;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
+
 /**
  * What Blog Pro lets the signed-in person do (spec 112, User Story 5): WordPress's own permission
  * for the post or comment in question, and never more. The screen and every route ask this one
  * class, so a control is hidden exactly when the route would refuse it (DECISIONS #159).
  *
- * - Blog Pro opens for anyone WordPress lets edit posts (stage 3 replaces this with its own ability).
+ * - Blog Pro opens for the holders of "Manage Blog Pro" (spec 117; site administrators hold it), and
+ *   for each post and comment WordPress's own permission still decides what they may do with it.
  * - A post's figures, share controls and held comments, and moving it between editorial states,
  *   need permission to edit that post; moving it to Published or Scheduled also needs permission
  *   to publish it.
@@ -28,7 +31,7 @@ defined('ABSPATH') || exit;
  */
 final class BlogProPermissions
 {
-    public const BASE = 'edit_posts';
+    public const BASE = CorexAbility::MANAGE_BLOG;
 
     private const PUBLISHING_STATES = [EditorialItem::STATE_PUBLISHED, EditorialItem::STATE_SCHEDULED];
 

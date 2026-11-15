@@ -25,6 +25,7 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Events\EventDispatcher;
 use Corex\Security\LoginLockoutEvent;
+use Corex\Support\DateTime\AdminDateTime;
 
 beforeEach(function () {
     $this->modeWas  = get_option(OperationsModeStore::OPTION, null);
@@ -89,7 +90,8 @@ it('records a mode change, a refusal, a lockout and an access decision, and keep
     expect($card)->toHaveCount(5)
         ->and($lines[0])->toBe('admin approved an access request')
         // The refused screen by its name, not its page slug.
-        ->and($lines)->toContain('User ' . ($this->admin + 1000) . ' was refused access to Data');
+        // A person who no longer exists is said so (spec 118, US-OVR-07).
+        ->and($lines)->toContain('A deleted user was refused access to Data');
 });
 
 // Each line is one sentence, so a language that puts the person last can say it that way.
@@ -102,16 +104,22 @@ it('says each event as one sentence a translation can reorder', function () {
     $lines = array_column(Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'], 'text');
     remove_filter('gettext', $reordered, 10);
 
-    expect($lines)->toContain('Insights ← User ' . ($this->admin + 3000));
+    expect($lines)->toContain('Insights ← A deleted user');
 });
 
 it('adds one event for a counted refusal, not one per repeat inside its hour', function () {
-    $refusals = static fn (): int => count(Boot::app()->container()->make(ActivityService::class)->query(['kind' => SecurityActivityRecorder::ACCESS_DENIED], 1, 100));
+    // This person's only: a page of the whole log stops at 100, which a long-lived site passes.
+    $person   = $this->admin + 2000;
+    $refusals = static fn (): int => count(Boot::app()->container()->make(ActivityService::class)->query(
+        ['kind' => SecurityActivityRecorder::ACCESS_DENIED, 'actor_id' => $person],
+        1,
+        100,
+    ));
     $before   = $refusals();
     $log      = Boot::app()->container()->make(AccessAuditLog::class);
 
     for ($i = 0; $i < 5; $i++) {
-        $log->record('denied', 'corex-insights', $this->admin + 2000);
+        $log->record('denied', 'corex-insights', $person);
     }
 
     expect($refusals())->toBe($before + 1);
@@ -126,4 +134,17 @@ it('says from when it has records, written once', function () {
 
     expect($first)->toBeGreaterThan(0)->toBeLessThanOrEqual(time())
         ->and($since->since())->toBe($first);
+});
+
+// A person reads the date in the site's words and timezone, as on the Overview; the card showed
+// `2026-11-10 07:36` in UTC.
+it('dates each event as every CoreX screen does, with its ISO value for the time element', function () {
+    Boot::app()->container()->make(AccessAuditLog::class)->record('denied', 'corex-insights', $this->admin + 4000);
+    $event = Boot::app()->container()->make(ActivityService::class)->query(['kind' => SecurityActivityRecorder::ACCESS_DENIED], 1, 1)[0];
+    $card  = Boot::app()->container()->make(InsightWidgetFacts::class)->gather()['securityEvents'][0];
+    $want  = Boot::app()->container()->make(AdminDateTime::class)->format($event->occurredAt, AdminDateTime::FULL);
+
+    expect($card['meta'])->toBe($want->human)
+        ->and($card['meta'])->not->toMatch('/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/')
+        ->and($card['datetime'])->toBe($want->machine);
 });

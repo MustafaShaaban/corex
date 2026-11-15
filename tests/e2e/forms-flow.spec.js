@@ -96,12 +96,19 @@ test( 'creates publishes tests and submits a persisted flow without console erro
 	} else {
 		await existing.click();
 	}
-	const publish = page.getByRole( 'button', { name: 'Publish' } );
+	const publish = page.getByRole( 'button', {
+		name: 'Publish',
+		exact: true,
+	} );
 	if ( await publish.isVisible().catch( () => false ) ) {
 		await expect( publish ).toBeEnabled();
 		await publish.click();
+		// Spec 122: "Move to draft" is "Unpublish", and a live flow says it is up to date.
 		await expect(
-			page.getByRole( 'button', { name: 'Move to draft' } )
+			page.getByRole( 'button', { name: 'Unpublish' } )
+		).toBeVisible();
+		await expect(
+			page.getByText( 'Live version is up to date' )
 		).toBeVisible();
 	}
 
@@ -112,8 +119,9 @@ test( 'creates publishes tests and submits a persisted flow without console erro
 		.click();
 	await page.getByRole( 'button', { name: 'Run marked test' } ).click();
 	await expect( page.getByText( 'Marked test completed.' ) ).toBeVisible();
+	// Seven stages, and the flow actions after them (spec 122).
 	await expect( page.locator( '.corex-flow-test-results > li' ) ).toHaveCount(
-		7
+		8
 	);
 
 	const visitor = await page.evaluate( async ( slug ) => {
@@ -135,7 +143,7 @@ test( 'creates publishes tests and submits a persisted flow without console erro
 
 	expect( visitor.envelope.ok ).toBe( true );
 	expect( visitor.envelope.data.completed ).toBe( true );
-	expect( visitor.envelope.data.stages ).toHaveLength( 7 );
+	expect( visitor.envelope.data.stages ).toHaveLength( 8 );
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 

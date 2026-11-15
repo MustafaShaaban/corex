@@ -66,7 +66,9 @@ final class EmailDesignFailureNotificationProducer implements NotificationProduc
             titleKey: 'notifications.email.design_failed.title',
             messageKey: 'notifications.email.design_failed.body',
             rendered: [
-                'title' => __('This site\'s email design could not be used', 'corex'),
+                'title' => $event->reason === EmailDesignFailedEvent::TEMPLATE_FAILED
+                    ? __('An email template could not be drawn', 'corex')
+                    : __('This site\'s email design could not be used', 'corex'),
                 'body'  => $this->said($event),
             ],
             // The key's column is 191 characters wide; a class name can be longer.
@@ -91,6 +93,15 @@ final class EmailDesignFailureNotificationProducer implements NotificationProduc
      */
     private function said(EmailDesignFailedEvent $event): string
     {
+        if ($event->reason === EmailDesignFailedEvent::TEMPLATE_FAILED) {
+            return sprintf(
+                /* translators: 1: an Email Studio template's slug. 2: why it could not be drawn. */
+                __('The Email Studio template %1$s could not be drawn, so the site\'s own email was sent in its place. %2$s', 'corex'),
+                $event->design,
+                $event->detail,
+            );
+        }
+
         if ($event->reason === EmailDesignFailedEvent::BRAND_THREW) {
             return sprintf(
                 /* translators: 1: the name of a WordPress filter. 2: one line of an error message, or nothing. */

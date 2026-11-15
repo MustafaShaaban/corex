@@ -116,3 +116,6 @@ output/
 
 # Script translations are written from corex-ar.po when the bundles are built (spec 121).
 /plugins/corex-core/languages/corex-*-*.json
+
+# ui-review-loop evidence (video, DOM timeline, network capture): private, never committed
+.agent-review/

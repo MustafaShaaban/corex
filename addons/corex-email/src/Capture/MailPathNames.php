@@ -24,7 +24,8 @@ final class MailPathNames
             $template === 'newsletter-notify'       => __('Newsletter: new post', 'corex'),
             str_starts_with($template, 'call-request-') => __('Bookings: call request', 'corex'),
             str_starts_with($template, 'careers-')  => __('Careers: application', 'corex'),
-            $template === 'contact-notification'    => __('Form notification', 'corex'),
+            $template === 'contact-notification',
+            $template === 'form-notification'       => __('Form notification', 'corex'),
             default                                 => sprintf(
                 /* translators: %s: the email template's name. */
                 __('Site code: %s', 'corex'),

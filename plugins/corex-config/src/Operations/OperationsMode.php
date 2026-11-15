@@ -85,13 +85,14 @@ final class OperationsMode
                 'mode'   => self::DEVELOPMENT,
                 'label'  => __('Development', 'corex'),
                 'tone'   => self::TONE_INFO,
-                'detail' => __('Not a live site — outbound email and analytics should be off.', 'corex'),
+                // Said as it is since spec 113: a development site keeps its email (spec 118).
+                'detail' => __('Not a live site. Email is kept in Email Studio instead of being sent.', 'corex'),
             ],
             self::STAGING => [
                 'mode'   => self::STAGING,
                 'label'  => __('Staging', 'corex'),
                 'tone'   => self::TONE_WARNING,
-                'detail' => __('Pre-production — verify recipients before sending to avoid mailing real contacts.', 'corex'),
+                'detail' => __('Pre-production. Email is kept in Email Studio unless a mail provider and live delivery are set.', 'corex'),
             ],
             self::MAINTENANCE => [
                 'mode'   => self::MAINTENANCE,

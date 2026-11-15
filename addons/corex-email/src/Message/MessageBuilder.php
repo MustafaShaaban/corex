@@ -43,6 +43,7 @@ final class MessageBuilder
     private array $attachments = [];
     private ?string $subject = null;
     private ?string $body = null;
+    private ?string $plainText = null;
     private ?string $templateName = null;
     /** @var array<string,mixed> */
     private array $context = [];
@@ -147,6 +148,17 @@ final class MessageBuilder
         return $this;
     }
 
+    /**
+     * The same words as plain text, for a message given its subject and body here (spec 120,
+     * story 7). A template makes its own.
+     */
+    public function plainText(string $text): self
+    {
+        $this->plainText = trim($text) === '' ? null : $text;
+
+        return $this;
+    }
+
     public function template(string $name): self
     {
         $this->templateName = $name;
@@ -183,14 +195,14 @@ final class MessageBuilder
             if ($template !== null) {
                 $rendered = $this->renderer->render($template, new MailContext($this->context));
 
-                return $this->message($rendered->subject, $rendered->body);
+                return $this->message($rendered->subject, $rendered->body, $rendered->plainText);
             }
 
             // Unknown template → empty message; the service rejects + logs it (non-fatal).
             return $this->message('', '');
         }
 
-        return $this->message((string) $this->subject, (string) $this->body);
+        return $this->message((string) $this->subject, (string) $this->body, $this->plainText);
     }
 
     public function send(): EmailResult
@@ -198,7 +210,7 @@ final class MessageBuilder
         return $this->service->deliver($this->build());
     }
 
-    private function message(string $subject, string $body): EmailMessage
+    private function message(string $subject, string $body, ?string $plainText = null): EmailMessage
     {
         $to = $this->resolver->resolve($this->recipients, new MailContext($this->context))['valid'];
 
@@ -212,6 +224,7 @@ final class MessageBuilder
             $this->messageId === '' ? [] : ['Message-ID' => $this->messageId],
             $this->from,
             $this->attachments,
+            $plainText,
         );
     }
 }

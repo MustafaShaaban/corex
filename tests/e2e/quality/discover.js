@@ -140,16 +140,18 @@ function tabsOf( slug, html ) {
 		const href = decode(
 			( tag.match( /href=["']([^"']+)["']/ ) || [] )[ 1 ] || ''
 		);
-		const tab = ( href.match(
-			new RegExp( `[?&]page=${ slug }&tab=([a-z0-9_-]+)` )
-		) || [] )[ 1 ];
+		// `tab=` for a screen's tabs; `section=` for the Settings pages (spec 119).
+		const found = href.match(
+			new RegExp( `[?&]page=${ slug }&(tab|section)=([a-z0-9_-]+)` )
+		);
+		const tab = found ? `${ found[ 1 ] }=${ found[ 2 ] }` : '';
 
 		if (
 			tab &&
 			! tag.includes( 'aria-current' ) &&
-			! tabs.includes( `tab=${ tab }` )
+			! tabs.includes( tab )
 		) {
-			tabs.push( `tab=${ tab }` );
+			tabs.push( tab );
 		}
 	}
 

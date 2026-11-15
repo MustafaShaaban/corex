@@ -1,5 +1,9 @@
 # Corex — Spec Kit Starter Prompt
 
+> **Historical.** This is how CoreX was bootstrapped in June 2026, and its module order is long built. The
+> `/speckit-*` commands it uses were retired by constitution v2.0.0 (DECISIONS #621): the loop every change
+> follows now is in `AGENTS.md` ("The CoreX loop"), and what to build next is in `PROGRESS.md` and `ROADMAP.md`.
+
 Paste the blocks below into Claude Code **in order**. Each block is one step. Wait for completion and review before the next. This follows Spec Kit best practice: establish the constitution first, specify before planning, plan before tasking, task before implementing.
 
 ---

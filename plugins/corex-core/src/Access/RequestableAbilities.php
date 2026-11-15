@@ -41,6 +41,15 @@ final class RequestableAbilities
         return true;
     }
 
+    /**
+     * Whether the ability is locked: only site administrators hold it, no role can be given it, and
+     * nobody can ask for it (spec 117, FR-013).
+     */
+    public function isLocked(string $abilityKey): bool
+    {
+        return $this->catalog->find($abilityKey)?->locked ?? false;
+    }
+
     /** Whether a request may ask for every ability of this area. */
     public function isAreaRequestable(string $areaKey): bool
     {

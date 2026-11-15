@@ -26,6 +26,7 @@ use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
 use Corex\Support\Config\Repository;
+use Corex\Support\Config\SettingLocks;
 use Corex\Support\Config\SettingRegistry;
 use Corex\Support\Config\Sources\DefaultsSource;
 use Corex\Support\Config\Sources\DotenvSource;
@@ -83,6 +84,13 @@ final class CoreServiceProvider extends ServiceProvider
             ]);
         });
 
+        // Which settings a screen may not edit, read from the two layers above a site's own option
+        // (spec 119, US-SET-02).
+        $this->container->singleton(SettingLocks::class, static fn (ContainerInterface $container): SettingLocks => new SettingLocks(
+            $container->make(DotenvSource::class),
+            $container->make(NetworkLockSource::class),
+        ));
+
         // One name and one hold for the whole request: whoever sends, the gate reads the same ones.
         $this->container->singleton(
             Catalogue::class,
@@ -135,6 +143,8 @@ final class CoreServiceProvider extends ServiceProvider
             ),
         );
 
+        $this->container->singleton(\Corex\Health\FatalErrorLog::class);
+
         // The cache contract (spec 078). The registry is a singleton because it is the authority on
         // what may be cleared, and two of those in one request could disagree.
         $this->container->singleton(\Corex\Cache\CacheRegistry::class);
@@ -183,6 +193,8 @@ final class CoreServiceProvider extends ServiceProvider
     {
         $this->container->make(UpdateService::class)->register();
         $this->container->make(HealthModule::class)->register();
+        // A request that ends in a PHP fatal error is recorded for the Overview (spec 118).
+        $this->container->make(\Corex\Health\FatalErrorRecorder::class)->register();
         // Every wp_mail() meets the mail gate (spec 113): captured on a development or staging
         // site, held during a flow test, untouched in production.
         $this->container->make(WpMailInterceptor::class)->register();
