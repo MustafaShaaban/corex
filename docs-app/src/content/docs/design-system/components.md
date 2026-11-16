@@ -74,8 +74,9 @@ is dark in both the default style and Dark, and hands everything inside it the b
 link, a card or a field in it is drawn by its ordinary rules. The **Brass band** is brass with graphite text and a
 graphite button. **Use** the dark band for a hero and the brass band for one call to action a page at most.
 **Don't** give a heading or a button inside a band a colour of its own: the band draws them. The bands are offered
-only under a theme whose palette has the CoreX roles (`primary`, `surface`, `surface-alt`, `accent`, `accent-dark`,
-`inverse`); under a theme with a palette of its own the hero and call-to-action patterns take that theme's look.
+under a theme that defines the `band` custom colour (the CoreX theme, whatever palette a `brand.json` gives it), or
+whose palette has every one of `primary`, `surface`, `surface-alt`, `accent`, `accent-dark` and `inverse`. Under a
+theme with a palette of its own the hero and call-to-action patterns take that theme's look (DECISIONS #642).
 
 ### Empty state — block style `is-style-corex-empty` (on `core/group`)
 A muted, centred placeholder. **Use** when a list/area has no content yet.
