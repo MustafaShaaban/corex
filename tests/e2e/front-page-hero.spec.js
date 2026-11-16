@@ -3,15 +3,20 @@
  *
  * Measured signed out on the front page, as a visitor meets it: the hero heading against the hero's
  * own background, each hero and call-to-action button against the section behind it, and that a
- * keyboard reaches each button, which goes to a real page and shows where focus is. The dark palette
- * is measured from the palettes themselves by `tests/Unit/Patterns/HeroContrastTest.php`, since it is
- * a style variation a site chooses and not a mode of the page.
+ * keyboard reaches each button, which goes to a real page and shows where focus is.
+ *
+ * Spec 134 (SC-005, DECISIONS #640): the hero is the dark band and the call to action the brass band,
+ * in the default style and in the Dark variation (drawn as `theme-colours.js` says); the hero's
+ * button is brass with a graphite label in both. `tests/Unit/Patterns/HeroContrastTest.php` works
+ * the same out from the stylesheet and the palettes.
  *
  * The buttons go to the brand's primary action link or, without one, the site's contact page. The
  * spec makes a contact page when the site has none, and removes only what it made.
  */
 const { test, expect } = require( '@playwright/test' );
 const { STORAGE_STATE } = require( './global-setup' );
+const { contrast } = require( './helpers' );
+const { MODES, showDarkVariation } = require( './theme-colours' );
 
 const NO_SESSION = { cookies: [], origins: [] };
 
@@ -180,3 +185,86 @@ test( 'shows a visitor no sample figures or quote on the front page', async ( {
 	);
 	expect( await page.content() ).not.toContain( 'href="#"' );
 } );
+
+/**
+ * The colours the front page draws for its hero and its call to action.
+ *
+ * @param {import('@playwright/test').Page} page The front page.
+ * @return {Promise<Object>} Each section's ground and text, its heading and its button.
+ */
+function bands( page ) {
+	return page.evaluate( () => {
+		const read = ( section ) => {
+			const heading = section.querySelector( 'h1, h2' );
+			const button = section.querySelector( '.wp-block-button__link' );
+			const style = ( element ) => window.getComputedStyle( element );
+			return {
+				ground: style( section ).backgroundColor,
+				text: style( section ).color,
+				heading: style( heading ).color,
+				button: style( button ).backgroundColor,
+				label: style( button ).color,
+			};
+		};
+		const hero = document.querySelector(
+			'main section.is-style-corex-band-dark'
+		);
+		const cta = document.querySelector(
+			'main section.is-style-corex-band-brass'
+		);
+		return {
+			hero: hero && read( hero ),
+			cta: cta && read( cta ),
+			heroHoldsTheHeading: !! hero?.querySelector( 'h1' ),
+		};
+	} );
+}
+
+for ( const mode of Object.keys( MODES ) ) {
+	test( `the hero is a dark band with a brass button and a graphite label, and the call to action a brass band, in the ${ mode } style (SC-005)`, async ( {
+		page,
+	} ) => {
+		const { preset, custom } = MODES[ mode ];
+		await page.goto( '/' );
+		if ( mode === 'dark' ) {
+			await showDarkVariation( page );
+		}
+		const { hero, cta, heroHoldsTheHeading } = await bands( page );
+
+		expect( heroHoldsTheHeading ).toBe( true );
+		expect( hero ).toEqual( {
+			ground: custom.band,
+			text: custom[ 'band-ink' ],
+			heading: custom[ 'band-ink' ],
+			button: custom[ 'band-accent' ],
+			label: custom.band,
+		} );
+		// Dark in both styles: white text on it reads at least 12:1, the band's graphite on its brass 4.5:1.
+		expect(
+			contrast( hero.ground, 'rgb(255, 255, 255)' )
+		).toBeGreaterThanOrEqual( 12 );
+		expect( contrast( hero.label, hero.button ) ).toBeGreaterThanOrEqual(
+			4.5
+		);
+		expect( contrast( hero.button, hero.ground ) ).toBeGreaterThanOrEqual(
+			3
+		);
+
+		expect( cta ).toEqual( {
+			ground: preset.accent,
+			text: custom[ 'on-accent' ],
+			heading: custom[ 'on-accent' ],
+			button: custom[ 'on-accent' ],
+			label: custom[ 'band-ink' ],
+		} );
+		expect( contrast( cta.heading, cta.ground ) ).toBeGreaterThanOrEqual(
+			4.5
+		);
+		expect( contrast( cta.button, cta.ground ) ).toBeGreaterThanOrEqual(
+			3
+		);
+		expect( contrast( cta.label, cta.button ) ).toBeGreaterThanOrEqual(
+			4.5
+		);
+	} );
+}

@@ -47,9 +47,10 @@ rebuilt.
 ## Actions & forms
 
 ### Button — `core/button` (+ Corex block styles)
-The primary button is the theme.json default; the **Secondary** (`is-style-corex-secondary`) and **Ghost**
-(`is-style-corex-ghost`) block styles add the variants. **Use** the primary for the main action, one per view.
-**Don't use** more than one primary action in a section.
+The primary button is the theme.json default: brass with a graphite label, a 10px corner, and a quiet surface
+when it is disabled. The **Secondary** (`is-style-corex-secondary`, an outline in the text colour around it) and
+**Ghost** (`is-style-corex-ghost`, text in the darker brass) block styles add the variants. **Use** the primary for
+the main action, one per view. **Don't use** more than one primary action in a section.
 
 ### Link — `core/` rich-text link
 Styled via `theme.json` `elements.link`. **Use** for navigation within prose.
@@ -66,6 +67,15 @@ to convey grouping for assistive tech — keep a heading.
 
 ### Section — block style `is-style-corex-section` (on `core/group`)
 Vertical rhythm + container. **Use** to wrap a page section.
+
+### Bands: block styles `is-style-corex-band-quiet`, `-dark` and `-brass` (on `core/group`)
+The visitor kit's grounds for a section (spec 134). The **Quiet band** is the quiet grey ground. The **Dark band**
+is dark in both the default style and Dark, and hands everything inside it the band's own colours, so a button, a
+link, a card or a field in it is drawn by its ordinary rules. The **Brass band** is brass with graphite text and a
+graphite button. **Use** the dark band for a hero and the brass band for one call to action a page at most.
+**Don't** give a heading or a button inside a band a colour of its own: the band draws them. The bands are offered
+only under a theme whose palette has the CoreX roles (`primary`, `surface`, `surface-alt`, `accent`, `accent-dark`,
+`inverse`); under a theme with a palette of its own the hero and call-to-action patterns take that theme's look.
 
 ### Empty state — block style `is-style-corex-empty` (on `core/group`)
 A muted, centred placeholder. **Use** when a list/area has no content yet.

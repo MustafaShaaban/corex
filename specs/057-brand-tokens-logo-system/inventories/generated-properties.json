@@ -1,6 +1,6 @@
 {
   "generated_at": "source-controlled",
-  "count": 105,
+  "count": 106,
   "properties": [
     {
       "id": "border.width.strong",
@@ -328,6 +328,13 @@
       "id": "color.white",
       "source_path": "theme/theme.json#settings.color.palette[27]",
       "generated_property": "--wp--preset--color--white",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "control.height",
+      "source_path": "theme/theme.json#settings.custom.control.height",
+      "generated_property": "--wp--custom--control--height",
       "unique": true,
       "status": "observed"
     },

@@ -4,14 +4,18 @@
  * Corex DLS block styles + the skeleton utility (spec 054, US3). Token-only, logical
  * properties (RTL-correct). Loaded with the block that uses the style (registered via
  * register_block_style style_handle). No hardcoded colour/size — every value is a token.
+ * The section bands have a sheet of their own, section-bands.css (spec 134).
  */
 /* stylelint-enable @stylistic/max-line-length */
 
-/* Card — surface panel on core/group. */
+/*
+ * Card: the raised surface with a hairline (the kit's card, spec 134).
+ * Inside a band the band's tokens draw it.
+ */
 .wp-block-group.is-style-corex-card {
 	padding: var(--wp--preset--spacing--40);
-	background: var(--wp--preset--color--surface);
-	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	background: var(--wp--preset--color--surface-raised, var(--wp--preset--color--surface));
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--surface-strong, var(--wp--preset--color--surface-alt));
 	border-radius: var(--wp--custom--radius--md);
 	box-shadow: var(--wp--preset--shadow--sm);
 }
@@ -33,18 +37,31 @@
 	background: var(--wp--preset--color--surface-alt);
 }
 
-/* Secondary button — outline. */
-.wp-block-button.is-style-corex-secondary .wp-block-button__link {
-	background: transparent;
-	color: var(--wp--preset--color--primary);
-	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--primary);
+/*
+ * Secondary button: the kit's (spec 134, FR-011), the raised surface with a
+ * border edge, the quiet surface and an ink edge on hover. Inside a band
+ * the band's tokens draw it. A disabled one keeps the theme's look.
+ */
+.wp-block-button.is-style-corex-secondary .wp-block-button__link:not(:disabled, [aria-disabled="true"]) {
+	background-color: var(--wp--preset--color--surface-raised, var(--wp--preset--color--surface));
+	color: var(--wp--preset--color--ink);
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
 }
 
-/* Ghost button — text-only, accent on hover. */
-.wp-block-button.is-style-corex-ghost .wp-block-button__link {
-	background: transparent;
-	color: var(--wp--preset--color--accent-dark);
+.wp-block-button.is-style-corex-secondary .wp-block-button__link:not(:disabled, [aria-disabled="true"]):hover {
+	background-color: var(--wp--preset--color--surface-alt);
+	border-color: var(--wp--preset--color--ink);
+}
+
+/* Ghost button: the kit's, ink text, the quiet surface on hover. */
+.wp-block-button.is-style-corex-ghost .wp-block-button__link:not(:disabled, [aria-disabled="true"]) {
+	background-color: transparent;
+	color: var(--wp--preset--color--ink);
 	border: var(--wp--custom--border--width--thin) solid transparent;
+}
+
+.wp-block-button.is-style-corex-ghost .wp-block-button__link:not(:disabled, [aria-disabled="true"]):hover {
+	background-color: var(--wp--preset--color--surface-alt);
 }
 
 /* Skeleton / loading placeholder. */

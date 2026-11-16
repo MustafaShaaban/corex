@@ -47,7 +47,7 @@ system: what it is for, its rules, and how it ships in WordPress.
 - **The logo files.** The design system's Logos group still holds the files of 2026-11-15. The corrected lockup,
   the fixed-colour and stacked lockups, the knockout and the favicon set are specified in spec 134 and were shown
   to the owner on the earlier R2.2 canvas, which he did not approve as a whole. They need their own approval before
-  slice 2 of spec 134 is built.
+  slice 3 of spec 134 (the logo set) is built: given on 2026-11-16, recorded in `spec-134-logo-set.md`.
 - **Form patterns.** Ready-made field groups (name, phone number, address, date) are not drawn yet.
 - **WooCommerce blocks** and **emails**.
 - **Behaviour.** The previews are static renditions with no script. Keyboard order, focus movement, opening and

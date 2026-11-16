@@ -3597,6 +3597,21 @@ msgstr "قسم"
 msgid "Empty state"
 msgstr "حالة فارغة"
 
+# Drafted 2026-11-16 (spec 134 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/BlockStyles.php
+msgid "Quiet band"
+msgstr "شريط هادئ"
+
+# Drafted 2026-11-16 (spec 134 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/BlockStyles.php
+msgid "Dark band"
+msgstr "شريط داكن"
+
+# Drafted 2026-11-16 (spec 134 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/BlockStyles.php
+msgid "Brass band"
+msgstr "شريط نحاسي"
+
 #: addons/corex-ui/src/Blocks/BlockStyles.php
 msgid "Striped"
 msgstr "مخطَّط"

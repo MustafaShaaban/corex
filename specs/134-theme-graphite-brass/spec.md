@@ -6,7 +6,9 @@
 rejected a design that only recoloured today's layout and approved a full visitor kit instead. This file is the
 whole spec: it ends in slices, and there is no separate plan or task file.
 
-**Status**: Slice 1 in review (PR #472). Slice 2 ready. Slice 3 waits for its own design approval (the logo set).
+**Status**: Slice 1 merged (PR #472, `e990d8da`). Slice 2 in build on `spec/134-slice-2-bands`. Slice 3's design (the
+logo set) was approved on 2026-11-16 (`design/handoffs/spec-134-logo-set.md`); it is built after slice 2's pull
+request is open, since the root checkout holds one branch at a time.
 
 Slice 1 also moved three places that drew white text on `accent` to `on-accent` (the call-to-action pattern's
 text, the newsletter submit, the menu badge), ahead of slice 2, because the new brass makes white text fail AA
@@ -68,9 +70,11 @@ taken under his mandate (DECISIONS #633 to #640).
   re-points the palette tokens to the `band-*` tokens for everything inside it (DECISIONS #640). Filling a section
   with `primary` is retired: `primary` is light in the Dark variation, so such a section turned light there.
 - Q: And a brass section? → A: **The brass band**: `accent` behind, graphite text, a graphite button. Once a page.
-- Q: What happens to the band under a client's theme that has no `band-*` tokens? → A: **It draws as today.** The
-  section style's rules name the band tokens with the palette slugs as fallbacks (`band` falls back to `primary`,
-  `band-ink` to `surface`, and so on), so a band under a client theme is today's `primary` section.
+- Q: What happens to the band under a client's theme? → A: **It draws as today.** A band style is registered
+  only where the active theme's palette has the slugs its rules fall back to (DECISIONS #642). Under a theme with
+  those slugs and no `band-*` tokens a band is today's `primary` or `accent` section; under a theme without them
+  (Muva's and Perego's) the style does not exist, so the pattern's class is inert, as the old pattern's colour
+  classes were there, and the theme draws the section and its button with its own defaults.
 - Q: The dark variation: chosen by the site owner, or automatic? → A: **Chosen, as today.**
 - Q: The "editorial" variation? → A: **Removed** (DECISIONS #636).
 - Q: Do the shadows take the contract's geometry or only its colours? → A: **The contract's three shadows whole.**
@@ -176,11 +180,17 @@ change one palette value and run the tests.
   background and `surface` as its text. It keeps drawing: graphite with white text for the hero in light, and in the
   Dark variation the hero is light with dark text, as it is today. Only the patterns as newly inserted, and the
   front-page template (which draws them by reference), take the section styles.
-- **A band under a client's theme.** It falls back to the palette slugs and draws as today's section.
+- **A band under a client's theme.** With the CoreX slugs it falls back to them and draws as today's section;
+  without them no band style is registered and the theme's own defaults draw it, as before (DECISIONS #642).
+- **A brand with a dark `accent`.** It sets `onAccent` light, and the brass band then draws light text on its
+  accent, but the band's button (`onAccent` ground, `bandInk` label, as the kit draws it) loses its label. Such a
+  brand uses the dark band for its call to action; the branding guide says so (slice 5). The dark band itself
+  stays graphite and brass unless the brand sets the `band*` tokens too.
 - **A field on a quiet band.** `border` is 3.21:1 on white and 2.91:1 on `surface-alt` in light, as today's grey is.
   A field's own background is white, so its outline is read against white.
 - **The form's shapes.** The form block sets no outline, corner or typeface on its fields and its button, so they
-  are the browser's own today. This release changes their colours only.
+  are the browser's own today. This release changes their colours, and gives them the theme's focus ring
+  (FR-012); their shapes are the visitor forms release.
 - **System admin appearance on the login.** The lockup follows the computer, as the card does.
 
 ## Requirements *(mandatory)*
@@ -215,12 +225,14 @@ change one palette value and run the tests.
 **Base elements and section styles (US-BRD-01)**
 
 - **FR-011**: The theme's button (`elements.button`) MUST be `accent` behind with `custom.color.onAccent` on it,
-  `custom.color.accentHover` on hover, the kit's corner and height, and a disabled state. The existing block styles
+  `custom.color.accentHover` on hover, the kit's corner and height (48px, `custom.control.height`, DECISIONS #644),
+  and a disabled state. The existing block styles
   (secondary, ghost) MUST take the kit's look. The other button styles of the kit are a later release.
 - **FR-012**: Links MUST be `accent-dark`, underlined in running text, turning `primary` on hover. The focus ring
   MUST be 2px `accent`, 2px away. Selected text MUST be drawn with `selection` behind and `selection-text` on it.
-- **FR-013**: The theme MUST register three section styles for the Group block: the quiet band, the dark band and
-  the brass band. The dark band MUST re-point the palette tokens to the `band-*` tokens for its descendants; the
+- **FR-013**: CoreX MUST register three section styles for the Group block: the quiet band, the dark band and
+  the brass band. corex-ui registers them, beside its other Group styles, because the patterns that use them are
+  corex-ui's and run under client themes; the theme supplies the tokens they read (DECISIONS #642). The dark band MUST re-point the palette tokens to the `band-*` tokens for its descendants; the
   brass band MUST give its descendants graphite text and a graphite button.
 - **FR-014**: A heading with no colour of its own inside a section MUST take that section's text colour.
 - **FR-015**: The hero pattern MUST use the dark band and the call-to-action pattern the brass band, and neither
@@ -228,7 +240,7 @@ change one palette value and run the tests.
   today.
 - **FR-016**: `HeroContrastTest` MUST keep its thresholds (heading 4.5:1, button against its section 3:1, label
   4.5:1) and pass for both patterns in both palettes.
-- **FR-017**: `DECISIONS #41` MUST be superseded for the theme by a recorded decision.
+- **FR-017**: `DECISIONS #41` MUST be superseded for the theme by a recorded decision (DECISIONS #633).
 
 **Logo set (US-BRD-05)**
 
@@ -304,12 +316,20 @@ change one palette value and run the tests.
   Themes. `corex-mark.svg` disappears from its plugin folder; nothing used it.
 - **Perego**: shows its own logo on sign-in and is unchanged there. The theme does not reach it. The card image
   changes. Perego runs corex-ui: a hero or a call-to-action band inserted after the update names a section style;
-  under Perego's theme it falls back and draws as before (SC-009 proves it). Bands already on its pages do not
+  under Perego's theme no band style exists (its palette has none of the CoreX slugs), so the class is inert and
+  the section draws with Perego's defaults, as the old pattern did there (SC-009 proves it). One difference,
+  accepted: Perego's palette has an `accent`, so the old call to action drew Perego's `#d86af3` behind its light
+  page text, about 2.9:1, under AA; a newly inserted one draws on the page and reads. Its button label is WordPress's
+  default white where it was Perego's page text, on the same default button. Bands already on its pages do not
   change. The form's required mark turns from the theme's `accent` to its `accent-dark` on both clients' forms.
   The example colour in a settings help text changes in both admins.
 - **Mizzey**: not on this release.
 - **A site running the CoreX theme**: its colours, its button and its dark sections change on update. A site that
   chose Dark keeps the navy dark values until Dark is chosen again. Editorial is no longer offered.
+- **Both clients, and any site on corex-ui:** corex-ui's block style sheet starts loading on the front end
+  (DECISIONS #643), so content saved with Card, Section, Empty state, Striped, Secondary or Ghost starts drawing
+  those styles for visitors. Under a client palette their colour declarations name CoreX slugs and mostly draw
+  nothing; padding, corners and outlines do draw. Secondary now draws in the surrounding text colour.
 - No upgrade step, no stored data changed, no client file edited.
 
 ## Assumptions
@@ -335,11 +355,26 @@ two-model review, CI green. A slice a person sees is built only from the approve
 |---|---|---|---|---|
 | 1 | Tokens: the palette, the custom colours and the shadows in both files, bound to the contract; the contrast matrix; brass text moved to `accent-dark`; Editorial removed; navy values and example copy gone; Foundations and inventories regenerated | FR-001 to FR-010 | nothing | approved: `design/handoffs/visitor-kit.md` |
 | 2 | Base elements and section styles: the brass button, links, focus, selection; the three section styles; the hero and call-to-action patterns on them, with the fallback under a client theme | FR-011 to FR-017 | 1 | approved: the same |
-| 3 | The logo set, the login's lockup by appearance, the theme's favicon | FR-018 to FR-024 | its own design approval | **Design first** |
+| 3 | The logo set, the login's lockup by appearance, the theme's favicon | FR-018 to FR-024 | nothing (approved 2026-11-16) | approved: `design/handoffs/spec-134-logo-set.md` |
 | 4 | The theme preview: the capture command, the fingerprint and its test, the new image | FR-025 to FR-027 | 2 | approved: the HomePage template shows the look |
 | 5 | Release notes with before and after captures, the branding guide, the client impact, PROGRESS | FR-028 | 1 to 4 | no |
 
 Slice 3 shares no file with slices 1 and 2 and may be built beside them once its design is approved.
+
+**Found while building slice 2, and left open.** (1) The dark band re-points no status colour: the kit has no
+`band-*` token for `success`, `warning`, `error` or `info`, so status text placed in a dark band is not proven AA.
+It belongs to the kit's Alert and Badge components, built by a later spec. (2) Under a client theme the hero's and
+the call to action's buttons draw no focus ring, before this release as after: `action-link.css` names
+`--wp--custom--focus--width`, which only the CoreX theme defines, so its whole `outline` is dropped. A follow-up
+fix. (3) SC-009's draw-as-before half is measured under a scratch theme with foreign slug names, modelled on Muva's
+and Perego's palettes; their own repositories are checked by hand with `scripts/client-merge-check.mjs`
+before the tag (CI's client-repository job merges into a generated site, not into theirs). (4) The newsletter block's submit (`corex-newsletter-signup__submit`) is no
+`.wp-element-button`, so inside the brass band it stays brass on brass, 1.00:1. A corex-blocks follow-up gives it
+the element button class; until then the newsletter does not go on the brass band. (5) The form block draws no
+field border, so on the brass band a field has no edge at 3:1 (1.36:1 measured); forms do not go on the brass band
+until the visitor forms release gives fields their shapes. (6) Measured against the kit and left to the blocks that
+own them: the kit's large button (56px) for the hero and call to action, the hero's lead size and soft colour,
+the call to action's one-row layout, the section's 64px padding under 782px, and the card's radius and padding.
 
 **What each slice proves.** Slice 1: SC-001 (colours), SC-002, SC-003, SC-004, with the layout captures equal before
 and after. Slice 2: SC-005 and SC-009, and the bands measured in both modes and both directions. Slice 3: SC-006
@@ -348,5 +383,6 @@ visible change listed, and spec 121's three held criteria marked complete.
 
 **Principles touched.** I (the favicon is presentation and stays in the theme), V (tokens in `theme.json`, read at
 runtime; the band re-points tokens with tokens, never a raw value; the contract stays a test fixture), VI (no new
-global asset; a section style's rules load with the theme's own styles), VIII (logical properties; every screen
+global asset; a section style's rules load with corex-ui's block style sheet, only where a styled block is drawn,
+DECISIONS #643), VIII (logical properties; every screen
 checked right to left), IX (the band falls back under a theme that lacks its tokens), X (this spec before code).
