@@ -57,9 +57,11 @@
       "path": "docs-app/src/content/docs/design-system/components.md",
       "lines": [
         50,
-        56
+        56,
+        77
       ],
       "topics": [
+        "brand.json",
         "theme-authority"
       ]
     },

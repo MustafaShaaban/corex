@@ -21409,3 +21409,16 @@ kit's large button (56px) for the hero and the call to action is the Hero and Ca
 
 *Not chosen:* `spacing|60` (a height borrowed from a spacing step); padding that adds up to 48px (it changes with the
 label's line height and the face, measured 57.6px before this slice).
+
+## #645 -- The pages that draw a band carry the band sheet in their byte budget
+
+**Date:** 2026-11-16. **Spec:** 134, slice 2 (FR-013); spec 116 (US-NFR-07, the front-end budget).
+**Decided:** under the owner's mandate for the revamp.
+
+`section-bands.css` (8,572 bytes) loads only on a page that draws a band (constitution VI). On CI's quality site
+those are the front page, About, Landing, Services and the single service page, which took each more than 10% over
+its budget; without the sheet each is within it. Their budgets in `tests/e2e/quality/byte-budget.json` become the
+bytes measured on the pull request's run: `/` 61,472, the four others 26,820. No other page changes.
+
+*Not chosen:* stripping the sheet's comments (about 2.5 KB saved, the pages still over); folding the bands into
+`block-styles.css` (every page with a card would carry them).
