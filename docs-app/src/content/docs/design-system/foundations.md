@@ -17,8 +17,9 @@ The brand's colours, shadows, radius and motion are written once, in `design/tok
 the values of the admin set as shipped. The admin token stylesheet, the email palette
 (`Corex\Email\Design\EmailPalette`) and the theme's radius and motion each hold a copy, and
 `tests/Unit/Theme/BrandContractTest.php` fails, naming the token and the copy, when one of them holds another
-value. The theme's colours and shadows are bound to the contract when the theme moves to graphite and brass
-(US-BRD-01); until then the theme tables below show the palette the theme ships today.
+value. The theme's palette, its custom colours and its shadows are bound too, in the default style and in the
+Dark variation (spec 134): each is a brand colour, apart from `success` in the default style, which is darker
+than the admin's so that it reads as text on white.
 
 A `brand.json` overrides the **theme only**. It never reaches the admin, the login screen or the emails.
 
@@ -31,6 +32,7 @@ A `brand.json` overrides the **theme only**. It never reaches the admin, the log
 | Font size | `--wp--preset--font-size--<slug>`, with a letter after a digit starting a word (`2xl` is `2-xl`) |
 | Spacing | `--wp--preset--spacing--<slug>` |
 | Shadow | `--wp--preset--shadow--<slug>` |
+| Custom colour | `--wp--custom--color--<key>`, with a capital starting a word (`onAccent` is `on-accent`) |
 | Radius, tracking, motion | `--wp--custom--<group>--<key>` |
 
 WordPress's own spacing sizes, font sizes and shadows are turned off for the CoreX theme, so only these are
@@ -41,34 +43,34 @@ with the tracking tokens.
 <!-- tokens:theme -->
 | Colour | Custom property | Default | Dark variation | Use |
 | --- | --- | --- | --- | --- |
-| `primary` | `--wp--preset--color--primary` | `#0B1F3B` | `#00C2FF` | Primary |
-| `primary-dark` | `--wp--preset--color--primary-dark` | `#06121F` | `#7DD3FC` | Primary dark |
-| `accent` | `--wp--preset--color--accent` | `#007A9E` | `#7DD3FC` | Accent |
-| `accent-dark` | `--wp--preset--color--accent-dark` | `#006080` | `#38BDF8` | Accent dark |
-| `surface` | `--wp--preset--color--surface` | `#FFFFFF` | `#0B1F3B` | Surface |
-| `surface-alt` | `--wp--preset--color--surface-alt` | `#F4F7FA` | `#102A4C` | Surface alt |
-| `border` | `--wp--preset--color--border` | `#8795A3` | `#71869C` | Border |
-| `ink` | `--wp--preset--color--ink` | `#11181C` | `#F1F5F9` | Ink |
-| `ink-soft` | `--wp--preset--color--ink-soft` | `#5A6772` | `#C3CEDA` | Ink soft |
-| `success` | `--wp--preset--color--success` | `#1A7F4B` | `#4ADE80` | Success |
-| `warning` | `--wp--preset--color--warning` | `#875400` | `#FACC15` | Warning |
-| `error` | `--wp--preset--color--error` | `#C1352B` | `#F87171` | Error |
-| `info` | `--wp--preset--color--info` | `#1F6FEB` | `#60A5FA` | Info |
-| `inverse` | `--wp--preset--color--inverse` | `#FFFFFF` | `#06121F` | Inverse text |
-| `overlay` | `--wp--preset--color--overlay` | `rgba(6, 18, 31, 0.72)` | `rgba(0, 0, 0, 0.78)` | Overlay |
-| `selection` | `--wp--preset--color--selection` | `#BFEFFF` | `#075985` | Selection |
-| `selection-text` | `--wp--preset--color--selection-text` | `#06121F` | `#F0F9FF` | Selection text |
-| `surface-raised` | `--wp--preset--color--surface-raised` | `#FFFFFF` | `#102A4C` | Raised surface |
-| `surface-strong` | `--wp--preset--color--surface-strong` | `#E8EEF5` | `#183B61` | Strong surface |
-| `background` | `--wp--preset--color--background` | `#FFFFFF` | `#0B1F3B` | Background (compatibility) |
-| `foreground` | `--wp--preset--color--foreground` | `#11181C` | `#F1F5F9` | Foreground (compatibility) |
-| `danger` | `--wp--preset--color--danger` | `#C1352B` | `#F87171` | Danger (compatibility) |
-| `corex-danger` | `--wp--preset--color--corex-danger` | `#C1352B` | `#F87171` | CoreX danger (compatibility) |
-| `corex-info` | `--wp--preset--color--corex-info` | `#1F6FEB` | `#60A5FA` | CoreX info (compatibility) |
-| `corex-primary` | `--wp--preset--color--corex-primary` | `#0B1F3B` | `#00C2FF` | CoreX primary (compatibility) |
-| `corex-success` | `--wp--preset--color--corex-success` | `#1A7F4B` | `#4ADE80` | CoreX success (compatibility) |
-| `corex-warning` | `--wp--preset--color--corex-warning` | `#875400` | `#FACC15` | CoreX warning (compatibility) |
-| `white` | `--wp--preset--color--white` | `#FFFFFF` | `#06121F` | White (compatibility) |
+| `primary` | `--wp--preset--color--primary` | `#14151a` | `#f4f5f7` | Primary |
+| `primary-dark` | `--wp--preset--color--primary-dark` | `#0d0e11` | `#c2c8d1` | Primary dark |
+| `accent` | `--wp--preset--color--accent` | `#ad8643` | `#c9a25e` | Accent |
+| `accent-dark` | `--wp--preset--color--accent-dark` | `#76521d` | `#e2c188` | Accent dark |
+| `surface` | `--wp--preset--color--surface` | `#ffffff` | `#16181d` | Surface |
+| `surface-alt` | `--wp--preset--color--surface-alt` | `#f3f4f6` | `#1a1d23` | Surface alt |
+| `border` | `--wp--preset--color--border` | `#8b9099` | `#646b78` | Border |
+| `ink` | `--wp--preset--color--ink` | `#14151a` | `#f4f5f7` | Ink |
+| `ink-soft` | `--wp--preset--color--ink-soft` | `#5b616d` | `#9aa0ab` | Ink soft |
+| `success` | `--wp--preset--color--success` | `#287a4e` | `#5fb787` | Success |
+| `warning` | `--wp--preset--color--warning` | `#8a5b13` | `#e0a33a` | Warning |
+| `error` | `--wp--preset--color--error` | `#b23530` | `#e0645c` | Error |
+| `info` | `--wp--preset--color--info` | `#176b96` | `#6e9be6` | Info |
+| `inverse` | `--wp--preset--color--inverse` | `#ffffff` | `#14151a` | Inverse text |
+| `overlay` | `--wp--preset--color--overlay` | `rgba(15, 17, 22, 0.54)` | `rgba(7, 9, 12, 0.72)` | Overlay |
+| `selection` | `--wp--preset--color--selection` | `#ad8643` | `#c9a25e` | Selection |
+| `selection-text` | `--wp--preset--color--selection-text` | `#14151a` | `#14151a` | Selection text |
+| `surface-raised` | `--wp--preset--color--surface-raised` | `#ffffff` | `#1c1f26` | Raised surface |
+| `surface-strong` | `--wp--preset--color--surface-strong` | `#e2e5ea` | `#262a32` | Strong surface |
+| `background` | `--wp--preset--color--background` | `#ffffff` | `#16181d` | Background (compatibility) |
+| `foreground` | `--wp--preset--color--foreground` | `#14151a` | `#f4f5f7` | Foreground (compatibility) |
+| `danger` | `--wp--preset--color--danger` | `#b23530` | `#e0645c` | Danger (compatibility) |
+| `corex-danger` | `--wp--preset--color--corex-danger` | `#b23530` | `#e0645c` | CoreX danger (compatibility) |
+| `corex-info` | `--wp--preset--color--corex-info` | `#176b96` | `#6e9be6` | CoreX info (compatibility) |
+| `corex-primary` | `--wp--preset--color--corex-primary` | `#14151a` | `#f4f5f7` | CoreX primary (compatibility) |
+| `corex-success` | `--wp--preset--color--corex-success` | `#287a4e` | `#5fb787` | CoreX success (compatibility) |
+| `corex-warning` | `--wp--preset--color--corex-warning` | `#8a5b13` | `#e0a33a` | CoreX warning (compatibility) |
+| `white` | `--wp--preset--color--white` | `#ffffff` | `#14151a` | White (compatibility) |
 
 | Font family | Custom property | Stack |
 | --- | --- | --- |
@@ -103,11 +105,31 @@ with the tracking tokens.
 | `70` | `--wp--preset--spacing--70` | `4rem` |
 | `80` | `--wp--preset--spacing--80` | `6rem` |
 
-| Shadow | Custom property | Value |
+| Custom colour | Default | Dark variation |
 | --- | --- | --- |
-| `sm` | `--wp--preset--shadow--sm` | `0 1px 2px rgba(11, 31, 59, 0.08)` |
-| `md` | `--wp--preset--shadow--md` | `0 4px 12px rgba(11, 31, 59, 0.10)` |
-| `lg` | `--wp--preset--shadow--lg` | `0 12px 32px rgba(11, 31, 59, 0.14)` |
+| `--wp--custom--color--on-accent` | `#14151a` | `#14151a` |
+| `--wp--custom--color--accent-hover` | `#c9a25e` | `#e6cf9f` |
+| `--wp--custom--color--accent-subtle` | `rgba(173, 134, 67, 0.12)` | `rgba(201, 162, 94, 0.14)` |
+| `--wp--custom--color--success-soft` | `rgba(47, 143, 91, 0.12)` | `rgba(95, 183, 135, 0.13)` |
+| `--wp--custom--color--warning-soft` | `rgba(181, 120, 31, 0.12)` | `rgba(224, 163, 58, 0.13)` |
+| `--wp--custom--color--error-soft` | `rgba(194, 67, 59, 0.12)` | `rgba(224, 100, 92, 0.13)` |
+| `--wp--custom--color--info-soft` | `rgba(23, 107, 150, 0.12)` | `rgba(110, 155, 230, 0.13)` |
+| `--wp--custom--color--band` | `#14151a` | `#0d0e11` |
+| `--wp--custom--color--band-raised` | `#1c1f26` | `#16181d` |
+| `--wp--custom--color--band-ink` | `#f4f5f7` | `#f4f5f7` |
+| `--wp--custom--color--band-ink-soft` | `#9aa0ab` | `#9aa0ab` |
+| `--wp--custom--color--band-line` | `#262a32` | `#262a32` |
+| `--wp--custom--color--band-border` | `#646b78` | `#646b78` |
+| `--wp--custom--color--band-accent` | `#c9a25e` | `#c9a25e` |
+| `--wp--custom--color--band-accent-hover` | `#e6cf9f` | `#e6cf9f` |
+| `--wp--custom--color--band-accent-subtle` | `rgba(201, 162, 94, 0.14)` | `rgba(201, 162, 94, 0.14)` |
+| `--wp--custom--color--band-link` | `#e2c188` | `#e2c188` |
+
+| Shadow | Custom property | Default | Dark variation |
+| --- | --- | --- | --- |
+| `sm` | `--wp--preset--shadow--sm` | `0 1px 2px rgb(20 21 26 / 8%)` | `0 1px 2px rgb(0 0 0 / 20%)` |
+| `md` | `--wp--preset--shadow--md` | `0 8px 24px rgb(20 21 26 / 10%)` | `0 8px 24px rgb(0 0 0 / 24%)` |
+| `lg` | `--wp--preset--shadow--lg` | `0 18px 48px rgb(20 21 26 / 14%)` | `0 18px 48px rgb(0 0 0 / 28%)` |
 
 | Custom property | Value |
 | --- | --- |

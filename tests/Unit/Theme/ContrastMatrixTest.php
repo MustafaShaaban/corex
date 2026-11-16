@@ -28,9 +28,41 @@ it('defines unique light and dark evidence pairs with the required thresholds', 
     }
 });
 
+// Spec 134, FR-006: the pairs the theme draws in graphite and brass, in both modes.
+it('holds the brass button, both bands, selected text and the field edge, in both modes', function () {
+    $pairs = ThemeContract::json('tests/Fixtures/Theme/contrast-focus-matrix.json')['pairs'];
+    $held = array_map(
+        static fn (array $pair): string => sprintf('%s %s on %s', $pair['mode'], $pair['foreground'], $pair['background']),
+        $pairs,
+    );
+    $required = [
+        'custom.onAccent on accent',                // the label on the brass button, text on the brass band
+        'custom.onAccent on custom.accentHover',    // the label on the brass button, on hover
+        'custom.bandInk on custom.band',            // text on the dark band
+        'custom.bandInkSoft on custom.band',
+        'custom.bandLink on custom.band',
+        'custom.onAccent on custom.bandAccent',     // the brass button on the dark band
+        'selection-text on selection',              // selected text
+        'border on surface',                        // a field's edge
+        'primary on surface-strong',                // the focus ring on the corporate header's top bar
+    ];
+    $missing = [];
+
+    foreach (['light', 'dark'] as $mode) {
+        foreach ($required as $pair) {
+            if (! in_array($mode . ' ' . $pair, $held, true)) {
+                $missing[] = $mode . ' ' . $pair;
+            }
+        }
+    }
+
+    expect($missing)->toBe([]);
+});
+
 it('meets every light and dark contrast and focus pairing', function () {
-    $light = ThemeContract::palette(ThemeContract::json('theme/theme.json'));
-    $dark = ThemeContract::palette(ThemeContract::json('theme/styles/dark.json'));
+    // The palette and the custom colours (spec 134, FR-006): the brass button's label, the bands.
+    $light = ThemeContract::colours(ThemeContract::json('theme/theme.json'));
+    $dark = ThemeContract::colours(ThemeContract::json('theme/styles/dark.json'));
     $pairs = ThemeContract::json(
         'tests/Fixtures/Theme/contrast-focus-matrix.json',
     )['pairs'];

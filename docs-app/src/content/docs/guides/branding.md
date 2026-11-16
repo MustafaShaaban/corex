@@ -73,8 +73,10 @@ Give both sides the same value: `theme.json` has no logical side, and a page rea
 left is correct only while the two are equal.
 
 To recolor just one role without restating the list, override the **scalar** instead (e.g. a
-single `settings.custom` value), which merges. Point the resolver at the file with
-`config('theme.brand_path')`, or place it at the active theme root. A **missing or malformed**
+single `settings.custom` value), which merges. Text drawn on `accent` takes
+`settings.custom.color.onAccent`, graphite by default, so a brand whose `accent` is dark sets it to a light value
+in its `brand.json` (`{ "settings": { "custom": { "color": { "onAccent": "#FFFFFF" } } } }`). Point the resolver
+at the file with `config('theme.brand_path')`, or place it at the active theme root. A **missing or malformed**
 `brand.json` leaves the defaults intact (logged), so removing the file is a clean rollback.
 Style variations (e.g. `theme/styles/dark.json`) override tokens only — the theme stays a skin.
 
@@ -140,5 +142,5 @@ production path for a client's brand fonts is still source-controlled fonts regi
 `theme.json` ships a real token system: an expanded palette (surface/border/ink-soft + state colours), a
 multi-step type scale, a full spacing scale, **shadow** presets (`--wp--preset--shadow--sm|md|lg`), and **radius**
 tokens (`--wp--custom--radius--sm|md|lg|full`). Buttons/links/headings are styled from tokens, and the card
-blocks use shadow + radius for depth. Switch the whole look with a **style variation** (Dark or Editorial) in
-the Site Editor. Everything stays token-only — no hardcoded colours or sizes.
+blocks use shadow + radius for depth. Switch the whole look to the **Dark** style variation in the Site
+Editor. Everything stays token-only: no hardcoded colours or sizes.

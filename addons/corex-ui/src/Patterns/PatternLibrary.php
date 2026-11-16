@@ -14,7 +14,7 @@ use Corex\Blocks\SampleBlocks;
 
 /**
  * The Corex section patterns — compositions of core blocks, styled only with
- * theme.json presets (color slugs + `var:preset` spacing), accessible, and
+ * theme.json tokens (color slugs, `var:preset` spacing, the `onAccent` custom colour), accessible, and
  * translation-ready. Pure: it returns the catalog; registration is the registrar's
  * job. The contact pattern composes the spec-007 `corex/form` block.
  *
@@ -38,6 +38,12 @@ final class PatternLibrary
      * the contact page ({@see ActionLinks}, spec 115). With neither, it is not drawn.
      */
     public const ACTION_LINK = 'corex-action-link';
+
+    /**
+     * Text on a brass ground: the theme's graphite `onAccent` (spec 134, DECISIONS #635), and `inverse`
+     * under a theme that has no such token. White on the light brass is 3.35:1, under AA for text.
+     */
+    private const ON_ACCENT = 'var(--wp--custom--color--on-accent, var(--wp--preset--color--inverse))';
 
     /**
      * @return list<array{name:string,title:string,content:string}>
@@ -113,9 +119,9 @@ final class PatternLibrary
     private function cta(): string
     {
         return sprintf(
-            '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"accent","textColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
-            . '<section class="wp-block-group alignfull has-surface-color has-accent-background-color has-text-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
-            . '<!-- wp:heading {"textAlign":"center","textColor":"surface"} --><h2 class="wp-block-heading has-text-align-center has-surface-color has-text-color">%1$s</h2><!-- /wp:heading -->'
+            '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"accent","style":{"color":{"text":"' . self::ON_ACCENT . '"},"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull has-accent-background-color has-text-color has-background" style="color:' . self::ON_ACCENT . ';padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:heading {"textAlign":"center","style":{"color":{"text":"' . self::ON_ACCENT . '"}}} --><h2 class="wp-block-heading has-text-align-center has-text-color" style="color:' . self::ON_ACCENT . '">%1$s</h2><!-- /wp:heading -->'
             . '<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} --><div class="wp-block-buttons">'
             . self::actionButton('surface', 'accent-dark', '%2$s')
             . '</div><!-- /wp:buttons --></section><!-- /wp:group -->',

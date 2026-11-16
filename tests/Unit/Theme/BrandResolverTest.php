@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 use Corex\Support\BootLogger;
+use Corex\Theme\BrandOverrideValidator;
 use Corex\Theme\BrandResolver;
 
 it('returns the defaults unchanged when there is no override', function () {
@@ -89,4 +90,17 @@ it('logs and ignores a malformed brand.json', function () {
         ->and($logger->messages())->not->toBeEmpty();
 
     unlink($path);
+});
+
+// Spec 134 (the hand-over's open question 4): a brand whose accent is dark sets a light `onAccent`.
+it('takes a brand.json\'s own onAccent over the theme\'s and keeps the other custom colours', function () {
+    $defaults = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/theme/theme.json'), true);
+    $brand = ['settings' => ['custom' => ['color' => ['onAccent' => '#ffffff']]]];
+    $overrides = (new BrandOverrideValidator())->validate($defaults, $brand)['overrides'];
+
+    $merged = (new BrandResolver(new BootLogger(debug: false)))->merge($defaults, $overrides);
+
+    expect($merged['settings']['custom']['color']['onAccent'])->toBe('#ffffff')
+        ->and($merged['settings']['custom']['color']['bandInk'])->toBe($defaults['settings']['custom']['color']['bandInk'])
+        ->and($merged['settings']['custom']['radius'])->toBe($defaults['settings']['custom']['radius']);
 });

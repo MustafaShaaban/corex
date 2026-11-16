@@ -76,6 +76,12 @@
 	padding-block: var(--wp--preset--spacing--20);
 }
 
+/* Brass is 2.65:1 on the top bar's surface in light, under 3:1:
+   its links ring in primary. */
+.corex-header__topbar a:focus-visible {
+	outline-color: var(--wp--preset--color--primary);
+}
+
 /* Transparent header overlays a hero and sticks; the script flips the state on
    scroll so it resolves to a solid, readable background. */
 .corex-header--transparent {
@@ -240,7 +246,7 @@
 	padding-inline: var(--wp--preset--spacing--20);
 	border-radius: var(--wp--custom--radius--sm);
 	background-color: var(--wp--preset--color--accent);
-	color: var(--wp--preset--color--inverse);
+	color: var(--wp--custom--color--on-accent, var(--wp--preset--color--inverse));
 }
 
 .corex-mega__desc {

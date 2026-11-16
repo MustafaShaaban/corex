@@ -59,8 +59,9 @@ and approved first, a spec ends in slices, and nothing merges without the review
   kit** in the CoreX design system: foundations, 30 components, 28 blocks, 13 page templates, light and dark,
   English and Arabic (DECISIONS #639; `design/handoffs/visitor-kit.md`). Spec 134 builds its first layer in five
   slices: tokens; base elements and section styles (the brass button, the dark band and the brass band,
-  DECISIONS #640); the logo set; the theme preview; release notes. Nothing is built. Slices 1 and 2 are ready;
-  slice 3 waits for the logo set's own design approval. The kit's components, blocks and templates need later
+  DECISIONS #640); the logo set; the theme preview; release notes. The spec merged as #471. **Slice 1** (the
+  palette, the kit's custom colours and shadows bound to the brand contract, no text on brass in white, DECISIONS
+  #641) is PR #472, in review fixes. Slice 2 is ready next; slice 3 waits for the logo set's own design approval. The kit's components, blocks and templates need later
   specs, and the release order in the planning workspace needs a change request (not written from here).
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).

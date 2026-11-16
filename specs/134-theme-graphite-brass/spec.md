@@ -6,7 +6,13 @@
 rejected a design that only recoloured today's layout and approved a full visitor kit instead. This file is the
 whole spec: it ends in slices, and there is no separate plan or task file.
 
-**Status**: Ready for slices 1 and 2. Slice 3 waits for its own design approval (the logo set). Nothing is built.
+**Status**: Slice 1 in review (PR #472). Slice 2 ready. Slice 3 waits for its own design approval (the logo set).
+
+Slice 1 also moved three places that drew white text on `accent` to `on-accent` (the call-to-action pattern's
+text, the newsletter submit, the menu badge), ahead of slice 2, because the new brass makes white text fail AA
+(DECISIONS #641). Slice 2 replaces the call-to-action's colours with the brass band (FR-015). Still to list for
+slice 5: the emails of a site on the CoreX theme draw their edge in the theme's `primary`, now graphite (and
+near-white under Dark, too faint on a white card); decide there whether it takes brass.
 
 **Design**: the approved visitor kit, `design/handoffs/visitor-kit.md` (approved by the owner on 2026-11-15 at
 Version 8 of the CoreX design system, https://claude.ai/artifact/DExY8maEuxwM6JwdZ1jw5c, private to him). The

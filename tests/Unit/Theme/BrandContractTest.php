@@ -1,11 +1,13 @@
 <?php
 
 /**
- * The brand is written once and every copy holds it (spec 121, US-BRD-02, DECISIONS #460, #461).
+ * The brand is written once and every copy holds it (spec 121, US-BRD-02, DECISIONS #460, #461;
+ * spec 134, US-BRD-01, DECISIONS #634).
  *
  * `design/tokens/brand-contract.json` lists each colour, shadow, radius and motion value with the
- * copies that hold it. A copy that holds another value fails here, with the token's name and the
- * copy's, so the admin, the emails and the theme cannot drift apart again.
+ * copies that hold it, and the theme's palette and custom colours by mode. A copy that holds another
+ * value fails here, with the token's name and the copy's, so the admin, the emails and the theme
+ * cannot drift apart again.
  *
  * @package Corex\Tests\Unit\Theme
  */
@@ -166,6 +168,216 @@ it('holds the email palette and the email radius at the contract value', functio
 
     expect($differences)->toBe([])
         ->and(brand_contract_pixels(EmailBrand::RADIUS))->toBe(brand_contract_pixels($contract['radius']['md']['value']));
+});
+
+/**
+ * A colour as numbers, so `rgba(15, 17, 22, 0.54)` and `rgb(15 17 22 / 54%)` compare equal.
+ * Returns the value as it is when it is not a hex, `rgb()` or `rgba()` colour.
+ */
+function brand_contract_colour(string $value): string
+{
+    $value = brand_contract_normal($value);
+
+    if (preg_match('/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/', $value, $hex) === 1) {
+        return sprintf('%d,%d,%d,1', hexdec($hex[1]), hexdec($hex[2]), hexdec($hex[3]));
+    }
+
+    if (preg_match('/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)\s*(?:[,\/]\s*([\d.]+)(%?))?\s*\)$/', $value, $rgb) === 1) {
+        $alpha = isset($rgb[4]) && $rgb[4] !== '' ? (float) $rgb[4] / (($rgb[5] ?? '') === '%' ? 100 : 1) : 1.0;
+
+        return sprintf('%d,%d,%d,%s', $rgb[1], $rgb[2], $rgb[3], rtrim(rtrim(sprintf('%.4f', $alpha), '0'), '.'));
+    }
+
+    return $value;
+}
+
+/**
+ * The theme's colours and shadows in one mode, keyed as the contract keys them: `palette.<slug>`,
+ * `custom.<key>` (settings.custom.color) and `shadows.<slug>`.
+ *
+ * @param array<string,mixed> $json theme.json or a style variation
+ * @return array<string,string>
+ */
+function brand_contract_theme_values(array $json): array
+{
+    $values = [];
+
+    foreach ($json['settings']['color']['palette'] ?? [] as $entry) {
+        $values['palette.' . $entry['slug']] = (string) $entry['color'];
+    }
+    foreach ($json['settings']['custom']['color'] ?? [] as $key => $value) {
+        $values['custom.' . $key] = (string) $value;
+    }
+    foreach ($json['settings']['shadow']['presets'] ?? [] as $entry) {
+        $values['shadows.' . $entry['slug']] = (string) $entry['shadow'];
+    }
+
+    return $values;
+}
+
+/**
+ * What the contract says the theme holds, by mode, keyed as {@see brand_contract_theme_values()}.
+ *
+ * @param array<string,mixed> $contract
+ * @return array{light: array<string,string>, dark: array<string,string>}
+ */
+function brand_contract_theme_expected(array $contract): array
+{
+    $expected = ['light' => [], 'dark' => []];
+
+    foreach (['palette', 'custom'] as $group) {
+        foreach ($contract['theme'][$group] as $token => $entry) {
+            foreach (['light', 'dark'] as $mode) {
+                $expected[$mode][$group . '.' . $token] = $entry[$mode];
+            }
+        }
+    }
+    foreach ($contract['shadows'] as $entry) {
+        foreach (['light', 'dark'] as $mode) {
+            $expected[$mode]['shadows.' . $entry['theme']] = $entry[$mode];
+        }
+    }
+
+    return $expected;
+}
+
+/**
+ * Each way the theme's files differ from the contract, one line each, naming the token, the mode
+ * and the file (FR-004).
+ *
+ * @param array<string,mixed> $contract
+ * @param array<string,array<string,mixed>> $files mode => [file => path, json => decoded file]
+ * @return list<string>
+ */
+function brand_contract_theme_differences(array $contract, array $files): array
+{
+    $expected = brand_contract_theme_expected($contract);
+    $differences = [];
+
+    foreach ($files as $mode => $file) {
+        $actual = brand_contract_theme_values($file['json']);
+
+        foreach ($expected[$mode] as $token => $value) {
+            if (! isset($actual[$token])) {
+                $differences[] = sprintf('%s (%s): %s does not define it, the contract %s', $token, $mode, $file['file'], $value);
+            } elseif (brand_contract_normal($actual[$token]) !== brand_contract_normal($value)) {
+                $differences[] = sprintf('%s (%s): %s holds %s, the contract %s', $token, $mode, $file['file'], $actual[$token], $value);
+            }
+        }
+        foreach (array_diff_key($actual, $expected[$mode]) as $token => $value) {
+            $differences[] = sprintf('%s (%s): %s holds %s, which the contract does not list', $token, $mode, $file['file'], $value);
+        }
+    }
+
+    return $differences;
+}
+
+/** @return array<string,array<string,mixed>> */
+function brand_contract_theme_files(): array
+{
+    return [
+        'light' => ['file' => 'theme/theme.json', 'json' => ThemeContract::json('theme/theme.json')],
+        'dark' => ['file' => 'theme/styles/dark.json', 'json' => ThemeContract::json('theme/styles/dark.json')],
+    ];
+}
+
+// Spec 134, FR-001 to FR-004 (DECISIONS #634): the theme's palette, custom colours and shadows are bound.
+it('holds the theme\'s palette, custom colours and shadows at the contract value, light and dark', function () {
+    expect(brand_contract_theme_differences(brand_contract(), brand_contract_theme_files()))->toBe([]);
+});
+
+it('names the token, the mode and the file when the theme holds another value', function () {
+    $files = brand_contract_theme_files();
+    $files['dark']['json']['settings']['custom']['color']['bandInk'] = '#ffffff';
+    $files['light']['json']['settings']['shadow']['presets'][0]['shadow'] = '0 1px 2px black';
+    unset($files['light']['json']['settings']['custom']['color']['onAccent']);
+
+    $differences = brand_contract_theme_differences(brand_contract(), $files);
+
+    expect($differences)->toHaveCount(3)
+        ->and($differences)->toContain('custom.bandInk (dark): theme/styles/dark.json holds #ffffff, the contract #f4f5f7')
+        ->and($differences)->toContain('shadows.sm (light): theme/theme.json holds 0 1px 2px black, the contract 0 1px 2px rgb(20 21 26 / 8%)')
+        ->and($differences)->toContain('custom.onAccent (light): theme/theme.json does not define it, the contract #14151a');
+});
+
+it('lists every slug, custom colour and shadow the theme defines, and the ones it must keep', function () {
+    $contract = brand_contract();
+    $light = brand_contract_theme_values(brand_contract_theme_files()['light']['json']);
+
+    // Every slug keeps its name, so a brand.json and a client theme keep working (FR-001).
+    expect(array_keys($contract['theme']['palette']))->toContain(
+        'primary', 'primary-dark', 'accent', 'accent-dark', 'surface', 'surface-alt', 'surface-raised', 'surface-strong',
+        'border', 'ink', 'ink-soft', 'success', 'warning', 'error', 'info', 'inverse', 'overlay', 'selection',
+        'selection-text', 'background', 'foreground', 'danger', 'corex-danger', 'corex-info', 'corex-primary',
+        'corex-success', 'corex-warning', 'white',
+    )
+        // The kit's custom colour tokens (FR-002).
+        ->and(array_keys($contract['theme']['custom']))->toEqualCanonicalizing([
+            'onAccent', 'accentHover', 'accentSubtle', 'successSoft', 'warningSoft', 'errorSoft', 'infoSoft',
+            'band', 'bandRaised', 'bandInk', 'bandInkSoft', 'bandLine', 'bandBorder', 'bandAccent', 'bandAccentHover',
+            'bandAccentSubtle', 'bandLink',
+        ])
+        ->and(array_column($contract['shadows'], 'theme'))->toBe(['sm', 'md', 'lg'])
+        ->and(count($light))->toBe(count($contract['theme']['palette']) + count($contract['theme']['custom']) + 3);
+});
+
+it('gives each compatibility slug the value of the role it follows, in both modes', function () {
+    $palette = brand_contract()['theme']['palette'];
+    $differ = [];
+
+    foreach ($palette as $slug => $entry) {
+        if (! isset($entry['follows'])) {
+            continue;
+        }
+        foreach (['light', 'dark'] as $mode) {
+            if (brand_contract_normal($entry[$mode]) !== brand_contract_normal($palette[$entry['follows']][$mode])) {
+                $differ[] = sprintf('palette.%s (%s) is %s, its role %s is %s', $slug, $mode, $entry[$mode], $entry['follows'], $palette[$entry['follows']][$mode]);
+            }
+        }
+    }
+
+    expect($differ)->toBe([]);
+});
+
+// Spec 134, FR-005: a theme colour is a brand colour, or the contract says why it is not.
+it('draws every theme colour from the brand, apart from the exceptions the contract gives a reason for', function () {
+    $contract = brand_contract();
+    $brand = [];
+    foreach ($contract['colors'] as $entry) {
+        $brand[] = brand_contract_colour($entry['light']);
+        $brand[] = brand_contract_colour($entry['dark']);
+    }
+    $outside = [];
+    $stale = [];
+
+    foreach (['palette', 'custom'] as $group) {
+        foreach ($contract['theme'][$group] as $token => $entry) {
+            foreach (['light', 'dark'] as $mode) {
+                // A compatibility slug takes the reason of the role it follows.
+                $exception = $entry['exception'][$mode] ?? $contract['theme'][$group][$entry['follows'] ?? '']['exception'][$mode] ?? null;
+                $reason = trim((string) $exception);
+                $isBrand = in_array(brand_contract_colour($entry[$mode]), $brand, true);
+
+                if (! $isBrand && $reason === '') {
+                    $outside[] = sprintf('theme.%s.%s (%s): %s is not a brand colour', $group, $token, $mode, $entry[$mode]);
+                }
+                if ($isBrand && $exception !== null) {
+                    $stale[] = sprintf('theme.%s.%s (%s): %s is a brand colour, so it needs no exception', $group, $token, $mode, $entry[$mode]);
+                }
+            }
+        }
+    }
+
+    expect($outside)->toBe([])
+        ->and($stale)->toBe([])
+        // One today: `success` in light, because the admin's green is 4.04:1 as text on white.
+        ->and($contract['theme']['palette']['success']['exception'] ?? [])->toHaveKey('light');
+});
+
+it('reads a colour the same in each notation', function () {
+    expect(brand_contract_colour('rgba(15, 17, 22, 0.54)'))->toBe(brand_contract_colour('rgb(15 17 22 / 54%)'))
+        ->and(brand_contract_colour('#FFF'))->toBe(brand_contract_colour('rgb(255, 255, 255)'))
+        ->and(brand_contract_colour('#ad8643'))->not->toBe(brand_contract_colour('rgba(173, 134, 67, 0.12)'));
 });
 
 /**

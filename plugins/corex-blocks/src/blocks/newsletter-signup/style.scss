@@ -33,7 +33,7 @@
 
 	&__submit {
 		padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
-		color: var(--wp--preset--color--inverse);
+		color: var(--wp--custom--color--on-accent, var(--wp--preset--color--inverse));
 		background: var(--wp--preset--color--accent);
 		border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--accent);
 		border-radius: var(--wp--custom--radius--md);

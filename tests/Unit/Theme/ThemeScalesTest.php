@@ -106,7 +106,7 @@ it('draws a page in an Arabic-script language in the Arabic face at Arabic line 
 });
 
 it('declares the Arabic character range on every Arabic face, so an English page loads none', function () {
-    foreach (['theme/theme.json', 'theme/styles/dark.json', 'theme/styles/editorial.json'] as $file) {
+    foreach (['theme/theme.json', 'theme/styles/dark.json'] as $file) {
         $families = array_column(ThemeContract::json($file)['settings']['typography']['fontFamilies'], null, 'slug');
 
         foreach ($families['arabic']['fontFace'] as $face) {

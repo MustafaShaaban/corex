@@ -336,7 +336,7 @@ final class SettingsPageRenderer
             /* translators: 1: a setting's label. 2: what was typed into it. */
             'url', 'media' => __('%1$s was not changed: "%2$s" is not a web address.', 'corex'),
             /* translators: 1: a setting's label. 2: what was typed into it. */
-            'hex-colour' => __('%1$s was not changed: "%2$s" is not a six-digit colour such as #0B1F3B.', 'corex'),
+            'hex-colour' => __('%1$s was not changed: "%2$s" is not a six-digit colour such as #7A7A7A.', 'corex'),
             /* translators: 1: a setting's label. 2: what was chosen for it. */
             default => __('%1$s was not changed: "%2$s" is not one of its choices.', 'corex'),
         };

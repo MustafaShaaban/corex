@@ -90,12 +90,9 @@ it('never emits a double quote inside a style attribute', function () {
 it('carries the CoreX brass rather than the theme brand colour', function () {
     $body = (new SupportRequestTemplate())->body(new \Corex\Email\Template\MailContext([]));
 
-    // #0B1F3B is theme.json's `primary`, which is what Layout injects as the accent. The owner
-    // asked for the admin's identity, which is the brass — see EmailPalette's docblock for why
-    // that means literals here.
-    expect($body)
-        ->toContain(EmailPalette::light()->accent)
-        ->and($body)->not->toContain('#0B1F3B');
+    // Layout injects theme.json's `primary` as the accent. The owner asked for the admin's
+    // identity, which is the brass: see EmailPalette's docblock for why that means literals here.
+    expect($body)->toContain(EmailPalette::light()->accent);
 });
 
 /**
