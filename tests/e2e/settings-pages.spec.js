@@ -141,6 +141,74 @@ test.describe( 'each Settings page saves on its own', () => {
 		restoreOption( 'corex_brand_tagline', before );
 	} );
 
+	// One person saving two pages, in two tabs or two browsers, before either page is drawn
+	// again. Each save's result used to wait in one place per person, so the second overwrote the
+	// first and the first page said nothing (DECISIONS #646). The two posts are sent without
+	// following their redirects, then each redirect is opened: the order two tabs can meet.
+	test( 'two saves made before either page is drawn each say what they did', async ( {
+		page,
+	} ) => {
+		const saved = wpEval(
+			"update_option( 'corex_insights_cloudflare_token', 'e2e-token-to-remove' ); echo 'ok';"
+		);
+		test.skip( saved !== 'ok', 'needs WP-CLI to save a secret first' );
+		const before = storedOption( 'corex_brand_tagline' );
+
+		/**
+		 * Posts a page's form as its button would, with the changes on top, and answers where
+		 * the save sends the browser.
+		 *
+		 * @param {string}                section The page.
+		 * @param {Object<string,string>} changes Field name => value.
+		 * @return {Promise<string>} The address of the redirect.
+		 */
+		const postWithoutFollowing = async ( section, changes ) => {
+			await page.goto( `${ PAGE }&section=${ section }` );
+			const form = page.locator( 'form.corex-settings-form' );
+			const { action, fields } = await form.evaluate( ( element ) => ( {
+				action: element.action,
+				fields: [ ...new FormData( element ) ],
+			} ) );
+			const data = new FormData();
+			for ( const [ name, value ] of fields ) {
+				if ( ! ( name in changes ) ) {
+					data.append( name, value );
+				}
+			}
+			for ( const [ name, value ] of Object.entries( changes ) ) {
+				data.append( name, value );
+			}
+			const answer = await page.request.post( action, {
+				multipart: data,
+				maxRedirects: 0,
+			} );
+			expect( answer.status() ).toBe( 303 );
+
+			return answer.headers().location;
+		};
+
+		try {
+			const insights = await postWithoutFollowing( 'insights', {
+				'corex_remove_secret[]': 'insights.cloudflare.token',
+			} );
+			const general = await postWithoutFollowing( 'general', {
+				brand_tagline: `Saved second by the browser suite ${ Date.now() }`,
+			} );
+
+			await page.goto( insights );
+			await expect( page.locator( '.corex-toast' ) ).toContainText(
+				'Cloudflare API token was removed.'
+			);
+			await page.goto( general );
+			await expect( page.locator( '.corex-toast' ) ).toContainText(
+				'Settings saved.'
+			);
+		} finally {
+			restoreOption( 'corex_brand_tagline', before );
+			restoreOption( 'corex_insights_cloudflare_token', null );
+		}
+	} );
+
 	test( 'a refused value is named, stays in its field and stays unsaved', async ( {
 		page,
 	} ) => {
@@ -305,7 +373,10 @@ test.describe( 'without scripts', () => {
 		await page.locator( '#brand_address' ).fill( 'No-script Street 1' );
 		await page.getByRole( 'button', { name: 'Save changes' } ).click();
 
-		await expect( page ).toHaveURL( /section=general$/ );
+		// The save's id stays in the address here: taking it out is the script's job.
+		await expect( page ).toHaveURL(
+			/section=general&corex_saved=[a-f0-9-]+$/
+		);
 		await expect( page.locator( '.corex-toast' ) ).toContainText(
 			'Settings saved.'
 		);
