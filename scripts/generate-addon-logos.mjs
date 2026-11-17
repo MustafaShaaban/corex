@@ -4,8 +4,9 @@
  * (`Corex Addon Logos - Final.dc.html`): a rounded graphite tile, a brass stroke glyph,
  * and the five-square Core sigil in the bottom-trailing corner.
  *
- * Output: plugins/corex-config/assets/addon-logos/{slug}.svg + {slug}--disabled.svg, and
- * the standalone five-square mark corex-mark.svg. No data:/base64 — these are committed assets.
+ * Output: plugins/corex-config/assets/addon-logos/{slug}.svg + {slug}--disabled.svg. No
+ * data:/base64: these are committed assets. The CoreX symbol itself is the logo set's
+ * (scripts/generate-logo-assets.py).
  *
  * Run: node scripts/generate-addon-logos.mjs
  */
@@ -146,22 +147,6 @@ function tile(
 	);
 }
 
-// Standalone five-square CoreX mark (for shell/header identity).
-function mark( size = 48 ) {
-	const cell = ( x, y, fill ) =>
-		`<rect x="${ x }" y="${ y }" width="12" height="12" rx="2.5" fill="${ fill }"/>`;
-	return (
-		`<svg xmlns="http://www.w3.org/2000/svg" width="${ size }" height="${ size }" viewBox="0 0 48 48" fill="none" role="img" aria-label="Corex">` +
-		`<title>Corex</title>` +
-		cell( 3, 3, 'currentColor' ) +
-		cell( 33, 3, 'currentColor' ) +
-		cell( 18, 18, BRASS ) +
-		cell( 3, 33, 'currentColor' ) +
-		cell( 33, 33, 'currentColor' ) +
-		`</svg>\n`
-	);
-}
-
 // slug -> glyph key. Functional add-ons, site kits, and the core package.
 const MAP = {
 	'corex-ui': 'ui',
@@ -218,10 +203,6 @@ writeFileSync(
 	`${ OUT }/fallback--disabled.svg`,
 	tile( 'core', 48, { glyphColor: MUTED, label: 'add-on (disabled)' } )
 );
-// Standalone five-square mark for headers.
-writeFileSync( 'plugins/corex-config/assets/brand/corex-mark.svg', mark( 48 ) );
-count += 5;
+count += 4;
 
-console.log(
-	`Generated ${ count } add-on logo SVGs in ${ OUT } + corex-mark.svg`
-);
+console.log( `Generated ${ count } add-on logo SVGs in ${ OUT }` );

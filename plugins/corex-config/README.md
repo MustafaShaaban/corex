@@ -11,14 +11,22 @@ radius); four corners use `currentColor` and the center module is CoreX brass `#
 
 | Variant | File | viewBox | Use |
 |---|---|---|---|
-| Symbol | `corex-symbol.svg` | `0 0 48 48` | Bare mark / favicon / app-icon source (decorative) |
-| Wordmark | `corex-wordmark.svg` | `0 0 2600.5 728` | "Corex" type, brass terminal `x` (named image) |
-| Lockup | `corex-lockup.svg` | `0 0 170.02 48` | Mark + wordmark — the default product logo (named image) |
-| Monochrome | `corex-monochrome.svg` | `0 0 170.02 48` | Single-ink (`currentColor`) for print / forced-colors |
-| Contrast | `corex-contrast.svg` | `0 0 170.02 48` | AA-darkened brass `#ad8643` for light / high-contrast |
+| Symbol | `corex-symbol.svg` | `0 0 48 48` | Bare mark drawn inline: corners in the text colour, brass centre (decorative) |
+| Symbol, light / dark | `corex-symbol-light.svg`, `corex-symbol-dark.svg` | `0 0 48 48` | Bare mark in fixed colours for a light or a dark background (decorative) |
+| Wordmark | `corex-wordmark.svg` | `0 0 2600.5 728` | "Core" in the text colour, brass terminal `x` (named image) |
+| Lockup | `corex-lockup.svg` | `0 0 170.02 48` | Mark, divider and word drawn inline, the neutral in the text colour (named image) |
+| Lockup, light / dark | `corex-lockup-light.svg`, `corex-lockup-dark.svg` | `0 0 170.02 48` | Fixed colours for a light or a dark background; the sign-in draws the one that suits its card (named image) |
+| Stacked, light / dark | `corex-stacked-light.svg`, `corex-stacked-dark.svg` | `0 0 54.61 75.06` | Mark over word, for square places (named image) |
+| Knockout | `corex-knockout.svg` | `0 0 123.06 123.06` | One ink, graphite, on a brass tile, for print and stamps (named image) |
+| Monochrome | `corex-monochrome.svg` | `0 0 170.02 48` | The lockup in one ink, the text colour, for one-colour and forced-colours contexts (named image) |
+| Contrast | `corex-contrast.svg` | `0 0 170.02 48` | The lockup with the AA brass `#ad8643` for a light background; the print image's source |
+| Favicon | `corex-favicon.svg`, `corex-favicon-{16,32,180,512}.png` | `0 0 48 48` | The symbol on a graphite tile; the CoreX theme links its copies when the site has no site icon (decorative) |
 
-**Usage rules:** keep at least one module of clear space on every side; minimum size 16px (favicon) / 24px in-app;
-never recolor, rotate, stretch, or add effects to the mark. On a light background use the contrast variant (AA
+Every file is written by `scripts/generate-logo-assets.py` and listed in the manifest with its use, colours and
+hash; `tests/Unit/Config/LogoAssetContractTest.php` fails when the two disagree (spec 134, FR-024).
+
+**Usage rules:** keep at least one module of clear space on every side; minimum size 16px (the favicon) / 24px in-app;
+never recolor, rotate, stretch, or add effects to the mark. On a light background use the light lockup or the contrast variant (AA
 brass); the wordmark glyphs are outlined vector paths (no live font dependency) so the mark renders without the
 Space Grotesk webfont. The retired navy and cyan logo was removed in spec 121; the Core X set above is the only
 CoreX artwork.

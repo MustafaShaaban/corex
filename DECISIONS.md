@@ -21422,3 +21422,44 @@ bytes measured on the pull request's run: `/` 61,472, the four others 26,820. No
 
 *Not chosen:* stripping the sheet's comments (about 2.5 KB saved, the pages still over); folding the bands into
 `block-styles.css` (every page with a card would carry them).
+
+## #647 -- The login's lockup follows the login card; the favicon links come from the theme
+
+**Date:** 2026-11-17. **Spec:** 134, slice 3 (FR-020 to FR-022, SC-006, SC-007). **Branch:**
+`spec/134-slice-3-logo-set`. **Decided:** under the owner's mandate, from the logo set he approved on 2026-11-16
+(`design/handoffs/spec-134-logo-set.md`).
+
+**The lockup by appearance.** The login draws `corex-lockup-dark.svg` on the dark card and `corex-lockup-light.svg`
+on the light one, through the same selectors `corex-admin-tokens.css` gives the card. FR-020 asked that System
+follow the computer "as the card does", but the card does not: `AdminBranding::loginAppearance()` keeps it
+dark-first under System (spec 060). The lockup follows the card, so under System it is the dark lockup on both
+computer settings; making the card follow the computer would turn every default site's login light on a light
+computer, Muva's included, which no story asked for. The lockup's rules already handle a card that follows the
+computer, should a later story ask for it. A logo set in CoreX Settings, Branding, replaces both; the CoreX lockup
+gets the accessible name "CoreX" through `login_headertext`, a site's own logo keeps WordPress's.
+
+**The divider.** It is drawn as the approved artboard draws it (1.55:1 against the ground); the four modules, the
+centre and the word are at 3:1 or more. The hand-over's line that held the divider to 3:1 is corrected.
+
+**The favicon.** `theme/inc/favicon.php` links the theme's own copies (SVG, 32, 16, 512 and an apple-touch 180)
+from `get_template_directory_uri()` on `wp_head` at 99 when `has_site_icon()` is false; no plugin links a favicon
+(#637 keeps the copies equal to the logo folder's).
+
+**The theme gains a `functions.php`.** A favicon link needs a `wp_head` hook, and no plugin may print one
+(principle I: presentation is the theme's). `theme/functions.php` only includes `inc/favicon.php` and hooks it;
+#403's "the theme stays without bootstrap code" is superseded for this one presentation hook, and
+`SkinDisciplineTest` still holds the theme to presentation. The Coming soon page drops the link with the generator
+tags, because that page names no platform (spec 101; spec 111 FR-006).
+
+**The light brass.** On the light login ground the brass centre and "x" read about 3:1 (2.95 to 3.1 as the
+login's glow moves, and the glow did not stop under reduced motion: fixed in this slice). SC-006 holds the corner
+modules and the word to 3:1 and the browser check asserts that; the brass is recorded beside the divider, a logo
+carrying no contrast requirement in WCAG 2.2.
+
+**Geometry.** The files keep the master Core X outlines approved on 2026-06-20 (`logo-manifest.json`): the UI review
+measured the artboard's horizontal lockup with its divider 3.5px further from the symbol and its word about 7%
+larger, because the artboard sets the word as live text beside a 1px line. The hand-over keeps the master geometry;
+the owner may ask for the artboard's proportions instead.
+
+*Not chosen:* changing the card under System in this slice; a divider darkened past the approved drawing; a darker
+brass on the light lockup than the brand's `#ad8643`.

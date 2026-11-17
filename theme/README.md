@@ -67,6 +67,14 @@ All colors, sizes, spacing, radii, shadows, and fonts come from `theme.json` pre
 custom properties. No raw literals ship in CSS (enforced by the token-consumer contract
 tests). Layout is RTL-first via logical properties.
 
+## The favicon (`functions.php`, `inc/favicon.php`, `assets/favicon/`)
+
+`functions.php` holds one presentation hook: when the site has no site icon, `wp_head` links the CoreX favicon
+(SVG, 16, 32, 512 and an apple-touch 180) from the theme's own copies in `assets/favicon/`. A site icon chosen in
+WordPress always wins, and the Coming soon page links none. The copies are written by
+`scripts/generate-logo-assets.py`, and `LogoAssetContractTest` holds them equal to the logo folder's (spec 134,
+FR-022; DECISIONS #637, #647).
+
 ## The gutter
 
 The space between what a visitor reads and each edge of the window is the theme's root

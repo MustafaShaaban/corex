@@ -14,17 +14,20 @@ body.login.corex-login {
 	font-family: var(--corex-admin-font-body);
 }
 
-/* Ambient brass glow behind the card (animated pulse). */
+/* Ambient brass glow behind the card (animated pulse). Centred by two
+   equal insets, which holds in both directions: a translate is physical,
+   so `inset-inline-start: 50%` with `translate(-50%)` put it at the left
+   of a right-to-left page. The transform moves only the block axis. */
 body.login.corex-login::before {
 	position: fixed;
 	inset-block-start: 30%;
-	inset-inline-start: 50%;
+	inset-inline: calc(50% - 16rem);
 	z-index: 0;
 	inline-size: 32rem;
 	block-size: 32rem;
 	background: radial-gradient(circle, rgb(201 162 94 / 16%), transparent 68%);
 	filter: blur(20px);
-	transform: translate(-50%, -50%);
+	transform: translateY(-50%);
 	animation: corex-login-glow 7s ease-in-out infinite;
 	content: "";
 	pointer-events: none;
@@ -395,12 +398,12 @@ body.login.corex-login .corex-login__subtitle {
 	0%,
 	100% {
 		opacity: 0.7;
-		transform: translate(-50%, -50%) scale(1);
+		transform: translateY(-50%) scale(1);
 	}
 
 	50% {
 		opacity: 1;
-		transform: translate(-50%, -50%) scale(1.08);
+		transform: translateY(-50%) scale(1.08);
 	}
 }
 
@@ -415,6 +418,9 @@ body.login.corex-login .corex-login__subtitle {
 
 	/* Accessibility override — !important so it wins over the higher-specificity
 	   per-element animation rules (e.g. #login) above. */
+	body.login.corex-login,
+	body.login.corex-login::before,
+	body.login.corex-login::after,
 	body.login.corex-login *,
 	body.login.corex-login *::before,
 	body.login.corex-login *::after {

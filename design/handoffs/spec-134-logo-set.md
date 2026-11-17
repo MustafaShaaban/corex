@@ -25,7 +25,8 @@ brass values, and answered "Approve logo set". The approved design is the functi
    neutral `#f4f5f7`, brass `#c9a25e`. Drawn on white `#ffffff`, the quiet band `#f3f4f6`, graphite `#14151a` and
    the dark page `#16181d` (FR-018, FR-019).
 2. **The sign-in lockup by appearance.** Dark admin appearance: the dark-background lockup on `#0d0e11`. Light: the
-   light-background lockup on `#eceef1`. System follows the computer. A logo set in CoreX Settings still replaces
+   light-background lockup on the light login ground. System draws the dark lockup, because the card is dark-first
+   under System (spec 060; DECISIONS #647). A logo set in CoreX Settings still replaces
    it. Today's sign-in (black corner modules and divider on near-black, the whole word in brass) is the failure this
    replaces (FR-020, SC-006).
 3. **Stacked lockup**, light and dark, for square places; **the symbol** alone, light and dark (FR-019).
@@ -47,8 +48,11 @@ variants change. `corex-mark.svg` is removed (FR-023).
 
 ## Accessibility expectations
 
-- Every module, the divider and the word differ from the card behind them by at least 3:1 (SC-006): measured on the
-  login in Dark and Light by pixel samples.
+- Every module and the word differ from the ground behind them by at least 3:1 (SC-006 names the four corner
+  modules): measured on the login in Dark and Light by pixel samples (the light brass centre and "x" read about 3:1,
+  2.95 to 3.1 as the login's glow moves, and are recorded, not held to 3:1). The divider
+  is a decorative hairline drawn as the approved artboard draws it (`#c2c8d1` light, `#343b47` dark, 1.55:1); a logo
+  carries no contrast requirement in WCAG 2.2 (1.4.3, 1.4.11). Corrected 2026-11-17, when the build measured it.
 - A lockup used as an image of text has an accessible name ("CoreX"); the symbol and the favicon are decorative.
 
 ## How to change this design

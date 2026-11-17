@@ -292,6 +292,9 @@ test( 'a signed-out visitor gets the coming-soon page at home and a redirect eve
 	expect( html ).not.toMatch( /rel=["']EditURI["']/ );
 	expect( html ).not.toMatch( /type=["']application\/rss\+xml["']/ );
 	expect( html ).not.toContain( 'wpemojiSettings' );
+	// Nor the CoreX theme's favicon, which it links on the real site when there is no site icon
+	// (spec 134, FR-022).
+	expect( html ).not.toContain( 'corex-favicon' );
 
 	// With a campaign tag it is still the home URL.
 	expect( ( await client.get( '/?utm_source=launch' ) ).status() ).toBe(

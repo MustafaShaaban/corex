@@ -26,6 +26,7 @@ final class AdminBranding
         add_action('login_enqueue_scripts', [$this, 'enqueueLoginAssets'], 20);
         add_filter('login_body_class', [$this, 'loginBodyClass']);
         add_filter('login_headerurl', [$this, 'loginUrl']);
+        add_filter('login_headertext', [$this, 'loginHeaderText']);
         add_filter('admin_footer_text', [$this, 'footerText']);
         add_filter('corex_admin_appearance', [$this, 'appearance']);
         add_filter('login_message', [$this, 'loginMessage']);
@@ -68,8 +69,18 @@ final class AdminBranding
         wp_enqueue_script('corex-admin-login');
         wp_add_inline_style(
             'corex-admin-login',
-            $this->branding->loginCss(esc_url($this->branding->logoUrl())),
+            $this->branding->loginCss($this->branding->logoUrl(), $this->branding->lightLogoUrl()),
         );
+    }
+
+    /**
+     * The name of the login's logo link. The CoreX lockup is an image of text, so it is named
+     * "CoreX"; a logo set in CoreX Settings keeps the name WordPress gives it. WordPress prints
+     * the text as it is (wp-login.php), so it is escaped here.
+     */
+    public function loginHeaderText(string $text): string
+    {
+        return $this->branding->hasCustomLogo() ? $text : esc_html__('CoreX', 'corex');
     }
 
     /** @param list<string> $classes

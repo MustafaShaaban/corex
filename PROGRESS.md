@@ -63,8 +63,11 @@ and approved first, a spec ends in slices, and nothing merges without the review
   palette, the kit's custom colours and shadows bound to the brand contract, no text on brass in white, DECISIONS
   #641) is merged (#472, `e990d8da`). **Slice 2** (the brass button, links, focus and selection; the quiet, dark
   and brass bands, registered by corex-ui only where the theme can draw them, DECISIONS #642; corex-ui's style sheet now loads
-  for visitors, #643) is in build on `spec/134-slice-2-bands`. Slice 3's design, the logo set, was approved on 2026-11-16
-  (`design/handoffs/spec-134-logo-set.md`); it is built once slice 2's pull request is open. The kit's components, blocks and templates need later
+  for visitors, #643; the 48px control height, #644; the band pages' byte budgets, #645) is merged (#473,
+  `5e74ec05`). **Slice 3** (the logo set the owner approved on 2026-11-16, `design/handoffs/spec-134-logo-set.md`:
+  light and dark lockups, stacked lockups, a knockout, the favicon set; the login's lockup follows its card; the
+  theme links the favicon when the site has no icon, DECISIONS #647) is on `spec/134-slice-3-logo-set`. Slices 4
+  (theme preview) and 5 (release notes) follow. The kit's components, blocks and templates need later
   specs, and the release order in the planning workspace needs a change request (not written from here).
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).
