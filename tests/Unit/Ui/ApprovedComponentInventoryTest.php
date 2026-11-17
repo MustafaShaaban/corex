@@ -40,7 +40,7 @@ function corexBlockSlugsOnDisk(): array
 /** Registered block-style names. */
 function corexBlockStyleNames(): array
 {
-    return array_column((new BlockStyles(''))->styles(), 'name');
+    return array_column((new BlockStyles('', ''))->styles(), 'name');
 }
 
 /** PatternLibrary names plus `theme/patterns/*.php` basenames. */

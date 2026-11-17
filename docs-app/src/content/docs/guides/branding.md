@@ -75,7 +75,10 @@ left is correct only while the two are equal.
 To recolor just one role without restating the list, override the **scalar** instead (e.g. a
 single `settings.custom` value), which merges. Text drawn on `accent` takes
 `settings.custom.color.onAccent`, graphite by default, so a brand whose `accent` is dark sets it to a light value
-in its `brand.json` (`{ "settings": { "custom": { "color": { "onAccent": "#FFFFFF" } } } }`). Point the resolver
+in its `brand.json` (`{ "settings": { "custom": { "color": { "onAccent": "#FFFFFF" } } } }`). The brass
+band (the call-to-action pattern) is drawn for a light `accent`: with a dark one, its button loses its label, so such
+a brand puts its call to action on the dark band, which keeps CoreX's graphite and brass unless the brand also sets
+the `band*` custom colours. Point the resolver
 at the file with `config('theme.brand_path')`, or place it at the active theme root. A **missing or malformed**
 `brand.json` leaves the defaults intact (logged), so removing the file is a clean rollback.
 Style variations (e.g. `theme/styles/dark.json`) override tokens only — the theme stays a skin.

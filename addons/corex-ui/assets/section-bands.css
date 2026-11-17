@@ -1,0 +1,152 @@
+/*
+ * Section bands (spec 134, FR-013 to FR-015, DECISIONS #640, #642): the
+ * visitor kit's grounds for a Group. They are corex-ui's, not the theme's,
+ * because corex-ui's hero and call-to-action use them. This sheet loads
+ * only under a theme that defines the `band` custom colour or whose palette
+ * has every slug named below as a fallback (BlockStyles::BAND_SLUGS), and
+ * only where a band is drawn.
+ *
+ * A band reads the CoreX theme's band tokens and falls back to those
+ * slugs, so under a theme with the CoreX roles and no band tokens the hero
+ * is the old `primary` section and the call to action the old `accent`
+ * one. Each band takes its colours on itself, into private properties of
+ * its own (`--corex-dark-*`, `--corex-brass-*`), and re-points the palette
+ * only on its children (`> *`): no property refers to itself, and a band
+ * placed directly inside the other keeps its own colours. Every value is a
+ * token.
+ */
+
+/* Quiet band: the quiet grey ground. Its text and headings are the page's. */
+.wp-block-group.is-style-corex-band-quiet {
+	background-color: var(--wp--preset--color--surface-alt);
+}
+
+/* Dark band: dark in both themes. */
+.wp-block-group.is-style-corex-band-dark {
+	--corex-dark-ground: var(--wp--custom--color--band, var(--wp--preset--color--primary));
+	--corex-dark-raised: var(--wp--custom--color--band-raised, var(--wp--preset--color--primary));
+	--corex-dark-line: var(--wp--custom--color--band-line, var(--wp--preset--color--primary));
+	--corex-dark-ink: var(--wp--custom--color--band-ink, var(--wp--preset--color--surface));
+	--corex-dark-ink-soft: var(--wp--custom--color--band-ink-soft, var(--wp--preset--color--surface));
+	--corex-dark-border: var(--wp--custom--color--band-border, var(--wp--preset--color--surface));
+	--corex-dark-accent: var(--wp--custom--color--band-accent, var(--wp--preset--color--surface));
+	--corex-dark-accent-hover: var(--wp--custom--color--band-accent-hover, var(--wp--preset--color--surface));
+	--corex-dark-accent-subtle: var(--wp--custom--color--band-accent-subtle, var(--wp--custom--color--accent-subtle));
+	--corex-dark-link: var(--wp--custom--color--band-link, var(--wp--preset--color--surface));
+	background-color: var(--corex-dark-ground);
+	color: var(--corex-dark-ink);
+}
+
+/*
+ * Inside it every palette token is the band's, as the kit's
+ * `.corex-section--band` hands them on, so a component's ordinary rules
+ * draw it right. Text on brass is the band's own graphite, not a brand's
+ * `on-accent`: a brand with a dark accent sets that light.
+ */
+.wp-block-group.is-style-corex-band-dark > * {
+	--wp--preset--color--surface: var(--corex-dark-ground);
+	--wp--preset--color--background: var(--corex-dark-ground);
+	--wp--preset--color--surface-alt: var(--corex-dark-raised);
+	--wp--preset--color--surface-raised: var(--corex-dark-raised);
+	--wp--preset--color--surface-strong: var(--corex-dark-line);
+	--wp--preset--color--border: var(--corex-dark-border);
+	--wp--preset--color--ink: var(--corex-dark-ink);
+	--wp--preset--color--foreground: var(--corex-dark-ink);
+	--wp--preset--color--ink-soft: var(--corex-dark-ink-soft);
+	--wp--preset--color--primary: var(--corex-dark-ink);
+	--wp--preset--color--corex-primary: var(--corex-dark-ink);
+	--wp--preset--color--primary-dark: var(--corex-dark-ink-soft);
+	--wp--preset--color--inverse: var(--corex-dark-ground);
+	--wp--preset--color--white: var(--corex-dark-ground);
+	--wp--preset--color--accent: var(--corex-dark-accent);
+	--wp--preset--color--accent-dark: var(--corex-dark-link);
+	--wp--preset--color--selection: var(--corex-dark-accent);
+	--wp--custom--color--on-accent: var(--corex-dark-ground);
+	--wp--custom--color--accent-hover: var(--corex-dark-accent-hover);
+	--wp--custom--color--accent-subtle: var(--corex-dark-accent-subtle);
+	--wp--custom--focus--color: var(--corex-dark-accent);
+	--corex-band-button: var(--corex-dark-accent);
+	--corex-band-button-hover: var(--corex-dark-accent-hover);
+	--corex-band-button-label: var(--corex-dark-ground);
+	--corex-band-ring: var(--corex-dark-accent);
+}
+
+/* Brass band: brass ground, graphite text, a graphite button. Once a page. */
+.wp-block-group.is-style-corex-band-brass {
+	--corex-brass-text: var(--wp--custom--color--on-accent, var(--wp--preset--color--inverse));
+	--corex-brass-ground: var(--wp--preset--color--accent);
+	--corex-brass-raised: var(--wp--custom--color--accent-hover, var(--wp--preset--color--accent));
+	--corex-brass-card: var(--wp--custom--color--band-ink, var(--wp--preset--color--surface));
+	--corex-brass-ring: var(--wp--custom--color--on-accent, var(--wp--preset--color--surface));
+	--corex-brass-button: var(--wp--custom--color--on-accent, var(--wp--preset--color--surface));
+	--corex-brass-button-hover: var(--wp--custom--color--band-raised, var(--wp--preset--color--surface));
+	--corex-brass-button-label: var(--wp--custom--color--band-ink, var(--wp--preset--color--accent-dark));
+	background-color: var(--wp--preset--color--accent);
+	color: var(--wp--custom--color--on-accent, var(--wp--preset--color--inverse));
+}
+
+/*
+ * Inside it text, links and edges are graphite, as the kit's
+ * `.corex-section--accent` has them. A card is the kit's near-white card
+ * in both modes, and a field stands on brass (in Dark the page's surface is
+ * graphite, where graphite text is lost).
+ */
+.wp-block-group.is-style-corex-band-brass > * {
+	--wp--preset--color--surface: var(--corex-brass-ground);
+	--wp--preset--color--background: var(--corex-brass-ground);
+	--wp--preset--color--surface-alt: var(--corex-brass-raised);
+	--wp--preset--color--surface-raised: var(--corex-brass-card);
+	--wp--preset--color--surface-strong: var(--corex-brass-raised);
+	--wp--preset--color--ink: var(--corex-brass-text);
+	--wp--preset--color--foreground: var(--corex-brass-text);
+	--wp--preset--color--ink-soft: var(--corex-brass-text);
+	--wp--preset--color--primary: var(--corex-brass-text);
+	--wp--preset--color--corex-primary: var(--corex-brass-text);
+	--wp--preset--color--accent-dark: var(--corex-brass-text);
+	--wp--preset--color--border: var(--corex-brass-text);
+	--wp--preset--color--selection: var(--corex-brass-text);
+	--wp--preset--color--selection-text: var(--corex-brass-ground);
+	--wp--custom--focus--color: var(--corex-brass-ring);
+	--corex-band-button: var(--corex-brass-button);
+	--corex-band-button-hover: var(--corex-brass-button-hover);
+	--corex-band-button-label: var(--corex-brass-button-label);
+	--corex-band-ring: var(--corex-brass-ring);
+}
+
+/* The kit's secondary on brass: graphite text and edge, nothing behind. */
+.wp-block-group.is-style-corex-band-brass .wp-block-button.is-style-corex-secondary .wp-block-button__link:not(:disabled, [aria-disabled="true"]) {
+	background-color: transparent;
+}
+
+/*
+ * A band's plain button (DECISIONS #642): every element button with no
+ * style of its own, and the button block's link when the block has none
+ * (its style sits on the wrapper). Under the CoreX theme the dark band's
+ * colours are those its ordinary rules give anyway; they are named so that
+ * a theme with the CoreX roles and no band tokens draws the old hero and
+ * call-to-action buttons. A disabled button keeps the theme's disabled look.
+ */
+:is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass) :is(.wp-element-button:not(.wp-block-button__link, [class*="is-style-"]), .wp-block-button:is(:not([class*="is-style-"]), .is-style-fill) > .wp-block-button__link):not(:disabled, [aria-disabled="true"]) {
+	background-color: var(--corex-band-button);
+	color: var(--corex-band-button-label);
+}
+
+:is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass) :is(.wp-element-button:not(.wp-block-button__link, [class*="is-style-"]), .wp-block-button:is(:not([class*="is-style-"]), .is-style-fill) > .wp-block-button__link):not(:disabled, [aria-disabled="true"]):hover {
+	background-color: var(--corex-band-button-hover);
+}
+
+/* A band's buttons ring in the band's focus colour. */
+:is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass) :is(.wp-element-button, .wp-block-button__link):focus-visible {
+	outline-color: var(--corex-band-ring);
+}
+
+/*
+ * A heading with no colour of its own takes the band's text colour
+ * (FR-014). A heading's own colour (a colour class, or a colour set on the
+ * block) still wins over this rule; a colour a theme gives all headings
+ * of one block type does not.
+ */
+.wp-block-group.is-style-corex-band-dark :where(h1, h2, h3, h4, h5, h6),
+.wp-block-group.is-style-corex-band-brass :where(h1, h2, h3, h4, h5, h6) {
+	color: inherit;
+}

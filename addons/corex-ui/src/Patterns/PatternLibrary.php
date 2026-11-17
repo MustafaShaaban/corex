@@ -14,14 +14,17 @@ use Corex\Blocks\SampleBlocks;
 
 /**
  * The Corex section patterns — compositions of core blocks, styled only with
- * theme.json tokens (color slugs, `var:preset` spacing, the `onAccent` custom colour), accessible, and
+ * theme.json tokens (color slugs, `var:preset` spacing) and corex-ui's section styles, accessible, and
  * translation-ready. Pure: it returns the catalog; registration is the registrar's
  * job. The contact pattern composes the spec-007 `corex/form` block.
  *
  * They make no claim for the site (spec 115): the figures and the quote are marked as samples, and the
- * hero and call-to-action buttons go to a real address or are not drawn. Their colours are chosen for
- * contrast in the light and the dark palette: text on the section at least 4.5:1, a button against its
- * section at least 3:1.
+ * hero and call-to-action buttons go to a real address or are not drawn. The hero is the dark band and
+ * the call to action the brass band ({@see \Corex\Ui\Blocks\BlockStyles}, spec 134, FR-015): the band
+ * draws the section, its heading and its button, so neither names a colour. Under a theme with the
+ * CoreX roles and no band tokens each draws the colours it named before. The bands exist only under a
+ * theme that defines the `band` colour or has every slug they fall back to (DECISIONS #642); under a
+ * client theme with a palette of its own the band class is inert and the theme's own look draws them.
  */
 final class PatternLibrary
 {
@@ -39,11 +42,11 @@ final class PatternLibrary
      */
     public const ACTION_LINK = 'corex-action-link';
 
-    /**
-     * Text on a brass ground: the theme's graphite `onAccent` (spec 134, DECISIONS #635), and `inverse`
-     * under a theme that has no such token. White on the light brass is 3.35:1, under AA for text.
-     */
-    private const ON_ACCENT = 'var(--wp--custom--color--on-accent, var(--wp--preset--color--inverse))';
+    /** The section style of the hero: dark in both themes (DECISIONS #640). */
+    public const DARK_BAND = 'is-style-corex-band-dark';
+
+    /** The section style of the call to action: brass, with graphite text and a graphite button. */
+    public const BRASS_BAND = 'is-style-corex-band-brass';
 
     /**
      * @return list<array{name:string,title:string,content:string}>
@@ -67,12 +70,12 @@ final class PatternLibrary
     private function hero(): string
     {
         return sprintf(
-            '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"primary","textColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
-            . '<section class="wp-block-group alignfull has-surface-color has-primary-background-color has-text-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
-            . '<!-- wp:heading {"textAlign":"center","level":1,"textColor":"surface"} --><h1 class="wp-block-heading has-text-align-center has-surface-color has-text-color">%1$s</h1><!-- /wp:heading -->'
+            '<!-- wp:group {"tagName":"section","align":"full","className":"' . self::DARK_BAND . '","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull ' . self::DARK_BAND . '" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:heading {"textAlign":"center","level":1} --><h1 class="wp-block-heading has-text-align-center">%1$s</h1><!-- /wp:heading -->'
             . '<!-- wp:paragraph {"align":"center"} --><p class="has-text-align-center">%2$s</p><!-- /wp:paragraph -->'
             . '<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} --><div class="wp-block-buttons">'
-            . self::actionButton('surface', 'primary', '%3$s')
+            . self::actionButton('%3$s')
             . '</div><!-- /wp:buttons --></section><!-- /wp:group -->',
             esc_html__('Build something great', 'corex'),
             esc_html__('A clear, confident sentence about what your company does and who it helps.', 'corex'),
@@ -81,16 +84,14 @@ final class PatternLibrary
     }
 
     /**
-     * A button with no address of its own: {@see ActionLinks} gives it one when it is drawn. Its colours
-     * are its own, so it stands apart from the section behind it.
+     * A button with no address of its own: {@see ActionLinks} gives it one when it is drawn. It has no
+     * colours of its own: the section style it sits in draws it apart from the section.
      */
-    private static function actionButton(string $background, string $text, string $label): string
+    private static function actionButton(string $label): string
     {
         return sprintf(
-            '<!-- wp:button {"backgroundColor":"%1$s","textColor":"%2$s","className":"%4$s"} -->'
-            . '<div class="wp-block-button %4$s"><a class="wp-block-button__link has-%2$s-color has-%1$s-background-color has-text-color has-background wp-element-button">%3$s</a></div><!-- /wp:button -->',
-            $background,
-            $text,
+            '<!-- wp:button {"className":"%2$s"} -->'
+            . '<div class="wp-block-button %2$s"><a class="wp-block-button__link wp-element-button">%1$s</a></div><!-- /wp:button -->',
             $label,
             self::ACTION_LINK,
         );
@@ -119,11 +120,11 @@ final class PatternLibrary
     private function cta(): string
     {
         return sprintf(
-            '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"accent","style":{"color":{"text":"' . self::ON_ACCENT . '"},"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
-            . '<section class="wp-block-group alignfull has-accent-background-color has-text-color has-background" style="color:' . self::ON_ACCENT . ';padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
-            . '<!-- wp:heading {"textAlign":"center","style":{"color":{"text":"' . self::ON_ACCENT . '"}}} --><h2 class="wp-block-heading has-text-align-center has-text-color" style="color:' . self::ON_ACCENT . '">%1$s</h2><!-- /wp:heading -->'
+            '<!-- wp:group {"tagName":"section","align":"full","className":"' . self::BRASS_BAND . '","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull ' . self::BRASS_BAND . '" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:heading {"textAlign":"center"} --><h2 class="wp-block-heading has-text-align-center">%1$s</h2><!-- /wp:heading -->'
             . '<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} --><div class="wp-block-buttons">'
-            . self::actionButton('surface', 'accent-dark', '%2$s')
+            . self::actionButton('%2$s')
             . '</div><!-- /wp:buttons --></section><!-- /wp:group -->',
             esc_html__('Ready to talk?', 'corex'),
             esc_html__('Contact us', 'corex')

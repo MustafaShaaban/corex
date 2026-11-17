@@ -1,7 +1,7 @@
 {
   "generated_at": "source-controlled",
   "canonical_source": "theme/theme.json",
-  "count": 105,
+  "count": 106,
   "definitions": [
     {
       "id": "border.width.strong",
@@ -659,6 +659,20 @@
       "replacement_id": "color.inverse",
       "introduced_version": "0.28.0",
       "remove_after_version": "0.29.0",
+      "evidence_status": "planned"
+    },
+    {
+      "id": "control.height",
+      "group": "layout",
+      "source_path": "theme/theme.json#settings.custom.control.height",
+      "generated_property": "--wp--custom--control--height",
+      "semantic_role": "control-height",
+      "default_mapping": "3rem",
+      "dark_mapping": null,
+      "classification": "retained",
+      "replacement_id": null,
+      "introduced_version": null,
+      "remove_after_version": null,
       "evidence_status": "planned"
     },
     {

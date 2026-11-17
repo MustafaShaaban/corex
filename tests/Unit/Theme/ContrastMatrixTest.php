@@ -45,6 +45,15 @@ it('holds the brass button, both bands, selected text and the field edge, in bot
         'selection-text on selection',              // selected text
         'border on surface',                        // a field's edge
         'primary on surface-strong',                // the focus ring on the corporate header's top bar
+        // Spec 134, FR-013, DECISIONS #642: the brass band's graphite button, at rest and on hover.
+        'custom.onAccent on accent',
+        'custom.bandInk on custom.onAccent',
+        'custom.bandRaised on accent',
+        'custom.bandInk on custom.bandRaised',
+        'custom.band on custom.bandAccent',         // the dark band's button label, the band's own graphite
+        'accent on custom.onAccent',                // selected text on the brass band
+        'selection-text on custom.bandAccent',      // selected text on the dark band
+        'custom.bandLink on custom.bandRaised',     // a link in a card on the dark band
     ];
     $missing = [];
 

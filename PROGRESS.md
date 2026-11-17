@@ -61,7 +61,10 @@ and approved first, a spec ends in slices, and nothing merges without the review
   slices: tokens; base elements and section styles (the brass button, the dark band and the brass band,
   DECISIONS #640); the logo set; the theme preview; release notes. The spec merged as #471. **Slice 1** (the
   palette, the kit's custom colours and shadows bound to the brand contract, no text on brass in white, DECISIONS
-  #641) is PR #472, in review fixes. Slice 2 is ready next; slice 3 waits for the logo set's own design approval. The kit's components, blocks and templates need later
+  #641) is merged (#472, `e990d8da`). **Slice 2** (the brass button, links, focus and selection; the quiet, dark
+  and brass bands, registered by corex-ui only where the theme can draw them, DECISIONS #642; corex-ui's style sheet now loads
+  for visitors, #643) is in build on `spec/134-slice-2-bands`. Slice 3's design, the logo set, was approved on 2026-11-16
+  (`design/handoffs/spec-134-logo-set.md`); it is built once slice 2's pull request is open. The kit's components, blocks and templates need later
   specs, and the release order in the planning workspace needs a change request (not written from here).
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).
