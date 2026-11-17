@@ -2,7 +2,8 @@
  * Corex E2E: tokens and type as the browser draws them (spec 121, R2.1).
  *
  * - US-BRD-03: the front page prints the theme's spacing, font sizes and shadows only, headings
- *   follow the type scale, a button has the 6px CoreX radius and a motion-token transition.
+ *   follow the type scale, a button has the kit's 10px control corner (spec 134) and a motion-token
+ *   transition.
  * - US-BRD-04: a page in Arabic draws its text in IBM Plex Sans Arabic at 1.8 and 1.3, and only a
  *   page with Arabic text loads the Arabic files; Latin words stay in the Latin face.
  * - US-BRD-09: paragraphs in the system font, buttons, labels and headings in Space Grotesk, on the
@@ -206,8 +207,9 @@ test.describe( 'the CoreX theme', () => {
 		expect( paragraph.family ).toMatch( SYSTEM_FONT );
 		expect( button.family ).toMatch( SPACE_GROTESK );
 		expect( label.family ).toMatch( SPACE_GROTESK );
-		// The 6px CoreX radius; the hover change takes the fast motion token, 140ms (TC-BRD-03-04).
-		expect( button.radius ).toBe( '6px' );
+		// The kit's 10px control corner (spec 134, FR-011; it was 6px under spec 121); the hover change
+		// takes the fast motion token, 140ms (TC-BRD-03-04).
+		expect( button.radius ).toBe( '10px' );
 		expect( button.transition.split( ', ' ) ).toContain( '0.14s' );
 	} );
 

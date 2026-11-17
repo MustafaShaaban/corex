@@ -1,8 +1,8 @@
 /**
  * The hero and call-to-action buttons' focus ring (spec 115, US-SAFE-15).
- * The ring sits outside the button, on the section, so it takes the
- * section's text colour (surface): at least 3:1 against the section in
- * the light and dark palettes, where the browser's own ring is not.
+ * The ring sits outside the button, on the section, so it is drawn in
+ * `surface`. Inside a section band (spec 134) the band's sheet gives it
+ * the band's focus colour instead, at least 3:1 against the band.
  */
 .corex-action-link .wp-block-button__link:focus-visible {
 	outline:

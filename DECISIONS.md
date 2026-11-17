@@ -21340,3 +21340,85 @@ the case-folding test) that reads about 4.5:1 on near-black.
 
 **Docs.** The Foundations page lists the custom colours and the shadows with their default and dark values, which
 completes spec 121's FR-025, TC-DOC-07-04 and SC-007.
+
+## #642 -- The three section styles are registered by corex-ui, where the patterns that use them live
+
+**Date:** 2026-11-16. **Spec:** 134, slice 2 (FR-013, FR-015). **Branch:** `spec/134-slice-2-bands`.
+**Decided:** under the owner's mandate for the revamp.
+
+**Why.** The hero and call-to-action patterns are corex-ui's (`PatternLibrary`), and corex-ui runs under client
+themes (Perego) that do not inherit the CoreX theme's `theme.json`. A section style registered only by the theme
+would be an inert class name there, and a hero inserted under a client theme would lose its ground, which FR-015
+and SC-009 forbid.
+
+**What.** `corex-band-quiet`, `corex-band-dark` and `corex-band-brass` are Group block styles registered by
+`Corex\Ui\Blocks\BlockStyles`, beside the existing Card, Section and Empty state styles, with their rules in a
+sheet of their own, `section-bands.css`, loaded with the block that uses them (#643). The rules name the `band-*` and `on-accent` tokens the
+theme defines (slice 1), each with a palette slug as its fallback, so under a theme without them a band draws as
+today's `primary` or `accent` section. The theme supplies the tokens and its base elements; it registers no
+section style of its own. FR-013's "the theme MUST register" is corrected to say so.
+
+*Not chosen:* theme.json section style variations (inert under a client theme); registering in both places (two
+definitions of one look, which drift).
+
+**Where a band exists.** The band styles and their sheet (`section-bands.css`) exist only where the active theme
+can draw them: it defines the `band` custom colour (the CoreX theme, whatever palette a `brand.json` gives it), or
+its palette has every slug the rules fall back to. The check runs when it is needed (the editor's assets, or the
+first band drawn on a page), not on `init`, so a request that draws no block pays nothing for it. Muva's and Perego's palettes lack all or most of them (Perego has an `accent`;
+measured 2026-11-16 by the slice's review): a `var()` with no value and no fallback computes to `unset`, so a
+registered band there turned the hero's button transparent and wiped the client's own `accent` inside it. Without
+the style the class is inert, as the old pattern's colour classes were (WordPress prints no class for a slug the
+theme lacks), and the theme draws the section with its defaults, which is what it drew before.
+
+**The brass band's button** is the kit's: `onAccent` behind, `bandInk` on it, for every plain button in the band.
+Inside the dark band `onAccent` is re-pointed to the band's graphite, so a brand that sets a light `onAccent` does
+not put a white label on the band's brass. A brand with a dark `accent` uses the dark band for its call to action
+(spec 134, Edge cases).
+
+## #643 -- corex-ui's block style sheet is enqueued when a styled block is drawn
+
+**Date:** 2026-11-16. **Spec:** 134, slice 2 (FR-013, FR-015). **Branch:** `spec/134-slice-2-bands`.
+**Decided:** under the owner's mandate for the revamp.
+
+**Found.** WordPress enqueues a registered block style's `style_handle` from `enqueue_block_assets`. A block theme
+fires that inside `wp_head`, after it has drawn the template, so on the front end `block-styles.css` never reached
+the page: a Group saved with `is-style-corex-card` drew with no card, under the CoreX theme and under client themes
+alike. The editor loaded the sheet, so what an author saw there was not what visitors got. Measured in Chromium on a
+scratch site; the three band browser tests fail with the fix taken out.
+
+**What.** `BlockStyles::register()` adds a `render_block` filter that enqueues the sheet when a block using one of
+its styles is drawn, and only then (constitution VI: no global asset).
+
+**Client impact.** Where saved content already uses Card, Section, Empty state, Striped, Secondary or Ghost, those
+styles start drawing on the front end after the update, on Muva and Perego too. Their colour declarations name
+CoreX slugs a client palette mostly lacks, so there they draw little colour, but padding, corners and outlines do
+draw; Secondary now takes the surrounding text colour (spec 134, FR-011). The release notes (slice 5) list it, and both client sessions are told before the tag.
+
+*Not chosen:* enqueueing the sheet on every page (a global asset); leaving it, which ships bands that never draw.
+
+## #644 -- A control's height is a token: `custom.control.height`, 3rem
+
+**Date:** 2026-11-16. **Spec:** 134, slice 2 (FR-011). **Decided:** under the owner's mandate for the revamp.
+
+The kit draws every button 48px tall with no block padding and a 1px transparent edge, so every button style is one
+height; its stylesheet writes the 48px as a raw `3rem`. The theme had no token for it, and the spacing scale's `60`
+happens to be 3rem, but a spacing step that names a height breaks the day the scale is retuned. `theme.json` gains
+`settings.custom.control.height` (3rem), beside `custom.header.height`; the button's `min-block-size` reads it. The
+kit's large button (56px) for the hero and the call to action is the Hero and Call to Action blocks' (spec 134,
+"Found while building slice 2", item 6).
+
+*Not chosen:* `spacing|60` (a height borrowed from a spacing step); padding that adds up to 48px (it changes with the
+label's line height and the face, measured 57.6px before this slice).
+
+## #645 -- The pages that draw a band carry the band sheet in their byte budget
+
+**Date:** 2026-11-16. **Spec:** 134, slice 2 (FR-013); spec 116 (US-NFR-07, the front-end budget).
+**Decided:** under the owner's mandate for the revamp.
+
+`section-bands.css` (8,572 bytes) loads only on a page that draws a band (constitution VI). On CI's quality site
+those are the front page, About, Landing, Services and the single service page, which took each more than 10% over
+its budget; without the sheet each is within it. Their budgets in `tests/e2e/quality/byte-budget.json` become the
+bytes measured on the pull request's run: `/` 61,472, the four others 26,820. No other page changes.
+
+*Not chosen:* stripping the sheet's comments (about 2.5 KB saved, the pages still over); folding the bands into
+`block-styles.css` (every page with a card would carry them).

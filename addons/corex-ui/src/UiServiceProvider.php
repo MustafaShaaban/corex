@@ -53,6 +53,7 @@ final class UiServiceProvider extends ServiceProvider
             BlockStyles::class,
             static fn (): BlockStyles => new BlockStyles(
                 plugins_url('assets/block-styles.css', dirname(__DIR__) . '/corex-ui.php'),
+                plugins_url('assets/section-bands.css', dirname(__DIR__) . '/corex-ui.php'),
             ),
         );
     }
@@ -68,7 +69,8 @@ final class UiServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register the DLS block styles (card/section/empty/striped/secondary/ghost) — spec 054 US3.
+     * Register the DLS block styles (card/section/empty/striped/secondary/ghost; spec 054 US3) and, under a
+     * theme with the CoreX palette roles, the quiet, dark and brass bands (spec 134, DECISIONS #642).
      */
     public function registerBlockStyles(): void
     {

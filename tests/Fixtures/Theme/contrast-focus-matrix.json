@@ -35,6 +35,15 @@
     { "id": "light-band-raised-body", "mode": "light", "foreground": "custom.bandInk", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 },
     { "id": "light-band-raised-muted", "mode": "light", "foreground": "custom.bandInkSoft", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 },
     { "id": "light-band-raised-border", "mode": "light", "foreground": "custom.bandBorder", "background": "custom.bandRaised", "kind": "non-text", "threshold": 3.0 },
+    { "id": "light-brass-band-button-edge", "mode": "light", "foreground": "custom.onAccent", "background": "accent", "kind": "non-text", "threshold": 3.0 },
+    { "id": "light-brass-band-button-hover-edge", "mode": "light", "foreground": "custom.bandRaised", "background": "accent", "kind": "non-text", "threshold": 3.0 },
+    { "id": "light-brass-band-button-label", "mode": "light", "foreground": "custom.bandInk", "background": "custom.onAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-band-button-band-label", "mode": "light", "foreground": "custom.band", "background": "custom.bandAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-brass-band-button-hover-label", "mode": "light", "foreground": "custom.bandInk", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-brass-band-focus", "mode": "light", "foreground": "custom.onAccent", "background": "accent", "kind": "focus", "threshold": 3.0 },
+    { "id": "light-brass-band-selection", "mode": "light", "foreground": "accent", "background": "custom.onAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-band-selection", "mode": "light", "foreground": "selection-text", "background": "custom.bandAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-band-raised-link", "mode": "light", "foreground": "custom.bandLink", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 },
     { "id": "dark-body", "mode": "dark", "foreground": "ink", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
     { "id": "dark-muted", "mode": "dark", "foreground": "ink-soft", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
     { "id": "dark-heading", "mode": "dark", "foreground": "primary", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
@@ -68,6 +77,15 @@
     { "id": "dark-band-button-hover-label", "mode": "dark", "foreground": "custom.onAccent", "background": "custom.bandAccentHover", "kind": "normal-text", "threshold": 4.5 },
     { "id": "dark-band-raised-body", "mode": "dark", "foreground": "custom.bandInk", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 },
     { "id": "dark-band-raised-muted", "mode": "dark", "foreground": "custom.bandInkSoft", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 },
-    { "id": "dark-band-raised-border", "mode": "dark", "foreground": "custom.bandBorder", "background": "custom.bandRaised", "kind": "non-text", "threshold": 3.0 }
+    { "id": "dark-band-raised-border", "mode": "dark", "foreground": "custom.bandBorder", "background": "custom.bandRaised", "kind": "non-text", "threshold": 3.0 },
+    { "id": "dark-brass-band-button-edge", "mode": "dark", "foreground": "custom.onAccent", "background": "accent", "kind": "non-text", "threshold": 3.0 },
+    { "id": "dark-brass-band-button-hover-edge", "mode": "dark", "foreground": "custom.bandRaised", "background": "accent", "kind": "non-text", "threshold": 3.0 },
+    { "id": "dark-brass-band-button-label", "mode": "dark", "foreground": "custom.bandInk", "background": "custom.onAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-band-button-band-label", "mode": "dark", "foreground": "custom.band", "background": "custom.bandAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-brass-band-button-hover-label", "mode": "dark", "foreground": "custom.bandInk", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-brass-band-focus", "mode": "dark", "foreground": "custom.onAccent", "background": "accent", "kind": "focus", "threshold": 3.0 },
+    { "id": "dark-brass-band-selection", "mode": "dark", "foreground": "accent", "background": "custom.onAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-band-selection", "mode": "dark", "foreground": "selection-text", "background": "custom.bandAccent", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-band-raised-link", "mode": "dark", "foreground": "custom.bandLink", "background": "custom.bandRaised", "kind": "normal-text", "threshold": 4.5 }
   ]
 }

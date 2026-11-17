@@ -2,9 +2,9 @@
   "generated_at": "source-controlled",
   "authority": "theme/theme.json",
   "summary": {
-    "definitions": 105,
-    "consumer_records": 1339,
-    "retained": 84,
+    "definitions": 106,
+    "consumer_records": 1388,
+    "retained": 85,
     "added": 10,
     "aliased": 11,
     "migration_batches": 4,
@@ -189,6 +189,12 @@
       "id": "color.warningSoft",
       "generated_property": "--wp--custom--color--warning-soft",
       "source_path": "theme/theme.json#settings.custom.color.warningSoft",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "control.height",
+      "generated_property": "--wp--custom--control--height",
+      "source_path": "theme/theme.json#settings.custom.control.height",
       "status": "retained-pending-contract-tests"
     },
     {

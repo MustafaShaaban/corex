@@ -85,7 +85,8 @@ it('writes the design\'s radius and motion', function () {
 
     expect($custom['radius'])->toBe(['xs' => '0.1875rem', 'sm' => '0.375rem', 'md' => '0.625rem', 'lg' => '1rem', 'full' => '999px'])
         ->and($custom['motion']['duration'])->toBe(['instant' => '80ms', 'fast' => '140ms', 'base' => '200ms', 'slow' => '320ms'])
-        ->and(theme_scales()['styles']['elements']['button']['border']['radius'])->toBe('var(--wp--custom--radius--sm)');
+        // The kit's control corner is 10px (spec 134, FR-011), the scale's `md`.
+        ->and(theme_scales()['styles']['elements']['button']['border']['radius'])->toBe('var(--wp--custom--radius--md)');
 });
 
 it('sets buttons, navigation and form labels in the heading face', function () {
