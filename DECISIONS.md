@@ -20123,6 +20123,11 @@ as safe and needs no follow-up. *An exception for `isomorphic-git` instead*: the
 with `ci` or `shipped-runtime` exposure, and an override that installs the fixed version is the policy's first
 choice even where the copy is unused.
 
+**Amended 2026-11-17.** GitHub withdrew GHSA-gcqx-w48m-w2h4 on 2026-11-16, so `npm audit` no longer reports
+`deepmerge` and the gate failed the exception as STALE. The exception's own trigger was "when GitHub withdraws the
+advisory": it is removed from `.github/dependency-security-policy.json`, and the root has four exceptions, all
+`simple-git` and its parser (PR #474).
+
 ## #515 -- CoreX draws the admin's checkboxes and radios, in brass, with a clip-path mark
 
 **Date:** 2026-11-10. **Spec:** none (a shell fix the owner asked for while reviewing CoreX → Assistant, PR #449).
