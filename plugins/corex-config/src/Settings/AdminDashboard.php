@@ -57,6 +57,22 @@ final class AdminDashboard
         add_action('admin_menu', [$this, 'menu']);
         add_action('admin_init', [$this, 'maybeSave']);
         add_action('admin_enqueue_scripts', [$this, 'maybeEnqueue']);
+        add_filter('removable_query_args', [$this, 'removableQueryArgs']);
+    }
+
+    /**
+     * A save's id is for the one drawing of the page it redirects to: WordPress takes it out of
+     * the address bar once the page has loaded, so a bookmark or a copied link does not carry it.
+     *
+     * @param array<int,string> $args
+     *
+     * @return array<int,string>
+     */
+    public function removableQueryArgs(array $args): array
+    {
+        $args[] = SettingsSaveFlash::QUERY_ARG;
+
+        return $args;
     }
 
     public function menu(): void
@@ -182,10 +198,12 @@ final class AdminDashboard
         echo $this->page->open('settings', $page->title, $page->description, $page->title, $this->subnav($page->key), readOnly: $readOnly);
         echo $this->renderer->render(
             $page,
-            $this->pages->url($page->key),
+            // The form posts to an address with a new save id, and its save redirects back to it,
+            // so the page drawn after it says what this save did, whatever else was saved meanwhile.
+            add_query_arg(SettingsSaveFlash::QUERY_ARG, $this->flash->newSave(), $this->pages->url($page->key)),
             // A read-only page has nothing to send, so it carries no nonce to send it with.
             $readOnly ? '' : wp_nonce_field('corex_settings', 'corex_settings_nonce', true, false),
-            $this->flash->take(get_current_user_id(), $page->key),
+            $this->flash->take(get_current_user_id(), $page->key, $this->requestedSave()),
             $readOnly,
             $this->administration->userAdministersSite(get_current_user_id()),
         );
@@ -222,9 +240,25 @@ final class AdminDashboard
         $result = $this->saver->save($pageKey, wp_unslash($_POST), $userId, $this->administration->userAdministersSite(get_current_user_id()))
             ?? SettingsSaveResult::nothingSaved(SettingsPages::DEFAULT);
 
-        $this->flash->keep($userId, $result);
-        wp_safe_redirect($this->pages->url($result->page), 303);
+        // A form drawn before saves had ids posts none, and gets one here.
+        $save = $this->requestedSave();
+        $save = $save !== '' ? $save : $this->flash->newSave();
+        $this->flash->keep($userId, $save, $result);
+        wp_safe_redirect(add_query_arg(SettingsSaveFlash::QUERY_ARG, $save, $this->pages->url($result->page)), 303);
         exit;
+    }
+
+    /**
+     * The save named in the address: the one a form posts, or the one whose result the page
+     * drawn after it says. Only an id the flash gives out is taken, so nothing else names a
+     * stored value. Its result is found only under the person who saved, so no nonce.
+     */
+    private function requestedSave(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reading which save to report.
+        $save = isset($_GET[SettingsSaveFlash::QUERY_ARG]) ? sanitize_key(wp_unslash($_GET[SettingsSaveFlash::QUERY_ARG])) : '';
+
+        return wp_is_uuid($save, 4) ? $save : '';
     }
 
     /** The page the address asks for. A read-only choice of what to show, so no nonce. */

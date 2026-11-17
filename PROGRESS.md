@@ -159,6 +159,12 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**The Settings save that said nothing** (2026-11-17, branch `fix/settings-secret-removal-flake`, DECISIONS #646):
+the flaky "a saved secret can be removed" browser test was a real defect. A Settings save kept its result in one
+place per person, so a second save (another tab, or the other browser-test worker signed in as the same
+administrator) overwrote it before its page was drawn. Each save now waits under its own id, carried by the form
+and its redirect.
+
 **Merged, not released, 2026-11-10 and 11.** #458 (the CoreX loop), #457 (public hosts), #452 to #455 (admin
 checkboxes, activity time contrast, the shell line height, the inbox dates), and the revamp releases above. Their
 paragraphs, and those of the specs released in v0.47.0 to v0.48.1, follow as each was written while it was built;

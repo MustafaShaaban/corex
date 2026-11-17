@@ -21340,3 +21340,29 @@ the case-folding test) that reads about 4.5:1 on near-black.
 
 **Docs.** The Foundations page lists the custom colours and the shadows with their default and dark values, which
 completes spec 121's FR-025, TC-DOC-07-04 and SC-007.
+
+## #646 -- A Settings save's result waits under the save's own id, not one place per person
+
+**Date:** 2026-11-17. **Spec:** 119 (FR-006, US-SET-01, US-SET-15). **Branch:** `fix/settings-secret-removal-flake`.
+**Decided:** from a flaky browser test whose cause turned out to be a product defect.
+
+**What happened.** `settings-pages.spec.js` "a saved secret can be removed" failed now and then in CI (run
+43877879720 on `main`, run 43902204185 on #473) with no toast. The failure's snapshot showed the secret removed and
+the save bar at "No changes": the save had worked, and the page drawn after it had no result to say. The suite runs
+on two workers signed in as one administrator, and the other worker's Email save
+(`setup-settings-insights.spec.js`, "Settings refuses a reply sender address") overlapped it. `SettingsSaveFlash`
+kept one transient per person, so that save overwrote the Insights result between its post and its redirect, and
+`take()` found the wrong page. The same happens to one person saving two pages in two tabs.
+
+**The fix.** Every drawing of a Settings form posts to its page's address with a new `corex_saved` id (a v4
+UUID); the save keeps its result under the person and that id, and redirects back to that address. The page's
+script opens `form.action` after its `fetch` (it cannot read an opaque redirect's address), which already carries
+the id, so the script is unchanged. Only a v4 UUID is read from the address; a post without one (a form drawn
+before this change) gets a new id. `corex_saved` is in `removable_query_args`, so WordPress takes it out of the
+address bar once the page loads; without scripts it stays there, which is harmless, since the result is taken once.
+*Not chosen:* one transient per person and page, which still lets a second drawing of the same page take the
+result; serialising the two specs, which hides the defect.
+
+**Tests.** `SettingsSaveFlashTest` (two saves by one person each keep their result; a result is said once, only to
+its person and page). A browser test posts two saves without following their redirects, then opens each: before
+the fix the first page drew no toast, the CI failure exactly.
