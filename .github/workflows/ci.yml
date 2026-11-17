@@ -40,12 +40,29 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # fail-fast: a tool that cannot be installed stops the job here, not at its first use.
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
+        env:
+          fail-fast: true
         with:
           php-version: ${{ matrix.php }}
-          tools: composer:v2, wp-cli
+          tools: composer:v2
           coverage: none
+
+      # WP-CLI from its own GitHub release, pinned and checked against the release's SHA-512.
+      # setup-php's wp-cli tool stopped installing on 2026-11-17 ("Could not setup wp-cli").
+      - name: Install WP-CLI
+        env:
+          WP_CLI_VERSION: '2.12.0'
+          WP_CLI_SHA512: be928f6b8ca1e8dfb9d2f4b75a13aa4aee0896f8a9a0a1c45cd5d2c98605e6172e6d014dda2e27f88c98befc16c040cbb2bd1bfa121510ea5cdf5f6a30fe8832
+        run: |
+          set -euo pipefail
+          curl -fsSL -o wp-cli.phar "https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar"
+          echo "${WP_CLI_SHA512}  wp-cli.phar" | sha512sum -c -
+          sudo install -m 0755 wp-cli.phar /usr/local/bin/wp
+          rm wp-cli.phar
+          wp --version
 
       - name: Validate composer.json
         run: composer validate --no-check-publish
@@ -153,6 +170,8 @@ jobs:
       - name: Set up PHP for the reference generator
         if: ${{ !cancelled() }}
         uses: shivammathur/setup-php@v2
+        env:
+          fail-fast: true
         with:
           php-version: '8.3'
           tools: composer:v2
