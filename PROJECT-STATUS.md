@@ -108,11 +108,11 @@ Two entries stood under *Known open items* in v0.39.0 and no longer do. They are
 because "was this ever a problem, and how was it dealt with" is a fair question to ask of a project
 you are evaluating.
 
-### Dependency advisories — four bounded exceptions
+### Dependency advisories: six bounded exceptions
 
 `npm run verify:dependencies` reports **PASS** across Composer, the root npm workspace and the
-docs-site npm workspace as of 2026-11-17: zero findings in Composer and the docs site, and in the
-root, **four findings covered by four exceptions**. Three more left the list when GitHub withdrew their
+docs-site npm workspace as of 2026-11-18: zero findings in Composer, one in the docs site and five in
+the root, **six findings covered by six exceptions**. Three more left the list when GitHub withdrew their
 advisories: `sprintf-js` (GHSA-hp3w-g68c-fv3c) on 2026-10-22, `braces` (GHSA-vfj7-8cjw-p6xm) on
 2026-10-23 and `deepmerge` (GHSA-gcqx-w48m-w2h4) on 2026-11-16. Ten advisories published since 2026-10-23 (twelve findings) were closed on 2026-10-25 with patched releases
 inside the ranges their parents already accept (`body-parser`, `fast-uri`, `serialize-javascript` and `zod`
@@ -125,12 +125,13 @@ published by somebody else against a tree that did not move, so this is a measur
 property — on 2026-10-06, with nothing changed here, the gate failed on thirteen advisories, eleven of them
 published on 2026-10-05 or 2026-10-06.
 
-None of the four is a fix that was skipped. Each is an advisory with no release this tree can take:
+None of the six is a fix that was skipped. Each is an advisory with no release this tree can take:
 
 | Package | Advisory | Why it cannot be closed |
 |---|---|---|
 | `simple-git` 3.36.0 | GHSA-x6jw-m9v5-85vh (critical), GHSA-g4wm-2vf7-vfgr, GHSA-858h-whjf-mvg5 | Fixed in 4.x only. It is installed for `@wordpress/env`, whose latest release requires `^3.32.3` and calls the package as a function; 4.x exports an object, so an override breaks `wp-env start` instead of fixing it. Tried, and it failed. |
 | `@simple-git/argv-parser` 1.1.1 | GHSA-v5rq-49vh-5v5c (critical) | The parser `simple-git` 3 depends on; the fixed 2.0.1 belongs to `simple-git` 4. |
+| `picomatch` 2.3.2, 4.0.5, 4.0.7 | GHSA-fc5q-39xc-vjpf (high), root and docs site | Every published version is affected (`<=4.0.7`, and 4.0.7 is the latest), so no upgrade or override exists. It arrives through Jest, ESLint, stylelint, webpack, Astro and Vite. |
 
 **The `simple-git` four are the ones to read carefully: two are rated critical, and the code
 runs.** `npm run env:start` clones WordPress through it. Each advisory is a way round
@@ -143,15 +144,16 @@ exposure is neither the shipped runtime nor CI; these are reviewed a month soone
 on 2026-11-30, and are removed by a lockfile update the day `@wordpress/env` moves to
 `simple-git` 4.
 
-**`braces` also runs** — in `npm run lint:css` and `npm run build`, locally and in CI. The defect
-is a stack overflow on a deeply nested brace pattern, and the only glob patterns that reach it here
-are the built-in defaults of `@wordpress/scripts`: no tracked file imports a glob library and there
-is no custom webpack, stylelint or dev-server proxy configuration. Triggering it would take a
-commit to this repository's tooling configuration, and the result would be one failed job. It is
-not in any built asset. The policy forbids excepting a high finding whose exposure is CI, so this
-rests on a judgement that the exposure is build tooling with repository-authored input — the same
-judgement spec 056 made for `minimatch` and `brace-expansion`. The exception says what would
-overturn it.
+**`picomatch` also runs**: in `npm run lint:js`, `lint:css`, `test:js` and `build`, and in the
+docs site's `astro build`, locally and in CI. The defect is exponential backtracking when somebody
+chooses the glob pattern (a single repeated extglob branch such as `+(*)`); matching a crafted path
+against a fixed pattern does not trigger it. No tracked file imports a glob library, so every
+pattern comes from a tool's own source or from configuration committed here. Triggering it would
+take a commit to this repository's tooling configuration, and the result would be one stalled job.
+It is not in any built asset, and the docs site is static. The policy forbids excepting a high
+finding whose exposure is CI, so this rests on the same judgement the withdrawn `braces` exception
+made: the exposure is build tooling with repository-authored input (DECISIONS #648). Both
+exceptions are reviewed by 2026-12-31 and say what would overturn them.
 
 The two `extract-zip` exceptions are gone, with the package. `lighthouse` is overridden to 13,
 which brings `puppeteer-core` 25 and `@puppeteer/browsers` 3.x, and that unpacks without

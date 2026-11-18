@@ -21453,3 +21453,50 @@ result; serialising the two specs, which hides the defect.
 **Tests.** `SettingsSaveFlashTest` (two saves by one person each keep their result; a result is said once, only to
 its person and page). A browser test posts two saves without following their redirects, then opens each: before
 the fix the first page drew no toast, the CI failure exactly.
+
+## #648 -- picomatch GHSA-fc5q-39xc-vjpf has no fixed release, so it is a bounded exception in both npm trees
+
+**Date:** 2026-11-18. **Spec:** 056 (dependency security policy). **Branch:** `fix/picomatch-advisory-exception`.
+**Decided:** from a gate failure on every open pull request, with nothing changed in the tree. **Status:** proposed;
+the owner accepts or rejects the exception at merge.
+
+**What happened.** GitHub published GHSA-fc5q-39xc-vjpf (high) on 2026-10-19 and updated it on 2026-11-17: a glob
+made of one repeated extglob branch, such as `+(*)` or `+(*a)`, is skipped by `analyzeRepeatedExtglob` in
+`lib/parse.js` and compiles to a regular expression that backtracks exponentially on a short string. "Validate
+dependency advisories" then failed on every pull request (first seen on #476) with `UNBOUNDED npm-root` and
+`UNBOUNDED npm-docs`.
+
+**Why not an upgrade or override.** The advisory covers `<=4.0.7` with no patched version, and 4.0.7 is the latest
+release on npm (checked 2026-11-18). Every installed copy (2.3.2, 4.0.5 and 4.0.7) is inside the range, and so is
+every version an override could name. Replacing picomatch is not possible from here either: it is required by
+micromatch, anymatch, tinyglobby, fdir, the Jest packages, `@parcel/watcher`, Astro and Vite.
+
+**Where it is reached.** Root, six copies, all under devDependencies: micromatch and anymatch (for fast-glob,
+globby, stylelint, http-proxy-middleware, jest-haste-map), the Jest packages (test discovery), tinyglobby
+(`@typescript-eslint`, eslint-import-resolver-typescript, markdownlint-cli, webpack-dev-server) and `@parcel/watcher`.
+It runs in `npm run lint:js`, `lint:css`, `test:js` and `build`, on developer machines and CI. The top-level 2.3.2 is
+`devOptional` rather than `dev` for the reason recorded for `braces`: `@wordpress/theme`, beneath
+`@wordpress/components`, lists stylelint as an optional peer, and the build maps `@wordpress/components` to
+WordPress's own script. Docs site, two copies: 4.0.7 for Astro, `@astrojs/internal-helpers`, Vite, tinyglobby and
+fdir, and 2.3.2 for anymatch under unstorage. It runs in `astro build` and `astro dev`; the site is static (no
+adapter, no server output), so no Node process serves it.
+
+**Whether untrusted input reaches it.** No. The defect needs the attacker to choose the pattern; matching a crafted
+path against a fixed pattern is safe. No tracked file imports picomatch, micromatch, anymatch, tinyglobby, fdir,
+fast-glob or globby (checked with `git grep` over the tree). Every pattern comes from a tool's own source or from
+configuration and `package.json` script arguments committed here, and changing those already grants code execution
+in the same job. The worst case is one stalled lint, test or build process. No glob library reaches a WordPress site:
+`scripts/build-shared-host-dist.mjs` ships plugin and theme source, never `node_modules`.
+
+**Decided.** Two exceptions in `.github/dependency-security-policy.json`, one per ecosystem, each with the exact
+installed paths, `severityCeiling` `high`, range `<=4.0.7`, review by 2026-12-31. Exposure is
+`build-test-transitive`, not `ci`, on the reading spec 056 and the `braces` exception used: the class describes where
+the input comes from, not whether the code executes. The policy forbids excepting a high finding classed `ci`, so this
+is a judgement, and it is the owner's to accept. Each exception names what removes it (a picomatch release outside
+the range) and what would end the reasoning (a tracked file passing a pattern it did not write to a glob library, any
+of these packages reaching a server or a shipped build, or the docs site gaining server output). PROJECT-STATUS.md
+now counts six exceptions and replaces the stale `braces` paragraph with this one.
+
+*Not chosen:* an override to a fork or a patched tarball, which would put unreviewed code under every lint and test
+run to close a pattern-injection defect nobody here can reach; disabling the gate until a release ships, which is
+how the advisories of 2026-09 went unnoticed.
