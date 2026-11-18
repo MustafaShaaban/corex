@@ -68,6 +68,46 @@
       "upstreamTrigger": "Remove together with the three simple-git exceptions: it leaves the tree with simple-git 3. Remove when @wordpress/env publishes a release that depends on simple-git 4.0.1 or later; a lockfile update then takes it with no override. Re-argue instead of renewing if wp-env.json gains a source whose URL or ref is not written in this repository, or if a CI workflow starts using wp-env: either would end the reasoning above.",
       "range": "<2.0.1",
       "url": "https://github.com/advisories/GHSA-v5rq-49vh-5v5c"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-12-31",
+      "range": "<=4.0.7",
+      "url": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+      "paths": [
+        "node_modules/@parcel/watcher/node_modules/picomatch",
+        "node_modules/jest-haste-map/node_modules/picomatch",
+        "node_modules/jest-message-util/node_modules/picomatch",
+        "node_modules/jest-util/node_modules/picomatch",
+        "node_modules/picomatch",
+        "node_modules/tinyglobby/node_modules/picomatch"
+      ],
+      "reason": "Published 2026-10-19: a glob made of one repeated extglob branch, such as `+(*)` or `+(*a)`, is skipped by analyzeRepeatedExtglob in lib/parse.js and compiles to a regular expression that backtracks exponentially on a short crafted string. Every published version is affected: the advisory covers `<=4.0.7`, 4.0.7 is the latest release, and no patched version exists, so neither an upgrade nor an override can remove it (DECISIONS #648). In the root it is installed six times (2.3.2 at the top, 4.0.5 and 4.0.7 nested), all under devDependencies: micromatch and anymatch for fast-glob, globby, stylelint, http-proxy-middleware and jest-haste-map; the jest packages for test discovery; tinyglobby for @typescript-eslint, eslint-import-resolver-typescript, markdownlint-cli and webpack-dev-server; and @parcel/watcher. The lockfile marks the top-level 2.3.2 devOptional, not dev, for the reason #648 checked: @wordpress/theme, beneath @wordpress/components, lists stylelint as an optional peer, and the build maps @wordpress/components to WordPress's own script.",
+      "control": "The defect needs the attacker to choose the glob pattern; matching a crafted path against a fixed pattern does not trigger it. It runs on developer machines and CI runners in `npm run lint:js`, `npm run lint:css`, `npm run test:js` and `npm run build`, and the patterns it compiles come from the Jest, ESLint, stylelint and webpack configuration and the package.json scripts in this repository. No tracked file in this repository imports picomatch, micromatch, anymatch, tinyglobby, fdir, fast-glob or globby, so every pattern comes from a tool's own source or from configuration and script arguments committed here. Supplying one therefore means committing to this repository's tooling configuration, which already grants code execution in the same job, and the worst result is one stalled process. No glob library reaches a WordPress site or a server: scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, and the docs build is a static site.",
+      "upstreamTrigger": "Remove when picomatch publishes a release outside `<=4.0.7` and the advisory names it: an override or lockfile update then takes it. Re-argue instead of renewing if a tracked file starts calling a glob library with a pattern it did not write, or if any of these packages reaches a running server or a shipped build."
+    },
+    {
+      "ecosystem": "npm-docs",
+      "advisoryId": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-12-31",
+      "range": "<=4.0.7",
+      "url": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+      "paths": [
+        "node_modules/anymatch/node_modules/picomatch",
+        "node_modules/picomatch"
+      ],
+      "reason": "Published 2026-10-19: a glob made of one repeated extglob branch, such as `+(*)` or `+(*a)`, is skipped by analyzeRepeatedExtglob in lib/parse.js and compiles to a regular expression that backtracks exponentially on a short crafted string. Every published version is affected: the advisory covers `<=4.0.7`, 4.0.7 is the latest release, and no patched version exists, so neither an upgrade nor an override can remove it (DECISIONS #648). In docs-app it is installed twice: 4.0.7 for astro, @astrojs/internal-helpers, vite, tinyglobby and fdir, and 2.3.2 for anymatch under unstorage.",
+      "control": "The defect needs the attacker to choose the glob pattern; matching a crafted path against a fixed pattern does not trigger it. It runs only inside `astro build` and `astro dev` (the docs workflow runs `npm run build`), where the patterns come from Astro, Starlight and Vite source and from docs-app/astro.config.mjs in this repository; the published site is the static dist/ directory and no Node process serves it. No tracked file in this repository imports picomatch, micromatch, anymatch, tinyglobby, fdir, fast-glob or globby, so every pattern comes from a tool's own source or from configuration and script arguments committed here. Supplying one therefore means committing to this repository's tooling configuration, which already grants code execution in the same job, and the worst result is one stalled process. No glob library reaches a WordPress site or a server: scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, and the docs build is a static site.",
+      "upstreamTrigger": "Remove together with the npm-root picomatch exception, when picomatch publishes a release outside `<=4.0.7`. Re-argue instead of renewing if the docs site gains server output (an Astro adapter or `output: 'server'`), since glob patterns could then be reached at request time."
     }
   ]
 }
