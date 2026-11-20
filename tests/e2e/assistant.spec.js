@@ -15,8 +15,11 @@ const { test, expect } = require( '@playwright/test' );
 const AxeBuilder = require( '@axe-core/playwright' ).default;
 
 const { STORAGE_STATE } = require( './global-setup' );
+const { wpEval } = require( './helpers' );
 
 const PAGE = '/sample-page/';
+// At example.com, so the suite's teardown knows a request for a test's own.
+const SENDER = 'sara.e2e@example.com';
 const WCAG_TAGS = [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ];
 
 test.use( { storageState: { cookies: [], origins: [] } } );
@@ -35,6 +38,14 @@ test( 'puts nothing on the page while it is off', async ( { page } ) => {
 test.describe( 'with the assistant on', () => {
 	test.beforeEach( async ( { page } ) => {
 		await page.setExtraHTTPHeaders( { 'X-Corex-E2E-Assistant': 'on' } );
+	} );
+
+	// The callback requests a test sent, which would otherwise sit in Submissions and the Data screen for the
+	// specs after this one. Deleting them frees the times they claimed.
+	test.afterEach( () => {
+		wpEval(
+			`foreach ( get_posts( [ 'post_type' => 'corex_submission', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => 'corex_field_email', 'meta_value' => '${ SENDER }' ] ) as $id ) { wp_delete_post( $id, true ); }`
+		);
 	} );
 
 	test( 'answers from the site, hands off to the team, and closes back to its button', async ( {
@@ -130,6 +141,94 @@ test.describe( 'with the assistant on', () => {
 		await expect(
 			page.getByRole( 'dialog' ).getByText( 'What do you build?' )
 		).toBeVisible();
+	} );
+
+	test( 'hides a time one visitor asked for from the next, and offers the open ones when it was just taken', async ( {
+		context,
+	} ) => {
+		// Each visitor is a tab of their own, so no conversation is carried from one to the next.
+		await context.setExtraHTTPHeaders( { 'X-Corex-E2E-Assistant': 'on' } );
+		const offeredBy = ( picker ) =>
+			picker
+				.locator( 'option' )
+				.evaluateAll( ( options ) =>
+					options.map( ( option ) => option.value ).filter( Boolean )
+				);
+		const openHandoff = async ( visitor ) => {
+			await visitor.goto( PAGE );
+			await visitor
+				.getByRole( 'button', { name: /^Chat with / } )
+				.click();
+			const dialog = visitor.getByRole( 'dialog' );
+			await dialog
+				.getByRole( 'button', { name: /talk to someone/ } )
+				.click();
+			const picker = dialog.getByLabel( 'When should we reach you?' );
+			await expect( picker ).toBeVisible();
+			return { dialog, picker, times: await offeredBy( picker ) };
+		};
+		const send = async ( { dialog, picker }, slot ) => {
+			await dialog.getByLabel( 'Your name' ).fill( 'Sara E2E' );
+			await dialog.getByLabel( 'Mobile number' ).fill( '50 123 4567' );
+			await dialog
+				.getByRole( 'textbox', { name: /^Email/ } )
+				.fill( SENDER );
+			await picker.selectOption( slot );
+			await dialog
+				.getByRole( 'button', { name: 'Send request' } )
+				.click();
+		};
+
+		// The first visitor asks for the second time on offer: the first is the coming hour, which could pass
+		// before the request is sent.
+		const first = await openHandoff( await context.newPage() );
+		const asked = first.times[ 1 ];
+		await send( first, asked );
+		await expect(
+			first.dialog.getByText( /^Thank you, Sara E2E/ )
+		).toBeVisible();
+
+		// The next visitor is not offered it.
+		const next = await openHandoff( await context.newPage() );
+		expect( next.times.length ).toBeGreaterThan( 0 );
+		expect( next.times ).not.toContain( asked );
+
+		// A visitor whose list was drawn before that request picks it anyway: the site refuses it, and
+		// the chat fetches the times again.
+		const lateTab = await context.newPage();
+		let stale = true;
+		await lateTab.route(
+			'**/corex/v1/assistant/slots*',
+			async ( route ) => {
+				if ( ! stale ) {
+					return route.continue();
+				}
+				stale = false;
+				const fresh = await route.fetch();
+				const body = await fresh.json();
+				return route.fulfill( {
+					response: fresh,
+					json: {
+						...body,
+						slots: [ Number( asked ), ...body.slots ],
+					},
+				} );
+			}
+		);
+		const late = await openHandoff( lateTab );
+		expect( late.times ).toContain( asked );
+		await send( late, asked );
+
+		await expect( late.dialog.getByRole( 'alert' ) ).toHaveText(
+			'Someone has just asked for that time. Please choose another.'
+		);
+		await expect( late.picker ).toBeFocused();
+		await expect( late.picker ).toHaveValue( '' );
+		await expect( late.picker ).toHaveAttribute( 'aria-invalid', 'true' );
+		const offered = await offeredBy( late.picker );
+		expect( offered.length ).toBeGreaterThan( 0 );
+		expect( offered ).not.toContain( asked );
+		await expect( late.dialog.getByText( /^Thank you/ ) ).toHaveCount( 0 );
 	} );
 } );
 

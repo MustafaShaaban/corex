@@ -21,6 +21,7 @@ use Corex\Forms\Validation\Rules\Numeric;
 use Corex\Forms\Validation\Rules\Pattern;
 use Corex\Forms\Validation\Rules\Phone;
 use Corex\Forms\Validation\Rules\Required;
+use Corex\Forms\Validation\Rules\RequiredIf;
 use Corex\Forms\Validation\Rules\Url;
 use InvalidArgumentException;
 
@@ -45,6 +46,7 @@ final class RuleRegistry
     {
         $this->rules = [
             'required' => new Required(),
+            'required_if' => new RequiredIf(),
             'email'    => new Email(),
             'max'      => new Max(),
             'min'      => new Min(),

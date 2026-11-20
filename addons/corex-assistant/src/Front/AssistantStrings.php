@@ -127,6 +127,7 @@ final class AssistantStrings
             'fieldTime' => __('Best time to reach you (optional)', 'corex'),
             'fieldSlot' => __('When should we reach you?', 'corex'),
             'slotAny' => __('Any time that suits the team', 'corex'),
+            'slotTaken' => __('Someone has just asked for that time. Please choose another.', 'corex'),
             /* translators: %s: the visitor's time zone, such as Asia/Riyadh. */
             'slotZone' => __('Times are in your time zone (%s). The team confirms the time with you.', 'corex'),
             'attach' => __('Attach a summary of this chat, so the team knows what you need', 'corex'),

@@ -1,10 +1,10 @@
 /**
  * The times a visitor may ask the team to reach them at (spec 129, "pick a time").
  *
- * The site sends moments (UTC seconds) inside its own working hours; here they are shown in the
- * visitor's own time zone, grouped by their day, and a chosen one is described in both zones for the
- * team: "Thu, Nov 12, 7:00 PM Riyadh = Thu, Nov 12, 6:00 PM Cairo". A time the team confirms, not a
- * booking.
+ * The site sends moments (UTC seconds) inside its own working hours, less the ones other visitors have
+ * asked for; here they are shown in the visitor's own time zone, grouped by their day. A chosen one goes
+ * back as it came, with the visitor's zone, and the site writes the line the team reads in both zones.
+ * A time the team confirms, not a booking.
  */
 
 /**
@@ -18,16 +18,6 @@ export function visitorZone() {
 	} catch {
 		return '';
 	}
-}
-
-/**
- * The place a zone is named for: `Asia/Riyadh` is Riyadh, `America/Argentina/Buenos_Aires` Buenos Aires.
- *
- * @param {string} zone
- * @return {string} its city
- */
-export function city( zone ) {
-	return String( zone ).split( '/' ).pop().replace( /_/g, ' ' );
 }
 
 function format( locale, zone, options ) {
@@ -75,32 +65,6 @@ export function slotGroups( slots, locale, zone ) {
 		} );
 	}
 	return groups;
-}
-
-/**
- * A chosen slot as the team reads it, in the visitor's zone and then the booking hours' zone.
- *
- * @param {number} at       UTC seconds
- * @param {string} locale   the page's language
- * @param {string} visitor  the visitor's zone
- * @param {string} business the zone of the owner's booking hours
- * @return {string} both times, each with its city
- */
-export function describeSlot( at, locale, visitor, business ) {
-	const moment = new Date( at * 1000 );
-	const options = {
-		weekday: 'short',
-		day: 'numeric',
-		month: 'short',
-		hour: 'numeric',
-		minute: '2-digit',
-	};
-	const ours = format( locale, business, options ).format( moment );
-	if ( ! visitor || visitor === business ) {
-		return `${ ours } ${ city( business ) }`;
-	}
-	const theirs = format( locale, visitor, options ).format( moment );
-	return `${ theirs } ${ city( visitor ) } = ${ ours } ${ city( business ) }`;
 }
 
 /** How long the times may take to arrive, in milliseconds. */

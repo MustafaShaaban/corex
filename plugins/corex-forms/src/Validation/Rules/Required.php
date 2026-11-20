@@ -19,18 +19,14 @@ final class Required implements Rule
 {
     public function validate(mixed $value, array $params, array $allValues): ?string
     {
-        if ($value === null) {
-            return 'required';
-        }
+        return self::missing($value) ? 'required' : null;
+    }
 
-        if (is_string($value) && trim($value) === '') {
-            return 'required';
-        }
-
-        if (is_array($value) && $value === []) {
-            return 'required';
-        }
-
-        return null;
+    /** Whether there is no answer: absent, blank, or an empty list. Shared with `required_if`. */
+    public static function missing(mixed $value): bool
+    {
+        return $value === null
+            || (is_string($value) && trim($value) === '')
+            || (is_array($value) && $value === []);
     }
 }
