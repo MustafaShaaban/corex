@@ -581,6 +581,18 @@ test.describe( 'the brass band and the quiet band (FR-013, FR-014)', () => {
 			expect(
 				contrast( field.border, field.background )
 			).toBeGreaterThanOrEqual( 3 );
+
+			// Its submit is the band's plain button, graphite on brass, not brass on brass.
+			const submit = await computed(
+				page,
+				'.corex-newsletter-signup__submit'
+			);
+			expect(
+				contrast( submit.background, brass.background )
+			).toBeGreaterThanOrEqual( 3 );
+			expect(
+				contrast( submit.color, submit.background )
+			).toBeGreaterThanOrEqual( 4.5 );
 		} );
 
 		test( `the secondary on brass is graphite text and edge with nothing behind, in the ${ mode } style`, async ( {

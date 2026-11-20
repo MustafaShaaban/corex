@@ -374,8 +374,8 @@ the call to action's buttons draw no focus ring, before this release as after: `
 2026-11-20 on `fix/action-link-focus-fallback`: every token there has a keyword fallback (`medium`, `Highlight`, `0`). (3) SC-009's draw-as-before half is measured under a scratch theme with foreign slug names, modelled on Muva's
 and Perego's palettes; their own repositories are checked by hand with `scripts/client-merge-check.mjs`
 before the tag (CI's client-repository job merges into a generated site, not into theirs). (4) The newsletter block's submit (`corex-newsletter-signup__submit`) is no
-`.wp-element-button`, so inside the brass band it stays brass on brass, 1.00:1. A corex-blocks follow-up gives it
-the element button class; until then the newsletter does not go on the brass band. (5) The form block draws no
+`.wp-element-button`, so inside the brass band it stayed brass on brass, 1.00:1. Fixed 2026-11-20 on
+`fix/newsletter-submit-on-brass`: the bands' plain-button rule names it, so it is graphite there. (5) The form block draws no
 field border, so on the brass band a field has no edge at 3:1 (1.36:1 measured); forms do not go on the brass band
 until the visitor forms release gives fields their shapes. (6) Measured against the kit and left to the blocks that
 own them: the kit's large button (56px) for the hero and call to action, the hero's lead size and soft colour,

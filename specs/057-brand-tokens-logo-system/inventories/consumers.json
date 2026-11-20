@@ -2083,7 +2083,7 @@
     },
     {
       "path": "addons/corex-ui/assets/section-bands.css",
-      "selector_or_context": "lines 130: background-color: var(--corex-band-button);",
+      "selector_or_context": "lines 131: background-color: var(--corex-band-button);",
       "property": "--corex-band-button",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2093,7 +2093,7 @@
     },
     {
       "path": "addons/corex-ui/assets/section-bands.css",
-      "selector_or_context": "lines 135: background-color: var(--corex-band-button-hover);",
+      "selector_or_context": "lines 136: background-color: var(--corex-band-button-hover);",
       "property": "--corex-band-button-hover",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2103,7 +2103,7 @@
     },
     {
       "path": "addons/corex-ui/assets/section-bands.css",
-      "selector_or_context": "lines 131: color: var(--corex-band-button-label);",
+      "selector_or_context": "lines 132: color: var(--corex-band-button-label);",
       "property": "--corex-band-button-label",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2113,7 +2113,7 @@
     },
     {
       "path": "addons/corex-ui/assets/section-bands.css",
-      "selector_or_context": "lines 140: outline-color: var(--corex-band-ring);",
+      "selector_or_context": "lines 141: outline-color: var(--corex-band-ring);",
       "property": "--corex-band-ring",
       "owner": "ui-addon",
       "surface": "front-end",
