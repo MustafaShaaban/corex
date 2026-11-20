@@ -6,6 +6,77 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
+the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and
+after, in light and dark: `specs/134-theme-graphite-brass/evidence/`.
+
+**Read Client impact before updating.** The CoreX theme's look changes on any site that runs it, Muva's sign-in
+shows the whole CoreX mark, and corex-ui's block styles start drawing for visitors on both clients.
+
+### Added
+
+- **Section bands** (US-BRD-01, FR-013 to FR-015; DECISIONS #640, #642). corex-ui registers three Group styles, the
+  quiet, dark and brass bands, with a sheet of their own that loads only where a band is drawn. The dark band is
+  dark in both styles and hands everything inside it the band's colours, so a button, link, card or field draws
+  right with no rule of its own; the brass band draws graphite text and a graphite button. They exist only where
+  the theme can draw them (the CoreX theme, whatever palette a `brand.json` gives it); under a client palette the
+  class is inert. The hero pattern is the dark band, the call-to-action pattern the brass band.
+- **The logo set** (US-BRD-05, FR-018 to FR-024; DECISIONS #647). Fixed-colour lockups for light and dark grounds,
+  stacked lockups, the symbol in both, a graphite knockout on brass, and a favicon as SVG and PNG at 16, 32, 180
+  and 512px, all written by `scripts/generate-logo-assets.py` and listed in `logo-manifest.json` with their use,
+  colours and hash. The CoreX theme links its own favicon copies when a site has no site icon; the Coming soon
+  page links none.
+- **The theme preview is a capture** (US-BRD-07, FR-025 to FR-027; DECISIONS #638). `npm run theme:preview --
+  --url=<address> --wp-path=<folder>` takes the front page of a scratch site with the Company kit at 1200 by 900
+  and writes a fingerprint of the palette beside it; a test fails, naming the command, when the colours change
+  without a new capture. The new `theme/screenshot.png` shows the theme as it is.
+- **A token for a control's height**, `settings.custom.control.height` (3rem; DECISIONS #644).
+
+### Changed
+
+- **The CoreX theme is graphite and brass** (US-BRD-01, FR-001 to FR-010; DECISIONS #633, #641): a white page,
+  graphite text and headings, brass `#ad8643` (light) and `#c9a25e` (dark), every value bound to the brand
+  contract; no text on brass is white. The main button is brass with a graphite label, 48px tall, one height for
+  every style (FR-011); links are the darker brass, underlined; a 2px brass focus ring for links, buttons and
+  fields; selected text in the selection colours (FR-012).
+- **The login's lockup follows its card**: the dark lockup on a Dark card, the light one on a Light card, the
+  dark one under System, where the card is dark first (FR-020). "Core" is drawn in the neutral colour, only the
+  "x" and the centre in brass (FR-018). A logo set in CoreX Settings still replaces it.
+- Secondary, Ghost and Card take the kit's tokens. Five front-end pages that draw a band carry the band sheet in
+  their byte budget (DECISIONS #645).
+
+### Fixed
+
+- **corex-ui's block styles reach visitors** (DECISIONS #643). On a block theme WordPress enqueued their sheet
+  after the page was drawn, so Card, Section and the rest never drew on the front end.
+- **The login's glow stops under reduced motion and is centred right to left.**
+- **A Branding logo address with a query string** is no longer mangled on the login.
+
+### Removed
+
+- `corex-mark.svg` (the symbol files replace it), and the Editorial style variation.
+
+### Client impact
+
+- **Muva**: its sign-in shows the whole CoreX mark, "Core" neutral and the "x" brass (its corner modules read
+  1.20:1 on the dark card before). Its own theme is not touched. An exported PDF's CoreX logo draws "Core" in
+  graphite where it was brass.
+- **Perego**: shows its own logo on sign-in, unchanged. Its theme lacks most of the CoreX palette roles, so no band
+  is offered there: a hero or call to action inserted after the update draws with Perego's defaults (a new call to
+  action no longer puts Perego's accent behind its page text, which read about 2.9:1). Content already saved does
+  not change.
+- **Both**: corex-ui's block style sheet now loads for visitors, so content saved with Card, Section, Empty state,
+  Striped, Secondary or Ghost starts drawing those styles; under their palettes the colour declarations mostly
+  draw nothing, while padding, corners and edges do. The form's required mark turns from `accent` to
+  `accent-dark`. The inactive CoreX theme's card image changes in Appearance, Themes. `corex-mark.svg` leaves the
+  plugin folder (nothing used it).
+- **A site on the CoreX theme**: its colours, its button and its dark sections change; with no site icon of its
+  own, its tab shows the CoreX favicon. Its CoreX emails, where Mail settings set no accent, draw their edge in
+  the theme's `primary`: navy before, graphite now, and near-white on the white card if the site has chosen Dark.
+  Set an accent in CoreX Settings, Mail, to choose the edge (brass is `#ad8643`); DECISIONS #649. A site that chose Dark keeps its saved values until it chooses Dark again.
+  Editorial is no longer offered.
+- **Mizzey**: not on this release. No upgrade step, no stored data changed, no client file edited.
+
 Tokens and type (spec 121, revamp release R2.1, the first of stage 2; DECISIONS #460 to #468).
 
 **Read Client impact before updating.** The CoreX admin and its login change look on every client site, and

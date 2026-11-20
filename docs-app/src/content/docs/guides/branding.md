@@ -95,10 +95,24 @@ the deprecation window are recorded in
 ## Product brand vs. client brand
 
 `brand.json` controls the **client site's** identity. The **CoreX product** identity (the Core X
-logo on the wp-admin login/dashboard) is separate and never imposed on a client site — a per-site
-`brand.logo_url` override always wins over the bundled product mark. The approved product logo
-variants and usage rules are documented in the `plugins/corex-config/README.md` "Brand identity"
-section.
+logo on the wp-admin login and dashboard) is separate and never imposed on a client site: a per-site
+`brand.logo_url` override always wins over the bundled product mark. The login draws the lockup that suits its
+card (the dark lockup on a Dark card, the light one on a Light card; System is dark first). The CoreX theme, and
+only the CoreX theme, links the CoreX favicon when a site has no site icon of its own; a site icon chosen in
+WordPress always wins. The product logo variants, the favicon set and their usage rules are in the
+`plugins/corex-config/README.md` "Brand identity" section (spec 134, DECISIONS #647).
+
+## Sections and the button (spec 134)
+
+The CoreX theme's main button is `accent` with the `onAccent` label, 48px tall
+(`settings.custom.control.height`), and every button style is one height. corex-ui offers three section styles
+for a Group, the **quiet band** (`surface-alt`), the **dark band** and the **brass band**, and the hero and
+call-to-action patterns use the dark and brass bands. The dark band is dark in both styles and reads the `band*`
+custom colours, so it keeps CoreX's graphite and brass under any palette unless the brand sets those too. The
+brass band is the brand's `accent` with `onAccent` text and button; it is drawn for a light `accent` (see
+above). The bands are offered only where the theme can draw them: the CoreX theme, whatever palette a
+`brand.json` gives it, or a theme whose palette holds `primary`, `surface`, `surface-alt`, `accent`,
+`accent-dark` and `inverse`. A client theme with a palette of its own does not see them (DECISIONS #642).
 
 ## RTL
 
@@ -145,5 +159,7 @@ production path for a client's brand fonts is still source-controlled fonts regi
 `theme.json` ships a real token system: an expanded palette (surface/border/ink-soft + state colours), a
 multi-step type scale, a full spacing scale, **shadow** presets (`--wp--preset--shadow--sm|md|lg`), and **radius**
 tokens (`--wp--custom--radius--sm|md|lg|full`). Buttons/links/headings are styled from tokens, and the card
-blocks use shadow + radius for depth. Switch the whole look to the **Dark** style variation in the Site
-Editor. Everything stays token-only: no hardcoded colours or sizes.
+blocks use shadow + radius for depth. Since spec 134 the palette is graphite and brass, bound to the brand
+contract (`design/tokens/brand-contract.json`), with the band and on-accent custom colours beside it. Switch the
+whole look to the **Dark** style variation in the Site Editor; a site that chose Dark before spec 134 keeps its
+saved values until it chooses Dark again. Everything stays token-only: no hardcoded colours or sizes.
