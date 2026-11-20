@@ -302,6 +302,35 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 
 	const CONTROL = '/corex-definitely-not-a-page/';
 
+	/**
+	 * The body of `path` and of the control, asked one after the other. Other browser tests
+	 * publish pages while this file runs, and the header's page list draws every published page,
+	 * so a page published between the two requests made them differ (main's CI on 2026-11-20, a
+	 * band test's page in one list and not the other). The pair is asked again, at most three
+	 * times: a difference that is still there on the third asking is a real one.
+	 *
+	 * @param {import('@playwright/test').APIRequestContext} request The visitor's requests.
+	 * @param {string}                                       path    The address under test.
+	 * @return {Promise<{body: string, control: string}>} The two bodies.
+	 */
+	async function besideControl( request, path ) {
+		let pair;
+		for ( let asking = 0; asking < 3; asking++ ) {
+			const body = await (
+				await request.get( path, { maxRedirects: 0 } )
+			).text();
+			const control = await (
+				await request.get( CONTROL, { maxRedirects: 0 } )
+			).text();
+			pair = { body, control };
+			if ( body === control ) {
+				break;
+			}
+		}
+
+		return pair;
+	}
+
 	test( 'the default login and admin endpoints 404 without leaking a diagnostic', async ( {
 		request,
 	} ) => {
@@ -333,14 +362,9 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 	} ) => {
 		// wp-login.php is the endpoint that actually identifies a hidden login, so this one has to
 		// be exact. /wp-admin cannot be (see below).
-		const control = await (
-			await request.get( CONTROL, { maxRedirects: 0 } )
-		).text();
-		const login = await (
-			await request.get( '/wp-login.php', { maxRedirects: 0 } )
-		).text();
+		const login = await besideControl( request, '/wp-login.php' );
 
-		expect( login ).toBe( control );
+		expect( login.body ).toBe( login.control );
 	} );
 
 	// Reported from a production site on 2026-10-08, and two more found by probing: signed out,
@@ -351,10 +375,6 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 	test( 'no well-known address forwards a signed-out visitor to the hidden login', async ( {
 		request,
 	} ) => {
-		const control = await (
-			await request.get( CONTROL, { maxRedirects: 0 } )
-		).text();
-
 		for ( const path of [
 			'/wp-signup.php',
 			'/wp-register.php',
@@ -368,11 +388,8 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 
 		// wp-signup.php is a file WordPress has, so the answer is CoreX's: the page that was
 		// never there, exactly.
-		expect(
-			await (
-				await request.get( '/wp-signup.php', { maxRedirects: 0 } )
-			).text()
-		).toBe( control );
+		const signup = await besideControl( request, '/wp-signup.php' );
+		expect( signup.body ).toBe( signup.control );
 
 		// wp-register.php is not a file. Apache hands it to WordPress, and nginx answers a missing
 		// `.php` itself without asking WordPress: CI's does, and this test compared it with a
