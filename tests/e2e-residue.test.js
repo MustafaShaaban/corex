@@ -73,11 +73,10 @@ test.each( [
 	const other = wpCliServing( served );
 
 	expect( finishRun( other.wpEval, under ) ).toEqual( [] );
-	expect(
-		other.calls.some(
-			( php ) => php.includes( 'post_title' ) || php.includes( 'DELETE' )
-		)
-	).toBe( false );
+	// Asked at most which site it serves: no removal (wp_delete_post) and no count.
+	expect( other.calls.every( ( php ) => php.includes( 'home_url()' ) ) ).toBe(
+		true
+	);
 } );
 
 test( 'a run with no site named removes and counts nothing', () => {
