@@ -6,8 +6,9 @@
 rejected a design that only recoloured today's layout and approved a full visitor kit instead. This file is the
 whole spec: it ends in slices, and there is no separate plan or task file.
 
-**Status**: Slices 1 to 3 merged (PR #472, `e990d8da`; PR #473, `5e74ec05`; PR #475, `8b737a87`). Slice 4 (the theme
-preview) in build on `spec/134-slice-4-preview`. Slice 5 (release notes) to do.
+**Status**: Slices 1 to 4 merged (PR #472, `e990d8da`; PR #473, `5e74ec05`; PR #475, `8b737a87`; PR #479,
+`0b8b3296`). Slice 5 (release notes, `evidence/`) on `spec/134-slice-5-release-notes`. The release itself is cut
+with R2.1's Arabic review, after the Muva and Perego sessions have read the client impact.
 
 Slice 1 also moved three places that drew white text on `accent` to `on-accent` (the call-to-action pattern's
 text, the newsletter submit, the menu badge), ahead of slice 2, because the new brass makes white text fail AA
