@@ -1,0 +1,68 @@
+/* What every form block shares, kept here so the Form block's own
+   stylesheet, and every flow block's through it, carries it: the flow's
+   section, one column with the same gap between its heading, intro,
+   notices and form in every block (spec 124, FR-021), and the notice
+   panel NoticePanel draws. */
+.corex-flow {
+	display: grid;
+	gap: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink);
+}
+
+.corex-flow__title,
+.corex-flow__intro {
+	margin: 0;
+}
+
+/* A flow that is not taking answers (spec 122, US-VIS-01): a titled
+   notice, with the owner's alternative. The state is said in words,
+   never by colour alone. */
+.corex-flow-notice {
+	display: grid;
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink);
+	background: var(--wp--preset--color--surface-alt);
+	border-inline-start-style: solid;
+	border-inline-start-color: var(--wp--preset--color--info);
+	border-inline-start-width: 4px; /* corex-token-allow: state edge */
+
+	/* As wide as a form beside it under the same column width, edge and
+	   padding included. */
+	box-sizing: border-box;
+}
+
+.corex-flow-notice p {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.corex-flow-notice__title {
+	font-weight: 700;
+}
+
+.corex-flow-notice__alternative a {
+	color: var(--wp--preset--color--primary);
+	text-decoration: underline;
+}
+
+/* The editors' note, and the test-site notice above a form on a
+   development or staging site (spec 124, FR-021): the same panel, in
+   small text, with a warning edge. */
+.corex-flow-notice--editors,
+.corex-flow-notice--test {
+	font-size: var(--wp--preset--font-size--sm);
+	border-inline-start-color: var(--wp--preset--color--warning);
+}
+
+/* Above a code-defined form, which stands in no grid, the test-site
+   notice keeps the flow block's gap (spec 124, FR-021). */
+.corex-flow-notice + .corex-form {
+	margin-block-start: var(--wp--preset--spacing--40);
+}
+
+.corex-flow > .corex-flow-notice + .corex-form {
+	margin-block-start: 0;
+}

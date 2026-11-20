@@ -21522,3 +21522,35 @@ palette whatever style is chosen is a follow-up, with its own test, outside R2.2
 *Not chosen:* the brass `accent` as the fallback (it would change every client's emails to CoreX's colour, which
 spec 120 refused); a code change inside a release-notes slice.
 
+
+## #650 -- The flow notices: the test site said by the mail gate, the pause by one notice the guard sends too
+
+**Date:** 2026-11-20. **Spec:** 124, slice 7 (FR-021, User Story 10). **Branch:** `spec/124-slice-7-flow-notices`.
+**Decided:** under the owner's mandate, from the design he approved on 2026-11-15
+(`design/handoffs/spec-124-slice-7-flow-notices.md`).
+
+- **The test-site notice** asks `MailGate::decide()` what this site does with a form's mail (a display query; it
+  sends nothing) and says it in one of the two drawn sentences (#523). Development and Staging only.
+- **The paused panel** is one notice, `PublicSubmissionPause::pausedNotice()` in corex-core (title, message, the
+  back-by line), so the block that draws it and the guard's 503 that a script draws after load say the same
+  words. Its message and back-by time come from `VisitorMessages`, empty until slice 9 stores the owner's (FR-007):
+  slice 7 draws CoreX's default and no time line, and its tests inject values for all three time states.
+- **The runtime keeps a REST error's code** (`normalise()`), so a script can tell `forms_paused` from any other
+  refusal; every reader of `code` and `details` was checked and behaves as before.
+- **A code-defined form in the Form block** gets both notices too: the pause has refused every public submission
+  since slice 1, so drawing the form while paused would mislead.
+- The panel rules and the flow grid move to `plugins/corex-forms/src/Block/blocks/_flow-shared.scss`, loaded by the
+  Form block's `style.scss` and, through `_flow.scss`, by every flow block; the Form block drew a closed flow's
+  notice unstyled before.
+
+- **Three wordings, not two.** The gate keeps a form's mail (Capture), delivers it, or refuses it (a site without
+  the CoreX Mail add-on has nowhere to keep it). The drawn "kept" sentence is said only when the mail is kept; a
+  refusal says the emails "are not delivered" (FR-021 amended: kept only when the gate keeps them).
+- **A site locked to Development or Staging** shows the test-site notice in Coming soon and Maintenance too: the
+  lock wins over the stored mode (FR-002), and what the notice says about the mail is true there.
+- **The success-message block stays filled while paused**: a pause does not undo a submission already received
+  (a closed flow still blanks it, as spec 122 decided).
+- **The after-load panel goes** when the next submission succeeds or meets another refusal, so it never stands
+  above a thank-you.
+
+*Not chosen:* porting slice 9's storage now; a notice per block written twice (block and guard), which drifts.

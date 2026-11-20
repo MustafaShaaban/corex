@@ -3,6 +3,8 @@
  * logical properties (RTL-correct by default). Compiled by @wordpress/scripts;
  * loaded conditionally (only when the block renders), per Principle VI.
  */
+@use "../flow-shared";
+
 .corex-form {
 	gap: var(--wp--preset--spacing--50);
 	text-align: start;
@@ -181,6 +183,15 @@ select.corex-form__input[multiple] {
 .corex-form__status {
 	margin-block-start: var(--wp--preset--spacing--30);
 	color: var(--wp--preset--color--ink);
+}
+
+/*
+ * Said under the button, across the whole form, not in a column beside
+ * it. Only while it holds words: an empty line keeps the cell it had, so
+ * a form that says nothing is laid out as before (spec 124 slice 7).
+ */
+.corex-form__status:not(:empty) {
+	grid-column: 1 / -1;
 }
 
 /* Field-level message filled by the shared client/server validator. */

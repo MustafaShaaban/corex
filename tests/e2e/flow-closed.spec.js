@@ -11,6 +11,8 @@ const { collectConsoleErrors } = require( './helpers' );
 
 const FLOW_NAME = 'CoreX E2E closed flow';
 const FLOW_SLUG = 'corex-e2e-closed-flow';
+// The flow's own notice: on a test copy the test-site notice (spec 124, FR-021) stands above the form too.
+const CLOSED_NOTICE = '.corex-flow-notice:not(.corex-flow-notice--test)';
 
 function flowsApi( page, method, path, body ) {
 	return page.evaluate(
@@ -145,7 +147,7 @@ test( 'a submission sent after the flow closed keeps its answers and shows the c
 		} );
 
 		await visitor.getByRole( 'button', { name: 'Submit' } ).click();
-		const notice = visitor.locator( '.corex-flow-notice' );
+		const notice = visitor.locator( CLOSED_NOTICE );
 		await expect( notice ).toContainText( 'Closed' );
 		await expect( notice ).toContainText( 'Applications reopen in March.' );
 		await expect(
@@ -163,7 +165,7 @@ test( 'a submission sent after the flow closed keeps its answers and shows the c
 		await expect(
 			visitor.getByRole( 'heading', { name: FLOW_NAME } )
 		).toBeVisible();
-		await expect( visitor.locator( '.corex-flow-notice' ) ).toContainText(
+		await expect( visitor.locator( CLOSED_NOTICE ) ).toContainText(
 			'Applications reopen in March.'
 		);
 		await visitor
@@ -214,10 +216,10 @@ test( 'a scheduled flow says when it opens, and opens when the date is cleared i
 		).toContainText( 'Scheduled' );
 
 		await visitor.goto( link );
-		await expect( visitor.locator( '.corex-flow-notice' ) ).toContainText(
+		await expect( visitor.locator( CLOSED_NOTICE ) ).toContainText(
 			'This form opens on'
 		);
-		await expect( visitor.locator( '.corex-flow-notice' ) ).toContainText(
+		await expect( visitor.locator( CLOSED_NOTICE ) ).toContainText(
 			'2099'
 		);
 

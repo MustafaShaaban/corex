@@ -225,3 +225,25 @@ it('does not mark any other CoreX route as a public submission, and not the Assi
         '/corex/v1/account/register',
     ]);
 });
+
+it('carries the paused panel in a Forms paused refusal, so a form refused after its page loaded draws it (spec 124, FR-021)', function () {
+    $this->mode = OperationsMode::FORMS_PAUSED;
+    rest_get_server();
+
+    foreach (['flow' => '/corex/v1/flows/1/submit', 'code-defined form' => '/corex/v1/forms/contact'] as $what => $route) {
+        $data = corexSubmit($route)->get_data();
+
+        expect($data['data']['notice'] ?? null)->toBe([
+            'title' => 'Paused',
+            'message' => 'Forms are paused for a short while. Please try again later.',
+            'when' => '',
+        ], $what)->and($data['data'])->not->toHaveKey('errors');
+    }
+});
+
+it('carries no paused panel in a Maintenance refusal, which is answered by the maintenance page', function () {
+    $this->mode = OperationsMode::MAINTENANCE;
+    rest_get_server();
+
+    expect(corexSubmit('/corex/v1/flows/1/submit')->get_data()['data'] ?? [])->not->toHaveKey('notice');
+});

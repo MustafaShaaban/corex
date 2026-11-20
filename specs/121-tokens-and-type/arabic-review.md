@@ -26,6 +26,12 @@ reviewer can find every one of them by that line. The reviewer reads all of them
 screens the proof's screenshots show (the assistant, Access & Abilities, Settings, Forms & Flows, Email
 Studio), and the email ones only in the catalogue and the email previews.
 
+**Added 2026-11-16 and 2026-11-20.** Later batches, drafted the same way and marked in `corex-ar.po` by their own
+comment line: `# Drafted 2026-11-16 (spec 134 slice 2)` (the three section band names) and
+`# Drafted 2026-11-20 (spec 124 slice 7)` (the flow notices: the test-site notice, the paused panel, its back-by
+line). The slice 7 hand-over drew its Arabic with the tanween after the alef (مؤقتاً); the catalogue writes it before
+(مؤقتًا), as everywhere else: the reviewer settles the spelling once for the whole catalogue.
+
 <details>
 <summary>The 825 originals, by the plug-in or add-on that asks for them</summary>
 

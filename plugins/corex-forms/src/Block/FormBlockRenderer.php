@@ -26,6 +26,10 @@ use Corex\Forms\Submission\FormSubmissionService;
  * required markers, an aria-live status), translation-ready, RTL-aware (logical CSS,
  * applied via the block's stylesheet — no inline styles), and carrying the REST nonce
  * + honeypot the secured endpoint expects. Unknown slug → empty output (non-fatal).
+ *
+ * The site's mode speaks as it does at a flow (spec 124, FR-021): a test site says so right above the
+ * form, and while forms are paused the paused panel stands in its place, since the pause refuses
+ * this form's submissions too (FR-004).
  */
 final class FormBlockRenderer implements BlockRenderer
 {
@@ -37,6 +41,8 @@ final class FormBlockRenderer implements BlockRenderer
         private readonly ?FlowBlockRenderer $flowRenderer = null,
         private readonly ?FormChallengeContextFactory $challenge = null,
         private readonly ?ProtectedFormRegistry $protectedForms = null,
+        private readonly ?SiteModeNotice $modes = null,
+        private readonly ?NoticePanel $panel = null,
     ) {
     }
 
@@ -66,6 +72,11 @@ final class FormBlockRenderer implements BlockRenderer
             return '';
         }
 
+        $paused = $this->modes?->paused();
+        if ($paused !== null && $this->panel !== null) {
+            return $this->panel->render($paused); // Nothing can be sent, so no runtime is loaded.
+        }
+
         // Conditional load (Principle VI): the shared runtime + its styles enqueue only
         // here, where a form actually renders — never globally. The runtime drives the
         // submit lifecycle and auto-binds this form (spec 043).
@@ -79,7 +90,17 @@ final class FormBlockRenderer implements BlockRenderer
         $parts  = $this->partsOf($form, $schema, $token);
         $own    = $form->markup($parts);
 
-        return $own === null ? $this->stockForm($parts, $schema) : $this->ownMarkup($form, $parts, $own);
+        $html = $own === null ? $this->stockForm($parts, $schema) : $this->ownMarkup($form, $parts, $own);
+
+        return $html === '' ? '' : $this->testSite() . $html;
+    }
+
+    /** The test-site notice on a development or staging site; '' on any other. */
+    private function testSite(): string
+    {
+        $notice = $this->modes?->testSite();
+
+        return $notice === null || $this->panel === null ? '' : $this->panel->render($notice, 'test');
     }
 
     /**

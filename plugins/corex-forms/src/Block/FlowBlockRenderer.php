@@ -35,6 +35,10 @@ use DateTimeImmutable;
  * A flow that is not taking answers is not left out (spec 122, US-VIS-01): a closed, expired or
  * not-yet-open flow shows its heading and a notice with the owner's alternative, and a draft or
  * missing flow shows nothing to visitors and a note to signed-in editors.
+ *
+ * The site's mode speaks too (spec 124, FR-021): a test site says so above the form, and while forms
+ * are paused the paused panel stands where the form would be. A flow that is not taking answers says
+ * only its own notice, which stays true after the pause (DECISIONS #521).
  */
 final readonly class FlowBlockRenderer implements BlockRenderer
 {
@@ -50,6 +54,8 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         private FlowStatusResolver $statuses,
         private FlowNoticeText $notices,
         private PageReference $pages,
+        private SiteModeNotice $modes,
+        private NoticePanel $panel,
     ) {
     }
 
@@ -69,7 +75,12 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             return $variant === 'success-message' ? '' : $this->unavailable($flow, $notice, $variant, $attributes);
         }
         if ($variant === 'success-message') {
+            // Filled while forms are paused too (#650): the flow is still open, only paused.
             return $this->successMessage($flow, $version);
+        }
+        $paused = $this->modes->paused();
+        if ($paused instanceof FlowNotice) {
+            return $this->paused($flow, $paused, $variant, $attributes);
         }
 
         wp_enqueue_script('corex-runtime');
@@ -88,27 +99,37 @@ final readonly class FlowBlockRenderer implements BlockRenderer
     private function unavailable(Flow $flow, FlowNotice $notice, string $variant, array $attributes): string
     {
         $heading = trim((string) ($attributes['heading'] ?? ''));
-        $link = $notice->link();
 
         return sprintf(
-            '<section class="corex-flow corex-flow--%1$s corex-flow--unavailable" data-corex-flow-name="%2$s">%3$s'
-            . '<div class="corex-flow-notice"><p class="corex-flow-notice__title">%4$s</p>'
-            . '<p class="corex-flow-notice__message">%5$s</p>%6$s</div>%7$s</section>',
+            '<section class="corex-flow corex-flow--%1$s corex-flow--unavailable" data-corex-flow-name="%2$s">%3$s%4$s%5$s</section>',
             esc_attr($variant),
             esc_attr($flow->name),
             $this->heading($heading !== '' ? $heading : $flow->name),
-            esc_html($notice->title),
-            esc_html($notice->message),
-            $link['url'] === '' ? '' : sprintf(
-                '<p class="corex-flow-notice__alternative"><a href="%1$s">%2$s</a></p>',
-                esc_url($link['url'], ['http', 'https', 'mailto']),
-                esc_html($link['label']),
-            ),
+            $this->panel->render($notice),
             $this->editorsSee(sprintf(
                 /* translators: %s: the name of a form built in Forms & Flows. */
                 __('Only editors see this: the form "%s" is not taking answers. Reopen it or change its dates in Forms & Flows.', 'corex'),
                 $flow->name,
             ), $flow),
+        );
+    }
+
+    /**
+     * Forms paused (spec 124, FR-021): the flow's heading and the paused panel where its form would be.
+     * Nothing can be sent, so no runtime is loaded.
+     *
+     * @param array<string,mixed> $attributes
+     */
+    private function paused(Flow $flow, FlowNotice $notice, string $variant, array $attributes): string
+    {
+        $heading = trim((string) ($attributes['heading'] ?? ''));
+
+        return sprintf(
+            '<section class="corex-flow corex-flow--%1$s corex-flow--paused" data-corex-flow-name="%2$s">%3$s%4$s</section>',
+            esc_attr($variant),
+            esc_attr($flow->name),
+            $this->heading($heading !== '' ? $heading : $flow->name),
+            $this->panel->render($notice),
         );
     }
 
@@ -184,10 +205,11 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         $intro = trim((string) ($attributes['intro'] ?? ''));
         $submitLabel = trim((string) ($attributes['submitLabel'] ?? ''));
         $success = $this->successConfig($version->configuration->success);
+        $testSite = $this->modes->testSite();
 
         return sprintf(
             '<section class="corex-flow corex-flow--%1$s" data-corex-flow-name="%2$s">%3$s%4$s'
-            . '<form class="corex-form" method="post" novalidate enctype="multipart/form-data"'
+            . '%21$s<form class="corex-form" method="post" novalidate enctype="multipart/form-data"'
             . ' data-corex-form="%5$s" data-corex-flow="%6$d"'
             . ' data-corex-flow-version="%7$d" data-corex-endpoint="%8$s" data-corex-nonce="%9$s"'
             . ' data-corex-success="%10$s" data-corex-success-config="%11$s" data-corex-error="%12$s" data-corex-schema="%13$s"'
@@ -221,6 +243,7 @@ final readonly class FlowBlockRenderer implements BlockRenderer
                 esc_attr(PageReference::FIELD),
                 esc_attr($this->pages->sign($pageId, $flow->id)),
             ) : '',
+            $testSite === null ? '' : $this->panel->render($testSite, 'test'),
         );
     }
 

@@ -95,9 +95,18 @@
 				data: body && typeof body === 'object' ? body : {},
 			};
 		}
-		return genericError(
+		const failed = genericError(
 			( body && body.message ) || statusMessage( status )
 		);
+		// A REST error (`{ code, message, data }`) keeps its code and data, so a caller can tell one
+		// refusal from another: Forms paused carries the panel to draw (spec 124, FR-021).
+		if ( body && typeof body.code === 'string' && body.code !== '' ) {
+			failed.code = body.code;
+		}
+		if ( body && body.data !== null && typeof body.data === 'object' ) {
+			failed.details = body.data;
+		}
+		return failed;
 	}
 
 	/* ----------------------------------------------------------------------- *
@@ -736,20 +745,25 @@
 	}
 
 	/**
-	 * A flow that stopped taking answers after the page was loaded (spec 122, US-VIS-01): the
-	 * notice the page would now show, drawn above the form, whose answers stay as they are.
-	 * Built from text, never from markup the server sent.
+	 * A flow that stopped taking answers after the page was loaded (spec 122, US-VIS-01), or forms
+	 * that were paused since (spec 124, FR-021): the notice the page would now show, drawn above
+	 * the form, whose answers stay as they are. Built from text, never from markup the server sent.
+	 *
+	 * It is drawn right above the form, below the test-site notice a test copy shows, and marked as
+	 * drawn here: the next answer takes it away (clearDrawnNotice()), so it never stands above a
+	 * thank-you, and a later refusal draws its own (DECISIONS #650).
 	 *
 	 * @param {HTMLFormElement} form   The form that was sent.
-	 * @param {Object}          notice `{ title, message, alternative: { type, label, url } }`.
+	 * @param {Object}          notice `{ title, message, when, alternative: { type, label, url } }`.
 	 */
 	function showClosedNotice( form, notice ) {
 		const holder = form.parentNode;
-		if ( ! holder || holder.querySelector( '.corex-flow-notice' ) ) {
+		if ( ! holder ) {
 			return;
 		}
 		const panel = document.createElement( 'div' );
 		panel.className = 'corex-flow-notice';
+		panel.dataset.corexDrawn = '1';
 		const title = document.createElement( 'p' );
 		title.className = 'corex-flow-notice__title';
 		title.textContent = notice.title || '';
@@ -758,6 +772,12 @@
 		message.textContent = notice.message || '';
 		panel.appendChild( title );
 		panel.appendChild( message );
+		if ( notice.when ) {
+			const when = document.createElement( 'p' );
+			when.className = 'corex-flow-notice__when';
+			when.textContent = notice.when;
+			panel.appendChild( when );
+		}
 		const alternative = notice.alternative || {};
 		if ( /^(https?:|mailto:)/i.test( alternative.url || '' ) ) {
 			const line = document.createElement( 'p' );
@@ -771,6 +791,18 @@
 		holder.insertBefore( panel, form );
 	}
 
+	/**
+	 * Take away the notice an earlier answer drew above the form, if there is one.
+	 *
+	 * @param {HTMLFormElement} form The form.
+	 */
+	function clearDrawnNotice( form ) {
+		const before = form.previousElementSibling;
+		if ( before && before.dataset && before.dataset.corexDrawn === '1' ) {
+			before.parentNode.removeChild( before );
+		}
+	}
+
 	function submit( form ) {
 		if ( form.dataset.corexBusy === '1' ) {
 			return; // dedupe concurrent submits
@@ -778,6 +810,12 @@
 		form.dataset.corexBusy = '1';
 
 		const submitEl = form.querySelector( '[type="submit"]' );
+		// Sending disables the button, and a browser then drops its focus to the page. It is given
+		// back when the button is enabled again, so a keyboard user carries on from it; the answer
+		// itself is said by the status line.
+		const sentFromButton =
+			Boolean( submitEl ) &&
+			form.ownerDocument.activeElement === submitEl;
 		const token = loading.start( form, submitEl );
 
 		api.post( form.dataset.corexEndpoint, collectForRequest( form ), {
@@ -785,6 +823,15 @@
 		} ).then( function ( result ) {
 			loading.stop( token );
 			delete form.dataset.corexBusy;
+			const active = form.ownerDocument.activeElement;
+			if (
+				sentFromButton &&
+				submitEl.isConnected &&
+				( ! active || active === form.ownerDocument.body )
+			) {
+				submitEl.focus();
+			}
+			clearDrawnNotice( form );
 
 			const envelope = result.envelope;
 			if ( envelope.ok ) {
@@ -797,7 +844,8 @@
 				showErrors( form, envelope.errors );
 			}
 			if (
-				envelope.code === 'flow_closed' &&
+				( envelope.code === 'flow_closed' ||
+					envelope.code === 'forms_paused' ) &&
 				envelope.details &&
 				envelope.details.notice
 			) {

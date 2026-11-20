@@ -21409,13 +21409,50 @@ msgstr "تسجيل عمليات تسجيل الدخول الناجحة (تفعي
 msgid "Nothing was saved. Correct the settings named below and save again."
 msgstr "لم يُحفظ شيء. صحّح الإعدادات المذكورة أدناه ثم احفظ من جديد."
 
-# Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: plugins/corex-core/src/Http/PublicSubmissionPause.php:66
 msgid "Forms are paused for a short while. Please try again later."
-msgstr "النماذج متوقفة مؤقتًا لفترة قصيرة. يرجى المحاولة لاحقًا."
+msgstr "النماذج متوقفة لفترة قصيرة. يُرجى المحاولة لاحقًا."
 
 # Drafted 2026-11-15 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #. translators: 1: a score from 0 to 100, 2: its letter grade.
 #: plugins/corex-config/assets/insights.js:248
 msgid "Score %1$d / 100, grade %2$s"
 msgstr "النتيجة %1$d / 100، الدرجة %2$s"
+
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/SiteModeNotice.php:46
+msgid "Test site"
+msgstr "موقع تجريبي"
+
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/SiteModeNotice.php:48
+msgid "This is a test copy of the site. What you send here is kept for testing. This form's emails are delivered."
+msgstr "هذه نسخة تجريبية من الموقع. ما ترسله هنا يُحفظ للاختبار. رسائل البريد الخاصة بهذا النموذج تُرسَل فعلًا."
+
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/SiteModeNotice.php:49
+msgid "This is a test copy of the site. What you send here is kept for testing. This form's emails stay on the site and are not delivered."
+msgstr "هذه نسخة تجريبية من الموقع. ما ترسله هنا يُحفظ للاختبار. رسائل البريد الخاصة بهذا النموذج تبقى في الموقع ولا تُرسَل."
+
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-core/src/Http/PublicSubmissionPause.php
+msgctxt "flow notice title"
+msgid "Paused"
+msgstr "متوقفة مؤقتًا"
+
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-core/src/Http/PublicSubmissionPause.php
+msgid "This is taking longer than planned."
+msgstr "يستغرق الأمر وقتًا أطول مما خططنا له."
+
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: 1: a date, 2: a time of day, both in the site's formats.
+#: plugins/corex-core/src/Http/PublicSubmissionPause.php
+msgid "Back by %1$s at %2$s."
+msgstr "نعود بحلول %1$s في %2$s."
+
+# Drafted 2026-11-20 (spec 124 slice 7); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/SiteModeNotice.php
+msgid "This is a test copy of the site. What you send here is kept for testing. This form's emails are not delivered."
+msgstr "هذه نسخة تجريبية من الموقع. ما ترسله هنا يُحفظ للاختبار. رسائل البريد الخاصة بهذا النموذج لا تُرسَل."

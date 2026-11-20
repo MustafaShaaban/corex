@@ -13,6 +13,8 @@ defined('ABSPATH') || exit;
 /**
  * What a visitor reads where a form that is not taking answers would be (spec 122, US-VIS-01): a
  * title, a message and, when the owner set one, another way to get in touch. Already translated.
+ *
+ * The paused panel of spec 124 (FR-021) is one too, with a line saying when forms are back.
  */
 final readonly class FlowNotice
 {
@@ -20,6 +22,7 @@ final readonly class FlowNotice
         public string $title,
         public string $message,
         public FlowAlternative $alternative = new FlowAlternative(),
+        public string $when = '',
     ) {
     }
 
