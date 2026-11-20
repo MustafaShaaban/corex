@@ -7,7 +7,8 @@ left on 2026-10-26, is on `spec/124-modes-and-login`, commit 34294b63)
 since: specs 117 (abilities), 122 (live flows) and 129 (the Assistant). This file is the whole spec: it ends in
 slices, and there is no separate plan or task file.
 
-**Status**: Ready for slice 1. Slices 7 to 11 each wait for an approved design.
+**Status**: Slices 1 to 6 merged (#463, #465 to #469). Slice 7 (flow block notices, design approved 2026-11-15) in
+review on `spec/124-slice-7-flow-notices`. Slices 8 to 11 each wait for an approved design.
 
 **Input**: Release R3.8 of the CoreX revamp, eleven stories approved under the owner's 2026-10-21 mandate:
 US-OPS-01, US-OPS-02, US-OPS-05, US-OPS-06, US-OPS-07, US-SEC-01, US-SEC-02, US-SEC-03, US-SEC-07, US-SEC-10 and
@@ -263,8 +264,9 @@ Production: gone, and Settings > Reading unchanged.
 
 **Acceptance Scenarios**:
 
-1. **Given** Staging and a flow on a page, **Then** a visitor sees above the form: "Test site: what you send here is kept
-   for testing and no email is delivered."
+1. **Given** Staging and a flow on a page, **Then** a visitor sees above the form the test-site notice, saying what
+   the mail gate does with this site's mail (#523; the words are in `design/handoffs/spec-124-slice-7-flow-notices.md`
+   and DECISIONS #650).
 2. **Given** Production, Coming soon or Maintenance (as an administrator), **Then** no notice.
 3. **Given** Forms paused with a back-by time, **Then** the flow block shows the paused message with the time instead of
    the form; a crafted request gets 503, the paused message and no `errors`; nothing is stored or mailed.
@@ -448,6 +450,11 @@ a server change would show itself (a new mode in the chooser), it is held back u
 | 10 | The login protection tab, the Lockouts panel, the Overview rows | FR-013, FR-015 to FR-017 (screens) | 4, 5, 6 | Design first |
 | 11 | Hardening by mode | FR-018 | 8 | Design first |
 | 12 | Docs, the client impact for Muva and Perego, PROGRESS | all | 1 to 11 | no |
+
+**Found while building slice 7, for slice 9.** The submission guard is made at boot (`ConfigServiceProvider`), so the
+owner's message and back-by time must reach `VisitorMessages` before then, or through a lazy read, or the page's panel
+and the 503's panel disagree. FR-007 asks for a message per site language, which `VisitorMessages` (one message per
+mode today, DECISIONS #650) does not yet hold: slice 9 reshapes it.
 
 **What each slice proves.** Slice 1: every route that declares a public submission refused in both modes and
 open in every other, the Assistant's chat answering and its hand-off refused, an administrator passing, no flow's

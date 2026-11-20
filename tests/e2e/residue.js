@@ -199,4 +199,10 @@ function finishRun( wpEval ) {
 	return ( left || '' ).split( '\n' ).filter( Boolean );
 }
 
-module.exports = { refuseProduction, startRun, finishRun, markedSubmissions };
+module.exports = {
+	refuseProduction,
+	startRun,
+	finishRun,
+	markedSubmissions,
+	wpCliServes,
+};

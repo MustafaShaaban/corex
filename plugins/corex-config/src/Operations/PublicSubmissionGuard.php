@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Http\PublicSubmission;
 use Corex\Http\PublicSubmissionPause;
+use DateTimeImmutable;
 use WP_Error;
 
 /**
@@ -26,6 +27,9 @@ use WP_Error;
  * (sign-in, password reset, every read, the Assistant's chat) are untouched, and so is every other
  * mode: Coming soon keeps its forms open (spec 101). Who passes is {@see PublicSubmissionPause}'s
  * answer.
+ *
+ * A Forms paused refusal also carries the paused panel (spec 124, FR-021), so a form whose page was
+ * loaded before the pause draws the same panel a flow block draws in the form's place.
  */
 final class PublicSubmissionGuard
 {
@@ -54,7 +58,12 @@ final class PublicSubmissionGuard
             return $response;
         }
 
-        return new WP_Error($this->pause->code($mode), $this->pause->message($mode), ['status' => 503]);
+        $data = ['status' => 503];
+        if ($mode === PublicSubmissionPause::FORMS_PAUSED) {
+            $data['notice'] = $this->pause->pausedNotice(new DateTimeImmutable('now'));
+        }
+
+        return new WP_Error($this->pause->code($mode), $this->pause->message($mode), $data);
     }
 
     /**

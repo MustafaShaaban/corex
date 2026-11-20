@@ -17,6 +17,15 @@ use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FormBlockRenderer;
 use Corex\Forms\Block\FormParts;
 use Corex\Forms\Block\ProtectedFormRegistry;
+use Corex\Forms\Block\NoticePanel;
+use Corex\Forms\Block\SiteModeNotice;
+use Corex\Container\Container;
+use Corex\Environment\SiteEnvironment;
+use Corex\Http\PublicSubmissionPause;
+use Corex\Mail\Capture\MailGate;
+use Corex\Mail\Capture\MailHold;
+use Corex\Mail\Capture\MailCaptureStore;
+use Corex\Mail\Capture\CapturedMessage;
 use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Forms\ContactForm;
@@ -90,6 +99,7 @@ function renderRegisteredForm(
     array $attributes,
     array $settings = [],
     ?ProtectedFormRegistry $declared = null,
+    ?SiteModeNotice $modes = null,
 ): string {
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
@@ -116,6 +126,8 @@ function renderRegisteredForm(
         new FieldRenderer(),
         challenge: new FormChallengeContextFactory(new ChallengeSettings(siteSettings($settings)), new RemoteAddress()),
         protectedForms: $declared ?? new ProtectedFormRegistry(),
+        modes: $modes,
+        panel: new NoticePanel(),
     );
 
     return $renderer->render($attributes, '', (object) []);
@@ -395,4 +407,64 @@ it('gives a protected form a place for the widget of a provider that shows one, 
     expect($html)->toContain(
         '<div class="corex-form__challenge" data-corex-challenge="turnstile" data-corex-sitekey="a-site-key"></div><button type="submit"',
     );
+});
+
+/*
+ * Spec 124, FR-021: a code-defined form in the Form block tells a visitor what the site's mode
+ * means for it, as a flow does. The pause refuses its submissions too (FR-004), so it is not drawn
+ * while forms are paused; and its mail follows the mail gate like any CoreX mail.
+ */
+
+/** What the site's mode says, for a site in this mode, to a visitor or an administrator. */
+function siteModeIn(string $mode, bool $administrator = false): SiteModeNotice
+{
+    Functions\when('get_option')->alias(static fn (string $name, mixed $default = false): mixed => $name === SiteEnvironment::MODE_OPTION ? $mode : $default);
+    Functions\when('wp_get_environment_type')->justReturn('production');
+    Functions\when('is_user_logged_in')->justReturn($administrator);
+    Functions\when('current_user_can')->justReturn($administrator);
+    Functions\when('_x')->returnArg();
+    Functions\when('sanitize_html_class')->returnArg();
+    $environment = new SiteEnvironment([]);
+
+    // CoreX Mail is active, so the gate keeps a development or staging site's mail.
+    $container = new Container();
+    $container->instance(MailCaptureStore::class, new class implements MailCaptureStore {
+        public function keep(CapturedMessage $message): string
+        {
+            return 'kept';
+        }
+    });
+
+    return new SiteModeNotice($environment, new PublicSubmissionPause(), new MailGate($environment, siteSettings([]), new MailHold(), $container));
+}
+
+it('FR-021: tells a visitor of a development or staging site, right above a code-defined form, that it is a test copy', function (string $mode) {
+    $html = renderRegisteredForm(new ContactForm(), ['formSlug' => 'contact'], modes: siteModeIn($mode));
+
+    expect($html)->toStartWith('<div class="corex-flow-notice corex-flow-notice--test"><p class="corex-flow-notice__title">Test site</p>'
+        . '<p class="corex-flow-notice__message">This is a test copy of the site. What you send here is kept for testing.'
+        . ' This form&#039;s emails stay on the site and are not delivered.</p></div><form ');
+})->with(['development', 'staging']);
+
+it('FR-021: draws the paused panel, and no code-defined form, for a visitor while forms are paused', function () {
+    expect(renderRegisteredForm(new ContactForm(), ['formSlug' => 'contact'], modes: siteModeIn('forms-paused')))->toBe(
+        '<div class="corex-flow-notice"><p class="corex-flow-notice__title">Paused</p>'
+        . '<p class="corex-flow-notice__message">Forms are paused for a short while. Please try again later.</p></div>'
+    );
+});
+
+it('FR-021: gives an administrator of a paused site the code-defined form and no panel', function () {
+    $html = renderRegisteredForm(new ContactForm(), ['formSlug' => 'contact'], modes: siteModeIn('forms-paused', true));
+
+    expect($html)->toStartWith('<form ')->not->toContain('corex-flow-notice');
+});
+
+it('FR-021: shows no notice beside a code-defined form in Production, Coming soon or Maintenance', function (string $mode) {
+    $html = renderRegisteredForm(new ContactForm(), ['formSlug' => 'contact'], modes: siteModeIn($mode));
+
+    expect($html)->toStartWith('<form ')->not->toContain('corex-flow-notice');
+})->with(['production', 'coming-soon', 'maintenance']);
+
+it('FR-021: shows no notice where an unknown code-defined form draws nothing', function () {
+    expect(renderRegisteredForm(new ContactForm(), ['formSlug' => 'missing'], modes: siteModeIn('staging')))->toBe('');
 });

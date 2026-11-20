@@ -90,8 +90,10 @@ and approved first, a spec ends in slices, and nothing merges without the review
   Slice 6 (the lockout release routes, `POST corex/v1/security/lockouts/{id}/release` and `.../release-all`: a
   lockout named by its stored row, every active row of its username and network ended, its failures no longer
   counted, recorded in the activity log by account or fingerprint; 409 when nothing is left to end; the panel drawn
-  on load from the same rows; DECISIONS #630) is on `spec/124-slice-6-lockout-release`, in review. Next: slice 7
-  (design first). Held: `OperationsMode.php:189`
+  on load from the same rows; DECISIONS #630) is merged (#469). Slice 7 (the flow block notices: the test-site
+  notice from the mail gate, the paused panel with the owner's message and back-by line, drawn after load from the
+  503 too; DECISIONS #650; design approved 2026-11-15, `design/handoffs/spec-124-slice-7-flow-notices.md`) is on
+  `spec/124-slice-7-flow-notices`, in review. Slices 8 to 11 each wait for an approved design. Held: `OperationsMode.php:189`
   and `ModeDisclosure.php:157` still tell a Staging owner that search engines "should be discouraged", which is no
   longer true once slice 2 ships; the wording is held for slice 8's screen copy, but a release cut before slice 8
   would ship it.

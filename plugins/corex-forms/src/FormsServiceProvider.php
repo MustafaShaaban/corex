@@ -18,6 +18,7 @@ use Corex\Foundation\ServiceProvider;
 use Corex\Forms\Block\FormBlockRenderer;
 use Corex\Forms\Block\FlowBlockRenderer;
 use Corex\Forms\Block\ProtectedFormRegistry;
+use Corex\Forms\Block\SiteModeNotice;
 use Corex\Forms\Catalog\FormCatalog;
 use Corex\Forms\Catalog\SubmissionCounts;
 use Corex\Forms\Forms\ContactForm;
@@ -374,6 +375,8 @@ final class FormsServiceProvider extends ServiceProvider
         // Request-scoped: one registry per page render, shared between the renderer that declares
         // protected forms and the captcha asset controller that reads them at footer time.
         $this->container->singleton(ProtectedFormRegistry::class);
+        // What the site's mode tells a visitor at a flow (spec 124, FR-021).
+        $this->container->singleton(SiteModeNotice::class);
         $this->container->singleton(FlowBlockRenderer::class);
         $this->container->singleton(FormBlockRenderer::class);
     }

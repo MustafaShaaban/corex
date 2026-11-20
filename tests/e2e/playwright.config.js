@@ -76,6 +76,9 @@ const CANNOT_RUN_ON_A_FRESH_INSTALL = [
 /** The one spec that changes what the whole site serves, and so runs in a project of its own. */
 const COMING_SOON_SPEC = /coming-soon\.spec\.js$/;
 
+/** The flow notices of each mode (spec 124, FR-021), which switch the whole site's mode to measure them. */
+const FLOW_MODE_NOTICES_SPEC = /flow-mode-notices\.spec\.js$/;
+
 /** The one spec that installs a release, which holds the whole site in maintenance while it does. */
 const RELEASE_INSTALL_SPEC = /releases-install\.spec\.js$/;
 
@@ -135,6 +138,7 @@ module.exports = defineConfig( {
 			use: { ...devices[ 'Desktop Chrome' ] },
 			testIgnore: [
 				COMING_SOON_SPEC,
+				FLOW_MODE_NOTICES_SPEC,
 				RELEASE_INSTALL_SPEC,
 				QUALITY_CHECKS,
 			],
@@ -152,12 +156,21 @@ module.exports = defineConfig( {
 			testMatch: COMING_SOON_SPEC,
 			dependencies: [ 'chromium' ],
 		},
+		// The flow notices of each mode (spec 124, FR-021), alone, for the reason Coming soon is: the
+		// spec puts the site in Development, Staging, Forms paused, Maintenance and the rest in turn.
+		// It puts back the mode it found.
+		{
+			name: 'flow-mode-notices',
+			use: { ...devices[ 'Desktop Chrome' ] },
+			testMatch: FLOW_MODE_NOTICES_SPEC,
+			dependencies: [ 'coming-soon' ],
+		},
 		// A release installed from the admin (spec 107), last and alone.
 		//
 		// While a release's files are in place and its database step has not run, WordPress
 		// answers every request but the installation's own with "briefly unavailable". For
 		// those seconds any other spec would fail on a 503 it had nothing to do with. It
-		// follows coming-soon, which restores the mode it found, so the site this meets is
+		// follows coming-soon and flow-mode-notices, which restore the mode they found, so the site this meets is
 		// serving visitors: the spec asks for the front page before and after.
 		//
 		// On a site whose server cannot write its own folders the spec skips itself: the
@@ -167,7 +180,7 @@ module.exports = defineConfig( {
 			name: 'release-install',
 			use: { ...devices[ 'Desktop Chrome' ] },
 			testMatch: RELEASE_INSTALL_SPEC,
-			dependencies: [ 'coming-soon' ],
+			dependencies: [ 'flow-mode-notices' ],
 		},
 	],
 } );

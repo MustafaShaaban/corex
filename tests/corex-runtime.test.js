@@ -121,6 +121,37 @@ describe( 'Corex.api', () => {
 		expect( result.envelope.code ).toBe( 'error' );
 	} );
 
+	it( 'keeps the code and the data of a REST error, with its own message (spec 124, FR-021)', async () => {
+		mockFetch(
+			{
+				code: 'rest_forbidden',
+				message: 'Sorry, you are not allowed to do that.',
+				data: { status: 403 },
+			},
+			{ ok: false, status: 403 }
+		);
+		const result = await window.Corex.api.get( '/x' );
+
+		expect( result.envelope ).toEqual( {
+			ok: false,
+			code: 'rest_forbidden',
+			message: 'Sorry, you are not allowed to do that.',
+			details: { status: 403 },
+		} );
+	} );
+
+	it( 'still calls an error body with no code of its own an error', async () => {
+		mockFetch( { message: 'Broken.' }, { ok: false, status: 500 } );
+		const result = await window.Corex.api.get( '/x' );
+
+		expect( result.envelope ).toEqual( {
+			ok: false,
+			code: 'error',
+			message: 'Broken.',
+			details: {},
+		} );
+	} );
+
 	it( 'resolves a non-JSON (HTML) error body to a generic error envelope', async () => {
 		mockFetch( null, { ok: false, status: 500, nonJson: true } );
 		const result = await window.Corex.api.get( '/x' );
@@ -267,6 +298,244 @@ describe( 'Corex.forms.bind', () => {
 		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe(
 			'Applications reopen in March'
 		);
+	} );
+
+	// Spec 124, FR-021: forms were paused after the page loaded. WordPress answers the refusal
+	// as a REST error, `{ code, message, data }`, not as an envelope.
+	const PAUSED =
+		'Forms are paused for a short while. Please try again later.';
+	function refusePaused( when ) {
+		mockFetch(
+			{
+				code: 'forms_paused',
+				message: PAUSED,
+				data: {
+					status: 503,
+					notice: { title: 'Paused', message: PAUSED, when },
+				},
+			},
+			{ ok: false, status: 503 }
+		);
+	}
+	async function submitAnswered( form ) {
+		form.querySelector( 'input[name="email"]' ).value = 'a@b.com';
+		window.Corex.forms.bind( form );
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
+		await flush();
+	}
+
+	it( 'FR-021: draws the paused panel above the form, keeps the answers, marks no field and says it once', async () => {
+		refusePaused( 'Back by 21 November 2026 at 14:30.' );
+		const form = makeForm( EMAIL_REQUIRED );
+		await submitAnswered( form );
+		const panel = form.previousElementSibling;
+
+		expect( panel.className ).toBe( 'corex-flow-notice' );
+		expect(
+			[ ...panel.children ].map( ( line ) => [
+				line.className,
+				line.textContent,
+			] )
+		).toEqual( [
+			[ 'corex-flow-notice__title', 'Paused' ],
+			[ 'corex-flow-notice__message', PAUSED ],
+			[ 'corex-flow-notice__when', 'Back by 21 November 2026 at 14:30.' ],
+		] );
+		expect( panel.getAttribute( 'role' ) ).toBeNull();
+		expect( form.querySelector( 'input[name="email"]' ).value ).toBe(
+			'a@b.com'
+		);
+		expect( form.querySelectorAll( '[aria-invalid]' ) ).toHaveLength( 0 );
+		expect( form.querySelector( '.corex-form__error' ).textContent ).toBe(
+			''
+		);
+		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe(
+			PAUSED
+		);
+	} );
+
+	it( 'FR-021: draws no line for a back-by time that is not set, and one panel however often it is refused', async () => {
+		refusePaused( '' );
+		const form = makeForm( EMAIL_REQUIRED );
+		await submitAnswered( form );
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
+		await flush();
+
+		expect(
+			document.querySelectorAll( '.corex-flow-notice' )
+		).toHaveLength( 1 );
+		expect(
+			document.querySelector( '.corex-flow-notice__when' )
+		).toBeNull();
+	} );
+
+	/**
+	 * Answer each request in turn with the next of these.
+	 *
+	 * @param {...Array} answers `[ body, { ok, status } ]` per request.
+	 */
+	function answerInTurn( ...answers ) {
+		global.fetch = jest.fn();
+		answers.forEach( ( [ body, { ok = true, status = 200 } = {} ] ) =>
+			global.fetch.mockImplementationOnce( () =>
+				Promise.resolve( {
+					ok,
+					status,
+					json: () => Promise.resolve( body ),
+				} )
+			)
+		);
+	}
+	const PAUSED_ANSWER = [
+		{
+			code: 'forms_paused',
+			message: PAUSED,
+			data: {
+				status: 503,
+				notice: { title: 'Paused', message: PAUSED, when: '' },
+			},
+		},
+		{ ok: false, status: 503 },
+	];
+	async function sendAgain( form ) {
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
+		await flush();
+	}
+
+	it( 'FR-021 (#650): takes the paused panel away when the next submission is taken, so it never stands above a thank-you', async () => {
+		answerInTurn( PAUSED_ANSWER, [ { ok: true, message: '', data: {} } ] );
+		const form = makeForm( EMAIL_REQUIRED );
+		await submitAnswered( form );
+		expect(
+			document.querySelectorAll( '.corex-flow-notice' )
+		).toHaveLength( 1 );
+
+		form.querySelector( 'input[name="email"]' ).value = 'a@b.com';
+		await sendAgain( form );
+
+		expect(
+			document.querySelectorAll( '.corex-flow-notice' )
+		).toHaveLength( 0 );
+		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe(
+			'Thanks!'
+		);
+	} );
+
+	it( 'FR-021 (#650): a later refusal draws its own panel in place of the paused one', async () => {
+		answerInTurn( PAUSED_ANSWER, [
+			{
+				ok: false,
+				code: 'flow_closed',
+				message: 'This form is closed.',
+				details: {
+					notice: {
+						title: 'Closed',
+						message: 'This form is closed.',
+					},
+				},
+			},
+			{ ok: false, status: 409 },
+		] );
+		const form = makeForm( EMAIL_REQUIRED );
+		await submitAnswered( form );
+		await sendAgain( form );
+		const panels = document.querySelectorAll( '.corex-flow-notice' );
+
+		expect( panels ).toHaveLength( 1 );
+		expect(
+			panels[ 0 ].querySelector( '.corex-flow-notice__title' ).textContent
+		).toBe( 'Closed' );
+		expect( panels[ 0 ].nextElementSibling ).toBe( form );
+	} );
+
+	it( 'FR-021: gives focus back to the button that sent the form once a refusal re-enables it', async () => {
+		for ( const answer of [
+			PAUSED_ANSWER,
+			[
+				{
+					ok: false,
+					code: 'flow_closed',
+					message: 'This form is closed.',
+					details: {
+						notice: { title: 'Closed', message: 'Closed.' },
+					},
+				},
+				{ ok: false, status: 409 },
+			],
+		] ) {
+			answerInTurn( answer );
+			const form = makeForm( EMAIL_REQUIRED );
+			const button = form.querySelector( '[type="submit"]' );
+			form.querySelector( 'input[name="email"]' ).value = 'a@b.com';
+			window.Corex.forms.bind( form );
+			button.focus();
+
+			form.dispatchEvent(
+				new Event( 'submit', { cancelable: true, bubbles: true } )
+			);
+			// A browser drops the focus of a button it disables while the form is sent; jsdom
+			// does not, so the drop is made here.
+			expect( button.disabled ).toBe( true );
+			button.disabled = false;
+			button.blur();
+			button.disabled = true;
+			expect( document.activeElement ).toBe( document.body );
+			await flush();
+
+			expect( button.disabled ).toBe( false );
+			expect( document.activeElement ).toBe( button );
+		}
+	} );
+
+	it( 'FR-021: leaves focus where it was when the form was sent from a field', async () => {
+		answerInTurn( PAUSED_ANSWER );
+		const form = makeForm( EMAIL_REQUIRED );
+		const field = form.querySelector( 'input[name="email"]' );
+		field.value = 'a@b.com';
+		window.Corex.forms.bind( form );
+		field.focus();
+
+		await sendAgain( form );
+
+		expect( document.activeElement ).toBe( field );
+	} );
+
+	it( 'FR-021: draws the closed notice beside a test-site notice the page already shows', async () => {
+		mockFetch(
+			{
+				ok: false,
+				code: 'flow_closed',
+				message: 'This form is closed.',
+				details: {
+					notice: {
+						title: 'Closed',
+						message: 'This form is closed.',
+					},
+				},
+			},
+			{ ok: false, status: 409 }
+		);
+		const form = makeForm( EMAIL_REQUIRED );
+		form.insertAdjacentHTML(
+			'beforebegin',
+			'<div class="corex-flow-notice corex-flow-notice--test"><p class="corex-flow-notice__title">Test site</p></div>'
+		);
+		await submitAnswered( form );
+
+		expect(
+			form.previousElementSibling.querySelector(
+				'.corex-flow-notice__title'
+			).textContent
+		).toBe( 'Closed' );
+		expect(
+			document.querySelectorAll( '.corex-flow-notice' )
+		).toHaveLength( 2 );
 	} );
 
 	it( 'draws no link for an alternative that is not a web or mail address', async () => {
