@@ -1893,7 +1893,7 @@
     },
     {
       "path": "addons/corex-ui/assets/action-link.css",
-      "selector_or_context": "lines 11: outline-offset: var(--wp--custom--focus--offset);",
+      "selector_or_context": "lines 16: outline-offset: var(--wp--custom--focus--offset, 0);",
       "property": "--wp--custom--focus--offset",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1903,7 +1903,7 @@
     },
     {
       "path": "addons/corex-ui/assets/action-link.css",
-      "selector_or_context": "lines 9: var(--wp--custom--focus--width) solid",
+      "selector_or_context": "lines 13: outline-width: var(--wp--custom--focus--width, medium);",
       "property": "--wp--custom--focus--width",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1913,7 +1913,7 @@
     },
     {
       "path": "addons/corex-ui/assets/action-link.css",
-      "selector_or_context": "lines 10: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 15: outline-color: var(--wp--preset--color--surface, Highlight);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
