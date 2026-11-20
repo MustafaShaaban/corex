@@ -6,7 +6,7 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647). Built on the visitor kit
+The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and
 after, in light and dark: `specs/134-theme-graphite-brass/evidence/`.
 
