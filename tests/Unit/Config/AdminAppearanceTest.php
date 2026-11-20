@@ -20,7 +20,7 @@ function brandingWith(string $appearanceReturn): BrandingService
     $config = Mockery::mock(ConfigInterface::class);
     $config->shouldReceive('get')->with('brand.admin_appearance', 'system')->andReturn($appearanceReturn);
 
-    return new BrandingService($config, 'https://example.test/default-logo.svg');
+    return new BrandingService($config, 'https://example.test/default-logo.svg', 'https://example.test/light-logo.svg');
 }
 
 it('resolves the appearance setting, falling back to system for unknown values', function (string $stored, string $expected) {

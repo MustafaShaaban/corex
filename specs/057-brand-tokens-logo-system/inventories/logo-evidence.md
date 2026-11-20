@@ -68,3 +68,12 @@ run on the US3 diff (see the session commit / PROGRESS entry for outcomes).
 
 US3 (T056-T065) is implementation-complete with the approved production package. The remaining Spec 057 final-gate
 tasks (T080-T090) still depend on US4 (T066-T079), which is unchanged by this work.
+
+## Later change: spec 134 slice 3 (2026-11-17)
+
+The set above is the state of 2026-06-20. Spec 134 slice 3 (FR-018 to FR-024, `design/handoffs/spec-134-logo-set.md`)
+draws "Core" in the neutral colour with only the `x` and the centre in brass, adds fixed-colour lockups for light and
+dark backgrounds, stacked lockups, the symbol in both, a knockout on brass and a favicon set (SVG and PNG at 16, 32,
+180 and 512px), removes `corex-mark.svg`, and names the monochrome lockup "CoreX". The current list, with every
+file's use, colours and hash, is `plugins/corex-config/assets/brand/logo-manifest.json`; the table above is kept as
+the record of spec 057.

@@ -33,7 +33,7 @@ function loginBranding(string $storedSso): AdminBranding
     $config->shouldReceive('get')->with('brand.login_sso_enabled', '')->andReturn($storedSso);
     $config->shouldReceive('get')->andReturn('');
 
-    return new AdminBranding(new BrandingService($config, 'https://example.test/logo.svg'));
+    return new AdminBranding(new BrandingService($config, 'https://example.test/logo.svg', 'https://example.test/light-logo.svg'));
 }
 
 /**

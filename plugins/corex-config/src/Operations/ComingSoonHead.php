@@ -19,7 +19,8 @@ use Corex\Theme\GeneratorTag;
  * which WordPress it runs, where its remote-editing endpoint is, and offer feeds whose addresses
  * the mode redirects straight back to the page. The emoji loader goes with them: an inline
  * script on a page that prints no emoji of its own. CoreX's own generator tag goes too (spec 111
- * FR-006): the page names no platform.
+ * FR-006): the page names no platform. So does the CoreX theme's favicon (spec 134, FR-022); a site
+ * icon chosen in WordPress stays, since it is the site's own.
  *
  * Only for a request that is being served the page. A visitor let through to the real site, and
  * the real site after launch, get WordPress's head as the site has it.
@@ -40,6 +41,10 @@ final class ComingSoonHead
         foreach (self::LEFT_OUT as $callback => $priority) {
             remove_action('wp_head', $callback, $priority);
         }
+
+        // The CoreX theme's favicon links (`theme/inc/favicon.php`). Under another theme there is
+        // nothing to remove, and removing nothing is harmless.
+        remove_action('wp_head', 'corex_theme_favicon_links', 99);
 
         // At the last priority, so a site that answers true at an ordinary one cannot put it back.
         add_filter(GeneratorTag::FILTER, '__return_false', PHP_INT_MAX);

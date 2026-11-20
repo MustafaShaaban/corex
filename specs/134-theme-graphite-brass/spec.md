@@ -6,9 +6,8 @@
 rejected a design that only recoloured today's layout and approved a full visitor kit instead. This file is the
 whole spec: it ends in slices, and there is no separate plan or task file.
 
-**Status**: Slice 1 merged (PR #472, `e990d8da`). Slice 2 in build on `spec/134-slice-2-bands`. Slice 3's design (the
-logo set) was approved on 2026-11-16 (`design/handoffs/spec-134-logo-set.md`); it is built after slice 2's pull
-request is open, since the root checkout holds one branch at a time.
+**Status**: Slices 1 and 2 merged (PR #472, `e990d8da`; PR #473, `5e74ec05`). Slice 3 (the logo set, approved on
+2026-11-16, `design/handoffs/spec-134-logo-set.md`) in build on `spec/134-slice-3-logo-set`. Slices 4 and 5 to do.
 
 Slice 1 also moved three places that drew white text on `accent` to `on-accent` (the call-to-action pattern's
 text, the newsletter submit, the menu badge), ahead of slice 2, because the new brass makes white text fail AA
@@ -191,7 +190,8 @@ change one palette value and run the tests.
 - **The form's shapes.** The form block sets no outline, corner or typeface on its fields and its button, so they
   are the browser's own today. This release changes their colours, and gives them the theme's focus ring
   (FR-012); their shapes are the visitor forms release.
-- **System admin appearance on the login.** The lockup follows the computer, as the card does.
+- **System admin appearance on the login.** The card is dark-first under System, whatever the computer says, and
+  the lockup follows the card (DECISIONS #647).
 
 ## Requirements *(mandatory)*
 
@@ -248,7 +248,9 @@ change one palette value and run the tests.
 - **FR-019**: The logo set MUST gain a lockup with fixed colours for dark backgrounds, one for light backgrounds, a
   stacked lockup in both, and a single-ink knockout on a brass tile.
 - **FR-020**: The login MUST draw the fixed-colour lockup that suits its card: dark when the admin appearance is
-  Dark, light when Light, by the computer's setting when System. A logo set in CoreX Settings MUST still replace it.
+  Dark, light when Light. Under System the card is dark-first (spec 060, `AdminBranding::loginAppearance()`), so
+  the lockup is the dark one; it follows the card's own selectors, so it stays right if the card ever follows the
+  computer (DECISIONS #647). A logo set in CoreX Settings MUST still replace it.
 - **FR-021**: A favicon set MUST exist as SVG and as PNG at 16, 32, 180 and 512px, written by the logo generator.
   The raster sizes are an explicit exception to the "no raster set" rule.
 - **FR-022**: The CoreX theme MUST link the CoreX favicon when the site has no site icon, from files inside the
@@ -313,7 +315,8 @@ change one palette value and run the tests.
 
 - **Muva**: its sign-in shows the whole CoreX mark after the update, with "Core" neutral and the "x" brass. The
   theme does not reach it: Muva runs its own theme. The inactive CoreX theme's card image changes in Appearance,
-  Themes. `corex-mark.svg` disappears from its plugin folder; nothing used it.
+  Themes. `corex-mark.svg` disappears from its plugin folder; nothing used it. An exported PDF's CoreX logo draws
+  "Core" in graphite where it was brass.
 - **Perego**: shows its own logo on sign-in and is unchanged there. The theme does not reach it. The card image
   changes. Perego runs corex-ui: a hero or a call-to-action band inserted after the update names a section style;
   under Perego's theme no band style exists (its palette has none of the CoreX slugs), so the class is inert and
@@ -324,7 +327,8 @@ change one palette value and run the tests.
   change. The form's required mark turns from the theme's `accent` to its `accent-dark` on both clients' forms.
   The example colour in a settings help text changes in both admins.
 - **Mizzey**: not on this release.
-- **A site running the CoreX theme**: its colours, its button and its dark sections change on update. A site that
+- **A site running the CoreX theme**: its colours, its button and its dark sections change on update. With no site
+  icon of its own, its browser tab shows the CoreX favicon (not on its Coming soon page, which names no platform). A site that
   chose Dark keeps the navy dark values until Dark is chosen again. Editorial is no longer offered.
 - **Both clients, and any site on corex-ui:** corex-ui's block style sheet starts loading on the front end
   (DECISIONS #643), so content saved with Card, Section, Empty state, Striped, Secondary or Ghost starts drawing
@@ -375,6 +379,13 @@ field border, so on the brass band a field has no edge at 3:1 (1.36:1 measured);
 until the visitor forms release gives fields their shapes. (6) Measured against the kit and left to the blocks that
 own them: the kit's large button (56px) for the hero and call to action, the hero's lead size and soft colour,
 the call to action's one-row layout, the section's 64px padding under 782px, and the card's radius and padding.
+
+**Found while building slice 3, and left open.** (1) The sign-in page (`/wp-login.php`) links no icon, so its tab
+shows WordPress's default icon under a CoreX-branded login; FR-022 covers the theme only. A later story may give
+the CoreX login the favicon. (2) The login's grounds are `--corex-admin-canvas`, not the artboard's specimen tiles
+(`#f6f7f9` light, `#16181d` dark). (3) The extracted word outlines carry letter-spacing but not kerning, so "re"
+and "ex" sit slightly wider than live text. (4) The knockout's square tile and its padding are the generator's
+choice: the artboard draws the knockout in a display cell.
 
 **What each slice proves.** Slice 1: SC-001 (colours), SC-002, SC-003, SC-004, with the layout captures equal before
 and after. Slice 2: SC-005 and SC-009, and the bands measured in both modes and both directions. Slice 3: SC-006

@@ -161,12 +161,15 @@ it('recomputes the bundled branding URL through its provider registration after 
     (new ConfigServiceProvider($container))->register();
     $branding = $container->make(BrandingService::class);
 
-    expect($branding->logoUrl())->toBe('https://site-1.test/assets/brand/corex-lockup.svg');
+    // The login's lockups, one for a dark card and one for a light card (spec 134, FR-020).
+    expect($branding->logoUrl())->toBe('https://site-1.test/assets/brand/corex-lockup-dark.svg')
+        ->and($branding->lightLogoUrl())->toBe('https://site-1.test/assets/brand/corex-lockup-light.svg');
 
     $siteId = 2;
     $environment->switchTo(2);
 
-    expect($branding->logoUrl())->toBe('https://site-2.test/assets/brand/corex-lockup.svg');
+    expect($branding->logoUrl())->toBe('https://site-2.test/assets/brand/corex-lockup-dark.svg')
+        ->and($branding->lightLogoUrl())->toBe('https://site-2.test/assets/brand/corex-lockup-light.svg');
 });
 
 it('reads the fallback HR email when sending after a site switch', function () {
