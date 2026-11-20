@@ -169,24 +169,45 @@ function startRun( wpEval, baseUrl ) {
 		)
 	);
 
-	fs.writeFileSync( MARK_FILE, JSON.stringify( { from } ) );
+	fs.writeFileSync(
+		MARK_FILE,
+		JSON.stringify( { from, origin: new URL( baseUrl ).origin } )
+	);
 	process.stdout.write(
 		`Removed ${ removed } submission(s) earlier runs left; this run's start from post id ${ from }.\n`
 	);
 }
 
 /**
- * After the run: removes this run's marked submissions, and lists any it made that are left.
+ * Forgets the mark an earlier run left, before anything else this run does. A run refused before
+ * startRun() would otherwise hand its teardown the previous run's starting point.
+ */
+function forgetRun() {
+	fs.rmSync( MARK_FILE, { force: true } );
+}
+
+/**
+ * After the run: removes this run's marked submissions, and lists any it made that are left. It
+ * acts only on the site this run started on, and only where WP-CLI serves that site: a mark from
+ * another site, or none, removes and counts nothing (2026-11-20, a refused run's teardown counted
+ * another install's submissions against a stale mark).
  *
- * @param {(php: string) => (string|null)} wpEval helpers.js's wpEval.
+ * @param {(php: string) => (string|null)} wpEval  helpers.js's wpEval.
+ * @param {string|undefined}               baseUrl The site under test.
  * @return {string[]} One line per submission left, empty when the run left nothing.
  */
-function finishRun( wpEval ) {
-	const { from } = fs.existsSync( MARK_FILE )
+function finishRun( wpEval, baseUrl ) {
+	const { from, origin } = fs.existsSync( MARK_FILE )
 		? JSON.parse( fs.readFileSync( MARK_FILE, 'utf8' ) )
-		: { from: null };
+		: { from: null, origin: null };
 
-	if ( ! Number.isInteger( from ) ) {
+	if ( ! Number.isInteger( from ) || ! baseUrl ) {
+		return [];
+	}
+	if (
+		origin !== new URL( baseUrl ).origin ||
+		! wpCliServes( wpEval, baseUrl )
+	) {
 		return [];
 	}
 
@@ -202,6 +223,7 @@ function finishRun( wpEval ) {
 module.exports = {
 	refuseProduction,
 	startRun,
+	forgetRun,
 	finishRun,
 	markedSubmissions,
 	wpCliServes,
