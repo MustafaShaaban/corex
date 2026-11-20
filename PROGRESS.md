@@ -70,7 +70,8 @@ and approved first, a spec ends in slices, and nothing merges without the review
   system's Logos group follows it (Version 12). **Slice 4** (the theme preview: `npm run theme:preview`, a palette
   fingerprint and its test, a new `screenshot.png`; DECISIONS #638 amended) is merged (#479, `0b8b3296`). **Slice 5**
   (the R2.2 changelog section, the branding guide, before and after captures in `specs/134-theme-graphite-brass/evidence/`)
-  is on `spec/134-slice-5-release-notes`. R2.2 is then complete on `main`, unreleased: the tag waits for R2.1's
+  is merged (#481, `6055afa6`): **R2.2 is complete on `main`**, unreleased, with three follow-ups merged since (#483,
+  #484, #485). The tag waits for R2.1's
   native Arabic review and for the Muva and Perego sessions to read the client impact. The kit's components, blocks and templates need later
   specs, and the release order in the planning workspace needs a change request (not written from here).
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
@@ -92,8 +93,9 @@ and approved first, a spec ends in slices, and nothing merges without the review
   counted, recorded in the activity log by account or fingerprint; 409 when nothing is left to end; the panel drawn
   on load from the same rows; DECISIONS #630) is merged (#469). Slice 7 (the flow block notices: the test-site
   notice from the mail gate, the paused panel with the owner's message and back-by line, drawn after load from the
-  503 too; DECISIONS #650; design approved 2026-11-15, `design/handoffs/spec-124-slice-7-flow-notices.md`) is on
-  `spec/124-slice-7-flow-notices`, in review. Slices 8 to 11 each wait for an approved design. Held: `OperationsMode.php:189`
+  503 too; DECISIONS #650; design approved 2026-11-15, `design/handoffs/spec-124-slice-7-flow-notices.md`) is
+  merged (#482, `6207ba64`); the owner's recorded rounds for it and for spec 134's look and logo are in the review
+  library (`.agent-review/`). Slices 8 to 11 each wait for an approved design. Held: `OperationsMode.php:189`
   and `ModeDisclosure.php:157` still tell a Staging owner that search engines "should be discouraged", which is no
   longer true once slice 2 ships; the wording is held for slice 8's screen copy, but a release cut before slice 8
   would ship it.
