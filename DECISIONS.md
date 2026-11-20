@@ -21268,6 +21268,15 @@ beside the image, and a test fails, naming the command, when the hash differs fr
 *Not chosen:* comparing file dates (a checkout sets every file's date to now); a fingerprint that also covers the
 templates (the story asks for the palette; R2.3 and R2.4 change the page and each takes its own capture).
 
+**Amended 2026-11-20 (slice 4, built).** The spec numbers these FR-025 to FR-027. The fingerprint covers the palettes,
+the custom colours and the shadows of both files (FR-026), canonicalised (keys sorted at every depth, no
+whitespace) so key order and layout do not change it. The command is `npm run theme:preview -- --url=<address>
+--wp-path=<folder>`: it runs no write of its own (it loads WordPress once through WP-CLI and requests the front
+page once, as a visitor would), and refuses a site that is not a development site on the CoreX theme
+in its default style with the Company kit applied and nothing else published, or whose served colours differ from
+the files. The capture is a true 1200 by 900 viewport, the top of the front page as a visitor sees it; the brass
+call-to-action band starts below it (at 938px) and is not in the image.
+
 ## #639 -- The design system is a component kit in four layers, and it comes before the code
 
 **Date:** 2026-11-15. **Spec:** 134, and every later spec with a visible part. **Decided:** by the owner, in session.

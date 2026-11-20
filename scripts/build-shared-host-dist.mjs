@@ -98,8 +98,15 @@ const DEV_EXCLUDES = [
  * What describes CoreX or a site to a developer and to nobody else: left out of every tree that is not
  * WordPress core. Each sat in a web root where anybody could fetch it, saying what is installed and at
  * which version, and nothing on a running site reads one. WordPress's own are WordPress's to ship.
+ * `screenshot.fingerprint.json` says which colours the theme's preview was taken with, for a test
+ * (spec 134, FR-026); the preview itself ships.
  */
-const SOURCE_DESCRIPTIONS = [ 'README.md', 'composer.json', 'package.json' ];
+const SOURCE_DESCRIPTIONS = [
+	'README.md',
+	'composer.json',
+	'package.json',
+	'screenshot.fingerprint.json',
+];
 
 /**
  * The PDF library's fonts a package keeps unless it is built with `--pdf-fonts=all`: DejaVu, which has Latin,

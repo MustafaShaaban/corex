@@ -75,6 +75,69 @@ WordPress always wins, and the Coming soon page links none. The copies are writt
 `scripts/generate-logo-assets.py`, and `LogoAssetContractTest` holds them equal to the logo folder's (spec 134,
 FR-022; DECISIONS #637, #647).
 
+## The preview image (`screenshot.png`)
+
+The card in Appearance, Themes shows `screenshot.png`: the front page at 1200 by 900, in the default style,
+with the Company kit applied and its neutral sample content. `screenshot.fingerprint.json` beside it holds a
+SHA-256 hash of the colours of `theme.json` and of `styles/dark.json` when the image was taken: each palette
+(slug to colour), `settings.custom.color` and the shadows (slug to shadow), with keys sorted and no whitespace,
+so only a changed value changes it. `tests/theme-preview.test.js` recomputes the hashes and fails, naming the
+command, when a colour changed after the capture; it also reads the image's size from its header (spec 134,
+FR-025 to FR-027; DECISIONS #638).
+
+After a change to a colour, a custom colour or a shadow, take the image again and commit both files:
+
+```bash
+npm run theme:preview -- --url=http://127.0.0.1:8917 --wp-path=/path/to/scratch/wordpress
+```
+
+`--url` and `--wp-path` (or `COREX_BASE_URL` and `COREX_WP_PATH`) name the scratch site and the WordPress
+folder that serves it; neither has a default, and a folder with no `wp-load.php` is refused. The command runs
+no write of its own: it loads WordPress once through WP-CLI and requests the front page once, as a visitor
+would. It needs Playwright's Chromium (`npx playwright install chromium`) and WP-CLI, which it starts with no
+shell, so a path with spaces is passed as it is. It runs `wp`; on Windows, where `wp` is a batch file, it runs
+`php` with the WP-CLI behind the first `wp.bat` on the `PATH` (Composer's `wp-cli/php/boot-fs.php`, or a
+`wp-cli.phar` beside it). Set `COREX_WP_CLI` to a WP-CLI phar or `boot-fs.php` to choose it, and `WP_CLI_PHP`
+for another PHP.
+
+The scratch site is a clean WordPress made for the capture, never a copy of a real site:
+
+1. Install WordPress with a neutral title (for example "Example Company"), `WP_ENVIRONMENT_TYPE` set to
+   `local` in `wp-config.php`, and pretty permalinks.
+2. Link this repository's `theme/` as `wp-content/themes/corex` and activate it. Link and activate
+   `corex-core` first, then `corex-config`, `corex-blocks`, `corex-forms` and the add-ons `corex-ui`,
+   `corex-email` and `corex-kit-company`.
+3. Apply the Company kit at Minimal, which makes its pages and sets its Home as the front page, with the
+   Setup Wizard or with this command, which reads the same in Bash and in PowerShell (run it from this
+   repository, with the WordPress folder as `--path`):
+
+   ```bash
+   wp --user=admin --path=/path/to/scratch/wordpress eval-file scripts/theme-preview-site.php
+   ```
+
+4. Serve it at the address you pass as `--url`.
+
+The command refuses, and writes nothing, when:
+
+- the folder holds no WordPress, or WP-CLI fails (its own error is printed) or reads a site at another
+  address than `--url`;
+- CoreX does not read the site as development (production, staging, Coming soon or Maintenance);
+- the active theme is not `corex`, or is not this checkout's `theme/` folder (a copied theme could be older);
+- a style such as Dark is chosen or the site has styles of its own, or a template or part was changed in
+  the Site Editor;
+- the Company kit is not applied, or the front page is not the page the kit makes the front page (its Home);
+- a published post, page or menu is neither the kit's nor WordPress's own sample (the "Hello world!" post,
+  the Sample Page, and the menu the Navigation block writes when it lists the pages);
+- the colours the page serves differ from `theme.json`, so the image and the fingerprint would disagree;
+- the page shows CoreX product copy: "CoreX" or "Core X", "Discipline, at every layer", or "framework".
+
+Chromium draws the text with greyscale edges (`--disable-lcd-text`), so the image does not take the colour
+fringes of the screen it was made on. The build for a host (`npm run build:dist`) leaves the fingerprint out;
+the image ships.
+
+The image shows the top of the front page as the release leaves it. The releases that build the kit's blocks
+and templates each take a new one.
+
 ## The gutter
 
 The space between what a visitor reads and each edge of the window is the theme's root
