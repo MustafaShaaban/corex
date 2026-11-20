@@ -14,7 +14,7 @@ const fs = require( 'fs' );
 const path = require( 'path' );
 
 const { wpEval } = require( './helpers' );
-const { refuseProduction, startRun } = require( './residue' );
+const { refuseProduction, startRun, forgetRun } = require( './residue' );
 
 const BASE_URL = process.env.COREX_BASE_URL;
 const ADMIN_USER = process.env.COREX_ADMIN_USER || 'admin';
@@ -59,6 +59,8 @@ async function openLoginForm( page ) {
 }
 
 module.exports = async () => {
+	forgetRun();
+
 	if ( ! BASE_URL ) {
 		throw new Error(
 			'COREX_BASE_URL is not set. The browser tests sign in, submit forms and remove the test-marked submissions they find, so they run only against a site named on purpose: a scratch site or the one CI makes, for example COREX_BASE_URL=http://127.0.0.1:8916.'
