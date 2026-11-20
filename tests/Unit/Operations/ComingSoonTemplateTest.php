@@ -25,6 +25,12 @@ function comingSoonTemplate(?string $appEnv = null): ComingSoonTemplate
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_attr')->returnArg();
+    // StandalonePage asks WordPress for the direction and the appearance when the functions exist.
+    // Brain Monkey keeps a function defined after a test that stubbed it, with nothing to answer,
+    // so both are given an answer here (ThemeFontPreloadTest stubs is_rtl). Each test that draws
+    // the page stubs get_bloginfo itself, before this helper runs.
+    Functions\when('is_rtl')->justReturn(false);
+    Functions\when('apply_filters')->returnArg(2);
 
     $assets = dirname(__DIR__, 3) . '/plugins/corex-core/assets';
 
