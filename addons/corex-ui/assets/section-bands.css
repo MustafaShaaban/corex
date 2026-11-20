@@ -121,17 +121,18 @@
 /*
  * A band's plain button (DECISIONS #642): every element button with no
  * style of its own, and the button block's link when the block has none
- * (its style sits on the wrapper). Under the CoreX theme the dark band's
+ * (its style sits on the wrapper), and the newsletter's submit, which is
+ * no element button. Under the CoreX theme the dark band's
  * colours are those its ordinary rules give anyway; they are named so that
  * a theme with the CoreX roles and no band tokens draws the old hero and
  * call-to-action buttons. A disabled button keeps the theme's disabled look.
  */
-:is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass) :is(.wp-element-button:not(.wp-block-button__link, [class*="is-style-"]), .wp-block-button:is(:not([class*="is-style-"]), .is-style-fill) > .wp-block-button__link):not(:disabled, [aria-disabled="true"]) {
+:is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass) :is(.wp-element-button:not(.wp-block-button__link, [class*="is-style-"]), .wp-block-button:is(:not([class*="is-style-"]), .is-style-fill) > .wp-block-button__link, .corex-newsletter-signup__submit):not(:disabled, [aria-disabled="true"]) {
 	background-color: var(--corex-band-button);
 	color: var(--corex-band-button-label);
 }
 
-:is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass) :is(.wp-element-button:not(.wp-block-button__link, [class*="is-style-"]), .wp-block-button:is(:not([class*="is-style-"]), .is-style-fill) > .wp-block-button__link):not(:disabled, [aria-disabled="true"]):hover {
+:is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass) :is(.wp-element-button:not(.wp-block-button__link, [class*="is-style-"]), .wp-block-button:is(:not([class*="is-style-"]), .is-style-fill) > .wp-block-button__link, .corex-newsletter-signup__submit):not(:disabled, [aria-disabled="true"]):hover {
 	background-color: var(--corex-band-button-hover);
 }
 

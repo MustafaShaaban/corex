@@ -259,6 +259,8 @@ it('gives a plain element button and an unstyled button block a band\'s button r
             ->toContain(':is(.wp-block-group.is-style-corex-band-dark, .wp-block-group.is-style-corex-band-brass)')
             ->toContain('.wp-element-button:not(.wp-block-button__link, [class*="is-style-"])')
             ->toContain('.wp-block-button:is(:not([class*="is-style-"]), .is-style-fill) > .wp-block-button__link')
+            // The newsletter's submit is no element button: without it, brass on brass in the brass band.
+            ->toContain('.corex-newsletter-signup__submit')
             ->toContain(':not(:disabled, [aria-disabled="true"])');
     }
 });
