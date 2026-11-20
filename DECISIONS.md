@@ -21498,8 +21498,8 @@ carrying no contrast requirement in WCAG 2.2.
 
 **Geometry.** The files keep the master Core X outlines approved on 2026-06-20 (`logo-manifest.json`): the UI review
 measured the artboard's horizontal lockup with its divider 3.5px further from the symbol and its word about 7%
-larger, because the artboard sets the word as live text beside a 1px line. The hand-over keeps the master geometry;
-the owner may ask for the artboard's proportions instead.
+larger, because the artboard sets the word as live text beside a 1px line. The hand-over keeps the master geometry,
+and the owner confirmed it on 2026-11-20 ("Keep master geometry"): the artboard's proportions are not adopted.
 
 *Not chosen:* changing the card under System in this slice; a divider darkened past the approved drawing; a darker
 brass on the light lockup than the brand's `#ad8643`.
