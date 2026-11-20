@@ -76,8 +76,9 @@ shows the whole CoreX mark, and corex-ui's block styles start drawing for visito
   buttons, in the system's highlight colour (#484).
 - **A site on the CoreX theme**: its colours, its button and its dark sections change; with no site icon of its
   own, its tab shows the CoreX favicon. Its CoreX emails, where Mail settings set no accent, draw their edge in
-  the theme's `primary`: navy before, graphite now, and near-white on the white card if the site has chosen Dark.
-  Set an accent in CoreX Settings, Mail, to choose the edge (brass is `#ad8643`); DECISIONS #649. A site that chose Dark keeps its saved values until it chooses Dark again.
+  the theme's `primary`: navy before, graphite now. A `primary` that would vanish on the white card (the Dark
+  style's near-white) gives way to the email's standard edge. Set an accent in CoreX Settings, Mail, to choose the
+  edge (brass is `#ad8643`); DECISIONS #649. A site that chose Dark keeps its saved values until it chooses Dark again.
   Editorial is no longer offered.
 - **Mizzey**: not on this release. No upgrade step, no stored data changed, no client file edited.
 
