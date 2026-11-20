@@ -450,11 +450,12 @@ test( 'FR-021: the Form block with a flow keeps 24px between its heading, intro,
 			);
 		expect( gap ).toBe( 24 );
 		for ( let index = 1; index < boxes.length; index++ ) {
-			expect( boxes[ index ].top - boxes[ index - 1 ].bottom ).toBe(
-				gap
-			);
-			expect( boxes[ index ].left ).toBe( boxes[ 0 ].left );
-			expect( boxes[ index ].right ).toBe( boxes[ 0 ].right );
+			// Within half a pixel: Chromium lays boxes out on sub-pixel positions.
+			expect(
+				boxes[ index ].top - boxes[ index - 1 ].bottom
+			).toBeCloseTo( gap, 0 );
+			expect( boxes[ index ].left ).toBeCloseTo( boxes[ 0 ].left, 0 );
+			expect( boxes[ index ].right ).toBeCloseTo( boxes[ 0 ].right, 0 );
 		}
 		// A status line spans the form while it says something; empty, it keeps its old cell.
 		await page
@@ -464,8 +465,8 @@ test( 'FR-021: the Form block with a flow keeps 24px between its heading, intro,
 			page.locator( '.corex-form__status' ).boundingBox(),
 			page.locator( 'form.corex-form' ).boundingBox(),
 		] );
-		expect( status.x ).toBe( form.x );
-		expect( status.width ).toBe( form.width );
+		expect( status.x ).toBeCloseTo( form.x, 0 );
+		expect( status.width ).toBeCloseTo( form.width, 0 );
 	} finally {
 		await context.close();
 	}
@@ -655,8 +656,9 @@ for ( const theme of [ 'light', 'dark' ] ) {
 						status.boundingBox(),
 						page.locator( 'form.corex-form' ).boundingBox(),
 					] );
-					expect( line.x ).toBe( sent.x );
-					expect( line.width ).toBe( sent.width );
+					// Within half a pixel (256.015625 against 256 in Arabic at 1280, CI 2026-11-20).
+					expect( line.x ).toBeCloseTo( sent.x, 0 );
+					expect( line.width ).toBeCloseTo( sent.width, 0 );
 					await expect(
 						page.locator( '.corex-form__submit' )
 					).toBeFocused();
