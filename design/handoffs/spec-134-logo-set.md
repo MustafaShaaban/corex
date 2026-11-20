@@ -37,7 +37,9 @@ brass values, and answered "Approve logo set". The approved design is the functi
 
 Geometry and the wordmark are today's, from the approved Core X mark (`plugins/corex-config/assets/brand/
 logo-manifest.json`: five modules on a 48 by 48 grid, Space Grotesk 600 outlines). Only the colours and the new
-variants change. `corex-mark.svg` is removed (FR-023).
+variants change. `corex-mark.svg` is removed (FR-023). The artboard sets the word as live text, so its horizontal
+lockup's divider sits 3.5px further out and its word about 7% larger; the owner confirmed the master geometry on
+2026-11-20 (DECISIONS #647).
 
 ## Explicit exclusions
 
