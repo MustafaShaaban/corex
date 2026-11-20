@@ -71,7 +71,9 @@ shows the whole CoreX mark, and corex-ui's block styles start drawing for visito
   `accent-dark`. The inactive CoreX theme's card image changes in Appearance, Themes. `corex-mark.svg` leaves the
   plugin folder (nothing used it).
 - **A site on the CoreX theme**: its colours, its button and its dark sections change; with no site icon of its
-  own, its tab shows the CoreX favicon. A site that chose Dark keeps its saved values until it chooses Dark again.
+  own, its tab shows the CoreX favicon. Its CoreX emails, where Mail settings set no accent, draw their edge in
+  the theme's `primary`: navy before, graphite now, and near-white on the white card if the site has chosen Dark.
+  Set an accent in CoreX Settings, Mail, to choose the edge (brass is `#ad8643`); DECISIONS #649. A site that chose Dark keeps its saved values until it chooses Dark again.
   Editorial is no longer offered.
 - **Mizzey**: not on this release. No upgrade step, no stored data changed, no client file edited.
 

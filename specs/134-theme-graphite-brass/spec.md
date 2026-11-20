@@ -12,9 +12,9 @@ with R2.1's Arabic review, after the Muva and Perego sessions have read the clie
 
 Slice 1 also moved three places that drew white text on `accent` to `on-accent` (the call-to-action pattern's
 text, the newsletter submit, the menu badge), ahead of slice 2, because the new brass makes white text fail AA
-(DECISIONS #641). Slice 2 replaces the call-to-action's colours with the brass band (FR-015). Still to list for
-slice 5: the emails of a site on the CoreX theme draw their edge in the theme's `primary`, now graphite (and
-near-white under Dark, too faint on a white card); decide there whether it takes brass.
+(DECISIONS #641). Slice 2 replaces the call-to-action's colours with the brass band (FR-015). The emails of a site on
+the CoreX theme draw their edge in the theme's `primary`: listed in the release notes and decided in slice 5
+(DECISIONS #649: it stays `primary`, graphite; a Mail accent sets it, and the Dark case is a follow-up).
 
 **Design**: the approved visitor kit, `design/handoffs/visitor-kit.md` (approved by the owner on 2026-11-15 at
 Version 8 of the CoreX design system, https://claude.ai/artifact/DExY8maEuxwM6JwdZ1jw5c, private to him). The

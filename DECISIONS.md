@@ -21503,3 +21503,22 @@ the owner may ask for the artboard's proportions instead.
 
 *Not chosen:* changing the card under System in this slice; a divider darkened past the approved drawing; a darker
 brass on the light lockup than the brand's `#ad8643`.
+
+## #649 -- An email's edge keeps following the theme's `primary`; a Mail accent chooses it
+
+**Date:** 2026-11-20. **Spec:** 134, slice 5 (FR-028). **Branch:** `spec/134-slice-5-release-notes`.
+**Decided:** under the owner's mandate for the revamp; found by the two-model review of slice 5.
+
+**What happens.** `SiteEmailBrand` draws a CoreX email's edge in the Mail accent, and with none set in the
+theme palette's `primary` (spec 120, story 3: every CoreX email carries the site's colour). Under the CoreX theme
+that was navy and is now graphite `#14151a`: a quiet, legible edge, and the change is listed in the R2.2 release
+notes. A site that has chosen the Dark style may get its near-white `primary`, too faint on the white card.
+
+**Decided.** The edge stays the site's `primary`; this slice changes no email code. Brass is CoreX's accent,
+not every site's, and the fallback reads the client's own palette on Muva and Perego too, where `primary` is
+their brand. A site that wants brass, or runs Dark, sets the accent in CoreX Settings, Mail. Reading the light
+palette whatever style is chosen is a follow-up, with its own test, outside R2.2.
+
+*Not chosen:* the brass `accent` as the fallback (it would change every client's emails to CoreX's colour, which
+spec 120 refused); a code change inside a release-notes slice.
+
