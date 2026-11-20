@@ -21539,8 +21539,9 @@ spec 120 refused); a code change inside a release-notes slice.
   refusal; every reader of `code` and `details` was checked and behaves as before.
 - **A code-defined form in the Form block** gets both notices too: the pause has refused every public submission
   since slice 1, so drawing the form while paused would mislead.
-- The panel rules move to `blocks/_notice.scss`, loaded by every flow block and the Form block, which drew a
-  closed flow's notice unstyled before.
+- The panel rules and the flow grid move to `plugins/corex-forms/src/Block/blocks/_flow-shared.scss`, loaded by the
+  Form block's `style.scss` and, through `_flow.scss`, by every flow block; the Form block drew a closed flow's
+  notice unstyled before.
 
 - **Three wordings, not two.** The gate keeps a form's mail (Capture), delivers it, or refuses it (a site without
   the CoreX Mail add-on has nowhere to keep it). The drawn "kept" sentence is said only when the mail is kept; a
