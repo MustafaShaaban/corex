@@ -7,7 +7,7 @@ const { wpEval } = require( './helpers' );
 const { finishRun } = require( './residue' );
 
 module.exports = async () => {
-	const left = finishRun( wpEval );
+	const left = finishRun( wpEval, process.env.COREX_BASE_URL );
 
 	if ( left.length > 0 ) {
 		throw new Error(
