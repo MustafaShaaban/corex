@@ -6,8 +6,8 @@
 rejected a design that only recoloured today's layout and approved a full visitor kit instead. This file is the
 whole spec: it ends in slices, and there is no separate plan or task file.
 
-**Status**: Slices 1 and 2 merged (PR #472, `e990d8da`; PR #473, `5e74ec05`). Slice 3 (the logo set, approved on
-2026-11-16, `design/handoffs/spec-134-logo-set.md`) in build on `spec/134-slice-3-logo-set`. Slices 4 and 5 to do.
+**Status**: Slices 1 to 3 merged (PR #472, `e990d8da`; PR #473, `5e74ec05`; PR #475, `8b737a87`). Slice 4 (the theme
+preview) in build on `spec/134-slice-4-preview`. Slice 5 (release notes) to do.
 
 Slice 1 also moved three places that drew white text on `accent` to `on-accent` (the call-to-action pattern's
 text, the newsletter submit, the menu badge), ahead of slice 2, because the new brass makes white text fail AA
@@ -319,7 +319,7 @@ change one palette value and run the tests.
   "Core" in graphite where it was brass.
 - **Perego**: shows its own logo on sign-in and is unchanged there. The theme does not reach it. The card image
   changes. Perego runs corex-ui: a hero or a call-to-action band inserted after the update names a section style;
-  under Perego's theme no band style exists (its palette has none of the CoreX slugs), so the class is inert and
+  under Perego's theme no band style exists (its palette lacks most of the CoreX slugs), so the class is inert and
   the section draws with Perego's defaults, as the old pattern did there (SC-009 proves it). One difference,
   accepted: Perego's palette has an `accent`, so the old call to action drew Perego's `#d86af3` behind its light
   page text, about 2.9:1, under AA; a newly inserted one draws on the page and reads. Its button label is WordPress's
@@ -386,6 +386,11 @@ the CoreX login the favicon. (2) The login's grounds are `--corex-admin-canvas`,
 (`#f6f7f9` light, `#16181d` dark). (3) The extracted word outlines carry letter-spacing but not kerning, so "re"
 and "ex" sit slightly wider than live text. (4) The knockout's square tile and its padding are the generator's
 choice: the artboard draws the knockout in a display cell.
+
+**Found while building slice 4, and left open.** (1) The Company kit has no `wp corex kit apply` command, so the
+preview's scratch site is prepared through the Setup Wizard or the kit's REST route; a one-line command would help.
+(2) The preview's navigation lists WordPress's own "Sample Page" beside the kit's pages, as a fresh install does.
+(3) TC-BRD-07-01 (the card compared with the activated front page) stays an owner's check.
 
 **What each slice proves.** Slice 1: SC-001 (colours), SC-002, SC-003, SC-004, with the layout captures equal before
 and after. Slice 2: SC-005 and SC-009, and the bands measured in both modes and both directions. Slice 3: SC-006

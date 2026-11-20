@@ -42,8 +42,9 @@ variants change. `corex-mark.svg` is removed (FR-023).
 ## Explicit exclusions
 
 - The page artboards of the same canvas (see Design source).
-- The CoreX design system's Logos group still holds the files of 2026-11-15. It is brought into step from the
-  generated files once slice 3 is built, so the design system and the code show one logo set.
+- The CoreX design system's Logos group held the files of 2026-11-15. It was brought into step from the generated
+  files on 2026-11-20 (design system Version 12), after slice 3 merged, so the design system and the code show one
+  logo set; `corex-mark.svg` is retired there too.
 - No new logo geometry, no animated mark, no client logo.
 
 ## Accessibility expectations

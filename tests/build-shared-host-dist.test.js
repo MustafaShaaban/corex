@@ -129,6 +129,9 @@ function makeRepo() {
 	write( 'plugins/corex-core/composer.json', '{}' );
 	write( 'addons/corex-ui/package.json', '{}' );
 	write( 'theme/README.md' );
+	// the theme's preview, which WordPress shows, and the fingerprint that only a test reads
+	write( 'theme/screenshot.png' );
+	write( 'theme/screenshot.fingerprint.json', '{}' );
 	write( 'packages/cli/README.md' );
 	// client source (target layout)
 	write( 'sites/acme/acme-site/acme-site.php' );
@@ -420,6 +423,21 @@ it( 'leaves out the files that only describe CoreX or the site to a developer', 
 	// What WordPress ships is WordPress's, and is left as it came.
 	expect( listed( distDir ) ).toContain(
 		'wp-includes/sodium_compat/composer.json'
+	);
+} );
+
+/**
+ * Spec 134 (FR-026). The theme's preview fingerprint says which colours `screenshot.png` was taken with,
+ * for `tests/theme-preview.test.js`. Nothing on a site reads it; the preview itself is what WordPress
+ * shows in Appearance, Themes, and ships.
+ */
+it( 'leaves out the theme preview fingerprint and keeps the preview', () => {
+	const { distDir } = buildFixture();
+	const packaged = listed( distDir );
+
+	expect( packaged ).toContain( 'wp-content/themes/corex/screenshot.png' );
+	expect( packaged ).not.toContain(
+		'wp-content/themes/corex/screenshot.fingerprint.json'
 	);
 } );
 

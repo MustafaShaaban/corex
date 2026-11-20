@@ -66,8 +66,9 @@ and approved first, a spec ends in slices, and nothing merges without the review
   for visitors, #643; the 48px control height, #644; the band pages' byte budgets, #645) is merged (#473,
   `5e74ec05`). **Slice 3** (the logo set the owner approved on 2026-11-16, `design/handoffs/spec-134-logo-set.md`:
   light and dark lockups, stacked lockups, a knockout, the favicon set; the login's lockup follows its card; the
-  theme links the favicon when the site has no icon, DECISIONS #647) is on `spec/134-slice-3-logo-set`. Slices 4
-  (theme preview) and 5 (release notes) follow. The kit's components, blocks and templates need later
+  theme links the favicon when the site has no icon, DECISIONS #647) is merged (#475, `8b737a87`); the design
+  system's Logos group follows it (Version 12). **Slice 4** (the theme preview: one capture command, a palette
+  fingerprint and its test, a new `screenshot.png`) is on `spec/134-slice-4-preview`; slice 5 (release notes) follows. The kit's components, blocks and templates need later
   specs, and the release order in the planning workspace needs a change request (not written from here).
 - **Spec 124, modes and login protection (R3.8)**: re-planned for the CoreX loop in twelve slices, server first
   (DECISIONS #520 to #526; the 2026-10-26 code on `spec/124-modes-and-login` is a source to port from, not a base).

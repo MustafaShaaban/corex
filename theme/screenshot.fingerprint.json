@@ -1,0 +1,17 @@
+{
+	"command": "npm run theme:preview",
+	"image": "screenshot.png",
+	"width": 1200,
+	"height": 900,
+	"algorithm": "sha256",
+	"covers": [
+		"settings.color.palette, slug to color",
+		"settings.custom.color",
+		"settings.shadow.presets, slug to shadow"
+	],
+	"canonical": "keys sorted at every depth, JSON with no whitespace, UTF-8",
+	"sources": {
+		"theme/theme.json": "e3e46fb98353fcdb37ba3766f230f276a9894dbfc3c50b3300662729074eb48d",
+		"theme/styles/dark.json": "3ca6938c5f4329146b30a45dc2ca998c8cf74bc45b4dedb8b6f6be4f293c79fb"
+	}
+}
