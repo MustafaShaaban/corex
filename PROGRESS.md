@@ -803,13 +803,18 @@ Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
 ## Next
 
-The revamp comes first, in its release plan's order, under the CoreX loop (AGENTS.md):
-1. Spec 121 (R2.1) to a pull request, reviewed and green; the owner's native Arabic review before its tag.
-2. A release of what is merged (R3.1, R3.2, R3.4, R3.9, R3.11), once the owner accepts what is visible in it and
-   the Muva and Perego sessions have read its client impact.
-3. Spec 124 (R3.8): review the saved work, then its slices.
-4. The CoreX design system in Claude Design, made from `main`'s tokens once R2.1 lands: no later visible release
-   starts without its screens drawn there and approved.
+The revamp comes first, in its release plan's order, under the CoreX loop (AGENTS.md). As of 2026-11-20 `main`
+holds R2.1, R2.2 (complete), R3.1, R3.2, R3.4, R3.9, R3.11 and spec 124 (R3.8) slices 1 to 7, all unreleased:
+1. **No tag from `main` until spec 124 slice 10 lands.** Slice 5 (#468) is merged and may not be released before
+   slice 10's Overview words (DECISIONS #628). Slice 10 needs an approved design first (admin screens: the login
+   protection tab, the Lockouts panel, the Overview rows); then slices 8, 9 and 11, each design first.
+2. Before the tag: the owner's native Arabic review (`specs/121-tokens-and-type/arabic-review.md`, now with the
+   drafts of 2026-11-16 and 2026-11-20); the owner's acceptance of what is visible (recorded review rounds are in
+   the local review library, `.agent-review/`); the Muva and Perego sessions told the client impact (the
+   changelog's Unreleased sections); the client merge check (`scripts/client-merge-check.mjs`, run on 2026-11-20:
+   `CODEOWNERS` for both, and five agent-instruction files Perego edited on purpose, no product code).
+3. Then the next stage 2 release (R2.3 onwards), each designed on the approved visitor kit
+   (`design/handoffs/visitor-kit.md`) before it is built.
 
 Outside the revamp, [`ROADMAP.md`](ROADMAP.md) §17 lists the candidates in order. **M3 (navigation and template
 parts) and M4 (the company-page contract)** are the substantive product direction; everything else on that list
