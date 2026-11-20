@@ -3,10 +3,15 @@
  * The ring sits outside the button, on the section, so it is drawn in
  * `surface`. Inside a section band (spec 134) the band's sheet gives it
  * the band's focus colour instead, at least 3:1 against the band.
+ *
+ * Every token has a fallback: a client theme defines none of them, and a
+ * `var()` with no value and no fallback drops the whole declaration, which
+ * took the browser's own ring with it (WCAG 2.2, 2.4.7). There the ring is
+ * the system's highlight colour, at the medium width.
  */
 .corex-action-link .wp-block-button__link:focus-visible {
-	outline:
-		var(--wp--custom--focus--width) solid
-		var(--wp--preset--color--surface);
-	outline-offset: var(--wp--custom--focus--offset);
+	outline-width: var(--wp--custom--focus--width, medium);
+	outline-style: solid;
+	outline-color: var(--wp--preset--color--surface, Highlight);
+	outline-offset: var(--wp--custom--focus--offset, 0);
 }

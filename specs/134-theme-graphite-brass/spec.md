@@ -370,8 +370,8 @@ Slice 3 shares no file with slices 1 and 2 and may be built beside them once its
 `band-*` token for `success`, `warning`, `error` or `info`, so status text placed in a dark band is not proven AA.
 It belongs to the kit's Alert and Badge components, built by a later spec. (2) Under a client theme the hero's and
 the call to action's buttons draw no focus ring, before this release as after: `action-link.css` names
-`--wp--custom--focus--width`, which only the CoreX theme defines, so its whole `outline` is dropped. A follow-up
-fix. (3) SC-009's draw-as-before half is measured under a scratch theme with foreign slug names, modelled on Muva's
+`--wp--custom--focus--width`, which only the CoreX theme defines, so its whole `outline` is dropped. Fixed
+2026-11-20 on `fix/action-link-focus-fallback`: every token there has a keyword fallback (`medium`, `Highlight`, `0`). (3) SC-009's draw-as-before half is measured under a scratch theme with foreign slug names, modelled on Muva's
 and Perego's palettes; their own repositories are checked by hand with `scripts/client-merge-check.mjs`
 before the tag (CI's client-repository job merges into a generated site, not into theirs). (4) The newsletter block's submit (`corex-newsletter-signup__submit`) is no
 `.wp-element-button`, so inside the brass band it stays brass on brass, 1.00:1. A corex-blocks follow-up gives it
