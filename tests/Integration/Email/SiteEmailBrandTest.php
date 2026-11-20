@@ -285,3 +285,49 @@ it('says no size for a logo elsewhere, whatever its name or its address says', f
     'a name that is two years' => ['https://cdn.acme.test/brand/report-2024x2025.png'],
     'a size in what follows the name' => ['https://cdn.acme.test/brand/logo.png?src=a-300x150.png'],
 ]);
+
+/**
+ * The theme's palette with `primary` set to a colour, through WordPress's own theme data filter.
+ *
+ * @return callable The filter, for the test to remove.
+ */
+function themePrimary(string $colour): callable
+{
+    return static function (WP_Theme_JSON_Data $data) use ($colour): WP_Theme_JSON_Data {
+        $settings = $data->get_data()['settings']['color']['palette'] ?? [];
+        $palette = $settings['theme'] ?? $settings;
+        foreach ($palette as $index => $entry) {
+            if (($entry['slug'] ?? '') === 'primary') {
+                $palette[$index]['color'] = $colour;
+            }
+        }
+
+        return $data->update_with(['version' => 3, 'settings' => ['color' => ['palette' => $palette]]]);
+    };
+}
+
+// DECISIONS #649 and its 2026-11-20 amendment: a site that chose the Dark style can have a near-white `primary`,
+// which would be an invisible edge on the email's white card; then the email keeps its own standard edge.
+it('keeps the standard edge where the theme\'s primary would vanish on the white card', function () {
+    ($this->answer)('wp_theme_json_data_theme', themePrimary('#f4f5f7'));
+    wp_clean_theme_json_cache();
+
+    try {
+        expect(siteEmailBrand()->light->accent)->toBe(EmailPalette::light()->accent);
+    } finally {
+        remove_filter('wp_theme_json_data_theme', end($this->answered)[1]);
+        wp_clean_theme_json_cache();
+    }
+});
+
+it('still takes a readable primary from the theme as the edge', function () {
+    ($this->answer)('wp_theme_json_data_theme', themePrimary('#7a1f3a'));
+    wp_clean_theme_json_cache();
+
+    try {
+        expect(siteEmailBrand()->light->accent)->toBe('#7a1f3a');
+    } finally {
+        remove_filter('wp_theme_json_data_theme', end($this->answered)[1]);
+        wp_clean_theme_json_cache();
+    }
+});

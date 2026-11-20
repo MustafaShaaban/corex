@@ -146,7 +146,9 @@ final readonly class SiteEmailBrand implements EmailBrandSource
 
     /**
      * The `primary` colour of the theme's palette, as `#rrggbb`, or '' where the theme has none
-     * a mail client can be given (a custom property or a function is not one).
+     * a mail client can be given (a custom property or a function is not one), or where it would
+     * vanish on the email's white card (DECISIONS #649, amended 2026-11-20: a site that chose a
+     * dark style can have a near-white `primary`).
      */
     private static function primaryColour(): string
     {
@@ -155,11 +157,27 @@ final readonly class SiteEmailBrand implements EmailBrandSource
             if (is_array($entry) && ($entry['slug'] ?? '') === 'primary') {
                 $colour = strtolower(trim((string) ($entry['color'] ?? '')));
 
-                return preg_match('/^#[0-9a-f]{6}\z/', $colour) === 1 ? $colour : '';
+                return preg_match('/^#[0-9a-f]{6}\z/', $colour) === 1 && self::showsOnWhite($colour) ? $colour : '';
             }
         }
 
         return '';
+    }
+
+    /**
+     * Whether an edge in this colour can be seen on a white card: at least 1.5:1 (the edge is never
+     * text, so it keeps no text contrast; this only refuses one that would vanish). WCAG's relative
+     * luminance, from `#rrggbb`.
+     */
+    private static function showsOnWhite(string $colour): bool
+    {
+        $luminance = 0.0;
+        foreach ([[1, 0.2126], [3, 0.7152], [5, 0.0722]] as [$at, $weight]) {
+            $channel = hexdec(substr($colour, $at, 2)) / 255;
+            $luminance += $weight * ($channel <= 0.04045 ? $channel / 12.92 : (($channel + 0.055) / 1.055) ** 2.4);
+        }
+
+        return 1.05 / ($luminance + 0.05) >= 1.5;
     }
 
     /** The site as WordPress knows it, with what its Mail settings say about its emails. */

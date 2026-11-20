@@ -21522,6 +21522,12 @@ palette whatever style is chosen is a follow-up, with its own test, outside R2.2
 *Not chosen:* the brass `accent` as the fallback (it would change every client's emails to CoreX's colour, which
 spec 120 refused); a code change inside a release-notes slice.
 
+**Amended 2026-11-20 (fix/email-edge-faint-primary).** The Dark case is settled without choosing between the
+theme file's palette and a primary the owner set in the Site Editor: the site's `primary` is still the edge,
+unless it is under 1.5:1 against the email's white card, where it would vanish. Then the email keeps its standard
+edge, as one with no site colour does. Graphite stays the edge (about 18:1); the Dark style's `#f4f5f7` (1.08:1)
+gives way.
+
 
 ## #650 -- The flow notices: the test site said by the mail gate, the pause by one notice the guard sends too
 
