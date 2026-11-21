@@ -40,6 +40,88 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**The Blackstone gap programme (DECISIONS #651 to #659, change request CR-049).** The Blackstone eIT site, a
+client site on v0.48.1, found 45 gaps in CoreX. The owner's rule: each is fixed here, released as a tag, then taken
+by the site. The gap rows, with paths and the effect on the site, are in that site's repository, which CoreX
+sessions only read: `C:\wamp64\www\blackstoneeit-official-website-v2\sites\blackstoneeit\docs\corex-gaps.md`
+(section ids refer to `docs\screen-map.md`; the owner's answers are decisions 1 to 24 of `DECISIONS.md` there; the
+brief is `docs\corex-session-brief.md`). The rules every session of the programme follows are in the shared notes
+file `corex-gap-programme-rules.md` (side-session notes of the Blackstone session) and repeat nothing that
+`AGENTS.md` says.
+
+- **Release route (#651).** Every slice merges into `main` first. A wave is then carried by cherry-pick to
+  `release/gap-line` (cut at `v0.48.1`, not yet created) through pull requests into that branch, and tagged from
+  it: wave 1 `v0.49.0`, wave 2 `v0.50.0`, wave 3 `v0.51.0`, the rest `v0.52.0`. The coordinating session carries
+  and tags; a wave session's work ends at `main`. `main`'s own gates (below, "Next") are untouched, and if `main`
+  can be tagged when a wave is ready, the wave ships from `main` and the line closes.
+- **Now (2026-11-21).** All 45 rows were re-read against `main` at `3a3caeb1`: 36 are true as written, 8 are partly changed by work `main` gained after v0.48.1 (G-023, G-025, G-029, G-031, G-033, G-036, G-039, G-041; what is left is in each row), and G-026 is already fixed on `main` (spec 122, DECISIONS #476) but in no release. Nothing is built
+  yet. Three sessions were started for wave 1, each in its own worktree: spec 135 (the client site scaffold),
+  spec 136 (the editor standard for blocks), spec 137 (the header system). Decision numbers given out: #660 to
+  #669, #670 to #689, #690 to #699.
+- **Next.** (1) Each wave 1 session writes its spec, then builds slice by slice into `main`. (2) When wave 1 is
+  on `main`: create `release/gap-line` from `v0.48.1`, cherry-pick the wave's squash commits in merge order, open
+  one pull request into the line per spec, run `scripts/client-merge-check.mjs`, bump the version surfaces to
+  0.49.0 on the line, move the wave's changelog lines into a `[0.49.0]` entry (on the line and on `main`), tag,
+  publish, and report the tag, the gaps and the client impact. (3) Spec 149 (lists, filters, carousel) may start
+  beside wave 1 when a session is free. (4) Wave 2: specs 138 to 143.
+- **Waiting on the owner, none of it blocking the slices nobody sees.** Approval of each design for a visible
+  slice (the header system, the hero's media and second button, the pause controls, later the careers screens and
+  the consent banner). His word on the reversals listed in CR-049's intake (`06-change-control/intake-2026-11-21.md`
+  in the planning workspace): the child theme against BRD-D8, the SEO add-on against the market audit, analytics
+  and consent against OPS-D2. They are built as decided on 2026-11-21 unless he says otherwise. Whether the two
+  new add-ons are included or paid.
+
+| Gap | Effect | What | Wave | Spec | Slice | PR | Tag | State |
+|---|---|---|---|---|---|---|---|---|
+| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | | | | open |
+| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | | | | open |
+| G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | | | | open |
+| G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | | | | open |
+| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | | | | open |
+| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | | | | open |
+| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | | | | open |
+| G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
+| G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
+| G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
+| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | | | | open |
+| G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
+| G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | | | | open |
+| G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
+| G-015 | Medium | No in-page section navigation | then | 150 | | | | open |
+| G-016 | Medium | Blocks print images with no `srcset` or size | then | 150 | | | | open |
+| G-017 | Medium | Article parts missing (reading time, contents, author box, related) | then | 150 | | | | open |
+| G-018 | Low | No pattern, template, post type or taxonomy generator | then | 151 | | | | open |
+| G-019 | Low | Copyright sentence cannot be edited | then | 150 | | | | open |
+| G-020 | Medium | No declarative post type, taxonomy and field registration | then | 151 | | | | open |
+| G-021 | Medium | Portfolio kit cannot be relabelled or reshaped | then | 151 | | | | open |
+| G-022 | Medium | No people record | 2 | 143 | | | | open |
+| G-023 | Medium | Settings: no list type, no live binding (the admin field control knows `textarea` and `json`; no setting declares them) | 2 | 143 | | | | open |
+| G-024 | Medium | An editor-built form cannot take a file | 2 | 138 | | | | open |
+| G-025 | Medium | Captcha: opt-in for code forms, script not deferred or tied to consent, no notice helper (the silent refusal on half-set keys is fixed on `main`) | 2, consent half in 3 | 138, 145 | | | | open |
+| G-026 | High | A stored submission answered 502 when its email failed | 2 | 122 (revamp R3.9), 138 for what is left | | #446 | | fixed on `main`, in no release: it is revamp work, so the line cannot carry it (#651) and it ships with `main`'s own tag. Left for 138: say at launch when production mail is still held |
+| G-027 | High | Forms fail on pages cached longer than the nonce lives | 2 | 138 | | | | open |
+| G-028 | Medium | Form runtime: steps, conditions, error summary, ids | 2 | 138 | | | | open |
+| G-029 | Medium | Forms hand-off: no webhook, no `dataLayer` push (campaign capture is on `main`, unreleased) | 2 | 138 | | | | open |
+| G-030 | Medium | Public write routes without a rate limit or nonce: newsletter subscribe, careers apply, bookings request, and the four account routes of `corex-profile` | 2 | 138 | | | | open |
+| G-031 | Medium | Privacy: no WordPress exporter or eraser, no blocked-attempts log, anonymising leaves files, no retention for subscribers or applications (submission retention is on `main`, unreleased) | 2 | 142 | | | | open |
+| G-032 | High | Mail: `wp_mail` is the only provider; no DNS check, no bounces | 2 | 139 | | | | open |
+| G-033 | High | The private upload folder is closed on Apache and IIS only; no nginx rule, no probe (files are now served through a viewer check) | 2 | 142 | | | | open |
+| G-034 | High | Newsletter block subscribes with no topic, so nothing is ever sent | 2 | 140 | | | | open |
+| G-035 | High | Newsletter journey and sending (pages, expiry, headers, batches) | 2 | 140 | | | | open |
+| G-036 | High | Careers has no visitor side: no job fields, templates, application block or `JobPosting` (three taxonomies exist) | 2 | 141 | | | | open |
+| G-037 | Low | Blog reading analytics receive no events | 3 | 145 | | | | open |
+| G-038 | High | No SEO output of any kind | 3 | 144 | | | | open |
+| G-039 | High | Agent readiness is scored but not written; two read-only abilities (spec 123 made them public to MCP) | 3 | 146 | | | | open |
+| G-040 | High | No analytics, consent banner or consent signal | 3 | 145 | | | | open |
+| G-041 | High | No security headers or enforced hardening (seven checks that only read) | 3 | 147 | | | | open |
+| G-042 | High | No Polylang or WPML support | 3, rules from 1 | 148 | | | | open |
+| G-043 | Medium | The client site workflow has no speed, accessibility or secret checks | then | 152 | | | | open |
+| G-044 | Low | No uninstall routine | then | 152 | | | | open |
+| G-045 | Low | Docs describe an `I18nHandler` and an Interactivity rule the code does not have | then | 152 | | | | open |
+
+State is one of: open, specced (the spec is on `main`), built (every slice on `main`), released (in the tag
+named), not fixed (with the reason beside it). A row with two specs is released when both are.
+
 **The revamp, where it stands on 2026-11-11.** Released: stage 0 (R0.1 to R0.4) and R1.1 (v0.47.0,
 v0.48.0). Merged, not released: R3.2 (spec 118, #439), R3.4 (spec 119, #440), R3.1 (spec 117, #438), R3.9
 (spec 122, #446) and R3.11 (spec 120, #447). The last three were built on 2026-10-23 to 26 and sat unmerged (two of
@@ -803,7 +885,11 @@ Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
 ## Next
 
-The revamp comes first, in its release plan's order, under the CoreX loop (AGENTS.md). As of 2026-11-20 `main`
+**The Blackstone gap programme runs beside the revamp** (owner, 2026-11-21): its own "Now" and "Next" are at the
+top of "In flight", with the table of every gap. It releases from `release/gap-line`, not from `main` (DECISIONS
+#651), so nothing below is loosened by it.
+
+The revamp comes first on `main`, in its release plan's order, under the CoreX loop (AGENTS.md). As of 2026-11-20 `main`
 holds R2.1, R2.2 (complete), R3.1, R3.2, R3.4, R3.9, R3.11 and spec 124 (R3.8) slices 1 to 7, all unreleased:
 1. **No tag from `main` until spec 124 slice 10 lands.** Slice 5 (#468) is merged and may not be released before
    slice 10's Overview words (DECISIONS #628). Slice 10 needs an approved design first (admin screens: the login

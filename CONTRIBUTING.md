@@ -14,12 +14,14 @@ Per `docs/internal/COREX-FRAMEWORK.md` §19:
 
 | Branch | Purpose |
 |---|---|
-| `main` | The only long-lived branch. Releases are tagged from it. |
+| `main` | The only branch work is built on. Releases are tagged from it. |
+| `release/<name>` | A maintenance line, only when `DECISIONS.md` records one. It receives cherry-picks of commits already on `main`, through pull requests, and may be tagged. Today: `release/gap-line`, cut at `v0.48.1` (DECISIONS #651). |
 | `spec/NNN-slug` | Short-lived work for one spec (e.g. `spec/087-guides-support-and-admin-controls`). |
 | `hotfix/slug` | Urgent fix off `main`, merged straight back. |
 
 - Branch from `main`, open a PR back into `main` with a green pipeline, squash-merge.
-- Tag a release from `main` when a set of specs is ready to ship, not on every merge.
+- Tag a release from `main` when a set of specs is ready to ship, not on every merge. A maintenance line
+  is tagged the same way, and never holds a commit `main` does not.
 - Environments deploy from tags, never branches.
 
 > **This replaced a `develop` integration branch.** That branch no longer exists, and the

@@ -21560,3 +21560,221 @@ gives way.
   above a thank-you.
 
 *Not chosen:* porting slice 9's storage now; a notice per block written twice (block and guard), which drifts.
+
+## #651 -- Gap releases come from a maintenance line cut at v0.48.1; every slice lands on `main` first
+
+**Date:** 2026-11-21. **Spec:** none (release process). **Branch:** `docs/blackstone-gap-programme`.
+**Decided:** by the CoreX coordinating session, under the owner's delegation in the Blackstone brief
+("decide the release route first ... pick what gets the site building soonest without breaking the revamp's rules").
+
+**The question.** The Blackstone eIT site (a client site on v0.48.1) found 45 gaps and the owner's rule is that
+each is fixed in CoreX and released as a tag before the site takes it (#652). `main` cannot be tagged today.
+
+**Measured on 2026-11-21, `main` at `3a3caeb1`.**
+- `main` is 38 commits ahead of `v0.48.1` and holds R2.1, R2.2, R3.1, R3.2, R3.4, R3.9, R3.11 and spec 124
+  slices 1 to 7, all unreleased. Between it and a tag stand steps only the owner can take: an approved design for
+  spec 124 slice 10 (#628: slice 5 may not be released before slice 10), his native Arabic review of the
+  catalogue (R2.1's tag waits for it), and his acceptance of everything visible.
+- The areas wave 1 changes have moved little since `v0.48.1`: `addons/corex-ui` 8 files, `theme` 17,
+  `packages/cli` 6, `plugins/corex-blocks` 3. The areas waves 2 and 3 change have moved a lot:
+  `plugins/corex-forms` 81 files, `plugins/corex-core` 70, `plugins/corex-config` 247.
+- Nothing in `scripts/`, `tests/` or `.github/` checks that a tag is an ancestor of `main`. A pull request runs CI
+  whatever its base (`ci.yml`, `pull_request` with no branch filter). A client takes a release with
+  `git merge <tag>`, and `verify:framework --record` accepts any tag.
+
+**Decided.**
+1. **The line.** `release/gap-line` is branched from the tag `v0.48.1`. It carries gap fixes and what they need
+   to pass CI, nothing else. It never carries revamp work (specs 117 to 124, 134), so #628, the Arabic review and
+   the owner's acceptance of the revamp keep their force on `main`.
+2. **`main` first.** Every slice is built on a branch from `main` and squash-merged into `main` through the whole
+   loop. Its squash commit is then cherry-picked to the line through a pull request whose base is
+   `release/gap-line`, so CI runs on the line too. Nothing is built only on the line.
+3. **Tags.** Each wave is one tag from the line: `v0.49.0` (wave 1), `v0.50.0` (wave 2), `v0.51.0` (wave 3), then
+   in order. They are minor numbers because the waves add features (the brief called it a patch line; Semantic
+   Versioning does not allow a feature in a patch). `main`'s own next release takes the next free minor when it
+   ships. Because of point 2 it holds everything the line shipped, so a higher number always holds more.
+4. **When the line ends.** Each wave asks again when it is ready. If `main` can be tagged by then (slice 10
+   landed, the owner's steps done), the wave ships from `main` and the line is closed. A slice that rests on code
+   `main` gained after `v0.48.1`, and so cannot be carried without being rewritten, is named in the gap table
+   (`PROGRESS.md`): either what it rests on is carried with it, when that is itself releasable, or the slice waits
+   for `main`. It is never written twice.
+5. **Clients.** A line tag is optional for Muva, Perego and Mizzey: gap fixes that change behaviour ship off or
+   behind a setting. Every entry still carries `### Client impact` naming the three. `scripts/client-merge-check.mjs`
+   runs before each tag. The owner relays the impact to the client sessions, as before.
+6. **`CONTRIBUTING.md`** says so: `main` stays the only branch work is built on; a maintenance line recorded in
+   this file may be tagged.
+
+*Not chosen.* Releases from `main` after spec 124 slice 10: three owner steps stand in the way and none has a
+date, so the site would wait on work unrelated to it. Release candidates from `main` for Blackstone alone: a tag
+from `main` is what `PROGRESS.md` forbids, and a client site would be built on work the owner has not accepted.
+Building on the line and merging forward: `main` would receive forms and settings code written against files it
+has since rewritten.
+
+**Cost, accepted.** Each slice runs CI twice, and wave 2 and 3 slices may meet point 4. The three owner steps
+above are listed in `PROGRESS.md` as what would let later waves ship from `main` instead.
+
+## #652 -- The Blackstone gap programme: 45 gaps fixed in CoreX in waves, outside the revamp's register
+
+**Date:** 2026-11-21. **Spec:** 135 to 152 (reserved, written wave by wave). **Branch:** `docs/blackstone-gap-programme`.
+**Decided:** by the owner, in the brief his Blackstone session gave this one; the grouping into specs is the
+coordinating session's.
+
+**What it is.** The Blackstone eIT corporate website is a CoreX client site on v0.48.1. A fit check of its design
+found 45 gaps (G-001 to G-045, 21 of them High), re-read against `main` on 2026-11-21. The owner's rule: nothing
+is built outside CoreX; a gap is fixed here, released as a tag, then taken by the site. The site's repository is
+read-only for CoreX sessions. The table of every gap with its spec, slice, pull request and tag is in
+`PROGRESS.md`.
+
+**Where it sits against the revamp.** It is not a register row. It entered through the planning workspace's
+change control as CR-049, approved by the owner on 2026-11-21, and is built through CoreX specs as specs 123, 129
+and 130 were. Twenty-six gaps touch a revamp story: the story's acceptance criteria are the spec's, the story
+ships with the gap ahead of its release, and the revamp's own gates on `main` (design first, the owner's
+acceptance, #628) are unchanged. Ten of the 2026-11-21 answers reverse or go past an answer recorded earlier; the
+owner delegated them without the earlier answers in front of him, so each pair is listed in CR-049's intake for
+him to overrule. Until he does, the later answer is built (#653 to #659).
+
+**Three earlier rules that keep their force.**
+- The approved visitor kit says nothing opens, moves or plays by itself. Tabs that advance, a carousel that runs
+  as a ticker and a hero video are therefore options, off unless a site turns them on, never under reduced motion,
+  always with a pause control a person can see.
+- Where WordPress's own block does the job (the revamp's BLK-D1 names Accordion and Breadcrumbs), CoreX styles it
+  and retires its own instead of rebuilding it. The spec that meets such a gap says which it chose and why.
+- A behaviour change ships off or behind a setting, so Muva and Perego are not changed by taking a tag.
+
+**Waves and specs.** One spec per group, one pull request per slice.
+- **Wave 1, `v0.49.0`, what stops the site starting.** Spec 135, the client site scaffold: G-006, G-007, G-002,
+  G-001. Spec 136, the editor standard for blocks: G-005, G-003 (the stub, the parity test, the site's blocks),
+  G-004, G-011. Spec 137, the header system: G-013.
+- **Wave 2, `v0.50.0`, forms, mail and the features the owner calls very important.** Spec 138, forms that hold:
+  G-026, G-027, G-024, G-028, G-029, G-030, G-025. Spec 139, mail delivery: G-032. Spec 140, the newsletter:
+  G-034, G-035. Spec 141, careers: G-036. Spec 142, privacy and private uploads: G-031, G-033. Spec 143, people
+  and settings lists: G-022, G-023.
+- **Wave 3, `v0.51.0`.** Spec 144, the SEO add-on: G-038, G-014. Spec 145, analytics and consent: G-040, G-037.
+  Spec 146, agent readiness: G-039. Spec 147, hardening: G-041. Spec 148, languages: G-042.
+- **Then, `v0.52.0`.** Spec 149, lists, filters and the carousel: G-008, G-009, G-010 (it may run beside wave 1
+  and ship with whichever tag is next, since every list page waits for it). Spec 150, the remaining blocks and
+  article parts: the rest of G-003, G-012, G-015, G-016, G-017, G-019. Spec 151, the content model and
+  generators: G-020, G-021, G-018. Spec 152, client checks, removal and the docs: G-043, G-044, G-045.
+
+**Numbers.** Specs 135 to 152 and DECISIONS #651 to #659 are taken by this entry. A wave session is given a range
+of decision numbers in its brief (spec 135: #660 to #669; spec 136: #670 to #689; spec 137: #690 to #699).
+
+*Not chosen.* A register row, stories and test cases for each gap before any code: the revamp's full lane would
+hold a client site for weeks behind paperwork for work the owner has already ordered, and the gap rows already say
+what is wrong, where, and what done looks like. One spec for all 45: no reviewer could hold it.
+
+## #653 -- SEO is built in CoreX as an add-on (reverses "no SEO engine", #104)
+
+**Date:** 2026-11-21. **Spec:** planned, wave 3 (G-038, with G-014). **Decided:** by the owner, through the
+Blackstone grill of 2026-11-21 (its decision 2, made under his delegation, "decided, owner may overrule").
+
+#104 point 4 said the company kit's SEO starter was "per-page editable title/description applied as
+plugin-compatible defaults, no SEO engine". Two client sites have now needed the engine (Muva built it in its site
+plugin, Blackstone asks for it), and the owner's rule is that nothing a site needs is built outside CoreX.
+
+- **An add-on, `corex-seo`.** Title and description per page, post, record and term, with a pattern per type;
+  canonical; robots and noindex; Open Graph and card tags with a default image; JSON-LD (`Organization`,
+  `WebSite`, `BreadcrumbList`, `Article` with its author as `Person`, `JobPosting`, `Event`, `Service`, `Person`);
+  filters on the core sitemap (no users, no empty terms); a redirect manager with import; a Search Console
+  verification field.
+- **Out of scope.** Keyword scoring, content analysis, `FAQPage`, the sitelinks search box.
+- **It stands down** when Yoast, Rank Math or another SEO plugin is active (constitution IX: detect and adapt), and
+  leaves hreflang to the multilingual plugin (#657).
+- The company kit's stored `seo` values, which nothing prints today, are read by the add-on.
+- Whether the add-on is included or paid in the premium plan (owner, 2026-11-15) is his to say; nothing here is
+  gated by price.
+
+## #654 -- Analytics and consent are built in CoreX as one add-on
+
+**Date:** 2026-11-21. **Spec:** planned, wave 3 (G-040, with G-037 and the consent half of G-025).
+**Decided:** by the owner, through the Blackstone grill of 2026-11-21 (its decision 3).
+
+- **Measurement.** GA4 through one `gtag` tag; a Tag Manager container id is an optional setting. Google Consent
+  Mode v2 with every signal denied by default, set before any tag. The tag is printed late and only after
+  analytics consent. Events: `generate_lead`, newsletter signup, job application, file download, outbound link.
+- **Consent.** One banner with Accept, Reject and Preferences of equal weight, no pre-ticked box; categories
+  necessary, analytics, marketing; the choice kept six months in a first-party cookie; a link that reopens it. One
+  opt-in mode for every visitor, no location lookup, so it works behind a page cache.
+- **A consent signal other add-ons read.** reCAPTCHA (it loads on the first touch of a form, with the notice
+  Google requires; the trap field, the time check and the rate limit always run) and the blog's reading beacon
+  (G-037) follow it. The signal is an interface in core, so an add-on never requires this one (constitution IX).
+- **This is not CoreX measuring visitors.** The owner's 2026-11-15 answer that visitor analytics is a later paid
+  add-on stands: this add-on carries Google's tag and stores no visit. His 2026-10-20 position (integrate with
+  named plugins instead of building, for caching, backups, analytics and migrations) is reversed for the GA4 tag
+  and the banner only.
+- The kit's approved `CookieNotice` block (`design/handoffs/visitor-kit.md`) is the banner's design source; the
+  preferences state is drawn and approved before it is built.
+
+## #655 -- A client theme is a child of the CoreX theme (reverses the standalone starter theme, #87)
+
+**Date:** 2026-11-21. **Spec:** 135, wave 1 (G-006). **Decided:** by the owner, through the Blackstone grill of
+2026-11-21 (its decision 5).
+
+#87 recorded the owner's 2026-06-14 choice that a generated site gets a standalone starter theme. As generated,
+that theme has an empty `theme.json`, CoreX's block styles read tokens it does not define, and the header, mega
+menu and footer patterns with their script and style exist only in the CoreX theme.
+
+- `make:site` generates a theme with `Template: corex`. The parent supplies the token names, the block styles and
+  the header system; the child supplies the client's values, patterns, templates and parts. The generated
+  `theme.json` lists the full token set for the client to fill in.
+- The `dist` builder ships both themes. The client site docs say what a child theme overrides.
+- **If the re-check shows the child model breaks something**, the shared assets may move into a plugin instead,
+  as long as the result is the same: tokens, block styles and the header system reach the client theme with no
+  copied file. That change is recorded here before it is built.
+- **The worry that set the child theme aside before** (the revamp's BRD-D8: a child "makes every CoreX theme
+  release change live client pages"): a client site ships the parent at the release its baseline records, so the
+  parent changes only when the client takes a release, which is already a reviewed step with a client impact
+  line. A parent change that would move a client's pages is written there like any other.
+- Muva and Perego keep their standalone themes; nothing converts an existing site.
+
+## #656 -- Editor parity is the standard for every CoreX block
+
+**Date:** 2026-11-21. **Spec:** 136, wave 1 (G-003, G-004, G-005, G-011). **Decided:** by the owner, through the
+Blackstone grill of 2026-11-21 (its decision 4).
+
+- A static block renders the same markup in the editor as on the front end and is edited in place. A block that
+  lists records keeps a server render, with a record picker.
+- `make:block` generates the static shape by default; the build-tools README stops stating a server-rendered
+  preview as the rule.
+- A parity test compares a block's editor markup with its front end markup, and a block without one fails CI once
+  its turn has come.
+- **Wave 1:** the stub, the test, and the blocks the Blackstone site uses: hero, cta, stat, tabs, accordion,
+  carousel, drawer, modal, breadcrumbs, copyright, team, posts, `corex/form`, newsletter signup, social share,
+  jobs. Tabs, accordion, carousel, modal and drawer hold other blocks. Every renderer prints
+  `get_block_wrapper_attributes()`, so an anchor, an alignment and an extra class reach the page.
+- **After wave 3:** the other blocks.
+
+## #657 -- Languages: Polylang Pro and WPML through `wpml-config.xml`, never required
+
+**Date:** 2026-11-21. **Spec:** planned, wave 3 (G-042). **Decided:** by the owner, through the Blackstone grill
+of 2026-11-21 (its decision 9).
+
+- CoreX ships a `wpml-config.xml` per plugin and add-on for its blocks, settings, flows and email templates,
+  finds links by id instead of English slug, makes post type slugs translatable and adds the documented language
+  helper. Neither plugin is ever required (constitution IX).
+- **From wave 1, on every change:** no new literal English, no lookup by slug. The header and the phone menu are
+  built with a language slot, hidden while a site has one language.
+
+## #658 -- Mail: a generic SMTP provider, an HTTP API provider interface with one driver, a DNS check, bounces
+
+**Date:** 2026-11-21. **Spec:** planned, wave 2 (G-032). **Decided:** by the owner, through the Blackstone grill
+of 2026-11-21 (its decision 20).
+
+- Corex Mail gains a generic SMTP provider and a provider interface for HTTP APIs with at least one driver (Amazon
+  SES or Postmark, chosen in the spec from what each needs).
+- The Mail screen checks SPF, DKIM and DMARC for the sending domain and says what to add.
+- Bounces are handled: a bounce address, and a hard bounce recorded against the recipient.
+- The newsletter sends `List-Unsubscribe` headers (G-035).
+- `wp_mail` stays a provider, so a site that sends through its own SMTP plugin is not changed.
+
+## #659 -- The host is unknown: headers from PHP, private uploads proven closed, forms that survive a page cache
+
+**Date:** 2026-11-21. **Spec:** planned, waves 2 and 3 (G-033, G-027, G-041). **Decided:** by the owner, through
+the Blackstone grill of 2026-11-21 (its decision 24).
+
+- **Security headers are sent from PHP** (HSTS, a content security policy, frame, referrer and permissions
+  headers), each behind a switch, so they do not depend on `.htaccess` (G-041, wave 3).
+- **Private uploads** (G-033, raised to High because applications carry CVs): the nginx rule is shipped in the
+  docs, and a readiness check requests a probe file over HTTP and warns in the admin when it can be read.
+- **Forms work on cached pages** (G-027): a submit never depends on a nonce printed into a page that a cache may
+  keep for days.
