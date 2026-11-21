@@ -58,11 +58,13 @@ CoreX's blocks do not meet it, in three ways that were measured on `main` on 202
    gains its wrapper attributes. Tabs stay CoreX's until CoreX's minimum is WordPress 7.1, as BLK-D1 says.
 5. **`corex/form` is a record block** (#673). It shows one record, the form, whose fields are edited in the form
    builder or in code. It keeps a server render.
-6. **What is left to other specs** (#674). Of US-BLK-03 (carousel) this spec takes "a slide holds any content"
-   and "carousels saved before keep their slides"; widths per screen, control sizes, the Pause button, the
-   scripts-off state and the ticker go with G-010 in spec 149. US-BLK-09 (a video in a dialog) stays in its
-   release; the modal holding blocks is what it will be built on. The trail of the breadcrumbs is G-014 (spec
-   144). Width, height and responsive sizes for team and gallery images are G-016 (spec 150).
+6. **What is left to other specs** (#674). Of US-BLK-03 (carousel) this spec takes the first criterion without
+   its larger view, and the last; the larger view of an image, the widths per screen, the control sizes, the
+   Pause button, the scripts-off state, the touch state, lazy images, the right-to-left criterion and the ticker
+   go with G-010 in spec 149. US-BLK-09 (a video in a dialog) stays in its release; the modal holding blocks is
+   what it will be built on. The trail of the breadcrumbs is G-014 (spec 144). Width, height and responsive
+   sizes for team and gallery images are G-016 (spec 150). Of the G-011 row's wishes, child blocks inside the
+   hero and a slideshow background are not taken: the owner's decision 18 lists the scope and names neither.
 7. **A container block keeps its name and migrates its content** (#675): the section "Blocks that hold blocks".
 
 ## The parity contract
@@ -74,28 +76,43 @@ CoreX's blocks do not meet it, in three ways that were measured on `main` on 202
 - `records`: a block that shows records it does not hold (a list of posts, a trail, a form). It keeps a server
   render in the editor, inside the block's own wrapper, and the preview cannot be clicked or submitted.
 - `none`: a block with no editor (`corex/assistant`).
+- `pending`: a block whose turn has not come (spec 150). Only the 13 blocks the gate names may declare it.
 
-**The comparison.** For a fixture with every field filled, the tree of elements that carry a class of the block
-(`corex-hero`, `corex-hero__title` and so on), with each element's tag, its block classes and its nesting, is the
-same in the editor as in the front end markup. An element the editor needs and the page does not (a remove
-button, a link field) carries `data-corex-editor-only` and no block class. Classes that are not the block's
-(`is-selected`, `wp-block`, WordPress's own) are ignored. Where a block holds other blocks, the element that holds
-them is compared and what is inside it is not.
+**The comparison.** For a fixture with every field filled, the tree of elements that carry a class of the block,
+with each element's tag, its block classes and its nesting, is the same in the editor as in the front end
+markup. A class of the block is one that is the fixture's `prefix` or starts with it followed by `__` or `--`
+(`corex-hero`, `corex-hero__title`, `corex-hero--split`); a child block prints its parent's prefix. An element
+the editor needs and the page does not (a remove button, a link field) carries `data-corex-editor-only` and no
+block class. An element the page needs and the editor does not (a trap field against robots) is named in the
+fixture's `pageOnly` list. Classes that are not the block's (`is-selected`, `wp-block`, WordPress's own) are
+ignored. Where a block holds other blocks, the element that holds them is compared and what the child blocks
+draw is compared through their own fixtures.
 
-**The fixture.** Each `in-place` block has a `parity.json` beside its `block.json`: the attributes to draw with,
-and the expected tree. One PHP test draws every fixture through its renderer and one JavaScript test draws it
-through the block's `edit`; each compares its tree with the fixture's. Neither language reads the other.
+**The fixture.** Each `in-place` block has a `parity.json` beside its `block.json`: the class `prefix`, the
+`attributes` to draw with, the `innerBlocks` when the block holds blocks, what the page `needs` to draw it (a
+current post), the optional `pageOnly` list, and the expected `tree`.
+
+**The two tests.** Neither language reads the other; each compares its tree with the fixture's.
+- PHP, in the integration suite: every fixture is drawn through WordPress (`render_block`), so the renderer comes
+  from the container with its real collaborators and inner blocks are real blocks.
+- JavaScript, in Jest: every fixture is drawn by rendering the block's `edit` to markup with `react-dom/server`
+  and one shared set of stand-ins for the `@wordpress/*` packages, kept in `packages/build-tools` beside the
+  helper. A stand-in draws what the real component draws that matters here: a text field as its tag and class,
+  inner blocks as the element that holds them.
 
 **The gate.** A test reads every `block.json` in the repository. It fails when a block declares no kind, when an
-`in-place` block has no fixture or imports the server render, or when a `records` block does not use it. The
-blocks whose turn has not come (spec 150) are named in one list in that test, which may only get shorter.
+`in-place` block has no fixture or imports the server render, when a `records` block does not use it, or when a
+block outside the waiting list declares `pending`. That list is in the test and may only get shorter.
 
 | Kind after this spec | Blocks |
 |---|---|
-| `in-place`, wave 1 | hero, cta, stat, team, tabs, accordion, carousel, modal, drawer, copyright, newsletter signup, social share |
+| `in-place`, wave 1 | hero, cta, stat, team, tabs, accordion, carousel, modal, drawer, copyright, newsletter signup, social share, and the three child blocks (tab, accordion item, slide) |
 | `records`, wave 1 | posts, jobs, breadcrumbs, `corex/form` |
-| waiting for spec 150 | alert, badge, gallery, pricing, testimonial, entity field, project meta, projects, flow, cta flow, subscribe, success message, survey |
+| `pending`, for spec 150 | alert, badge, gallery, pricing, testimonial, entity field, project meta, projects, flow, cta flow, subscribe, success message, survey |
 | `none` | assistant |
+
+`corex/account` (corex-profile) is registered in code with no `block.json`, so it has no kind; it receives the
+wrapper attributes in slice 1 and its editor is spec 150's.
 
 ## Blocks that hold blocks
 
@@ -104,10 +121,17 @@ and drawer hold blocks directly. The rules are the same for all five:
 
 - The block keeps its name. Its saved content becomes its inner blocks; the label of a tab and the question of an
   accordion item are attributes of the child.
-- **Content saved in today's shape still renders.** A block with no inner blocks and a filled `tabs`, `items`,
-  `slides` or `content` attribute is drawn from that attribute, in the new markup, with the same labels and text.
-- **Opening it in the editor migrates it.** A deprecation turns each old item into a child block holding a
-  paragraph with the old text, and the old attribute is emptied on save.
+- **Content saved in today's shape still renders, and nothing about how it behaves changes.** A block with no
+  inner blocks and a filled `tabs`, `items`, `slides` or `content` attribute is drawn from that attribute with
+  the same labels and text. For accordion, carousel, modal and drawer the markup is the new one, which behaves as
+  today's. Tabs are the exception, because the new tabs need a script and today's need none: tabs saved in the
+  old shape are drawn exactly as today, radio inputs and no script, until an editor opens and saves them
+  (DECISIONS #675, #651 point 5).
+- **Opening it in the editor migrates it.** A deprecation, marked eligible for a block that has the old attribute
+  and no inner blocks, turns each old item into a child block holding a paragraph with the old text; the old
+  attribute is emptied on save.
+- Every new setting defaults to today's behaviour: one-open off, no heading level (the question is plain text in
+  its `<summary>`, as today), advancing off.
 - The renderer stays the source of the markup: the block saves its inner blocks only.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -125,7 +149,7 @@ a class; read the root element.
 
 **Acceptance Scenarios**:
 
-1. **Given** any CoreX block with the anchor `about`, **When** the page is rendered by WordPress, **Then** the
+1. **Given** any CoreX block a person can insert, with the anchor `about`, **When** the page is rendered by WordPress, **Then** the
    block's root element has `id="about"`.
 2. **Given** a block that supports alignment set to full width, **When** rendered, **Then** its root has
    `alignfull`.
@@ -218,22 +242,27 @@ And, from G-004 and DECISIONS #652:
 9. An "Advance by itself" setting, off by default, moves to the next tab after a number of seconds the editor
    sets. While it is on, a Pause button is shown beside the tabs; pressing it stops the movement and it becomes
    Play. Movement also stops while the pointer or the focus is inside the block and while the page is hidden. It
-   never starts under reduced motion, and then no Pause button is shown.
+   never starts under reduced motion, and then no Pause button is shown. The button is added by the script, so
+   with scripts off there is none. Advancing does not run while the tabs are shown as an accordion on a phone,
+   and it does not change the address.
 
 **Independent Test**: The story's test cases, then criterion 9 with a clock the test controls.
 
 ### User Story 6 - A slide, a modal and a drawer hold any content (Priority: P2)
 
-1. A slide can hold any blocks: a testimonial, an image, a logo, a card. A text slide still works. (US-BLK-03,
-   first criterion.)
-2. Carousels saved before the change keep their slides. (US-BLK-03, last criterion.)
+1. US-BLK-03's first criterion, as written: "A slide can be a testimonial (quote, name, role, photo or initial),
+   an image (with its alternative text, opening a larger view), a logo, or a project card; a text slide still
+   works". Here a slide holds any blocks, which gives all of these but the larger view of an image; that part,
+   and the story's test case for it, go to spec 149.
+2. US-BLK-03's last criterion, as written: "Carousels saved before the change keep their slides".
 3. The carousel is drawn in the editor as on the page, one slide after another, and each slide is edited where it
    stands.
 4. A modal and a drawer hold any blocks: a heading, a list, an image, a form, a video. What is placed in them is
    no longer removed when the page renders.
 5. In the editor the trigger and the panel are both drawn in place and the panel's content is edited there; on
    the page the panel opens from its trigger as today.
-6. Closing a modal or a drawer pauses a video or a sound playing inside it.
+6. Closing a modal or a drawer stops a video or a sound playing inside it: a media element is paused, and an
+   embedded player in a frame is reset.
 7. Modals and drawers saved before the change keep their title, their button label and their text.
 
 **Independent Test**: Insert each with an image, a list and a button inside; publish; open and close with the
@@ -260,13 +289,16 @@ US-BLK-14, the criteria that concern the hero, as written:
 
 And, from G-011 and the Blackstone decision 18:
 
-10. A hero can draw its media as a background behind the text, with a scrim between them whose strength the
-    editor chooses from a short list. Criterion 4 holds on the scrim.
-11. Text can be aligned to the start of the line in either layout.
-12. Only the first hero on a page is marked high priority; a later one loads lazily.
+10. In the Centred layout the media is behind the text, as the image is today. A scrim can be put between them:
+    none (the default, which is today's drawing), light, medium or strong. Criterion 4 holds at light, medium
+    and strong; with media behind and no scrim the editor says the text may not be readable.
+11. In the Centred layout the text can be aligned to the centre (the default) or to the start of the line. In
+    Split it is at the start.
+12. Only the first hero on a page is marked high priority; a later one loads lazily. WordPress's own count of
+    what has been given priority on the page decides it.
 13. A background can be a video with a poster. The poster is an image, is what is painted first, and is the
-    largest element measured. The video is silent, loops, plays inline, and is not requested until the page has
-    finished loading. It is never requested under reduced motion, Save-Data or a slow connection: the poster
+    largest element measured. The video is silent, loops, plays inline, may be given as WebM with an MP4
+    fallback, and is not requested until the page has finished loading. It is never requested under reduced motion, Save-Data or a slow connection: the poster
     stays. It is an option, off until a video is chosen.
 14. While a video plays, a Pause button is shown on the hero; pressing it stops the video and it becomes Play.
     With scripts off no video and no button is drawn.
@@ -277,12 +309,15 @@ network log shows no request for the video; the LCP entry is the poster.
 ### Edge Cases
 
 - A renderer's markup starts with a notice before its root (the form on a test site): the attributes go on the
-  block's root, not on the notice.
+  block's root, not on the notice. The form block has two roots, by its source: the flow's section or the form.
+- A renderer prints only a notice (a paused form): the attributes go on the first element.
 - An anchor that is already an `id` elsewhere on the page: the block prints what the editor set; uniqueness is the
   editor's, as in WordPress.
 - A tab with no label, an accordion item with no question, an empty slide: skipped on the page as today, shown in
   the editor so it can be filled.
-- Two tabs with the same label: their fragments still differ.
+- Two tabs with the same label: their fragments still differ. A label with no Latin letters gives a fragment
+  made from the tab's place (`tab-2`). A fragment that is also the anchor of a section elsewhere on the page:
+  the editor is told, as WordPress tells of any repeated anchor.
 - A link to a tab's fragment inside a tab of another block on the same page.
 - A container block inside itself (tabs in a tab, an accordion in a modal): each works on its own.
 - A hero with a video and no poster: the editor says a poster is needed and the page draws no video.
@@ -300,17 +335,24 @@ network log shows no request for the video; the LCP entry is the poster.
 - **FR-002**: The merge MUST happen in one collaborator injected into the registrar, not in each renderer. A class
   is added to the root's classes, a style is appended to the root's style, and an attribute the root already has
   is kept. Markup that is empty stays empty.
-- **FR-003**: A block MAY name its root in `block.json` (`corex.root`, a class) when its markup does not start
-  with it; the attributes then go on the first element with that class.
-- **FR-004**: Every block a person can insert MUST declare `anchor`. The section blocks (hero, cta, team, posts,
+- **FR-003**: A block MAY name its root in `block.json` (`corex.root`, a list of classes) when its markup does
+  not always start with it; the attributes then go on the first element, in document order, that carries one of
+  those classes as a whole class, and on the first element of the markup when none does.
+- **FR-004**: Every block a person can insert MUST declare `anchor`, but for `corex/tab`, whose fragment is its
+  `id`. `corex/account`, registered in code, MUST pass through the same collaborator. The section blocks (hero, cta, team, posts,
   gallery, tabs, accordion, carousel, newsletter signup, jobs, projects, testimonial, pricing) MUST declare
   `align` wide and full.
 - **FR-005**: The six blocks of `plugins/corex-forms` MUST declare `className: false`, so that with nothing set
-  their markup is unchanged, and a test MUST compare it with markup recorded before this spec.
+  their markup is unchanged, and a test MUST prove it by comparing what WordPress prints for each with what its
+  renderer returns, in the same run.
 - **FR-006**: A test in the integration suite MUST render a block through WordPress (`do_blocks`) and prove that
-  an anchor, an alignment and a class reach the page, and a second MUST do so for every registered block's anchor.
+  an anchor, an alignment and a class reach the page, and a second MUST do so for the anchor of every CoreX
+  block a person can insert.
+- **FR-006a**: Every server-rendered preview in an editor MUST ask for its markup without the support
+  attributes (`skipBlockSupportAttributes`), so the editor's wrapper and the preview do not both carry them.
 - **FR-007**: Every block a person can insert MUST support a top and bottom margin. The section blocks, stat and
-  alert MUST also support padding.
+  alert MUST also support padding, declared by axis (vertical, horizontal), so the two sides of a line are always
+  equal and no physical side is set alone (constitution VIII).
 - **FR-008**: The section blocks and stat MUST support a background colour and a text colour, and each one's
   style sheet MUST let a chosen text colour reach its headings and text.
 - **FR-009**: The quiet, dark and brass band styles MUST be offered on the section blocks under a theme that can
@@ -318,14 +360,17 @@ network log shows no request for the video; the LCP entry is the poster.
 
 ### The standard (G-003)
 
-- **FR-010**: Every `block.json` MUST declare `corex.editor` as `in-place`, `records` or `none`.
-- **FR-011**: The parity helper MUST live in `packages/build-tools` for JavaScript and in the framework's test
-  support for PHP, and both MUST compute the tree the contract describes.
-- **FR-012**: One PHP test and one JavaScript test MUST cover every `parity.json` in the repository, found by
-  search, so a new block is covered without a new test.
+- **FR-010**: Every `block.json` MUST declare `corex.editor` as `in-place`, `records`, `none` or `pending`.
+- **FR-011**: The parity helper and the shared stand-ins MUST live in `packages/build-tools` for JavaScript and
+  in the framework's test support for PHP, and both helpers MUST compute the tree the contract describes.
+- **FR-012**: One PHP test, in the integration suite, and one JavaScript test MUST cover every `parity.json` of
+  the framework, found by search, so a new framework block is covered without a new test. A client's blocks
+  under `sites/` are the client's to test (they are hidden from the framework's suites): the helper is exported
+  for the client package that spec 135 generates.
 - **FR-013**: The gate test MUST fail as the contract describes, with a message that names the block and the rule.
 - **FR-014**: `make:block` MUST generate the `in-place` shape by default and the `records` shape with `--records`,
-  each with its kind declared; the `in-place` shape MUST include its `parity.json`.
+  each with its kind declared; the `in-place` shape MUST include its `parity.json`. The starter's example block
+  (`packages/cli/stubs/starter/`) MUST declare its kind and pass its markup through the same collaborator.
 - **FR-015**: The generated style sheet MUST use tokens and logical properties only, and the generated strings
   MUST go through the translation functions with the configured text domain.
 - **FR-016**: `packages/build-tools/README.md`, `packages/cli/README.md` and the scaffolder's own description MUST
@@ -335,7 +380,9 @@ network log shows no request for the video; the LCP entry is the poster.
 - **FR-018**: Copyright, newsletter signup and social share MUST be `in-place`. The newsletter's form MUST NOT
   submit in the editor.
 - **FR-019**: Posts, jobs, breadcrumbs and `corex/form` MUST be `records`: the server render inside the block's
-  wrapper, inert, with a named loading state and a named empty state.
+  wrapper, inert, with a named loading state and a named empty state. Those states and the form chooser are
+  WordPress's own Placeholder, Spinner and Notice components as WordPress draws them, so CoreX draws nothing
+  new in the editor; their words are reviewed.
 - **FR-020**: `corex/form` MUST ask for its form on the canvas when none is chosen, and the change to it MUST stay
   in the block's editor files and its `block.json`. Its front end markup MUST NOT change.
 
@@ -345,10 +392,13 @@ network log shows no request for the video; the LCP entry is the poster.
   place) and holds any blocks. The markup stays `<details>` and `<summary>`.
 - **FR-031**: The accordion MUST offer "Open one at a time", off by default, done with the `name` attribute of
   `<details>` so it holds with scripts off.
-- **FR-032**: The accordion MUST offer the questions' heading level, and MUST draw the kit's chevron, turned when
-  open and mirrored right to left, with the browser's marker hidden.
+- **FR-032**: The accordion MUST offer the questions' heading level (none by default), and MUST draw the kit's
+  chevron, turned when open and mirrored right to left, with the browser's marker hidden. A test MUST read the
+  accessibility tree for a question with a heading level: it is still announced as a control that is expanded
+  or collapsed.
 - **FR-033**: `corex/tabs` MUST hold `corex/tab` blocks; a tab has a label (typed in place) and a fragment (made
-  from its label, kept when the label changes, editable), and holds any blocks.
+  from its label, kept when the label changes, editable), and holds any blocks. The fragment is the `id` of the
+  tab's panel. A script looks a fragment up inside its own block first.
 - **FR-034**: The tabs MUST meet criteria 2 to 7 of User Story 5 with one view script loaded only where the block
   is, and MUST print every panel under its title when the script has not run.
 - **FR-035**: The tabs MUST offer "Advance by itself" as criterion 9 says. The seconds have a floor of 4.
@@ -356,28 +406,34 @@ network log shows no request for the video; the LCP entry is the poster.
   script and its controls stay as they are.
 - **FR-037**: `corex/modal` and `corex/drawer` MUST hold any blocks in their body. Title, button label and side
   stay attributes, typed in place.
-- **FR-038**: Closing a modal or a drawer MUST pause media playing inside it.
+- **FR-038**: Closing a modal or a drawer MUST pause a media element playing inside it and reset an embedded
+  player's frame.
 - **FR-039**: Each of the five MUST render content saved in today's shape and MUST migrate it when opened in the
-  editor, as "Blocks that hold blocks" says. A test MUST render one saved example of each old shape.
+  editor, as "Blocks that hold blocks" says: tabs in today's markup, the other four in the new one. A test MUST
+  render one saved example of each old shape, and for tabs MUST compare it with today's markup.
 - **FR-040**: The FAQ pattern of corex-ui MUST insert an accordion with items, so it shows questions.
 
 ### The hero (G-011)
 
-- **FR-050**: The hero MUST offer the layouts Centred and Split, a text alignment (centre or start), and where its
-  media goes (none, beside the text, behind the text). Today's hero is Centred, centre, with its image behind
-  the text, and MUST draw as it does now.
+- **FR-050**: The hero MUST offer the layouts Centred and Split. In Centred the media, when there is any, is
+  behind the text, and the text is aligned to the centre or to the start. In Split the media is beside the text,
+  at the end of the line, and the text is at the start. Every new setting defaults to today's drawing: Centred,
+  centre, no scrim, one action. The short label of criterion 3 is the hero's `eyebrow`, which exists.
 - **FR-051**: The hero MUST offer a second action, drawn as an outline button or a text link, and each action MUST
   render only when its text and its address are both set.
 - **FR-052**: A hero image chosen from the media library MUST be printed from its attachment, with width, height,
   `srcset` and `sizes`; an image saved as an address alone MUST still be drawn. Corex Media's filter MUST still
   be applied.
-- **FR-053**: The first hero rendered on a page MUST print its image with `fetchpriority="high"` and without lazy
-  loading; later heroes MUST load lazily.
-- **FR-054**: Media behind the text MUST be covered by a scrim with three strengths, and User Story 7's criterion
-  4 MUST hold at each.
+- **FR-053**: Whether a hero's image is printed with `fetchpriority="high"` or loads lazily MUST be decided by
+  WordPress's loading optimisation for the page (`wp_get_loading_optimization_attributes`), so the first large
+  image of the page gets the priority once, whichever block prints it.
+- **FR-054**: Media behind the text MAY be covered by a scrim: none (the default), light, medium or strong. User
+  Story 7's criterion 4 MUST hold at light, medium and strong, and the editor MUST warn when media is behind the
+  text with no scrim.
 - **FR-055**: A background video MUST follow criteria 13 and 14 of User Story 7. The server prints the poster and
-  the video's addresses as data; the view script adds the video element only when every condition allows it.
-- **FR-056**: The hero's view script MUST load only on a page whose hero has a video.
+  the video's addresses (WebM, MP4 or both) as data; the view script adds the video element only when every
+  condition allows it.
+- **FR-056**: The hero's view script MUST be enqueued by the renderer, only for a hero that has a video.
 
 ### Every slice (the gap programme's rules)
 
@@ -400,12 +456,12 @@ network log shows no request for the video; the LCP entry is the poster.
 
 Parity draws nothing new: the editor shows what the page already shows. The accordion, the tabs and the carousel
 are built on the components of the approved visitor kit (`design/handoffs/visitor-kit.md`, DECISIONS #639) and
-are reviewed against it. Four things are seen for the first time and are drawn on the CoreX design system and
+are reviewed against it. The phone state of the tabs is the kit's Accordion as drawn. Three things are seen for the first time and are drawn on the CoreX design system and
 approved by the owner before they are built. Each approval is recorded in `design/handoffs/spec-136-<name>.md`.
 
 | Design | What is drawn | Slice that waits |
 |---|---|---|
-| D-1 | Tabs with "Advance by itself" on: the Pause and Play button, its place, the phone accordion state | 6b |
+| D-1 | Tabs with "Advance by itself" on: the Pause and Play button and its place, at desktop and phone width | 6b |
 | D-2 | A modal and a drawer holding a heading, a list, an image and a form; the drawer itself, which the kit does not have; phone width | 8 |
 | D-3 | The hero: Centred and Split, text at the start, media behind with each scrim strength, the second action as outline and as link, the video's Pause button, phone width, Arabic | 9 |
 
@@ -414,14 +470,17 @@ reduced motion, always with a control a person can see (DECISIONS #652).
 
 ## Success Criteria *(mandatory)*
 
-- **SC-001**: For all 30 blocks, an anchor set in the editor is the `id` of the block's root on the page.
+- **SC-001**: For the 29 `block.json` blocks a person can insert and for `corex/account`, an anchor set in the
+  editor is the `id` of the block's root on the page.
 - **SC-002**: The six form and flow blocks, with nothing set, print markup identical to `main` before this spec.
-- **SC-003**: 16 of the 16 wave 1 blocks declare a kind; the 12 `in-place` ones pass both parity tests; the gate's
-  waiting list holds 13 blocks and no wave 1 block.
-- **SC-004**: A block generated by `make:block` builds and passes the parity tests and the gate untouched.
-- **SC-005**: Every test case of US-BLK-01 and US-BLK-02 passes, and those of US-BLK-03, US-BLK-06 and US-BLK-14
-  that this spec takes.
-- **SC-006**: One saved example of each of the five old container shapes renders with the same labels and text.
+- **SC-003**: Every `block.json` declares a kind; the 12 wave 1 `in-place` blocks and the three child blocks pass
+  both parity tests; exactly 13 blocks declare `pending` and none of them is a wave 1 block.
+- **SC-004**: A block generated by `make:block` into a scratch folder of the framework builds and passes the
+  parity tests and the gate untouched.
+- **SC-005**: Every test case of US-BLK-01, US-BLK-02 and US-BLK-06 passes; of US-BLK-03, the cases for a slide's
+  content (without the larger view) and for saved carousels; of US-BLK-14, the cases for the hero.
+- **SC-006**: One saved example of each of the five old container shapes renders with the same labels and text,
+  and the old tabs example renders the markup it renders today.
 - **SC-007**: On a throttled phone profile the LCP element of a page whose hero has a video is the poster, and
   with reduced motion, Save-Data or a slow connection the network log holds no request for the video.
 - **SC-008**: `npm run test:quality` passes for every slice a person sees, in light, dark and right to left, at
@@ -429,11 +488,15 @@ reduced motion, always with a control a person can see (DECISIONS #652).
 
 ## Client impact
 
-- **Muva** runs no corex-ui block. Its forms print the same bytes (FR-005). Nothing to do.
-- **Perego** has corex-ui active. Every corex-ui block's root gains the class `wp-block-corex-<name>`. Tabs saved
-  today are drawn as real tabs with a script (they were radio inputs with none); accordions, carousels, modals
-  and drawers keep their look and content. Its form markup and messages do not change. No step is needed; a
-  style of its own that targets a tab's radio input must be checked.
+- **Muva** runs no corex-ui block. Its forms print the same bytes (FR-005). The newsletter signup and social
+  share blocks of corex-blocks, where it uses them, gain the class `wp-block-corex-<name>` on their root, and an
+  alignment or a class already saved on one now reaches the page. No step is needed.
+- **Perego** has corex-ui active. Every CoreX block that is not a form gains the class `wp-block-corex-<name>` on
+  its root (corex-ui, corex-blocks, careers, portfolio, the assistant), and an anchor, an alignment or a class
+  already saved on a block now reaches the page. Tabs, accordions, carousels, modals and drawers already on its
+  pages keep their content and behave as today; an accordion's marker becomes the kit's chevron. A tabs block
+  becomes scripted tabs only when an editor opens it and saves. Its form markup and messages do not change. No
+  step is needed.
 - **Mizzey** is not on this line.
 
 ## Assumptions
@@ -444,8 +507,8 @@ reduced motion, always with a control a person can see (DECISIONS #652).
 - "A slow connection" is what the browser reports (`navigator.connection`: `saveData`, or an effective type of
   `2g` or `slow-2g`); a browser that reports nothing is treated as fast, and reduced motion still applies.
 - The client supplies the hero footage; the block works with a poster alone.
-- `corex/account` is registered outside `DynamicBlockRegistrar` and has no `block.json`; it is not one of the 30
-  and is left to spec 150.
+- `corex/account` is registered outside `DynamicBlockRegistrar` and has no `block.json`; it is not one of the 30.
+  It receives the wrapper attributes here (FR-004); its editor is spec 150's.
 
 ## Out of scope
 
@@ -464,9 +527,10 @@ One pull request each, test first, merged into `main` on green. "Rests on" names
 | Slice | What | Requirements | Waits on | Principles | Rests on |
 |---|---|---|---|---|---|
 | 0 | This spec, DECISIONS #670 to #675, the gap table rows | | | X | nothing |
-| 1 | Wrapper attributes reach the page | FR-001 to FR-006 | 0 | IV, VII | nothing |
-| 2 | Margin, padding, colour and the bands | FR-007 to FR-009 | 1 | V, VIII | the section bands (spec 134, #640, #642) for FR-009 only |
-| 3 | The standard: kinds, the two parity tests, the gate, `make:block`, the READMEs, and hero, cta, stat, team | FR-010 to FR-017 | 1 | X, V, VIII | nothing |
+| 1 | Wrapper attributes reach the page | FR-001 to FR-006a | 0 | IV, VII | one line in each forms `block.json` and the flow blocks' editor file, which changed after the tag: the cherry-pick may need a hand merge there |
+| 2a | Margin, padding and colour | FR-007, FR-008 | 1 | V, VIII | nothing |
+| 2b | The bands on the section blocks | FR-009 | 2a | V | the section bands (spec 134, #640, #642), which the line does not carry: this slice waits for `main` to be released and is not cherry-picked |
+| 3 | The standard: kinds, the two parity tests, the gate, `make:block`, the starter's block, the READMEs, and hero, cta, stat, team | FR-010 to FR-017 | 1 | X, V, VIII | nothing |
 | 4 | Copyright, newsletter signup and social share in place; posts, jobs, breadcrumbs and the form as records | FR-018 to FR-020 | 3 | VI, VII | nothing (the form: editor files only) |
 | 5 | The accordion holds blocks | FR-030 to FR-032, FR-039, FR-040 | 3 | VI, VIII | nothing |
 | 6a | Tabs hold blocks and behave as tabs | FR-033, FR-034, FR-039 | 3 | VI, VIII | nothing |
@@ -475,6 +539,6 @@ One pull request each, test first, merged into `main` on green. "Rests on" names
 | 8 | Modal and drawer hold blocks | FR-037 to FR-039 | 3, D-2 approved | VI, VIII | nothing |
 | 9 | The hero | FR-050 to FR-056 | 3, D-3 approved | V, VI, VIII | nothing |
 
-Slices 1, 3, 4, 5, 6a and 7 are seen by nobody for the first time and are built while D-1 to D-3 wait for the
-owner. Slices 2, 5, 6a and 7 change what a visitor may see and run the full UI steps of `AGENTS.md` against the
-approved kit. Every slice runs the Guard Gate, `corex-reviewer` and the two-model review before its pull request.
+Slices 1, 3, 4, 5, 6a and 7 show nothing that is not already approved or WordPress's own, and are built while
+D-1 to D-3 wait for the owner. Slices 2a, 2b, 5, 6a and 7 change what a visitor may see and run the full UI
+steps of `AGENTS.md` against the approved kit. Every slice runs the Guard Gate, `corex-reviewer` and the two-model review before its pull request.
