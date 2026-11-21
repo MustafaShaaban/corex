@@ -21778,3 +21778,81 @@ the Blackstone grill of 2026-11-21 (its decision 24).
   docs, and a readiness check requests a probe file over HTTP and warns in the admin when it can be read.
 - **Forms work on cached pages** (G-027): a submit never depends on a nonce printed into a page that a cache may
   keep for days.
+
+## #660 -- The child theme re-check passed: the generated child lists every token, and a check keeps the lists full
+
+**Date:** 2026-11-21. **Spec:** 135 (G-006). **Branch:** `spec/135-client-site-scaffold`.
+**Decided:** by the spec 135 session, under the owner's delegation (#655 asked for the re-check before anything was built).
+
+**Measured** on a WordPress 7 install of the branch's own, every CoreX plugin and add-on active, a hand-made
+child theme (`Template: corex`) switched on; the table is in `specs/135-client-site-scaffold/spec.md`. Templates,
+parts, all 36 `corex/*` patterns, the dark variation, the fonts, the navigation style and script and the
+coming-soon template reach the child with no copied file. Multisite was read in WordPress's source
+(`WP_Theme::is_allowed()` asks about the active stylesheet only), not run.
+
+**The one trap.** WordPress merges a child's `theme.json` into the parent's key by key, except a preset list: a
+palette, a font size list, a spacing list, a shadow list or a font family list the child declares replaces the
+parent's whole list. A child palette of two colours left the site with two. `customTemplates` and `templateParts`
+merge by position, so a child list of one entry overwrites the parent's first.
+
+**Decided.**
+1. The child model stands. The shared assets stay in the theme; #655's plugin route is not built.
+2. `make:site` writes the child's `theme.json` from the CoreX theme's own file at generation: every preset list,
+   the whole of `settings.custom`, and `settings.layout`, with CoreX's values, for the client to change. No copy of
+   the lists is kept in a stub, so the generator is right on any line of the repository, whatever its tokens.
+3. `npm run verify:client-theme` holds the rule from then on: a list a child declares names every entry of the
+   parent's. It runs in the client's generated workflow, in the update checklist and in the framework's CI. A
+   release that adds a slug fails the client's update branch there, by name, before a page loses a colour.
+4. The generator stops writing `templates/index.html`, `parts/header.html` and `parts/footer.html`. A child that
+   ships them hides the parent's, which is how a generated site came to have a header of the site title alone.
+5. The CoreX theme links its favicon only when it is the active theme itself. Its `functions.php` runs under a
+   child, and a client site must not show the CoreX mark.
+6. The generated `theme.json` carries CoreX's values, not neutral ones. The revamp's BRD-D8 wanted neutral colours
+   for a standalone copy; a child shows the parent's values whether or not it lists them, so listing them changes
+   nothing a visitor sees and gives the client the full list to edit.
+
+*Not chosen.* A child `theme.json` that lists nothing: the client could not change one colour without first
+copying the list by hand, and would meet the trap alone. A static stub of the lists: a second copy to drift, and
+wrong on `release/gap-line`, whose theme has other tokens. A generated `styles/dark.json`: a copied file for a
+variation most client designs do not have; the docs say how a client replaces it.
+
+## #661 -- Which repository this is: a named framework stays the framework, an unnamed one with a baseline is a client
+
+**Date:** 2026-11-21. **Spec:** 135 (G-001). **Branch:** `spec/135-client-site-scaffold`.
+**Decided:** by the spec 135 session, under the owner's delegation.
+
+The gap row asked that the role come from `corex-baseline.json` being present, not from the remote. Taken whole,
+that would let anyone switch off the framework repository's own rule against `sites/` by committing a `sites/`
+folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
+
+- `resolveRole()` keeps an explicit `COREX_REPOSITORY_ROLE` first and a repository named by CI or `origin` second
+  (CoreX's own is `framework`, any other is `client`). Only a repository nothing names is decided by the baseline:
+  `client` when one is recorded, `framework` when none is. That is the Blackstone case.
+- A checkout that resolves to `framework` and holds a baseline no longer passes `verify:framework` with "nothing
+  to compare". It fails and says to set `COREX_REPOSITORY_ROLE=client`. That closes the same false pass for a
+  client clone whose `origin` still points at CoreX.
+
+## #662 -- A site plugin boots through `Corex::onReady`, its blocks through `corex-blocks`, its build from its own folder
+
+**Date:** 2026-11-21. **Spec:** 135 (G-007). **Branch:** `spec/135-client-site-scaffold`.
+**Decided:** by the spec 135 session, under the owner's delegation.
+
+- **Boot.** The generated plugin autoloads its namespace and boots its provider through `Corex::onReady`, the
+  call that exists because booting on `plugins_loaded` beside CoreX is a coin flip (`Corex.php`). The provider is
+  a class of the site's own that is handed CoreX's container. It is not loaded through CoreX's provider
+  lifecycle: that list is first-party, and opening it is a change to `corex-core` no gap asks for.
+- **Blocks.** `corex-blocks` gains one public call that registers a folder of blocks (built when it exists,
+  source otherwise) through the registrar its own blocks use, so a site block gets a container-resolved renderer
+  and the same path handling, and a fix to registration reaches every site by release. The `--starter` example
+  block moves to the same route.
+- **Text domain.** The registrar bound every block script's translations to `corex`. It now binds the block's
+  own `textdomain` from `block.json` and falls back to `corex`. All 30 CoreX blocks name `corex`, so none changes;
+  a site block's strings are found in the site's domain.
+- **Build.** `packages/build-tools` is a convention (`src/Blocks` to `build/blocks` with `wp-scripts`), not an
+  installable package. The site plugin's `package.json` follows it and declares its own `@wordpress/scripts` at
+  the framework's range, because a client package must build from a clean install of its own folder: the
+  generated workflow installs no npm package at the repository root, so a client can never lean on a framework
+  dependency by accident. A test holds the stub's range to the root's.
+
+*Not chosen.* A `file:` dependency on `packages/build-tools`: it would need a binary and dependencies of its own,
+and installs differently across npm versions, for no gain over one pinned range.
