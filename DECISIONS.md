@@ -21814,7 +21814,16 @@ merge by position, so a child list of one entry overwrites the parent's first.
 *Not chosen.* A child `theme.json` that lists nothing: the client could not change one colour without first
 copying the list by hand, and would meet the trap alone. A static stub of the lists: a second copy to drift, and
 wrong on `release/gap-line`, whose theme has other tokens. A generated `styles/dark.json`: a copied file for a
-variation most client designs do not have; the docs say how a client replaces it.
+variation most client designs do not have; the docs say how a client replaces it. Completing a partial list at runtime, as `ThemeServiceProvider` does for a `brand.json`: it would hide the
+mistake on the site and leave the file wrong for every tool that reads it.
+
+**Added on review, 2026-11-22.** A child that lists the font families with the parent's `file:./` sources still
+gets the fonts from the parent's folder, on the page and in the editor's canvas (measured), so the families are
+listed too; the check also fails a font source that exists in neither theme. The generator writes no
+`templates/front-page.html` either: the reason that removes the index and the two parts removes it. `--force`
+keeps an existing theme's `style.css` and `theme.json`, so it can neither wipe a client's tokens nor turn a
+standalone theme into a child. The re-check ran on `main`; the coordinating session repeats the probe on
+`release/gap-line`, whose parent theme has other tokens and no `functions.php`.
 
 ## #661 -- Which repository this is: a named framework stays the framework, an unnamed one with a baseline is a client
 
@@ -21828,9 +21837,10 @@ folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
 - `resolveRole()` keeps an explicit `COREX_REPOSITORY_ROLE` first and a repository named by CI or `origin` second
   (CoreX's own is `framework`, any other is `client`). Only a repository nothing names is decided by the baseline:
   `client` when one is recorded, `framework` when none is. That is the Blackstone case.
-- A checkout that resolves to `framework` and holds a baseline no longer passes `verify:framework` with "nothing
-  to compare". It fails and says to set `COREX_REPOSITORY_ROLE=client`. That closes the same false pass for a
-  client clone whose `origin` still points at CoreX.
+- A checkout that resolves to `framework` from its name and holds a baseline no longer passes
+  `verify:framework` with "nothing to compare". It fails and says to set `COREX_REPOSITORY_ROLE=client`. That
+  closes the same false pass for a client clone whose `origin` still points at CoreX. A role stated in
+  `COREX_REPOSITORY_ROLE` is taken at its word: only a role worked out from the repository's name is doubted.
 
 ## #662 -- A site plugin boots through `Corex::onReady`, its blocks through `corex-blocks`, its build from its own folder
 
@@ -21847,7 +21857,9 @@ folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
   block moves to the same route.
 - **Text domain.** The registrar bound every block script's translations to `corex`. It now binds the block's
   own `textdomain` from `block.json` and falls back to `corex`. All 30 CoreX blocks name `corex`, so none changes;
-  a site block's strings are found in the site's domain.
+  a site block's script is bound to the site's domain (WordPress then looks for the JSON file where it looks
+  for any plugin's). Muva and Perego register their blocks with `register_block_type` themselves, so neither is
+  touched (read in both repositories, 2026-11-22).
 - **Build.** `packages/build-tools` is a convention (`src/Blocks` to `build/blocks` with `wp-scripts`), not an
   installable package. The site plugin's `package.json` follows it and declares its own `@wordpress/scripts` at
   the framework's range, because a client package must build from a clean install of its own folder: the
@@ -21856,3 +21868,138 @@ folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
 
 *Not chosen.* A `file:` dependency on `packages/build-tools`: it would need a binary and dependencies of its own,
 and installs differently across npm versions, for no gain over one pinned range.
+
+**Added on review, 2026-11-22.** The site provider does not extend `Corex\Foundation\ServiceProvider`: only
+CoreX's own lifecycle reads that class's `subscribers()` and `controllerPaths()`, and a site provider that had
+them would be silently ignored. "When `corex-blocks` is not active" cannot happen as a plugin state (its provider
+is one of core's and its classes load from the root autoloader), so the generated provider asks the container
+whether it offers the service. `verify:dist` fails a client plugin that ships block sources and no `build/blocks`.
+
+## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
+
+**Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.
+**Decided:** by the spec 136 session, under the owner's delegation in the gap programme (#652, #656).
+
+**The question.** #656 says every renderer prints `get_block_wrapper_attributes()`. 26 classes implement
+`Corex\Blocks\BlockRenderer`, each writing its root element by hand, with no shared base.
+
+**Decided.**
+- All of them are called from one place, `DynamicBlockRegistrar::renderCallback()`. A collaborator injected into
+  the registrar takes what `get_block_wrapper_attributes()` returns and merges it into the root element of the
+  renderer's markup with WordPress's tag processor: classes added, styles appended, an attribute the root already
+  has kept. Empty markup stays empty.
+- A block whose markup does not always start with its root names the root's classes in `block.json`
+  (`corex.root`, a list): the first element that carries one of them is the root, and the first element of the
+  markup when none does. `corex/form` needs two, because a form from a flow is drawn as the flow's section and a
+  registered form as the form itself, either of them after a notice.
+- For the editor's preview request (WordPress's block renderer route) the markup is returned without the merge:
+  the editor's own wrapper already carries the attributes, so nothing is printed twice and no editor file has
+  to change.
+- `corex/account`, registered in code by corex-profile, passes through the same collaborator.
+- The six blocks of `plugins/corex-forms` declare `className: false`. With nothing set by an editor their markup
+  is byte for byte what it was, because Perego adapts that markup by exact strings. The cost: a `theme.json` rule
+  for `corex/form` has no class to hold on to. Spec 138 may revisit it with Perego's adaptation in front of it.
+
+*Not chosen.* A base class or a trait every renderer extends: 26 edits, 26 constructors or static calls, a unit
+suite that has no WordPress function to answer, and the next renderer can still forget. A wrapper element added
+around every block: it changes every block's markup and every style that counts children.
+
+## #671 -- Editor parity: three kinds, one fixture per block, two tests and a gate
+
+**Date:** 2026-11-21. **Spec:** 136 (G-003). **Decided:** by the spec 136 session, to carry out #656.
+
+- A block declares its kind in `block.json` (`corex.editor`): `in-place`, `records`, `none`, or `pending` for a
+  block whose turn has not come.
+- Parity is compared on the tree of elements that carry a class of the block: tag, block classes, nesting. What
+  the editor needs and the page does not is marked `data-corex-editor-only` and carries no block class.
+- An `in-place` block has a `parity.json` beside its `block.json`: the class prefix, attributes with every field
+  filled, inner blocks where it holds blocks, what the page needs (a current post), a list of what only the page
+  draws, and the expected tree. A PHP test in the integration suite draws it through WordPress, so renderers
+  with collaborators and inner blocks are real; a JavaScript test renders `edit` to markup with one shared set
+  of stand-ins for WordPress's packages. Each compares with the fixture. Both find fixtures by search, so a new
+  framework block needs no new test; a client's blocks are tested by the client's package with the same helper.
+- A gate test reads every `block.json`: no kind, an `in-place` block without a fixture or with a server render, a
+  `records` block without one, or `pending` on a block outside the test's list, fails CI. The list starts as
+  the 13 blocks of spec 150 and the eight wave 1 blocks not yet brought over, each slice takes its own off it,
+  and it may only shrink.
+
+*Not chosen.* A browser test that opens the editor and the page for each block: it is the truest comparison and
+the slowest, it needs a running site for a check that is about markup, and a generated client block could not
+run it. Comparing whole HTML strings: the editor's own attributes differ on every element by design.
+
+## #672 -- The accordion stays CoreX's block; WordPress's is not taken (against BLK-D1 for this block)
+
+**Date:** 2026-11-21. **Spec:** 136 (G-004, US-BLK-02). **Decided:** by the spec 136 session; #652 asks the spec
+to say which it chose and why. The owner may overrule.
+
+**The question.** The planning decision BLK-D1 says "WordPress's Accordion and Breadcrumbs now", and #652 says to
+style WordPress's block and retire CoreX's where WordPress's does the job.
+
+**Measured.** `core/accordion` (WordPress 6.9) holds blocks, has a heading level and closes the others when one
+opens. Its questions are buttons that a script toggles (`block_core_accordion_item_render`: `data-wp-on--click`),
+so with scripts off a question cannot be opened or closed. US-BLK-02 requires exactly that, and its test case
+TC-BLK-02-05 runs with scripts off and the keyboard only. `corex/accordion` is `<details>` and `<summary>`: it
+passes that case today, and the `name` attribute of `<details>` gives one-open-at-a-time with no script either.
+
+**Decided.** `corex/accordion` is kept and gains child blocks, the one-open setting, the heading level and the
+kit's chevron. Its saved content also migrates inside the same block when opened, where a move to WordPress's
+block would need an editor to convert each one. `core/accordion` is left as WordPress draws it. BLK-D1 and the
+story's test case disagree in the planning workspace; the pair belongs in CR-049's intake for the owner.
+- **Breadcrumbs**, BLK-D1's other half, is decided with G-014 in spec 144. Spec 136 gives the block its wrapper
+  attributes and keeps its server render.
+- **Tabs** stay CoreX's until the minimum is WordPress 7.1, as BLK-D1 says: `core/tabs` is not in 7.0.
+
+*Not chosen.* WordPress's accordion with every panel printed open when scripts are off: nothing is lost, but a
+question still cannot be closed, so the criterion is not met as written, and a criterion is not edited to pass.
+
+## #673 -- `corex/form` is a record block and keeps its server render
+
+**Date:** 2026-11-21. **Spec:** 136 (G-003). **Decided:** by the spec 136 session.
+
+The owner's list of blocks for wave 1 names `corex/form`, and #656 says a block that lists records keeps a server
+render. The form block holds no content of its own: it names a form, and the form's fields live in the form
+builder or in code. Editing them on the canvas would put the form builder inside the block editor, which is
+spec 138's subject, not parity. So the block is `records`: the server render inside the block's wrapper, inert,
+with the choice of form asked on the canvas when none is made. Its front end markup does not change (Perego), and
+the change stays in the block's editor files and `block.json`, because `plugins/corex-forms` moved a lot after
+`v0.48.1` (#651, point 4).
+
+## #674 -- What spec 136 takes of the stories it touches, and what it leaves
+
+**Date:** 2026-11-21. **Spec:** 136. **Decided:** by the spec 136 session.
+
+- US-BLK-01 (tabs), US-BLK-02 (accordion), US-BLK-06 (hero): whole, criteria as written.
+- US-BLK-14: the hero's criteria. Gallery and team images are G-016 (spec 150).
+- US-BLK-03 (carousel): the first criterion without the larger view of an image, and the last ("saved carousels
+  keep their slides"). The larger view, the widths per screen, the control sizes, the Pause button, the
+  scripts-off state, the touch state, lazy images, the right-to-left criterion and the ticker go with G-010 in
+  spec 149, which rewrites the carousel's options and script in one piece.
+- G-011's row also wishes for child blocks inside the hero and a slideshow background. Neither is taken: the
+  owner's decision 18 lists the scope and names neither.
+- G-005 for the bands (the section styles on CoreX's section blocks) rests on spec 134, which the maintenance
+  line does not carry: that slice lands on `main` and waits there (#651, point 4).
+- US-BLK-09 (a video in a dialog): not taken. The modal holding blocks is what it will stand on, and closing a
+  modal or a drawer pauses media inside it.
+- Past the stories, from the gap rows: tabs that advance by themselves with Pause; a hero background video with a
+  poster, a scrim and Pause; text at the start. All off unless a site turns them on (#652).
+
+## #675 -- A block that holds blocks keeps its name, renders its old shape and migrates in the editor
+
+**Date:** 2026-11-21. **Spec:** 136 (G-004). **Decided:** by the spec 136 session.
+
+Tabs, accordion and carousel gain a child block (`corex/tab`, `corex/accordion-item`, `corex/slide`); modal and
+drawer hold blocks in their body. Muva and Perego have content saved in today's shapes, so:
+- the renderer draws a block that has no inner blocks and a filled `tabs`, `items`, `slides` or `content`
+  attribute from that attribute, for as long as such content exists. Accordion, carousel, modal and drawer are
+  drawn in the new markup, which behaves as today's. **Tabs are drawn exactly as today**, radio inputs and no
+  script: the new tabs need a script and turn into an accordion on a phone, and a behaviour change is not handed
+  to a client by an update (#651 point 5, #652), nor by saving a page for another reason. Old tabs become new
+  tabs when an editor presses "Convert" on the block;
+- for the other four, a deprecation in the editor, marked eligible for a block with the old attribute and no
+  inner blocks, turns each old item into a child block holding a paragraph with the old text, so the first save
+  writes the new shape;
+- every new setting defaults to today's behaviour;
+- the block saves its inner blocks only; the PHP renderer stays the one source of the markup.
+
+*Not chosen.* New block names beside the old ones: two tabs blocks in the inserter and no migration. A one-time
+database migration of post content: it rewrites client content on an update, with no editor looking at it.

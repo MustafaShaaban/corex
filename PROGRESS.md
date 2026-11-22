@@ -54,10 +54,22 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   it: wave 1 `v0.49.0`, wave 2 `v0.50.0`, wave 3 `v0.51.0`, the rest `v0.52.0`. The coordinating session carries
   and tags; a wave session's work ends at `main`. `main`'s own gates (below, "Next") are untouched, and if `main`
   can be tagged when a wave is ready, the wave ships from `main` and the line closes.
-- **Now (2026-11-21).** All 45 rows were re-read against `main` at `3a3caeb1`: 36 are true as written, 8 are partly changed by work `main` gained after v0.48.1 (G-023, G-025, G-029, G-031, G-033, G-036, G-039, G-041; what is left is in each row), and G-026 is already fixed on `main` (spec 122, DECISIONS #476) but in no release. Nothing is built
-  yet. Three sessions were started for wave 1, each in its own worktree: spec 135 (the client site scaffold),
-  spec 136 (the editor standard for blocks), spec 137 (the header system). Decision numbers given out: #660 to
-  #669, #670 to #689, #690 to #699.
+- **Now (2026-11-22).** All 45 rows were re-read against `main` at `3a3caeb1` on 2026-11-21: 36 are true as
+  written, 8 are partly changed by work `main` gained after v0.48.1 (G-023, G-025, G-029, G-031, G-033, G-036,
+  G-039, G-041; what is left is in each row), and G-026 is already fixed on `main` (spec 122, DECISIONS #476) but
+  in no release. Wave 1 is in three sessions, each in its own worktree, with decision numbers #660 to #669,
+  #670 to #689 and #690 to #699: spec 135 is pull request #492, spec 136 is #491, spec 137 is #493. On
+  2026-11-21 the usage limit stopped all three with their specs open and green and review corrections not yet
+  committed; slice 1 of spec 135 (`spec/135-slice-1-role-and-agent-files`) and of spec 136
+  (`spec/136-slice-1-wrapper-attributes`) were built and uncommitted. They were resumed on 2026-11-22. No slice
+  is on `main` and nothing is tagged.
+- **Pacing (asked for the owner, 2026-11-22).** Two building sessions at a time, one builder or reviewer agent
+  at a time inside each, finished work committed and pushed before the next step. Specs 135 and 136 build first;
+  spec 137 merges its spec and draws its designs, and starts building when one of the two is done.
+- **Who coordinates.** A coordinating session carries each finished wave to the line, cuts the tag and reports
+  to the Blackstone session after each round of merges and at each tag. Its hand-over note, with the session
+  ids, worktrees and the release steps, is `corex-coordinator-handover.md` in the shared notes folder named
+  above.
 - **Next.** (1) Each wave 1 session writes its spec, then builds slice by slice into `main`. (2) When wave 1 is
   on `main`: create `release/gap-line` from `v0.48.1`, cherry-pick the wave's squash commits in merge order, open
   one pull request into the line per spec, run `scripts/client-merge-check.mjs`, bump the version surfaces to
@@ -73,17 +85,17 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 
 | Gap | Effect | What | Wave | Spec | Slice | PR | Tag | State |
 |---|---|---|---|---|---|---|---|---|
-| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | | | open: spec written (#661) |
-| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 1 | | | open: spec written |
-| G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | | | | open |
-| G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | | | | open |
-| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | | | | open |
-| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 2, 3 | | | open: spec written; the child theme re-check passed (#660). Slice 3 (the favicon) rests on spec 134 and is not carried to the line |
-| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 4 | | | open: spec written (#662) |
+| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | | | open: spec reviewed (#661) |
+| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | | | open: spec reviewed. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
+| G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | spec written (DECISIONS #671, #673) |
+| G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
+| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | | | spec written (DECISIONS #670) |
+| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | | | open: spec reviewed; the child theme re-check passed (#660). Slice 4 (the favicon) rests on spec 134 and is not carried to the line |
+| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | | | open: spec reviewed (#662) |
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
 | G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
-| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | | | | open |
+| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written |
 | G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
 | G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | | | | open |
 | G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
