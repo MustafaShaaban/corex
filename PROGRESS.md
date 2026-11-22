@@ -75,15 +75,15 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 |---|---|---|---|---|---|---|---|---|
 | G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | | | | open |
 | G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | | | | open |
-| G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | | | | open |
-| G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | | | | open |
-| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | | | | open |
+| G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | spec written (DECISIONS #671, #673) |
+| G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
+| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | | | spec written (DECISIONS #670) |
 | G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | | | | open |
 | G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | | | | open |
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
 | G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
-| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | | | | open |
+| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written |
 | G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
 | G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | | | | open |
 | G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
