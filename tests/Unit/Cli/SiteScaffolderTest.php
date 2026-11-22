@@ -332,7 +332,8 @@ it('FR-005: the builder agent may work in a client site when its brief says so',
 
     expect($builder)->toContain('**A client site\'s slice.**')
         ->and($builder)->toContain('`sites/<client>/specs/NNN-name/spec.md`')
-        ->and($builder)->toContain('Edit `sites/<client>/` in a framework slice, or anything outside it in a client site\'s slice.')
+        ->and($builder)->toContain('Edit `sites/<client>/` in a framework slice.')
+        ->and($builder)->toContain('except the site\'s workflow when the brief gives it to you.')
         // The rule it replaces refused every client folder outright.
         ->and($builder)->not->toContain('Edit `wp/wp-content/`, `dist/`, `sites/<client>/` or another slice\'s files.');
 });
