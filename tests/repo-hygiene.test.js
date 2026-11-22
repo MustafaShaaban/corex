@@ -26,6 +26,7 @@ const repositoryRoot = path.resolve( __dirname, '..' );
 
 const {
 	loadOwnership,
+	recordedBaselines,
 	resolveRole,
 } = require( '../scripts/repository-ownership.mjs' );
 
@@ -42,11 +43,15 @@ const originUrl = ( () => {
 	}
 } )();
 
-/** `framework` in CoreX's own repository, `client` in a repository built on it (spec 102). */
+/**
+ * `framework` in CoreX's own repository, `client` in a repository built on it (spec 102). A
+ * repository nothing names is a client when it records a baseline (spec 135, FR-001 and FR-002).
+ */
 const repositoryRole = resolveRole( {
 	ownership: loadOwnership( repositoryRoot ),
 	env: process.env,
 	originUrl,
+	baselineRecorded: recordedBaselines( repositoryRoot ).length > 0,
 } );
 
 /** Every path git tracks, one per line. */

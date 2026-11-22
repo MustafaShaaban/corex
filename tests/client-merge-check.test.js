@@ -155,7 +155,9 @@ describe( 'the client merge check', () => {
 				file: 'shared.txt',
 				localEdit: expect.objectContaining( {
 					reason: 'the client changed the greeting',
-					record: path.join( 'sites', 'acme', 'corex-baseline.json' ),
+					// Repository-relative with forward slashes on every system: the one listing
+					// `verify-framework.mjs` reads too (spec 135, FR-002).
+					record: 'sites/acme/corex-baseline.json',
 				} ),
 			},
 		] );
