@@ -10,7 +10,7 @@ search and the phone action bar).
 https://claude.ai/artifact/3jYwcAEaZyBWC1pgG1ZHvF. It is drawn on the CoreX design system
 (https://claude.ai/artifact/DExY8maEuxwM6JwdZ1jw5c) and uses the approved visitor kit's SiteHeader, MegaMenu,
 Navigation, Dropdown, Button, Badge and TextInput unchanged (`visitor-kit.md`, DECISIONS #639). Because the canvas
-is private, its sources are kept beside the spec: `specs/137-header-system/design/` holds the 28 boards
+is private, its sources are kept beside the spec: `specs/137-header-system/design/` holds the 27 boards
 (`boards/*.dc.html`), their layout (`boards/canvas.json`) and the rules the kit lacked
 (`header-system.css.txt`, the build contract).
 
