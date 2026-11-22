@@ -10,7 +10,7 @@
 	"attributes": {
 		"label": { "type": "string", "default": "" }
 	},
-	"supports": { "html": false },
+	"supports": { "html": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\BadgeRenderer" }

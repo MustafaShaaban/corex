@@ -6,6 +6,41 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Gap programme, wave 1 (the Blackstone gap programme; DECISIONS #651, #652, #656). Spec 136, slice 1: what an
+editor sets on a block reaches the page (gap G-005; DECISIONS #670).
+
+### Added
+
+- **A CoreX block prints its anchor, its alignment and its extra class** (spec 136, FR-001 to FR-006). The block
+  registrar passes every renderer's markup through one collaborator, `Corex\Blocks\BlockWrapper`, which merges
+  what `get_block_wrapper_attributes()` returns into the block's root element: each class added, a style appended,
+  an attribute the root already has kept. Empty markup stays empty. A block whose markup does not always start
+  with its root lists the classes its root can carry in `block.json` (`corex.root`); `corex/form` does
+  (`corex-flow`, `corex-form`), so a test site's notice before a form does not take the anchor, and a form drawn
+  from a flow puts it on the flow's section. The account block (`corex/account`) goes through the same
+  collaborator.
+- Every block a person can insert declares `anchor`, the account block included; hero, cta, team, posts,
+  gallery, tabs, accordion, carousel, newsletter signup, jobs, projects, testimonial and pricing declare wide and
+  full alignment. The six blocks of `corex-forms` declare `"className": false`, so they print no generated class.
+- The editor's server-rendered preview (WordPress's block renderer route) gets the previewed block's markup
+  without the merge, since the editor's own wrapper already carries the attributes (FR-006a; DECISIONS #676).
+- A hero or a call to action set to full width has square corners, since it reaches both edges of the screen.
+
+### Client impact
+
+- **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks gain
+  an `id` or a class only where an editor set one. Where it shows the account block, that block's root gains the
+  class `wp-block-corex-account`. An anchor, an alignment or a class already saved on a block now reaches the
+  page: a newsletter signup saved as wide or full is drawn that wide, and a social share saved as left, centre
+  or right is placed there.
+- **Perego**: its corex-ui blocks gain the class `wp-block-corex-<name>` on their root (the other CoreX blocks
+  outside the forms do too, the account block included, wherever a site uses them). An anchor, an alignment or
+  a class already saved on a block now reaches the page, as for Muva. Its form markup is unchanged wherever no
+  editor typed a class or an anchor on the form block; where one did, the form's root now carries it, which
+  matters to code that matches that markup by exact strings.
+- **Mizzey** is not on this line.
+- No upgrade step, no stored data changed.
+
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and
 after, in light and dark: `specs/134-theme-graphite-brass/evidence/`.

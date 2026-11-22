@@ -8,7 +8,7 @@
 	"description": "The current project's client, role, year, and link — only the fields that are set (dynamic).",
 	"textdomain": "corex",
 	"usesContext": ["postId"],
-	"supports": { "html": false },
+	"supports": { "html": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Portfolio\\Blocks\\ProjectMetaRenderer" }

@@ -29,6 +29,14 @@ final class BlocksServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): BlockMap => new BlockMap($c->make(BootLogger::class)),
         );
 
+        // Puts what an editor set on a block on its root element (spec 136, FR-001 to FR-003).
+        // One instance under both names: boot registers its listeners on the one the registrar uses.
+        $this->container->singleton(WordPressBlockWrapper::class);
+        $this->container->singleton(
+            BlockWrapper::class,
+            static fn (ContainerInterface $c): BlockWrapper => $c->make(WordPressBlockWrapper::class),
+        );
+
         $this->container->singleton(
             DynamicBlockRegistrar::class,
             static fn (ContainerInterface $c): DynamicBlockRegistrar => new DynamicBlockRegistrar(
@@ -36,6 +44,7 @@ final class BlocksServiceProvider extends ServiceProvider
                 $c->make(BootLogger::class),
                 $c->make(PluginMountMap::class),
                 $c->make(BlockPathResolver::class),
+                $c->make(BlockWrapper::class),
             ),
         );
 
@@ -65,6 +74,9 @@ final class BlocksServiceProvider extends ServiceProvider
         $this->container->make(PluginRealpathRegistrar::class)->register();
 
         add_filter('block_categories_all', [$this, 'registerBlockCategory']);
+
+        // The editor's preview gets a block's markup without the wrapper attributes (spec 136, FR-006a).
+        $this->container->make(WordPressBlockWrapper::class)->register();
 
         // Sample content in shipped patterns: hidden from visitors, labelled for editors (spec 115).
         $this->container->make(SampleBlocks::class)->register();

@@ -21907,3 +21907,34 @@ drawer hold blocks in their body. Muva and Perego have content saved in today's 
 
 *Not chosen.* New block names beside the old ones: two tabs blocks in the inserter and no migration. A one-time
 database migration of post content: it rewrites client content on an update, with no editor looking at it.
+
+## #676 -- The editor's preview is told apart by the REST route being answered, and only the previewed block is left unmerged
+
+**Date:** 2026-11-22. **Spec:** 136, slice 1 (G-005, FR-006a). **Branch:** `spec/136-slice-1-wrapper-attributes`.
+**Decided:** by the spec 136 session.
+
+**The question.** #670 says the editor's preview gets a block's markup without the wrapper attributes, because the
+editor's own wrapper already carries them. The render callback is the same for a page and for the preview, and
+WordPress gives a callback no public way to ask which REST request is being answered.
+
+**Decided.**
+- `WordPressBlockWrapper` listens to `rest_request_before_callbacks` and `rest_request_after_callbacks`, which
+  WordPress fires around every route callback, for an HTTP request and for `rest_do_request()` alike, and keeps
+  the routes being answered, innermost last.
+- The markup is left unmerged only when that route is the block renderer's route for the very block being
+  rendered (`/wp/v2/block-renderer/<name>`). A CoreX block nested in what is previewed has no editor wrapper
+  there and is merged as on a page.
+- A page a visitor loads dispatches no REST request, so nothing is recorded and every block is merged.
+- With no block being rendered (a callback called directly, as tests do) there is nothing to merge and the
+  markup is returned as it came.
+- `corex/account` keeps WordPress's generated class (`wp-block-corex-account`): nothing matches that block's
+  markup by exact strings, unlike the forms (#670).
+
+**Known limit.** WordPress does not fire the second filter when a route's callback throws. The route then stays
+recorded until the process ends, and only another preview of the same block in that process could be affected.
+
+*Not chosen.* The `skipBlockSupportAttributes` prop on every preview in the editor files: it strips the support
+values and the extra class but not the generated class or the alignment class, and it would have changed two
+editor files of `plugins/corex-forms`, which the maintenance line would have to merge by hand. Reading
+`$_SERVER['REQUEST_URI']`: it misses a preview asked through `rest_do_request()` and any site with plain
+permalinks.

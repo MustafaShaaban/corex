@@ -14,7 +14,7 @@
 			"default": ["x", "facebook", "linkedin", "whatsapp", "email"]
 		}
 	},
-	"supports": { "html": false, "align": ["left", "center", "right"] },
+	"supports": { "html": false, "align": ["left", "center", "right"], "anchor": true },
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",
