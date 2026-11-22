@@ -88,8 +88,12 @@ The generated `AGENTS.md` / `CLAUDE.md` state the rules a team — and any AI ag
 
 - **Edit only the client plugin/theme** (`sites/acme/acme-site/`, `sites/acme/acme-theme/`) — **never** the
   Corex framework.
-- **One feature = one branch = one spec folder = one PR.** Pull `develop`, branch `feature/...`, add `specs/...`,
-  implement, run the guards, update docs, open a PR, merge to `develop` (staging) → `main` (production).
+- **The CoreX loop, as a client site runs it**: grill, a spec with slices in the site's own
+  `sites/acme/specs/`, one slice at a time test first, the guards, the reviews, a pull request. Every file the
+  loop writes is the site's own; a file written at the repository root is drift.
+- **One slice = one branch = one PR.** Pull `develop`, branch `feature/...`, implement, run the guards, update
+  docs, open a PR, merge to `develop` (staging) → `main` (production).
+- **Who does what**: a table of the agents, their models and effort, and what a brief to an agent must name.
 - Local AI/cache/notes (`.corex/cache/`, `.ai/`, `.claude/local/`, …) are **git-ignored** — never committed; the
   project memory (specs, PROGRESS, DECISIONS, AGENTS) **is** committed.
 

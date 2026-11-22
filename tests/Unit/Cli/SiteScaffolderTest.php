@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 use Corex\Cli\Generators\StubRenderer;
+use Corex\Cli\Site\SiteIdentity;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldResult;
 
@@ -97,7 +98,7 @@ it('writes governance stating the client-only edit boundary + one-feature-one-PR
 
     expect($agents)->toContain('do not edit Corex framework folders')
         ->and($agents)->toContain('acme-site/')
-        ->and($agents)->toContain('One feature = one branch = one spec folder = one PR')
+        ->and($agents)->toContain('**One slice = one branch = one PR**')
         ->and($agents)->toContain('AcmeSite\\')
         // spec 061: the generated stub carries the Role Gate + handoff guidance for Client Site Mode.
         ->and($agents)->toContain('CLIENT SITE MODE')
@@ -214,10 +215,9 @@ it('documents the theme’s asset pipeline only for a site that has one', functi
 });
 
 /**
- * The generated AGENTS.md told a client to follow Spec Kit and said the `make:*` generators write
- * into the client plugin. The generators wrote elsewhere, and Spec Kit, run as documented, changed
- * two files the framework owns (#251). It says where each thing goes, and how Spec Kit is given
- * the site's own specs directory.
+ * The generated AGENTS.md once said the `make:*` generators write into the client plugin when they
+ * wrote elsewhere, and its specs landed in the framework's own `specs/` (#251). It says where each
+ * thing goes; the specs path is the site's own folder (spec 135, FR-004).
  */
 it('tells a client where its specs and generated code go', function () {
     $base = tempSiteBase();
@@ -226,6 +226,228 @@ it('tells a client where its specs and generated code go', function () {
     expect((string) file_get_contents($base . '/AGENTS.md'))
         ->toContain('acme-site/src')
         ->toContain('APP_PATH')
-        ->toContain('SPECIFY_FEATURE_DIRECTORY=sites/' . basename($base) . '/specs/')
+        ->toContain('sites/' . basename($base) . '/specs/NNN-name/spec.md')
+        ->toContain('never in the root `specs/`')
         ->not->toContain('by hand');
+});
+
+// Spec 135, slice 2 (G-002): the generated agent files teach the CoreX loop, not the retired chain.
+
+/**
+ * @return array{agents:string, claude:string, base:string}
+ */
+function generatedAgentFiles(): array
+{
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base);
+
+    return [
+        'agents' => (string) file_get_contents($base . '/AGENTS.md'),
+        'claude' => (string) file_get_contents($base . '/CLAUDE.md'),
+        'base'   => $base,
+    ];
+}
+
+it('FR-004: describes the CoreX loop as a client site runs it, its steps in order', function () {
+    $files   = generatedAgentFiles();
+    $agents  = $files['agents'];
+    $site    = 'sites/' . basename($files['base']);
+    $heading = '## The CoreX loop, as this site runs it';
+    $start   = strpos($agents, $heading);
+
+    expect($start)->not->toBeFalse();
+
+    // The section alone: the Role Gate above it also names the Guard Gate.
+    $section = substr($agents, (int) $start);
+    $next    = strpos($section, "\n## ", strlen($heading));
+    $section = $next === false ? $section : substr($section, 0, $next);
+
+    $steps = [
+        '**Grill**',
+        '**Research**',
+        '**Spec**',
+        '**Owner-only steps**',
+        '**One slice at a time, test first.**',
+        '**Guard Gate**',
+        'the measured UI review',
+        '`debate-review --local`',
+        '**Pull request**',
+        'a retro after a release',
+    ];
+
+    $positions = array_combine(
+        $steps,
+        array_map(static fn (string $step): int|false => strpos($section, $step), $steps)
+    );
+    $inOrder = $positions;
+    asort($inOrder);
+
+    expect(array_keys(array_filter($positions, static fn (int|false $at): bool => $at === false)))->toBe([])
+        // Each step appears after the one before it.
+        ->and(array_keys($inOrder))->toBe($steps)
+        ->and($section)->toContain('The root `AGENTS.md`, "The CoreX loop", holds each step in full')
+        // Every file the root loop writes at the repository root has this site's own path (FR-004).
+        ->and($section)->toContain('a file written there is drift in `npm run verify:framework`')
+        ->and($section)->toContain("`{$site}/specs/`")
+        ->and($section)->toContain("`{$site}/DECISIONS.md`")
+        ->and($section)->toContain("`{$site}/PROGRESS.md`")
+        ->and($section)->toContain("`{$site}/docs/glossary.md`")
+        ->and($section)->toContain("`{$site}/design/handoffs/`")
+        ->and($section)->toContain('this site\'s `DECISIONS.md`')
+        ->and($section)->toContain('`specs/NNN-name/research.md`')
+        ->and($section)->toContain('(`FR-001`)')
+        ->and($section)->toContain('Bugs start by reproducing the bug and proving its cause');
+});
+
+it('FR-005: carries the model routing table, its seven rows, and who commits', function () {
+    $files  = generatedAgentFiles();
+    $agents = $files['agents'];
+    $site   = 'sites/' . basename($files['base']);
+
+    $rows = [
+        ['the main session', 'Fable', 'high'],
+        ['`corex-builder`', 'Opus', 'medium (high for a UI slice or a bug)'],
+        ['`corex-tester`', 'Sonnet', 'medium'],
+        ['`corex-scout`', 'Haiku', 'low'],
+        ['`corex-reviewer`', 'Fable', 'high'],
+        ['`corex-ui-reviewer`', 'Fable', 'high'],
+        ['the `debate-review` lane', 'Codex', 'high'],
+    ];
+
+    foreach ($rows as [$who, $model, $effort]) {
+        expect($agents)->toContain("| {$who} | {$model} | {$effort} |");
+    }
+
+    expect($agents)->toContain('## Models, effort and agents')
+        ->and($agents)->toContain('`.claude/agents/`')
+        ->and($agents)->toContain('Max effort only when the owner asks, for one task')
+        ->and($agents)->toContain('Agents never commit')
+        // A brief names Client Site Mode and the site's folder, or the agent takes the work for the framework's.
+        ->and($agents)->toContain('Every brief to an agent says the work is in Client Site Mode')
+        ->and($agents)->toContain("(`{$site}/`)");
+});
+
+it('FR-005: the builder agent may work in a client site when its brief says so', function () {
+    $builder = (string) file_get_contents(dirname(__DIR__, 3) . '/.claude/agents/corex-builder.md');
+
+    expect($builder)->toContain('**A client site\'s slice.**')
+        ->and($builder)->toContain('`sites/<client>/specs/NNN-name/spec.md`')
+        ->and($builder)->toContain('Edit `sites/<client>/` in a framework slice.')
+        ->and($builder)->toContain('except the site\'s workflow when the brief gives it to you.')
+        // The rule it replaces refused every client folder outright.
+        ->and($builder)->not->toContain('Edit `wp/wp-content/`, `dist/`, `sites/<client>/` or another slice\'s files.');
+});
+
+it('FR-006: carries the UI steps for a client site, in the site\'s own text domain', function () {
+    $agents     = generatedAgentFiles()['agents'];
+    $textDomain = SiteIdentity::from('Acme')->textDomain;
+
+    expect($agents)->toContain('### UI, UX and front end')
+        ->and($agents)->toContain('the functional contract')
+        ->and($agents)->toContain('designed first and approved by the owner before it is built')
+        ->and($agents)->toContain('`ui-ux-pro-max`')
+        ->and($agents)->toContain('tokens from the theme\'s `theme.json` only')
+        ->and($agents)->toContain('logical CSS properties')
+        ->and($agents)->toContain("every string translatable in `{$textDomain}`")
+        ->and($agents)->toContain('never judge it from a screenshot')
+        ->and($agents)->toContain('375px')
+        ->and($agents)->toContain('200% zoom')
+        ->and($agents)->toContain('right to left')
+        ->and($agents)->toContain('`corex-ui-reviewer`')
+        ->and($agents)->toContain('WCAG 2.2 AA')
+        ->and($agents)->toContain('One recorded round for the owner');
+});
+
+it('FR-007: states the Role Gate and the handoff in the loop\'s words', function () {
+    $files = generatedAgentFiles();
+
+    expect($files['agents'])->toContain('the spec decides **what**')
+        ->and($files['agents'])->toContain('Follow **the CoreX loop**, the **Guard Gate** and **UI/UX ProMax**')
+        ->and($files['agents'])->toContain(
+            'SUMMARY / WORKSPACE / MODE / SPEC STATUS / VERIFICATION / BLOCKERS / RECOMMENDED NEXT STEP'
+        )
+        ->and($files['claude'])->toContain(
+            'Follow the CoreX loop, the Guard Gate, and UI/UX ProMax (this site\'s version of the loop and '
+            . 'the model routing table are in `AGENTS.md`)'
+        );
+});
+
+// The owner's writing rule, not a requirement of the spec: no em dash in anything CoreX writes.
+it('writes no em dash into the generated agent files', function () {
+    $files = generatedAgentFiles();
+
+    expect($files['agents'])->not->toContain("\u{2014}")
+        ->and($files['claude'])->not->toContain("\u{2014}");
+});
+
+/**
+ * FR-040: the routing table is compared with the agents' own definitions, and the two root sections the
+ * generated file cites by name are checked to exist. When an agent is added, renamed or moved to another
+ * model, this fails until the stub follows, which is how the stub went stale before (G-002).
+ */
+it('FR-005: names every agent in `.claude/agents/` with the model and effort its definition gives', function () {
+    $agents      = generatedAgentFiles()['agents'];
+    $definitions = glob(dirname(__DIR__, 3) . '/.claude/agents/*.md') ?: [];
+    $missing     = [];
+
+    foreach ($definitions as $definition) {
+        $contents = (string) file_get_contents($definition);
+        preg_match('/^name:\s*(\S+)/m', $contents, $name);
+        preg_match('/^model:\s*(\S+)/m', $contents, $model);
+        preg_match('/^effort:\s*(\S+)/m', $contents, $effort);
+
+        // One table row: | work | `name` | Model | effort ... |
+        $row = sprintf('/\| `%s` \| %s \| %s[ |]/i', preg_quote($name[1], '/'), preg_quote($model[1], '/'), preg_quote($effort[1], '/'));
+
+        if (preg_match($row, $agents) !== 1) {
+            $missing[] = basename($definition);
+        }
+    }
+
+    expect($definitions)->not->toBe([])
+        ->and($missing)->toBe([]);
+});
+
+it('FR-004: cites two sections the root `AGENTS.md` really has', function () {
+    $root   = (string) file_get_contents(dirname(__DIR__, 3) . '/AGENTS.md');
+    $agents = generatedAgentFiles()['agents'];
+
+    foreach (['The CoreX loop', 'UI, UX and front end'] as $section) {
+        expect(preg_match('/^#{2,3} ' . preg_quote($section, '/') . '/m', $root))->toBe(1)
+            ->and($agents)->toContain('The root `AGENTS.md`, "' . $section . '"');
+    }
+});
+
+/**
+ * User Story 4, scenario 2: nothing `make:site` writes names the retired chain. Read from the stub
+ * directories themselves and from a `--starter` scaffold, so a stub or a literal added later is held to the
+ * same rule (FR-040).
+ */
+it('FR-007: names the retired command chain in nothing make:site writes', function () {
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base, ['starter' => true]);
+
+    $offenders = [];
+    $read      = 0;
+
+    foreach ([siteStubsDir() . '/site', siteStubsDir() . '/starter', $base] as $directory) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($files as $file) {
+            if (! $file->isFile()) {
+                continue;
+            }
+
+            $read++;
+
+            if (preg_match('/spec[\s-]*kit|speckit|SPECIFY_FEATURE/i', (string) file_get_contents($file->getPathname())) === 1) {
+                $offenders[] = $file->getPathname();
+            }
+        }
+    }
+
+    expect($read)->toBeGreaterThan(0)
+        ->and($offenders)->toBe([]);
 });

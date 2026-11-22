@@ -34,6 +34,12 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   comparing a file. A repository nothing names is now a client when it records a baseline
   (`sites/<client>/corex-baseline.json`). A checkout that resolves to the framework by its name while holding a
   baseline fails and says to set `COREX_REPOSITORY_ROLE=client`. A role stated in that variable still wins.
+- **The agent files `make:site` writes teach the CoreX loop** (spec 135 slice 2, gap G-002). The generated
+  `AGENTS.md` and `CLAUDE.md` taught the command chain CoreX retired on 2026-11-11. They now hold the loop's
+  steps as a client site runs them, with the site's own path for every file the loop writes (a file written at
+  the repository root is drift), the model routing table and the UI steps. `corex-builder` used to refuse every
+  `sites/<client>/` folder: it now works in one when its brief says the slice is a client site's, and then
+  edits nothing outside it.
 
 ### Client impact
 
@@ -42,6 +48,12 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     is no upgrade step. `npm run verify:framework` answers as before in a repository whose `origin` is the
     client's own. A client clone whose `origin` still points at CoreX's repository now fails that check, with a
     message, until `origin` is re-pointed or `COREX_REPOSITORY_ROLE=client` is set.
+  - **Spec 135 slice 2 (G-002).** Muva, Perego and Mizzey: nothing on a running site changes and there is no
+    upgrade step. Each site's `AGENTS.md` and `CLAUDE.md` are the client's own and are not rewritten. A site
+    that wants the new text generates one under its own name into a scratch folder whose last part is the site's
+    folder name (`wp corex make:site Muva --dir=<scratch>/muva`) and copies the two files from it: the files
+    carry that name and that folder in their paths. This slice rests on the loop itself (#458), so it reaches a
+    client only in a release that carries that too.
   - **Spec 136 slice 1 (G-005).** No upgrade step, no stored data changed.
     - **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks
       gain an `id` or a class only where an editor set one. Where it shows the account block, that block's root
