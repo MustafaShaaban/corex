@@ -1,4 +1,4 @@
-# Corex — Progress
+# 4 | | | open: spec written (#662) |2, 3 | | | open: spec written; the re-check passed (#660) |1 | | | open: spec written |1 | | | open: spec written (#661) |Corex — Progress
 
 **This is a resume point, not a history.** It holds the current baseline, what is in flight, and what
 to do next. A session that ends does not append here — it *replaces* what is here.
@@ -85,13 +85,13 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 
 | Gap | Effect | What | Wave | Spec | Slice | PR | Tag | State |
 |---|---|---|---|---|---|---|---|---|
-| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | | | | open |
-| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | | | | open |
+| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | | | open: spec reviewed (#661) |
+| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | | | open: spec reviewed. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
 | G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | spec written (DECISIONS #671, #673) |
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
 | G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | | | spec written (DECISIONS #670) |
-| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | | | | open |
-| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | | | | open |
+| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | | | open: spec reviewed; the child theme re-check passed (#660). Slice 4 (the favicon) rests on spec 134 and is not carried to the line |
+| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | | | open: spec reviewed (#662) |
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
 | G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
