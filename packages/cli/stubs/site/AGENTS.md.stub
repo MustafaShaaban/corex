@@ -20,7 +20,9 @@ conflict waiting in every later framework update.
 > Role Gate decides **where** you work · the spec decides **what** · Guard Gate decides **whether it ships** ·
 > UI/UX ProMax decides **whether visible UI is good enough**.
 
-- Edit **only** this client source (this plugin + theme + this site's `docs/`/`specs/`).
+- Edit **only** this client source: everything under `sites/{{ site_dir }}/` (this plugin and theme, and this
+  site's specs, docs, design hand-overs, `PROGRESS.md` and `DECISIONS.md`) and this site's own workflow,
+  `.github/workflows/site-{{ site_dir }}.yml`.
 - **Do not** edit Corex framework internals (`plugins/`, `addons/`, `packages/`, the Corex parent `theme/`, root
   `specs/`, `ROADMAP.md`, root `PROGRESS.md`).
 - **Do not** edit `wp/wp-content/` or `dist/` as source (runtime/build output; `dist/` is generated, never committed).
@@ -43,13 +45,15 @@ The client uses its own identity, distinct from Corex: namespace `{{ namespace }
 `{{ text_domain }}`, REST namespace `{{ rest_namespace }}`, CSS prefix `{{ css_prefix }}`, option/CPT
 prefix `{{ option_prefix }}`. Import Corex base classes; never use the `Corex\` namespace for app classes.
 
-## Workflow (every non-trivial change)
-1. Pull `develop`. 2. Branch `feature/<work-item>-<slug>`. 3. Write or update the spec in `specs/NNN-name/`.
-4. Implement **only** in the client plugin/theme. 5. Run the guards/checks. 6. Update docs.
-7. Commit. 8. Open a PR. 9. CI + review. 10. Merge to `develop` (staging) → tag/`main` (production).
+## Branches and pull requests
+The loop below says what is built and in what order. These are the git mechanics of each slice:
 
-**One feature = one branch = one spec folder = one PR.** Run the guard skills before presenting/pushing.
-**Never push directly to `develop`/`main`.** Update docs after any feature.
+1. Pull `develop`. 2. Branch `feature/<work-item>-<slug>` for the slice. 3. Implement **only** in the client
+plugin/theme, test first. 4. Run the guards and checks. 5. Update the docs the slice makes untrue. 6. Commit.
+7. Open a PR. 8. CI + review. 9. Merge to `develop` (staging) → tag/`main` (production).
+
+**One slice = one branch = one PR**; a spec may take several. Run the guard skills before presenting/pushing.
+**Never push directly to `develop`/`main`.**
 
 **Generators.** `wp corex make:*` writes into `{{ plugin_slug }}/src` under `{{ namespace }}\` while this
 is the only site in the repository. With more than one site, or to send them elsewhere, set `APP_PATH`,
@@ -60,7 +64,8 @@ site's own folder and never in the root `specs/`, which is the framework's: a sp
 `npm run verify:framework`.
 
 ## The CoreX loop, as this site runs it
-The root `AGENTS.md`, "The CoreX loop", holds each step in full. For this site:
+The root `AGENTS.md`, "The CoreX loop", holds each step in full. The skill named in a step is the tool; an
+agent that has no such skill carries the step out itself. For this site:
 
 **Every file the loop writes is this site's own.** The root file names paths at the repository root, which
 are the framework's: a file written there is drift in `npm run verify:framework`. Here they are
@@ -69,10 +74,11 @@ are the framework's: a file written there is drift in `npm run verify:framework`
 `sites/{{ site_dir }}/design/handoffs/` (for the root's `design/handoffs/`).
 
 1. **Grill** one question at a time until nothing about the change is open. Decisions go into
-   this site's `DECISIONS.md`.
-2. **Research** only when the spec depends on outside facts: the findings go to `specs/NNN-name/research.md`.
-3. **Spec** in `specs/NNN-name/spec.md`: requirements with ids (`FR-001`), ending in slices. Each slice is one
-   pull request and names the slices it waits on.
+   this site's `DECISIONS.md`, and the terms it settles into this site's glossary.
+2. **Research** only when the spec depends on outside facts: the findings go to this site's
+   `specs/NNN-name/research.md`.
+3. **Spec** in this site's `specs/NNN-name/spec.md`: requirements with ids (`FR-001`), ending in slices. Each
+   slice is one pull request and names the slices it waits on.
 4. **Owner-only steps** as a checked script in this site's folder, which walks the owner through each step and
    checks it.
 5. **One slice at a time, test first.** Bugs start by reproducing the bug and proving its cause, then the
@@ -82,8 +88,8 @@ are the framework's: a file written there is drift in `npm run verify:framework`
 7. **Pull request**, its review rounds, and a retro after a release.
 
 ### UI, UX and front end
-A slice a person sees runs these steps too, and one that skips a step is not done. The root `AGENTS.md`,
-"UI, UX and front end", holds them in full.
+A slice a person sees runs these steps too, and one that skips a step is not done.
+The root `AGENTS.md`, "UI, UX and front end", holds them in full.
 
 1. **The client's approved design is the functional contract.** Build and measure from it, never from memory;
    nothing in it ships as a sample or a placeholder.
@@ -103,8 +109,9 @@ A slice a person sees runs these steps too, and one that skips a step is not don
 | Work | Who | Model | Effort |
 |---|---|---|---|
 | Grilling, specs, decisions, final judgment on a diff | the main session | Fable | high |
+| Designing what the client's design does not draw (Claude Design) | the main session | Fable | high |
 | Building a slice, fixing a diagnosed bug | `corex-builder` | Opus | medium (high for a UI slice or a bug) |
-| Tests, fixtures, translations, docs chores, the recorded review round | `corex-tester` | Sonnet | medium |
+| Tests, fixtures, docs chores, the recorded review round | `corex-tester` | Sonnet | medium |
 | Searching CoreX or this site | `corex-scout` | Haiku | low |
 | Reviewing a diff against its spec and the constitution | `corex-reviewer` | Fable | high |
 | A rendered page measured against its approved design | `corex-ui-reviewer` | Fable | high |
@@ -113,5 +120,8 @@ A slice a person sees runs these steps too, and one that skips a step is not don
 The agents are in the repository's `.claude/agents/`: framework-owned, carried with every release, so this
 site does not edit them. Every brief to an agent says the work is in Client Site Mode and names this site's
 folder (`sites/{{ site_dir }}/`) and the spec in it: an agent sees only its brief, and without that it takes
-the work for the framework's and looks for the spec at the repository root. Max effort only when the owner asks, for one task. Agents never commit: the main
-session reads every diff, runs the guards and commits.
+the work for the framework's and looks for the spec at the repository root. A brief to `corex-ui-reviewer`
+also names the design or hand-over file it compares against, the address of the site it measures and this
+site's CSS prefix (`{{ css_prefix }}`), because that agent otherwise looks in the framework's `design/handoffs/`
+and knows only CoreX's own prefix. Max effort only when the owner asks, for one task. Agents never commit:
+the main session reads every diff, runs the guards and commits.

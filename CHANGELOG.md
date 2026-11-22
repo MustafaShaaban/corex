@@ -32,9 +32,10 @@ generated with and checked by. These lines move to the wave's own entry when it 
     message, until `origin` is re-pointed or `COREX_REPOSITORY_ROLE=client` is set.
   - **Spec 135 slice 2 (G-002).** Muva, Perego and Mizzey: nothing on a running site changes and there is no
     upgrade step. Each site's `AGENTS.md` and `CLAUDE.md` are the client's own and are not rewritten. A site
-    that wants the new text generates a site into a scratch folder (`wp corex make:site <Name> --dir=<folder>`)
-    and copies the two files from it. This slice rests on the loop itself (#458), so it reaches a client only in
-    a release that carries that too.
+    that wants the new text generates one under its own name into a scratch folder whose last part is the site's
+    folder name (`wp corex make:site Muva --dir=<scratch>/muva`) and copies the two files from it: the files
+    carry that name and that folder in their paths. This slice rests on the loop itself (#458), so it reaches a
+    client only in a release that carries that too.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and

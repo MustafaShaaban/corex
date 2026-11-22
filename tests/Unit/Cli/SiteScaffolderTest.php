@@ -98,7 +98,7 @@ it('writes governance stating the client-only edit boundary + one-feature-one-PR
 
     expect($agents)->toContain('do not edit Corex framework folders')
         ->and($agents)->toContain('acme-site/')
-        ->and($agents)->toContain('One feature = one branch = one spec folder = one PR')
+        ->and($agents)->toContain('**One slice = one branch = one PR**')
         ->and($agents)->toContain('AcmeSite\\')
         // spec 061: the generated stub carries the Role Gate + handoff guidance for Client Site Mode.
         ->and($agents)->toContain('CLIENT SITE MODE')
@@ -231,7 +231,7 @@ it('tells a client where its specs and generated code go', function () {
         ->not->toContain('by hand');
 });
 
-// Spec 135, slice 1 (G-002): the generated agent files teach the CoreX loop, not the retired chain.
+// Spec 135, slice 2 (G-002): the generated agent files teach the CoreX loop, not the retired chain.
 
 /**
  * @return array{agents:string, claude:string, base:string}
@@ -368,11 +368,11 @@ it('FR-007: states the Role Gate and the handoff in the loop\'s words', function
         ->and($files['claude'])->toContain(
             'Follow the CoreX loop, the Guard Gate, and UI/UX ProMax (this site\'s version of the loop and '
             . 'the model routing table are in `AGENTS.md`)'
-        )
-        ->and($files['claude'])->toContain('This file mirrors `AGENTS.md`');
+        );
 });
 
-it('FR-007: writes no em dash into the generated agent files', function () {
+// The owner's writing rule, not a requirement of the spec: no em dash in anything CoreX writes.
+it('writes no em dash into the generated agent files', function () {
     $files = generatedAgentFiles();
 
     expect($files['agents'])->not->toContain("\u{2014}")
@@ -380,26 +380,70 @@ it('FR-007: writes no em dash into the generated agent files', function () {
 });
 
 /**
- * Read from the stub directory itself, so a site stub added later is held to the same rule (FR-040).
+ * FR-040: the routing table is compared with the agents' own definitions, and the two root sections the
+ * generated file cites by name are checked to exist. When an agent is added, renamed or moved to another
+ * model, this fails until the stub follows, which is how the stub went stale before (G-002).
  */
-it('FR-007: names the retired command chain in no site stub', function () {
-    $directory = siteStubsDir() . '/site';
-    $stubs     = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
-    );
+it('FR-005: names every agent in `.claude/agents/` with the model and effort its definition gives', function () {
+    $agents      = generatedAgentFiles()['agents'];
+    $definitions = glob(dirname(__DIR__, 3) . '/.claude/agents/*.md') ?: [];
+    $missing     = [];
+
+    foreach ($definitions as $definition) {
+        $contents = (string) file_get_contents($definition);
+        preg_match('/^name:\s*(\S+)/m', $contents, $name);
+        preg_match('/^model:\s*(\S+)/m', $contents, $model);
+        preg_match('/^effort:\s*(\S+)/m', $contents, $effort);
+
+        // One table row: | work | `name` | Model | effort ... |
+        $row = sprintf('/\| `%s` \| %s \| %s[ |]/i', preg_quote($name[1], '/'), preg_quote($model[1], '/'), preg_quote($effort[1], '/'));
+
+        if (preg_match($row, $agents) !== 1) {
+            $missing[] = basename($definition);
+        }
+    }
+
+    expect($definitions)->not->toBe([])
+        ->and($missing)->toBe([]);
+});
+
+it('FR-004: cites two sections the root `AGENTS.md` really has', function () {
+    $root   = (string) file_get_contents(dirname(__DIR__, 3) . '/AGENTS.md');
+    $agents = generatedAgentFiles()['agents'];
+
+    foreach (['The CoreX loop', 'UI, UX and front end'] as $section) {
+        expect(preg_match('/^#{2,3} ' . preg_quote($section, '/') . '/m', $root))->toBe(1)
+            ->and($agents)->toContain('The root `AGENTS.md`, "' . $section . '"');
+    }
+});
+
+/**
+ * User Story 4, scenario 2: nothing `make:site` writes names the retired chain. Read from the stub
+ * directories themselves and from a `--starter` scaffold, so a stub or a literal added later is held to the
+ * same rule (FR-040).
+ */
+it('FR-007: names the retired command chain in nothing make:site writes', function () {
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base, ['starter' => true]);
+
     $offenders = [];
     $read      = 0;
 
-    foreach ($stubs as $stub) {
-        if (! $stub->isFile()) {
-            continue;
-        }
+    foreach ([siteStubsDir() . '/site', siteStubsDir() . '/starter', $base] as $directory) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+        );
 
-        $read++;
-        $contents = (string) file_get_contents($stub->getPathname());
+        foreach ($files as $file) {
+            if (! $file->isFile()) {
+                continue;
+            }
 
-        if (preg_match('/spec\s*kit|speckit/i', $contents) === 1) {
-            $offenders[] = $stub->getFilename();
+            $read++;
+
+            if (preg_match('/spec[\s-]*kit|speckit|SPECIFY_FEATURE/i', (string) file_get_contents($file->getPathname())) === 1) {
+                $offenders[] = $file->getPathname();
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 ---
 name: corex-builder
-description: Builds one slice of a CoreX spec, test first, in the root checkout, and leaves the diff uncommitted for the orchestrator to review. Use for a slice of `specs/NNN-name/spec.md` or a bug whose cause is already proven.
+description: Builds one slice of a CoreX spec, test first, in the root checkout, and leaves the diff uncommitted for the orchestrator to review. Use for a slice of `specs/NNN-name/spec.md`, a slice of a client site's spec (`sites/<client>/specs/NNN-name/spec.md`) when the brief says Client Site Mode, or a bug whose cause is already proven.
 model: opus
 effort: medium
 tools: Read, Edit, Write, Grep, Glob, Bash
@@ -14,8 +14,9 @@ Before anything else, read `specs/constitution.md` (canonical: `.specify/memory/
 spec, and the parts of `docs/internal/COREX-FRAMEWORK.md` the slice touches.
 
 **A client site's slice.** When the brief says the work is in Client Site Mode, it names the site's folder
-(`sites/<client>/`) and the spec is in that folder (`sites/<client>/specs/NNN-name/spec.md`), with that
-site's `AGENTS.md` beside it: read both. You then edit only inside that folder, and nothing of the
+(`sites/<client>/`) and the spec is in that folder (`sites/<client>/specs/NNN-name/spec.md`). Read it and
+that site's own rules, `sites/<client>/AGENTS.md`. You then edit only inside that folder (and the site's
+workflow, `.github/workflows/site-<client>.yml`, when the brief gives it to you), and nothing of the
 framework's (`plugins/`, `addons/`, `packages/`, `theme/`, the root `specs/` and docs).
 
 ## How you work

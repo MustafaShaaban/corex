@@ -5,8 +5,8 @@ This file mirrors `AGENTS.md`. Read it first.
 You are working on the **{{ name }}** website, a **Corex client site**. **Do not edit Corex
 framework folders**: app code goes in `{{ plugin_slug }}/` (`{{ namespace }}\`), presentation
 in `{{ theme_slug }}/`. Site identity: `{{ namespace }}\`, `{{ text_domain }}`, `{{ rest_namespace }}`,
-`{{ css_prefix }}`, `{{ option_prefix }}` (all distinct from Corex). One feature = one branch = one spec =
-one PR; run guards before pushing; never push directly to `develop`/`main`. Use `wp corex make:*`.
+`{{ css_prefix }}`, `{{ option_prefix }}` (all distinct from Corex). One slice of a spec = one branch = one PR;
+run guards before pushing; never push directly to `develop`/`main`. Use `wp corex make:*`.
 
 **Role Gate: CLIENT SITE MODE.** Edit only this client source; do not edit Corex framework internals, nor
 `wp/wp-content/` or `dist/` as source. Keep specs in `specs/`, progress in `PROGRESS.md`, decisions in
