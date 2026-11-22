@@ -17,6 +17,8 @@ the slice that shows them is built:** the phone menu holding mega panels as grou
 switch in its two forms, the header search, the bar at the foot of a phone screen. Their hand-over will be
 `design/handoffs/header-system.md`.
 
+**Reviewed**: by `corex-reviewer` on 2026-11-21; its ten findings and its notes are answered in this text.
+
 **Input**: the gap row G-013 and decisions 6, 9 and 10 of the Blackstone grill of 2026-11-21 (in that site's
 repository, which CoreX sessions only read), and five stories of the revamp's NAV epic, approved under the owner's
 2026-10-21 mandate and kept in his private planning workspace: US-NAV-11, US-NAV-02, US-NAV-04, US-NAV-10 and
@@ -117,10 +119,17 @@ works on a phone and is announced as part of the site's navigation.
 * On the page the mega item is inside the navigation landmark and its list
 * On a phone it appears inside the opened menu as a section that expands in place, with the same items
 * On desktop the panel opens as an overlay below the header and does not change the header's height
-* The mega patterns are rebuilt on the new item; the instruction "Insert into a header's navigation area" becomes
-  true
+* The mega patterns are rebuilt as panels of the new item; each pattern's description says how to put it on a mega
+  menu item, and what it says is true
 * The item ships in an add-on, so it appears in the editor only on sites that turn that add-on on
 * DECISIONS #103 point 1 ("mega menus are the native details element") is superseded by a recorded decision
+
+**Corrected in the planning workspace first (2026-11-21, under CR-049), then copied here.** The fifth criterion
+read "The mega patterns are rebuilt on the new item; the instruction 'Insert into a header's navigation area'
+becomes true". The gap row asks for the panel as a template part, and a pattern cannot carry a template part, so
+a mega pattern is now the content of a panel and is chosen on an item, not inserted into the menu. The CoreX
+theme therefore ships no header with a mega item in place: an owner adds the item and picks a panel
+(`corex/header-saas` stops saying it has a features mega menu).
 
 ### User Story 3 - Menus open on hover, close when focus leaves, and move with arrow keys (US-NAV-04, Priority: P1)
 
@@ -176,19 +185,20 @@ language, and on a site in one language I want no switcher at all, so that nothi
 * In right-to-left languages, pages set `dir="rtl"` and Arabic text uses the Arabic font token
 * The framework document and DECISIONS no longer describe the `I18nHandler` as existing, or it exists
 
-### User Story 6 - A header has a utility menu (no story; G-013, Priority: P1)
+### User Story 6 - A header has a utility menu (US-NAV-16, added under CR-049; G-013, Priority: P1)
 
 As a site owner, I want a row above the bar that holds a short menu of secondary links and the language switch,
 which I edit as a menu, so that careers, support and the language are within reach without crowding the main menu.
 
-**Acceptance criteria** (written here; the planning workspace gains the story through change control, FR-041)
+**Acceptance criteria** (written with this spec and held in the planning workspace as US-NAV-16)
 
 * A header pattern has a utility row above the bar holding a Navigation block named "Utility" and the language
   switcher
 * The utility menu is one list: the row above the bar and the phone menu show the same template part, so a link
   added once appears in both
 * Until an owner edits it, the utility menu shows the Brand settings' phone and email as they are today, not as
-  they were when the pattern was inserted; with neither set and one language, the row is not rendered
+  they were when the pattern was inserted; with neither set and one language, the row is not shown and takes no
+  space
 * On a phone the row is not shown in the bar; its links and the language switch are inside the opened menu
 * A second navigation on the page has its own name, so the two are told apart by a screen reader
 
@@ -214,7 +224,11 @@ the editor like anything else.
   shows its languages as a plain list.
 - **A token value that is not a length** (empty, a word, a percentage): the default 782px is used and nothing a
   theme wrote reaches the page as CSS.
-- **A token below 600px**: the menu stays in its desktop form down to that width.
+- **A token below 600px**: read as 600px, WordPress's own width. A narrower switch is not supported.
+- **Escape inside an open group of the phone menu**: closes the menu, as WordPress does, and focus returns to the
+  menu button. On desktop, Escape closes the open panel only.
+- **A child theme that ships a panel part while `corex-ui` is off**: WordPress raises its notice for a part in an
+  area nobody registered. The client site docs say a panel part belongs only on a site with the add-on on.
 - **A header from another theme** (Muva's, Perego's): the breakpoint writer does nothing, because it only acts
   where the active theme, or its parent, ships the CoreX navigation styles.
 - **The `corex-ui` add-on is off**: no mega item exists in the editor; a header pattern never prints one; a menu
@@ -241,8 +255,8 @@ the editor like anything else.
   `corex-navigation.css` MUST go. No other CoreX stylesheet or script may name a navigation width.
 - **FR-004**: `Corex\Theme\NavigationServiceProvider` MUST serve that stylesheet as a file when the token is the
   default, and otherwise print it inline with the token's width in place of the default, in the editor's canvas as
-  on the page. It MUST accept only a plain length in `px`, `em` or `rem` and fall back to the default for anything
-  else.
+  on the page. It MUST accept only a whole or decimal number of `px`, fall back to the default for anything else,
+  and read a value below 600px as 600px.
 - **FR-005**: A child theme of the CoreX theme that sets the token MUST get the switch at its own width with no file
   of the parent copied or edited. A fixture child theme proves it in the browser at 1024px.
 - **FR-006**: The provider MUST do nothing when neither the active theme nor its parent ships the collapse
@@ -257,8 +271,10 @@ the editor like anything else.
 **The mega menu item (User Stories 2 and 3). Slice 3, with its phone form in slice 4.**
 
 - **FR-009**: The `corex-ui` add-on MUST register a block `corex/mega-menu`, titled "Mega menu item", whose only
-  parent is `core/navigation`, and MUST add it to the blocks the Navigation block accepts. With the add-on off
-  neither exists.
+  parent is `core/navigation`, and MUST add it to the blocks the Navigation block accepts. WordPress reads that
+  list from the block's settings in the editor, so the add-on's editor script adds it there
+  (`blocks.registerBlockType`); a server filter alone never reaches the editor. With the add-on off neither
+  exists.
 - **FR-010**: The item MUST hold a label and the slug of one template part, its panel. The add-on MUST register a
   template part area `mega-menu` ("Mega menu panels") so panels are listed apart from headers and footers.
 - **FR-011**: On the page the item MUST be a list item of the navigation's list, holding a button and the panel.
@@ -268,9 +284,12 @@ the editor like anything else.
   is already being rendered.
 - **FR-013**: In the editor the label MUST be typed in place in the menu, and the panel chosen from the parts of
   the `mega-menu` area, with a link that opens the chosen panel for editing and a way to start a new one from a
-  panel pattern. An item with no panel shows a notice.
-- **FR-014**: On desktop the panel MUST open below the header as an overlay as wide as the header's content,
-  without changing the header's height, and MUST keep inside the window in both directions of writing.
+  panel pattern. An item with no panel shows a notice. These controls are WordPress's own editor components as
+  they come, under the standard spec 136 sets; nothing here is a CoreX-styled surface.
+- **FR-014**: On desktop the panel MUST open below the header as an overlay, without changing the header's height,
+  and MUST keep inside the window in both directions of writing. In a CoreX header it is as wide as
+  `.corex-header__inner`. In any other header it is as wide as the Navigation block, and a theme widens it by
+  making an ancestor the panel's anchor, which the block's style documents.
 - **FR-015**: A view script that loads only where the item renders MUST give the behaviour of User Story 3:
   opening after about 150ms of rest and closing after a short delay, a click or a tap that opens and closes,
   closing when focus leaves, Down, Up, Home and End among the panel's links and buttons, Escape that closes and
@@ -280,29 +299,48 @@ the editor like anything else.
   motion nothing animates.
 - **FR-018**: Whether a panel is drawn as an overlay or as a section in place MUST follow where the item is (in
   the bar, or inside the opened phone menu), never a width of its own, so the breakpoint stays in one place.
+  Slice 3 builds the overlay. Inside an opened menu, slice 3 shows the panel in place under its label, open, the
+  way WordPress shows a sub-menu there today; the collapsing group is slice 4's, from the approved drawing. No
+  release carries slice 3 without slice 4.
 - **FR-019**: The four mega patterns (`corex/megamenu-simple`, `-services`, `-product`, `-docs`) MUST be rebuilt
   as panel patterns for the `mega-menu` area: the panel's content only, under the same slugs. Their descriptions
   MUST say how a panel is put on a menu item, and that sentence MUST be true.
 - **FR-020**: No shipped header pattern may place a mega panel beside the Navigation block. The script and the
   styles that serve `details.corex-mega` MUST stay, so a header saved earlier keeps working.
-- **FR-021**: The block MUST follow the editor standard that spec 136 sets for a block that renders on the server
-  (DECISIONS #656), including the wrapper attributes its renderer prints.
+- **FR-021**: The two blocks this spec adds (`corex/mega-menu`, `corex/language-switcher`) MUST follow the editor
+  standard that spec 136 sets for a block that renders on the server (DECISIONS #656). Their renderers print
+  `get_block_wrapper_attributes()`, the one rule #656 already fixes. If spec 136's shared base for renderers is on
+  `main` when a slice is built, the slice uses it; if not, the block is moved onto it by whichever lands second.
 
 **The phone menu (User Story 4). Slice 4.**
 
-- **FR-022**: The theme MUST ship phone menu template parts in WordPress's `navigation-overlay` area, each one
-  line that names a pattern, so their words are translatable and their Brand values are read on each request:
-  `mobile-menu` (the close button, the menu, the language switcher, the call to action), `mobile-menu-search`
-  (the same with the Search block) and `mobile-menu-utility` (the same as the first with the utility menu).
-- **FR-023**: The default header part and every header pattern with a menu MUST name the phone menu that holds
-  what its bar holds, and carry the class `corex-header--menu-holds-actions`. Below the breakpoint such a header
-  MUST show the logo and the menu button only: its call to action, search and utility row are in the opened menu
-  and the bar stays one row.
-- **FR-024**: A Navigation block inside a phone menu that names no menu of its own MUST show the menu of the
-  header's Navigation block that opened it, so an owner who picks a menu for the header never has two lists. It
-  applies to CoreX headers only.
+- **FR-022**: The theme MUST ship three phone menu template parts in WordPress's `navigation-overlay` area:
+  `mobile-menu` (the close button, the menu, the language switcher, the header's actions), `mobile-menu-search`
+  (the same with the Search block first) and `mobile-menu-utility` (the same as the first with the utility menu
+  before the actions). Each part file holds its Navigation block directly, with `overlayMenu` set to `never` and
+  the class `corex-mobile-menu__nav`: WordPress switches off the menu button of a nested Navigation block only
+  when it finds the block in the part's own markup, never through a pattern or a second part. A part file holds
+  no words; anything with words or Brand values in it is a pattern the part names.
+- **FR-023**: The header's actions MUST be one template part, `header-actions`, that names a pattern printing the
+  Brand call to action (the Brand label, or "Get started" translated when none is set; the Brand link; nothing
+  when no link is set). The bar of every header with a menu and every phone menu show that part, so the bar and
+  the menu hold the same action by construction. The default header part and every such header pattern MUST name
+  its phone menu and carry the class `corex-header--menu-holds-actions`. Below the breakpoint such a header shows
+  the logo and the menu button only, on one row. `corex/header-saas` loses its "Sign in" button: the account link
+  is US-NAV-06's, and it will sit in the same part.
+- **FR-024**: `Corex\Theme\NavigationServiceProvider` MUST make a phone menu show the header's menu. While a
+  Navigation block that has the class `corex-header__nav`, an `overlay` and a `ref` is being rendered, a
+  Navigation block that has the class `corex-mobile-menu__nav`, no `ref` and no inner blocks takes that `ref`. A
+  Navigation block without those classes is never touched, and a test proves it. A header whose Navigation block
+  holds its links inline has no menu to share; no shipped pattern does that.
 - **FR-025**: Inside the opened menu, mega items and WordPress's own sub-menus MUST start collapsed and open one at
-  a time, each with a chevron that turns and mirrors, and each row a target of at least 44px.
+  a time, each with a chevron that turns and mirrors, and each row a target of at least 44px. WordPress's
+  sub-menus are set to open on a click and are collapsed by WordPress itself; the theme's navigation script closes
+  the other open group of either kind, so it works with the add-on off. The mega item's own script opens and
+  closes its panel.
+- **FR-025a**: The phone menu and its focus handling MUST be proven once on WordPress 7.0, the oldest version CoreX
+  supports, since CI installs the newest. If 7.0 fails it, the minimum version is raised by a recorded decision
+  before the slice merges.
 - **FR-026**: Focus MUST stay inside the opened menu; Escape and the close button MUST close it and return focus to
   the menu button. This is WordPress's own behaviour and MUST be proven in a browser, not rebuilt.
 - **FR-027**: A pattern `corex/mobile-action-bar` MUST add a bar fixed to the foot of the screen below the
@@ -319,26 +357,33 @@ the editor like anything else.
 - **FR-030**: The source that ships MUST read WordPress alone and return the site's one language. No function of
   Polylang or WPML is called or looked for.
 - **FR-031**: A block `corex/language-switcher` MUST print nothing, not even its wrapper, when the source returns
-  fewer than two languages.
+  fewer than two languages. In the editor it then shows WordPress's placeholder with one sentence saying it
+  appears once the site has a second language.
 - **FR-032**: With two or more it MUST show them in one of two forms an editor chooses: a **menu** (a button that
   names the current language and opens a list of the others, the kit's Dropdown) or a **list** (every language as
   a link in a row, the current one marked and not a link). Each name is marked with its own `lang` and `dir`. The
   visible text is part of the accessible name. Without script the menu form is the list.
-- **FR-033**: The block MUST be accepted inside the Navigation block and anywhere else, and its script and style
-  MUST load only where it renders something.
+- **FR-033**: The block is placed beside a Navigation block, never inside one (an item of a menu's list must be a
+  list item, and the Navigation inserter of Muva and Perego does not change). Its script and style MUST load only
+  where it renders something.
 - **FR-034**: A test MUST prove no shipped pattern or part holds a language control that goes nowhere, and that a
   page in a right-to-left language carries `dir="rtl"` and draws its text in the Arabic font token. The slice
   reads `main` first: what already holds gets a test that keeps it, what does not is made to hold.
-- **FR-035**: `docs/internal/COREX-FRAMEWORK.md` and `docs/internal/COREX-EMAIL-ADDON.md` MUST stop describing an
-  `I18nHandler` as existing and describe the `LanguageSource` instead. The rest of G-045 stays with spec 152.
+- **FR-035**: `docs/internal/COREX-FRAMEWORK.md` MUST stop describing an `I18nHandler` as existing and describe the
+  `LanguageSource`. `docs/internal/COREX-EMAIL-ADDON.md` MUST say that an email template per language is not
+  built and belongs to spec 148 (G-042); the source does not pick a recipient's language. The rest of G-045 stays
+  with spec 152.
 
 **The utility menu, search and the patterns (User Stories 6 and 7). Slice 5.**
 
 - **FR-036**: The theme MUST ship a template part `utility-menu` that names a pattern holding a Navigation block
-  named "Utility". Until an owner edits the part, its links are the Brand settings' phone and email, read on each
-  request; with neither set the block is not printed.
+  named "Utility", with `overlayMenu` set to `never` (it never folds: on a phone it is inside the phone menu).
+  Until an owner edits the part, its links are the Brand settings' phone and email, read on each request; with
+  neither set the pattern prints nothing.
 - **FR-037**: `corex/header-corporate` MUST be rebuilt: a utility row holding the `utility-menu` part and the
-  language switcher, above the bar. The row is not printed when the part and the switcher both print nothing.
+  language switcher, above the bar. WordPress always prints a part's wrapper, so the row cannot be left out by
+  the server: a rule of the theme's navigation styles hides a utility row that holds no link and no button, and
+  a browser test proves it takes no space.
 - **FR-038**: Every header pattern with actions, and the default header part, MUST hold the language switcher in
   its actions, where the kit's SiteHeader draws it.
 - **FR-039**: `corex/header-saas` and `corex/header-sticky` MUST hold WordPress's Search block where they hold raw
@@ -354,8 +399,10 @@ the editor like anything else.
   added to the notes of the five stories, and a story for the utility menu raised through change control. No
   acceptance criterion is edited to make work pass.
 - **FR-042**: Every string a person reads MUST go through the translation functions with the plugin's or the
-  theme's text domain. No page, term or menu is found by its slug. A block, a setting or a part this spec adds is
-  written so a `wpml-config.xml` can name its strings (DECISIONS #657).
+  theme's text domain. Nothing this spec adds finds a page, a term or a menu by its slug, and no new helper takes
+  one. The helpers in `theme/inc/pattern-links.php` that do so today stay as they are in the patterns this spec
+  rebuilds: replacing them in every pattern at once is G-042's work (spec 148). A block, a setting or a part this
+  spec adds is written so a `wpml-config.xml` can name its strings (DECISIONS #657).
 - **FR-043**: Every style MUST read `theme.json` tokens and logical properties only. A token that `v0.48.1` does
   not have MUST be written with a fallback to one it has, because the slices are carried to a line cut at that
   tag (DECISIONS #651).
@@ -413,8 +460,10 @@ value); the renderers (missing panel, repeated panel, unique ids, one language);
   language toggle are untouched. No upgrade step.
 - **Mizzey**: not on this release line.
 - **A site on the CoreX theme**: its header folds at 782px instead of at 600px for the menu and 768px for the
-  panels. A header saved earlier is otherwise unchanged. Headers inserted after the update get the phone menu,
-  the language slot and the Search block.
+  panels. A header saved earlier is otherwise unchanged. **A site that never edited the default header part gets
+  the new part on update, without opting in**: the same bar, with the language slot (empty for one language) and
+  the phone menu in place of WordPress's default one. Headers inserted after the update get the phone menu, the
+  language slot and the Search block. No client runs the CoreX theme.
 
 ## Assumptions
 
@@ -424,7 +473,7 @@ value); the renderers (missing panel, repeated panel, unique ids, one language);
   `packages/cli/stubs/site/`.
 - Spec 136 owns the renderers and editor files that exist in `addons/corex-ui` today. This spec adds new files
   there and one registration line, and follows the base it lands.
-- The owner approves the drawings in small steps; slices 1 to 3 do not wait for them.
+- The owner approves the drawings in small steps; slices 1 and 3 do not wait for them.
 
 ## Slices
 
@@ -433,13 +482,14 @@ two-model review, CI green, merged into `main` by its session. A slice a person 
 approved design, then checked by `corex-ui-reviewer` against it, with the accessibility and copy reviews and one
 recorded round for the owner.
 
-| Slice | What | FRs | Stories | Waits on | Design |
-|---|---|---|---|---|---|
-| 1 | One width: the collapse stylesheet, the writer in `corex-core`, the child theme fixture, the four tests, the research note | FR-001 to FR-008 | US-NAV-11 | nothing | approved: the kit says the menu folds at 782px |
-| 2 | The language source and the language switcher block in its menu form; the two proofs; the framework document | FR-029 to FR-035 (the list form of FR-032 is slice 4's) | US-NAV-05 | nothing | approved: the kit's SiteHeader and Dropdown |
-| 3 | The mega menu item: the block, the area, the editor, the desktop panel and its behaviour; the four panel patterns | FR-009 to FR-021 | US-NAV-02 (all but its phone criterion), US-NAV-04 | 1 | approved: the kit's MegaMenu |
-| 4 | The phone menu: the three parts, the same-menu rule, groups that open one at a time, the bar's phone form, the language list, the action bar | FR-022 to FR-028, the list form of FR-032 | US-NAV-10, US-NAV-02's phone criterion | 1, 2, 3 and the approval | to draw and approve: `header-system.md` |
-| 5 | The utility menu, the corporate header, the language slot in every header, search as blocks, the docs and the gap row | FR-036 to FR-040 | Story 6, Story 7 | 4 and the approval | to draw and approve: `header-system.md` |
+| Slice | What | FRs | Stories | Principles | Waits on | Design |
+|---|---|---|---|---|---|---|
+| 1 | One width: the collapse stylesheet, the writer in `corex-core`, the child theme fixture, the four tests, the research note | FR-001 to FR-008 | US-NAV-11 | I, II, V, VI, VIII | nothing | approved: the kit says the menu folds at 782px |
+| 2 | The language source and the language switcher block in its menu form; the two proofs; the two documents | FR-029 to FR-035 (the list form of FR-032 is slice 4's), FR-021 | US-NAV-05 | IV, VI, VIII, IX | the approval of the language switch drawings (the kit's SiteHeader and Dropdown show a language button and a menu, but no drawing shows them together with their states) | to draw and approve: `header-system.md` |
+| 3 | The mega menu item: the block, the area, the editor controls, the desktop panel and its behaviour; the four panel patterns | FR-009 to FR-021 (the collapsing group of FR-018 is slice 4's) | US-NAV-02 (all but its phone criterion), US-NAV-04 | I, V, VI, VIII | 1; spec 136's renderer base if it is on `main` (FR-021) | approved for the panel and its trigger: the kit's MegaMenu. The editor controls are WordPress's own components |
+| 4 | The phone menu: the three parts, the `header-actions` part, the same-menu rule, groups that open one at a time, the bar's phone form, the language list, the action bar, the proof on WordPress 7.0 | FR-022 to FR-028, FR-025a, the list form of FR-032, the group of FR-018 | US-NAV-10, US-NAV-02's phone criterion | I, II, V, VI, VIII | 1, 2, 3 and the approval | to draw and approve: `header-system.md` |
+| 5 | The utility menu, the corporate header, the language slot in every header, search as blocks, the docs and the gap row | FR-036 to FR-040 | US-NAV-16 (Story 6), Story 7 | I, V, VI, VIII, IX | 4 and the approval | to draw and approve: `header-system.md` |
 
-FR-041 to FR-045 bind every slice. Each slice adds the terms it builds to `docs/_glossary.md`. Slices 1 and 2 share no file and may be built together. Each pull request says
+FR-041 to FR-045 bind every slice. Each slice adds the terms it builds to `docs/_glossary.md`. Principle X (the spec
+first) and the Guard Gate bind every slice too. Slice 1 waits for nothing and is built first. Each pull request says
 which criteria of its stories it closes.

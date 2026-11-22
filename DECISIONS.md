@@ -21818,6 +21818,10 @@ accept a Details block inside a Navigation block, so the panel was never in the 
 - A header saved earlier keeps its `details.corex-mega` panels: the script and styles that serve them stay.
 - The CoreX theme ships panels as patterns, not as part files: a part declared in an area that is not registered
   makes WordPress raise a notice on every request, and the area exists only with the add-on on.
+- US-NAV-02's fifth criterion said the mega patterns are "rebuilt on the new item" and that "Insert into a
+  header's navigation area" becomes true. A pattern cannot carry a template part, so the patterns are rebuilt
+  as panels and chosen on an item. The criterion was corrected in the planning workspace first (CR-049), then
+  copied into the spec. No shipped header has a mega item in place.
 
 *Not chosen.* Inner blocks in the item: a 1200px panel edited inside a 40px menu row. Keeping `<details>` and
 moving it by script into the menu: two lists remain. A new add-on for navigation: one more thing to turn on for
@@ -21834,7 +21838,8 @@ A media query cannot read a custom property, so "the token decides" needs the wi
   default 782px, so it is plain CSS that the linters read.
 - `Corex\Theme\NavigationServiceProvider` reads `settings.custom.nav.breakpoint` from the merged `theme.json` (a
   child's value wins). When it is the default, the file is served. When it differs, the same rules are printed
-  inline with the width replaced. Only a plain `px`, `em` or `rem` length is accepted.
+  inline with the width replaced. Only a number of `px` is accepted, and a value below 600px is read as
+  600px, WordPress's own width.
 - The override of WordPress's 600px rule is scoped to Navigation blocks inside `.corex-header`.
 - Conditions are written in range syntax (`width >= 782px`), so no value is one pixel off.
 
@@ -21849,10 +21854,17 @@ linters and the token inventory could not read it.
 - WordPress 7.0, the oldest version CoreX supports, has the `navigation-overlay` template part area and the block
   that closes it (`render_block_core_navigation_overlay_close`, `@since 7.0.0`, read in WordPress 7.1.3). So
   US-NAV-10's question is answered without raising the minimum version, and CoreX builds no focus trap of its own.
-- The theme ships phone menus as parts of that area, each one line naming a pattern, so their words are
-  translatable and Brand values are read on each request until an owner edits the part.
-- A Navigation block inside a phone menu that names no menu shows the menu of the header's Navigation block. Without
-  that, an owner who picks a menu for the header would have a different one on a phone.
+- The theme ships phone menus as parts of that area. Each part file holds its Navigation block directly, set
+  never to fold: WordPress switches off the menu button of a nested Navigation block only when the block is in
+  the part's own markup (`blocks/navigation.php`), not when it arrives through a pattern or a second part. A
+  part file holds no words; what has words or Brand values is a pattern the part names, read on each request
+  until an owner edits the part.
+- A phone menu's Navigation block that names no menu takes the menu of the header's Navigation block, by a
+  rule in `Corex\Theme\NavigationServiceProvider` that acts only on blocks carrying CoreX's two classes.
+  Without it, an owner who picks a menu for the header would have a different one on a phone.
+- The header's actions are one template part, `header-actions`, shown in the bar and in the phone menu, so
+  both hold the same call to action by construction. The SaaS header loses its "Sign in" button until
+  US-NAV-06 puts the account link in that part.
 - The utility menu is a template part with its own Navigation block. The row above the bar and the phone menu both
   show the part, so it is one list. It starts as the Brand phone and email, which also ends the frozen top bar.
 
