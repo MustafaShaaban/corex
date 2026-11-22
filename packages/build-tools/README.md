@@ -48,6 +48,40 @@ named `style.*` to `style-index.css` (the block's front-end + editor `style`) an
 also emits `style-index-rtl.css` automatically. The `block.json` `style` field
 therefore points at the **compiled** name, `file:./style-index.css`.
 
+## The root element and the wrapper attributes
+
+What an editor sets on a block (its HTML anchor, its alignment, its extra CSS class) and
+the class WordPress generates for it (`wp-block-corex-<name>`) reach the page without the
+renderer doing anything (spec 136, DECISIONS #670). The registrar passes the renderer's
+markup through one collaborator (`Corex\Blocks\BlockWrapper`), which merges what
+`get_block_wrapper_attributes()` returns into the markup's **root element**: each class is
+added, a style is appended to the root's style, and any other attribute (`id`, `aria-label`)
+is set only when the root does not already have it. Empty markup stays empty, and with
+nothing to merge the markup is returned byte for byte.
+
+So a renderer **prints exactly one root element**, and never calls
+`get_block_wrapper_attributes()` itself. The root is the first element of the markup. When
+something may come before it (the form's test-site notice), the block lists the classes
+its root can carry in `block.json` (`corex.root`), and the attributes go on the first
+element, in document order, that carries any of them. Whole class names match, so
+`corex-flow` does not match `corex-flow-notice`:
+
+```json
+"corex": { "renderer": "Corex\\Forms\\Block\\FormBlockRenderer", "root": [ "corex-flow", "corex-form" ] }
+```
+
+When no element carries one, the first element is the root. The first match wins even when
+it sits inside another element, so a form whose own markup wraps `<form class="corex-form">`
+in an element of its own gets the attributes on the form. An anchor and an alignment reach
+the page only where the block declares them in `supports` (`anchor`, `align`); the extra
+class and the generated class need no declaration. The six blocks of `corex-forms` declare
+`"className": false`, so they print no generated class.
+
+The editor's preview is the exception. A `<ServerSideRender>` preview asks WordPress's block
+renderer route (`/wp/v2/block-renderer/...`), and there the previewed block's markup comes
+back unmerged: the editor's own wrapper already carries the attributes. Nothing changes in a block's `index.js`
+for it.
+
 ## Commands
 
 From the repo root:
