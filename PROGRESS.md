@@ -85,7 +85,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 
 | Gap | Effect | What | Wave | Spec | Slice | PR | Tag | State |
 |---|---|---|---|---|---|---|---|---|
-| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | | | open: spec reviewed (#661) |
+| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | #495 | | built: pull request open. Rests on nothing `main` gained after v0.48.1 (#661) |
 | G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | | | open: spec reviewed. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
 | G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | spec written (DECISIONS #671, #673) |
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
