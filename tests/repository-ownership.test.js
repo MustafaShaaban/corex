@@ -8,6 +8,7 @@
  */
 const { execFileSync } = require( 'node:child_process' );
 const fs = require( 'node:fs' );
+const os = require( 'node:os' );
 const path = require( 'node:path' );
 
 const {
@@ -16,6 +17,7 @@ const {
 	matchesPattern,
 	isClientOwned,
 	mayBeRemovedByClient,
+	recordedBaselines,
 	repositoryFromRemoteUrl,
 	resolveRole,
 } = require( '../scripts/repository-ownership.mjs' );
@@ -165,6 +167,116 @@ describe( 'which repository this is', () => {
 		// The strict default: a repository that cannot say what it is gets the rule that
 		// forbids `sites/`, not the one that allows it.
 		expect( resolveRole( { ownership, env: {} } ) ).toBe( 'framework' );
+	} );
+
+	/**
+	 * Spec 135, FR-001. A client repository made from a release has no `origin` until someone adds
+	 * one, and until then it was taken for the framework and compared nothing (G-001). A repository
+	 * nothing names is decided by whether it records a baseline; a named one is decided by its name,
+	 * so committing a baseline into the framework's own repository does not make it a client.
+	 */
+	describe( 'when a baseline is recorded (FR-001)', () => {
+		it( 'is a client when nothing names the repository', () => {
+			expect(
+				resolveRole( { ownership, env: {}, baselineRecorded: true } )
+			).toBe( 'client' );
+		} );
+
+		it( 'is still the framework when CI names the framework', () => {
+			expect(
+				resolveRole( {
+					ownership,
+					env: { GITHUB_REPOSITORY: 'Acme/framework' },
+					baselineRecorded: true,
+				} )
+			).toBe( 'framework' );
+		} );
+
+		it( 'is still the framework when origin names the framework', () => {
+			expect(
+				resolveRole( {
+					ownership,
+					env: {},
+					originUrl: 'git@github.com:Acme/framework.git',
+					baselineRecorded: true,
+				} )
+			).toBe( 'framework' );
+		} );
+
+		it.each( [ true, false ] )(
+			'is a client when another repository is named (baseline recorded: %s)',
+			( baselineRecorded ) => {
+				expect(
+					resolveRole( {
+						ownership,
+						env: {},
+						originUrl: 'https://github.com/Client/website.git',
+						baselineRecorded,
+					} )
+				).toBe( 'client' );
+			}
+		);
+
+		it( 'gives way to an explicit role', () => {
+			expect(
+				resolveRole( {
+					ownership,
+					env: { COREX_REPOSITORY_ROLE: 'framework' },
+					baselineRecorded: true,
+				} )
+			).toBe( 'framework' );
+		} );
+	} );
+} );
+
+/**
+ * Spec 135, FR-002: one definition of "a baseline is recorded", read by `verify-framework.mjs` and
+ * by `tests/repo-hygiene.test.js` alike.
+ */
+describe( 'the recorded baselines (FR-002)', () => {
+	const scratch = [];
+	const scratchRoot = () => {
+		const root = fs.mkdtempSync(
+			path.join( os.tmpdir(), 'corex-baselines-' )
+		);
+		scratch.push( root );
+
+		return root;
+	};
+	const touch = ( root, file ) => {
+		const target = path.join( root, ...file.split( '/' ) );
+		fs.mkdirSync( path.dirname( target ), { recursive: true } );
+		fs.writeFileSync( target, '{}\n' );
+	};
+
+	afterAll( () => {
+		for ( const root of scratch ) {
+			fs.rmSync( root, { recursive: true, force: true } );
+		}
+	} );
+
+	it( 'is none where there is no sites/ folder', () => {
+		expect( recordedBaselines( scratchRoot() ) ).toEqual( [] );
+	} );
+
+	it( 'is every sites/<client>/corex-baseline.json, repository-relative', () => {
+		const root = scratchRoot();
+		touch( root, 'sites/beta/corex-baseline.json' );
+		touch( root, 'sites/acme/corex-baseline.json' );
+
+		expect( recordedBaselines( root ).sort() ).toEqual( [
+			'sites/acme/corex-baseline.json',
+			'sites/beta/corex-baseline.json',
+		] );
+	} );
+
+	it( 'ignores a site with no record, and a record anywhere else', () => {
+		const root = scratchRoot();
+		touch( root, 'sites/acme/acme-site/acme-site.php' );
+		touch( root, 'sites/corex-baseline.json' );
+		touch( root, 'sites/acme/nested/corex-baseline.json' );
+
+		expect( recordedBaselines( root ) ).toEqual( [] );
 	} );
 } );
 

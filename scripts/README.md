@@ -67,10 +67,20 @@ included. Uncommitted changes and untracked files count.
 | `STALE <path>` | An exception whose path no longer differs. Delete it from the record. | yes |
 | `REMOVED <path>` | A framework file this repository deleted, which `.github/repository-ownership.json` lists under `clientMayRemove`. Editing such a file is still `DRIFT`. | no |
 | `WARN <message>` | The recorded release tag exists and points at a different commit from the recorded one. | no |
-| `FAIL <message>` | No record, an invalid record, two records naming different commits, a commit that is not in this repository, or `--record` given no release or one that does not exist. | yes |
+| `FAIL <message>` | No record, an invalid record, two records naming different commits, a commit that is not in this repository, `--record` given no release or one that does not exist, or a checkout taken for the framework's own repository that holds a record (see below). | yes |
 
 Exit code `0` on a pass and `1` otherwise. In the framework's own repository there is no baseline
 to compare against, and it reports that and passes.
+
+Which repository this is, is decided in order: the variable `COREX_REPOSITORY_ROLE` (`framework` or
+`client`) when it is set; then the repository's name, from `GITHUB_REPOSITORY` in CI or the `origin`
+remote, which is the framework when it equals `frameworkRepository` in
+`.github/repository-ownership.json` and a client otherwise; then, for a repository nothing names,
+a client when a baseline is recorded and the framework when none is. So a client repository made
+from a release is compared before it has an `origin`. A checkout whose name is the framework's
+but which holds a baseline (a client clone whose `origin` still points at CoreX) fails, and says
+to set `COREX_REPOSITORY_ROLE=client` or re-point `origin`: passing would compare nothing. A role
+set in the variable is taken at its word.
 
 A baseline record:
 
