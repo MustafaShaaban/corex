@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Language switcher, two languages</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="canvas-base.css">
+<link rel="stylesheet" href="ds/corex/components/bundle.css">
+<link rel="stylesheet" href="header-system.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ds-visitor ds-board ds-light" style="width: 1280px; min-height: 320px">
+<div class="ds-specimens">
+<div class="ds-specimen"><p class="ds-caption">Menu form, closed</p>
+<div class="corex-dropdown corex-language-switcher corex-language-switcher--menu"><button type="button" class="wp-element-button is-style-corex-ghost is-size-sm" aria-expanded="false"><span class="corex-sr-only">Language: </span><span lang="en" dir="ltr">English</span> <span class="corex-icon corex-icon--sm corex-icon--chevron-down" aria-hidden="true"></span></button></div></div>
+<div class="ds-specimen ds-specimen--open" style="min-inline-size: 14rem; justify-items: end"><p class="ds-caption">Menu form, open</p>
+<div class="corex-dropdown corex-language-switcher corex-language-switcher--menu"><button type="button" class="wp-element-button is-style-corex-ghost is-size-sm" aria-expanded="true" aria-controls="language-menu"><span class="corex-sr-only">Language: </span><span lang="en" dir="ltr">English</span> <span class="corex-icon corex-icon--sm corex-icon--chevron-down" aria-hidden="true"></span></button>
+<ul class="corex-dropdown__menu" id="language-menu"><li><span class="corex-dropdown__item" aria-current="true"><span lang="en" dir="ltr">English</span> <span class="corex-icon corex-icon--sm corex-icon--check" aria-hidden="true"></span></span></li><li><a class="corex-dropdown__item" href="#" hreflang="ar"><span lang="ar" dir="rtl">العربية</span></a></li></ul></div></div>
+<div class="ds-specimen"><p class="ds-caption">List form</p>
+<div class="corex-language-switcher corex-language-switcher--list" role="group" aria-label="Language"><ul class="corex-language-switcher__list"><li><span class="corex-language-switcher__item" aria-current="true"><span class="corex-icon corex-icon--sm corex-icon--check" aria-hidden="true"></span><span lang="en" dir="ltr">English</span></span></li><li><a class="corex-language-switcher__item" href="#" hreflang="ar"><span lang="ar" dir="rtl">العربية</span></a></li></ul></div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":320}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

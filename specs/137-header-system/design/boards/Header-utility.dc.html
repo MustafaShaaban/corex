@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Corporate header with a utility row</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="canvas-base.css">
+<link rel="stylesheet" href="ds/corex/components/bundle.css">
+<link rel="stylesheet" href="header-system.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ds-visitor ds-board ds-light" style="width: 1280px; min-height: 600px">
+<header class="corex-site-header corex-header--menu-holds-actions">
+<div class="corex-header__utility"><nav aria-label="Utility"><ul class="corex-header__utility-list"><li><a class="corex-header__utility-link" href="#">Careers</a></li><li><a class="corex-header__utility-link" href="#">Events</a></li><li><a class="corex-header__utility-link" href="#">Support</a></li></ul></nav><div class="corex-dropdown corex-language-switcher corex-language-switcher--menu"><button type="button" class="wp-element-button is-style-corex-ghost is-size-sm" aria-expanded="false"><span class="corex-sr-only">Language: </span><span lang="en" dir="ltr">English</span> <span class="corex-icon corex-icon--sm corex-icon--chevron-down" aria-hidden="true"></span></button></div></div>
+<nav class="corex-nav" aria-label="Main"><a class="corex-nav__brand" href="#"><span class="corex-nav__mark" aria-hidden="true"></span>Your Company</a><ul class="corex-nav__list"><li><button type="button" class="corex-nav__link corex-nav__trigger" aria-expanded="false">Services <span class="corex-icon corex-icon--sm corex-icon--chevron-down" aria-hidden="true"></span></button></li><li><button type="button" class="corex-nav__link corex-nav__trigger" aria-expanded="false">Products <span class="corex-icon corex-icon--sm corex-icon--chevron-down" aria-hidden="true"></span></button></li><li><button type="button" class="corex-nav__link corex-nav__trigger" aria-expanded="false">Resources <span class="corex-icon corex-icon--sm corex-icon--chevron-down" aria-hidden="true"></span></button></li><li><a class="corex-nav__link" href="#" aria-current="page">Work</a></li><li><button type="button" class="corex-nav__link corex-nav__trigger" aria-expanded="false">About <span class="corex-icon corex-icon--sm corex-icon--chevron-down" aria-hidden="true"></span></button></li><li><a class="corex-nav__link" href="#">Blog</a></li></ul><div class="corex-nav__actions"><a class="wp-element-button is-style-corex-strong is-size-sm" href="#">Contact us</a></div></nav>
+</header>
+<section class="corex-section"><div class="corex-container"><div class="corex-hero"><p class="corex-eyebrow">Web studio</p><h1 class="corex-h1">Websites that bring clients to you</h1><p class="corex-lead">A clear, confident sentence about what your company does and who it helps.</p></div></div></section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":600}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
