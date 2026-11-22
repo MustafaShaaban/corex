@@ -20,6 +20,11 @@ use Throwable;
  * `corex.renderer`, the render callback resolves that BlockRenderer from the
  * container and stays non-fatal: a throwable yields empty output + a logged
  * warning (spec FR-005, FR-008, FR-010).
+ *
+ * The renderer's markup then passes through the BlockWrapper, which puts what the
+ * editor set on the block (anchor, alignment, extra classes) on its root element
+ * (spec 136, FR-001 to FR-003). A block names its root in block.json
+ * (`corex.root`, a list of classes) when its markup does not always start with it.
  */
 final class DynamicBlockRegistrar
 {
@@ -28,6 +33,7 @@ final class DynamicBlockRegistrar
         private readonly BootLogger $logger,
         private readonly PluginMountMap $mountMap,
         private readonly BlockPathResolver $resolver,
+        private readonly BlockWrapper $wrapper,
     ) {
     }
 
@@ -47,7 +53,7 @@ final class DynamicBlockRegistrar
         $renderer = $block['metadata']['corex']['renderer'] ?? null;
 
         if (is_string($renderer)) {
-            $args['render_callback'] = $this->renderCallback($renderer);
+            $args['render_callback'] = $this->renderCallback($renderer, $this->rootClasses($block['metadata']));
         }
 
         // Normalize the block dir back under WP_PLUGIN_DIR so plugins_url() derives a correct asset URL on any
@@ -57,6 +63,22 @@ final class DynamicBlockRegistrar
         $type = register_block_type($dir, $args);
 
         $this->registerScriptTranslations($type);
+    }
+
+    /**
+     * The classes that mark the block's root element (`corex.root` in block.json, a list).
+     *
+     * @param array<string, mixed> $metadata
+     * @return list<string>
+     */
+    private function rootClasses(array $metadata): array
+    {
+        $root = $metadata['corex']['root'] ?? [];
+
+        return array_values(array_filter(
+            is_array($root) ? $root : [],
+            static fn (mixed $class): bool => is_string($class) && $class !== '',
+        ));
     }
 
     /**
@@ -89,12 +111,16 @@ final class DynamicBlockRegistrar
      * The container-resolved render callback (exposed for headless testing).
      *
      * @param class-string<BlockRenderer> $rendererClass
+     * @param list<string>                $rootClasses The block's `corex.root`; empty when its root is its first element.
      */
-    public function renderCallback(string $rendererClass): callable
+    public function renderCallback(string $rendererClass, array $rootClasses = []): callable
     {
-        return function (array $attributes, string $content, object $block) use ($rendererClass): string {
+        return function (array $attributes, string $content, object $block) use ($rendererClass, $rootClasses): string {
             try {
-                return $this->container->make($rendererClass)->render($attributes, $content, $block);
+                $markup = $this->container->make($rendererClass)->render($attributes, $content, $block);
+
+                // A block that prints nothing stays absent from the page (spec 136, US1 scenario 5).
+                return $markup === '' ? '' : $this->wrapper->apply($markup, $rootClasses);
             } catch (Throwable $e) {
                 // Non-fatal: a broken block render never takes the page down (FR-010).
                 $this->logger->warning(sprintf('Block render failed (%s): %s', $rendererClass, $e->getMessage()));

@@ -2923,7 +2923,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 41: border-radius: var(--wp--custom--radius--md);",
+      "selector_or_context": "lines 47: border-radius: var(--wp--custom--radius--md);",
       "property": "--wp--custom--radius--md",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2933,7 +2933,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 10, 40: background-color: var(--wp--preset--color--primary); | color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 10, 46: background-color: var(--wp--preset--color--primary); | color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2943,7 +2943,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 25, 31, 39: color: var(--wp--preset--color--surface); | background-color: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 31, 37, 45: color: var(--wp--preset--color--surface); | background-color: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2953,7 +2953,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 24: font-size: var(--wp--preset--font-size--2-xl);",
+      "selector_or_context": "lines 30: font-size: var(--wp--preset--font-size--2-xl);",
       "property": "--wp--preset--font-size--2-xl",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2963,7 +2963,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 30: font-size: var(--wp--preset--font-size--lg);",
+      "selector_or_context": "lines 36: font-size: var(--wp--preset--font-size--lg);",
       "property": "--wp--preset--font-size--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2983,7 +2983,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 43: box-shadow: var(--wp--preset--shadow--sm);",
+      "selector_or_context": "lines 49: box-shadow: var(--wp--preset--shadow--sm);",
       "property": "--wp--preset--shadow--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2993,7 +2993,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 36: margin-block-start: var(--wp--preset--spacing--20);",
+      "selector_or_context": "lines 42: margin-block-start: var(--wp--preset--spacing--20);",
       "property": "--wp--preset--spacing--20",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3003,7 +3003,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 18, 37: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 24, 43: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3023,7 +3023,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 38: padding-inline: var(--wp--preset--spacing--60);",
+      "selector_or_context": "lines 44: padding-inline: var(--wp--preset--spacing--60);",
       "property": "--wp--preset--spacing--60",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3223,7 +3223,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 67: border-radius: var(--wp--custom--radius--md);",
+      "selector_or_context": "lines 73: border-radius: var(--wp--custom--radius--md);",
       "property": "--wp--custom--radius--md",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3233,7 +3233,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 51: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 57: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3243,7 +3243,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 57: color: var(--wp--preset--color--ink-soft);",
+      "selector_or_context": "lines 63: color: var(--wp--preset--color--ink-soft);",
       "property": "--wp--preset--color--ink-soft",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3253,7 +3253,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 44, 65: color: var(--wp--preset--color--primary); | background-color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 50, 71: color: var(--wp--preset--color--primary); | background-color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3263,7 +3263,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 66: color: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 72: color: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3283,7 +3283,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 49: font-size: var(--wp--preset--font-size--hero);",
+      "selector_or_context": "lines 55: font-size: var(--wp--preset--font-size--hero);",
       "property": "--wp--preset--font-size--hero",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3293,7 +3293,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 56: font-size: var(--wp--preset--font-size--lg);",
+      "selector_or_context": "lines 62: font-size: var(--wp--preset--font-size--lg);",
       "property": "--wp--preset--font-size--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3303,7 +3303,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 42: font-size: var(--wp--preset--font-size--sm);",
+      "selector_or_context": "lines 48: font-size: var(--wp--preset--font-size--sm);",
       "property": "--wp--preset--font-size--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3313,7 +3313,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 69: box-shadow: var(--wp--preset--shadow--sm);",
+      "selector_or_context": "lines 75: box-shadow: var(--wp--preset--shadow--sm);",
       "property": "--wp--preset--shadow--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3323,7 +3323,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 62: margin-block-start: var(--wp--preset--spacing--20);",
+      "selector_or_context": "lines 68: margin-block-start: var(--wp--preset--spacing--20);",
       "property": "--wp--preset--spacing--20",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3333,7 +3333,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 34, 63: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 40, 69: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3343,7 +3343,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 9, 64: padding-inline: var(--wp--preset--spacing--50);",
+      "selector_or_context": "lines 9, 70: padding-inline: var(--wp--preset--spacing--50);",
       "property": "--wp--preset--spacing--50",
       "owner": "ui-addon",
       "surface": "front-end",

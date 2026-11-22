@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Corex\Tests\Fixtures\Blocks;
 
 use Corex\Blocks\BlockRenderer;
+use Corex\Blocks\BlockWrapper;
 use Corex\Blocks\Connectors\RepositoryConnector;
 use Corex\Database\QueryBuilder;
 use Corex\Models\Model;
@@ -84,5 +85,36 @@ final class ThrowingRenderer implements BlockRenderer
     public function render(array $attributes, string $content, object $block): string
     {
         throw new RuntimeException('render boom');
+    }
+}
+
+final class EmptyRenderer implements BlockRenderer
+{
+    public function render(array $attributes, string $content, object $block): string
+    {
+        return '';
+    }
+}
+
+/** Hands the markup back unchanged: the registrar's tests that are not about the wrapper. */
+final class PassThroughWrapper implements BlockWrapper
+{
+    public function apply(string $markup, array $rootClasses = []): string
+    {
+        return $markup;
+    }
+}
+
+/** Records what it was asked and marks the markup, so a test sees the registrar used it. */
+final class RecordingWrapper implements BlockWrapper
+{
+    /** @var list<array{markup: string, root: list<string>}> */
+    public array $calls = [];
+
+    public function apply(string $markup, array $rootClasses = []): string
+    {
+        $this->calls[] = ['markup' => $markup, 'root' => $rootClasses];
+
+        return '[wrapped]' . $markup;
     }
 }

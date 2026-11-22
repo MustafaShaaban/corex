@@ -15,7 +15,7 @@
 		"submitLabel": { "type": "string", "default": "" }
 	},
 	"usesContext": [ "postId" ],
-	"supports": { "html": false },
+	"supports": { "html": false, "className": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"viewScript": "file:./view.js",

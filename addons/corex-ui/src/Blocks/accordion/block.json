@@ -10,7 +10,7 @@
 	"attributes": {
 		"items": { "type": "array", "default": [], "items": { "type": "object" } }
 	},
-	"supports": { "html": false },
+	"supports": { "html": false, "anchor": true, "align": ["wide", "full"] },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\AccordionRenderer" }

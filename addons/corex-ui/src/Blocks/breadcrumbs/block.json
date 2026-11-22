@@ -7,7 +7,7 @@
 	"icon": "arrow-right-alt2",
 	"description": "Accessible breadcrumb trail from the site home to the current page (dynamic).",
 	"textdomain": "corex",
-	"supports": { "html": false },
+	"supports": { "html": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\BreadcrumbsRenderer" }
