@@ -360,7 +360,8 @@ the editor like anything else.
   fewer than two languages. In the editor it then shows WordPress's placeholder with one sentence saying it
   appears once the site has a second language.
 - **FR-032**: With two or more it MUST show them in one of two forms an editor chooses: a **menu** (a button that
-  names the current language and opens a list of the others, the kit's Dropdown) or a **list** (every language as
+  names the current language and opens a list of every language, the current one ticked and not a link, the
+  kit's Dropdown) or a **list** (every language as
   a link in a row, the current one marked and not a link). Each name is marked with its own `lang` and `dir`. The
   visible text is part of the accessible name. Without script the menu form is the list.
 - **FR-033**: The block is placed beside a Navigation block, never inside one (an item of a menu's list must be a

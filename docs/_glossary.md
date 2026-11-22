@@ -34,3 +34,7 @@ future translation phase (spec 028, phase 2). Code identifiers are **never** tra
 | **Section style** | A named look of the WordPress Group block that a section takes: quiet band, dark band or brass band. | _TODO_ |
 | **Dark band** | A section that is dark in both the light and the dark theme. It hands its own colours to everything inside it, so a component needs no second set of rules. | _TODO_ |
 | **Brass band** | A section with the brass accent behind it, graphite text and a graphite button. One on a page at most. | _TODO_ |
+| **Editor parity** | A static block is drawn in the editor with the same elements as on the page and its text is typed where it stands (DECISIONS #656, #671). | _TODO_ |
+| **Block kind** | How a CoreX block is edited, declared in its `block.json` as `corex.editor`: `in-place` (drawn by the editor, typed on the canvas), `records` (shows records it does not hold, so it keeps a server render), `none`, or `pending` (its turn has not come). | _TODO_ |
+| **Parity fixture** | The `parity.json` beside an in-place block's `block.json`: the class prefix, attributes with every field filled, inner blocks where it holds blocks, and the tree of elements both the editor and the renderer must draw. | _TODO_ |
+| **Child block** | A block that exists only inside its parent and holds any blocks: `corex/tab`, `corex/accordion-item`, `corex/slide`. | _TODO_ |
