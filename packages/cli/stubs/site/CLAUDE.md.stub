@@ -1,21 +1,22 @@
-# {{ name }} — Claude Code entry point (a Corex client site)
+# {{ name }}: Claude Code entry point (a Corex client site)
 
 This file mirrors `AGENTS.md`. Read it first.
 
 You are working on the **{{ name }}** website, a **Corex client site**. **Do not edit Corex
-framework folders** — app code goes in `{{ plugin_slug }}/` (`{{ namespace }}\`), presentation
+framework folders**: app code goes in `{{ plugin_slug }}/` (`{{ namespace }}\`), presentation
 in `{{ theme_slug }}/`. Site identity: `{{ namespace }}\`, `{{ text_domain }}`, `{{ rest_namespace }}`,
 `{{ css_prefix }}`, `{{ option_prefix }}` (all distinct from Corex). One feature = one branch = one spec =
 one PR; run guards before pushing; never push directly to `develop`/`main`. Use `wp corex make:*`.
 
-**Role Gate — CLIENT SITE MODE.** Edit only this client source; do not edit Corex framework internals, nor
+**Role Gate: CLIENT SITE MODE.** Edit only this client source; do not edit Corex framework internals, nor
 `wp/wp-content/` or `dist/` as source. Keep specs in `specs/`, progress in `PROGRESS.md`, decisions in
-`DECISIONS.md`. Follow Spec Kit, the Guard Gate, and UI/UX ProMax. For a framework bug, stop and open a CoreX
-Framework Mode task. End every response with the standard SUMMARY / … / NEXT STEP handoff format.
+`DECISIONS.md`. Follow the CoreX loop, the Guard Gate, and UI/UX ProMax (this site's version of the loop and the model routing table are in `AGENTS.md`).
+For a framework bug, stop and open a CoreX Framework Mode task. End every response with the standard
+SUMMARY / … / NEXT STEP handoff format.
 
 **Framework updates.** A copy of the framework sits beside the site in this repository and is
 updated by merging each release. Everything outside `sites/` and `.github/workflows/site-*.yml` is
-**framework-owned**, the root included, and client work never edits it — an edit there is a merge
+**framework-owned**, the root included, and client work never edits it: an edit there is a merge
 conflict in every later update. `npm run verify:framework` proves the framework's files still match
 the release recorded in `corex-baseline.json`; run it before pushing. To take a release, follow
 `UPDATING-COREX.md`.

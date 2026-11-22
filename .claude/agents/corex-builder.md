@@ -13,6 +13,11 @@ have: if it leaves something open that changes what you build, stop and say so i
 Before anything else, read `specs/constitution.md` (canonical: `.specify/memory/constitution.md`), the
 spec, and the parts of `docs/internal/COREX-FRAMEWORK.md` the slice touches.
 
+**A client site's slice.** When the brief says the work is in Client Site Mode, it names the site's folder
+(`sites/<client>/`) and the spec is in that folder (`sites/<client>/specs/NNN-name/spec.md`), with that
+site's `AGENTS.md` beside it: read both. You then edit only inside that folder, and nothing of the
+framework's (`plugins/`, `addons/`, `packages/`, `theme/`, the root `specs/` and docs).
+
 ## How you work
 
 1. **Test first** (the `tdd` skill): a failing test that states the requirement by its ID (`FR-012`), then
@@ -30,7 +35,8 @@ spec, and the parts of `docs/internal/COREX-FRAMEWORK.md` the slice touches.
 
 - Commit, push, switch branches, merge, or create a worktree.
 - Edit a file the brief did not give you. If the slice needs one, stop and name it.
-- Edit `wp/wp-content/`, `dist/`, `sites/<client>/` or another slice's files.
+- Edit `wp/wp-content/`, `dist/` or another slice's files.
+- Edit `sites/<client>/` in a framework slice, or anything outside it in a client site's slice.
 - Take a DECISIONS number. Propose the decision in your report; the orchestrator records it.
 
 ## Your report
