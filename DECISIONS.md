@@ -21814,7 +21814,16 @@ merge by position, so a child list of one entry overwrites the parent's first.
 *Not chosen.* A child `theme.json` that lists nothing: the client could not change one colour without first
 copying the list by hand, and would meet the trap alone. A static stub of the lists: a second copy to drift, and
 wrong on `release/gap-line`, whose theme has other tokens. A generated `styles/dark.json`: a copied file for a
-variation most client designs do not have; the docs say how a client replaces it.
+variation most client designs do not have; the docs say how a client replaces it. Completing a partial list at runtime, as `ThemeServiceProvider` does for a `brand.json`: it would hide the
+mistake on the site and leave the file wrong for every tool that reads it.
+
+**Added on review, 2026-11-22.** A child that lists the font families with the parent's `file:./` sources still
+gets the fonts from the parent's folder, on the page and in the editor's canvas (measured), so the families are
+listed too; the check also fails a font source that exists in neither theme. The generator writes no
+`templates/front-page.html` either: the reason that removes the index and the two parts removes it. `--force`
+keeps an existing theme's `style.css` and `theme.json`, so it can neither wipe a client's tokens nor turn a
+standalone theme into a child. The re-check ran on `main`; the coordinating session repeats the probe on
+`release/gap-line`, whose parent theme has other tokens and no `functions.php`.
 
 ## #661 -- Which repository this is: a named framework stays the framework, an unnamed one with a baseline is a client
 
@@ -21828,9 +21837,10 @@ folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
 - `resolveRole()` keeps an explicit `COREX_REPOSITORY_ROLE` first and a repository named by CI or `origin` second
   (CoreX's own is `framework`, any other is `client`). Only a repository nothing names is decided by the baseline:
   `client` when one is recorded, `framework` when none is. That is the Blackstone case.
-- A checkout that resolves to `framework` and holds a baseline no longer passes `verify:framework` with "nothing
-  to compare". It fails and says to set `COREX_REPOSITORY_ROLE=client`. That closes the same false pass for a
-  client clone whose `origin` still points at CoreX.
+- A checkout that resolves to `framework` from its name and holds a baseline no longer passes
+  `verify:framework` with "nothing to compare". It fails and says to set `COREX_REPOSITORY_ROLE=client`. That
+  closes the same false pass for a client clone whose `origin` still points at CoreX. A role stated in
+  `COREX_REPOSITORY_ROLE` is taken at its word: only a role worked out from the repository's name is doubted.
 
 ## #662 -- A site plugin boots through `Corex::onReady`, its blocks through `corex-blocks`, its build from its own folder
 
@@ -21847,7 +21857,9 @@ folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
   block moves to the same route.
 - **Text domain.** The registrar bound every block script's translations to `corex`. It now binds the block's
   own `textdomain` from `block.json` and falls back to `corex`. All 30 CoreX blocks name `corex`, so none changes;
-  a site block's strings are found in the site's domain.
+  a site block's script is bound to the site's domain (WordPress then looks for the JSON file where it looks
+  for any plugin's). Muva and Perego register their blocks with `register_block_type` themselves, so neither is
+  touched (read in both repositories, 2026-11-22).
 - **Build.** `packages/build-tools` is a convention (`src/Blocks` to `build/blocks` with `wp-scripts`), not an
   installable package. The site plugin's `package.json` follows it and declares its own `@wordpress/scripts` at
   the framework's range, because a client package must build from a clean install of its own folder: the
@@ -21856,3 +21868,9 @@ folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
 
 *Not chosen.* A `file:` dependency on `packages/build-tools`: it would need a binary and dependencies of its own,
 and installs differently across npm versions, for no gain over one pinned range.
+
+**Added on review, 2026-11-22.** The site provider does not extend `Corex\Foundation\ServiceProvider`: only
+CoreX's own lifecycle reads that class's `subscribers()` and `controllerPaths()`, and a site provider that had
+them would be silently ignored. "When `corex-blocks` is not active" cannot happen as a plugin state (its provider
+is one of core's and its classes load from the root autoloader), so the generated provider asks the container
+whether it offers the service. `verify:dist` fails a client plugin that ships block sources and no `build/blocks`.

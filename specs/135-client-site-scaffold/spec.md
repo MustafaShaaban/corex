@@ -4,7 +4,8 @@
 
 **Created**: 2026-11-21
 
-**Status**: Draft
+**Status**: Reviewed on 2026-11-22 (`corex-reviewer`, against the constitution, `main` and the tag `v0.48.1`);
+what it found is answered in the text below
 
 **Input**: The Blackstone gap programme, wave 1 (DECISIONS #651, #652, #655). Four gaps the Blackstone eIT site found
 in what `wp corex make:site` generates on v0.48.1: G-006 (the client theme), G-007 (the site plugin), G-002 (the
@@ -32,15 +33,21 @@ plugin and add-on active and a hand-made child theme (`Template: corex`) switche
 running site (`wp_get_global_settings()`, `get_block_templates()`, the pattern registry, the page over HTTP),
 except multisite, which was read in WordPress's source.
 
+It was run on `main` only. Every row but one is WordPress's own inheritance and holds whatever the parent
+contains. The one that leans on CoreX's code, the header system, was also read at the tag `v0.48.1`, where
+`NavigationServiceProvider` finds its files with the same `get_theme_file_path`. The parent on
+`release/gap-line` has other tokens, a second style variation and no `functions.php`, so the coordinating
+session runs the same probe on the line before the tag (the probe is in the session's notes folder).
+
 | Asked | Found | Verdict |
 |---|---|---|
 | `theme.json` inheritance | `settings.custom` merges key by key: the child changed `custom.color.accentHover` and `custom.nav.breakpoint` and kept the other 16 colour keys and every scale. Font sizes, spacing sizes, shadows and font families a child does not declare are the parent's. `styles` merges: the child changed the button radius and kept the button colour. **A preset list the child declares replaces the parent's whole list**: a child palette of two colours left the site with two, and `--wp--preset--color--surface` was gone. `customTemplates` merges by position: a child list of one entry overwrote the parent's first and "Landing page" lost its title | Holds, with one rule: a list the child declares must name every entry of the parent's. FR-011 and FR-014 |
 | Templates | All 15 of the parent's templates resolve for the child. A file of the same name in the child wins (`front-page.html` did). A child needs no `index.html` | Holds |
 | Parts | `header` and `footer` resolve from the parent; a child `parts/header.html` wins | Holds |
-| Patterns | All 36 `corex/*` patterns register under the child, beside the child's own `patterns/` | Holds |
-| Style variations | The parent's `styles/dark.json` is offered under the child. A child file of the same name replaces it | Holds; the docs say the dark variation keeps CoreX's colours until the child ships its own |
+| Patterns | All 26 patterns of the theme register under the child, beside the child's own `patterns/` (36 `corex/*` in all with those `corex-ui` registers under any theme) | Holds |
+| Style variations | The parent's `styles/dark.json` is offered under the child. A child file of the same name replaces it | Holds; the docs say a variation the parent ships keeps CoreX's colours until the child ships a file of the same name |
 | The header system | `corex-navigation.css` and `corex-navigation.js` are found and served from the parent (`get_theme_file_path` falls back to it), and a child header that uses `corex/header-corporate` renders with both. `--wp--custom--nav--breakpoint` printed the child's value | Holds |
-| Fonts | The parent's four families are served from the parent's folder; the heading preload follows them | Holds |
+| Fonts | The parent's four families are served from the parent's folder, on the page and in the editor's canvas, whether the child leaves them out or lists them with the parent's `file:./` sources (a source the child does not hold falls back to the parent's folder). The heading preload follows them | Holds |
 | The parent's directory name | `corex` everywhere it is installed: `scripts/setup-wordpress.ps1`, the `dist` builder, the Dockerfile, CI's provisioning. `Template: corex` is therefore right on every route | Holds |
 | The coming-soon template | The child's `templates/coming-soon.html` replaces the default `corex-config` registers, as a standalone theme's does today | Holds |
 | The `dist` layout | The builder already copies `theme/` to `wp-content/themes/corex` on every build and the client theme beside it. Nothing checks that a child's parent is in the artifact | Holds; FR-017 adds the check |
@@ -97,7 +104,7 @@ WordPress whether the block is registered and what it renders.
 1. **Given** a generated site plugin and `corex-core` active, **When** WordPress loads, **Then** the site's service
    provider has registered and booted once, whichever of the two plugins WordPress loaded first.
 2. **Given** `corex-core` is not active, **When** WordPress loads with the site plugin active, **Then** nothing
-   boots and no error or notice is raised.
+   boots and no PHP error is raised (WordPress's own notice about the unmet plugin requirement aside).
 3. **Given** a block generated by `make:block` and built, **When** WordPress loads, **Then** the block is
    registered from `build/blocks`, its renderer is the generated class, and its script's translations are bound to
    the site's text domain.
@@ -124,8 +131,9 @@ framework file is reported as drift.
    is resolved, **Then** it is `client`.
 2. **Given** CoreX's own repository (named by CI or by `origin`), **When** someone commits a `sites/` folder with
    a baseline, **Then** the role is still `framework` and the repository's own rule against `sites/` fails.
-3. **Given** a checkout that resolves to `framework` and holds a baseline, **When** `verify:framework` runs,
-   **Then** it fails and says how to state the role, instead of passing with nothing compared.
+3. **Given** a checkout that resolves to `framework` from its name and holds a baseline, **When**
+   `verify:framework` runs, **Then** it fails and says how to state the role, instead of passing with nothing
+   compared. With `COREX_REPOSITORY_ROLE=framework` stated, it passes as before.
 
 ### User Story 4 - An agent in a new client site follows the CoreX loop (Priority: P3)
 
@@ -148,11 +156,17 @@ there, and no retired name is.
 - **The CoreX theme cannot be found at generation.** `make:site` stops before writing a file and names the path it
   looked in. A child with no token list would be the gap again.
 - **`--plugin-only`** needs no parent theme and must not fail for the lack of one.
-- **A standalone client theme** (Muva, Perego, any site generated before this spec): `verify:client-theme` says it
-  is standalone and checks nothing in it; the `dist` builder ships it as before; nothing rewrites it.
-- **`--force` on an existing site** rewrites the files `make:site` generates, as it does today. It does not
-  delete `templates/index.html`, `parts/header.html` or `parts/footer.html` left by an older generation; while
-  they exist they still win over the parent's. The docs say so.
+- **A standalone client theme** (Muva, Perego, any site generated before this spec; Mizzey has no client theme
+  in a `sites/` folder): `verify:client-theme` says it is standalone and checks nothing in it; the `dist` builder
+  ships it as before; nothing rewrites it.
+- **`--force` on an existing site** rewrites what `make:site` generates, as today, with one exception: a theme
+  that already has a `style.css` keeps its `style.css` and its `theme.json`, and the command says it kept them
+  (FR-019). Before this spec `--force` replaced a client's tokens with the empty stub; after it, it would have
+  turned a standalone theme into a child. It deletes nothing: a `templates/index.html`, `templates/front-page.html`,
+  `parts/header.html` or `parts/footer.html` left by an older generation still wins over the parent's.
+- **A release changes a token's value in the CoreX theme.** A child keeps the value it lists: that is the model.
+  Only a new entry, or a font file that moved, needs a step, and `verify:client-theme` names both.
+- **`brand.json`** in a client theme works as before (FR-020).
 - **A child that declares `customTemplates` or `templateParts`** must repeat the parent's entries
   (`verify:client-theme` checks it); the generated `theme.json` declares neither.
 - **A later CoreX release adds a palette slug.** The client's list no longer names every parent slug:
@@ -177,9 +191,11 @@ there, and no retired name is.
   named by CI or by `origin`, which is `framework` when it is CoreX's own and `client` otherwise; then, for a
   repository nothing names, `client` when a baseline is recorded and `framework` when none is.
 - **FR-002**: "A baseline is recorded" MUST have one definition, a `sites/<client>/corex-baseline.json` on disk,
-  used by `scripts/verify-framework.mjs` and `tests/repo-hygiene.test.js` alike.
-- **FR-003**: `verify:framework` MUST fail, not pass, when the role resolves to `framework` and a baseline is
-  recorded, with a message that names the baseline file and `COREX_REPOSITORY_ROLE=client`.
+  exported from `scripts/repository-ownership.mjs` and used by `scripts/verify-framework.mjs`,
+  `scripts/client-merge-check.mjs` and `tests/repo-hygiene.test.js` alike.
+- **FR-003**: `verify:framework` MUST fail, not pass, when the role resolves to `framework` from the repository's
+  name and a baseline is recorded, with a message that names the baseline file and
+  `COREX_REPOSITORY_ROLE=client`. A role stated in `COREX_REPOSITORY_ROLE` is taken at its word.
 
 **The agent files (G-002)**
 
@@ -187,9 +203,14 @@ there, and no retired name is.
   when the spec depends on outside facts, a spec with requirement ids and slices in the site's own
   `specs/NNN-name/spec.md`, owner-only steps as a checked script, one slice at a time test first, the Guard Gate,
   the measured UI review, the two-model review, the pull request, a retro after a release) and point at the root
-  `AGENTS.md` for each step in full.
+  `AGENTS.md` for each step in full. For every file the root loop writes at the repository root (`specs/`,
+  `DECISIONS.md`, `PROGRESS.md`, `docs/_glossary.md`, `design/handoffs/`) it MUST name the client's own path
+  under `sites/<client>/` and say a file written at the root is drift.
 - **FR-005**: It MUST carry the model routing table (who does what, on which model, at which effort, with the five
-  agents in `.claude/agents/`), that agents never commit, and that max effort is the owner's call.
+  agents in `.claude/agents/`), that agents never commit, and that max effort is the owner's call. It MUST say a
+  brief to an agent names Client Site Mode, the site's folder and the site's spec. `.claude/agents/corex-builder.md`
+  refuses `sites/<client>/` today; it MUST allow it when the brief says the work is a client site's, and then
+  edit nothing outside that folder.
 - **FR-006**: It MUST carry the UI steps: the client's approved design is the contract; what that design does not
   draw is designed first and approved before it is built; tokens from `theme.json`, logical properties; the
   rendered page is measured, then reviewed against the design; accessibility and copy are reviewed.
@@ -205,16 +226,20 @@ there, and no retired name is.
   gradients or duotones should it gain any), the whole of `settings.custom`, and `settings.layout`. It MUST
   declare no `styles`, `templateParts` or `customTemplates`. The lists are read from the CoreX theme's own
   `theme.json`; no second copy of them is kept in a stub.
-- **FR-012**: When the CoreX theme's `theme.json` cannot be read, `make:site` MUST fail before writing anything
-  and name the path. `--plugin-only` MUST NOT need it.
-- **FR-013**: The generator MUST write `templates/front-page.html` and `templates/coming-soon.html` in the theme,
-  and MUST NOT write `templates/index.html`, `parts/header.html` or `parts/footer.html`: those are the parent's
-  until the client's design changes them. `--starter` adds what it adds today.
+- **FR-012**: The CoreX theme's `theme.json` is looked for at `theme/theme.json` in the repository the CLI runs
+  from, then in the installed theme `corex`. When neither can be read, `make:site` MUST fail before writing
+  anything and name both paths. `--plugin-only` MUST NOT need it.
+- **FR-013**: The generator MUST write `templates/coming-soon.html` in the theme (the launch page is the
+  client's from the first day, spec 101), and MUST NOT write `templates/index.html`, `templates/front-page.html`,
+  `parts/header.html` or `parts/footer.html`: those are the parent's until the client's design replaces them.
+  `--starter` adds what it adds today.
 - **FR-014**: `npm run verify:client-theme` (Node built-ins only, like `verify:framework`) MUST check every client
-  theme under `sites/` that declares `Template: corex`: each preset list its `theme.json` declares names every
-  slug of the CoreX theme's same list, and a `customTemplates` or `templateParts` list it declares names every
-  entry of the CoreX theme's. It prints one line per missing entry, exits non-zero on any, reports a standalone
-  theme as standalone, and passes when there is nothing to check.
+  theme under `sites/`, in the flat layout and the older `themes/` one, that declares `Template: corex`. In its
+  `theme.json` and in each of its `styles/*.json`: each preset list it declares names every slug of the CoreX
+  theme's same list; a `customTemplates` or `templateParts` list it declares names every entry of the CoreX
+  theme's; and every `file:./` font source it lists exists in the client theme or in the CoreX theme. It prints
+  one line per finding, exits non-zero on any, reports a standalone theme as standalone, and passes when there
+  is nothing to check.
 - **FR-015**: The generated `site-<client>.yml` workflow, the generated `UPDATING-COREX.md` checklist and the
   framework's CI job "A generated client site passes every root check" MUST run that check.
 - **FR-016**: The CoreX theme MUST link its favicon only when it is the active theme itself, never under a child.
@@ -222,13 +247,19 @@ there, and no retired name is.
   it for a child), and `verify:dist` MUST fail when a theme in the artifact names a `Template:` the artifact does
   not hold.
 - **FR-018**: The docs MUST say what is true: `docs/en/04-team-workflow/client-site-workflow.md` (what a child
-  inherits, what it overrides and how, the full-list rule, the dark variation, the position rule for custom
-  templates), `docs/en/05-deployment/shared-host-dist.md` (both themes ship; the parent stays installed and is
+  inherits, what it overrides and how, the full-list rule, the variations the parent ships, the position rule
+  for custom templates, where `brand.json` stands), `docs/en/05-deployment/shared-host-dist.md` (both themes ship; the parent stays installed and is
   not the active theme), `docs/en/05-deployment/updating-a-client-site.md` and the generated checklist (a release
   can change the parent; read the client impact, run `verify:client-theme`), `packages/cli/README.md`, and each
   Arabic page that mirrors one of these.
-- **FR-019**: Nothing may convert or rewrite an existing site. The docs MUST give the steps by which a site
-  generated before this spec becomes a child by hand.
+- **FR-019**: Nothing may convert or rewrite an existing site's theme. `make:site --force` MUST leave the
+  `style.css` and `theme.json` of a theme that already has a `style.css` as they are, and say so. The docs MUST
+  give the steps by which a site generated before this spec becomes a child by hand, and how it takes the new
+  agent files (from a site generated into a scratch folder).
+- **FR-020**: A `brand.json` in the client theme MUST keep working as today: read from the child first, applied
+  over the merged `theme.json` at runtime, an incomplete list in it dropped with a warning
+  (`ThemeServiceProvider`). The docs say a generated site's values go in the child's `theme.json` and that a
+  `brand.json` still wins over it.
 
 **The site plugin boots and its blocks build (G-007)**
 
@@ -237,25 +268,33 @@ there, and no retired name is.
   loads first and also when the site plugin is loaded after CoreX has booted. With `corex-core` inactive it MUST
   do nothing and raise nothing.
 - **FR-031**: The generated provider MUST receive CoreX's container, keep `register()` and `boot()`, and register
-  the site's blocks on `init`.
-- **FR-032**: `corex-blocks` MUST offer one public way to register a folder of blocks: the built folder when it
-  exists, the source folder otherwise; each directory with a `block.json` registered through
-  `DynamicBlockRegistrar`. The generated provider calls it with `build/blocks` and `src/Blocks`, and does nothing
-  when `corex-blocks` is not active.
+  the site's blocks on `init`. It is a class of the site's own and does not extend
+  `Corex\Foundation\ServiceProvider`, whose `subscribers()` and `controllerPaths()` only CoreX's own provider
+  lifecycle reads.
+- **FR-032**: `corex-blocks` MUST offer one public way to register a folder of blocks, a service resolved from
+  the container: the built folder when it exists, the source folder otherwise; each directory with a
+  `block.json` registered through `DynamicBlockRegistrar`. The generated provider calls it with `build/blocks`
+  and `src/Blocks`, and does nothing when the container does not offer the service.
 - **FR-033**: A block's script translations MUST be bound to the block's own `textdomain` from `block.json`, and
-  to `corex` when it names none. Every CoreX block names `corex` today, so none changes.
+  to `corex` when it names none. Every CoreX block names `corex` today, so none changes. Muva and Perego register
+  their blocks with `register_block_type` themselves, never through the registrar (read in both repositories on
+  2026-11-22), so neither changes.
 - **FR-034**: The generated site plugin MUST have a `package.json` with `build` and `start` scripts on the
   convention `packages/build-tools/README.md` documents (`src/Blocks` to `build/blocks`) and its own
-  `@wordpress/scripts` dependency at the framework's range; a test holds the two ranges equal. A site with no
-  block MUST build with exit 0. The generated `.gitignore` MUST keep `node_modules` and `build` out of git at any
+  `@wordpress/scripts` dependency at the framework's range; a test holds that range, and the `--starter` theme's,
+  equal to the root's. A site with no block MUST build with exit 0. The generated `.gitignore` MUST keep `node_modules` and `build` out of git at any
   depth.
 - **FR-035**: `--starter` MUST use the same plugin file and the same block route: its example block is discovered,
-  not registered by hand, and is named in the plugin's block namespace.
+  not registered by hand, and is named in the plugin's block namespace. Its provider binds and resolves its
+  services through the container it is handed, never with `new` inside a method.
 - **FR-036**: The framework's CI job "A generated client site passes every root check" MUST generate a block in
   the generated site with `make:block`, build the site plugin from a clean install, activate it, and assert the
   block is registered and renders.
 - **FR-037**: The docs MUST say how a site gets a block (`packages/cli/README.md`,
   `packages/build-tools/README.md`, `client-site-workflow.md`, the generated `AGENTS.md` and `README.md`).
+- **FR-038**: `verify:dist` MUST fail when a client plugin in the artifact holds a block source folder
+  (`src/Blocks/*/block.json`) and no `build/blocks`, as it already fails for a theme that ships sources without
+  their compiled output.
 
 **Every slice**
 
@@ -289,8 +328,8 @@ there, and no retired name is.
 - **SC-003**: `verify:framework` in a repository with a baseline and no remote reports drift for a changed
   framework file.
 - **SC-004**: A search of everything `make:site` writes finds no retired workflow name.
-- **SC-005**: Muva's and Perego's repositories merge the release with no new conflict and no changed page
-  (`scripts/client-merge-check.mjs`, run by the coordinating session before the tag).
+- **SC-005**: Muva's, Perego's and Mizzey's repositories merge the release with no new conflict and no changed
+  page (`scripts/client-merge-check.mjs`, run by the coordinating session before the tag).
 
 ## Slices
 
@@ -299,18 +338,20 @@ writes its `### Client impact` lines under `[Unreleased]`, "Gap programme, wave 
 
 | # | Slice | Requirements | Waits on | Principles | Rests on anything `main` gained after v0.48.1 |
 |---|---|---|---|---|---|
-| 1 | The repository role and the agent files (G-001, G-002) | FR-001 to FR-007, FR-040, FR-041 | nothing | X (the generated files teach spec first) | No |
-| 2 | The client theme is a child (G-006) | FR-010 to FR-015, FR-017 to FR-019, FR-040, FR-041 | 1 (same stubs and tests) | I, V, VIII | No. It edits `ci.yml`, the `dist` verifier and docs that `main` has also changed since the tag, so the carry may need a hand-resolved hunk |
-| 3 | The CoreX favicon stays off a child theme | FR-016 | 2 | I | **Yes**: `theme/inc/favicon.php` is spec 134's. Not carried to the line, where the theme links no favicon |
-| 4 | The site plugin boots and its blocks build (G-007) | FR-030 to FR-037, FR-040, FR-041 | 2 | II, IV, VI | No. `plugins/corex-blocks/src/DynamicBlockRegistrar.php` is also changed by spec 136 (another method) |
+| 1 | The repository role (G-001) | FR-001 to FR-003, FR-040 | nothing | X | No |
+| 2 | The agent files (G-002) | FR-004 to FR-007, FR-040, FR-041 | nothing | X (the generated files teach spec first) | **Yes**: the loop in the root `AGENTS.md`, the constitution v2.0.0 and `.claude/agents/` all arrived with #458 (`fe8bcfad`), after the tag. Carried only together with that commit (docs and process files), or it waits for `main`: the coordinating session's call under #651 point 4. The Blackstone site rewrote its own pair by hand, so it does not wait on this |
+| 3 | The client theme is a child (G-006) | FR-010 to FR-015, FR-017 to FR-020, FR-040, FR-041 | 2 (same stubs and tests) | I, V, VIII | No. It edits `ci.yml`, `package.json`, the `dist` verifier and docs that `main` has also changed since the tag, so the carry may need a hand-resolved hunk |
+| 4 | The CoreX favicon stays off a child theme | FR-016 | 3 | I | **Yes**: `theme/inc/favicon.php` is spec 134's. Not carried to the line, where the theme links no favicon |
+| 5 | The site plugin boots and its blocks build (G-007) | FR-030 to FR-038, FR-040, FR-041 | 3 | II, IV, VI | No. `DynamicBlockRegistrar.php` is unchanged since the tag and is also changed by spec 136 (another method). It adds a step to the `ci.yml` job `main` has changed since the tag, so the carry may need a hand-resolved hunk |
 
-Nothing here is seen by a visitor, so no slice has a design step. Slice 3 removes a link from a page's head and
+Nothing here is seen by a visitor, so no slice has a design step. Slice 4 removes a link from a page's head and
 draws nothing.
 
 ## Assumptions
 
 - The CoreX theme is installed as `corex` on every site (measured above), so `Template: corex` needs no option.
-- A client repository carries the framework's `.claude/agents/`, so the routing table's agents exist there.
+- A client repository on `main`'s line carries the framework's `.claude/agents/`, so the routing table's agents
+  exist there. At the tag `v0.48.1` there are none, which is why slice 2 is not carried alone.
 - `packages/build-tools` stays a convention and a README, not a package a client installs: a client package must
   build from a clean install of its own folder (the generated workflow installs no npm package at the repository root, on purpose).
 - The block stub (`packages/cli/stubs/block/`) is spec 136's. This spec registers whatever folder holds a
@@ -327,4 +368,9 @@ draws nothing.
   variation is the parent's until a client's design has one.
 - A generator for patterns, templates, post types or taxonomies (G-018, spec 151).
 - Loading a site provider's `subscribers()` or `controllerPaths()` through CoreX's provider lifecycle: a site
-  wires its hooks and routes in `boot()`, as the `--starter` example does.
+  wires its hooks and routes in `boot()`. The `--starter` example's controller registers its route by hand with
+  its own permission callback, short of principle VII's declared middleware; that is as it was before this spec
+  and is a follow-up, not part of G-007.
+- The Site Health probe's sentence about a site with no `brand.json` ("neutral default tokens"), and
+  `docs/en/05-deployment/updates-and-distribution.md`, which says the same: both describe `brand.json`, which
+  this spec leaves as it is. Rewording them for a child theme is a follow-up.

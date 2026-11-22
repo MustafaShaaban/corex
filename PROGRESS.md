@@ -73,13 +73,13 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 
 | Gap | Effect | What | Wave | Spec | Slice | PR | Tag | State |
 |---|---|---|---|---|---|---|---|---|
-| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | | | open: spec written (#661) |
-| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 1 | | | open: spec written |
+| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | | | open: spec reviewed (#661) |
+| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | | | open: spec reviewed. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
 | G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | | | | open |
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | | | | open |
 | G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | | | | open |
-| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 2, 3 | | | open: spec written; the child theme re-check passed (#660). Slice 3 (the favicon) rests on spec 134 and is not carried to the line |
-| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 4 | | | open: spec written (#662) |
+| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | | | open: spec reviewed; the child theme re-check passed (#660). Slice 4 (the favicon) rests on spec 134 and is not carried to the line |
+| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | | | open: spec reviewed (#662) |
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
 | G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
