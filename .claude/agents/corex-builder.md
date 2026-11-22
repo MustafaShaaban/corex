@@ -37,7 +37,8 @@ framework's (`plugins/`, `addons/`, `packages/`, `theme/`, the root `specs/` and
 - Commit, push, switch branches, merge, or create a worktree.
 - Edit a file the brief did not give you. If the slice needs one, stop and name it.
 - Edit `wp/wp-content/`, `dist/` or another slice's files.
-- Edit `sites/<client>/` in a framework slice, or anything outside it in a client site's slice.
+- Edit `sites/<client>/` in a framework slice. In a client site's slice, edit anything outside that folder,
+  except the site's workflow when the brief gives it to you.
 - Take a DECISIONS number. Propose the decision in your report; the orchestrator records it.
 
 ## Your report
