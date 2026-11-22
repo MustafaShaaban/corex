@@ -21779,6 +21779,102 @@ the Blackstone grill of 2026-11-21 (its decision 24).
 - **Forms work on cached pages** (G-027): a submit never depends on a nonce printed into a page that a cache may
   keep for days.
 
+## #660 -- The child theme re-check passed: the generated child lists every token, and a check keeps the lists full
+
+**Date:** 2026-11-21. **Spec:** 135 (G-006). **Branch:** `spec/135-client-site-scaffold`.
+**Decided:** by the spec 135 session, under the owner's delegation (#655 asked for the re-check before anything was built).
+
+**Measured** on a WordPress 7 install of the branch's own, every CoreX plugin and add-on active, a hand-made
+child theme (`Template: corex`) switched on; the table is in `specs/135-client-site-scaffold/spec.md`. Templates,
+parts, all 36 `corex/*` patterns, the dark variation, the fonts, the navigation style and script and the
+coming-soon template reach the child with no copied file. Multisite was read in WordPress's source
+(`WP_Theme::is_allowed()` asks about the active stylesheet only), not run.
+
+**The one trap.** WordPress merges a child's `theme.json` into the parent's key by key, except a preset list: a
+palette, a font size list, a spacing list, a shadow list or a font family list the child declares replaces the
+parent's whole list. A child palette of two colours left the site with two. `customTemplates` and `templateParts`
+merge by position, so a child list of one entry overwrites the parent's first.
+
+**Decided.**
+1. The child model stands. The shared assets stay in the theme; #655's plugin route is not built.
+2. `make:site` writes the child's `theme.json` from the CoreX theme's own file at generation: every preset list,
+   the whole of `settings.custom`, and `settings.layout`, with CoreX's values, for the client to change. No copy of
+   the lists is kept in a stub, so the generator is right on any line of the repository, whatever its tokens.
+3. `npm run verify:client-theme` holds the rule from then on: a list a child declares names every entry of the
+   parent's. It runs in the client's generated workflow, in the update checklist and in the framework's CI. A
+   release that adds a slug fails the client's update branch there, by name, before a page loses a colour.
+4. The generator stops writing `templates/index.html`, `parts/header.html` and `parts/footer.html`. A child that
+   ships them hides the parent's, which is how a generated site came to have a header of the site title alone.
+5. The CoreX theme links its favicon only when it is the active theme itself. Its `functions.php` runs under a
+   child, and a client site must not show the CoreX mark.
+6. The generated `theme.json` carries CoreX's values, not neutral ones. The revamp's BRD-D8 wanted neutral colours
+   for a standalone copy; a child shows the parent's values whether or not it lists them, so listing them changes
+   nothing a visitor sees and gives the client the full list to edit.
+
+*Not chosen.* A child `theme.json` that lists nothing: the client could not change one colour without first
+copying the list by hand, and would meet the trap alone. A static stub of the lists: a second copy to drift, and
+wrong on `release/gap-line`, whose theme has other tokens. A generated `styles/dark.json`: a copied file for a
+variation most client designs do not have; the docs say how a client replaces it. Completing a partial list at runtime, as `ThemeServiceProvider` does for a `brand.json`: it would hide the
+mistake on the site and leave the file wrong for every tool that reads it.
+
+**Added on review, 2026-11-22.** A child that lists the font families with the parent's `file:./` sources still
+gets the fonts from the parent's folder, on the page and in the editor's canvas (measured), so the families are
+listed too; the check also fails a font source that exists in neither theme. The generator writes no
+`templates/front-page.html` either: the reason that removes the index and the two parts removes it. `--force`
+keeps an existing theme's `style.css` and `theme.json`, so it can neither wipe a client's tokens nor turn a
+standalone theme into a child. The re-check ran on `main`; the coordinating session repeats the probe on
+`release/gap-line`, whose parent theme has other tokens and no `functions.php`.
+
+## #661 -- Which repository this is: a named framework stays the framework, an unnamed one with a baseline is a client
+
+**Date:** 2026-11-21. **Spec:** 135 (G-001). **Branch:** `spec/135-client-site-scaffold`.
+**Decided:** by the spec 135 session, under the owner's delegation.
+
+The gap row asked that the role come from `corex-baseline.json` being present, not from the remote. Taken whole,
+that would let anyone switch off the framework repository's own rule against `sites/` by committing a `sites/`
+folder with a baseline in it: `tests/repo-hygiene.test.js` reads the same role.
+
+- `resolveRole()` keeps an explicit `COREX_REPOSITORY_ROLE` first and a repository named by CI or `origin` second
+  (CoreX's own is `framework`, any other is `client`). Only a repository nothing names is decided by the baseline:
+  `client` when one is recorded, `framework` when none is. That is the Blackstone case.
+- A checkout that resolves to `framework` from its name and holds a baseline no longer passes
+  `verify:framework` with "nothing to compare". It fails and says to set `COREX_REPOSITORY_ROLE=client`. That
+  closes the same false pass for a client clone whose `origin` still points at CoreX. A role stated in
+  `COREX_REPOSITORY_ROLE` is taken at its word: only a role worked out from the repository's name is doubted.
+
+## #662 -- A site plugin boots through `Corex::onReady`, its blocks through `corex-blocks`, its build from its own folder
+
+**Date:** 2026-11-21. **Spec:** 135 (G-007). **Branch:** `spec/135-client-site-scaffold`.
+**Decided:** by the spec 135 session, under the owner's delegation.
+
+- **Boot.** The generated plugin autoloads its namespace and boots its provider through `Corex::onReady`, the
+  call that exists because booting on `plugins_loaded` beside CoreX is a coin flip (`Corex.php`). The provider is
+  a class of the site's own that is handed CoreX's container. It is not loaded through CoreX's provider
+  lifecycle: that list is first-party, and opening it is a change to `corex-core` no gap asks for.
+- **Blocks.** `corex-blocks` gains one public call that registers a folder of blocks (built when it exists,
+  source otherwise) through the registrar its own blocks use, so a site block gets a container-resolved renderer
+  and the same path handling, and a fix to registration reaches every site by release. The `--starter` example
+  block moves to the same route.
+- **Text domain.** The registrar bound every block script's translations to `corex`. It now binds the block's
+  own `textdomain` from `block.json` and falls back to `corex`. All 30 CoreX blocks name `corex`, so none changes;
+  a site block's script is bound to the site's domain (WordPress then looks for the JSON file where it looks
+  for any plugin's). Muva and Perego register their blocks with `register_block_type` themselves, so neither is
+  touched (read in both repositories, 2026-11-22).
+- **Build.** `packages/build-tools` is a convention (`src/Blocks` to `build/blocks` with `wp-scripts`), not an
+  installable package. The site plugin's `package.json` follows it and declares its own `@wordpress/scripts` at
+  the framework's range, because a client package must build from a clean install of its own folder: the
+  generated workflow installs no npm package at the repository root, so a client can never lean on a framework
+  dependency by accident. A test holds the stub's range to the root's.
+
+*Not chosen.* A `file:` dependency on `packages/build-tools`: it would need a binary and dependencies of its own,
+and installs differently across npm versions, for no gain over one pinned range.
+
+**Added on review, 2026-11-22.** The site provider does not extend `Corex\Foundation\ServiceProvider`: only
+CoreX's own lifecycle reads that class's `subscribers()` and `controllerPaths()`, and a site provider that had
+them would be silently ignored. "When `corex-blocks` is not active" cannot happen as a plugin state (its provider
+is one of core's and its classes load from the root autoloader), so the generated provider asks the container
+whether it offers the service. `verify:dist` fails a client plugin that ships block sources and no `build/blocks`.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.
@@ -21938,3 +22034,118 @@ values and the extra class but not the generated class or the alignment class, a
 editor files of `plugins/corex-forms`, which the maintenance line would have to merge by hand. Reading
 `$_SERVER['REQUEST_URI']`: it misses a preview asked through `rest_do_request()` and any site with plain
 permalinks.
+
+## #690 -- Spec 137, the header system: which NAV stories it takes, which it leaves, where it goes past them
+
+**Date:** 2026-11-21. **Spec:** 137 (G-013, wave 1). **Branch:** `spec/137-header-system`.
+**Decided:** by the spec 137 session, under the owner's delegation in the gap programme (#652); the planning
+workspace's intake of 2026-11-21 asks the spec to say this.
+
+- **Taken whole, criteria copied as written:** US-NAV-11 (one width), US-NAV-02 (a mega menu inside the menu),
+  US-NAV-04 (hover, focus, arrow keys), US-NAV-10 (the phone menu holds everything), US-NAV-05 (the language
+  switcher). G-013 does not close without each of them.
+- **Left with their release:** US-NAV-14, 07, 01, 13 (R2.4); US-NAV-03, 09 (R4.1); US-NAV-06, 08, 12 (R4.2);
+  US-NAV-15. US-NAV-03's entry anatomy waits for the front-end icon set, which does not exist; a panel holds any
+  blocks, so a site is not held up by it.
+- **Past the stories, twice.** A utility menu, which no story has (Blackstone HDR-1 and HDR-6): a story is raised
+  through the planning workspace's change control. And the breakpoint token is settable by a child theme with no
+  copied file, because a client theme is a child of the CoreX theme (#655).
+- **NAV-D2 stands** ("Core overlay now; drawer later"): the phone menu is WordPress's own overlay (#693).
+- **Neither a header builder nor a mega menu builder** (`ROADMAP.md` section 15): no screen assembles a header.
+
+*Not chosen.* Taking all fifteen NAV stories: three releases of work behind one gap. Taking none and writing new
+criteria: the stories are approved and say the same thing.
+
+## #691 -- A mega menu is a block inside the Navigation block, its panel a template part (supersedes #103 point 1)
+
+**Date:** 2026-11-21. **Spec:** 137, slice 3. **Decided:** by the spec 137 session, from NAV-D1 (answered by the
+owner on 2026-10-20: "a mega item inside navigation") and the gap row ("panel as a template part").
+
+#103 point 1 made a mega menu the native `<details>` element placed beside the Navigation block. WordPress does not
+accept a Details block inside a Navigation block, so the panel was never in the menu and never in the phone menu.
+
+- `corex/mega-menu`, in the `corex-ui` add-on, is an item of the Navigation block: a label and the slug of one
+  template part. The add-on adds it to the blocks the Navigation block accepts and registers the template part
+  area `mega-menu`.
+- The panel is a template part, not inner blocks: it is as wide as the page and edited on its own canvas, the bar
+  and the phone menu show the same part, a child theme ships it as a file, and a translation plugin translates it.
+- Whether a panel is an overlay or a section in place follows where the item is rendered, never a width of its
+  own (#692 keeps the width in one place).
+- A header saved earlier keeps its `details.corex-mega` panels: the script and styles that serve them stay.
+- The CoreX theme ships panels as patterns, not as part files: a part declared in an area that is not registered
+  makes WordPress raise a notice on every request, and the area exists only with the add-on on.
+- US-NAV-02's fifth criterion said the mega patterns are "rebuilt on the new item" and that "Insert into a
+  header's navigation area" becomes true. A pattern cannot carry a template part, so the patterns are rebuilt
+  as panels and chosen on an item. The criterion was corrected in the planning workspace first (CR-049), then
+  copied into the spec. No shipped header has a mega item in place.
+
+*Not chosen.* Inner blocks in the item: a 1200px panel edited inside a 40px menu row. Keeping `<details>` and
+moving it by script into the menu: two lists remain. A new add-on for navigation: one more thing to turn on for
+one block; US-NAV-02's client impact already expects `corex-ui`.
+
+## #692 -- One navigation width: a stylesheet written with the token's value when the page is built
+
+**Date:** 2026-11-21. **Spec:** 137, slice 1. **Decided:** by the spec 137 session, from NAV-D10 (782px, with a
+contained override of WordPress's collapse and a test) and decision 10 of the Blackstone grill.
+
+A media query cannot read a custom property, so "the token decides" needs the width written into the CSS.
+
+- Every rule that depends on the width is in `theme/assets/css/corex-navigation-collapse.css`, written with the
+  default 782px, so it is plain CSS that the linters read.
+- `Corex\Theme\NavigationServiceProvider` reads `settings.custom.nav.breakpoint` from the merged `theme.json` (a
+  child's value wins). When it is the default, the file is served. When it differs, the same rules are printed
+  inline with the width replaced. Only a number of `px` is accepted, and a value below 600px is read as
+  600px, WordPress's own width.
+- The override of WordPress's 600px rule is scoped to Navigation blocks inside `.corex-header`.
+- Conditions are written in range syntax (`width >= 782px`), so no value is one pixel off.
+
+*Not chosen.* A script that sets a class from `matchMedia`: the header would change form after it is drawn.
+Container style queries on a custom property: a browser without them would never fold the header. A PHP template of the CSS: the
+linters and the token inventory could not read it.
+
+## #693 -- The phone menu is WordPress's navigation overlay part; the utility menu is a template part shown twice
+
+**Date:** 2026-11-21. **Spec:** 137, slices 4 and 5. **Decided:** by the spec 137 session.
+
+- WordPress 7.0, the oldest version CoreX supports, has the `navigation-overlay` template part area and the block
+  that closes it (`render_block_core_navigation_overlay_close`, `@since 7.0.0`, read in WordPress 7.1.3). So
+  US-NAV-10's question is answered without raising the minimum version, and CoreX builds no focus trap of its own.
+- The theme ships phone menus as parts of that area. Each part file holds its Navigation block directly, set
+  never to fold: WordPress switches off the menu button of a nested Navigation block only when the block is in
+  the part's own markup (`blocks/navigation.php`), not when it arrives through a pattern or a second part. A
+  part file holds no words; what has words or Brand values is a pattern the part names, read on each request
+  until an owner edits the part.
+- A phone menu's Navigation block that names no menu takes the menu of the header's Navigation block, by a
+  rule in `Corex\Theme\NavigationServiceProvider` that acts only on blocks carrying CoreX's two classes.
+  Without it, an owner who picks a menu for the header would have a different one on a phone.
+- The header's actions are one template part, `header-actions`, shown in the bar and in the phone menu, so
+  both hold the same call to action by construction. The SaaS header loses its "Sign in" button until
+  US-NAV-06 puts the account link in that part.
+- The utility menu is a template part with its own Navigation block. The row above the bar and the phone menu both
+  show the part, so it is one list. It starts as the Brand phone and email, which also ends the frozen top bar.
+
+*Not chosen.* A CoreX drawer block as the phone menu: NAV-D2 says later. Utility links copied into the main menu
+and hidden in the bar: two lists in the page. A stored map of "which menu is the utility menu": a setting to keep
+in step, where a template part needs none.
+
+## #694 -- Languages in the header: a source behind an interface, a block that prints nothing for one language
+
+**Date:** 2026-11-21. **Spec:** 137, slice 2. **Decided:** by the spec 137 session, from NAV-D5 ("Locale now,
+optional seam later") and #657.
+
+- `LanguageSource` and the block `corex/language-switcher` are in `corex-blocks`, so the slot works with every
+  add-on off. The source that ships reads WordPress, which has one language; the block then prints nothing, not
+  even a wrapper.
+- No Polylang or WPML function is called or looked for (constitution IX). Their sources are spec 148's and are
+  bound in the container without a change to the block.
+- Two forms: a menu (the kit's Dropdown, naming the current language) and a list of links.
+- The `I18nHandler` that #9 and the framework document describe was never built. The framework document now
+  describes the source. The rest of G-045 stays with spec 152.
+
+## #695 -- Search in a header is WordPress's Search block; the search overlay stays with US-NAV-09
+
+**Date:** 2026-11-21. **Spec:** 137, slice 5. **Decided:** by the spec 137 session.
+
+The two header patterns that hold a raw HTML search get WordPress's Search block in the bar and in the phone menu.
+The one search overlay with its keyboard shortcut is US-NAV-09 (R4.1) and is not built here. Headers saved earlier
+keep the raw search and the script that opens it. Blackstone's header has no search (its decision 6).
