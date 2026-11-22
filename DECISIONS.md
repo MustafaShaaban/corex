@@ -21796,8 +21796,9 @@ the Blackstone grill of 2026-11-21 (its decision 24).
   (`corex.root`, a list): the first element that carries one of them is the root, and the first element of the
   markup when none does. `corex/form` needs two, because a form from a flow is drawn as the flow's section and a
   registered form as the form itself, either of them after a notice.
-- A server-rendered preview in an editor asks for its markup without the support attributes
-  (`skipBlockSupportAttributes`), so they are not printed twice.
+- For the editor's preview request (WordPress's block renderer route) the markup is returned without the merge:
+  the editor's own wrapper already carries the attributes, so nothing is printed twice and no editor file has
+  to change.
 - `corex/account`, registered in code by corex-profile, passes through the same collaborator.
 - The six blocks of `plugins/corex-forms` declare `className: false`. With nothing set by an editor their markup
   is byte for byte what it was, because Perego adapts that markup by exact strings. The cost: a `theme.json` rule
@@ -21811,8 +21812,8 @@ around every block: it changes every block's markup and every style that counts 
 
 **Date:** 2026-11-21. **Spec:** 136 (G-003). **Decided:** by the spec 136 session, to carry out #656.
 
-- A block declares its kind in `block.json` (`corex.editor`): `in-place`, `records`, `none`, or `pending` for the
-  13 blocks left to spec 150.
+- A block declares its kind in `block.json` (`corex.editor`): `in-place`, `records`, `none`, or `pending` for a
+  block whose turn has not come.
 - Parity is compared on the tree of elements that carry a class of the block: tag, block classes, nesting. What
   the editor needs and the page does not is marked `data-corex-editor-only` and carries no block class.
 - An `in-place` block has a `parity.json` beside its `block.json`: the class prefix, attributes with every field
@@ -21822,8 +21823,9 @@ around every block: it changes every block's markup and every style that counts 
   of stand-ins for WordPress's packages. Each compares with the fixture. Both find fixtures by search, so a new
   framework block needs no new test; a client's blocks are tested by the client's package with the same helper.
 - A gate test reads every `block.json`: no kind, an `in-place` block without a fixture or with a server render, a
-  `records` block without one, or `pending` on a block outside the list of 13, fails CI. The list may only
-  shrink.
+  `records` block without one, or `pending` on a block outside the test's list, fails CI. The list starts as
+  the 13 blocks of spec 150 and the eight wave 1 blocks not yet brought over, each slice takes its own off it,
+  and it may only shrink.
 
 *Not chosen.* A browser test that opens the editor and the page for each block: it is the truest comparison and
 the slowest, it needs a running site for a check that is about markup, and a generated client block could not
@@ -21895,9 +21897,11 @@ drawer hold blocks in their body. Muva and Perego have content saved in today's 
   attribute from that attribute, for as long as such content exists. Accordion, carousel, modal and drawer are
   drawn in the new markup, which behaves as today's. **Tabs are drawn exactly as today**, radio inputs and no
   script: the new tabs need a script and turn into an accordion on a phone, and a behaviour change is not handed
-  to a client by an update (#651 point 5, #652). Old tabs become new tabs when an editor opens and saves them;
-- a deprecation in the editor, marked eligible for a block with the old attribute and no inner blocks, turns each
-  old item into a child block holding a paragraph with the old text, so the first save writes the new shape;
+  to a client by an update (#651 point 5, #652), nor by saving a page for another reason. Old tabs become new
+  tabs when an editor presses "Convert" on the block;
+- for the other four, a deprecation in the editor, marked eligible for a block with the old attribute and no
+  inner blocks, turns each old item into a child block holding a paragraph with the old text, so the first save
+  writes the new shape;
 - every new setting defaults to today's behaviour;
 - the block saves its inner blocks only; the PHP renderer stays the one source of the markup.
 
