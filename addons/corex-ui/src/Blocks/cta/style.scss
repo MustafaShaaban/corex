@@ -12,7 +12,8 @@
 	box-shadow: var(--wp--preset--shadow--md);
 	text-align: center;
 
-	// Full width reaches both edges of the screen, where a rounded corner would show the page behind.
+	// Full width reaches both edges of the screen, where a rounded corner
+	// would show the page behind.
 	&.alignfull {
 		border-radius: 0;
 	}
