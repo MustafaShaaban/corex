@@ -9,10 +9,10 @@ search and the phone action bar).
 **Design source:** the canvas "CoreX spec 137: the header system" in Claude Design, private to the owner:
 https://claude.ai/artifact/3jYwcAEaZyBWC1pgG1ZHvF. It is drawn on the CoreX design system
 (https://claude.ai/artifact/DExY8maEuxwM6JwdZ1jw5c) and uses the approved visitor kit's SiteHeader, MegaMenu,
-Navigation, Dropdown, Button, Badge and TextInput unchanged (`visitor-kit.md`, DECISIONS #639). Because the canvas
-is private, its sources are kept beside the spec: `specs/137-header-system/design/` holds the 27 boards
-(`boards/*.dc.html`), their layout (`boards/canvas.json`) and the rules the kit lacked
-(`header-system.css.txt`, the build contract).
+Navigation, Dropdown, Button, Badge and TextInput unchanged (`visitor-kit.md`, DECISIONS #639). The canvas holds
+27 boards. The repository keeps no design-tool export (`tests/repo-hygiene.test.js`), so the boards stay on the
+canvas; what the code needs from them is written here, and the rules the kit lacked are kept beside the spec as
+`specs/137-header-system/design/header-system.css.txt`, the build contract.
 
 **Engineering target:** `specs/137-header-system/spec.md`, slices 2, 4 and 5. Slices 1 and 3 are built from
 `navigation-footer.md` and the kit.

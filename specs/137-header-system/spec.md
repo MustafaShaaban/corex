@@ -15,8 +15,8 @@ DECISIONS #696). No slice built.
 (2026-06-20) and the visitor kit's SiteHeader, MegaMenu, Navigation and Dropdown
 (`design/handoffs/visitor-kit.md`, 2026-11-15, DECISIONS #639). The phone menu holding mega panels as groups,
 the utility menu, the language switcher in its two forms, the header search and the bar at the foot of a phone
-screen: `design/handoffs/header-system.md`, approved on 2026-11-22 in three steps (DECISIONS #696). The boards
-and the rules the kit lacked are in `specs/137-header-system/design/`.
+screen: `design/handoffs/header-system.md`, approved on 2026-11-22 in three steps (DECISIONS #696). The rules
+the kit lacked are in `specs/137-header-system/design/header-system.css.txt`; the boards stay on the canvas.
 
 **Reviewed**: by `corex-reviewer` on 2026-11-21; its ten findings and its notes are answered in this text.
 

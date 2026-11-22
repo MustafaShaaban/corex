@@ -22132,8 +22132,9 @@ from a picture with a button.
   (links in a row, the current one marked by a tint, a tick and its weight, and not a link).
 - **Step 3, search and the phone action bar:** search is an icon button that opens a field over the end of the
   menu, with no visible label; the action bar is the strong button, full width, at the foot of a phone screen.
-- The record is `design/handoffs/header-system.md`. The canvas is private to the owner, so the boards and the
-  rules the kit lacked are kept in `specs/137-header-system/design/`. No token was added.
+- The record is `design/handoffs/header-system.md`. The boards stay on the owner's private canvas (the
+  repository keeps no design-tool export); the rules the kit lacked are kept as
+  `specs/137-header-system/design/header-system.css.txt`. No token was added.
 - FR-032 of the spec was brought into step with the drawing before the approval: the menu lists every language,
   not only the others.
 
