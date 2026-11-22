@@ -54,10 +54,22 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   it: wave 1 `v0.49.0`, wave 2 `v0.50.0`, wave 3 `v0.51.0`, the rest `v0.52.0`. The coordinating session carries
   and tags; a wave session's work ends at `main`. `main`'s own gates (below, "Next") are untouched, and if `main`
   can be tagged when a wave is ready, the wave ships from `main` and the line closes.
-- **Now (2026-11-21).** All 45 rows were re-read against `main` at `3a3caeb1`: 36 are true as written, 8 are partly changed by work `main` gained after v0.48.1 (G-023, G-025, G-029, G-031, G-033, G-036, G-039, G-041; what is left is in each row), and G-026 is already fixed on `main` (spec 122, DECISIONS #476) but in no release. Nothing is built
-  yet. Three sessions were started for wave 1, each in its own worktree: spec 135 (the client site scaffold),
-  spec 136 (the editor standard for blocks), spec 137 (the header system). Decision numbers given out: #660 to
-  #669, #670 to #689, #690 to #699.
+- **Now (2026-11-22).** All 45 rows were re-read against `main` at `3a3caeb1` on 2026-11-21: 36 are true as
+  written, 8 are partly changed by work `main` gained after v0.48.1 (G-023, G-025, G-029, G-031, G-033, G-036,
+  G-039, G-041; what is left is in each row), and G-026 is already fixed on `main` (spec 122, DECISIONS #476) but
+  in no release. Wave 1 is in three sessions, each in its own worktree, with decision numbers #660 to #669,
+  #670 to #689 and #690 to #699: spec 135 is pull request #492, spec 136 is #491, spec 137 is #493. On
+  2026-11-21 the usage limit stopped all three with their specs open and green and review corrections not yet
+  committed; slice 1 of spec 135 (`spec/135-slice-1-role-and-agent-files`) and of spec 136
+  (`spec/136-slice-1-wrapper-attributes`) were built and uncommitted. They were resumed on 2026-11-22. No slice
+  is on `main` and nothing is tagged.
+- **Pacing (asked for the owner, 2026-11-22).** Two building sessions at a time, one builder or reviewer agent
+  at a time inside each, finished work committed and pushed before the next step. Specs 135 and 136 build first;
+  spec 137 merges its spec and draws its designs, and starts building when one of the two is done.
+- **Who coordinates.** A coordinating session carries each finished wave to the line, cuts the tag and reports
+  to the Blackstone session after each round of merges and at each tag. Its hand-over note, with the session
+  ids, worktrees and the release steps, is `corex-coordinator-handover.md` in the shared notes folder named
+  above.
 - **Next.** (1) Each wave 1 session writes its spec, then builds slice by slice into `main`. (2) When wave 1 is
   on `main`: create `release/gap-line` from `v0.48.1`, cherry-pick the wave's squash commits in merge order, open
   one pull request into the line per spec, run `scripts/client-merge-check.mjs`, bump the version surfaces to
