@@ -69,6 +69,19 @@ describe( 'hero block — inline editing', () => {
 		expect( collect( element, RichTextMock ).length ).toBe( 4 );
 	} );
 
+	test( 'FR-017: is a section, and its button is a link typed in place', () => {
+		const element = config.edit( {
+			attributes: { level: 2, image: {} },
+			setAttributes: jest.fn(),
+		} );
+		const button = collect( element, RichTextMock ).find(
+			( r ) => r.props.className === 'corex-hero__cta'
+		);
+
+		expect( element.type ).toBe( 'section' );
+		expect( button.props.tagName ).toBe( 'a' );
+	} );
+
 	test( 'a media select stores { id, url, alt }', () => {
 		const setAttributes = jest.fn();
 		const element = config.edit( {

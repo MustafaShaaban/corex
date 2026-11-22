@@ -1,0 +1,35 @@
+{
+	"prefix": "corex-hero",
+	"attributes": {
+		"eyebrow": "Now open source",
+		"title": "Build sites that last",
+		"subtitle": "A framework for WordPress, edited where it stands.",
+		"level": 1,
+		"ctaText": "Start a project",
+		"ctaUrl": "https://example.test/start",
+		"image": {
+			"id": 12,
+			"url": "https://example.test/hero.jpg",
+			"alt": "A team at work"
+		}
+	},
+	"tree": [
+		{
+			"tag": "section",
+			"classes": [ "corex-hero" ],
+			"children": [
+				{ "tag": "img", "classes": [ "corex-hero__bg" ] },
+				{
+					"tag": "div",
+					"classes": [ "corex-hero__inner" ],
+					"children": [
+						{ "tag": "p", "classes": [ "corex-hero__eyebrow" ] },
+						{ "tag": "h1", "classes": [ "corex-hero__title" ] },
+						{ "tag": "p", "classes": [ "corex-hero__subtitle" ] },
+						{ "tag": "a", "classes": [ "corex-hero__cta" ] }
+					]
+				}
+			]
+		}
+	]
+}

@@ -74,6 +74,29 @@ describe( 'team block — inline editing', () => {
 		} );
 	} );
 
+	test( "FR-017: the add and remove buttons on the canvas are the editor's own", () => {
+		const element = config.edit( {
+			attributes: {
+				members: [ { name: 'Sam', role: '', image: {}, bio: '' } ],
+			},
+			setAttributes: jest.fn(),
+		} );
+		// The root's first child is the side panel; the rest is the canvas.
+		const [ sidePanel, ...canvas ] = element.props.children;
+		const onCanvas = collect( canvas, ButtonMock ).filter(
+			( b ) => typeof b.props.children === 'string'
+		);
+
+		expect( collect( sidePanel, ButtonMock ).length ).toBe( 1 );
+		expect( onCanvas.map( ( b ) => b.props.children ) ).toEqual( [
+			'Remove member',
+			'Add member',
+		] );
+		onCanvas.forEach( ( b ) =>
+			expect( b.props[ 'data-corex-editor-only' ] ).toBe( true )
+		);
+	} );
+
 	test( 'a member media select stores { id, url, alt }', () => {
 		const setAttributes = jest.fn();
 		const element = config.edit( {

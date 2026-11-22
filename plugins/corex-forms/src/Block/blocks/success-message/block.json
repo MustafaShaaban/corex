@@ -14,5 +14,5 @@
 	"supports": { "html": false, "className": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer" }
+	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer", "editor": "pending" }
 }

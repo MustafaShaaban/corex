@@ -54,4 +54,16 @@ describe( 'cta block — inline editing', () => {
 		} );
 		expect( collect( element, RichTextMock ).length ).toBe( 3 );
 	} );
+
+	test( 'FR-017: its button is a link typed in place', () => {
+		const element = config.edit( {
+			attributes: {},
+			setAttributes: jest.fn(),
+		} );
+		const button = collect( element, RichTextMock ).find(
+			( r ) => r.props.className === 'corex-cta__button'
+		);
+
+		expect( button.props.tagName ).toBe( 'a' );
+	} );
 } );

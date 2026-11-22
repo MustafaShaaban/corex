@@ -82,6 +82,59 @@ renderer route (`/wp/v2/block-renderer/...`), and there the previewed block's ma
 back unmerged: the editor's own wrapper already carries the attributes. Nothing changes in a block's `index.js`
 for it.
 
+## The editor kind and the parity fixture
+
+Every `block.json` declares how its editor draws it, in `corex.editor` (spec 136, DECISIONS
+#671): `in-place` (drawn with the page's elements and typed on the canvas), `records` (a
+server-rendered preview of records the block does not hold), `none` (no editor), or `pending`
+(its turn has not come; only the blocks on the gate's waiting list in
+`tests/block-editor-kinds.test.js` may say so). The gate fails a block with no kind, an
+`in-place` block with no `parity.json` or whose editor imports
+`@wordpress/server-side-render`, and a `records` block whose editor does not.
+
+An `in-place` block keeps a `parity.json` beside its `block.json`:
+
+```json
+{
+	"prefix": "corex-hero",
+	"attributes": { "title": "Build sites that last", "ctaText": "Start", "ctaUrl": "https://example.test" },
+	"innerBlocks": [ { "name": "core/paragraph", "attributes": {}, "innerHTML": "<p>Text</p>" } ],
+	"needs": [ "post" ],
+	"pageOnly": [ "corex-hero__trap" ],
+	"tree": [
+		{ "tag": "section", "classes": [ "corex-hero" ], "children": [
+			{ "tag": "h2", "classes": [ "corex-hero__title" ] },
+			{ "tag": "a", "classes": [ "corex-hero__cta" ] }
+		] }
+	]
+}
+```
+
+- `prefix`: the block's class. A class of the block is the prefix itself or the prefix followed
+  by `__` or `--`; every other class (`wp-block-*`, `is-selected`) is ignored.
+- `attributes`: what the block is drawn with, every field filled, so the editor's placeholders
+  and the page's optional parts are all drawn.
+- `innerBlocks` (optional): the child blocks, each `name`, `attributes`, `innerHTML` for a
+  static block, and its own `innerBlocks`. The element that holds them is compared; what they
+  draw is compared through their own fixtures.
+- `needs` (optional): what the page needs to draw the block. Only `"post"`, a current post.
+- `pageOnly` (optional): classes of elements only the page draws (a trap field against robots);
+  they are removed from the page's tree before the comparison.
+- `tree`: the expected tree. Each element that carries a class of the block, with its `tag`, its
+  block `classes` and its `children`; an element with no class of the block is transparent and
+  its children take its place.
+
+An element the editor needs and the page does not (a link field, a remove button) carries
+`data-corex-editor-only` and no class of the block; it is skipped with what it holds.
+
+Two tests find every `parity.json` under `plugins/` and `addons/` by search, so a new block needs
+no new test: `tests/Integration/Blocks/ParityTest.php` draws it through WordPress
+(`render_block`), and `tests/block-editor-parity.test.js` renders its `edit` with
+`react-dom/server`. The helper they use is exported as `@corex/build-tools/parity`
+(`parityTree`, `renderEdit`, `installStandIns`, `registeredBlock`, `findFiles`), with one shared
+set of stand-ins for the `@wordpress/*` packages, so a client package tests its own blocks the
+same way. Its PHP twin is `tests/Support/ParityTree.php`.
+
 ## Commands
 
 From the repo root:

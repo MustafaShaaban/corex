@@ -17,5 +17,5 @@
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Ui\\Blocks\\CarouselRenderer" }
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\CarouselRenderer", "editor": "pending" }
 }

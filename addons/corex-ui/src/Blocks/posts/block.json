@@ -13,5 +13,5 @@
 	"supports": { "html": false, "anchor": true, "align": ["wide", "full"] },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Ui\\Blocks\\PostsRenderer" }
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\PostsRenderer", "editor": "records" }
 }

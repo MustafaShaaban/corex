@@ -26,6 +26,17 @@ to the wave's own entry when it is tagged from `release/gap-line`.
 - The editor's server-rendered preview (WordPress's block renderer route) gets the previewed block's markup
   without the merge, since the editor's own wrapper already carries the attributes (FR-006a; DECISIONS #676).
 - A hero or a call to action set to full width has square corners, since it reaches both edges of the screen.
+- **The editor standard: every block declares its kind, and the editor draws the page** (spec 136 slice 3, gap
+  G-003; FR-010 to FR-013, FR-017; DECISIONS #656, #671). Every `block.json` declares `corex.editor`:
+  `in-place` for hero, cta, stat and team, `records` for posts, jobs, breadcrumbs and `corex/form`, `none` for
+  the assistant, `pending` for the 21 whose turn has not come. An `in-place` block keeps a `parity.json` beside
+  its `block.json`, and two tests find every one by search and compare the tree of the block's elements (tag,
+  block classes, nesting) with it: one draws the block through WordPress, the other renders its `edit` with one
+  shared set of stand-ins for the `@wordpress/*` packages. A gate fails a block with no kind, an `in-place` block
+  without a fixture or with a server-rendered preview, a `records` block without one, and `pending` on a block
+  outside its waiting list. The helper is exported as `@corex/build-tools/parity`. The hero is a `section` in the
+  editor as on the page, and the hero's and the call to action's button is a link typed in place, without the
+  extra wrapper; its address field, and team's photo, add and remove buttons, are marked as the editor's own.
 
 ### Fixed
 
@@ -54,6 +65,10 @@ to the wave's own entry when it is tagged from `release/gap-line`.
       unchanged wherever no editor typed a class or an anchor on the form block; where one did, the form's root
       now carries it, which matters to code that matches that markup by exact strings.
     - **Mizzey** is not on this line.
+  - **Spec 136 slice 3 (G-003).** Muva, Perego and Mizzey: nothing changes on any page, and there is no upgrade
+    step. The hero, call to action and team editors change for the people who edit them (the hero and the call to
+    action show their button as the link the page prints); the stat's editor already drew the page. No saved
+    content changes, and the renderers are untouched.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and
