@@ -6,6 +6,25 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+Gap programme, wave 1 (the Blackstone gap programme, DECISIONS #651 and #652): fixes to what a client site is
+generated with and checked by. These lines move to the wave's own entry when it is tagged from `release/gap-line`.
+
+### Fixed
+
+- **A new client repository is checked before it has a remote** (spec 135 slice 1, gap G-001; DECISIONS #661).
+  `npm run verify:framework` took a repository with no `origin` for the framework's own and passed without
+  comparing a file. A repository nothing names is now a client when it records a baseline
+  (`sites/<client>/corex-baseline.json`). A checkout that resolves to the framework by its name while holding a
+  baseline fails and says to set `COREX_REPOSITORY_ROLE=client`. A role stated in that variable still wins.
+
+### Client impact
+
+- **Gap programme, wave 1.**
+  - **Spec 135 slice 1 (G-001).** Muva, Perego and Mizzey: no page, setting or stored data changes, and there
+    is no upgrade step. `npm run verify:framework` answers as before in a repository whose `origin` is the
+    client's own. A client clone whose `origin` still points at CoreX's repository now fails that check, with a
+    message, until `origin` is re-pointed or `COREX_REPOSITORY_ROLE=client` is set.
+
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and
 after, in light and dark: `specs/134-theme-graphite-brass/evidence/`.

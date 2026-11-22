@@ -15,7 +15,7 @@
  *   node scripts/verify-framework.mjs --record v1.2.3  write that release into every record
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import {
 	BaselineError,
@@ -24,13 +24,14 @@ import {
 	sharedCommit,
 } from './framework-baseline.mjs';
 import {
+	BASELINE_PATTERN,
 	loadOwnership,
 	mayBeRemovedByClient,
+	recordedBaselines,
 	resolveRole,
+	roleIsStated,
 } from './repository-ownership.mjs';
 
-const SITES_DIRECTORY = 'sites';
-const BASELINE_FILE = 'corex-baseline.json';
 const RECORD_HINT =
 	'record one with `npm run verify:framework -- --record <release tag>`';
 const NOTHING_FOUND = {
@@ -67,26 +68,6 @@ const commitOf = ( root, ref ) => {
 	return resolved.succeeded ? resolved.stdout.trim() : null;
 };
 
-/**
- * @param {string} root Absolute path of the repository.
- * @return {string[]} Every `sites/<client>/corex-baseline.json` present, repository-relative.
- */
-const baselineFiles = ( root ) => {
-	const sites = path.join( root, SITES_DIRECTORY );
-
-	if ( ! existsSync( sites ) ) {
-		return [];
-	}
-
-	return readdirSync( sites, { withFileTypes: true } )
-		.filter( ( entry ) => entry.isDirectory() )
-		.map(
-			( entry ) =>
-				`${ SITES_DIRECTORY }/${ entry.name }/${ BASELINE_FILE }`
-		)
-		.filter( ( file ) => existsSync( path.join( root, file ) ) );
-};
-
 const decoded = ( root, file ) => {
 	try {
 		return JSON.parse( readFileSync( path.join( root, file ), 'utf8' ) );
@@ -114,11 +95,11 @@ const readRecord = ( root, file ) => {
 };
 
 const foundBaselineFiles = ( root ) => {
-	const files = baselineFiles( root );
+	const files = recordedBaselines( root );
 
 	if ( files.length === 0 ) {
 		throw new BaselineError(
-			`no baseline recorded — expected ${ SITES_DIRECTORY }/<client>/${ BASELINE_FILE }; ${ RECORD_HINT }`
+			`no baseline recorded: expected ${ BASELINE_PATTERN }; ${ RECORD_HINT }`
 		);
 	}
 
@@ -306,8 +287,24 @@ const summaryLine = ( result ) =>
 			: 'no usable baseline',
 	].join( '\t' );
 
+/**
+ * The failure for a checkout taken for the framework that holds a baseline (spec 135, FR-003).
+ *
+ * Passing there would compare nothing while a baseline says something should be compared: the
+ * false pass a new client repository with no `origin` used to get, here for a client clone whose
+ * `origin` still names the framework. It applies to a role worked out from the repository's
+ * name, never to one stated in the environment.
+ *
+ * @param {string[]} files The baseline records found.
+ * @return {string} The message.
+ */
+const frameworkHoldingBaseline = ( files ) =>
+	`${ files.join( ', ' ) } records a baseline, but this checkout resolves to the framework's own ` +
+	'repository, so nothing would be compared. In a client repository, set ' +
+	"COREX_REPOSITORY_ROLE=client or point `origin` at the client's repository";
+
 const report = ( result ) => {
-	if ( result.role === 'framework' ) {
+	if ( result.role === 'framework' && result.status === 'pass' ) {
 		return [
 			'framework\tPASS\tthe framework repository — nothing to compare',
 		];
@@ -321,19 +318,33 @@ const report = ( result ) => {
 		);
 	}
 
+	// Taken for the framework while holding a baseline: the failure says it all, and a summary
+	// of "no usable baseline" under it would contradict it.
+	if ( result.role === 'framework' ) {
+		return [
+			...findingLines( result ),
+			'framework\tFAIL\tnothing compared',
+		];
+	}
+
 	return [ ...findingLines( result ), summaryLine( result ) ];
 };
 
 const verify = ( root, args ) => {
 	const ownership = loadOwnership( root );
+	const baselines = recordedBaselines( root );
 	const role = resolveRole( {
 		ownership,
 		env: process.env,
 		originUrl: git( root, [ 'remote', 'get-url', 'origin' ] ).stdout,
+		baselineRecorded: baselines.length > 0,
 	} );
 
 	if ( role === 'framework' ) {
-		return { status: 'pass', role };
+		// A role somebody stated is theirs to state. Only a role worked out from a name is doubted.
+		return roleIsStated( process.env ) || baselines.length === 0
+			? { status: 'pass', role }
+			: { ...failed( frameworkHoldingBaseline( baselines ) ), role };
 	}
 
 	const recordAt = args.indexOf( '--record' );

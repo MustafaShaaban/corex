@@ -27,6 +27,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { recordedBaselines } from './repository-ownership.mjs';
 
 const VERIFY = 'node scripts/verify-framework.mjs';
 const IDENTITY = [
@@ -96,22 +97,12 @@ export function recordBaseline( file, release, commit ) {
  * @param {string} root A checkout.
  */
 function baselines( root ) {
-	const sites = path.join( root, 'sites' );
-
-	if ( ! fs.existsSync( sites ) ) {
-		return [];
-	}
-
-	return fs
-		.readdirSync( sites )
-		.map( ( site ) => path.join( 'sites', site, 'corex-baseline.json' ) )
-		.filter( ( file ) => fs.existsSync( path.join( root, file ) ) )
-		.map( ( file ) => ( {
-			file,
-			record: JSON.parse(
-				fs.readFileSync( path.join( root, file ), 'utf8' )
-			),
-		} ) );
+	return recordedBaselines( root ).map( ( file ) => ( {
+		file,
+		record: JSON.parse(
+			fs.readFileSync( path.join( root, file ), 'utf8' )
+		),
+	} ) );
 }
 
 /**

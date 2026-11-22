@@ -17,6 +17,7 @@ const ownershipMap = fs.readFileSync(
 	path.join( frameworkRoot, '.github', 'repository-ownership.json' ),
 	'utf8'
 );
+const { frameworkRepository } = JSON.parse( ownershipMap );
 const BASELINE = 'sites/acme/corex-baseline.json';
 
 const repositories = [];
@@ -87,6 +88,27 @@ const verify = ( root, args = [], env = {} ) =>
 			...env,
 		},
 	} );
+
+/**
+ * Run the script with neither variable that names the role or the repository set at all, so only
+ * the repository itself (its `origin`, its baseline) can say what it is. CI sets
+ * `GITHUB_REPOSITORY`, so both are removed rather than inherited.
+ *
+ * @param {string}   root Where to run it.
+ * @param {string[]} args Its arguments.
+ * @return {Object} The finished child process.
+ */
+const verifyUnnamed = ( root, args = [] ) => {
+	const env = { ...process.env };
+	delete env.GITHUB_REPOSITORY;
+	delete env.COREX_REPOSITORY_ROLE;
+
+	return spawnSync( process.execPath, [ script, ...args ], {
+		cwd: root,
+		encoding: 'utf8',
+		env,
+	} );
+};
 
 const readmeException = {
 	path: 'README.md',
@@ -283,7 +305,9 @@ describe( 'a baseline that cannot be compared against', () => {
 } );
 
 describe( 'the framework’s own repository', () => {
-	it( 'has nothing to compare, and passes', () => {
+	it( 'has nothing to compare, and passes, when the role is stated', () => {
+		// The repository holds a baseline: a stated role is taken at its word (FR-003 doubts only
+		// a role worked out from the repository's name).
 		const { root } = clientRepository();
 		write( root, 'README.md', 'Edited, as the framework is free to be.\n' );
 		const outcome = verify( root, [], {
@@ -291,6 +315,96 @@ describe( 'the framework’s own repository', () => {
 		} );
 
 		expect( outcome.stdout ).toMatch( /nothing to compare/ );
+		expect( outcome.status ).toBe( 0 );
+	} );
+
+	it( 'has nothing to compare, and passes, when its name says so and it holds no baseline', () => {
+		// CoreX's own everyday run: named by `origin`, no role stated, no `sites/` record.
+		const { root } = clientRepository();
+		fs.rmSync( path.join( root, ...BASELINE.split( '/' ) ) );
+		git(
+			root,
+			'remote',
+			'add',
+			'origin',
+			`https://github.com/${ frameworkRepository }.git`
+		);
+		const outcome = verifyUnnamed( root );
+
+		expect( outcome.stdout ).toMatch( /nothing to compare/ );
+		expect( outcome.status ).toBe( 0 );
+	} );
+
+	/**
+	 * Spec 135, FR-003: a checkout taken for the framework that holds a baseline used to pass with
+	 * nothing compared. It fails instead, and says how to state the role.
+	 */
+	describe( 'holding a recorded baseline (FR-003)', () => {
+		const namedAsTheFramework = () => {
+			const { root } = clientRepository();
+			git(
+				root,
+				'remote',
+				'add',
+				'origin',
+				`https://github.com/${ frameworkRepository }.git`
+			);
+			write( root, 'README.md', 'The framework!\n' );
+
+			return root;
+		};
+
+		it( 'fails, names the baseline and says how to state the role', () => {
+			const outcome = verifyUnnamed( namedAsTheFramework() );
+
+			expect( outcome.stdout ).toMatch(
+				/^FAIL\t.*sites\/acme\/corex-baseline\.json.*COREX_REPOSITORY_ROLE=client/m
+			);
+			expect( outcome.stdout ).not.toMatch( /nothing to compare/ );
+			expect( outcome.stdout ).not.toMatch( /no usable baseline/ );
+			expect( outcome.status ).toBe( 1 );
+		} );
+
+		it( 'carries the same failure in --json', () => {
+			const outcome = verifyUnnamed( namedAsTheFramework(), [
+				'--json',
+			] );
+			const result = JSON.parse( outcome.stdout );
+
+			expect( result ).toMatchObject( {
+				status: 'fail',
+				role: 'framework',
+			} );
+			expect( result.failures ).toEqual( [
+				expect.stringMatching(
+					/sites\/acme\/corex-baseline\.json.*COREX_REPOSITORY_ROLE=client/
+				),
+			] );
+			expect( outcome.status ).toBe( 1 );
+		} );
+	} );
+} );
+
+/**
+ * Spec 135, FR-001 and SC-003: a client repository made from a release, before anyone has added an
+ * `origin`. Nothing names it, so the baseline it records decides that it is a client.
+ */
+describe( 'a client repository nothing names yet', () => {
+	it( 'is compared, and reports a changed framework file as drift', () => {
+		const { root } = clientRepository();
+		write( root, 'README.md', 'The framework!\n' );
+		const outcome = verifyUnnamed( root );
+
+		expect( outcome.stdout ).toContain( 'DRIFT\tREADME.md' );
+		expect( outcome.stdout ).not.toMatch( /nothing to compare/ );
+		expect( outcome.status ).toBe( 1 );
+	} );
+
+	it( 'passes when its framework files are untouched', () => {
+		const { root } = clientRepository();
+		const outcome = verifyUnnamed( root );
+
+		expect( outcome.stdout ).toContain( 'framework\tPASS\t0 drifted' );
 		expect( outcome.status ).toBe( 0 );
 	} );
 } );
