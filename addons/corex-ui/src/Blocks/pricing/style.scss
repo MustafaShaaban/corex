@@ -44,3 +44,17 @@
 		text-decoration: none;
 	}
 }
+
+// A text colour chosen in the editor (spec 136, FR-008): the headings
+// and text take it.
+// WordPress's own colour classes already beat the colours of the root.
+.corex-pricing.has-text-color {
+
+	:where(h1, h2, h3, h4, h5, h6),
+	.corex-pricing__plan,
+	.corex-pricing__price,
+	.corex-pricing__period,
+	.corex-pricing__features {
+		color: inherit;
+	}
+}

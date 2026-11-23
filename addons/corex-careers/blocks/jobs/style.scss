@@ -29,3 +29,22 @@
 	color: var(--wp--preset--color--ink);
 	text-align: start;
 }
+
+// A text colour chosen in the editor (spec 136, FR-008): the headings
+// and text take it, and the cards drop their surface so the text
+// sits on the background it was chosen against.
+// WordPress's own colour classes already beat the colours of the root.
+.corex-jobs.has-text-color {
+
+	:where(h1, h2, h3, h4, h5, h6),
+	.corex-jobs__title,
+	.corex-jobs__title a,
+	.corex-jobs__meta,
+	.corex-jobs__empty {
+		color: inherit;
+	}
+
+	.corex-jobs__item {
+		background-color: transparent;
+	}
+}

@@ -7,7 +7,7 @@
 	"icon": "info-outline",
 	"description": "Footer copyright line — current year + site name (dynamic).",
 	"textdomain": "corex",
-	"supports": { "html": false, "anchor": true },
+	"supports": { "html": false, "anchor": true, "spacing": { "margin": ["top", "bottom"] } },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\CopyrightRenderer", "editor": "pending" }

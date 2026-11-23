@@ -12,7 +12,13 @@
 		"buttonLabel": { "type": "string", "default": "" },
 		"consentText": { "type": "string", "default": "" }
 	},
-	"supports": { "html": false, "align": ["wide", "full"], "anchor": true },
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"spacing": { "margin": ["top", "bottom"], "padding": ["vertical", "horizontal"] },
+		"color": { "background": true, "text": true }
+	},
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",

@@ -13,7 +13,7 @@
 		"content": { "type": "string", "default": "" },
 		"side": { "type": "string", "default": "end" }
 	},
-	"supports": { "html": false, "anchor": true },
+	"supports": { "html": false, "anchor": true, "spacing": { "margin": ["top", "bottom"] } },
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",

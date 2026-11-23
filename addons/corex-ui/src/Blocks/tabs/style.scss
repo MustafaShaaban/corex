@@ -83,3 +83,21 @@
 		color: var(--wp--preset--color--ink);
 	}
 }
+
+// A text colour chosen in the editor (spec 136, FR-008): the headings
+// and text take it, and the panels drop their surface so the text
+// sits on the background it was chosen against. The tab shown keeps
+// its own surface and colour, which mark it.
+// WordPress's own colour classes already beat the colours of the root.
+.corex-tabs.has-text-color {
+
+	:where(h1, h2, h3, h4, h5, h6),
+	.corex-tabs__label,
+	.corex-tabs__panel {
+		color: inherit;
+	}
+
+	.corex-tabs__panel {
+		background-color: transparent;
+	}
+}

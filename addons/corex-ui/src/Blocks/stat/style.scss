@@ -25,3 +25,16 @@
 		margin-block-start: var(--wp--preset--spacing--30);
 	}
 }
+
+// A text colour chosen in the editor (spec 136, FR-008): the headings
+// and text take it.
+// WordPress's own colour classes already beat the colours of the root.
+.corex-stat.has-text-color {
+
+	:where(h1, h2, h3, h4, h5, h6),
+	.corex-stat__value,
+	.corex-stat__label,
+	.corex-stat__desc {
+		color: inherit;
+	}
+}

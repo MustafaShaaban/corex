@@ -58,3 +58,21 @@
 		color: var(--wp--preset--color--ink-soft);
 	}
 }
+
+// A text colour chosen in the editor (spec 136, FR-008): the headings
+// and text take it, and the cards drop their surface so the text
+// sits on the background it was chosen against.
+// WordPress's own colour classes already beat the colours of the root.
+.corex-team.has-text-color {
+
+	:where(h1, h2, h3, h4, h5, h6),
+	.corex-team__name,
+	.corex-team__role,
+	.corex-team__bio {
+		color: inherit;
+	}
+
+	.corex-team__member {
+		background-color: transparent;
+	}
+}

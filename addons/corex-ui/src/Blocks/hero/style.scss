@@ -75,3 +75,16 @@
 		box-shadow: var(--wp--preset--shadow--sm);
 	}
 }
+
+// A text colour chosen in the editor (spec 136, FR-008): the headings
+// and text take it.
+// WordPress's own colour classes already beat the colours of the root.
+.corex-hero.has-text-color {
+
+	:where(h1, h2, h3, h4, h5, h6),
+	.corex-hero__eyebrow,
+	.corex-hero__title,
+	.corex-hero__subtitle {
+		color: inherit;
+	}
+}
