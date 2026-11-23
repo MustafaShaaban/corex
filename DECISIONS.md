@@ -22171,3 +22171,21 @@ from a picture with a button.
 
 *Owed to the design system:* these rules, the Arabic face on four classes that set the heading face themselves,
 and a mark for the current page in the phone menu.
+
+## #677 -- The hero's drawing is approved (spec 136, design D-3)
+
+**Date:** 2026-11-23. **Spec:** 136, slice 9 (G-011; US-BLK-06, US-BLK-14). **Decided:** by the owner, in session,
+from the pictures of 21 artboards with a button ("Approve hero").
+
+- **Layouts:** Centred (media behind, text centred or at the start) and Split (text at the start, media at the
+  end of the line in a frame). A second action as the kit's outline button or text link.
+- **The scrim** has four settings: none (the default, today's drawing, with a warning in the editor), and light,
+  medium and strong, the `band` colour at 75, 82 and 90%. Any scrim makes the hero the kit's dark band. 75% is
+  the floor because it holds the kit's contrast on a pure white picture.
+- **The Pause button** is the kit's outline button with an icon and a word, 48px tall, in the bottom corner at
+  the end of the line, last in the keyboard order; a hero with a video keeps 96px under its content so the
+  button never covers the actions. In Split it sits in the frame's corner.
+- The record is `design/handoffs/spec-136-hero.md`. The boards stay on the owner's private canvas.
+
+*Owed to the design system before slice 9 is built:* three scrim tokens, a pause and a play icon, a 44px minimum
+for the standalone link in the hero, and three Arabic fixes the drawing made to follow the kit's written rules.
