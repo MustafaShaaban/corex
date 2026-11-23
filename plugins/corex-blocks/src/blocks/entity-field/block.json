@@ -10,7 +10,7 @@
 	"attributes": {
 		"value": { "type": "string", "default": "" }
 	},
-	"supports": { "html": false, "anchor": true },
+	"supports": { "html": false, "anchor": true, "spacing": { "margin": ["top", "bottom"] } },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Blocks\\Examples\\EntityFieldRenderer", "editor": "pending" }

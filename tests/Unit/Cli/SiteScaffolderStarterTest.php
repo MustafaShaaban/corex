@@ -144,7 +144,7 @@ it('names the slice files in the removal guide', function () {
         ->and($guide)->toContain('src/Blocks/example');
 });
 
-it('spec 136 FR-014: the example block declares its kind and its anchor, and previews its records inert', function () {
+it('spec 136 FR-014: the example block declares its kind, its anchor and a top and bottom margin, and previews its records inert', function () {
     $base = starterBase();
     starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
     $block = $base . '/acme-site/src/Blocks/example';
@@ -153,7 +153,7 @@ it('spec 136 FR-014: the example block declares its kind and its anchor, and pre
     $js = (string) file_get_contents($block . '/index.js');
 
     expect($json['corex']['editor'])->toBe('records')
-        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true])
+        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true, 'spacing' => ['margin' => ['top', 'bottom']]])
         ->and($js)->toContain("import ServerSideRender from '@wordpress/server-side-render';")
         ->toContain('<div { ...useBlockProps() }>')
         ->toContain('<Disabled>');

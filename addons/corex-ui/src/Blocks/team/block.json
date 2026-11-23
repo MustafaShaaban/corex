@@ -10,7 +10,13 @@
 	"attributes": {
 		"members": { "type": "array", "default": [] }
 	},
-	"supports": { "html": false, "anchor": true, "align": ["wide", "full"] },
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"align": ["wide", "full"],
+		"spacing": { "margin": ["top", "bottom"], "padding": ["vertical", "horizontal"] },
+		"color": { "background": true, "text": true }
+	},
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\TeamRenderer", "editor": "in-place" }

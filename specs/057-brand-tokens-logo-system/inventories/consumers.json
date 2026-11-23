@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 1392,
+  "count": 1393,
   "consumers": [
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
@@ -2913,7 +2913,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 11: border-radius: var(--wp--custom--radius--lg);",
+      "selector_or_context": "lines 14: border-radius: var(--wp--custom--radius--lg);",
       "property": "--wp--custom--radius--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2923,7 +2923,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 47: border-radius: var(--wp--custom--radius--md);",
+      "selector_or_context": "lines 50: border-radius: var(--wp--custom--radius--md);",
       "property": "--wp--custom--radius--md",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2933,7 +2933,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 10, 46: background-color: var(--wp--preset--color--primary); | color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 10, 49: background-color: var(--wp--preset--color--primary); | color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2943,7 +2943,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 31, 37, 45: color: var(--wp--preset--color--surface); | background-color: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 13, 48: color: var(--wp--preset--color--surface); | background-color: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2953,7 +2953,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 30: font-size: var(--wp--preset--font-size--2-xl);",
+      "selector_or_context": "lines 33: font-size: var(--wp--preset--font-size--2-xl);",
       "property": "--wp--preset--font-size--2-xl",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2963,7 +2963,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 36: font-size: var(--wp--preset--font-size--lg);",
+      "selector_or_context": "lines 39: font-size: var(--wp--preset--font-size--lg);",
       "property": "--wp--preset--font-size--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2973,7 +2973,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 12: box-shadow: var(--wp--preset--shadow--md);",
+      "selector_or_context": "lines 15: box-shadow: var(--wp--preset--shadow--md);",
       "property": "--wp--preset--shadow--md",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2983,7 +2983,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 49: box-shadow: var(--wp--preset--shadow--sm);",
+      "selector_or_context": "lines 52: box-shadow: var(--wp--preset--shadow--sm);",
       "property": "--wp--preset--shadow--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2993,7 +2993,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 42: margin-block-start: var(--wp--preset--spacing--20);",
+      "selector_or_context": "lines 45: margin-block-start: var(--wp--preset--spacing--20);",
       "property": "--wp--preset--spacing--20",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3003,7 +3003,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 24, 43: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 27, 46: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3023,7 +3023,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/cta/style.scss",
-      "selector_or_context": "lines 44: padding-inline: var(--wp--preset--spacing--60);",
+      "selector_or_context": "lines 47: padding-inline: var(--wp--preset--spacing--60);",
       "property": "--wp--preset--spacing--60",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3213,7 +3213,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 17: border-radius: var(--wp--custom--radius--lg);",
+      "selector_or_context": "lines 20: border-radius: var(--wp--custom--radius--lg);",
       "property": "--wp--custom--radius--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3223,7 +3223,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 73: border-radius: var(--wp--custom--radius--md);",
+      "selector_or_context": "lines 76: border-radius: var(--wp--custom--radius--md);",
       "property": "--wp--custom--radius--md",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3233,7 +3233,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 57: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 19: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3243,7 +3243,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 63: color: var(--wp--preset--color--ink-soft);",
+      "selector_or_context": "lines 66: color: var(--wp--preset--color--ink-soft);",
       "property": "--wp--preset--color--ink-soft",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3253,7 +3253,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 50, 71: color: var(--wp--preset--color--primary); | background-color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 53, 74: color: var(--wp--preset--color--primary); | background-color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3263,7 +3263,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 72: color: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 75: color: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3283,7 +3283,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 55: font-size: var(--wp--preset--font-size--hero);",
+      "selector_or_context": "lines 58: font-size: var(--wp--preset--font-size--hero);",
       "property": "--wp--preset--font-size--hero",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3293,7 +3293,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 62: font-size: var(--wp--preset--font-size--lg);",
+      "selector_or_context": "lines 65: font-size: var(--wp--preset--font-size--lg);",
       "property": "--wp--preset--font-size--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3303,7 +3303,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 48: font-size: var(--wp--preset--font-size--sm);",
+      "selector_or_context": "lines 51: font-size: var(--wp--preset--font-size--sm);",
       "property": "--wp--preset--font-size--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3313,7 +3313,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 75: box-shadow: var(--wp--preset--shadow--sm);",
+      "selector_or_context": "lines 78: box-shadow: var(--wp--preset--shadow--sm);",
       "property": "--wp--preset--shadow--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3323,7 +3323,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 68: margin-block-start: var(--wp--preset--spacing--20);",
+      "selector_or_context": "lines 71: margin-block-start: var(--wp--preset--spacing--20);",
       "property": "--wp--preset--spacing--20",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3333,7 +3333,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 40, 69: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 43, 72: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3343,7 +3343,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/hero/style.scss",
-      "selector_or_context": "lines 9, 70: padding-inline: var(--wp--preset--spacing--50);",
+      "selector_or_context": "lines 9, 73: padding-inline: var(--wp--preset--spacing--50);",
       "property": "--wp--preset--spacing--50",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3533,7 +3533,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 11: border-radius: var(--wp--custom--radius--lg);",
+      "selector_or_context": "lines 14: border-radius: var(--wp--custom--radius--lg);",
       "property": "--wp--custom--radius--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3543,7 +3543,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 17, 28, 35: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 12, 31: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3553,7 +3553,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 23, 42: color: var(--wp--preset--color--primary); | background-color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 26, 45: color: var(--wp--preset--color--primary); | background-color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3563,7 +3563,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 9, 43: background-color: var(--wp--preset--color--surface); | color: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 9, 46: background-color: var(--wp--preset--color--surface); | color: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3573,7 +3573,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 22: font-size: var(--wp--preset--font-size--hero);",
+      "selector_or_context": "lines 25: font-size: var(--wp--preset--font-size--hero);",
       "property": "--wp--preset--font-size--hero",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3583,7 +3583,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 16: font-size: var(--wp--preset--font-size--lg);",
+      "selector_or_context": "lines 19: font-size: var(--wp--preset--font-size--lg);",
       "property": "--wp--preset--font-size--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3593,7 +3593,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 27: font-size: var(--wp--preset--font-size--sm);",
+      "selector_or_context": "lines 30: font-size: var(--wp--preset--font-size--sm);",
       "property": "--wp--preset--font-size--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3603,7 +3603,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 10: box-shadow: var(--wp--preset--shadow--md);",
+      "selector_or_context": "lines 13: box-shadow: var(--wp--preset--shadow--md);",
       "property": "--wp--preset--shadow--md",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3613,7 +3613,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 7, 29, 40: gap: var(--wp--preset--spacing--30); | margin-inline-start: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 7, 32, 43: gap: var(--wp--preset--spacing--30); | margin-inline-start: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3623,7 +3623,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/pricing/style.scss",
-      "selector_or_context": "lines 8, 34, 41: padding: var(--wp--preset--spacing--50); | padding-inline-start: var(--wp--preset--spacing--50); | padding-inline: var(--wp--preset--spacing--50);",
+      "selector_or_context": "lines 8, 37, 44: padding: var(--wp--preset--spacing--50); | padding-inline-start: var(--wp--preset--spacing--50); | padding-inline: var(--wp--preset--spacing--50);",
       "property": "--wp--preset--spacing--50",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3713,7 +3713,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/stat/style.scss",
-      "selector_or_context": "lines 19, 24: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 11: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3723,7 +3723,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/stat/style.scss",
-      "selector_or_context": "lines 13: color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 16: color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3733,7 +3733,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/stat/style.scss",
-      "selector_or_context": "lines 12: font-size: var(--wp--preset--font-size--hero);",
+      "selector_or_context": "lines 15: font-size: var(--wp--preset--font-size--hero);",
       "property": "--wp--preset--font-size--hero",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3743,7 +3743,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/stat/style.scss",
-      "selector_or_context": "lines 18: font-size: var(--wp--preset--font-size--lg);",
+      "selector_or_context": "lines 21: font-size: var(--wp--preset--font-size--lg);",
       "property": "--wp--preset--font-size--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3753,7 +3753,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/stat/style.scss",
-      "selector_or_context": "lines 23: font-size: var(--wp--preset--font-size--sm);",
+      "selector_or_context": "lines 26: font-size: var(--wp--preset--font-size--sm);",
       "property": "--wp--preset--font-size--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -3763,13 +3763,23 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/stat/style.scss",
-      "selector_or_context": "lines 8, 25: gap: var(--wp--preset--spacing--30); | margin-block-start: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 8, 28: gap: var(--wp--preset--spacing--30); | margin-block-start: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",
       "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.30"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/tabs/style.scss",
+      "selector_or_context": "lines 108: border-block-end: var(--wp--custom--border--width--strong) solid transparent;",
+      "property": "--wp--custom--border--width--strong",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "border.width.strong"
     },
     {
       "path": "addons/corex-ui/src/Blocks/tabs/style.scss",
@@ -4043,7 +4053,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/testimonial/style.scss",
-      "selector_or_context": "lines 9: border-radius: var(--wp--custom--radius--lg);",
+      "selector_or_context": "lines 12: border-radius: var(--wp--custom--radius--lg);",
       "property": "--wp--custom--radius--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -4053,7 +4063,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/testimonial/style.scss",
-      "selector_or_context": "lines 15: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 10: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -4063,7 +4073,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/testimonial/style.scss",
-      "selector_or_context": "lines 21: color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 24: color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -4083,7 +4093,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/testimonial/style.scss",
-      "selector_or_context": "lines 14: font-size: var(--wp--preset--font-size--lg);",
+      "selector_or_context": "lines 17: font-size: var(--wp--preset--font-size--lg);",
       "property": "--wp--preset--font-size--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -4093,7 +4103,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/testimonial/style.scss",
-      "selector_or_context": "lines 20: font-size: var(--wp--preset--font-size--sm);",
+      "selector_or_context": "lines 23: font-size: var(--wp--preset--font-size--sm);",
       "property": "--wp--preset--font-size--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -4103,7 +4113,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/testimonial/style.scss",
-      "selector_or_context": "lines 8: box-shadow: var(--wp--preset--shadow--md);",
+      "selector_or_context": "lines 11: box-shadow: var(--wp--preset--shadow--md);",
       "property": "--wp--preset--shadow--md",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -4113,7 +4123,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/testimonial/style.scss",
-      "selector_or_context": "lines 19: margin-block-start: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 22: margin-block-start: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",

@@ -12,7 +12,7 @@
 		"triggerLabel": { "type": "string", "default": "" },
 		"content": { "type": "string", "default": "" }
 	},
-	"supports": { "html": false, "anchor": true },
+	"supports": { "html": false, "anchor": true, "spacing": { "margin": ["top", "bottom"] } },
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",

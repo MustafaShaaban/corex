@@ -11,7 +11,7 @@
 		"flowId": { "type": "integer", "default": 0 },
 		"variant": { "type": "string", "default": "success-message" }
 	},
-	"supports": { "html": false, "className": false, "anchor": true },
+	"supports": { "html": false, "className": false, "anchor": true, "spacing": { "margin": ["top", "bottom"] } },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer", "editor": "pending" }

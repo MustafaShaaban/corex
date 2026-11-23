@@ -12,7 +12,12 @@
 		"label": { "type": "string", "default": "" },
 		"description": { "type": "string", "default": "" }
 	},
-	"supports": { "html": false, "anchor": true },
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"spacing": { "margin": ["top", "bottom"], "padding": ["vertical", "horizontal"] },
+		"color": { "background": true, "text": true }
+	},
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\StatRenderer", "editor": "in-place" }

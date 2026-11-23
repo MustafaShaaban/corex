@@ -7,7 +7,11 @@
 	"icon": "list-view",
 	"description": "An example {{ name }} client-site block that lists records (server-rendered). Delete with the rest of the example: see REMOVE-EXAMPLE.md.",
 	"textdomain": "{{ text_domain }}",
-	"supports": { "html": false, "anchor": true },
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"spacing": { "margin": [ "top", "bottom" ] }
+	},
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "editor": "records", "renderer": "{{ namespace }}\\Blocks\\ExampleRenderer" }

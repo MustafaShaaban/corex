@@ -556,7 +556,7 @@ One pull request each, test first, merged into `main` on green. "Rests on" names
 |---|---|---|---|---|---|
 | 0 | This spec, DECISIONS #670 to #675, the gap table rows | | | X | nothing |
 | 1 | Wrapper attributes reach the page | FR-001 to FR-006a | 0 | IV, VII | each forms `block.json` (one line each) and corex-profile's `ProfileServiceProvider.php` changed after the tag: the cherry-pick may need a hand merge there |
-| 2a | Margin, padding and colour | FR-007, FR-008 | 1 | V, VIII | nothing |
+| 2a | Margin, padding and colour | FR-007, FR-008 | 1, 3 | V, VIII | slice 3 (#506), cherry-picked first: the gate imports its parity helpers and the `supports` lines sit beside its `corex.editor` keys (DECISIONS #680) |
 | 2b | The bands on the section blocks | FR-009 | 2a | V | the section bands (spec 134, #640, #642), which the line does not carry: this slice waits for `main` to be released and is not cherry-picked |
 | 3 | The standard: kinds, the two parity tests, the gate, `make:block`, the starter's block, the READMEs, and hero, cta, stat, team | FR-010 to FR-017 | 1 | X, V, VIII | nothing |
 | 4 | Copyright, newsletter signup and social share in place; posts, jobs, breadcrumbs and the form as records | FR-018 to FR-020 | 3 | VI, VII | nothing (the form: editor files only) |

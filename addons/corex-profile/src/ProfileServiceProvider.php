@@ -172,7 +172,7 @@ final class ProfileServiceProvider extends ServiceProvider
         register_block_type('corex/account', [
             'api_version'     => 3,
             'render_callback' => [$this, 'renderBlock'],
-            'supports'        => ['anchor' => true],
+            'supports'        => ['anchor' => true, 'spacing' => ['margin' => ['top', 'bottom']]],
         ]);
     }
 
