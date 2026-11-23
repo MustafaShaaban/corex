@@ -73,7 +73,7 @@ to the wave's own entry when it is tagged from `release/gap-line`.
 - **Social share's copy and device-share buttons stay hidden until its script shows them.** Their sheet's
   `display: inline-flex` beat the `hidden` they are printed with, so both showed from the first paint: without
   scripts, and the device-share button on browsers that cannot share, where it did nothing. A `[hidden]` rule hides
-  them again; the view script still shows the copy button, and the device-share button where the browser can share.
+  them again; the view script still shows each where the browser can copy or share.
 
 - **A new client repository is checked before it has a remote** (spec 135 slice 1, gap G-001; DECISIONS #661).
   `npm run verify:framework` took a repository with no `origin` for the framework's own and passed without

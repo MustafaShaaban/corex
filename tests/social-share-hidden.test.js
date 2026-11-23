@@ -1,7 +1,6 @@
 /**
  * The social share block's copy and device-share buttons are printed `hidden` and shown by its
- * view script: the copy button once the script runs, the device-share button only where the
- * browser can share. Their sheet gives them `display: inline-flex`, which beats the browser's own
+ * view script, each only where the browser can do what it offers: copy to the clipboard, share. Their sheet gives them `display: inline-flex`, which beats the browser's own
  * `[hidden] { display: none }`, so the sheet must hide them again while they carry `hidden`.
  */
 const path = require( 'path' );
