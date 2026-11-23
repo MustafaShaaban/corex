@@ -18,13 +18,13 @@ use Corex\Tests\Support\ThemeContract;
 
 require_once ThemeContract::root() . '/theme/inc/favicon.php';
 
-/** The links the theme prints into the head, for a site with or without a site icon. */
-function theme_favicon_head(bool $hasSiteIcon, string $activeTheme = 'corex'): string
+/** The links the theme prints into the head: with or without a site icon, under the theme itself or a child. */
+function theme_favicon_head(bool $hasSiteIcon, string $activeTheme = 'corex', string $parentTheme = 'corex'): string
 {
     Functions\when('has_site_icon')->justReturn($hasSiteIcon);
     // The active theme: the CoreX theme itself, or a child of it whose stylesheet is another folder.
     Functions\when('get_stylesheet')->justReturn($activeTheme);
-    Functions\when('get_template')->justReturn('corex');
+    Functions\when('get_template')->justReturn($parentTheme);
     Functions\when('get_template_directory_uri')->justReturn('https://example.test/wp-content/themes/corex');
     Functions\when('esc_url')->returnArg();
     Functions\when('esc_attr')->returnArg();
@@ -89,6 +89,11 @@ it('adds no favicon from any plugin, add-on or package, so another theme gets no
     }
 
     expect($found)->toBe([]);
+});
+
+it('links the favicon under the CoreX theme installed under another folder name (spec 135, FR-016)', function () {
+    // wp-env installs the theme as `theme`: the check compares the active theme with its parent, not a name.
+    expect(theme_favicon_head(false, 'theme', 'theme'))->toContain('corex-favicon.svg');
 });
 
 it('links nothing under a child of the CoreX theme, whose site is the client\'s (spec 135, FR-016)', function () {

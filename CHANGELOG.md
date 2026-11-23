@@ -52,9 +52,6 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   generated, for the client to change. It writes no index, front page, header or footer: those are the CoreX
   theme's until the client's design replaces them. `make:site --force` keeps an existing theme's `style.css`
   and `theme.json`.
-- **The CoreX favicon stays off a client's child theme** (spec 135 slice 4, FR-016). WordPress runs the CoreX
-  theme's `functions.php` under a child too, so a client site on a child theme with no site icon showed the
-  CoreX mark in its tab. The theme now links its favicon only when it is the active theme itself.
 
 ### Client impact
 
@@ -77,9 +74,9 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     `sites/`. From this release, a CoreX release that adds a palette slug or a font size says so here, because
     a child theme's list must gain it too.
   - **Spec 135 slice 4 (FR-016).** Muva, Perego and Mizzey: nothing changes. Muva and Perego run their own
-    standalone themes, so the CoreX theme's `functions.php` never runs there; Mizzey has no client theme under
-    `sites/`. A site that runs the CoreX theme itself keeps its favicon. Not carried to `release/gap-line`, whose
-    CoreX theme links no favicon.
+    standalone themes, so the CoreX theme's `functions.php` never runs there, and Mizzey's theme names no
+    `Template:` line either. A site that runs the CoreX theme itself keeps its favicon. On `main` only: not
+    carried to `release/gap-line`, whose CoreX theme links no favicon, so it does not move into the wave's entry.
   - **Spec 136 slice 1 (G-005).** No upgrade step, no stored data changed.
     - **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks
       gain an `id` or a class only where an editor set one. Where it shows the account block, that block's root
@@ -111,7 +108,8 @@ shows the whole CoreX mark, and corex-ui's block styles start drawing for visito
 - **The logo set** (US-BRD-05, FR-018 to FR-024; DECISIONS #647). Fixed-colour lockups for light and dark grounds,
   stacked lockups, the symbol in both, a graphite knockout on brass, and a favicon as SVG and PNG at 16, 32, 180
   and 512px, all written by `scripts/generate-logo-assets.py` and listed in `logo-manifest.json` with their use,
-  colours and hash. The CoreX theme links its own favicon copies when a site has no site icon; the Coming soon
+  colours and hash. The CoreX theme links its own favicon copies when a site has no site icon and it is the active theme
+  itself, never under a client's child theme (spec 135 slice 4, FR-016); the Coming soon
   page links none.
 - **The theme preview is a capture** (US-BRD-07, FR-025 to FR-027; DECISIONS #638). `npm run theme:preview --
   --url=<address> --wp-path=<folder>` takes the front page of a scratch site with the Company kit at 1200 by 900

@@ -19,7 +19,8 @@ defined('ABSPATH') || exit;
 
 if (! function_exists('corex_theme_favicon_links')) {
     /**
-     * Prints the CoreX favicon links into the head, unless the site has a site icon.
+     * Prints the CoreX favicon links into the head, unless the site has a site icon or the active theme is a
+     * child of this one.
      */
     function corex_theme_favicon_links(): void
     {
