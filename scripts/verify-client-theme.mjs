@@ -252,19 +252,29 @@ export function clientThemeDirs( root ) {
 		.filter( ( dir ) => existsSync( path.join( root, dir, 'style.css' ) ) );
 }
 
+/**
+ * Every style variation of a theme: each `.json` under `styles/`, at any depth, as WordPress reads them.
+ *
+ * @param {string} root The repository.
+ * @param {string} dir  The theme, repository-relative.
+ * @return {{file: string, json: Object}[]} The variations, by path.
+ */
 const variationsOf = ( root, dir ) => {
 	const styles = path.join( root, dir, 'styles' );
 
-	return isDirectory( styles )
-		? readdirSync( styles )
-				.filter( ( entry ) => entry.endsWith( '.json' ) )
-				.sort()
-				.map( ( entry ) => {
-					const file = `${ dir }/styles/${ entry }`;
+	if ( ! isDirectory( styles ) ) {
+		return [];
+	}
 
-					return { file, json: readJson( root, file ) };
-				} )
-		: [];
+	return readdirSync( styles, { recursive: true } )
+		.map( ( entry ) => String( entry ).split( path.sep ).join( '/' ) )
+		.filter( ( entry ) => entry.endsWith( '.json' ) )
+		.sort()
+		.map( ( entry ) => {
+			const file = `${ dir }/styles/${ entry }`;
+
+			return { file, json: readJson( root, file ) };
+		} );
 };
 
 const checkOne = ( root, dir, parentOf, fileExists ) => {
@@ -276,7 +286,8 @@ const checkOne = ( root, dir, parentOf, fileExists ) => {
 		return { theme: { dir, kind: 'standalone' }, findings: [] };
 	}
 
-	if ( template.toLowerCase() !== PARENT_SLUG ) {
+	// Matched as WordPress matches a theme's directory: exactly, so `Corex` is not the CoreX theme.
+	if ( template !== PARENT_SLUG ) {
 		return { theme: { dir, kind: 'other', template }, findings: [] };
 	}
 

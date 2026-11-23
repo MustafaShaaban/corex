@@ -18,7 +18,9 @@ framework's, the root included.
 - [ ] Read the **Client impact** section of `CHANGELOG.md` for every release between the one
       recorded in `sites/{{ site_dir }}/corex-baseline.json` and the one you are taking. A release
       can change the CoreX theme, which is the parent of `sites/{{ site_dir }}/{{ theme_slug }}`:
-      its templates, parts, patterns and new tokens reach {{ name }} with the merge.
+      its templates, parts and patterns, and new keys under `custom` and `layout`, reach {{ name }}
+      with the merge. A value {{ name }}'s `theme.json` lists stays {{ name }}'s, and a new colour,
+      size or font does not arrive until {{ name }}'s list names it (the check below says which).
 - [ ] Note how the public pages look and behave now, to compare afterwards.
 
 ## Update

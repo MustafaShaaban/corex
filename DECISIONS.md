@@ -21883,7 +21883,7 @@ whether it offers the service. `verify:dist` fails a client plugin that ships bl
 - **Where the tokens come from.** `Corex\Cli\Site\ParentThemeTokens` reads the CoreX theme's `theme.json`
   when a theme is generated, from `theme/theme.json` in the repository the CLI runs from, then from the
   installed theme `corex`. It reaches `SiteScaffolder` through its constructor, so the scaffolder stays a pure
-  class with no WordPress and `ReadinessCommand`, which builds one too, is unchanged. With neither readable,
+  class with no WordPress and `ReadinessCommand`, which is handed one by the container, is unchanged. With neither readable,
   nothing is written and the message names both paths. `--plugin-only` never asks for it.
 - **What it never touches.** A theme folder that already holds a `style.css` keeps its `style.css` and its
   `theme.json`, with or without `--force`, and the command says which files it kept. `--force` before this

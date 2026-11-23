@@ -101,11 +101,11 @@ a site **plugin** (`acme-site/`, namespace `AcmeSite\`) and **theme** (`acme-the
 prefixes (REST `acme/v1`, CSS `--acme-`, options `acme_`, all distinct from Corex), plus governance
 docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, `.gitignore`, `specs/`, `docs/`).
 
-The theme is a **child of the CoreX theme**. It gets three files: `style.css` (`Template: corex`), `theme.json`
+The theme is a **child of the CoreX theme**. It gets three files (`--starter` adds its asset build): `style.css` (`Template: corex`), `theme.json`
 (every preset list of the CoreX theme's, its `settings.custom` and its `settings.layout`, with CoreX's values,
 read from the CoreX theme's own `theme.json` at generation) and `templates/coming-soon.html`. Its templates,
-header and footer parts, patterns and style variations are the CoreX theme's until the client theme ships a file
-of the same name. The CoreX theme's `theme.json` is looked for in `theme/` of the repository, then in the
+header and footer parts and style variations are the CoreX theme's until the client theme ships a file of the
+same name, and its patterns until the client theme ships one with the same `Slug:`. The CoreX theme's `theme.json` is looked for in `theme/` of the repository, then in the
 installed theme `corex`; when neither can be read, nothing is generated and both paths are named.
 `--plugin-only` does not need it. A list kept in the client theme's `theme.json` must keep every CoreX entry:
 `npm run verify:client-theme` checks it. See the

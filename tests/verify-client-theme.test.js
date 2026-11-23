@@ -339,6 +339,39 @@ describe( 'a repository', () => {
 		] );
 	} );
 
+	it( 'reads a variation in a folder under styles/, as WordPress does', () => {
+		const partial = {
+			settings: {
+				color: { palette: parent().settings.color.palette.slice( 1 ) },
+			},
+		};
+		const root = repository( {
+			'sites/acme/acme-theme/style.css': CHILD_STYLE,
+			'sites/acme/acme-theme/styles/colors/acme.json':
+				JSON.stringify( partial ),
+		} );
+		const result = verifyClientThemes( root );
+		const [ first ] = parent().settings.color.palette;
+
+		expect( result.status ).toBe( 'fail' );
+		expect( result.missing ).toEqual( [
+			expect.objectContaining( {
+				file: 'sites/acme/acme-theme/styles/colors/acme.json',
+				entry: first.slug,
+			} ),
+		] );
+	} );
+
+	it( 'takes a parent named in another case for another theme, as WordPress does', () => {
+		const root = repository( {
+			'sites/acme/acme-theme/style.css': '/*\nTemplate: Corex\n*/\n',
+		} );
+
+		expect( report( verifyClientThemes( root ) ).join( '\n' ) ).toContain(
+			'OTHER\tsites/acme/acme-theme\tTemplate: Corex'
+		);
+	} );
+
 	it( 'fails, once, when a child needs the CoreX theme and it cannot be read', () => {
 		const root = repository( {
 			'sites/acme/acme-theme/style.css': CHILD_STYLE,

@@ -38,7 +38,7 @@ SUMMARY / WORKSPACE / MODE / SPEC STATUS / VERIFICATION / BLOCKERS / RECOMMENDED
 
 ## Where code goes
 - **App / business code** → the site plugin `{{ plugin_slug }}/` (namespace `{{ namespace }}\`).
-- **Presentation / theme code** → the site theme `{{ theme_slug }}/`, a child of the CoreX theme: values in its `theme.json`, and a template, part or pattern of the same name to replace the CoreX theme's.
+- **Presentation / theme code** → the site theme `{{ theme_slug }}/`, a child of the CoreX theme: values in its `theme.json`, and a template or part of the same name, or a pattern of the same slug, to replace the CoreX theme's.
 - Site docs/specs → `docs/` and `specs/`.
 
 The client uses its own identity, distinct from Corex: namespace `{{ namespace }}\`, text domain

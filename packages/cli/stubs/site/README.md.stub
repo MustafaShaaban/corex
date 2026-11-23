@@ -19,8 +19,9 @@ site looks finished before it has a file of its own.
 
 - **Values** go in `{{ theme_slug }}/theme.json`. It lists every CoreX token with CoreX's value at
   the time the site was generated: change the values to the client's.
-- **Structure** is overridden by a file of the same name: a `templates/front-page.html`,
-  `parts/header.html` or `patterns/` file in `{{ theme_slug }}/` replaces the CoreX theme's.
+- **Structure** is overridden by a file of the same name: a `templates/front-page.html` or
+  `parts/header.html` in `{{ theme_slug }}/` replaces the CoreX theme's, and a pattern in its
+  `patterns/` replaces the CoreX pattern with the same `Slug:`.
   Create one when the client's design calls for it.
 - **A list you keep must keep every entry.** A preset list in `theme.json` (the palette, the font
   families, the font sizes, the spacing sizes, the shadows) replaces the CoreX theme's whole list,

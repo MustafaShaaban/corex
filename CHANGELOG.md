@@ -26,6 +26,10 @@ to the wave's own entry when it is tagged from `release/gap-line`.
 - The editor's server-rendered preview (WordPress's block renderer route) gets the previewed block's markup
   without the merge, since the editor's own wrapper already carries the attributes (FR-006a; DECISIONS #676).
 - A hero or a call to action set to full width has square corners, since it reaches both edges of the screen.
+- **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
+  every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
+  `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
+  update checklist and CoreX's own CI run it. `verify:dist` fails a theme whose parent is not in the package.
 
 ### Fixed
 
@@ -48,10 +52,6 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   generated, for the client to change. It writes no index, front page, header or footer: those are the CoreX
   theme's until the client's design replaces them. `make:site --force` keeps an existing theme's `style.css`
   and `theme.json`.
-- **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
-  every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
-  `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
-  update checklist and CoreX's own CI run it. `verify:dist` fails a theme whose parent is not in the package.
 
 ### Client impact
 

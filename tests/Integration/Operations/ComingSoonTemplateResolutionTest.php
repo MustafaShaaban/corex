@@ -108,6 +108,26 @@ it('serves the theme\'s own page in place of the default when the theme ships on
 });
 
 /**
+ * The theme-origin token lists the running site reports, by slug, and its custom token keys.
+ *
+ * @return array<string, list<string>>
+ */
+function corexReportedTokens(): array
+{
+    $settings = wp_get_global_settings();
+    $lists    = [];
+
+    foreach (['color.palette', 'typography.fontSizes', 'typography.fontFamilies', 'spacing.spacingSizes', 'shadow.presets'] as $path) {
+        [$group, $list] = explode('.', $path);
+        $lists[$path]   = array_column($settings[$group][$list]['theme'] ?? [], 'slug');
+    }
+
+    $lists['custom'] = array_keys($settings['custom'] ?? []);
+
+    return $lists;
+}
+
+/**
  * Spec 135 (G-006): the client theme make:site generates is a child of the CoreX theme. Its own
  * coming-soon page still replaces the default, as a standalone theme's did. Generated here, into a
  * theme root of its own, by the scaffolder the command uses.
@@ -129,6 +149,10 @@ it('serves a generated client theme\'s own page, with the CoreX theme as its par
     wp_clean_themes_cache();
 
     try {
+        switch_theme('corex');
+        WP_Theme_JSON_Resolver::clean_cached_data();
+        $parentTokens = corexReportedTokens();
+
         corexComingSoonUnderTheme('initech-theme');
 
         $canvas = corexComingSoonTemplateService()->canvas();
@@ -138,6 +162,14 @@ it('serves a generated client theme\'s own page, with the CoreX theme as its par
             ->and($parent->get_stylesheet())->toBe('corex')
             ->and($canvas)->toEndWith('template-canvas.php')
             ->and((string) $_wp_current_template_content)->toContain('This file replaces CoreX\'s default page');
+
+        // SC-001: under the generated child, WordPress reports the same tokens as under the CoreX theme itself
+        // (both measured on this site, so the test holds on any line of the repository, FR-040).
+        WP_Theme_JSON_Resolver::clean_cached_data();
+        $child = corexReportedTokens();
+
+        expect($child)->toBe($parentTokens)
+            ->and($child['color.palette'])->not->toBe([]);
     } finally {
         global $wp_theme_directories;
 

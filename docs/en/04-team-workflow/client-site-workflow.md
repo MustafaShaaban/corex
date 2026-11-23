@@ -96,14 +96,16 @@ client theme's `assets/fonts/` and name it in the list.
 
 ### Structure
 
-A template, part or pattern file in the client theme replaces the CoreX theme's file of the same name. To give
-the client its own header, create `acme-theme/parts/header.html`; its own home page,
-`acme-theme/templates/front-page.html`; and so on, when the client's design calls for it. Until then the CoreX
-theme's file is used. A file you do not create is not a gap: it is the CoreX theme's.
+A template or part file in the client theme replaces the CoreX theme's file of the same name, and a pattern in
+the client theme's `patterns/` replaces the CoreX theme's pattern with the same `Slug:` header (a pattern with a
+slug of its own is simply added). To give the client its own header, create `acme-theme/parts/header.html`; its
+own home page, `acme-theme/templates/front-page.html`; and so on, when the client's design calls for it. Until
+then the CoreX theme's file is used. A file you do not create is not a gap: it is the CoreX theme's.
 
 - **Style variations.** The CoreX theme's variations (`styles/dark.json`) are offered under the client theme and
   keep CoreX's colours until the client theme ships a file of the same name, which replaces it. A variation's own
-  preset list replaces the theme's when the variation is chosen, so the full-list rule applies to it too.
+  preset list replaces the theme's when the variation is chosen, so the full-list rule applies to it too, in
+  `styles/` and in any folder under it.
 - **Custom templates and template parts.** `customTemplates` and `templateParts` in a child's `theme.json` merge
   with the CoreX theme's by position, so a list of one entry overwrites the CoreX theme's first. The generated
   `theme.json` declares neither. A client theme that declares one repeats every entry of the CoreX theme's, then
@@ -114,10 +116,12 @@ theme's file is used. A file you do not create is not a gap: it is the CoreX the
 ### `brand.json`
 
 A `brand.json` in the client theme keeps working. CoreX looks for it in the client theme first, then in the CoreX
-theme's folder, and applies it over the merged `theme.json` at runtime, so its values win over the client
-theme's `theme.json`. A preset list in it that lacks an entry of the theme's is dropped, with a warning in the
-boot log, and the theme's list is kept. A generated site puts its values in `theme.json`; a site that already has
-a `brand.json` can keep it.
+theme's folder, and applies it at runtime to the client theme's own `theme.json` data, before WordPress merges
+in the CoreX theme's, so its values win over the client theme's `theme.json`. Its palette and font families
+are checked only for the roles CoreX's blocks need: a palette or family list in it that lacks one of those
+roles is dropped, with a warning in the boot log. Like any list the client theme declares, a list in
+`brand.json` replaces the CoreX theme's whole list, and `npm run verify:client-theme` does not read it. A
+generated site puts its values in `theme.json`; a site that already has a `brand.json` can keep it.
 
 ### A site generated before the child theme
 
@@ -129,7 +133,9 @@ untouched, and says so. To make one a child by hand:
 1. Add `Template: corex` to the header of its `style.css`.
 2. In its `theme.json`, make each preset list it declares complete (every entry of the CoreX theme's, with the
    client's values), or remove the list to inherit CoreX's.
-3. Run `npm run verify:client-theme` until it passes.
+3. Run `npm run verify:client-theme` until it passes, and add it to the site's own workflow,
+   `.github/workflows/site-<client>.yml`, as a step beside `node scripts/verify-framework.mjs`: a site
+   generated before this change has a workflow without it.
 4. Decide which of its own `templates/index.html`, `templates/front-page.html`, `parts/header.html` and
    `parts/footer.html` it still wants. Each one it keeps replaces the CoreX theme's; delete the ones the
    client's design does not need.
