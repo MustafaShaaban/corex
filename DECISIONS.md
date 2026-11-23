@@ -22636,6 +22636,7 @@ sheet.
 - Slice 1 adds `corex-navigation-collapse.css` to every page with a CoreX header: 1,638 bytes printed inline, less
   the 840 bytes its rules left in `corex-navigation.css`, so about 800 bytes more per page. Its comments were moved
   out first (they were 1,628 bytes of the first version), so what is left is rules.
-- Every page stays within 10% of its budget but two: `/contact/` and `/form/`, which were already 9.6% over theirs
+- Every page stays within 10% of its budget but the three that draw a form: `/contact/`, `/form/` and `/locations/`,
+  which were already 9.6% over theirs
   on `main` (55,254 bytes against 50,424). Their budgets in `tests/e2e/quality/byte-budget.json` become the
-  measured 56,052 bytes. No other budget changes.
+  measured 56,052 bytes (56,054 for `/locations/`). No other budget changes.
