@@ -175,9 +175,11 @@ npm run build
 named `acme-site/banner` and translated in the `acme-site` text domain. The plugin requires `corex-core` and
 boots its provider once CoreX is up; the provider registers every folder of `src/Blocks` that has a
 `block.json`, from `build/blocks` once `npm run build` has run. The plugin's `package.json` has its own
-`@wordpress/scripts`, so it builds from a clean install of its own folder. A package built for deployment fails
-`npm run verify:dist` when a site plugin has block sources and no `build/blocks`, so build the plugin before
-packaging.
+`@wordpress/scripts`, so it builds from a clean install of its own folder. Build the plugin before packaging:
+`npm run verify:dist` prints a `WARN` line for each block whose `block.json` names a file its folder lacks (the
+compiled `index.js` or `style-index.css`) when the plugin's build holds no folder of that block. It names the
+plugin, the block and the file, and it does not fail the package, so read the output. A block written by hand
+that holds every file it names is not reported.
 
 ## 5. Build & deploy
 

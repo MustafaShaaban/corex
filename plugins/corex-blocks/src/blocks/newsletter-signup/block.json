@@ -16,5 +16,5 @@
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Blocks\\NewsletterSignupRenderer" }
+	"corex": { "renderer": "Corex\\Blocks\\NewsletterSignupRenderer", "editor": "pending" }
 }

@@ -1,7 +1,9 @@
 /**
- * Corex Team — DYNAMIC block edited INLINE (spec 029). Members are repeatable cards; each name/
- * role/bio is a RichText region and the photo is picked from the media library. The PHP
- * TeamRenderer renders the grid server-side (save: () => null).
+ * Corex Team: a dynamic block edited in place (spec 029; spec 136, FR-017). Members are
+ * repeatable cards drawn with the elements TeamRenderer prints; each name, role and bio is typed
+ * on the canvas and the photo is picked from the media library. The add, photo and remove
+ * buttons are the editor's own (`data-corex-editor-only`). `parity.json` is the tree both must
+ * draw. TeamRenderer renders the grid on the server (save: () => null).
  */
 import './style.scss';
 
@@ -50,6 +52,19 @@ function Edit( { attributes, setAttributes } ) {
 
 			{ members.map( ( member, index ) => (
 				<figure className="corex-team__member" key={ index }>
+					{ /*
+					 * The photo is drawn as on the page; it is a preview, not the
+					 * control. An <img> with a click handler cannot be reached or
+					 * fired from the keyboard, so the picker is opened from a real
+					 * button, the editor's own.
+					 */ }
+					{ member.image && member.image.url && (
+						<img
+							className="corex-team__photo"
+							src={ member.image.url }
+							alt={ member.image.alt || '' }
+						/>
+					) }
 					<MediaUploadCheck>
 						<MediaUpload
 							onSelect={ ( media ) =>
@@ -62,29 +77,15 @@ function Edit( { attributes, setAttributes } ) {
 							allowedTypes={ [ 'image' ] }
 							value={ member.image && member.image.id }
 							render={ ( { open } ) => (
-								/*
-								 * The photo is a preview, not the control: an <img> with a
-								 * click handler cannot be reached or fired from the
-								 * keyboard, so the picker is opened from a real button —
-								 * the same one that appears when there is no photo yet.
-								 */
-								<>
-									{ member.image && member.image.url && (
-										<img
-											className="corex-team__photo"
-											src={ member.image.url }
-											alt={ member.image.alt || '' }
-										/>
-									) }
-									<Button
-										variant="secondary"
-										onClick={ open }
-									>
-										{ member.image && member.image.url
-											? __( 'Replace photo', 'corex' )
-											: __( 'Add photo', 'corex' ) }
-									</Button>
-								</>
+								<Button
+									variant="secondary"
+									onClick={ open }
+									data-corex-editor-only
+								>
+									{ member.image && member.image.url
+										? __( 'Replace photo', 'corex' )
+										: __( 'Add photo', 'corex' ) }
+								</Button>
 							) }
 						/>
 					</MediaUploadCheck>
@@ -117,6 +118,7 @@ function Edit( { attributes, setAttributes } ) {
 							isDestructive
 							variant="link"
 							onClick={ () => removeMember( index ) }
+							data-corex-editor-only
 						>
 							{ __( 'Remove member', 'corex' ) }
 						</Button>
@@ -124,7 +126,11 @@ function Edit( { attributes, setAttributes } ) {
 				</figure>
 			) ) }
 
-			<Button variant="secondary" onClick={ addMember }>
+			<Button
+				variant="secondary"
+				onClick={ addMember }
+				data-corex-editor-only
+			>
 				{ __( 'Add member', 'corex' ) }
 			</Button>
 		</div>

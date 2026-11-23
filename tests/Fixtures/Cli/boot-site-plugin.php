@@ -8,6 +8,8 @@
  * Scenarios (spec 135, FR-030 and FR-031):
  * - `booted`: CoreX has booted before `plugins_loaded` reaches the site plugin.
  * - `later`: CoreX boots after the site plugin's `plugins_loaded` callback has run.
+ * - `included-first`: the plugin file is included before any CoreX class exists (WordPress includes
+ *   `acme-site` before `corex-core`), then CoreX loads and boots on `plugins_loaded`.
  * - `loaded-late`: the plugin file is loaded after `plugins_loaded` (activated in this request).
  * - `absent`: corex-core is not active, so no CoreX class exists.
  * - `no-block-folder`: CoreX is up and its container does not offer the block-folder service.
@@ -68,15 +70,20 @@ function initCallbacks(): int
 }
 
 $container = null;
+$app       = null;
 
-if ($scenario !== 'absent') {
-    require __DIR__ . '/site-plugin-corex.php';
+// What corex-core's file does when WordPress includes it: its classes exist from then on.
+$loadCorex = static function () use ($scenario, &$container, &$app): void {
+    if ($scenario === 'absent') {
+        return;
+    }
+
+    require_once __DIR__ . '/site-plugin-corex.php';
 
     $container = new Corex\Container\FakeContainer($scenario !== 'no-block-folder');
-}
-
-$app      = $container === null ? null : new Corex\Foundation\Application($container);
-$bootCore = static function () use ($app): void {
+    $app       = new Corex\Foundation\Application($container);
+};
+$bootCore = static function () use (&$app): void {
     if ($app !== null) {
         Corex\Support\Facades\Corex::$app = $app;
     }
@@ -84,17 +91,27 @@ $bootCore = static function () use ($app): void {
     do_action('corex_booted', $app);
 };
 
-if ($scenario === 'later') {
+if ($scenario === 'included-first') {
+    // WordPress includes acme-site before corex-core (alphabetically), and CoreX boots on plugins_loaded.
+    require $pluginFile;
+    $loadCorex();
+    add_action('plugins_loaded', $bootCore, 10);
+    do_action('plugins_loaded');
+    $beforeCorex = 0;
+} elseif ($scenario === 'later') {
+    $loadCorex();
     require $pluginFile;
     do_action('plugins_loaded');
     $beforeCorex = initCallbacks();
     $bootCore();
 } elseif ($scenario === 'loaded-late') {
+    $loadCorex();
     $bootCore();
     do_action('plugins_loaded');
     $beforeCorex = 0;
     require $pluginFile;
 } else {
+    $loadCorex();
     $bootCore();
     $beforeCorex = 0;
     require $pluginFile;

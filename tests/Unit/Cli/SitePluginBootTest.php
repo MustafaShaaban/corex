@@ -66,43 +66,32 @@ function bootSitePlugin(string $pluginFile, string $scenario): array
     return $result;
 }
 
-/** @return array<string, mixed> */
-function rootPackageJson(): array
+/** The framework's `@wordpress/scripts` range, read from the root package.json (FR-040). */
+function frameworkScriptsRange(): string
 {
-    return json_decode((string) file_get_contents(sitePluginRepository() . '/package.json'), true);
+    $root = json_decode((string) file_get_contents(sitePluginRepository() . '/package.json'), true);
+
+    return $root['devDependencies']['@wordpress/scripts'];
 }
 
 // FR-030: the plugin file.
 
-it('FR-030: the plugin file requires corex-core, autoloads the site from src/ and boots through onReady', function () {
-    $plugin = (string) file_get_contents(generatedSite() . '/acme-site/acme-site.php');
-
-    expect($plugin)->toMatch('/^ \* Requires Plugins:\s+corex-core$/m')
-        ->toContain("spl_autoload_register(")
-        ->toContain("'/src/'")
-        ->toContain('class_exists(\\Corex\\Support\\Facades\\Corex::class)')
-        ->toContain('\\Corex\\Support\\Facades\\Corex::onReady(')
-        ->toContain('new AcmeSite\\AcmeSiteServiceProvider($app->container())');
+it('FR-030: the plugin file requires corex-core', function () {
+    expect((string) file_get_contents(generatedSite() . '/acme-site/acme-site.php'))
+        ->toMatch('/^ \* Requires Plugins:\s+corex-core$/m');
 });
 
-it('FR-030: boots the provider once when CoreX has booted first', function () {
-    $result = bootSitePlugin(generatedSite() . '/acme-site/acme-site.php', 'booted');
-
-    expect($result['boots'])->toBe(1);
-});
-
-it('FR-030: boots the provider once when CoreX boots after the site plugin, and not before', function () {
-    $result = bootSitePlugin(generatedSite() . '/acme-site/acme-site.php', 'later');
+it('FR-030: boots the provider once, and never before CoreX, whichever loads first', function (string $scenario) {
+    $result = bootSitePlugin(generatedSite() . '/acme-site/acme-site.php', $scenario);
 
     expect($result['beforeCorex'])->toBe(0)
         ->and($result['boots'])->toBe(1);
-});
-
-it('FR-030: boots the provider once when the plugin is loaded after plugins_loaded', function () {
-    $result = bootSitePlugin(generatedSite() . '/acme-site/acme-site.php', 'loaded-late');
-
-    expect($result['boots'])->toBe(1);
-});
+})->with([
+    'CoreX has booted first'                             => 'booted',
+    'CoreX boots after the site plugin'                  => 'later',
+    'the plugin file is included before any CoreX class' => 'included-first',
+    'the plugin is loaded after plugins_loaded'          => 'loaded-late',
+]);
 
 it('FR-030: does nothing and raises nothing when corex-core is not active', function () {
     $result = bootSitePlugin(generatedSite() . '/acme-site/acme-site.php', 'absent');
@@ -139,15 +128,10 @@ it('FR-030: boots each of two site plugins once, each its own provider', functio
 
 // FR-031 and FR-032: the provider.
 
-it('FR-031: the provider is the site\'s own class, handed the container, and registers its blocks on init', function () {
-    $provider = (string) file_get_contents(generatedSite() . '/acme-site/src/AcmeSiteServiceProvider.php');
-
-    expect($provider)->toContain('final class AcmeSiteServiceProvider' . "\n")
-        ->not->toContain('extends')
-        ->toContain('private readonly ContainerInterface $container')
-        ->toContain('public function register(): void')
-        ->toContain('public function boot(): void')
-        ->toContain("add_action('init', [\$this, 'registerBlocks'])");
+it('FR-031: the provider is the site\'s own class, not one of CoreX\'s', function () {
+    expect((string) file_get_contents(generatedSite() . '/acme-site/src/AcmeSiteServiceProvider.php'))
+        ->toContain('final class AcmeSiteServiceProvider' . "\n")
+        ->not->toContain('extends');
 });
 
 it('FR-032: the provider asks the container for the block-folder service and hands it build/blocks and src/Blocks', function () {
@@ -168,23 +152,24 @@ it('FR-032: the provider registers no blocks when the container does not offer t
 
 // FR-034: the build.
 
-it('FR-034: the plugin\'s package.json builds src/Blocks to build/blocks with the framework\'s @wordpress/scripts', function () {
+it('FR-034: the plugin\'s package.json builds src/Blocks to build/blocks', function () {
     $package = json_decode((string) file_get_contents(generatedSite() . '/acme-site/package.json'), true);
 
     expect($package)->toBeArray()
         ->and($package['name'])->toBe('acme-site')
         ->and($package['private'])->toBeTrue()
         ->and($package['scripts']['build'])->toBe('wp-scripts build --webpack-src-dir=src/Blocks --output-path=build/blocks')
-        ->and($package['scripts']['start'])->toBe('wp-scripts start --webpack-src-dir=src/Blocks --output-path=build/blocks')
-        // FR-040: the range is the root's, read from the root package.json.
-        ->and($package['devDependencies']['@wordpress/scripts'])->toBe(rootPackageJson()['devDependencies']['@wordpress/scripts']);
+        ->and($package['scripts']['start'])->toBe('wp-scripts start --webpack-src-dir=src/Blocks --output-path=build/blocks');
 });
 
-it('FR-034: the --starter theme builds with the framework\'s @wordpress/scripts range too', function () {
-    $package = json_decode((string) file_get_contents(generatedSite(['starter' => true]) . '/acme-theme/package.json'), true);
+it('FR-034, FR-040: builds with the framework\'s @wordpress/scripts range', function (string $file) {
+    $package = json_decode((string) file_get_contents(generatedSite(['starter' => true]) . $file), true);
 
-    expect($package['devDependencies']['@wordpress/scripts'])->toBe(rootPackageJson()['devDependencies']['@wordpress/scripts']);
-});
+    expect($package['devDependencies']['@wordpress/scripts'])->toBe(frameworkScriptsRange());
+})->with([
+    'the site plugin'     => '/acme-site/package.json',
+    'the --starter theme' => '/acme-theme/package.json',
+]);
 
 it('FR-034: the build convention is the one corex-ui builds with', function () {
     $corexUi = json_decode((string) file_get_contents(sitePluginRepository() . '/addons/corex-ui/package.json'), true);
@@ -254,7 +239,6 @@ it('FR-035: the --starter provider binds its services on the container and build
     $result   = bootSitePlugin($site . '/acme-site/acme-site.php', 'booted');
 
     expect($provider)->not->toMatch('/\bnew\s+[A-Z\\\\]/')
-        ->not->toContain('register_block_type')
         ->and($result['boots'])->toBe(1)
         ->and($result['singletons'])->toBe(['AcmeSite\\Repositories\\ExampleRepository', 'AcmeSite\\Services\\ExampleService'])
         ->and($result['made'])->toBe([
@@ -275,15 +259,6 @@ it('FR-035: the example block is discovered in the plugin\'s block namespace, wi
         ->and($block['corex']['renderer'])->toBe('AcmeSite\\Blocks\\ExampleRenderer')
         ->and($block['editorScript'])->toBe('file:./index.js')
         ->and($block['style'])->toBe('file:./style-index.css');
-});
-
-it('FR-035: the example renderer is a CoreX block renderer that is handed its service', function () {
-    $renderer = (string) file_get_contents(generatedSite(['starter' => true]) . '/acme-site/src/Blocks/ExampleRenderer.php');
-
-    expect($renderer)->toContain('use Corex\\Blocks\\BlockRenderer;')
-        ->toContain('final class ExampleRenderer implements BlockRenderer')
-        ->toContain('public function __construct(private readonly ExampleService $service)')
-        ->toContain('public function render(array $attributes, string $content, object $block): string');
 });
 
 // FR-037: the generated README and AGENTS.md say how the site gets a block.

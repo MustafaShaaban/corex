@@ -11,11 +11,18 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
+use Corex\Blocks\BlockPathResolver;
+use Corex\Blocks\BlockWrapper;
+use Corex\Blocks\DynamicBlockRegistrar;
+use Corex\Blocks\PluginMountMap;
 use Corex\Cli\Generators\StubRenderer;
 use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldResult;
 use Corex\Cli\Support\InvalidNameException;
+use Corex\Container\Container;
+use Corex\Support\BootLogger;
 
 function starterScaffolder(): SiteScaffolder
 {
@@ -135,6 +142,81 @@ it('names the slice files in the removal guide', function () {
     expect($guide)->toContain('src/Models/Example.php')
         ->and($guide)->toContain('src/Controllers/ExampleController.php')
         ->and($guide)->toContain('src/Blocks/example');
+});
+
+it('spec 136 FR-014: the example block declares its kind and its anchor, and previews its records inert', function () {
+    $base = starterBase();
+    starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
+    $block = $base . '/acme-site/src/Blocks/example';
+
+    $json = json_decode((string) file_get_contents($block . '/block.json'), true);
+    $js = (string) file_get_contents($block . '/index.js');
+
+    expect($json['corex']['editor'])->toBe('records')
+        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true])
+        ->and($js)->toContain("import ServerSideRender from '@wordpress/server-side-render';")
+        ->toContain('<div { ...useBlockProps() }>')
+        ->toContain('<Disabled>');
+});
+
+/**
+ * Generates a starter under a name of its own (its classes load once per run), loads its classes and
+ * returns the render callback CoreX gives its example block: the one DynamicBlockRegistrar builds from
+ * the `corex.renderer` its block.json names, as BlockFolder registers it (spec 135, FR-032).
+ */
+function starterBlockCallback(BlockWrapper $wrapper): callable
+{
+    $base = starterBase();
+    $name = 'Wrap' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 8);
+    starterScaffolder()->scaffold($name, $base, ['starter' => true]);
+
+    $provider = glob($base . '/*-site/src/*ServiceProvider.php')[0];
+    $namespace = basename($provider, 'ServiceProvider.php');
+    $src = dirname($provider);
+    spl_autoload_register(static function (string $class) use ($namespace, $src): void {
+        if (str_starts_with($class, $namespace . '\\')) {
+            $file = $src . '/' . str_replace('\\', '/', substr($class, strlen($namespace) + 1)) . '.php';
+            if (is_file($file)) {
+                require $file;
+            }
+        }
+    });
+
+    Functions\when('get_option')->justReturn([['id' => 1, 'title' => 'First']]);
+    Functions\stubEscapeFunctions();
+    Functions\stubTranslationFunctions();
+
+    $metadata = json_decode((string) file_get_contents($src . '/Blocks/example/block.json'), true);
+    $registrar = new DynamicBlockRegistrar(
+        new Container(),
+        new BootLogger(debug: false),
+        new PluginMountMap(),
+        new BlockPathResolver(),
+        $wrapper,
+    );
+
+    return $registrar->renderCallback($metadata['corex']['renderer']);
+}
+
+it('spec 136 FR-001, spec 135 FR-032: the example block\'s renderer is resolved from the container and its markup passes through the BlockWrapper', function () {
+    $wrapper = new class implements BlockWrapper {
+        /** @var list<string> */
+        public array $seen = [];
+
+        public function apply(string $markup, array $rootClasses = []): string
+        {
+            $this->seen[] = $markup;
+
+            return str_replace('<ul class=', '<ul id="wrapped" class=', $markup);
+        }
+    };
+
+    $wrapped = starterBlockCallback($wrapper)([], '', (object) []);
+
+    expect($wrapper->seen)->toHaveCount(1)
+        ->and($wrapper->seen[0])->toStartWith('<ul class=')
+        ->and($wrapped)->toContain('<ul id="wrapped" class=')
+        ->and($wrapped)->toContain('<li>First</li>');
 });
 
 it('refuses a name that normalises to the reserved corex identity', function () {

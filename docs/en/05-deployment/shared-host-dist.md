@@ -197,7 +197,15 @@ npm run verify:dist
   `corex-release.json` (`autoload.psr4`: every framework plugin, every add-on and the CLI package) loads from the
   packaged directory it is mapped to, and that no file was loaded from outside the package.
 
-The build entry runs the same verification and exits non-zero on failure.
+It also prints one `WARN` line, without changing the exit code, for each block of a client site plugin (a plugin
+whose folder ends in `-site`, or whose main file says `Requires Plugins: corex-core`) whose
+`src/Blocks/<block>/block.json` names a file its folder lacks, such as the compiled `index.js` or
+`style-index.css`, when the plugin's `build/blocks/` (in any case, `build/Blocks` too) holds no folder of that
+block. The line names the plugin, the block and the missing file. A block written by hand that holds every file
+it names is not reported. It is a warning and not a failure so that a client whose pipeline packages its site
+plugin unbuilt keeps deploying; build the plugin before packaging (below) and the warning goes.
+
+The build entry runs the same verification, prints the same warnings and exits non-zero on failure.
 
 The probe does not start WordPress: it has no database. CoreX's own CI goes one step further on every pull
 request. The `client-site-layout` job builds the package for a generated client site, points it at that job's
@@ -207,7 +215,9 @@ database and runs `wp eval` and `wp corex routes:list` from the package.
 > (the admin and block bundles are git-ignored build output, and the builder copies what is there; the same
 > build writes the Arabic script translations, and `build:dist` and `release:push` exit 1 on a package without
 > them), and build each
-> client theme that has an asset pipeline: `cd sites/<client>/<client>-theme && npm ci && npm run build`. In CI,
+> client theme that has an asset pipeline: `cd sites/<client>/<client>-theme && npm ci && npm run build`, and each
+> client site plugin that has a `package.json`: `cd sites/<client>/<slug>-site && npm ci && npm run build` (or
+> `npm install` in place of `npm ci` when the plugin has no lockfile yet). In CI,
 > run these as steps before the `build:dist` step (the Azure pipeline's build stage is the place for it).
 
 ## First deploy checklist

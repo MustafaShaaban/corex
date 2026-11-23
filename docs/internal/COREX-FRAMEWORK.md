@@ -386,7 +386,7 @@ wp corex make:model Career --cpt --rest --ability
 wp corex make:controller CareerController
 wp corex make:service CareerService
 wp corex make:repository CareerRepository
-wp corex make:block hero-section --dynamic --php
+wp corex make:block hero-section            # a static block, edited in place (DECISIONS #656)
 wp corex make:migration create_subscribers_table
 wp corex make:seeder CareerSeeder
 wp corex make:middleware RateLimit
@@ -827,7 +827,7 @@ wp corex make:model Career --cpt --rest --ability
 wp corex make:repository CareerRepository
 wp corex make:service CareerService
 wp corex make:controller CareerController
-wp corex make:block career-grid --dynamic
+wp corex make:block career-grid --records
 wp corex make:form job-application
 
 # 3. Declare fields on the model (§6) — ACF or native, same code

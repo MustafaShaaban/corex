@@ -17,7 +17,7 @@ future translation phase (spec 028, phase 2). Code identifiers are **never** tra
 | **Controller** | A thin entry point (REST/AJAX/hook) that delegates to services. Holds no business logic and no hand-written security checks. | _TODO_ |
 | **Event Bus** | The publish/subscribe seam: code emits an event; listeners react. Decouples "something happened" from "what to do about it". | _TODO_ |
 | **Middleware** | Declarative cross-cutting checks (nonce, capability, throttle, sanitize) attached to a route, applied automatically instead of being hand-written. | _TODO_ |
-| **Block (dynamic)** | A `corex/*` editor block whose HTML is rendered on the server by a PHP renderer (the editor previews it via `ServerSideRender`). | _TODO_ |
+| **Block (dynamic)** | A `corex/*` editor block whose HTML is rendered on the server by a PHP renderer (a static block is edited in place, drawn with the page's elements; a block that shows records previews via `ServerSideRender`; DECISIONS #656). | _TODO_ |
 | **Blueprint / Kit** | A manifest that composes existing templates, parts, patterns, and modules into a ready-made site shape (e.g. the Company or Portfolio kit). | _TODO_ |
 | **Feature flag** | A named on/off switch (`corex_features_<flag>` option / `FEATURES_<FLAG>` env) that turns a capability on per-site without code changes. | _TODO_ |
 | **Guard Gate** | The rule that no diff ships until the relevant guard skill (clean-code / wp / woo / test / docs) has run clean on it. | _TODO_ |

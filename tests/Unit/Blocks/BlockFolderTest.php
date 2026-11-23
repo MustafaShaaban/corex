@@ -108,10 +108,22 @@ it('FR-033: binds a block\'s script translations to its own text domain, and to 
 
 it('FR-033: every CoreX block names corex as its text domain, so none is bound to another', function () {
     $repository = dirname(__DIR__, 3);
-    $files      = array_merge(
-        glob($repository . '/plugins/*/src/blocks/*/block.json') ?: [],
-        glob($repository . '/addons/*/src/Blocks/*/block.json') ?: [],
-    );
+    $files      = [];
+
+    // Every block.json under plugins/ and addons/, wherever it sits, except installed packages and builds.
+    foreach (['plugins', 'addons'] as $root) {
+        $tree = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator(
+            new RecursiveDirectoryIterator($repository . '/' . $root, FilesystemIterator::SKIP_DOTS),
+            static fn (SplFileInfo $entry): bool => ! ($entry->isDir() && in_array($entry->getFilename(), ['node_modules', 'build'], true))
+        ));
+
+        foreach ($tree as $entry) {
+            if ($entry->getFilename() === 'block.json') {
+                $files[] = $entry->getPathname();
+            }
+        }
+    }
+
     $others = [];
 
     foreach ($files as $file) {
@@ -122,6 +134,7 @@ it('FR-033: every CoreX block names corex as its text domain, so none is bound t
         }
     }
 
-    expect($files)->not->toBe([])
+    // 30 blocks today: a search that finds few of them is broken, not clean.
+    expect(count($files))->toBeGreaterThan(25)
         ->and($others)->toBe([]);
 });

@@ -18,5 +18,5 @@
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"viewScript": "file:./view.js",
-	"corex": { "renderer": "Corex\\Forms\\Block\\FormBlockRenderer", "root": [ "corex-flow", "corex-form" ] }
+	"corex": { "renderer": "Corex\\Forms\\Block\\FormBlockRenderer", "root": [ "corex-flow", "corex-form" ], "editor": "records" }
 }

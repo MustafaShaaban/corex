@@ -19,5 +19,5 @@
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"viewScript": "file:./view.js",
-	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer" }
+	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer", "editor": "pending" }
 }

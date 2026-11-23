@@ -26,6 +26,28 @@ to the wave's own entry when it is tagged from `release/gap-line`.
 - The editor's server-rendered preview (WordPress's block renderer route) gets the previewed block's markup
   without the merge, since the editor's own wrapper already carries the attributes (FR-006a; DECISIONS #676).
 - A hero or a call to action set to full width has square corners, since it reaches both edges of the screen.
+- **The editor standard: every block declares its kind, and the editor draws the page** (spec 136 slice 3, gap
+  G-003; FR-010 to FR-013, FR-017; DECISIONS #656, #671). Every `block.json` declares `corex.editor`:
+  `in-place` for hero, cta, stat and team, `records` for posts, jobs, breadcrumbs and `corex/form`, `none` for
+  the assistant, `pending` for the 21 whose turn has not come. An `in-place` block keeps a `parity.json` beside
+  its `block.json`, and two tests find every one by search and compare the tree of the block's elements (tag,
+  block classes, nesting) with it: one draws the block through WordPress, the other renders its `edit` with one
+  shared set of stand-ins for the `@wordpress/*` packages. A gate fails a block with no kind, an `in-place` block
+  without a fixture or with a server-rendered preview, a `records` block without one, and `pending` on a block
+  outside its waiting list. The helper is exported as `@corex/build-tools/parity`. The hero is a `section` in the
+  editor as on the page, and the hero's and the call to action's button is a link typed in place, without the
+  extra wrapper; its address field, and team's photo, add and remove buttons, are marked as the editor's own.
+- **`make:block` generates a block edited in place** (spec 136 slice 3, gap G-003; FR-014 to FR-016, SC-004;
+  DECISIONS #656). By default the block declares `in-place`, draws its renderer's elements with its title typed on
+  the canvas, comes with its `parity.json` and imports no server render; `--records` gives a block that shows
+  records, previewed by the server render inside its wrapper and inert. Both declare `anchor`, print one root
+  element and leave the wrapper attributes to the registrar; their strings are translated with the configured
+  text domain and their style sheet uses theme.json tokens and logical properties only. A test generates each
+  shape and proves, without touching the files, that both pass the gate and the in-place one passes the parity
+  comparison. The `make:site --starter` example block declares `records`, previews its server render inert, and
+  passes its markup through `Corex\Blocks\BlockWrapper`, so an anchor or class set on it reaches the page. The
+  build-tools and CLI READMEs and the docs site state the rule: a static block is edited in place, a block that
+  shows records keeps a server render.
 - **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
   every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
   `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
@@ -83,6 +105,10 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     follows the steps in `docs/en/04-team-workflow/client-site-workflow.md`. Mizzey has no client theme under
     `sites/`. From this release, a CoreX release that adds a palette slug or a font size says so here, because
     a child theme's list must gain it too.
+  - **Spec 135 slice 4 (FR-016).** Muva, Perego and Mizzey: nothing changes. Muva and Perego run their own
+    standalone themes, so the CoreX theme's `functions.php` never runs there, and Mizzey's theme names no
+    `Template:` line either. A site that runs the CoreX theme itself keeps its favicon. On `main` only: not
+    carried to `release/gap-line`, whose CoreX theme links no favicon, so it does not move into the wave's entry.
   - **Spec 135 slice 5 (G-007).** Muva, Perego and Mizzey: no page changes and there is no upgrade step. Their
     site plugins are their own and are not rewritten; Muva and Perego register their blocks with
     `register_block_type` themselves, so the change to how `corex-blocks` binds a block's translations does not
@@ -102,6 +128,14 @@ to the wave's own entry when it is tagged from `release/gap-line`.
       unchanged wherever no editor typed a class or an anchor on the form block; where one did, the form's root
       now carries it, which matters to code that matches that markup by exact strings.
     - **Mizzey** is not on this line.
+  - **Spec 136 slice 3 (G-003).** Muva, Perego and Mizzey: nothing changes on any page, and there is no upgrade
+    step. The hero, call to action and team editors change for the people who edit them (the hero and the call to
+    action show their button as the link the page prints); the stat's editor already drew the page. No saved
+    content changes, and the renderers are untouched: a hero, call to action, stat or team block saved earlier
+    still loads in the editor unchanged, with no block validation message, because none of the four saves
+    markup and their attributes are the same. A block generated by `make:block` before this change is not
+    altered; a block generated from now on has the new shape. A site generated with `make:site --starter` before
+    this change keeps its example block as it is.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and
@@ -121,7 +155,8 @@ shows the whole CoreX mark, and corex-ui's block styles start drawing for visito
 - **The logo set** (US-BRD-05, FR-018 to FR-024; DECISIONS #647). Fixed-colour lockups for light and dark grounds,
   stacked lockups, the symbol in both, a graphite knockout on brass, and a favicon as SVG and PNG at 16, 32, 180
   and 512px, all written by `scripts/generate-logo-assets.py` and listed in `logo-manifest.json` with their use,
-  colours and hash. The CoreX theme links its own favicon copies when a site has no site icon; the Coming soon
+  colours and hash. The CoreX theme links its own favicon copies when a site has no site icon and it is the active theme
+  itself, never under a client's child theme (spec 135 slice 4, FR-016); the Coming soon
   page links none.
 - **The theme preview is a capture** (US-BRD-07, FR-025 to FR-027; DECISIONS #638). `npm run theme:preview --
   --url=<address> --wp-path=<folder>` takes the front page of a scratch site with the Company kit at 1200 by 900

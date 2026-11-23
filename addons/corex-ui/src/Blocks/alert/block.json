@@ -14,5 +14,5 @@
 	"supports": { "html": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Ui\\Blocks\\AlertRenderer" }
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\AlertRenderer", "editor": "pending" }
 }

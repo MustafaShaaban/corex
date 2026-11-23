@@ -224,7 +224,7 @@
     {
       "path": "docs-app/src/content/docs/faq.md",
       "lines": [
-        29
+        30
       ],
       "topics": [
         "brand.json",
@@ -263,6 +263,15 @@
       ]
     },
     {
+      "path": "docs-app/src/content/docs/guides/blocks.md",
+      "lines": [
+        39
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
       "path": "docs-app/src/content/docs/guides/branding.md",
       "lines": [
         3,
@@ -278,15 +287,15 @@
         78,
         83,
         97,
-        114,
-        131,
+        115,
         132,
-        139,
-        147,
-        155,
-        159,
+        133,
+        140,
+        148,
+        156,
         160,
-        161
+        161,
+        162
       ],
       "topics": [
         "brand.json",
@@ -359,12 +368,13 @@
     {
       "path": "packages/cli/README.md",
       "lines": [
-        117,
-        119,
-        121,
-        123,
-        132,
-        259
+        87,
+        145,
+        147,
+        149,
+        151,
+        160,
+        287
       ],
       "topics": [
         "brand.json",
@@ -396,10 +406,10 @@
         4,
         25,
         66,
-        82,
-        131,
-        144,
-        145
+        83,
+        132,
+        145,
+        146
       ],
       "topics": [
         "generated-properties",

@@ -1,0 +1,15 @@
+{
+	"prefix": "{{ css_class }}",
+	"attributes": {
+		"title": "{{ title }}"
+	},
+	"tree": [
+		{
+			"tag": "div",
+			"classes": [ "{{ css_class }}" ],
+			"children": [
+				{ "tag": "p", "classes": [ "{{ css_class }}__title" ] }
+			]
+		}
+	]
+}

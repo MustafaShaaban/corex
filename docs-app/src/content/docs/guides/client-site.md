@@ -73,17 +73,22 @@ wp corex make:site Acme --starter
 Adds, on top of the lean scaffold, one complete vertical slice so you can see how a Corex client site is wired:
 
 - a **model → repository → service → controller** (the controller returns the spec-043 response envelope at
-  `GET acme/v1/examples`), a **server-rendered block** (`acme/example`), an **options page**, and a **Pest test** —
+  `GET acme/v1/examples`), a **server-rendered block** (`acme-site/example`), an **options page**, and a **Pest test**,
   all under `AcmeSite\`;
 - a **starter-theme asset architecture**: `package.json` (project-local `sass` + `@wordpress/scripts` build —
   source maps in dev, minified in production, hashed `*.asset.php` for cache-busting), an
   `assets/src/{scss,js,images}/` → `assets/{css,js,images}/` pipeline (`styles`/`scripts`/`images`/`build`
   scripts), and a `functions.php` that enqueues the **compiled** output through the CoreX asset helpers
   (`Corex\Assets\*`) — never hardcoded paths;
-- the generated plugin autoloads `AcmeSite\` (PSR-4) and boots the example automatically.
+- the example is wired in the site's provider; the plugin itself is the same with or without `--starter`.
 
 A **`REMOVE-EXAMPLE.md`** in the plugin lists exactly which files to delete and which provider lines to unwire to
 return to a clean scaffold. The default and `--minimal` produce no example.
+
+Every generated site plugin, with or without `--starter`, autoloads `AcmeSite\` from its `src/` (PSR-4), requires
+`corex-core`, and boots its service provider once CoreX is up (`Corex::onReady`), handing it CoreX's container. The
+provider registers each block folder under `src/Blocks` that has a `block.json`, from `build/blocks` once
+`npm run build` has run in the plugin.
 
 ## The team & AI workflow
 

@@ -51,7 +51,9 @@ final class {{ namespace }}ServiceProvider
     /**
      * The site's blocks, one folder each with a block.json: from build/blocks once `npm run build`
      * has run in this plugin, from src/Blocks before. The example block's renderer is resolved from
-     * the container. Nothing when CoreX offers no block folder.
+     * the container, and what an editor sets on a block (its anchor, an extra class) reaches its
+     * root element through CoreX's BlockWrapper, as on every CoreX block (spec 136, FR-001).
+     * Nothing when CoreX offers no block folder.
      */
     public function registerBlocks(): void
     {
