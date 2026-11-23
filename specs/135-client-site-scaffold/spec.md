@@ -10,7 +10,9 @@ what it found is answered in the text below
 **Input**: The Blackstone gap programme, wave 1 (DECISIONS #651, #652, #655). Four gaps the Blackstone eIT site found
 in what `wp corex make:site` generates on v0.48.1: G-006 (the client theme), G-007 (the site plugin), G-002 (the
 agent files), G-001 (which repository this is). A fifth, G-048 (what the editor of a child theme sees), was found
-on 2026-11-23 once the child theme existed and added as slice 6 by the coordinating session (DECISIONS #664). The gap rows are in that site's `docs/corex-gaps.md`, which CoreX
+on 2026-11-23 once the child theme existed and added as slice 6 by the coordinating session (DECISIONS #664). A
+sixth, G-055 (a client site on Azure DevOps has no CI), was added the same day as slices 7 to 10 (DECISIONS #669,
+#712, #713), after the Blackstone site moved its repository to Azure DevOps (its decision 32). The gap rows are in that site's `docs/corex-gaps.md`, which CoreX
 sessions only read.
 
 ## Why this spec exists
@@ -178,6 +180,35 @@ the page template choices.
    template picker opens, **Then** it offers CoreX's six custom templates, with their titles, and the child's.
 4. **Given** a child that does not set the switch, the CoreX theme itself, or a standalone theme, **When** any of the
    above is read, **Then** it is as it was before this slice.
+
+### User Story 6 - A client site on Azure DevOps is checked and packaged by a pipeline of its own (Priority: P1)
+
+A team keeps a client repository on Azure DevOps. `make:site` has written an Azure Pipelines definition into the
+site's folder beside the GitHub workflow. The owner points a pipeline at it once; from then on every pull request
+checks the framework files, the client theme, the site plugin's build and its PHP and JS tests, and a run on
+`main` builds a deploy package that holds the site plugin's compiled blocks and fails when a block names a file
+the package lacks.
+
+**Why this priority**: the Blackstone site has no automated gate at all since it moved to Azure DevOps, and a
+package built by the framework's own pipeline ships a site plugin's blocks without their compiled assets
+(G-055, High; the same is true of Perego's packages today, DECISIONS #666).
+
+**Independent Test**: generate a site, read the Azure definition it wrote and run its steps' commands in order on a
+scratch copy; resolve the role of a repository whose `origin` is an Azure DevOps URL.
+
+**Acceptance Scenarios**:
+
+1. **Given** a repository whose `origin` is an Azure DevOps URL (HTTPS with or without a user, URL-encoded names,
+   SSH, or the older `visualstudio.com` form) and no baseline, **When** the role is resolved, **Then** it is
+   `client`; **and given** the Azure pipeline's own variables and no `origin`, **Then** it is `client` too.
+2. **Given** a generated site, **When** its folder is read, **Then** it holds `azure-pipelines.yml` whose jobs run
+   `verify:framework`, `verify:client-theme`, the client packages' builds and JS tests, the site plugin's Pest, and,
+   on `main`, the deploy package with the strict asset check; and `verify:framework` does not report it as drift.
+3. **Given** a package whose site plugin has a block naming a file the package lacks, **When** `verify:dist` runs
+   with `--strict-assets`, **Then** it fails naming the plugin, the block and the file; **and when** it runs without
+   the flag, **Then** it warns as before (DECISIONS #666).
+4. **Given** Muva's or Perego's repository taking the release, **When** their own pipelines run, **Then** nothing
+   they run fails that passed before.
 
 ### Edge Cases
 
@@ -353,6 +384,38 @@ the page template choices.
   (Muva's) is not reported. It warns because Perego's pipeline packages its site plugin unbuilt today, and a
   check that failed would break Perego's deployments the day it took the release (DECISIONS #666).
 
+**A client site on Azure DevOps (G-055)**
+
+- **FR-050**: `repositoryFromRemoteUrl()` MUST name the repository of an Azure DevOps remote:
+  `https://[user@]dev.azure.com/<org>/<project>/_git/<repo>`, `git@ssh.dev.azure.com:v3/<org>/<project>/<repo>`
+  and `https://<org>.visualstudio.com/[DefaultCollection/]<project>/_git/<repo>`, with names URL-decoded and any
+  `.git` dropped, as `<org>/<project>/<repo>`. A GitHub or other `owner/name` remote is read as today. Such a name
+  is never CoreX's own repository, so the role is `client`.
+- **FR-051**: `resolveRole()` MUST also read the repository Azure Pipelines names (`BUILD_REPOSITORY_URI`) where
+  CI names it, after `COREX_REPOSITORY_ROLE` and beside `GITHUB_REPOSITORY`.
+- **FR-052**: `npm run verify:dist -- --strict-assets` MUST fail, with the message #666 prints as a warning, for each
+  site plugin block that names a `file:./` asset its package does not hold. Without the flag it warns, as today.
+- **FR-053**: `npm run build:sites` (a root script, Node built-ins only) MUST install and build every client package
+  under `sites/` that has a `package.json` (the site plugins and themes, flat and older layouts), each from its own
+  folder (`npm ci` when it has a lockfile, else `npm install`), and stop on the first that fails, naming it. It
+  installs nothing at the repository root.
+- **FR-054**: The framework's own `azure-pipelines.yml` MUST gain a run-time parameter `buildSitePlugins`, off by
+  default, that runs `npm run build:sites` before `build:dist`, and a parameter `strictAssets`, off by default,
+  that adds `--strict-assets` to `verify:dist`. Off, the pipeline runs exactly as before.
+- **FR-055**: `make:site` MUST write `sites/<client>/azure-pipelines.yml` (inside the client's folder, so it is the
+  client's and never drift) with: a job that runs `verify:framework` and `verify:client-theme` on a full clone; a
+  job that runs `npm run build:sites` and each client package's `test:js` when present; a job that runs the site
+  plugin's Pest from the root Composer install; and, on `main` only, a job that runs the root `npm ci` and
+  `npm run build`, `npm run build:sites`, `build:dist --client=<client>`, `verify:dist -- --strict-assets`, and
+  publishes `dist/` as the pipeline artifact. It triggers on pushes to `main` and `develop` and on pull requests.
+  The pipeline's steps are the generated GitHub workflow's, so the two cannot drift (a test holds them equal).
+- **FR-056**: Creating the pipeline in Azure DevOps is the owner's step: a checked script (`wizard`) in the site's
+  `scripts/` walks it (pick the repository, point at the file, set a branch policy on `main` and `develop`), and
+  the generated `README.md`, `UPDATING-COREX.md` and the client site docs say so.
+- **FR-057**: A generated site's Playwright suite (when the site has one) MUST run in that pipeline against a
+  WordPress the job provisions. This needs a Linux WordPress provisioning that does not exist outside GitHub's
+  composite action, so it is its own slice (DECISIONS #713).
+
 **Every slice**
 
 - **FR-040**: A test of generated output MUST read what it compares against from the repository (the CoreX
@@ -385,6 +448,9 @@ the page template choices.
 - **SC-003**: `verify:framework` in a repository with a baseline and no remote reports drift for a changed
   framework file.
 - **SC-004**: A search of everything `make:site` writes finds no retired workflow name.
+- **SC-007**: A repository whose `origin` is the Blackstone site's Azure DevOps URL resolves to `client` with no
+  baseline and no variable set; a site generated after slice 9 holds an Azure definition whose package job fails on
+  a block with a missing asset and passes once it is built.
 - **SC-006**: On a child with the switch set, the editor's pattern list offers none of the CoreX theme's patterns,
   every one of them is still registered, and every page of the site still renders with no PHP notice.
 - **SC-005**: Muva's, Perego's and Mizzey's repositories merge the release with no new conflict and no changed
@@ -403,6 +469,10 @@ writes its `### Client impact` lines under `[Unreleased]`, "Gap programme, wave 
 | 4 | The CoreX favicon stays off a child theme | FR-016 | 3 | I | **Yes**: `theme/inc/favicon.php` is spec 134's. Not carried to the line, where the theme links no favicon |
 | 5 | The site plugin boots and its blocks build (G-007) | FR-030 to FR-038, FR-040, FR-041 | 3 | II, IV, VI | No. `DynamicBlockRegistrar.php` is unchanged since the tag and is also changed by spec 136 (another method). It adds a step to the `ci.yml` job `main` has changed since the tag, so the carry may need a hand-resolved hunk |
 | 6 | What the editor of a child theme sees (G-048, hidden patterns and completed custom templates) | FR-021, FR-023, FR-024, FR-040, FR-041 | 3 (and after 5, by the coordinating session's order) | I (the behaviour is `corex-core`'s, the theme only declares the switch), IX | No: it names the CoreX theme by a constant of its own, and `wp_theme_json_data_theme` and the pattern API exist at the tag. Its `ThemeServiceProvider` lines sit in their own blocks, whose context lines exist at the tag |
+| 7 | Azure DevOps remotes name their repository (G-055) | FR-050, FR-051, FR-040 | 1 | X | Rests on slice 1 (`resolveRole()` as #495 left it), which carries; nothing else after the tag |
+| 8 | `build:sites`, `verify:dist --strict-assets`, and two off-by-default parameters in the framework's pipeline (G-055) | FR-052, FR-053, FR-054, FR-040 | 5 | VI, IX | Rests on slice 5 (`verifyClientPluginBuilds()` and #666's warnings, #512). Its `build-shared-host-dist.mjs` hunk sits beside spec 121 code, as slice 3's did, so the carry resolves it by hand; `azure-pipelines.yml` is unchanged since the tag |
+| 9 | `make:site` writes an Azure Pipelines definition, and the owner's step to create it (G-055) | FR-055, FR-056, FR-040, FR-041 | 8 (and 3, 5 for the stubs it mirrors) | X | Rests on slices 3 and 5 (the stubs and the site workflow as they left them), which carry |
+| 10 | A generated site's Playwright suite runs in its Azure pipeline (G-055) | FR-057 | 9 | X | Not decided: it needs a WordPress provisioning for Azure's Linux agents; v0.50.0 at the earliest (DECISIONS #713) |
 
 Nothing here is seen by a visitor, so no slice has a design step. Slice 4 removes a link from a page's head and
 draws nothing.
@@ -422,6 +492,9 @@ draws nothing.
   domain, as `ClientSitePlugin` derives them today. This spec does not change the name.
 
 ## Out of scope
+
+- Changing what the framework's own `azure-pipelines.yml` does when its new parameters are left off, and any client's
+  pipeline: Muva and Perego keep theirs as they are (FR-054).
 
 - Converting Muva, Perego or any existing site (DECISIONS #655).
 - A generated `styles/dark.json`, header or footer for the client: the header system is spec 137's, and the dark
