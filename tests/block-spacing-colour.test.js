@@ -95,16 +95,6 @@ const KEEPS = {
 };
 
 /**
- * Elements printed only as the block's own root (a list with nothing in it): WordPress's colour
- * classes sit on them, and no rule under the root can reach them.
- */
-const ROOT_ONLY = {
-	'corex/posts': [ 'corex-posts__empty' ],
-	'corex/jobs': [ 'corex-jobs__empty' ],
-	'corex/projects': [ 'corex-projects__empty' ],
-};
-
-/**
  * The blocks whose text sits on their own root: the root sets the text colour, and these elements
  * inherit it (a heading has to, or the theme's heading colour wins). The card blocks are not
  * here: their text sits on their cards, not on the root.
@@ -280,19 +270,14 @@ function elementClassOf( compound, slug ) {
 /**
  * What a block's compiled sheet breaks of FR-008.
  *
- * @param {string}        name            The block's name (`corex/hero`).
- * @param {string}        css             Its compiled sheet.
- * @param {Object}        [kept]          Its controls that keep their colours.
- * @param {Array<string>} [kept.rules]    Their rules, by compiled selector.
- * @param {Array<string>} [kept.links]    Those drawn as a link.
- * @param {Array<string>} [kept.rootOnly] Element classes printed only as the root.
+ * @param {string}        name         The block's name (`corex/hero`).
+ * @param {string}        css          Its compiled sheet.
+ * @param {Object}        [kept]       Its controls that keep their colours.
+ * @param {Array<string>} [kept.rules] Their rules, by compiled selector.
+ * @param {Array<string>} [kept.links] Those drawn as a link.
  * @return {Array<string>} One line per problem, naming the block and the selector.
  */
-function colourFailures(
-	name,
-	css,
-	{ rules: keeps = [], links = [], rootOnly = [] } = {}
-) {
+function colourFailures( name, css, { rules: keeps = [], links = [] } = {} ) {
 	const slug = slugOf( name );
 	const chosen = chosenOf( name );
 	const rules = rulesOf( css );
@@ -348,7 +333,7 @@ function colourFailures(
 				lastCompound( rule.selector ),
 				slug
 			);
-			if ( target === null || rootOnly.includes( target ) ) {
+			if ( target === null ) {
 				return;
 			}
 			const wanted = [];
@@ -476,7 +461,6 @@ describe( 'FR-008: background and text colour', () => {
 		const failures = COLOURED.flatMap( ( name ) =>
 			colourFailures( name, compiledSheet( byName.get( name ) ), {
 				...KEEPS[ name ],
-				rootOnly: ROOT_ONLY[ name ],
 			} )
 		);
 
@@ -631,20 +615,18 @@ describe( 'FR-008: the style check fails naming the block and the selector', () 
 		] );
 	} );
 
-	test( 'a control kept, a link control left out, a root-only element, and a colour marked !important', () => {
+	test( 'a control kept, a link control left out, and a colour marked !important', () => {
 		expect(
 			probe(
 				`
 				${ CHOSEN } :where(h1, h2, h3, h4, h5, h6) { color: inherit; }
 				${ CHOSEN } a:where(:not(.wp-element-button, .corex-probe__button)) { color: inherit; }
 				.corex-probe__button { color: var(--b); background: var(--c); }
-				.corex-probe__empty { color: var(--b); }
 				.corex-probe { background-color: var(--a) !important; }
 			`,
 				{
 					rules: [ '.corex-probe__button' ],
 					links: [ '.corex-probe__button' ],
-					rootOnly: [ 'corex-probe__empty' ],
 				}
 			)
 		).toEqual( [

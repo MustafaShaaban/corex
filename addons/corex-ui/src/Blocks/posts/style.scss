@@ -40,6 +40,7 @@
 
 	:where(h1, h2, h3, h4, h5, h6),
 	a:where(:not(.wp-element-button)),
+	.corex-posts__empty,
 	.corex-posts__title {
 		color: inherit;
 	}
