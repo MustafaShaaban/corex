@@ -22460,6 +22460,10 @@ the other language's name alone).
   `v0.50.0`. Slice 2 does not wait for it.
 - A site that wants the toggle at launch with one language of content binds its own `LanguageSource` (FR-029);
   CoreX's default stays: no control while a site has one language.
+- Found while drawing it: rule 0 of the build contract gives the Arabic face by the page's language, so a name in
+  the list or the menu would take the page's face, not its own, which step 2 did not draw. Rule 3a of
+  `specs/137-header-system/design/header-system.css.txt` makes every form follow the name's own `lang`. It brings
+  the code to the approved drawing, so it needs no new approval.
 
 ## #698 -- The header's scroll distance is a theme token (spec 137 slice 6, from #701)
 

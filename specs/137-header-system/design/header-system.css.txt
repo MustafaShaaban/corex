@@ -44,6 +44,18 @@
 .corex-language-switcher__item { display: inline-flex; align-items: center; gap: var(--wp--preset--spacing--10); box-sizing: border-box; min-block-size: 2.25rem; padding-inline: var(--wp--preset--spacing--25); border-radius: var(--wp--custom--radius--sm); color: var(--wp--preset--color--ink-soft) !important; font-family: var(--wp--preset--font-family--heading); font-size: var(--wp--preset--font-size--sm); font-weight: 500; line-height: 1.2; text-decoration: none; }
 a.corex-language-switcher__item:hover { color: var(--wp--preset--color--ink) !important; background-color: var(--wp--preset--color--surface-alt); }
 .corex-language-switcher__item[aria-current="true"] { color: var(--wp--preset--color--accent-dark) !important; background-color: var(--wp--custom--color--accent-subtle); font-weight: 600; }
+/* 3a. Each language name in its own face, whatever the page's language, in every form (step 2: "each language
+       name is drawn in its own script"). Rule 0 follows the page; a name carries its own lang, so this follows
+       the name: Arabic in the Arabic face on an English page, a Latin name in the heading face on an Arabic one. */
+.corex-language-switcher [lang]:lang(ar) { font-family: var(--wp--preset--font-family--arabic); letter-spacing: 0; }
+.corex-language-switcher [lang]:not(:lang(ar)) { font-family: var(--wp--preset--font-family--heading); }
+/* 3b. The toggle form (FR-032a, step 2a, DECISIONS #697): with exactly two languages, one link naming the other
+       language, carrying its own lang, dir and hreflang. It is one item of the list form with no current item, so
+       it has no tint and no tick. It keeps the list form's height and its target is 2.75rem tall: the ::after box
+       adds the difference, half above and half below, and adds nothing where the item is already 2.75rem (the
+       phone menu). */
+.corex-language-switcher--toggle > .corex-language-switcher__item { position: relative; justify-content: center; min-inline-size: 2.75rem; }
+.corex-language-switcher--toggle > .corex-language-switcher__item::after { content: ""; position: absolute; inset-inline: 0; inset-block: min(0px, calc((100% - 2.75rem) / 2)); }
 
 /* 4. Search in the bar (core/search). Closed it is the kit's icon button. Open, the kit's field lies over the
       end of the menu, from the button toward the inline start: nothing in the bar moves. */
