@@ -92,10 +92,11 @@ function corexListsCorexCustomTitles(): array
 
 /**
  * Register the theme folders' patterns as a request on the active theme does: the theme folders'
- * patterns are dropped, then every `init` callback that registers or changes them runs, in the
- * priority order WordPress gives them.
+ * patterns are dropped, then WordPress's `init` registration runs, then, for a request that serves the
+ * REST API the editors read, every `rest_api_init` callback of the hider (DECISIONS #668: the
+ * inserter flag is set only where patterns are chosen).
  */
-function corexListsRegisterThemePatterns(): void
+function corexListsRegisterThemePatterns(bool $servingRest = true): void
 {
     $registry = WP_Block_Patterns_Registry::get_instance();
     foreach ([...corexListsCorexPatternSlugs(), 'corex-lists/own'] as $slug) {
@@ -112,8 +113,20 @@ function corexListsRegisterThemePatterns(): void
     foreach ($callbacks as $hooked) {
         foreach ($hooked as $callback) {
             $function = $callback['function'];
-            if ($function === '_register_theme_block_patterns'
-                || (is_array($function) && $function[0] instanceof ParentPatternsHider)) {
+            if ($function === '_register_theme_block_patterns') {
+                call_user_func($function);
+            }
+        }
+    }
+
+    if (! $servingRest) {
+        return;
+    }
+
+    foreach (($GLOBALS['wp_filter']['rest_api_init'] ?? null)?->callbacks ?? [] as $hooked) {
+        foreach ($hooked as $callback) {
+            $function = $callback['function'];
+            if (is_array($function) && $function[0] instanceof ParentPatternsHider) {
                 call_user_func($function);
             }
         }
@@ -275,6 +288,25 @@ it('still draws a CoreX template\'s CoreX patterns, in the editor and for a visi
 
     expect($html)->toContain('corex-services__grid')
         ->and($html)->toContain('corex-process');
+});
+
+it('leaves the patterns as they are on a visitor\'s request, which is not where patterns are chosen (DECISIONS #668)', function () {
+    corexListsUse($this, corexListsSwitches(['hidePatterns' => true]));
+    corexListsRegisterThemePatterns(false);
+
+    // The `init` hook ran on a request that is neither an admin screen nor the REST API.
+    foreach ($GLOBALS['wp_filter']['init']->callbacks[11] ?? [] as $callback) {
+        if ($callback['function'] instanceof Closure) {
+            call_user_func($callback['function']);
+        }
+    }
+
+    $inserter = corexListsInserter();
+
+    expect(array_filter(
+        array_intersect_key($inserter, array_flip(corexListsCorexPatternSlugs())),
+        static fn (bool $shown): bool => ! $shown,
+    ))->toBe([]);
 });
 
 it('leaves every pattern in the inserter for a child that does not set hidePatterns (FR-021)', function () {

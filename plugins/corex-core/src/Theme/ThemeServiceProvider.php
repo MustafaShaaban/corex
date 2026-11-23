@@ -124,8 +124,16 @@ final class ThemeServiceProvider extends ServiceProvider
 
         // Spec 135 slice 6 (DECISIONS #664, #668): under a child of the CoreX theme that sets
         // `hidePatterns`, the CoreX theme's patterns leave the inserter once WordPress has registered
-        // them (`init` at 10); a child's custom templates are completed with CoreX's.
-        add_action('init', [$this->container->make(ParentPatternsHider::class), 'hideFromInserter'], 11);
+        // them (`init` at 10). Only where patterns are chosen, an admin screen and the REST API the
+        // editors read: marking them loads every pattern file, and a visitor's page needs none of it
+        // (they stay registered either way). A child's custom templates are completed with CoreX's.
+        $patterns = $this->container->make(ParentPatternsHider::class);
+        add_action('init', static function () use ($patterns): void {
+            if (is_admin()) {
+                $patterns->hideFromInserter();
+            }
+        }, 11);
+        add_action('rest_api_init', [$patterns, 'hideFromInserter']);
         add_filter('wp_theme_json_data_theme', [$this->container->make(ChildCustomTemplates::class), 'filter']);
     }
 }

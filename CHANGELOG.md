@@ -99,12 +99,11 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   other. A block's editor strings are bound to its own text domain (`corex` for every CoreX block, as before).
   `verify:dist` warns, without failing, about a block of a site plugin that names a file its folder does not
   hold (a compiled stylesheet, say) and has no build; a block written by hand with all its files is left alone.
-- **A child theme may keep the CoreX theme's patterns and templates out of its editors' way** (spec 135 slice
-  6, gap G-048; DECISIONS #664, #667). Two switches in the child's own `theme.json`,
-  `settings.custom.corex.parent.hidePatterns` and `hideTemplates`, both off unless set: the first takes the CoreX
-  theme's 26 patterns out of the inserter, the second takes the templates and parts only the CoreX theme has out
-  of the Site Editor's lists and the page template picker. Visitors' pages are drawn as before, with every
-  template and pattern they use. A child's `customTemplates` is completed with CoreX's six, so a client adds its
+- **A child theme may keep the CoreX theme's patterns out of its editors' way** (spec 135 slice 6, gap G-048;
+  DECISIONS #664, #667, #668). A switch in the child's own `theme.json`, `settings.custom.corex.parent.hidePatterns`,
+  off unless set, takes the CoreX theme's patterns out of the inserter and the Site Editor's Patterns screen;
+  every template and page that uses one still draws it. Hiding the CoreX theme's templates was withdrawn (the
+  editor finds a page's template in the same list) and moves to spec 153. A child's `customTemplates` is completed with CoreX's six, so a client adds its
   own without copying them, and `verify:client-theme` no longer asks for them there.
 
 ### Client impact
@@ -141,9 +140,9 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     its `azure-pipelines.yml` builds only the workspaces): the fix is to run `npm ci` and `npm run build` in
     `sites/perego/perego-site` before `build:dist`. Nothing fails.
   - **Spec 135 slice 6 (G-048).** Muva, Perego and Mizzey: nothing changes and there is no upgrade step. The
-    switches act only under a child of the CoreX theme that sets them; Muva's and Perego's themes are standalone
+    switch acts only under a child of the CoreX theme that sets it; Muva's and Perego's themes are standalone
     and Mizzey's names no `Template:`. A site on the CoreX theme itself is unchanged even if its theme's file
-    held them.
+    held it.
   - **Spec 136 slice 1 (G-005).** No upgrade step, no stored data changed.
     - **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks
       gain an `id` or a class only where an editor set one. Where it shows the account block, that block's root

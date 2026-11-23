@@ -21990,6 +21990,39 @@ warning in every run is seen without anyone choosing it.
   its parent, and hands a child that has no `theme.json` the parent's data as its own, which would let the CoreX
   theme's file turn the switches on. Only a boolean `true` counts, and only under a child of the CoreX theme.
 
+## #668 -- `hideTemplates` is withdrawn; `hidePatterns` keeps CoreX's patterns registered and out of the inserter
+
+**Date:** 2026-11-23. **Spec:** 135, slice 6 (G-048). **Branch:** `spec/135-slice-6-child-editor-lists`.
+**Decided:** by the spec 135 session, under the owner's delegation, after the slice's review; accepted by the
+coordinating session the same day. Revises #664 and #667.
+
+**Measured** by the review on WordPress 7.1: the block editor finds a post's template in the same REST collection
+the Site Editor lists (core-data's `getTemplateId` searches `GET /wp/v2/templates?per_page=-1`, then falls back to
+the lookup route), and REST checks a post's `template` against the same choices the page template picker offers.
+With CoreX's templates taken out of that collection, the static front page and a Landing page were edited inside
+`page.html`, and duplicating such a page failed with 400. Unregistering CoreX's patterns made a CoreX template
+that inserts one show "pattern not found" in the editor.
+
+- **`hideTemplates` is withdrawn from spec 135.** No list is read by the template screen alone. Hiding the CoreX
+  theme's templates from a child's editors moves to spec 153 (editor experience, v0.51.0; DECISIONS #701), which
+  decides its mechanism: a Site Editor list filter in the editor's script, or the child declaring which templates
+  it shows. A child that sets `hideTemplates` today gets nothing from it.
+- **`hidePatterns` marks, it does not unregister.** Each pattern of the CoreX theme's folder is registered again
+  with `inserter: false`, so the inserter and the Site Editor's Patterns screen leave it out (both filter on it)
+  while every template that references it still resolves it, for visitors and in the editor.
+- **Only where patterns are chosen.** It runs on an admin screen and in a REST request: re-registering reads
+  every pattern file (about 60 ms cold, 6 ms with OPcache, measured), and a visitor's page needs none of it. A
+  visitor page that calls the REST server internally marks them too, which is harmless now that nothing is
+  unregistered.
+- **CoreX's custom template titles stay translated.** For a CoreX entry a child does not name, only its `name` is
+  put in the child's list, so WordPress's positional merge keeps the parent's translated title and its
+  `postTypes` (measured with the Arabic catalogue).
+- **The CoreX theme is named by a constant of the slice's own,** not `ThemeDefaultPresets::THEME` (spec 121),
+  which the release line does not have.
+
+*Not chosen.* Rebuilding each pattern's properties from `get_block_patterns()` and the file path without loading
+the files, to save the cold cost: it copies WordPress's registration code, and the cost falls only on editors.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.
