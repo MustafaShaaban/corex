@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Forms\Block\FormParts;
 use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
+use Corex\Forms\Validation\AnswersRefused;
 
 /**
  * A code-defined form: its slug, its field definitions, its wording, and the listeners
@@ -97,6 +98,27 @@ abstract class Form
     public function markup(FormParts $parts): ?string
     {
         return null;
+    }
+
+    /**
+     * The values a valid submission is stored and sent with (spec 129, FR-022): run once after
+     * validation and before any listener, so the inbox and the team's email read the same thing.
+     * The default changes nothing. A form may turn a raw answer into what a person reads, such as
+     * a time sent as a timestamp. A field its schema does not declare is dropped from what it returns.
+     *
+     * It may still refuse, by throwing {@see AnswersRefused} with field errors: the visitor is answered
+     * 422 as for a rule, and nothing is stored or sent. That is for what can only be refused once the
+     * form acts on it, such as a time two visitors claimed at once; anything a rule can say belongs in a rule.
+     *
+     * @param array<string,mixed> $values validated answers, uploads already stored
+     *
+     * @return array<string,mixed>
+     *
+     * @throws AnswersRefused when the answers cannot be taken after all
+     */
+    public function prepare(array $values): array
+    {
+        return $values;
     }
 
     /**

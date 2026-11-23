@@ -42,6 +42,9 @@ add_action('plugins_loaded', static function (): void {
         'enabled' => true, 'timezone' => 'Africa/Cairo', 'days' => [0, 1, 2, 3, 4, 5, 6],
         'start' => '00:00', 'end' => '00:00', 'slot' => 60, 'notice' => 0, 'horizon' => 2,
     ]);
+    // A request sent from the hand-off is stored, and no email goes to a team. The times it asks for stay
+    // claimed between requests, so a spec can see one hidden from the next visitor.
+    add_filter('corex_assistant_callback_listeners', static fn (): array => [\Corex\Forms\Listeners\StoreSubmissionListener::class]);
 
     global $wpdb;
     $wpdb->query($wpdb->prepare(

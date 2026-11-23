@@ -15,8 +15,8 @@ defined('ABSPATH') || exit;
  *
  * The hours are the business's, in its own time zone (for example every day 9:00 to 23:00, Cairo time). The
  * slots go to the browser as moments in time, so a visitor sees them in their own time zone, and the
- * team reads a chosen slot in both. A slot is a requested time the team confirms, not a reservation:
- * nothing here checks for a slot already asked for.
+ * team reads a chosen slot in both. A slot is a requested time the team confirms, not a reservation;
+ * {@see OpenSlots} leaves out the ones other visitors have asked for.
  */
 final class BookingHours
 {
@@ -38,7 +38,10 @@ final class BookingHours
     public const MAX_HORIZON = 30;
 
     /** A screen of slots, at most: a month of quarter-hours would be too many to choose from. */
-    private const MAX_SLOTS = 400;
+    public const MAX_SLOTS = 400;
+
+    /** A zone written as an offset from UTC, as WordPress gives a site set to "UTC+2": `+02:00`. */
+    private const OFFSET = '/^[+-](0\d|1[0-4]):[0-5]\d$/';
 
     /**
      * @param list<int> $days    the weekdays the team takes calls, Sunday 0 to Saturday 6
@@ -76,7 +79,8 @@ final class BookingHours
             )))
             : $d['days'];
         sort($days);
-        $zone = is_string($saved['timezone'] ?? null) ? $saved['timezone'] : '';
+        $zone = self::named(is_string($saved['timezone'] ?? null) ? $saved['timezone'] : '');
+        $siteZone = self::named($siteZone);
         $fallback = self::knownZone($siteZone) ? $siteZone : 'UTC';
 
         return new self(
@@ -91,9 +95,50 @@ final class BookingHours
         );
     }
 
+    /** A zone name PHP knows (`Africa/Cairo`, `UTC`), or an offset (`+02:00`). */
     public static function knownZone(string $zone): bool
     {
-        return $zone !== '' && in_array($zone, \DateTimeZone::listIdentifiers(), true);
+        return $zone !== '' && (in_array($zone, \DateTimeZone::listIdentifiers(), true) || self::isOffset($zone));
+    }
+
+    /** A zone written as an offset: `+02:00`, as WordPress gives a site set to "UTC+2". */
+    public static function isOffset(string $zone): bool
+    {
+        return preg_match(self::OFFSET, $zone) === 1;
+    }
+
+    /** The zone, with no offset from UTC written as UTC: a new WordPress site is `+00:00`. */
+    private static function named(string $zone): string
+    {
+        return in_array($zone, ['+00:00', '-00:00'], true) ? 'UTC' : $zone;
+    }
+
+    /** The place a zone is named for: `Asia/Riyadh` is Riyadh, `America/Argentina/Buenos_Aires` Buenos Aires, `+02:00` UTC+02:00. */
+    public static function city(string $zone): string
+    {
+        if (self::isOffset($zone)) {
+            return 'UTC' . $zone;
+        }
+        $parts = explode('/', $zone);
+
+        return str_replace('_', ' ', (string) end($parts));
+    }
+
+    /**
+     * A requested time as the team reads it (spec 129, FR-022): in the visitor's zone, then the booking
+     * hours' zone, each with its city ("Thu 12 Nov, 7:00 pm Riyadh = Thu 12 Nov, 6:00 pm Cairo"). Only the
+     * booking hours' time when the visitor is in the same zone, or in one this site does not know.
+     *
+     * @param \Closure(int, string): string $format a moment written on a zone's clock, in the site's language
+     */
+    public function describe(int $at, string $visitorZone, \Closure $format): string
+    {
+        $ours = $format($at, $this->timezone) . ' ' . self::city($this->timezone);
+        if ($visitorZone === $this->timezone || ! self::knownZone($visitorZone)) {
+            return $ours;
+        }
+
+        return $format($at, $visitorZone) . ' ' . self::city($visitorZone) . ' = ' . $ours;
     }
 
     /** @return array{enabled: bool, timezone: string, days: list<int>, start: string, end: string, slot: int, notice: int, horizon: int} */

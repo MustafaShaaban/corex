@@ -10,7 +10,11 @@ namespace Corex\Assistant\Forms;
 
 defined('ABSPATH') || exit;
 
+use Corex\Assistant\Booking\BookingHours;
+use Corex\Assistant\Booking\OpenSlots;
+use Corex\Assistant\Booking\SlotMoment;
 use Corex\Forms\Form;
+use Corex\Forms\Validation\AnswersRefused;
 
 /**
  * The assistant's hand-off (spec 129, FR-011): a visitor asks the team to call or write, from inside
@@ -23,16 +27,26 @@ use Corex\Forms\Form;
  * inbox and the team's email show.
  *
  * The number is required when the visitor asks for a call or WhatsApp, the email when they ask for an
- * email ({@see RequiredForChannel}). A picked time arrives three ways: `slot` (the moment, in UTC),
- * `zone` (the visitor's time zone), and `time`, the line the team reads ("Thu, Nov 12, 7:00 PM Riyadh =
- * Thu, Nov 12, 6:00 PM Cairo"), written by the visitor's browser from the first two. It is a requested
- * time the team confirms; `slot` is the part to trust, since the visitor's browser wrote the line.
+ * email (`required_if`). A picked time arrives as `slot` (the moment, UTC seconds) and `zone` (the
+ * visitor's time zone). The `assistant_slot` rule refuses a time no longer on offer; {@see prepare()}
+ * claims it, so two visitors cannot both be given it, and writes `time`, the line the team reads ("Thu 12
+ * Nov, 7:00 pm Riyadh = Thu 12 Nov, 6:00 pm Cairo"), so a request written by hand cannot put another line
+ * in the inbox. It is a requested time the team confirms, not a booking.
  */
 final class AssistantCallbackForm extends Form
 {
     public const SLUG = 'corex-assistant-callback';
 
     public string $slug = self::SLUG;
+
+    /**
+     * @param \Closure(int, string): string $describe a moment and the visitor's zone, as the team reads them
+     */
+    public function __construct(
+        private readonly OpenSlots $slots,
+        private readonly \Closure $describe,
+    ) {
+    }
 
     public function label(): string
     {
@@ -42,15 +56,43 @@ final class AssistantCallbackForm extends Form
     /**
      * Storage and the team's notification, unless a site sends its own: the
      * `corex_assistant_callback_listeners` filter takes and returns the listeners' container ids, so a
-     * site with branded emails puts its own listener in place of the notification.
+     * site with branded emails puts its own listener in place of the notification. The claim of the
+     * requested time is settled last, whatever the filter returns ({@see SlotClaimListener}).
      *
      * @return list<class-string>
      */
     public function listeners(): array
     {
         $listeners = apply_filters('corex_assistant_callback_listeners', parent::listeners());
+        $listeners = is_array($listeners) ? array_values(array_filter($listeners, 'is_string')) : parent::listeners();
 
-        return is_array($listeners) ? array_values(array_filter($listeners, 'is_string')) : parent::listeners();
+        return [...array_diff($listeners, [SlotClaimListener::class]), SlotClaimListener::class];
+    }
+
+    /**
+     * The time asked for, made the team's (spec 129, FR-021, FR-022): claimed, so the next visitor is not
+     * offered it, and written on the server in both zones. With no time picked, `time` is what the visitor
+     * typed. A zone this site does not know is dropped.
+     *
+     * @param array<string, mixed> $values
+     *
+     * @return array<string, mixed>
+     *
+     * @throws AnswersRefused when another visitor claimed the time a moment earlier
+     */
+    public function prepare(array $values): array
+    {
+        $zone = is_string($values['zone'] ?? null) ? trim($values['zone']) : '';
+        $zone = BookingHours::knownZone($zone) ? $zone : '';
+        $slot = SlotMoment::read($values['slot'] ?? null);
+        if ($slot === null) {
+            return ['slot' => '', 'zone' => $zone] + $values;
+        }
+        if (! $this->slots->claim($slot)) {
+            throw new AnswersRefused(['slot' => AssistantSlotRule::TAKEN]);
+        }
+
+        return ['time' => ($this->describe)($slot, $zone), 'slot' => SlotMoment::write($slot), 'zone' => $zone] + $values;
     }
 
     /**
@@ -58,8 +100,6 @@ final class AssistantCallbackForm extends Form
      */
     public function fields(): array
     {
-        $needs = RequiredForChannel::NAME . ':';
-
         return [
             'name' => [
                 'type' => 'text',
@@ -79,12 +119,12 @@ final class AssistantCallbackForm extends Form
             ],
             'phone' => [
                 'type' => 'phone',
-                'rules' => [$needs . 'call,whatsapp', 'phone'],
+                'rules' => ['required_if:channel,call,whatsapp', 'phone'],
                 'label' => __('Phone', 'corex'),
             ],
             'email' => [
                 'type' => 'email',
-                'rules' => [$needs . 'email', 'email', 'max:160'],
+                'rules' => ['required_if:channel,email', 'email', 'max:160'],
                 'label' => __('Email', 'corex'),
             ],
             'time' => [
@@ -94,7 +134,7 @@ final class AssistantCallbackForm extends Form
             ],
             'slot' => [
                 'type' => 'text',
-                'rules' => ['max:40'],
+                'rules' => ['max:40', AssistantSlotRule::NAME],
                 'label' => __('Requested time (UTC)', 'corex'),
             ],
             'zone' => [

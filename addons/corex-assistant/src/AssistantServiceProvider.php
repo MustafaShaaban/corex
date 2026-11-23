@@ -17,12 +17,19 @@ use Corex\Assistant\Admin\AssistantScreenSave;
 use Corex\Assistant\Admin\AssistantScreenView;
 use Corex\Assistant\Admin\ServiceCheck;
 use Corex\Assistant\Admin\ServiceCheckController;
+use Corex\Assistant\Booking\OpenSlots;
+use Corex\Assistant\Booking\SlotClaims;
 use Corex\Assistant\Booking\SlotsController;
+use Corex\Assistant\Booking\StoredCallbackSlot;
+use Corex\Assistant\Booking\SubmissionSlots;
+use Corex\Assistant\Booking\TeamClock;
+use Corex\Assistant\Booking\WpSlotClaims;
 use Corex\Assistant\Chain\ChatRouter;
 use Corex\Assistant\Chain\Cooldowns;
 use Corex\Assistant\Chain\ModelClient;
 use Corex\Assistant\Forms\AssistantCallbackForm;
-use Corex\Assistant\Forms\RequiredForChannel;
+use Corex\Assistant\Forms\AssistantSlotRule;
+use Corex\Assistant\Forms\SlotClaimListener;
 use Corex\Assistant\Front\AssistantButton;
 use Corex\Assistant\Front\AssistantStrings;
 use Corex\Assistant\Http\AssistantController;
@@ -40,13 +47,14 @@ use Corex\Foundation\ServiceProvider;
 use Corex\Http\ClientAddress;
 use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
+use Corex\Mail\EmailLanguage;
 use Corex\Security\Admin\AdminGuard;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\SettingLocks;
 
 /**
- * Wires the CoreX Assistant (spec 129): the chat route and its limits, the slots route, the button in the
- * footer, the hand-off form and its rule, and the CoreX → Assistant screen.
+ * Wires the CoreX Assistant (spec 129): the chat route and its limits, the slots route and the claims of
+ * requested times, the button in the footer, the hand-off form and its rule, and the CoreX → Assistant screen.
  *
  * The knowledge is asked of the `corex_assistant_knowledge_provider` filter when the chat first needs
  * it, so a site plugin that adds the filter on `init` or earlier is heard.
@@ -112,10 +120,7 @@ final class AssistantServiceProvider extends ServiceProvider
             $c->make(ClientAddress::class),
             static fn (): string => wp_salt('nonce'),
         ));
-        $this->container->singleton(SlotsController::class, static fn (ContainerInterface $c): SlotsController => new SlotsController(
-            $c->make(AssistantSettings::class),
-            static fn (): int => time(),
-        ));
+        $this->registerBooking();
         $this->container->singleton(AssistantButton::class, fn (ContainerInterface $c): AssistantButton => new AssistantButton(
             $c->make(AssistantSettings::class),
             $c->make(AssistantStrings::class),
@@ -149,6 +154,7 @@ final class AssistantServiceProvider extends ServiceProvider
             $this->container->make(SlotsController::class)->register();
             $this->container->make(ServiceCheckController::class)->register();
         });
+        $this->container->make(SubmissionSlots::class)->register();
         add_action('wp_footer', function (): void {
             $this->container->make(AssistantButton::class)->printInFooter();
         }, 5);
@@ -184,7 +190,35 @@ final class AssistantServiceProvider extends ServiceProvider
         }
     }
 
-    /** The block, and the hand-off form and its rule when the forms engine is there to take them (Principle IX). */
+    /**
+     * The claims of requested times, the times still open, the slots route, and what follows a request in the
+     * inbox (spec 129, FR-021).
+     */
+    private function registerBooking(): void
+    {
+        $now = static fn (): int => time();
+        $this->container->singleton(SlotClaims::class, static function () use ($now): SlotClaims {
+            global $wpdb;
+
+            return new WpSlotClaims($wpdb, $now);
+        });
+        $this->container->singleton(OpenSlots::class, static fn (ContainerInterface $c): OpenSlots => new OpenSlots(
+            $c->make(AssistantSettings::class),
+            $c->make(SlotClaims::class),
+            $now,
+        ));
+        $this->container->singleton(SlotsController::class, static fn (ContainerInterface $c): SlotsController => new SlotsController($c->make(OpenSlots::class)));
+        $this->container->singleton(SlotClaimListener::class, static fn (ContainerInterface $c): SlotClaimListener => new SlotClaimListener($c->make(SlotClaims::class)));
+        $this->container->singleton(StoredCallbackSlot::class, static fn (): StoredCallbackSlot => new StoredCallbackSlot());
+        $this->container->singleton(SubmissionSlots::class, static fn (ContainerInterface $c): SubmissionSlots => new SubmissionSlots(
+            $c->make(SlotClaims::class),
+            $c->make(StoredCallbackSlot::class)(...),
+            $now,
+        ));
+        $this->container->singleton(TeamClock::class, static fn (ContainerInterface $c): TeamClock => new TeamClock($c->make(EmailLanguage::class)));
+    }
+
+    /** The block, and the hand-off form and its rules when the forms engine is there to take them (Principle IX). */
     public function install(): void
     {
         // The built block when a build has run, else its source (the markup renders; its scripts wait for the build).
@@ -201,10 +235,16 @@ final class AssistantServiceProvider extends ServiceProvider
             return;
         }
         $rules = $this->container->make(RuleRegistry::class);
-        if (! in_array(RequiredForChannel::NAME, $rules->keys(), true)) {
-            $rules->register(RequiredForChannel::NAME, new RequiredForChannel());
+        $slots = $this->container->make(OpenSlots::class);
+        if (! $rules->has(AssistantSlotRule::NAME)) {
+            $rules->register(AssistantSlotRule::NAME, new AssistantSlotRule($slots));
         }
-        $this->container->make(FormRegistry::class)->register(new AssistantCallbackForm());
+        $settings = $this->container->make(AssistantSettings::class);
+        $clock = $this->container->make(TeamClock::class)(...);
+        $this->container->make(FormRegistry::class)->register(new AssistantCallbackForm(
+            $slots,
+            static fn (int $at, string $zone): string => $settings->booking()->describe($at, $zone, $clock),
+        ));
     }
 
     /**
