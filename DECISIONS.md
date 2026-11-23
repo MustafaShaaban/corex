@@ -22607,3 +22607,150 @@ session). His approval also approves #679, which reverses #674's child-blocks bu
   button keeps #677's place and 96px clearance and stays last in the keyboard order.
 - A site block's own motion is the site's to build and review; CoreX's motion rule covers CoreX's own parts.
 - The record is the D-3a addendum in `design/handoffs/spec-136-hero.md`. Slice 9 builds FR-057.
+
+## #722 -- Lists are WordPress's Query Loop, with a CoreX record picker; `corex/posts` and `corex/projects` retire
+
+**Date:** 2026-11-23. **Spec:** 149, slice 1 (G-008). **Decided:** by the waves 2 and 3 planning session, on the
+gap row's proposal and the rule of #652 (where WordPress's own block does the job, CoreX uses it).
+
+- Every list is core's Query Loop with the site's card pattern. CoreX adds one thing core lacks: a variation,
+  "Chosen records", that lists hand-picked records of one post type in the order picked. Its panel is built from
+  WordPress's own components only, so it needs no drawing.
+- `corex/posts` and `corex/projects` leave the inserter. Content saved with them, and the Muva and Perego
+  `section-selected-work` patterns that hold `corex/projects`, render as today. Each offers a "Replace with a
+  Query Loop" transform an editor must press; nothing is migrated by itself (as #675 for tabs). The `corex/news`
+  pattern inserts a Query Loop.
+- `corex/jobs` stays until spec 141 gives jobs their card, fields and filters (G-036): retiring it now would leave
+  a careers site with titles only and no replacement card.
+- A filter receives the chosen ids before the query, so spec 148's language adapters can map an id to the page's
+  language. Polylang and WPML stay optional.
+
+*Not chosen.* A "featured" field on each record: it cannot hold an order, and the Blackstone site withdrew it as a
+stand-in (its spec 001, FR-028). Extending `corex/posts` with a post type, a taxonomy, an order and cards: it
+rebuilds the Query Loop and keeps a second list block in the inserter.
+
+## #723 -- A carousel's items come from its slides, one Query Loop or one Gallery
+
+**Date:** 2026-11-23. **Spec:** 149, slice 2 (G-010). **Decided:** by the waves 2 and 3 planning session.
+
+`corex/carousel` holds exactly one source: its `corex/slide` blocks (spec 136 slice 7), one Query Loop (each record
+of the post template is a slide), or one Gallery (each image is a slide). The renderer marks the items; the script
+and the styles read only that mark. A record carousel (HOM-4, SSL-2) is therefore the record picker or a newest
+first query inside a carousel, and a logo strip is a Gallery, which an editor fills by dropping many images at
+once. An image's larger view is WordPress's own "Expand on click".
+
+*Not chosen.* A Query Loop variation that draws its post template as a carousel: the carousel's options, controls
+and script would live twice. Slides only: an editor would copy each record by hand and keep it in step.
+
+## #724 -- The carousel's sizes, controls and timing, and what a saved carousel keeps
+
+**Date:** 2026-11-23. **Spec:** 149, slice 3 (G-010, US-BLK-03). **Decided:** by the waves 2 and 3 planning
+session.
+
+- Size is slides per view for desktop, tablet and phone, or one slide width with as many in view as fit (the
+  Leadership Lens cards are drawn 384px wide with part of the next in view). Unset tablet and phone counts follow
+  US-BLK-03. Widths are the theme's; CoreX adds no breakpoint.
+- Arrows and dots can each be hidden; their sizes are US-BLK-03's. Advancing by itself has a floor of 4 seconds
+  (as spec 136's tabs, FR-035) and always shows Pause. Loop, an edge fade at the start, the end or both (a mask in
+  logical terms), and the current slide aligned to the start or the centre are options.
+- The slides in view and the current slide carry a class and `aria-current`, so a site draws a coverflow or dims
+  the others with a style of its own, not a CoreX option.
+- A carousel saved before keeps its slides, its count as the desktop count, 5 seconds and today's wrap to the
+  first slide. What US-BLK-03 forces (the Pause button, the control sizes, fewer slides on a phone) changes for
+  it, is named in the changelog, and reaches no client that has no carousel (neither Muva nor Perego has one in
+  its code).
+
+## #725 -- The ticker is a mode of the carousel, and its Pause is always shown
+
+**Date:** 2026-11-23. **Spec:** 149, slice 4 (G-010). **Decided:** by the waves 2 and 3 planning session.
+
+A ticker is the carousel in a mode that moves continuously at one of three named speeds, with the same sources and
+edge fade and no arrows or dots. Because it moves for more than five seconds, WCAG 2.2.2 requires a way to stop it:
+the Pause button is always shown, not only when a site asks. The copies that make the loop seamless are
+`aria-hidden` and `inert`. Under reduced motion and with scripts off it is a still row. It moves in the page's
+reading direction.
+
+*Not chosen.* A separate ticker block: a second set of sources and fades for one difference in movement. A CSS-only
+ticker: it cannot stop on focus or offer Pause, and the site withdrew it (its spec 001, FR-031).
+
+## #726 -- Reveal is a CoreX block support that never hides content from a reader without the script
+
+**Date:** 2026-11-23. **Spec:** 149, slice 6 (G-012). **Decided:** by the waves 2 and 3 planning session.
+
+- A "Reveal" setting (none, fade, fade and rise; optionally the inner blocks one after another) on core's Group,
+  Cover, Columns, Media and Text, Image, Gallery and Query Loop and on CoreX's blocks, with a filter for the list.
+  It is printed as a data attribute on the block's root; one small stylesheet and script load only where it is used.
+- The script alone hides or moves a block, and only one that is out of view when it starts. A block in view at that
+  moment is shown as it is, so the first screen never flashes and the largest paint is not held back. With
+  scripts off, under reduced motion, in print and in the editor's canvas every block is in its end state, so the
+  canvas shows the page (#656). The start state is never fully transparent.
+- The trigger is entering the view; how much of the block, the distance, the duration and the easing come from the
+  approved drawing (149-D3) as tokens. Not offered inside a carousel, a ticker, a modal or a drawer.
+
+*Not chosen.* CSS that hides every revealed block until a class is added: content is lost when the script fails to
+load. `@media (scripting: enabled)` alone: the same loss when the script is blocked or late. A Reveal block that
+wraps sections: an extra level in every section and in the list view.
+
+## #727 -- Count-up is an option of `corex/stat` and an attribute any block may print
+
+**Date:** 2026-11-23. **Spec:** 149, slice 5 (G-012). **Decided:** by the waves 2 and 3 planning session.
+
+The page carries the final value as text; the script counts from zero to it once, keeping the value's prefix,
+suffix, grouping and digit script, hides the changing numbers from screen readers and keeps the final value's width.
+It is a registered script with a documented attribute, `data-corex-count-up`, so the Blackstone hero's stats scene
+(a site block) uses CoreX's script, as that site's spec requires, and never its own.
+
+## #728 -- Filters live inside the Query Loop they filter, as a form first; the address carries term ids
+
+**Date:** 2026-11-23. **Spec:** 149, slices 7 and 8 (G-009, US-BLK-07). **Decided:** by the waves 2 and 3 planning
+session.
+
+- The filter bar is placed inside the Query Loop and reads its id and query from block context, so two filtered
+  lists on one page never mix and no setting links them. It is a GET form that reloads the page without the
+  script; the script then updates the list in place, announces the count and adds Load more.
+- The address names each filter after the Query Loop's id (`filter-<id>-<taxonomy>`, `-year`, `-status`) and
+  carries term ids, never slugs: no lookup by an English slug (G-042 rules), and a term renamed or translated keeps
+  its links. A filtered address asks not to be indexed (`noindex, follow`), so a list does not become thousands of
+  indexed pages.
+- "Counts" is the number selected on each control (drawn as "2 selected"); counts per option are an option, counted
+  against the Query Loop's own query and cached.
+
+*Not chosen.* Slugs in the address: readable, but a renamed or translated term breaks shared links. Faceted counts
+that follow every other filter: a query per option per change, for a number the design does not draw.
+
+## #729 -- Spec 149: what is CoreX's and what is the Blackstone site's
+
+**Date:** 2026-11-23. **Spec:** 149. **Decided:** by the waves 2 and 3 planning session, on the owner's test of
+2026-11-23 (what later products need is CoreX's, with complete scope).
+
+CoreX's: the record picker, the carousel's sources, sizes, controls and timing, the ticker, reveal, count-up and the
+filter blocks. The site's: its card patterns (`lens-card`, `story-card-bento`, `story-card-glass`), the bento
+layout, the coverflow style (on #724's classes), card hover dimming, and its story, event and office content model.
+
+## #730 -- Spec 149's slices and the line
+
+**Date:** 2026-11-23. **Spec:** 149. **Decided:** by the waves 2 and 3 planning session.
+
+Eight slices in #701's order: the picker (1), carousel sources (2), carousel options (3), the ticker (4), count-up
+(5), reveal (6), filters as a form (7), filters in the browser (8). Slices 1 and 2 draw nothing new and can be built
+before the owner sees a drawing; 3 to 8 wait for 149-D1 to 149-D4. Measured with `git log v0.48.1..origin/main` on
+2026-11-23: every slice rests only on wave 1 (spec 136 slices 3 and 7), so each is carried to the line after wave 1;
+a new token in `theme/theme.json` is placed there by hand (#701). `v0.50.0` holds slices 1 to 6, and 7 and 8 when
+they are on `main` with them.
+
+## #731 -- Every visible value of a spec 149 block is a token a client theme can change
+
+**Date:** 2026-11-23. **Spec:** 149 (FR-080 to FR-086, SC-006). **Decided:** by the waves 2 and 3 planning session,
+on the gap coordinator's request from the Blackstone site's decision 29 (pixel parity with its Figma frames).
+
+The constitution already says styling comes from `theme.json` only. Spec 149 makes it testable for its blocks:
+- each size, colour, radius, gap, offset, speed, duration, easing, distance and threshold is a property
+  `--corex-<block>-<name>` on the block's root, defaulting to `settings.custom.<block>.<name>` in `theme/theme.json`,
+  so a client theme changes it in its own `theme.json` or in a block style, never by overriding CoreX's selectors;
+- values a script needs (speed, durations, thresholds) are read from the computed property, never written in it;
+- the classes a style may target are a public contract in the two READMEs;
+- a fixture client theme overrides every token and a Playwright test reads each change from the computed style;
+  a unit check fails on a raw length, colour, time or easing in the blocks' style files;
+- the drawings 149-D1 to 149-D4 name their values as these tokens, so the defaults they set are the ones shipped.
+
+*Not chosen.* Leaving restyling to a site's own CSS: it couples the site to CoreX's selectors and breaks on an update.
