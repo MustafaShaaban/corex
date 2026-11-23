@@ -35,6 +35,7 @@ Mistral, OpenAI and Anthropic Claude; code identifiers, file names, commands, op
 | Template (page, email) | قالب (القوالب) |
 | Pattern | نمط (الأنماط) |
 | Block | مكوّن (المكوّنات) |
+| Language switcher | مبدّل اللغات |
 | Dashboard | لوحة التحكم |
 | Overview | نظرة عامة |
 | Settings | الإعدادات |

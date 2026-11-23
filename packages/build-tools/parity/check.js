@@ -15,8 +15,21 @@ const { renderEdit } = require( './render' );
 const { registeredBlock } = require( './stand-ins' );
 const { editorScriptsOf } = require( './gate' );
 
-/** What a fixture may say the page needs to draw the block (`needs`). */
+/**
+ * What a fixture may say the page needs to draw the block (`needs`): a current post, or a
+ * plug-in, named `plugin:<folder>/<file>.php`, that must be active for the page to draw the
+ * tree. The editor needs neither: it draws with what it is given.
+ */
 const KNOWN_NEEDS = [ 'post' ];
+const PLUGIN_NEED = /^plugin:[^/\s]+\/[^/\s]+\.php$/;
+
+/**
+ * @param {string} need One entry of a fixture's `needs`.
+ * @return {boolean} Whether a test can give it.
+ */
+function isKnownNeed( need ) {
+	return KNOWN_NEEDS.includes( need ) || PLUGIN_NEED.test( String( need ) );
+}
 
 const json = ( tree ) => JSON.stringify( tree, null, 2 );
 
@@ -74,9 +87,7 @@ function editorParityProblem( folder ) {
 		return problems.join( '\n' );
 	}
 
-	const unknownNeeds = needs.filter(
-		( need ) => ! KNOWN_NEEDS.includes( need )
-	);
+	const unknownNeeds = needs.filter( ( need ) => ! isKnownNeed( need ) );
 	if ( unknownNeeds.length > 0 ) {
 		return `${ name }: parity.json needs what no test can give: ${ unknownNeeds.join(
 			', '
@@ -119,4 +130,9 @@ function editorParityProblem( folder ) {
 	].join( '\n' );
 }
 
-module.exports = { KNOWN_NEEDS, editorParityProblem, fixtureProblems };
+module.exports = {
+	KNOWN_NEEDS,
+	editorParityProblem,
+	fixtureProblems,
+	isKnownNeed,
+};

@@ -21456,3 +21456,151 @@ msgstr "نعود بحلول %1$s في %2$s."
 #: plugins/corex-forms/src/Block/SiteModeNotice.php
 msgid "This is a test copy of the site. What you send here is kept for testing. This form's emails are not delivered."
 msgstr "هذه نسخة تجريبية من الموقع. ما ترسله هنا يُحفظ للاختبار. رسائل البريد الخاصة بهذا النموذج لا تُرسَل."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/breadcrumbs/index.js
+msgid "Breadcrumbs"
+msgstr "مسار التنقل"
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/posts/index.js
+msgid "Loading posts…"
+msgstr "جارٍ تحميل المقالات…"
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/posts/index.js
+msgid "No posts to show."
+msgstr "لا توجد مقالات لعرضها."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/breadcrumbs/index.js
+msgid "Loading the trail…"
+msgstr "جارٍ تحميل مسار التنقل…"
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/breadcrumbs/index.js
+msgid "No trail to show."
+msgstr "لا يوجد مسار تنقل لعرضه."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-careers/blocks/jobs/index.js
+msgid "Loading open positions…"
+msgstr "جارٍ تحميل الوظائف الشاغرة…"
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-careers/blocks/jobs/index.js
+msgid "No open positions to show."
+msgstr "لا توجد وظائف شاغرة لعرضها."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/shared/records-states.js
+#: addons/corex-careers/blocks/shared/records-states.js
+#: plugins/corex-forms/src/Block/blocks/records-states.js
+msgid "The preview did not load."
+msgstr "لم تُحمَّل المعاينة."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "Loading the form…"
+msgstr "جارٍ تحميل النموذج…"
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "This form is not available. Choose another in the block settings."
+msgstr "هذا النموذج غير متاح. اختر نموذجًا آخر من إعدادات المكوّن."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "Choose the form this block shows."
+msgstr "اختر النموذج الذي يعرضه هذا المكوّن."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "No published forms yet."
+msgstr "لا توجد نماذج منشورة بعد."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "No registered forms yet."
+msgstr "لا توجد نماذج مسجّلة بعد."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "You cannot see the list of forms. Ask someone who manages forms to choose one."
+msgstr "لا يمكنك عرض قائمة النماذج. اطلب من أحد مديري النماذج اختيار نموذج."
+
+# Drafted 2026-11-23 (spec 136 slice 4); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-forms/src/Block/blocks/corex-form/index.js
+msgid "The list of forms did not load."
+msgstr "لم تُحمَّل قائمة النماذج."
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: Read by a screen reader only, straight after the current language's name on the language menu's button, so it begins with its own separator.
+#: plugins/corex-blocks/src/LanguageSwitcherRenderer.php
+msgid ", choose a language"
+msgstr "، اختر لغة"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/LanguageSwitcherRenderer.php
+msgid "Languages"
+msgstr "اللغات"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/index.js
+msgid "Language switcher"
+msgstr "مبدّل اللغات"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/index.js
+msgid "The switcher appears here once the site has a second language."
+msgstr "يظهر المبدّل هنا حين تصبح للموقع لغة ثانية."
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/index.js
+msgid "With three or more languages, the toggle shows as the list."
+msgstr "مع ثلاث لغات أو أكثر، يظهر التبديل على شكل قائمة."
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/index.js
+msgid "Menu"
+msgstr "قائمة منسدلة"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/index.js
+msgid "List"
+msgstr "قائمة"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/index.js
+msgid "Toggle"
+msgstr "تبديل"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/block.json
+msgctxt "block title"
+msgid "Language switcher"
+msgstr "مبدّل اللغات"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/block.json
+msgctxt "block description"
+msgid "Takes a visitor to this page in another of the site's languages. Shows nothing while the site has one language."
+msgstr "ينقل الزائر إلى هذه الصفحة بلغة أخرى من لغات الموقع. لا يعرض شيئًا ما دام للموقع لغة واحدة."
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/block.json
+msgctxt "block keyword"
+msgid "language"
+msgstr "لغة"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/block.json
+msgctxt "block keyword"
+msgid "translation"
+msgstr "ترجمة"
+
+# Drafted 2026-11-23 (spec 137 slice 2); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: plugins/corex-blocks/src/blocks/language-switcher/block.json
+msgctxt "block keyword"
+msgid "multilingual"
+msgstr "متعدد اللغات"

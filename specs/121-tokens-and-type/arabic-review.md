@@ -32,6 +32,11 @@ comment line: `# Drafted 2026-11-16 (spec 134 slice 2)` (the three section band 
 line). The slice 7 hand-over drew its Arabic with the tanween after the alef (مؤقتاً); the catalogue writes it before
 (مؤقتًا), as everywhere else: the reviewer settles the spelling once for the whole catalogue.
 
+**Added 2026-11-23.** `# Drafted 2026-11-23 (spec 137 slice 2)`: the language switcher's 13 strings (its block
+title, description and three keywords, its editor's form choice, help line and placeholder, its list's name and
+the words a screen reader hears after the current language). "Menu" and "List" are the switcher's two forms:
+قائمة منسدلة and قائمة.
+
 <details>
 <summary>The 825 originals, by the plug-in or add-on that asks for them</summary>
 

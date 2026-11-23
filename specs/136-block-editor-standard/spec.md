@@ -85,8 +85,9 @@ with each element's tag, its block classes and its nesting, is the same in the e
 markup. A class of the block is one that is the fixture's `prefix` or starts with it followed by `__` or `--`
 (`corex-hero`, `corex-hero__title`, `corex-hero--split`); a child block prints its parent's prefix. An element
 the editor needs and the page does not (a remove button, a link field) carries `data-corex-editor-only` and no
-block class. An element the page needs and the editor does not (a trap field against robots) is named in the
-fixture's `pageOnly` list. Classes that are not the block's (`is-selected`, `wp-block`, WordPress's own) are
+block class. An element the page needs and the editor does not, and that carries no block class, is named in the
+fixture's `pageOnly` list; one that carries a block class (the newsletter's trap field against robots) is drawn in
+the editor as an empty element (DECISIONS #678, #682). Classes that are not the block's (`is-selected`, `wp-block`, WordPress's own) are
 ignored. Where a block holds other blocks, the element that holds them is compared and what the child blocks
 draw is compared through their own fixtures.
 

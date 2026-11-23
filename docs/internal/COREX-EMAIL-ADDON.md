@@ -29,7 +29,7 @@ When *anything* happens on the site, Corex Mail can render a chosen template wit
 5. **Secure attachments** — from the media library or generated files (e.g. a PDF), validated and size-limited.
 6. **Reliable delivery** — queued (Action Scheduler), retried on failure, rate-limited, provider-agnostic.
 7. **Full audit log** — every send recorded (queued/sent/failed/bounced), viewable in a DataViews admin screen.
-8. **Localized & RTL** — templates per language via the i18n abstraction; correct RTL rendering for Arabic.
+8. **Localized & RTL**: correct RTL rendering for Arabic. Templates per language are not built; they belong to spec 148 (G-042).
 9. **Compliance** — unsubscribe/suppression handling, consent awareness, retention policy.
 10. **Developer API + CLI** — fire emails from code in one line; scaffold templates and triggers via the CLI.
 
@@ -104,7 +104,7 @@ Variables are resolved from a typed **context** assembled per send: `event.*` (t
 
 **Layouts** — templates extend a shared layout (header/footer/brand) so all mail is on-brand and consistent. Layouts pull colors and logo from the active `brand.json` (same token system as the site).
 
-**Localization** — a template has per-language variants; the `I18nHandler` picks the recipient's language. RTL layouts render correctly for Arabic.
+**Localization**: an email template per language is **not built**: it belongs to spec 148 (G-042, DECISIONS #657). The `I18nHandler` this section once named was never built either; CoreX reads a site's languages through the `LanguageSource` of `corex-blocks` (spec 137, DECISIONS #694), which does not pick a recipient's language. RTL layouts render correctly for Arabic.
 
 ---
 
@@ -269,7 +269,7 @@ Specify → plan → tasks → implement, in this internal order:
 - **Decoupled** — email after any event without touching that event's code.
 - **Safe** — header-injection, XSS, path-traversal, and credential risks all closed by default.
 - **Reliable** — queued, retried, rate-limited; never blocks a request.
-- **On-brand & localized** — shared layouts from `brand.json`, per-language templates, RTL-correct.
+- **On-brand & localized**: shared layouts from `brand.json`, RTL-correct (templates per language are spec 148's).
 - **Observable** — full log, failure alerts, resend.
 - **Extensible** — driver abstraction, developer API, CLI, and an AI ability.
 
