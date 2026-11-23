@@ -98,7 +98,8 @@ the deprecation window are recorded in
 logo on the wp-admin login and dashboard) is separate and never imposed on a client site: a per-site
 `brand.logo_url` override always wins over the bundled product mark. The login draws the lockup that suits its
 card (the dark lockup on a Dark card, the light one on a Light card; System is dark first). The CoreX theme, and
-only the CoreX theme, links the CoreX favicon when a site has no site icon of its own; a site icon chosen in
+only the CoreX theme as the active theme itself (never under a client's child theme), links the CoreX favicon
+when a site has no site icon of its own; a site icon chosen in
 WordPress always wins. The product logo variants, the favicon set and their usage rules are in the
 `plugins/corex-config/README.md` "Brand identity" section (spec 134, DECISIONS #647).
 

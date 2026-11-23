@@ -20,7 +20,7 @@ radius); four corners use `currentColor` and the center module is CoreX brass `#
 | Knockout | `corex-knockout.svg` | `0 0 123.06 123.06` | One ink, graphite, on a brass tile, for print and stamps (named image) |
 | Monochrome | `corex-monochrome.svg` | `0 0 170.02 48` | The lockup in one ink, the text colour, for one-colour and forced-colours contexts (named image) |
 | Contrast | `corex-contrast.svg` | `0 0 170.02 48` | The lockup with the AA brass `#ad8643` for a light background; the print image's source |
-| Favicon | `corex-favicon.svg`, `corex-favicon-{16,32,180,512}.png` | `0 0 48 48` | The symbol on a graphite tile; the CoreX theme links its copies when the site has no site icon (decorative) |
+| Favicon | `corex-favicon.svg`, `corex-favicon-{16,32,180,512}.png` | `0 0 48 48` | The symbol on a graphite tile; the CoreX theme links its copies when the site has no site icon and the CoreX theme is the active theme itself, never under a child (decorative) |
 
 Every file is written by `scripts/generate-logo-assets.py` and listed in the manifest with its use, colours and
 hash; `tests/Unit/Config/LogoAssetContractTest.php` fails when the two disagree (spec 134, FR-024).

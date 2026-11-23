@@ -805,10 +805,21 @@ jobs:
           test "$status" = 302 || { echo "another address answered $status" >&2; exit 1; }
           test ! -s "$RUNNER_TEMP/page.html"
 
+          # Spec 135, FR-016: out of Coming soon, a page under the client's child theme links no CoreX
+          # favicon, and the same page under the CoreX theme itself does (so the check can tell).
+          wp corex mode set development --path="$WP"
+          status=$(curl -s -o "$RUNNER_TEMP/child.html" -w '%{http_code}' -H 'Host: localhost' http://127.0.0.1:8081/)
+          test "$status" = 200 || { echo "home under the child answered $status" >&2; exit 1; }
+          if grep --quiet 'corex-favicon' "$RUNNER_TEMP/child.html"; then
+            echo "The CoreX favicon is linked under a child theme." >&2
+            exit 1
+          fi
+          wp theme activate corex --path="$WP"
+          curl -s -o "$RUNNER_TEMP/corex.html" -H 'Host: localhost' http://127.0.0.1:8081/
+          grep --quiet 'corex-favicon' "$RUNNER_TEMP/corex.html"
+
           # Put the install and the working tree back as the steps below expect them.
           kill "$server"
-          wp corex mode set development --path="$WP"
-          wp theme activate corex --path="$WP"
           rm "$WP/wp-content/themes/acme-theme"
           git checkout -- sites/acme/acme-theme/templates/coming-soon.html
 
