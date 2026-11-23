@@ -108,12 +108,17 @@ export function presetFindings( file, parent, child ) {
 }
 
 /**
- * The parent's custom templates and template parts a child's declared lists lack.
+ * The parent's custom templates and template parts a child's declared lists lack, or hold elsewhere.
+ *
+ * WordPress merges these two lists by position (entry i of the child into entry i of the parent), so
+ * a child must repeat the parent's entries in the parent's order before adding its own. A missing entry
+ * is reported by name; when none is missing, each entry not at its parent's position is reported with
+ * the position it belongs at, counted from 1.
  *
  * @param {string} file   The child's `theme.json`, as it is reported.
  * @param {Object} parent The CoreX theme's decoded `theme.json`.
  * @param {Object} child  The child's decoded `theme.json`.
- * @return {Object[]} One finding per missing entry.
+ * @return {Object[]} One finding per missing or misplaced entry.
  */
 export function positionalFindings( file, parent, child ) {
 	return POSITIONAL_LISTS.flatMap( ( list ) => {
@@ -124,9 +129,24 @@ export function positionalFindings( file, parent, child ) {
 			return [];
 		}
 
-		return missingFrom( parent[ list ], child[ list ], 'name' ).map(
-			( entry ) => ( { file, list, entry } )
-		);
+		const missing = missingFrom( parent[ list ], child[ list ], 'name' );
+		const misplaced = missing.length
+			? []
+			: parent[ list ]
+					.map( ( entry, at ) => ( { name: entry?.name, at } ) )
+					.filter(
+						( { name, at } ) => child[ list ][ at ]?.name !== name
+					)
+					.map(
+						( { name, at } ) =>
+							`${ name } (expected at position ${ at + 1 })`
+					);
+
+		return [ ...missing, ...misplaced ].map( ( entry ) => ( {
+			file,
+			list,
+			entry,
+		} ) );
 	} );
 }
 

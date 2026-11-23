@@ -214,6 +214,48 @@ describe( 'a child theme', () => {
 		] );
 	} );
 
+	it( 'fails a declared templateParts list that holds every entry in another order', () => {
+		const parts = parent().templateParts;
+		const child = { ...fullChild(), templateParts: [ ...parts ].reverse() };
+
+		expect( findings( { themeJson: child } ) ).toEqual(
+			parts.length > 1
+				? parts.map( ( part, at ) => ( {
+						file: `${ DIR }/theme.json`,
+						list: 'templateParts',
+						entry: `${ part.name } (expected at position ${ at + 1 })`,
+					} ) )
+				: []
+		);
+	} );
+
+	it( 'fails a customTemplates list with a client entry before the CoreX theme’s, and passes one after', () => {
+		const own = { name: 'page-acme', title: 'Acme', postTypes: [ 'page' ] };
+		const theirs = parent().customTemplates;
+
+		expect(
+			findings( {
+				themeJson: {
+					...fullChild(),
+					customTemplates: [ own, ...theirs ],
+				},
+			} ).map( ( { entry } ) => entry )
+		).toEqual(
+			theirs.map(
+				( entry, at ) =>
+					`${ entry.name } (expected at position ${ at + 1 })`
+			)
+		);
+		expect(
+			findings( {
+				themeJson: {
+					...fullChild(),
+					customTemplates: [ ...theirs, own ],
+				},
+			} )
+		).toEqual( [] );
+	} );
+
 	it( 'passes a font source only the CoreX theme holds, and fails one neither theme holds', () => {
 		const child = fullChild();
 		const [ family ] = child.settings.typography.fontFamilies;

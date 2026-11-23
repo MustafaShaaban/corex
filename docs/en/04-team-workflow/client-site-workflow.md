@@ -108,8 +108,8 @@ then the CoreX theme's file is used. A file you do not create is not a gap: it i
   `styles/` and in any folder under it.
 - **Custom templates and template parts.** `customTemplates` and `templateParts` in a child's `theme.json` merge
   with the CoreX theme's by position, so a list of one entry overwrites the CoreX theme's first. The generated
-  `theme.json` declares neither. A client theme that declares one repeats every entry of the CoreX theme's, then
-  adds its own; `npm run verify:client-theme` checks it.
+  `theme.json` declares neither. A client theme that declares one repeats every entry of the CoreX theme's, in the
+  same order, then adds its own after them; `npm run verify:client-theme` checks both.
 - **The launch page** is `acme-theme/templates/coming-soon.html`, the page visitors see while the site is in
   Coming soon mode. See [Coming soon mode](../03-operations/coming-soon.md).
 
