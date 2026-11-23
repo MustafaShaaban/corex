@@ -14,16 +14,22 @@ use Corex\Cli\Generators\StubRenderer;
 
 /**
  * Scaffolds a client site (spec 049) from one name: a site **plugin** (`<slug>-site`,
- * namespace `<Name>Site\`) + a site **theme** (`<slug>`) with the client's own prefixes
+ * namespace `<Name>Site\`) and a site **theme** (`<slug>-theme`) with the client's own prefixes
  * (distinct from Corex), plus the governance set (AGENTS/CLAUDE/README/PROGRESS/DECISIONS/
  * .gitignore + specs/docs). Pure render-all-before-write (mirrors ApiResourceScaffolder):
  * an unresolved placeholder fails loudly without a half-written site. No WordPress.
  *
+ * The theme is a child of the CoreX theme (spec 135, DECISIONS #655 and #660): its `style.css`
+ * names `Template: corex`, and its `theme.json` lists the CoreX theme's preset lists, custom
+ * tokens and layout, read from the CoreX theme's own file at generation (ParentThemeTokens).
+ * Templates, parts, patterns and style variations are the parent's until the client's design
+ * replaces them with a file of the same name, so the theme gets only its coming-soon page.
+ *
  * Options: `force`, `plugin_only`, `theme_only`, `starter`. With `starter` (spec 053 US4) it
- * also emits a runnable, client-namespaced example vertical slice (model → repository →
- * service → controller-on-envelope → block → option page → test + REMOVE-EXAMPLE.md) and a
- * starter-theme asset architecture (SCSS/JS + wp-scripts build + an Assets url/path/version
- * helper); the default and `--minimal` omit it.
+ * also emits a runnable, client-namespaced example vertical slice (model, repository, service,
+ * controller on the envelope, block, option page, test and REMOVE-EXAMPLE.md) and a theme asset
+ * architecture (SCSS/JS, a wp-scripts build and an Assets url/path/version helper); the default
+ * and `--minimal` omit it.
  *
  * With the governance set it also writes what lets the site take framework updates (spec 102):
  * `corex-baseline.json`, `UPDATING-COREX.md` and, when told where the repository root is, the
@@ -34,6 +40,7 @@ final class SiteScaffolder
     public function __construct(
         private readonly StubRenderer $renderer,
         private readonly string $stubsDir,
+        private readonly ParentThemeTokens $parentTheme,
     ) {
     }
 
@@ -77,8 +84,8 @@ final class SiteScaffolder
             ? $this->renderer->render($this->readStub('starter/readme-theme-assets'), $values)
             : '';
 
-        // spec 061: the client plugin + theme sit directly under the site root (sites/<client>/<slug>-site,
-        // <slug>-theme) — not nested under plugins/themes — so the layout reads as one client unit.
+        // spec 061: the client plugin and theme sit directly under the site root (sites/<client>/<slug>-site,
+        // <slug>-theme), not nested under plugins/themes, so the layout reads as one client unit.
         $pluginDir = $outputDir . '/' . $id->pluginSlug;
         $themeDir  = $outputDir . '/' . $id->themeSlug;
 
@@ -105,20 +112,27 @@ final class SiteScaffolder
             }
         }
 
+        /** @var list<string> $kept an existing theme's files, left as they are (FR-019) */
+        $kept = [];
+        /** @var bool $childTokens whether the theme.json is written from the CoreX theme's tokens */
+        $childTokens = false;
+
         if (! $pluginOnly) {
-            $stubFiles[$themeDir . '/style.css'] = 'site/theme-style';
-            $stubFiles[$themeDir . '/theme.json'] = 'site/theme-json';
+            // spec 135, FR-019: a theme that already has a style.css is never converted, and its
+            // tokens are never replaced. It keeps both files, whatever else --force rewrites.
+            if (is_file($themeDir . '/style.css')) {
+                $kept = array_values(array_filter(
+                    [$themeDir . '/style.css', $themeDir . '/theme.json'],
+                    'is_file',
+                ));
+            } else {
+                $stubFiles[$themeDir . '/style.css'] = 'site/theme-style';
+                $childTokens                         = true;
+            }
             // spec 101: the page a site in Coming soon mode serves. CoreX registers a default under
             // this template's name and a theme file of the same name replaces it, so a new site's
             // launch page is the one in its own repository from the first day (FR-020).
             $stubFiles[$themeDir . '/templates/coming-soon.html'] = 'site/theme-coming-soon';
-            $literals[$themeDir . '/templates/index.html'] = "<!-- wp:template-part {\"slug\":\"header\",\"tagName\":\"header\"} /-->\n<!-- wp:post-content /-->\n<!-- wp:template-part {\"slug\":\"footer\",\"tagName\":\"footer\"} /-->";
-            // Structural header/footer override points (spec 061). Brand-only changes (colours, fonts,
-            // spacing) belong in theme.json / a style variation — NOT here, and never in the CoreX parent
-            // theme. Edit these parts when the approved client design changes header/footer structure.
-            $literals[$themeDir . '/parts/header.html'] = "<!-- Client header — override CoreX's default header structure here. Brand-only changes: use theme.json/tokens, not markup edits. -->\n<!-- wp:site-title /-->";
-            $literals[$themeDir . '/parts/footer.html'] = "<!-- Client footer — override structure here; brand via tokens. -->\n<!-- wp:paragraph {\"align\":\"center\"} -->\n<p class=\"has-text-align-center\"></p>\n<!-- /wp:paragraph -->";
-            $literals[$themeDir . '/templates/front-page.html'] = "<!-- Client front page — compose CoreX UI patterns + core blocks here; this layout is yours to own. -->\n<!-- wp:template-part {\"slug\":\"header\",\"tagName\":\"header\"} /-->\n<!-- wp:post-content /-->\n<!-- wp:template-part {\"slug\":\"footer\",\"tagName\":\"footer\"} /-->";
         }
 
         // --starter (spec 053 US4): the runnable example slice + the starter-theme assets.
@@ -168,12 +182,21 @@ final class SiteScaffolder
             $rendered[$path] = $this->renderer->render($this->readStub($stub), $values);
         }
 
-        return $this->writeAll($outputDir, $rendered);
+        if ($childTokens) {
+            // spec 135, FR-011 and FR-012: the CoreX theme's own tokens, or no site at all.
+            try {
+                $rendered[$themeDir . '/theme.json'] = $this->parentTheme->childThemeJson();
+            } catch (ParentThemeUnavailable $e) {
+                return SiteScaffoldResult::parentThemeUnavailable($outputDir, $e);
+            }
+        }
+
+        return $this->writeAll($outputDir, $rendered, $kept);
     }
 
     /**
      * What lets the site take framework updates (spec 102): the baseline record, the client's
-     * copy of the update checklist, and — only when the repository root is known — the client's
+     * copy of the update checklist, and (only when the repository root is known) the client's
      * own CI workflow. The workflow is the one file written outside the site root, because a
      * workflow runs from `.github/workflows/` and nowhere else; its name carries the site
      * directory so no framework release can ship a file that collides with it.
@@ -196,8 +219,9 @@ final class SiteScaffolder
 
     /**
      * @param array<string,string> $rendered path => contents
+     * @param list<string>         $kept     existing files left untouched
      */
-    private function writeAll(string $outputDir, array $rendered): SiteScaffoldResult
+    private function writeAll(string $outputDir, array $rendered, array $kept): SiteScaffoldResult
     {
         $written = [];
 
@@ -215,7 +239,7 @@ final class SiteScaffolder
             $written[] = $path;
         }
 
-        return SiteScaffoldResult::created($outputDir, $written);
+        return SiteScaffoldResult::created($outputDir, $written, $kept);
     }
 
     private function readStub(string $name): string
