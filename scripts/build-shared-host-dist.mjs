@@ -819,7 +819,7 @@ export function verifyThemeParents( distDir ) {
 				: [
 						`theme "${ theme }" names Template: ${ parent }, and the package has no wp-content/themes/${ parent }: ` +
 							'a child theme cannot run without its parent',
-				  ];
+					];
 		} );
 }
 
