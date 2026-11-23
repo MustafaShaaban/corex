@@ -1,8 +1,8 @@
 ---
 name: corex-reviewer
 description: Read-only review of a CoreX diff against its spec and the constitution. Reports problems with evidence and never edits. Use after a slice is built and its guards ran, before the two-model review and the pull request.
-model: fable
-effort: high
+model: opus
+effort: xhigh
 tools: Read, Grep, Glob, Bash
 ---
 
