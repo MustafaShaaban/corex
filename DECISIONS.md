@@ -97,6 +97,7 @@ default, not patched afterward (§1 rule 8, §16). Polylang has lower query cost
 Alternatives considered: hard-coding Polylang calls (rejected: §1 rule 9); WPML as default
 (rejected: higher query cost — kept compatible, not default).
 Status: Final.
+**Amended by #694, #703:** never built; replaced by `LanguageSource`.
 
 ## #10 — Testing: Pest + Jest + Playwright
 Date: 2026-06-07
@@ -22590,6 +22591,53 @@ coordinating session, which relayed it to the spec 137 session.
 - It came before slice 2 was built, so slice 2 builds the toggle and it ships in `v0.49.0` (#697). Slice 7 has
   nothing to build.
 - The record is `design/handoffs/header-system.md`, step 2a.
+
+## #703 -- The language switcher is built in its three forms in slice 2 (spec 137)
+
+**Date:** 2026-11-23. **Spec:** 137, slice 2 (FR-021, FR-029 to FR-035, FR-032a; G-013, G-054). **Decided:** by the
+spec 137 session, as the slice was built.
+
+- **Slice 2 builds the list form too.** It is the menu form without script and the toggle's form with three or
+  more languages, so the menu and the toggle cannot ship without it. Slice 4 only places it in the phone menu's
+  "Language" row. The Slices table of the spec says so.
+- **The menu is the list without script, and nothing moves when the script arrives.** The server prints the button
+  and the list. The block's style draws the button and the Dropdown only under `@media (scripting: enabled)`, and
+  the view script wires the menu only where `matchMedia('(scripting: enabled)')` matches. A browser that cannot say
+  shows the list. *Not chosen:* a class the script adds, which redraws the switcher once the script has run.
+  *Known limit:* where the browser runs script but the view script never loads (blocked, or failed), the button is
+  drawn and opens nothing; the list is hidden behind it.
+- **The Dropdown opens at the button's inline end, and at its inline start where that would leave the window.**
+  The view script measures it on every opening and adds `is-aligned-start`, which the style turns into
+  `inset-inline-start: 0`; logical properties mirror it in right-to-left pages. A switcher at the start of a line
+  on a phone so keeps its menu inside the window.
+- **Focus leaving for nowhere does not close the menu.** WebKit does not focus a link or a button it is clicked
+  on, so pressing on a language reports `focusout` with no `relatedTarget`; closing then hid the link before the
+  click landed. Only focus moving to something else closes it; a click outside is the document's to close.
+- **In a list a name carries its `lang` and `dir`, not its row.** A row with `dir="rtl"` aligned its tick and its
+  text to the other side in the Dropdown, so the rows did not line up. The toggle's link carries them itself,
+  with its `hreflang` (FR-032a). Every link of every form has a 44px target through the `::after` box rule 3b
+  gives the toggle; nothing drawn changes. A list that wraps puts its rows `spacing-20` (0.5rem) apart, so the
+  targets of two rows meet and neither is cut to 40px by the other; items in a row stay 4px apart. The build
+  contract, `specs/137-header-system/design/header-system.css.txt` section 3, says so.
+- **The menu is drawn as the kit draws it** (the measured UI review of 2026-11-23): the small ghost button,
+  2.25rem tall with 16px inline padding and an 8px gap, its 2.75rem target from the same `::after` box, so a
+  2.5rem utility row (slice 5) does not grow; 16px icons; the Dropdown's items in `ink` at the body's size and
+  weight with the tick at the row's inline end, as the kit's `.corex-dropdown__item` (the list form keeps its tick
+  first). Where neither side of the button holds the Dropdown's 14rem (a phone at 200%), the view script narrows
+  it to the room the window has.
+- **The block draws the kit's ghost button and Dropdown in its own style.** The ghost button style is the
+  `corex-ui` add-on's, and the switcher is in `corex-blocks` so it works with every add-on off (#694).
+- **The block's script loads wherever the block prints something**, whatever its form (FR-033, constitution VI:
+  declared in `block.json`). With one language WordPress leaves neither its script nor its style on the page. The
+  list and the toggle need the script for nothing.
+- **The source CoreX ships** names the request's language with PHP's `intl` extension where the server has it,
+  and by its code where it does not; the address is the page asked for, or the home page with none (the command
+  line). It is a singleton bound to `LanguageSource`; a site rebinds it after `Corex::onReady`.
+- **When no language is marked current**, the menu and the toggle have nothing to name and print the list.
+- The editor kind is `records` (#656): the languages come from the source, so the editor previews the server
+  render, inert, and shows WordPress's placeholder when it is empty (FR-031).
+- `docs/internal/COREX-FRAMEWORK.md` no longer describes an `I18nHandler`; #9's `I18nHandler` and
+  `MWP_I18N_DRIVER` were never built and are replaced by the language source.
 
 ## #712 -- An Azure DevOps remote names its repository
 

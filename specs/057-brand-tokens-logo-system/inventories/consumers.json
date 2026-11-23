@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 1398,
+  "count": 1423,
   "consumers": [
     {
       "path": "addons/corex-assistant/assets/assistant-admin.css",
@@ -4354,6 +4354,256 @@
     {
       "path": "plugins/corex-blocks/src/blocks/entity-field/style.scss",
       "selector_or_context": "lines 12: padding-inline: var(--wp--preset--spacing--30);",
+      "property": "--wp--preset--spacing--30",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.30"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 127, 170: border: var(--wp--custom--border--width--thin) solid transparent; | border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--surface-strong);",
+      "property": "--wp--custom--border--width--thin",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "border.width.thin"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 101: background-color: var(--wp--custom--color--accent-subtle, var(--wp--preset--color--surface-alt));",
+      "property": "--wp--custom--color--accent-subtle",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.accentSubtle"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 27: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
+      "property": "--wp--custom--focus--color",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.color"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 28: outline-offset: var(--wp--custom--focus--offset);",
+      "property": "--wp--custom--focus--offset",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.offset"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 27: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
+      "property": "--wp--custom--focus--width",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.width"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 145: transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "property": "--wp--custom--motion--duration--base",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "motion.duration.base"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 145: transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "property": "--wp--custom--motion--easing--standard",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "motion.easing.standard"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 171: border-radius: var(--wp--custom--radius--md);",
+      "property": "--wp--custom--radius--md",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "radius.md"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 67, 128: border-radius: var(--wp--custom--radius--sm);",
+      "property": "--wp--custom--radius--sm",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "radius.sm"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 164: z-index: var(--wp--custom--z--dropdown);",
+      "property": "--wp--custom--z--dropdown",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "z.dropdown"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 100, 202: color: var(--wp--preset--color--accent-dark);",
+      "property": "--wp--preset--color--accent-dark",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.accent-dark"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 93, 130, 193: color: var(--wp--preset--color--ink);",
+      "property": "--wp--preset--color--ink",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.ink"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 68: color: var(--wp--preset--color--ink-soft);",
+      "property": "--wp--preset--color--ink-soft",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.ink-soft"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 172: background-color: var(--wp--preset--color--surface-raised, var(--wp--preset--color--surface));",
+      "property": "--wp--preset--color--surface",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 94, 101, 150: background-color: var(--wp--preset--color--surface-alt); | background-color: var(--wp--custom--color--accent-subtle, var(--wp--preset--color--surface-alt));",
+      "property": "--wp--preset--color--surface-alt",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface-alt"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 172: background-color: var(--wp--preset--color--surface-raised, var(--wp--preset--color--surface));",
+      "property": "--wp--preset--color--surface-raised",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface-raised"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 170: border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--surface-strong);",
+      "property": "--wp--preset--color--surface-strong",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface-strong"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 35: font-family: var(--wp--preset--font-family--arabic);",
+      "property": "--wp--preset--font-family--arabic",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "font-family.arabic"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 40, 69, 131: font-family: var(--wp--preset--font-family--heading);",
+      "property": "--wp--preset--font-family--heading",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "font-family.heading"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 70, 132: font-size: var(--wp--preset--font-size--sm);",
+      "property": "--wp--preset--font-size--sm",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "font-size.sm"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 173: box-shadow: var(--wp--preset--shadow--md);",
+      "property": "--wp--preset--shadow--md",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "shadow.md"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 53, 63, 162, 169: gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--10); | gap: var(--wp--preset--spacing--10); | inset-block-start: calc(100% + var(--wp--preset--spacing--10));",
+      "property": "--wp--preset--spacing--10",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.10"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 53, 66, 122: gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--10); | padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20)); | gap: var(--wp--preset--spacing--20);",
+      "property": "--wp--preset--spacing--20",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.20"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 66: padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));",
+      "property": "--wp--preset--spacing--25",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.25"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/language-switcher/style.scss",
+      "selector_or_context": "lines 126, 191: padding-inline: var(--wp--preset--spacing--30); | gap: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "blocks-plugin",
       "surface": "front-end",

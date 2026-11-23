@@ -663,7 +663,7 @@ The model's `$fields` schema feeds the ability schema — one definition, agent-
 
 ## 16. Internationalization & RTL
 
-- **`I18nHandler` abstraction** wraps Polylang and WPML. Controllers call `$this->i18n->currentLanguage()` and never import either plugin's functions. Switch translators via `MWP_I18N_DRIVER` config — a one-line change.
+- **`LanguageSource`** (`Corex\Blocks\Languages`, in `corex-blocks`) is where CoreX reads the site's languages: one method, `languages()`, returning each language of the current request with its code, its name in its own language, its direction, the address of this page in it (or its home page), and whether it is current. It is bound in the container; the source CoreX ships reads WordPress alone, which has one language, so the language switcher block (`corex/language-switcher`) prints nothing. A Polylang or WPML source is spec 148's (G-042) and is bound in its place without touching the block; no multilingual plugin is required or looked for (spec 137, FR-029 to FR-035; DECISIONS #694, #703). The `I18nHandler` and the `MWP_I18N_DRIVER` setting earlier versions of this document described (DECISIONS #9) were never built.
 - **Logical CSS properties** (`margin-inline-start`, `inset-inline-end`) everywhere → RTL correct by default. `postcss-rtlcss` handles edge cases only.
 - **Fonts** subset by `unicode-range` per direction.
 
@@ -767,7 +767,7 @@ Corex is built *with* AI agents and usable *by* any LLM — so the structure is 
 | Need | Recommendation | Notes |
 |---|---|---|
 | Custom fields | **ACF** (via Local JSON) | Optional driver, not a dependency (§6) |
-| Multilingual | **Polylang** (WPML-compatible via abstraction) | Lower query cost than WPML |
+| Multilingual | **Polylang** or **WPML**, never required | CoreX reads languages through the replaceable `LanguageSource` (§16); the source that ships reads WordPress alone, and a Polylang or WPML source is spec 148's (G-042) |
 | E-commerce | **WooCommerce** | Detect-and-defer (§13) |
 | SMTP | **Fluent SMTP** or SES/Brevo | Deliverability for transactional mail |
 | Email queue | **Action Scheduler** | Async sending, retries — never blocks a request |
