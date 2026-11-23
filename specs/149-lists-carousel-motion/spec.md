@@ -49,7 +49,9 @@ These are not Blackstone's alone: any product CoreX builds lists records, shows 
   and runs no corex-ui block and no portfolio kit, as spec 136 says. Perego switched off corex-ui and corex-blocks
   on its live site on 2026-10-24 (`perego/sites/perego/DECISIONS.md:4272`), so nothing in this spec runs there.
   What reaches Muva is the Chosen records variation, the filter blocks and their hooks, which change nothing on a
-  page without a filter bar (FR-063). Its saved content was not read.
+  page without a filter bar (FR-063), and, because corex-ui is active there, the Reveal setting on core's Group,
+  Cover and the other listed blocks, with its `render_block` hook; nothing on a page changes unless an editor sets
+  it. Its saved content was not read.
 
 ### Decisions this spec settles (DECISIONS #722 to #731)
 
@@ -301,9 +303,11 @@ left, keyboard only, with a screen reader.
   to use, so a language adapter can map them (spec 148).
 - **FR-007**: `corex/posts` and `corex/projects` MUST leave the inserter and MUST render content saved with them as
   before. Each MUST offer a transform "Replace with a Query Loop" that writes a Query Loop of the same post type and
-  count with a post template that prints what the block printed: it keeps the classes `corex-posts__item` and
-  `corex-posts__title` (for projects `corex-projects__item`, `corex-projects__thumb` and `corex-projects__title`,
-  read from `ProjectsRenderer.php:44,64`), and a browser test measures the transformed list against today's render.
+  count with a post template that prints what the block printed: it writes the Query Loop with the class
+  `corex-posts` (or `corex-projects`), the wrapper the old block's grid sits on, beside the classes
+  `corex-posts__item` and `corex-posts__title` (for projects `corex-projects__item`, `corex-projects__thumb` and
+  `corex-projects__title`, read from `ProjectsRenderer.php:44,64`). CoreX enqueues the retired block's stylesheet
+  when a Query Loop with that class renders. A browser test measures the transformed list against today's render.
   It runs only when an editor presses it. Both become kind `records` in spec 136's table; spec 136's pending list
   and count already say so (this change edited them), so slice 1 does not edit spec 136.
 - **FR-008**: The corex-ui pattern `corex/news`, the only pattern holding `corex/posts` (`PatternLibrary.php:218`),
@@ -334,8 +338,10 @@ left, keyboard only, with a screen reader.
   (a length or a spacing token) with as many in view as fit. Media queries cannot read custom properties, so the
   tablet and desktop widths are tokens (`settings.custom.carousel.tabletWidth` and `.desktopWidth`) that PHP resolves
   from the merged theme JSON into the rule it prints for the block, the way spec 137 FR-004 prints the header's
-  width, without depending on spec 137's code. The per-screen counts
-  work without scripts.
+  width, without depending on spec 137's code. The defaults are the tag's own: `carousel.tabletWidth` 782px
+  (`v0.48.1:theme/theme.json` `custom.nav.breakpoint`) and `carousel.desktopWidth` 1200px (its `wideSize`); 149-D1
+  may change them. PHP accepts a px value only and falls back to the default otherwise, as spec 137 FR-004 does.
+  The per-screen counts work without scripts.
 - **FR-021**: When the tablet and phone counts are not set on a new carousel, they MUST follow US-BLK-03: at most
   four on a tablet, at most two on a phone, and a 2-up or 3-up carousel shows one slide on a phone with part of the
   next. A saved carousel follows this only when an editor turns on "Fit the screen" or sets a count (FR-029).
@@ -459,9 +465,11 @@ left, keyboard only, with a screen reader.
   that loop's inner blocks (post template, pagination, no results) for the length of its render, then restores the
   main query. It does so only on an archive, the posts page or a search, never on a singular request. Because the main query is never changed,
   an empty filtered result never turns into a 404 (core `WP::handle_404()` acts on the main query). The filters
-  apply only when a filter bar has rendered on the page with its own parameters present (a block theme renders the
-  template before `wp_head` and before output); an address with `filter-*` parameters and no bar on the page
-  changes nothing. Tests MUST cover a page and a single post that carry a `filter-*` parameter (no 404, no change),
+  apply to a Query Loop whose parsed inner blocks hold a bar and whose own parameters are present (the loop's query
+  runs in its post template, which may render before a bar placed below it, so the bar is looked for in the parsed
+  blocks, not waited for); `noindex` and the `X-Robots-Tag` header are set once such a loop has rendered (a block
+  theme renders the template before `wp_head` and before output). An address with `filter-*` parameters and no bar
+  in any loop on the page changes nothing. Tests MUST cover a page and a single post that carry a `filter-*` parameter (no 404, no change),
   an archive whose template has no bar (its list unchanged), and a site with corex-blocks active and no bar.
   Changing a filter MUST go back to the first page.
 - **FR-064**: Each term control MUST say how many terms are selected (slice 7a). Counts per option (slice 7b) MAY be turned on; they
@@ -480,19 +488,24 @@ left, keyboard only, with a screen reader.
 - **FR-067**: Below the tablet width the filters MUST fold into one "Filters" button that names how many are active
   and opens them in a sheet, as the approved design draws it; the chips stay outside it. The filters fold only once the script runs: without it they show as the form at every
   width, with its Apply button, and a no-script phone test MUST show that (149-D4 draws it). The tablet width is the
-  token `settings.custom.filters.sheetWidth`, which PHP resolves from the merged theme JSON into the rule it prints
-  (as FR-020).
+  token `settings.custom.filters.sheetWidth`, default 782px (the tag's `custom.nav.breakpoint`; 149-D4 may change
+  it), which PHP resolves from the merged theme JSON into the rule it prints (as FR-020, px only, with the same
+  fallback).
 - **FR-068**: A page whose address carries a filter MUST print `noindex, follow` through `wp_robots` and MUST also
   send `X-Robots-Tag: noindex, follow` as a header, so an SEO plugin that replaces core's robots tag does not drop
-  it. Both apply only when a filter bar has rendered on the page with its own parameters present (FR-063); an
+  it. Both are set once a Query Loop that holds a bar, with its own parameters present, has rendered (FR-063); an
   address with `filter-*` parameters and no bar gets neither.
 - **FR-069**: A Query Loop that holds a filter bar MUST be navigated by CoreX's script only. Core disables client
   navigation page-wide (`wp_interactivity_config('core/router')`), and its editor turns "Reload full page" back on
-  by itself (EnhancedPaginationModal) for a loop with a block that does not declare client navigation. So a
-  `render_block_data` filter at a priority below 10 MUST set `enhancedPagination` to false on a Query Loop that
-  holds a filter bar: that loop never asks core for client navigation, core's router never intercepts its links,
-  and CoreX's script handles that loop's links. CoreX draws no editor note of its own (core shows its own). A test
-  MUST show that another Query Loop on the same page keeps core's client navigation.
+  by itself (EnhancedPaginationModal) for a loop with a block that does not declare client navigation. Core builds
+  inner blocks, with their attributes, when their parent is built (`class-wp-block.php:171` and `:198`), before
+  `render_block_data` runs for them (`:614`), so the filter MUST act on the top-level block: CoreX's
+  `render_block_data` filter, for every top-level block (`blocks.php:2474`), walks its parsed inner blocks and
+  sets `enhancedPagination` to false on each `core/query` whose own inner blocks hold a filter bar, at any depth.
+  That loop never asks core for client navigation, core's router never intercepts its links, and CoreX's script
+  handles that loop's links. CoreX draws no editor note of its own (core shows its own). A test MUST cover a Query
+  Loop nested in a Group (as `theme/templates/archive.html` nests it in `<main>`), and MUST show that another
+  Query Loop on the same page keeps core's client navigation.
 
 ### Restyling by a client theme (#731)
 
@@ -503,7 +516,8 @@ CoreX's. So every visible value of every block this spec adds or changes is a to
   distance or threshold. Each is read from a property named `--corex-<block>-<name>` set on the block's root,
   whose default is the token `settings.custom.<block>.<name>` in `theme/theme.json`
   (`--wp--custom--<block>--<name>`), itself made from the theme's presets where one fits. Every `var()` in the
-  blocks' style files carries the default as its fallback, so a theme without CoreX's tokens (Muva, Perego, a
+  blocks' style files carries the default as its fallback, and every fallback chain ends in a literal (a preset
+  used as a fallback carries a literal fallback of its own), so a theme without CoreX's tokens (Muva, Perego, a
   standalone theme) still draws the blocks (US-BLK-16).
 - **FR-081**: A client theme MUST be able to change each value two ways: in its own `theme.json`
   (`settings.custom.<block>.<name>`), and in a block style or class that sets `--corex-<block>-<name>`.
@@ -604,7 +618,9 @@ by itself unless a site turns it on, never under reduced motion, always with a c
   `corex/stats` or `corex/carousel`; the portfolio kit is off. The `theme/` files this spec changes are CoreX's own
   and are not Muva's. It has corex-blocks and corex-ui active (`muva/sites/muva/DECISIONS.md:45`) but runs no
   corex-ui block and no portfolio kit. What reaches it is the Chosen records variation, the filter blocks and their
-  hooks, which change nothing on a page without a filter bar (FR-063). No step is needed.
+  hooks, which change nothing on a page without a filter bar (FR-063), and the Reveal setting, which appears on
+  core's Group, Cover and the other listed blocks (corex-ui is active) with its `render_block` hook running;
+  nothing on a page changes unless an editor sets it. No step is needed.
 - **Perego** runs its own theme (`perego-theme`) and switched off corex-ui and corex-blocks on its live site on
   2026-10-24 (`perego/sites/perego/DECISIONS.md:4272`), so nothing in this spec runs there. No step is needed.
 - **Mizzey** is not on this line.
@@ -613,8 +629,10 @@ by itself unless a site turns it on, never under reduced motion, always with a c
 
 - WordPress 7.0's Query Loop, Gallery, Image "Expand on click" and `query_loop_block_query_vars` behave as in 6.x;
   slice 1 measures the editor preview path (FR-004) before building it.
-- CoreX adds two width tokens for the carousel and one for the filter sheet, defaulting to the theme's own
-  widths, printed by PHP the way spec 137 FR-004 prints the header's width, without depending on spec 137's code.
+- CoreX adds two width tokens for the carousel and one for the filter sheet, defaulting to the tag's own widths
+  (`carousel.tabletWidth` 782px, `carousel.desktopWidth` 1200px, `filters.sheetWidth` 782px; 149-D1 and 149-D4 may
+  change them), printed by PHP the way spec 137 FR-004 prints the header's width, without depending on spec
+  137's code.
 - Chips, the dropdown and the sheet are built on the approved visitor kit's components where they exist.
 - The site's story, event and job post types and their taxonomies exist before its list pages are built (site work
   and spec 151); the filter blocks need only a post type and a taxonomy.
@@ -639,7 +657,7 @@ One pull request each, test first, merged into `main` on green. "Rests on" names
 | 0 | This spec, DECISIONS #722 to #731, the gap table rows | | | X | nothing |
 | 1 | The record picker; `corex/posts` and `corex/projects` retired with their transform; the `corex/news` pattern | FR-001 to FR-008, FR-090 to FR-095 | 0, spec 136 slice 4 (it rewrites `posts/index.js`) | IV, VI, IX | spec 136 slices 1, 2a, 3 and 4, carried in wave 1 |
 | 2 | Carousel items from a Query Loop or a Gallery; lazy images; the larger view (the carousel's current styles, no new token) | FR-010 to FR-013 | 1, spec 136 slice 7 on `main` | VI, VIII | spec 136 slice 7 (`corex/slide`), carried in wave 1 |
-| 3 | Carousel sizes, controls, loop, timing, edge fade, scripts off, touch, right to left, saved carousels | FR-020 to FR-029a (with FR-021a), FR-080 to FR-085 and FR-087 for the carousel | 2, 149-D1 approved | V, VI, VIII | slice 2; the new tokens are new keys placed by hand in `theme/theme.json` on the line beside the tag's tokens (#701), with literal defaults, never references to `main`-only tokens (FR-087) |
+| 3 | Carousel sizes, controls, loop, timing, edge fade, scripts off, touch, right to left, saved carousels | FR-020 to FR-029a (with FR-021a), FR-080 to FR-085 and FR-087 for the carousel | 2, 149-D1 approved | V, VI, VIII | slice 2; the new tokens are new keys placed by hand in `theme/theme.json` on the line beside the tag's tokens (#701), with literal defaults or presets the tag has, ending in a literal, never references to `main`-only tokens (FR-087) |
 | 4 | The ticker | FR-030 to FR-034, FR-080 to FR-085 and FR-087 for the ticker | 3, 149-D2 approved | V, VI, VIII | slice 3; tokens as slice 3 (FR-087) |
 | 5 | Count-up on `corex/stat` and its documented attribute | FR-040 to FR-046, FR-080 to FR-085 and FR-087 for count-up | 149-D3 approved | V, VI | spec 136 slice 3 (stat's parity fixture); the motion tokens are new keys with literal defaults, not `main`'s spec 121 durations (FR-087) |
 | 6 | Reveal as a block setting | FR-050 to FR-055, FR-080 to FR-085 and FR-087 for reveal | 149-D3 approved | V, VI | nothing past wave 1; the motion tokens are new keys with literal defaults, not `main`'s spec 121 durations (FR-087) |

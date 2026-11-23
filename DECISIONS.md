@@ -22620,7 +22620,8 @@ gap row's proposal and the rule of #652 (where WordPress's own block does the jo
   "Replace with a Query Loop" transform an editor must press; nothing is migrated by itself (as #675 for tabs).
   CoreX's own `corex/news` pattern, `theme/patterns/section-selected-work.php`, the portfolio kit's blueprint and
   the component coverage defaults (which name `corex/posts`) change to Query Loops. Both blocks become kind
-  `records` in spec 136's table, and slice 1 updates its pending list and count. The variation hides core's query
+  `records` in spec 136's table; its pending list and count are already updated (done in the pull request of
+  this spec). The variation hides core's query
   controls and ignores every other query key; no chosen id, or a filter that returns none, is an empty result
   with the loop's "No results" content.
 - `corex/jobs` stays until spec 141 gives jobs their card, fields and filters (G-036): retiring it now would leave
@@ -22652,11 +22653,12 @@ session.
 
 - Size is slides per view for desktop, tablet and phone, or one slide width with as many in view as fit (the
   Leadership Lens cards are drawn 384px wide with part of the next in view). Unset tablet and phone counts of a new carousel
-  follow US-BLK-03. CoreX adds two width tokens for the carousel and one for the filter sheet, defaulting to the theme's own widths,
-  printed by PHP the way spec 137 FR-004 prints the header's width, without depending on spec 137's code.
+  follow US-BLK-03. CoreX adds two width tokens for the carousel and one for the filter sheet, defaulting to the tag's own widths
+  (782px for the tablet, its `custom.nav.breakpoint`; 1200px for the desktop, its `wideSize`; 782px for the
+  sheet), printed by PHP the way spec 137 FR-004 prints the header's width, without depending on spec 137's code.
 - Arrows and dots can each be hidden; their sizes are US-BLK-03's. Advancing by itself has a floor of 4 seconds
-  (as spec 136's tabs, FR-035) and always shows Pause; after Pause only Play starts it again. Loop, an edge fade at the start, the end or both (a mask in
-  logical terms), and the current slide aligned to the start or the centre are options.
+  (as spec 136's tabs, FR-035) and always shows Pause; after Pause only Play starts it again. Loop, an edge fade at the start, the end or both (its direction
+  chosen from the page direction), and the current slide aligned to the start or the centre are options.
 - The slides in view and the current slide carry a class and `aria-current`, so a site draws a coverflow or dims
   the others with a style of its own, not a CoreX option.
 - Loop is off by default, as today: the arrows stop at the ends (with `aria-disabled`, never `disabled`, so focus is not lost) and advancing by
@@ -22733,19 +22735,21 @@ session.
   so a Chosen records carousel with the same id is never filtered. Two filtered loops with the same id on one page:
   the editor warns and gives the second a new id; patterns CoreX ships carry no fixed `queryId`. The main query is
   never changed: it runs before the template, so the bar is not known yet, and an empty filtered result never
-  becomes a 404 (core `WP::handle_404()` acts on the main query). The filters, `noindex` and the header apply only
-  when a bar has rendered on the page with its own parameters present; an address with `filter-*` parameters and no
-  bar changes nothing. An inheriting Query Loop that holds a
+  becomes a 404 (core `WP::handle_404()` acts on the main query). The filters apply to a Query Loop whose parsed inner blocks hold a bar and whose own parameters are present (its
+  query runs in its post template, which may render before a bar placed below it); `noindex` and the header are set
+  once such a loop has rendered. An address with `filter-*` parameters and no bar in any loop changes nothing. An inheriting Query Loop that holds a
   bar runs the main query's arguments with the filters as its own query while it renders, only on an archive, the
   posts page or a search. *Not chosen:* `pre_get_posts` on the main query, which would filter an archive whose
   template has no bar. A filtered address also sends
   `X-Robots-Tag: noindex, follow`, so an SEO plugin that replaces core's robots tag does not drop it.
 - A Query Loop that holds a filter bar is navigated by CoreX's script only. Core disables client navigation
   page-wide (`wp_interactivity_config('core/router')`) and its editor turns "Reload full page" back on by itself
-  (EnhancedPaginationModal) for a loop with a block that does not declare client navigation. So a
-  `render_block_data` filter at a priority below 10 sets `enhancedPagination` to false on a Query Loop that holds a
-  filter bar: that loop never asks core for client navigation, core's router never intercepts its links, and
-  CoreX's script handles them. CoreX draws no editor note (core shows its own); another loop keeps core's.
+  (EnhancedPaginationModal) for a loop with a block that does not declare client navigation. Core builds
+  inner blocks, with their attributes, before `render_block_data` runs for them (`class-wp-block.php:171`, `:198`
+  and `:614`), so CoreX's `render_block_data` filter acts on every top-level block (`blocks.php:2474`) and walks
+  its parsed inner blocks, setting `enhancedPagination` to false on each `core/query` whose own inner blocks hold a
+  filter bar, at any depth (a loop nested in a Group, as `archive.html` nests it in `<main>`). That loop never asks
+  core for client navigation, core's router never intercepts its links, and CoreX's script handles them. CoreX draws no editor note (core shows its own); another loop keeps core's.
 - The filters fold into a "Filters" button and sheet on a phone only once the script runs; without it they stay the
   form with Apply.
 - "Counts" is the number selected on each control (drawn as "2 selected"); counts per option are an option, counted
@@ -22776,7 +22780,7 @@ slice 4, which rewrites `posts/index.js`, and rests on spec 136 slices 1, 2a, 3 
 `git log v0.48.1..origin/main` on 2026-11-23, over the carousel, posts and stat blocks, `addons/corex-kit-portfolio`
 (3 files, spec 136 slices 1, 3 and 2a) and `theme/theme.json` (specs 121 and 134): each slice is carried to the
 line after wave 1. `main` has motion durations the line lacks (spec 121); the spec's tokens are new keys placed
-there by hand (#701) with literal defaults, and scripts fall back to a stated default (as #698). `v0.50.0` holds
+there by hand (#701) with literal defaults or presets the tag has, ending in a literal, and scripts fall back to a stated default (as #698). `v0.50.0` holds
 slices 1 to 6, and 7a, 7b and 8 when they are on `main` with them.
 
 ## #731 -- Every visible value of a spec 149 block is a token a client theme can change
@@ -22794,6 +22798,7 @@ The constitution already says styling comes from `theme.json` only. Spec 149 mak
 - values a script needs (speed, durations, thresholds) are read from the computed property, never written in it;
 - the classes a style may target are a public contract in the two READMEs;
 - a fixture client theme overrides every token and a Playwright test reads each change from the computed style;
+  speeds, thresholds and durations are proved by FR-085's script test, which reads the value the script used;
   a unit check fails on a raw length, colour, time or easing in the blocks' style files;
 - the drawings 149-D1 to 149-D4 name their values as these tokens, so the defaults they set are the ones shipped.
 
