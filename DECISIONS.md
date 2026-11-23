@@ -22149,3 +22149,25 @@ optional seam later") and #657.
 The two header patterns that hold a raw HTML search get WordPress's Search block in the bar and in the phone menu.
 The one search overlay with its keyboard shortcut is US-NAV-09 (R4.1) and is not built here. Headers saved earlier
 keep the raw search and the script that opens it. Blackstone's header has no search (its decision 6).
+
+## #696 -- The header system's drawings are approved (spec 137)
+
+**Date:** 2026-11-22. **Spec:** 137, slices 2, 4 and 5. **Decided:** by the owner, in session, in three steps, each
+from a picture with a button.
+
+- **Step 1, the phone menu:** the bar shows the logo and the "Menu" button only; the open menu holds the links,
+  mega panels and sub-menus as groups that open in place one at a time, a Language row, the utility links and the
+  one strong button.
+- **Step 2, the utility row and the language switcher:** the row sits on the quiet band above the bar. The
+  switcher has a menu form (the kit's Dropdown, every language listed, the current one ticked) and a list form
+  (links in a row, the current one marked by a tint, a tick and its weight, and not a link).
+- **Step 3, search and the phone action bar:** search is an icon button that opens a field over the end of the
+  menu, with no visible label; the action bar is the strong button, full width, at the foot of a phone screen.
+- The record is `design/handoffs/header-system.md`. The boards stay on the owner's private canvas (the
+  repository keeps no design-tool export); the rules the kit lacked are kept as
+  `specs/137-header-system/design/header-system.css.txt`. No token was added.
+- FR-032 of the spec was brought into step with the drawing before the approval: the menu lists every language,
+  not only the others.
+
+*Owed to the design system:* these rules, the Arabic face on four classes that set the heading face themselves,
+and a mark for the current page in the phone menu.
