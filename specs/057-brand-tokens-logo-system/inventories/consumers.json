@@ -12973,7 +12973,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 49, 68: var(--wp--custom--border--width--thin) solid",
+      "selector_or_context": "lines 24, 43: var(--wp--custom--border--width--thin) solid",
       "property": "--wp--custom--border--width--thin",
       "owner": "theme",
       "surface": "front-end",
@@ -12983,7 +12983,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 65: min-inline-size: var(--wp--custom--header--height);",
+      "selector_or_context": "lines 40: min-inline-size: var(--wp--custom--header--height);",
       "property": "--wp--custom--header--height",
       "owner": "theme",
       "surface": "front-end",
@@ -12993,7 +12993,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 51, 70: border-radius: var(--wp--custom--radius--md);",
+      "selector_or_context": "lines 26, 45: border-radius: var(--wp--custom--radius--md);",
       "property": "--wp--custom--radius--md",
       "owner": "theme",
       "surface": "front-end",
@@ -13003,7 +13003,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 46, 64: z-index: var(--wp--custom--z--dropdown);",
+      "selector_or_context": "lines 21, 39: z-index: var(--wp--custom--z--dropdown);",
       "property": "--wp--custom--z--dropdown",
       "owner": "theme",
       "surface": "front-end",
@@ -13013,7 +13013,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 50, 69: var(--wp--preset--color--border);",
+      "selector_or_context": "lines 25, 44: var(--wp--preset--color--border);",
       "property": "--wp--preset--color--border",
       "owner": "theme",
       "surface": "front-end",
@@ -13023,7 +13023,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 47, 66: background-color: var(--wp--preset--color--surface-raised);",
+      "selector_or_context": "lines 22, 41: background-color: var(--wp--preset--color--surface-raised);",
       "property": "--wp--preset--color--surface-raised",
       "owner": "theme",
       "surface": "front-end",
@@ -13033,7 +13033,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 53, 72: box-shadow: var(--wp--preset--shadow--md);",
+      "selector_or_context": "lines 28, 47: box-shadow: var(--wp--preset--shadow--md);",
       "property": "--wp--preset--shadow--md",
       "owner": "theme",
       "surface": "front-end",
@@ -13043,7 +13043,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 44: inset-block-start: calc(100% + var(--wp--preset--spacing--20));",
+      "selector_or_context": "lines 19: inset-block-start: calc(100% + var(--wp--preset--spacing--20));",
       "property": "--wp--preset--spacing--20",
       "owner": "theme",
       "surface": "front-end",
@@ -13053,7 +13053,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation-collapse.css",
-      "selector_or_context": "lines 52, 71: padding: var(--wp--preset--spacing--40);",
+      "selector_or_context": "lines 27, 46: padding: var(--wp--preset--spacing--40);",
       "property": "--wp--preset--spacing--40",
       "owner": "theme",
       "surface": "front-end",

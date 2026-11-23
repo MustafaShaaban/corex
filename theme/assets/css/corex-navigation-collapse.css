@@ -1,5 +1,5 @@
 /* Every width rule of the CoreX header, at the token's default.
-   Spec 137 FR-003; DECISIONS #692, #699. */
+   Spec 137, FR-003; decisions 692 and 699. */
 
 @media (600px <= width < 782px) { /* corex-token-allow: nav breakpoint */
 

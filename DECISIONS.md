@@ -22612,3 +22612,15 @@ database. CoreX provisions one only through `.github/actions/provision-wordpress
 Azure job cannot use. Writing a provisioning for Azure's Linux agents (a script both hosts can call) is work of its
 own, so slices 7 to 9 ship the gate without it and slice 10 adds it, v0.50.0 at the earliest. Until then a site
 runs its Playwright suite locally before a pull request.
+
+## #704 -- The contact and form pages carry the header's width rules in their byte budget (spec 137 slice 1)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-003, FR-044. **Decided:** by the spec 137 session, as #645 did for the band
+sheet.
+
+- Slice 1 adds `corex-navigation-collapse.css` to every page with a CoreX header: 1,638 bytes printed inline, less
+  the 840 bytes its rules left in `corex-navigation.css`, so about 800 bytes more per page. Its comments were moved
+  out first (they were 1,628 bytes of the first version), so what is left is rules.
+- Every page stays within 10% of its budget but two: `/contact/` and `/form/`, which were already 9.6% over theirs
+  on `main` (55,254 bytes against 50,424). Their budgets in `tests/e2e/quality/byte-budget.json` become the
+  measured 56,052 bytes. No other budget changes.
