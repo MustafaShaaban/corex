@@ -99,8 +99,9 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   on `main`: create `release/gap-line` from `v0.48.1`, cherry-pick the wave's squash commits in merge order, open
   one pull request into the line per spec, run `scripts/client-merge-check.mjs`, bump the version surfaces to
   0.49.0 on the line, move the wave's changelog lines into a `[0.49.0]` entry (on the line and on `main`), tag,
-  publish, and report the tag, the gaps and the client impact. (3) Spec 149 (lists, filters, carousel) may start
-  beside wave 1 when a session is free. (4) Wave 2: specs 138 to 143.
+  publish, and report the tag, the gaps and the client impact. (3) Spec 149 (G-008, G-010, G-012, then G-009) is
+  written and built next and ships as `v0.50.0` (DECISIONS #701); spec 137 adds slice 6, the header's scroll
+  distance, to `v0.49.0`. (4) Specs 138 to 143 ship as `v0.51.0`.
 - **Waiting on the owner, none of it blocking the slices nobody sees.** Approval of each design for a visible
   slice (the header system, the hero's media and second button, the pause controls, later the careers screens and
   the consent banner). His word on the reversals listed in CR-049's intake (`06-change-control/intake-2026-11-21.md`
@@ -117,11 +118,11 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | #496 (slice 1) | | slice 1 merged into `main` (`93bf6321`): anchor, alignment and class reach the page (DECISIONS #670, #676); 2a (margin, padding, colour; DECISIONS #680, rests on slice 3) in review; 2b to come |
 | G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | #504 (slice 3), #509 (slice 4) | | slice 3 merged into `main` (`1e6ca459`), rests on nothing the tag lacks; the child theme re-check passed (#660, #663). Slice 4 (the favicon under a child, FR-016): pull request open; rests on spec 134, on `main` only, not carried to the line |
 | G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | #512 | | slice 5: pull request open (#662, #665, #666). Rests on nothing `main` gained after v0.48.1 that the tag lacks |
-| G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
+| G-008 | High | List blocks read one post type, titles only, no picker | `v0.50.0` | 149 | | | | open: first after wave 1 (DECISIONS #701) |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
-| G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
+| G-010 | High | Carousel: text slides, fixed timing, no ticker | `v0.50.0` | 149 | | | | open: first after wave 1 (DECISIONS #701) |
 | G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written; the hero drawing (D-3) approved 2026-11-23 (DECISIONS #677, `design/handoffs/spec-136-hero.md`); slice 9 waits on slice 3 and on the design system gaining its scrim tokens and icons |
-| G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
+| G-012 | Medium | No reveal on scroll, no count-up | `v0.50.0` | 149 | | | | open: moved from spec 150 to 149, first after wave 1 (DECISIONS #701) |
 | G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | spec written; five slices: 1 one width, 2 language switcher, 3 mega menu item, 4 phone menu, 5 utility menu, search and patterns | spec: #493 | | open: spec merged (`4d0a2b8d`); every drawing approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`, DECISIONS #696); no slice built yet, building waits for a free slot (DECISIONS #690 to #696) |
 | G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
 | G-015 | Medium | No in-page section navigation | then | 150 | | | | open |

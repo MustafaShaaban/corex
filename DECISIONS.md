@@ -22390,3 +22390,37 @@ after corex-reviewer's round.
 *For the maintenance line:* this slice rests on slice 3 (#506): the gate imports `@corex/build-tools/parity`, and
 the `supports` lines and stubs it edits sit beside slice 3's `corex.editor` keys. Slice 3's commit is
 cherry-picked first. `ProfileServiceProvider.php` changed after the tag (slice 1 note).
+
+## #701 -- Pixel parity moves lists, the carousel, reveal and the header's scroll distance ahead of wave 2
+
+**Date:** 2026-11-23. **Spec:** 137 (slice 6), 149, 150 (G-012 leaves it). **Decided:** by the gap coordinator,
+on the Blackstone site's decision 29, relayed by its coordinator: every visible slice of the site matches its
+Figma frame, and a slice waits rather than differs. Amends the wave order of #652.
+
+- The site's Home slices 9, 10 and 12 now wait for four CoreX gaps instead of working around them: G-010 (a
+  carousel of records that moves and fades, and a partner ticker), G-012 (reveal on scroll and count-up, for the
+  KPI banner and the hero's stats), G-008 (a record picker, for featured stories and articles), and a header
+  scroll distance a site can set (today `theme/assets/js/corex-navigation.js` swaps the header state at a fixed
+  `SCROLL_THRESHOLD` of 8 pixels, with no token).
+- **The header scroll distance joins wave 1** as spec 137 slice 6, after its slices 1 to 5, so it ships in
+  `v0.49.0`. It is a setting a site's `theme.json` can change, read by the header script, defaulting to today's 8
+  pixels so no site changes on update. Spec 137 records it in its own range (#690 to #699).
+- **G-012 moves from spec 150 to spec 149.** Spec 149 becomes lists, the carousel, the ticker and reveal: G-008,
+  G-010, G-012, then G-009 (visitor-side filters), in that order.
+- **`v0.50.0` is spec 149**, cut on `release/gap-line` like `v0.49.0`. The forms, mail and features wave of #652
+  (specs 138 to 143) becomes `v0.51.0`, wave 3 (specs 144 to 148) `v0.52.0`, and the rest `v0.53.0`. G-009 ships
+  in `v0.50.0` if it is on `main` when the other three are, and otherwise with the next tag.
+- **What spec 149 rests on, measured** with `git log v0.48.1..origin/main` on 2026-11-23: since the tag, `main`
+  changed the carousel and posts blocks only through wave 1 (spec 136 slices 1, 3 and 2a), the stat block the same
+  way, and `corex-navigation.js` not at all. So nothing keeps the four gaps off the line, provided wave 1 is
+  carried first. One risk: `theme/theme.json` also changed through revamp work the line never carries (specs 121
+  and 134). A new token there is a hunk to place by hand beside the tag's own tokens. If a slice's token only
+  makes sense with that revamp work, #651 point 4 applies.
+- Every visible part of spec 149 (the carousel's controls, the ticker, the reveal) is a CoreX framework design,
+  drawn in Claude Design and approved by the owner before it is built (`AGENTS.md`, "UI, UX and front end"). The
+  Figma frames of the site set what the blocks must be able to show; the spec lists the drawings, and their
+  approval sets `v0.50.0`'s date.
+
+*Not chosen.* Shipping the four with the forms wave: it would hold three Home slices behind specs that are not
+written yet and rest far more on revamp code. A separate spec for the scroll distance: it is one setting in the
+header system spec 137 already owns.
