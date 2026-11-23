@@ -63,6 +63,25 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   own rows of the table below: the Slice, PR and State columns say what is on `main`, so this paragraph does not
   repeat them. The first slice landed on 2026-11-22 (spec 135 slice 1, G-001, #495, `819f0be1`). Nothing is
   tagged.
+- **Paused by the owner, 2026-11-23, until 8:30 PM Cairo time.** No session builds, merges or starts work until
+  he resumes it. Where each wave 1 slice stands at the pause (every branch below is pushed; the worktrees hold
+  no interrupted merge, rebase or cherry-pick):
+  - Spec 135 (`spec-135-client-site-scaffold-2294b5`): slices 1 (#495, `819f0be1`) and 2 (#500, `2e2a85ce`) are
+    on `main`. Slice 3 (G-006, the child theme) is pull request #504, CI running; its auto-merge was turned off
+    for the pause, so the session turns it on again when it resumes. Slice 4 (the favicon, `main` only) has a WIP
+    commit `2f4b33fb` on `spec/135-slice-4-favicon-off-a-child` and three files edited and not committed in the
+    worktree (`theme/inc/favicon.php`, `theme/README.md`, `tests/Unit/Theme/ThemeFaviconTest.php`), left as
+    they were. Slice 5 (G-007) not started.
+  - Spec 136 (`spec-136-block-editor-standard-27c368`): slice 1 (#496, `93bf6321`) is on `main`; the hero
+    drawing D-3 (#502) and the hero's child-block slot G-051 (#503, `6d15fdb7`, DECISIONS #679) are recorded.
+    Slice 3 (G-003, the parity standard) has WIP commits up to `a3e30129` on
+    `spec/136-slice-3-parity-standard` and 25 files edited and not committed in the worktree, left as they were;
+    next are its guards, `corex-reviewer` and the Codex debate. Slices 2a, 2b and 4 to 9 not started; D-1, D-2
+    and the D-3a addendum board are not yet approved.
+  - Spec 137 (`spec-137-header-system-69dd56`): the spec (#493) and every drawing (#498) are on `main`; its
+    worktree is clean. No slice started; it takes the next building slot.
+  - Waves 2 and 3: the planning session is not started; its brief is `brief-waves-2-3-specs.md` in the
+    coordinator's notes folder (named under "Who coordinates").
 - **What `v0.49.0` waits for, and what it will not hold.** The tag is cut when every wave 1 slice the line can
   carry is on `main`, designed slices included (the owner, 2026-11-22: "No, full wave", when offered an earlier
   tag without them). Its date follows his design approvals: spec 136 slices 6b, 8 and 9 wait for designs D-1 to
@@ -71,7 +90,8 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   design. Two slices rest on spec 134,
   which the line never carries, and ship with `main`'s own tag (#651 point 4): spec 136 slice 2b (the section
   bands) and spec 135 slice 4 (the CoreX favicon kept off a child theme). Spec 135 slice 2 (G-002) rests on #458
-  (the CoreX loop); whether #458 is carried with it is decided when the wave is carried.
+  (the CoreX loop, `fe8bcfad`), which is carried to the line before it: a trial cherry-pick onto `v0.48.1`
+  conflicted only in the record files.
 - **Pacing (asked for the owner, 2026-11-22).** Two building sessions at a time, one builder or reviewer agent
   at a time inside each, finished work committed and pushed before the next step. Specs 135 and 136 build first;
   spec 137 starts building when one of the two has finished or waits on the owner, on the coordinator's word.
@@ -97,10 +117,10 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | Gap | Effect | What | Wave | Spec | Slice | PR | Tag | State |
 |---|---|---|---|---|---|---|---|---|
 | G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | #495 | | merged into `main` (`819f0be1`). Rests on nothing `main` gained after v0.48.1 (#661) |
-| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | #500 | | built: pull request open. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
+| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | #500 | | merged into `main` (`2e2a85ce`). Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
 | G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | spec written (DECISIONS #671, #673) |
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
-| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | #496 (slice 1) | | slice 1 in review: anchor, alignment and class reach the page (DECISIONS #670, #676); 2a and 2b to come |
+| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | #496 (slice 1) | | slice 1 merged into `main` (`93bf6321`): anchor, alignment and class reach the page (DECISIONS #670, #676); 2a and 2b to come |
 | G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | | | open: spec reviewed; the child theme re-check passed (#660). Slice 4 (the favicon) rests on spec 134 and is not carried to the line |
 | G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | | | open: spec reviewed (#662) |
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
