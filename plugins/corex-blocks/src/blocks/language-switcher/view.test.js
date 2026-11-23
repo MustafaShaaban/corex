@@ -224,82 +224,109 @@ describe( 'FR-032: the menu form', () => {
 } );
 
 describe( 'FR-032: the open menu stays inside the window', () => {
-	const WIDTH = 375;
+	const MENU_WIDTH = 224;
 
 	/**
-	 * Opens a menu whose Dropdown, aligned to the button's inline end, is drawn at `box`.
+	 * Opens a menu whose button is drawn from `start` to `end` across a window `width` wide. Its
+	 * Dropdown, 14rem wide, hangs from the button's inline end until told otherwise.
 	 *
-	 * @param {{left: number, right: number}} box       Where the Dropdown is drawn when opened.
-	 * @param {string}                        direction The page's direction.
+	 * @param {Object} where
+	 * @param {number} where.start     The button's left edge.
+	 * @param {number} where.end       The button's right edge.
+	 * @param {string} where.direction The page's direction.
+	 * @param {number} where.width     The window's width.
 	 * @return {HTMLElement} The Dropdown.
 	 */
-	function openAt( box, direction = 'ltr' ) {
+	function openAt( { start, end, direction = 'ltr', width = 375 } ) {
+		window.innerWidth = width;
 		const root = menu();
 		const { button, list } = parts( root );
 		list.style.direction = direction;
-		list.getBoundingClientRect = () => ( {
-			...box,
+		const box = ( left, right ) => ( {
+			left,
+			right,
 			top: 0,
-			bottom: 100,
-			width: box.right - box.left,
-			height: 100,
+			bottom: 36,
+			width: right - left,
+			height: 36,
 		} );
+		root.getBoundingClientRect = () => box( start, end );
+		button.getBoundingClientRect = () => box( start, end );
+		list.getBoundingClientRect = () => box( 0, MENU_WIDTH );
 		initLanguageMenu( root );
 		button.click();
 
 		return list;
 	}
 
-	beforeEach( () => {
-		window.innerWidth = WIDTH;
+	const alignedStart = ( list ) =>
+		list.classList.contains( 'is-aligned-start' );
+
+	it( 'keeps the Dropdown at the inline end where it fits there', () => {
+		const ltr = openAt( { start: 240, end: 350 } );
+		expect( alignedStart( ltr ) ).toBe( false );
+		expect( ltr.style.maxInlineSize ).toBe( '' );
+
+		const rtl = openAt( { start: 16, end: 126, direction: 'rtl' } );
+		expect( alignedStart( rtl ) ).toBe( false );
+		expect( rtl.style.maxInlineSize ).toBe( '' );
 	} );
 
-	it( 'keeps the Dropdown at the inline end while its start edge is inside the window', () => {
-		expect(
-			openAt( { left: 120, right: 344 } ).classList.contains(
-				'is-aligned-start'
-			)
-		).toBe( false );
-		expect(
-			openAt( { left: 30, right: 254 }, 'rtl' ).classList.contains(
-				'is-aligned-start'
-			)
-		).toBe( false );
+	it( 'opens it from the inline start where the end has no room, left to right', () => {
+		const list = openAt( { start: 16, end: 126 } );
+
+		expect( alignedStart( list ) ).toBe( true );
+		expect( list.style.maxInlineSize ).toBe( '' );
 	} );
 
-	it( 'aligns it to the inline start when its start edge would leave the window, left to right', () => {
-		expect(
-			openAt( { left: -118, right: 106 } ).classList.contains(
-				'is-aligned-start'
-			)
-		).toBe( true );
+	it( 'opens it from the inline start where the end has no room, right to left', () => {
+		const list = openAt( { start: 249, end: 359, direction: 'rtl' } );
+
+		expect( alignedStart( list ) ).toBe( true );
+		expect( list.style.maxInlineSize ).toBe( '' );
 	} );
 
-	it( 'aligns it to the inline start when its start edge would leave the window, right to left', () => {
-		expect(
-			openAt( { left: 269, right: 493 }, 'rtl' ).classList.contains(
-				'is-aligned-start'
-			)
-		).toBe( true );
+	it( 'narrows it to the room the window has where neither side holds 14rem (a phone at 200%)', () => {
+		const start = openAt( { start: 16, end: 126, width: 188 } );
+		expect( alignedStart( start ) ).toBe( true );
+		expect( start.style.maxInlineSize ).toBe( '172px' );
+		expect( start.style.minInlineSize ).toBe( '0px' );
+
+		const end = openAt( { start: 62, end: 172, width: 188 } );
+		expect( alignedStart( end ) ).toBe( false );
+		expect( end.style.maxInlineSize ).toBe( '172px' );
+
+		const rtl = openAt( {
+			start: 62,
+			end: 172,
+			width: 188,
+			direction: 'rtl',
+		} );
+		expect( alignedStart( rtl ) ).toBe( true );
+		expect( rtl.style.maxInlineSize ).toBe( '172px' );
 	} );
 
 	it( 'measures again on each opening', () => {
-		const list = openAt( { left: -118, right: 106 } );
+		const list = openAt( { start: 16, end: 126, width: 188 } );
+		const root = list.parentElement;
 		const button = list.previousElementSibling;
 
 		button.click();
-		expect( list.classList.contains( 'is-aligned-start' ) ).toBe( false );
+		expect( alignedStart( list ) ).toBe( false );
+		expect( list.style.maxInlineSize ).toBe( '' );
 
-		list.getBoundingClientRect = () => ( {
-			left: 120,
-			right: 344,
+		window.innerWidth = 1280;
+		root.getBoundingClientRect = () => ( {
+			left: 900,
+			right: 1010,
 			top: 0,
-			bottom: 100,
-			width: 224,
-			height: 100,
+			bottom: 36,
+			width: 110,
+			height: 36,
 		} );
 		button.click();
-		expect( list.classList.contains( 'is-aligned-start' ) ).toBe( false );
+		expect( alignedStart( list ) ).toBe( false );
+		expect( list.style.maxInlineSize ).toBe( '' );
 	} );
 } );
 

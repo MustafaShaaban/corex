@@ -5,8 +5,9 @@
  * the ends, Enter follows a language (the link's own), Escape closes it and returns focus to the
  * button, and a click outside or focus moving elsewhere closes it.
  *
- * The Dropdown opens at the button's inline end. Where that would put its start edge outside the
- * window (a switcher at the start of a line, on a phone), it opens at the button's inline start.
+ * The Dropdown opens at the button's inline end. Where it does not fit there (a switcher at the start
+ * of a line, on a phone), it opens from the button's inline start, and where neither side holds it (a
+ * phone zoomed to 200%), it narrows to the room the window has.
  *
  * The server prints the menu with its list showing. Where the browser runs no script, the block's
  * style draws that markup as the list form, and this script does nothing where the browser cannot
@@ -41,12 +42,12 @@ function menuOf( root, button, list ) {
 		open() {
 			button.setAttribute( 'aria-expanded', 'true' );
 			list.hidden = false;
-			keepInside( list, view );
+			keepInside( root, list, view );
 		},
 		close( returnFocus = false ) {
 			button.setAttribute( 'aria-expanded', 'false' );
 			list.hidden = true;
-			list.classList.remove( ALIGNED_START );
+			resetPlacement( list );
 			if ( returnFocus ) {
 				button.focus();
 			}
@@ -64,21 +65,48 @@ function menuOf( root, button, list ) {
 }
 
 /**
- * Opens the Dropdown at the button's inline start when, at its inline end, its start edge would be
- * outside the window. Measured on every opening, so a turned phone gets the right side.
+ * Lets the Dropdown go back to the style's placement: at the button's inline end, 14rem wide.
  *
+ * @param {HTMLElement} list The Dropdown.
+ */
+function resetPlacement( list ) {
+	list.classList.remove( ALIGNED_START );
+	list.style.removeProperty( 'min-inline-size' );
+	list.style.removeProperty( 'max-inline-size' );
+}
+
+/**
+ * Keeps the open Dropdown inside the window. It hangs from the button's inline end while it fits
+ * there; otherwise from the side with more room; and where neither side holds its width (a phone
+ * zoomed to 200%), it narrows to that room. Measured on every opening, so a turned phone or a
+ * changed zoom gets the right answer.
+ *
+ * @param {HTMLElement} root The menu's root, as wide as its button.
  * @param {HTMLElement} list The open Dropdown.
  * @param {Window}      view Its window.
  */
-function keepInside( list, view ) {
-	list.classList.remove( ALIGNED_START );
+function keepInside( root, list, view ) {
+	resetPlacement( list );
 
-	const box = list.getBoundingClientRect();
+	const button = root.getBoundingClientRect();
 	const width = view.document.documentElement.clientWidth || view.innerWidth;
 	const rtl = view.getComputedStyle( list ).direction === 'rtl';
+	// The room from the button's inline end back across it, and from its inline start onward.
+	const fromEnd = rtl ? width - button.left : button.right;
+	const fromStart = rtl ? button.right : width - button.left;
+	const needed = list.getBoundingClientRect().width;
 
-	if ( rtl ? box.right > width : box.left < 0 ) {
+	if ( needed <= fromEnd ) {
+		return;
+	}
+	if ( fromStart > fromEnd ) {
 		list.classList.add( ALIGNED_START );
+	}
+
+	const room = Math.floor( Math.max( fromStart, fromEnd ) );
+	if ( needed > room ) {
+		list.style.minInlineSize = '0px';
+		list.style.maxInlineSize = `${ room }px`;
 	}
 }
 

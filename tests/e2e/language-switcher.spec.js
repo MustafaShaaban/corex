@@ -25,6 +25,8 @@ const VISITOR = { cookies: [], origins: [] };
 const DESKTOP = { width: 1280, height: 900 };
 const PHONE = { width: 375, height: 812 };
 const TARGET = 44;
+const SMALL_BUTTON = 36;
+const ZOOMED_PHONE = { width: 188, height: 406 };
 
 const PAGE = [
 	'<!-- wp:paragraph --><p class="cx137-text">A page that holds the language switcher in each form.</p><!-- /wp:paragraph -->',
@@ -296,9 +298,13 @@ test.describe( 'the language switcher (US-NAV-05)', () => {
 
 		await expect( button ).toHaveAttribute( 'aria-expanded', 'false' );
 		await expect( dropdown ).toBeHidden();
-		expect( ( await button.boundingBox() ).height ).toBeGreaterThanOrEqual(
-			TARGET
+		// Drawn as the kit's small button, 36px tall; its target reaches 44px past its edges.
+		expect( Math.round( ( await button.boundingBox() ).height ) ).toBe(
+			SMALL_BUTTON
 		);
+		const buttonArea = await hitArea( button );
+		expect( buttonArea.height ).toBeGreaterThanOrEqual( TARGET );
+		expect( buttonArea.width ).toBeGreaterThanOrEqual( TARGET );
 
 		await button.click();
 		await expect( button ).toHaveAttribute( 'aria-expanded', 'true' );
@@ -505,6 +511,100 @@ test.describe( 'the language switcher (US-NAV-05)', () => {
 			await dropdown.getByRole( 'link', { name: 'Français' } ).click();
 			await expect( page ).toHaveURL( /corex_e2e_language=fr/ );
 		} );
+	}
+
+	for ( const locale of [ 'en', 'ar' ] ) {
+		test( `the menu is drawn as the kit's small ghost button over its Dropdown (${ locale })`, async ( {
+			page,
+			baseURL,
+		} ) => {
+			await open( page, baseURL, { languages: 'three', locale } );
+
+			const menu = page.locator( '.cx137-menu .corex-language-switcher' );
+			const button = menu.locator( 'button' );
+			await button.click();
+			const dropdown = menu.locator( '.corex-dropdown__menu' );
+			await expect( dropdown ).toBeVisible();
+
+			const drawn = await menu.evaluate( ( root ) => {
+				const css = ( element ) => window.getComputedStyle( element );
+				const swatch = document.createElement( 'span' );
+				swatch.style.color = 'var(--wp--preset--color--ink)';
+				document.body.appendChild( swatch );
+				const ink = css( swatch ).color;
+				swatch.remove();
+				const knob = root.querySelector( 'button' );
+				const current = root.querySelector( '[aria-current="true"]' );
+				const tick = current.querySelector( '.corex-icon' );
+				const other = root.querySelector( '.corex-dropdown__menu a' );
+
+				return {
+					ink,
+					paddingStart: css( knob ).paddingInlineStart,
+					gap: css( knob ).columnGap,
+					// Its drawn size, not its turning box: the chevron may still be turning.
+					chevron: parseFloat(
+						css( knob.querySelector( '.corex-icon' ) ).width
+					),
+					tick: tick.getBoundingClientRect().width,
+					tickX: tick.getBoundingClientRect().left,
+					nameX: current
+						.querySelector( '[lang]' )
+						.getBoundingClientRect().left,
+					rowEnd: current.getBoundingClientRect().right,
+					rowStart: current.getBoundingClientRect().left,
+					otherColour: css( other ).color,
+					otherSize: css( other ).fontSize,
+					bodySize: css( document.body ).fontSize,
+				};
+			} );
+
+			expect( drawn.paddingStart ).toBe( '16px' );
+			expect( drawn.gap ).toBe( '8px' );
+			expect( drawn.chevron ).toBe( 16 );
+			expect( drawn.tick ).toBe( 16 );
+			// The tick sits at the row's inline end: right of the name in English, left of it in Arabic.
+			if ( locale === 'ar' ) {
+				expect( drawn.tickX ).toBeLessThan( drawn.nameX );
+				expect( drawn.tickX - drawn.rowStart ).toBeLessThan( 24 );
+			} else {
+				expect( drawn.tickX ).toBeGreaterThan( drawn.nameX );
+				expect(
+					drawn.rowEnd - ( drawn.tickX + drawn.tick )
+				).toBeLessThan( 24 );
+			}
+			expect( drawn.otherColour ).toBe( drawn.ink );
+			expect( drawn.otherSize ).toBe( drawn.bodySize );
+		} );
+
+		for ( const place of [ 'cx137-start', 'cx137-menu' ] ) {
+			test( `the open menu stays inside a 188px window, a phone at 200% (${ locale }, ${ place })`, async ( {
+				page,
+				baseURL,
+			} ) => {
+				await open( page, baseURL, {
+					languages: 'three',
+					locale,
+					size: ZOOMED_PHONE,
+				} );
+
+				const menu = page.locator(
+					`.${ place } .corex-language-switcher`
+				);
+				await menu.locator( 'button' ).click();
+				const dropdown = menu.locator( '.corex-dropdown__menu' );
+				await expect( dropdown ).toBeVisible();
+
+				const box = await dropdown.boundingBox();
+				expect( box.x ).toBeGreaterThanOrEqual( 0 );
+				expect( box.x + box.width ).toBeLessThanOrEqual(
+					ZOOMED_PHONE.width
+				);
+				await expect(
+					dropdown.getByRole( 'link', { name: 'Français' } )
+				).toBeVisible();
+			} );
+		}
 	}
 
 	test( 'a list that wraps keeps a 44px target on every row', async ( {

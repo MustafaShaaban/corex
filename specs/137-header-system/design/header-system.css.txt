@@ -39,8 +39,10 @@
 .corex-language-switcher--menu > [aria-expanded="true"] > .corex-icon { transform: rotate(180deg); }
 .corex-language-switcher--menu > .corex-dropdown__menu { position: absolute; inset-block-start: calc(100% + var(--wp--preset--spacing--10)); inset-inline-end: 0; z-index: var(--wp--custom--z--dropdown); }
 .corex-language-switcher--menu > .corex-dropdown__menu[hidden] { display: none; }
-/* List form: every language in a row. The current one is not a link; it has the brass tint, a tick and more weight. */
-.corex-language-switcher__list { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wp--preset--spacing--10); margin: 0; padding: 0; list-style: none; }
+/* List form: every language in a row. The current one is not a link; it has the brass tint, a tick and more weight.
+   Items in a row are 4px apart (spacing 10); rows that wrap are 0.5rem apart (spacing 20), so each row's 2.75rem
+   target (3b) reaches the next row's and neither is cut short (slice 2's review, DECISIONS #703). */
+.corex-language-switcher__list { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--10); margin: 0; padding: 0; list-style: none; }
 .corex-language-switcher__item { display: inline-flex; align-items: center; gap: var(--wp--preset--spacing--10); box-sizing: border-box; min-block-size: 2.25rem; padding-inline: var(--wp--preset--spacing--25); border-radius: var(--wp--custom--radius--sm); color: var(--wp--preset--color--ink-soft) !important; font-family: var(--wp--preset--font-family--heading); font-size: var(--wp--preset--font-size--sm); font-weight: 500; line-height: 1.2; text-decoration: none; }
 a.corex-language-switcher__item:hover { color: var(--wp--preset--color--ink) !important; background-color: var(--wp--preset--color--surface-alt); }
 .corex-language-switcher__item[aria-current="true"] { color: var(--wp--preset--color--accent-dark) !important; background-color: var(--wp--custom--color--accent-subtle); font-weight: 600; }

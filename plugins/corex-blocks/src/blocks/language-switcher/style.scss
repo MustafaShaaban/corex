@@ -16,10 +16,11 @@
 	display: inline-flex;
 	align-items: center;
 
+	// The kit's small icon: the chevron and the tick.
 	.corex-icon {
 		flex: none;
-		inline-size: 1em;
-		block-size: 1em;
+		inline-size: 1rem;
+		block-size: 1rem;
 	}
 
 	:is(a, button):focus-visible {
@@ -111,14 +112,18 @@
 
 @media (scripting: enabled) {
 
+	// The kit's small ghost button, drawn 2.25rem tall so a 2.5rem utility row
+	// does not grow; its target is 2.75rem through the ::after box, as rule 3b
+	// gives the toggle.
 	.corex-language-switcher--menu > .corex-language-switcher__button {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
-		gap: var(--wp--preset--spacing--10);
+		gap: var(--wp--preset--spacing--20);
 		box-sizing: border-box;
-		min-block-size: 2.75rem;
+		min-block-size: 2.25rem;
 		padding-block: 0;
-		padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+		padding-inline: var(--wp--preset--spacing--30);
 		border: var(--wp--custom--border--width--thin) solid transparent;
 		border-radius: var(--wp--custom--radius--sm);
 		background-color: transparent;
@@ -128,6 +133,13 @@
 		font-weight: 500;
 		line-height: 1.2;
 		cursor: pointer;
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset-inline: min(0px, calc((100% - 2.75rem) / 2));
+			inset-block: min(0px, calc((100% - 2.75rem) / 2));
+		}
 
 		> .corex-icon {
 			transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);
@@ -171,10 +183,25 @@
 			display: flex;
 		}
 
+		// The kit's Dropdown item: ink at the body's size and weight, the tick at
+		// the row's inline end. The list form keeps its tick first.
 		.corex-language-switcher__item {
 			flex: 1 1 auto;
-			justify-content: flex-start;
+			justify-content: space-between;
+			gap: var(--wp--preset--spacing--30);
 			min-block-size: 2.75rem;
+			color: var(--wp--preset--color--ink);
+			font-size: inherit;
+			font-weight: inherit;
+
+			> .corex-icon {
+				order: 1;
+			}
+
+			&[aria-current="true"] {
+				color: var(--wp--preset--color--accent-dark);
+				font-weight: 600;
+			}
 		}
 	}
 
