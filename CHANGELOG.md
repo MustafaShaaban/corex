@@ -124,6 +124,17 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   every template and page that uses one still draws it. Hiding the CoreX theme's templates was withdrawn (the
   editor finds a page's template in the same list) and moves to spec 153. A child's `customTemplates` is completed with CoreX's six, so a client adds its
   own without copying them, and `verify:client-theme` no longer asks for them there.
+- **A CoreX header changes form at one width, its navigation breakpoint** (spec 137 slice 1, gap G-013;
+  FR-001 to FR-008; DECISIONS #692). WordPress folded the header's menu at 600px, the theme switched its mega and
+  search panels at 768px, and the token `settings.custom.nav.breakpoint` said 782px and was read by nothing. Every
+  rule that depends on the width is now in `theme/assets/css/corex-navigation-collapse.css`, written at 782px:
+  inside `.corex-header`, between 600px and the token the menu stays behind its button, and from the token up the
+  menu is inline and the panels are dropdowns. `Corex\Theme\NavigationServiceProvider` serves the file when the
+  token is 782px and otherwise prints the same rules inline at the token's width, on the page and in the editor's
+  canvas, so a child theme moves the switch from its own `theme.json` with no file copied. Only a number of `px` is
+  taken (anything else is 782px) and a value below 600px is read as 600px. It loads where a Navigation block
+  renders, and does nothing under a theme that is neither the CoreX theme nor its child. Spec 058's research note
+  (R6) said WordPress folds at 782px; it now says 600px.
 
 ### Client impact
 
@@ -201,6 +212,17 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     earlier loads in the editor unchanged, with no block validation message: all seven save no markup. A form
     block saved earlier with no form named keeps showing the contact form, as its page does; only a form block
     inserted from now on starts with none.
+  - **Spec 137 slice 1 (G-013).** No upgrade step, no stored data changed.
+    - **Muva** runs its own theme, which ships no `corex-navigation-collapse.css`, so the breakpoint writer does
+      nothing there: its pages print the same markup, scripts and styles as before.
+    - **Perego** runs its own theme too: the same holds, and its own header is untouched.
+    - **Mizzey** is not on this line.
+    - **A site on the CoreX theme**, or on a child of it: its header now folds at 782px instead of at 600px for
+      the menu and 768px for the mega and search panels, so between 600px and 781px a visitor gets the menu
+      button where the menu used to be inline. A child that sets `settings.custom.nav.breakpoint` folds at its
+      own width. In the Site Editor the header is drawn folded whenever the canvas is narrower than the token,
+      since the canvas measures its own width, not the window's: an editor on a laptop with the sidebars open may
+      see the menu button where visitors see the menu. No client runs the CoreX theme.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and

@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Theme;
 
+use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 
 defined('ABSPATH') || exit;
@@ -17,15 +18,20 @@ defined('ABSPATH') || exit;
  *
  * - the `corex` block-pattern category, so site owners can find CoreX header/footer
  *   variants in the inserter (the variant patterns themselves are auto-registered by
- *   WordPress from `theme/patterns/*.php` for block themes — no PHP per pattern); and
+ *   WordPress from `theme/patterns/*.php` for block themes, with no PHP per pattern);
  * - the `corex-navigation` stylesheet, attached to the core navigation block via
  *   {@see wp_enqueue_block_style()} so it loads only where a navigation renders
- *   (constitution Principle VI) and never as a global library.
+ *   (constitution Principle VI) and never as a global library; and
+ * - the theme's navigation collapse rules at the width of its navigation breakpoint
+ *   token, through {@see NavigationCollapseStyle} (spec 137, slice 1; DECISIONS #692).
  *
  * The provider holds no business logic, no routes, and no DB access; the markup and
- * styles live in the theme (Principle I). It registers on `init`, independent of any
- * theme being active, and no-ops cleanly when the CoreX theme (which owns the asset)
- * is not present.
+ * styles live in the theme (Principle I). It binds the collapse classes in the
+ * container and hooks the rest from `boot()`, independent of any theme being active:
+ * the pattern category, the stylesheet and the script on `init`, the script and the
+ * collapse rules on `render_block`, and the collapse rules on `enqueue_block_assets`.
+ * The stylesheets and the script no-op cleanly when neither the active theme nor its
+ * parent ships them.
  */
 final class NavigationServiceProvider extends ServiceProvider
 {
@@ -39,7 +45,17 @@ final class NavigationServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        // No services to bind; presentation-only surface.
+        $this->container->singleton(
+            NavigationBreakpoint::class,
+            static fn (ContainerInterface $c): NavigationBreakpoint => new NavigationBreakpoint(),
+        );
+
+        $this->container->singleton(
+            NavigationCollapseStyle::class,
+            static fn (ContainerInterface $c): NavigationCollapseStyle => new NavigationCollapseStyle(
+                $c->make(NavigationBreakpoint::class),
+            ),
+        );
     }
 
     public function boot(): void
@@ -48,6 +64,10 @@ final class NavigationServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerNavigationStyle']);
         add_action('init', [$this, 'registerNavigationScript']);
         add_filter('render_block', [$this, 'maybeEnqueueNavigationScript'], 10, 2);
+
+        $collapse = $this->container->make(NavigationCollapseStyle::class);
+        add_filter('render_block', [$collapse, 'enqueueOnRender'], 10, 2);
+        add_action('enqueue_block_assets', [$collapse, 'enqueueWhereEveryBlockLoads']);
     }
 
     public function registerPatternCategory(): void

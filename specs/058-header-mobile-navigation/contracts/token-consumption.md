@@ -25,18 +25,21 @@ Added under `theme.json` `settings.custom` (same convention as existing `radius`
 |---|---|---|---|
 | `custom.header.height` | `--wp--custom--header--height` | `4rem` | base header row height |
 | `custom.header.heightCompact` | `--wp--custom--header--height-compact` | `3.25rem` | scrolled/compact header |
-| `custom.nav.breakpoint` | `--wp--custom--nav--breakpoint` | `782px` | desktop→mobile switch (aligns with core `overlayMenu:"mobile"`) |
+| `custom.nav.breakpoint` | `--wp--custom--nav--breakpoint` | `782px` | desktop→mobile switch |
 
 - These are the **only** new tokens. No new color, type, spacing, radius, shadow, or focus tokens.
-- The breakpoint value MUST match the point where `core/navigation` `overlayMenu:"mobile"` collapses, so the CoreX
-  CSS breakpoint and core's overlay trigger stay consistent.
+- Corrected by spec 137 (DECISIONS #692): `core/navigation` with `overlayMenu:"mobile"` folds at 600px, not at
+  782px. Inside a `.corex-header` the theme overrides that fold at the token, from
+  `theme/assets/css/corex-navigation-collapse.css` (`specs/137-header-system/spec.md`, FR-001 to FR-004).
 
 ## C3. No raw literals (Principle V)
 
 - `theme/assets/css/corex-navigation.css` and every `theme/patterns/*.php` MUST NOT contain a raw hex color
   (`#rgb`/`#rrggbb`/`rgb()`/`hsl()` literal), a hard-coded font family name, or a hard-coded font size; all such
-  values MUST be `var(--wp--…)` references. (Layout values like `100%`, `0`, `1px` borders via the border token, and
-  the breakpoint media query reading `--wp--custom--nav--breakpoint` are permitted.)
+  values MUST be `var(--wp--…)` references. (Layout values like `100%`, `0`, `1px` borders via the border token are
+  permitted.) A media condition cannot read `--wp--custom--nav--breakpoint`, so no condition in
+  `corex-navigation.css` names a width: since spec 137 the breakpoint's value is written into the conditions of
+  `theme/assets/css/corex-navigation-collapse.css`, and printed there at a theme's own value (DECISIONS #692, #699).
 - No build-time token system, Tailwind/Bootstrap variable, or component-local palette may be introduced.
 
 ## C4. Acceptance (test hooks)
