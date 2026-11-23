@@ -6,10 +6,13 @@
 slices, and there is no separate plan or task file.
 
 **Status**: Spec merged (PR #493, `4d0a2b8d`). Designs approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`,
-DECISIONS #696). No slice built.
+DECISIONS #696). No slice built. Added on 2026-11-23: the toggle form of the language switcher (FR-032a,
+G-054, DECISIONS #697), whose drawing waits for the owner, and slice 6, the header's scroll distance
+(FR-046 to FR-048, DECISIONS #698, from #701).
 
 **Closes**: G-013 (High) of the Blackstone gap programme, wave 1 (DECISIONS #651, #652; the table in
-`PROGRESS.md`, "The Blackstone gap programme").
+`PROGRESS.md`, "The Blackstone gap programme"). Also G-054 (Medium), the toggle form, and the header scroll
+distance a site can set (DECISIONS #701).
 
 **Design**: approved. The bar, the mega panel and the plain phone menu: `design/handoffs/navigation-footer.md`
 (2026-06-20) and the visitor kit's SiteHeader, MegaMenu, Navigation and Dropdown
@@ -186,6 +189,9 @@ language, and on a site in one language I want no switcher at all, so that nothi
 * In right-to-left languages, pages set `dir="rtl"` and Arabic text uses the Arabic font token
 * The framework document and DECISIONS no longer describe the `I18nHandler` as existing, or it exists
 
+**Past the story** (G-054, DECISIONS #697): a third form, the **toggle**, for a site with exactly two languages:
+one link naming the other language (FR-032a). The criteria above are unchanged.
+
 ### User Story 6 - A header has a utility menu (US-NAV-16, added under CR-049; G-013, Priority: P1)
 
 As a site owner, I want a row above the bar that holds a short menu of secondary links and the language switch,
@@ -213,6 +219,18 @@ the editor like anything else.
 * No shipped header pattern holds a raw HTML block
 * A header with search shows it as the Search block in the bar on desktop and inside the opened menu on a phone
 * A header saved earlier with the raw search keeps working as it does today
+
+### User Story 8 - The header changes state at a distance the theme sets (DECISIONS #701, Priority: P2)
+
+As a site builder, I want to set in my theme how far a page scrolls before a sticky or transparent header takes
+its scrolled look, so that the header matches my design without copying the header script.
+
+**Acceptance criteria** (no NAV story holds this; they are this spec's own)
+
+* A site that sets nothing sees no change: the header takes its scrolled state past 8 pixels, as today
+* A child theme that sets the distance in its own `theme.json` moves the change to that distance, with no copied
+  file
+* A value the script cannot use is read as 8 pixels, and nothing breaks
 
 ### Edge Cases
 
@@ -365,6 +383,15 @@ the editor like anything else.
   kit's Dropdown) or a **list** (every language as
   a link in a row, the current one marked and not a link). Each name is marked with its own `lang` and `dir`. The
   visible text is part of the accessible name. Without script the menu form is the list.
+- **FR-032a** (G-054, DECISIONS #697): A third form an editor can choose, the **toggle**. With exactly two
+  languages it prints one link: the language that is not the current one, named in its own language and
+  script, with its own `lang`, `dir` and `hreflang`, leading to the address the source gave for it. Its visible
+  text is its whole accessible name, so the link reads "العربية" on an English page and "English" on an Arabic
+  one. It needs no script. With fewer than two languages it prints nothing (FR-031 stands). With three or more
+  it prints the list form, and the editor's choice says so in one sentence of help under it: a single link would
+  leave a language with no way in, and a site that adds a third language must not lose its switcher or need an
+  edit. It is built in slice 2 if the owner approves its drawing before slice 2 is built, and otherwise in
+  slice 7.
 - **FR-033**: The block is placed beside a Navigation block, never inside one (an item of a menu's list must be a
   list item, and the Navigation inserter of Muva and Perego does not change). Its script and style MUST load only
   where it renders something.
@@ -395,6 +422,19 @@ the editor like anything else.
   US-NAV-14, 07 and 13. The new second navigation is named, so US-NAV-14's rule that every navigation has its own
   name holds for what this spec adds.
 
+**The header's scroll distance (User Story 8; DECISIONS #698, from #701). Slice 6.**
+
+- **FR-046**: The theme MUST define the token `settings.custom.header.scrollDistance`, `8px` by default, which
+  WordPress prints as `--wp--custom--header--scroll-distance`. A child theme sets it in its own `theme.json`.
+- **FR-047**: `theme/assets/js/corex-navigation.js` MUST read the distance from that property on the page's
+  root element when it starts, and swap a transparent or sticky header to its scrolled state once the page has
+  scrolled past it, where it uses the fixed `SCROLL_THRESHOLD` of 8 today. Pixels only: a missing value (a theme
+  at `v0.48.1`, which has no such token), another unit, a negative number or anything that is not a number is
+  read as 8 pixels (FR-043). Nothing else in the script changes.
+- **FR-048**: Unit tests in jsdom MUST cover the default, a set value, and each refused value; a browser test
+  MUST prove a child theme's value moves the change and the default does not. The token is documented where the
+  theme's tokens are, and `node scripts/generate-token-inventory.mjs` is run after.
+
 **For every slice.**
 
 - **FR-041**: The planning workspace MUST be brought into step as its intake of 2026-11-21 asks: the spec number
@@ -423,6 +463,8 @@ the editor like anything else.
 - **Utility menu**: a template part holding a second Navigation block, shown above the bar and in the phone menu.
 - **Language**: a code, a name in that language, a direction, an address, and whether it is the current one.
   Supplied by a `LanguageSource`.
+- **Scroll distance**: one length in pixels, `settings.custom.header.scrollDistance`. Owned by the theme, or by
+  its child.
 
 ## Success Criteria *(mandatory)*
 
@@ -443,6 +485,11 @@ the editor like anything else.
 - **SC-008**: The quality suite (`npm run test:quality`) passes on every header pattern at 375, 782 and 1280px,
   light and dark, left to right and right to left, with no new known failure.
 - **SC-009**: Muva's and Perego's pages render the same markup before and after, with the same scripts and styles.
+- **SC-010**: With a source that returns English (current) and Arabic, the toggle prints one link, "العربية",
+  with `lang="ar"` and `dir="rtl"`, whose accessible name is that text; with three languages it prints the list;
+  with one, nothing.
+- **SC-011**: With no token set a sticky header is in its scrolled state at 9 pixels and not at 8; with a child
+  theme's `120px`, at 121 and not at 120.
 
 ## What is measured
 
@@ -460,6 +507,8 @@ value); the renderers (missing panel, repeated panel, unique ids, one language);
 - **Perego**: none on its pages. It has `corex-ui` on, so its editor gains "Mega menu item" inside the Navigation
   block and the area "Mega menu panels" in the Site Editor; both do nothing until used. Its own header and its own
   language toggle are untouched. No upgrade step.
+- **Every site, slice 6**: none at the default. The header script changes state past 8 pixels as it does today;
+  only a theme that sets the new token sees a different distance.
 - **Mizzey**: not on this release line.
 - **A site on the CoreX theme**: its header folds at 782px instead of at 600px for the menu and 768px for the
   panels. A header saved earlier is otherwise unchanged. **A site that never edited the default header part gets
@@ -475,7 +524,8 @@ value); the renderers (missing panel, repeated panel, unique ids, one language);
   `packages/cli/stubs/site/`.
 - Spec 136 owns the renderers and editor files that exist in `addons/corex-ui` today. This spec adds new files
   there and one registration line, and follows the base it lands.
-- The owner approved the drawings on 2026-11-22; no slice waits for a design.
+- The owner approved the drawings on 2026-11-22. The toggle's drawing (FR-032a) is an addendum that waits for
+  him; slice 2 does not wait for it. Slice 6 shows nothing new and needs no drawing.
 
 ## Slices
 
@@ -491,7 +541,10 @@ recorded round for the owner.
 | 3 | The mega menu item: the block, the area, the editor controls, the desktop panel and its behaviour; the four panel patterns | FR-009 to FR-021 (the collapsing group of FR-018 is slice 4's) | US-NAV-02 (all but its phone criterion), US-NAV-04 | I, V, VI, VIII | 1; spec 136's renderer base if it is on `main` (FR-021) | approved for the panel and its trigger: the kit's MegaMenu. The editor controls are WordPress's own components |
 | 4 | The phone menu: the three parts, the `header-actions` part, the same-menu rule, groups that open one at a time, the bar's phone form, the language list, the action bar, the proof on WordPress 7.0 | FR-022 to FR-028, FR-025a, the list form of FR-032, the group of FR-018 | US-NAV-10, US-NAV-02's phone criterion | I, II, V, VI, VIII | 1, 2, 3 | approved 2026-11-22: `header-system.md`, steps 1 and 3 |
 | 5 | The utility menu, the corporate header, the language slot in every header, search as blocks, the docs and the gap row | FR-036 to FR-040 | US-NAV-16 (Story 6), Story 7 | I, V, VI, VIII, IX | 4 | approved 2026-11-22: `header-system.md`, steps 2 and 3 |
+| 6 | The header's scroll distance: the token, the script reading it, the tests, the token docs. Ships in `v0.49.0` | FR-046 to FR-048 | Story 8 | I, V, VI | nothing | none: nothing new is seen |
+| 7 | The toggle form of the language switcher, only if slice 2 was built before its drawing was approved. Ships in `v0.50.0` | FR-032a | Story 5 (past it, G-054) | IV, VI, VIII, IX | 2, 6 | addendum to `header-system.md`, step 2a: waits for the owner |
 
 FR-041 to FR-045 bind every slice. Each slice adds the terms it builds to `docs/_glossary.md`. Principle X (the spec
 first) and the Guard Gate bind every slice too. Slice 1 waits for nothing and is built first. Each pull request says
-which criteria of its stories it closes.
+which criteria of its stories it closes. Slices 1 to 6 are built in order; slice 2 takes FR-032a when its
+drawing is approved before slice 2 starts, and slice 7 then has nothing to build.
