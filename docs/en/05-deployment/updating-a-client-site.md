@@ -277,8 +277,9 @@ client's own tests. The full list of what the check prints is in
 
    A preset list the client theme's `theme.json` declares (colours, font families, font sizes, spacing
    sizes, shadows) replaces the CoreX theme's whole list, so a release that adds an entry to one leaves
-   it out of the client site until the client theme lists it. The same holds for `customTemplates` and
-   `templateParts`, when the client theme declares them. Each `MISSING` line names the file, the list and the entry: add the entry to that list,
+   it out of the client site until the client theme lists it. The same holds for `templateParts`, when
+   the client theme declares it. `customTemplates` does not need it: `corex-core` completes the client
+   theme's list with CoreX's entries before WordPress merges it. Each `MISSING` line names the file, the list and the entry: add the entry to that list,
    with the CoreX theme's value or the client's own. A theme reported as `STANDALONE` is not a child
    of the CoreX theme and is not checked. The rules are in
    [Client-site workflow](../04-team-workflow/client-site-workflow.md#3-the-client-theme-values-structure-and-what-it-inherits).

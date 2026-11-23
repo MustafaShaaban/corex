@@ -390,6 +390,19 @@ wholesale. A missing `brand.json` yields `[]` (defaults stand); a malformed one 
 logged, so a bad file never breaks the site. Full alternate styles live in `theme/styles/*.json`
 (e.g. `dark.json`) and WordPress auto-registers them as selectable style variations.
 
+A **child of the CoreX theme** (a client theme with `Template: corex`) gets three more services, all
+off for the CoreX theme itself and for a standalone theme. `ChildThemeSwitches` reads
+`settings.custom.corex.parent.hidePatterns` from the child's own `theme.json` only. With it,
+`ParentPatternsHider` registers each pattern of the CoreX theme's `patterns/` folder again with
+`inserter` set to `false` after WordPress registers the theme folders' patterns, where patterns are
+chosen: on `init` at 11 on an admin screen, and on `rest_api_init` (DECISIONS #668). A visitor's request
+leaves them as WordPress registered them:
+the inserter and the Site Editor's Patterns screen leave them out, and every template and page that
+uses one still draws it. `ChildCustomTemplates` completes a child's `customTemplates` with CoreX's
+six on `wp_theme_json_data_theme`, before WordPress merges the two lists by position: a CoreX entry
+the child does not name is only its name, so the merge keeps CoreX's translated title. The rules for a
+client site: `docs/en/04-team-workflow/client-site-workflow.md`.
+
 ## Events
 
 A framework-wide event seam lets modules react to what happens elsewhere without coupling

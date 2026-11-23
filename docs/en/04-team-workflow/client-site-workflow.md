@@ -106,12 +106,47 @@ then the CoreX theme's file is used. A file you do not create is not a gap: it i
   keep CoreX's colours until the client theme ships a file of the same name, which replaces it. A variation's own
   preset list replaces the theme's when the variation is chosen, so the full-list rule applies to it too, in
   `styles/` and in any folder under it.
-- **Custom templates and template parts.** `customTemplates` and `templateParts` in a child's `theme.json` merge
-  with the CoreX theme's by position, so a list of one entry overwrites the CoreX theme's first. The generated
-  `theme.json` declares neither. A client theme that declares one repeats every entry of the CoreX theme's, in the
-  same order, then adds its own after them; `npm run verify:client-theme` checks both.
+- **Custom templates.** A client theme that adds a page template of its own lists only its own entry in
+  `customTemplates` (and puts the file in `templates/`): it does not copy CoreX's six. WordPress merges the list
+  with the CoreX theme's by position, so `corex-core` completes it first with CoreX's six, in CoreX's order: a
+  CoreX entry the client theme names is its own entry (its title wins), and one it does not name keeps the CoreX
+  theme's title, in the site's language, and post types. The client theme's other entries come after them. The
+  page template picker then offers CoreX's six, each with its title, and the client's.
+- **Template parts.** `templateParts` in a child's `theme.json` merges with the CoreX theme's by position too, and
+  nothing completes it, so a list of one entry overwrites the CoreX theme's first. The generated `theme.json`
+  declares neither list. A client theme that declares `templateParts` repeats every entry of the CoreX theme's, in
+  the same order, then adds its own after them; `npm run verify:client-theme` checks it.
 - **The launch page** is `acme-theme/templates/coming-soon.html`, the page visitors see while the site is in
   Coming soon mode. See [Coming soon mode](../03-operations/coming-soon.md).
+
+### What the editor offers
+
+By default the client's editors are offered everything the client theme inherits, the CoreX theme's patterns
+among it (its corporate, SaaS and docs headers, for example). When the client's own patterns should be the only
+ones offered, the client theme says so in its own `theme.json`, with one switch:
+
+```json
+{
+	"settings": {
+		"custom": {
+			"corex": {
+				"parent": { "hidePatterns": true }
+			}
+		}
+	}
+}
+```
+
+**`hidePatterns`** takes every pattern of the CoreX theme's `patterns/` folder out of the inserter and out of the
+Site Editor's Patterns screen. The patterns stay registered, so every template and page that uses one still draws
+it, for a visitor and in the editor (the CoreX theme's Services page template, which inserts its services grid
+and process steps, for example). The client theme's own patterns stay offered, and so does one of its own that has
+a CoreX pattern's `Slug:`; so do the patterns an add-on registers (`corex-ui`'s `corex/*` sections). The switch
+is on only when it is `true` in the client theme's own `theme.json` (`corex-core` reads it there, and the CoreX
+theme's own file cannot turn it on), and `make:site` does not write it.
+
+The CoreX theme's templates and parts stay in the Site Editor and in the page template choices: the editor finds
+the template a page is drawn with in that same list, so a template taken out of it could no longer be edited.
 
 ### `brand.json`
 
