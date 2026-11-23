@@ -145,6 +145,16 @@ it('describes the mode commands, so WP-CLI rejects a flag they do not take', fun
         ->and($registrations['corex mode set']['definition']['synopsis'][0]['optional'])->toBeFalse();
 });
 
+it('spec 136 FR-014: describes make:block, so `wp help` shows --records and --force', function () {
+    $definition = (new CliServiceProvider(new UnresolvableCommandContainer201()))
+        ->commandRegistrations()['corex make:block']['definition'];
+
+    expect($definition['shortdesc'] ?? '')->not->toBe('')
+        ->and(array_column($definition['synopsis'], 'name'))->toBe(['name', 'records', 'force'])
+        ->and(array_column($definition['synopsis'], 'type'))->toBe(['positional', 'flag', 'flag'])
+        ->and($definition['synopsis'][0]['optional'])->toBeFalse();
+});
+
 it('resolves the mode command from the real container, with the service the screen uses', function () {
     $container = Boot::app()->container();
     $command   = $container->make(\Corex\Cli\Commands\ModeCommand::class);

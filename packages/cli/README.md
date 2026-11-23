@@ -91,10 +91,17 @@ pipeline expects (see `packages/build-tools/README.md`), by the rule of DECISION
 The renderer prints one root element with the block's class and never calls
 `get_block_wrapper_attributes()`: the block registrar merges what an editor set on the
 block (its anchor, an extra class) into that root. Every string a person reads goes
-through the translation functions with the configured text domain. The generated
-block passes the gate (`tests/block-editor-kinds.test.js`), which fails a block whose
-kind is missing, an in-place block without its `parity.json` or with a server render,
-and a records block without one.
+through the translation functions with the configured text domain.
+
+**Who checks it.** The framework's own tests (the gate, `tests/block-editor-kinds.test.js`,
+and the two parity tests) cover the framework's blocks: they search `plugins/` and
+`addons/` only. `make:block` writes to the app's folder (`WP_CONTENT_DIR/corex-app` by
+default, or the client plugin in a client repository), so an app or client block is
+checked by its own test, calling `@corex/build-tools/parity`: `gateFailures( blockIn(
+folder ) )` for the gate's rules (a kind is declared, an in-place block has its
+`parity.json` and no server render, a records block has one), and
+`editorParityProblem( folder )` for the parity comparison
+(`packages/build-tools/README.md`).
 
 The renderer PHP lives **beside** the block folder in one `Blocks/` directory (the
 corex-ui convention) — a single dir name also avoids a `blocks/`-vs-`Blocks/`
@@ -276,5 +283,5 @@ suffix, a sub-path, and the placeholder values) and pair with a `*.stub` under
 `packages/cli/stubs/`. Register the instance in `CliServiceProvider::boot()`'s
 `make:*` map. The multi-file block path is `BlockScaffolder` + the stub set under
 `packages/cli/stubs/block/`: the in-place shape there, the `--records` shape's own
-`block.json`, `index.js` and renderer under `packages/cli/stubs/block/records/`, and one
-`style.scss` for both.
+`block.json`, `index.js`, renderer and `style.scss` under
+`packages/cli/stubs/block/records/`.

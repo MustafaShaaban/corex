@@ -14,8 +14,20 @@ const path = require( 'path' );
 
 const KINDS = [ 'in-place', 'records', 'none', 'pending' ];
 const SERVER_RENDER = '@wordpress/server-side-render';
-const LOCAL_IMPORT =
-	/(?:from\s+|import\s*\(\s*|require\s*\(\s*|import\s+)['"](\.{1,2}\/[^'"]+)['"]/g;
+
+/** The extensions a local import may leave out, in the order they are tried. */
+const SCRIPT_EXTENSIONS = [ '.js', '.jsx', '.ts', '.tsx' ];
+
+/** A string literal (kept), or a comment (removed). */
+const STRING_OR_COMMENT =
+	/("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g;
+
+/** The module each import or require statement names. */
+const IMPORT_STATEMENTS = [
+	/\b(?:import|export)\s+(?:[\w$*{}\s,]+\s+from\s+)?['"]([^'"]+)['"]/g,
+	/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+	/\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+];
 
 /**
  * @param {string} folder A block folder, holding its `block.json`.
@@ -34,57 +46,103 @@ function blockIn( folder ) {
 	};
 }
 
-function isScript( file ) {
-	return (
-		fs.existsSync( file ) &&
-		fs.statSync( file ).isFile() &&
-		file.endsWith( '.js' )
-	);
-}
-
 /**
- * The editor's source: the `editorScript` file and every local module it imports, followed.
+ * The one rule for which files are a block's editor: every `file:` entry of its `editorScript`,
+ * which may be a string or a list. A script handle (`wp-blocks`) is not a file of the block.
  *
- * @param {Object} block A block, as `blockIn()` returns it.
- * @return {string} Their text, joined.
+ * @param {string} folder   The block folder.
+ * @param {Object} metadata The block's `block.json`.
+ * @return {Array<string>} The editor files, absolute.
  */
-function editorSourceOf( block ) {
-	const scripts = [ block.metadata.editorScript ]
+function editorScriptsOf( folder, metadata ) {
+	return [ metadata.editorScript ]
 		.flat()
 		.filter(
 			( script ) =>
 				typeof script === 'string' && script.startsWith( 'file:' )
 		)
-		.map( ( script ) => path.resolve( block.folder, script.slice( 5 ) ) );
-	const seen = new Set();
-	const texts = [];
+		.map( ( script ) => path.resolve( folder, script.slice( 5 ) ) );
+}
 
-	while ( scripts.length > 0 ) {
-		const file = scripts.shift();
-		if ( seen.has( file ) || ! isScript( file ) ) {
+function isFile( file ) {
+	return fs.existsSync( file ) && fs.statSync( file ).isFile();
+}
+
+/**
+ * The file a local specifier names: as written, with an extension, or its folder's index.
+ *
+ * @param {string} from      The file that imports it.
+ * @param {string} specifier The local specifier (`./edit`).
+ * @return {string|undefined} The script file, when there is one.
+ */
+function localFile( from, specifier ) {
+	const target = path.resolve( path.dirname( from ), specifier );
+	const candidates = [
+		target,
+		...SCRIPT_EXTENSIONS.map( ( extension ) => target + extension ),
+		...SCRIPT_EXTENSIONS.map( ( extension ) =>
+			path.join( target, `index${ extension }` )
+		),
+	];
+
+	return candidates.find(
+		( file ) =>
+			isFile( file ) && SCRIPT_EXTENSIONS.includes( path.extname( file ) )
+	);
+}
+
+/**
+ * @param {string} text A script's source.
+ * @return {Array<string>} The modules its import and require statements name, comments ignored.
+ */
+function importsIn( text ) {
+	const code = text.replace(
+		STRING_OR_COMMENT,
+		( match, literal ) => literal ?? ''
+	);
+
+	return IMPORT_STATEMENTS.flatMap( ( pattern ) =>
+		Array.from( code.matchAll( pattern ), ( [ , specifier ] ) => specifier )
+	);
+}
+
+/**
+ * Every module the block's editor imports: its editor files, and the local modules they import,
+ * followed (a cycle is followed once).
+ *
+ * @param {Object} block A block, as `blockIn()` returns it.
+ * @return {Array<string>} The module specifiers, local ones included.
+ */
+function editorImportsOf( block ) {
+	const queue = editorScriptsOf( block.folder, block.metadata );
+	const seen = new Set();
+	const imports = [];
+
+	while ( queue.length > 0 ) {
+		const file = queue.shift();
+		if ( seen.has( file ) || ! isFile( file ) ) {
 			continue;
 		}
 		seen.add( file );
 
-		const text = fs.readFileSync( file, 'utf8' );
-		texts.push( text );
-		for ( const [ , specifier ] of text.matchAll( LOCAL_IMPORT ) ) {
-			const target = path.resolve( path.dirname( file ), specifier );
-			scripts.push(
-				...[
-					target,
-					`${ target }.js`,
-					path.join( target, 'index.js' ),
-				].filter( isScript )
-			);
+		for ( const specifier of importsIn(
+			fs.readFileSync( file, 'utf8' )
+		) ) {
+			imports.push( specifier );
+			const local = specifier.startsWith( '.' )
+				? localFile( file, specifier )
+				: undefined;
+			if ( local ) {
+				queue.push( local );
+			}
 		}
 	}
 
-	return texts.join( '\n' );
+	return imports;
 }
 
 const importsServerRender = ( block ) =>
-	new RegExp( `['"]${ SERVER_RENDER }['"]` ).test( editorSourceOf( block ) );
+	editorImportsOf( block ).includes( SERVER_RENDER );
 
 /**
  * @param {Object} block     A block, as `blockIn()` returns it.
@@ -141,6 +199,7 @@ module.exports = {
 	KINDS,
 	SERVER_RENDER,
 	blockIn,
-	editorSourceOf,
+	editorImportsOf,
+	editorScriptsOf,
 	gateFailures,
 };

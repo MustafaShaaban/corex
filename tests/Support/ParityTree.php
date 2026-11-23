@@ -103,6 +103,39 @@ final class ParityTree
         return implode("\n", $lines);
     }
 
+    /**
+     * What makes a fixture unable to fail: no tree, a first root that does not carry the prefix
+     * (a wrong prefix gives an empty tree on both sides), or a `pageOnly` class that is a class of
+     * the block, which could hide a whole subtree from the page's side. The JavaScript twin is
+     * `fixtureProblems()` in `packages/build-tools/parity/check.js`.
+     *
+     * @param array<string,mixed> $fixture the block's `parity.json`
+     * @return list<string> the problems, each naming the block
+     */
+    public static function fixtureProblems(string $name, array $fixture): array
+    {
+        $prefix = (string) ($fixture['prefix'] ?? '');
+        $tree = self::normalize($fixture['tree'] ?? []);
+        $problems = [];
+
+        if ($tree === []) {
+            $problems[] = $name . ': parity.json has no tree, so the comparison proves nothing';
+        } elseif (! in_array($prefix, $tree[0]['classes'], true)) {
+            $problems[] = sprintf('%s: the first root of parity.json does not carry the prefix class %s', $name, $prefix);
+        }
+
+        $pageOnly = is_array($fixture['pageOnly'] ?? null) ? $fixture['pageOnly'] : [];
+        $hiding = array_values(array_filter(
+            array_map('strval', $pageOnly),
+            static fn (string $entry): bool => $prefix !== '' && self::isBlockClass($entry, $prefix),
+        ));
+        if ($hiding !== []) {
+            $problems[] = sprintf('%s: pageOnly may not name a class of the block: %s', $name, implode(', ', $hiding));
+        }
+
+        return $problems;
+    }
+
     public static function isBlockClass(string $name, string $prefix): bool
     {
         return $name === $prefix || str_starts_with($name, $prefix . '__') || str_starts_with($name, $prefix . '--');

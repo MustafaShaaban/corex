@@ -6,6 +6,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 
 const RichTextMock = () => null;
+const URLInputButtonMock = () => null;
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
 jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
@@ -16,7 +17,7 @@ jest.mock(
 	() => ( {
 		useBlockProps: ( props ) => props || {},
 		RichText: RichTextMock,
-		URLInputButton: () => null,
+		URLInputButton: URLInputButtonMock,
 	} ),
 	{ virtual: true }
 );
@@ -37,6 +38,27 @@ function collect( node, type, out = [] ) {
 	}
 	collect( node.props && node.props.children, type, out );
 	return out;
+}
+
+/**
+ * The element whose children include an element of the given type.
+ * @param {Object} node A React element.
+ * @param {Object} type A component.
+ */
+function holderOf( node, type ) {
+	const children = node && node.props ? [ node.props.children ].flat() : [];
+	if ( children.some( ( child ) => child && child.type === type ) ) {
+		return node;
+	}
+	for ( const child of children ) {
+		const found =
+			child && typeof child === 'object' && holderOf( child, type );
+		if ( found ) {
+			return found;
+		}
+	}
+
+	return null;
 }
 
 describe( 'cta block — inline editing', () => {
@@ -65,5 +87,20 @@ describe( 'cta block — inline editing', () => {
 		);
 
 		expect( button.props.tagName ).toBe( 'a' );
+	} );
+	test( 'FR-017: the link field sits in an element marked editor-only, with no block class', () => {
+		const element = config.edit( {
+			attributes: {},
+			setAttributes: jest.fn(),
+		} );
+		const holder = holderOf( element, URLInputButtonMock );
+		const classes = String( holder.props.className || '' ).split( /\s+/ );
+
+		expect( holder.props[ 'data-corex-editor-only' ] ).toBe( true );
+		expect(
+			classes.filter( ( className ) =>
+				className.startsWith( 'corex-cta' )
+			)
+		).toEqual( [] );
 	} );
 } );

@@ -83,7 +83,9 @@ it('FR-012: draws the tree of its parity.json on the page', function (string $fi
     $name = (string) $metadata['name'];
     $needs = is_array($fixture['needs'] ?? null) ? $fixture['needs'] : [];
 
-    expect(array_diff($needs, PARITY_TEST_KNOWN_NEEDS))->toBe([], $name . ': parity.json needs what no test can give')
+    // A fixture that could not fail (no tree, a wrong prefix, a pageOnly class of the block) fails here.
+    expect(ParityTree::fixtureProblems($name, $fixture))->toBe([])
+        ->and(array_diff($needs, PARITY_TEST_KNOWN_NEEDS))->toBe([], $name . ': parity.json needs what no test can give')
         ->and(WP_Block_Type_Registry::get_instance()->is_registered($name))->toBeTrue($name . ' is not registered');
 
     if (in_array('post', $needs, true)) {

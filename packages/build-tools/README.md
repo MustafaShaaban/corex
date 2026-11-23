@@ -143,10 +143,21 @@ An element the editor needs and the page does not (a link field, a remove button
 Two tests find every `parity.json` under `plugins/` and `addons/` by search, so a new block needs
 no new test: `tests/Integration/Blocks/ParityTest.php` draws it through WordPress
 (`render_block`), and `tests/block-editor-parity.test.js` renders its `edit` with
-`react-dom/server`. The helper they use is exported as `@corex/build-tools/parity`
-(`parityTree`, `renderEdit`, `installStandIns`, `registeredBlock`, `findFiles`), with one shared
-set of stand-ins for the `@wordpress/*` packages, so a client package tests its own blocks the
-same way. Its PHP twin is `tests/Support/ParityTree.php`.
+`react-dom/server`. They cover the framework's blocks only. The helper they use is exported as
+`@corex/build-tools/parity`, with one shared set of stand-ins for the `@wordpress/*` packages,
+so an app or client package tests its own blocks the same way. What a client needs:
+
+- `installStandIns( jest )`, once in the test file, before anything else;
+- `blockIn( folder )`, the block as the gate reads it;
+- `gateFailures( block, waiting )`, the gate's rules for one block (an empty list when it passes;
+  `waiting` is a list of blocks allowed to be `pending`, usually none);
+- `editorParityProblem( folder )`, the editor's side of the comparison (an empty string when the
+  editor draws the fixture's tree, or the block, both trees and the markup).
+
+It also exports the pieces they are made of (`parityTree`, `fixtureProblems`, `renderEdit`,
+`registeredBlock`, `editorScriptsOf`, `editorImportsOf`, `findFiles`). The page's side, in PHP, is
+`tests/Support/ParityTree.php` in the framework; a client draws its block through WordPress
+with it, or with a copy of it in its own tests.
 
 ## Commands
 

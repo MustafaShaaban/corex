@@ -12,8 +12,10 @@ the editor draws it follows one rule (DECISIONS #656):
 - **A block that shows records keeps a server render.** A list of posts, a trail or a form
   previews its server render with `<ServerSideRender>`, inside the block's wrapper and inert.
 
-Every `block.json` says which, in `corex.editor` (`in-place` or `records`), and a test fails a
-block that breaks its rule. One command scaffolds either shape.
+Every `block.json` says which, in `corex.editor`: `in-place`, `records`, `none` (a block with no
+editor, such as the assistant) or `pending` (a framework block whose turn has not come; only the
+blocks on the gate's waiting list may say so). For the framework's own blocks, a test fails a
+block that breaks its rule. One command scaffolds either of the first two shapes.
 
 ## Scaffold
 
@@ -73,7 +75,27 @@ final class TeamMemberRenderer implements BlockRenderer
 ```
 
 When you add an element to the renderer, draw it in `index.js` too and add it to
-`parity.json`; the parity tests fail until all three agree.
+`parity.json`. The framework's parity tests cover the framework's blocks only (they search
+`plugins/` and `addons/`). A block `make:block` writes into your app or client plugin is checked
+by a test of your own that calls `@corex/build-tools/parity`:
+
+```js
+const {
+	blockIn,
+	editorParityProblem,
+	gateFailures,
+	installStandIns,
+} = require( '@corex/build-tools/parity' );
+
+installStandIns( jest );
+
+test( 'the team member block meets the editor standard', () => {
+	const folder = `${ __dirname }/../src/Blocks/team-member`;
+
+	expect( gateFailures( blockIn( folder ) ) ).toEqual( [] );
+	expect( editorParityProblem( folder ) ).toBe( '' );
+} );
+```
 
 ## Why a build is required
 

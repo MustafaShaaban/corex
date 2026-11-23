@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockWrapper;
 use Corex\Boot;
+use Corex\Container\ContainerInterface;
 use {{ namespace }}\Blocks\ExampleRenderer;
 use {{ namespace }}\Controllers\ExampleController;
 use {{ namespace }}\Options\ExampleOptions;
@@ -27,6 +28,14 @@ use {{ namespace }}\Services\ExampleService;
 final class {{ namespace }}ServiceProvider
 {
     private ExampleService $exampleService;
+
+    /**
+     * @param ContainerInterface|null $container CoreX's container; left out, it is CoreX's own
+     *                                           once Corex has booted (a test passes its own).
+     */
+    public function __construct(private readonly ?ContainerInterface $container = null)
+    {
+    }
 
     public function register(): void
     {
@@ -45,7 +54,7 @@ final class {{ namespace }}ServiceProvider
             // What an editor sets on the block (its anchor, an extra class) reaches its root
             // element through CoreX's BlockWrapper, as on every CoreX block (spec 136, FR-001).
             // Corex boots on plugins_loaded, so its container is ready by init.
-            $container = Boot::booted() ? Boot::app()->container() : null;
+            $container = $this->container ?? (Boot::booted() ? Boot::app()->container() : null);
             $wrapper = $container !== null && $container->has(BlockWrapper::class)
                 ? $container->make(BlockWrapper::class)
                 : null;

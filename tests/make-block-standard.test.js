@@ -33,14 +33,29 @@ let scratch;
  * @param {string} shape `in-place` or `records`.
  * @return {string} The generated block's folder.
  */
+/**
+ * @param {Object} run What `spawnSync` returned for the PHP scaffolder.
+ * @return {string} Empty when PHP ran and exited cleanly; otherwise what the test needs, and why.
+ */
+function scaffolderFailure( run ) {
+	if ( ! run.error && run.status === 0 ) {
+		return '';
+	}
+	const reason = run.error
+		? run.error.message
+		: `${ run.stderr || '' }${ run.stdout || '' }`.trim() ||
+			`exit code ${ run.status }`;
+
+	return `this test runs the PHP scaffolder: it needs \`php\` on the path and \`composer install\` run (${ reason })`;
+}
+
 function scaffold( name, shape ) {
 	const run = spawnSync( 'php', [ PROBE, scratch, name, shape ], {
 		encoding: 'utf8',
 	} );
-	if ( run.status !== 0 ) {
-		throw new Error(
-			`the scaffolder failed: ${ run.stderr }${ run.stdout }`
-		);
+	const failure = scaffolderFailure( run );
+	if ( failure !== '' ) {
+		throw new Error( failure );
 	}
 	const result = JSON.parse( run.stdout );
 	if ( result.status !== 'created' ) {
@@ -58,6 +73,40 @@ beforeAll( () => {
 } );
 
 afterAll( () => fs.rmSync( scratch, { recursive: true, force: true } ) );
+
+describe( 'the scaffolder run says what it needs when it cannot start', () => {
+	const NEEDS =
+		'this test runs the PHP scaffolder: it needs `php` on the path and `composer install` run';
+
+	test( 'PHP that cannot be spawned', () => {
+		expect(
+			scaffolderFailure( {
+				error: Object.assign( new Error( 'spawn php ENOENT' ), {
+					code: 'ENOENT',
+				} ),
+				status: null,
+				stdout: null,
+				stderr: null,
+			} )
+		).toBe( `${ NEEDS } (spawn php ENOENT)` );
+	} );
+
+	test( 'PHP that runs without the Composer autoloader', () => {
+		expect(
+			scaffolderFailure( {
+				status: 255,
+				stdout: '',
+				stderr: 'Failed opening required vendor/autoload.php',
+			} )
+		).toBe( `${ NEEDS } (Failed opening required vendor/autoload.php)` );
+	} );
+
+	test( 'a run that worked is no failure', () => {
+		expect(
+			scaffolderFailure( { status: 0, stdout: '{}', stderr: '' } )
+		).toBe( '' );
+	} );
+} );
 
 describe( 'SC-004: a generated block passes the parity test and the gate untouched', () => {
 	test( 'the in-place block passes the gate and its editor draws its parity.json', () => {

@@ -22182,6 +22182,18 @@ keep the raw search and the script that opens it. Blackstone's header has no sea
 with a picker depend on the stand-in imitating WordPress's picker. Comparing editor and page in a browser:
 already rejected in #671.
 
-**For the maintenance line.** `addons/corex-assistant/blocks/assistant/block.json` does not exist at `v0.48.1`,
-so its kind cannot be carried; the starter's `provider.stub` names `Corex\Blocks\BlockWrapper`, which slice 1
-added after the tag.
+- **A fixture that cannot fail is refused**: an empty tree, a first root without the prefix class, or a
+  `pageOnly` entry that is a class of the block fails both parity tests, so a fixture cannot pass by comparing
+  nothing.
+- **The gate reads real imports only** (comments removed; `import`, `export from`, `import()` and `require()`),
+  follows `.js`, `.jsx`, `.ts` and `.tsx`, and finds a block's editor files from every `file:` entry of its
+  `editorScript`, one rule for the gate and the parity check.
+- **`make:block` declares its arguments** (the name, `--records`, `--force`), so `wp help` shows them and WP-CLI
+  refuses an option it does not know, as it does for CoreX's other commands; `--records=false` is off.
+- **The framework's tests cover the framework's blocks** (`plugins/` and `addons/`). A block `make:block` writes
+  into an app or a client plugin is checked by that package's own test, which calls `@corex/build-tools/parity`.
+
+**For the maintenance line.** Slice 3 rests on slice 1: every `block.json` it touches carries slice 1's
+`supports` line next to the new `corex.editor` key, so slice 1's commit is cherry-picked first.
+`addons/corex-assistant/blocks/assistant/block.json` does not exist at `v0.48.1`, so its kind cannot be carried;
+the starter's `provider.stub` names `Corex\Blocks\BlockWrapper`, which slice 1 added after the tag.

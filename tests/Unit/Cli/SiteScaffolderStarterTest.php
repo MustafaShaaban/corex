@@ -11,7 +11,11 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
+use Corex\Blocks\BlockWrapper;
 use Corex\Cli\Generators\StubRenderer;
+use Corex\Container\Container;
+use Corex\Container\ContainerInterface;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldResult;
 use Corex\Cli\Support\InvalidNameException;
@@ -152,16 +156,77 @@ it('spec 136 FR-014: the example block declares its kind and its anchor, and pre
         ->toContain('<Disabled>');
 });
 
-it('spec 136 FR-001, FR-014: the example block\'s markup passes through the BlockWrapper from the container', function () {
+/**
+ * Generates a starter under a name of its own (its classes load once per run), loads its classes,
+ * boots its provider with the given container and returns the example block's render callback.
+ */
+function starterBlockCallback(?ContainerInterface $container): callable
+{
     $base = starterBase();
-    starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
+    $name = 'Wrap' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 8);
+    starterScaffolder()->scaffold($name, $base, ['starter' => true]);
 
-    $provider = (string) file_get_contents($base . '/acme-site/src/AcmeSiteServiceProvider.php');
+    $provider = glob($base . '/*-site/src/*ServiceProvider.php')[0];
+    $namespace = basename($provider, 'ServiceProvider.php');
+    $src = dirname($provider);
+    spl_autoload_register(static function (string $class) use ($namespace, $src): void {
+        if (str_starts_with($class, $namespace . '\\')) {
+            $file = $src . '/' . str_replace('\\', '/', substr($class, strlen($namespace) + 1)) . '.php';
+            if (is_file($file)) {
+                require $file;
+            }
+        }
+    });
 
-    expect($provider)->toContain('use Corex\\Blocks\\BlockWrapper;')
-        ->toContain('$container->has(BlockWrapper::class)')
-        ->toContain('$container->make(BlockWrapper::class)')
-        ->toContain('$wrapper->apply($renderer->render())');
+    $hooks = [];
+    $blocks = [];
+    Functions\when('add_action')->alias(static function (string $hook, callable $callback) use (&$hooks): void {
+        $hooks[$hook][] = $callback;
+    });
+    Functions\when('register_block_type')->alias(static function (string $path, array $args) use (&$blocks): void {
+        $blocks[$path] = $args;
+    });
+    Functions\when('get_option')->justReturn([['id' => 1, 'title' => 'First']]);
+    Functions\stubEscapeFunctions();
+    Functions\stubTranslationFunctions();
+
+    $class = $namespace . '\\' . $namespace . 'ServiceProvider';
+    $instance = new $class($container);
+    $instance->register();
+    $instance->boot();
+    foreach ($hooks['init'] ?? [] as $init) {
+        $init();
+    }
+
+    return array_values($blocks)[0]['render_callback'];
+}
+
+it('spec 136 FR-001, FR-014: the example block\'s markup passes through the BlockWrapper only when the container binds one', function () {
+    $wrapper = new class implements BlockWrapper {
+        /** @var list<string> */
+        public array $seen = [];
+
+        public function apply(string $markup, array $rootClasses = []): string
+        {
+            $this->seen[] = $markup;
+
+            return str_replace('<ul class=', '<ul id="wrapped" class=', $markup);
+        }
+    };
+    $bound = new Container();
+    $bound->instance(BlockWrapper::class, $wrapper);
+
+    $wrapped = starterBlockCallback($bound)();
+    $unbound = starterBlockCallback(new Container())();
+    $withoutCorex = starterBlockCallback(null)();
+
+    expect($wrapper->seen)->toHaveCount(1)
+        ->and($wrapped)->toContain('<ul id="wrapped" class=')
+        ->and($wrapped)->toContain('<li>First</li>')
+        ->and($unbound)->toStartWith('<ul class=')
+        ->and($unbound)->toContain('<li>First</li>')
+        ->and($withoutCorex)->toStartWith('<ul class=')
+        ->and($withoutCorex)->toContain('<li>First</li>');
 });
 
 it('refuses a name that normalises to the reserved corex identity', function () {

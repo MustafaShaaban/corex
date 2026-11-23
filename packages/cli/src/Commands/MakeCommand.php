@@ -47,6 +47,20 @@ final class MakeCommand
     }
 
     /**
+     * Whether a flag is on: given (`--records`, `--records=1`), and not turned off (`--no-records`,
+     * `--records=false`, `--records=0`). WP-CLI hands `--records=false` over as the text "false",
+     * which a cast would read as on.
+     *
+     * @param array<string, mixed> $assoc
+     */
+    public static function flag(array $assoc, string $name): bool
+    {
+        $value = $assoc[$name] ?? false;
+
+        return is_bool($value) ? $value : filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
      * @param list<string>          $args
      * @param array<string, mixed>  $assoc
      */
@@ -55,8 +69,8 @@ final class MakeCommand
         if ($type === 'block') {
             $this->runBlock(
                 $args[0] ?? '',
-                (bool) ($assoc['force'] ?? false),
-                (bool) ($assoc['records'] ?? false) ? BlockScaffolder::RECORDS : BlockScaffolder::IN_PLACE,
+                self::flag($assoc, 'force'),
+                self::flag($assoc, 'records') ? BlockScaffolder::RECORDS : BlockScaffolder::IN_PLACE,
             );
 
             return;

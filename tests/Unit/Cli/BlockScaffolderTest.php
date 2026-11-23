@@ -213,6 +213,24 @@ it('FR-015: the generated style sheet uses theme.json tokens and logical propert
     }
 });
 
+it('FR-015: the records shape has a style sheet of its own, a root rule of tokens and logical properties', function () {
+    [, $dir] = scaffoldedBlock('LatestNews', BlockScaffolder::RECORDS);
+    $scss = (string) file_get_contents($dir . '/style.scss');
+
+    preg_match_all('/^\s*([a-z-]+)\s*:\s*([^;]+);/m', $scss, $declarations, PREG_SET_ORDER);
+
+    expect($scss)->toContain('.corex-latest-news {')
+        ->not->toContain('__title')
+        ->and($declarations)->not->toBeEmpty();
+    foreach ($declarations as [, $property, $value]) {
+        expect($value)->toMatch('/^var\(--wp--preset--[a-z-]+--[a-z0-9-]+\)$/', "{$property} is not a token")
+            ->and($property)->not->toMatch('/(^|-)(left|right|top|bottom|width|height)($|-)/', "{$property} is physical");
+    }
+    foreach (explode("\n", $scss) as $line) {
+        expect(strlen($line))->toBeLessThan(80);
+    }
+});
+
 it('honours the configured namespace and prefix', function () {
     $base = tempBlockBase();
 

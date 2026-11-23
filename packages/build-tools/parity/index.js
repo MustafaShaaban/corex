@@ -13,12 +13,17 @@ const {
 const { attributeDefaults, renderEdit } = require( './render' );
 const { standIns, installStandIns, registeredBlock } = require( './stand-ins' );
 const { findFiles } = require( './find' );
-const { KNOWN_NEEDS, editorParityProblem } = require( './check' );
+const {
+	KNOWN_NEEDS,
+	editorParityProblem,
+	fixtureProblems,
+} = require( './check' );
 const {
 	KINDS,
 	SERVER_RENDER,
 	blockIn,
-	editorSourceOf,
+	editorImportsOf,
+	editorScriptsOf,
 	gateFailures,
 } = require( './gate' );
 
@@ -30,8 +35,10 @@ module.exports = {
 	attributeDefaults,
 	blockIn,
 	editorParityProblem,
-	editorSourceOf,
+	editorImportsOf,
+	editorScriptsOf,
 	findFiles,
+	fixtureProblems,
 	formatTree,
 	gateFailures,
 	installStandIns,

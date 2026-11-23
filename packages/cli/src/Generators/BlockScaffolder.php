@@ -52,7 +52,7 @@ final class BlockScaffolder
         self::RECORDS => [
             'block.json' => 'block/records/block.json',
             'index.js'   => 'block/records/index.js',
-            'style.scss' => 'block/style.scss',
+            'style.scss' => 'block/records/style.scss',
             'renderer'   => 'block/records/renderer',
         ],
     ];

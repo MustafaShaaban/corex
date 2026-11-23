@@ -134,6 +134,40 @@ it('FR-011: formats a tree as an outline, one element per line', function () {
     ]))->and(ParityTree::format([]))->toBe('(empty)');
 });
 
+it('FR-012: a well-formed fixture has no problem', function () {
+    expect(ParityTree::fixtureProblems('corex/hero', [
+        'prefix' => 'corex-hero',
+        'pageOnly' => ['corex-trap'],
+        'tree' => [['tag' => 'div', 'classes' => ['corex-hero']]],
+    ]))->toBe([]);
+});
+
+it('FR-012: a fixture with no tree fails, naming the block', function () {
+    $message = 'corex/hero: parity.json has no tree, so the comparison proves nothing';
+
+    expect(ParityTree::fixtureProblems('corex/hero', ['prefix' => 'corex-hero']))->toBe([$message])
+        ->and(ParityTree::fixtureProblems('corex/hero', ['prefix' => 'corex-hero', 'tree' => []]))->toBe([$message]);
+});
+
+it('FR-012: a fixture whose first root does not carry the prefix fails, naming the block', function () {
+    expect(ParityTree::fixtureProblems('corex/hero', [
+        'prefix' => 'corex-heros',
+        'tree' => [['tag' => 'div', 'classes' => ['corex-hero']]],
+    ]))->toBe(['corex/hero: the first root of parity.json does not carry the prefix class corex-heros'])
+        ->and(ParityTree::fixtureProblems('corex/hero', [
+            'prefix' => 'corex-hero',
+            'tree' => [['tag' => 'div', 'classes' => ['corex-hero__inner']]],
+        ]))->toBe(['corex/hero: the first root of parity.json does not carry the prefix class corex-hero']);
+});
+
+it('FR-012: a pageOnly class that is a class of the block fails, naming the block', function () {
+    expect(ParityTree::fixtureProblems('corex/hero', [
+        'prefix' => 'corex-hero',
+        'pageOnly' => ['corex-hero', 'corex-hero__trap', 'corex-hero--x', 'trap'],
+        'tree' => [['tag' => 'div', 'classes' => ['corex-hero']]],
+    ]))->toBe(['corex/hero: pageOnly may not name a class of the block: corex-hero, corex-hero__trap, corex-hero--x']);
+});
+
 it('FR-011: normalizes a fixture tree into the same shape', function () {
     expect(ParityTree::normalize([['children' => [], 'classes' => ['corex-hero--split', 'corex-hero'], 'tag' => 'SECTION']]))
         ->toBe([['tag' => 'section', 'classes' => ['corex-hero', 'corex-hero--split']]]);
