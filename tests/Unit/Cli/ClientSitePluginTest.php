@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 use Corex\Cli\Generators\StubRenderer;
 use Corex\Cli\Site\ClientSitePlugin;
+use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 
 function repositoryWithSites(string ...$names): string
@@ -21,7 +22,7 @@ function repositoryWithSites(string ...$names): string
     $root = sys_get_temp_dir() . '/corex_repo_' . uniqid('', true);
     mkdir($root . '/sites', 0777, true);
 
-    $scaffolder = new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs');
+    $scaffolder = new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json']));
     foreach ($names as $name) {
         $scaffolder->scaffold($name, $root . '/sites/' . strtolower($name));
     }

@@ -97,16 +97,26 @@ wp corex make:site Acme --starter        # + a runnable example slice + starter-
 ```
 
 Generates a complete **client site** under `--dir` (default: the current directory + the slug):
-a site **plugin** (`acme-site/`, namespace `AcmeSite\`) and **theme** (`acme/`) with the client's own
-prefixes (REST `acme/v1`, CSS `--acme-`, options `acme_` — all distinct from Corex), plus governance
+a site **plugin** (`acme-site/`, namespace `AcmeSite\`) and **theme** (`acme-theme/`) with the client's own
+prefixes (REST `acme/v1`, CSS `--acme-`, options `acme_`, all distinct from Corex), plus governance
 docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, `.gitignore`, `specs/`, `docs/`).
+
+The theme is a **child of the CoreX theme**. It gets three files (`--starter` adds its asset build): `style.css` (`Template: corex`), `theme.json`
+(every preset list of the CoreX theme's, its `settings.custom` and its `settings.layout`, with CoreX's values,
+read from the CoreX theme's own `theme.json` at generation) and `templates/coming-soon.html`. Its templates,
+header and footer parts and style variations are the CoreX theme's until the client theme ships a file of the
+same name, and its patterns until the client theme ships one with the same `Slug:`. The CoreX theme's `theme.json` is looked for in `theme/` of the repository, then in the
+installed theme `corex`; when neither can be read, nothing is generated and both paths are named.
+`--plugin-only` does not need it. A list kept in the client theme's `theme.json` must keep every CoreX entry:
+`npm run verify:client-theme` checks it. See the
+[client-site workflow](../../docs/en/04-team-workflow/client-site-workflow.md).
 
 | Flag | Effect |
 |---|---|
 | `--starter` | also emit a runnable example (model → repository → service → controller-on-envelope → block → option page → test) + a starter-theme asset setup (`@wordpress/scripts` build, dev source maps, minified prod, hashed `*.asset.php`, an `Assets` url/path/version helper) + a `REMOVE-EXAMPLE.md` guide |
 | `--minimal` | force the lean scaffold (no example) — same as the default |
 | `--plugin-only` / `--theme-only` | generate just one side |
-| `--force` | regenerate (otherwise an existing site is skipped) |
+| `--force` | regenerate (otherwise an existing site is skipped). A theme that already has a `style.css` keeps its `style.css` and `theme.json`, and the command says so: an existing theme is never converted to a child or given new tokens |
 | `--dir=<dir>` | the site root. Not `--path`: WP-CLI takes that for itself, as the WordPress install |
 
 A name normalizing to `corex` (or empty) is refused, so a client site can never collide with the framework.

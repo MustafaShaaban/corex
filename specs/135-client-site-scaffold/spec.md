@@ -257,8 +257,9 @@ there, and no retired name is.
   give the steps by which a site generated before this spec becomes a child by hand, and how it takes the new
   agent files (from a site generated into a scratch folder).
 - **FR-020**: A `brand.json` in the client theme MUST keep working as today: read from the child first, applied
-  over the merged `theme.json` at runtime, an incomplete list in it dropped with a warning
-  (`ThemeServiceProvider`). The docs say a generated site's values go in the child's `theme.json` and that a
+  at runtime to the child's own `theme.json` data before WordPress merges the parent's in, a palette or font
+  family list in it that lacks a role CoreX's blocks need dropped with a warning (`ThemeServiceProvider`,
+  `BrandOverrideValidator`). The docs say a generated site's values go in the child's `theme.json` and that a
   `brand.json` still wins over it.
 
 **The site plugin boots and its blocks build (G-007)**

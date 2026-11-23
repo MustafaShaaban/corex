@@ -63,25 +63,19 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   own rows of the table below: the Slice, PR and State columns say what is on `main`, so this paragraph does not
   repeat them. The first slice landed on 2026-11-22 (spec 135 slice 1, G-001, #495, `819f0be1`). Nothing is
   tagged.
-- **Paused by the owner, 2026-11-23, until 8:30 PM Cairo time.** No session builds, merges or starts work until
-  he resumes it. Where each wave 1 slice stands at the pause (every branch below is pushed; the worktrees hold
-  no interrupted merge, rebase or cherry-pick):
-  - Spec 135 (`spec-135-client-site-scaffold-2294b5`): slices 1 (#495, `819f0be1`) and 2 (#500, `2e2a85ce`) are
-    on `main`. Slice 3 (G-006, the child theme) is pull request #504, CI running; its auto-merge was turned off
-    for the pause, so the session turns it on again when it resumes. Slice 4 (the favicon, `main` only) has a WIP
-    commit `2f4b33fb` on `spec/135-slice-4-favicon-off-a-child` and three files edited and not committed in the
-    worktree (`theme/inc/favicon.php`, `theme/README.md`, `tests/Unit/Theme/ThemeFaviconTest.php`), left as
-    they were. Slice 5 (G-007) not started.
-  - Spec 136 (`spec-136-block-editor-standard-27c368`): slice 1 (#496, `93bf6321`) is on `main`; the hero
-    drawing D-3 (#502) and the hero's child-block slot G-051 (#503, `6d15fdb7`, DECISIONS #679) are recorded.
-    Slice 3 (G-003, the parity standard) has WIP commits up to `a3e30129` on
-    `spec/136-slice-3-parity-standard` and 25 files edited and not committed in the worktree, left as they were;
-    next are its guards, `corex-reviewer` and the Codex debate. Slices 2a, 2b and 4 to 9 not started; D-1, D-2
-    and the D-3a addendum board are not yet approved.
-  - Spec 137 (`spec-137-header-system-69dd56`): the spec (#493) and every drawing (#498) are on `main`; its
-    worktree is clean. No slice started; it takes the next building slot.
-  - Waves 2 and 3: the planning session is not started; its brief is `brief-waves-2-3-specs.md` in the
-    coordinator's notes folder (named under "Who coordinates").
+- **Paused and resumed, 2026-11-23.** The owner paused the programme in the afternoon and resumed it the same
+  day at 4:30 PM Cairo time. Nothing merged during the pause; every branch was pushed and no worktree was left
+  mid-merge. Spec 135 resumes at slice 4 (the favicon, `main` only) and then slice 5 (G-007); spec 136 resumes
+  after slice 3 (#506); spec 137 has its spec and every drawing on `main` and takes the next building slot. The
+  waves 2 and 3 planning session is not started; its brief is `brief-waves-2-3-specs.md` in the coordinator's
+  notes folder (named under "Who coordinates").
+- **G-048 joins wave 1 (spec 135 slice 6, after slice 5).** A child of the CoreX theme sees all of the parent's
+  patterns and templates and cannot hide them. Correction to the gap as written: a child does not repeat the
+  parent's custom templates unless it declares its own `customTemplates` list. The slice adds an opt-in setting
+  in the child's `theme.json`, off by default, that hides the parent's patterns and templates from the editor's
+  lists (never from template resolution) and keeps the parent's custom templates when the child declares its
+  own (DECISIONS #664, FR-021 to FR-023, recorded by spec 135's own pull request). It rests on nothing `main`
+  gained after `v0.48.1`.
 - **What `v0.49.0` waits for, and what it will not hold.** The tag is cut when every wave 1 slice the line can
   carry is on `main`, designed slices included (the owner, 2026-11-22: "No, full wave", when offered an earlier
   tag without them). Its date follows his design approvals: spec 136 slices 6b, 8 and 9 wait for designs D-1 to
@@ -121,7 +115,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | spec written (DECISIONS #671, #673) |
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
 | G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | #496 (slice 1) | | slice 1 merged into `main` (`93bf6321`): anchor, alignment and class reach the page (DECISIONS #670, #676); 2a and 2b to come |
-| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | | | open: spec reviewed; the child theme re-check passed (#660). Slice 4 (the favicon) rests on spec 134 and is not carried to the line |
+| G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | #504 (slice 3) | | slice 3 merged into `main` (`1e6ca459`): rests on nothing the tag lacks (#663); the child theme re-check passed (#660). Slice 4 (the favicon) rests on spec 134 and is not carried to the line |
 | G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | | | open: spec reviewed (#662) |
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
@@ -161,6 +155,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-043 | Medium | The client site workflow has no speed, accessibility or secret checks | then | 152 | | | | open |
 | G-044 | Low | No uninstall routine | then | 152 | | | | open |
 | G-045 | Low | Docs describe an `I18nHandler` and an Interactivity rule the code does not have | then | 152 | | | | open |
+| G-048 | Medium | A child of the CoreX theme cannot hide the parent's patterns and templates from the editor | 1 | 135 | 6 (after slice 5) | | | open: added to spec 135 on 2026-11-23 (DECISIONS #664); rests on nothing the tag lacks |
 | G-051 | High | The hero takes no child block, so a site block cannot sit inside its media and scrim | 1 | 136 | 9 (with G-011; waits on the addendum board D-3a; without it, its own slice after 9) | | | spec written (DECISIONS #679) |
 
 State is one of: open, specced (the spec is on `main`), built (every slice on `main`), released (in the tag

@@ -40,9 +40,9 @@ metadata (title/description) that common SEO plugins can read and override; Core
 ## Starting a real site
 
 `wp corex make:site "<CompanyName>"` scaffolds an isolated client plugin + theme + governance (see
-[Build a client site](/guides/client-site/)). The company kit then provides the page coverage above. Bridging the
-scaffolded client theme to automatically inherit the M2 tokens and M3 nav/footer is a tracked follow-up
-(`specs/059-company-site-kit/make-site-verification.md`).
+[Build a client site](/guides/client-site/)). The company kit then provides the page coverage above. The
+scaffolded client theme is a child of the CoreX theme, so it inherits the CoreX header, footer, patterns and
+tokens, and lists every token in its own `theme.json` for the client to change.
 
 ## What each layer owns
 

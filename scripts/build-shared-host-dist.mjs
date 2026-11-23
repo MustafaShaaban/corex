@@ -44,6 +44,7 @@ import {
 import { join, basename, relative, resolve, sep } from 'node:path';
 import { describeFolder } from './release-content-hash.mjs';
 import { missingScriptTranslations } from './i18n-arabic.mjs';
+import { templateOf } from './verify-client-theme.mjs';
 import {
 	PACKAGE_ROOT,
 	planAutoload,
@@ -711,6 +712,9 @@ export function verifyDist( distDir ) {
 	// output — otherwise the deploy would serve a half-built client theme. Catches "packaged without building".
 	errors.push( ...verifyClientAssets( distDir ) );
 
+	// A child theme with no parent in the package does not run (spec 135, FR-017).
+	errors.push( ...verifyThemeParents( distDir ) );
+
 	// The Arabic script translations are written by `npm run build` and ignored by git: a package
 	// built without them has an Arabic catalogue and English admin scripts (spec 121, FR-019).
 	const plugins = join( distDir, 'wp-content', 'plugins' );
@@ -779,6 +783,44 @@ export function verifyClientAssets( distDir ) {
 	}
 
 	return errors;
+}
+
+/**
+ * Every theme under wp-content/themes whose `style.css` names a `Template:` that is not a folder beside
+ * it (spec 135, FR-017). A client theme is a child of the CoreX theme, and WordPress will not run a
+ * child whose parent is not installed. A theme that names no parent is left alone.
+ *
+ * @param {string} distDir The built bundle to check.
+ * @return {string[]} One message per theme whose parent the package does not hold.
+ */
+export function verifyThemeParents( distDir ) {
+	const themesDir = join( distDir, 'wp-content', 'themes' );
+
+	if ( ! existsSync( themesDir ) ) {
+		return [];
+	}
+
+	return readdirSync( themesDir )
+		.sort()
+		.flatMap( ( theme ) => {
+			const style = join( themesDir, theme, 'style.css' );
+			if ( ! existsSync( style ) ) {
+				return [];
+			}
+
+			const parent = templateOf( readFileSync( style, 'utf8' ) );
+			const held =
+				parent !== null &&
+				existsSync( join( themesDir, parent ) ) &&
+				statSync( join( themesDir, parent ) ).isDirectory();
+
+			return parent === null || held
+				? []
+				: [
+						`theme "${ theme }" names Template: ${ parent }, and the package has no wp-content/themes/${ parent }: ` +
+							'a child theme cannot run without its parent',
+					];
+		} );
 }
 
 function* walk( dir ) {

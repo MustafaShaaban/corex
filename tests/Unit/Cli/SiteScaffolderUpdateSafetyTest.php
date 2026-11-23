@@ -14,6 +14,7 @@ use Corex\Cli\Generators\StubRenderer;
 use Corex\Cli\Release\ReadinessFinding;
 use Corex\Cli\Site\FrameworkBaseline;
 use Corex\Cli\Site\SiteRepository;
+use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldValidator;
 
@@ -21,7 +22,7 @@ const UPDATE_SAFETY_COMMIT = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 function updateSafetyScaffolder(): SiteScaffolder
 {
-    return new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs');
+    return new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json']));
 }
 
 /** A temporary repository root; the site is generated at `<root>/sites/acme`. */
@@ -105,6 +106,36 @@ it('places the client workflow at the repository root, under a client-specific n
         ->and($workflow)->toContain('fetch-depth: 0')
         ->and($workflow)->toContain('sites/acme/acme-site')
         ->and($workflow)->toContain('sites/acme/acme-theme');
+});
+
+it('FR-015: runs the client theme check in the job that has Node and nothing installed', function () {
+    $root = updateSafetyRepository();
+    updateSafetyScaffolder()->scaffold('Acme', $root . '/sites/acme', [], new SiteRepository(updateSafetyBaseline(), $root));
+
+    $workflow = (string) file_get_contents($root . '/.github/workflows/site-acme.yml');
+    $job      = substr($workflow, (int) strpos($workflow, 'framework-unmodified:'));
+    $job      = substr($job, 0, (int) strpos($job, 'client-build:'));
+    $package  = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/package.json'), true);
+
+    // The script the workflow names is the one the root package runs as verify:client-theme.
+    expect($job)->toContain('run: node scripts/verify-client-theme.mjs')
+        ->and($job)->not->toContain('npm ci')
+        ->and($package['scripts']['verify:client-theme'])->toBe('node scripts/verify-client-theme.mjs')
+        ->and(is_file(dirname(__DIR__, 3) . '/scripts/verify-client-theme.mjs'))->toBeTrue();
+});
+
+it('FR-015 and FR-018: the checklist runs the client theme check and says what a release can change', function () {
+    $root = updateSafetyRepository();
+    updateSafetyScaffolder()->scaffold('Acme', $root . '/sites/acme', [], new SiteRepository(updateSafetyBaseline()));
+
+    $checklist = (string) file_get_contents($root . '/sites/acme/UPDATING-COREX.md');
+    $verify    = substr($checklist, (int) strpos($checklist, '## Verify'));
+
+    expect($verify)->toContain('`npm run verify:client-theme` must pass')
+        ->and($verify)->toContain('A `MISSING` line names')
+        ->and($verify)->toContain('add that entry to the list')
+        ->and($checklist)->toContain('A release' . "
+" . '      can change the CoreX theme, which is the parent of `sites/acme/acme-theme`');
 });
 
 it('generates a workflow with nothing left for the stub renderer or for GitHub to substitute', function () {

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 use Corex\Cli\Generators\StubRenderer;
 use Corex\Cli\Release\ReadinessFinding;
+use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldValidator;
 
@@ -17,7 +18,7 @@ it('validates minimal client scaffolds for isolation, identity, governance, spec
     $base = sys_get_temp_dir() . '/corex_validation_' . uniqid('', true);
     mkdir($base);
 
-    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
+    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json'])))
         ->scaffold('Acme', $base, ['minimal' => true]);
 
     $finding = (new SiteScaffoldValidator())->validate($base, 'minimal');
@@ -44,7 +45,7 @@ it('validates starter scaffolds for the removable example slice and theme asset 
     $base = sys_get_temp_dir() . '/corex_validation_starter_' . uniqid('', true);
     mkdir($base);
 
-    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
+    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json'])))
         ->scaffold('Acme', $base, ['starter' => true]);
 
     $finding = (new SiteScaffoldValidator())->validate($base, 'starter');
@@ -66,7 +67,7 @@ it('fails validation when required scaffold files are missing or placeholders re
     $base = sys_get_temp_dir() . '/corex_validation_broken_' . uniqid('', true);
     mkdir($base);
 
-    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
+    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json'])))
         ->scaffold('Acme', $base);
     unlink($base . '/AGENTS.md');
     file_put_contents($base . '/acme-theme/theme.json', '{{ unresolved }}');
@@ -89,7 +90,7 @@ it('does not mistake the nested attributes of a block for an unresolved placehol
     $base = sys_get_temp_dir() . '/corex_validation_blocks_' . uniqid('', true);
     mkdir($base);
 
-    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
+    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json'])))
         ->scaffold('Acme', $base);
     file_put_contents(
         $base . '/acme-theme/templates/page.html',
@@ -106,7 +107,7 @@ it('still catches a placeholder left in a file beside nested block attributes', 
     $base = sys_get_temp_dir() . '/corex_validation_mixed_' . uniqid('', true);
     mkdir($base);
 
-    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
+    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json'])))
         ->scaffold('Acme', $base);
     file_put_contents(
         $base . '/acme-theme/templates/page.html',
