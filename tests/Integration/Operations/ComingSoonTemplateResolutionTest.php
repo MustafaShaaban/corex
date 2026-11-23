@@ -14,6 +14,9 @@
 declare(strict_types=1);
 
 use Corex\Boot;
+use Corex\Cli\Generators\StubRenderer;
+use Corex\Cli\Site\ParentThemeTokens;
+use Corex\Cli\Site\SiteScaffolder;
 use Corex\Config\Operations\ComingSoonTemplate;
 
 function corexComingSoonTemplateService(): ComingSoonTemplate
@@ -85,8 +88,8 @@ it('serves CoreX\'s default under a block theme unrelated to the Corex theme', f
 
     $canvas = corexComingSoonTemplateService()->canvas();
 
-    // User Story 6.2: a generated client theme is a standalone block theme and inherits nothing
-    // from the Corex theme. The default reaches it anyway, because the plugin supplies it.
+    // User Story 6.2: a block theme with no parent and no coming-soon page of its own, as a client
+    // theme generated before spec 135 is. The default reaches it anyway, because the plugin supplies it.
     expect(wp_get_theme()->parent())->toBeFalse()
         ->and($canvas)->toEndWith('template-canvas.php')
         ->and((string) $_wp_current_template_content)->toContain('Coming soon')
@@ -102,6 +105,81 @@ it('serves the theme\'s own page in place of the default when the theme ships on
     expect($canvas)->toEndWith('template-canvas.php')
         ->and((string) $_wp_current_template_content)->toContain('THEME OWN PAGE')
         ->and((string) $_wp_current_template_content)->not->toContain('We are getting things ready');
+});
+
+/**
+ * The theme-origin token lists the running site reports, by slug, and its custom token keys.
+ *
+ * @return array<string, list<string>>
+ */
+function corexReportedTokens(): array
+{
+    $settings = wp_get_global_settings();
+    $lists    = [];
+
+    foreach (['color.palette', 'typography.fontSizes', 'typography.fontFamilies', 'spacing.spacingSizes', 'shadow.presets'] as $path) {
+        [$group, $list] = explode('.', $path);
+        $lists[$path]   = array_column($settings[$group][$list]['theme'] ?? [], 'slug');
+    }
+
+    $lists['custom'] = array_keys($settings['custom'] ?? []);
+
+    return $lists;
+}
+
+/**
+ * Spec 135 (G-006): the client theme make:site generates is a child of the CoreX theme. Its own
+ * coming-soon page still replaces the default, as a standalone theme's did. Generated here, into a
+ * theme root of its own, by the scaffolder the command uses.
+ */
+it('serves a generated client theme\'s own page, with the CoreX theme as its parent', function () {
+    global $_wp_current_template_content;
+
+    $root = sys_get_temp_dir() . '/corex-child-theme-' . uniqid('', true);
+    mkdir($root);
+    $repository = dirname(__DIR__, 3);
+    // Not Acme: a local install may already have an `acme-theme`, and two themes of one name are ambiguous.
+    (new SiteScaffolder(
+        new StubRenderer(),
+        $repository . '/packages/cli/stubs',
+        new ParentThemeTokens([$repository . '/theme/theme.json']),
+    ))->scaffold('Initech', $root, ['theme_only' => true]);
+
+    register_theme_directory($root);
+    wp_clean_themes_cache();
+
+    try {
+        switch_theme('corex');
+        WP_Theme_JSON_Resolver::clean_cached_data();
+        $parentTokens = corexReportedTokens();
+
+        corexComingSoonUnderTheme('initech-theme');
+
+        $canvas = corexComingSoonTemplateService()->canvas();
+        $parent = wp_get_theme()->parent();
+
+        expect($parent)->toBeInstanceOf(WP_Theme::class)
+            ->and($parent->get_stylesheet())->toBe('corex')
+            ->and($canvas)->toEndWith('template-canvas.php')
+            ->and((string) $_wp_current_template_content)->toContain('This file replaces CoreX\'s default page');
+
+        // SC-001: under the generated child, WordPress reports the same tokens as under the CoreX theme itself
+        // (both measured on this site, so the test holds on any line of the repository, FR-040).
+        WP_Theme_JSON_Resolver::clean_cached_data();
+        $child = corexReportedTokens();
+
+        expect($child)->toBe($parentTokens)
+            ->and($child['color.palette'])->not->toBe([]);
+    } finally {
+        global $wp_theme_directories;
+
+        switch_theme($this->previousStylesheet);
+        $wp_theme_directories = array_values(array_filter(
+            (array) $wp_theme_directories,
+            static fn (string $directory): bool => wp_normalize_path($directory) !== wp_normalize_path($root),
+        ));
+        wp_clean_themes_cache();
+    }
 });
 
 it('has no template to serve under a theme with no block templates, and a whole page instead', function () {

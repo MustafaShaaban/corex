@@ -1,13 +1,31 @@
 # {{ name }}
 
-The {{ name }} website — a **Corex client site**.
+The {{ name }} website, a **Corex client site**.
 
 - **App code:** `{{ plugin_slug }}/` (`{{ namespace }}\`)
-- **Theme:** `{{ theme_slug }}/`
+- **Theme:** `{{ theme_slug }}/`, a child of the CoreX theme
 - **Specs / docs:** `specs/`, `docs/`
 - **Workflow + agent rules:** [AGENTS.md](./AGENTS.md)
-- **Taking a CoreX release:** [UPDATING-COREX.md](./UPDATING-COREX.md) — the framework release
+- **Taking a CoreX release:** [UPDATING-COREX.md](./UPDATING-COREX.md). The framework release
   this site is on is recorded in `corex-baseline.json`.
 
-Edit only the client plugin/theme — never the Corex framework. Scaffold with `wp corex make:*`.
+Edit only the client plugin/theme, never the Corex framework. Scaffold with `wp corex make:*`.
+
+## The theme
+
+`{{ theme_slug }}/` is a child of the CoreX theme (`Template: corex`). It inherits the CoreX theme's
+templates, header and footer parts, patterns, style variations, block styles and fonts, so the
+site looks finished before it has a file of its own.
+
+- **Values** go in `{{ theme_slug }}/theme.json`. It lists every CoreX token with CoreX's value at
+  the time the site was generated: change the values to the client's.
+- **Structure** is overridden by a file of the same name: a `templates/front-page.html` or
+  `parts/header.html` in `{{ theme_slug }}/` replaces the CoreX theme's, and a pattern in its
+  `patterns/` replaces the CoreX pattern with the same `Slug:`.
+  Create one when the client's design calls for it.
+- **A list you keep must keep every entry.** A preset list in `theme.json` (the palette, the font
+  families, the font sizes, the spacing sizes, the shadows) replaces the CoreX theme's whole list,
+  so removing an entry removes that token from the site. `npm run verify:client-theme` checks it.
+
+The rules in full: `docs/en/04-team-workflow/client-site-workflow.md` in the framework.
 {{ theme_assets }}

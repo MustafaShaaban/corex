@@ -16,7 +16,11 @@ framework's, the root included.
 - [ ] `npm run verify:framework` passes. If it reports `DRIFT`, a framework file was edited here.
       Resolve that first, or the merge will conflict on it.
 - [ ] Read the **Client impact** section of `CHANGELOG.md` for every release between the one
-      recorded in `sites/{{ site_dir }}/corex-baseline.json` and the one you are taking.
+      recorded in `sites/{{ site_dir }}/corex-baseline.json` and the one you are taking. A release
+      can change the CoreX theme, which is the parent of `sites/{{ site_dir }}/{{ theme_slug }}`:
+      its templates, parts and patterns, and new keys under `custom` and `layout`, reach {{ name }}
+      with the merge. A value {{ name }}'s `theme.json` lists stays {{ name }}'s, and a new colour,
+      size or font does not arrive until {{ name }}'s list names it (the check below says which).
 - [ ] Note how the public pages look and behave now, to compare afterwards.
 
 ## Update
@@ -37,6 +41,9 @@ framework's, the root included.
 - [ ] `npm run verify:framework -- --record <release tag>` — records the new baseline.
 - [ ] `npm run verify:framework` — must pass. It now compares against the release you took, so a
       pass means the framework files here are exactly that release's.
+- [ ] `npm run verify:client-theme` must pass. A `MISSING` line names a token, template or font
+      the CoreX theme has and a list in the site theme lacks: add that entry to the list it names in
+      `sites/{{ site_dir }}/{{ theme_slug }}`, with the CoreX theme's value or the client's own.
 - [ ] `composer test` and `npm run test:js` — the framework's suites.
 - [ ] The {{ name }} site's own tests.
 - [ ] Compare the public pages with what you noted before.

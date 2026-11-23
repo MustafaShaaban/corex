@@ -725,6 +725,99 @@ it( 'fails verification when a client theme ships SCSS/JS source but no compiled
 	expect( mod.verifyClientAssets( dist ) ).toEqual( [] );
 } );
 
+// Spec 135, FR-017: a client theme is a child of the CoreX theme, and the package must hold both.
+describe( 'a child client theme', () => {
+	const CHILD_STYLE = '/*\nTheme Name: Acme\nTemplate: corex\n*/\n';
+
+	function buildChildFixture() {
+		const root = makeRepo();
+		writeFileSync(
+			join( root, 'sites', 'acme', 'acme-theme', 'style.css' ),
+			CHILD_STYLE
+		);
+		const distDir = join( root, 'dist' );
+		const plan = mod.buildPlan( {
+			repoRoot: root,
+			distDir,
+			client: 'acme',
+		} );
+		mod.runBuild( plan, distDir );
+
+		return { distDir, plan };
+	}
+
+	it( 'ships beside the CoreX theme, in the plan and the manifest, and passes verification', () => {
+		const { distDir, plan } = buildChildFixture();
+		const themes = join( distDir, 'wp-content', 'themes' );
+
+		expect(
+			plan.copies
+				.filter( ( copy ) => copy.kind.endsWith( 'theme' ) )
+				.map( ( copy ) => copy.kind )
+				.sort()
+		).toEqual( [ 'client-theme', 'theme' ] );
+		expect( [ ...plan.manifest.themes ].sort() ).toEqual( [
+			'acme-theme',
+			'corex',
+		] );
+		expect(
+			readFileSync( join( themes, 'acme-theme', 'style.css' ), 'utf8' )
+		).toBe( CHILD_STYLE );
+		expect( existsSync( join( themes, 'corex', 'style.css' ) ) ).toBe(
+			true
+		);
+		expect( mod.verifyThemeParents( distDir ) ).toEqual( [] );
+		expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+	} );
+
+	it( 'fails verification once the CoreX theme is not in the package, naming the theme and its parent', () => {
+		const { distDir } = buildChildFixture();
+		rmSync( join( distDir, 'wp-content', 'themes', 'corex' ), {
+			recursive: true,
+			force: true,
+		} );
+		describedAgainWithout( distDir, 'wp-content/themes/corex' );
+
+		const message =
+			'theme "acme-theme" names Template: corex, and the package has no wp-content/themes/corex: ' +
+			'a child theme cannot run without its parent';
+
+		expect( mod.verifyThemeParents( distDir ) ).toEqual( [ message ] );
+		expect( mod.verifyDist( distDir ) ).toEqual( {
+			ok: false,
+			errors: [ message ],
+		} );
+	} );
+
+	it( 'leaves a standalone client theme alone', () => {
+		const { distDir } = buildFixture();
+		rmSync( join( distDir, 'wp-content', 'themes', 'corex' ), {
+			recursive: true,
+			force: true,
+		} );
+
+		expect( mod.verifyThemeParents( distDir ) ).toEqual( [] );
+	} );
+} );
+
+/**
+ * Describe a package again after a folder of the release was taken out of it.
+ *
+ * @param {string} distDir The package.
+ * @param {string} removed The release path no longer in it.
+ */
+function describedAgainWithout( distDir, removed ) {
+	const file = join( distDir, 'corex-release.json' );
+	const manifest = JSON.parse( readFileSync( file, 'utf8' ) );
+
+	manifest.release_paths = manifest.release_paths.filter(
+		( path ) => path !== removed
+	);
+	delete manifest.contents[ removed ];
+	writeFileSync( file, JSON.stringify( manifest, null, 2 ) + '\n' );
+	describedAgain( distDir );
+}
+
 it( 'dry-run plans without writing dist/', () => {
 	const root = makeRepo();
 	const distDir = join( root, 'dist' );

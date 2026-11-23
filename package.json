@@ -31,6 +31,7 @@
         "release:push": "node scripts/release-push.mjs",
         "verify:dist": "node scripts/verify-shared-host-dist.mjs",
         "verify:framework": "node scripts/verify-framework.mjs",
+        "verify:client-theme": "node scripts/verify-client-theme.mjs",
         "format": "wp-scripts format",
         "env:start": "wp-env start",
         "env:stop": "wp-env stop",
