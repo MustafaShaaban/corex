@@ -67,6 +67,22 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
   `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
   update checklist and CoreX's own CI run it. `verify:dist` fails a theme whose parent is not in the package.
+- **A language switcher block and the source it reads** (spec 137 slice 2, gaps G-013 and G-054; FR-021, FR-029
+  to FR-035, FR-032a; DECISIONS #694, #697, #702, #703). `corex-blocks` binds `Corex\Blocks\Languages\LanguageSource`
+  in the container: one method returning the request's languages, each with its code, its name in its own
+  language, its direction, the address of this page in it (or its home page) and whether it is current. The
+  source CoreX ships reads WordPress alone, which has one language; it calls no multilingual plugin, fetches
+  nothing and finds nothing by its slug. A site, or spec 148's Polylang and WPML sources, binds another in its
+  place. The block `corex/language-switcher` ("Language switcher") prints nothing, not even its wrapper, with
+  fewer than two languages, and its editor then shows WordPress's placeholder. With two or more it prints the
+  form an editor chose: **menu** (the default: a ghost button naming the current language over a Dropdown of every
+  language, opened by click or keyboard, Escape back to the button; the list without script), **list** (every
+  language in a row, the current one ticked, tinted, `aria-current` and not a link) or **toggle** (with exactly
+  two languages one link naming the other language in its own script, "العربية" on an English page; the list
+  with three or more). Every name carries its own `lang` and `dir` and is drawn in its own face; every link has
+  its `hreflang` and a 44px target. Its script and style load only where it prints something. It sits beside a
+  Navigation block, never inside one. `docs/internal/COREX-FRAMEWORK.md` describes the source in place of the
+  `I18nHandler`, which was never built.
 
 ### Fixed
 
@@ -171,6 +187,10 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     not turn them on shows none, and nothing changes. **Perego**: a margin set on a form or flow block adds a
     `style` attribute to the form's root, as an anchor set on it adds an `id` (slice 1), which matters to code
     that matches that markup by exact strings.
+  - **Spec 137 slice 2 (G-013, G-054).** No page changes, no stored data changes, and there is no upgrade step.
+    - **Muva**: its editor gains one block, "Language switcher", in the CoreX category. It prints nothing unless
+      it is placed, and then only on a site with two languages: Muva's source is WordPress's, with one.
+    - **Perego**: the same. Its own language toggle is untouched: nothing of CoreX replaces it or reads it.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and

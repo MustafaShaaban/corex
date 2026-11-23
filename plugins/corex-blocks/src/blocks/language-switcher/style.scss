@@ -1,0 +1,185 @@
+/**
+ * Language switcher: the page's and the editor's styling (spec 137, FR-032,
+ * FR-032a, FR-043), from the build contract
+ * `specs/137-header-system/design/header-system.css.txt`, sections 3, 3a and
+ * 3b, on the kit's ghost button and Dropdown.
+ *
+ * theme.json tokens and logical properties only. A token the CoreX theme
+ * gained after v0.48.1 (spacing 25, the brass tint) falls back to one that
+ * release has. Raw lengths are the kit's own: 2.75rem a target, 2.25rem a
+ * small item, 14rem the Dropdown. Compiled to style-index.css and loaded only
+ * where the block renders (constitution VI).
+ */
+
+.corex-language-switcher {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+
+	.corex-icon {
+		flex: none;
+		inline-size: 1em;
+		block-size: 1em;
+	}
+
+	:is(a, button):focus-visible {
+		outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+		outline-offset: var(--wp--custom--focus--offset);
+	}
+
+	// 3a. Each name in its own face, whatever the page's language: Arabic in
+	// the Arabic face on an English page, a Latin name in the heading face on
+	// an Arabic one.
+	[lang]:lang(ar) {
+		font-family: var(--wp--preset--font-family--arabic);
+		letter-spacing: 0;
+	}
+
+	[lang]:not(:lang(ar)) {
+		font-family: var(--wp--preset--font-family--heading);
+	}
+}
+
+// The list form, and the menu's list where no script runs: every language in a
+// row.
+.corex-language-switcher__list {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wp--preset--spacing--10);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+// Two classes, so a theme's link colour does not reach the item.
+.corex-language-switcher .corex-language-switcher__item {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--10);
+	box-sizing: border-box;
+	min-block-size: 2.25rem;
+	padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+	border-radius: var(--wp--custom--radius--sm);
+	color: var(--wp--preset--color--ink-soft);
+	font-family: var(--wp--preset--font-family--heading);
+	font-size: var(--wp--preset--font-size--sm);
+	font-weight: 500;
+	line-height: 1.2;
+	text-decoration: none;
+}
+
+// A link's target is 2.75rem tall and wide, whatever the item's drawn height
+// (3b): the ::after box adds the difference, half above and half below, and
+// adds nothing where the item is already that tall. The drawing does not
+// change.
+.corex-language-switcher a.corex-language-switcher__item {
+	position: relative;
+	justify-content: center;
+	min-inline-size: 2.75rem;
+
+	&::after {
+		content: "";
+		position: absolute;
+		inset-inline: 0;
+		inset-block: min(0px, calc((100% - 2.75rem) / 2));
+	}
+
+	&:hover {
+		color: var(--wp--preset--color--ink);
+		background-color: var(--wp--preset--color--surface-alt);
+	}
+}
+
+// The current language is not a link: the brass tint, a tick and more weight.
+.corex-language-switcher .corex-language-switcher__item[aria-current="true"] {
+	color: var(--wp--preset--color--accent-dark);
+	background-color: var(--wp--custom--color--accent-subtle, var(--wp--preset--color--surface-alt));
+	font-weight: 600;
+}
+
+// The menu form: without script its button is not drawn and its list is the
+// list form. Where the browser runs script it is the kit's ghost button over
+// the kit's Dropdown, which the view script opens; the same media feature
+// decides both, so nothing moves when the script arrives.
+.corex-language-switcher--menu > .corex-language-switcher__button {
+	display: none;
+}
+
+@media (scripting: enabled) {
+
+	.corex-language-switcher--menu > .corex-language-switcher__button {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--wp--preset--spacing--10);
+		box-sizing: border-box;
+		min-block-size: 2.75rem;
+		padding-block: 0;
+		padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+		border: var(--wp--custom--border--width--thin) solid transparent;
+		border-radius: var(--wp--custom--radius--sm);
+		background-color: transparent;
+		color: var(--wp--preset--color--ink);
+		font-family: var(--wp--preset--font-family--heading);
+		font-size: var(--wp--preset--font-size--sm);
+		font-weight: 500;
+		line-height: 1.2;
+		cursor: pointer;
+
+		> .corex-icon {
+			transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);
+		}
+
+		&:hover,
+		&[aria-expanded="true"] {
+			background-color: var(--wp--preset--color--surface-alt);
+		}
+
+		&[aria-expanded="true"] > .corex-icon {
+			transform: rotate(180deg);
+		}
+	}
+
+	// The kit's Dropdown, opened as an overlay at the inline end, so it stays
+	// inside the window.
+	.corex-language-switcher--menu > .corex-dropdown__menu {
+		position: absolute;
+		inset-block-start: calc(100% + var(--wp--preset--spacing--10));
+		inset-inline-end: 0;
+		z-index: var(--wp--custom--z--dropdown);
+		display: grid;
+		gap: 0;
+		box-sizing: border-box;
+		min-inline-size: 14rem;
+		padding: var(--wp--preset--spacing--10);
+		border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--surface-strong);
+		border-radius: var(--wp--custom--radius--md);
+		background-color: var(--wp--preset--color--surface-raised, var(--wp--preset--color--surface));
+		box-shadow: var(--wp--preset--shadow--md);
+
+		> li {
+			display: flex;
+		}
+
+		.corex-language-switcher__item {
+			flex: 1 1 auto;
+			justify-content: flex-start;
+			min-block-size: 2.75rem;
+		}
+	}
+
+	.corex-language-switcher--menu > [aria-expanded="false"] + .corex-dropdown__menu,
+	.corex-language-switcher--menu > .corex-dropdown__menu[hidden] {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-language-switcher--menu > .corex-language-switcher__button {
+
+		> .corex-icon {
+			transition: none;
+		}
+	}
+}

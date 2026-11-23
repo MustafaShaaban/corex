@@ -11,6 +11,8 @@ namespace Corex\Blocks;
 defined('ABSPATH') || exit;
 
 use Corex\Blocks\Connectors\ConnectorRegistry;
+use Corex\Blocks\Languages\LanguageSource;
+use Corex\Blocks\Languages\WordPressLanguageSource;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Support\BootLogger;
@@ -65,6 +67,10 @@ final class BlocksServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(ConnectorRegistry::class);
+
+        // The site's languages, for the language switcher (spec 137, FR-029): WordPress alone until a
+        // site or a later spec binds another source here.
+        $this->container->singleton(LanguageSource::class, WordPressLanguageSource::class);
 
         $this->container->singleton(
             SampleBlocks::class,

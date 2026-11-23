@@ -22571,6 +22571,36 @@ coordinating session, which relayed it to the spec 137 session.
   nothing to build.
 - The record is `design/handoffs/header-system.md`, step 2a.
 
+## #703 -- The language switcher is built in its three forms in slice 2 (spec 137)
+
+**Date:** 2026-11-23. **Spec:** 137, slice 2 (FR-021, FR-029 to FR-035, FR-032a; G-013, G-054). **Decided:** by the
+spec 137 session, as the slice was built.
+
+- **Slice 2 builds the list form too.** It is the menu form without script and the toggle's form with three or
+  more languages, so the menu and the toggle cannot ship without it. Slice 4 only places it in the phone menu's
+  "Language" row. The Slices table of the spec says so.
+- **The menu is the list without script, and nothing moves when the script arrives.** The server prints the button
+  and the list. The block's style draws the button and the Dropdown only under `@media (scripting: enabled)`, and
+  the view script wires the menu only where `matchMedia('(scripting: enabled)')` matches. A browser that cannot say
+  shows the list. *Not chosen:* a class the script adds, which redraws the switcher once the script has run.
+- **In a list a name carries its `lang` and `dir`, not its row.** A row with `dir="rtl"` aligned its tick and its
+  text to the other side in the Dropdown, so the rows did not line up. The toggle's link carries them itself,
+  with its `hreflang` (FR-032a). Every link of every form has a 44px target through the `::after` box rule 3b
+  gives the toggle; nothing drawn changes.
+- **The block draws the kit's ghost button and Dropdown in its own style.** The ghost button style is the
+  `corex-ui` add-on's, and the switcher is in `corex-blocks` so it works with every add-on off (#694).
+- **The block's script loads wherever the block prints something**, whatever its form (FR-033, constitution VI:
+  declared in `block.json`). With one language WordPress leaves neither its script nor its style on the page. The
+  list and the toggle need the script for nothing.
+- **The source CoreX ships** names the request's language with PHP's `intl` extension where the server has it,
+  and by its code where it does not; the address is the page asked for, or the home page with none (the command
+  line). It is a singleton bound to `LanguageSource`; a site rebinds it after `Corex::onReady`.
+- **When no language is marked current**, the menu and the toggle have nothing to name and print the list.
+- The editor kind is `records` (#656): the languages come from the source, so the editor previews the server
+  render, inert, and shows WordPress's placeholder when it is empty (FR-031).
+- `docs/internal/COREX-FRAMEWORK.md` no longer describes an `I18nHandler`; #9's `I18nHandler` and
+  `MWP_I18N_DRIVER` were never built and are replaced by the language source.
+
 ## #712 -- An Azure DevOps remote names its repository
 
 **Date:** 2026-11-23. **Spec:** 135, slice 7 (G-055). **Decided:** by the spec 135 session, from the

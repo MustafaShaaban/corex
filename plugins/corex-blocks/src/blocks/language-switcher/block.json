@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/language-switcher",
+	"title": "Language switcher",
+	"category": "corex",
+	"icon": "translation",
+	"description": "Takes a visitor to this page in another of the site's languages. Shows nothing while the site has one language.",
+	"keywords": [ "language", "translation", "multilingual" ],
+	"textdomain": "corex",
+	"attributes": {
+		"form": { "type": "string", "enum": [ "menu", "list", "toggle" ], "default": "menu" }
+	},
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"spacing": { "margin": [ "top", "bottom" ] }
+	},
+	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Blocks\\LanguageSwitcherRenderer", "editor": "records" }
+}

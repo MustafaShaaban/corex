@@ -10,6 +10,9 @@
 
 declare(strict_types=1);
 
+use Corex\Blocks\Languages\Language;
+use Corex\Blocks\Languages\LanguageSource;
+use Corex\Blocks\Languages\WordPressLanguageSource;
 use Corex\Blocks\WordPressBlockWrapper;
 use Corex\Boot;
 use Corex\Environment\SiteEnvironment;
@@ -82,6 +85,8 @@ function wrapperTestMinimalAttributes(int $flowId): array
         'corex/gallery'           => ['images' => [['url' => 'https://example.test/a.jpg', 'alt' => 'A']]],
         'corex/hero'              => ['title' => 'T'],
         'corex/jobs'              => [],
+        // Prints only with two languages: the test binds a source that has them (spec 137, FR-031).
+        'corex/language-switcher' => ['form' => 'list'],
         'corex/modal'             => ['title' => 'T'],
         'corex/newsletter-signup' => [],
         'corex/posts'             => [],
@@ -208,6 +213,18 @@ it('FR-001, FR-006: an anchor reaches the root of every CoreX block a person can
     // A new block fails here until it is given what it needs to print.
     expect(array_diff(wrapperTestInsertableBlocks(), array_keys($minimal)))->toBe([]);
 
+    // The language switcher prints nothing for the site's one language; give it two for this test.
+    $container = Boot::app()->container();
+    $container->instance(LanguageSource::class, new class () implements LanguageSource {
+        public function languages(): array
+        {
+            return [
+                new Language('en', 'English', 'ltr', home_url('/'), true),
+                new Language('ar', 'العربية', 'rtl', home_url('/ar/'), false),
+            ];
+        }
+    });
+
     $missed = [];
     foreach (wrapperTestInsertableBlocks() as $name) {
         $html = do_blocks(sprintf('<!-- wp:%s %s /-->', $name, wp_json_encode(['anchor' => 'about'] + $minimal[$name], JSON_UNESCAPED_SLASHES)));
@@ -221,6 +238,7 @@ it('FR-001, FR-006: an anchor reaches the root of every CoreX block a person can
             $missed[$name] = substr($html, 0, 160);
         }
     }
+    $container->instance(LanguageSource::class, new WordPressLanguageSource());
 
     expect($missed)->toBe([]);
 });
