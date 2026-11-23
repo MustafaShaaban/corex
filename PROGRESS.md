@@ -165,7 +165,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-051 | High | The hero takes no child block, so a site block cannot sit inside its media and scrim | 1 | 136 | 9 (with G-011; waits on the addendum board D-3a; without it, its own slice after 9) | | | spec written (DECISIONS #679) |
 | G-052 | Medium | Repeatable items in a locked section, if content-only mode cannot add or reorder them (conditional) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 | G-053 | Low | No pre-publish checks (alt text, sample text, empty required fields) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
-| G-054 | Medium | The language switcher cannot print only the other language's name (a toggle) | 1 if approved before slice 2, else `v0.50.0` | 137 | 2 if its drawing is approved before slice 2 is built, else 7 | | | open: FR-032a written (DECISIONS #697); the drawing, an addendum to `header-system.md` step 2, waits for the owner |
+| G-054 | Medium | The language switcher cannot print only the other language's name (a toggle) | 1 | 137 | 2 | | | open: FR-032a written (DECISIONS #697); drawing approved by the owner on 2026-11-23 (step 2a, DECISIONS #702); built with slice 2, ships in `v0.49.0` |
 
 State is one of: open, specced (the spec is on `main`), built (every slice on `main`), released (in the tag
 named), not fixed (with the reason beside it). A row with two specs is released when both are.
