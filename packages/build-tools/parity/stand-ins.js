@@ -12,7 +12,10 @@
  *   what a child block draws is compared through its own fixture;
  * - `InspectorControls`, `BlockControls`, `MediaUpload`, `URLInputButton` and the like draw
  *   nothing, because they draw outside the block or only when asked;
- * - `Button` draws a button with its class, `aria-*` and `data-*` attributes.
+ * - `Button` draws a button with its class, `aria-*` and `data-*` attributes;
+ * - `useSelect` reads stores that hold no records yet, as the editor's do before they have
+ *   loaded: every selector answers `undefined`. `@wordpress/core-data`'s `store` is its
+ *   descriptor, named `core`.
  *
  * `registerBlockType` records the settings, so a test takes `edit` with `registeredBlock()`.
  *
@@ -151,6 +154,23 @@ function components() {
 	return moduleOf( { Button, Disabled: childrenOnly } );
 }
 
+function data() {
+	// A store whose every selector answers nothing, as a store that has not loaded its records.
+	const emptyStore = new Proxy( {}, { get: () => () => undefined } );
+
+	return moduleOf( {
+		useSelect: ( mapSelect ) =>
+			typeof mapSelect === 'function'
+				? mapSelect( () => emptyStore )
+				: emptyStore,
+		useDispatch: () => new Proxy( {}, { get: () => () => undefined } ),
+	} );
+}
+
+function coreData() {
+	return moduleOf( { store: { name: 'core' } } );
+}
+
 function sprintf( format, ...values ) {
 	let next = 0;
 
@@ -177,6 +197,8 @@ const standIns = {
 	'@wordpress/blocks': blocks,
 	'@wordpress/block-editor': blockEditor,
 	'@wordpress/components': components,
+	'@wordpress/core-data': coreData,
+	'@wordpress/data': data,
 	'@wordpress/i18n': i18n,
 };
 

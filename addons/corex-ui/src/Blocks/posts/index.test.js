@@ -11,8 +11,10 @@
 import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 
-// Sentinel component so we can find <ServerSideRender> in the edit() element tree.
+// Sentinel components so we can find <ServerSideRender> and <Disabled> in the edit() element tree.
 const ServerSideRenderMock = () => null;
+const DisabledMock = ( { children } ) => children;
+const PlaceholderMock = () => null;
 
 // The @wordpress/* packages are webpack externals at build time (mapped to window.wp.*),
 // not installed in node_modules — so the mocks are virtual.
@@ -33,6 +35,10 @@ jest.mock(
 	() => ( {
 		PanelBody: ( { children } ) => children,
 		RangeControl: () => null,
+		Disabled: DisabledMock,
+		Placeholder: PlaceholderMock,
+		Spinner: () => null,
+		Notice: () => null,
 	} ),
 	{ virtual: true }
 );

@@ -18,5 +18,5 @@
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Blocks\\SocialShareRenderer", "editor": "pending" }
+	"corex": { "renderer": "Corex\\Blocks\\SocialShareRenderer", "editor": "in-place" }
 }
