@@ -565,7 +565,7 @@ One pull request each, test first, merged into `main` on green. "Rests on" names
 | 6b | Tabs advance by themselves, with Pause | FR-035 | 6a, D-1 approved | VI | nothing |
 | 7 | Carousel slides hold blocks | FR-036, FR-039 | 3 | VI, VIII | nothing |
 | 8 | Modal and drawer hold blocks | FR-037 to FR-039 | 3, D-2 approved | VI, VIII | nothing |
-| 9 | The hero | FR-050 to FR-057 | 3, D-3 approved (approved 2026-11-23), D-3a approved for FR-057; without D-3a it ships without FR-057, which then follows as its own slice | V, VI, VIII | nothing |
+| 9 | The hero | FR-050 to FR-057 | 3, D-3 approved (approved 2026-11-23), D-3a approved for FR-057 (approved 2026-11-23, DECISIONS #681) | V, VI, VIII | nothing |
 
 Slices 1, 3, 4, 5, 6a and 7 show nothing that is not already approved or WordPress's own, and are built while
 D-1 to D-3 wait for the owner. Slices 2a, 2b, 5, 6a and 7 change what a visitor may see and run the full UI
