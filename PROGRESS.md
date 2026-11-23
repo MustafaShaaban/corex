@@ -106,7 +106,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
 | G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
-| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written |
+| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written; the hero drawing (D-3) approved 2026-11-23 (DECISIONS #677, `design/handoffs/spec-136-hero.md`); slice 9 waits on slice 3 and on the design system gaining its scrim tokens and icons |
 | G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
 | G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | spec written; five slices: 1 one width, 2 language switcher, 3 mega menu item, 4 phone menu, 5 utility menu, search and patterns | spec: #493 | | open: spec merged (`4d0a2b8d`); every drawing approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`, DECISIONS #696); no slice built yet, building waits for a free slot (DECISIONS #690 to #696) |
 | G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
