@@ -22579,6 +22579,18 @@ the other language's name alone).
   by a cookie read in an e2e mu-plugin, as the logo set fixture does, so the active theme is never saved and other
   tests are not disturbed.
 
+## #702 -- The language toggle's drawing is approved (spec 137, step 2a, G-054)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-032a. **Decided:** by the owner, "Approve step 2a", typed in the Blackstone
+coordinating session, which relayed it to the spec 137 session.
+
+- It covers the nine boards of step 2a on the canvas: the toggle's states on English and Arabic pages and in dark,
+  the toggle in the utility row, in the header's actions and in the phone menu, and the editor's form choice
+  (Menu, List, Toggle) with its help line.
+- It came before slice 2 was built, so slice 2 builds the toggle and it ships in `v0.49.0` (#697). Slice 7 has
+  nothing to build.
+- The record is `design/handoffs/header-system.md`, step 2a.
+
 ## #712 -- An Azure DevOps remote names its repository
 
 **Date:** 2026-11-23. **Spec:** 135, slice 7 (G-055). **Decided:** by the spec 135 session, from the
