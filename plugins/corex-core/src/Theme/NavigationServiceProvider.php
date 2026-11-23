@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Theme;
 
+use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 
 defined('ABSPATH') || exit;
@@ -21,6 +22,9 @@ defined('ABSPATH') || exit;
  * - the `corex-navigation` stylesheet, attached to the core navigation block via
  *   {@see wp_enqueue_block_style()} so it loads only where a navigation renders
  *   (constitution Principle VI) and never as a global library.
+ *
+ * - the theme's navigation collapse rules at the width of its navigation breakpoint
+ *   token, through {@see NavigationCollapseStyle} (spec 137, slice 1; DECISIONS #692).
  *
  * The provider holds no business logic, no routes, and no DB access; the markup and
  * styles live in the theme (Principle I). It registers on `init`, independent of any
@@ -39,7 +43,17 @@ final class NavigationServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        // No services to bind; presentation-only surface.
+        $this->container->singleton(
+            NavigationBreakpoint::class,
+            static fn (ContainerInterface $c): NavigationBreakpoint => new NavigationBreakpoint(),
+        );
+
+        $this->container->singleton(
+            NavigationCollapseStyle::class,
+            static fn (ContainerInterface $c): NavigationCollapseStyle => new NavigationCollapseStyle(
+                $c->make(NavigationBreakpoint::class),
+            ),
+        );
     }
 
     public function boot(): void
@@ -48,6 +62,10 @@ final class NavigationServiceProvider extends ServiceProvider
         add_action('init', [$this, 'registerNavigationStyle']);
         add_action('init', [$this, 'registerNavigationScript']);
         add_filter('render_block', [$this, 'maybeEnqueueNavigationScript'], 10, 2);
+
+        $collapse = $this->container->make(NavigationCollapseStyle::class);
+        add_filter('render_block', [$collapse, 'enqueueOnRender'], 10, 2);
+        add_action('enqueue_block_assets', [$collapse, 'enqueueWhereEveryBlockLoads']);
     }
 
     public function registerPatternCategory(): void

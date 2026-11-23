@@ -22531,3 +22531,23 @@ the other language's name alone).
   also how a theme at `v0.48.1` without the token behaves, so no site changes on update.
 - *Not chosen:* passing the value from PHP with an inline script. The property is already on every page through
   `theme.json`, a child theme reaches it with no PHP, and the script stays the one place that decides.
+
+## #699 -- How the navigation width reaches the page (spec 137 slice 1)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-001 to FR-008. **Decided:** by the spec 137 session, while building slice 1.
+
+- Two classes in `corex-core`: `NavigationBreakpoint` turns the token's value into a width (a whole or decimal
+  number of `px`; anything else is the default `782px`; below 600 is 600), and `NavigationCollapseStyle` serves
+  `theme/assets/css/corex-navigation-collapse.css` at the default and prints it with the theme's width otherwise.
+  `NavigationServiceProvider` binds both and adds their hooks.
+- The writer hangs on `render_block` and `enqueue_block_assets`, not on `wp_enqueue_block_style()`. The token is
+  then read only when a menu is drawn, never at `init`, where reading the merged settings would cache them before
+  blocks registered later on `init`. The editor builds its canvas styles in a fresh registry, so the writer asks
+  that registry whether the style is there rather than keeping a flag.
+- "Served as a file" means a registered handle with its `src` and `path`. WordPress may still print a small block
+  style's bytes inline from that path, as it does for every block style; the editor's canvas gets a link.
+- The token is read with `wp_get_global_settings()`, so a width saved in the site's Global Styles wins over the
+  theme's file, as for any `theme.json` setting.
+- The browser proof puts one request under a fixture child theme (`tests/e2e/fixtures/themes/corex-e2e-nav-child/`)
+  by a cookie read in an e2e mu-plugin, as the logo set fixture does, so the active theme is never saved and other
+  tests are not disturbed.

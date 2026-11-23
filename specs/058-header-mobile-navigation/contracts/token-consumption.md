@@ -25,11 +25,12 @@ Added under `theme.json` `settings.custom` (same convention as existing `radius`
 |---|---|---|---|
 | `custom.header.height` | `--wp--custom--header--height` | `4rem` | base header row height |
 | `custom.header.heightCompact` | `--wp--custom--header--height-compact` | `3.25rem` | scrolled/compact header |
-| `custom.nav.breakpoint` | `--wp--custom--nav--breakpoint` | `782px` | desktop→mobile switch (aligns with core `overlayMenu:"mobile"`) |
+| `custom.nav.breakpoint` | `--wp--custom--nav--breakpoint` | `782px` | desktop→mobile switch |
 
 - These are the **only** new tokens. No new color, type, spacing, radius, shadow, or focus tokens.
-- The breakpoint value MUST match the point where `core/navigation` `overlayMenu:"mobile"` collapses, so the CoreX
-  CSS breakpoint and core's overlay trigger stay consistent.
+- Corrected by spec 137 (DECISIONS #692): `core/navigation` with `overlayMenu:"mobile"` folds at 600px, not at
+  782px. Inside a `.corex-header` the theme overrides that fold at the token, from
+  `theme/assets/css/corex-navigation-collapse.css` (`specs/137-header-system/spec.md`, FR-001 to FR-004).
 
 ## C3. No raw literals (Principle V)
 

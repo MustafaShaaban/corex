@@ -44,10 +44,12 @@ stays a presentation-only skin (constitution Principle I).
 
 Everything consumes M2 `theme.json` tokens (color, typography, spacing, radius, border, shadow, focus, `z`). The only
 tokens this system adds are three layout-only custom properties: `--wp--custom--header--height`,
-`--wp--custom--header--height-compact`, and `--wp--custom--nav--breakpoint` (the desktop→mobile switch, aligned with
-core navigation's mobile overlay). There are no raw color/size/font literals in the patterns or
-`theme/assets/css/corex-navigation.css`; the one exception is the breakpoint value inside the desktop media query,
-because CSS `@media` cannot read custom properties.
+`--wp--custom--header--height-compact`, and `--wp--custom--nav--breakpoint` (the desktop→mobile switch, `782px` by
+default; a child theme sets its own in its `theme.json`). WordPress's own Navigation block folds at 600px; inside a
+`.corex-header` it folds at the token instead (spec 137). There are no raw color/size/font literals in the patterns or
+`theme/assets/css/corex-navigation.css`. CSS `@media` cannot read custom properties, so every rule that depends on
+the width lives in `theme/assets/css/corex-navigation-collapse.css`, written at the default; when a theme sets
+another width, CoreX prints that file with the theme's width in its place.
 
 ## Conditional loading
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Container\Container;
+use Corex\Theme\NavigationCollapseStyle;
 use Corex\Theme\NavigationServiceProvider;
 use Corex\Tests\Support\ThemeContract;
 
@@ -63,6 +64,20 @@ it('attaches the navigation stylesheet to core/navigation and never globally enq
     expect($blockStyles)->toHaveKey('core/navigation')
         ->and($blockStyles)->toHaveKey('corex/copyright')
         ->and($blockStyles['core/navigation']['handle'])->toBe('corex-navigation');
+});
+
+it('wires the collapse stylesheet where a navigation renders and where every block style loads (spec 137, FR-004)', function () {
+    $container = new Container();
+    $provider = new NavigationServiceProvider($container);
+
+    $provider->register();
+    $provider->boot();
+
+    $collapse = $container->make(NavigationCollapseStyle::class);
+
+    expect($collapse)->toBe($container->make(NavigationCollapseStyle::class))
+        ->and(has_filter('render_block', [$collapse, 'enqueueOnRender']))->toBe(10)
+        ->and(has_action('enqueue_block_assets', [$collapse, 'enqueueWhereEveryBlockLoads']))->toBe(10);
 });
 
 it('enqueues the behavior script only when a navigation or mega block renders', function () {

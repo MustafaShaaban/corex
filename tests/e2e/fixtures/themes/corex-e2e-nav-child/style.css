@@ -1,0 +1,7 @@
+/*
+Theme Name:  CoreX E2E navigation child (test fixture)
+Template:    corex
+Description: Test fixture. A child of the CoreX theme that sets its navigation breakpoint to 1024px and nothing else, with no file of the CoreX theme copied (spec 137, FR-005). Used by tests/e2e/navigation-width.spec.js and tests/Integration/Theme/NavigationCollapseStyleTest.php.
+Version:     1.0.0
+Text Domain: corex-e2e-nav-child
+*/

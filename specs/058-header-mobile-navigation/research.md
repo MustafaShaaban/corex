@@ -102,6 +102,16 @@ with where core nav already collapses, avoiding a mismatch between the CSS break
 **Alternatives considered**: Hard-coded `px` breakpoints in CSS (rejected: Principle V), a JS-measured breakpoint
 (rejected: unnecessary, fights core nav's CSS-based overlay).
 
+**Correction (spec 137, FR-008, 2026-11-23)**: the rationale above is wrong. WordPress folds the Navigation block's
+`overlayMenu:"mobile"` menu at **600px**, not at 782px: its stylesheet (`wp-includes/blocks/navigation/style.css`,
+read in WordPress 7.1.3) shows the menu inline and hides its button from `min-width: 600px`. 782px is the width of
+WordPress's admin bar breakpoint, not of the Navigation block. So until spec 137 a CoreX header had three widths: the
+menu folded at 600px, `corex-navigation.css` switched the mega and search panels at `48em` (768px), and the token said
+782px and was read by nothing. Spec 137 (`specs/137-header-system/spec.md`, slice 1; DECISIONS #692) makes the token
+the one width: every width-dependent rule is in `theme/assets/css/corex-navigation-collapse.css`, which overrides
+WordPress's 600px rules inside `.corex-header` up to the token, and `Corex\Theme\NavigationServiceProvider` writes the
+token's value into it.
+
 ## Cross-cutting notes
 
 - **i18n**: pattern PHP files wrap all visible strings in `corex` text-domain translation functions and escape
