@@ -1,26 +1,6 @@
-/**
- * CoreX navigation: every rule that depends on the window's width (spec 137,
- * FR-002 and FR-003; DECISIONS #692).
- *
- * A CoreX header changes between its phone form and its desktop form at one
- * width, the theme's navigation breakpoint: `settings.custom.nav.breakpoint`
- * in theme.json. A media condition cannot read a custom property, so this file
- * is written with the CoreX theme's own value. Where a theme or its child sets
- * another one, Corex\Theme\NavigationCollapseStyle prints these same rules
- * inline with that value in its place. So the token's value is named here in
- * the conditions only, and the only other width is WordPress's own 600px,
- * below which WordPress folds a Navigation block itself.
- *
- * Tokens and logical properties only (constitution V and VIII). Loaded where a
- * Navigation block renders (constitution VI).
- */
+/* Every width rule of the CoreX header, at the token's default.
+   Spec 137 FR-003; DECISIONS #692, #699. */
 
-/* Below the breakpoint: the menu behind its button ------------------------ */
-
-/* WordPress shows a Navigation block's menu inline from 600px up. In a CoreX
-   header the menu stays folded behind its button up to the breakpoint. The two
-   selectors are WordPress's own (wp-includes/blocks/navigation/style.css),
-   inside the header; a test fails when WordPress stops writing them. */
 @media (600px <= width < 782px) { /* corex-token-allow: nav breakpoint */
 
 	.corex-header .wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
@@ -32,11 +12,6 @@
 	}
 }
 
-/* From the breakpoint up: the desktop form -------------------------------- */
-
-/* The menu is inline from here, by WordPress's own rules. The search panel
-   becomes a dropdown under its toggle, and a mega panel a positioned dropdown
-   above the page's content; below the breakpoint both stay in place. */
 @media (width >= 782px) { /* corex-token-allow: nav breakpoint */
 
 	.corex-header__search-panel:not([hidden]) {
