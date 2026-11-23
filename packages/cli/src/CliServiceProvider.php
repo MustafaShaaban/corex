@@ -202,7 +202,7 @@ final class CliServiceProvider extends ServiceProvider
                 'handler' => function (array $args, array $assoc) use ($type): void {
                     $this->makeCommand()->run($type, $args, $assoc);
                 },
-                'definition' => [],
+                'definition' => $type === 'block' ? $this->makeBlockDefinition() : [],
             ];
         }
 
@@ -637,6 +637,31 @@ final class CliServiceProvider extends ServiceProvider
             'name' => $name,
             'optional' => true,
             'description' => $description,
+        ];
+    }
+
+    /**
+     * What `wp corex make:block --help` says, so `--records` can be found (spec 136, FR-014).
+     *
+     * @return array{shortdesc: string, synopsis: list<array<string, mixed>>}
+     */
+    private function makeBlockDefinition(): array
+    {
+        return [
+            'shortdesc' => __('Generate a complete CoreX block: block.json, its editor, its style sheet and its PHP renderer.', 'corex'),
+            'synopsis'  => [
+                [
+                    'type'        => 'positional',
+                    'name'        => 'name',
+                    'optional'    => false,
+                    'description' => __('The block\'s name in PascalCase, for example TeamMember.', 'corex'),
+                ],
+                $this->resetFlag(
+                    'records',
+                    __('Generate a block that shows records, previewed in the editor by its server render. Without it the block is edited in place and comes with its parity.json.', 'corex'),
+                ),
+                $this->resetFlag('force', __('Overwrite the block when it exists.', 'corex')),
+            ],
         ];
     }
 

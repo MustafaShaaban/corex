@@ -1,0 +1,67 @@
+{
+	"prefix": "corex-team",
+	"attributes": {
+		"members": [
+			{
+				"name": "Sam Rivera",
+				"role": "Lead engineer",
+				"bio": "Builds the parts nobody sees.",
+				"image": {
+					"id": 21,
+					"url": "https://example.test/sam.jpg",
+					"alt": "Sam Rivera"
+				}
+			},
+			{
+				"name": "Noor Haddad",
+				"role": "Designer",
+				"bio": "Draws everything twice.",
+				"image": {
+					"id": 22,
+					"url": "https://example.test/noor.jpg",
+					"alt": "Noor Haddad"
+				}
+			}
+		]
+	},
+	"tree": [
+		{
+			"tag": "div",
+			"classes": [ "corex-team" ],
+			"children": [
+				{
+					"tag": "figure",
+					"classes": [ "corex-team__member" ],
+					"children": [
+						{ "tag": "img", "classes": [ "corex-team__photo" ] },
+						{
+							"tag": "figcaption",
+							"classes": [ "corex-team__caption" ],
+							"children": [
+								{ "tag": "span", "classes": [ "corex-team__name" ] },
+								{ "tag": "span", "classes": [ "corex-team__role" ] },
+								{ "tag": "p", "classes": [ "corex-team__bio" ] }
+							]
+						}
+					]
+				},
+				{
+					"tag": "figure",
+					"classes": [ "corex-team__member" ],
+					"children": [
+						{ "tag": "img", "classes": [ "corex-team__photo" ] },
+						{
+							"tag": "figcaption",
+							"classes": [ "corex-team__caption" ],
+							"children": [
+								{ "tag": "span", "classes": [ "corex-team__name" ] },
+								{ "tag": "span", "classes": [ "corex-team__role" ] },
+								{ "tag": "p", "classes": [ "corex-team__bio" ] }
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

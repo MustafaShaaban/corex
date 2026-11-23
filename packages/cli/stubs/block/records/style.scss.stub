@@ -1,0 +1,10 @@
+/**
+ * {{ title }}: every value a theme.json token, every property logical
+ * (right to left by default). Style the records the renderer prints
+ * inside this root. Imported by index.js, compiled by @wordpress/scripts
+ * to style-index.css, loaded only where the block is.
+ */
+.{{ css_class }} {
+	padding-block: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink);
+}

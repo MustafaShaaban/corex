@@ -1,0 +1,19 @@
+{
+	"prefix": "corex-stat",
+	"attributes": {
+		"value": "98%",
+		"label": "Uptime",
+		"description": "Measured over the last twelve months."
+	},
+	"tree": [
+		{
+			"tag": "div",
+			"classes": [ "corex-stat" ],
+			"children": [
+				{ "tag": "span", "classes": [ "corex-stat__value" ] },
+				{ "tag": "span", "classes": [ "corex-stat__label" ] },
+				{ "tag": "p", "classes": [ "corex-stat__desc" ] }
+			]
+		}
+	]
+}

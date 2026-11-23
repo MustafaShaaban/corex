@@ -1,10 +1,14 @@
 /**
- * {{ title }} — token-only styling (no hardcoded colors/sizes/fonts) with logical
- * properties (RTL-correct by default). Imported by index.js, compiled by
- * @wordpress/scripts to style-index.css, loaded only when the block renders.
+ * {{ title }}: every value a theme.json token, every property logical
+ * (right to left by default). Imported by index.js, compiled by
+ * @wordpress/scripts to style-index.css, loaded only where the block is.
  */
 .{{ css_class }} {
-	display: block;
-	color: var(--wp--preset--color--foreground);
-	text-align: start;
+	padding-block: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink);
+}
+
+.{{ css_class }}__title {
+	margin-block: var(--wp--preset--spacing--10);
+	font-size: var(--wp--preset--font-size--lg);
 }

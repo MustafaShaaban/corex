@@ -13,9 +13,11 @@ defined('ABSPATH') || exit;
 use Corex\Blocks\BlockRenderer;
 
 /**
- * Server render for the {{ block_name }} block. Keep it thin: build escaped markup
- * from the (bounded) attributes — no data-source calls or business rules here.
- * Inject a service/repository via the container for anything beyond presentation.
+ * Server render for the {{ block_name }} block, edited in place: the editor draws these same
+ * elements (`parity.json` holds their tree). Print one root element with the block's class; the
+ * block registrar adds what an editor set on the block (its anchor, an extra class) to it, so do
+ * not merge them here. Keep it thin: escaped markup from the attributes, no data-source calls or
+ * business rules. Inject a service through the container for more.
  */
 final class {{ class }} implements BlockRenderer
 {
@@ -24,10 +26,17 @@ final class {{ class }} implements BlockRenderer
      */
     public function render(array $attributes, string $content, object $block): string
     {
+        $title = trim((string) ($attributes['title'] ?? ''));
+
+        if ($title === '') {
+            return '';
+        }
+
+        // The title is typed with RichText, so it may carry safe inline HTML.
         return sprintf(
-            '<div class="%s">%s</div>',
+            '<div class="%1$s"><p class="%1$s__title">%2$s</p></div>',
             esc_attr('{{ css_class }}'),
-            esc_html__('{{ title }}', '{{ text_domain }}')
+            wp_kses_post($title)
         );
     }
 }

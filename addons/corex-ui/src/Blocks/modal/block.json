@@ -16,5 +16,5 @@
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Ui\\Blocks\\ModalRenderer" }
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\ModalRenderer", "editor": "pending" }
 }

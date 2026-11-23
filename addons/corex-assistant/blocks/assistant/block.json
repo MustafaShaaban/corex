@@ -11,5 +11,5 @@
 	"supports": { "html": false, "inserter": false },
 	"viewScript": "file:./view.js",
 	"style": "file:./style-view.css",
-	"corex": { "renderer": "Corex\\Assistant\\Front\\AssistantButton" }
+	"corex": { "renderer": "Corex\\Assistant\\Front\\AssistantButton", "editor": "none" }
 }

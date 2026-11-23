@@ -11,5 +11,5 @@
 	"supports": { "html": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Portfolio\\Blocks\\ProjectMetaRenderer" }
+	"corex": { "renderer": "Corex\\Portfolio\\Blocks\\ProjectMetaRenderer", "editor": "pending" }
 }

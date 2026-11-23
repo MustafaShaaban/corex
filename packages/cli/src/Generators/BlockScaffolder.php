@@ -11,20 +11,52 @@ namespace Corex\Cli\Generators;
 defined('ABSPATH') || exit;
 
 use Corex\Cli\Support\Naming;
+use InvalidArgumentException;
 
 /**
- * Scaffolds a complete, registered, working DYNAMIC block from one name — the same
- * shape the build pipeline expects: a block folder (`block.json` + `index.js` +
- * `style.scss`) under `<base>/Blocks/<slug>/`, plus the PHP `BlockRenderer` class
- * beside it at `<base>/Blocks/<Name>Renderer.php`. WP-CLI-independent and headless-testable: it only renders
- * stubs and writes files (no WordPress, no `register_block_type`).
+ * Scaffolds a complete, registered, working dynamic block from one name, in the shape the build
+ * pipeline expects: a block folder under `<base>/Blocks/<slug>/` (`block.json`, `index.js`,
+ * `style.scss`) and the PHP `BlockRenderer` class beside it at `<base>/Blocks/<Name>Renderer.php`.
+ * WP-CLI-independent and headless-testable: it only renders stubs and writes files (no WordPress,
+ * no `register_block_type`).
  *
- * The generated block is discovered by the corex-blocks engine (BlockMap → the build
- * dir, or the source `blocks/` dir headlessly) and previewed in the editor via
- * `<ServerSideRender>`. Run `npm run build` to compile its `index.js`/`style.scss`.
+ * Two shapes, the rule of DECISIONS #656 (spec 136, FR-014):
+ *
+ * - **in-place**, the default: a static block. Its editor draws the same elements as its renderer
+ *   prints, with the title typed on the canvas, and it never previews by the server render. It
+ *   comes with its `parity.json`, the tree both must draw, which the parity tests compare.
+ * - **records** (`--records`): a block that shows records it does not hold. Its editor previews
+ *   the server render inside the block's wrapper, inert, and it has no `parity.json`.
+ *
+ * Each declares its kind in `block.json` (`corex.editor`), which the gate checks. The generated
+ * block is discovered by the corex-blocks engine (BlockMap: the build dir, or the source dir
+ * headlessly). Run `npm run build` to compile its `index.js` and `style.scss`.
  */
 final class BlockScaffolder
 {
+    /** A static block, edited in place (the default). */
+    public const IN_PLACE = 'in-place';
+
+    /** A block that shows records, previewed by the server render (`--records`). */
+    public const RECORDS = 'records';
+
+    /** Each shape's files: the file in the block folder (or `renderer`) => its stub. */
+    private const STUBS = [
+        self::IN_PLACE => [
+            'block.json'  => 'block/block.json',
+            'index.js'    => 'block/index.js',
+            'style.scss'  => 'block/style.scss',
+            'parity.json' => 'block/parity.json',
+            'renderer'    => 'block/renderer',
+        ],
+        self::RECORDS => [
+            'block.json' => 'block/records/block.json',
+            'index.js'   => 'block/records/index.js',
+            'style.scss' => 'block/records/style.scss',
+            'renderer'   => 'block/records/renderer',
+        ],
+    ];
+
     public function __construct(
         private readonly StubRenderer $renderer,
         private readonly Naming $naming,
@@ -32,8 +64,19 @@ final class BlockScaffolder
     ) {
     }
 
-    public function scaffold(string $rawName, GeneratorContext $context, bool $force = false): BlockScaffoldResult
-    {
+    /**
+     * @param string $shape {@see self::IN_PLACE} or {@see self::RECORDS}
+     */
+    public function scaffold(
+        string $rawName,
+        GeneratorContext $context,
+        bool $force = false,
+        string $shape = self::IN_PLACE,
+    ): BlockScaffoldResult {
+        $stubs = self::STUBS[$shape] ?? throw new InvalidArgumentException(
+            sprintf('Unknown block shape "%s"; use %s or %s.', $shape, self::IN_PLACE, self::RECORDS)
+        );
+
         $base = $this->naming->classNameFor($rawName);
         $slug = $this->naming->blockSlugFor($base);
         $title = $this->naming->titleFor($base);
@@ -65,12 +108,10 @@ final class BlockScaffolder
             return BlockScaffoldResult::skipped($blockDir);
         }
 
-        $files = [
-            $blockDir . DIRECTORY_SEPARATOR . 'block.json' => 'block/block.json',
-            $blockDir . DIRECTORY_SEPARATOR . 'index.js'   => 'block/index.js',
-            $blockDir . DIRECTORY_SEPARATOR . 'style.scss' => 'block/style.scss',
-            $rendererPath                                  => 'block/renderer',
-        ];
+        $files = [];
+        foreach ($stubs as $file => $stub) {
+            $files[$file === 'renderer' ? $rendererPath : $blockDir . DIRECTORY_SEPARATOR . $file] = $stub;
+        }
 
         // Render everything before writing anything: an unresolved placeholder must
         // fail loudly without leaving a half-written block on disk.
@@ -79,7 +120,38 @@ final class BlockScaffolder
             $rendered[$path] = $this->renderer->render($this->readStub($stub), $values);
         }
 
+        $stale = $this->removeOtherShapesFiles($blockDir, $shape);
+        if ($stale !== null) {
+            return BlockScaffoldResult::error($blockDir, sprintf('Could not remove: %s', $stale));
+        }
+
         return $this->writeAll($blockDir, $rendered);
+    }
+
+    /**
+     * A block rewritten with `--force` in the other shape loses the files only that shape has: a
+     * records block keeps no `parity.json`, which its editor could not draw and the gate refuses.
+     *
+     * @return string|null the file that could not be removed, or null when all went
+     */
+    private function removeOtherShapesFiles(string $blockDir, string $shape): ?string
+    {
+        $own = array_keys(self::STUBS[$shape]);
+
+        foreach (self::STUBS as $other => $stubs) {
+            if ($other === $shape) {
+                continue;
+            }
+
+            foreach (array_diff(array_keys($stubs), $own, ['renderer']) as $file) {
+                $path = $blockDir . DIRECTORY_SEPARATOR . $file;
+                if (is_file($path) && ! unlink($path)) {
+                    return $path;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

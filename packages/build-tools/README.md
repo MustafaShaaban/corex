@@ -13,10 +13,21 @@ needs two things the editor can only get from JavaScript:
 
 1. **Editor registration.** Without `registerBlockType()` running in the editor,
    WordPress shows *"Your site doesn't include support for this block."* Each block
-   ships an `index.js` that registers the type and previews the server render with
-   [`<ServerSideRender>`](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-server-side-render/)
-   — so the editor preview is byte-for-byte the front-end output, never a second
-   implementation to keep in sync.
+   ships an `index.js` that registers the type and draws the block in the editor,
+   by the rule of DECISIONS #656:
+   - **A static block is edited in place.** Its `edit` draws the same elements as
+     its renderer prints on the page, and its text is typed on the canvas, never in
+     the side panel. Its `parity.json` proves it: the parity tests compare the
+     editor's tree and the page's with it (below). It never imports
+     `@wordpress/server-side-render`.
+   - **A block that shows records keeps a server render.** A list of posts, a trail
+     or a form shows records it does not hold, so its editor previews the server
+     render with
+     [`<ServerSideRender>`](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-server-side-render/)
+     inside the block's own wrapper, inert (it cannot be clicked or submitted).
+
+   `wp corex make:block <Name>` generates the first shape, `--records` the second
+   (`packages/cli/README.md`).
 2. **Compiled, conditional assets.** SCSS compiles to a minified, **auto-RTL**
    stylesheet; `block.json` loads it only where the block renders (Principle VI).
 
@@ -37,8 +48,10 @@ A block folder contains:
 ```
 my-block/
   block.json     # apiVersion 3; editorScript: file:./index.js;
-                 #   style: file:./style-index.css; corex.renderer: <FQCN>
+                 #   style: file:./style-index.css; corex.renderer: <FQCN>;
+                 #   corex.editor: in-place | records | none | pending
   index.js       # editor registration; imports ./style.scss
+  parity.json    # an in-place block's tree, compared by the parity tests
   style.scss     # token-only, logical properties (RTL-correct)
   view.js        # OPTIONAL front-end behaviour (forms submit, Interactivity)
 ```
@@ -81,6 +94,70 @@ The editor's preview is the exception. A `<ServerSideRender>` preview asks WordP
 renderer route (`/wp/v2/block-renderer/...`), and there the previewed block's markup comes
 back unmerged: the editor's own wrapper already carries the attributes. Nothing changes in a block's `index.js`
 for it.
+
+## The editor kind and the parity fixture
+
+Every `block.json` declares how its editor draws it, in `corex.editor` (spec 136, DECISIONS
+#671): `in-place` (drawn with the page's elements and typed on the canvas), `records` (a
+server-rendered preview of records the block does not hold), `none` (no editor), or `pending`
+(its turn has not come; only the blocks on the gate's waiting list in
+`tests/block-editor-kinds.test.js` may say so). The gate fails a block with no kind, an
+`in-place` block with no `parity.json` or whose editor imports
+`@wordpress/server-side-render`, and a `records` block whose editor does not.
+
+An `in-place` block keeps a `parity.json` beside its `block.json`:
+
+```json
+{
+	"prefix": "corex-hero",
+	"attributes": { "title": "Build sites that last", "ctaText": "Start", "ctaUrl": "https://example.test" },
+	"innerBlocks": [ { "name": "core/paragraph", "attributes": {}, "innerHTML": "<p>Text</p>" } ],
+	"needs": [ "post" ],
+	"pageOnly": [ "corex-hero__trap" ],
+	"tree": [
+		{ "tag": "section", "classes": [ "corex-hero" ], "children": [
+			{ "tag": "h2", "classes": [ "corex-hero__title" ] },
+			{ "tag": "a", "classes": [ "corex-hero__cta" ] }
+		] }
+	]
+}
+```
+
+- `prefix`: the block's class. A class of the block is the prefix itself or the prefix followed
+  by `__` or `--`; every other class (`wp-block-*`, `is-selected`) is ignored.
+- `attributes`: what the block is drawn with, every field filled, so the editor's placeholders
+  and the page's optional parts are all drawn.
+- `innerBlocks` (optional): the child blocks, each `name`, `attributes`, `innerHTML` for a
+  static block, and its own `innerBlocks`. The element that holds them is compared; what they
+  draw is compared through their own fixtures.
+- `needs` (optional): what the page needs to draw the block. Only `"post"`, a current post.
+- `pageOnly` (optional): classes of elements only the page draws (a trap field against robots);
+  they are removed from the page's tree before the comparison.
+- `tree`: the expected tree. Each element that carries a class of the block, with its `tag`, its
+  block `classes` and its `children`; an element with no class of the block is transparent and
+  its children take its place.
+
+An element the editor needs and the page does not (a link field, a remove button) carries
+`data-corex-editor-only` and no class of the block; it is skipped with what it holds.
+
+Two tests find every `parity.json` under `plugins/` and `addons/` by search, so a new block needs
+no new test: `tests/Integration/Blocks/ParityTest.php` draws it through WordPress
+(`render_block`), and `tests/block-editor-parity.test.js` renders its `edit` with
+`react-dom/server`. They cover the framework's blocks only. The helper they use is exported as
+`@corex/build-tools/parity`, with one shared set of stand-ins for the `@wordpress/*` packages,
+so an app or client package tests its own blocks the same way. What a client needs:
+
+- `installStandIns( jest )`, once in the test file, before anything else;
+- `blockIn( folder )`, the block as the gate reads it;
+- `gateFailures( block, waiting )`, the gate's rules for one block (an empty list when it passes;
+  `waiting` is a list of blocks allowed to be `pending`, usually none);
+- `editorParityProblem( folder )`, the editor's side of the comparison (an empty string when the
+  editor draws the fixture's tree, or the block, both trees and the markup).
+
+It also exports the pieces they are made of (`parityTree`, `fixtureProblems`, `renderEdit`,
+`registeredBlock`, `editorScriptsOf`, `editorImportsOf`, `findFiles`). The page's side, in PHP, is
+`tests/Support/ParityTree.php` in the framework; a client draws its block through WordPress
+with it, or with a copy of it in its own tests.
 
 ## Commands
 

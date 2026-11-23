@@ -1,7 +1,10 @@
 /**
- * Corex Hero — DYNAMIC block edited INLINE on the canvas (spec 029). The eyebrow/title/subtitle
- * are RichText regions; the CTA and the background image are set in the block toolbar/inspector.
- * Text lives in attributes; the PHP HeroRenderer renders server-side (save: () => null).
+ * Corex Hero: a dynamic block edited in place (spec 029; spec 136, FR-017). The editor draws the
+ * elements HeroRenderer prints: a `section`, the eyebrow, title, subtitle and button typed on the
+ * canvas, the button a link as on the page. Its address field is the editor's own
+ * (`data-corex-editor-only`); the image is chosen in the side panel. `parity.json` is the tree
+ * both must draw.
+ * The text lives in attributes; HeroRenderer renders it on the server (save: () => null).
  */
 import './style.scss';
 
@@ -25,7 +28,7 @@ function Edit( { attributes, setAttributes } ) {
 	const tag = `h${ level || 2 }`;
 
 	return (
-		<div { ...blockProps }>
+		<section { ...blockProps }>
 			<InspectorControls>
 				<PanelBody title={ __( 'Hero', 'corex' ) }>
 					<RangeControl
@@ -101,21 +104,22 @@ function Edit( { attributes, setAttributes } ) {
 					onChange={ ( v ) => setAttributes( { subtitle: v } ) }
 					placeholder={ __( 'Subheadline (optional)', 'corex' ) }
 				/>
-				<div className="corex-hero__cta-edit">
-					<RichText
-						tagName="span"
-						className="corex-hero__cta"
-						value={ ctaText }
-						onChange={ ( v ) => setAttributes( { ctaText: v } ) }
-						placeholder={ __( 'Button label', 'corex' ) }
-					/>
+				<RichText
+					tagName="a"
+					className="corex-hero__cta"
+					value={ ctaText }
+					onChange={ ( v ) => setAttributes( { ctaText: v } ) }
+					placeholder={ __( 'Button label', 'corex' ) }
+					withoutInteractiveFormatting
+				/>
+				<div data-corex-editor-only>
 					<URLInputButton
 						url={ ctaUrl }
 						onChange={ ( url ) => setAttributes( { ctaUrl: url } ) }
 					/>
 				</div>
 			</div>
-		</div>
+		</section>
 	);
 }
 

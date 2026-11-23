@@ -1,0 +1,26 @@
+{
+	"prefix": "corex-cta",
+	"attributes": {
+		"title": "Ready to start?",
+		"text": "Tell us what you are building.",
+		"ctaText": "Get in touch",
+		"ctaUrl": "https://example.test/contact"
+	},
+	"tree": [
+		{
+			"tag": "div",
+			"classes": [ "corex-cta" ],
+			"children": [
+				{
+					"tag": "div",
+					"classes": [ "corex-cta__inner" ],
+					"children": [
+						{ "tag": "h2", "classes": [ "corex-cta__title" ] },
+						{ "tag": "p", "classes": [ "corex-cta__text" ] },
+						{ "tag": "a", "classes": [ "corex-cta__button" ] }
+					]
+				}
+			]
+		}
+	]
+}

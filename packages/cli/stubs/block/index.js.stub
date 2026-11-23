@@ -1,29 +1,36 @@
 /**
- * {{ title }} — editor registration for a DYNAMIC block. The markup is produced
- * server-side by the PHP renderer ({{ class }}); the editor previews it via
- * <ServerSideRender> so the preview matches the front end exactly. Registering the
- * type here is what stops the editor reporting "not supported".
+ * {{ title }}: editor registration for a block edited in place (DECISIONS #656).
+ * The editor draws the same elements as {{ class }} prints on the page, and the
+ * title is typed on the canvas. `parity.json` holds the tree both must draw; the
+ * parity tests compare each with it. The page's markup comes from the renderer
+ * (save returns null), and what an editor sets on the block (its anchor, an
+ * extra class) is added to the root element by the block registrar.
  */
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps } from '@wordpress/block-editor';
-import ServerSideRender from '@wordpress/server-side-render';
+import { useBlockProps, RichText } from '@wordpress/block-editor';
+import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes } ) => {
-		const blockProps = useBlockProps();
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps( { className: '{{ css_class }}' } );
 
-		return (
-			<div { ...blockProps }>
-				<ServerSideRender
-					block={ metadata.name }
-					attributes={ attributes }
-				/>
-			</div>
-		);
-	},
+	return (
+		<div { ...blockProps }>
+			<RichText
+				tagName="p"
+				className="{{ css_class }}__title"
+				value={ attributes.title }
+				onChange={ ( title ) => setAttributes( { title } ) }
+				placeholder={ __( 'Title', '{{ text_domain }}' ) }
+			/>
+		</div>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	// Dynamic block: nothing is saved to post content; the server renders it.
 	save: () => null,
 } );

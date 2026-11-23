@@ -49,5 +49,7 @@ REST/AJAX → Controller (thin) → Service (logic) → Repository (data) → Mo
 ## Blocks as components
 
 Every section of a site is built from Corex blocks — dynamic, server-rendered, token-only.
-There is no hardcoded section markup; a block's PHP renderer produces escaped output and
-the editor previews it with `<ServerSideRender>`.
+There is no hardcoded section markup; a block's PHP renderer produces escaped output. A
+static block is edited in place, its editor drawing the same elements as the page (proven by
+its `parity.json`); a block that shows records previews its server render with
+`<ServerSideRender>` (DECISIONS #656).
