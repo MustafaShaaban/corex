@@ -34,6 +34,22 @@ final class ThemeServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Spec 135 slice 6: a child of the CoreX theme's patterns switch and custom templates.
+        $this->container->singleton(
+            ChildThemeSwitches::class,
+            static fn (ContainerInterface $c): ChildThemeSwitches => new ChildThemeSwitches(),
+        );
+
+        $this->container->singleton(
+            ParentPatternsHider::class,
+            static fn (ContainerInterface $c): ParentPatternsHider => new ParentPatternsHider($c->make(ChildThemeSwitches::class)),
+        );
+
+        $this->container->singleton(
+            ChildCustomTemplates::class,
+            static fn (ContainerInterface $c): ChildCustomTemplates => new ChildCustomTemplates($c->make(ChildThemeSwitches::class)),
+        );
+
         $this->container->singleton(
             BrandResolver::class,
             static fn (ContainerInterface $c): BrandResolver => new BrandResolver($c->make(BootLogger::class)),
@@ -105,5 +121,19 @@ final class ThemeServiceProvider extends ServiceProvider
                 return $themeJson->update_with($resolver->merge($defaults, $result['overrides']));
             }
         );
+
+        // Spec 135 slice 6 (DECISIONS #664, #668): under a child of the CoreX theme that sets
+        // `hidePatterns`, the CoreX theme's patterns leave the inserter once WordPress has registered
+        // them (`init` at 10). Only where patterns are chosen, an admin screen and the REST API the
+        // editors read: marking them loads every pattern file, and a visitor's page needs none of it
+        // (they stay registered either way). A child's custom templates are completed with CoreX's.
+        $patterns = $this->container->make(ParentPatternsHider::class);
+        add_action('init', static function () use ($patterns): void {
+            if (is_admin()) {
+                $patterns->hideFromInserter();
+            }
+        }, 11);
+        add_action('rest_api_init', [$patterns, 'hideFromInserter']);
+        add_filter('wp_theme_json_data_theme', [$this->container->make(ChildCustomTemplates::class), 'filter']);
     }
 }

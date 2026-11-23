@@ -188,19 +188,6 @@ describe( 'a child theme', () => {
 		] );
 	} );
 
-	it( 'fails a declared customTemplates list that lacks an entry of the CoreX theme’s', () => {
-		const [ first, ...rest ] = parent().customTemplates;
-		const child = { ...fullChild(), customTemplates: rest };
-
-		expect( findings( { themeJson: child } ) ).toEqual( [
-			{
-				file: `${ DIR }/theme.json`,
-				list: 'customTemplates',
-				entry: first.name,
-			},
-		] );
-	} );
-
 	it( 'fails a declared templateParts list that lacks an entry of the CoreX theme’s', () => {
 		const parts = parent().templateParts;
 		const child = { ...fullChild(), templateParts: parts.slice( 1 ) };
@@ -229,32 +216,36 @@ describe( 'a child theme', () => {
 		);
 	} );
 
-	it( 'fails a customTemplates list with a client entry before the CoreX theme’s, and passes one after', () => {
-		const own = { name: 'page-acme', title: 'Acme', postTypes: [ 'page' ] };
-		const theirs = parent().customTemplates;
+	const ownTemplate = {
+		name: 'page-acme',
+		title: 'Acme',
+		postTypes: [ 'page' ],
+	};
 
-		expect(
-			findings( {
-				themeJson: {
-					...fullChild(),
-					customTemplates: [ own, ...theirs ],
-				},
-			} ).map( ( { entry } ) => entry )
-		).toEqual(
-			theirs.map(
-				( entry, at ) =>
-					`${ entry.name } (expected at position ${ at + 1 })`
-			)
-		);
-		expect(
-			findings( {
-				themeJson: {
-					...fullChild(),
-					customTemplates: [ ...theirs, own ],
-				},
-			} )
-		).toEqual( [] );
-	} );
+	it.each( [
+		[ 'only the client’s own entry', () => [ ownTemplate ] ],
+		[
+			'the CoreX theme’s entries but its first',
+			( theirs ) => theirs.slice( 1 ),
+		],
+		[
+			'a client entry before the CoreX theme’s',
+			( theirs ) => [ ownTemplate, ...theirs ],
+		],
+		[
+			'a client entry after the CoreX theme’s',
+			( theirs ) => [ ...theirs, ownTemplate ],
+		],
+	] )(
+		'passes a declared customTemplates list holding %s, which corex-core completes (FR-023)',
+		( _, list ) => {
+			const customTemplates = list( parent().customTemplates );
+
+			expect(
+				findings( { themeJson: { ...fullChild(), customTemplates } } )
+			).toEqual( [] );
+		}
+	);
 
 	it( 'passes a font source only the CoreX theme holds, and fails one neither theme holds', () => {
 		const child = fullChild();
