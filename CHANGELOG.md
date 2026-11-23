@@ -82,8 +82,8 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   before a build) through `corex-blocks`, and the plugin has a `package.json` that builds them with
   `@wordpress/scripts`. The `--starter` example uses the same plugin file and its block is discovered like any
   other. A block's editor strings are bound to its own text domain (`corex` for every CoreX block, as before).
-  `verify:dist` fails a site plugin with no build whose block names a file it does not hold (a compiled
-  stylesheet, say); a block written by hand with all its files is left alone.
+  `verify:dist` warns, without failing, about a block of a site plugin that names a file its folder does not
+  hold (a compiled stylesheet, say) and has no build; a block written by hand with all its files is left alone.
 
 ### Client impact
 
@@ -112,10 +112,12 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   - **Spec 135 slice 5 (G-007).** Muva, Perego and Mizzey: no page changes and there is no upgrade step. Their
     site plugins are their own and are not rewritten; Muva and Perego register their blocks with
     `register_block_type` themselves, so the change to how `corex-blocks` binds a block's translations does not
-    reach them, and every CoreX block still binds `corex`. `npm run verify:dist` now fails a package whose site
-    plugin has no `build/blocks` and a block whose `block.json` names a file the plugin does not hold. Muva's
-    blocks are written by hand and hold every file they name, and Perego builds its blocks into `build/`, so it
-    passes for both; a site that packages without building is told to run `npm run build` in its plugin first.
+    reach them, and every CoreX block still binds `corex`. `npm run verify:dist` now prints a `WARN` line, and still
+    passes, for a block of a site plugin that names a file its folder does not hold and has no build. Muva's
+    blocks are written by hand and hold every file they name: no warning. **Perego** will see one per unbuilt
+    block when its pipeline packages without building the site plugin (its `build/Blocks` is git-ignored and
+    its `azure-pipelines.yml` builds only the workspaces): the fix is to run `npm ci` and `npm run build` in
+    `sites/perego/perego-site` before `build:dist`. Nothing fails.
   - **Spec 136 slice 1 (G-005).** No upgrade step, no stored data changed.
     - **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks
       gain an `id` or a class only where an editor set one. Where it shows the account block, that block's root
