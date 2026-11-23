@@ -57,11 +57,7 @@ function shown( selected ) {
 }
 
 function Edit( { attributes, setAttributes } ) {
-	const blockProps = useBlockProps( {
-		className: 'corex-social-share',
-		role: 'group',
-		'aria-label': __( 'Share this post', 'corex' ),
-	} );
+	const blockProps = useBlockProps( { className: 'corex-social-share' } );
 	const selected = attributes.networks || [];
 
 	const toggle = ( id ) => ( checked ) => {

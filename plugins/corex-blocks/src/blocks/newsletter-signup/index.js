@@ -7,6 +7,9 @@
  * what is typed is kept as typed, with no formatting. The button label is typed in a text field
  * inside the page's button, since a browser types into no button that is itself editable.
  *
+ * With the newsletter add-on off, the editor draws the renderer's note that signup is not
+ * available, as the page does; the server says which (NewsletterSignupEditor).
+ *
  * The form never submits in the editor: its button is a plain button, a submit is stopped, and a
  * click on the consent text places the cursor instead of ticking the box. `parity.json` is the
  * tree both must draw. The renderer draws it on the server, wired to the subscribe route
@@ -16,37 +19,64 @@ import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, RichText } from '@wordpress/block-editor';
+import { escapeEditableHTML } from '@wordpress/escape-html';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
 const stop = ( event ) => event.preventDefault();
 
 /**
- * @param {string} text A plain text.
- * @return {string} It as RichText holds it: `&` and `<` escaped, as WordPress escapes editable text.
- */
-const toEditable = ( text ) =>
-	text.replace( /&/g, '&amp;' ).replace( /</g, '&lt;' );
-
-/**
- * @param {string} html What RichText holds, with formats and line breaks turned off.
- * @return {string} Its plain text: entities read back as characters, as WordPress decodes them.
+ * The plain text of what RichText holds: a paste can bring markup that formats are not, so tags
+ * are dropped (a line break becomes a space) and entities read back as characters. The renderer
+ * escapes the attribute, so markup kept here would print as text on the page.
+ *
+ * @param {string} html What RichText holds.
+ * @return {string} Its text.
  */
 function toPlain( html ) {
-	const area = document.createElement( 'textarea' );
-	area.innerHTML = html;
+	const parsed = new window.DOMParser().parseFromString(
+		html.replace( /<br\s*\/?>/gi, ' ' ),
+		'text/html'
+	);
 
-	return area.value;
+	return parsed.body.textContent || '';
 }
 
+/**
+ * Whether the newsletter add-on is on, as the server told the editor
+ * (`window.corexNewsletterSignup`, written by NewsletterSignupEditor). With nothing said the form
+ * is drawn, as a site with the add-on draws it.
+ *
+ * @return {boolean} False only when the server said the add-on is off.
+ */
+const available = () => window.corexNewsletterSignup?.available !== false;
+
 function Edit( { attributes, setAttributes } ) {
+	const isAvailable = available();
 	const blockProps = useBlockProps( {
-		className: 'corex-newsletter-signup',
+		className: isAvailable
+			? 'corex-newsletter-signup'
+			: 'corex-newsletter-signup corex-newsletter-signup--unavailable',
 	} );
+
+	if ( ! isAvailable ) {
+		// The renderer's own note, as the page prints it with the add-on off.
+		return (
+			<div { ...blockProps }>
+				<p>
+					{ __(
+						'Newsletter signup is not available on this site yet.',
+						'corex'
+					) }
+				</p>
+			</div>
+		);
+	}
+
 	// A plain-text field typed on the canvas: RichText holds HTML, the attribute holds the text.
 	const field = ( name ) => ( {
 		identifier: name,
-		value: toEditable( attributes[ name ] || '' ),
+		value: escapeEditableHTML( attributes[ name ] || '' ),
 		onChange: ( value ) => setAttributes( { [ name ]: toPlain( value ) } ),
 		allowedFormats: [],
 		disableLineBreaks: true,
@@ -78,6 +108,7 @@ function Edit( { attributes, setAttributes } ) {
 					<button
 						type="button"
 						className="corex-newsletter-signup__submit"
+						tabIndex={ -1 }
 					>
 						<RichText
 							{ ...field( 'buttonLabel' ) }

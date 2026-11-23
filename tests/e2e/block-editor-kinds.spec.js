@@ -1,19 +1,21 @@
 /**
- * Spec 136, slice 4 (User Story 2 scenarios 2 to 4, FR-018 to FR-020, SC-008): the blocks drawn in
- * place and the records blocks, as the block editor draws them.
+ * Spec 136, slice 4 (User Story 2 scenarios 2 to 4, FR-018 to FR-020): the blocks drawn in place
+ * and the records blocks, as the block editor draws them. The browser check the UI steps of
+ * `AGENTS.md` ask of a slice a person sees; the quality run of SC-008 is separate.
  *
  * A draft holds copyright, newsletter signup and social share (in place), posts, breadcrumbs and
- * jobs (records), and a form with no form chosen, each saved as a self-closing dynamic block, as a
- * page saved before this slice holds them. In the editor:
+ * jobs (records), a form with no form chosen and a form that names a registered form that does not exist,
+ * each saved as a self-closing dynamic block, as a page saved before this slice holds them. In
+ * the editor:
  * - every block loads without a validation warning;
  * - the three in-place blocks are drawn with no request to the server's block renderer, and the
  *   newsletter's heading, button label and consent text are typed where they stand, while its
- *   form never submits;
- * - the records blocks are previewed inside their wrapper, inert, and their loading and empty
- *   states are WordPress's Placeholder with their words (the renderer's answer is held back or
- *   emptied for that, by the test);
- * - the form asks which form on the canvas, and a choice there sets the block's attribute and
- *   draws the form.
+ *   form never submits (a submit the browser sends is stopped);
+ * - the records blocks are previewed inside their wrapper, inert; the posts preview is held back
+ *   by the test to show its loading state, and the form whose form is gone, which its renderer
+ *   prints as nothing, shows the empty state;
+ * - the form asks which form on the canvas, a choice there sets the block's attribute and draws
+ *   the form, and a person the flows route refuses is told so.
  *
  * The spec makes the draft and removes it. ENVIRONMENT-GATED: needs the site at COREX_BASE_URL.
  */
@@ -34,6 +36,10 @@ const CONTENT = [
 	block( 'corex/breadcrumbs' ),
 	block( 'corex/jobs', { count: 1 } ),
 	block( 'corex/form', { formSlug: '' } ),
+	block( 'corex/form', {
+		source: 'registered',
+		formSlug: 'cx136-no-such-form',
+	} ),
 ].join( '' );
 
 const made = { draft: null };
@@ -155,6 +161,10 @@ test( 'FR-018: the in-place blocks are drawn without the server and load without
 		)
 	).toBeVisible( { timeout: 30_000 } );
 
+	// The server told the newsletter's editor the add-on is on (this site runs it), so the form is drawn.
+	expect( await page.evaluate( () => window.corexNewsletterSignup ) ).toEqual(
+		{ available: true }
+	);
 	await expect( canvas.locator( '.block-editor-warning' ) ).toHaveCount( 0 );
 	expect(
 		asked.filter( ( name ) =>
@@ -209,10 +219,24 @@ test( 'FR-018: the newsletter is typed where it stands and never submits', async
 		)
 	).not.toBeChecked();
 
-	// A submit of the form, as the browser sends it, is stopped in the editor.
-	await signup.locator( 'form' ).evaluate( ( form ) => form.requestSubmit() );
-	await expect( page ).toHaveURL( /post\.php\?post=\d+&action=edit/ );
-	await expect( signup.locator( 'form' ) ).toBeVisible();
+	// A submit the browser sends is stopped in the editor: read where the page would hear it, on
+	// the canvas's window, after React's handler has run.
+	const prevented = await signup.locator( 'form' ).evaluate(
+		( form ) =>
+			new Promise( ( resolve ) => {
+				form.ownerDocument.defaultView.addEventListener(
+					'submit',
+					( event ) => {
+						resolve( event.defaultPrevented );
+						// The check is done: whatever the editor did, stop the canvas leaving.
+						event.preventDefault();
+					},
+					{ once: true }
+				);
+				form.requestSubmit();
+			} )
+	);
+	expect( prevented ).toBe( true );
 	expect( subscribed ).toEqual( [] );
 } );
 
@@ -265,27 +289,52 @@ test( 'FR-019: a records preview is inert inside its wrapper, and its loading st
 test( 'FR-019: when the server draws nothing, a records block says so', async ( {
 	page,
 } ) => {
+	const canvas = await openDraft( page );
+	// The second form names a registered form that does not exist; its renderer prints nothing.
+	// (A flow that does not exist is not this case: editors are shown a note about it.)
+	const gone = canvas.locator( '.wp-block-corex-form' ).nth( 1 );
+
+	await expect( gone.locator( '.components-placeholder' ) ).toContainText(
+		'This form is not available. Choose another in the block settings.',
+		{ timeout: 30_000 }
+	);
+} );
+
+test( 'FR-020: a person who may not list the flows is told so on the canvas', async ( {
+	page,
+} ) => {
+	// The flows route's answer to someone without corex_manage_forms, as the site gives it.
 	await page.route(
-		( url ) => rendererBlock( url.href ) === 'corex/jobs',
+		( url ) => decodeURIComponent( url.href ).includes( 'corex/v1/flows' ),
 		( route ) =>
 			route.fulfill( {
-				status: 200,
+				status: 403,
 				contentType: 'application/json',
-				body: JSON.stringify( { rendered: '' } ),
+				body: JSON.stringify( {
+					code: 'forbidden',
+					message:
+						'You do not have permission to perform this action.',
+					data: { status: 403 },
+				} ),
 			} )
 	);
 	const canvas = await openDraft( page );
+	const chooser = canvas
+		.locator( '.wp-block-corex-form' )
+		.first()
+		.locator( '.components-placeholder' );
 
-	await expect(
-		canvas.locator( '.wp-block-corex-jobs .components-placeholder' )
-	).toContainText( 'No open positions to show.', { timeout: 30_000 } );
+	await expect( chooser ).toContainText(
+		'You cannot see the list of forms. Ask someone who manages forms to choose one.'
+	);
+	await expect( chooser ).not.toContainText( 'No published forms yet.' );
 } );
 
 test( 'FR-020: the form asks which form on the canvas, and a choice draws it', async ( {
 	page,
 } ) => {
 	const canvas = await openDraft( page );
-	const form = canvas.locator( '.wp-block-corex-form' );
+	const form = canvas.locator( '.wp-block-corex-form' ).first();
 	const chooser = form.locator( '.components-placeholder' );
 
 	await expect( chooser ).toContainText(

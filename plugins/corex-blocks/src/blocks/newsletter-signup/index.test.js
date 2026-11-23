@@ -138,6 +138,33 @@ describe( 'newsletter signup block: drawn in place (FR-018)', () => {
 		} );
 	} );
 
+	test.each( [
+		[ 'bold text', '<strong>Big</strong> news', 'Big news' ],
+		[
+			'a link',
+			'Read <a href="https://example.test/terms">our terms</a> first',
+			'Read our terms first',
+		],
+		[ 'a line break', 'One<br>Two', 'One Two' ],
+	] )(
+		'FR-018: a paste of %s stores its text, with no markup',
+		( _what, pasted, stored ) => {
+			[ 'heading', 'buttonLabel', 'consentText' ].forEach(
+				( attribute ) => {
+					const setAttributes = jest.fn();
+					field(
+						edit( {}, setAttributes ),
+						attribute
+					).props.onChange( pasted );
+
+					expect( setAttributes ).toHaveBeenCalledWith( {
+						[ attribute ]: stored,
+					} );
+				}
+			);
+		}
+	);
+
 	test( 'FR-018: the form does not submit in the editor', () => {
 		const element = edit( {} );
 		const [ form ] = collect( element, 'form' );
@@ -151,6 +178,7 @@ describe( 'newsletter signup block: drawn in place (FR-018)', () => {
 			'corex-newsletter-signup__submit'
 		);
 		expect( submit.props.type ).toBe( 'button' );
+		expect( submit.props.tabIndex ).toBe( -1 );
 		expect( collect( submit, RichTextMock )[ 0 ].props.identifier ).toBe(
 			'buttonLabel'
 		);
@@ -168,6 +196,35 @@ describe( 'newsletter signup block: drawn in place (FR-018)', () => {
 		consent.props.onClick( event );
 
 		expect( event.preventDefault ).toHaveBeenCalled();
+	} );
+
+	describe( 'with the newsletter add-on off', () => {
+		beforeEach( () => {
+			window.corexNewsletterSignup = { available: false };
+		} );
+
+		afterEach( () => {
+			delete window.corexNewsletterSignup;
+		} );
+
+		test( "FR-018: draws the renderer's note that signup is not available, and no form", () => {
+			const element = edit( { heading: 'Letters' } );
+
+			expect( element.props.className ).toBe(
+				'corex-newsletter-signup corex-newsletter-signup--unavailable'
+			);
+			expect( collect( element, 'form' ) ).toEqual( [] );
+			expect( collect( element, 'p' )[ 0 ].props.children ).toBe(
+				'Newsletter signup is not available on this site yet.'
+			);
+		} );
+	} );
+
+	test( 'with the add-on on, or nothing said about it, the form is drawn', () => {
+		window.corexNewsletterSignup = { available: true };
+		expect( collect( edit( {} ), 'form' ).length ).toBe( 1 );
+		delete window.corexNewsletterSignup;
+		expect( collect( edit( {} ), 'form' ).length ).toBe( 1 );
 	} );
 
 	test( 'draws without the server', () => {

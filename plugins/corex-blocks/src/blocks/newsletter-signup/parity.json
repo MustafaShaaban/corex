@@ -1,5 +1,6 @@
 {
 	"prefix": "corex-newsletter-signup",
+	"needs": [ "plugin:corex-newsletter/corex-newsletter.php" ],
 	"attributes": {
 		"heading": "Letters from the studio",
 		"buttonLabel": "Sign me up",

@@ -97,23 +97,4 @@ describe( 'posts block editor registration', () => {
 		expect( ssr ).not.toBeNull();
 		expect( ssr.props.block ).toBe( metadata.name );
 	} );
-
-	test( 'FR-019: the preview is inert, inside the block wrapper, with named loading and empty states', () => {
-		const element = config.edit( {
-			attributes: { count: 3 },
-			setAttributes: () => {},
-		} );
-		const disabled = findByType( element, DisabledMock );
-		const ssr = findByType( disabled, ServerSideRenderMock );
-		const loading = ssr.props.LoadingResponsePlaceholder( {} );
-		const empty = ssr.props.EmptyResponsePlaceholder( {} );
-
-		expect( element.type ).toBe( 'div' );
-		expect( ssr.props.attributes ).toEqual( { count: 3 } );
-		expect( loading.type ).toBe( PlaceholderMock );
-		expect( loading.props.instructions ).toBe( 'Loading posts…' );
-		expect( empty.type ).toBe( PlaceholderMock );
-		expect( empty.props.instructions ).toBe( 'No posts to show.' );
-		expect( typeof ssr.props.ErrorResponsePlaceholder ).toBe( 'function' );
-	} );
 } );

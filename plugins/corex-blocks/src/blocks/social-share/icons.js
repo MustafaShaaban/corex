@@ -4,8 +4,8 @@
  * the text beside each glyph.
  */
 
-/** Each glyph's path, by name: a network, `copy` or `share`. */
-const PATHS = {
+/** Each glyph's path, by name: a network, `copy` or `share`. A test holds them to the renderer's. */
+export const ICON_PATHS = {
 	x: 'M4 3l6.5 8.5L4.3 21H6l5.4-6.6L16 21h4l-6.8-9L19.6 3H18l-5 6.1L8.5 3H4z',
 	facebook: 'M15 8h2V5h-2a3 3 0 00-3 3v2H9v3h3v6h3v-6h2.2l.4-3H15V8z',
 	linkedin:
@@ -33,7 +33,7 @@ export function ShareIcon( { name } ) {
 			aria-hidden="true"
 			focusable="false"
 		>
-			<path d={ PATHS[ name ] } />
+			<path d={ ICON_PATHS[ name ] } />
 		</svg>
 	);
 }

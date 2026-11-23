@@ -22607,3 +22607,30 @@ session). His approval also approves #679, which reverses #674's child-blocks bu
   button keeps #677's place and 96px clearance and stays last in the keyboard order.
 - A site block's own motion is the site's to build and review; CoreX's motion rule covers CoreX's own parts.
 - The record is the D-3a addendum in `design/handoffs/spec-136-hero.md`. Slice 9 builds FR-057.
+
+## #682 -- A new form block asks for its form; a saved one keeps the contact form (spec 136, slice 4)
+
+**Date:** 2026-11-23. **Spec:** 136, slice 4 (FR-018 to FR-020; gap G-003). **Decided:** by the spec 136 session,
+after corex-reviewer's round.
+
+- **The form block keeps `contact` as its `block.json` default.** Every `<!-- wp:corex/form /-->` saved on Muva,
+  Perego or Mizzey, and every pattern that names no form, keeps printing the contact form, byte for byte. A
+  default inserter variation sets `formSlug` to an empty string, so a form block inserted from now on asks for its
+  form on the canvas (WordPress's Placeholder and selects) instead of showing the contact form. Changing the
+  `block.json` default would have emptied every saved block; a test holds the default at `contact`.
+- **The chooser tells failed from empty:** a person who may not list flows is told so, not that none exist.
+- **The newsletter's editor draws what the page draws**, including the "not available" note when the newsletter
+  add-on is off (it is optional, Principle IX). Its bot trap field and status line are drawn as empty elements,
+  because the parity check refuses a block class in `pageOnly`. Its three texts are plain: what is typed or
+  pasted is stored as text, since the renderer escapes it.
+- **Records states are WordPress's own** (Placeholder, Spinner, Notice) with CoreX's words: "Loading posts…",
+  "No posts to show.", "The preview did not load." and the like. The helper lives in corex-ui and is repeated
+  inline in jobs and the form, because a plugin never imports another plugin's source and `@corex/build-tools` is
+  for builds and tests, not runtime code.
+  The corex-careers and corex-forms copies build on their own; one test fails if a copy differs from corex-ui's.
+- **A parity fixture can need a plugin:** `"needs": [ "plugin:<folder>/<file>.php" ]` makes the PHP parity test
+  fail, naming the plugin, when it is off. The newsletter's fixture needs `corex-newsletter`. The editor learns
+  whether that add-on is active from `window.corexNewsletterSignup`, written before its editor script by a class
+  built only when the block editor loads.
+- The new editor strings are translated into Arabic in this slice; the owner's Arabic review checks them before
+  the tag.

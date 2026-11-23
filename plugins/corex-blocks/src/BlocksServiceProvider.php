@@ -90,6 +90,12 @@ final class BlocksServiceProvider extends ServiceProvider
         // Sample content in shipped patterns: hidden from visitors, labelled for editors (spec 115).
         $this->container->make(SampleBlocks::class)->register();
 
+        // The newsletter signup's editor draws the page's note when the add-on is off (spec 136, FR-018).
+        // Made only in the block editor, so no other request builds its renderer.
+        add_action('enqueue_block_editor_assets', function (): void {
+            $this->container->make(NewsletterSignupEditor::class)->enqueue();
+        });
+
         add_action('init', function (): void {
             $this->container->make(BlockFolder::class)->register(dirname(__DIR__) . '/build/blocks', __DIR__ . '/blocks');
         });

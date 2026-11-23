@@ -10,6 +10,7 @@ import { renderToStaticMarkup } from 'react-dom/server.node';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { createElement } from 'react';
 import metadata from './block.json';
+import { ICON_PATHS } from './icons';
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
 jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
@@ -56,9 +57,6 @@ describe( 'social share block: drawn in place (FR-018)', () => {
 			...bar.querySelectorAll( '.corex-social-share__link' ),
 		];
 
-		expect(
-			bar.querySelector( '.corex-social-share' ).getAttribute( 'role' )
-		).toBe( 'group' );
 		expect( links.map( ( link ) => link.className ) ).toEqual( [
 			'corex-social-share__link corex-social-share__link--x',
 			'corex-social-share__link corex-social-share__link--email',
@@ -90,4 +88,22 @@ describe( 'social share block: drawn in place (FR-018)', () => {
 			bar.querySelector( '.corex-social-share__native' ).hidden
 		).toBe( true );
 	} );
+} );
+
+test( "the glyphs are the renderer's, path for path", () => {
+	const fs = require( 'fs' );
+	const path = require( 'path' );
+	const renderer = fs.readFileSync(
+		path.resolve( __dirname, '../../SocialShareRenderer.php' ),
+		'utf8'
+	);
+	const printed = Object.fromEntries(
+		Array.from(
+			renderer.matchAll( /'([a-z]+)'\s*=>\s*'<path d="([^"]+)"\/>'/g ),
+			( [ , name, d ] ) => [ name, d ]
+		)
+	);
+
+	expect( Object.keys( printed ) ).toHaveLength( 7 );
+	expect( ICON_PATHS ).toEqual( printed );
 } );

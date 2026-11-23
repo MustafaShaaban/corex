@@ -5,6 +5,8 @@
  * form builder or in code. With none chosen the canvas asks which, in WordPress's own Placeholder
  * and selects, and the page prints nothing. With one chosen the editor previews the server render
  * (FormBlockRenderer) inside the block's wrapper, inert: the preview cannot be clicked or sent.
+ * The chooser tells a list that failed, or that the person may not see, from an empty one
+ * (`./choices.js`).
  *
  * A block inserted from the inserter starts with no form (its default variation empties
  * `formSlug`). A block saved before keeps block.json's defaults, so one saved with no form named
@@ -24,41 +26,23 @@ import {
 	Spinner,
 } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
-import { useState, useEffect } from '@wordpress/element';
-import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
-import { flowOptions, normalizePublishedFlows } from '../flowBlockEditor.js';
+import { flowOptions } from '../flowBlockEditor.js';
+import { recordsStates } from '../records-states';
+import { useChoices } from './choices';
 
 const LABEL = __( 'Form', 'corex' );
 
 /** The preview's states, made once so the same components are used on every render. */
-const STATES = {
-	// While a later preview loads, the last one stays in place.
-	LoadingResponsePlaceholder: ( { children } ) =>
-		children || (
-			<Placeholder
-				label={ LABEL }
-				instructions={ __( 'Loading the form…', 'corex' ) }
-			>
-				<Spinner />
-			</Placeholder>
-		),
-	EmptyResponsePlaceholder: () => (
-		<Placeholder
-			label={ LABEL }
-			instructions={ __(
-				'This form is not available. Choose another in the block settings.',
-				'corex'
-			) }
-		/>
+const STATES = recordsStates( {
+	label: LABEL,
+	loading: __( 'Loading the form…', 'corex' ),
+	empty: __(
+		'This form is not available. Choose another in the block settings.',
+		'corex'
 	),
-	ErrorResponsePlaceholder: () => (
-		<Notice status="warning" isDismissible={ false }>
-			{ __( 'The preview did not load.', 'corex' ) }
-		</Notice>
-	),
-};
+} );
 
 /**
  * Whether the block names a form the renderer can look for: a flow by id or slug, or a
@@ -79,54 +63,27 @@ function hasForm( { flowId, flowSlug, formSlug } ) {
 }
 
 /**
- * The forms the block can name from its source, fetched once per source.
- *
- * @param {string} source `flow` or `registered`.
- * @return {Array|null} The flows or forms; null while they load.
- */
-function useChoices( source ) {
-	const [ choices, setChoices ] = useState( null );
-
-	useEffect( () => {
-		const path =
-			source === 'flow'
-				? '/corex/v1/flows?state=published'
-				: '/corex/v1/forms';
-		apiFetch( { path } )
-			.then( ( response ) => {
-				if ( source === 'flow' ) {
-					setChoices( normalizePublishedFlows( response ) );
-					return;
-				}
-				setChoices( Array.isArray( response ) ? response : [] );
-			} )
-			.catch( () => setChoices( [] ) );
-	}, [ source ] );
-
-	return choices;
-}
-
-/**
  * The two selects that choose the form: its source, then the flow or the registered form. Drawn
  * in the side panel always, and on the canvas while no form is chosen.
  *
  * @param {Object}                       props
  * @param {Object}                       props.attributes    The block's attributes.
  * @param {(attributes: Object) => void} props.setAttributes Sets them.
- * @param {Array|null}                   props.choices       What the source offers; null while it loads.
+ * @param {Object}                       props.choices       What the source offers, as `useChoices()` gives it.
  * @return {Element} The selects; the second waits for the choices.
  */
 function formFields( { attributes, setAttributes, choices } ) {
 	const source = attributes.source || 'flow';
+	const items = choices.status === 'ready' ? choices.items : [];
 	const options =
 		source === 'flow'
-			? flowOptions( choices || [] )
+			? flowOptions( items )
 			: [
 					{
 						label: __( 'Select a registered form…', 'corex' ),
 						value: '',
 					},
-					...( choices || [] ).map( ( form ) => ( {
+					...items.map( ( form ) => ( {
 						label: form.label,
 						value: form.slug,
 					} ) ),
@@ -161,9 +118,8 @@ function formFields( { attributes, setAttributes, choices } ) {
 					} )
 				}
 			/>
-			{ choices === null ? (
-				<Spinner />
-			) : (
+			{ choices.status === 'loading' && <Spinner /> }
+			{ choices.status === 'ready' && (
 				<SelectControl
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
@@ -184,6 +140,46 @@ function formFields( { attributes, setAttributes, choices } ) {
 				/>
 			) }
 		</>
+	);
+}
+
+/**
+ * What the chooser says about the list it offers: that there is nothing to choose, that the person
+ * may not see the list, or that it failed. Nothing while it loads or offers something.
+ *
+ * @param {string} source  `flow` or `registered`.
+ * @param {Object} choices What the source offers, as `useChoices()` gives it.
+ * @return {?Element} A Notice, or nothing.
+ */
+function choicesNotice( source, choices ) {
+	if ( choices.status === 'ready' && choices.items.length === 0 ) {
+		return (
+			<Notice status="info" isDismissible={ false }>
+				{ source === 'flow'
+					? __( 'No published forms yet.', 'corex' )
+					: __( 'No registered forms yet.', 'corex' ) }
+			</Notice>
+		);
+	}
+	if ( choices.status !== 'failed' ) {
+		return null;
+	}
+	if ( choices.forbidden ) {
+		return (
+			<Notice status="warning" isDismissible={ false }>
+				{ __(
+					'You cannot see the list of forms. Ask someone who manages forms to choose one.',
+					'corex'
+				) }
+			</Notice>
+		);
+	}
+
+	return (
+		<Notice status="warning" isDismissible={ false }>
+			{ __( 'The list of forms did not load.', 'corex' ) }
+			{ choices.message ? ` ${ choices.message }` : '' }
+		</Notice>
 	);
 }
 
@@ -216,13 +212,7 @@ function Edit( { attributes, setAttributes } ) {
 					) }
 				>
 					{ fields }
-					{ choices && choices.length === 0 && (
-						<Notice status="info" isDismissible={ false }>
-							{ source === 'flow'
-								? __( 'No published forms yet.', 'corex' )
-								: __( 'No registered forms yet.', 'corex' ) }
-						</Notice>
-					) }
+					{ choicesNotice( source, choices ) }
 				</Placeholder>
 			) }
 		</div>
@@ -236,12 +226,6 @@ registerBlockType( metadata.name, {
 	variations: [
 		{
 			name: 'corex-form',
-			title: __( 'Corex Form', 'corex' ),
-			description: __(
-				'Renders a registered Corex form (server-rendered, secured submit).',
-				'corex'
-			),
-			icon: metadata.icon,
 			isDefault: true,
 			scope: [ 'inserter' ],
 			attributes: { formSlug: '' },

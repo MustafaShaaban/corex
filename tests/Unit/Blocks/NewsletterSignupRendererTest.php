@@ -113,3 +113,15 @@ it('carries the provider check inside the form, after its consent, for the signu
         ->and(strpos($html, 'name="captcha_token"'))->toBeGreaterThan(strpos($html, 'name="consent"'))
         ->and(strpos($html, 'name="captcha_token"'))->toBeLessThan(strpos($html, '</form>'));
 });
+
+it('answers whether signup is available, by the same check that decides what it draws (spec 136, FR-018)', function (bool $active) {
+    Functions\when('get_option')->alias(static fn (string $name, $default = false) => $name === 'active_plugins'
+        ? ($active ? ['corex-newsletter/corex-newsletter.php'] : [])
+        : $default);
+    $renderer = new NewsletterSignupRenderer(
+        new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+        new NoFormChallenge(),
+    );
+
+    expect($renderer->available())->toBe($active);
+})->with([true, false]);
