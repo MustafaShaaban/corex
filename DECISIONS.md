@@ -22150,6 +22150,70 @@ The two header patterns that hold a raw HTML search get WordPress's Search block
 The one search overlay with its keyboard shortcut is US-NAV-09 (R4.1) and is not built here. Headers saved earlier
 keep the raw search and the script that opens it. Blackstone's header has no search (its decision 6).
 
+## #696 -- The header system's drawings are approved (spec 137)
+
+**Date:** 2026-11-22. **Spec:** 137, slices 2, 4 and 5. **Decided:** by the owner, in session, in three steps, each
+from a picture with a button.
+
+- **Step 1, the phone menu:** the bar shows the logo and the "Menu" button only; the open menu holds the links,
+  mega panels and sub-menus as groups that open in place one at a time, a Language row, the utility links and the
+  one strong button.
+- **Step 2, the utility row and the language switcher:** the row sits on the quiet band above the bar. The
+  switcher has a menu form (the kit's Dropdown, every language listed, the current one ticked) and a list form
+  (links in a row, the current one marked by a tint, a tick and its weight, and not a link).
+- **Step 3, search and the phone action bar:** search is an icon button that opens a field over the end of the
+  menu, with no visible label; the action bar is the strong button, full width, at the foot of a phone screen.
+- The record is `design/handoffs/header-system.md`. The boards stay on the owner's private canvas (the
+  repository keeps no design-tool export); the rules the kit lacked are kept as
+  `specs/137-header-system/design/header-system.css.txt`. No token was added.
+- FR-032 of the spec was brought into step with the drawing before the approval: the menu lists every language,
+  not only the others.
+
+*Owed to the design system:* these rules, the Arabic face on four classes that set the heading face themselves,
+and a mark for the current page in the phone menu.
+
+## #677 -- The hero's drawing is approved (spec 136, design D-3)
+
+**Date:** 2026-11-23. **Spec:** 136, slice 9 (G-011; US-BLK-06, US-BLK-14). **Decided:** by the owner, in session,
+from the pictures of 21 artboards with a button ("Approve hero").
+
+- **Layouts:** Centred (media behind, text centred or at the start) and Split (text at the start, media at the
+  end of the line in a frame). A second action as the kit's outline button or text link.
+- **The scrim** has four settings: none (the default, today's drawing, with a warning in the editor), and light,
+  medium and strong, the `band` colour at 75, 82 and 90%. Any scrim makes the hero the kit's dark band. 75% is
+  the floor because it holds the kit's contrast on a pure white picture.
+- **The Pause button** is the kit's outline button with an icon and a word, 48px tall, in the bottom corner at
+  the end of the line, last in the keyboard order; a hero with a video keeps 96px under its content so the
+  button never covers the actions. In Split it sits in the frame's corner.
+- The record is `design/handoffs/spec-136-hero.md`. The boards stay on the owner's private canvas.
+
+*Owed to the design system before slice 9 is built:* three scrim tokens, a pause and a play icon, a 44px minimum
+for the standalone link in the hero, and three Arabic fixes the drawing made to follow the kit's written rules.
+
+## #679 -- The hero holds child blocks in one slot (gap G-051); the slideshow stays out
+
+**Date:** 2026-11-23. **Spec:** 136, slice 9 (G-051, with G-011). **Decided:** by the gap programme's
+coordinating session with the spec 136 session, under the owner's request of 2026-11-23 that features a client
+site needs are built in CoreX. The owner's approval of the addendum board D-3a is also his yes to this decision.
+
+**What it changes.** #674 said: "G-011's row also wishes for child blocks inside the hero and a slideshow
+background. Neither is taken." This reverses that bullet for child blocks only. The slideshow background stays
+out. #674 is not rewritten; this entry stands beside it.
+
+**Why.** The Blackstone home hero (HOM-1) holds a site block, its headline scenes, inside the hero's media and
+scrim (gap G-051). Without a slot the site would need a hero block of its own, which duplicates CoreX's.
+
+**Decided.**
+- One slot for child blocks, inside the hero's media and scrim, where the approved addendum board D-3a places it.
+- No block is allowed in it by default. A site names the blocks it allows through WordPress's `allowedBlocks`
+  for `corex/hero`.
+- The block follows #675: `save` returns its inner blocks and the renderer prints them in the slot. A hero saved
+  with no children stays valid and renders exactly as before, so no deprecation is needed and Muva and Perego
+  are not changed.
+- The scrim, the contrast of the approved drawing and the Pause button's place and clearance hold over what the
+  slot holds; the motion of a site's own block is the site's.
+- If D-3a is not approved when slice 9 starts, slice 9 ships without the slot and G-051 follows as its own slice.
+
 ## #678 -- How the parity standard is built: shared helpers in build-tools, stand-ins that draw what parity compares, two shapes from make:block
 
 **Date:** 2026-11-23. **Spec:** 136, slice 3 (G-003; FR-010 to FR-017, SC-004). **Branch:**

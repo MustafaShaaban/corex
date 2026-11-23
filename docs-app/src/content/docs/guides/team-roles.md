@@ -53,5 +53,5 @@ See [Deploy & distribute](/guides/deployment/) and the handbook deployment pages
 
 ## Required handoff format
 
-Every working response ends with `SUMMARY / WORKSPACE / MODE / SPEC KIT STATUS / VERIFICATION / BLOCKERS /
+Every working response ends with `SUMMARY / WORKSPACE / MODE / SPEC STATUS / VERIFICATION / BLOCKERS /
 RECOMMENDED NEXT STEP` and a `--- NEXT STEP ---` block — see `AGENTS.md` / `../../../../../docs/internal/COREX-WORKING-GUIDE.md` §G.5.

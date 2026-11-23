@@ -96,8 +96,8 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 
 | Gap | Effect | What | Wave | Spec | Slice | PR | Tag | State |
 |---|---|---|---|---|---|---|---|---|
-| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | #495 | | built: pull request open. Rests on nothing `main` gained after v0.48.1 (#661) |
-| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | | | open: spec reviewed. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
+| G-001 | Low | A client fork with no `origin` is taken for the framework repository | 1 | 135 | 1 | #495 | | merged into `main` (`819f0be1`). Rests on nothing `main` gained after v0.48.1 (#661) |
+| G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | #500 | | built: pull request open. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
 | G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | slice 3 in review: block kinds, the parity tests and gate, `make:block` in place by default, hero, cta, stat and team edited like their page (DECISIONS #671, #678); slice 4 and the containers to come |
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
 | G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | #496 (slice 1) | | slice 1 in review: anchor, alignment and class reach the page (DECISIONS #670, #676); 2a and 2b to come |
@@ -106,9 +106,9 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
 | G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
-| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written |
+| G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written; the hero drawing (D-3) approved 2026-11-23 (DECISIONS #677, `design/handoffs/spec-136-hero.md`); slice 9 waits on slice 3 and on the design system gaining its scrim tokens and icons |
 | G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
-| G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | spec written; five slices: 1 one width, 2 language switcher, 3 mega menu item, 4 phone menu, 5 utility menu, search and patterns | spec: #493 | | open: spec reviewed; slices 1 and 3 need no new drawing, 2, 4 and 5 wait for the approved drawings (DECISIONS #690 to #695) |
+| G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | spec written; five slices: 1 one width, 2 language switcher, 3 mega menu item, 4 phone menu, 5 utility menu, search and patterns | spec: #493 | | open: spec merged (`4d0a2b8d`); every drawing approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`, DECISIONS #696); no slice built yet, building waits for a free slot (DECISIONS #690 to #696) |
 | G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
 | G-015 | Medium | No in-page section navigation | then | 150 | | | | open |
 | G-016 | Medium | Blocks print images with no `srcset` or size | then | 150 | | | | open |
@@ -141,6 +141,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-043 | Medium | The client site workflow has no speed, accessibility or secret checks | then | 152 | | | | open |
 | G-044 | Low | No uninstall routine | then | 152 | | | | open |
 | G-045 | Low | Docs describe an `I18nHandler` and an Interactivity rule the code does not have | then | 152 | | | | open |
+| G-051 | High | The hero takes no child block, so a site block cannot sit inside its media and scrim | 1 | 136 | 9 (with G-011; waits on the addendum board D-3a; without it, its own slice after 9) | | | spec written (DECISIONS #679) |
 
 State is one of: open, specced (the spec is on `main`), built (every slice on `main`), released (in the tag
 named), not fixed (with the reason beside it). A row with two specs is released when both are.

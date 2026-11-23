@@ -5,17 +5,18 @@
 **Created**: 2026-11-21, under the CoreX loop (constitution v2.0.0). This file is the whole spec: it ends in
 slices, and there is no separate plan or task file.
 
-**Status**: Spec written. No slice built.
+**Status**: Spec merged (PR #493, `4d0a2b8d`). Designs approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`,
+DECISIONS #696). No slice built.
 
 **Closes**: G-013 (High) of the Blackstone gap programme, wave 1 (DECISIONS #651, #652; the table in
 `PROGRESS.md`, "The Blackstone gap programme").
 
-**Design**: approved for the bar, the mega panel and the plain phone menu: `design/handoffs/navigation-footer.md`
+**Design**: approved. The bar, the mega panel and the plain phone menu: `design/handoffs/navigation-footer.md`
 (2026-06-20) and the visitor kit's SiteHeader, MegaMenu, Navigation and Dropdown
-(`design/handoffs/visitor-kit.md`, 2026-11-15, DECISIONS #639). **Not drawn anywhere, so drawn and approved before
-the slice that shows them is built:** the phone menu holding mega panels as groups, the utility menu, the language
-switch in its two forms, the header search, the bar at the foot of a phone screen. Their hand-over will be
-`design/handoffs/header-system.md`.
+(`design/handoffs/visitor-kit.md`, 2026-11-15, DECISIONS #639). The phone menu holding mega panels as groups,
+the utility menu, the language switcher in its two forms, the header search and the bar at the foot of a phone
+screen: `design/handoffs/header-system.md`, approved on 2026-11-22 in three steps (DECISIONS #696). The rules
+the kit lacked are in `specs/137-header-system/design/header-system.css.txt`; the boards stay on the canvas.
 
 **Reviewed**: by `corex-reviewer` on 2026-11-21; its ten findings and its notes are answered in this text.
 
@@ -474,7 +475,7 @@ value); the renderers (missing panel, repeated panel, unique ids, one language);
   `packages/cli/stubs/site/`.
 - Spec 136 owns the renderers and editor files that exist in `addons/corex-ui` today. This spec adds new files
   there and one registration line, and follows the base it lands.
-- The owner approves the drawings in small steps; slices 1 and 3 do not wait for them.
+- The owner approved the drawings on 2026-11-22; no slice waits for a design.
 
 ## Slices
 
@@ -486,10 +487,10 @@ recorded round for the owner.
 | Slice | What | FRs | Stories | Principles | Waits on | Design |
 |---|---|---|---|---|---|---|
 | 1 | One width: the collapse stylesheet, the writer in `corex-core`, the child theme fixture, the four tests, the research note | FR-001 to FR-008 | US-NAV-11 | I, II, V, VI, VIII | nothing | approved: the kit says the menu folds at 782px |
-| 2 | The language source and the language switcher block in its menu form; the two proofs; the two documents | FR-029 to FR-035 (the list form of FR-032 is slice 4's), FR-021 | US-NAV-05 | IV, VI, VIII, IX | the approval of the language switch drawings (the kit's SiteHeader and Dropdown show a language button and a menu, but no drawing shows them together with their states) | to draw and approve: `header-system.md` |
+| 2 | The language source and the language switcher block in its menu form; the two proofs; the two documents | FR-029 to FR-035 (the list form of FR-032 is slice 4's), FR-021 | US-NAV-05 | IV, VI, VIII, IX | nothing | approved 2026-11-22: `header-system.md`, step 2 |
 | 3 | The mega menu item: the block, the area, the editor controls, the desktop panel and its behaviour; the four panel patterns | FR-009 to FR-021 (the collapsing group of FR-018 is slice 4's) | US-NAV-02 (all but its phone criterion), US-NAV-04 | I, V, VI, VIII | 1; spec 136's renderer base if it is on `main` (FR-021) | approved for the panel and its trigger: the kit's MegaMenu. The editor controls are WordPress's own components |
-| 4 | The phone menu: the three parts, the `header-actions` part, the same-menu rule, groups that open one at a time, the bar's phone form, the language list, the action bar, the proof on WordPress 7.0 | FR-022 to FR-028, FR-025a, the list form of FR-032, the group of FR-018 | US-NAV-10, US-NAV-02's phone criterion | I, II, V, VI, VIII | 1, 2, 3 and the approval | to draw and approve: `header-system.md` |
-| 5 | The utility menu, the corporate header, the language slot in every header, search as blocks, the docs and the gap row | FR-036 to FR-040 | US-NAV-16 (Story 6), Story 7 | I, V, VI, VIII, IX | 4 and the approval | to draw and approve: `header-system.md` |
+| 4 | The phone menu: the three parts, the `header-actions` part, the same-menu rule, groups that open one at a time, the bar's phone form, the language list, the action bar, the proof on WordPress 7.0 | FR-022 to FR-028, FR-025a, the list form of FR-032, the group of FR-018 | US-NAV-10, US-NAV-02's phone criterion | I, II, V, VI, VIII | 1, 2, 3 | approved 2026-11-22: `header-system.md`, steps 1 and 3 |
+| 5 | The utility menu, the corporate header, the language slot in every header, search as blocks, the docs and the gap row | FR-036 to FR-040 | US-NAV-16 (Story 6), Story 7 | I, V, VI, VIII, IX | 4 | approved 2026-11-22: `header-system.md`, steps 2 and 3 |
 
 FR-041 to FR-045 bind every slice. Each slice adds the terms it builds to `docs/_glossary.md`. Principle X (the spec
 first) and the Guard Gate bind every slice too. Slice 1 waits for nothing and is built first. Each pull request says
