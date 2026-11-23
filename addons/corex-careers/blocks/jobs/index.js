@@ -1,16 +1,27 @@
 /**
- * Corex Jobs — editor registration for a DYNAMIC block. The open-positions list
- * is produced by the PHP renderer (JobsRenderer); the editor previews it via
- * <ServerSideRender> so the preview matches the front end exactly.
+ * Corex Jobs: a records block (spec 136, FR-019). The open positions it lists are not its own, so
+ * the editor previews the server render (JobsRenderer) inside the block's wrapper, inert: a click
+ * in the preview does nothing. While it loads, when the server draws nothing and when the preview
+ * fails, it says so in WordPress's own components (`../shared/records-states.js`).
  */
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, RangeControl } from '@wordpress/components';
+import { Disabled, PanelBody, RangeControl } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
+import { recordsStates } from '../shared/records-states';
+
+const LABEL = __( 'Jobs', 'corex' );
+
+/** The preview's states, made once so the same components are used on every render. */
+const STATES = recordsStates( {
+	label: LABEL,
+	loading: __( 'Loading open positions…', 'corex' ),
+	empty: __( 'No open positions to show.', 'corex' ),
+} );
 
 function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps();
@@ -18,7 +29,7 @@ function Edit( { attributes, setAttributes } ) {
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
-				<PanelBody title={ __( 'Jobs', 'corex' ) }>
+				<PanelBody title={ LABEL }>
 					<RangeControl
 						__nextHasNoMarginBottom
 						label={ __( 'Number of positions', 'corex' ) }
@@ -29,10 +40,13 @@ function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<ServerSideRender
-				block={ metadata.name }
-				attributes={ attributes }
-			/>
+			<Disabled>
+				<ServerSideRender
+					block={ metadata.name }
+					attributes={ attributes }
+					{ ...STATES }
+				/>
+			</Disabled>
 		</div>
 	);
 }

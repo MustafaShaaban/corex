@@ -6,12 +6,12 @@
 slices, and there is no separate plan or task file.
 
 **Status**: Spec merged (PR #493, `4d0a2b8d`). Designs approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`,
-DECISIONS #696). Slice 1 (one width) merged (#520, `fbe03540`; DECISIONS #699). Slice 2 (the language switcher) in
-review as PR #522. Slice 3 (the mega menu item) built on `spec/137-slice-3-mega-menu`, in review (DECISIONS #705,
-#706). No other slice built. Added on 2026-11-23: the toggle form of the language switcher (FR-032a,
-G-054, DECISIONS #697), whose drawing the owner approved the same day (DECISIONS #702), so slice 2 builds it,
-and slice 6, the header's scroll distance
-(FR-046 to FR-048, DECISIONS #698, from #701).
+DECISIONS #696). Slice 1 (one width) merged (PR #520, `fbe03540`; DECISIONS #699, #704). Slice 2 (the language
+source and the switcher in its three forms) merged (PR #522, `78b00c0e`; DECISIONS #703). Slice 3 (the mega menu
+item) built on `spec/137-slice-3-mega-menu`, in review (DECISIONS #705, #706). No other slice built. Added on
+2026-11-23: the toggle form of the language switcher (FR-032a, G-054, DECISIONS #697), whose drawing the owner
+approved the same day (DECISIONS #702), so slice 2 builds it, and slice 6, the header's scroll distance (FR-046 to
+FR-048, DECISIONS #698, from #701).
 
 **Closes**: G-013 (High) of the Blackstone gap programme, wave 1 (DECISIONS #651, #652; the table in
 `PROGRESS.md`, "The Blackstone gap programme"). Also G-054 (Medium), the toggle form, and the header scroll
@@ -541,9 +541,9 @@ recorded round for the owner.
 | Slice | What | FRs | Stories | Principles | Waits on | Design |
 |---|---|---|---|---|---|---|
 | 1 | One width: the collapse stylesheet, the writer in `corex-core`, the child theme fixture, the four tests, the research note | FR-001 to FR-008 | US-NAV-11 | I, II, V, VI, VIII | nothing | approved: the kit says the menu folds at 782px |
-| 2 | The language source and the language switcher block in its menu form; the two proofs; the two documents | FR-029 to FR-035 and FR-032a, the toggle (the list form of FR-032 is slice 4's), FR-021 | US-NAV-05 | IV, VI, VIII, IX | nothing | approved: `header-system.md`, step 2 (2026-11-22) and step 2a, the toggle (2026-11-23) |
+| 2 | The language source and the language switcher block in its three forms (the menu, the list, which is the menu's form without script and the toggle's with three languages, and the toggle); the two proofs; the two documents | FR-029 to FR-035 and FR-032a, the toggle, FR-021 | US-NAV-05 | IV, VI, VIII, IX | nothing | approved: `header-system.md`, step 2 (2026-11-22) and step 2a, the toggle (2026-11-23) |
 | 3 | The mega menu item: the block, the area, the editor controls, the desktop panel and its behaviour; the four panel patterns | FR-009 to FR-021 (the collapsing group of FR-018 is slice 4's) | US-NAV-02 (all but its phone criterion), US-NAV-04 | I, V, VI, VIII | 1; spec 136's renderer base if it is on `main` (FR-021) | approved for the panel and its trigger: the kit's MegaMenu. The editor controls are WordPress's own components |
-| 4 | The phone menu: the three parts, the `header-actions` part, the same-menu rule, groups that open one at a time, the bar's phone form, the language list, the action bar, the proof on WordPress 7.0 | FR-022 to FR-028, FR-025a, the list form of FR-032, the group of FR-018 | US-NAV-10, US-NAV-02's phone criterion | I, II, V, VI, VIII | 1, 2, 3 | approved 2026-11-22: `header-system.md`, steps 1 and 3 |
+| 4 | The phone menu: the three parts, the `header-actions` part, the same-menu rule, groups that open one at a time, the bar's phone form, the language row that places slice 2's list form in the phone menu, the action bar, the proof on WordPress 7.0 | FR-022 to FR-028, FR-025a, the list form of FR-032 placed in the phone menu (built in slice 2, DECISIONS #703), the group of FR-018 | US-NAV-10, US-NAV-02's phone criterion | I, II, V, VI, VIII | 1, 2, 3 | approved 2026-11-22: `header-system.md`, steps 1 and 3 |
 | 5 | The utility menu, the corporate header, the language slot in every header, search as blocks, the docs and the gap row | FR-036 to FR-040 | US-NAV-16 (Story 6), Story 7 | I, V, VI, VIII, IX | 4 | approved 2026-11-22: `header-system.md`, steps 2 and 3 |
 | 6 | The header's scroll distance: the token, the script reading it, the tests, the token docs. Ships in `v0.49.0` | FR-046 to FR-048 | Story 8 | I, V, VI | nothing | none: nothing new is seen |
 | 7 | The toggle form of the language switcher, only if slice 2 was built before its drawing was approved. Ships in `v0.50.0` | FR-032a | Story 5 (past it, G-054) | IV, VI, VIII, IX | 2, 6 | not needed: the owner approved step 2a before slice 2, so slice 2 builds the toggle |

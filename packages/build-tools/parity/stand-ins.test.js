@@ -25,6 +25,8 @@ const {
 } = require( '@wordpress/block-editor' );
 const { Button, PanelBody } = require( '@wordpress/components' );
 const { __, sprintf } = require( '@wordpress/i18n' );
+const { useSelect } = require( '@wordpress/data' );
+const { store: coreStore } = require( '@wordpress/core-data' );
 
 describe( 'FR-011: the shared stand-ins', () => {
 	test( 'registerBlockType records the settings, so a test can take edit', () => {
@@ -144,5 +146,24 @@ describe( 'FR-011: the shared stand-ins', () => {
 	test( 'the translation functions return the text they were given', () => {
 		expect( __( 'Headline', 'corex' ) ).toBe( 'Headline' );
 		expect( sprintf( '%1$s of %2$d', 'One', 3 ) ).toBe( 'One of 3' );
+	} );
+
+	test( 'a store read through useSelect finds no record, as before the editor has loaded it', () => {
+		const Edit = () =>
+			h(
+				'p',
+				null,
+				useSelect(
+					( select ) =>
+						select( coreStore ).getEntityRecord(
+							'root',
+							'__unstableBase'
+						)?.name ?? 'none',
+					[]
+				)
+			);
+
+		expect( coreStore ).toEqual( { name: 'core' } );
+		expect( renderEdit( Edit ) ).toBe( '<p>none</p>' );
 	} );
 } );

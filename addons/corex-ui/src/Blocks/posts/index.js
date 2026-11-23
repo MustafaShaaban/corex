@@ -1,17 +1,25 @@
 /**
- * Corex Posts — editor registration for a DYNAMIC block. The markup comes from
- * the PHP renderer (PostsRenderer); the editor previews it via <ServerSideRender>
- * so the preview matches the front end exactly. Registering the type here is what
- * stops the editor reporting "your site doesn't include support for this block".
+ * Corex Posts: a records block (spec 136, FR-019). The posts it lists are not its own, so the
+ * editor previews the server render (PostsRenderer) inside the block's wrapper, inert: a click in
+ * the preview does nothing. While it loads, and when the server draws nothing, it says so in
+ * WordPress's own Placeholder. Registering the type here is what stops the editor reporting
+ * "your site doesn't include support for this block".
  */
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, RangeControl } from '@wordpress/components';
+import { Disabled, PanelBody, RangeControl } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
+import { recordsStates } from '../shared/records-states';
+
+const STATES = recordsStates( {
+	label: __( 'Posts', 'corex' ),
+	loading: __( 'Loading posts…', 'corex' ),
+	empty: __( 'No posts to show.', 'corex' ),
+} );
 
 function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps();
@@ -30,10 +38,13 @@ function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<ServerSideRender
-				block={ metadata.name }
-				attributes={ attributes }
-			/>
+			<Disabled>
+				<ServerSideRender
+					block={ metadata.name }
+					attributes={ attributes }
+					{ ...STATES }
+				/>
+			</Disabled>
 		</div>
 	);
 }

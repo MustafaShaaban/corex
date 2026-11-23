@@ -247,9 +247,18 @@ $container->make(RuleRegistry::class)->register('reply', new AWayToReply());
 
 ## Place the block
 
-Add the **Corex Form** block and set its `formSlug` to your slug. It server-renders the
-form (accessible labels, per-field error regions, the REST nonce, a honeypot) and embeds
-the schema.
+Add the **Corex Form** block. Until it names a form, the block asks which one where it stands
+on the page: choose **Registered form** as the source, then your form by its name (a published
+flow is the other source). The block stores the form's slug in `formSlug`, so a block written by
+hand in a template or a pattern names it the same way:
+`<!-- wp:corex/form {"source":"registered","formSlug":"your-slug"} /-->`. A block whose
+`formSlug` is empty and that names no flow prints nothing on the page; one written with no
+`formSlug` at all shows the built-in contact form, as it always has.
+
+The editor then shows the form as the page draws it, which cannot be clicked or sent there. It
+server-renders the form (accessible labels, per-field error regions, the REST nonce, a
+honeypot) and embeds the schema. Someone who may not list the forms is told so in the block
+and can ask someone who manages forms to choose one.
 
 ## How validation flows
 

@@ -1,0 +1,140 @@
+{
+	"prefix": "corex-social-share",
+	"attributes": {
+		"networks": [
+			"x",
+			"facebook",
+			"linkedin",
+			"whatsapp",
+			"email"
+		]
+	},
+	"needs": [
+		"post"
+	],
+	"tree": [
+		{
+			"tag": "div",
+			"classes": [
+				"corex-social-share"
+			],
+			"children": [
+				{
+					"tag": "span",
+					"classes": [
+						"corex-social-share__label"
+					]
+				},
+				{
+					"tag": "a",
+					"classes": [
+						"corex-social-share__link",
+						"corex-social-share__link--x"
+					],
+					"children": [
+						{
+							"tag": "svg",
+							"classes": [
+								"corex-social-share__icon"
+							]
+						}
+					]
+				},
+				{
+					"tag": "a",
+					"classes": [
+						"corex-social-share__link",
+						"corex-social-share__link--facebook"
+					],
+					"children": [
+						{
+							"tag": "svg",
+							"classes": [
+								"corex-social-share__icon"
+							]
+						}
+					]
+				},
+				{
+					"tag": "a",
+					"classes": [
+						"corex-social-share__link",
+						"corex-social-share__link--linkedin"
+					],
+					"children": [
+						{
+							"tag": "svg",
+							"classes": [
+								"corex-social-share__icon"
+							]
+						}
+					]
+				},
+				{
+					"tag": "a",
+					"classes": [
+						"corex-social-share__link",
+						"corex-social-share__link--whatsapp"
+					],
+					"children": [
+						{
+							"tag": "svg",
+							"classes": [
+								"corex-social-share__icon"
+							]
+						}
+					]
+				},
+				{
+					"tag": "a",
+					"classes": [
+						"corex-social-share__link",
+						"corex-social-share__link--email"
+					],
+					"children": [
+						{
+							"tag": "svg",
+							"classes": [
+								"corex-social-share__icon"
+							]
+						}
+					]
+				},
+				{
+					"tag": "button",
+					"classes": [
+						"corex-social-share__copy"
+					],
+					"children": [
+						{
+							"tag": "svg",
+							"classes": [
+								"corex-social-share__icon"
+							]
+						},
+						{
+							"tag": "span",
+							"classes": [
+								"corex-social-share__copy-label"
+							]
+						}
+					]
+				},
+				{
+					"tag": "button",
+					"classes": [
+						"corex-social-share__native"
+					],
+					"children": [
+						{
+							"tag": "svg",
+							"classes": [
+								"corex-social-share__icon"
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

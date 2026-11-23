@@ -43,7 +43,7 @@ final class NewsletterSignupRenderer implements BlockRenderer
      */
     public function render(array $attributes, string $content, object $block): string
     {
-        if (! $this->newsletterActive()) {
+        if (! $this->available()) {
             return '<div class="corex-newsletter-signup corex-newsletter-signup--unavailable">'
                 . '<p>' . esc_html__('Newsletter signup is not available on this site yet.', 'corex') . '</p></div>';
         }
@@ -96,7 +96,11 @@ final class NewsletterSignupRenderer implements BlockRenderer
         return $value !== '' ? $value : $default;
     }
 
-    private function newsletterActive(): bool
+    /**
+     * Whether signup is available: the newsletter add-on is active. The block's editor asks the
+     * same (NewsletterSignupEditor), so it draws what the page draws.
+     */
+    public function available(): bool
     {
         return $this->pluginActivationInspector->isActive(self::NEWSLETTER_PLUGIN);
     }

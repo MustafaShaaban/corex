@@ -3,7 +3,7 @@
  * FR-012): an empty tree, a first root that does not carry the prefix, or a `pageOnly` class
  * that is a class of the block, which could hide a whole subtree.
  */
-const { fixtureProblems } = require( './check' );
+const { fixtureProblems, isKnownNeed } = require( './check' );
 
 const node = ( classes ) => ( { tag: 'div', classes } );
 
@@ -65,5 +65,21 @@ describe( 'FR-012: a fixture that proves something', () => {
 		).toEqual( [
 			'corex/hero: pageOnly may not name a class of the block: corex-hero, corex-hero__trap, corex-hero--x',
 		] );
+	} );
+} );
+
+describe( 'what a fixture may say the page needs', () => {
+	test( 'a current post, a mega menu panel, or an active plug-in named by its file', () => {
+		expect( isKnownNeed( 'post' ) ).toBe( true );
+		expect( isKnownNeed( 'panel' ) ).toBe( true );
+		expect(
+			isKnownNeed( 'plugin:corex-newsletter/corex-newsletter.php' )
+		).toBe( true );
+	} );
+
+	test( 'anything else, a plug-in with no file among it, is unknown', () => {
+		expect( isKnownNeed( 'posts' ) ).toBe( false );
+		expect( isKnownNeed( 'plugin:' ) ).toBe( false );
+		expect( isKnownNeed( 'plugin:corex-newsletter' ) ).toBe( false );
 	} );
 } );

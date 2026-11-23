@@ -35,6 +35,7 @@ Mistral, OpenAI and Anthropic Claude; code identifiers, file names, commands, op
 | Template (page, email) | قالب (القوالب) |
 | Pattern | نمط (الأنماط) |
 | Block | مكوّن (المكوّنات) |
+| Language switcher | مبدّل اللغات |
 | Mega menu (item) | قائمة موسّعة (عنصر قائمة موسّعة) |
 | Panel (of a mega menu) | لوحة (اللوحات) |
 | Template part | جزء قالب (أجزاء القالب) |

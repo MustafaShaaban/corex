@@ -16,11 +16,21 @@ const { registeredBlock } = require( './stand-ins' );
 const { editorScriptsOf } = require( './gate' );
 
 /**
- * What a fixture may say the page needs to draw the block (`needs`): a current post, or a mega menu
- * panel (a template part of the `mega-menu` area named by the fixture's `panel` attribute). The
- * editor needs neither: it is given the post's context, and it does not draw a panel.
+ * What a fixture may say the page needs to draw the block (`needs`): a current post, a mega menu
+ * panel (a template part of the `mega-menu` area named by the fixture's `panel` attribute), or a
+ * plug-in, named `plugin:<folder>/<file>.php`, that must be active for the page to draw the tree.
+ * The editor needs none of them: it draws with what it is given, and it does not draw a panel.
  */
 const KNOWN_NEEDS = [ 'post', 'panel' ];
+const PLUGIN_NEED = /^plugin:[^/\s]+\/[^/\s]+\.php$/;
+
+/**
+ * @param {string} need One entry of a fixture's `needs`.
+ * @return {boolean} Whether a test can give it.
+ */
+function isKnownNeed( need ) {
+	return KNOWN_NEEDS.includes( need ) || PLUGIN_NEED.test( String( need ) );
+}
 
 const json = ( tree ) => JSON.stringify( tree, null, 2 );
 
@@ -78,9 +88,7 @@ function editorParityProblem( folder ) {
 		return problems.join( '\n' );
 	}
 
-	const unknownNeeds = needs.filter(
-		( need ) => ! KNOWN_NEEDS.includes( need )
-	);
+	const unknownNeeds = needs.filter( ( need ) => ! isKnownNeed( need ) );
 	if ( unknownNeeds.length > 0 ) {
 		return `${ name }: parity.json needs what no test can give: ${ unknownNeeds.join(
 			', '
@@ -123,4 +131,9 @@ function editorParityProblem( folder ) {
 	].join( '\n' );
 }
 
-module.exports = { KNOWN_NEEDS, editorParityProblem, fixtureProblems };
+module.exports = {
+	KNOWN_NEEDS,
+	editorParityProblem,
+	fixtureProblems,
+	isKnownNeed,
+};

@@ -40,6 +40,13 @@
 		transition-timing-function: var(--wp--custom--motion--easing--standard);
 	}
 
+	// The view script shows these two; until then (and where the browser
+	// cannot share) `hidden` must win over the display above.
+	&__copy[hidden],
+	&__native[hidden] {
+		display: none;
+	}
+
 	&__link:hover,
 	&__link:focus-visible,
 	&__copy:hover,

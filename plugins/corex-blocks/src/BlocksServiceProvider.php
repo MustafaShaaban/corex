@@ -11,6 +11,8 @@ namespace Corex\Blocks;
 defined('ABSPATH') || exit;
 
 use Corex\Blocks\Connectors\ConnectorRegistry;
+use Corex\Blocks\Languages\LanguageSource;
+use Corex\Blocks\Languages\WordPressLanguageSource;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Support\BootLogger;
@@ -66,6 +68,10 @@ final class BlocksServiceProvider extends ServiceProvider
 
         $this->container->singleton(ConnectorRegistry::class);
 
+        // The site's languages, for the language switcher (spec 137, FR-029): WordPress alone until a
+        // site or a later spec binds another source here.
+        $this->container->singleton(LanguageSource::class, WordPressLanguageSource::class);
+
         $this->container->singleton(
             SampleBlocks::class,
             static fn (): SampleBlocks => new SampleBlocks(
@@ -89,6 +95,12 @@ final class BlocksServiceProvider extends ServiceProvider
 
         // Sample content in shipped patterns: hidden from visitors, labelled for editors (spec 115).
         $this->container->make(SampleBlocks::class)->register();
+
+        // The newsletter signup's editor draws the page's note when the add-on is off (spec 136, FR-018).
+        // Made only in the block editor, so no other request builds its renderer.
+        add_action('enqueue_block_editor_assets', function (): void {
+            $this->container->make(NewsletterSignupEditor::class)->enqueue();
+        });
 
         add_action('init', function (): void {
             $this->container->make(BlockFolder::class)->register(dirname(__DIR__) . '/build/blocks', __DIR__ . '/blocks');

@@ -63,10 +63,46 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   as before. A test checks every `block.json` for these supports and every one of these style sheets,
   compiled, for the rule, an integration test reads the margin from WordPress's registry, and a browser test
   measures the colours.
+- **Copyright, newsletter signup and social share are edited in place; the records blocks say what they are
+  doing** (spec 136 slice 4, gap G-003; FR-018 to FR-020; DECISIONS #671, #673). The three are drawn in the
+  editor with the elements their page prints, without asking the server: the copyright line with the year and
+  the site's name (decoded, so an apostrophe or an ampersand in it shows as itself), the share bar with its
+  chosen networks, and the newsletter's form, whose heading, button label and consent text are typed where
+  they stand (an empty one shows the words the page prints in its place). What is typed or pasted there is
+  kept as plain text, since the renderer escapes it. With the newsletter add-on off, the editor draws the
+  renderer's note that signup is not available, as the page does; the server tells the block's editor script
+  which (`Corex\Blocks\NewsletterSignupEditor`). The newsletter's form never submits in the editor. Each has
+  its `parity.json` and declares `in-place`, and the gate's waiting list loses them. Posts, jobs, breadcrumbs
+  and `corex/form` preview their server render inert, inside the block's wrapper; the first load and an empty
+  render are named in WordPress's own Placeholder, a later load is WordPress's own (the last preview dimmed
+  under a Spinner), and a preview that failed is WordPress's Notice with WordPress's message. `corex/form` with
+  no form chosen asks which one on the canvas, with WordPress's selects, and a block inserted from the
+  inserter starts with none; a choice there draws the form. The chooser tells an empty list from one that
+  failed, and tells a person who may not list the forms so. A parity fixture may now say the page needs a
+  plug-in active (`"needs": [ "plugin:<folder>/<file>.php" ]`), and the parity helper's stand-ins cover
+  `@wordpress/data` and `@wordpress/core-data`. A browser test opens the editor on all seven. The new words
+  have a first Arabic draft, waiting for review.
 - **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
   every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
   `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
   update checklist and CoreX's own CI run it. `verify:dist` fails a theme whose parent is not in the package.
+- **A language switcher block and the source it reads** (spec 137 slice 2, gaps G-013 and G-054; FR-021, FR-029
+  to FR-035, FR-032a; DECISIONS #694, #697, #702, #703). `corex-blocks` binds `Corex\Blocks\Languages\LanguageSource`
+  in the container: one method returning the request's languages, each with its code, its name in its own
+  language, its direction, the address of this page in it (or its home page) and whether it is current. The
+  source CoreX ships reads WordPress alone, which has one language; it calls no multilingual plugin, fetches
+  nothing and finds nothing by its slug. A site, or spec 148's Polylang and WPML sources, binds another in its
+  place. The block `corex/language-switcher` ("Language switcher") prints nothing, not even its wrapper, with
+  fewer than two languages, and its editor then shows WordPress's placeholder. With two or more it prints the
+  form an editor chose: **menu** (the default: a ghost button naming the current language over a Dropdown of every
+  language, opened by click or keyboard, Escape back to the button, kept inside the window by opening from the
+  button's other side when it must; the list without script), **list** (every
+  language in a row, the current one ticked, tinted, `aria-current` and not a link) or **toggle** (with exactly
+  two languages one link naming the other language in its own script, "العربية" on an English page; the list
+  with three or more). Every name carries its own `lang` and `dir` and is drawn in its own face; every link has
+  its `hreflang` and a 44px target. Its script and style load only where it prints something. It sits beside a
+  Navigation block, never inside one. `docs/internal/COREX-FRAMEWORK.md` describes the source in place of the
+  `I18nHandler`, which was never built.
 - **A mega menu is an item of the menu** (spec 137 slice 3, gap G-013; FR-009 to FR-021, US-NAV-02 but its phone
   criterion, US-NAV-04; DECISIONS #691, #705, #706). The CoreX UI add-on adds the block "Mega menu item"
   (`corex/mega-menu`), which the Navigation block accepts beside its links, and the template part area "Mega menu
@@ -86,6 +122,11 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   working. The parity standard's fixtures may now say a page `needs` a `panel`.
 
 ### Fixed
+
+- **Social share's copy and device-share buttons stay hidden until its script shows them.** Their sheet's
+  `display: inline-flex` beat the `hidden` they are printed with, so both showed from the first paint: without
+  scripts, and the device-share button on browsers that cannot share, where it did nothing. A `[hidden]` rule hides
+  them again; the view script still shows each where the browser can copy or share.
 
 - **A new client repository is checked before it has a remote** (spec 135 slice 1, gap G-001; DECISIONS #661).
   `npm run verify:framework` took a repository with no `origin` for the framework's own and passed without
@@ -137,6 +178,9 @@ to the wave's own entry when it is tagged from `release/gap-line`.
 ### Client impact
 
 - **Gap programme, wave 1.**
+  - **Social share's hidden buttons.** Muva and Perego, where a page shows social share: a visitor without
+    scripts, or on a browser that cannot share, no longer sees a button that does nothing. Nothing else changes
+    and there is no upgrade step. Mizzey is not on this line.
   - **Spec 135 slice 1 (G-001).** Muva, Perego and Mizzey: no page, setting or stored data changes, and there
     is no upgrade step. `npm run verify:framework` answers as before in a repository whose `origin` is the
     client's own. A client clone whose `origin` still points at CoreX's repository now fails that check, with a
@@ -199,6 +243,17 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     not turn them on shows none, and nothing changes. **Perego**: a margin set on a form or flow block adds a
     `style` attribute to the form's root, as an anchor set on it adds an `id` (slice 1), which matters to code
     that matches that markup by exact strings.
+  - **Spec 136 slice 4 (G-003).** Muva, Perego and Mizzey: no page changes and there is no upgrade step. No
+    renderer and no saved attribute changes, so every page prints exactly as before, Perego's form markup
+    included. Editors see copyright, newsletter signup and social share drawn as on the page and type the
+    newsletter's words on the canvas instead of in the side panel; posts, jobs, breadcrumbs and the form name
+    their loading and empty states, and a form block with no form asks for one on the canvas. An editor who
+    may not manage forms is told so there. A newsletter heading, button label or consent text saved earlier
+    with markup in it is shown as its text in the editor and keeps printing as before until it is edited. A
+    block saved
+    earlier loads in the editor unchanged, with no block validation message: all seven save no markup. A form
+    block saved earlier with no form named keeps showing the contact form, as its page does; only a form block
+    inserted from now on starts with none.
   - **Spec 137 slice 1 (G-013).** No upgrade step, no stored data changed.
     - **Muva** runs its own theme, which ships no `corex-navigation-collapse.css`, so the breakpoint writer does
       nothing there: its pages print the same markup, scripts and styles as before.
@@ -210,8 +265,15 @@ to the wave's own entry when it is tagged from `release/gap-line`.
       own width. In the Site Editor the header is drawn folded whenever the canvas is narrower than the token,
       since the canvas measures its own width, not the window's: an editor on a laptop with the sidebars open may
       see the menu button where visitors see the menu. No client runs the CoreX theme.
-  - **Spec 137 slice 3 (G-013).** No upgrade step, no stored data changed. It rests on slice 1 and on spec 136's
-    renderer base (#496, #506, #511), all after v0.48.1; carried to `release/gap-line` only with slice 4.
+  - **Spec 137 slice 2 (G-013, G-054).** No page changes, no stored data changes, and there is no upgrade step.
+    - **Muva**: its editor gains one block, "Language switcher", in the CoreX category. It prints nothing unless
+      it is placed, and then only on a site with two languages: Muva's source is WordPress's, with one.
+    - **Perego**: the same. Its own language toggle is untouched: nothing of CoreX replaces it or reads it.
+    - **Mizzey**: not on this line.
+  - **Spec 137 slice 3 (G-013).** No upgrade step, no stored data changed. Slices 1 (#520, `fbe03540`) and 2
+    (#522, `78b00c0e`) are merged; slice 3 is built on its branch, `spec/137-slice-3-mega-menu`. It rests on slice 1
+    and on spec 136's renderer base (#496, #506, #511), all after v0.48.1; carried to `release/gap-line` only with
+    slice 4.
     - **Muva** runs no CoreX UI block, and the spec's client notes record the add-on only on Perego: its pages
       print the same markup, scripts and styles as before. Where the add-on is on, its editor gains the item and
       the area as Perego's does, and both do nothing until used.
