@@ -21898,6 +21898,31 @@ whether it offers the service. `verify:dist` fails a client plugin that ships bl
 does not use when it generates a plugin only. Refusing `--force` on an existing theme: the other files it
 regenerates (the coming-soon page, the agent files) are what a client asks `--force` for.
 
+## #664 -- A child theme may hide the CoreX theme's patterns and templates from its editors, and adds custom templates without copying CoreX's
+
+**Date:** 2026-11-23. **Spec:** 135, slice 6 (G-048). **Branch:** `spec/135-slice-6-child-editor-lists`.
+**Decided:** by the spec 135 session, under the owner's delegation; taken into wave 1 by the coordinating session
+the same day.
+
+**Measured** on a real WordPress with a child of the CoreX theme active (the spec's re-check): the editor of a
+child sees the CoreX theme's 26 patterns and 15 templates, and nothing in CoreX hides them. The gap row's third
+claim was half right: a child that declares no `customTemplates` inherits CoreX's six, but one that adds its own
+must repeat the six first, in order, because WordPress merges that list by position.
+
+- **Opt-in from the child's own `theme.json`**, `settings.custom.corex.parent.hidePatterns` and `hideTemplates`,
+  both off unless set. A theme declares what it wants; the behaviour that acts on it is `corex-core`'s
+  (constitution I). No settings screen, so nothing to design, and nothing changes for Muva and Perego
+  (standalone themes), for the CoreX theme itself, or for a child that sets neither.
+- **Templates leave the editor's lists, never resolution.** A generated child has no index or page template of
+  its own: taking the CoreX theme's out of resolution would leave pages with no template.
+- **Custom templates are completed by name** before WordPress's merge, the child's first, so a client adds one
+  without copying six. `verify:client-theme` stops requiring CoreX's entries in a child's `customTemplates`;
+  `templateParts`, which this slice does not complete, keeps the rule.
+
+*Not chosen.* A site setting in the admin: the choice belongs to the theme's design, travels with the theme,
+and would need a screen and a design. Removing the parent's patterns by slug prefix: an add-on's `corex/*`
+patterns would go too; the theme folder's own files are the exact list.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.
