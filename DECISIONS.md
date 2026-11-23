@@ -21923,6 +21923,29 @@ must repeat the six first, in order, because WordPress merges that list by posit
 and would need a screen and a design. Removing the parent's patterns by slug prefix: an add-on's `corex/*`
 patterns would go too; the theme folder's own files are the exact list.
 
+## #667 -- Where a child's editor switches act, and in which order its custom templates are completed
+
+**Date:** 2026-11-23. **Spec:** 135, slice 6 (G-048). **Branch:** `spec/135-slice-6-child-editor-lists`.
+**Decided:** by the spec 135 session, under the owner's delegation, from what the slice's builder measured.
+
+- **Patterns are hidden where the editor reads them, not on every request.** The CoreX theme's
+  `templates/page-services.html` inserts two patterns from its own folder; unregistering them on every `init`
+  would have emptied those sections on a visitor's page. So `hidePatterns` acts on admin screens and REST
+  requests (measured: a published services page still drew both sections with the switch on). Patterns are
+  found by the `Slug:` headers in the CoreX theme's folder: WordPress drops a pattern's file path once its
+  content is loaded. A slug the child's own folder declares stays.
+- **Templates leave the Site Editor's REST lists and the page template picker only.** In the REST lists a
+  template is hidden when it comes from a theme file the CoreX theme has and the child does not; a copy saved in
+  the Site Editor and a plugin's template stay. The picker always keeps the template a page already uses, because
+  saving a page whose template is missing from its choices sets it back to the default.
+- **CoreX's custom templates go first.** WordPress merges `customTemplates` by position, so the completed list
+  is CoreX's entries in CoreX's order (a child entry of the same name taking that place), then the child's own.
+  The spec first said the child's go first; that also gives the right titles today, but would hand a child's
+  entry a CoreX entry's extra post types the day one has more than one.
+- **The switches are read from the child's own file.** WordPress has no call for a child's theme JSON without
+  its parent, and hands a child that has no `theme.json` the parent's data as its own, which would let the CoreX
+  theme's file turn the switches on. Only a boolean `true` counts, and only under a child of the CoreX theme.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.

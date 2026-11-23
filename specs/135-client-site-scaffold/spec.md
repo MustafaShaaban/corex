@@ -297,20 +297,24 @@ page template choices, and render a page whose template only the parent has.
 **What the editor of a child theme sees (G-048)**
 
 - **FR-021**: When the active theme is a child of the CoreX theme and its `theme.json` sets
-  `settings.custom.corex.parent.hidePatterns` to `true`, `corex-core` MUST unregister, on `init` after WordPress
-  has registered the theme folders' patterns, every pattern whose file is in the CoreX theme's `patterns/`
-  folder, and nothing else (not the child's, not those an add-on registers). Off unless the child sets it.
+  `settings.custom.corex.parent.hidePatterns` to `true`, `corex-core` MUST unregister, where the editor reads
+  patterns (an admin screen, a REST request) and after WordPress has registered the theme folders' patterns,
+  every pattern the CoreX theme's `patterns/` folder declares (by its `Slug:`), and nothing else (not the
+  child's, not those an add-on registers). A visitor's page keeps them: a CoreX template that inserts one (the
+  services page) still draws it. Off unless the child sets it.
 - **FR-022**: When it sets `settings.custom.corex.parent.hideTemplates` to `true`, the templates and parts that
   only the CoreX theme has MUST be left out of the lists the editor reads (the Site Editor's template and part
   lists and the page template choices), and MUST still resolve when a page is drawn. Off unless the child sets
   it.
 - **FR-023**: When a child declares `customTemplates`, `corex-core` MUST complete the list before WordPress merges
-  it with the CoreX theme's (`wp_theme_json_data_theme`): the child's entries first, as written, then each CoreX
-  entry whose `name` the child's list lacks, in CoreX's order. A child that declares no list is untouched (it
+  it with the CoreX theme's (`wp_theme_json_data_theme`): CoreX's entries first, in CoreX's order, each replaced
+  by the child's entry of the same `name` when it has one, then the child's own entries. WordPress merges the list
+  by position, so this order keeps every entry's post types and title its own. A child that declares no list is untouched (it
   inherits CoreX's as before). `npm run verify:client-theme` then stops requiring the CoreX entries in a child's
   `customTemplates` (it keeps the rule for `templateParts`), and the docs say so.
-- **FR-024**: The switches are read from the child's own `theme.json` data, through the theme JSON WordPress has
-  already resolved; `make:site` writes neither (a new site shows everything until its theme says otherwise), and
+- **FR-024**: The switches are read from the child's own `theme.json` file (WordPress offers no way to read a
+  child's theme JSON without its parent, and hands a child that has no file the parent's), only when the active
+  theme is a child of the CoreX theme, and only a boolean `true` counts; `make:site` writes neither (a new site shows everything until its theme says otherwise), and
   the docs and the generated README say how to set them.
 
 **The site plugin boots and its blocks build (G-007)**

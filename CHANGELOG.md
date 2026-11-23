@@ -89,6 +89,13 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   generated, for the client to change. It writes no index, front page, header or footer: those are the CoreX
   theme's until the client's design replaces them. `make:site --force` keeps an existing theme's `style.css`
   and `theme.json`.
+- **A child theme may keep the CoreX theme's patterns and templates out of its editors' way** (spec 135 slice
+  6, gap G-048; DECISIONS #664, #667). Two switches in the child's own `theme.json`,
+  `settings.custom.corex.parent.hidePatterns` and `hideTemplates`, both off unless set: the first takes the CoreX
+  theme's 26 patterns out of the inserter, the second takes the templates and parts only the CoreX theme has out
+  of the Site Editor's lists and the page template picker. Visitors' pages are drawn as before, with every
+  template and pattern they use. A child's `customTemplates` is completed with CoreX's six, so a client adds its
+  own without copying them, and `verify:client-theme` no longer asks for them there.
 
 ### Client impact
 
@@ -114,6 +121,10 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     standalone themes, so the CoreX theme's `functions.php` never runs there, and Mizzey's theme names no
     `Template:` line either. A site that runs the CoreX theme itself keeps its favicon. On `main` only: not
     carried to `release/gap-line`, whose CoreX theme links no favicon, so it does not move into the wave's entry.
+  - **Spec 135 slice 6 (G-048).** Muva, Perego and Mizzey: nothing changes and there is no upgrade step. The
+    switches act only under a child of the CoreX theme that sets them; Muva's and Perego's themes are standalone
+    and Mizzey's names no `Template:`. A site on the CoreX theme itself is unchanged even if its theme's file
+    held them.
   - **Spec 136 slice 1 (G-005).** No upgrade step, no stored data changed.
     - **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks
       gain an `id` or a class only where an editor set one. Where it shows the account block, that block's root
