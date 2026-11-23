@@ -4,8 +4,8 @@
  *
  * Every `block.json` under `plugins/` and `addons/` declares its kind in `corex.editor`:
  * - `in-place`: has a `parity.json` beside it, and its editor never imports the server render;
- * - `records`: its editor previews by the server render;
- * - `none`: has no editor;
+ * - `records`: its editor previews by the server render, and it has no `parity.json`;
+ * - `none`: has no editor script;
  * - `pending`: its turn has not come, and only the blocks on the waiting list below may say so.
  * The waiting list may only get shorter: a block on it that no longer declares `pending` fails
  * until it is taken off.
@@ -87,12 +87,13 @@ describe( 'FR-013: each rule of the gate fails naming the block and the rule', (
 	/**
 	 * A block in a scratch folder, checked by the gate's rules.
 	 *
-	 * @param {Object}  probed
-	 * @param {string}  [probed.name]   The block's name.
-	 * @param {string}  [probed.kind]   Its `corex.editor`.
-	 * @param {string}  [probed.editor] The text of its `index.js`.
-	 * @param {boolean} [probed.parity] Whether it has a `parity.json`.
-	 * @param {Object}  [probed.extra]  Other files of its folder, by name.
+	 * @param {Object}          probed
+	 * @param {string}          [probed.name]   The block's name.
+	 * @param {string}          [probed.kind]   Its `corex.editor`.
+	 * @param {string}          [probed.editor] The text of its `index.js`.
+	 * @param {boolean}         [probed.parity] Whether it has a `parity.json`.
+	 * @param {Object}          [probed.extra]  Other files of its folder, by name.
+	 * @param {?(string|Array)} [probed.script] Its `editorScript`; `null` for a block with none.
 	 * @return {Array<string>} What the gate says it breaks.
 	 */
 	function probe( {
@@ -101,6 +102,7 @@ describe( 'FR-013: each rule of the gate fails naming the block and the rule', (
 		editor = '',
 		parity = false,
 		extra = {},
+		script = 'file:./index.js',
 	} ) {
 		fs.writeFileSync( path.join( folder, 'index.js' ), editor );
 		fs.writeFileSync( path.join( folder, 'block.json' ), '{}' );
@@ -114,7 +116,7 @@ describe( 'FR-013: each rule of the gate fails naming the block and the rule', (
 		);
 		const metadata = {
 			name,
-			editorScript: 'file:./index.js',
+			editorScript: script,
 			corex: kind === undefined ? {} : { editor: kind },
 		};
 
@@ -162,6 +164,27 @@ describe( 'FR-013: each rule of the gate fails naming the block and the rule', (
 		] );
 	} );
 
+	test( 'a records block that keeps a parity.json, which its editor cannot draw', () => {
+		expect(
+			probe( { kind: 'records', editor: SSR, parity: true } )
+		).toEqual( [
+			'corex/probe: is records and has a parity.json; only an in-place block has one',
+		] );
+	} );
+
+	test( 'a none block with an editor script', () => {
+		expect( probe( { kind: 'none', script: null } ) ).toEqual( [] );
+		expect( probe( { kind: 'none' } ) ).toEqual( [
+			'corex/probe: is none and has an editor script',
+		] );
+		expect(
+			probe( {
+				kind: 'none',
+				script: [ 'wp-blocks', 'file:./index.js' ],
+			} )
+		).toEqual( [ 'corex/probe: is none and has an editor script' ] );
+	} );
+
 	test( 'pending outside the waiting list, and a block on the list that no longer waits', () => {
 		expect( probe( { kind: 'pending' } ) ).toEqual( [
 			'corex/probe: declares pending and is not on the waiting list; only those blocks may wait',
@@ -169,7 +192,9 @@ describe( 'FR-013: each rule of the gate fails naming the block and the rule', (
 		expect( probe( { name: 'corex/alert', kind: 'pending' } ) ).toEqual(
 			[]
 		);
-		expect( probe( { name: 'corex/alert', kind: 'none' } ) ).toEqual( [
+		expect(
+			probe( { name: 'corex/alert', kind: 'none', script: null } )
+		).toEqual( [
 			'corex/alert: no longer declares pending; take it off the waiting list (spec 150 took it)',
 		] );
 	} );

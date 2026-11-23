@@ -257,6 +257,21 @@ it('skips an existing block unless forced', function () {
     expect($forced->status)->toBe(BlockScaffoldResult::CREATED);
 });
 
+it('FR-014: re-scaffolding an in-place block as records with --force removes its parity.json', function () {
+    $base = tempBlockBase();
+    $context = new GeneratorContext($base, 'App', 'corex');
+    $dir = $base . '/Blocks/pricing';
+
+    scaffolder()->scaffold('Pricing', $context);
+    expect(is_file($dir . '/parity.json'))->toBeTrue();
+
+    $result = scaffolder()->scaffold('Pricing', $context, true, BlockScaffolder::RECORDS);
+
+    expect($result->status)->toBe(BlockScaffoldResult::CREATED)
+        ->and(scaffoldedJson($dir . '/block.json')['corex']['editor'])->toBe('records')
+        ->and(is_file($dir . '/parity.json'))->toBeFalse();
+});
+
 it('rejects an invalid block name', function () {
     $context = new GeneratorContext(tempBlockBase(), 'App', 'corex');
 

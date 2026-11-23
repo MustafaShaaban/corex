@@ -5,8 +5,8 @@
  *
  * - `in-place`: has a `parity.json` beside its `block.json`, and its editor never imports the
  *   server render;
- * - `records`: its editor previews by the server render;
- * - `none`: has no editor;
+ * - `records`: its editor previews by the server render, and it has no `parity.json`;
+ * - `none`: has no editor script;
  * - `pending`: only a block on the waiting list may say so, and a block on the list must.
  */
 const fs = require( 'fs' );
@@ -176,10 +176,23 @@ function gateFailures( block, waiting = {} ) {
 			);
 		}
 	}
-	if ( kind === 'records' && ! importsServerRender( block ) ) {
-		failures.push(
-			`${ name }: is records and its editor does not preview by ${ SERVER_RENDER }`
-		);
+	if ( kind === 'records' ) {
+		if ( ! importsServerRender( block ) ) {
+			failures.push(
+				`${ name }: is records and its editor does not preview by ${ SERVER_RENDER }`
+			);
+		}
+		if ( fs.existsSync( path.join( folder, 'parity.json' ) ) ) {
+			failures.push(
+				`${ name }: is records and has a parity.json; only an in-place block has one`
+			);
+		}
+	}
+	if (
+		kind === 'none' &&
+		editorScriptsOf( folder, block.metadata ).length > 0
+	) {
+		failures.push( `${ name }: is none and has an editor script` );
 	}
 	if ( kind === 'pending' && ! ( name in waiting ) ) {
 		failures.push(

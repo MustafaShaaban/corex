@@ -120,7 +120,38 @@ final class BlockScaffolder
             $rendered[$path] = $this->renderer->render($this->readStub($stub), $values);
         }
 
+        $stale = $this->removeOtherShapesFiles($blockDir, $shape);
+        if ($stale !== null) {
+            return BlockScaffoldResult::error($blockDir, sprintf('Could not remove: %s', $stale));
+        }
+
         return $this->writeAll($blockDir, $rendered);
+    }
+
+    /**
+     * A block rewritten with `--force` in the other shape loses the files only that shape has: a
+     * records block keeps no `parity.json`, which its editor could not draw and the gate refuses.
+     *
+     * @return string|null the file that could not be removed, or null when all went
+     */
+    private function removeOtherShapesFiles(string $blockDir, string $shape): ?string
+    {
+        $own = array_keys(self::STUBS[$shape]);
+
+        foreach (self::STUBS as $other => $stubs) {
+            if ($other === $shape) {
+                continue;
+            }
+
+            foreach (array_diff(array_keys($stubs), $own, ['renderer']) as $file) {
+                $path = $blockDir . DIRECTORY_SEPARATOR . $file;
+                if (is_file($path) && ! unlink($path)) {
+                    return $path;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
