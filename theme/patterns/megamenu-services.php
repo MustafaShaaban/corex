@@ -1,10 +1,14 @@
 <?php
 
 /**
- * Title: Mega Menu — Services
+ * Title: Mega menu panel: Services
  * Slug: corex/megamenu-services
  * Categories: corex
- * Description: A services mega menu — a multi-column panel of service items, each with a title, description, and link. Native details/summary disclosure; usable with no JavaScript.
+ * Block Types: core/template-part/mega-menu
+ * Description: The content of a mega menu panel: services, each a link with a line of text. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel.
+ *
+ * A panel's content only (spec 137, FR-019): the panel is a template part of the
+ * `mega-menu` area, styled by the corex-ui mega menu item where it opens.
  *
  * @package Corex
  */
@@ -12,64 +16,56 @@
 defined('ABSPATH') || exit;
 
 require_once get_template_directory() . '/inc/pattern-links.php';
+$corex_training_url = corex_pattern_page_url('training');
 ?>
-<!-- wp:details {"summary":"<?php echo esc_attr__('Services', 'corex'); ?>","className":"corex-mega corex-mega--services"} -->
-<details class="wp-block-details corex-mega corex-mega--services"><summary><?php echo esc_html__('Services', 'corex'); ?></summary>
-	<!-- wp:columns {"className":"corex-mega__panel"} -->
-	<div class="wp-block-columns corex-mega__panel">
-		<!-- wp:column -->
-		<div class="wp-block-column">
-			<!-- wp:group {"className":"corex-mega__item"} -->
-			<div class="wp-block-group corex-mega__item">
-				<!-- wp:heading {"level":3,"fontSize":"sm"} -->
-				<h3 class="wp-block-heading has-sm-font-size"><?php echo corex_pattern_link('consulting', __('Consulting', 'corex')); ?></h3>
-				<!-- /wp:heading -->
-				<!-- wp:paragraph {"className":"corex-mega__desc","fontSize":"xs"} -->
-				<p class="corex-mega__desc has-xs-font-size"><?php echo esc_html__('Strategy and architecture reviews.', 'corex'); ?></p>
-				<!-- /wp:paragraph -->
-			</div>
-			<!-- /wp:group -->
-
-			<!-- wp:group {"className":"corex-mega__item"} -->
-			<div class="wp-block-group corex-mega__item">
-				<!-- wp:heading {"level":3,"fontSize":"sm"} -->
-				<h3 class="wp-block-heading has-sm-font-size"><?php echo corex_pattern_link('implementation', __('Implementation', 'corex')); ?></h3>
-				<!-- /wp:heading -->
-				<!-- wp:paragraph {"className":"corex-mega__desc","fontSize":"xs"} -->
-				<p class="corex-mega__desc has-xs-font-size"><?php echo esc_html__('Build and ship production features.', 'corex'); ?></p>
-				<!-- /wp:paragraph -->
-			</div>
-			<!-- /wp:group -->
+<!-- wp:group {"className":"corex-megamenu corex-megamenu--services"} -->
+<div class="wp-block-group corex-megamenu corex-megamenu--services">
+	<!-- wp:group {"className":"corex-megamenu__list"} -->
+	<div class="wp-block-group corex-megamenu__list">
+		<!-- wp:group {"className":"corex-megamenu__item"} -->
+		<div class="wp-block-group corex-megamenu__item">
+			<!-- wp:paragraph {"className":"corex-megamenu__title"} -->
+			<p class="corex-megamenu__title"><?php echo corex_pattern_link('consulting', __('Consulting', 'corex')); ?></p>
+			<!-- /wp:paragraph -->
+			<!-- wp:paragraph {"className":"corex-megamenu__text"} -->
+			<p class="corex-megamenu__text"><?php echo esc_html__('Strategy and architecture reviews.', 'corex'); ?></p>
+			<!-- /wp:paragraph -->
 		</div>
-		<!-- /wp:column -->
+		<!-- /wp:group -->
 
-		<!-- wp:column -->
-		<div class="wp-block-column">
-			<!-- wp:group {"className":"corex-mega__item"} -->
-			<div class="wp-block-group corex-mega__item">
-				<!-- wp:heading {"level":3,"fontSize":"sm"} -->
-				<h3 class="wp-block-heading has-sm-font-size"><?php echo corex_pattern_link('support', __('Support', 'corex')); ?></h3>
-				<!-- /wp:heading -->
-				<!-- wp:paragraph {"className":"corex-mega__desc","fontSize":"xs"} -->
-				<p class="corex-mega__desc has-xs-font-size"><?php echo esc_html__('Ongoing maintenance and care.', 'corex'); ?></p>
-				<!-- /wp:paragraph -->
-			</div>
-			<!-- /wp:group -->
-
-			<!-- wp:group {"className":"corex-mega__item"} -->
-			<div class="wp-block-group corex-mega__item">
-				<?php $corex_training_url = corex_pattern_page_url('training'); ?>
-				<!-- wp:heading {"level":3,"fontSize":"sm"} -->
-				<h3 class="wp-block-heading has-sm-font-size"><?php if ($corex_training_url !== '') : ?><a href="<?php echo esc_url($corex_training_url); ?>"><?php endif; ?><?php echo esc_html__('Training', 'corex'); ?> <span class="corex-mega__badge"><?php echo esc_html__('New', 'corex'); ?></span><?php if ($corex_training_url !== '') : ?></a><?php endif; ?></h3>
-				<!-- /wp:heading -->
-				<!-- wp:paragraph {"className":"corex-mega__desc","fontSize":"xs"} -->
-				<p class="corex-mega__desc has-xs-font-size"><?php echo esc_html__('Team workshops and onboarding.', 'corex'); ?></p>
-				<!-- /wp:paragraph -->
-			</div>
-			<!-- /wp:group -->
+		<!-- wp:group {"className":"corex-megamenu__item"} -->
+		<div class="wp-block-group corex-megamenu__item">
+			<!-- wp:paragraph {"className":"corex-megamenu__title"} -->
+			<p class="corex-megamenu__title"><?php echo corex_pattern_link('implementation', __('Implementation', 'corex')); ?></p>
+			<!-- /wp:paragraph -->
+			<!-- wp:paragraph {"className":"corex-megamenu__text"} -->
+			<p class="corex-megamenu__text"><?php echo esc_html__('Build and ship production features.', 'corex'); ?></p>
+			<!-- /wp:paragraph -->
 		</div>
-		<!-- /wp:column -->
+		<!-- /wp:group -->
+
+		<!-- wp:group {"className":"corex-megamenu__item"} -->
+		<div class="wp-block-group corex-megamenu__item">
+			<!-- wp:paragraph {"className":"corex-megamenu__title"} -->
+			<p class="corex-megamenu__title"><?php echo corex_pattern_link('support', __('Support', 'corex')); ?></p>
+			<!-- /wp:paragraph -->
+			<!-- wp:paragraph {"className":"corex-megamenu__text"} -->
+			<p class="corex-megamenu__text"><?php echo esc_html__('Ongoing maintenance and care.', 'corex'); ?></p>
+			<!-- /wp:paragraph -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:group {"className":"corex-megamenu__item"} -->
+		<div class="wp-block-group corex-megamenu__item">
+			<!-- wp:paragraph {"className":"corex-megamenu__title"} -->
+			<p class="corex-megamenu__title"><?php if ($corex_training_url !== '') : ?><a href="<?php echo esc_url($corex_training_url); ?>"><?php endif; ?><?php echo esc_html__('Training', 'corex'); ?><?php if ($corex_training_url !== '') : ?></a><?php endif; ?> <span class="corex-mega__badge"><?php echo esc_html__('New', 'corex'); ?></span></p>
+			<!-- /wp:paragraph -->
+			<!-- wp:paragraph {"className":"corex-megamenu__text"} -->
+			<p class="corex-megamenu__text"><?php echo esc_html__('Team workshops and onboarding.', 'corex'); ?></p>
+			<!-- /wp:paragraph -->
+		</div>
+		<!-- /wp:group -->
 	</div>
-	<!-- /wp:columns -->
-</details>
-<!-- /wp:details -->
+	<!-- /wp:group -->
+</div>
+<!-- /wp:group -->

@@ -13,7 +13,8 @@ brand values, no global JavaScript, no commerce business logic.
 |---|---|---|
 | Header (default) | `theme/parts/header.html` | Brand + core navigation (mobile overlay) + CTA. |
 | Header variants | `corex/header-simple`, `corex/header-corporate`, `corex/header-saas`, `corex/header-docs`, `corex/header-transparent`, `corex/header-minimal` | Registered under the **CoreX** + core **header** pattern categories. |
-| Mega menus | `corex/megamenu-simple`, `corex/megamenu-services`, `corex/megamenu-product`, `corex/megamenu-docs` | Built on the native `<details>`/`<summary>` disclosure. |
+| Mega menu item | `corex/mega-menu` (CoreX UI add-on) | An item of the Navigation block that opens a panel; the add-on registers the template part area "Mega menu panels" (`mega-menu`). |
+| Mega menu panels | `corex/megamenu-simple`, `corex/megamenu-services`, `corex/megamenu-product`, `corex/megamenu-docs` | Panel patterns: the content of a panel, offered when a panel is made. |
 | Footer (default) | `theme/parts/footer.html` | Simple variant: legal/utility row. |
 | Footer variants | `corex/footer-simple`, `corex/footer-corporate`, `corex/footer-saas`, `corex/footer-newsletter`, `corex/footer-locations`, `corex/footer-legal` | Registered under **CoreX** + core **footer**. |
 
@@ -25,11 +26,18 @@ stays a presentation-only skin (constitution Principle I).
 
 - **Mobile navigation** uses the core navigation block's overlay: an accessible toggle, focus trap, `aria-expanded`,
   Escape-to-close, and focus return — CoreX does not re-implement these.
-- **Mega menus** are native `<details>` disclosures, so they are keyboard-operable and fully usable with no
-  JavaScript (the summary toggles the panel; every link is reachable). The buildless
-  `theme/assets/js/corex-navigation.js` adds only the conveniences `<details>` lacks: opening one panel closes its
-  siblings, and Escape or an outside click closes the open panel and returns focus to its summary. Below the
-  navigation breakpoint the same markup is an accordion (no hover dependency).
+- **Mega menus** are items of the menu (spec 137). With the CoreX UI add-on on, add a "Mega menu item" to a
+  Navigation block, type its label in place, and choose its panel in the item's settings: a template part of the
+  "Mega menu panels" area, opened for editing from there, or made from a panel pattern under "New panel". The item
+  is a list item of the menu holding a button and its panel; it is not shown until it has a label and a panel. In
+  the bar the panel opens under the header, as wide as the header's content, and the header keeps its height:
+  after a mouse rests on the item for about 150ms, or on a click, a tap, Enter or Space. It closes when focus
+  leaves it, on a click outside and on Escape, which returns focus to the button; Down, Up, Home and End move among
+  its links, and Left and Right among the menu's items, mirrored right to left. Without JavaScript a panel opens
+  while the pointer or the focus is inside its item. Outside a CoreX header the panel is as wide as the Navigation
+  block; a theme widens it by giving an ancestor `position: relative`, with the elements between static.
+- **Headers saved earlier** keep their native `<details>` panels: the buildless `theme/assets/js/corex-navigation.js`
+  still opens one at a time and closes it on Escape or an outside click, returning focus to its summary.
 - **Sticky / transparent header**: `corex/header-transparent` is `position: sticky` and transparent over a hero; the
   script flips `data-corex-header-state` on a passive, `requestAnimationFrame`-throttled scroll listener so CSS can
   resolve it to a solid, readable (WCAG 2.2 AA) background. The transition is gated by
@@ -59,8 +67,9 @@ written at the default; when a theme sets another width, CoreX prints that file 
 ## Conditional loading
 
 `corex-navigation.css` is attached to `core/navigation` and `corex/copyright` via `wp_enqueue_block_style`, and the
-behavior script is enqueued through `render_block` only when a navigation or CoreX mega-menu block renders, so
-nothing loads on pages without a CoreX header/footer (constitution Principle VI). `corex-navigation-collapse.css` is
+behavior script is enqueued through `render_block` only when a navigation or a `<details>` mega panel renders, so
+nothing loads on pages without a CoreX header/footer (constitution Principle VI). The mega menu item's script and
+style are declared in its `block.json` and load only where a menu holds an item. `corex-navigation-collapse.css` is
 enqueued through `render_block` when a `core/navigation` block renders, and through `enqueue_block_assets` wherever
 WordPress loads every block's style instead, which includes the block editor's screens.
 

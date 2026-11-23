@@ -52,6 +52,7 @@ final class DesignSystemCatalog
         'copyright'   => 'Copyright',
         'modal'       => 'Modal / dialog',
         'drawer'      => 'Drawer',
+        'mega-menu'   => 'Mega menu item',
     ];
 
     /** Component atoms delivered by a mechanism other than a Corex block (gap analysis, research D2). */

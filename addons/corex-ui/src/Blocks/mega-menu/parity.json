@@ -1,0 +1,25 @@
+{
+	"prefix": "corex-mega-menu",
+	"attributes": {
+		"label": "Services",
+		"panel": "parity-mega-menu-panel"
+	},
+	"needs": [ "panel" ],
+	"pageOnly": [ "corex-nav__panel" ],
+	"tree": [
+		{
+			"tag": "li",
+			"classes": [ "corex-mega-menu" ],
+			"children": [
+				{
+					"tag": "button",
+					"classes": [ "corex-mega-menu__trigger" ],
+					"children": [
+						{ "tag": "span", "classes": [ "corex-mega-menu__label" ] },
+						{ "tag": "svg", "classes": [ "corex-mega-menu__caret" ] }
+					]
+				}
+			]
+		}
+	]
+}

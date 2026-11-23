@@ -22640,3 +22640,59 @@ sheet.
   which were already 9.6% over theirs
   on `main` (55,254 bytes against 50,424). Their budgets in `tests/e2e/quality/byte-budget.json` become the
   measured 56,052 bytes (56,054 for `/locations/`). No other budget changes.
+
+## #705 -- How the mega menu item is built (spec 137 slice 3)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-009 to FR-021 (the collapsing group of FR-018 is slice 4's). **Decided:** by
+the spec 137 session, while building slice 3, carrying out #691.
+
+- `corex/mega-menu` is a block of `corex-ui` with `core/navigation` as its only parent. Its editor script adds it to
+  the Navigation block's `allowedBlocks` on `blocks.registerBlockType`. `Corex\Ui\Blocks\MegaMenuArea` registers the
+  template part area `mega-menu` ("Mega menu panels") on `default_wp_template_part_areas`. The provider gains one
+  binding and one boot line for them; no other `corex-ui` renderer or editor file changes.
+- A panel is drawn by `MegaMenuPanels`, bound to `TemplatePartMegaMenuPanels` as one instance: it reads the part with
+  `get_block_template()` (a part saved in the Site Editor wins over a theme file) and draws it with WordPress's own
+  template part block, so whatever translates or filters a part does the same for a panel. A part that is missing,
+  in another area or holds no block is no panel. The instance keeps the panels being drawn, so a panel that holds
+  its own menu is drawn once and the item inside it is skipped.
+- An item with no label is not drawn either, as one with no panel is not: never a button with no name. The spec's
+  Edge Cases named the missing panel only.
+- In the bar the panel hangs from the CoreX header (`position: relative`, at no specificity, so a sticky or
+  transparent header keeps its own position). The Navigation block, its container and its dialog are static where
+  they hold an item. The panel starts at the header's bottom edge, never over its padding, and its inline padding
+  makes its content exactly as wide as `.corex-header__inner`: the content size, as every CoreX header draws that
+  row, or the wide size where the row is `alignwide`. The build contract wrote the wide size because the kit's bar
+  is wide; measured at 782 and 1280px in both directions, the card's edges are the row's edges. Outside a CoreX
+  header the panel is as wide as the Navigation block.
+- Whether the panel is an overlay or a section in place follows where the item is, by
+  `.wp-block-navigation__responsive-container.is-menu-open`, so no stylesheet or script of the block names a width
+  (#692). Inside WordPress's opened phone menu the panel shows in place, open, and the script leaves the item alone,
+  so Escape there is WordPress's; slice 4 builds the group.
+- The script opens a panel after 150ms of a mouse resting on its item and closes it 300ms after the mouse leaves.
+  A click on a panel the mouse opened keeps it open rather than closing it, since that is what the click meant; a
+  second click closes it. Down and Up on a trigger open the panel at its first or last link; Left, Right, Home and
+  End move among the menu's items, mirrored right to left; keys typed in a field of a panel stay the field's.
+- The panel patterns are laid out by their own widths (a flex row whose two parts wrap), never the window's, so a
+  panel is right at any width and in the editor's canvas.
+
+*Not chosen.* The panel anchored to `.corex-header__inner`: its bottom edge is inside the header's padding, which is
+the overlap the slice 1 review measured. A script that measures the bar: the panel would move after it is drawn,
+and without the script it would be wrong. CSS anchor positioning: not in every browser CoreX supports.
+
+## #706 -- The parity standard gains a mega menu panel among what a page needs (spec 137 slice 3)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-021, on spec 136's base (#670, #671, #678). **Decided:** by the spec 137
+session.
+
+- The mega menu item is `in-place`: its editor draws the trigger the page draws, with the label typed in it, and
+  its `parity.json` lists the panel as what only the page draws. The page draws nothing without a panel (FR-012),
+  so a fixture may now say it `needs` `panel`: `tests/Integration/Blocks/ParityTest.php` saves a template part of
+  the `mega-menu` area named by the fixture's `panel` attribute, and `@corex/build-tools/parity` accepts the word
+  (the editor needs nothing for it). `tests/Integration/Blocks/WrapperAttributesTest.php` saves a panel the same way
+  for its every-block check.
+- The browser test never publishes a menu: WordPress draws the newest published menu in every Navigation block that
+  names none, so a published test menu changes the headers other specs read while it exists. Its page holds the
+  items in the Navigation block itself, and its editor check uses a draft menu.
+
+*Not chosen.* Declaring the item `records`: its editor would preview the server render and the label could not be
+typed in place, which FR-013 asks for.

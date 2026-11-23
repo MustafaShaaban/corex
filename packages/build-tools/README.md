@@ -134,7 +134,9 @@ An `in-place` block keeps a `parity.json` beside its `block.json`:
 - `innerBlocks` (optional): the child blocks, each `name`, `attributes`, `innerHTML` for a
   static block, and its own `innerBlocks`. The element that holds them is compared; what they
   draw is compared through their own fixtures.
-- `needs` (optional): what the page needs to draw the block. Only `"post"`, a current post.
+- `needs` (optional): what the page needs to draw the block: `"post"`, a current post, or
+  `"panel"`, a template part of the `mega-menu` area whose slug is the fixture's `panel`
+  attribute (the mega menu item draws nothing without its panel).
 - `pageOnly` (optional): classes of elements only the page draws (a trap field against robots);
   they are removed from the page's tree before the comparison.
 - `tree`: the expected tree. Each element that carries a class of the block, with its `tag`, its

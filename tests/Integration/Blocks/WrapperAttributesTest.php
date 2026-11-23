@@ -26,6 +26,23 @@ use Corex\Tests\Support\WatchedTransients;
 /** The blocks whose root is not always their first element name it in block.json (`corex.root`, FR-003). */
 const WRAPPER_TEST_NAMED_ROOTS = ['corex/form' => ['corex-flow', 'corex-form']];
 
+/** The slug of the mega menu panel the mega menu item is printed with. */
+const WRAPPER_TEST_MEGA_MENU_PANEL = 'wrapper-mega-menu-panel';
+
+/** Saves the mega menu item's panel, a template part of the `mega-menu` area for the active theme. */
+function wrapperTestMegaMenuPanel(): void
+{
+    $id = wp_insert_post([
+        'post_type' => 'wp_template_part',
+        'post_name' => WRAPPER_TEST_MEGA_MENU_PANEL,
+        'post_title' => 'Wrapper panel',
+        'post_status' => 'publish',
+        'post_content' => '<!-- wp:paragraph --><p>Panel</p><!-- /wp:paragraph -->',
+    ]);
+    wp_set_post_terms($id, get_stylesheet(), 'wp_theme');
+    wp_set_post_terms($id, 'mega-menu', 'wp_template_part_area');
+}
+
 function wrapperTestRequest(string $method, string $route, array $payload = [], array $urlParams = []): WP_REST_Request
 {
     $request = new WP_REST_Request($method, $route);
@@ -82,6 +99,8 @@ function wrapperTestMinimalAttributes(int $flowId): array
         'corex/gallery'           => ['images' => [['url' => 'https://example.test/a.jpg', 'alt' => 'A']]],
         'corex/hero'              => ['title' => 'T'],
         'corex/jobs'              => [],
+        // Prints only with its panel: the test saves one (spec 137, FR-012).
+        'corex/mega-menu'         => ['label' => 'L', 'panel' => WRAPPER_TEST_MEGA_MENU_PANEL],
         'corex/modal'             => ['title' => 'T'],
         'corex/newsletter-signup' => [],
         'corex/posts'             => [],
@@ -143,7 +162,7 @@ function wrapperTestInsertableBlocks(): array
 
 beforeEach(function () {
     Boot::app()->container()->make(WpFlowStore::class)->registerPostType();
-    $this->posts = CreatedPosts::watch(WpFlowStore::POST_TYPE, 'corex_submission', 'post');
+    $this->posts = CreatedPosts::watch(WpFlowStore::POST_TYPE, 'corex_submission', 'post', 'wp_template_part');
     $this->transients = WatchedTransients::watch('corex_throttle_');
     $this->mode = get_option(SiteEnvironment::MODE_OPTION, null);
     $this->globalPost = $GLOBALS['post'] ?? null;
@@ -204,6 +223,7 @@ it('FR-001, FR-006: an anchor reaches the root of every CoreX block a person can
     update_post_meta($postId, WpProjectMetaProvider::CLIENT, 'Client');
     $GLOBALS['post'] = get_post($postId);
     $minimal = wrapperTestMinimalAttributes(wrapperTestPublishedFlow('wrapper-every-block'));
+    wrapperTestMegaMenuPanel();
 
     // A new block fails here until it is given what it needs to print.
     expect(array_diff(wrapperTestInsertableBlocks(), array_keys($minimal)))->toBe([]);

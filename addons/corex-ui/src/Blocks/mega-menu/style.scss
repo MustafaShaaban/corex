@@ -1,0 +1,272 @@
+// corex/mega-menu, the mega menu item (spec 137; FR-011, FR-014, FR-016 to
+// FR-018; DECISIONS #691). The build contract is section 1 of
+// specs/137-header-system/design/header-system.css.txt.
+
+// No width is named here (FR-003): whether the panel is an overlay or a
+// section in place follows where the item is, in the bar or inside
+// WordPress's opened phone menu (FR-018).
+
+// The panel hangs from the nearest positioned ancestor of its item, which is
+// static. Outside a CoreX header that is the Navigation block, so the panel is
+// as wide as the Navigation block. A theme widens it by making an ancestor the
+// anchor: it gives that ancestor `position: relative` and leaves the ones
+// between it and the item static, as the rules for `.corex-header` below do.
+// In a CoreX header the header is the anchor, so the panel opens under the
+// bar, never over its padding, and its content is as wide as
+// `.corex-header__inner` (DECISIONS #705).
+
+// The item and its trigger, drawn as the menu's other links are: their face,
+// size and colour. WordPress makes every item of a menu `position: relative`,
+// with as many classes.
+.wp-block-navigation .wp-block-navigation-item.corex-mega-menu {
+	position: static;
+}
+
+.wp-block-navigation .corex-mega-menu > .corex-nav__trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--10);
+	box-sizing: border-box;
+	min-block-size: 2.5rem;
+	margin: 0;
+	padding-block: 0;
+	padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+	border: 0;
+	border-radius: var(--wp--custom--radius--sm);
+	background-color: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.wp-block-navigation .corex-mega-menu > .corex-nav__trigger:hover,
+.wp-block-navigation
+.corex-mega-menu > .corex-nav__trigger[aria-expanded="true"] {
+	background-color: var(--wp--preset--color--surface-alt);
+	color: var(--wp--preset--color--ink);
+}
+
+.corex-mega-menu__caret {
+	flex: none;
+	inline-size: 1em;
+	block-size: 1em;
+}
+
+// The caret turns when the panel is open. Pointing down, it reads the same in
+// both directions.
+.corex-nav__trigger[aria-expanded="true"] > .corex-mega-menu__caret {
+	transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+	.corex-mega-menu__caret {
+		transition:
+			transform var(--wp--custom--motion--duration--base)
+			var(--wp--custom--motion--easing--standard);
+	}
+}
+
+// The panel: an overlay under the header, as wide as its anchor's content. The
+// header's height does not change (US-NAV-02 criterion 4).
+.corex-mega-menu > .corex-nav__panel {
+	position: absolute;
+	inset-block-start: 100%;
+	inset-inline: 0;
+	z-index: var(--wp--custom--z--dropdown);
+	box-sizing: border-box;
+	padding-block: var(--wp--preset--spacing--20) 0;
+	padding-inline: 0;
+	color: var(--wp--preset--color--ink);
+	font-family: var(--wp--preset--font-family--body);
+	text-align: start;
+	white-space: normal;
+}
+
+.corex-mega-menu > .corex-nav__panel[hidden] {
+	display: none;
+}
+
+// Without the script (FR-016): open while the pointer or the focus is inside
+// the item.
+.corex-mega-menu:not([data-corex-mega-menu="ready"]):is(:hover, :focus-within) > .corex-nav__panel {
+	display: block;
+}
+
+// The panel's surface: the kit's MegaMenu card, around what the part holds.
+.corex-mega-menu > .corex-nav__panel > .wp-block-template-part {
+	box-sizing: border-box;
+	margin: 0;
+	padding: var(--wp--preset--spacing--40);
+	border:
+		var(--wp--custom--border--width--thin) solid
+		var(--wp--preset--color--surface-strong);
+	border-radius: var(--wp--custom--radius--lg);
+	background-color: var(--wp--preset--color--surface-raised);
+	box-shadow: var(--wp--preset--shadow--lg);
+}
+
+// In a CoreX header the header is the anchor; the Navigation block and its
+// containers stand aside. A sticky or transparent header is already
+// positioned, and keeps its own rule.
+:where(.corex-header:has(.corex-mega-menu)) {
+	position: relative;
+}
+
+.corex-header .wp-block-navigation:has(.corex-mega-menu),
+.corex-header
+.wp-block-navigation__responsive-container:not(.is-menu-open):has(.corex-mega-menu),
+.corex-header
+.wp-block-navigation__responsive-container:not(.is-menu-open)
+.wp-block-navigation__responsive-dialog:has(.corex-mega-menu) {
+	position: static;
+}
+
+// Its content is as wide as `.corex-header__inner`: the content size, or the
+// wide size where the header's inner row is wide.
+:where(.corex-header) .corex-mega-menu > .corex-nav__panel {
+	// stylelint-disable-next-line @stylistic/max-line-length -- one value
+	padding-inline: max(var(--wp--preset--spacing--40), calc((100% - var(--wp--style--global--content-size)) / 2));
+}
+
+:where(.corex-header:has(.corex-header__inner.alignwide))
+.corex-mega-menu > .corex-nav__panel {
+	// stylelint-disable-next-line @stylistic/max-line-length -- one value
+	padding-inline: max(var(--wp--preset--spacing--40), calc((100% - var(--wp--style--global--wide-size)) / 2));
+}
+
+// Inside WordPress's opened phone menu the panel is shown in place under its
+// label, open, as WordPress shows a sub-menu there (FR-018). The group that
+// opens one at a time is slice 4's.
+.wp-block-navigation__responsive-container.is-menu-open .corex-mega-menu {
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+.wp-block-navigation__responsive-container.is-menu-open
+.corex-mega-menu > .corex-nav__panel {
+	position: static;
+	display: block;
+	inline-size: 100%;
+	padding: 0;
+}
+
+.wp-block-navigation__responsive-container.is-menu-open
+.corex-mega-menu > .corex-nav__panel > .wp-block-template-part {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+}
+
+.wp-block-navigation__responsive-container.is-menu-open
+.corex-mega-menu__caret {
+	display: none;
+}
+
+// The panel patterns (theme/patterns/megamenu-*.php): the kit's MegaMenu as
+// blocks. A list of entries, each a title and a line, and an optional side
+// card, two to one where both fit and one under the other where they do not,
+// by their own widths, never the window's.
+.corex-megamenu {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--40);
+	margin: 0;
+}
+
+.corex-megamenu > .corex-megamenu__list {
+	flex: 2 1 0;
+	min-inline-size: min(24rem, 100%);
+}
+
+.corex-megamenu > .corex-megamenu__feature {
+	flex: 1 1 0;
+	min-inline-size: min(12rem, 100%);
+}
+
+// The parts are spaced by their gaps: the margins WordPress's flow layout
+// gives the blocks of a group are taken off, with one class more than its
+// rule has.
+.corex-megamenu
+:is(
+	.corex-megamenu__list,
+	.corex-megamenu__item,
+	.corex-megamenu__feature,
+	.corex-megamenu__item > *,
+	.corex-megamenu__feature > *
+) {
+	margin: 0;
+}
+
+.corex-megamenu__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+	gap: var(--wp--preset--spacing--20);
+	padding: 0;
+	list-style: none;
+}
+
+.corex-megamenu__item {
+	display: grid;
+	align-content: start;
+	gap: var(--wp--preset--spacing--10);
+	padding: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+	border-radius: var(--wp--custom--radius--md);
+}
+
+.corex-megamenu__item:hover {
+	background-color: var(--wp--preset--color--surface-alt);
+}
+
+.corex-megamenu__title {
+	margin: 0;
+	color: var(--wp--preset--color--ink);
+	font-family: var(--wp--preset--font-family--heading);
+	font-size: var(--wp--preset--font-size--base);
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.corex-megamenu__title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.corex-megamenu__title a:hover {
+	text-decoration: underline;
+}
+
+.corex-megamenu__text {
+	margin: 0;
+	color: var(--wp--preset--color--ink-soft);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-megamenu__links {
+	display: grid;
+	gap: var(--wp--preset--spacing--10);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-megamenu__feature {
+	display: grid;
+	align-content: start;
+	gap: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+	padding: var(--wp--preset--spacing--40);
+	border-radius: var(--wp--custom--radius--md);
+	background-color: var(--wp--preset--color--surface-alt);
+}
+
+// Arabic pages: the panel's text and its titles in the Arabic face, as the
+// menu's links are.
+:root:is(:lang(ar), :lang(fa), :lang(ur), :lang(ps), :lang(ckb), :lang(ug))
+:is(.corex-mega-menu > .corex-nav__panel, .corex-megamenu__title) {
+	font-family: var(--wp--preset--font-family--arabic);
+	letter-spacing: 0;
+}

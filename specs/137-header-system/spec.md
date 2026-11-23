@@ -6,8 +6,9 @@
 slices, and there is no separate plan or task file.
 
 **Status**: Spec merged (PR #493, `4d0a2b8d`). Designs approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`,
-DECISIONS #696). Slice 1 (one width) built on `spec/137-slice-1-one-width`, in review (DECISIONS #699); no other
-slice built. Added on 2026-11-23: the toggle form of the language switcher (FR-032a,
+DECISIONS #696). Slice 1 (one width) merged (#520, `fbe03540`; DECISIONS #699). Slice 2 (the language switcher) in
+review as PR #522. Slice 3 (the mega menu item) built on `spec/137-slice-3-mega-menu`, in review (DECISIONS #705,
+#706). No other slice built. Added on 2026-11-23: the toggle form of the language switcher (FR-032a,
 G-054, DECISIONS #697), whose drawing the owner approved the same day (DECISIONS #702), so slice 2 builds it,
 and slice 6, the header's scroll distance
 (FR-046 to FR-048, DECISIONS #698, from #701).

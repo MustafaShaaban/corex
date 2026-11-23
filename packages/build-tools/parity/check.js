@@ -15,8 +15,12 @@ const { renderEdit } = require( './render' );
 const { registeredBlock } = require( './stand-ins' );
 const { editorScriptsOf } = require( './gate' );
 
-/** What a fixture may say the page needs to draw the block (`needs`). */
-const KNOWN_NEEDS = [ 'post' ];
+/**
+ * What a fixture may say the page needs to draw the block (`needs`): a current post, or a mega menu
+ * panel (a template part of the `mega-menu` area named by the fixture's `panel` attribute). The
+ * editor needs neither: it is given the post's context, and it does not draw a panel.
+ */
+const KNOWN_NEEDS = [ 'post', 'panel' ];
 
 const json = ( tree ) => JSON.stringify( tree, null, 2 );
 

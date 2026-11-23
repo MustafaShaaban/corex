@@ -32,6 +32,12 @@ comment line: `# Drafted 2026-11-16 (spec 134 slice 2)` (the three section band 
 line). The slice 7 hand-over drew its Arabic with the tanween after the alef (مؤقتاً); the catalogue writes it before
 (مؤقتًا), as everywhere else: the reviewer settles the spelling once for the whole catalogue.
 
+**Added 2026-11-23 (spec 137 slice 3).** `# Drafted 2026-11-23 (spec 137 slice 3)`: the mega menu item's 27 strings
+(its block title, description and three keywords, the template part area's name and description, its settings in the
+editor, and the four panel patterns' titles and descriptions, which replace the old ones). Mega menu stays قائمة
+موسّعة as the old pattern titles had it; a panel is لوحة; a template part is جزء قالب. The patterns' descriptions name
+the editor's words in «», so the reviewer keeps them matching the strings they quote.
+
 <details>
 <summary>The 825 originals, by the plug-in or add-on that asks for them</summary>
 

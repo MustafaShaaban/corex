@@ -16,7 +16,10 @@ use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Ui\Blocks\BlockStyles;
+use Corex\Ui\Blocks\MegaMenuArea;
+use Corex\Ui\Blocks\MegaMenuPanels;
 use Corex\Ui\Blocks\PostsProvider;
+use Corex\Ui\Blocks\TemplatePartMegaMenuPanels;
 use Corex\Ui\Blocks\WpPostsProvider;
 use Corex\Ui\Patterns\ActionLinks;
 use Corex\Ui\Patterns\PatternLibrary;
@@ -32,6 +35,7 @@ final class UiServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(PostsProvider::class, WpPostsProvider::class);
+        $this->container->singleton(MegaMenuPanels::class, TemplatePartMegaMenuPanels::class);
 
         $this->container->singleton(
             UiManifest::class,
@@ -66,6 +70,9 @@ final class UiServiceProvider extends ServiceProvider
 
         // The hero and call-to-action buttons get a real address when drawn, or are not drawn (spec 115).
         $this->container->make(ActionLinks::class)->register();
+
+        // Mega menu panels are template parts of their own area (spec 137, FR-010).
+        $this->container->make(MegaMenuArea::class)->register();
     }
 
     /**

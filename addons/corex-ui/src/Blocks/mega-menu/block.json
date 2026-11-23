@@ -1,0 +1,26 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/mega-menu",
+	"title": "Mega menu item",
+	"category": "corex",
+	"parent": [ "core/navigation" ],
+	"icon": "menu-alt3",
+	"description": "An item of the menu that opens a panel: a template part of the Mega menu panels area.",
+	"keywords": [ "mega menu", "panel", "dropdown" ],
+	"textdomain": "corex",
+	"attributes": {
+		"label": { "type": "string", "default": "" },
+		"panel": { "type": "string", "default": "" }
+	},
+	"supports": {
+		"html": false,
+		"reusable": false,
+		"anchor": true,
+		"spacing": { "margin": [ "top", "bottom" ] }
+	},
+	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\MegaMenuRenderer", "editor": "in-place" }
+}

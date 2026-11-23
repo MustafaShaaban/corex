@@ -19,8 +19,11 @@ use Corex\Tests\Support\CreatedPosts;
 use Corex\Tests\Support\ParityTree;
 use Corex\Tests\Support\ThemeContract;
 
-/** What a fixture may say the page needs to draw the block (`needs`). */
-const PARITY_TEST_KNOWN_NEEDS = ['post'];
+/**
+ * What a fixture may say the page needs to draw the block (`needs`): a current post, or a mega menu
+ * panel, a template part of the `mega-menu` area named by the fixture's `panel` attribute (spec 137).
+ */
+const PARITY_TEST_KNOWN_NEEDS = ['post', 'panel'];
 
 /**
  * Every fixture, keyed by its block's name.
@@ -64,7 +67,7 @@ function parityTestParsedBlocks(mixed $blocks): array
 }
 
 beforeEach(function () {
-    $this->posts = CreatedPosts::watch('post');
+    $this->posts = CreatedPosts::watch('post', 'wp_template_part');
     $this->globalPost = $GLOBALS['post'] ?? null;
 });
 
@@ -91,6 +94,18 @@ it('FR-012: draws the tree of its parity.json on the page', function (string $fi
     if (in_array('post', $needs, true)) {
         $postId = wp_insert_post(['post_title' => 'Parity probe', 'post_status' => 'publish', 'post_type' => 'post']);
         $GLOBALS['post'] = get_post($postId);
+    }
+
+    if (in_array('panel', $needs, true)) {
+        $partId = wp_insert_post([
+            'post_type' => 'wp_template_part',
+            'post_name' => (string) ($fixture['attributes']['panel'] ?? ''),
+            'post_title' => 'Parity panel',
+            'post_status' => 'publish',
+            'post_content' => '<!-- wp:paragraph --><p>Panel</p><!-- /wp:paragraph -->',
+        ]);
+        wp_set_post_terms($partId, get_stylesheet(), 'wp_theme');
+        wp_set_post_terms($partId, 'mega-menu', 'wp_template_part_area');
     }
 
     $inner = parityTestParsedBlocks($fixture['innerBlocks'] ?? []);

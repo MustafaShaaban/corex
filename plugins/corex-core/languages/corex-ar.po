@@ -15583,45 +15583,53 @@ msgctxt "Pattern description"
 msgid "A centered maintenance notice — heading, message, and a contact line to the brand settings' email (left out when none is set). Mirrors the live Operations maintenance surface (Corex\\Admin\\StandalonePage) for editor use. Built on core blocks and CoreX brand tokens."
 msgstr "إشعار صيانة في وسط الصفحة: عنوان ورسالة وسطر للتواصل عبر البريد الإلكتروني من إعدادات العلامة التجارية (يُحذف إن لم يُعيَّن). يحاكي صفحة الصيانة الحية في وضع التشغيل (Corex\\Admin\\StandalonePage) للاستخدام في المحرر. مبني على مكوّنات WordPress الأساسية ومتغيرات تصميم العلامة التجارية في CoreX."
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-docs.php
 msgctxt "Pattern title"
-msgid "Mega Menu — Docs / Resources"
-msgstr "قائمة موسّعة: التوثيق / الموارد"
+msgid "Mega menu panel: Docs and resources"
+msgstr "لوحة قائمة موسّعة: التوثيق والموارد"
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-docs.php
 msgctxt "Pattern description"
-msgid "A docs/resources mega menu — grouped resource links across columns. Native details/summary disclosure; usable with no JavaScript."
-msgstr "قائمة موسّعة للتوثيق والموارد: روابط موارد مجمّعة عبر أعمدة. إفصاح أصلي بعنصري details/summary؛ تعمل دون JavaScript."
+msgid "The content of a mega menu panel: resource links in three groups. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel."
+msgstr "محتوى لوحة قائمة موسّعة: روابط موارد في ثلاث مجموعات. لاستخدامها، فعّل الوحدة الإضافية CoreX UI، وأضف «عنصر قائمة موسّعة» إلى مكوّن التنقل، ثم في إعدادات العنصر، تحت «لوحة جديدة»، اختر هذا النمط واضغط «إنشاء لوحة»."
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-product.php
 msgctxt "Pattern title"
-msgid "Mega Menu — Product / Features"
-msgstr "قائمة موسّعة: المنتج / الميزات"
+msgid "Mega menu panel: Product"
+msgstr "لوحة قائمة موسّعة: المنتج"
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-product.php
 msgctxt "Pattern description"
-msgid "A product mega menu — feature links plus a featured card and a call-to-action. Native details/summary disclosure; usable with no JavaScript."
-msgstr "قائمة موسّعة للمنتج: روابط الميزات مع بطاقة مميّزة ودعوة إلى إجراء. إفصاح أصلي بعنصري details/summary؛ تعمل دون JavaScript."
+msgid "The content of a mega menu panel: product links beside a card for what is new. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel."
+msgstr "محتوى لوحة قائمة موسّعة: روابط المنتج بجانب بطاقة لما هو جديد. لاستخدامها، فعّل الوحدة الإضافية CoreX UI، وأضف «عنصر قائمة موسّعة» إلى مكوّن التنقل، ثم في إعدادات العنصر، تحت «لوحة جديدة»، اختر هذا النمط واضغط «إنشاء لوحة»."
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-services.php
 msgctxt "Pattern title"
-msgid "Mega Menu — Services"
-msgstr "قائمة موسّعة: الخدمات"
+msgid "Mega menu panel: Services"
+msgstr "لوحة قائمة موسّعة: الخدمات"
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-services.php
 msgctxt "Pattern description"
-msgid "A services mega menu — a multi-column panel of service items, each with a title, description, and link. Native details/summary disclosure; usable with no JavaScript."
-msgstr "قائمة موسّعة للخدمات: لوحة متعددة الأعمدة لعناصر الخدمات، لكل منها عنوان ووصف ورابط. إفصاح أصلي بعنصري details/summary؛ تعمل دون JavaScript."
+msgid "The content of a mega menu panel: services, each a link with a line of text. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel."
+msgstr "محتوى لوحة قائمة موسّعة: الخدمات، لكل منها رابط وسطر نصي. لاستخدامها، فعّل الوحدة الإضافية CoreX UI، وأضف «عنصر قائمة موسّعة» إلى مكوّن التنقل، ثم في إعدادات العنصر، تحت «لوحة جديدة»، اختر هذا النمط واضغط «إنشاء لوحة»."
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-simple.php
 msgctxt "Pattern title"
-msgid "Mega Menu — Simple Dropdown"
-msgstr "قائمة موسّعة: قائمة منسدلة بسيطة"
+msgid "Mega menu panel: Simple links"
+msgstr "لوحة قائمة موسّعة: روابط بسيطة"
 
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-simple.php
 msgctxt "Pattern description"
-msgid "A single-column dropdown built on the native details/summary disclosure — keyboard-operable and usable with no JavaScript. Insert into a header's navigation area."
-msgstr "قائمة منسدلة بعمود واحد مبنية على الإفصاح الأصلي بعنصري details/summary، تعمل بلوحة المفاتيح ودون JavaScript. أدرجها في منطقة التنقل في الترويسة."
+msgid "The content of a mega menu panel: a short list of links. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel."
+msgstr "محتوى لوحة قائمة موسّعة: قائمة قصيرة من الروابط. لاستخدامها، فعّل الوحدة الإضافية CoreX UI، وأضف «عنصر قائمة موسّعة» إلى مكوّن التنقل، ثم في إعدادات العنصر، تحت «لوحة جديدة»، اختر هذا النمط واضغط «إنشاء لوحة»."
 
 #: theme/patterns/project-card.php
 msgctxt "Pattern title"
@@ -21456,3 +21464,104 @@ msgstr "نعود بحلول %1$s في %2$s."
 #: plugins/corex-forms/src/Block/SiteModeNotice.php
 msgid "This is a test copy of the site. What you send here is kept for testing. This form's emails are not delivered."
 msgstr "هذه نسخة تجريبية من الموقع. ما ترسله هنا يُحفظ للاختبار. رسائل البريد الخاصة بهذا النموذج لا تُرسَل."
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/MegaMenuArea.php
+msgctxt "template part area"
+msgid "Mega menu panels"
+msgstr "لوحات القائمة الموسّعة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/MegaMenuArea.php
+msgid "A panel opens under a mega menu item of a navigation menu. Each panel is chosen on its item."
+msgstr "تُفتح اللوحة تحت عنصر قائمة موسّعة في قائمة التنقل. تُختار كل لوحة من عنصرها."
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/block.json
+msgctxt "block title"
+msgid "Mega menu item"
+msgstr "عنصر قائمة موسّعة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/block.json
+msgctxt "block description"
+msgid "An item of the menu that opens a panel: a template part of the Mega menu panels area."
+msgstr "عنصر في القائمة يفتح لوحة: جزء قالب من منطقة «لوحات القائمة الموسّعة»."
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/block.json
+msgctxt "block keyword"
+msgid "mega menu"
+msgstr "قائمة موسّعة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/block.json
+msgctxt "block keyword"
+msgid "panel"
+msgstr "لوحة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/block.json
+msgctxt "block keyword"
+msgid "dropdown"
+msgstr "قائمة منسدلة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Panel"
+msgstr "اللوحة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Choose a panel"
+msgstr "اختر لوحة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Panels are template parts of the Mega menu panels area."
+msgstr "اللوحات أجزاء قالب في منطقة «لوحات القائمة الموسّعة»."
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Choose a panel. Until one is chosen, this item is not shown on the page."
+msgstr "اختر لوحة. لن يظهر هذا العنصر في الصفحة حتى تختار واحدة."
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "The chosen panel no longer exists. Choose another; until then this item is not shown on the page."
+msgstr "اللوحة المختارة لم تعد موجودة. اختر غيرها؛ وحتى ذلك الحين لا يظهر هذا العنصر في الصفحة."
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Edit panel"
+msgstr "تحرير اللوحة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "New panel"
+msgstr "لوحة جديدة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Start from"
+msgstr "البدء من"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Choose a pattern"
+msgstr "اختر نمطًا"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "Create panel"
+msgstr "إنشاء لوحة"
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "The panel could not be created."
+msgstr "تعذّر إنشاء اللوحة."
+
+# Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
+msgid "No panel pattern is available."
+msgstr "لا يتوفر نمط للوحات."
