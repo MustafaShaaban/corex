@@ -93,3 +93,29 @@ end", step 7):
 
 None for slice 9. If the owner later wants the Split video's focus ring promised against any footage, the Pause
 button moves under the frame.
+
+## Addendum D-3a: the hero's slot (approved 2026-11-23)
+
+The owner approved the addendum board D-3a with the word "approve" (2026-11-23, relayed by the gap programme's
+coordinator from the Blackstone planning session). His approval also approves DECISIONS #679, which reverses the
+child-blocks bullet of #674. Six boards: the slot holding a block, the slot empty, Split, phone width, Arabic, and
+the rules. Recorded as DECISIONS #681; slice 9 builds FR-057 from them.
+
+- **Where it sits.** The slot takes the place of the hero's title and text, in both layouts: the eyebrow stays
+  above it and the actions below it, 24px from each. With a block in the slot the hero's own title and text are
+  not drawn, so the page never shows two headlines or two main headings.
+- **No block unless a site names it.** Nothing can be put in the slot by default; a site lists the blocks it
+  allows for the hero. Without that list the hero is exactly today's.
+- **An empty slot draws the approved hero:** no box, no space, no change. A hero saved without a block stays
+  valid, with no deprecation.
+- **The scrim and the contrast hold over what the slot holds.** The slot is inside the media and the scrim, so
+  its block sits under the same scrim and takes the band's colours. The approved numbers stand (text 7.44, 9.62
+  and 12.70:1, brass text 4.72, 6.10 and 8.06:1 on a pure white picture under Light, Medium and Strong). A site's
+  block that sets colours of its own is the site's to measure.
+- **The Pause button keeps its place:** bottom corner at the end of the line, 24px from both edges, 96px kept
+  under the content so it stays 24px clear however tall the block is, and last in the keyboard order, after the
+  block and the actions.
+- **The motion of a site's own block is the site's.** CoreX's rule (nothing moves by itself unless a site turns
+  it on, never under reduced motion, always with a visible control) covers CoreX's own parts, here the video. A
+  rotating headline is the site's block, and its motion, control and steady height are the site's to build and
+  review.

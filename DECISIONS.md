@@ -22592,3 +22592,18 @@ database. CoreX provisions one only through `.github/actions/provision-wordpress
 Azure job cannot use. Writing a provisioning for Azure's Linux agents (a script both hosts can call) is work of its
 own, so slices 7 to 9 ship the gate without it and slice 10 adds it, v0.50.0 at the earliest. Until then a site
 runs its Playwright suite locally before a pull request.
+
+## #681 -- The hero's slot drawing is approved (spec 136, design D-3a, gap G-051)
+
+**Date:** 2026-11-23. **Spec:** 136, slice 9 (FR-057; G-051 with G-011). **Decided:** by the owner, who answered
+"approve" to the boards he was shown (relayed by the gap programme's coordinator from the Blackstone planning
+session). His approval also approves #679, which reverses #674's child-blocks bullet; the slideshow stays out.
+
+- The slot takes the place of the hero's title and text in both layouts; the eyebrow stays above and the actions
+  below, 24px from each. With a block in the slot the hero's own title and text are not drawn.
+- No block is allowed by default; a site names the blocks it allows. An empty slot draws the approved hero
+  exactly, and a hero saved without a block needs no deprecation.
+- The block sits under the hero's scrim and takes the band's colours; #677's contrast numbers stand. The Pause
+  button keeps #677's place and 96px clearance and stays last in the keyboard order.
+- A site block's own motion is the site's to build and review; CoreX's motion rule covers CoreX's own parts.
+- The record is the D-3a addendum in `design/handoffs/spec-136-hero.md`. Slice 9 builds FR-057.
