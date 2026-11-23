@@ -92,7 +92,9 @@ intended for application menus, is error-prone for link navigation, and breaks t
 **Decision**: Add layout-only custom properties to `theme.json` `settings.custom` under the existing convention:
 `custom.header.height` (e.g. `4rem`), `custom.header.heightCompact`, and `custom.nav.breakpoint` (the desktop→mobile
 switch, default `782px` to align with WordPress's standard mobile breakpoint and core nav's `overlayMenu:"mobile"`).
-CSS consumes `--wp--custom--header--height` and `--wp--custom--nav--breakpoint`. No new color/spacing/type tokens.
+CSS consumes `--wp--custom--header--height`. The breakpoint cannot be consumed as a property, since a media condition
+cannot read one: since spec 137 its value is written into the conditions of
+`theme/assets/css/corex-navigation-collapse.css` (see the correction below). No new color/spacing/type tokens.
 
 **Rationale**: Principle V — everything token-driven, no magic numbers in CSS. Reusing the existing `custom` block
 (which already holds `radius`, `motion`, `focus`, `z`) keeps one token source. Aligning the breakpoint with core's

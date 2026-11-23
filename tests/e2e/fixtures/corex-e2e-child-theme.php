@@ -30,7 +30,7 @@ defined('ABSPATH') || exit;
  * Copied into `wp-content/mu-plugins/` with the other `corex-e2e-*.php` fixtures, by the CI jobs
  * and by `scripts/setup-wordpress.ps1`.
  */
-$corexChild = (string) ($_COOKIE['corex_e2e_child'] ?? '');
+$corexChild = isset($_COOKIE['corex_e2e_child']) ? sanitize_key(wp_unslash((string) $_COOKIE['corex_e2e_child'])) : '';
 $corexTheme = realpath(WP_CONTENT_DIR . '/themes/corex');
 
 if (preg_match('/^corex-e2e-[a-z0-9-]+$/D', $corexChild) !== 1 || $corexTheme === false) {

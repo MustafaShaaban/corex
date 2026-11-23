@@ -16,9 +16,10 @@ defined('ABSPATH') || exit;
  * The token is `settings.custom.nav.breakpoint` in the active theme's merged `theme.json`: the one
  * width at which a CoreX header changes between its desktop and its phone form. It becomes part of
  * a media condition, so only a whole or decimal number of `px` is taken, written back from the
- * number itself, and nothing a theme wrote reaches the page as CSS. Anything else is the CoreX
- * theme's own width. A width below WordPress's own collapse point is read as that point: WordPress
- * folds its Navigation block below it, and a narrower switch is not supported.
+ * number itself, and nothing a theme wrote reaches the page as CSS. Anything else, a number too
+ * large to be finite included, is the CoreX theme's own width. A width below WordPress's own
+ * collapse point is read as that point: WordPress folds its Navigation block below it, and a
+ * narrower switch is not supported.
  */
 final class NavigationBreakpoint
 {
@@ -34,7 +35,14 @@ final class NavigationBreakpoint
             return self::DEFAULT;
         }
 
-        $number = max((float) $match[1], (float) self::FLOOR);
+        $number = (float) $match[1];
+
+        // Four hundred digits are still digits, and a float makes them INF, which is no width.
+        if (! is_finite($number)) {
+            return self::DEFAULT;
+        }
+
+        $number = max($number, (float) self::FLOOR);
 
         return rtrim(rtrim(sprintf('%.4F', $number), '0'), '.') . 'px';
     }

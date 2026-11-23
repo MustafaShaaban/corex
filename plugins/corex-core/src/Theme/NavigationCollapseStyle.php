@@ -23,7 +23,9 @@ defined('ABSPATH') || exit;
  *
  * The rules load where a Navigation block renders, as WordPress loads a block's own style on
  * demand, and wherever WordPress loads every block's style instead, the editor's canvas among
- * those (constitution VI). The token is read only then, never on a request that draws no menu.
+ * those (constitution VI). The token is read only when the rules are first registered in a style
+ * registry, at one of those two moments, and never at `init`; where WordPress loads every block's
+ * style, that is so whether or not the request draws a menu.
  */
 final class NavigationCollapseStyle
 {

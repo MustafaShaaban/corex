@@ -18,18 +18,20 @@ defined('ABSPATH') || exit;
  *
  * - the `corex` block-pattern category, so site owners can find CoreX header/footer
  *   variants in the inserter (the variant patterns themselves are auto-registered by
- *   WordPress from `theme/patterns/*.php` for block themes — no PHP per pattern); and
+ *   WordPress from `theme/patterns/*.php` for block themes, with no PHP per pattern);
  * - the `corex-navigation` stylesheet, attached to the core navigation block via
  *   {@see wp_enqueue_block_style()} so it loads only where a navigation renders
- *   (constitution Principle VI) and never as a global library.
- *
+ *   (constitution Principle VI) and never as a global library; and
  * - the theme's navigation collapse rules at the width of its navigation breakpoint
  *   token, through {@see NavigationCollapseStyle} (spec 137, slice 1; DECISIONS #692).
  *
  * The provider holds no business logic, no routes, and no DB access; the markup and
- * styles live in the theme (Principle I). It registers on `init`, independent of any
- * theme being active, and no-ops cleanly when the CoreX theme (which owns the asset)
- * is not present.
+ * styles live in the theme (Principle I). It binds the collapse classes in the
+ * container and hooks the rest from `boot()`, independent of any theme being active:
+ * the pattern category, the stylesheet and the script on `init`, the script and the
+ * collapse rules on `render_block`, and the collapse rules on `enqueue_block_assets`.
+ * The stylesheets and the script no-op cleanly when neither the active theme nor its
+ * parent ships them.
  */
 final class NavigationServiceProvider extends ServiceProvider
 {

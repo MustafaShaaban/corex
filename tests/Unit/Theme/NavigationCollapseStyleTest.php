@@ -98,8 +98,7 @@ it('serves the collapse stylesheet as a file when the token is the default (FR-0
 
     corexCollapse()->enqueue();
 
-    expect($seen['settings'])->toBe([['custom', 'nav', 'breakpoint']])
-        ->and($seen['registered'])->toBe([
+    expect($seen['registered'])->toBe([
             'corex-navigation-collapse' => [
                 'src' => 'https://example.test/theme/assets/css/corex-navigation-collapse.css',
                 'deps' => [],
@@ -129,8 +128,9 @@ it('prints the rules inline with a child\'s width in place of the default (FR-00
         ->and($seen['enqueued'])->toBe(['corex-navigation-collapse']);
 });
 
-it('serves the file, with nothing of the token on the page, for a value that is not a number of px (FR-004)', function (mixed $token) {
-    $seen = corexCollapseStubs($token);
+it('serves the file, with nothing of the token on the page, for a value that is not a number of px (FR-004)', function () {
+    // Every refused value is NavigationBreakpointTest's; this one would break out of the condition.
+    $seen = corexCollapseStubs('1024px) { body { display: none } } @media (width >= 1px');
 
     corexCollapse()->enqueue();
 
@@ -138,13 +138,7 @@ it('serves the file, with nothing of the token on the page, for a value that is 
         ->toBe('https://example.test/theme/assets/css/corex-navigation-collapse.css')
         ->and($seen['inline'])->toBe([])
         ->and($seen['enqueued'])->toBe(['corex-navigation-collapse']);
-})->with([
-    'another unit' => ['64em'],
-    'no unit' => ['1024'],
-    'negative' => ['-800px'],
-    'garbage' => ['1024px) { body { display: none } } @media (width >= 1px'],
-    'not set' => [['custom' => []]],
-]);
+});
 
 it('prints the rules with 600px for a token below it (FR-004)', function () {
     $seen = corexCollapseStubs('480px');

@@ -6,7 +6,8 @@
 slices, and there is no separate plan or task file.
 
 **Status**: Spec merged (PR #493, `4d0a2b8d`). Designs approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`,
-DECISIONS #696). No slice built. Added on 2026-11-23: the toggle form of the language switcher (FR-032a,
+DECISIONS #696). Slice 1 (one width) built on `spec/137-slice-1-one-width`, in review (DECISIONS #699); no other
+slice built. Added on 2026-11-23: the toggle form of the language switcher (FR-032a,
 G-054, DECISIONS #697), whose drawing waits for the owner, and slice 6, the header's scroll distance
 (FR-046 to FR-048, DECISIONS #698, from #701).
 
@@ -272,9 +273,10 @@ its scrolled look, so that the header matches my design without copying the head
 - **FR-003**: Every rule of the theme's navigation styles that depends on the width MUST live in one stylesheet,
   `theme/assets/css/corex-navigation-collapse.css`, written with the default width. The two `48em` conditions in
   `corex-navigation.css` MUST go. No other CoreX stylesheet or script may name a navigation width.
-- **FR-004**: `Corex\Theme\NavigationServiceProvider` MUST serve that stylesheet as a file when the token is the
-  default, and otherwise print it inline with the token's width in place of the default, in the editor's canvas as
-  on the page. It MUST accept only a whole or decimal number of `px`, fall back to the default for anything else,
+- **FR-004**: `Corex\Theme\NavigationServiceProvider` MUST register that stylesheet as a style with its file's
+  address and its path when the token is the default (WordPress may print a small block style inline from that
+  path, as for any block style; DECISIONS #699), and otherwise print it inline with the token's width in place of
+  the default, in the editor's canvas as on the page. It MUST accept only a whole or decimal number of `px`, fall back to the default for anything else,
   and read a value below 600px as 600px.
 - **FR-005**: A child theme of the CoreX theme that sets the token MUST get the switch at its own width with no file
   of the parent copied or edited. A fixture child theme proves it in the browser at 1024px.

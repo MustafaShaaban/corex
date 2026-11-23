@@ -44,18 +44,25 @@ stays a presentation-only skin (constitution Principle I).
 
 Everything consumes M2 `theme.json` tokens (color, typography, spacing, radius, border, shadow, focus, `z`). The only
 tokens this system adds are three layout-only custom properties: `--wp--custom--header--height`,
-`--wp--custom--header--height-compact`, and `--wp--custom--nav--breakpoint` (the desktop→mobile switch, `782px` by
-default; a child theme sets its own in its `theme.json`). WordPress's own Navigation block folds at 600px; inside a
-`.corex-header` it folds at the token instead (spec 137). There are no raw color/size/font literals in the patterns or
-`theme/assets/css/corex-navigation.css`. CSS `@media` cannot read custom properties, so every rule that depends on
-the width lives in `theme/assets/css/corex-navigation-collapse.css`, written at the default; when a theme sets
-another width, CoreX prints that file with the theme's width in its place.
+`--wp--custom--header--height-compact`, and `--wp--custom--nav--breakpoint`. The last is the navigation breakpoint,
+`settings.custom.nav.breakpoint` in `theme.json`: the one width at which a CoreX header changes between its phone form
+and its desktop form, `782px` in the CoreX theme. A child theme sets its own in its `theme.json`. It must be a whole or
+decimal number of `px` (`1024px`, `1023.5px`); anything else, such as `64em` or a bare `1024`, is read as `782px`, and
+a value below `600px` is read as `600px`. WordPress's own Navigation block folds at 600px; inside a `.corex-header` it
+folds at the token instead (spec 137).
+
+There are no raw color or font literals in the patterns or in `theme/assets/css/corex-navigation.css`; the one size
+that file writes itself is the search toggle's, a `2.75rem` target holding a `1.25rem` icon. CSS `@media` cannot read
+custom properties, so every rule that depends on the width lives in `theme/assets/css/corex-navigation-collapse.css`,
+written at the default; when a theme sets another width, CoreX prints that file with the theme's width in its place.
 
 ## Conditional loading
 
 `corex-navigation.css` is attached to `core/navigation` and `corex/copyright` via `wp_enqueue_block_style`, and the
-behavior script is enqueued through `render_block` only when a navigation or CoreX mega-menu block renders — so
-nothing loads on pages without a CoreX header/footer (constitution Principle VI).
+behavior script is enqueued through `render_block` only when a navigation or CoreX mega-menu block renders, so
+nothing loads on pages without a CoreX header/footer (constitution Principle VI). `corex-navigation-collapse.css` is
+enqueued through `render_block` when a `core/navigation` block renders, and through `enqueue_block_assets` wherever
+WordPress loads every block's style instead, which includes the block editor's screens.
 
 ## RTL
 

@@ -50,6 +50,7 @@ it('falls back to the default for anything that is not a number of px (FR-004)',
     'not set: WordPress answers with the whole settings array' => [['custom' => []]],
     'a number, not a string' => [1024],
     'null' => [null],
+    'a number too large to be finite' => [str_repeat('9', 400) . 'px'],
 ]);
 
 it('says whether a width is the default the stylesheet is written with', function () {
@@ -57,7 +58,5 @@ it('says whether a width is the default the stylesheet is written with', functio
 
     expect($breakpoint->isDefault('782px'))->toBeTrue()
         ->and($breakpoint->isDefault($breakpoint->width('782.0px')))->toBeTrue()
-        ->and($breakpoint->isDefault('1024px'))->toBeFalse()
-        ->and(NavigationBreakpoint::DEFAULT)->toBe('782px')
-        ->and(NavigationBreakpoint::FLOOR)->toBe('600px');
+        ->and($breakpoint->isDefault('1024px'))->toBeFalse();
 });

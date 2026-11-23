@@ -36,8 +36,10 @@ Added under `theme.json` `settings.custom` (same convention as existing `radius`
 
 - `theme/assets/css/corex-navigation.css` and every `theme/patterns/*.php` MUST NOT contain a raw hex color
   (`#rgb`/`#rrggbb`/`rgb()`/`hsl()` literal), a hard-coded font family name, or a hard-coded font size; all such
-  values MUST be `var(--wp--…)` references. (Layout values like `100%`, `0`, `1px` borders via the border token, and
-  the breakpoint media query reading `--wp--custom--nav--breakpoint` are permitted.)
+  values MUST be `var(--wp--…)` references. (Layout values like `100%`, `0`, `1px` borders via the border token are
+  permitted.) A media condition cannot read `--wp--custom--nav--breakpoint`, so no condition in
+  `corex-navigation.css` names a width: since spec 137 the breakpoint's value is written into the conditions of
+  `theme/assets/css/corex-navigation-collapse.css`, and printed there at a theme's own value (DECISIONS #692, #699).
 - No build-time token system, Tailwind/Bootstrap variable, or component-local palette may be introduced.
 
 ## C4. Acceptance (test hooks)

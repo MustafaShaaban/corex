@@ -115,8 +115,9 @@ afterEach(function () {
 });
 
 it('still writes, at 600px, the two rules of the Navigation block that the CoreX header overrides (FR-007 d)', function () {
-    // Both copies: a site serves the minified one unless SCRIPT_DEBUG is on.
-    foreach (['style.css', 'style.min.css'] as $file) {
+    // Every copy: a site serves the minified one unless SCRIPT_DEBUG is on, and a right-to-left
+    // page the `-rtl` one.
+    foreach (['style.css', 'style.min.css', 'style-rtl.css', 'style-rtl.min.css'] as $file) {
         $path = ABSPATH . WPINC . '/blocks/navigation/' . $file;
         expect($path)->toBeFile();
         $css = corexCollapseCompact((string) file_get_contents($path));

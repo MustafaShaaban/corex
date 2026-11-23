@@ -25,6 +25,7 @@
 const { test, expect } = require( '@playwright/test' );
 
 const { STORAGE_STATE } = require( './global-setup' );
+const { wpEval } = require( './helpers' );
 
 /** The child of the CoreX theme the fixture draws a request under. */
 const CHILD = 'corex-e2e-nav-child';
@@ -181,16 +182,56 @@ test.beforeAll( async ( { browser } ) => {
 	await session.context.close();
 } );
 
+/**
+ * PHP that removes what WordPress stores for the fixture child, and says how much of it is left.
+ *
+ * The editor opened under the child makes WordPress write the child's Global Styles post
+ * (`wp-global-styles-corex-e2e-nav-child`) and the `wp_theme` term that names the child. Any post
+ * that term holds goes with it: the child's Global Styles, and a template or part saved for it.
+ */
+const REMOVE_CHILD_RECORDS = `
+$theme = ${ JSON.stringify( CHILD ) };
+$held = static fn () => get_posts( array(
+	'post_type'   => array( 'wp_global_styles', 'wp_template', 'wp_template_part' ),
+	'post_status' => array_keys( get_post_stati() ),
+	'numberposts' => -1,
+	'fields'      => 'ids',
+	'tax_query'   => array( array( 'taxonomy' => 'wp_theme', 'field' => 'slug', 'terms' => $theme ) ),
+) );
+foreach ( $held() as $id ) {
+	wp_delete_post( (int) $id, true );
+}
+$term = get_term_by( 'slug', $theme, 'wp_theme' );
+if ( $term ) {
+	wp_delete_term( $term->term_id, 'wp_theme' );
+}
+echo count( $held() ) + ( get_term_by( 'slug', $theme, 'wp_theme' ) ? 1 : 0 );
+`;
+
 test.afterAll( async ( { browser } ) => {
-	if ( ! madePage ) {
+	if ( madePage ) {
+		const session = await adminSession( browser );
+		await session.page.request.delete(
+			`/wp-json/wp/v2/pages/${ madePage.id }?force=true`,
+			{ headers: { 'X-WP-Nonce': session.nonce } }
+		);
+		await session.context.close();
+	}
+
+	// Through WP-CLI, on the install COREX_WP_PATH names: no route removes a Global Styles post.
+	const left = wpEval( REMOVE_CHILD_RECORDS );
+	if ( left === null ) {
+		process.stderr.write(
+			`
+What WordPress stored for ${ CHILD } was not removed: WP-CLI did not answer.
+`
+		);
 		return;
 	}
-	const session = await adminSession( browser );
-	await session.page.request.delete(
-		`/wp-json/wp/v2/pages/${ madePage.id }?force=true`,
-		{ headers: { 'X-WP-Nonce': session.nonce } }
-	);
-	await session.context.close();
+	expect(
+		left,
+		`the records WordPress stored for ${ CHILD } left behind`
+	).toBe( '0' );
 } );
 
 for ( const theme of THEMES ) {

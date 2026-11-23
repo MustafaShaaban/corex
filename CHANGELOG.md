@@ -190,7 +190,9 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     - **A site on the CoreX theme**, or on a child of it: its header now folds at 782px instead of at 600px for
       the menu and 768px for the mega and search panels, so between 600px and 781px a visitor gets the menu
       button where the menu used to be inline. A child that sets `settings.custom.nav.breakpoint` folds at its
-      own width. No client runs the CoreX theme.
+      own width. In the Site Editor the header is drawn folded whenever the canvas is narrower than the token,
+      since the canvas measures its own width, not the window's: an editor on a laptop with the sidebars open may
+      see the menu button where visitors see the menu. No client runs the CoreX theme.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and
