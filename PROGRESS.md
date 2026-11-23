@@ -166,6 +166,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-052 | Medium | Repeatable items in a locked section, if content-only mode cannot add or reorder them (conditional) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 | G-053 | Low | No pre-publish checks (alt text, sample text, empty required fields) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 | G-054 | Medium | The language switcher cannot print only the other language's name (a toggle) | 1 | 137 | 2 | | | open: FR-032a written (DECISIONS #697); drawing approved by the owner on 2026-11-23 (step 2a, DECISIONS #702); built with slice 2, ships in `v0.49.0` |
+| G-055 | High | A client site on Azure DevOps gets no CI from `make:site`, and a pipeline-built package ships a site plugin's blocks unbuilt | 1 or 2 | 135 | 7, 8, 9, 10 | | | specced (DECISIONS #669, #712, #713): v0.49.0 if a building slot frees before wave 1's last slice, else v0.50.0; slice 10 (Playwright) v0.50.0 at the earliest |
 
 State is one of: open, specced (the spec is on `main`), built (every slice on `main`), released (in the tag
 named), not fixed (with the reason beside it). A row with two specs is released when both are.

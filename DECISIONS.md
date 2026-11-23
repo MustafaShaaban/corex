@@ -22023,6 +22023,33 @@ that inserts one show "pattern not found" in the editor.
 *Not chosen.* Rebuilding each pattern's properties from `get_block_patterns()` and the file path without loading
 the files, to save the cold cost: it copies WordPress's registration code, and the cost falls only on editors.
 
+## #669 -- A client site on Azure DevOps gets a pipeline from `make:site`; failing on a missing block asset is opt-in
+
+**Date:** 2026-11-23. **Spec:** 135, slices 7 to 10 (G-055). **Branch:** `spec/135-azure-amendment`.
+**Decided:** by the spec 135 session, under the owner's delegation; the gap was taken into spec 135 by the
+coordinating session the same day.
+
+**Found.** `make:site` writes only `.github/workflows/site-<client>.yml`, which never runs on Azure DevOps. The
+framework's root `azure-pipelines.yml` builds the framework and packages it, but never builds a site plugin's
+blocks, so its package ships them without their compiled files (Perego's case, #666). The Blackstone site moved to
+Azure DevOps on 2026-11-23 and has no CI.
+
+- **The site's pipeline lives in its own folder**, `sites/<client>/azure-pipelines.yml`. Azure DevOps runs a
+  definition from any path the pipeline names, and a file under `sites/` is the client's by the ownership map, so
+  it is never drift and no framework release can collide with it. The root `azure-pipelines.yml` stays the
+  framework's.
+- **Its steps are the GitHub workflow's.** Both are generated from the same list of commands, held equal by a test,
+  so a client on either host is checked the same way.
+- **Failing on a missing block asset is opt-in**, `verify:dist --strict-assets`. A generated site's pipeline passes
+  the flag, so a new site fails a package that would ship blocks without their files. The framework's own pipeline
+  gets two run-time parameters, `buildSitePlugins` and `strictAssets`, off by default, so Muva's and Perego's
+  pipelines, which run that file, do exactly what they did (#652); Perego can switch both on to fix its packages.
+- **`npm run build:sites`** is one root script for every client package, used by both pipelines and the GitHub
+  workflow, so the loop the workflow stub writes in shell exists once.
+
+*Not chosen.* Turning the asset check into a failure for every package: it would fail Perego's pipeline the day it
+took the release. A pipeline file at the repository root for the client: that path is the framework's.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.
@@ -22543,3 +22570,25 @@ coordinating session, which relayed it to the spec 137 session.
 - It came before slice 2 was built, so slice 2 builds the toggle and it ships in `v0.49.0` (#697). Slice 7 has
   nothing to build.
 - The record is `design/handoffs/header-system.md`, step 2a.
+
+## #712 -- An Azure DevOps remote names its repository
+
+**Date:** 2026-11-23. **Spec:** 135, slice 7 (G-055). **Decided:** by the spec 135 session, from the
+coordinating session's measurement.
+
+`repositoryFromRemoteUrl()` reads `owner/name` with `[\w.-]` on each side, so the Blackstone site's real remote,
+`https://<user>@dev.azure.com/bseit/Blackstone%20Official%20Website%20-%20%28New%29/_git/...`, gave no name and a
+client without a baseline was taken for the framework. It now reads the three Azure DevOps forms (HTTPS with an
+optional user, SSH `v3`, the older `visualstudio.com`), URL-decodes the names and returns `<org>/<project>/<repo>`.
+That name can never equal CoreX's `owner/name`, so the role is `client`. In an Azure pipeline the repository is
+read from `BUILD_REPOSITORY_URI` as `GITHUB_REPOSITORY` is read on GitHub.
+
+## #713 -- A client site's Playwright suite in its Azure pipeline is a slice of its own
+
+**Date:** 2026-11-23. **Spec:** 135, slice 10 (G-055). **Decided:** by the spec 135 session.
+
+Running a site's browser tests needs a WordPress with the framework, the site plugin and the theme installed and a
+database. CoreX provisions one only through `.github/actions/provision-wordpress`, a GitHub composite action an
+Azure job cannot use. Writing a provisioning for Azure's Linux agents (a script both hosts can call) is work of its
+own, so slices 7 to 9 ship the gate without it and slice 10 adds it, v0.50.0 at the earliest. Until then a site
+runs its Playwright suite locally before a pull request.
