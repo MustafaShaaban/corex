@@ -10,7 +10,11 @@
 	"attributes": {
 		"title": { "type": "string", "default": "" }
 	},
-	"supports": { "html": false, "anchor": true },
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"spacing": { "margin": [ "top", "bottom" ] }
+	},
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "{{ renderer_fqcn }}", "editor": "in-place" }

@@ -22309,3 +22309,25 @@ already rejected in #671.
 `supports` line next to the new `corex.editor` key, so slice 1's commit is cherry-picked first.
 `addons/corex-assistant/blocks/assistant/block.json` does not exist at `v0.48.1`, so its kind cannot be carried;
 the starter's `provider.stub` names `Corex\Blocks\BlockWrapper`, which slice 1 added after the tag.
+
+## #680 -- A chosen text colour reaches every text of a section block; its cards give way, its controls keep their fill
+
+**Date:** 2026-11-23. **Spec:** 136, slice 2a (FR-007, FR-008; gap G-005). **Decided:** by the spec 136 session.
+
+- Every block a person can insert (29 of 30: `corex/assistant` has `inserter: false`) supports a top and bottom
+  margin. The 13 section blocks, stat and alert support padding by axis (vertical, horizontal) only, so the two
+  sides of a line stay equal (constitution VIII). The section blocks and stat support a background and a text
+  colour, with no gradient and no link colour.
+- A chosen text colour is applied by one `.has-text-color` rule at the end of each of those 14 sheets: every
+  element the sheet colours, every heading (spec 134's rule that headings follow their section, #635) and the
+  list blocks' title links take `color: inherit`.
+- Under it, inner cards and panels (team member, posts, gallery and accordion items, jobs and projects items, the
+  tab panel) become transparent, so the chosen text sits on the background it was chosen against. Controls keep
+  their own fill (the hero's, cta's and pricing's buttons, the carousel's arrows and dots, the newsletter's field,
+  button and messages, the tab that is shown), so a control still reads as one and the open tab stays marked.
+- The root needs no rule: WordPress's colour classes are `!important` and a custom colour is an inline style, so
+  both beat a sheet's own background. A test refuses a sheet that marks a colour `!important`.
+- With nothing chosen, every block prints and draws exactly as before. Tabs (slice 6a) and carousel (slice 7) may
+  restyle their parts of this.
+- The `make:block` stubs and the starter's example block declare the margin too, so a generated block passes the
+  same gate.
