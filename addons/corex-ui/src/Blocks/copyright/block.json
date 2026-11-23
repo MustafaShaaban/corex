@@ -10,5 +10,5 @@
 	"supports": { "html": false, "anchor": true, "spacing": { "margin": ["top", "bottom"] } },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Ui\\Blocks\\CopyrightRenderer", "editor": "pending" }
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\CopyrightRenderer", "editor": "in-place" }
 }

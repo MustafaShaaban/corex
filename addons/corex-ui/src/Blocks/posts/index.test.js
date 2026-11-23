@@ -11,8 +11,10 @@
 import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 
-// Sentinel component so we can find <ServerSideRender> in the edit() element tree.
+// Sentinel components so we can find <ServerSideRender> and <Disabled> in the edit() element tree.
 const ServerSideRenderMock = () => null;
+const DisabledMock = ( { children } ) => children;
+const PlaceholderMock = () => null;
 
 // The @wordpress/* packages are webpack externals at build time (mapped to window.wp.*),
 // not installed in node_modules — so the mocks are virtual.
@@ -33,6 +35,10 @@ jest.mock(
 	() => ( {
 		PanelBody: ( { children } ) => children,
 		RangeControl: () => null,
+		Disabled: DisabledMock,
+		Placeholder: PlaceholderMock,
+		Spinner: () => null,
+		Notice: () => null,
 	} ),
 	{ virtual: true }
 );
@@ -90,5 +96,24 @@ describe( 'posts block editor registration', () => {
 
 		expect( ssr ).not.toBeNull();
 		expect( ssr.props.block ).toBe( metadata.name );
+	} );
+
+	test( 'FR-019: the preview is inert, inside the block wrapper, with named loading and empty states', () => {
+		const element = config.edit( {
+			attributes: { count: 3 },
+			setAttributes: () => {},
+		} );
+		const disabled = findByType( element, DisabledMock );
+		const ssr = findByType( disabled, ServerSideRenderMock );
+		const loading = ssr.props.LoadingResponsePlaceholder( {} );
+		const empty = ssr.props.EmptyResponsePlaceholder( {} );
+
+		expect( element.type ).toBe( 'div' );
+		expect( ssr.props.attributes ).toEqual( { count: 3 } );
+		expect( loading.type ).toBe( PlaceholderMock );
+		expect( loading.props.instructions ).toBe( 'Loading posts…' );
+		expect( empty.type ).toBe( PlaceholderMock );
+		expect( empty.props.instructions ).toBe( 'No posts to show.' );
+		expect( typeof ssr.props.ErrorResponsePlaceholder ).toBe( 'function' );
 	} );
 } );

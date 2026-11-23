@@ -1,0 +1,34 @@
+{
+	"prefix": "corex-newsletter-signup",
+	"attributes": {
+		"heading": "Letters from the studio",
+		"buttonLabel": "Sign me up",
+		"consentText": "Send me the monthly letter. I can leave at any time."
+	},
+	"tree": [
+		{
+			"tag": "div",
+			"classes": [ "corex-newsletter-signup" ],
+			"children": [
+				{
+					"tag": "form",
+					"classes": [ "corex-newsletter-signup__form" ],
+					"children": [
+						{ "tag": "h2", "classes": [ "corex-newsletter-signup__heading" ] },
+						{
+							"tag": "div",
+							"classes": [ "corex-newsletter-signup__row" ],
+							"children": [
+								{ "tag": "input", "classes": [ "corex-newsletter-signup__email" ] },
+								{ "tag": "button", "classes": [ "corex-newsletter-signup__submit" ] }
+							]
+						},
+						{ "tag": "label", "classes": [ "corex-newsletter-signup__consent" ] },
+						{ "tag": "div", "classes": [ "corex-newsletter-signup__hp" ] },
+						{ "tag": "p", "classes": [ "corex-newsletter-signup__status" ] }
+					]
+				}
+			]
+		}
+	]
+}
