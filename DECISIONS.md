@@ -22559,6 +22559,26 @@ the other language's name alone).
 - *Not chosen:* passing the value from PHP with an inline script. The property is already on every page through
   `theme.json`, a child theme reaches it with no PHP, and the script stays the one place that decides.
 
+## #699 -- How the navigation width reaches the page (spec 137 slice 1)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-001 to FR-008. **Decided:** by the spec 137 session, while building slice 1.
+
+- Two classes in `corex-core`: `NavigationBreakpoint` turns the token's value into a width (a whole or decimal
+  number of `px`; anything else is the default `782px`; below 600 is 600), and `NavigationCollapseStyle` serves
+  `theme/assets/css/corex-navigation-collapse.css` at the default and prints it with the theme's width otherwise.
+  `NavigationServiceProvider` binds both and adds their hooks.
+- The writer hangs on `render_block` and `enqueue_block_assets`, not on `wp_enqueue_block_style()`. The token is
+  then read only when a menu is drawn, never at `init`, where reading the merged settings would cache them before
+  blocks registered later on `init`. The editor builds its canvas styles in a fresh registry, so the writer asks
+  that registry whether the style is there rather than keeping a flag.
+- "Served as a file" means a registered handle with its `src` and `path`. WordPress may still print a small block
+  style's bytes inline from that path, as it does for every block style; the editor's canvas gets a link.
+- The token is read with `wp_get_global_settings()`, so a width saved in the site's Global Styles wins over the
+  theme's file, as for any `theme.json` setting.
+- The browser proof puts one request under a fixture child theme (`tests/e2e/fixtures/themes/corex-e2e-nav-child/`)
+  by a cookie read in an e2e mu-plugin, as the logo set fixture does, so the active theme is never saved and other
+  tests are not disturbed.
+
 ## #702 -- The language toggle's drawing is approved (spec 137, step 2a, G-054)
 
 **Date:** 2026-11-23. **Spec:** 137, FR-032a. **Decided:** by the owner, "Approve step 2a", typed in the Blackstone
@@ -22607,3 +22627,16 @@ session). His approval also approves #679, which reverses #674's child-blocks bu
   button keeps #677's place and 96px clearance and stays last in the keyboard order.
 - A site block's own motion is the site's to build and review; CoreX's motion rule covers CoreX's own parts.
 - The record is the D-3a addendum in `design/handoffs/spec-136-hero.md`. Slice 9 builds FR-057.
+
+## #704 -- The contact and form pages carry the header's width rules in their byte budget (spec 137 slice 1)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-003, FR-044. **Decided:** by the spec 137 session, as #645 did for the band
+sheet.
+
+- Slice 1 adds `corex-navigation-collapse.css` to every page with a CoreX header: 1,638 bytes printed inline, less
+  the 840 bytes its rules left in `corex-navigation.css`, so about 800 bytes more per page. Its comments were moved
+  out first (they were 1,628 bytes of the first version), so what is left is rules.
+- Every page stays within 10% of its budget but the three that draw a form: `/contact/`, `/form/` and `/locations/`,
+  which were already 9.6% over theirs
+  on `main` (55,254 bytes against 50,424). Their budgets in `tests/e2e/quality/byte-budget.json` become the
+  measured 56,052 bytes (56,054 for `/locations/`). No other budget changes.

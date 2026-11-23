@@ -1,0 +1,49 @@
+/* Every width rule of the CoreX header, at the token's default.
+   Spec 137, FR-003; decisions 692 and 699. */
+
+@media (600px <= width < 782px) { /* corex-token-allow: nav breakpoint */
+
+	.corex-header .wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
+		display: none;
+	}
+
+	.corex-header .wp-block-navigation__responsive-container-open:not(.always-shown) {
+		display: flex;
+	}
+}
+
+@media (width >= 782px) { /* corex-token-allow: nav breakpoint */
+
+	.corex-header__search-panel:not([hidden]) {
+		position: absolute;
+		inset-block-start: calc(100% + var(--wp--preset--spacing--20));
+		inset-inline-end: 0;
+		z-index: var(--wp--custom--z--dropdown);
+		background-color: var(--wp--preset--color--surface-raised);
+		border:
+			var(--wp--custom--border--width--thin) solid
+			var(--wp--preset--color--border);
+		border-radius: var(--wp--custom--radius--md);
+		padding: var(--wp--preset--spacing--40);
+		box-shadow: var(--wp--preset--shadow--md);
+	}
+
+	.corex-mega {
+		position: relative;
+	}
+
+	.corex-mega[open] > .corex-mega__panel {
+		position: absolute;
+		inset-block-start: 100%;
+		inset-inline-start: 0;
+		z-index: var(--wp--custom--z--dropdown);
+		min-inline-size: var(--wp--custom--header--height);
+		background-color: var(--wp--preset--color--surface-raised);
+		border:
+			var(--wp--custom--border--width--thin) solid
+			var(--wp--preset--color--border);
+		border-radius: var(--wp--custom--radius--md);
+		padding: var(--wp--preset--spacing--40);
+		box-shadow: var(--wp--preset--shadow--md);
+	}
+}
