@@ -12,7 +12,7 @@
 		"author": { "type": "string", "default": "" },
 		"role": { "type": "string", "default": "" }
 	},
-	"supports": { "html": false },
+	"supports": { "html": false, "anchor": true, "align": ["wide", "full"] },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\TestimonialRenderer" }

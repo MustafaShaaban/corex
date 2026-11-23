@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Blocks\BlockWrapper;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Http\PublicSubmission;
@@ -171,6 +172,7 @@ final class ProfileServiceProvider extends ServiceProvider
         register_block_type('corex/account', [
             'api_version'     => 3,
             'render_callback' => [$this, 'renderBlock'],
+            'supports'        => ['anchor' => true],
         ]);
     }
 
@@ -205,7 +207,12 @@ final class ProfileServiceProvider extends ServiceProvider
             $ctx['challengeAttribute'] = $challenge->formAttribute();
         }
 
-        return (new AccountRenderer())->render($ctx);
+        $markup = (new AccountRenderer())->render($ctx);
+
+        // What an editor set on the block reaches its root, as on every CoreX block (spec 136, FR-001).
+        return $this->container->has(BlockWrapper::class)
+            ? $this->container->make(BlockWrapper::class)->apply($markup)
+            : $markup;
     }
 
     public function registerRoutes(): void

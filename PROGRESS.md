@@ -59,25 +59,29 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   G-039, G-041; what is left is in each row), and G-026 is already fixed on `main` (spec 122, DECISIONS #476) but
   in no release. Wave 1 is in three sessions, each in its own worktree, with decision numbers #660 to #669,
   #670 to #689 and #690 to #699. All three specs are on `main`: spec 136 (#491, `a5b91506`), spec 135 (#492,
-  `44356a77`) and spec 137 (#493, `4d0a2b8d`). They are records only, so no gap is closed yet. Slice 1 of spec
-  135 (G-001) is pull request #495 and slice 1 of spec 136 (G-005) is #496, both open. No slice is on `main` and
-  nothing is tagged.
+  `44356a77`) and spec 137 (#493, `4d0a2b8d`). Slices now merge one pull request at a time, and each carries its
+  own rows of the table below: the Slice, PR and State columns say what is on `main`, so this paragraph does not
+  repeat them. The first slice landed on 2026-11-22 (spec 135 slice 1, G-001, #495, `819f0be1`). Nothing is
+  tagged.
 - **What `v0.49.0` waits for, and what it will not hold.** The tag is cut when every wave 1 slice the line can
-  carry is on `main`, so its date follows the owner's design approvals: spec 136 slices 6b, 8 and 9 wait for
-  designs D-1 to D-3, and spec 137 slices 2, 4 and 5 wait for the header drawings. Two slices rest on spec 134,
+  carry is on `main`, designed slices included (the owner, 2026-11-22: "No, full wave", when offered an earlier
+  tag without them). Its date follows his design approvals: spec 136 slices 6b, 8 and 9 wait for designs D-1 to
+  D-3, which are not drawn yet. Spec 137's session reports that he approved all three steps of the header
+  drawings on 2026-11-22 (the record is pull request #498, DECISIONS #696), so none of its slices waits for a
+  design. Two slices rest on spec 134,
   which the line never carries, and ship with `main`'s own tag (#651 point 4): spec 136 slice 2b (the section
   bands) and spec 135 slice 4 (the CoreX favicon kept off a child theme). Spec 135 slice 2 (G-002) rests on #458
   (the CoreX loop); whether #458 is carried with it is decided when the wave is carried.
 - **Pacing (asked for the owner, 2026-11-22).** Two building sessions at a time, one builder or reviewer agent
   at a time inside each, finished work committed and pushed before the next step. Specs 135 and 136 build first;
-  spec 137 merges its spec and draws its designs, and starts building when one of the two is done.
+  spec 137 starts building when one of the two has finished or waits on the owner, on the coordinator's word.
 - **Who coordinates.** A coordinating session carries each finished wave to the line, cuts the tag and reports
   to the Blackstone session after each round of merges and at each tag. Its hand-over note, with the session
   ids, worktrees and the release steps, is `corex-coordinator-handover.md` in the shared notes folder named
   above. What it has read about the line since (the version surfaces, the tag's own CI, a log of each round) is
   `gap-coordinator-state.md`, in the side-session notes of the session that started the wave sessions.
-- **Next.** (1) Specs 135 and 136 build slice by slice into `main`; spec 137 starts with its slices 1 and 3,
-  which need no new drawing, when one of the two has finished or waits on the owner. (2) When wave 1 is
+- **Next.** (1) Specs 135 and 136 build slice by slice into `main`; spec 137 follows with its slices 1 to 5
+  in order when a building slot frees. (2) When wave 1 is
   on `main`: create `release/gap-line` from `v0.48.1`, cherry-pick the wave's squash commits in merge order, open
   one pull request into the line per spec, run `scripts/client-merge-check.mjs`, bump the version surfaces to
   0.49.0 on the line, move the wave's changelog lines into a `[0.49.0]` entry (on the line and on `main`), tag,
@@ -96,7 +100,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-002 | Low | `make:site` agent stubs still teach Spec Kit | 1 | 135 | 2 | #500 | | built: pull request open. Rests on #458 (the loop, constitution v2.0.0, `.claude/agents/`), which `main` gained after v0.48.1: carried to the line only with that commit, or it waits for `main` (#651 point 4) |
 | G-003 | High | Editor parity: 18 of 30 blocks preview by server render; the stub generates one | 1, rest after 3 | 136, 150 | 136: 3 (the standard, the stub, hero, cta, stat, team), 4 (copyright, newsletter, social share; posts, jobs, breadcrumbs and the form as records), and 5 to 9 for the five containers and the hero | | | spec written (DECISIONS #671, #673) |
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
-| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | | | spec written (DECISIONS #670) |
+| G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | #496 (slice 1) | | slice 1 in review: anchor, alignment and class reach the page (DECISIONS #670, #676); 2a and 2b to come |
 | G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | | | open: spec reviewed; the child theme re-check passed (#660). Slice 4 (the favicon) rests on spec 134 and is not carried to the line |
 | G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | | | open: spec reviewed (#662) |
 | G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
@@ -104,7 +108,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
 | G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written |
 | G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
-| G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | spec written; five slices: 1 one width, 2 language switcher, 3 mega menu item, 4 phone menu, 5 utility menu, search and patterns | spec: #493 | | open: spec reviewed; slices 1 and 3 need no new drawing, 2, 4 and 5 wait for the approved drawings (DECISIONS #690 to #695) |
+| G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | spec written; five slices: 1 one width, 2 language switcher, 3 mega menu item, 4 phone menu, 5 utility menu, search and patterns | spec: #493 | | open: spec merged (`4d0a2b8d`); every drawing approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`, DECISIONS #696); no slice built yet, building waits for a free slot (DECISIONS #690 to #696) |
 | G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
 | G-015 | Medium | No in-page section navigation | then | 150 | | | | open |
 | G-016 | Medium | Blocks print images with no `srcset` or size | then | 150 | | | | open |

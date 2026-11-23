@@ -22004,6 +22004,37 @@ drawer hold blocks in their body. Muva and Perego have content saved in today's 
 *Not chosen.* New block names beside the old ones: two tabs blocks in the inserter and no migration. A one-time
 database migration of post content: it rewrites client content on an update, with no editor looking at it.
 
+## #676 -- The editor's preview is told apart by the REST route being answered, and only the previewed block is left unmerged
+
+**Date:** 2026-11-22. **Spec:** 136, slice 1 (G-005, FR-006a). **Branch:** `spec/136-slice-1-wrapper-attributes`.
+**Decided:** by the spec 136 session.
+
+**The question.** #670 says the editor's preview gets a block's markup without the wrapper attributes, because the
+editor's own wrapper already carries them. The render callback is the same for a page and for the preview, and
+WordPress gives a callback no public way to ask which REST request is being answered.
+
+**Decided.**
+- `WordPressBlockWrapper` listens to `rest_request_before_callbacks` and `rest_request_after_callbacks`, which
+  WordPress fires around every route callback, for an HTTP request and for `rest_do_request()` alike, and keeps
+  the routes being answered, innermost last.
+- The markup is left unmerged only when that route is the block renderer's route for the very block being
+  rendered (`/wp/v2/block-renderer/<name>`). A CoreX block nested in what is previewed has no editor wrapper
+  there and is merged as on a page.
+- A page a visitor loads dispatches no REST request, so nothing is recorded and every block is merged.
+- With no block being rendered (a callback called directly, as tests do) there is nothing to merge and the
+  markup is returned as it came.
+- `corex/account` keeps WordPress's generated class (`wp-block-corex-account`): nothing matches that block's
+  markup by exact strings, unlike the forms (#670).
+
+**Known limit.** WordPress does not fire the second filter when a route's callback throws. The route then stays
+recorded until the process ends, and only another preview of the same block in that process could be affected.
+
+*Not chosen.* The `skipBlockSupportAttributes` prop on every preview in the editor files: it strips the support
+values and the extra class but not the generated class or the alignment class, and it would have changed two
+editor files of `plugins/corex-forms`, which the maintenance line would have to merge by hand. Reading
+`$_SERVER['REQUEST_URI']`: it misses a preview asked through `rest_do_request()` and any site with plain
+permalinks.
+
 ## #690 -- Spec 137, the header system: which NAV stories it takes, which it leaves, where it goes past them
 
 **Date:** 2026-11-21. **Spec:** 137 (G-013, wave 1). **Branch:** `spec/137-header-system`.
@@ -22118,3 +22149,25 @@ optional seam later") and #657.
 The two header patterns that hold a raw HTML search get WordPress's Search block in the bar and in the phone menu.
 The one search overlay with its keyboard shortcut is US-NAV-09 (R4.1) and is not built here. Headers saved earlier
 keep the raw search and the script that opens it. Blackstone's header has no search (its decision 6).
+
+## #696 -- The header system's drawings are approved (spec 137)
+
+**Date:** 2026-11-22. **Spec:** 137, slices 2, 4 and 5. **Decided:** by the owner, in session, in three steps, each
+from a picture with a button.
+
+- **Step 1, the phone menu:** the bar shows the logo and the "Menu" button only; the open menu holds the links,
+  mega panels and sub-menus as groups that open in place one at a time, a Language row, the utility links and the
+  one strong button.
+- **Step 2, the utility row and the language switcher:** the row sits on the quiet band above the bar. The
+  switcher has a menu form (the kit's Dropdown, every language listed, the current one ticked) and a list form
+  (links in a row, the current one marked by a tint, a tick and its weight, and not a link).
+- **Step 3, search and the phone action bar:** search is an icon button that opens a field over the end of the
+  menu, with no visible label; the action bar is the strong button, full width, at the foot of a phone screen.
+- The record is `design/handoffs/header-system.md`. The boards stay on the owner's private canvas (the
+  repository keeps no design-tool export); the rules the kit lacked are kept as
+  `specs/137-header-system/design/header-system.css.txt`. No token was added.
+- FR-032 of the spec was brought into step with the drawing before the approval: the menu lists every language,
+  not only the others.
+
+*Owed to the design system:* these rules, the Arabic face on four classes that set the heading face themselves,
+and a mark for the current page in the phone menu.

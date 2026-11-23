@@ -17,6 +17,12 @@
 	border-radius: var(--wp--custom--radius--lg);
 	text-align: center;
 
+	// Full width reaches both edges of the screen, where a rounded corner
+	// would show the page behind.
+	&.alignfull {
+		border-radius: 0;
+	}
+
 	&__bg {
 		position: absolute;
 		inset: 0;
