@@ -22390,3 +22390,54 @@ after corex-reviewer's round.
 *For the maintenance line:* this slice rests on slice 3 (#506): the gate imports `@corex/build-tools/parity`, and
 the `supports` lines and stubs it edits sit beside slice 3's `corex.editor` keys. Slice 3's commit is
 cherry-picked first. `ProfileServiceProvider.php` changed after the tag (slice 1 note).
+
+## #701 -- Pixel parity sets the release order: page parts first, then the features
+
+**Date:** 2026-11-23. **Spec:** 137 (slice 6), 149, 150, 153 (new), 144 (G-014 leaves it). **Decided:** by the gap coordinator,
+on the Blackstone site's decision 29, relayed by its coordinator: every visible slice of the site matches its
+Figma frame, and a slice waits rather than differs. Amends the wave order of #652. Spec 153 is new: the editor experience gaps G-046 to G-053
+that wave 1 does not take (G-048 is spec 135, #664; G-051 is spec 136, #679).
+
+- The site's Home slices 9, 10 and 12 now wait for four CoreX gaps instead of working around them: G-010 (a
+  carousel of records that moves and fades, and a partner ticker), G-012 (reveal on scroll and count-up, for the
+  KPI banner and the hero's stats), G-008 (a record picker, for featured stories and articles), and a header
+  scroll distance a site can set (today `theme/assets/js/corex-navigation.js` swaps the header state at a fixed
+  `SCROLL_THRESHOLD` of 8 pixels, with no token).
+- **The header scroll distance joins wave 1** as spec 137 slice 6, after its slices 1 to 5, so it ships in
+  `v0.49.0`. It is a setting a site's `theme.json` can change, read by the header script, defaulting to today's 8
+  pixels so no site changes on update. Spec 137 records it in its own range (#690 to #699).
+- **G-012 moves from spec 150 to spec 149.** Spec 149 becomes lists, the carousel, the ticker and reveal: G-008,
+  G-010, G-012, then G-009 (visitor-side filters), in that order.
+- **The release order after `v0.49.0`**, each cut on `release/gap-line` like `v0.49.0`. The visible page parts the
+  site's pages wait for go first; the features follow. It replaces the tags of #652.
+  - `v0.50.0`: spec 149, G-008, G-010, G-012, then G-009. G-009 ships here if it is on `main` when the other three
+    are, and otherwise with the next tag.
+  - `v0.51.0`: spec 150, the page parts: G-014's visible trail (parent pages, the post type and term steps; moved
+    here from spec 144, whose SEO add-on keeps the `BreadcrumbList` data), G-015, G-016, G-017, G-019 and the rest
+    of G-003. With it, spec 153, the editor experience: G-046, G-047, G-049, G-050 and G-053, and G-052 only if
+    the site's spec 001 shows WordPress 7.0's content-only mode cannot add or reorder an item in a locked section.
+  - `v0.52.0`: specs 138 to 143 (forms, mail, the newsletter, careers, privacy and private uploads, people and
+    settings lists).
+  - `v0.53.0`: specs 144 to 148 (the SEO add-on, analytics and consent, agent readiness, hardening, languages).
+  - `v0.54.0`: spec 151 (G-018, G-020, G-021) and spec 152 (G-043, G-044, G-045). A gap here moves ahead when the
+    site names a launch page that rests on it.
+- **What spec 149 rests on, measured** with `git log v0.48.1..origin/main` on 2026-11-23: since the tag, `main`
+  changed the carousel and posts blocks only through wave 1 (spec 136 slices 1, 3 and 2a), the stat block the same
+  way, and `corex-navigation.js` not at all. So nothing keeps the four gaps off the line, provided wave 1 is
+  carried first. One risk: `theme/theme.json` also changed through revamp work the line never carries (specs 121
+  and 134). A new token there is a hunk to place by hand beside the tag's own tokens. If a slice's token only
+  makes sense with that revamp work, #651 point 4 applies.
+- The same measure for specs 150 and 151: `BreadcrumbsRenderer.php`, `CopyrightRenderer.php`, `TeamRenderer.php`,
+  `GalleryRenderer.php`, `HeroRenderer.php`, `addons/corex-media/src/MediaImage.php`, `theme/templates/single.html`,
+  `plugins/corex-core/src/Models/Model.php`, `PostRepository.php` and `ConnectorRegistry.php` are unchanged on
+  `main` since `v0.48.1`; only the blocks' `block.json` files changed, through wave 1. Spec 153 is new code. So
+  each can go to the line once wave 1 is carried. Specs 138 to 143 are not measured yet; forms, core and settings
+  moved a lot after the tag, so some of them may ship only with `main`'s own tag.
+- Every visible part of spec 149 (the carousel's controls, the ticker, the reveal) is a CoreX framework design,
+  drawn in Claude Design and approved by the owner before it is built (`AGENTS.md`, "UI, UX and front end"). The
+  Figma frames of the site set what the blocks must be able to show; the spec lists the drawings, and their
+  approval sets `v0.50.0`'s date.
+
+*Not chosen.* Shipping the four with the forms wave: it would hold three Home slices behind specs that are not
+written yet and rest far more on revamp code. A separate spec for the scroll distance: it is one setting in the
+header system spec 137 already owns.
