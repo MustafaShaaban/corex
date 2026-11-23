@@ -309,6 +309,34 @@ it('leaves the patterns as they are on a visitor\'s request, which is not where 
     ))->toBe([]);
 });
 
+it('takes CoreX\'s patterns out of the inserter on an admin screen (FR-021, DECISIONS #668)', function () {
+    corexListsUse($this, corexListsSwitches(['hidePatterns' => true]));
+    corexListsRegisterThemePatterns(false);
+    $previousScreen = $GLOBALS['current_screen'] ?? null;
+    \Corex\Tests\Support\AdminScreen::set('edit-page');
+
+    try {
+        foreach ($GLOBALS['wp_filter']['init']->callbacks[11] ?? [] as $callback) {
+            if ($callback['function'] instanceof Closure) {
+                call_user_func($callback['function']);
+            }
+        }
+    } finally {
+        $GLOBALS['current_screen'] = $previousScreen;
+    }
+
+    $inserter = corexListsInserter();
+    $hidden = array_keys(array_filter(
+        array_intersect_key($inserter, array_flip(corexListsCorexPatternSlugs())),
+        static fn (bool $shown): bool => ! $shown,
+    ));
+    sort($hidden);
+    $expected = array_values(array_diff(corexListsCorexPatternSlugs(), ['corex/loading']));
+    sort($expected);
+
+    expect($hidden)->toBe($expected);
+});
+
 it('leaves every pattern in the inserter for a child that does not set hidePatterns (FR-021)', function () {
     corexListsUse($this, corexListsSwitches([]));
     corexListsRegisterThemePatterns();

@@ -21,7 +21,9 @@ defined('ABSPATH') || exit;
  * pattern the CoreX theme's folder declares is registered again under its own name with its own
  * properties and `inserter` set to `false`. It stays registered: a CoreX template that inserts one by
  * slug still draws it for a visitor and in the editor, while the block inserter and the Site Editor's
- * Patterns screen leave it out. This runs on every request, so every reader sees the same registry.
+ * Patterns screen leave it out. The provider runs it where patterns are chosen, on an admin screen and
+ * in a REST request (DECISIONS #668): a visitor's request leaves the registry as WordPress built it,
+ * and the patterns are registered either way.
  *
  * The CoreX theme's patterns are known by the `Slug:` headers of its own folder, never by a prefix
  * (`corex-ui` registers `corex/*` patterns too, and they stay as they are), and a slug the child's
