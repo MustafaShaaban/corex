@@ -8,7 +8,11 @@
 	"description": "{{ title }}: a CoreX block that shows records, previewed by the server.",
 	"textdomain": "{{ text_domain }}",
 	"attributes": {},
-	"supports": { "html": false, "anchor": true },
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"spacing": { "margin": [ "top", "bottom" ] }
+	},
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "{{ renderer_fqcn }}", "editor": "records" }

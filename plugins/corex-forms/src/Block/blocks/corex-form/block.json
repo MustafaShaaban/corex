@@ -14,7 +14,7 @@
 		"flowSlug": { "type": "string", "default": "" }
 	},
 	"usesContext": [ "postId" ],
-	"supports": { "html": false, "className": false, "anchor": true },
+	"supports": { "html": false, "className": false, "anchor": true, "spacing": { "margin": ["top", "bottom"] } },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"viewScript": "file:./view.js",

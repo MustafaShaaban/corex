@@ -11,7 +11,11 @@
 		"message": { "type": "string", "default": "" },
 		"variant": { "type": "string", "default": "info" }
 	},
-	"supports": { "html": false, "anchor": true },
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"spacing": { "margin": ["top", "bottom"], "padding": ["vertical", "horizontal"] }
+	},
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\AlertRenderer", "editor": "pending" }

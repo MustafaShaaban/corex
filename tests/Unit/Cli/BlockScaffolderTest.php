@@ -89,14 +89,14 @@ it('writes a valid block.json with the dynamic renderer wired', function () {
         ->and($json['corex']['renderer'])->toBe('App\\Blocks\\PricingRenderer');
 });
 
-it('FR-014: declares the in-place kind by default, with a title typed on the canvas and an anchor', function () {
+it('FR-014: declares the in-place kind by default, with a title typed on the canvas, an anchor and a top and bottom margin (FR-007)', function () {
     [, $dir] = scaffoldedBlock('TeamMember');
 
     $json = scaffoldedJson($dir . '/block.json');
 
     expect($json['corex']['editor'])->toBe('in-place')
         ->and($json['attributes'])->toBe(['title' => ['type' => 'string', 'default' => '']])
-        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true]);
+        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true, 'spacing' => ['margin' => ['top', 'bottom']]]);
 });
 
 it('FR-014: draws the title with RichText in the editor, and never previews by the server render', function () {
@@ -183,7 +183,7 @@ it('FR-014: with --records, declares the records kind and previews the server re
     $php = (string) file_get_contents($base . '/Blocks/LatestNewsRenderer.php');
 
     expect($json['corex']['editor'])->toBe('records')
-        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true])
+        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true, 'spacing' => ['margin' => ['top', 'bottom']]])
         ->and(is_file($dir . '/parity.json'))->toBeFalse()
         ->and(is_file($dir . '/style.scss'))->toBeTrue()
         ->and($js)->toContain("import ServerSideRender from '@wordpress/server-side-render';")

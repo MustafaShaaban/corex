@@ -7,6 +7,9 @@
 	gap: var(--wp--preset--spacing--30);
 	padding: var(--wp--preset--spacing--50);
 	background-color: var(--wp--preset--color--surface);
+	// The text colour is set on the root, so WordPress's contrast check
+	// reads the colour the text is drawn in.
+	color: var(--wp--preset--color--ink);
 	box-shadow: var(--wp--preset--shadow--md);
 	border-radius: var(--wp--custom--radius--lg);
 	text-align: start;
@@ -14,7 +17,7 @@
 	&__plan {
 		margin: 0;
 		font-size: var(--wp--preset--font-size--lg);
-		color: var(--wp--preset--color--ink);
+		color: inherit;
 	}
 
 	&__price {
@@ -32,7 +35,7 @@
 	&__features {
 		margin: 0;
 		padding-inline-start: var(--wp--preset--spacing--50);
-		color: var(--wp--preset--color--ink);
+		color: inherit;
 	}
 
 	&__cta {
@@ -42,5 +45,22 @@
 		background-color: var(--wp--preset--color--primary);
 		color: var(--wp--preset--color--surface);
 		text-decoration: none;
+	}
+}
+
+// A text colour chosen in the editor (spec 136, FR-008). Written on the
+// class WordPress gives both the page's root and the editor's wrapper,
+// so a preview drawn inside the wrapper takes it too. The headings, the
+// text and the links take the chosen colour, as core's paragraph does.
+// The button keeps its own colours, drawn on its own fill.
+.wp-block-corex-pricing.has-text-color {
+
+	:where(h1, h2, h3, h4, h5, h6),
+	a:where(:not(.wp-element-button, .corex-pricing__cta)),
+	.corex-pricing__plan,
+	.corex-pricing__price,
+	.corex-pricing__period,
+	.corex-pricing__features {
+		color: inherit;
 	}
 }

@@ -265,7 +265,7 @@
     {
       "path": "docs-app/src/content/docs/guides/blocks.md",
       "lines": [
-        39
+        40
       ],
       "topics": [
         "theme-authority"
@@ -368,13 +368,13 @@
     {
       "path": "packages/cli/README.md",
       "lines": [
-        87,
-        132,
-        134,
-        136,
-        138,
-        147,
-        274
+        88,
+        135,
+        137,
+        139,
+        141,
+        150,
+        277
       ],
       "topics": [
         "brand.json",
