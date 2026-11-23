@@ -402,10 +402,11 @@ test.describe( "the login's ambient glow and grid", () => {
 	test.use( { storageState: VISITOR } );
 
 	/**
-	 * The login's running animations, by name, with the element or pseudo-element each is on.
+	 * The login's running animations and transitions, by name (a transition by the property it
+	 * moves), with the element or pseudo-element each is on.
 	 *
 	 * @param {import('@playwright/test').Page} page The login.
-	 * @return {Promise<string[]>} One `name on target` per running animation.
+	 * @return {Promise<string[]>} One `name on target` per running animation or transition.
 	 */
 	const running = ( page ) =>
 		page.evaluate( () =>
@@ -414,7 +415,10 @@ test.describe( "the login's ambient glow and grid", () => {
 				.filter( ( animation ) => animation.playState === 'running' )
 				.map(
 					( animation ) =>
-						`${ animation.animationName } on ${
+						`${
+							animation.animationName ||
+							animation.transitionProperty
+						} on ${
 							animation.effect.pseudoElement ||
 							animation.effect.target.tagName
 						}`
@@ -438,20 +442,54 @@ test.describe( "the login's ambient glow and grid", () => {
 	test( 'stop under reduced motion', async ( { page } ) => {
 		await page.emulateMedia( { reducedMotion: 'reduce' } );
 		await openLogin( page );
-		// The entrances, and the focus WordPress gives the first field a moment after load, are
-		// shortened to a hundredth of a millisecond, not removed: give them two seconds to end.
-		await page
-			.waitForFunction(
-				() =>
-					document
-						.getAnimations()
-						.every(
-							( animation ) => animation.playState !== 'running'
-						),
-				null,
-				{ timeout: 2000 }
-			)
-			.catch( () => {} );
+
+		// The glow and the grid are cut to a hundredth of a millisecond and play once.
+		const ambient = await page.evaluate( () =>
+			[ '::before', '::after' ].map( ( pseudo ) => {
+				const style = window.getComputedStyle( document.body, pseudo );
+				return {
+					name: style.animationName,
+					milliseconds: parseFloat( style.animationDuration ) * 1000,
+					iterations: style.animationIterationCount,
+				};
+			} )
+		);
+		expect( ambient.map( ( { name } ) => name ) ).toEqual( [
+			'corex-login-glow',
+			'corex-login-grid',
+		] );
+		for ( const { milliseconds, iterations } of ambient ) {
+			expect( milliseconds ).toBeLessThanOrEqual( 0.01 );
+			expect( iterations ).toBe( '1' );
+		}
+
+		// WordPress focuses the first field about 200 ms after load (wp_attempt_focus), and that
+		// focus starts the field's border and shadow transitions: wait for the focus itself, then
+		// for every animation and transition on the page, each cut to a hundredth of a millisecond,
+		// to end. A fixed wait ended before the focus on a fast machine and caught them running.
+		await expect( page.locator( '#user_login' ) ).toBeFocused();
+		const longest = await page.evaluate( async () => {
+			const frame = () =>
+				new Promise( ( resolve ) =>
+					window.requestAnimationFrame( resolve )
+				);
+			await frame();
+			await frame();
+			const animations = document.getAnimations();
+			const durations = animations.map(
+				( animation ) =>
+					animation.effect.getComputedTiming().activeDuration
+			);
+			if ( durations.every( ( duration ) => duration <= 0.01 ) ) {
+				await Promise.all(
+					animations.map( ( animation ) =>
+						animation.finished.catch( () => {} )
+					)
+				);
+			}
+			return Math.max( 0, ...durations );
+		} );
+		expect( longest ).toBeLessThanOrEqual( 0.01 );
 
 		expect( await running( page ) ).toEqual( [] );
 	} );
