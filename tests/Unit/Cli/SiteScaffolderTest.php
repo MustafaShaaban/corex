@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 use Corex\Cli\Generators\StubRenderer;
 use Corex\Cli\Site\SiteIdentity;
+use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldResult;
 
@@ -28,7 +29,7 @@ function tempSiteBase(): string
 
 function siteScaffolder(): SiteScaffolder
 {
-    return new SiteScaffolder(new StubRenderer(), siteStubsDir());
+    return new SiteScaffolder(new StubRenderer(), siteStubsDir(), new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json']));
 }
 
 it('scaffolds the plugin, theme, and governance set under the flat sites/<client> layout', function () {
@@ -45,24 +46,6 @@ it('scaffolds the plugin, theme, and governance set under the flat sites/<client
         ->and(is_dir($base . '/themes'))->toBeFalse()
         ->and(is_file($base . '/AGENTS.md'))->toBeTrue()
         ->and(is_file($base . '/.gitignore'))->toBeTrue();
-});
-
-it('scaffolds header/footer/front-page override points with ownership guidance', function () {
-    $base = tempSiteBase();
-    siteScaffolder()->scaffold('Acme', $base);
-
-    $header = (string) file_get_contents($base . '/acme-theme/parts/header.html');
-    $footer = (string) file_get_contents($base . '/acme-theme/parts/footer.html');
-    $front  = (string) file_get_contents($base . '/acme-theme/templates/front-page.html');
-
-    expect(is_file($base . '/acme-theme/parts/header.html'))->toBeTrue()
-        ->and(is_file($base . '/acme-theme/parts/footer.html'))->toBeTrue()
-        ->and(is_file($base . '/acme-theme/templates/front-page.html'))->toBeTrue()
-        // the override points explain brand-via-tokens vs structure-in-client-theme
-        ->and($header)->toContain('override')
-        ->and($header)->toContain('theme.json')
-        ->and($footer)->toContain('override')
-        ->and($front)->toContain('front page');
 });
 
 it('scaffolds the client image-optimization pipeline in --starter mode', function () {

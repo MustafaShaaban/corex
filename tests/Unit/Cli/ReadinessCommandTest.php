@@ -17,6 +17,7 @@ use Corex\Cli\Release\DeploymentReadinessCheck;
 use Corex\Cli\Release\FreeProBoundaryReadinessCheck;
 use Corex\Cli\Release\MetadataConsistencyCheck;
 use Corex\Cli\Release\MultiAgentReadinessCheck;
+use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldValidator;
 
@@ -26,7 +27,7 @@ function spec055ReadinessCommand(): ReadinessCommand
         'metadata' => new MetadataConsistencyCheck(),
         'ciSecurity' => new CiSecurityReadiness(),
         'root' => dirname(__DIR__, 3),
-        'siteScaffolder' => new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'),
+        'siteScaffolder' => new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json'])),
         'siteScaffoldValidator' => new SiteScaffoldValidator(),
         'deploymentReadiness' => new DeploymentReadinessCheck(),
         'componentCoverage' => new ComponentCoverageReadinessCheck(),

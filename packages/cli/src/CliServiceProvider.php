@@ -46,6 +46,7 @@ use Corex\Cli\Routes\RouteList;
 use Corex\Cli\Routes\RoutesReader;
 use Corex\Cli\Site\FrameworkBaselineSource;
 use Corex\Cli\Site\GitFrameworkBaselineSource;
+use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteRepositoryResolver;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldValidator;
@@ -116,11 +117,22 @@ final class CliServiceProvider extends ServiceProvider
             ),
         );
 
+        // spec 135, FR-012: a client theme is a child of the CoreX theme, and make:site lists the
+        // CoreX theme's tokens in it. Its theme.json is looked for in the repository the CLI runs
+        // from, then in the installed theme `corex`; read only when a theme is generated.
+        $this->container->singleton(
+            ParentThemeTokens::class,
+            static fn (): ParentThemeTokens => new ParentThemeTokens([
+                dirname(__DIR__, 3) . '/theme/theme.json',
+                self::installedCorexThemeJson(),
+            ]),
+        );
         $this->container->singleton(
             SiteScaffolder::class,
             fn (ContainerInterface $c): SiteScaffolder => new SiteScaffolder(
                 $c->make(StubRenderer::class),
                 dirname(__DIR__) . '/stubs',
+                $c->make(ParentThemeTokens::class),
             ),
         );
         // spec 102: make:site records the framework release it generates against, and places the
@@ -686,6 +698,21 @@ final class CliServiceProvider extends ServiceProvider
         }
 
         return array_values(array_filter($candidates, 'is_file'));
+    }
+
+    /**
+     * Where the installed theme `corex` keeps its theme.json (spec 135, FR-012): the second place
+     * make:site looks, after the repository's own `theme/`. Asked of WordPress, which knows the
+     * theme roots; the path is named even when no such theme is installed, so a failure can say
+     * where it looked.
+     */
+    private static function installedCorexThemeJson(): string
+    {
+        if (function_exists('wp_get_theme')) {
+            return wp_get_theme('corex')->get_stylesheet_directory() . '/theme.json';
+        }
+
+        return (defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR : 'wp-content') . '/themes/corex/theme.json';
     }
 
     private function context(ConfigInterface $config): GeneratorContext

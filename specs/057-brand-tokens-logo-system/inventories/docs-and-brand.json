@@ -315,8 +315,8 @@
     {
       "path": "docs-app/src/content/docs/guides/client-site.md",
       "lines": [
-        22,
-        45
+        23,
+        48
       ],
       "topics": [
         "theme-authority"
@@ -325,10 +325,12 @@
     {
       "path": "docs-app/src/content/docs/guides/company-kit.md",
       "lines": [
-        36
+        36,
+        45
       ],
       "topics": [
-        "brand.json"
+        "brand.json",
+        "theme-authority"
       ]
     },
     {
@@ -367,7 +369,12 @@
       "path": "packages/cli/README.md",
       "lines": [
         87,
-        264
+        132,
+        134,
+        136,
+        138,
+        147,
+        274
       ],
       "topics": [
         "brand.json",

@@ -232,6 +232,7 @@ final class MakeCommand
             }
             WP_CLI::success(sprintf('Client site scaffolded: %s', $result->siteDir));
             WP_CLI::log('Edit only the client plugin/theme — never the Corex framework. See AGENTS.md.');
+            $this->reportKeptTheme($result->kept);
 
             if ($repository !== null && ! $options['plugin_only'] && ! $options['theme_only']) {
                 $this->reportUpdateSafety($repository);
@@ -240,9 +241,39 @@ final class MakeCommand
             return;
         }
 
+        if ($result->lookedIn !== []) {
+            WP_CLI::error(sprintf(
+                /* translators: %s: the paths looked in, separated by commas. */
+                __('Nothing was generated. A client theme is a child of the CoreX theme and lists its tokens, and the CoreX theme\'s theme.json could not be read at: %s', 'corex'),
+                implode(', ', $result->lookedIn),
+            ));
+
+            return;
+        }
+
         $result->status === SiteScaffoldResult::SKIPPED
             ? WP_CLI::warning(sprintf('%s (%s)', $result->message, $result->siteDir))
             : WP_CLI::error($result->message ?? 'Site scaffolding failed.');
+    }
+
+    /**
+     * Say which files of an existing theme were left as they were (spec 135, FR-019). `--force`
+     * rewrites the rest; an existing theme is never converted to a child, and its tokens are never
+     * replaced.
+     *
+     * @param list<string> $kept
+     */
+    private function reportKeptTheme(array $kept): void
+    {
+        if ($kept === []) {
+            return;
+        }
+
+        WP_CLI::warning(sprintf(
+            /* translators: %s: the files kept, separated by commas. */
+            __('Kept as they were: %s. An existing theme is never converted to a child of the CoreX theme, and its tokens are never replaced.', 'corex'),
+            implode(', ', $kept),
+        ));
     }
 
     /**

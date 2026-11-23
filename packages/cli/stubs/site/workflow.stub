@@ -33,6 +33,11 @@ jobs:
       - name: Compare framework-owned paths with the recorded baseline
         run: node scripts/verify-framework.mjs
 
+      # Node only. The site theme is a child of the CoreX theme, and a preset list it declares in
+      # theme.json replaces the CoreX theme's whole list: each one must name every CoreX entry.
+      - name: The client theme keeps every CoreX token in the lists it declares
+        run: node scripts/verify-client-theme.mjs
+
   client-build:
     name: Client build from a clean install
     runs-on: ubuntu-latest

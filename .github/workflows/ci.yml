@@ -738,6 +738,15 @@ jobs:
           git add sites .github/workflows/site-acme.yml
           git commit --quiet --message 'Add the client site'
 
+      # spec 135, FR-015: the generated theme is a child of the CoreX theme and lists its tokens.
+      # Every list it declares must name every entry of the CoreX theme's; Node alone runs it.
+      - name: The generated client theme keeps every CoreX token
+        run: |
+          set -euo pipefail
+          grep --quiet --ignore-case '^Template: corex$' sites/acme/acme-theme/style.css
+          node scripts/verify-client-theme.mjs | tee "$RUNNER_TEMP/client-theme.txt"
+          grep --quiet $'^client-theme\tPASS\t1 child themes checked' "$RUNNER_TEMP/client-theme.txt"
+
       - name: The client's own tests run from its plugin directory
         working-directory: sites/acme/acme-site
         run: ../../../vendor/bin/pest

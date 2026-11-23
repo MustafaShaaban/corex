@@ -14,15 +14,16 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Blocks\BlockWrapper;
 use Corex\Cli\Generators\StubRenderer;
-use Corex\Container\Container;
-use Corex\Container\ContainerInterface;
+use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldResult;
 use Corex\Cli\Support\InvalidNameException;
+use Corex\Container\Container;
+use Corex\Container\ContainerInterface;
 
 function starterScaffolder(): SiteScaffolder
 {
-    return new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs');
+    return new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs', new ParentThemeTokens([dirname(__DIR__, 3) . '/theme/theme.json']));
 }
 
 function starterBase(): string
@@ -69,7 +70,6 @@ it('emits the starter-theme asset architecture with --starter', function () {
         '/functions.php',
         '/assets/src/scss/main.scss',
         '/assets/src/js/main.js',
-        '/parts/footer.html',
     ] as $file) {
         expect(is_file($theme . $file))->toBeTrue("missing {$file}");
     }
