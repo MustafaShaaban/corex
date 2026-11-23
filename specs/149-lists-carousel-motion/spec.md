@@ -356,7 +356,11 @@ left, keyboard only, with a screen reader.
   every width unless an editor sets the tablet or phone count; the arrows clamp at the ends and advancing by itself
   wraps, as today. Only two changes reach it, because they are WCAG 2.2 AA defects: the Pause button when it
   advances by itself (2.2.2) and the 24px dot and 44px arrow targets (2.5.8). With scripts off its dead controls
-  are also hidden (a dead control is a defect). The slice MUST record in its pull request each visible difference.
+  are also hidden (a dead control is a defect). FR-023's hidden arrows on touch screens and FR-025's disabled end
+  control do not apply to it: its arrows stay shown and clamp without being disabled, as today. It gains the
+  in-view classes and `aria-current` of FR-022, which change nothing a visitor sees. A saved carousel is one with
+  none of this spec's attributes saved; setting any of them in the editor makes it a new one. The slice MUST record
+  in its pull request each visible difference.
   This is a named exception to #652's third rule, recorded in #724, that the owner may overrule through the
   coordinator.
 - **FR-029a**: In the editor's canvas the carousel MUST never advance and the ticker MUST never move; every item is
@@ -405,8 +409,9 @@ left, keyboard only, with a screen reader.
   starts. A block in view at that moment MUST be shown as it is. With scripts off, under reduced motion, in print
   and in the editor's canvas, every block MUST be shown in its end state.
 - **FR-053**: A block MUST reveal once, when the share of it that the approved design names comes into view, over
-  the duration, distance and easing of the approved design, from tokens. The start state MUST never be fully
-  transparent.
+  the duration, distance and easing of the approved design, from tokens. The start state MUST never be fully transparent:
+  `reveal.opacityStart` has a minimum of 0.3; the script clamps a lower value to it and falls back to the default
+  for one it cannot read, and a unit test sets it to 0.
 - **FR-054**: Reveal MUST NOT be offered on a block inside a carousel, a ticker, a modal or a drawer, and a saved
   one there MUST be ignored.
 - **FR-055**: A page with reveal on its sections MUST have a layout shift of 0 and the same largest paint element
@@ -435,10 +440,13 @@ left, keyboard only, with a screen reader.
   a hidden field except its own `filter-<id>-*`, `query-<id>-page` and `paged`, and its action MUST drop
   `/page/N/`. Tests MUST cover plain permalinks (`?page_id=`) and `?lang=`.
 - **FR-063**: The server MUST apply the address to that Query Loop only: through `query_loop_block_query_vars` for
-  a Query Loop with its own query, and through the main query for one that inherits it (an archive template). It
-  MUST touch the main query only when it is an archive, the posts page or a search
-  (`is_home() || is_archive() || is_search()`), never on a singular request; tests MUST cover a page and a single
-  post that carry a `filter-*` parameter (no 404, no change). Changing a filter MUST go back to the first page.
+  a Query Loop with its own query. For one that inherits the main query (an archive template), the main query MUST
+  NOT be changed, because it runs before the template, and so the bar, is known: when an inheriting Query Loop that
+  holds a bar renders, CoreX runs the main query's arguments with the filters as a query of its own and gives it to
+  that loop's inner blocks (post template, pagination, no results) for the length of its render, then restores the
+  main query. It does so only on an archive, the posts page or a search, never on a singular request. Tests MUST
+  cover a page and a single post that carry a `filter-*` parameter (no 404, no change), and an archive whose
+  template has no bar (its list unchanged). Changing a filter MUST go back to the first page.
 - **FR-064**: Each term control MUST say how many terms are selected. Counts per option MAY be turned on; they
   count items of the Query Loop's own query, without the other filters, and are cached until an item of that post
   type is saved or deleted.
@@ -474,6 +482,8 @@ CoreX's. So every visible value of every block this spec adds or changes is a to
   (`--wp--custom--<block>--<name>`), itself made from the theme's presets where one fits.
 - **FR-081**: A client theme MUST be able to change each value two ways: in its own `theme.json`
   (`settings.custom.<block>.<name>`), and in a block style or class that sets `--corex-<block>-<name>`.
+  The widths marked "theme.json only" in FR-084 are the exception: media queries cannot read a property, so PHP
+  resolves them from the merged theme JSON into the rule it prints, and a block style cannot change them.
 - **FR-082**: Values a script needs (the ticker's speed, the reveal's and the count-up's duration, step and
   threshold) MUST be read by the script from the computed property when it starts, never written in the script.
 - **FR-083**: The markup MUST carry stable classes for every part a style may target (`corex-carousel__arrow`,
@@ -484,16 +494,17 @@ CoreX's. So every visible value of every block this spec adds or changes is a to
 
 | Block | Tokens (`settings.custom.<block>.*`) |
 |---|---|
-| `carousel` | `gap`, `peek`, `fadeSize`; `arrowSize`, `arrowIconSize`, `arrowColor`, `arrowBackground`, `arrowBackgroundHover`, `arrowBorder`, `arrowRadius`, `arrowInset`; `dotSize`, `dotTarget`, `dotGap`, `dotColor`, `dotColorCurrent`, `dotRadius`; `controlsGap`, `controlsOffset`; `pauseSize`, `pauseColor`, `pauseBackground`, `pauseRadius`, `pauseInsetBlock`, `pauseInsetInline` |
+| `carousel` | `gap`, `peek`, `fadeSize`; `arrowSize`, `arrowIconSize`, `arrowColor`, `arrowBackground`, `arrowBackgroundHover`, `arrowBorder`, `arrowRadius`, `arrowInset`; `dotSize`, `dotTarget`, `dotGap`, `dotColor`, `dotColorCurrent`, `dotRadius`; `controlsGap`, `controlsOffset`; `pauseSize`, `pauseColor`, `pauseBackground`, `pauseRadius`, `pauseInsetBlock`, `pauseInsetInline`; `tabletWidth`, `desktopWidth` (theme.json only) |
 | `ticker` | `speedSlow`, `speedMedium`, `speedFast` (pixels per second), `gap`, `fadeSize`, `pauseSize`, `pauseColor`, `pauseBackground`, `pauseRadius`, `pauseInsetBlock`, `pauseInsetInline` |
 | `reveal` | `distance`, `opacityStart`, `duration`, `easing`, `stagger`, `threshold` |
 | `countUp` | `duration`, `easing`, `threshold` |
-| `filters` | `gap`; `controlHeight`, `controlPadding`, `controlRadius`, `controlBorder`, `controlBackground`, `controlColor`; `panelBackground`, `panelRadius`, `panelShadow`, `panelMaxHeight`; `chipBackground`, `chipColor`, `chipRadius`, `chipPadding`, `chipGap`, `chipRemoveSize`; `countColor`, `countSize`; `clearColor`; `moreGap`; `sheetBackground`, `sheetRadius`, `sheetPadding`, `sheetBackdrop`, `sheetMaxHeight` |
+| `filters` | `gap`; `controlHeight`, `controlPadding`, `controlRadius`, `controlBorder`, `controlBackground`, `controlColor`; `panelBackground`, `panelRadius`, `panelShadow`, `panelMaxHeight`; `chipBackground`, `chipColor`, `chipRadius`, `chipPadding`, `chipGap`, `chipRemoveSize`; `countColor`, `countSize`; `clearColor`; `moreGap`; `sheetBackground`, `sheetRadius`, `sheetPadding`, `sheetBackdrop`, `sheetMaxHeight`; `sheetWidth` (theme.json only) |
 
 - **FR-085**: A fixture client theme in the test suite MUST override every token of FR-084 with a value unlike its
   default, and a Playwright test MUST prove from the computed style that each one changes what renders, at 375
   and 1280px. A unit check MUST fail when a style file of these blocks holds a length, colour, time or easing
   literal (0, `100%`, keywords and `var()` references excepted).
+  For the widths it MUST prove the layout changes at the new width and not at the default one.
 - **FR-086**: Each design (149-D1 to 149-D4) MUST name its values as the tokens of FR-084, with their defaults, so
   the code and the drawing hold the same names.
 - **FR-087**: The tokens of FR-084 are new keys, placed by hand on the line. Their defaults MUST be literal values

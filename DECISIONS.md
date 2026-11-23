@@ -22728,8 +22728,11 @@ session.
   indexed pages.
 - A filter applies only to the Query Loop that holds the filter bar (the server checks the loop's own inner blocks),
   so a Chosen records carousel with the same id is never filtered. Two filtered loops with the same id on one page:
-  the editor warns and gives the second a new id; patterns CoreX ships carry no fixed `queryId`. The server touches
-  the main query only on an archive, the posts page or a search. A filtered address also sends
+  the editor warns and gives the second a new id; patterns CoreX ships carry no fixed `queryId`. The main query is
+  never changed: it runs before the template, so the bar is not known yet. An inheriting Query Loop that holds a
+  bar runs the main query's arguments with the filters as its own query while it renders, only on an archive, the
+  posts page or a search. *Not chosen:* `pre_get_posts` on the main query, which would filter an archive whose
+  template has no bar. A filtered address also sends
   `X-Robots-Tag: noindex, follow`, so an SEO plugin that replaces core's robots tag does not drop it.
 - A Query Loop that holds a filter bar is navigated by CoreX's script only: the filter blocks declare no
   `interactivity.clientNavigation`, so core turns its router off for that loop (core `blocks/query.php:84-150`),
