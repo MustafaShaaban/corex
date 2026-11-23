@@ -6,11 +6,14 @@
 1" (the phone menu), "Approve step 2" (the utility row and the language switcher), "Approve step 3" (the header
 search and the phone action bar).
 
+**Addendum, step 2a (the language toggle):** drawn 2026-11-23, **waiting for the owner's approval**. Its section
+below says what was drawn; nothing in it is built until this line says it is approved.
+
 **Design source:** the canvas "CoreX spec 137: the header system" in Claude Design, private to the owner:
 https://claude.ai/artifact/3jYwcAEaZyBWC1pgG1ZHvF. It is drawn on the CoreX design system
 (https://claude.ai/artifact/DExY8maEuxwM6JwdZ1jw5c) and uses the approved visitor kit's SiteHeader, MegaMenu,
 Navigation, Dropdown, Button, Badge and TextInput unchanged (`visitor-kit.md`, DECISIONS #639). The canvas holds
-27 boards. The repository keeps no design-tool export (`tests/repo-hygiene.test.js`), so the boards stay on the
+27 approved boards and the 9 of the step 2a addendum. The repository keeps no design-tool export (`tests/repo-hygiene.test.js`), so the boards stay on the
 canvas; what the code needs from them is written here, and the rules the kit lacked are kept beside the spec as
 `specs/137-header-system/design/header-system.css.txt`, the build contract.
 
@@ -63,6 +66,20 @@ opening and closing are written below and are proven when each slice is built.
 - The phone action bar at 375px: the strong button, full width, fixed to the foot of the screen, with the page's
   last content readable above it; light, dark, Arabic.
 
+**Step 2a, the language toggle (addendum, 9 boards, page `#page-step2a`; spec FR-032a, G-054, DECISIONS #697).
+Waiting for approval.**
+- The toggle is one link of the list form with no current item: the other language's name in its own script,
+  with its own `lang`, `dir` and `hreflang`, no tint, no tick, no icon, no script. It reads "العربية" on an English
+  page and "English" on an Arabic page. At rest, hover and keyboard focus (the 2px brass ring), on the page and
+  on the utility row's quiet band; its 44px target drawn. The same in dark.
+- In the corporate header's utility row at 1280px, on the inline end, English and Arabic pages.
+- In the standard header's actions at 1280px, beside the strong button, English and Arabic pages.
+- In the open phone menu at 375px, as the "Language" row's link, English and Arabic pages.
+- The editor: the block's "Form" setting with three choices, Menu, List and Toggle, and one sentence of help:
+  "With three or more languages, the toggle shows as the list." Drawn in WordPress's own look.
+- With one language nothing is printed; with three or more the list form is printed instead (not drawn: both
+  are already drawn forms).
+
 ## Explicit exclusions
 
 - **The editor.** The mega item's panel picker and notice and the language switcher's placeholder are WordPress's
@@ -102,6 +119,9 @@ opening and closing are written below and are proven when each slice is built.
 - Arabic uses the Arabic font token. The kit's stylesheet does not give that face to the brand, the phone menu's
   links, a panel entry's title or a standalone link: the build contract adds it, and the design system is owed
   the same correction.
+- A language name follows its own language, not the page's: "العربية" is in the Arabic face on an English page and
+  "English" in the heading face on an Arabic page, in every form. The boards drew it so; rule 3a of the build
+  contract makes the code do it, because rule 0 follows the page (found while drawing step 2a, 2026-11-23).
 
 ## Accessibility expectations
 
@@ -125,7 +145,8 @@ value a `theme.json` token and every side a logical property. New classes, which
 
 - The bar: `corex-nav__trigger`, `corex-nav__panel`.
 - The utility row: `corex-header__utility`, `corex-header__utility-list`, `corex-header__utility-link`.
-- The language switcher: `corex-language-switcher`, `--menu`, `--list`, `__list`, `__item`.
+- The language switcher: `corex-language-switcher`, `--menu`, `--list`, `__list`, `__item`, and `--toggle` once
+  step 2a is approved.
 - Search: `corex-header__search` with `is-open`.
 - The phone menu: `corex-mobile-menu__head`, `__list`, `__group`, `__toggle`, `__panel`, `__sublist`,
   `__sublink`, `__language`, `__label`, and `corex-mobile-menu--overlay`.

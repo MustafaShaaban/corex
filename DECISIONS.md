@@ -22497,3 +22497,37 @@ that wave 1 does not take (G-048 is spec 135, #664; G-051 is spec 136, #679).
 *Not chosen.* Shipping the four with the forms wave: it would hold three Home slices behind specs that are not
 written yet and rest far more on revamp code. A separate spec for the scroll distance: it is one setting in the
 header system spec 137 already owns.
+
+## #697 -- The language switcher gets a toggle form for two languages (spec 137, G-054)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-032a. **Decided:** by the spec 137 session, on the gap coordinator's
+request for G-054, which the Blackstone site's coordinator accepted (that site's decision 31: its header draws
+the other language's name alone).
+
+- A third form beside the menu and the list: with exactly two languages, one link naming the other language in
+  its own script, with its own `lang`, `dir` and `hreflang`. Its visible text is its whole accessible name. It
+  needs no script.
+- With one language it prints nothing, as FR-031 says. **With three or more it prints the list form**, and the
+  editor's choice says so under it. *Not chosen:* hiding the toggle from the editor when a site has three
+  languages. The count can change after the form is chosen; a hidden choice would leave a saved toggle with no
+  rule, and a single link would leave the third language with no way in.
+- The drawing is an addendum to `design/handoffs/header-system.md`, step 2, for the owner to approve. It ships in
+  `v0.49.0` with slice 2 if he approves it before slice 2 is built; otherwise it is slice 7 and ships in
+  `v0.50.0`. Slice 2 does not wait for it.
+- A site that wants the toggle at launch with one language of content binds its own `LanguageSource` (FR-029);
+  CoreX's default stays: no control while a site has one language.
+- Found while drawing it: rule 0 of the build contract gives the Arabic face by the page's language, so a name in
+  the list or the menu would take the page's face, not its own, which step 2 did not draw. Rule 3a of
+  `specs/137-header-system/design/header-system.css.txt` makes every form follow the name's own `lang`. It brings
+  the code to the approved drawing, so it needs no new approval.
+
+## #698 -- The header's scroll distance is a theme token (spec 137 slice 6, from #701)
+
+**Date:** 2026-11-23. **Spec:** 137, FR-046 to FR-048. **Decided:** by the spec 137 session, inside #701.
+
+- The token is `settings.custom.header.scrollDistance`, default `8px`, beside the header's `height` tokens. The
+  header script reads `--wp--custom--header--scroll-distance` from the root element when it starts.
+- Pixels only, like the navigation width (#692). Anything the script cannot use is read as 8 pixels, which is
+  also how a theme at `v0.48.1` without the token behaves, so no site changes on update.
+- *Not chosen:* passing the value from PHP with an inline script. The property is already on every page through
+  `theme.json`, a child theme reaches it with no PHP, and the script stays the one place that decides.
