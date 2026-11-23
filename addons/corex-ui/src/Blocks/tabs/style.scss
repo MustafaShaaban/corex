@@ -84,14 +84,17 @@
 	}
 }
 
-// A text colour chosen in the editor (spec 136, FR-008): the headings
-// and text take it, and the panels drop their surface so the text
-// sits on the background it was chosen against. The tab shown keeps
-// its own surface and colour, which mark it.
-// WordPress's own colour classes already beat the colours of the root.
-.corex-tabs.has-text-color {
+// A text colour chosen in the editor (spec 136, FR-008). Written on the
+// class WordPress gives both the page's root and the editor's wrapper,
+// so a preview drawn inside the wrapper takes it too. The headings, the
+// text and the links take the chosen colour, as core's paragraph does.
+// The cards drop their surface, so the text sits on the background it
+// was chosen against.
+// The tab shown is marked by a line under it, not by a colour alone.
+.wp-block-corex-tabs.has-text-color {
 
 	:where(h1, h2, h3, h4, h5, h6),
+	a:where(:not(.wp-element-button)),
 	.corex-tabs__label,
 	.corex-tabs__panel {
 		color: inherit;
@@ -99,5 +102,18 @@
 
 	.corex-tabs__panel {
 		background-color: transparent;
+	}
+
+	.corex-tabs__label {
+		border-block-end: var(--wp--custom--border--width--strong) solid transparent;
+	}
+}
+
+.wp-block-corex-tabs.has-text-color:not(.is-editing) {
+
+	.corex-tabs__radio:checked + .corex-tabs__label {
+		background-color: transparent;
+		color: inherit;
+		border-block-end-color: currentcolor;
 	}
 }

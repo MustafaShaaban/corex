@@ -71,13 +71,17 @@
 	}
 }
 
-// A text colour chosen in the editor (spec 136, FR-008): the headings
-// and text take it.
-// WordPress's own colour classes already beat the colours of the root.
-.corex-newsletter-signup.has-text-color {
+// A text colour chosen in the editor (spec 136, FR-008). Written on the
+// class WordPress gives both the page's root and the editor's wrapper,
+// so a preview drawn inside the wrapper takes it too. The headings, the
+// text and the links take the chosen colour, as core's paragraph does.
+// The field and the button keep their own colours, on their own fill.
+.wp-block-corex-newsletter-signup.has-text-color {
 
 	:where(h1, h2, h3, h4, h5, h6),
-	.corex-newsletter-signup__consent {
+	a:where(:not(.wp-element-button)),
+	.corex-newsletter-signup__consent,
+	.corex-newsletter-signup__status {
 		color: inherit;
 	}
 }

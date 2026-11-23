@@ -14,6 +14,9 @@
 		display: contents;
 	}
 	background-color: var(--wp--preset--color--surface-alt);
+	// The text colour is set on the root, so WordPress's contrast check
+	// reads the colour the text is drawn in.
+	color: var(--wp--preset--color--ink);
 	border-radius: var(--wp--custom--radius--lg);
 	text-align: center;
 
@@ -54,7 +57,7 @@
 		margin: 0;
 		font-size: var(--wp--preset--font-size--hero);
 		line-height: 1.1;
-		color: var(--wp--preset--color--ink);
+		color: inherit;
 	}
 
 	&__subtitle {
@@ -76,12 +79,15 @@
 	}
 }
 
-// A text colour chosen in the editor (spec 136, FR-008): the headings
-// and text take it.
-// WordPress's own colour classes already beat the colours of the root.
-.corex-hero.has-text-color {
+// A text colour chosen in the editor (spec 136, FR-008). Written on the
+// class WordPress gives both the page's root and the editor's wrapper,
+// so a preview drawn inside the wrapper takes it too. The headings, the
+// text and the links take the chosen colour, as core's paragraph does.
+// The button keeps its own colours, drawn on its own fill.
+.wp-block-corex-hero.has-text-color {
 
 	:where(h1, h2, h3, h4, h5, h6),
+	a:where(:not(.wp-element-button, .corex-hero__cta)),
 	.corex-hero__eyebrow,
 	.corex-hero__title,
 	.corex-hero__subtitle {

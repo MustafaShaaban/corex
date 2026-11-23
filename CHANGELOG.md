@@ -49,16 +49,20 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   build-tools and CLI READMEs and the docs site state the rule: a static block is edited in place, a block that
   shows records keeps a server render.
 - **Margin, padding and colour on the CoreX blocks** (spec 136 slice 2a, gap G-005; FR-007, FR-008). Every block
-  a person can insert supports a top and bottom margin, the six `corex-forms` blocks included (the assistant,
-  which a person does not insert, does not). Hero, cta, team, posts, gallery, tabs, accordion, carousel,
-  newsletter signup, jobs, projects, testimonial, pricing, stat and alert support padding set by axis (top and
-  bottom together, left and right together), never one side alone. The section blocks and stat support a
-  background and a text colour, with no gradient or link colour. A chosen text colour reaches the block's
-  headings and text: each one's style sheet makes its own text, its headings and a list block's title link
-  inherit it, and its cards (team, posts, gallery, accordion, tab panel, jobs, projects) drop their surface so
-  the text sits on the background it was chosen against. Buttons, fields, carousel controls and the tab shown
-  keep their own colours. A test checks every `block.json` for these supports and every one of these style
-  sheets, compiled, for the rule.
+  a person can insert supports a top and bottom margin, the six `corex-forms` blocks and the account block
+  included (the assistant, which a person does not insert, does not); `make:block` generates blocks with it
+  (DECISIONS #680). Hero, cta, team, posts, gallery, tabs, accordion, carousel, newsletter signup, jobs,
+  projects, testimonial, pricing, stat and alert support padding set by axis (top and bottom together, left and
+  right together), never one side alone. The section blocks and stat support a background and a text colour,
+  with no gradient or link colour. A chosen text colour reaches the block's headings, text and links, on the
+  page and in the editor's preview: each one's style sheet makes its text, its headings and its links (but
+  its buttons) inherit it, and its cards (team, posts, gallery, accordion, tab panel, jobs, projects) drop
+  their surface so the text sits on the background it was chosen against. Buttons, fields and carousel
+  controls keep their own colours; the tab shown is marked by a line under it. Cta, hero, pricing,
+  testimonial and stat set their text colour on their root, so WordPress's contrast check reads it; they draw
+  as before. A test checks every `block.json` for these supports and every one of these style sheets,
+  compiled, for the rule, an integration test reads the margin from WordPress's registry, and a browser test
+  measures the colours.
 - **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
   every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
   `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
@@ -127,9 +131,13 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     altered; a block generated from now on has the new shape. A site generated with `make:site --starter` before
     this change keeps its example block as it is.
   - **Spec 136 slice 2a (G-005).** Muva, Perego and Mizzey: with nothing set, every page prints exactly as
-    before, and there is no upgrade step. Editors gain margin controls on every CoreX block they can insert,
-    and padding and colour controls on the blocks above; what they set is printed on the block's root as
-    WordPress's own classes and inline style.
+    before, and there is no upgrade step. Editors gain a margin on every CoreX block, padding on the section
+    blocks, stat and alert, and colour on the section blocks and stat; what they set is printed
+    on the block's root as WordPress's own classes and inline style. The controls appear where the site's
+    theme turns them on: the CoreX theme does, through `appearanceTools`; a standalone client theme that does
+    not turn them on shows none, and nothing changes. **Perego**: a margin set on a form or flow block adds a
+    `style` attribute to the form's root, as an anchor set on it adds an `id` (slice 1), which matters to code
+    that matches that markup by exact strings.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and

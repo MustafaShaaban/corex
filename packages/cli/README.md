@@ -78,7 +78,8 @@ pipeline expects (see `packages/build-tools/README.md`), by the rule of DECISION
 <base>/Blocks/
   team-member/
     block.json     # apiVersion 3, category "corex", editorScript + style wired,
-                   #   a `title` attribute, supports html: false and anchor,
+                   #   a `title` attribute, supports html: false, anchor and a
+                   #   top and bottom margin,
                    #   corex.renderer → App\Blocks\TeamMemberRenderer,
                    #   corex.editor → in-place (records with --records)
     index.js       # registerBlockType; useBlockProps + RichText for the title
@@ -94,13 +95,15 @@ block (its anchor, an extra class) into that root. Every string a person reads g
 through the translation functions with the configured text domain.
 
 **Who checks it.** The framework's own tests (the gate, `tests/block-editor-kinds.test.js`,
-and the two parity tests) cover the framework's blocks: they search `plugins/` and
-`addons/` only. `make:block` writes to the app's folder (`WP_CONTENT_DIR/corex-app` by
-default, or the client plugin in a client repository), so an app or client block is
-checked by its own test, calling `@corex/build-tools/parity`: `gateFailures( blockIn(
-folder ) )` for the gate's rules (a kind is declared, an in-place block has its
-`parity.json` and no server render, a records block has one), and
-`editorParityProblem( folder )` for the parity comparison
+the two parity tests, and the spacing and colour gate: `tests/block-spacing-colour.test.js`
+for padding, colour and the style sheets, `tests/Integration/Blocks/SpacingColourTest.php`
+for the margin on every `corex/*` block WordPress has registered) cover the framework's
+blocks: the JavaScript ones search `plugins/` and `addons/` only. `make:block` writes to
+the app's folder (`WP_CONTENT_DIR/corex-app` by default, or the client plugin in a
+client repository), so an app or client block is checked by its own test, calling
+`@corex/build-tools/parity`: `gateFailures( blockIn( folder ) )` for the gate's rules (a
+kind is declared, an in-place block has its `parity.json` and no server render, a records
+block has one), and `editorParityProblem( folder )` for the parity comparison
 (`packages/build-tools/README.md`).
 
 The renderer PHP lives **beside** the block folder in one `Blocks/` directory (the

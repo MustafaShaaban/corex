@@ -6,6 +6,9 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--wp--preset--spacing--30);
+	// The text colour is set on the root, so WordPress's contrast check
+	// reads the colour the text is drawn in.
+	color: var(--wp--preset--color--ink);
 	text-align: center;
 
 	&__value {
@@ -16,22 +19,24 @@
 
 	&__label {
 		font-size: var(--wp--preset--font-size--lg);
-		color: var(--wp--preset--color--ink);
+		color: inherit;
 	}
 
 	&__desc {
 		font-size: var(--wp--preset--font-size--sm);
-		color: var(--wp--preset--color--ink);
+		color: inherit;
 		margin-block-start: var(--wp--preset--spacing--30);
 	}
 }
 
-// A text colour chosen in the editor (spec 136, FR-008): the headings
-// and text take it.
-// WordPress's own colour classes already beat the colours of the root.
-.corex-stat.has-text-color {
+// A text colour chosen in the editor (spec 136, FR-008). Written on the
+// class WordPress gives both the page's root and the editor's wrapper,
+// so a preview drawn inside the wrapper takes it too. The headings, the
+// text and the links take the chosen colour, as core's paragraph does.
+.wp-block-corex-stat.has-text-color {
 
 	:where(h1, h2, h3, h4, h5, h6),
+	a:where(:not(.wp-element-button)),
 	.corex-stat__value,
 	.corex-stat__label,
 	.corex-stat__desc {

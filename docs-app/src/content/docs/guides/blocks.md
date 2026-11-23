@@ -30,7 +30,8 @@ This writes, under your app's `Blocks/` directory:
 Blocks/
   team-member/
     block.json     # apiVersion 3, category "corex", editorScript + style wired,
-                   #   a title attribute, the anchor supported,
+                   #   a title attribute, the anchor and a top and bottom
+                   #   margin supported,
                    #   corex.renderer → App\Blocks\TeamMemberRenderer,
                    #   corex.editor → in-place (records with --records)
     index.js       # registerBlockType; the title typed on the canvas with RichText
