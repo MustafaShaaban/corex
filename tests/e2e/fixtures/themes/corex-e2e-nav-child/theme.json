@@ -1,0 +1,11 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/theme.json",
+    "version": 3,
+    "settings": {
+        "custom": {
+            "nav": {
+                "breakpoint": "1024px"
+            }
+        }
+    }
+}

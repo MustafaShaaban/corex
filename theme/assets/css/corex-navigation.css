@@ -6,6 +6,10 @@
  * (Principle VIII). Loaded only where a CoreX header/footer renders
  * (Principle VI); the mobile overlay + submenu a11y come from core navigation,
  * and mega panels are native <details> (usable with no JS).
+ *
+ * Names no width: every rule that depends on the window's width is in
+ * corex-navigation-collapse.css, at the theme's navigation breakpoint
+ * (spec 137, FR-003; DECISIONS #692).
  */
 
 /* Header shell ------------------------------------------------------- */
@@ -199,21 +203,9 @@
 	display: none;
 }
 
-@media (min-width: 48em) { /* corex-token-allow: nav breakpoint */
-	.corex-header__search-panel:not([hidden]) {
-		position: absolute;
-		inset-block-start: calc(100% + var(--wp--preset--spacing--20));
-		inset-inline-end: 0;
-		z-index: var(--wp--custom--z--dropdown);
-		background-color: var(--wp--preset--color--surface-raised);
-		border:
-			var(--wp--custom--border--width--thin) solid
-			var(--wp--preset--color--border);
-		border-radius: var(--wp--custom--radius--md);
-		padding: var(--wp--preset--spacing--40);
-		box-shadow: var(--wp--preset--shadow--md);
-	}
-}
+/* From the navigation breakpoint up the panel is a dropdown under its toggle:
+   corex-navigation-collapse.css, which holds every rule that depends on the
+   window's width (spec 137, FR-003). */
 
 /* Mega menu (native <details>) --------------------------------------- */
 
@@ -253,29 +245,8 @@
 	color: var(--wp--preset--color--ink-soft);
 }
 
-/* Desktop: the panel becomes a positioned dropdown above page content. The
-   breakpoint literal mirrors --wp--custom--nav--breakpoint because CSS @media
-   cannot read custom properties. */
-@media (min-width: 48em) { /* corex-token-allow: nav breakpoint */
-	.corex-mega {
-		position: relative;
-	}
-
-	.corex-mega[open] > .corex-mega__panel {
-		position: absolute;
-		inset-block-start: 100%;
-		inset-inline-start: 0;
-		z-index: var(--wp--custom--z--dropdown);
-		min-inline-size: var(--wp--custom--header--height);
-		background-color: var(--wp--preset--color--surface-raised);
-		border:
-			var(--wp--custom--border--width--thin) solid
-			var(--wp--preset--color--border);
-		border-radius: var(--wp--custom--radius--md);
-		padding: var(--wp--preset--spacing--40);
-		box-shadow: var(--wp--preset--shadow--md);
-	}
-}
+/* From the navigation breakpoint up the panel is a positioned dropdown above
+   the page's content: corex-navigation-collapse.css (spec 137, FR-003). */
 
 /* Footer ------------------------------------------------------------- */
 
