@@ -20,11 +20,12 @@ use Corex\Blocks\Languages\WordPressLanguageSource;
 use Corex\Container\Container;
 
 /**
- * The one language the shipped source returns for a request in `$locale`.
+ * The one language the shipped source returns for a request in `$locale`. `$intl` says whether the
+ * source may name it with PHP's `intl` extension; null leaves it to ask PHP.
  *
  * @return list<Language>
  */
-function wordPressLanguages(string $locale, bool $rtl = false, ?string $requestUri = '/about/?ref=1'): array
+function wordPressLanguages(string $locale, bool $rtl = false, ?string $requestUri = '/about/?ref=1', ?bool $intl = null): array
 {
     Functions\when('determine_locale')->justReturn($locale);
     Functions\when('is_rtl')->justReturn($rtl);
@@ -39,7 +40,7 @@ function wordPressLanguages(string $locale, bool $rtl = false, ?string $requestU
     }
 
     try {
-        return (new WordPressLanguageSource())->languages();
+        return (new WordPressLanguageSource($intl))->languages();
     } finally {
         if ($previous === null) {
             unset($_SERVER['REQUEST_URI']);
@@ -61,7 +62,7 @@ it('FR-029, FR-030: returns the site\'s one language, current, with this page\'s
         ->and($english->direction)->toBe('ltr')
         ->and($english->url)->toBe('https://site.test/about/?ref=1')
         ->and($english->current)->toBeTrue();
-});
+})->skip(! extension_loaded('intl'), 'this PHP has no intl extension, which names a language');
 
 it('FR-029: names a right-to-left language in its own script and gives its direction', function () {
     $arabic = wordPressLanguages('ar', rtl: true)[0];
@@ -69,6 +70,16 @@ it('FR-029: names a right-to-left language in its own script and gives its direc
     expect($arabic->code)->toBe('ar')
         ->and($arabic->name)->toBe('العربية')
         ->and($arabic->direction)->toBe('rtl');
+})->skip(! extension_loaded('intl'), 'this PHP has no intl extension, which names a language');
+
+it('FR-029: names a language by its code where PHP has no intl extension', function () {
+    $arabic = wordPressLanguages('ar', rtl: true, intl: false)[0];
+    $english = wordPressLanguages('en_US', intl: false)[0];
+
+    expect($arabic->name)->toBe('AR')
+        ->and($arabic->direction)->toBe('rtl')
+        ->and($english->name)->toBe('EN')
+        ->and($english->code)->toBe('en-US');
 });
 
 it('FR-029: falls back to the home page when no page was asked for (the command line, a cron run)', function () {

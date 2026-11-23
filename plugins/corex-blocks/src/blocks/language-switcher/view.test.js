@@ -179,6 +179,28 @@ describe( 'FR-032: the menu form', () => {
 		expect( list.hidden ).toBe( true );
 	} );
 
+	it( 'stays open when focus leaves for nowhere, as WebKit reports a click on a link, and follows the click', () => {
+		const root = menu();
+		initLanguageMenu( root );
+		const { button, list, links } = parts( root );
+
+		press( button, 'ArrowDown' );
+		links[ 0 ].dispatchEvent(
+			new window.FocusEvent( 'focusout', {
+				bubbles: true,
+				relatedTarget: null,
+			} )
+		);
+		expect( list.hidden ).toBe( false );
+
+		// The click that follows lands inside the menu, so it is not dismissed either.
+		links[ 0 ].addEventListener( 'click', ( event ) =>
+			event.preventDefault()
+		);
+		links[ 0 ].click();
+		expect( list.hidden ).toBe( false );
+	} );
+
 	it( 'keeps one menu open at a time on a page with two', () => {
 		const first = menu( 'corex-language-switcher-1' );
 		const second = menu( 'corex-language-switcher-2' );
@@ -198,6 +220,86 @@ describe( 'FR-032: the menu form', () => {
 
 		expect( initLanguageMenu( root ) ).toBe( false );
 		expect( root.querySelector( 'ul' ).hidden ).toBe( false );
+	} );
+} );
+
+describe( 'FR-032: the open menu stays inside the window', () => {
+	const WIDTH = 375;
+
+	/**
+	 * Opens a menu whose Dropdown, aligned to the button's inline end, is drawn at `box`.
+	 *
+	 * @param {{left: number, right: number}} box       Where the Dropdown is drawn when opened.
+	 * @param {string}                        direction The page's direction.
+	 * @return {HTMLElement} The Dropdown.
+	 */
+	function openAt( box, direction = 'ltr' ) {
+		const root = menu();
+		const { button, list } = parts( root );
+		list.style.direction = direction;
+		list.getBoundingClientRect = () => ( {
+			...box,
+			top: 0,
+			bottom: 100,
+			width: box.right - box.left,
+			height: 100,
+		} );
+		initLanguageMenu( root );
+		button.click();
+
+		return list;
+	}
+
+	beforeEach( () => {
+		window.innerWidth = WIDTH;
+	} );
+
+	it( 'keeps the Dropdown at the inline end while its start edge is inside the window', () => {
+		expect(
+			openAt( { left: 120, right: 344 } ).classList.contains(
+				'is-aligned-start'
+			)
+		).toBe( false );
+		expect(
+			openAt( { left: 30, right: 254 }, 'rtl' ).classList.contains(
+				'is-aligned-start'
+			)
+		).toBe( false );
+	} );
+
+	it( 'aligns it to the inline start when its start edge would leave the window, left to right', () => {
+		expect(
+			openAt( { left: -118, right: 106 } ).classList.contains(
+				'is-aligned-start'
+			)
+		).toBe( true );
+	} );
+
+	it( 'aligns it to the inline start when its start edge would leave the window, right to left', () => {
+		expect(
+			openAt( { left: 269, right: 493 }, 'rtl' ).classList.contains(
+				'is-aligned-start'
+			)
+		).toBe( true );
+	} );
+
+	it( 'measures again on each opening', () => {
+		const list = openAt( { left: -118, right: 106 } );
+		const button = list.previousElementSibling;
+
+		button.click();
+		expect( list.classList.contains( 'is-aligned-start' ) ).toBe( false );
+
+		list.getBoundingClientRect = () => ( {
+			left: 120,
+			right: 344,
+			top: 0,
+			bottom: 100,
+			width: 224,
+			height: 100,
+		} );
+		button.click();
+		expect( list.classList.contains( 'is-aligned-start' ) ).toBe( false );
 	} );
 } );
 

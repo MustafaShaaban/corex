@@ -156,7 +156,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-042 | High | No Polylang or WPML support | 3, rules from 1 | 148 | | | | open |
 | G-043 | Medium | The client site workflow has no speed, accessibility or secret checks | then | 152 | | | | open |
 | G-044 | Low | No uninstall routine | then | 152 | | | | open |
-| G-045 | Low | Docs describe an `I18nHandler` and an Interactivity rule the code does not have | then | 152 | | | | open |
+| G-045 | Low | Docs describe an `I18nHandler` and an Interactivity rule the code does not have | then | 152 | | | | open: the `I18nHandler` half is done by spec 137 slice 2 (`docs/internal/COREX-FRAMEWORK.md` and `COREX-EMAIL-ADDON.md` describe the `LanguageSource`, DECISIONS #9 marked, #703); the Interactivity rule stays with spec 152 |
 | G-046 | High | No role between Editor and Administrator for a marketing team (Site Editor for parts, menus and synced patterns only) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 | G-047 | Medium | No editor profile per role and post type (core patterns, locking, code editor, allowed blocks) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 | G-048 | High | A child of the CoreX theme cannot hide the parent's patterns and templates from the editor | 1 | 135 | 6 (after slice 5) | #515 | | slice 6 merged into `main` (#515, `22770c01`): the parent's patterns are hidden and custom templates are completed (DECISIONS #664, #667, #668); hiding the parent's templates is withdrawn and goes to spec 153, v0.51.0 (DECISIONS #701); rests on nothing the tag lacks |

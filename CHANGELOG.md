@@ -76,7 +76,8 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   place. The block `corex/language-switcher` ("Language switcher") prints nothing, not even its wrapper, with
   fewer than two languages, and its editor then shows WordPress's placeholder. With two or more it prints the
   form an editor chose: **menu** (the default: a ghost button naming the current language over a Dropdown of every
-  language, opened by click or keyboard, Escape back to the button; the list without script), **list** (every
+  language, opened by click or keyboard, Escape back to the button, kept inside the window by opening from the
+  button's other side when it must; the list without script), **list** (every
   language in a row, the current one ticked, tinted, `aria-current` and not a link) or **toggle** (with exactly
   two languages one link naming the other language in its own script, "العربية" on an English page; the list
   with three or more). Every name carries its own `lang` and `dir` and is drawn in its own face; every link has
@@ -191,6 +192,7 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     - **Muva**: its editor gains one block, "Language switcher", in the CoreX category. It prints nothing unless
       it is placed, and then only on a site with two languages: Muva's source is WordPress's, with one.
     - **Perego**: the same. Its own language toggle is untouched: nothing of CoreX replaces it or reads it.
+    - **Mizzey**: not on this line.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and

@@ -53,10 +53,16 @@ function switcherFrench(): Language
 /** The switcher rendered with `$attributes` over `$languages`, WordPress's escaping stood in for. */
 function renderLanguageSwitcher(array $attributes, Language ...$languages): string
 {
+    return renderLanguageSwitcherTranslated($attributes, static fn (string $text): string => $text, ...$languages);
+}
+
+/** The switcher rendered with WordPress's translation functions answering through `$translate`. */
+function renderLanguageSwitcherTranslated(array $attributes, callable $translate, Language ...$languages): string
+{
     $html = static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
-    Functions\when('__')->returnArg();
-    Functions\when('esc_html__')->alias($html);
-    Functions\when('esc_attr__')->alias($html);
+    Functions\when('__')->alias($translate);
+    Functions\when('esc_html__')->alias(static fn (string $text): string => $html($translate($text)));
+    Functions\when('esc_attr__')->alias(static fn (string $text): string => $html($translate($text)));
     Functions\when('esc_html')->alias($html);
     Functions\when('esc_attr')->alias($html);
     Functions\when('esc_url')->alias(
@@ -271,11 +277,15 @@ it('FR-042: escapes every name, code and address it prints', function () {
         ->toContain('&lt;b&gt;English&lt;/b&gt;');
 });
 
-it('FR-042: the strings a person reads go through the translation functions with the corex domain', function () {
-    $source = (string) file_get_contents(dirname(__DIR__, 3) . '/plugins/corex-blocks/src/LanguageSwitcherRenderer.php');
+it('FR-042: the words read after the current language in the menu button are one translated string, its comma too', function () {
+    // A translation that marks what it translated, so a comma joined outside it would show.
+    $html = renderLanguageSwitcherTranslated(
+        ['form' => 'menu'],
+        static fn (string $text): string => '[' . $text . ']',
+        switcherEnglish(),
+        switcherArabic(),
+    );
 
-    preg_match_all('/\b(?:esc_html__|esc_attr__|__)\(\s*\'[^\']+\',\s*\'([^\']+)\'\s*\)/', $source, $calls);
-
-    expect($calls[1])->not->toBe([])
-        ->and(array_unique($calls[1]))->toBe(['corex']);
+    $hidden = switcherDom($html)->query('//button/span[@class="screen-reader-text"]')->item(0);
+    expect($hidden->textContent)->toBe('[, choose a language]');
 });

@@ -226,19 +226,22 @@ it('FR-001, FR-006: an anchor reaches the root of every CoreX block a person can
     });
 
     $missed = [];
-    foreach (wrapperTestInsertableBlocks() as $name) {
-        $html = do_blocks(sprintf('<!-- wp:%s %s /-->', $name, wp_json_encode(['anchor' => 'about'] + $minimal[$name], JSON_UNESCAPED_SLASHES)));
-        $root = wrapperTestRoot($html, WRAPPER_TEST_NAMED_ROOTS[$name] ?? []);
-        // The id must sit on the block's own element: one that carries a class of CoreX's.
-        $own = $root === null ? [] : array_filter(
-            explode(' ', (string) $root->get_attribute('class')),
-            static fn (string $class): bool => str_starts_with($class, 'corex-'),
-        );
-        if ($root === null || $root->get_attribute('id') !== 'about' || $own === []) {
-            $missed[$name] = substr($html, 0, 160);
+    try {
+        foreach (wrapperTestInsertableBlocks() as $name) {
+            $html = do_blocks(sprintf('<!-- wp:%s %s /-->', $name, wp_json_encode(['anchor' => 'about'] + $minimal[$name], JSON_UNESCAPED_SLASHES)));
+            $root = wrapperTestRoot($html, WRAPPER_TEST_NAMED_ROOTS[$name] ?? []);
+            // The id must sit on the block's own element: one that carries a class of CoreX's.
+            $own = $root === null ? [] : array_filter(
+                explode(' ', (string) $root->get_attribute('class')),
+                static fn (string $class): bool => str_starts_with($class, 'corex-'),
+            );
+            if ($root === null || $root->get_attribute('id') !== 'about' || $own === []) {
+                $missed[$name] = substr($html, 0, 160);
+            }
         }
+    } finally {
+        $container->instance(LanguageSource::class, new WordPressLanguageSource());
     }
-    $container->instance(LanguageSource::class, new WordPressLanguageSource());
 
     expect($missed)->toBe([]);
 });

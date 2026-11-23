@@ -31,6 +31,8 @@ const PAGE = [
 	'<!-- wp:group {"className":"cx137-menu","layout":{"type":"flex","justifyContent":"right"}} --><div class="wp-block-group cx137-menu is-content-justification-right is-layout-flex"><!-- wp:corex/language-switcher /--></div><!-- /wp:group -->',
 	'<!-- wp:group {"className":"cx137-list"} --><div class="wp-block-group cx137-list"><!-- wp:corex/language-switcher {"form":"list"} /--></div><!-- /wp:group -->',
 	'<!-- wp:group {"className":"cx137-toggle"} --><div class="wp-block-group cx137-toggle"><!-- wp:corex/language-switcher {"form":"toggle"} /--></div><!-- /wp:group -->',
+	'<!-- wp:group {"className":"cx137-start"} --><div class="wp-block-group cx137-start"><!-- wp:corex/language-switcher /--></div><!-- /wp:group -->',
+	'<!-- wp:group {"className":"cx137-narrow"} --><div class="wp-block-group cx137-narrow"><!-- wp:corex/language-switcher {"form":"list"} /--></div><!-- /wp:group -->',
 	'<!-- wp:paragraph --><p><a class="cx137-after" href="/">A link after the switchers</a></p><!-- /wp:paragraph -->',
 ].join( '' );
 
@@ -196,6 +198,10 @@ test.describe( 'the language switcher (US-NAV-05)', () => {
 		expect( await page.content() ).not.toContain(
 			'.corex-language-switcher'
 		);
+		// The address WordPress names the block's style by, which the next test finds when it prints.
+		expect( await page.content() ).not.toContain(
+			'language-switcher/style-index'
+		);
 	} );
 
 	test( 'SC-010, FR-032a: the toggle is one link, "العربية", in its own lang, dir and face, named by its text', async ( {
@@ -203,6 +209,12 @@ test.describe( 'the language switcher (US-NAV-05)', () => {
 		baseURL,
 	} ) => {
 		await open( page, baseURL );
+
+		// Where the block prints, its style and its script are on the page.
+		expect( await page.content() ).toContain(
+			'language-switcher/style-index'
+		);
+		expect( await page.content() ).toContain( 'language-switcher/view' );
 
 		const toggle = page.locator( '.cx137-toggle .corex-language-switcher' );
 		await expect( toggle ).toHaveClass( /corex-language-switcher--toggle/ );
@@ -456,7 +468,82 @@ test.describe( 'the language switcher (US-NAV-05)', () => {
 			expect( box.x ).toBeGreaterThanOrEqual( 0 );
 			expect( box.x + box.width ).toBeLessThanOrEqual( PHONE.width );
 		} );
+
+		test( `a menu at the start of a line opens inside the window at 375px (${ locale })`, async ( {
+			page,
+			baseURL,
+		} ) => {
+			await open( page, baseURL, {
+				languages: 'three',
+				locale,
+				size: PHONE,
+			} );
+
+			const menu = page.locator(
+				'.cx137-start .corex-language-switcher'
+			);
+			const button = menu.locator( 'button' );
+			const dropdown = menu.locator( '.corex-dropdown__menu' );
+			await button.click();
+			await expect( dropdown ).toBeVisible();
+			await expect( dropdown ).toHaveClass( /is-aligned-start/ );
+
+			const box = await dropdown.boundingBox();
+			const start = await button.boundingBox();
+			expect( box.x ).toBeGreaterThanOrEqual( 0 );
+			expect( box.x + box.width ).toBeLessThanOrEqual( PHONE.width );
+			// It hangs from the button's inline start: its left edge in English, its right in Arabic.
+			if ( locale === 'ar' ) {
+				expect(
+					Math.abs( box.x + box.width - ( start.x + start.width ) )
+				).toBeLessThanOrEqual( 1 );
+			} else {
+				expect( Math.abs( box.x - start.x ) ).toBeLessThanOrEqual( 1 );
+			}
+
+			// A language in it can still be chosen with the mouse.
+			await dropdown.getByRole( 'link', { name: 'Français' } ).click();
+			await expect( page ).toHaveURL( /corex_e2e_language=fr/ );
+		} );
 	}
+
+	test( 'a list that wraps keeps a 44px target on every row', async ( {
+		page,
+		baseURL,
+	} ) => {
+		await open( page, baseURL, { languages: 'three' } );
+
+		const list = page.locator( '.cx137-narrow .corex-language-switcher' );
+		// Narrow enough that each language takes a row of its own.
+		await list.evaluate( ( element ) => {
+			element.parentElement.style.maxInlineSize = '7rem';
+		} );
+		const links = list.locator( 'a' );
+		const [ first, second ] = [
+			await links.nth( 0 ).boundingBox(),
+			await links.nth( 1 ).boundingBox(),
+		];
+		expect( second.y ).toBeGreaterThan( first.y + first.height / 2 );
+
+		for ( const index of [ 0, 1 ] ) {
+			const area = await hitArea( links.nth( index ) );
+			expect( area.height ).toBeGreaterThanOrEqual( TARGET );
+		}
+	} );
+
+	test( 'a mouse click on a language follows it after the keyboard opened the menu', async ( {
+		page,
+		baseURL,
+	} ) => {
+		await open( page, baseURL, { languages: 'three' } );
+
+		const menu = page.locator( '.cx137-menu .corex-language-switcher' );
+		await menu.locator( 'button' ).focus();
+		await page.keyboard.press( 'ArrowDown' );
+		await menu.getByRole( 'link', { name: 'Français' } ).click();
+
+		await expect( page ).toHaveURL( /corex_e2e_language=fr/ );
+	} );
 } );
 
 test.describe( 'the language switcher without script (FR-032)', () => {

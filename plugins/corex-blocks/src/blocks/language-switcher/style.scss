@@ -46,7 +46,10 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: var(--wp--preset--spacing--10);
+	// Rows that wrap sit 0.5rem apart: the 2.75rem target of a 2.25rem item
+	// reaches 0.25rem past each edge, so the rows' targets meet and none is
+	// cut short.
+	gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--10);
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -156,6 +159,13 @@
 		border-radius: var(--wp--custom--radius--md);
 		background-color: var(--wp--preset--color--surface-raised, var(--wp--preset--color--surface));
 		box-shadow: var(--wp--preset--shadow--md);
+
+		// The script opens it at the button's inline start where, at its inline
+		// end, it would leave the window (a switcher at the start of a line).
+		&.is-aligned-start {
+			inset-inline-start: 0;
+			inset-inline-end: auto;
+		}
 
 		> li {
 			display: flex;

@@ -767,7 +767,7 @@ Corex is built *with* AI agents and usable *by* any LLM — so the structure is 
 | Need | Recommendation | Notes |
 |---|---|---|
 | Custom fields | **ACF** (via Local JSON) | Optional driver, not a dependency (§6) |
-| Multilingual | **Polylang** (WPML-compatible via abstraction) | Lower query cost than WPML |
+| Multilingual | **Polylang** or **WPML**, never required | CoreX reads languages through the replaceable `LanguageSource` (§16); the source that ships reads WordPress alone, and a Polylang or WPML source is spec 148's (G-042) |
 | E-commerce | **WooCommerce** | Detect-and-defer (§13) |
 | SMTP | **Fluent SMTP** or SES/Brevo | Deliverability for transactional mail |
 | Email queue | **Action Scheduler** | Async sending, retries — never blocks a request |

@@ -97,6 +97,7 @@ default, not patched afterward (§1 rule 8, §16). Polylang has lower query cost
 Alternatives considered: hard-coding Polylang calls (rejected: §1 rule 9); WPML as default
 (rejected: higher query cost — kept compatible, not default).
 Status: Final.
+**Amended by #694, #703:** never built; replaced by `LanguageSource`.
 
 ## #10 — Testing: Pest + Jest + Playwright
 Date: 2026-06-07
@@ -22583,10 +22584,20 @@ spec 137 session, as the slice was built.
   and the list. The block's style draws the button and the Dropdown only under `@media (scripting: enabled)`, and
   the view script wires the menu only where `matchMedia('(scripting: enabled)')` matches. A browser that cannot say
   shows the list. *Not chosen:* a class the script adds, which redraws the switcher once the script has run.
+  *Known limit:* where the browser runs script but the view script never loads (blocked, or failed), the button is
+  drawn and opens nothing; the list is hidden behind it.
+- **The Dropdown opens at the button's inline end, and at its inline start where that would leave the window.**
+  The view script measures it on every opening and adds `is-aligned-start`, which the style turns into
+  `inset-inline-start: 0`; logical properties mirror it in right-to-left pages. A switcher at the start of a line
+  on a phone so keeps its menu inside the window.
+- **Focus leaving for nowhere does not close the menu.** WebKit does not focus a link or a button it is clicked
+  on, so pressing on a language reports `focusout` with no `relatedTarget`; closing then hid the link before the
+  click landed. Only focus moving to something else closes it; a click outside is the document's to close.
 - **In a list a name carries its `lang` and `dir`, not its row.** A row with `dir="rtl"` aligned its tick and its
   text to the other side in the Dropdown, so the rows did not line up. The toggle's link carries them itself,
   with its `hreflang` (FR-032a). Every link of every form has a 44px target through the `::after` box rule 3b
-  gives the toggle; nothing drawn changes.
+  gives the toggle; nothing drawn changes. A list that wraps puts its rows `spacing-20` (0.5rem) apart, so the
+  targets of two rows meet and neither is cut to 40px by the other.
 - **The block draws the kit's ghost button and Dropdown in its own style.** The ghost button style is the
   `corex-ui` add-on's, and the switcher is in `corex-blocks` so it works with every add-on off (#694).
 - **The block's script loads wherever the block prints something**, whatever its form (FR-033, constitution VI:

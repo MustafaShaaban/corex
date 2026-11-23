@@ -50,10 +50,7 @@ final class LanguageSwitcherRenderer implements BlockRenderer
      */
     public function render(array $attributes, string $content, object $block): string
     {
-        $languages = array_values(array_filter(
-            $this->source->languages(),
-            static fn (mixed $language): bool => $language instanceof Language,
-        ));
+        $languages = $this->source->languages();
 
         if (count($languages) < 2) {
             return '';
@@ -108,7 +105,10 @@ final class LanguageSwitcherRenderer implements BlockRenderer
         $button = '<button type="button" class="wp-element-button corex-language-switcher__button"'
             . ' aria-expanded="false" aria-controls="' . esc_attr($id) . '">'
             . $this->name($current)
-            . '<span class="screen-reader-text">, ' . esc_html__('choose a language', 'corex') . '</span>'
+            . '<span class="screen-reader-text">'
+            /* translators: Read by a screen reader only, straight after the current language's name on the language menu's button, so it begins with its own separator. */
+            . esc_html__(', choose a language', 'corex')
+            . '</span>'
             . self::CHEVRON
             . '</button>';
 
@@ -120,7 +120,7 @@ final class LanguageSwitcherRenderer implements BlockRenderer
     {
         foreach ($languages as $language) {
             if ($language !== $current) {
-                return $this->root('toggle', $this->link($language, isName: true));
+                return $this->root('toggle', $this->toggleLink($language));
             }
         }
 
@@ -136,7 +136,7 @@ final class LanguageSwitcherRenderer implements BlockRenderer
     {
         $items = '';
         foreach ($languages as $language) {
-            $items .= '<li>' . ($language === $current ? $this->currentItem($language) : $this->link($language)) . '</li>';
+            $items .= '<li>' . ($language === $current ? $this->currentItem($language) : $this->listLink($language)) . '</li>';
         }
 
         $attributes = $id === ''
@@ -147,18 +147,24 @@ final class LanguageSwitcherRenderer implements BlockRenderer
     }
 
     /**
-     * A language as a link. In the toggle the link is the name and carries its `lang` and `dir`
-     * (FR-032a). In a list the name inside the link carries them, so each row keeps the page's
-     * direction and the list's rows line up.
+     * A language as a row of a list: the name inside the link carries its `lang` and `dir`, so the
+     * row keeps the page's direction and the list's rows line up.
      */
-    private function link(Language $language, bool $isName = false): string
+    private function listLink(Language $language): string
     {
-        $open = '<a class="corex-language-switcher__item" href="' . esc_url($language->url) . '"'
-            . ' hreflang="' . esc_attr($language->code) . '"';
+        return $this->openLink($language, '') . $this->name($language) . '</a>';
+    }
 
-        return $isName
-            ? $open . $this->languageAttributes($language) . '>' . esc_html($language->name) . '</a>'
-            : $open . '>' . $this->name($language) . '</a>';
+    /** The toggle's one link: the link is the name, and carries its `lang` and `dir` (FR-032a). */
+    private function toggleLink(Language $language): string
+    {
+        return $this->openLink($language, $this->languageAttributes($language)) . esc_html($language->name) . '</a>';
+    }
+
+    private function openLink(Language $language, string $attributes): string
+    {
+        return '<a class="corex-language-switcher__item" href="' . esc_url($language->url) . '"'
+            . ' hreflang="' . esc_attr($language->code) . '"' . $attributes . '>';
     }
 
     private function currentItem(Language $language): string

@@ -23,6 +23,14 @@ use Locale;
  */
 final class WordPressLanguageSource implements LanguageSource
 {
+    /**
+     * @param bool|null $hasIntl Whether to name a language with PHP's `intl` extension; null asks PHP
+     *                           whether it is loaded. The container leaves it null.
+     */
+    public function __construct(private readonly ?bool $hasIntl = null)
+    {
+    }
+
     public function languages(): array
     {
         $locale = determine_locale();
@@ -42,7 +50,7 @@ final class WordPressLanguageSource implements LanguageSource
     private function nativeName(string $locale): string
     {
         $language = strtolower((string) strtok($locale, '_-'));
-        $name = extension_loaded('intl') ? (string) Locale::getDisplayLanguage($language, $language) : '';
+        $name = ($this->hasIntl ?? extension_loaded('intl')) ? (string) Locale::getDisplayLanguage($language, $language) : '';
 
         if ($name === '' || $name === $language) {
             return strtoupper($language);
