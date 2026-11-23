@@ -22652,14 +22652,15 @@ session.
 
 - Size is slides per view for desktop, tablet and phone, or one slide width with as many in view as fit (the
   Leadership Lens cards are drawn 384px wide with part of the next in view). Unset tablet and phone counts of a new carousel
-  follow US-BLK-03. Widths are the theme's; CoreX adds no breakpoint.
+  follow US-BLK-03. CoreX adds two width tokens for the carousel and one for the filter sheet, defaulting to the theme's own widths,
+  printed by PHP the way spec 137 FR-004 prints the header's width, without depending on spec 137's code.
 - Arrows and dots can each be hidden; their sizes are US-BLK-03's. Advancing by itself has a floor of 4 seconds
-  (as spec 136's tabs, FR-035) and always shows Pause. Loop, an edge fade at the start, the end or both (a mask in
+  (as spec 136's tabs, FR-035) and always shows Pause; after Pause only Play starts it again. Loop, an edge fade at the start, the end or both (a mask in
   logical terms), and the current slide aligned to the start or the centre are options.
 - The slides in view and the current slide carry a class and `aria-current`, so a site draws a coverflow or dims
   the others with a style of its own, not a CoreX option.
-- Loop is off by default, as today: the arrows stop at the ends and advancing by itself goes back to the first
-  slide; on, both wrap. A new carousel advances every 5 seconds when turned on. The tablet and desktop widths are
+- Loop is off by default, as today: the arrows stop at the ends (with `aria-disabled`, never `disabled`, so focus is not lost) and advancing by
+  itself goes back to the first slide; on, both wrap. A new carousel advances every 5 seconds when turned on. The tablet and desktop widths are
   tokens that PHP resolves from the merged theme JSON into the rule it prints, because media queries cannot read
   custom properties.
 - A carousel saved before keeps today's layout and loop: `perView` stays the count at every width unless an editor
@@ -22668,8 +22669,9 @@ session.
   24px dot and 44px arrow targets (2.5.8); its dead controls are also hidden with scripts off. This is a named
   exception to #652's third rule, which the owner may overrule through the coordinator. The phone and tablet
   counts of US-BLK-03 apply to new carousels, and to saved ones only when an editor turns on "Fit the screen" or
-  sets a count. The changes are named in the changelog. Neither client runs a carousel in its theme or site code,
-  and neither runs corex-ui blocks on its live pages, so none reaches them.
+  sets a count. The changes are named in the changelog. Perego has corex-ui and corex-blocks off on its live site, and Muva
+  runs no corex-ui block and no portfolio kit (it has corex-blocks and corex-ui active), so no saved carousel of
+  either is reached.
 
 ## #725 -- The ticker is a mode of the carousel, and its Pause is always shown
 
@@ -22698,8 +22700,9 @@ ticker: it cannot stop on focus or offer Pause, and the site withdrew it (its sp
   moment is shown as it is, so the first screen never flashes and the largest paint is not held back. With
   scripts off, under reduced motion, in print and in the editor's canvas every block is in its end state, so the
   canvas shows the page (#656). The start state is never fully transparent.
-- The trigger is entering the view; how much of the block, the distance, the duration and the easing come from the
-  approved drawing (149-D3) as tokens. Not offered inside a carousel, a ticker, a modal or a drawer.
+- A block reveals when its top has come into view by the threshold share of the viewport height, or the threshold
+  share of the block is in view, whichever comes first, so a block taller than the viewport still reveals; the
+  threshold, the distance, the duration and the easing come from the approved drawing (149-D3) as tokens. Not offered inside a carousel, a ticker, a modal or a drawer.
 
 *Not chosen.* CSS that hides every revealed block until a class is added: content is lost when the script fails to
 load. `@media (scripting: enabled)` alone: the same loss when the script is blocked or late. A Reveal block that
@@ -22716,7 +22719,7 @@ It is a registered script with a documented attribute, `data-corex-count-up`, so
 
 ## #728 -- Filters live inside the Query Loop they filter, as a form first; the address carries term ids
 
-**Date:** 2026-11-23. **Spec:** 149, slices 7 and 8 (G-009, US-BLK-07). **Decided:** by the waves 2 and 3 planning
+**Date:** 2026-11-23. **Spec:** 149, slices 7a, 7b and 8 (G-009, US-BLK-07). **Decided:** by the waves 2 and 3 planning
 session.
 
 - The filter bar is placed inside the Query Loop and reads its id and query from block context, so two filtered
@@ -22729,14 +22732,22 @@ session.
 - A filter applies only to the Query Loop that holds the filter bar (the server checks the loop's own inner blocks),
   so a Chosen records carousel with the same id is never filtered. Two filtered loops with the same id on one page:
   the editor warns and gives the second a new id; patterns CoreX ships carry no fixed `queryId`. The main query is
-  never changed: it runs before the template, so the bar is not known yet. An inheriting Query Loop that holds a
+  never changed: it runs before the template, so the bar is not known yet, and an empty filtered result never
+  becomes a 404 (core `WP::handle_404()` acts on the main query). The filters, `noindex` and the header apply only
+  when a bar has rendered on the page with its own parameters present; an address with `filter-*` parameters and no
+  bar changes nothing. An inheriting Query Loop that holds a
   bar runs the main query's arguments with the filters as its own query while it renders, only on an archive, the
   posts page or a search. *Not chosen:* `pre_get_posts` on the main query, which would filter an archive whose
   template has no bar. A filtered address also sends
   `X-Robots-Tag: noindex, follow`, so an SEO plugin that replaces core's robots tag does not drop it.
-- A Query Loop that holds a filter bar is navigated by CoreX's script only: the filter blocks declare no
-  `interactivity.clientNavigation`, so core turns its router off for that loop (core `blocks/query.php:84-150`),
-  and CoreX's script also handles that loop's page links. The editor's "Reload full page" control shows a note.
+- A Query Loop that holds a filter bar is navigated by CoreX's script only. Core disables client navigation
+  page-wide (`wp_interactivity_config('core/router')`) and its editor turns "Reload full page" back on by itself
+  (EnhancedPaginationModal) for a loop with a block that does not declare client navigation. So a
+  `render_block_data` filter at a priority below 10 sets `enhancedPagination` to false on a Query Loop that holds a
+  filter bar: that loop never asks core for client navigation, core's router never intercepts its links, and
+  CoreX's script handles them. CoreX draws no editor note (core shows its own); another loop keeps core's.
+- The filters fold into a "Filters" button and sheet on a phone only once the script runs; without it they stay the
+  form with Apply.
 - "Counts" is the number selected on each control (drawn as "2 selected"); counts per option are an option, counted
   against the Query Loop's own query and cached.
 
@@ -22770,13 +22781,16 @@ slices 1 to 6, and 7a, 7b and 8 when they are on `main` with them.
 
 ## #731 -- Every visible value of a spec 149 block is a token a client theme can change
 
-**Date:** 2026-11-23. **Spec:** 149 (FR-080 to FR-086, SC-006). **Decided:** by the waves 2 and 3 planning session,
+**Date:** 2026-11-23. **Spec:** 149 (FR-080 to FR-087, SC-006). **Decided:** by the waves 2 and 3 planning session,
 on the gap coordinator's request from the Blackstone site's decision 29 (pixel parity with its Figma frames).
 
 The constitution already says styling comes from `theme.json` only. Spec 149 makes it testable for its blocks:
 - each size, colour, radius, gap, offset, speed, duration, easing, distance and threshold is a property
   `--corex-<block>-<name>` on the block's root, defaulting to `settings.custom.<block>.<name>` in `theme/theme.json`,
   so a client theme changes it in its own `theme.json` or in a block style, never by overriding CoreX's selectors;
+- defaults are literal values or presets that `v0.48.1` has, colours are presets so the dark variation applies,
+  and every `var()` in the style files carries the default as its fallback, so a theme without CoreX's tokens
+  still draws the blocks;
 - values a script needs (speed, durations, thresholds) are read from the computed property, never written in it;
 - the classes a style may target are a public contract in the two READMEs;
 - a fixture client theme overrides every token and a Playwright test reads each change from the computed style;
