@@ -344,9 +344,10 @@ page template choices, and render a page whose template only the parent has.
   block is registered and renders.
 - **FR-037**: The docs MUST say how a site gets a block (`packages/cli/README.md`,
   `packages/build-tools/README.md`, `client-site-workflow.md`, the generated `AGENTS.md` and `README.md`).
-- **FR-038**: `verify:dist` MUST fail when a client plugin in the artifact holds a block source folder
-  (`src/Blocks/*/block.json`) and no `build/blocks`, as it already fails for a theme that ships sources without
-  their compiled output.
+- **FR-038**: `verify:dist` MUST fail when a client plugin in the artifact has no `build/blocks` and a block in
+  its `src/Blocks` names in its `block.json` a `file:./` asset its folder does not hold, as it already fails for a
+  theme that ships sources without their compiled output. A block written by hand that holds every file it names
+  (Muva's) is not a failure.
 
 **Every slice**
 

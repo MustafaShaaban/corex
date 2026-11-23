@@ -21923,6 +21923,28 @@ must repeat the six first, in order, because WordPress merges that list by posit
 and would need a screen and a design. Removing the parent's patterns by slug prefix: an add-on's `corex/*`
 patterns would go too; the theme folder's own files are the exact list.
 
+## #665 -- How a generated site plugin boots and registers its blocks: the details spec 135 left open
+
+**Date:** 2026-11-23. **Spec:** 135, slice 5 (G-007). **Branch:** `spec/135-slice-5-site-plugin`.
+**Decided:** by the spec 135 session, under the owner's delegation, from what the slice's builder found and proposed.
+
+- **Priority 20 on `plugins_loaded`.** CoreX boots at 10, so in the usual order the site's provider boots at once;
+  `Corex::onReady` covers every other order, and a plugin activated after `plugins_loaded` has run boots straight
+  away. A static guard boots it once.
+- **The text domain comes from the block's `block.json`, not the registered type.** Measured on WordPress 7.0:
+  `register_block_type()` does not copy `textdomain` onto the `WP_Block_Type`, so reading it from the type left
+  every site block bound to `corex`. All 30 CoreX blocks name `corex`, so none changes.
+- **What `verify:dist` takes for a site plugin, and when it needs a build.** A plugin folder that ends in `-site`,
+  or whose main file declares `Requires Plugins:` naming `corex-core`; a folder that starts `corex-` is never
+  checked. It fails only when the plugin has no `build/blocks` and a block's `block.json` names a `file:./` asset
+  the block's folder does not hold: Muva ships hand-written blocks whose every file is there, unbuilt on purpose,
+  and a rule of "block sources need a build" would have failed its package (read in Muva's repository).
+- **A built folder wins even when it is empty.** A site that ran `npm run build` before it had a block has an
+  empty `build/blocks`, and a block added to `src/Blocks` registers after the next build. That is the rule CoreX's
+  own plugins follow, and a block needs its build for its editor script anyway.
+- **One plugin file for `--starter` and the default.** The starter's own plugin stub, which booted with `new` and no
+  guard, is gone; its example block is discovered like any other and its provider resolves through the container.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.

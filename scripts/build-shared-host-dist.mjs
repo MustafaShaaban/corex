@@ -815,35 +815,85 @@ export function verifyClientPluginBuilds( distDir ) {
 					readFileSync( join( folder, entry ), 'utf8' )
 				)
 			);
-	const hasBlockSources = ( folder ) => {
-		const blocks = join( folder, 'src', 'Blocks' );
+	// A source block needs its build when its block.json names a `file:./` asset that is not beside it
+	// (a compiled `style-index.css`, say). A block written by hand, whose files are all there, does not:
+	// a client may ship such blocks unbuilt on purpose (Muva does).
+	const ASSET_KEYS = [
+		'editorScript',
+		'script',
+		'viewScript',
+		'viewScriptModule',
+		'editorStyle',
+		'style',
+		'viewStyle',
+		'render',
+	];
+	const missingAsset = ( blockDir ) => {
+		let metadata;
+		try {
+			metadata = JSON.parse(
+				readFileSync( join( blockDir, 'block.json' ), 'utf8' )
+			);
+		} catch {
+			return null;
+		}
 
 		return (
-			existsSync( blocks ) &&
-			readdirSync( blocks ).some( ( entry ) =>
-				existsSync( join( blocks, entry, 'block.json' ) )
-			)
+			ASSET_KEYS.flatMap( ( key ) => [ metadata?.[ key ] ].flat() )
+				.filter(
+					( value ) =>
+						typeof value === 'string' &&
+						value.startsWith( 'file:./' )
+				)
+				.map( ( value ) => value.slice( 'file:./'.length ) )
+				.find( ( file ) => ! existsSync( join( blockDir, file ) ) ) ??
+			null
 		);
+	};
+	const unbuiltBlock = ( folder ) => {
+		const blocks = join( folder, 'src', 'Blocks' );
+
+		if ( ! existsSync( blocks ) ) {
+			return null;
+		}
+
+		for ( const entry of readdirSync( blocks ).sort() ) {
+			const blockDir = join( blocks, entry );
+			if ( ! existsSync( join( blockDir, 'block.json' ) ) ) {
+				continue;
+			}
+			const asset = missingAsset( blockDir );
+			if ( asset !== null ) {
+				return `${ entry }/${ asset }`;
+			}
+		}
+
+		return null;
 	};
 
 	return readdirSync( pluginsDir )
 		.sort()
 		.filter( ( plugin ) => ! plugin.startsWith( 'corex-' ) )
-		.filter( ( plugin ) => {
+		.flatMap( ( plugin ) => {
 			const folder = join( pluginsDir, plugin );
 
-			return (
-				statSync( folder ).isDirectory() &&
-				( plugin.endsWith( '-site' ) || requiresCorex( folder ) ) &&
-				hasBlockSources( folder ) &&
-				! existsSync( join( folder, 'build', 'blocks' ) )
-			);
-		} )
-		.map(
-			( plugin ) =>
-				`client plugin "${ plugin }": block sources in src/Blocks and no compiled build/blocks ` +
-				"(run the plugin's npm run build before packaging)"
-		);
+			if (
+				! statSync( folder ).isDirectory() ||
+				! ( plugin.endsWith( '-site' ) || requiresCorex( folder ) ) ||
+				existsSync( join( folder, 'build', 'blocks' ) )
+			) {
+				return [];
+			}
+
+			const unbuilt = unbuiltBlock( folder );
+
+			return unbuilt === null
+				? []
+				: [
+						`client plugin "${ plugin }": src/Blocks/${ unbuilt } is named in its block.json and does ` +
+							"not exist, and there is no compiled build/blocks (run the plugin's npm run build before packaging)",
+					];
+		} );
 }
 
 /**

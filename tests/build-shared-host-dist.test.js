@@ -728,8 +728,8 @@ it( 'fails verification when a client theme ships SCSS/JS source but no compiled
 // Spec 135, FR-038: a site plugin that ships block sources ships them built, as a theme ships its CSS.
 describe( 'a client plugin’s blocks', () => {
 	const UNBUILT =
-		'client plugin "acme-site": block sources in src/Blocks and no compiled build/blocks ' +
-		"(run the plugin's npm run build before packaging)";
+		'client plugin "acme-site": src/Blocks/banner/index.js is named in its block.json and does ' +
+		"not exist, and there is no compiled build/blocks (run the plugin's npm run build before packaging)";
 
 	function packageWith( files ) {
 		const root = mkdtempSync( join( tmpdir(), 'corex-dist-blocks-' ) );
@@ -746,7 +746,9 @@ describe( 'a client plugin’s blocks', () => {
 
 	const SITE_PLUGIN =
 		'<?php\n/**\n * Plugin Name: Acme Site\n * Requires Plugins:  corex-core\n */\n';
-	const BLOCK = '{"name":"acme-site/banner"}';
+	// As make:block writes it: the stylesheet it names is what the build compiles.
+	const BLOCK =
+		'{"name":"acme-site/banner","editorScript":"file:./index.js","style":"file:./style-index.css"}';
 
 	it( 'passes a site plugin whose block sources are built', () => {
 		const dist = packageWith( {
@@ -765,6 +767,18 @@ describe( 'a client plugin’s blocks', () => {
 		} );
 
 		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [ UNBUILT ] );
+	} );
+
+	it( 'passes a site plugin whose hand-written blocks hold every file they name, with no build (Muva)', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/lead-form/block.json':
+				'{"name":"acme/lead-form","style":"file:./style.css","viewScript":"file:./view.js"}',
+			'acme-site/src/Blocks/lead-form/style.css': '',
+			'acme-site/src/Blocks/lead-form/view.js': '',
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
 	} );
 
 	it( 'passes a site plugin with no block', () => {
