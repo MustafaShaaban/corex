@@ -3,6 +3,10 @@
 /**
  * The CoreX favicon, linked by the theme when the site has no site icon (spec 134, FR-022, SC-007).
  *
+ * Only when the CoreX theme is the active theme itself (spec 135, FR-016). WordPress runs a parent's
+ * `functions.php` under a child too, and a client site whose theme is a child of this one is the
+ * client's site: it must not show the CoreX mark.
+ *
  * The files are the theme's own copies of the logo set's favicon (DECISIONS #637): the symbol on a
  * graphite tile, as SVG and at 16, 32, 180 and 512px. A site icon chosen in WordPress always wins:
  * WordPress links it itself, and the theme then links nothing. Decorative: a favicon has no name.
@@ -19,7 +23,7 @@ if (! function_exists('corex_theme_favicon_links')) {
      */
     function corex_theme_favicon_links(): void
     {
-        if (has_site_icon()) {
+        if (has_site_icon() || get_stylesheet() !== get_template()) {
             return;
         }
 
