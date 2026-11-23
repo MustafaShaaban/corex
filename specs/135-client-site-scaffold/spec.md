@@ -9,7 +9,8 @@ what it found is answered in the text below
 
 **Input**: The Blackstone gap programme, wave 1 (DECISIONS #651, #652, #655). Four gaps the Blackstone eIT site found
 in what `wp corex make:site` generates on v0.48.1: G-006 (the client theme), G-007 (the site plugin), G-002 (the
-agent files), G-001 (which repository this is). The gap rows are in that site's `docs/corex-gaps.md`, which CoreX
+agent files), G-001 (which repository this is). A fifth, G-048 (what the editor of a child theme sees), was found
+on 2026-11-23 once the child theme existed and added as slice 6 by the coordinating session (DECISIONS #664). The gap rows are in that site's `docs/corex-gaps.md`, which CoreX
 sessions only read.
 
 ## Why this spec exists
@@ -151,6 +152,33 @@ there, and no retired name is.
    model routing table and the UI steps, and where each is described in full.
 2. **Given** every file `make:site` writes, **When** searched for "Spec Kit" or "speckit", **Then** nothing is found.
 
+### User Story 5 - The editor of a child theme sees the client's own patterns and templates (Priority: P2)
+
+A client's designer opens the Site Editor and the inserter on a site whose theme is a child of the CoreX theme.
+The theme has said it wants only its own patterns and templates offered, so the 26 patterns and 15 templates of
+the CoreX theme are not in the lists; the site still renders every page, including those that use a template
+only the CoreX theme has. The child adds one custom page template of its own without copying CoreX's six.
+
+**Why this priority**: a site's editors choose from CoreX's corporate, SaaS and docs headers and fifteen
+templates the client's design never drew, and one wrong pick puts an off-brand page live (G-048, High).
+
+**Independent Test**: on a real WordPress with a generated child active, set the two switches in its
+`theme.json`; read the registered patterns, the Site Editor's template list (`get_block_templates()`), and the
+page template choices, and render a page whose template only the parent has.
+
+**Acceptance Scenarios**:
+
+1. **Given** a child whose `theme.json` sets `settings.custom.corex.parent.hidePatterns` to `true`, **When** the
+   editor loads, **Then** no pattern the CoreX theme's `patterns/` folder declares is registered, and the child's
+   own patterns and those `corex-ui` registers are.
+2. **Given** `hideTemplates` set to `true`, **When** the Site Editor lists templates and parts, **Then** a template
+   or part the child does not have itself is not listed; **and when** a visitor opens a page that needs a template
+   only the CoreX theme has (the site's index, for one), **Then** it renders with the CoreX theme's template.
+3. **Given** a child whose `theme.json` declares `customTemplates` with one entry of its own, **When** the page
+   template picker opens, **Then** it offers CoreX's six custom templates, with their titles, and the child's.
+4. **Given** a child that sets neither switch, the CoreX theme itself, or a standalone theme, **When** any of the
+   above is read, **Then** it is as it was before this slice.
+
 ### Edge Cases
 
 - **The CoreX theme cannot be found at generation.** `make:site` stops before writing a file and names the path it
@@ -167,6 +195,10 @@ there, and no retired name is.
 - **A release changes a token's value in the CoreX theme.** A child keeps the value it lists: that is the model.
   Only a new entry, or a font file that moved, needs a step, and `verify:client-theme` names both.
 - **`brand.json`** in a client theme works as before (FR-020).
+- **`hideTemplates` on a child that has no template for a page.** The page is still drawn with the CoreX theme's
+  template: the switch takes a template out of the editor's lists only, never out of resolution (FR-022).
+- **A child that lists a CoreX custom template under its own title.** Its entry wins, in its place; CoreX's
+  entries the child does not name are added after the child's (FR-023).
 - **A child that declares `customTemplates` or `templateParts`** must repeat the parent's entries
   (`verify:client-theme` checks it); the generated `theme.json` declares neither.
 - **A later CoreX release adds a palette slug.** The client's list no longer names every parent slug:
@@ -262,6 +294,25 @@ there, and no retired name is.
   `BrandOverrideValidator`). The docs say a generated site's values go in the child's `theme.json` and that a
   `brand.json` still wins over it.
 
+**What the editor of a child theme sees (G-048)**
+
+- **FR-021**: When the active theme is a child of the CoreX theme and its `theme.json` sets
+  `settings.custom.corex.parent.hidePatterns` to `true`, `corex-core` MUST unregister, on `init` after WordPress
+  has registered the theme folders' patterns, every pattern whose file is in the CoreX theme's `patterns/`
+  folder, and nothing else (not the child's, not those an add-on registers). Off unless the child sets it.
+- **FR-022**: When it sets `settings.custom.corex.parent.hideTemplates` to `true`, the templates and parts that
+  only the CoreX theme has MUST be left out of the lists the editor reads (the Site Editor's template and part
+  lists and the page template choices), and MUST still resolve when a page is drawn. Off unless the child sets
+  it.
+- **FR-023**: When a child declares `customTemplates`, `corex-core` MUST complete the list before WordPress merges
+  it with the CoreX theme's (`wp_theme_json_data_theme`): the child's entries first, as written, then each CoreX
+  entry whose `name` the child's list lacks, in CoreX's order. A child that declares no list is untouched (it
+  inherits CoreX's as before). `npm run verify:client-theme` then stops requiring the CoreX entries in a child's
+  `customTemplates` (it keeps the rule for `templateParts`), and the docs say so.
+- **FR-024**: The switches are read from the child's own `theme.json` data, through the theme JSON WordPress has
+  already resolved; `make:site` writes neither (a new site shows everything until its theme says otherwise), and
+  the docs and the generated README say how to set them.
+
 **The site plugin boots and its blocks build (G-007)**
 
 - **FR-030**: The generated plugin file MUST declare `Requires Plugins: corex-core`, autoload the site's namespace
@@ -329,6 +380,8 @@ there, and no retired name is.
 - **SC-003**: `verify:framework` in a repository with a baseline and no remote reports drift for a changed
   framework file.
 - **SC-004**: A search of everything `make:site` writes finds no retired workflow name.
+- **SC-006**: On a child with both switches set, the registered patterns hold none of the CoreX theme's 26, the
+  Site Editor lists no template the child lacks, and every page of the site still renders with no PHP notice.
 - **SC-005**: Muva's, Perego's and Mizzey's repositories merge the release with no new conflict and no changed
   page (`scripts/client-merge-check.mjs`, run by the coordinating session before the tag).
 
@@ -344,6 +397,7 @@ writes its `### Client impact` lines under `[Unreleased]`, "Gap programme, wave 
 | 3 | The client theme is a child (G-006) | FR-010 to FR-015, FR-017 to FR-020, FR-040, FR-041 | 2 (same stubs and tests) | I, V, VIII | No. It edits `ci.yml`, `package.json`, the `dist` verifier and docs that `main` has also changed since the tag, so the carry may need a hand-resolved hunk |
 | 4 | The CoreX favicon stays off a child theme | FR-016 | 3 | I | **Yes**: `theme/inc/favicon.php` is spec 134's. Not carried to the line, where the theme links no favicon |
 | 5 | The site plugin boots and its blocks build (G-007) | FR-030 to FR-038, FR-040, FR-041 | 3 | II, IV, VI | No. `DynamicBlockRegistrar.php` is unchanged since the tag and is also changed by spec 136 (another method). It adds a step to the `ci.yml` job `main` has changed since the tag, so the carry may need a hand-resolved hunk |
+| 6 | What the editor of a child theme sees (G-048) | FR-021 to FR-024, FR-040, FR-041 | 3 (and after 5, by the coordinating session's order) | I (the behaviour is `corex-core`'s, the theme only declares the switches), IX | No: `corex-core`'s `Theme` folder, `wp_theme_json_data_theme` and the pattern and template APIs it uses all exist at the tag |
 
 Nothing here is seen by a visitor, so no slice has a design step. Slice 4 removes a link from a page's head and
 draws nothing.
