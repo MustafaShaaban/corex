@@ -160,6 +160,27 @@ and delete the scratch folder.
   Framework Mode task.
 - A company-specific block/page/template → keep it in `sites/<client>/`.
 
+### A block of the site's own
+
+From the repository root, with one site under `sites/`:
+
+```bash
+wp corex make:block Banner
+cd sites/acme/acme-site
+npm install
+npm run build
+```
+
+`make:block` writes the block into the site plugin, `acme-site/src/Blocks/banner/` with its renderer beside it,
+named `acme-site/banner` and translated in the `acme-site` text domain. The plugin requires `corex-core` and
+boots its provider once CoreX is up; the provider registers every folder of `src/Blocks` that has a
+`block.json`, from `build/blocks` once `npm run build` has run. The plugin's `package.json` has its own
+`@wordpress/scripts`, so it builds from a clean install of its own folder. Build the plugin before packaging:
+`npm run verify:dist` prints a `WARN` line for each block whose `block.json` names a file its folder lacks (the
+compiled `index.js` or `style-index.css`) when the plugin's build holds no folder of that block. It names the
+plugin, the block and the file, and it does not fail the package, so read the output. A block written by hand
+that holds every file it names is not reported.
+
 ## 5. Build & deploy
 
 The team commits **source only**. A deployable artifact is built into `dist/` (never committed) and deployed by

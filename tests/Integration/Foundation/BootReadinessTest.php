@@ -4,8 +4,9 @@
  * A site plugin can reach Corex without guessing at load order (spec 086).
  *
  * Found by standing up a plugin that followed `docs-app/.../user-guides.md` exactly. Corex boots on
- * `plugins_loaded` at priority 10 and the generated site starter boots there too, so which runs
- * first depends on the plugin's **directory name**. The loser called `Corex::make()`, reached
+ * `plugins_loaded` at priority 10 and the site starter `make:site` generated then booted there too, so
+ * which ran first depended on the plugin's **directory name**. (The site plugin it generates now boots
+ * through `Corex::onReady`, spec 135, FR-030.) The loser called `Corex::make()`, reached
  * `Boot::app()`, and got a `RuntimeException` — not a silent no-op: a fatal, on every request,
  * taking the whole site down.
  *

@@ -369,12 +369,12 @@
       "path": "packages/cli/README.md",
       "lines": [
         88,
-        135,
-        137,
-        139,
-        141,
+        148,
         150,
-        277
+        152,
+        154,
+        163,
+        290
       ],
       "topics": [
         "brand.json",

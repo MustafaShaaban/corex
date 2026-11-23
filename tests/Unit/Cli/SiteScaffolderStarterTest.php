@@ -12,14 +12,17 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Blocks\BlockPathResolver;
 use Corex\Blocks\BlockWrapper;
+use Corex\Blocks\DynamicBlockRegistrar;
+use Corex\Blocks\PluginMountMap;
 use Corex\Cli\Generators\StubRenderer;
 use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldResult;
 use Corex\Cli\Support\InvalidNameException;
 use Corex\Container\Container;
-use Corex\Container\ContainerInterface;
+use Corex\Support\BootLogger;
 
 function starterScaffolder(): SiteScaffolder
 {
@@ -157,10 +160,11 @@ it('spec 136 FR-014: the example block declares its kind, its anchor and a top a
 });
 
 /**
- * Generates a starter under a name of its own (its classes load once per run), loads its classes,
- * boots its provider with the given container and returns the example block's render callback.
+ * Generates a starter under a name of its own (its classes load once per run), loads its classes and
+ * returns the render callback CoreX gives its example block: the one DynamicBlockRegistrar builds from
+ * the `corex.renderer` its block.json names, as BlockFolder registers it (spec 135, FR-032).
  */
-function starterBlockCallback(?ContainerInterface $container): callable
+function starterBlockCallback(BlockWrapper $wrapper): callable
 {
     $base = starterBase();
     $name = 'Wrap' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 8);
@@ -178,30 +182,23 @@ function starterBlockCallback(?ContainerInterface $container): callable
         }
     });
 
-    $hooks = [];
-    $blocks = [];
-    Functions\when('add_action')->alias(static function (string $hook, callable $callback) use (&$hooks): void {
-        $hooks[$hook][] = $callback;
-    });
-    Functions\when('register_block_type')->alias(static function (string $path, array $args) use (&$blocks): void {
-        $blocks[$path] = $args;
-    });
     Functions\when('get_option')->justReturn([['id' => 1, 'title' => 'First']]);
     Functions\stubEscapeFunctions();
     Functions\stubTranslationFunctions();
 
-    $class = $namespace . '\\' . $namespace . 'ServiceProvider';
-    $instance = new $class($container);
-    $instance->register();
-    $instance->boot();
-    foreach ($hooks['init'] ?? [] as $init) {
-        $init();
-    }
+    $metadata = json_decode((string) file_get_contents($src . '/Blocks/example/block.json'), true);
+    $registrar = new DynamicBlockRegistrar(
+        new Container(),
+        new BootLogger(debug: false),
+        new PluginMountMap(),
+        new BlockPathResolver(),
+        $wrapper,
+    );
 
-    return array_values($blocks)[0]['render_callback'];
+    return $registrar->renderCallback($metadata['corex']['renderer']);
 }
 
-it('spec 136 FR-001, FR-014: the example block\'s markup passes through the BlockWrapper only when the container binds one', function () {
+it('spec 136 FR-001, spec 135 FR-032: the example block\'s renderer is resolved from the container and its markup passes through the BlockWrapper', function () {
     $wrapper = new class implements BlockWrapper {
         /** @var list<string> */
         public array $seen = [];
@@ -213,20 +210,13 @@ it('spec 136 FR-001, FR-014: the example block\'s markup passes through the Bloc
             return str_replace('<ul class=', '<ul id="wrapped" class=', $markup);
         }
     };
-    $bound = new Container();
-    $bound->instance(BlockWrapper::class, $wrapper);
 
-    $wrapped = starterBlockCallback($bound)();
-    $unbound = starterBlockCallback(new Container())();
-    $withoutCorex = starterBlockCallback(null)();
+    $wrapped = starterBlockCallback($wrapper)([], '', (object) []);
 
     expect($wrapper->seen)->toHaveCount(1)
+        ->and($wrapper->seen[0])->toStartWith('<ul class=')
         ->and($wrapped)->toContain('<ul id="wrapped" class=')
-        ->and($wrapped)->toContain('<li>First</li>')
-        ->and($unbound)->toStartWith('<ul class=')
-        ->and($unbound)->toContain('<li>First</li>')
-        ->and($withoutCorex)->toStartWith('<ul class=')
-        ->and($withoutCorex)->toContain('<li>First</li>');
+        ->and($wrapped)->toContain('<li>First</li>');
 });
 
 it('refuses a name that normalises to the reserved corex identity', function () {

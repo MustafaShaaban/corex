@@ -89,6 +89,16 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   generated, for the client to change. It writes no index, front page, header or footer: those are the CoreX
   theme's until the client's design replaces them. `make:site --force` keeps an existing theme's `style.css`
   and `theme.json`.
+- **The site plugin `make:site` writes boots, and a block of the site's own registers and builds** (spec 135
+  slice 5, gap G-007; DECISIONS #662, #665). The generated plugin ended in a comment and booted nothing, so a block
+  `make:block` wrote into it was never registered and had nothing to build it. The plugin now declares
+  `Requires Plugins: corex-core`, autoloads its namespace and boots its provider once through `Corex::onReady`,
+  whichever plugin loads first. The provider registers the blocks in the plugin's `build/blocks` (or `src/Blocks`
+  before a build) through `corex-blocks`, and the plugin has a `package.json` that builds them with
+  `@wordpress/scripts`. The `--starter` example uses the same plugin file and its block is discovered like any
+  other. A block's editor strings are bound to its own text domain (`corex` for every CoreX block, as before).
+  `verify:dist` warns, without failing, about a block of a site plugin that names a file its folder does not
+  hold (a compiled stylesheet, say) and has no build; a block written by hand with all its files is left alone.
 
 ### Client impact
 
@@ -114,6 +124,15 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     standalone themes, so the CoreX theme's `functions.php` never runs there, and Mizzey's theme names no
     `Template:` line either. A site that runs the CoreX theme itself keeps its favicon. On `main` only: not
     carried to `release/gap-line`, whose CoreX theme links no favicon, so it does not move into the wave's entry.
+  - **Spec 135 slice 5 (G-007).** Muva, Perego and Mizzey: no page changes and there is no upgrade step. Their
+    site plugins are their own and are not rewritten; Muva and Perego register their blocks with
+    `register_block_type` themselves, so the change to how `corex-blocks` binds a block's translations does not
+    reach them, and every CoreX block still binds `corex`. `npm run verify:dist` now prints a `WARN` line, and still
+    passes, for a block of a site plugin that names a file its folder does not hold and has no build. Muva's
+    blocks are written by hand and hold every file they name: no warning. **Perego** will see one per unbuilt
+    block when its pipeline packages without building the site plugin (its `build/Blocks` is git-ignored and
+    its `azure-pipelines.yml` builds only the workspaces): the fix is to run `npm ci` and `npm run build` in
+    `sites/perego/perego-site` before `build:dist`. Nothing fails.
   - **Spec 136 slice 1 (G-005).** No upgrade step, no stored data changed.
     - **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks
       gain an `id` or a class only where an editor set one. Where it shows the account block, that block's root

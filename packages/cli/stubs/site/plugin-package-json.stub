@@ -1,0 +1,14 @@
+{
+	"name": "{{ plugin_slug }}",
+	"version": "0.1.0",
+	"private": true,
+	"description": "The {{ name }} site plugin's blocks: src/Blocks builds to build/blocks.",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build --webpack-src-dir=src/Blocks --output-path=build/blocks",
+		"start": "wp-scripts start --webpack-src-dir=src/Blocks --output-path=build/blocks"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^36.1.0"
+	}
+}

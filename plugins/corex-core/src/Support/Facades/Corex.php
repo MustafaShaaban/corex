@@ -33,8 +33,8 @@ final class Corex
      * Run something once Corex is up — the safe way for a site plugin to reach the container.
      *
      * **This exists because the obvious way is a coin flip that ends in a white screen.** Corex
-     * boots on `plugins_loaded` at priority 10, and the site starter this framework generates boots
-     * there too. Which one WordPress runs first depends on the plugin's *directory name*. The
+     * boots on `plugins_loaded` at priority 10, and a site plugin that boots there too races it.
+     * Which one WordPress runs first depends on the plugin's *directory name*. The
      * plugin that loses calls {@see make()}, reaches `Boot::app()`, and gets a `RuntimeException`
      * on every request — the whole site, not just the feature.
      *
@@ -43,7 +43,8 @@ final class Corex
      * standing up a plugin that followed the documented pattern exactly.
      *
      * Both orderings are covered here: already booted runs immediately, not yet booted waits for
-     * `corex_booted`. There is no ordering left for a caller to get wrong.
+     * `corex_booted`. There is no ordering left for a caller to get wrong. The site plugin
+     * `make:site` generates boots its provider this way (spec 135, FR-030).
      *
      *     add_action( 'plugins_loaded', static function (): void {
      *         Corex::onReady( static function (): void {

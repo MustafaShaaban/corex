@@ -1,4 +1,4 @@
-/* {{ name }} example block — token-only, logical properties (RTL-correct). */
+/* {{ name }} example block: token-only, logical properties (RTL-correct). */
 .{{ theme_slug }}-example {
 	display: grid;
 	gap: var({{ css_prefix }}gap, 0.5rem);

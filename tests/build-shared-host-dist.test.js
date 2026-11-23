@@ -256,7 +256,11 @@ it( 'builds a package whose core plugin loads the framework, in a PHP process of
 			'Corex\\Cli\\': 'Corex\\Cli\\CliServiceProvider',
 		},
 	} );
-	expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+	expect( mod.verifyDist( distDir ) ).toEqual( {
+		ok: true,
+		errors: [],
+		warnings: [],
+	} );
 } );
 
 it( 'builds the package vendor/ beside the plugins, and leaves the checkout vendor/ as it was', () => {
@@ -302,7 +306,11 @@ it( 'removes from the packaged vendor/ what a package may not hold, and keeps th
 		'wp-content/vendor/acme/pdf/tests',
 	] );
 	expect( existsSync( join( shipped, 'src', 'Writer.php' ) ) ).toBe( true );
-	expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+	expect( mod.verifyDist( distDir ) ).toEqual( {
+		ok: true,
+		errors: [],
+		warnings: [],
+	} );
 } );
 
 // The PDF library's fonts are 87MB of a package somebody uploads by hand, 54MB of it six fonts for
@@ -626,7 +634,11 @@ it.each( [
 		describedAgain( distDir );
 	}
 
-	expect( mod.verifyDist( distDir ) ).toEqual( { ok: false, errors } );
+	expect( mod.verifyDist( distDir ) ).toEqual( {
+		ok: false,
+		errors,
+		warnings: [],
+	} );
 } );
 
 describe( 'the Arabic script translations (spec 121, FR-019)', () => {
@@ -698,7 +710,11 @@ describe( 'the Arabic script translations (spec 121, FR-019)', () => {
 		writeFileSync( file, '{}' );
 		describedAgain( distDir );
 
-		expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+		expect( mod.verifyDist( distDir ) ).toEqual( {
+			ok: true,
+			errors: [],
+			warnings: [],
+		} );
 	} );
 } );
 
@@ -723,6 +739,151 @@ it( 'fails verification when a client theme ships SCSS/JS source but no compiled
 	mkdirSync( join( theme, 'assets', 'css' ), { recursive: true } );
 	writeFileSync( join( theme, 'assets', 'css', 'main.css' ), 'body{}' );
 	expect( mod.verifyClientAssets( dist ) ).toEqual( [] );
+} );
+
+// Spec 135, FR-038: a site plugin that ships block sources ships them built, as a theme ships its CSS.
+// A warning, not a failure (DECISIONS #666): a client that packages its site plugin unbuilt keeps deploying.
+describe( 'a client plugin’s blocks', () => {
+	const UNBUILT =
+		'client plugin "acme-site": src/Blocks/banner/index.js is named in its block.json and does ' +
+		"not exist, and there is no compiled build/blocks/banner (run the plugin's npm run build before packaging)";
+
+	function packageWith( files ) {
+		const root = mkdtempSync( join( tmpdir(), 'corex-dist-blocks-' ) );
+		roots.push( root );
+		const dist = join( root, 'dist' );
+		for ( const [ rel, body ] of Object.entries( files ) ) {
+			const abs = join( dist, 'wp-content', 'plugins', rel );
+			mkdirSync( join( abs, '..' ), { recursive: true } );
+			writeFileSync( abs, body );
+		}
+
+		return dist;
+	}
+
+	const SITE_PLUGIN =
+		'<?php\n/**\n * Plugin Name: Acme Site\n * Requires Plugins:  corex-core\n */\n';
+	// As make:block writes it: the stylesheet it names is what the build compiles.
+	const BLOCK =
+		'{"name":"acme-site/banner","editorScript":"file:./index.js","style":"file:./style-index.css"}';
+
+	it( 'passes a site plugin whose block sources are built', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/banner/block.json': BLOCK,
+			'acme-site/build/blocks/banner/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'passes a site plugin built into build/Blocks, whatever the case (Perego)', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/banner/block.json': BLOCK,
+			'acme-site/build/Blocks/banner/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'warns of each block the build does not hold, naming the plugin, the block and the file', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/banner/block.json': BLOCK,
+			'acme-site/src/Blocks/hero/block.json': BLOCK,
+			'acme-site/build/blocks/hero/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [ UNBUILT ] );
+	} );
+
+	it( 'passes a site plugin whose hand-written blocks hold every file they name, with no build (Muva)', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/lead-form/block.json':
+				'{"name":"acme/lead-form","style":"file:./style.css","viewScript":"file:./view.js"}',
+			'acme-site/src/Blocks/lead-form/style.css': '',
+			'acme-site/src/Blocks/lead-form/view.js': '',
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'passes a site plugin with no block', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/.gitkeep': '',
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'checks a client plugin by its requirement on corex-core, whatever its folder is called', () => {
+		const dist = packageWith( {
+			'acme-extras/acme-extras.php': SITE_PLUGIN,
+			'acme-extras/src/Blocks/banner/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [
+			UNBUILT.replace( 'acme-site', 'acme-extras' ),
+		] );
+	} );
+
+	it( 'leaves CoreX’s own plugins and a plugin that is not the site’s alone', () => {
+		const dist = packageWith( {
+			'corex-ui/corex-ui.php':
+				'<?php\n/**\n * Plugin Name: Corex UI\n * Requires Plugins: corex-core\n */\n',
+			'corex-ui/src/Blocks/hero/block.json': BLOCK,
+			'other/other.php': '<?php\n/**\n * Plugin Name: Other\n */\n',
+			'other/src/Blocks/thing/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'warns in verify:dist, without failing it, for a package whose site blocks were not built', () => {
+		const root = makeRepo();
+		const site = join( root, 'sites', 'acme', 'acme-site' );
+		mkdirSync( join( site, 'src', 'Blocks', 'banner' ), {
+			recursive: true,
+		} );
+		writeFileSync( join( site, 'acme-site.php' ), SITE_PLUGIN );
+		writeFileSync(
+			join( site, 'src', 'Blocks', 'banner', 'block.json' ),
+			BLOCK
+		);
+		const distDir = join( root, 'dist' );
+		mod.runBuild(
+			mod.buildPlan( { repoRoot: root, distDir, client: 'acme' } ),
+			distDir
+		);
+
+		expect( mod.verifyDist( distDir ) ).toEqual( {
+			ok: true,
+			errors: [],
+			warnings: [ UNBUILT ],
+		} );
+
+		mkdirSync( join( site, 'build', 'blocks', 'banner' ), {
+			recursive: true,
+		} );
+		writeFileSync(
+			join( site, 'build', 'blocks', 'banner', 'block.json' ),
+			BLOCK
+		);
+		rmSync( distDir, { recursive: true, force: true } );
+		mod.runBuild(
+			mod.buildPlan( { repoRoot: root, distDir, client: 'acme' } ),
+			distDir
+		);
+
+		expect( mod.verifyDist( distDir ) ).toEqual( {
+			ok: true,
+			errors: [],
+			warnings: [],
+		} );
+	} );
 } );
 
 // Spec 135, FR-017: a client theme is a child of the CoreX theme, and the package must hold both.
@@ -767,7 +928,11 @@ describe( 'a child client theme', () => {
 			true
 		);
 		expect( mod.verifyThemeParents( distDir ) ).toEqual( [] );
-		expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+		expect( mod.verifyDist( distDir ) ).toEqual( {
+			ok: true,
+			errors: [],
+			warnings: [],
+		} );
 	} );
 
 	it( 'fails verification once the CoreX theme is not in the package, naming the theme and its parent', () => {
@@ -786,6 +951,7 @@ describe( 'a child client theme', () => {
 		expect( mod.verifyDist( distDir ) ).toEqual( {
 			ok: false,
 			errors: [ message ],
+			warnings: [],
 		} );
 	} );
 

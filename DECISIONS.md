@@ -21923,6 +21923,50 @@ must repeat the six first, in order, because WordPress merges that list by posit
 and would need a screen and a design. Removing the parent's patterns by slug prefix: an add-on's `corex/*`
 patterns would go too; the theme folder's own files are the exact list.
 
+## #665 -- How a generated site plugin boots and registers its blocks: the details spec 135 left open
+
+**Date:** 2026-11-23. **Spec:** 135, slice 5 (G-007). **Branch:** `spec/135-slice-5-site-plugin`.
+**Decided:** by the spec 135 session, under the owner's delegation, from what the slice's builder found and proposed.
+
+- **Priority 20 on `plugins_loaded`.** CoreX boots at 10, so in the usual order the site's provider boots at once;
+  `Corex::onReady` covers every other order, and a plugin activated after `plugins_loaded` has run boots straight
+  away. A static guard boots it once.
+- **The text domain comes from the block's `block.json`, not the registered type.** Measured on WordPress 7.1:
+  `register_block_type()` does not copy `textdomain` onto the `WP_Block_Type`, so reading it from the type left
+  every site block bound to `corex`. All 30 CoreX blocks name `corex`, so none changes.
+- **What `verify:dist` takes for a site plugin, and when it warns (#666).** A plugin folder that ends in `-site`,
+  or whose main file declares `Requires Plugins:` naming `corex-core`; a folder that starts `corex-` is never
+  checked. It warns only when a block has no built folder and its `block.json` names a `file:./` asset
+  the block's folder does not hold: Muva ships hand-written blocks whose every file is there, unbuilt on purpose,
+  and a rule of "block sources need a build" would have failed its package (read in Muva's repository).
+- **A built folder wins even when it is empty.** A site that ran `npm run build` before it had a block has an
+  empty `build/blocks`, and a block added to `src/Blocks` registers after the next build. That is the rule CoreX's
+  own plugins follow, and a block needs its build for its editor script anyway.
+- **One plugin file for `--starter` and the default.** The starter's own plugin stub, which booted with `new` and no
+  guard, is gone; its example block is discovered like any other and its provider resolves through the container.
+
+## #666 -- `verify:dist` warns about a site block left unbuilt; it does not fail
+
+**Date:** 2026-11-23. **Spec:** 135, slice 5 (G-007, FR-038). **Branch:** `spec/135-slice-5-site-plugin`.
+**Decided:** by the spec 135 session, under the owner's delegation, after the slice's review.
+
+**Found** (read in Perego's repository, 2026-11-23): Perego's site plugin builds its blocks into `build/Blocks`,
+which its `.gitignore` leaves out, and its `azure-pipelines.yml` runs `npm ci`, the root `npm run build` (the
+workspaces only), `build:dist` and `verify:dist`, never the site plugin's build. A check that failed a package
+whose blocks name a compiled file the package lacks would have failed Perego's pipeline the day it took the
+release, and a release must not change a client by being taken (#651, #652). Muva ships hand-written blocks
+whose files are all there.
+
+- `verifyDist` returns `{ ok, errors, warnings }`; a warning never changes `ok`. Each warning names the plugin,
+  the block and the missing file; `npm run verify:dist` and `build:dist` print it as `WARN`.
+- A block is built when a folder of its name exists under the plugin's `build/` in any case of `blocks`
+  (Perego's `build/Blocks`, CoreX's `build/blocks`).
+- The owner was told, through the coordinating session, that Perego's packages may ship its blocks without
+  their compiled files.
+
+*Not chosen.* Failing, behind an opt-in flag: one more switch for a check whose whole value is being seen; a
+warning in every run is seen without anyone choosing it.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.
