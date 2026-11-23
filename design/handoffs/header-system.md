@@ -6,8 +6,8 @@
 1" (the phone menu), "Approve step 2" (the utility row and the language switcher), "Approve step 3" (the header
 search and the phone action bar).
 
-**Addendum, step 2a (the language toggle):** drawn 2026-11-23, **waiting for the owner's approval**. Its section
-below says what was drawn; nothing in it is built until this line says it is approved.
+**Addendum, step 2a (the language toggle):** approved 2026-11-23 by the owner, "Approve step 2a", typed in the
+Blackstone coordinating session and relayed by it (DECISIONS #702). It covers the nine boards of `#page-step2a`.
 
 **Design source:** the canvas "CoreX spec 137: the header system" in Claude Design, private to the owner:
 https://claude.ai/artifact/3jYwcAEaZyBWC1pgG1ZHvF. It is drawn on the CoreX design system
@@ -67,7 +67,7 @@ opening and closing are written below and are proven when each slice is built.
   last content readable above it; light, dark, Arabic.
 
 **Step 2a, the language toggle (addendum, 9 boards, page `#page-step2a`; spec FR-032a, G-054, DECISIONS #697).
-Waiting for approval.**
+Approved 2026-11-23.**
 - The toggle is one link of the list form with no current item: the other language's name in its own script,
   with its own `lang`, `dir` and `hreflang`, no tint, no tick, no icon, no script. It reads "العربية" on an English
   page and "English" on an Arabic page. At rest, hover and keyboard focus (the 2px brass ring), on the page and
@@ -145,8 +145,8 @@ value a `theme.json` token and every side a logical property. New classes, which
 
 - The bar: `corex-nav__trigger`, `corex-nav__panel`.
 - The utility row: `corex-header__utility`, `corex-header__utility-list`, `corex-header__utility-link`.
-- The language switcher: `corex-language-switcher`, `--menu`, `--list`, `__list`, `__item`, and `--toggle` once
-  step 2a is approved.
+- The language switcher: `corex-language-switcher`, `--menu`, `--list`, `__list`, `__item`, and `--toggle`
+  (step 2a).
 - Search: `corex-header__search` with `is-open`.
 - The phone menu: `corex-mobile-menu__head`, `__list`, `__group`, `__toggle`, `__panel`, `__sublist`,
   `__sublink`, `__language`, `__label`, and `corex-mobile-menu--overlay`.
