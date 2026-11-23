@@ -12,6 +12,7 @@ const os = require( 'node:os' );
 const path = require( 'node:path' );
 
 const {
+	POSITIONAL_LISTS,
 	PRESET_LISTS,
 	childThemeFindings,
 	clientThemeDirs,
@@ -188,17 +189,19 @@ describe( 'a child theme', () => {
 		] );
 	} );
 
-	it( 'fails a declared customTemplates list that lacks an entry of the CoreX theme’s', () => {
-		const [ first, ...rest ] = parent().customTemplates;
-		const child = { ...fullChild(), customTemplates: rest };
+	it( 'passes a declared customTemplates list that lacks the CoreX theme’s entries, which corex-core completes (FR-023)', () => {
+		const own = { name: 'page-acme', title: 'Acme', postTypes: [ 'page' ] };
+		const [ , ...rest ] = parent().customTemplates;
 
-		expect( findings( { themeJson: child } ) ).toEqual( [
-			{
-				file: `${ DIR }/theme.json`,
-				list: 'customTemplates',
-				entry: first.name,
-			},
-		] );
+		expect( POSITIONAL_LISTS ).toEqual( [ 'templateParts' ] );
+		expect(
+			findings( {
+				themeJson: { ...fullChild(), customTemplates: [ own ] },
+			} )
+		).toEqual( [] );
+		expect(
+			findings( { themeJson: { ...fullChild(), customTemplates: rest } } )
+		).toEqual( [] );
 	} );
 
 	it( 'fails a declared templateParts list that lacks an entry of the CoreX theme’s', () => {
@@ -229,7 +232,7 @@ describe( 'a child theme', () => {
 		);
 	} );
 
-	it( 'fails a customTemplates list with a client entry before the CoreX theme’s, and passes one after', () => {
+	it( 'passes a customTemplates list with a client entry before the CoreX theme’s or after them (FR-023)', () => {
 		const own = { name: 'page-acme', title: 'Acme', postTypes: [ 'page' ] };
 		const theirs = parent().customTemplates;
 
@@ -239,13 +242,8 @@ describe( 'a child theme', () => {
 					...fullChild(),
 					customTemplates: [ own, ...theirs ],
 				},
-			} ).map( ( { entry } ) => entry )
-		).toEqual(
-			theirs.map(
-				( entry, at ) =>
-					`${ entry.name } (expected at position ${ at + 1 })`
-			)
-		);
+			} )
+		).toEqual( [] );
 		expect(
 			findings( {
 				themeJson: {

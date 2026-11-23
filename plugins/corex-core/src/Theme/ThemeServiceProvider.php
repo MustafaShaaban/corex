@@ -29,6 +29,9 @@ defined('ABSPATH') || exit;
  * - the CoreX theme's heading face preloaded, so nothing moves when it arrives
  *   ({@see ThemeFontPreload}, spec 121).
  * - avatars loaded lazily on the CoreX theme's pages ({@see AvatarLazyLoading}, spec 121).
+ * - a child of the CoreX theme's editor kept to its own patterns and templates when its theme.json
+ *   asks ({@see ParentPatternsHider}, {@see ParentTemplatesHider}), and its custom templates
+ *   completed with CoreX's ({@see ChildCustomTemplates}), spec 135 slice 6.
  */
 final class ThemeServiceProvider extends ServiceProvider
 {
@@ -63,6 +66,26 @@ final class ThemeServiceProvider extends ServiceProvider
             AvatarLazyLoading::class,
             static fn (ContainerInterface $c): AvatarLazyLoading => new AvatarLazyLoading(),
         );
+
+        $this->container->singleton(
+            ChildThemeSwitches::class,
+            static fn (ContainerInterface $c): ChildThemeSwitches => new ChildThemeSwitches(),
+        );
+
+        $this->container->singleton(
+            ParentPatternsHider::class,
+            static fn (ContainerInterface $c): ParentPatternsHider => new ParentPatternsHider($c->make(ChildThemeSwitches::class)),
+        );
+
+        $this->container->singleton(
+            ParentTemplatesHider::class,
+            static fn (ContainerInterface $c): ParentTemplatesHider => new ParentTemplatesHider($c->make(ChildThemeSwitches::class)),
+        );
+
+        $this->container->singleton(
+            ChildCustomTemplates::class,
+            static fn (ContainerInterface $c): ChildCustomTemplates => new ChildCustomTemplates($c->make(ChildThemeSwitches::class)),
+        );
     }
 
     public function boot(): void
@@ -71,6 +94,16 @@ final class ThemeServiceProvider extends ServiceProvider
         add_filter('wp_theme_json_data_default', [$this->container->make(ThemeDefaultPresets::class), 'filter']);
         add_filter('wp_preload_resources', [$this->container->make(ThemeFontPreload::class), 'add']);
         add_filter('wp_get_loading_optimization_attributes', [$this->container->make(AvatarLazyLoading::class), 'filter'], 10, 4);
+
+        // Spec 135 slice 6: what the editor of a child of the CoreX theme sees (off unless the child asks).
+        $patterns = $this->container->make(ParentPatternsHider::class);
+        add_action('init', [$patterns, 'hideInAdmin'], 11);
+        add_action('rest_api_init', [$patterns, 'hide']);
+        $templates = $this->container->make(ParentTemplatesHider::class);
+        add_filter('rest_request_before_callbacks', [$templates, 'beforeListing'], 10, 3);
+        add_filter('rest_request_after_callbacks', [$templates, 'afterListing']);
+        add_filter('theme_templates', [$templates, 'pickerChoices'], 10, 3);
+        add_filter('wp_theme_json_data_theme', [$this->container->make(ChildCustomTemplates::class), 'filter']);
 
         $config = $this->container->make(ConfigInterface::class);
         $configured = (string) $config->get('theme.brand_path', '');

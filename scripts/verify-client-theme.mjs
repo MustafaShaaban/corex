@@ -4,10 +4,11 @@
  *
  * WordPress merges a child theme's `theme.json` into the parent's key by key, except a preset list:
  * a palette, a font family list, a font size list, a spacing list or a shadow list the child
- * declares replaces the parent's whole list. `customTemplates` and `templateParts` merge by
- * position. So a list the child declares has to name every entry of the CoreX theme's, or the site
- * silently loses a colour, a size or a template's title. A list the child does not declare is
- * inherited whole, and is fine.
+ * declares replaces the parent's whole list. `templateParts` merges by position. So a list the
+ * child declares has to name every entry of the CoreX theme's, or the site silently loses a colour,
+ * a size or a part's title. A list the child does not declare is inherited whole, and is fine.
+ * `customTemplates` merges by position too, but `corex-core` completes a child's list with the
+ * CoreX theme's entries before WordPress merges it (spec 135, FR-023), so it is not checked.
  *
  * For every client theme under `sites/` (the flat `sites/<client>/*-theme/` and the older
  * `sites/<client>/themes/*`) whose `style.css` names `Template: corex`, this reads its `theme.json`
@@ -36,8 +37,11 @@ export const PRESET_LISTS = [
 	[ 'shadow', 'presets' ],
 ];
 
-/** The top-level lists WordPress merges by position; an entry of each is named by its `name`. */
-export const POSITIONAL_LISTS = [ 'customTemplates', 'templateParts' ];
+/**
+ * The top-level lists WordPress merges by position that a child must repeat; an entry of each is
+ * named by its `name`. Not `customTemplates`: `corex-core` completes that one (spec 135, FR-023).
+ */
+export const POSITIONAL_LISTS = [ 'templateParts' ];
 
 /** Where the CoreX theme is, from the repository root. */
 export const PARENT_DIR = 'theme';
@@ -108,9 +112,9 @@ export function presetFindings( file, parent, child ) {
 }
 
 /**
- * The parent's custom templates and template parts a child's declared lists lack, or hold elsewhere.
+ * The parent's template parts a child's declared list lacks, or holds elsewhere.
  *
- * WordPress merges these two lists by position (entry i of the child into entry i of the parent), so
+ * WordPress merges this list by position (entry i of the child into entry i of the parent), so
  * a child must repeat the parent's entries in the parent's order before adding its own. A missing entry
  * is reported by name; when none is missing, each entry not at its parent's position is reported with
  * the position it belongs at, counted from 1.

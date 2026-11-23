@@ -26,6 +26,9 @@ site looks finished before it has a file of its own.
 - **A list you keep must keep every entry.** A preset list in `theme.json` (the palette, the font
   families, the font sizes, the spacing sizes, the shadows) replaces the CoreX theme's whole list,
   so removing an entry removes that token from the site. `npm run verify:client-theme` checks it.
+- **Only the client's patterns and templates in the editor:** set
+  `settings.custom.corex.parent.hidePatterns` and `hideTemplates` to `true` in
+  `{{ theme_slug }}/theme.json` (neither is set by default); pages still render with CoreX's templates.
 
 The rules in full: `docs/en/04-team-workflow/client-site-workflow.md` in the framework.
 {{ theme_assets }}
