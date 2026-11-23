@@ -1,0 +1,33 @@
+/**
+ * {{ title }}: editor registration for a block that shows records it does not
+ * hold (DECISIONS #656). The editor previews the server render of {{ class }}
+ * inside the block's own wrapper, and the preview is inert: it cannot be
+ * clicked or submitted. Registering the type here is what stops the editor
+ * reporting "not supported".
+ */
+import './style.scss';
+
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps } from '@wordpress/block-editor';
+import { Disabled } from '@wordpress/components';
+import ServerSideRender from '@wordpress/server-side-render';
+import metadata from './block.json';
+
+function Edit( { attributes } ) {
+	return (
+		<div { ...useBlockProps() }>
+			<Disabled>
+				<ServerSideRender
+					block={ metadata.name }
+					attributes={ attributes }
+				/>
+			</Disabled>
+		</div>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
+	// Dynamic block: nothing is saved to post content; the server renders it.
+	save: () => null,
+} );

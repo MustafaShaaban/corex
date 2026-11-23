@@ -12,11 +12,13 @@
  */
 const fs = require( 'fs' );
 const path = require( 'path' );
-const { findFiles } = require( '../packages/build-tools/parity' );
+const {
+	blockIn,
+	findFiles,
+	gateFailures,
+} = require( '../packages/build-tools/parity' );
 
 const ROOT = path.resolve( __dirname, '..' );
-const KINDS = [ 'in-place', 'records', 'none', 'pending' ];
-const SERVER_RENDER = '@wordpress/server-side-render';
 
 /**
  * The blocks whose turn has not come, and who takes each off the list. When spec 136 is done
@@ -52,117 +54,13 @@ const WAITING = {
 const blocks = findFiles(
 	[ path.join( ROOT, 'plugins' ), path.join( ROOT, 'addons' ) ],
 	'block.json'
-).map( ( file ) => {
-	const metadata = JSON.parse( fs.readFileSync( file, 'utf8' ) );
-
-	return {
-		name: metadata.name,
-		folder: path.dirname( file ),
-		metadata,
-		kind: metadata.corex ? metadata.corex.editor : undefined,
-	};
-} );
+).map( ( file ) => blockIn( path.dirname( file ) ) );
 
 /**
- * The editor's source: the `editorScript` file and every local module it imports, followed.
- *
- * @param {Object} block A block found above.
- * @return {string} Their text, joined.
+ * @param {Object} block A block, as `blockIn()` returns it.
+ * @return {Array<string>} What the block breaks against the gate and this waiting list.
  */
-function editorSourceOf( block ) {
-	const scripts = [ block.metadata.editorScript ]
-		.flat()
-		.filter(
-			( script ) =>
-				typeof script === 'string' && script.startsWith( 'file:' )
-		)
-		.map( ( script ) => path.resolve( block.folder, script.slice( 5 ) ) );
-	const seen = new Set();
-	const texts = [];
-
-	while ( scripts.length > 0 ) {
-		const file = scripts.shift();
-		if ( seen.has( file ) || ! fs.existsSync( file ) ) {
-			continue;
-		}
-		seen.add( file );
-
-		const text = fs.readFileSync( file, 'utf8' );
-		texts.push( text );
-		for ( const [ , specifier ] of text.matchAll(
-			/(?:from\s+|import\s*\(\s*|require\s*\(\s*|import\s+)['"](\.{1,2}\/[^'"]+)['"]/g
-		) ) {
-			const target = path.resolve( path.dirname( file ), specifier );
-			scripts.push(
-				...[
-					target,
-					`${ target }.js`,
-					path.join( target, 'index.js' ),
-				].filter(
-					( candidate ) =>
-						fs.existsSync( candidate ) &&
-						fs.statSync( candidate ).isFile() &&
-						candidate.endsWith( '.js' )
-				)
-			);
-		}
-	}
-
-	return texts.join( '\n' );
-}
-
-const importsServerRender = ( block ) =>
-	new RegExp( `['"]${ SERVER_RENDER }['"]` ).test( editorSourceOf( block ) );
-
-/**
- * @param {Object} block A block found above.
- * @return {Array<string>} What the block breaks, each naming the block and the rule.
- */
-function failuresOf( block ) {
-	const { name, kind, folder } = block;
-
-	if ( kind === undefined ) {
-		return [
-			`${ name }: declares no kind (corex.editor in block.json); give it one of ${ KINDS.join( ', ' ) }`,
-		];
-	}
-	if ( ! KINDS.includes( kind ) ) {
-		return [
-			`${ name }: declares the unknown kind "${ kind }"; the kinds are ${ KINDS.join( ', ' ) }`,
-		];
-	}
-
-	const failures = [];
-	if ( kind === 'in-place' ) {
-		if ( ! fs.existsSync( path.join( folder, 'parity.json' ) ) ) {
-			failures.push(
-				`${ name }: is in-place and has no parity.json beside its block.json`
-			);
-		}
-		if ( importsServerRender( block ) ) {
-			failures.push(
-				`${ name }: is in-place and its editor imports ${ SERVER_RENDER }`
-			);
-		}
-	}
-	if ( kind === 'records' && ! importsServerRender( block ) ) {
-		failures.push(
-			`${ name }: is records and its editor does not preview by ${ SERVER_RENDER }`
-		);
-	}
-	if ( kind === 'pending' && ! ( name in WAITING ) ) {
-		failures.push(
-			`${ name }: declares pending and is not on the waiting list; only those blocks may wait`
-		);
-	}
-	if ( kind !== 'pending' && name in WAITING ) {
-		failures.push(
-			`${ name }: no longer declares pending; take it off the waiting list (${ WAITING[ name ] } took it)`
-		);
-	}
-
-	return failures;
-}
+const failuresOf = ( block ) => gateFailures( block, WAITING );
 
 describe( 'FR-010, FR-013: the gate of the editor standard', () => {
 	test( 'finds the framework blocks by search', () => {

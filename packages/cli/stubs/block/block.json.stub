@@ -5,11 +5,13 @@
 	"title": "{{ title }}",
 	"category": "corex",
 	"icon": "block-default",
-	"description": "{{ title }} — a dynamic, server-rendered Corex block.",
+	"description": "{{ title }}: a CoreX block, edited in place.",
 	"textdomain": "{{ text_domain }}",
-	"attributes": {},
-	"supports": { "html": false },
+	"attributes": {
+		"title": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false, "anchor": true },
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "{{ renderer_fqcn }}" }
+	"corex": { "renderer": "{{ renderer_fqcn }}", "editor": "in-place" }
 }

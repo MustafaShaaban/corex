@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Blocks\BlockRenderer;
+
+/**
+ * Server render for the {{ block_name }} block, which shows records it does not hold; the
+ * editor previews this markup. Print one root element with the block's class; the block
+ * registrar adds what an editor set on the block (its anchor, an extra class) to it, so do not
+ * merge them here. Keep it thin: read the records through a service or repository injected by
+ * the container, and build escaped markup from them.
+ */
+final class {{ class }} implements BlockRenderer
+{
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    public function render(array $attributes, string $content, object $block): string
+    {
+        return sprintf(
+            '<div class="%s">%s</div>',
+            esc_attr('{{ css_class }}'),
+            esc_html__('{{ title }}', '{{ text_domain }}')
+        );
+    }
+}

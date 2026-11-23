@@ -53,7 +53,11 @@ final class MakeCommand
     public function run(string $type, array $args, array $assoc): void
     {
         if ($type === 'block') {
-            $this->runBlock($args[0] ?? '', (bool) ($assoc['force'] ?? false));
+            $this->runBlock(
+                $args[0] ?? '',
+                (bool) ($assoc['force'] ?? false),
+                (bool) ($assoc['records'] ?? false) ? BlockScaffolder::RECORDS : BlockScaffolder::IN_PLACE,
+            );
 
             return;
         }
@@ -94,10 +98,12 @@ final class MakeCommand
     }
 
     /**
-     * Scaffold a complete dynamic block (block.json + index.js + style.scss +
-     * renderer). Reports each created file so the developer can see the full set.
+     * Scaffold a complete dynamic block (block.json + index.js + style.scss + renderer, and the
+     * parity.json of a block edited in place). Edited in place by default; `--records` gives a
+     * block that shows records, previewed by the server render (spec 136, FR-014). Reports each
+     * created file so the developer can see the full set.
      */
-    private function runBlock(string $name, bool $force): void
+    private function runBlock(string $name, bool $force, string $shape): void
     {
         if ($this->blockScaffolder === null || $this->context === null) {
             WP_CLI::error('Block scaffolding is unavailable (no scaffolder bound).');
@@ -106,7 +112,7 @@ final class MakeCommand
         }
 
         try {
-            $result = $this->blockScaffolder->scaffold($name, $this->context, $force);
+            $result = $this->blockScaffolder->scaffold($name, $this->context, $force, $shape);
         } catch (Throwable $e) {
             WP_CLI::error($e->getMessage());
 

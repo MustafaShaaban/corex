@@ -9,14 +9,9 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 const {
-	KNOWN_NEEDS,
+	editorParityProblem,
 	findFiles,
-	formatTree,
 	installStandIns,
-	normalizeTree,
-	parityTree,
-	registeredBlock,
-	renderEdit,
 } = require( '../packages/build-tools/parity' );
 
 installStandIns( jest );
@@ -27,87 +22,22 @@ const fixtures = findFiles(
 	'parity.json'
 ).map( ( file ) => {
 	const folder = path.dirname( file );
-	const metadata = JSON.parse(
+	const { name } = JSON.parse(
 		fs.readFileSync( path.join( folder, 'block.json' ), 'utf8' )
 	);
 
-	return [
-		metadata.name,
-		{
-			folder,
-			metadata,
-			fixture: JSON.parse( fs.readFileSync( file, 'utf8' ) ),
-		},
-	];
+	return [ name, folder ];
 } );
-
-const json = ( tree ) => JSON.stringify( tree, null, 2 );
-
-function editorScriptOf( folder, metadata ) {
-	const script = String( metadata.editorScript || '' ).replace(
-		/^file:/,
-		''
-	);
-
-	return path.join( folder, script || 'index.js' );
-}
 
 describe( 'FR-012: every parity fixture, drawn by the block editor', () => {
 	test( 'finds the framework fixtures by search', () => {
 		expect( fixtures.length ).toBeGreaterThan( 0 );
 	} );
 
-	describe.each( fixtures )(
-		'%s',
-		( name, { folder, metadata, fixture } ) => {
-			test( 'its editor draws the tree of its parity.json', () => {
-				const unknownNeeds = ( fixture.needs || [] ).filter(
-					( need ) => ! KNOWN_NEEDS.includes( need )
-				);
-				if ( unknownNeeds.length > 0 ) {
-					throw new Error(
-						`${ name }: parity.json needs what no test can give: ${ unknownNeeds.join( ', ' ) }`
-					);
-				}
-
-				require( editorScriptOf( folder, metadata ) );
-				const settings = registeredBlock( name );
-				if ( ! settings || typeof settings.edit !== 'function' ) {
-					throw new Error(
-						`${ name }: its editor script registered no edit for the block`
-					);
-				}
-
-				const markup = renderEdit( settings.edit, {
-					metadata,
-					attributes: fixture.attributes || {},
-					context: ( fixture.needs || [] ).includes( 'post' )
-						? { postId: 1, postType: 'post' }
-						: {},
-				} );
-				const { tree, errors } = parityTree( markup, {
-					prefix: fixture.prefix,
-				} );
-				const expected = normalizeTree( fixture.tree );
-				const matches =
-					errors.length === 0 && json( tree ) === json( expected );
-
-				// Empty when the trees match; otherwise the block, both trees and the markup.
-				expect(
-					matches
-						? ''
-						: [
-								`${ name }: the editor does not draw the tree of its parity.json.`,
-								...errors,
-								'Editor:',
-								formatTree( tree ),
-								'parity.json:',
-								formatTree( expected ),
-								'Editor markup:',
-								markup,
-							].join( '\n' )
-				).toBe( '' );
-			} );
-		}
-	);
+	describe.each( fixtures )( '%s', ( _name, folder ) => {
+		test( 'its editor draws the tree of its parity.json', () => {
+			// Empty when the trees match; otherwise the block, both trees and the markup.
+			expect( editorParityProblem( folder ) ).toBe( '' );
+		} );
+	} );
 } );
