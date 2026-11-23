@@ -305,12 +305,12 @@ it('FR-005: carries the model routing table, its seven rows, and who commits', f
     $site   = 'sites/' . basename($files['base']);
 
     $rows = [
-        ['the main session', 'Fable', 'high'],
+        ['the main session', 'Opus', 'high'],
         ['`corex-builder`', 'Opus', 'medium (high for a UI slice or a bug)'],
         ['`corex-tester`', 'Sonnet', 'medium'],
         ['`corex-scout`', 'Haiku', 'low'],
-        ['`corex-reviewer`', 'Fable', 'high'],
-        ['`corex-ui-reviewer`', 'Fable', 'high'],
+        ['`corex-reviewer`', 'Opus', 'xhigh'],
+        ['`corex-ui-reviewer`', 'Opus', 'high'],
         ['the `debate-review` lane', 'Codex', 'high'],
     ];
 

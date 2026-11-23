@@ -77,17 +77,18 @@ What to build next: `PROGRESS.md` ("Next") and `ROADMAP.md`.
 
 ## Models, effort and agents (Claude Code tooling)
 This table is the instruction the Agent tool's `model` and `effort` settings need: use it, do not pick
-by feel. Max effort only when the owner asks for it, for one task.
+by feel. Max effort only when the owner asks for it, for one task. Fable is not used (DECISIONS #700).
 
 | Work | Who | Model | Effort |
 |---|---|---|---|
-| Grilling, specs, architecture, final judgment on a diff | the main session | Fable | high |
-| Designs and the CoreX design system in Claude Design | the main session | Fable | high |
+| Grilling, specs, architecture, final judgment on a diff | the main session | Opus | high (xhigh for a security fix, a release or a data migration) |
+| Designs and the CoreX design system in Claude Design | the main session | Opus | high |
+| Routine steps: merging `main` into a branch, re-running CI, PROGRESS and handoff lines | the main session | Opus | low (medium when a merge has conflicts or a release chore needs judgment) |
 | Building a slice (`tdd`), fixing a diagnosed bug | `corex-builder` agent | Opus | medium (high for a bug or a UI slice) |
 | Tests, fixtures, lockfile and docs chores | `corex-tester` agent | Sonnet | medium |
 | Searching and reading across the repo | `corex-scout` agent | Haiku | low |
-| Reviewing a diff against its spec and the constitution | `corex-reviewer` agent | Fable | high |
-| Comparing a rendered screen with its approved design, measured | `corex-ui-reviewer` agent | Fable | high |
+| Reviewing a diff against its spec and the constitution | `corex-reviewer` agent | Opus | xhigh |
+| Comparing a rendered screen with its approved design, measured | `corex-ui-reviewer` agent | Opus | high |
 | The recorded round for the owner (`ui-review-loop`), one per UI slice | `corex-tester` agent | Sonnet | medium |
 | The second, other-vendor review | `debate-review`'s `review-debate` lane | Codex | high |
 
@@ -96,8 +97,11 @@ by feel. Max effort only when the owner asks for it, for one task.
 - **Builders work in the root checkout, one at a time per set of files.** Two builders run together only
   when their files do not overlap. No worktrees without the owner's approval (§A.7 still holds).
 - The orchestrator reads every diff an agent leaves, runs the guards, and commits. Agents never commit.
-- The main session can be switched between Fable and Opus from the app's model picker; long routine
-  stretches (merging main into branches, release chores) run on Opus.
+- The builder and the reviewer now share a model, so the review's independence rests on two things that
+  stay: the reviewer is its own agent, given the code and the spec, never the builder's conclusion; and the
+  second review comes from another vendor (Codex). The reviewer also runs at a higher effort than the builder.
+- The main session runs on Opus at the effort its row gives: high for the judgment rows, low or medium
+  for the routine row. Only the owner raises it to max.
 
 ## Agent skills
 ### Issue tracker

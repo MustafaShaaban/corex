@@ -108,13 +108,13 @@ The root `AGENTS.md`, "UI, UX and front end", holds them in full.
 ## Models, effort and agents (Claude Code)
 | Work | Who | Model | Effort |
 |---|---|---|---|
-| Grilling, specs, decisions, final judgment on a diff | the main session | Fable | high |
-| Designing what the client's design does not draw (Claude Design) | the main session | Fable | high |
+| Grilling, specs, decisions, final judgment on a diff | the main session | Opus | high |
+| Designing what the client's design does not draw (Claude Design) | the main session | Opus | high |
 | Building a slice, fixing a diagnosed bug | `corex-builder` | Opus | medium (high for a UI slice or a bug) |
 | Tests, fixtures, docs chores, the recorded review round | `corex-tester` | Sonnet | medium |
 | Searching CoreX or this site | `corex-scout` | Haiku | low |
-| Reviewing a diff against its spec and the constitution | `corex-reviewer` | Fable | high |
-| A rendered page measured against its approved design | `corex-ui-reviewer` | Fable | high |
+| Reviewing a diff against its spec and the constitution | `corex-reviewer` | Opus | xhigh |
+| A rendered page measured against its approved design | `corex-ui-reviewer` | Opus | high |
 | The second review, from another vendor | the `debate-review` lane | Codex | high |
 
 The agents are in the repository's `.claude/agents/`: framework-owned, carried with every release, so this

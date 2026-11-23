@@ -22149,3 +22149,30 @@ optional seam later") and #657.
 The two header patterns that hold a raw HTML search get WordPress's Search block in the bar and in the phone menu.
 The one search overlay with its keyboard shortcut is US-NAV-09 (R4.1) and is not built here. Headers saved earlier
 keep the raw search and the script that opens it. Blackstone's header has no search (its decision 6).
+
+## #700 -- The model table runs without Fable: Opus for judgment, specs and both reviews
+
+**Date:** 2026-11-23. **Decided:** by the owner, in session (in Arabic): each kind of work runs on the Claude model and
+effort that fits it, Opus where Opus is needed and Haiku or another model elsewhere, after his Fable allowance ran
+out and the four gap programme sessions, all set to Fable, stopped. Changes the model column of #621's table only; the loop,
+the agents and the gates are unchanged.
+
+- **Opus, high** for what Fable did in the main session: grilling, specs, architecture, final judgment on a diff,
+  Claude Design work. **xhigh** for a security fix, a release or a data migration. A new row gives routine steps
+  (merging `main` into a branch, re-running CI, PROGRESS and handoff lines) **Opus, low**, medium when a merge
+  conflicts.
+- `corex-reviewer` runs on **Opus, xhigh**; `corex-ui-reviewer` on **Opus, high** (their agent files say so, so
+  a spawn no longer names a model that cannot run). Builder Opus medium, tester Sonnet medium, scout Haiku low and
+  Codex as the second reviewer stay.
+- The review's independence now rests on the reviewer being its own agent given the code and the spec (never the
+  builder's conclusion), on the other vendor's review, and on the reviewer running at a higher effort than the
+  builder (xhigh against medium or high); no longer on a different model.
+- `make:site`'s `AGENTS.md` stub (`packages/cli/stubs/site/AGENTS.md.stub`) gives client sites the same models,
+  and its test follows: `SiteScaffolderTest.php` holds the stub to the agent files, so they change together. Only
+  the model cells change; spec 135's open slice 3 edits other lines of both files.
+- **Numbers:** #700 sits just past spec 137's range (#690 to #699, #652); wave 2's ranges start at #701.
+
+*Not chosen.* Keeping Fable in the table for when it returns: a row that cannot run stops every session that
+follows it, which is what happened on 2026-11-22. Max effort for the reviewer to make up for the shared model: the
+owner keeps max for one task he names. Sonnet for the reviewer: the review is the gate the owner relies on most,
+and it stays on the strongest model that runs.

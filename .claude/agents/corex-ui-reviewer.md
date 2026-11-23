@@ -1,7 +1,7 @@
 ---
 name: corex-ui-reviewer
 description: Read-only review of a CoreX screen, page, block or email as it renders, measured against its approved Claude Design design and the constitution's UI rules. Reports differences with numbers and never edits. Use on every slice a person sees, after it is built and before the two-model review.
-model: fable
+model: opus
 effort: high
 tools: Read, Grep, Glob, Bash
 ---
