@@ -4553,7 +4553,7 @@
     },
     {
       "path": "plugins/corex-blocks/src/blocks/social-share/style.scss",
-      "selector_or_context": "lines 49, 50: color: var(--wp--preset--color--accent-dark, var(--wp--preset--color--accent)); | border-color: var(--wp--preset--color--accent);",
+      "selector_or_context": "lines 56, 57: color: var(--wp--preset--color--accent-dark, var(--wp--preset--color--accent)); | border-color: var(--wp--preset--color--accent);",
       "property": "--wp--preset--color--accent",
       "owner": "blocks-plugin",
       "surface": "front-end",
@@ -4563,7 +4563,7 @@
     },
     {
       "path": "plugins/corex-blocks/src/blocks/social-share/style.scss",
-      "selector_or_context": "lines 49: color: var(--wp--preset--color--accent-dark, var(--wp--preset--color--accent));",
+      "selector_or_context": "lines 56: color: var(--wp--preset--color--accent-dark, var(--wp--preset--color--accent));",
       "property": "--wp--preset--color--accent-dark",
       "owner": "blocks-plugin",
       "surface": "front-end",
@@ -4603,7 +4603,7 @@
     },
     {
       "path": "plugins/corex-blocks/src/blocks/social-share/style.scss",
-      "selector_or_context": "lines 58, 59: color: var(--wp--preset--color--success); | border-color: var(--wp--preset--color--success);",
+      "selector_or_context": "lines 65, 66: color: var(--wp--preset--color--success); | border-color: var(--wp--preset--color--success);",
       "property": "--wp--preset--color--success",
       "owner": "blocks-plugin",
       "surface": "front-end",
