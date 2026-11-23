@@ -40,6 +40,18 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   the repository root is drift), the model routing table and the UI steps. `corex-builder` used to refuse every
   `sites/<client>/` folder: it now works in one when its brief says the slice is a client site's, and then
   edits nothing outside it.
+- **The theme `make:site` writes is a child of the CoreX theme** (spec 135 slice 3, gap G-006; DECISIONS #655,
+  #660, #663). A generated theme had an empty `theme.json` and no parent, so CoreX's block styles read tokens
+  nobody defined and the header, mega menu and footer did not exist for it. Its `style.css` now names
+  `Template: corex`, and its `theme.json` lists every colour, font family, font size, spacing size, shadow and
+  custom token of the CoreX theme with CoreX's values, read from the CoreX theme's own file when the site is
+  generated, for the client to change. It writes no index, front page, header or footer: those are the CoreX
+  theme's until the client's design replaces them. `make:site --force` keeps an existing theme's `style.css`
+  and `theme.json`.
+- **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
+  every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
+  `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
+  update checklist and CoreX's own CI run it. `verify:dist` fails a theme whose parent is not in the package.
 
 ### Client impact
 
@@ -54,6 +66,13 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     folder name (`wp corex make:site Muva --dir=<scratch>/muva`) and copies the two files from it: the files
     carry that name and that folder in their paths. This slice rests on the loop itself (#458), so it reaches a
     client only in a release that carries that too.
+  - **Spec 135 slice 3 (G-006).** Muva, Perego and Mizzey: nothing on a running site changes and there is no
+    upgrade step. Muva's and Perego's themes stay standalone: `make:site` never converts a theme, and
+    `--force` keeps an existing theme's `style.css` and `theme.json`. `npm run verify:client-theme` reports a
+    standalone theme and checks nothing in it, so it passes for both. A site that wants to become a child
+    follows the steps in `docs/en/04-team-workflow/client-site-workflow.md`. Mizzey has no client theme under
+    `sites/`. From this release, a CoreX release that adds a palette slug or a font size says so here, because
+    a child theme's list must gain it too.
   - **Spec 136 slice 1 (G-005).** No upgrade step, no stored data changed.
     - **Muva** runs no corex-ui block, and its forms print the same bytes as before: the form and flow blocks
       gain an `id` or a class only where an editor set one. Where it shows the account block, that block's root

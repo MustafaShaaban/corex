@@ -21875,6 +21875,29 @@ them would be silently ignored. "When `corex-blocks` is not active" cannot happe
 is one of core's and its classes load from the root autoloader), so the generated provider asks the container
 whether it offers the service. `verify:dist` fails a client plugin that ships block sources and no `build/blocks`.
 
+## #663 -- How `make:site` gets the CoreX theme's tokens, and what it never touches
+
+**Date:** 2026-11-23. **Spec:** 135, slice 3 (G-006). **Branch:** `spec/135-slice-3-child-theme`.
+**Decided:** by the spec 135 session, under the owner's delegation, from what the slice's builder proposed.
+
+- **Where the tokens come from.** `Corex\Cli\Site\ParentThemeTokens` reads the CoreX theme's `theme.json`
+  when a theme is generated, from `theme/theme.json` in the repository the CLI runs from, then from the
+  installed theme `corex`. It reaches `SiteScaffolder` through its constructor, so the scaffolder stays a pure
+  class with no WordPress and `ReadinessCommand`, which builds one too, is unchanged. With neither readable,
+  nothing is written and the message names both paths. `--plugin-only` never asks for it.
+- **What it never touches.** A theme folder that already holds a `style.css` keeps its `style.css` and its
+  `theme.json`, with or without `--force`, and the command says which files it kept. `--force` before this
+  slice replaced a client's tokens with the empty stub; after it, it would have turned a standalone theme
+  into a child. Every other generated file is rewritten under `--force` as before.
+- **What the check passes over.** `npm run verify:client-theme` treats a folder with no `style.css` as not a
+  theme and says nothing of it, a theme with no `Template:` as standalone (reported, not checked), and a
+  theme whose `Template:` names another parent as reported and not checked. Its lines are tab-separated, as
+  `verify:framework`'s are, so a script can split them.
+
+*Not chosen.* Passing the tokens through `scaffold()`'s arguments: every caller would have to fetch a file it
+does not use when it generates a plugin only. Refusing `--force` on an existing theme: the other files it
+regenerates (the coming-soon page, the agent files) are what a client asks `--force` for.
+
 ## #670 -- Block wrapper attributes are merged in the registrar, and form blocks print no generated class
 
 **Date:** 2026-11-21. **Spec:** 136 (G-005). **Branch:** `spec/136-block-editor-standard`.
