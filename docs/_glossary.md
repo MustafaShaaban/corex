@@ -38,3 +38,9 @@ future translation phase (spec 028, phase 2). Code identifiers are **never** tra
 | **Block kind** | How a CoreX block is edited, declared in its `block.json` as `corex.editor`: `in-place` (drawn by the editor, typed on the canvas), `records` (shows records it does not hold, so it keeps a server render), `none`, or `pending` (its turn has not come). | _TODO_ |
 | **Parity fixture** | The `parity.json` beside an in-place block's `block.json`: the class prefix, attributes with every field filled, inner blocks where it holds blocks, and the tree of elements both the editor and the renderer must draw. | _TODO_ |
 | **Child block** | A block that exists only inside its parent and holds any blocks: `corex/tab`, `corex/accordion-item`, `corex/slide`. | _TODO_ |
+| **Chosen records** | A Query Loop variation that lists hand-picked records of one post type in the order picked. The ids are held in the loop's query (`corexChosen`). | _TODO_ |
+| **Item source** | What a carousel's items are: its `corex/slide` blocks, one Query Loop, or one Gallery. A carousel holds exactly one. | _TODO_ |
+| **Ticker** | A mode of the carousel that moves its items in one continuous line, with a Pause button always shown. The copy that makes the loop seamless is decoration, hidden from screen readers. | _TODO_ |
+| **Reveal** | A block setting (none, fade, fade and rise) that animates a block in as it comes into view. Only the script hides a block; with no script, reduced motion, print or the editor's canvas it is shown at once. | _TODO_ |
+| **Count-up** | An option of `corex/stat`, and the attribute `data-corex-count-up`, that counts a figure from zero to its value once when it comes into view. The page holds the final value as text. | _TODO_ |
+| **Filter state** | The `filter-<id>-*` values in the address that belong to one Query Loop, carrying term ids, so a shared link shows the same list. | _TODO_ |

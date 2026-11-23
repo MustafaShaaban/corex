@@ -113,7 +113,7 @@ and when this spec is done it holds the 13.
 |---|---|
 | `in-place`, wave 1 | hero, cta, stat, team, tabs, accordion, carousel, modal, drawer, copyright, newsletter signup, social share, and the three child blocks (tab, accordion item, slide) |
 | `records`, wave 1 | posts, jobs, breadcrumbs, `corex/form` |
-| `pending`, for spec 150 | alert, badge, gallery, pricing, testimonial, entity field, project meta, projects, flow, cta flow, subscribe, success message, survey |
+| `pending`, for spec 150 | alert, badge, gallery, pricing, testimonial, entity field, project meta, flow, cta flow, subscribe, success message, survey (`corex/projects` is retired by spec 149 as `records`) |
 | `none` | assistant |
 
 `corex/account` (corex-profile) is registered in code with no `block.json`, so it has no kind; it receives the
@@ -542,7 +542,7 @@ reduced motion, always with a control a person can see (DECISIONS #652).
 
 - The other 13 blocks' editors (spec 150), the record picker and the list blocks' content (spec 149), the
   carousel's widths, controls and ticker (spec 149), the breadcrumb trail (spec 144), reveal on scroll and
-  count-up (spec 150).
+  count-up (spec 149).
 - The site stubs (`packages/cli/stubs/site/`, spec 135) and the header patterns and navigation files of the theme
   (spec 137).
 - A tag, and the line `release/gap-line`: the coordinating session's.
