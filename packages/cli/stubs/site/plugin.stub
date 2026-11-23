@@ -6,6 +6,7 @@
  * Version:           0.1.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
+ * Requires Plugins:  corex-core
  * Author:            {{ name }}
  * License:           GPL-2.0-or-later
  * Text Domain:       {{ text_domain }}
@@ -17,5 +18,55 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
-// {{ name }} site app code lives here under the {{ namespace }}\ namespace — never edit the
-// Corex framework. Register the service provider with Corex's container on boot.
+// The site's classes: {{ namespace }}\Foo\Bar is src/Foo/Bar.php.
+spl_autoload_register(static function (string $class): void {
+    $prefix = '{{ namespace }}\\';
+    if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+        return;
+    }
+    $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
+    $file     = __DIR__ . '/src/' . $relative . '.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});
+
+/*
+ * Boot the site's service provider once CoreX is up, handing it CoreX's container.
+ *
+ * Corex::onReady runs the callback at once when CoreX has booted and on `corex_booted` otherwise, so
+ * it does not matter which plugin WordPress loads first. Priority 20 puts this after CoreX's own boot
+ * (`plugins_loaded` at 10), so the provider usually boots at once; when it does not, onReady waits.
+ * A plugin loaded after `plugins_loaded` (activated in this request) boots straight away. Without
+ * corex-core there is no CoreX class and nothing boots: WordPress names the missing plugin itself.
+ */
+(static function (): void {
+    $boot = static function (): void {
+        if (! class_exists(\Corex\Support\Facades\Corex::class)) {
+            return;
+        }
+
+        \Corex\Support\Facades\Corex::onReady(static function (\Corex\Foundation\Application $app): void {
+            // Once, however often CoreX says it is ready.
+            static $booted = false;
+
+            if ($booted) {
+                return;
+            }
+
+            $booted = true;
+
+            $provider = new {{ namespace }}\{{ namespace }}ServiceProvider($app->container());
+            $provider->register();
+            $provider->boot();
+        });
+    };
+
+    if (did_action('plugins_loaded')) {
+        $boot();
+
+        return;
+    }
+
+    add_action('plugins_loaded', $boot, 20);
+})();

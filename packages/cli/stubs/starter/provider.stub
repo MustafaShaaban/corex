@@ -10,39 +10,55 @@ namespace {{ namespace }};
 
 defined('ABSPATH') || exit;
 
-use {{ namespace }}\Blocks\ExampleRenderer;
+use Corex\Blocks\BlockFolder;
+use Corex\Container\ContainerInterface;
 use {{ namespace }}\Controllers\ExampleController;
 use {{ namespace }}\Options\ExampleOptions;
 use {{ namespace }}\Repositories\ExampleRepository;
 use {{ namespace }}\Services\ExampleService;
 
 /**
- * The {{ name }} site service provider — the composition root where your site's pieces are
- * wired. With --starter it registers a runnable example (REST route + block + options page);
- * remove that wiring per REMOVE-EXAMPLE.md and add your own. App code lives under
+ * The {{ name }} site service provider: the composition root where the site's pieces are wired,
+ * through CoreX's container. The plugin file builds it with that container once CoreX is up.
+ *
+ * With --starter it registers a runnable example (REST route, block and options page); remove that
+ * wiring per REMOVE-EXAMPLE.md and add your own. It is the site's own class and does not extend
+ * CoreX's ServiceProvider, whose lifecycle only reads CoreX's own providers. App code lives under
  * {{ namespace }}\. REST namespace: {{ rest_namespace }}. Option/CPT prefix: {{ option_prefix }}.
  */
 final class {{ namespace }}ServiceProvider
 {
-    private ExampleService $exampleService;
+    public function __construct(private readonly ContainerInterface $container)
+    {
+    }
 
     public function register(): void
     {
-        // Composition root: build the example's object graph once. (--starter example.)
-        $this->exampleService = new ExampleService(new ExampleRepository());
+        // --starter example: one repository and one service for the whole request.
+        $this->container->singleton(ExampleRepository::class);
+        $this->container->singleton(ExampleService::class);
     }
 
     public function boot(): void
     {
-        // --starter example wiring — delete this block when you remove the example.
-        (new ExampleController($this->exampleService))->register();
-        (new ExampleOptions())->register();
+        // --starter example wiring: delete these two lines when you remove the example.
+        $this->container->make(ExampleController::class)->register();
+        $this->container->make(ExampleOptions::class)->register();
 
-        add_action('init', function (): void {
-            $renderer = new ExampleRenderer($this->exampleService);
-            register_block_type(__DIR__ . '/Blocks/example', [
-                'render_callback' => static fn (): string => $renderer->render(),
-            ]);
-        });
+        add_action('init', [$this, 'registerBlocks']);
+    }
+
+    /**
+     * The site's blocks, one folder each with a block.json: from build/blocks once `npm run build`
+     * has run in this plugin, from src/Blocks before. The example block's renderer is resolved from
+     * the container. Nothing when CoreX offers no block folder.
+     */
+    public function registerBlocks(): void
+    {
+        if (! $this->container->has(BlockFolder::class)) {
+            return;
+        }
+
+        $this->container->make(BlockFolder::class)->register(dirname(__DIR__) . '/build/blocks', __DIR__ . '/Blocks');
     }
 }

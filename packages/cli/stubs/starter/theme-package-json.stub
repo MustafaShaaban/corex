@@ -11,7 +11,7 @@
 		"start": "wp-scripts start assets/src/js/main.js --output-path=assets/js"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^27.0.0",
+		"@wordpress/scripts": "^36.1.0",
 		"sass": "^1.77.0",
 		"sharp": "^0.33.0"
 	}

@@ -10,19 +10,25 @@ namespace {{ namespace }}\Blocks;
 
 defined('ABSPATH') || exit;
 
+use Corex\Blocks\BlockRenderer;
 use {{ namespace }}\Services\ExampleService;
 
 /**
- * Server-renders the {{ theme_slug }}/example block — escaped, i18n-ready, token-styled,
- * RTL-correct. Part of the --starter example; delete it per REMOVE-EXAMPLE.md.
+ * Server-renders the {{ plugin_slug }}/example block: escaped, i18n-ready, token-styled,
+ * RTL-correct. CoreX resolves it from the container (its block.json names it in
+ * `corex.renderer`), so the service arrives by constructor injection. Part of the --starter
+ * example; delete it per REMOVE-EXAMPLE.md.
  */
-final class ExampleRenderer
+final class ExampleRenderer implements BlockRenderer
 {
     public function __construct(private readonly ExampleService $service)
     {
     }
 
-    public function render(): string
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    public function render(array $attributes, string $content, object $block): string
     {
         $items = $this->service->all();
 

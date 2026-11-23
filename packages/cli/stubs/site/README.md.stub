@@ -3,6 +3,8 @@
 The {{ name }} website, a **Corex client site**.
 
 - **App code:** `{{ plugin_slug }}/` (`{{ namespace }}\`)
+- **Blocks:** `wp corex make:block <Name>` writes one into `{{ plugin_slug }}/src/Blocks/`; it is registered
+  once built (`npm install`, then the `build` script, in `{{ plugin_slug }}/`)
 - **Theme:** `{{ theme_slug }}/`, a child of the CoreX theme
 - **Specs / docs:** `specs/`, `docs/`
 - **Workflow + agent rules:** [AGENTS.md](./AGENTS.md)

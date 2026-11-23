@@ -31,6 +31,10 @@ package-level `build/blocks/`:
 | `plugins/corex-forms` | `src/Block/blocks` | `build/blocks` |
 | `addons/corex-ui` | `src/Blocks` | `build/blocks` |
 | `addons/corex-careers` | `blocks` | `build/blocks` |
+| A client site plugin, `sites/<client>/<slug>-site` | `src/Blocks` | `build/blocks` |
+
+A client site plugin has its own `package.json` with these two scripts and its own `@wordpress/scripts`,
+so `npm install && npm run build` in its folder builds its blocks with nothing from the framework's install.
 
 A block folder contains:
 

@@ -725,6 +725,119 @@ it( 'fails verification when a client theme ships SCSS/JS source but no compiled
 	expect( mod.verifyClientAssets( dist ) ).toEqual( [] );
 } );
 
+// Spec 135, FR-038: a site plugin that ships block sources ships them built, as a theme ships its CSS.
+describe( 'a client plugin’s blocks', () => {
+	const UNBUILT =
+		'client plugin "acme-site": block sources in src/Blocks and no compiled build/blocks ' +
+		"(run the plugin's npm run build before packaging)";
+
+	function packageWith( files ) {
+		const root = mkdtempSync( join( tmpdir(), 'corex-dist-blocks-' ) );
+		roots.push( root );
+		const dist = join( root, 'dist' );
+		for ( const [ rel, body ] of Object.entries( files ) ) {
+			const abs = join( dist, 'wp-content', 'plugins', rel );
+			mkdirSync( join( abs, '..' ), { recursive: true } );
+			writeFileSync( abs, body );
+		}
+
+		return dist;
+	}
+
+	const SITE_PLUGIN =
+		'<?php\n/**\n * Plugin Name: Acme Site\n * Requires Plugins:  corex-core\n */\n';
+	const BLOCK = '{"name":"acme-site/banner"}';
+
+	it( 'passes a site plugin whose block sources are built', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/banner/block.json': BLOCK,
+			'acme-site/build/blocks/banner/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'fails a site plugin with block sources and no build/blocks, naming it', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/banner/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [ UNBUILT ] );
+	} );
+
+	it( 'passes a site plugin with no block', () => {
+		const dist = packageWith( {
+			'acme-site/acme-site.php': SITE_PLUGIN,
+			'acme-site/src/Blocks/.gitkeep': '',
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'checks a client plugin by its requirement on corex-core, whatever its folder is called', () => {
+		const dist = packageWith( {
+			'acme-extras/acme-extras.php': SITE_PLUGIN,
+			'acme-extras/src/Blocks/banner/block.json': BLOCK,
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [
+			UNBUILT.replace( 'acme-site', 'acme-extras' ),
+		] );
+	} );
+
+	it( 'leaves CoreX’s own plugins and a plugin that is not the site’s alone', () => {
+		const dist = packageWith( {
+			'corex-ui/corex-ui.php':
+				'<?php\n/**\n * Plugin Name: Corex UI\n * Requires Plugins: corex-core\n */\n',
+			'corex-ui/src/Blocks/hero/block.json': '{"name":"corex/hero"}',
+			'other/other.php': '<?php\n/**\n * Plugin Name: Other\n */\n',
+			'other/src/Blocks/thing/block.json': '{"name":"other/thing"}',
+		} );
+
+		expect( mod.verifyClientPluginBuilds( dist ) ).toEqual( [] );
+	} );
+
+	it( 'fails verify:dist for a package built from a site whose blocks were not built', () => {
+		const root = makeRepo();
+		const site = join( root, 'sites', 'acme', 'acme-site' );
+		mkdirSync( join( site, 'src', 'Blocks', 'banner' ), {
+			recursive: true,
+		} );
+		writeFileSync( join( site, 'acme-site.php' ), SITE_PLUGIN );
+		writeFileSync(
+			join( site, 'src', 'Blocks', 'banner', 'block.json' ),
+			BLOCK
+		);
+		const distDir = join( root, 'dist' );
+		mod.runBuild(
+			mod.buildPlan( { repoRoot: root, distDir, client: 'acme' } ),
+			distDir
+		);
+
+		expect( mod.verifyDist( distDir ) ).toEqual( {
+			ok: false,
+			errors: [ UNBUILT ],
+		} );
+
+		mkdirSync( join( site, 'build', 'blocks', 'banner' ), {
+			recursive: true,
+		} );
+		writeFileSync(
+			join( site, 'build', 'blocks', 'banner', 'block.json' ),
+			BLOCK
+		);
+		rmSync( distDir, { recursive: true, force: true } );
+		mod.runBuild(
+			mod.buildPlan( { repoRoot: root, distDir, client: 'acme' } ),
+			distDir
+		);
+
+		expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+	} );
+} );
+
 // Spec 135, FR-017: a client theme is a child of the CoreX theme, and the package must hold both.
 describe( 'a child client theme', () => {
 	const CHILD_STYLE = '/*\nTheme Name: Acme\nTemplate: corex\n*/\n';

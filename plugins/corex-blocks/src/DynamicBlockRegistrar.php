@@ -62,7 +62,20 @@ final class DynamicBlockRegistrar
 
         $type = register_block_type($dir, $args);
 
-        $this->registerScriptTranslations($type);
+        $this->registerScriptTranslations($type, $this->textDomain($block['metadata']));
+    }
+
+    /**
+     * The block's own `textdomain` from its block.json, or `corex` when it names none (spec 135,
+     * FR-033). Read from the metadata: WordPress does not copy it onto the registered type.
+     *
+     * @param array<string, mixed> $metadata
+     */
+    private function textDomain(array $metadata): string
+    {
+        $domain = $metadata['textdomain'] ?? null;
+
+        return is_string($domain) && $domain !== '' ? $domain : 'corex';
     }
 
     /**
@@ -88,9 +101,12 @@ final class DynamicBlockRegistrar
      * No-op when the block ships no JS. Safe on older cores that lack a handle list
      * (guarded with `??`).
      *
+     * The domain is the block's own (see textDomain()), so a site's block is translated in
+     * the site's domain.
+     *
      * @param \WP_Block_Type|false $type
      */
-    private function registerScriptTranslations(mixed $type): void
+    private function registerScriptTranslations(mixed $type, string $domain): void
     {
         if (! $type instanceof \WP_Block_Type) {
             return;
@@ -103,7 +119,7 @@ final class DynamicBlockRegistrar
         );
 
         foreach (array_unique($handles) as $handle) {
-            wp_set_script_translations($handle, 'corex');
+            wp_set_script_translations($handle, $domain);
         }
     }
 

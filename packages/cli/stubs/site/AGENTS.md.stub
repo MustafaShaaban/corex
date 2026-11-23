@@ -57,7 +57,8 @@ plugin/theme, test first. 4. Run the guards and checks. 5. Update the docs the s
 
 **Generators.** `wp corex make:*` writes into `{{ plugin_slug }}/src` under `{{ namespace }}\` while this
 is the only site in the repository. With more than one site, or to send them elsewhere, set `APP_PATH`,
-`APP_NAMESPACE` and `APP_PREFIX` in the repository's `.env`.
+`APP_NAMESPACE` and `APP_PREFIX` in the repository's `.env`. A block from `make:block` is registered from
+`{{ plugin_slug }}/build/blocks` once `npm run build` has run in `{{ plugin_slug }}/`.
 
 **Specs.** This site's specs live in `sites/{{ site_dir }}/specs/NNN-name/spec.md`, numbered from 001 in this
 site's own folder and never in the root `specs/`, which is the framework's: a spec there shows as drift in

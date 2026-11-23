@@ -712,6 +712,9 @@ export function verifyDist( distDir ) {
 	// output — otherwise the deploy would serve a half-built client theme. Catches "packaged without building".
 	errors.push( ...verifyClientAssets( distDir ) );
 
+	// A site plugin that ships block sources ships them built, or its blocks are not there (spec 135, FR-038).
+	errors.push( ...verifyClientPluginBuilds( distDir ) );
+
 	// A child theme with no parent in the package does not run (spec 135, FR-017).
 	errors.push( ...verifyThemeParents( distDir ) );
 
@@ -783,6 +786,64 @@ export function verifyClientAssets( distDir ) {
 	}
 
 	return errors;
+}
+
+/**
+ * Every client plugin under wp-content/plugins that holds a block source (`src/Blocks/<block>/block.json`)
+ * and no `build/blocks` (spec 135, FR-038). A site plugin registers its blocks from `build/blocks` once
+ * built, and from sources that were never compiled before: a package of those has blocks with no scripts.
+ *
+ * A client plugin is one whose folder ends in `-site`, as `make:site` names it, or whose main file says
+ * `Requires Plugins:` corex-core. CoreX's own plugins (`corex-*`) are built by the framework's build and
+ * are not looked at, nor is a plugin that names no requirement on CoreX.
+ *
+ * @param {string} distDir The built bundle to check.
+ * @return {string[]} One message per client plugin that ships block sources without their build.
+ */
+export function verifyClientPluginBuilds( distDir ) {
+	const pluginsDir = join( distDir, 'wp-content', 'plugins' );
+
+	if ( ! existsSync( pluginsDir ) ) {
+		return [];
+	}
+
+	const requiresCorex = ( folder ) =>
+		readdirSync( folder )
+			.filter( ( entry ) => entry.endsWith( '.php' ) )
+			.some( ( entry ) =>
+				/^[ \t/*#@]*Requires Plugins:.*\bcorex-core\b/im.test(
+					readFileSync( join( folder, entry ), 'utf8' )
+				)
+			);
+	const hasBlockSources = ( folder ) => {
+		const blocks = join( folder, 'src', 'Blocks' );
+
+		return (
+			existsSync( blocks ) &&
+			readdirSync( blocks ).some( ( entry ) =>
+				existsSync( join( blocks, entry, 'block.json' ) )
+			)
+		);
+	};
+
+	return readdirSync( pluginsDir )
+		.sort()
+		.filter( ( plugin ) => ! plugin.startsWith( 'corex-' ) )
+		.filter( ( plugin ) => {
+			const folder = join( pluginsDir, plugin );
+
+			return (
+				statSync( folder ).isDirectory() &&
+				( plugin.endsWith( '-site' ) || requiresCorex( folder ) ) &&
+				hasBlockSources( folder ) &&
+				! existsSync( join( folder, 'build', 'blocks' ) )
+			);
+		} )
+		.map(
+			( plugin ) =>
+				`client plugin "${ plugin }": block sources in src/Blocks and no compiled build/blocks ` +
+				"(run the plugin's npm run build before packaging)"
+		);
 }
 
 /**

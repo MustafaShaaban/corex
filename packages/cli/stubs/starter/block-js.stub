@@ -1,5 +1,5 @@
 /**
- * {{ name }} example block — editor registration. The block is server-rendered (save returns
+ * {{ name }} example block: editor registration. The block is server-rendered (save returns
  * null); the front-end markup comes from ExampleRenderer. Part of the --starter example;
  * delete with the rest of it (REMOVE-EXAMPLE.md). Run `npm run build` to compile.
  */
@@ -9,6 +9,6 @@ import metadata from './block.json';
 import './style.scss';
 
 registerBlockType( metadata.name, {
-	edit: () => __( 'Example block — rendered on the front end by ExampleRenderer.', '{{ text_domain }}' ),
+	edit: () => __( 'Example block, rendered on the front end by ExampleRenderer.', '{{ text_domain }}' ),
 	save: () => null,
 } );

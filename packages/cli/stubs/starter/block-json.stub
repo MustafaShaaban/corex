@@ -1,12 +1,14 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "{{ theme_slug }}/example",
+	"name": "{{ plugin_slug }}/example",
 	"title": "{{ name }} Example",
 	"category": "widgets",
 	"icon": "list-view",
-	"description": "An example {{ name }} client-site block (server-rendered). Delete with the rest of the example — see REMOVE-EXAMPLE.md.",
+	"description": "An example {{ name }} client-site block (server-rendered). Delete with the rest of the example, see REMOVE-EXAMPLE.md.",
 	"textdomain": "{{ text_domain }}",
+	"supports": { "html": false },
 	"editorScript": "file:./index.js",
-	"style": "file:./style.scss"
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "{{ namespace }}\\Blocks\\ExampleRenderer" }
 }
