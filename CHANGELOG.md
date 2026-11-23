@@ -70,6 +70,11 @@ to the wave's own entry when it is tagged from `release/gap-line`.
 
 ### Fixed
 
+- **Social share's copy and device-share buttons stay hidden until its script shows them.** Their sheet's
+  `display: inline-flex` beat the `hidden` they are printed with, so both showed from the first paint: without
+  scripts, and the device-share button on browsers that cannot share, where it did nothing. A `[hidden]` rule hides
+  them again; the view script still shows the copy button, and the device-share button where the browser can share.
+
 - **A new client repository is checked before it has a remote** (spec 135 slice 1, gap G-001; DECISIONS #661).
   `npm run verify:framework` took a repository with no `origin` for the framework's own and passed without
   comparing a file. A repository nothing names is now a client when it records a baseline
@@ -120,6 +125,9 @@ to the wave's own entry when it is tagged from `release/gap-line`.
 ### Client impact
 
 - **Gap programme, wave 1.**
+  - **Social share's hidden buttons.** Muva and Perego, where a page shows social share: a visitor without
+    scripts, or on a browser that cannot share, no longer sees a button that does nothing. Nothing else changes
+    and there is no upgrade step. Mizzey is not on this line.
   - **Spec 135 slice 1 (G-001).** Muva, Perego and Mizzey: no page, setting or stored data changes, and there
     is no upgrade step. `npm run verify:framework` answers as before in a repository whose `origin` is the
     client's own. A client clone whose `origin` still points at CoreX's repository now fails that check, with a
