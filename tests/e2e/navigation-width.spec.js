@@ -286,10 +286,13 @@ for ( const theme of THEMES ) {
 					);
 
 					if ( desktop ) {
+						// WordPress's overlay is `fixed`. In the bar the menu is `relative`, or
+						// `static` where the menu holds a mega menu item, whose panel hangs from
+						// the header instead (DECISIONS #705).
 						expect(
 							read.menuPosition,
 							`${ where }: the menu is in the bar, not an overlay`
-						).toBe( 'relative' );
+						).not.toBe( 'fixed' );
 						expect(
 							read.links,
 							`${ where }: the menu's links show`
